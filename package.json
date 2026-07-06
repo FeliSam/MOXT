@@ -1,0 +1,49 @@
+{
+  "name": "moxt-monorepo",
+  "private": true,
+  "workspaces": [
+    "moxt-react",
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "postinstall": "node scripts/link-expo-router.cjs",
+    "web": "npm run dev -w moxt",
+    "web:build": "npm run build -w moxt",
+    "web:cap:doctor": "npm run cap:doctor -w moxt",
+    "web:cap:copy": "npm run cap:copy -w moxt",
+    "web:cap:sync": "npm run cap:sync -w moxt",
+    "web:cap:run:android": "npm run cap:run:android -w moxt",
+    "web:cap:run:ios": "npm run cap:run:ios -w moxt",
+    "web:cap:add:android": "npm run cap:add:android -w moxt",
+    "web:cap:add:ios": "npm run cap:add:ios -w moxt",
+    "web:cap:open:android": "npm run cap:open:android -w moxt",
+    "web:cap:open:ios": "npm run cap:open:ios -w moxt",
+    "web:cap:dev": "npm run cap:dev -w moxt",
+    "web:cap:dev:sync": "npm run cap:dev:sync -w moxt",
+    "web:test": "npm run test -w moxt",
+    "mobile": "npm run start --prefix apps/mobile",
+    "mobile:lan": "npm run start --prefix apps/mobile",
+    "mobile:tunnel": "npm run start:tunnel --prefix apps/mobile",
+    "mobile:tunnel:fresh": "npm run start:tunnel:fresh --prefix apps/mobile",
+    "mobile:android": "npm run android --prefix apps/mobile",
+    "mobile:ios": "npm run ios --prefix apps/mobile",
+    "shared:test": "npm run test -w @moxt/shared",
+    "test": "npm run shared:test && npm run web:test"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1",
+    "styleq": "^0.1.3",
+    "typescript": "~6.0.3",
+    "vite": "^8.1.2",
+    "vitest": "^4.1.8"
+  },
+  "overrides": {
+    "vite": "^8.1.2",
+    "expo": "~57.0.0",
+    "expo-modules-core": "~57.0.0"
+  },
+  "dependencies": {
+    "merge-options": "^3.0.4"
+  }
+}

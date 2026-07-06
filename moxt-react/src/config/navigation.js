@@ -1,0 +1,162 @@
+import {
+  FiBell,
+  FiBox,
+  FiBriefcase,
+  FiCalendar,
+  FiChevronRight,
+  FiGrid,
+  FiHome,
+  FiMessageSquare,
+  FiPieChart,
+  FiFileText,
+  FiRepeat,
+  FiSettings,
+  FiShield,
+  FiShoppingBag,
+  FiUser,
+  FiUsers,
+} from 'react-icons/fi'
+
+export const routePreloaders = {
+  '/admin': () => import('../pages/AdminPage'),
+  '/activities': () => import('../pages/ActivitiesPage'),
+  '/businesses': () => import('../pages/BusinessesPage'),
+  '/professional': () => import('../pages/ProfessionalPage'),
+  '/dashboard': () => import('../pages/DashboardPage'),
+  '/documents': () => import('../pages/DocumentsPage'),
+  '/events': () => import('../pages/EventsPage'),
+  '/favorites': () => import('../pages/FavoritesPage'),
+  '/feature-matrix': () => import('../pages/FeatureMatrixPage'),
+  '/exchangers': () => import('../pages/ExchangersPage'),
+  '/jobs': () => import('../pages/JobsPage'),
+  '/jobs/applications': () => import('../pages/JobApplicationsPage'),
+  '/local-data': () => import('../pages/LocalDataPage'),
+  '/news': () => import('../pages/NewsPage'),
+  '/marketplace': () => import('../pages/MarketplacePage'),
+  '/messages': () => import('../pages/MessagesPage'),
+  '/notifications': () => import('../pages/NotificationsPage'),
+  '/p2p': () => import('../pages/P2PPage'),
+  '/payments': () => import('../pages/PaymentsPage'),
+  '/parcels': () => import('../pages/ParcelsPage'),
+  '/profile': () => import('../pages/ProfilePage'),
+  '/profile/information': () => import('../pages/PersonalInformationPage'),
+  '/receipts': () => import('../pages/ReceiptsPage'),
+  '/support': () => import('../pages/SupportPage'),
+  '/superadmin': () => import('../pages/SuperAdminPage'),
+  '/settings': () => import('../pages/SettingsPage'),
+  '/security': () => import('../pages/SecurityPage'),
+  '/transfers': () => import('../pages/NewTransferPage'),
+  '/transfers/history': () => import('../pages/TransfersPage'),
+  '/verification': () => import('../pages/VerificationPage'),
+  '/wallet': () => import('../pages/WalletPage'),
+  '/disputes': () => import('../pages/DisputesPage'),
+}
+
+export function preloadRoute(path) {
+  return routePreloaders[path]?.()
+}
+
+export const navigationGroups = [
+  {
+    id: 'home',
+    label: 'Accueil',
+    icon: FiGrid,
+    color: 'from-sky-500 to-blue-600',
+    children: [{ id: 'dashboard', label: 'Accueil', path: '/dashboard', icon: FiHome }],
+  },
+  {
+    id: 'finance',
+    label: 'Finances',
+    icon: FiRepeat,
+    color: 'from-emerald-500 to-teal-500',
+    children: [
+      { id: 'transfers', label: 'Transferts', path: '/transfers', icon: FiRepeat },
+      { id: 'p2p', label: 'Echanges P2P', path: '/p2p', icon: FiUsers },
+      { id: 'exchangers', label: 'Échangeurs', path: '/exchangers', icon: FiRepeat },
+    ],
+  },
+  {
+    id: 'services',
+    label: 'Services',
+    icon: FiShoppingBag,
+    color: 'from-violet-500 to-purple-500',
+    children: [
+      { id: 'businesses', label: 'Entreprises', path: '/businesses', icon: FiBriefcase },
+      { id: 'professional', label: 'Espace professionnel', path: '/professional', icon: FiGrid },
+      { id: 'parcels', label: 'Colis', path: '/parcels', icon: FiBox },
+      { id: 'marketplace', label: 'Marketplace', path: '/marketplace', icon: FiShoppingBag },
+    ],
+  },
+  {
+    id: 'community',
+    label: 'Communauté',
+    icon: FiUsers,
+    color: 'from-amber-500 to-orange-500',
+    children: [
+      { id: 'news', label: 'Actualités', path: '/news', icon: FiFileText },
+      { id: 'jobs', label: 'Jobs', path: '/jobs', icon: FiBriefcase },
+      { id: 'events', label: 'Evenements', path: '/events', icon: FiCalendar },
+    ],
+  },
+  {
+    id: 'communication',
+    label: 'Communication',
+    icon: FiMessageSquare,
+    color: 'from-rose-500 to-pink-500',
+    children: [
+      {
+        id: 'messages',
+        label: 'Messages',
+        path: '/messages',
+        icon: FiMessageSquare,
+        badgeSelector: 'messages',
+      },
+      {
+        id: 'notifications',
+        label: 'Notifications',
+        path: '/notifications',
+        icon: FiBell,
+        badgeSelector: 'notifications',
+      },
+    ],
+  },
+  {
+    id: 'account',
+    label: 'Compte',
+    icon: FiUser,
+    color: 'from-slate-500 to-slate-700',
+    children: [{ id: 'profile', label: 'Mon profil', path: '/profile', icon: FiUser }],
+  },
+  {
+    id: 'administration',
+    label: 'Administration',
+    icon: FiSettings,
+    color: 'from-red-500 to-rose-600',
+    roles: ['admin', 'superadmin'],
+    children: [
+      {
+        id: 'admin',
+        label: 'Centre de contrôle',
+        path: '/admin',
+        icon: FiSettings,
+        roles: ['admin', 'superadmin'],
+      },
+      {
+        id: 'feature-matrix',
+        label: 'Couverture fonctionnelle',
+        path: '/feature-matrix',
+        icon: FiPieChart,
+        roles: ['admin', 'superadmin'],
+      },
+      {
+        id: 'superadmin',
+        label: 'Pilotage système',
+        path: '/superadmin',
+        icon: FiShield,
+        roles: ['superadmin'],
+      },
+    ],
+  },
+]
+
+export { FiChevronRight }

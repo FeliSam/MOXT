@@ -1,0 +1,24 @@
+appId: com.moxt.app
+name: "Login Flow"
+---
+- launchApp
+- assertVisible: "Connexion"
+
+# Enter email
+- tapOn: "Email"
+- inputText: "test@moxt.app"
+
+# Enter password
+- tapOn: "Mot de passe"
+- inputText: "Test1234!"
+
+# Submit
+- tapOn: "Se connecter"
+
+# Should navigate to home
+- assertVisible:
+    text: "Accueil"
+    timeout: 10000
+
+# Verify user card is visible
+- assertVisible: "MOXT Mobile"

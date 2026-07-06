@@ -1,0 +1,13 @@
+flows:
+  - login-flow.yaml
+  - navigation-flow.yaml
+  - transfer-flow.yaml
+  - referral-flow.yaml
+
+executionOrder:
+  continueOnFailure: false
+  flowsOrder:
+    - login-flow.yaml
+    - navigation-flow.yaml
+    - transfer-flow.yaml
+    - referral-flow.yaml

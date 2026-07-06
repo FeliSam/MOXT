@@ -1,0 +1,40 @@
+MOXT - The money transfer & services platform for communities
+
+MOXT simplifies international money transfers, parcel management, and much more.
+
+🌍 INTERNATIONAL TRANSFERS
+• Send and receive money between France, West Africa, and Russia
+• Competitive rates with transparent fees
+• Real-time tracking for every transfer
+
+📦 PARCEL MANAGEMENT
+• Post or book traveler parcels
+• Full delivery status tracking
+• Direct communication with travelers
+
+🏪 MARKETPLACE
+• Buy and sell products between communities
+• Verified and secure listings
+• Advanced search with filters
+
+💼 JOBS & SERVICES
+• Find jobs in your community
+• Post your job offers
+• Apply directly from the app
+
+🔒 SECURITY & TRUST
+• Identity verification (KYC)
+• Automatically calculated trust score
+• User ratings and reviews
+
+💰 MULTI-CURRENCY WALLET
+• Manage your balances in XOF, RUB, and EUR
+• Complete transaction history
+• Data export (CSV)
+
+🤝 REFERRAL PROGRAM
+• Invite friends and earn rewards
+• Unique referral code
+• Track your referrals
+
+Download MOXT now and join our growing community!

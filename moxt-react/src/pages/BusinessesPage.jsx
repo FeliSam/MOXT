@@ -1,0 +1,194 @@
+import { FiBriefcase, FiMapPin, FiPhone, FiPlus } from 'react-icons/fi'
+import { useMemo, useState } from 'react'
+import { useSelector } from 'react-redux'
+import { Link } from 'react-router-dom'
+import { Badge, VerifiedBadge } from '../components/ui/Badge'
+import { Button } from '../components/ui/Button'
+import { Card } from '../components/ui/Card'
+import { CatalogGrid } from '../components/ui/CatalogGrid'
+import { CatalogSearch } from '../components/ui/CatalogSearch'
+import { EmptyState } from '../components/ui/EmptyState'
+import { Input } from '../components/ui/Input'
+import { PageHeader } from '../components/ui/PageHeader'
+import { RevealListItem } from '../components/ui/RevealListItem'
+import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
+import { Select } from '../components/ui/Select'
+import { BUSINESS_ACTIVITIES, activityByValue } from '../config/businessActivities'
+import { statusMeta } from '../config/statuses'
+import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
+
+export function BusinessesPage() {
+  useScrollToSecondSection()
+  const [advancedOpen, setAdvancedOpen] = useState(false)
+  const [filters, setFilters] = useState({ query: '', city: '', sector: '', service: '' })
+  const user = useSelector((state) => state.auth.user)
+  const businesses = useSelector((state) => state.businesses.items)
+  const ownBusiness = businesses.find((item) => item.ownerId === user.id)
+
+  const visibleBusinesses = useMemo(
+    () =>
+      businesses.filter((business) => {
+        if (!['verified', 'approved', 'active'].includes(business.status)) return false
+        const activityLabel = activityByValue(business.primaryActivity)?.label || business.sector
+        const haystack =
+          `${business.name} ${activityLabel} ${business.city} ${business.description} ${business.services?.join(' ')}`.toLowerCase()
+        return (
+          (!filters.query || haystack.includes(filters.query.toLowerCase())) &&
+          (!filters.city || business.city.toLowerCase().includes(filters.city.toLowerCase())) &&
+          (!filters.sector || activityLabel.toLowerCase().includes(filters.sector.toLowerCase())) &&
+          (!filters.service || business.services?.includes(filters.service))
+        )
+      }),
+    [businesses, filters],
+  )
+
+  function clearFilters() {
+    setFilters({ query: '', city: '', sector: '', service: '' })
+  }
+
+  return (
+    <div className="grid gap-7">
+      <PageHeader
+        eyebrow="Services professionnels"
+        title="Entreprises et echangeurs"
+        description="Creez un profil professionnel situe en Russie et consultez les prestataires valides sur MOXT."
+        stats={[{ label: 'Entreprises verifiees', value: visibleBusinesses.length }]}
+        actions={
+          <Link to="/businesses/setup">
+            <Button icon={FiPlus}>{ownBusiness ? 'Modifier mon entreprise' : 'Creer une entreprise'}</Button>
+          </Link>
+        }
+      />
+
+      <ScrollSectionAnchor className="scroll-mt-24 grid gap-5 lg:scroll-mt-28">
+        <CatalogSearch
+          advancedOpen={advancedOpen}
+          count={visibleBusinesses.length}
+          query={filters.query}
+          onQueryChange={(query) => setFilters((current) => ({ ...current, query }))}
+          onToggleAdvanced={() => setAdvancedOpen((value) => !value)}
+          onClear={clearFilters}
+          placeholder="Entreprise, service, domaine ou ville..."
+        >
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Input
+              id="business-filter-city"
+              label="Ville"
+              value={filters.city}
+              onChange={(event) =>
+                setFilters((current) => ({ ...current, city: event.target.value }))
+              }
+            />
+            <Select
+              id="business-filter-sector"
+              label="Domaine"
+              value={filters.sector}
+              onChange={(event) =>
+                setFilters((current) => ({ ...current, sector: event.target.value }))
+              }
+            >
+              <option value="">Tous les domaines</option>
+              {BUSINESS_ACTIVITIES.map((activity) => (
+                <option key={activity.value} value={activity.label}>
+                  {activity.label}
+                </option>
+              ))}
+            </Select>
+            <Select
+              id="business-filter-service"
+              label="Service"
+              value={filters.service}
+              onChange={(event) =>
+                setFilters((current) => ({ ...current, service: event.target.value }))
+              }
+            >
+              <option value="">Tous les services</option>
+              {['Transfert', 'Colis', 'Marketplace', 'Jobs', 'Events'].map((service) => (
+                <option key={service} value={service}>
+                  {service}
+                </option>
+              ))}
+            </Select>
+          </div>
+        </CatalogSearch>
+
+        <div>
+          <h2 className="text-xl font-black">Annuaire professionnel</h2>
+          <p className="mt-1 text-sm text-[var(--app-text-muted)]">
+            Les entreprises apparaissent ici uniquement apres validation administrative.
+          </p>
+        </div>
+
+        <CatalogGrid lazy={false} columns="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          {visibleBusinesses.length ? (
+            visibleBusinesses.map((business, index) => {
+              const activity = activityByValue(business.primaryActivity)
+              const Icon = activity?.icon || FiBriefcase
+              return (
+                <RevealListItem key={business.id} index={index}>
+                  <Card variant="verified" className="flex h-full flex-col overflow-hidden p-4 sm:p-5">
+                    <div className="flex items-start gap-3">
+                      <img
+                        src={business.logoUrl || '/assets/services/service-businesses.svg'}
+                        alt=""
+                        className="size-14 shrink-0 rounded-2xl object-cover ring-1 ring-[var(--app-border)] sm:size-16"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <h3 className="break-words text-sm font-black sm:text-base">
+                          {business.name}
+                        </h3>
+                        <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-[var(--app-text-faint)]">
+                          <Icon className="shrink-0 text-sm text-brand-700 dark:text-brand-300" />
+                          {activity?.label || business.sector}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <VerifiedBadge size="sm" />
+                      <Badge tone={statusMeta(business.status).tone}>
+                        {statusMeta(business.status).label}
+                      </Badge>
+                    </div>
+
+                    <p className="mt-3 hidden text-sm leading-6 text-[var(--app-text-muted)] sm:block">
+                      {business.description}
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {(business.services || []).slice(0, 3).map((service) => (
+                        <Badge key={service} tone="teal">{service}</Badge>
+                      ))}
+                    </div>
+                    <div className="mt-4 grid gap-2 border-t border-[var(--app-border)] pt-4 text-xs text-[var(--app-text-muted)] sm:grid-cols-2 sm:text-sm">
+                      <span className="hidden items-center gap-2 sm:flex">
+                        <FiMapPin /> {business.city}
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <FiPhone /> {business.phone}
+                      </span>
+                    </div>
+                    <Link
+                      className="mt-auto inline-flex items-center gap-1.5 pt-5 text-xs font-black text-brand-700 transition hover:gap-2.5 sm:text-sm dark:text-brand-300"
+                      to={`/businesses/${business.id}`}
+                    >
+                      Voir la fiche entreprise →
+                    </Link>
+                  </Card>
+                </RevealListItem>
+              )
+            })
+          ) : (
+            <EmptyState
+              className="col-span-full"
+              icon={FiBriefcase}
+              title="Aucune entreprise validee"
+              description="Les profils apparaissent ici des leur validation par l'equipe MOXT."
+            />
+          )}
+        </CatalogGrid>
+      </ScrollSectionAnchor>
+    </div>
+  )
+}

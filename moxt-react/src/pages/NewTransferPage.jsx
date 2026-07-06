@@ -1,0 +1,703 @@
+import { useFormik } from 'formik'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  FiArrowLeft,
+  FiArrowRight,
+  FiCheck,
+  FiClock,
+  FiExternalLink,
+  FiRefreshCw,
+  FiSend,
+  FiShield,
+  FiSliders,
+  FiStar,
+  FiUsers,
+  FiZap,
+} from 'react-icons/fi'
+import { useDispatch, useSelector } from 'react-redux'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Alert } from '../components/ui/Alert'
+import { Button } from '../components/ui/Button'
+import { Card } from '../components/ui/Card'
+import { Input } from '../components/ui/Input'
+import { Modal } from '../components/ui/Modal'
+import { PageHeader } from '../components/ui/PageHeader'
+import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
+import { flagColor, flagEmoji } from '../config/flags'
+import { ensurePhoneCountry, phonePlaceholder, phonePrefix } from '../config/phone'
+import {
+  DIRECTIONS,
+  FALLBACK_EXCHANGERS,
+  paymentMethodsForCountry,
+} from '../features/transfers/transferConfig'
+import { transferSchema } from '../features/transfers/transferSchemas'
+import { createTransfer } from '../features/transfers/transferSlice'
+import { TransferCalculator } from '../features/transfers/TransferCalculator'
+import { useExchangeRate } from '../features/transfers/useExchangeRate'
+import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
+import {
+  calculateTransfer,
+  directionInfo,
+  formatMoney,
+  monthlyTransferTotal,
+  validateTransferAmount,
+} from '../features/transfers/transferUtils'
+
+import { TransferWizardSectionTitle as SectionTitle } from '../features/transfers/wizard/TransferWizardSectionTitle'
+import { TransferWizardStepper as Stepper } from '../features/transfers/wizard/TransferWizardStepper'
+import {
+  clearTransferDraft,
+  readTransferDraft,
+  writeTransferDraft,
+} from '../features/transfers/wizard/transferWizardConfig'
+export function NewTransferPage() {
+  useScrollToSecondSection()
+  const [step, setStep] = useState(1)
+  const [calculatorOpen, setCalculatorOpen] = useState(false)
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const user = useSelector((state) => state.auth.user)
+  const businesses = useSelector((state) => state.businesses.items)
+  const transfers = useSelector((state) => state.transfers.items)
+  const transferProfiles = useSelector((state) =>
+    (state.account.transferProfiles || []).filter((item) => item.userId === user.id),
+  )
+  const draft = useMemo(() => readTransferDraft(), [])
+  const liveRate = useExchangeRate()
+  const originCountry = user.originCountry || (user.country !== 'RU' ? user.country : 'BJ')
+  const initialDirection = user.country === 'RU' ? DIRECTIONS.RU_TO_BJ : DIRECTIONS.BJ_TO_RU
+  const initialInfo = directionInfo(initialDirection, originCountry)
+  const exchangers = useMemo(() => {
+    const approved = businesses
+      .filter(
+        (business) =>
+          ['approved', 'active', 'verified'].includes(business.status) &&
+          business.services?.includes('Transfert') &&
+          business.ownerId !== user.id,
+      )
+      .map((business) => {
+        const transferAccounts = (business.transferAccounts || []).filter(
+          (account) => account.active !== false,
+        )
+        const primaryAccount = transferAccounts[0]
+        const paymentAccount = primaryAccount
+          ? [
+              primaryAccount.recipientName,
+              primaryAccount.phone || primaryAccount.accountNumber,
+              primaryAccount.method || primaryAccount.bankName,
+            ]
+              .filter(Boolean)
+              .join(' · ')
+          : (business.exchangeMethods || business.paymentMethods || []).join(', ') ||
+            "Coordonnees communiquees par l'entreprise"
+        return {
+          id: business.id,
+          ownerId: business.ownerId,
+          name: business.name,
+          rating: business.rating || 0,
+          feePercent: Number(business.feePercent || 0),
+          averageDelay: business.averageDelay || 'À confirmer',
+          methods: business.exchangeMethods || business.paymentMethods || [],
+          paymentAccount,
+          paymentDetails: primaryAccount || null,
+        }
+      })
+    return approved.length ? approved : FALLBACK_EXCHANGERS
+  }, [businesses, user.id])
+  const formik = useFormik({
+    initialValues: {
+      direction: initialDirection,
+      sourceCountry: initialInfo.sourceCountry,
+      destinationCountry: initialInfo.destinationCountry,
+      amount: '',
+      exchangerId: searchParams.get('exchangerId') || '',
+      senderFirstName: user.firstName || '',
+      senderLastName: user.lastName || '',
+      senderPhone: ensurePhoneCountry(user.phone, initialInfo.sourceCountry),
+      senderMethod: '',
+      recipientFirstName: '',
+      recipientLastName: '',
+      recipientPhone: ensurePhoneCountry('', initialInfo.destinationCountry),
+      recipientMethod: '',
+      acceptTerms: false,
+      ...(draft?.userId === user.id ? draft.values : {}),
+    },
+    validationSchema: transferSchema,
+    onSubmit: (values) => {
+      const exchanger = exchangers.find((item) => item.id === values.exchangerId)
+      if (!exchanger) {
+        formik.setFieldError('exchangerId', 'Choisissez une entreprise disponible.')
+        return
+      }
+      if (exchanger?.ownerId === user.id) {
+        formik.setFieldError('exchangerId', 'Vous ne pouvez pas utiliser votre propre entreprise.')
+        return
+      }
+      const transferInfo = directionInfo(values.direction)
+      const amountError = validateTransferAmount(
+        values.amount,
+        values.direction,
+        user.verified,
+        monthlyTransferTotal(transfers, user.id, transferInfo.from),
+        originCountry,
+      )
+      if (amountError) {
+        formik.setFieldError('amount', amountError)
+        return
+      }
+      const action = dispatch(
+        createTransfer({
+          amount: values.amount,
+          direction: values.direction,
+          originCountry,
+          user,
+          exchanger,
+          rateOverride:
+            values.direction === DIRECTIONS.BJ_TO_RU ? liveRate.xofToRub : liveRate.rubToXof,
+          rateSource: liveRate.source,
+          rateDate: liveRate.date,
+          sender: {
+            firstName: values.senderFirstName,
+            lastName: values.senderLastName,
+            phone: values.senderPhone,
+            method: values.senderMethod,
+          },
+          recipient: {
+            firstName: values.recipientFirstName,
+            lastName: values.recipientLastName,
+            phone: values.recipientPhone,
+            method: values.recipientMethod,
+          },
+        }),
+      )
+      clearTransferDraft()
+      navigate(`/transfers/${action.payload.id}`)
+    },
+  })
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      writeTransferDraft(user.id, step, formik.values)
+    }, 250)
+    return () => window.clearTimeout(timeout)
+  }, [formik.values, step, user.id])
+
+  const selectedExchanger = exchangers.find((item) => item.id === formik.values.exchangerId)
+  const calculation = calculateTransfer(
+    formik.values.amount,
+    formik.values.direction,
+    selectedExchanger?.feePercent,
+    formik.values.direction === DIRECTIONS.BJ_TO_RU ? liveRate.xofToRub : liveRate.rubToXof,
+    originCountry,
+  )
+  const info = directionInfo(formik.values.direction, originCountry)
+  const usedThisMonth = monthlyTransferTotal(transfers, user.id, info.from)
+  const senderProfiles = transferProfiles.filter((item) => item.country === info.sourceCountry)
+  const recipientProfiles = transferProfiles.filter(
+    (item) => item.country === info.destinationCountry,
+  )
+  const sourceMethods = paymentMethodsForCountry(info.sourceCountry)
+  const destinationMethods = paymentMethodsForCountry(info.destinationCountry)
+  const errorFor = (field) => (formik.touched[field] ? formik.errors[field] : undefined)
+  const stepFields = {
+    1: ['direction', 'amount', 'exchangerId'],
+    2: ['senderFirstName', 'senderLastName', 'senderPhone', 'senderMethod'],
+    3: ['recipientFirstName', 'recipientLastName', 'recipientPhone', 'recipientMethod'],
+    4: ['acceptTerms'],
+  }
+
+  async function nextStep() {
+    const fields = stepFields[step] || []
+    const errors = await formik.validateForm()
+    if (step === 1) {
+      const amountError = validateTransferAmount(
+        formik.values.amount,
+        formik.values.direction,
+        user.verified,
+        usedThisMonth,
+        originCountry,
+      )
+      if (amountError) errors.amount = amountError
+      formik.setFieldError('amount', amountError || undefined)
+    }
+    formik.setTouched(
+      fields.reduce((touched, field) => ({ ...touched, [field]: true }), formik.touched),
+    )
+    if (fields.some((field) => errors[field])) return
+    setStep((current) => Math.min(4, current + 1))
+  }
+
+  function applyProfile(prefix, profile) {
+    formik.setFieldValue(`${prefix}FirstName`, profile.firstName)
+    formik.setFieldValue(`${prefix}LastName`, profile.lastName)
+    formik.setFieldValue(`${prefix}Phone`, profile.phone)
+    formik.setFieldValue(`${prefix}Method`, profile.method)
+  }
+
+  return (
+    <div className="grid gap-7">
+      <PageHeader
+        eyebrow="Transfert"
+        title="Créer un transfert"
+        description="Choisissez une entreprise validée. Elle recevra l'opération et suivra son traitement jusqu'à la validation."
+        actions={
+          <>
+            <Button variant="secondary" icon={FiSliders} onClick={() => setCalculatorOpen(true)}>
+              Calculatrice
+            </Button>
+            <Link to="/exchangers">
+              <Button variant="secondary" icon={FiRefreshCw}>
+                Échangeurs
+              </Button>
+            </Link>
+            <Link to="/transfers/history">
+              <Button variant="secondary" icon={FiArrowLeft}>
+                Historique
+              </Button>
+            </Link>
+          </>
+        }
+      />
+      <ScrollSectionAnchor as={Card} className="scroll-mt-24 px-6 py-5 lg:scroll-mt-28">
+        <Stepper step={step} onGoTo={setStep} />
+      </ScrollSectionAnchor>
+
+      <form className="grid gap-5" onSubmit={formik.handleSubmit} noValidate>
+        {step === 1 ? (
+          <div className="grid gap-5">
+            {/* Direction — 2 visual cards */}
+            <Card className="grid gap-5">
+              <SectionTitle icon={FiZap} label="Sens du transfert" />
+              <div className="grid gap-3 sm:grid-cols-2">
+                {[DIRECTIONS.BJ_TO_RU, DIRECTIONS.RU_TO_BJ].map((dir) => {
+                  // Chaque carte calcule ses propres pays/devises a partir de
+                  // SA direction (dir), jamais de la direction active
+                  // (formik.values.direction) : sinon les deux cartes
+                  // affichent le meme contenu des que l'utilisateur change de sens.
+                  const cardInfo = directionInfo(dir, originCountry)
+                  const fromFlag = flagEmoji(cardInfo.sourceCountry)
+                  const toFlag = flagEmoji(cardInfo.destinationCountry)
+                  const accent = flagColor(cardInfo.destinationCountry)
+                  const active = formik.values.direction === dir
+                  return (
+                    <button
+                      key={dir}
+                      type="button"
+                      onClick={() => {
+                        formik.setFieldValue("direction", dir)
+                        formik.setFieldValue("sourceCountry", cardInfo.sourceCountry)
+                        formik.setFieldValue("destinationCountry", cardInfo.destinationCountry)
+                        formik.setFieldValue("senderPhone", phonePrefix(cardInfo.sourceCountry))
+                        formik.setFieldValue("recipientPhone", phonePrefix(cardInfo.destinationCountry))
+                        formik.setFieldValue("senderMethod", "")
+                        formik.setFieldValue("recipientMethod", "")
+                      }}
+                      style={active ? { borderColor: accent } : undefined}
+                      className={`rounded-2xl border-2 p-5 text-left transition-all duration-200 ${
+                        active
+                          ? 'bg-gradient-to-br from-brand-50 to-cyan-50 shadow-md dark:from-brand-950/40 dark:to-cyan-950/40'
+                          : 'border-[var(--app-border)] hover:border-brand-400 hover:shadow-sm'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 text-lg font-black">
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="text-xl leading-none">{fromFlag}</span>
+                          {cardInfo.from}
+                        </span>
+                        <FiArrowRight className={`shrink-0 ${active ? 'text-brand-600' : 'text-[var(--app-text-muted)]'}`} />
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="text-xl leading-none">{toFlag}</span>
+                          {cardInfo.to}
+                        </span>
+                      </div>
+                      <p className={`mt-1 text-xs font-bold ${active ? 'text-brand-700 dark:text-brand-400' : 'text-[var(--app-text-muted)]'}`}>
+                        {dir === DIRECTIONS.BJ_TO_RU ? 'Afrique → Russie' : 'Russie → Afrique'}
+                      </p>
+                      {active ? (
+                        <span
+                          className="mt-3 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold text-white"
+                          style={{ backgroundColor: accent }}
+                        >
+                          <FiCheck className="text-[10px]" /> Sélectionné
+                        </span>
+                      ) : null}
+                    </button>
+                  )
+                })}
+              </div>
+            </Card>
+
+            {/* Amount */}
+            <Card className="grid gap-5">
+              <SectionTitle icon={FiSend} label={`Montant à envoyer en ${calculation.currencyFrom}`} />
+              <Input
+                id="amount"
+                label={`Montant en ${calculation.currencyFrom}`}
+                type="number"
+                min={calculation.minimumRequired}
+                placeholder={`Min. ${formatMoney(calculation.minimumRequired, calculation.currencyFrom)}`}
+                {...formik.getFieldProps('amount')}
+                error={errorFor('amount')}
+              />
+              <div className="flex items-start gap-3 rounded-2xl bg-[var(--app-accent-soft)] p-4 text-sm">
+                <FiClock className="mt-0.5 shrink-0 text-[var(--app-accent)]" />
+                <p className="text-[var(--app-text-muted)]">
+                  Minimum : <strong>{formatMoney(calculation.minimumRequired, calculation.currencyFrom)}</strong>.
+                  {!user.verified
+                    ? ` Utilisé ce mois : ${formatMoney(usedThisMonth, calculation.currencyFrom)}.`
+                    : ' Compte vérifié — plafond augmenté.'}
+                </p>
+              </div>
+            </Card>
+
+            {/* Exchanger cards */}
+            <Card className="grid gap-4">
+              <div className="flex items-center justify-between gap-3 border-b border-[var(--app-border)] pb-4">
+                <div className="flex items-center gap-3">
+                  <span className="grid size-9 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
+                    <FiStar className="text-base" />
+                  </span>
+                  <h2 className="font-black">Choisir un partenaire</h2>
+                </div>
+                <Link to="/exchangers" className="shrink-0">
+                  <Button variant="ghost" size="sm" icon={FiExternalLink}>
+                    Tous les échangeurs
+                  </Button>
+                </Link>
+              </div>
+              {errorFor('exchangerId') ? (
+                <p className="text-xs text-red-600">{errorFor('exchangerId')}</p>
+              ) : null}
+              <div className="w-full min-w-0 max-w-full overflow-x-auto xl:overflow-visible">
+                <div className="flex w-max gap-3 xl:grid xl:w-full xl:grid-cols-4 xl:gap-3">
+                  {exchangers.map((exchanger) => {
+                    const active = formik.values.exchangerId === exchanger.id
+                    return (
+                      <button
+                        key={exchanger.id}
+                        type="button"
+                        onClick={() => formik.setFieldValue('exchangerId', exchanger.id)}
+                        className={`flex w-[9.25rem] shrink-0 flex-col items-center gap-2 rounded-2xl border-2 p-4 text-center transition-all duration-200 sm:w-[10.5rem] xl:w-auto xl:shrink ${
+                          active
+                            ? 'border-brand-500 bg-[var(--app-accent-soft)] shadow-md'
+                            : 'border-[var(--app-border)] hover:border-brand-400 hover:shadow-sm'
+                        }`}
+                      >
+                        <div className={`grid size-12 shrink-0 place-items-center rounded-2xl text-base font-black ${active ? 'bg-brand-700 text-white' : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'}`}>
+                          {exchanger.name[0]}
+                        </div>
+                        <p className="line-clamp-2 text-xs font-black leading-tight">{exchanger.name}</p>
+                        {exchanger.rating > 0 ? (
+                          <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600">
+                            <FiStar className="text-[9px]" /> {exchanger.rating.toFixed(1)}
+                          </span>
+                        ) : null}
+                        <div className="flex w-full flex-col gap-1">
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${active ? 'bg-brand-700 text-white' : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'}`}>
+                            {exchanger.feePercent}% frais
+                          </span>
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${active ? 'bg-brand-600 text-white' : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'}`}>
+                            <FiClock className="mr-0.5 inline text-[9px]" />{exchanger.averageDelay}
+                          </span>
+                        </div>
+                        {active ? (
+                          <span className="flex items-center gap-1 text-[10px] font-bold text-brand-600">
+                            <FiCheck className="text-[10px]" /> Sélectionné
+                          </span>
+                        ) : null}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </Card>
+
+            {/* Calculation block */}
+            {Number(formik.values.amount) > 0 && selectedExchanger ? (
+              <Card className="overflow-hidden p-0">
+                {/* Hero gradient */}
+                <div className="bg-gradient-to-r from-brand-600 via-brand-500 to-cyan-500 p-5">
+                  <div className="mb-3 flex items-center gap-2">
+                    <FiZap className="text-white/80" />
+                    <span className="text-xs font-bold uppercase tracking-widest text-white/80">
+                      Simulation du transfert
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-bold text-white/70">Vous payez</p>
+                      <p className="text-2xl font-black text-white">
+                        {formatMoney(calculation.totalToPay, calculation.currencyFrom)}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-center gap-1">
+                      <div className="flex items-center gap-1 rounded-full bg-white/20 px-3 py-1">
+                        <FiArrowRight className="text-xs text-white" />
+                        <span className="text-[10px] font-bold text-white">
+                          1 {calculation.currencyFrom} = {calculation.rawRate} {calculation.currencyTo}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-bold text-white/70">Le destinataire reçoit ~</p>
+                      <p className="text-2xl font-black text-white">
+                        {formatMoney(calculation.amountReceived, calculation.currencyTo)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Details grid */}
+                <div className="grid grid-cols-3 divide-x divide-[var(--app-border)] border-b border-[var(--app-border)]">
+                  {[
+                    { label: 'Montant envoyé', value: formatMoney(calculation.amountSent, calculation.currencyFrom) },
+                    { label: `Frais ${calculation.feePercent}%`, value: formatMoney(calculation.fees, calculation.currencyFrom), highlight: true },
+                    { label: 'Délai estimé', value: selectedExchanger.averageDelay },
+                  ].map(({ label, value, highlight }) => (
+                    <div key={label} className="grid gap-0.5 px-4 py-3 text-center">
+                      <span className="text-[10px] font-bold uppercase tracking-wide text-[var(--app-text-faint)]">
+                        {label}
+                      </span>
+                      <span className={`text-sm font-black ${highlight ? 'text-red-500' : 'text-[var(--app-text)]'}`}>
+                        {value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Payment details + rate note */}
+                <div className="grid gap-3 p-5">
+                  {selectedExchanger?.paymentDetails ? (
+                    <div className="flex items-start gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-4">
+                      <div className="grid size-8 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300">
+                        <FiShield className="text-sm" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-black">Coordonnées de paiement</p>
+                        <p className="mt-0.5 text-xs text-[var(--app-text-muted)]">
+                          {selectedExchanger.paymentDetails.recipientName} ·{' '}
+                          {selectedExchanger.paymentDetails.method || selectedExchanger.paymentDetails.bankName} ·{' '}
+                          {selectedExchanger.paymentDetails.phone || selectedExchanger.paymentDetails.accountNumber}
+                        </p>
+                        {selectedExchanger.paymentDetails.instructions ? (
+                          <p className="mt-1 text-xs text-[var(--app-text-muted)]">
+                            {selectedExchanger.paymentDetails.instructions}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : null}
+                  <p className="text-[10px] leading-5 text-[var(--app-text-faint)]">
+                    Taux indicatif · source {liveRate.source} · {liveRate.date || 'date non disponible'} · marge {calculation.rateMarginPercent}%. Le montant reçu peut varier légèrement.
+                  </p>
+                </div>
+              </Card>
+            ) : !selectedExchanger ? null : (
+              <Alert variant="info">Saisissez un montant pour voir la simulation.</Alert>
+            )}
+          </div>
+        ) : null}
+
+        {step === 2 ? (
+          <PartyCard
+            title="2. Expéditeur"
+            prefix="sender"
+            profiles={senderProfiles}
+            formik={formik}
+            methods={sourceMethods}
+            errorFor={errorFor}
+            onProfile={(profile) => applyProfile('sender', profile)}
+          />
+        ) : null}
+        {step === 3 ? (
+          <PartyCard
+            title="3. Destinataire"
+            prefix="recipient"
+            profiles={recipientProfiles}
+            formik={formik}
+            methods={destinationMethods}
+            errorFor={errorFor}
+            onProfile={(profile) => applyProfile('recipient', profile)}
+          />
+        ) : null}
+
+        {step === 4 ? (
+          <div className="grid gap-5">
+            <Card className="grid gap-4">
+              <SectionTitle icon={FiShield} label="Récapitulatif et confirmation" />
+              {/* Amount highlight */}
+              <div className="flex items-center justify-between gap-4 rounded-2xl bg-gradient-to-br from-brand-600 to-cyan-600 p-5 text-white">
+                <div>
+                  <p className="text-xs font-bold opacity-80">Vous envoyez</p>
+                  <p className="text-2xl font-black">{formatMoney(calculation.totalToPay, calculation.currencyFrom)}</p>
+                </div>
+                <FiArrowRight className="shrink-0 text-3xl opacity-70" />
+                <div className="text-right">
+                  <p className="text-xs font-bold opacity-80">Le destinataire reçoit ~</p>
+                  <p className="text-2xl font-black">{formatMoney(calculation.amountReceived, calculation.currencyTo)}</p>
+                </div>
+              </div>
+              {[
+                ['Entreprise partenaire', selectedExchanger?.name],
+                ['Frais', formatMoney(calculation.fees, calculation.currencyFrom)],
+                ['Expéditeur', `${formik.values.senderFirstName} ${formik.values.senderLastName}`],
+                ['Destinataire', `${formik.values.recipientFirstName} ${formik.values.recipientLastName}`],
+              ].map(([label, value]) => (
+                <div key={label} className="flex justify-between gap-4 rounded-xl bg-[var(--app-surface-muted)] px-4 py-3">
+                  <span className="text-sm text-[var(--app-text-muted)]">{label}</span>
+                  <strong className="text-right text-sm">{value || '—'}</strong>
+                </div>
+              ))}
+              <label className="flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-[var(--app-border)] p-4 transition hover:border-brand-400">
+                <input
+                  className="mt-0.5 size-4 accent-brand-700"
+                  type="checkbox"
+                  {...formik.getFieldProps('acceptTerms')}
+                  checked={formik.values.acceptTerms}
+                />
+                <span className="text-sm leading-relaxed">
+                  Je confirme ces informations et autorise leur transmission à l'entreprise
+                  sélectionnée pour le traitement de cette opération.
+                </span>
+              </label>
+              {errorFor('acceptTerms') ? (
+                <p className="text-xs text-red-600">{errorFor('acceptTerms')}</p>
+              ) : null}
+              <Button type="submit" icon={FiShield} className="w-full sm:w-auto">
+                Créer et transmettre le transfert
+              </Button>
+            </Card>
+          </div>
+        ) : null}
+
+        <div className="flex justify-between gap-3">
+          <Button
+            variant="secondary"
+            icon={FiArrowLeft}
+            disabled={step === 1}
+            onClick={() => setStep((current) => Math.max(1, current - 1))}
+          >
+            Précédent
+          </Button>
+          {step < 4 ? (
+            <Button icon={FiArrowRight} onClick={nextStep}>
+              Continuer
+            </Button>
+          ) : null}
+        </div>
+      </form>
+      <Modal
+        open={calculatorOpen}
+        onClose={() => setCalculatorOpen(false)}
+        title="Calculatrice de transfert"
+        size="large"
+      >
+        <TransferCalculator verified={user.verified} />
+      </Modal>
+    </div>
+  )
+}
+
+
+function PartyCard({ errorFor, formik, methods, onProfile, prefix, profiles, title }) {
+  const country =
+    prefix === 'sender' ? formik.values.sourceCountry : formik.values.destinationCountry
+  const isRecipient = prefix === 'recipient'
+  return (
+    <div className="grid gap-5">
+      {/* Profils favoris */}
+      {profiles.length ? (
+        <Card className="grid gap-4">
+          <div className="flex items-center gap-3 border-b border-[var(--app-border)] pb-4">
+            <span className="grid size-9 place-items-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+              <FiStar className="text-base" />
+            </span>
+            <h2 className="font-black">Profils favoris</h2>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {profiles.map((profile) => (
+              <button
+                key={profile.id}
+                type="button"
+                onClick={() => onProfile(profile)}
+                className="flex items-center gap-3 rounded-2xl border border-[var(--app-border)] p-3 text-left transition hover:border-brand-400 hover:shadow-sm"
+              >
+                <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[var(--app-surface-muted)] text-sm font-black">
+                  {profile.firstName?.[0]}{profile.lastName?.[0]}
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold">{profile.firstName} {profile.lastName}</p>
+                  <p className="truncate text-xs text-[var(--app-text-muted)]">{profile.method}</p>
+                </div>
+                <FiCheck className="ml-auto shrink-0 text-[var(--app-text-muted)]" />
+              </button>
+            ))}
+          </div>
+        </Card>
+      ) : null}
+
+      {/* Identity */}
+      <Card className="grid gap-5">
+        <div className="flex items-center gap-3 border-b border-[var(--app-border)] pb-4">
+          <span className={`grid size-9 place-items-center rounded-xl ${isRecipient ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950/40 dark:text-cyan-300' : 'bg-[var(--app-accent-soft)] text-[var(--app-accent)]'}`}>
+            <FiUsers className="text-base" />
+          </span>
+          <h2 className="font-black">{title}</h2>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Input
+            id={`${prefix}FirstName`}
+            label="Prénom"
+            {...formik.getFieldProps(`${prefix}FirstName`)}
+            error={errorFor(`${prefix}FirstName`)}
+          />
+          <Input
+            id={`${prefix}LastName`}
+            label="Nom"
+            {...formik.getFieldProps(`${prefix}LastName`)}
+            error={errorFor(`${prefix}LastName`)}
+          />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Input
+            id={`${prefix}Phone`}
+            label="Téléphone"
+            type="tel"
+            inputMode="tel"
+            placeholder={phonePlaceholder(country)}
+            {...formik.getFieldProps(`${prefix}Phone`)}
+            error={errorFor(`${prefix}Phone`)}
+          />
+          <div>
+            <p className="mb-1.5 text-sm font-bold">Réseau ou banque</p>
+            <div className="flex flex-wrap gap-2">
+              {methods.map((method) => (
+                <button
+                  key={method}
+                  type="button"
+                  onClick={() => formik.setFieldValue(`${prefix}Method`, method)}
+                  className={`rounded-full px-3 py-2 text-xs font-bold transition ${
+                    formik.values[`${prefix}Method`] === method
+                      ? 'bg-brand-700 text-white shadow-sm'
+                      : 'bg-[var(--app-surface-muted)] text-[var(--app-text)] hover:bg-[var(--app-accent-soft)] hover:text-[var(--app-accent)]'
+                  }`}
+                >
+                  {method}
+                </button>
+              ))}
+            </div>
+            {errorFor(`${prefix}Method`) ? (
+              <p className="mt-1 text-xs text-red-600">{errorFor(`${prefix}Method`)}</p>
+            ) : null}
+          </div>
+        </div>
+        {!profiles.length ? (
+          <p className="text-xs text-[var(--app-text-muted)]">
+            Aucun profil favori pour ce pays. Renseignez manuellement.
+          </p>
+        ) : null}
+      </Card>
+    </div>
+  )
+}

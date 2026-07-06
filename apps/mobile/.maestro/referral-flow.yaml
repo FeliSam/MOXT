@@ -1,0 +1,21 @@
+appId: com.moxt.app
+name: "Referral Sharing Flow"
+---
+- launchApp
+- assertVisible: "Accueil"
+
+# Navigate to referral screen
+- tapOn: "Parrainage"
+- assertVisible:
+    text: "Parrainage"
+    timeout: 5000
+
+# Should see referral code
+- assertVisible: "Mon code de parrainage"
+
+# Should see share button
+- assertVisible: "Partager mon code"
+
+# Should see stats
+- assertVisible: "Filleuls"
+- assertVisible: "XOF gagnés"

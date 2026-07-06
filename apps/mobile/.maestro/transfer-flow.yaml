@@ -1,0 +1,27 @@
+appId: com.moxt.app
+name: "Transfer Creation Flow"
+---
+- launchApp
+- assertVisible: "Accueil"
+
+# Navigate to transfer wizard
+- tapOn: "Envoyer"
+
+# Should see wizard screen
+- assertVisible:
+    text: "Nouveau transfert"
+    timeout: 5000
+
+# Fill amount
+- tapOn: "Montant"
+- inputText: "50000"
+
+# Select direction if visible
+- tapOn:
+    text: "Suivant"
+    optional: true
+
+# Verify we can proceed in the wizard
+- assertVisible:
+    text: "Transfert"
+    timeout: 5000

@@ -1,0 +1,168 @@
+export const routeMetadata = [
+  { pattern: /^\/dashboard$/, title: 'Accueil', eyebrow: 'MOXT' },
+  { pattern: /^\/activities$/, title: 'Mes activités', eyebrow: 'Compte' },
+  { pattern: /^\/favorites$/, title: 'Mes favoris', eyebrow: 'Compte' },
+  { pattern: /^\/documents$/, title: 'Mes documents', eyebrow: 'Compte' },
+  { pattern: /^\/verification$/, title: 'Vérification', eyebrow: 'Compte' },
+  { pattern: /^\/security$/, title: 'Sécurité', eyebrow: 'Compte' },
+  { pattern: /^\/profile$/, title: 'Mon profil', eyebrow: 'Compte' },
+  { pattern: /^\/profile\/share-badge$/, title: 'Mon badge partageable', eyebrow: 'Compte' },
+  {
+    pattern: /^\/profile\/information$/,
+    title: 'Informations personnelles',
+    eyebrow: 'Compte',
+    back: '/profile',
+  },
+  { pattern: /^\/settings$/, title: 'Paramètres', eyebrow: 'Compte' },
+  { pattern: /^\/local-data$/, title: 'Données locales', eyebrow: 'Compte' },
+  { pattern: /^\/news$/, title: 'Actualités', eyebrow: 'Communauté' },
+  {
+    pattern: /^\/transfers\/new$/,
+    title: 'Nouveau transfert',
+    eyebrow: 'Finances',
+    back: '/transfers',
+  },
+  {
+    pattern: /^\/transfers\/[^/]+$/,
+    title: 'Détail du transfert',
+    eyebrow: 'Finances',
+    back: '/transfers',
+  },
+  { pattern: /^\/transfers$/, title: 'Nouveau transfert', eyebrow: 'Finances' },
+  { pattern: /^\/transfers\/history$/, title: 'Historique des transferts', eyebrow: 'Finances' },
+  { pattern: /^\/exchangers$/, title: 'Échangeurs', eyebrow: 'Finances' },
+  {
+    pattern: /^\/exchangers\/[^/]+$/,
+    title: 'Fiche échangeur',
+    eyebrow: 'Finances',
+    back: '/exchangers',
+  },
+  { pattern: /^\/wallet$/, title: 'Portefeuille simulé', eyebrow: 'Finances' },
+  { pattern: /^\/payments$/, title: 'Paiements simulés', eyebrow: 'Finances' },
+  { pattern: /^\/receipts$/, title: 'Reçus', eyebrow: 'Finances' },
+  { pattern: /^\/disputes$/, title: 'Mes litiges', eyebrow: 'Compte' },
+  {
+    pattern: /^\/businesses\/[^/]+$/,
+    title: 'Fiche entreprise',
+    eyebrow: 'Services',
+    back: '/businesses',
+  },
+  { pattern: /^\/businesses$/, title: 'Entreprises', eyebrow: 'Services' },
+  { pattern: /^\/professional$/, title: 'Espace professionnel', eyebrow: 'Services' },
+  {
+    pattern: /^\/parcels\/[^/]+$/,
+    title: 'Détail du colis',
+    eyebrow: 'Services',
+    back: '/parcels',
+  },
+  { pattern: /^\/parcels$/, title: 'Colis', eyebrow: 'Services' },
+  {
+    pattern: /^\/p2p\/orders\/[^/]+$/,
+    title: 'Transaction P2P',
+    eyebrow: 'Finances',
+    back: '/p2p',
+  },
+  {
+    pattern: /^\/p2p\/[^/]+$/,
+    title: 'Détail de l’offre P2P',
+    eyebrow: 'Finances',
+    back: '/p2p',
+  },
+  { pattern: /^\/p2p$/, title: 'Échanges P2P', eyebrow: 'Finances' },
+  {
+    pattern: /^\/marketplace\/mine$/,
+    title: 'Mes annonces',
+    eyebrow: 'Marketplace',
+    back: '/marketplace',
+  },
+  {
+    pattern: /^\/marketplace\/[^/]+\/edit$/,
+    title: 'Modifier l’annonce',
+    eyebrow: 'Marketplace',
+    back: '/marketplace/mine',
+  },
+  {
+    pattern: /^\/marketplace\/[^/]+$/,
+    title: 'Détail de l’annonce',
+    eyebrow: 'Services',
+    back: '/marketplace',
+  },
+  { pattern: /^\/marketplace$/, title: 'Marketplace', eyebrow: 'Services' },
+  {
+    pattern: /^\/jobs\/applications$/,
+    title: 'Demandes de job',
+    eyebrow: 'Communauté',
+    back: '/jobs',
+  },
+  {
+    pattern: /^\/jobs\/publish$/,
+    title: 'Publier un job',
+    eyebrow: 'Communauté',
+    back: '/jobs',
+  },
+  {
+    pattern: /^\/jobs\/[^/]+$/,
+    title: 'Fiche job',
+    eyebrow: 'Communauté',
+    back: '/jobs',
+  },
+  { pattern: /^\/jobs$/, title: 'Jobs', eyebrow: 'Communauté' },
+  {
+    pattern: /^\/events\/[^/]+$/,
+    title: 'Détail de l’événement',
+    eyebrow: 'Communauté',
+    back: '/events',
+  },
+  { pattern: /^\/events$/, title: 'Événements', eyebrow: 'Communauté' },
+  { pattern: /^\/messages$/, title: 'Messagerie', eyebrow: 'Communication' },
+  { pattern: /^\/notifications$/, title: 'Notifications', eyebrow: 'Communication' },
+  { pattern: /^\/support$/, title: 'Support', eyebrow: 'Communication' },
+  { pattern: /^\/design-system$/, title: 'Design system', eyebrow: 'Référence' },
+  { pattern: /^\/design-directions$/, title: 'Design directions', eyebrow: 'UX/UI' },
+  { pattern: /^\/design-directions\/[abc]$/, title: 'Mockup direction', eyebrow: 'UX/UI' },
+  {
+    pattern: /^\/feature-matrix$/,
+    title: 'Couverture fonctionnelle',
+    eyebrow: 'Administration',
+  },
+  { pattern: /^\/admin$/, title: 'Centre de contrôle', eyebrow: 'Administration' },
+  { pattern: /^\/superadmin$/, title: 'Pilotage système', eyebrow: 'Superadmin' },
+]
+
+export function getRouteMetadata(pathname) {
+  const meta =
+    routeMetadata.find((route) => route.pattern.test(pathname)) || {
+      title: 'MOXT',
+      eyebrow: 'Espace personnel',
+    }
+
+  return {
+    ...meta,
+    description: meta.description || buildRouteDescription(meta, pathname),
+  }
+}
+
+const eyebrowDescriptions = {
+  MOXT: 'Tableau de bord et accès rapide aux services MOXT entre le Bénin et la Russie.',
+  Compte: 'Gestion du profil, documents, sécurité et préférences personnelles.',
+  Finances: 'Transferts, portefeuille, paiements, reçus et échanges financiers.',
+  Services: 'Marketplace, colis, entreprises et services professionnels vérifiés.',
+  Communauté: 'Jobs, événements, actualités et vie de la diaspora afro-russe.',
+  Communication: 'Messagerie, notifications et support utilisateur.',
+  Administration: 'Modération, pilotage et outils internes MOXT.',
+  Superadmin: 'Pilotage système et configuration avancée de la plateforme.',
+  Référence: 'Référentiel UI et couverture fonctionnelle du frontend MOXT.',
+}
+
+function buildRouteDescription(meta, pathname) {
+  if (pathname.startsWith('/marketplace/') && pathname !== '/marketplace/publish') {
+    return 'Consultez le détail de l’annonce, contactez le vendeur et finalisez votre achat.'
+  }
+  if (pathname.startsWith('/transfers/') && pathname !== '/transfers/new') {
+    return 'Suivez le statut du transfert, déposez vos preuves et consultez la chronologie.'
+  }
+  if (pathname.startsWith('/businesses/')) {
+    return 'Découvrez les services, avis et coordonnées de cette entreprise MOXT.'
+  }
+  return `${meta.title} — ${eyebrowDescriptions[meta.eyebrow] || 'Services MOXT entre le Bénin et la Russie.'}`
+}

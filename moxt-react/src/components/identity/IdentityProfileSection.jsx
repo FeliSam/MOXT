@@ -1,0 +1,254 @@
+import { useMemo, useState } from 'react'
+import { FiEdit2, FiPlus, FiTrash2, FiUser } from 'react-icons/fi'
+import { Button } from '../ui/Button'
+import { Card } from '../ui/Card'
+import { Modal } from '../ui/Modal'
+import { Select } from '../ui/Select'
+import { Input } from '../ui/Input'
+import { useIdentityProfile } from '../../hooks/useIdentityProfile'
+import {
+  IDENTITY_TYPE_LABELS,
+  IDENTITY_TYPES,
+  OWNER_TYPE_LABELS,
+  OWNER_TYPES,
+} from '../../types/identityEnums'
+
+function IdentityFormFields({ variant, values, onChange, errors }) {
+  return (
+    <div className="grid gap-3">
+      {variant === 'person' ? (
+        <>
+          <Input
+            id="id-firstNames"
+            label="Prénoms"
+            value={values.firstNames}
+            onChange={(e) => onChange({ firstNames: e.target.value })}
+            error={errors.firstNames}
+          />
+          <Input
+            id="id-lastName"
+            label="Nom"
+            value={values.lastName}
+            onChange={(e) => onChange({ lastName: e.target.value })}
+            error={errors.lastName}
+          />
+        </>
+      ) : (
+        <>
+          <Input
+            id="id-companyName"
+            label="Raison sociale"
+            value={values.companyName}
+            onChange={(e) => onChange({ companyName: e.target.value })}
+            error={errors.companyName}
+          />
+          <Input
+            id="id-contactName"
+            label="Contact"
+            value={values.contactName}
+            onChange={(e) => onChange({ contactName: e.target.value })}
+          />
+        </>
+      )}
+      <Select
+        id="id-type"
+        label="Type de pièce"
+        value={values.idType}
+        onChange={(e) => onChange({ idType: e.target.value })}
+        error={errors.idType}
+      >
+        {IDENTITY_TYPES.map((t) => (
+          <option key={t} value={t}>
+            {IDENTITY_TYPE_LABELS[t]}
+          </option>
+        ))}
+      </Select>
+      <Input
+        id="id-passport"
+        label="N° pièce / passeport"
+        value={values.passportNumber}
+        onChange={(e) => onChange({ passportNumber: e.target.value.toUpperCase() })}
+        error={errors.passportNumber}
+      />
+      <Input
+        id="id-issuedBy"
+        label="Délivré par"
+        value={values.issuedBy}
+        onChange={(e) => onChange({ issuedBy: e.target.value })}
+        error={errors.issuedBy}
+      />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Input
+          id="id-issuedAt"
+          label="Date délivrance"
+          type="date"
+          value={values.issuedAt}
+          onChange={(e) => onChange({ issuedAt: e.target.value })}
+          error={errors.issuedAt}
+        />
+        <Input
+          id="id-expiresAt"
+          label="Date expiration"
+          type="date"
+          value={values.expiresAt}
+          onChange={(e) => onChange({ expiresAt: e.target.value })}
+          error={errors.expiresAt}
+        />
+      </div>
+      <label className="grid gap-1 text-sm">
+        <span className="font-bold">Scan (optionnel)</span>
+        <input
+          type="file"
+          accept="image/*,.pdf"
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (!file) return
+            onChange({
+              scanMeta: { name: file.name, size: file.size, type: file.type },
+            })
+          }}
+        />
+        {values.scanMeta ? (
+          <span className="text-xs text-[var(--app-text-muted)]">{values.scanMeta.name}</span>
+        ) : null}
+      </label>
+    </div>
+  )
+}
+
+export function IdentityProfileSection({ userId }) {
+  const { profiles, emptyIdentity, saveProfile, deleteProfile } = useIdentityProfile(userId)
+  const [open, setOpen] = useState(false)
+  const [editing, setEditing] = useState(null)
+  const [ownerType, setOwnerType] = useState('PERSON')
+  const [identity, setIdentity] = useState(emptyIdentity())
+  const [formErrors, setFormErrors] = useState({})
+
+  const variant = ownerType === 'COMPANY' ? 'company' : 'person'
+
+  function openCreate() {
+    setEditing(null)
+    setOwnerType('PERSON')
+    setIdentity(emptyIdentity())
+    setFormErrors({})
+    setOpen(true)
+  }
+
+  function openEdit(profile) {
+    setEditing(profile)
+    setOwnerType(profile.ownerType)
+    setIdentity({ ...emptyIdentity(), ...profile.identity })
+    setFormErrors({})
+    setOpen(true)
+  }
+
+  function handleSave() {
+    const result = saveProfile({
+      id: editing?.id,
+      ownerType,
+      identity,
+    })
+    if (!result.ok) {
+      setFormErrors(result.errors || {})
+      return
+    }
+    setOpen(false)
+  }
+
+  const sorted = useMemo(
+    () => [...profiles].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)),
+    [profiles],
+  )
+
+  return (
+    <Card className="grid gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="font-black">Profils d&apos;identité</h2>
+          <p className="text-sm text-[var(--app-text-muted)]">
+            Réutilisables pour vos adresses destinataires.
+          </p>
+        </div>
+        <Button type="button" icon={FiPlus} variant="secondary" onClick={openCreate}>
+          Nouveau profil
+        </Button>
+      </div>
+
+      {sorted.length ? (
+        <ul className="grid gap-2">
+          {sorted.map((profile) => (
+            <li
+              key={profile.id}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--app-border)] p-3"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
+                  <FiUser />
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate font-bold">
+                    {profile.ownerType === 'COMPANY'
+                      ? profile.identity.companyName || 'Société'
+                      : `${profile.identity.firstNames} ${profile.identity.lastName}`.trim()}
+                  </p>
+                  <p className="text-xs text-[var(--app-text-muted)]">
+                    {OWNER_TYPE_LABELS[profile.ownerType]} · {profile.identity.passportNumber}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" variant="secondary" size="sm" icon={FiEdit2} onClick={() => openEdit(profile)}>
+                  Modifier
+                </Button>
+                <Button
+                  type="button"
+                  variant="danger"
+                  size="sm"
+                  icon={FiTrash2}
+                  onClick={() => {
+                    if (window.confirm('Supprimer ce profil ?')) deleteProfile(profile.id)
+                  }}
+                >
+                  Supprimer
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-[var(--app-text-muted)]">Aucun profil enregistré.</p>
+      )}
+
+      <Modal open={open} onClose={() => setOpen(false)} title={editing ? 'Modifier le profil' : 'Nouveau profil'}>
+        <div className="grid gap-4">
+          <Select
+            id="profile-ownerType"
+            label="Type de titulaire"
+            value={ownerType}
+            onChange={(e) => setOwnerType(e.target.value)}
+          >
+            {OWNER_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {OWNER_TYPE_LABELS[t]}
+              </option>
+            ))}
+          </Select>
+          <IdentityFormFields
+            variant={variant}
+            values={identity}
+            onChange={(patch) => setIdentity((prev) => ({ ...prev, ...patch }))}
+            errors={formErrors}
+          />
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
+              Annuler
+            </Button>
+            <Button type="button" onClick={handleSave}>
+              Enregistrer
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </Card>
+  )
+}

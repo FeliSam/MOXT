@@ -1,0 +1,72 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+dist-ssr/
+web-build/
+*.tsbuildinfo
+
+# Env & secrets (garder .env.example)
+.env
+.env.local
+.env.*.local
+
+# Logs & caches
+logs/
+*.log
+npm-debug.log*
+.npm-cache/
+.cache/
+
+# Tests & e2e
+.playwright-browsers/
+playwright-report/
+test-results/
+coverage/
+
+# OS & IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Expo
+.expo/
+expo-env.d.ts
+.metro-health-check*
+
+# Android / iOS build artifacts (garder les sources Capacitor)
+**/android/.gradle/
+**/android/build/
+**/android/app/build/
+**/android/local.properties
+**/android/.idea/
+**/android/captures/
+*.apk
+*.aab
+*.jks
+*.keystore
+
+# iOS
+**/ios/App/Pods/
+**/ios/DerivedData/
+*.p8
+*.p12
+*.mobileprovision
+*.pem
+
+# Capacitor generated (optionnel — souvent commité)
+# moxt-react/android/app/src/main/assets/public/
+
+# Artefacts locaux / exports
+.tmp-ui-captures/
+outputs/
+apps/mobile/.expo-export*/
+supabase/.temp/

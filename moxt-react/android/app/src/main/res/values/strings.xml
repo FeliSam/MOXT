@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MOXT</string>
+    <string name="title_activity_main">MOXT</string>
+    <string name="package_name">com.moxt.app</string>
+    <string name="custom_url_scheme">com.moxt.app</string>
+</resources>

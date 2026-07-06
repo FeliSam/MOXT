@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="160" y2="160" gradientUnits="userSpaceOnUse"><stop stop-color="#0f172a"/><stop offset="1" stop-color="#475569"/></linearGradient>
+<linearGradient id="face" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ffffff"/><stop offset="1" stop-color="#e2e8f0"/></linearGradient>
+<filter id="sh" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="8" stdDeviation="9" flood-color="#000" flood-opacity="0.35"/></filter>
+</defs>
+<rect width="160" height="160" rx="36" fill="url(#bg)"/>
+<circle cx="128" cy="28" r="24" fill="#fff" opacity="0.06"/>
+<circle cx="28" cy="132" r="18" fill="#fff" opacity="0.05"/>
+<g filter="url(#sh)">
+  <!-- Building isometric - top face -->
+  <path d="M52,80 L80,64 L108,80 L80,96 Z" fill="#fff" opacity="0.92"/>
+  <!-- Left face (tall building facade) -->
+  <path d="M52,80 L80,96 L80,130 L52,114 Z" fill="url(#face)" opacity="0.75"/>
+  <!-- Right face -->
+  <path d="M80,96 L108,80 L108,114 L80,130 Z" fill="#cbd5e1" opacity="0.85"/>
+  <!-- Windows on left face -->
+  <rect x="58" y="100" width="7" height="6" rx="1" fill="#1e40af" opacity="0.35"/>
+  <rect x="70" y="100" width="7" height="6" rx="1" fill="#1e40af" opacity="0.35"/>
+  <rect x="58" y="112" width="7" height="6" rx="1" fill="#1e40af" opacity="0.35"/>
+  <rect x="70" y="112" width="7" height="6" rx="1" fill="#1e40af" opacity="0.25"/>
+  <!-- Windows on right face -->
+  <rect x="84" y="100" width="7" height="6" rx="1" fill="#1e40af" opacity="0.3"/>
+  <rect x="96" y="94" width="7" height="6" rx="1" fill="#1e40af" opacity="0.3"/>
+  <rect x="84" y="112" width="7" height="6" rx="1" fill="#1e40af" opacity="0.25"/>
+  <!-- Door on left face bottom -->
+  <rect x="65" y="119" width="8" height="11" rx="2" fill="#334155" opacity="0.4"/>
+  <!-- Antenna / flag on top -->
+  <line x1="80" y1="64" x2="80" y2="50" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>
+  <rect x="80" y="50" width="10" height="6" rx="1" fill="#3b82f6" opacity="0.7"/>
+</g>
+</svg>

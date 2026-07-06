@@ -1,0 +1,54 @@
+appId: com.moxt.app
+name: "Main Navigation Flow"
+---
+- launchApp
+- assertVisible: "Accueil"
+
+# Navigate to Transfers tab
+- tapOn: "Transferts"
+- assertVisible:
+    text: "Transferts"
+    timeout: 5000
+
+# Navigate to Parcels tab
+- tapOn: "Colis"
+- assertVisible:
+    text: "Colis"
+    timeout: 5000
+
+# Navigate to Marketplace tab
+- tapOn: "Marketplace"
+- assertVisible:
+    text: "Marketplace"
+    timeout: 5000
+
+# Back to home
+- tapOn: "Accueil"
+- assertVisible: "MOXT Mobile"
+
+# Open notifications
+- tapOn: "Notifs"
+- assertVisible:
+    text: "Notifications"
+    timeout: 5000
+- back
+
+# Open search
+- tapOn: "🔍"
+- assertVisible:
+    text: "Rechercher"
+    timeout: 5000
+- back
+
+# Open wallet
+- tapOn: "Portefeuille"
+- assertVisible:
+    text: "Portefeuille"
+    timeout: 5000
+- back
+
+# Open settings
+- tapOn: "Paramètres"
+- assertVisible:
+    text: "Paramètres"
+    timeout: 5000

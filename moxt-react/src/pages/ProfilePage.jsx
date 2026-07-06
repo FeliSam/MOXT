@@ -1,0 +1,54 @@
+import { useMemo } from 'react'
+import { useSelector } from 'react-redux'
+import { useLanguage } from '../contexts/useLanguage'
+import { ProfileHeroCard } from '../features/profile/components/ProfileHeroCard'
+import { ProfileLinkGrid } from '../features/profile/components/ProfileLinkGrid'
+import { ProfileQuickStats } from '../features/profile/components/ProfileQuickStats'
+import { ProfileSecuritySummary } from '../features/profile/components/ProfileSecuritySummary'
+import {
+  accountSections,
+  profileCompletionPercent,
+  quickStatsConfig,
+} from '../features/profile/profilePageConfig'
+
+export function ProfilePage() {
+  const user = useSelector((state) => state.auth.user)
+  const { translateLabel } = useLanguage()
+
+  const profileCompletion = profileCompletionPercent(user)
+
+  const transfersCount = useSelector(
+    (state) => state.transfers.items.filter((item) => item.userId === user.id).length,
+  )
+  const listingsCount = useSelector(
+    (state) => state.marketplace.items.filter((item) => item.ownerId === user.id).length,
+  )
+  const parcelsCount = useSelector(
+    (state) => state.parcels.items.filter((item) => item.ownerId === user.id).length,
+  )
+  const favoritesCount = useSelector((state) => state.account.favorites.length)
+
+  const countsByKey = useMemo(
+    () => ({
+      transfers: transfersCount,
+      listings: listingsCount,
+      parcels: parcelsCount,
+      favorites: favoritesCount,
+    }),
+    [favoritesCount, listingsCount, parcelsCount, transfersCount],
+  )
+
+  const quickStats = quickStatsConfig.map((stat) => ({
+    ...stat,
+    value: countsByKey[stat.key],
+  }))
+
+  return (
+    <div className="grid gap-6">
+      <ProfileHeroCard profileCompletion={profileCompletion} user={user} />
+      <ProfileQuickStats stats={quickStats} />
+      <ProfileLinkGrid sections={accountSections} translateLabel={translateLabel} />
+      <ProfileSecuritySummary verified={user.verified} />
+    </div>
+  )
+}

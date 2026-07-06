@@ -1,0 +1,130 @@
+import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  ENGLISH_PHRASES,
+  SOURCE_LANGUAGE,
+  SUPPORTED_LANGUAGES,
+  normalizeStoredLanguage,
+  translateUiText,
+} from '../config/uiTranslations'
+import { translate } from '../i18n/translate'
+import { LanguageContext } from './language-context'
+
+const STORAGE_KEY = 'moxt-language'
+
+const NAV_EXTRAS = {
+  en: {
+    Aide: 'Help',
+    'Centre de contrôle': 'Control center',
+    Communauté: 'Community',
+    Confiance: 'Trust',
+    'Couverture fonctionnelle': 'Feature coverage',
+    'Echanges P2P': 'P2P exchange',
+    'Gérer les demandes': 'Manage requests',
+    'Gérer les demandes de job': 'Manage job applications',
+    'Gérer les inscriptions': 'Manage registrations',
+  },
+}
+
+const LABELS = {
+  en: { ...ENGLISH_PHRASES, ...NAV_EXTRAS.en },
+}
+
+function initialLanguage() {
+  return normalizeStoredLanguage(localStorage.getItem(STORAGE_KEY))
+}
+
+export function LanguageProvider({ children }) {
+  const [language, setLanguage] = useState(initialLanguage)
+  const textOriginalsRef = useRef(new WeakMap())
+  const attributeOriginalsRef = useRef(new WeakMap())
+
+  useEffect(() => {
+    document.documentElement.lang = language
+    localStorage.setItem(STORAGE_KEY, language)
+  }, [language])
+
+  useEffect(() => {
+    if (language === SOURCE_LANGUAGE) return
+
+    const originals = textOriginalsRef.current
+    const attributeOriginals = attributeOriginalsRef.current
+    const translatedAttributes = ['aria-label', 'placeholder', 'title']
+
+    function translateTextNode(node) {
+      if (!node.nodeValue?.trim()) return
+      if (!originals.has(node)) originals.set(node, node.nodeValue)
+      const knownOriginal = originals.get(node)
+      const knownTranslation = translateUiText(knownOriginal, language)
+      if (node.nodeValue !== knownOriginal && node.nodeValue !== knownTranslation) {
+        originals.set(node, node.nodeValue)
+      }
+      const original = originals.get(node)
+      const next = translateUiText(original, language)
+      if (node.nodeValue !== next) node.nodeValue = next
+    }
+
+    function translateElement(element) {
+      if (!(element instanceof Element)) return
+      const tag = element.tagName
+      if (tag === 'SCRIPT' || tag === 'STYLE') return
+      let attributes = attributeOriginals.get(element)
+      if (!attributes) {
+        attributes = {}
+        translatedAttributes.forEach((name) => {
+          if (element.hasAttribute(name)) attributes[name] = element.getAttribute(name)
+        })
+        attributeOriginals.set(element, attributes)
+      }
+      Object.entries(attributes).forEach(([name, original]) => {
+        element.setAttribute(name, translateUiText(original, language))
+      })
+      element.childNodes.forEach((child) => {
+        if (child.nodeType === Node.TEXT_NODE) translateTextNode(child)
+        else if (child.nodeType === Node.ELEMENT_NODE) translateElement(child)
+      })
+    }
+
+    translateElement(document.body)
+
+    let rafId = 0
+    let pending = []
+    const observer = new MutationObserver((mutations) => {
+      pending.push(...mutations)
+      if (rafId) return
+      rafId = requestAnimationFrame(() => {
+        rafId = 0
+        const batch = pending
+        pending = []
+        for (const mutation of batch) {
+          if (mutation.type === 'characterData') translateTextNode(mutation.target)
+          for (const node of mutation.addedNodes) {
+            if (node.nodeType === Node.TEXT_NODE) translateTextNode(node)
+            else if (node.nodeType === Node.ELEMENT_NODE) translateElement(node)
+          }
+        }
+      })
+    })
+    observer.observe(document.body, { characterData: true, childList: true, subtree: true })
+    return () => {
+      observer.disconnect()
+      if (rafId) cancelAnimationFrame(rafId)
+    }
+  }, [language])
+
+  const value = useMemo(
+    () => ({
+      language,
+      setLanguage: (next) => setLanguage(normalizeStoredLanguage(next)),
+      t: (key, vars) => translate(language, key, vars),
+      translateLabel: (label) =>
+        language === SOURCE_LANGUAGE
+          ? label
+          : LABELS[language]?.[label] || translateUiText(label, language),
+    }),
+    [language],
+  )
+
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>
+}
+
+export { SUPPORTED_LANGUAGES }

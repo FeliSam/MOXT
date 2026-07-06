@@ -1,0 +1,79 @@
+import { ShareBadgeCard } from '../../components/share/ShareBadgeCard'
+import { Badge } from '../../components/ui/Badge'
+import { Card } from '../../components/ui/Card'
+import { statusMeta } from '../../config/statuses'
+
+export function ProfilePanel({ activity, business, secondaryActivity, siteUrl }) {
+  return (
+    <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+      <Card>
+        {business.bannerUrl ? (
+          <img
+            src={business.bannerUrl}
+            alt={`Bannière ${business.name}`}
+            className="mb-5 h-44 w-full rounded-[1.8rem] object-cover"
+          />
+        ) : null}
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            {business.logoUrl ? (
+              <img
+                src={business.logoUrl}
+                alt={`${business.name} logo`}
+                className="mb-4 size-16 rounded-3xl object-cover shadow-md"
+              />
+            ) : null}
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-brand-700">
+              Profil professionnel
+            </p>
+            <h2 className="mt-1 text-2xl font-black">{business.name}</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--app-text-muted)]">
+              {business.description}
+            </p>
+          </div>
+          <Badge tone={statusMeta(business.status).tone}>{statusMeta(business.status).label}</Badge>
+        </div>
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <Info label="Domaine principal" value={activity?.label || business.sector} />
+          <Info
+            label="Activité secondaire"
+            value={secondaryActivity?.label || 'Aucune activité secondaire'}
+          />
+          <Info label="Ville" value={business.city} />
+          <Info label="Adresse" value={business.address || 'Adresse à compléter'} />
+          <Info label="Téléphone russe" value={business.phone} />
+          <Info label="Numéro pays d'origine" value={business.originPhone || 'Non renseigné'} />
+          <Info label="Email" value={business.email || 'Non renseigné'} />
+          <Info label="Horaires" value={business.scheduleSummary || business.hours} />
+          <Info label="Zones" value={business.serviceZones || 'Russie'} />
+        </div>
+      </Card>
+      <ShareBadgeCard
+        type="business"
+        name={business.name}
+        logoUrl={business.logoUrl || ''}
+        sector={activity?.label || business.primaryActivity || business.sector || 'Entreprise MOXT'}
+        city={business.city || 'Russie'}
+        phone={business.phone || ''}
+        schedule={business.scheduleSummary || business.hours || ''}
+        status={business.status}
+        feePercent={business.feePercent}
+        rating={business.rating || 0}
+        businessId={business.id}
+        siteUrl={siteUrl}
+        filename={`moxt-entreprise-${business.id}.svg`}
+      />
+    </div>
+  )
+}
+
+function Info({ label, value }) {
+  return (
+    <div className="rounded-2xl bg-[var(--app-surface-muted)] p-4">
+      <p className="text-[10px] font-black uppercase tracking-wider text-[var(--app-text-muted)]">
+        {label}
+      </p>
+      <strong className="mt-1 block text-sm">{value}</strong>
+    </div>
+  )
+}

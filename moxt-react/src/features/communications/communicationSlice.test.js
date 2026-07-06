@@ -1,0 +1,286 @@
+import { beforeEach, describe, expect, it } from 'vitest'
+import reducer, {
+  addNotification,
+  archiveNotification,
+  archiveConversation,
+  createConversation,
+  createSupportTicket,
+  deleteMessageLocally,
+  markAllNotificationsRead,
+  markConversationRead,
+  replySupportTicket,
+  reactToMessage,
+  restoreConversation,
+  saveConversationDraft,
+  sendMessage,
+  setConversationMessages,
+  toggleConversationBlock,
+  toggleConversationMute,
+  toggleConversationPin,
+} from './communicationSlice'
+
+const emptyState = { conversations: [], support: [], notifications: [] }
+
+describe('communications', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('refuse un message venant d un non participant', () => {
+    const created = reducer(
+      emptyState,
+      createConversation({ title: 'Test', participantIds: ['u1', 'u2'], createdBy: 'u1' }),
+    )
+    const state = reducer(
+      created,
+      sendMessage({
+        conversationId: created.conversations[0].id,
+        senderId: 'intrus',
+        senderName: 'Intrus',
+        text: 'Message',
+      }),
+    )
+    expect(state.conversations[0].messages).toHaveLength(0)
+  })
+
+  it('refuse une conversation sans destinataire et gere les non lus', () => {
+    const refused = reducer(
+      emptyState,
+      createConversation({ title: 'Solo', participantIds: ['u1'], createdBy: 'u1' }),
+    )
+    expect(refused.conversations).toHaveLength(0)
+
+    const created = reducer(
+      emptyState,
+      createConversation({ title: 'Duo', participantIds: ['u1', 'u2'], createdBy: 'u1' }),
+    )
+    const messaged = reducer(
+      created,
+      sendMessage({
+        conversationId: created.conversations[0].id,
+        senderId: 'u1',
+        senderName: 'Amina',
+        text: 'Bonjour',
+      }),
+    )
+    expect(messaged.conversations[0].unreadBy.u2).toBe(1)
+    const read = reducer(
+      messaged,
+      markConversationRead({ conversationId: created.conversations[0].id, userId: 'u2' }),
+    )
+    expect(read.conversations[0].unreadBy.u2).toBe(0)
+  })
+
+  it('alterne le ticket entre attente agent et attente utilisateur', () => {
+    const created = reducer(
+      emptyState,
+      createSupportTicket({
+        userId: 'u1',
+        userName: 'Amina',
+        subject: 'Aide',
+        priority: 'normal',
+        message: 'Une demande suffisamment detaillee.',
+      }),
+    )
+    const ticketId = created.support[0].id
+    const replied = reducer(
+      created,
+      replySupportTicket({
+        ticketId,
+        senderId: 'admin',
+        senderName: 'Support',
+        role: 'agent',
+        text: 'Reponse du support',
+      }),
+    )
+    expect(replied.support[0].status).toBe('waiting_user')
+  })
+
+  it('marque uniquement les notifications de l utilisateur cible', () => {
+    const first = reducer(emptyState, addNotification({ userId: 'u1', title: 'A', message: 'A' }))
+    const second = reducer(first, addNotification({ userId: 'u2', title: 'B', message: 'B' }))
+    const state = reducer(second, markAllNotificationsRead('u1'))
+    expect(state.notifications.find((item) => item.userId === 'u1').read).toBe(true)
+    expect(state.notifications.find((item) => item.userId === 'u2').read).toBe(false)
+  })
+
+  it('archive, bloque et conserve les métadonnées de pièce jointe', () => {
+    const created = reducer(
+      emptyState,
+      createConversation({ title: 'Duo', participantIds: ['u1', 'u2'], createdBy: 'u1' }),
+    )
+    const id = created.conversations[0].id
+    const messaged = reducer(
+      created,
+      sendMessage({
+        conversationId: id,
+        senderId: 'u1',
+        senderName: 'Amina',
+        text: 'Document',
+        attachment: { name: 'devis.pdf', size: 1200, type: 'application/pdf' },
+      }),
+    )
+    const archived = reducer(messaged, archiveConversation({ id, userId: 'u1' }))
+    const blocked = reducer(archived, toggleConversationBlock({ id, userId: 'u1' }))
+
+    expect(blocked.conversations[0].messages[0].attachment.name).toBe('devis.pdf')
+    expect(blocked.conversations[0].archivedBy).toContain('u1')
+    expect(blocked.conversations[0].blockedBy).toContain('u1')
+  })
+
+  it('gère réponse, réaction, suppression locale et restauration', () => {
+    const created = reducer(
+      emptyState,
+      createConversation({
+        title: 'Duo',
+        participantIds: ['u1', 'u2'],
+        createdBy: 'u1',
+        initialMessage: 'Bonjour',
+      }),
+    )
+    const conversationId = created.conversations[0].id
+    const firstId = created.conversations[0].messages[0].id
+    const replied = reducer(
+      created,
+      sendMessage({
+        conversationId,
+        senderId: 'u2',
+        senderName: 'B',
+        text: 'Réponse',
+        replyToId: firstId,
+      }),
+    )
+    const reacted = reducer(
+      replied,
+      reactToMessage({ conversationId, messageId: firstId, reaction: 'like', userId: 'u2' }),
+    )
+    const deleted = reducer(
+      reacted,
+      deleteMessageLocally({ conversationId, messageId: firstId, userId: 'u1' }),
+    )
+    const archived = reducer(deleted, archiveConversation({ id: conversationId, userId: 'u1' }))
+    const restored = reducer(archived, restoreConversation({ id: conversationId, userId: 'u1' }))
+
+    expect(replied.conversations[0].messages[1].replyToId).toBe(firstId)
+    expect(reacted.conversations[0].messages[0].reactions.like).toContain('u2')
+    expect(deleted.conversations[0].messages[0].deletedBy).toContain('u1')
+    expect(restored.conversations[0].archivedBy).not.toContain('u1')
+  })
+  it('conserve brouillon, epinglage et sourdine par utilisateur', () => {
+    const created = reducer(
+      emptyState,
+      createConversation({ title: 'Duo', participantIds: ['u1', 'u2'], createdBy: 'u1' }),
+    )
+    const id = created.conversations[0].id
+    const drafted = reducer(created, saveConversationDraft({ id, userId: 'u1', text: 'A finir' }))
+    const pinned = reducer(drafted, toggleConversationPin({ id, userId: 'u1' }))
+    const muted = reducer(pinned, toggleConversationMute({ id, userId: 'u1' }))
+
+    expect(muted.conversations[0].drafts.u1).toBe('A finir')
+    expect(muted.conversations[0].pinnedBy).toContain('u1')
+    expect(muted.conversations[0].mutedBy).toContain('u1')
+  })
+
+  it('archive uniquement la notification de son proprietaire', () => {
+    const notified = reducer(
+      emptyState,
+      addNotification({ userId: 'u1', title: 'A', message: 'A' }),
+    )
+    const id = notified.notifications[0].id
+    const refused = reducer(notified, archiveNotification({ id, userId: 'u2' }))
+    const archived = reducer(refused, archiveNotification({ id, userId: 'u1' }))
+
+    expect(refused.notifications[0].archived).not.toBe(true)
+    expect(archived.notifications[0].archived).toBe(true)
+  })
+
+  it('incremente messageCount a chaque envoi', () => {
+    const created = reducer(
+      emptyState,
+      createConversation({ title: 'Duo', participantIds: ['u1', 'u2'], createdBy: 'u1' }),
+    )
+    const conversationId = created.conversations[0].id
+    const messaged = reducer(
+      created,
+      sendMessage({
+        conversationId,
+        senderId: 'u1',
+        senderName: 'Amina',
+        text: 'Bonjour',
+      }),
+    )
+    expect(messaged.conversations[0].messageCount).toBe(1)
+    expect(messaged.conversations[0].messages).toHaveLength(1)
+  })
+
+  it('marque une conversation vide comme non chargee cote messages', () => {
+    const created = reducer(
+      emptyState,
+      createConversation({ title: 'Duo', participantIds: ['u1', 'u2'], createdBy: 'u1' }),
+    )
+    expect(created.conversations[0].messagesLoaded).toBe(false)
+  })
+
+  it('accepte un message quand participantIds est une chaine JSON', () => {
+    const created = reducer(
+      emptyState,
+      createConversation({ title: 'Duo', participantIds: ['u1', 'u2'], createdBy: 'u1' }),
+    )
+    const id = created.conversations[0].id
+    const withStringIds = {
+      ...created,
+      conversations: [
+        {
+          ...created.conversations[0],
+          participantIds: JSON.stringify(['u1', 'u2']),
+        },
+      ],
+    }
+    const state = reducer(
+      withStringIds,
+      sendMessage({
+        conversationId: id,
+        senderId: 'u1',
+        senderName: 'Amina',
+        text: 'Bonjour',
+      }),
+    )
+    expect(state.conversations[0].messages).toHaveLength(1)
+    expect(Array.isArray(state.conversations[0].participantIds)).toBe(true)
+  })
+
+  it('conserve les messages locaux lors du chargement distant', () => {
+    const created = reducer(
+      emptyState,
+      createConversation({ title: 'Duo', participantIds: ['u1', 'u2'], createdBy: 'u1' }),
+    )
+    const conversationId = created.conversations[0].id
+    const sent = reducer(
+      created,
+      sendMessage({
+        conversationId,
+        senderId: 'u1',
+        senderName: 'Amina',
+        text: 'Local',
+      }),
+    )
+    const localId = sent.conversations[0].messages[0].id
+    const loaded = reducer(
+      sent,
+      setConversationMessages({
+        conversationId,
+        messages: [
+          {
+            id: 'MSG-REMOTE',
+            senderId: 'u2',
+            senderName: 'Bob',
+            text: 'Distant',
+            createdAt: '2026-01-02T10:00:00.000Z',
+          },
+        ],
+      }),
+    )
+    expect(loaded.conversations[0].messages.map((item) => item.id)).toEqual([
+      'MSG-REMOTE',
+      localId,
+    ])
+  })
+})

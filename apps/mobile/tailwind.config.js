@@ -1,0 +1,61 @@
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  darkMode: 'class',
+  content: [
+    './app/**/*.{js,jsx,ts,tsx}',
+    './components/**/*.{js,jsx,ts,tsx}',
+    './theme/**/*.{js,jsx,ts,tsx}',
+  ],
+  presets: [require('nativewind/preset')],
+  theme: {
+    extend: {
+      colors: {
+        brand: {
+          50: '#edfdf8',
+          100: '#d2f8ec',
+          200: '#a8efdb',
+          300: '#70dfc5',
+          400: '#36c6aa',
+          500: '#16a98f',
+          600: '#0b8975',
+          700: '#08705f',
+          800: '#07594d',
+          900: '#06493f',
+        },
+        app: {
+          bg: '#f7f8fa',
+          surface: '#ffffff',
+          'surface-muted': '#f3f4f6',
+          text: '#111827',
+          'text-secondary': '#374151',
+          'text-muted': '#6b7280',
+          'text-faint': '#9ca3af',
+          border: '#e5e7eb',
+          'border-md': '#d1d5db',
+          accent: '#08705f',
+          'accent-soft': '#ecfdf8',
+          teal: '#12bfa3',
+          cobalt: '#245de8',
+          warm: '#ff6b4a',
+          success: '#059669',
+          'success-soft': '#d1fae5',
+          warning: '#d97706',
+          'warning-soft': '#fef3c7',
+          danger: '#dc2626',
+          'danger-soft': '#fee2e2',
+          gold: '#b8860b',
+          inverse: '#020617',
+        },
+      },
+      borderRadius: {
+        card: '1rem',
+        'card-sm': '0.75rem',
+        btn: '0.75rem',
+      },
+      fontFamily: {
+        sans: ['System'],
+      },
+    },
+  },
+  plugins: [],
+};

@@ -1,0 +1,1 @@
+export { bottomNavigationItems } from './primaryNavigation'
