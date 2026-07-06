@@ -36,7 +36,7 @@ export default function TransferWizardScreen() {
   const [calculatorOpen, setCalculatorOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const [direction, setDirection] = useState(initialDirection);
+  const [direction, setDirection] = useState<(typeof DIRECTIONS)[keyof typeof DIRECTIONS]>(initialDirection);
   const [amount, setAmount] = useState((user as any)?.country === 'RU' ? '5000' : '');
   const [exchangerId, setExchangerId] = useState(FALLBACK_EXCHANGERS[0].id);
 
@@ -158,8 +158,9 @@ export default function TransferWizardScreen() {
             <TransferWizardStep1
               direction={direction}
               onDirectionChange={(d) => {
-                setDirection(d);
-                if (d === DIRECTIONS.RU_TO_BJ) {
+                const next = d as (typeof DIRECTIONS)[keyof typeof DIRECTIONS];
+                setDirection(next);
+                if (next === DIRECTIONS.RU_TO_BJ) {
                   setSenderPhone('+7');
                   setRecipientPhone('+229');
                 } else {

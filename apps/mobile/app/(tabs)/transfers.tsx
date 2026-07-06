@@ -35,7 +35,9 @@ function TransferHistoryCard({ transfer }: { transfer: TransferItem }) {
   const recipientName = [transfer.recipient?.firstName, transfer.recipient?.lastName]
     .filter(Boolean)
     .join(' ');
-  const st = TRANSFER_STATUS_LABELS[transfer.status] || TRANSFER_STATUS_LABELS.pending_payment;
+  const st =
+    TRANSFER_STATUS_LABELS[transfer.status ?? 'pending_payment'] ||
+    TRANSFER_STATUS_LABELS.pending_payment;
   const totalToPay = (transfer as any).totalToPay ?? (Number(transfer.amountSent || 0) + Number(transfer.fee || 0));
   const currFrom = transfer.currencyFrom || 'XOF';
 

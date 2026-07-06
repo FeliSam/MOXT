@@ -43,9 +43,11 @@ describe('translateUiText', () => {
 })
 
 describe('cycleLanguage', () => {
-  it('cycle fr → en → fr', () => {
+  it('cycle fr → en → ru → pt → fr', () => {
     expect(cycleLanguage('fr')).toBe('en')
-    expect(cycleLanguage('en')).toBe('fr')
+    expect(cycleLanguage('en')).toBe('ru')
+    expect(cycleLanguage('ru')).toBe('pt')
+    expect(cycleLanguage('pt')).toBe('fr')
   })
 
   it('retombe sur la langue source pour une valeur inconnue', () => {
@@ -54,14 +56,19 @@ describe('cycleLanguage', () => {
 })
 
 describe('normalizeStoredLanguage', () => {
-  it('reinitialise le russe vers le francais', () => {
-    expect(normalizeStoredLanguage('ru')).toBe('fr')
+  it('conserve les langues supportées', () => {
+    expect(normalizeStoredLanguage('ru')).toBe('ru')
+    expect(normalizeStoredLanguage('pt')).toBe('pt')
+  })
+
+  it('reinitialise une langue inconnue vers le francais', () => {
+    expect(normalizeStoredLanguage('es')).toBe('fr')
   })
 })
 
 describe('constantes', () => {
   it('expose les langues supportées et la langue source', () => {
-    expect(SUPPORTED_LANGUAGES).toEqual(['fr', 'en'])
+    expect(SUPPORTED_LANGUAGES).toEqual(['fr', 'en', 'ru', 'pt'])
     expect(SOURCE_LANGUAGE).toBe('fr')
   })
 })
