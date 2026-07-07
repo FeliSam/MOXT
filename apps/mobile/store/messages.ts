@@ -266,7 +266,8 @@ export const loadConversationMessages = createAsyncThunk(
   async (conversationId: string, { getState }) => {
     if (!supabase) return { conversationId, messages: [] as Message[] };
 
-    const localConversation = getState().messages.conversations.find(
+    const state = getState() as { messages: MessagesState };
+    const localConversation = state.messages.conversations.find(
       (item) => item.id === conversationId,
     );
     const conversationIds = new Set([conversationId]);
