@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { Button } from '@/components/ui';
-import { sendMessage } from '@/store/messages';
+import { loadConversationMessages, sendMessage } from '@/store/messages';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, radii, shadows, spacing, typography } from '@/theme/colors';
@@ -28,6 +28,13 @@ export default function ChatScreen() {
   );
   const [text, setText] = useState('');
   const listRef = useRef<FlatList>(null);
+
+  useEffect(() => {
+    if (!id || !conversation) return;
+    if (!conversation.messagesLoaded && !conversation.messagesLoading) {
+      dispatch(loadConversationMessages(id));
+    }
+  }, [conversation, dispatch, id]);
 
   if (!conversation) {
     return (
@@ -70,6 +77,29 @@ export default function ChatScreen() {
           {conversation.title}
         </Text>
       </View>
+
+      {conversation.relatedSnapshot?.path || conversation.relatedPath ? (
+        <Pressable
+          style={[styles.previewCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          onPress={() =>
+            router.push((conversation.relatedSnapshot?.path || conversation.relatedPath) as any)
+          }>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.previewEyebrow, { color: colors.primary }]}>
+              {(conversation.relatedSnapshot?.type || conversation.relatedType || 'annonce').toUpperCase()}
+            </Text>
+            <Text style={[styles.previewTitle, { color: colors.text }]} numberOfLines={2}>
+              {conversation.relatedSnapshot?.title || conversation.title}
+            </Text>
+            {conversation.relatedSnapshot?.subtitle ? (
+              <Text style={[styles.previewSubtitle, { color: colors.textMuted }]}>
+                {conversation.relatedSnapshot.subtitle}
+              </Text>
+            ) : null}
+          </View>
+          <Text style={{ color: colors.primary, fontWeight: '800' }}>→</Text>
+        </Pressable>
+      ) : null}
 
       <FlatList
         ref={listRef}
@@ -160,6 +190,20 @@ const styles = StyleSheet.create({
   },
   backArrow: { fontSize: 22, fontWeight: '700' },
   headerTitle: { flex: 1, fontSize: 17, fontWeight: '800' },
+  previewCard: {
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  previewEyebrow: { ...typography.eyebrow, marginBottom: 4 },
+  previewTitle: { fontSize: 15, fontWeight: '800' },
+  previewSubtitle: { fontSize: 13, marginTop: 2, fontWeight: '600' },
   messagesList: { padding: spacing.lg, gap: spacing.sm, flexGrow: 1 },
   bubble: { maxWidth: '80%', borderRadius: radii.lg, padding: spacing.md, gap: 2 },
   bubbleMe: { alignSelf: 'flex-end' },

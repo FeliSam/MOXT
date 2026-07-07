@@ -2,6 +2,10 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import { supabase } from '../../services/supabaseClient'
 import { fromRow, fromRows } from '../../services/remoteRowMapper'
 import { createLocalStorage } from '../../services/createLocalStorage'
+import { findConversationByParticipants, participantKey } from './conversationUtils'
+import { persistConversationRemote } from './conversationPersist'
+
+const PENDING_MESSAGE_MS = 15000
 
 const conversationsStorage = createLocalStorage('moxt-conversations-v1')
 const supportStorage = createLocalStorage('moxt-support-v1')
@@ -68,8 +72,10 @@ export function normalizeConversation(conv) {
     pinnedBy: parseIdList(conv.pinnedBy),
     mutedBy: parseIdList(conv.mutedBy),
     blockedBy: parseIdList(conv.blockedBy),
+    relatedSnapshot: parseJsonValue(conv.relatedSnapshot, conv.relatedSnapshot ?? null),
     messages: Array.isArray(conv.messages) ? conv.messages : [],
     messagesLoaded: conv.messagesLoaded ?? false,
+    messagesLoading: conv.messagesLoading ?? false,
     messageCount: Math.max(
       Number(conv.messageCount) || 0,
       Array.isArray(conv.messages) ? conv.messages.length : 0,
@@ -89,6 +95,7 @@ export function mergeConversations(localConversations, remoteConversations) {
         ...remoteConv,
         messages: localConv.messagesLoaded ? localConv.messages : [],
         messagesLoaded: localConv.messagesLoaded ?? false,
+        messagesLoading: localConv.messagesLoading ?? false,
         drafts: localConv.drafts ?? remoteConv.drafts,
         unreadBy: { ...remoteConv.unreadBy, ...localConv.unreadBy },
         archivedBy: localConv.archivedBy?.length ? localConv.archivedBy : remoteConv.archivedBy,
@@ -101,7 +108,33 @@ export function mergeConversations(localConversations, remoteConversations) {
     }
   }
 
-  return [...byId.values()].sort(
+  const byParticipant = new Map()
+  for (const conv of byId.values()) {
+    const key = participantKey(conv.participantIds)
+    const existing = byParticipant.get(key)
+    if (!existing) {
+      byParticipant.set(key, conv)
+      continue
+    }
+    const newer =
+      new Date(conv.updatedAt) >= new Date(existing.updatedAt) ? conv : existing
+    const older = newer === conv ? existing : conv
+    byParticipant.set(key, {
+      ...newer,
+      messages: newer.messagesLoaded
+        ? newer.messages
+        : older.messagesLoaded
+          ? older.messages
+          : [],
+      messagesLoaded: newer.messagesLoaded || older.messagesLoaded,
+      messagesLoading: newer.messagesLoading || older.messagesLoading,
+      messageCount: Math.max(newer.messageCount || 0, older.messageCount || 0),
+      unreadBy: { ...older.unreadBy, ...newer.unreadBy },
+      drafts: { ...older.drafts, ...newer.drafts },
+    })
+  }
+
+  return [...byParticipant.values()].sort(
     (left, right) => new Date(right.updatedAt) - new Date(left.updatedAt),
   )
 }
@@ -151,6 +184,24 @@ const communicationSlice = createSlice({
     },
     receiveRemoteConversation(state, action) {
       const conversation = normalizeConversation(action.payload)
+      const duplicate = findConversationByParticipants(
+        state.conversations,
+        conversation.participantIds,
+      )
+      if (duplicate && duplicate.id !== conversation.id) {
+        const index = state.conversations.findIndex((item) => item.id === duplicate.id)
+        const existing = normalizeConversation(state.conversations[index])
+        state.conversations[index] = {
+          ...existing,
+          ...conversation,
+          id: existing.id,
+          messages: existing.messages,
+          messagesLoaded: existing.messagesLoaded,
+          messagesLoading: existing.messagesLoading,
+        }
+        bumpConversationToTop(state, existing.id)
+        return
+      }
       const exists = state.conversations.some((c) => c.id === conversation.id)
       if (!exists) state.conversations.unshift(conversation)
     },
@@ -158,6 +209,29 @@ const communicationSlice = createSlice({
       const incoming = normalizeConversation(action.payload)
       const index = state.conversations.findIndex((item) => item.id === incoming.id)
       if (index < 0) {
+        const duplicate = findConversationByParticipants(
+          state.conversations,
+          incoming.participantIds,
+        )
+        if (duplicate) {
+          const dupIndex = state.conversations.findIndex((item) => item.id === duplicate.id)
+          const existing = normalizeConversation(state.conversations[dupIndex])
+          state.conversations[dupIndex] = {
+            ...existing,
+            ...incoming,
+            id: existing.id,
+            messages: existing.messages,
+            messagesLoaded: existing.messagesLoaded,
+            messagesLoading: existing.messagesLoading,
+            unreadBy: { ...incoming.unreadBy, ...existing.unreadBy },
+            messageCount: Math.max(
+              existing.messageCount || 0,
+              incoming.messageCount || existing.messages.length,
+            ),
+          }
+          bumpConversationToTop(state, existing.id)
+          return
+        }
         state.conversations.unshift(incoming)
         return
       }
@@ -167,6 +241,8 @@ const communicationSlice = createSlice({
         ...incoming,
         messages: existing.messages,
         messagesLoaded: existing.messagesLoaded,
+        messagesLoading: existing.messagesLoading,
+        unreadBy: { ...incoming.unreadBy, ...existing.unreadBy },
         messageCount: Math.max(
           existing.messageCount || 0,
           incoming.messageCount || existing.messages.length,
@@ -174,21 +250,67 @@ const communicationSlice = createSlice({
       }
       bumpConversationToTop(state, incoming.id)
     },
+    replaceConversationId(state, action) {
+      const { fromId, conversation } = action.payload
+      const fromIndex = state.conversations.findIndex((item) => item.id === fromId)
+      const keeper = normalizeConversation(conversation)
+      const keeperIndex = state.conversations.findIndex((item) => item.id === keeper.id)
+
+      if (fromIndex < 0) {
+        if (keeperIndex < 0) state.conversations.unshift(keeper)
+        return
+      }
+
+      const local = normalizeConversation(state.conversations[fromIndex])
+      const merged = {
+        ...keeper,
+        messages: local.messages?.length ? local.messages : keeper.messages,
+        messagesLoaded: local.messagesLoaded || keeper.messagesLoaded,
+        messagesLoading: local.messagesLoading || keeper.messagesLoading,
+        drafts: { ...keeper.drafts, ...local.drafts },
+        unreadBy: { ...keeper.unreadBy, ...local.unreadBy },
+      }
+
+      if (keeperIndex >= 0 && keeperIndex !== fromIndex) {
+        state.conversations[keeperIndex] = merged
+        state.conversations.splice(fromIndex, 1)
+      } else {
+        state.conversations[fromIndex] = merged
+      }
+      bumpConversationToTop(state, merged.id)
+    },
+    updateConversationContext(state, action) {
+      const conversation = state.conversations.find((item) => item.id === action.payload.id)
+      if (!conversation) return
+      if (action.payload.title) conversation.title = action.payload.title
+      if (action.payload.relatedType) conversation.relatedType = action.payload.relatedType
+      if (action.payload.relatedId) conversation.relatedId = action.payload.relatedId
+      if (action.payload.relatedPath) conversation.relatedPath = action.payload.relatedPath
+      if (action.payload.relatedSnapshot !== undefined) {
+        conversation.relatedSnapshot = action.payload.relatedSnapshot
+      }
+      conversation.updatedAt = new Date().toISOString()
+    },
     createConversation: {
       reducer(state, action) {
         const payload = normalizeConversation(action.payload)
         if (new Set(payload.participantIds).size < 2) return
-        const existing = state.conversations.find(
-          (item) => {
-            const normalized = normalizeConversation(item)
-            return (
-              normalized.relatedType === payload.relatedType &&
-              normalized.relatedId === payload.relatedId &&
-              payload.participantIds.every((id) => normalized.participantIds.includes(id))
-            )
-          },
-        )
-        if (!existing) state.conversations.unshift(payload)
+        const existing = findConversationByParticipants(state.conversations, payload.participantIds)
+        if (existing) {
+          const index = state.conversations.findIndex((item) => item.id === existing.id)
+          state.conversations[index] = {
+            ...state.conversations[index],
+            title: payload.title || state.conversations[index].title,
+            relatedType: payload.relatedType || state.conversations[index].relatedType,
+            relatedId: payload.relatedId || state.conversations[index].relatedId,
+            relatedPath: payload.relatedPath || state.conversations[index].relatedPath,
+            relatedSnapshot: payload.relatedSnapshot ?? state.conversations[index].relatedSnapshot,
+            updatedAt: new Date().toISOString(),
+          }
+          bumpConversationToTop(state, existing.id)
+          return
+        }
+        state.conversations.unshift(payload)
       },
       prepare(values) {
         const now = new Date().toISOString()
@@ -199,6 +321,7 @@ const communicationSlice = createSlice({
             relatedType: values.relatedType || 'general',
             relatedId: values.relatedId || null,
             relatedPath: values.relatedPath || null,
+            relatedSnapshot: values.relatedSnapshot || null,
             participantIds: [...new Set(values.participantIds)],
             createdBy: values.createdBy,
             status: 'active',
@@ -452,13 +575,39 @@ const communicationSlice = createSlice({
       if (!conversation) return
       const remoteMessages = (action.payload.messages || []).map(normalizeMessage)
       const remoteIds = new Set(remoteMessages.map((message) => message.id))
-      const localOnly = conversation.messages.filter((message) => !remoteIds.has(message.id))
+      const now = Date.now()
+      const localOnly = conversation.messages.filter(
+        (message) =>
+          !remoteIds.has(message.id) &&
+          now - new Date(message.createdAt).getTime() < PENDING_MESSAGE_MS,
+      )
       conversation.messages = [...remoteMessages, ...localOnly].sort(
         (left, right) => new Date(left.createdAt) - new Date(right.createdAt),
       )
       conversation.messageCount = conversation.messages.length
       conversation.messagesLoaded = true
+      conversation.messagesLoading = false
     },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase('communications/loadConversationMessages/pending', (state, action) => {
+        const conversation = state.conversations.find((c) => c.id === action.meta.arg)
+        if (conversation) conversation.messagesLoading = true
+      })
+      .addCase('communications/loadConversationMessages/fulfilled', (state, action) => {
+        const conversation = state.conversations.find(
+          (c) => c.id === action.payload.conversationId,
+        )
+        if (conversation) conversation.messagesLoading = false
+      })
+      .addCase('communications/loadConversationMessages/rejected', (state, action) => {
+        const conversation = state.conversations.find((c) => c.id === action.meta.arg)
+        if (conversation) {
+          conversation.messagesLoading = false
+          conversation.messagesLoaded = true
+        }
+      })
   },
 })
 
@@ -479,6 +628,112 @@ export const loadConversationMessages = createAsyncThunk(
       }),
     )
     return { conversationId, count: (data || []).length }
+  },
+)
+
+export const openConversationWithContact = createAsyncThunk(
+  'communications/openConversationWithContact',
+  async (
+    { ownerId, title, relatedType, relatedId, relatedPath, relatedSnapshot, createdBy, senderName },
+    { dispatch, getState },
+  ) => {
+    const participantIds = [createdBy, ownerId]
+    let conversation = findConversationByParticipants(
+      getState().communications.conversations,
+      participantIds,
+    )
+
+    const contextPatch = {
+      title,
+      relatedType,
+      relatedId,
+      relatedPath,
+      relatedSnapshot,
+    }
+
+    if (conversation) {
+      dispatch(
+        updateConversationContext({
+          id: conversation.id,
+          ...contextPatch,
+        }),
+      )
+      return normalizeConversation(
+        getState().communications.conversations.find((c) => c.id === conversation.id),
+      )
+    }
+
+    const key = participantKey(participantIds)
+    const { data, error } = await supabase
+      .from('conversations')
+      .select('*')
+      .eq('participant_key', key)
+      .maybeSingle()
+    if (error) throw error
+
+    if (data) {
+      conversation = normalizeConversation({
+        ...fromRow(data),
+        messages: [],
+        messagesLoaded: false,
+      })
+      dispatch(receiveRemoteConversation(conversation))
+      dispatch(
+        updateConversationContext({
+          id: conversation.id,
+          ...contextPatch,
+        }),
+      )
+      return normalizeConversation(
+        getState().communications.conversations.find((c) => c.id === conversation.id),
+      )
+    }
+
+    const created = dispatch(
+      createConversation({
+        title,
+        participantIds,
+        createdBy,
+        senderName,
+        relatedType,
+        relatedId,
+        relatedPath,
+        relatedSnapshot,
+      }),
+    ).payload
+
+    const canonicalId = (await persistConversationRemote(created)) || created.id
+    if (canonicalId !== created.id) {
+      const { data: canonicalRow, error: canonicalError } = await supabase
+        .from('conversations')
+        .select('*')
+        .eq('id', canonicalId)
+        .maybeSingle()
+      if (canonicalError) throw canonicalError
+      if (canonicalRow) {
+        dispatch(
+          replaceConversationId({
+            fromId: created.id,
+            conversation: normalizeConversation({
+              ...fromRow(canonicalRow),
+              messages: created.messages || [],
+              messagesLoaded: created.messagesLoaded ?? false,
+            }),
+          }),
+        )
+        dispatch(
+          updateConversationContext({
+            id: canonicalId,
+            ...contextPatch,
+          }),
+        )
+        return normalizeConversation(
+          getState().communications.conversations.find((c) => c.id === canonicalId),
+        )
+      }
+    }
+
+    return normalizeConversation(created)
   },
 )
 
@@ -520,6 +775,8 @@ export const {
   toggleConversationBlock,
   toggleConversationMute,
   toggleConversationPin,
+  replaceConversationId,
+  updateConversationContext,
   updateSupportStatus,
   setAll,
   receiveRemoteMessage,

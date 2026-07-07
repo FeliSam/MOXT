@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Search, X, UserRound, Settings, LogOut } from 'lucide-react-native';
 
 import {
   badgeForItem,
@@ -122,12 +123,12 @@ export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () 
               accessibilityLabel="Fermer"
               onPress={handleClose}
               className="h-10 w-10 items-center justify-center rounded-xl bg-app-surface-muted dark:bg-zinc-800">
-              <Text className="text-lg text-app-text-muted dark:text-zinc-400">✕</Text>
+              <X size={18} color="#6b7280" strokeWidth={2.4} />
             </Pressable>
           </View>
 
           <View className="mt-4 flex-row items-center gap-2 rounded-2xl bg-app-surface-muted px-3 py-2.5 dark:bg-zinc-800">
-            <Text className="text-base text-app-text-faint dark:text-zinc-500">🔍</Text>
+            <Search size={16} color="#9ca3af" strokeWidth={2.2} />
             <TextInput
               value={query}
               onChangeText={setQuery}
@@ -137,7 +138,7 @@ export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () 
             />
             {query ? (
               <Pressable onPress={() => setQuery('')} accessibilityLabel="Effacer">
-                <Text className="text-sm text-app-text-muted">✕</Text>
+                <X size={15} color="#9ca3af" strokeWidth={2.4} />
               </Pressable>
             ) : null}
           </View>
@@ -179,7 +180,7 @@ export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () 
                 handleClose();
                 router.push('/profile/edit' as any);
               }}>
-              <Text className="text-base">👤</Text>
+              <UserRound size={16} color="#6b7280" strokeWidth={2.2} />
               <Text className="text-xs font-semibold text-app-text dark:text-zinc-50">
                 {translateLabel('Mon profil')}
               </Text>
@@ -190,7 +191,7 @@ export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () 
                 handleClose();
                 router.push('/settings' as any);
               }}>
-              <Text className="text-base">⚙️</Text>
+              <Settings size={16} color="#6b7280" strokeWidth={2.2} />
               <Text className="text-xs font-semibold text-app-text dark:text-zinc-50">
                 {translateLabel('Réglages')}
               </Text>
@@ -199,7 +200,7 @@ export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () 
           <Pressable
             className="min-h-11 flex-row items-center justify-center gap-2 rounded-xl bg-red-50 dark:bg-red-950/20"
             onPress={handleLogout}>
-            <Text className="text-base">🚪</Text>
+            <LogOut size={16} color="#dc2626" strokeWidth={2.2} />
             <Text className="text-sm font-semibold text-red-600 dark:text-red-400">
               {translateLabel('Déconnexion')}
             </Text>

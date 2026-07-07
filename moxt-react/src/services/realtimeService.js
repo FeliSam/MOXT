@@ -32,6 +32,7 @@ const camelMap = {
   related_id: 'relatedId',
   related_type: 'relatedType',
   related_path: 'relatedPath',
+  related_snapshot: 'relatedSnapshot',
   created_by: 'createdBy',
 }
 
@@ -44,8 +45,6 @@ function fromRow(row) {
 }
 
 async function ingestRemoteMessage(conversationId, row, userId, dispatch, getState) {
-  if (row.sender_id === userId) return
-
   let conversation = getState().communications.conversations.find((c) => c.id === conversationId)
   if (!conversation) {
     await dispatch(ensureConversationFromRemote(conversationId))
@@ -57,6 +56,8 @@ async function ingestRemoteMessage(conversationId, row, userId, dispatch, getSta
   }
 
   const message = normalizeMessage(fromRow(row))
+  const alreadyExists = conversation.messages.some((m) => m.id === message.id)
+  if (alreadyExists) return
   dispatch(receiveRemoteMessage({ conversationId, message }))
 }
 

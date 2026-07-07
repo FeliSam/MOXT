@@ -365,7 +365,7 @@ export function MessagesPage() {
             ) : active ? (
               <ConversationPanel
                 active={active}
-                messagesLoading={!active.messagesLoaded}
+                messagesLoading={Boolean(active.messagesLoading)}
                 attachment={attachment}
                 blocked={blocked}
                 formik={formik}

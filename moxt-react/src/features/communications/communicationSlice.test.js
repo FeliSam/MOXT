@@ -247,6 +247,75 @@ describe('communications', () => {
     expect(Array.isArray(state.conversations[0].participantIds)).toBe(true)
   })
 
+  it('met a jour le contexte et le snapshot lors d une seconde annonce', () => {
+    const snapshotA = {
+      type: 'listing',
+      id: 'LST-1',
+      title: 'Velo',
+      path: '/marketplace/LST-1',
+      subtitle: '100 EUR',
+    }
+    const snapshotB = {
+      type: 'listing',
+      id: 'LST-2',
+      title: 'Table',
+      path: '/marketplace/LST-2',
+      subtitle: '50 EUR',
+    }
+    const first = reducer(
+      emptyState,
+      createConversation({
+        title: 'Velo',
+        participantIds: ['u1', 'u2'],
+        createdBy: 'u1',
+        relatedType: 'listing',
+        relatedId: 'LST-1',
+        relatedPath: '/marketplace/LST-1',
+        relatedSnapshot: snapshotA,
+      }),
+    )
+    const second = reducer(
+      first,
+      createConversation({
+        title: 'Table',
+        participantIds: ['u1', 'u2'],
+        createdBy: 'u1',
+        relatedType: 'listing',
+        relatedId: 'LST-2',
+        relatedPath: '/marketplace/LST-2',
+        relatedSnapshot: snapshotB,
+      }),
+    )
+    expect(second.conversations).toHaveLength(1)
+    expect(second.conversations[0].relatedId).toBe('LST-2')
+    expect(second.conversations[0].relatedSnapshot.title).toBe('Table')
+  })
+
+  it('converge vers une seule conversation par paire de participants', () => {
+    const first = reducer(
+      emptyState,
+      createConversation({
+        title: 'Annonce A',
+        participantIds: ['u1', 'u2'],
+        createdBy: 'u1',
+        relatedType: 'listing',
+        relatedId: 'LST-1',
+      }),
+    )
+    const second = reducer(
+      first,
+      createConversation({
+        title: 'Annonce B',
+        participantIds: ['u1', 'u2'],
+        createdBy: 'u1',
+        relatedType: 'listing',
+        relatedId: 'LST-2',
+      }),
+    )
+    expect(second.conversations).toHaveLength(1)
+    expect(second.conversations[0].relatedId).toBe('LST-2')
+  })
+
   it('conserve les messages locaux lors du chargement distant', () => {
     const created = reducer(
       emptyState,

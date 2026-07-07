@@ -1,23 +1,15 @@
 import { FiMessageSquare } from 'react-icons/fi'
-import { useDispatch, useSelector, useStore } from 'react-redux'
+import { useRef, useState } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
-import { createConversation, normalizeConversation } from './communicationSlice'
-
-function findRelatedConversation(conversations, { relatedType, relatedId, participantIds }) {
-  return conversations.find((item) => {
-    const normalized = normalizeConversation(item)
-    return (
-      normalized.relatedType === relatedType &&
-      normalized.relatedId === relatedId &&
-      participantIds.every((id) => normalized.participantIds.includes(id))
-    )
-  })
-}
+import { openConversationWithContact } from './communicationSlice'
+import { buildRelatedSnapshot } from './relatedSnapshot'
 
 export function ContactButton({
   className = '',
   ownerId,
+  relatedEntity,
   relatedId,
   relatedPath,
   relatedTitle,
@@ -27,42 +19,53 @@ export function ContactButton({
 }) {
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const store = useStore()
   const user = useSelector((state) => state.auth.user)
+  const [loading, setLoading] = useState(false)
+  const pendingRef = useRef(false)
 
   if (!ownerId || ownerId === user.id) return null
 
-  function handleContact() {
+  async function handleContact() {
+    if (pendingRef.current) return
+    pendingRef.current = true
+    setLoading(true)
     onContact?.()
-    const participantIds = [user.id, ownerId]
-    const lookup = { relatedType, relatedId, participantIds }
-    let conversation = findRelatedConversation(store.getState().communications.conversations, lookup)
-
-    if (!conversation) {
-      dispatch(
-        createConversation({
+    const relatedSnapshot = buildRelatedSnapshot(relatedType, relatedEntity, {
+      id: relatedId,
+      title: relatedTitle,
+      path: relatedPath,
+    })
+    try {
+      const conversation = await dispatch(
+        openConversationWithContact({
+          ownerId,
           title: relatedTitle,
-          participantIds,
           createdBy: user.id,
           senderName: `${user.firstName} ${user.lastName}`,
           relatedType,
           relatedId,
           relatedPath,
+          relatedSnapshot,
         }),
-      )
-      conversation = findRelatedConversation(store.getState().communications.conversations, lookup)
-    }
-
-    if (conversation) {
+      ).unwrap()
       navigate(`/messages?conversation=${conversation.id}`)
-    } else {
-      navigate(`/messages?relatedType=${relatedType}&relatedId=${relatedId}`)
+    } catch {
+      navigate('/messages')
+    } finally {
+      pendingRef.current = false
+      setLoading(false)
     }
   }
 
   return (
-    <Button className={className} icon={FiMessageSquare} variant={variant} onClick={handleContact}>
-      Contacter
+    <Button
+      className={className}
+      disabled={loading}
+      icon={FiMessageSquare}
+      variant={variant}
+      onClick={handleContact}
+    >
+      {loading ? 'Ouverture…' : 'Contacter'}
     </Button>
   )
 }

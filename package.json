@@ -32,6 +32,7 @@
     "mobile:tunnel:fresh": "npm run start:tunnel:fresh --prefix apps/mobile",
     "mobile:android": "npm run android --prefix apps/mobile",
     "mobile:ios": "npm run ios --prefix apps/mobile",
+    "mobile:eas:go": "npm run eas:go --prefix apps/mobile",
     "shared:test": "npm run test -w @moxt/shared",
     "test": "npm run shared:test && npm run web:test"
   },

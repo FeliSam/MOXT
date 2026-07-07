@@ -11,7 +11,9 @@ import {
   FiStar,
 } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
+import { useSelector } from 'react-redux'
 import { RELATED_CONTENT_META } from '../../config/communications'
+import { resolveRelatedSnapshot } from '../../features/communications/relatedSnapshot'
 import {
   MessageAvatar,
   MessageBubble,
@@ -22,6 +24,7 @@ import {
 } from './MessageBubble'
 import { conversationMessageCount } from './messageUtils'
 import { initials } from './format'
+import { RelatedContentPreview } from './RelatedContentPreview'
 
 export function ConversationPanel({
   active,
@@ -48,6 +51,7 @@ export function ConversationPanel({
   pinned,
 }) {
   const meta = RELATED_CONTENT_META[active.relatedType] || RELATED_CONTENT_META.general
+  const relatedPreview = useSelector((state) => resolveRelatedSnapshot(state, active))
   const messageListRef = useRef(null)
   const composerRef = useRef(null)
   const menuRef = useRef(null)
@@ -118,18 +122,18 @@ export function ConversationPanel({
             </span>
           </div>
         </div>
-        {active.relatedPath ? (
+        {(active.relatedPath || relatedPreview?.path) ? (
           <>
             <Link
               className="grid size-10 shrink-0 place-items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-brand-700 transition hover:border-brand-200 hover:bg-[var(--app-accent-soft)] lg:hidden dark:text-brand-300"
-              to={active.relatedPath}
+              to={active.relatedPath || relatedPreview.path}
               aria-label="Voir la fiche"
             >
               <FiExternalLink />
             </Link>
             <Link
               className="hidden shrink-0 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2 text-sm font-bold text-brand-700 transition hover:border-brand-200 hover:bg-[var(--app-accent-soft)] lg:inline-flex dark:text-brand-300"
-              to={active.relatedPath}
+              to={active.relatedPath || relatedPreview.path}
             >
               Voir la fiche <FiExternalLink />
             </Link>
@@ -205,6 +209,7 @@ export function ConversationPanel({
         data-testid="message-scroll-region"
       >
         <div className="mx-auto flex max-w-3xl flex-col">
+          {relatedPreview ? <RelatedContentPreview preview={relatedPreview} /> : null}
           {messagesLoading ? (
             <div className="flex flex-col gap-4 py-6">
               {[...Array(4)].map((_, i) => (

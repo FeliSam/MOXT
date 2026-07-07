@@ -7,9 +7,6 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "env": {
-        "EXPO_PUBLIC_SENTRY_DSN": ""
-      },
       "ios": {
         "simulator": true
       },
@@ -19,9 +16,6 @@
     },
     "preview": {
       "distribution": "internal",
-      "env": {
-        "EXPO_PUBLIC_SENTRY_DSN": ""
-      },
       "android": {
         "buildType": "apk"
       },

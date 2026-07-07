@@ -1,5 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import { Search } from 'lucide-react-native';
 
 import { tw } from '@/constants/dashboardTailwind';
 
@@ -15,7 +16,9 @@ export function DashboardSearchSection() {
         <Pressable
           className="relative mt-3 min-h-14 flex-row items-center rounded-2xl bg-app-surface-muted pl-11 pr-4 dark:bg-zinc-800"
           onPress={() => router.push('/search' as any)}>
-          <Text className="absolute left-4 text-brand-700">🔍</Text>
+          <View className="absolute left-4">
+            <Search size={16} color="#08705f" strokeWidth={2.2} />
+          </View>
           <Text className="flex-1 text-sm text-app-text-faint dark:text-zinc-500" numberOfLines={1}>
             Rechercher : Cotonou, colis, job, paramètres, sécurité, profil...
           </Text>

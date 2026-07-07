@@ -14,27 +14,43 @@ interface CardProps {
   style?: ViewStyle;
 }
 
+// Séparation par nuances de surface (pas de bordure, ombre quasi nulle).
+// Élévation en dark = teinte plus claire ; en light = surface blanche + micro-ombre.
 const variantClasses: Record<CardVariant, string> = {
-  default: 'shadow-sm',
+  default: '',
   flat: '',
-  finance: 'shadow-md',
-  interactive: 'shadow-sm active:opacity-90 active:border-brand-200 dark:active:border-brand-800',
-  featured: 'shadow-md overflow-hidden',
-  verified: 'shadow-sm border-l-[3px] border-l-brand-600 dark:border-l-brand-400',
+  finance: '',
+  interactive: 'active:opacity-80',
+  featured: 'overflow-hidden',
+  verified: 'overflow-hidden',
 };
 
 export function Card({ children, variant = 'default', className, style }: CardProps) {
+  const isFlat = variant === 'flat';
   return (
     <View
       className={cn(
         'rounded-2xl',
-        variant === 'flat'
-          ? 'bg-app-surface-muted dark:bg-zinc-900 p-4'
-          : 'bg-app-surface dark:bg-zinc-900 p-5',
+        isFlat
+          ? 'bg-app-surface-muted dark:bg-[#171d1b] p-4'
+          : 'bg-app-surface-elevated dark:bg-[#1b2320] p-5',
         variantClasses[variant],
         className,
       )}
-      style={style}>
+      style={[
+        !isFlat && {
+          shadowColor: '#0f1714',
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.05,
+          shadowRadius: 18,
+          elevation: 1,
+        },
+        variant === 'verified' && {
+          borderLeftWidth: 3,
+          borderLeftColor: '#0b8975',
+        },
+        style,
+      ]}>
       {children}
     </View>
   );

@@ -1,41 +1,28 @@
 import { useState } from 'react';
-import { Platform, Pressable, Text, View } from 'react-native';
-import { SymbolView } from 'expo-symbols';
+import { Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ArrowLeftRight, Home, ShoppingBag, Package, type LucideIcon } from 'lucide-react-native';
 
 import { MobileMoreSheet, PlusTabIcon } from '@/components/navigation/MobileMoreSheet';
 import { cn } from '@/lib/cn';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { bottomNavigationItems } from '@moxt/shared';
 
-const TAB_ICONS: Record<string, { ios: string; android: string }> = {
-  transfers: { ios: 'arrow.left.arrow.right', android: 'swap_horiz' },
-  index: { ios: 'house.fill', android: 'home' },
-  marketplace: { ios: 'bag.fill', android: 'shopping_bag' },
-  parcels: { ios: 'shippingbox.fill', android: 'inventory_2' },
+const TAB_ICONS: Record<string, LucideIcon> = {
+  transfers: ArrowLeftRight,
+  index: Home,
+  marketplace: ShoppingBag,
+  parcels: Package,
 };
 
 function TabIcon({ routeName, focused }: { routeName: string; focused: boolean }) {
-  const icons = TAB_ICONS[routeName];
-  const color = focused ? '#08705f' : '#6b7280';
-
-  if (!icons) {
-    return (
-      <Text className={cn('text-lg font-bold', focused ? 'text-brand-700 dark:text-brand-400' : 'text-app-text-muted')}>
-        •
-      </Text>
-    );
+  const Icon = TAB_ICONS[routeName];
+  const color = focused ? '#08705f' : '#9ca3af';
+  if (!Icon) {
+    return <Text style={{ color, fontSize: 18, fontWeight: '700' }}>•</Text>;
   }
-
-  return (
-    <SymbolView
-      name={icons as any}
-      tintColor={focused ? '#08705f' : '#9ca3af'}
-      size={Platform.OS === 'ios' ? 20 : 22}
-      fallback={<Text style={{ color, fontSize: 18 }}>{routeName[0]?.toUpperCase()}</Text>}
-    />
-  );
+  return <Icon size={22} color={color} strokeWidth={focused ? 2.4 : 2} />;
 }
 
 /** Barre flottante partagée — tabs principaux + Plus */

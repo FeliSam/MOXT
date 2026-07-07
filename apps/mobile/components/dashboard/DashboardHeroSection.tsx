@@ -1,6 +1,7 @@
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { ArrowRight, ArrowUpRight, ArrowRightLeft, CheckCircle2 } from 'lucide-react-native';
 
 import { tw } from '@/constants/dashboardTailwind';
 import { cn } from '@/lib/cn';
@@ -39,8 +40,9 @@ export function DashboardHeroSection({
         <View className="absolute -bottom-40 left-1/3 h-96 w-96 rounded-full bg-blue-400/25" />
 
         <View className="relative z-10">
-          <View className={tw.heroChip}>
-            <Text className={tw.heroChipText}>✓  Bienvenue {firstName || ''}</Text>
+          <View className={cn(tw.heroChip, 'flex-row items-center gap-2')}>
+            <CheckCircle2 size={14} color="#ffffff" strokeWidth={2.4} />
+            <Text className={tw.heroChipText}>Bienvenue {firstName || ''}</Text>
           </View>
 
           <Text className={tw.heroTitle}>Tous vos services essentiels, réunis.</Text>
@@ -50,8 +52,9 @@ export function DashboardHeroSection({
           </Text>
 
           <View className="mt-8 flex-row flex-wrap gap-3">
-            <Pressable className={tw.heroCtaPrimary} onPress={() => router.push('/transfer/wizard' as any)}>
-              <Text className={tw.heroCtaPrimaryText}>Créer un transfert  →</Text>
+            <Pressable className={cn(tw.heroCtaPrimary, 'flex-row items-center gap-2')} onPress={() => router.push('/transfer/wizard' as any)}>
+              <Text className={tw.heroCtaPrimaryText}>Créer un transfert</Text>
+              <ArrowRight size={16} color="#020617" strokeWidth={2.6} />
             </Pressable>
             <Pressable className={tw.heroCtaGhost} onPress={() => router.push('/marketplace' as any)}>
               <Text className={tw.heroCtaGhostText}>Explorer les services</Text>
@@ -66,7 +69,7 @@ export function DashboardHeroSection({
                 <Text className={tw.calcTitle}>Estimez votre envoi</Text>
               </View>
               <Pressable className={tw.calcInvert} onPress={() => setRubToXof((v) => !v)}>
-                <Text className="text-base font-black text-brand-800">⇄</Text>
+                <ArrowRightLeft size={18} color="#07594d" strokeWidth={2.4} />
               </Pressable>
             </View>
 
@@ -107,8 +110,9 @@ export function DashboardHeroSection({
               <Text className={tw.calcRateText}>Frankfurter</Text>
             </View>
 
-            <Pressable className={tw.calcBtn} onPress={() => router.push('/transfer/wizard' as any)}>
-              <Text className={tw.calcBtnText}>Ouvrir la calculatrice ↗</Text>
+            <Pressable className={cn(tw.calcBtn, 'flex-row items-center justify-center gap-2')} onPress={() => router.push('/transfer/wizard' as any)}>
+              <Text className={tw.calcBtnText}>Ouvrir la calculatrice</Text>
+              <ArrowUpRight size={16} color="#020617" strokeWidth={2.6} />
             </Pressable>
           </View>
         </View>

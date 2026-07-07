@@ -1,4 +1,5 @@
 import { normalizeConversation } from './communicationSlice'
+import { participantKey } from './conversationUtils'
 
 const CONVERSATION_REMOTE_FIELDS = [
   'id',
@@ -6,6 +7,7 @@ const CONVERSATION_REMOTE_FIELDS = [
   'relatedType',
   'relatedId',
   'relatedPath',
+  'relatedSnapshot',
   'participantIds',
   'createdBy',
   'status',
@@ -14,6 +16,7 @@ const CONVERSATION_REMOTE_FIELDS = [
   'pinnedBy',
   'mutedBy',
   'blockedBy',
+  'messageCount',
   'createdAt',
   'updatedAt',
 ]
@@ -23,12 +26,14 @@ const FIELD_MAP = {
   relatedId: 'related_id',
   relatedType: 'related_type',
   relatedPath: 'related_path',
+  relatedSnapshot: 'related_snapshot',
   participantIds: 'participant_ids',
   unreadBy: 'unread_by',
   archivedBy: 'archived_by',
   pinnedBy: 'pinned_by',
   mutedBy: 'muted_by',
   blockedBy: 'blocked_by',
+  messageCount: 'message_count',
   createdAt: 'created_at',
   updatedAt: 'updated_at',
   senderId: 'sender_id',
@@ -51,6 +56,11 @@ export function conversationToRemoteRow(conversation) {
     if (normalized[field] === undefined) continue
     const remoteKey = FIELD_MAP[field] ?? field
     row[remoteKey] = normalized[field]
+  }
+  row.participant_key = participantKey(normalized.participantIds)
+  row.message_count = normalized.messageCount ?? normalized.messages?.length ?? 0
+  if (normalized.relatedSnapshot) {
+    row.related_snapshot = normalized.relatedSnapshot
   }
   return row
 }

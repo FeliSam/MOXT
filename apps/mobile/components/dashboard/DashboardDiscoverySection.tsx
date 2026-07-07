@@ -1,6 +1,10 @@
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import {
+  Package, Briefcase, CalendarDays, ShoppingBag, Heart, MapPin, Newspaper, Clock, MessageCircle,
+  type LucideIcon,
+} from 'lucide-react-native';
 
 import { formatShortDate } from '@moxt/shared/utils/formatters.js';
 
@@ -16,7 +20,8 @@ import { cn } from '@/lib/cn';
 
 function LiveListSection({
   accent,
-  emoji,
+  Icon,
+  iconColor,
   title,
   subtitle,
   path,
@@ -26,7 +31,8 @@ function LiveListSection({
   renderBadge,
 }: {
   accent: keyof typeof liveAccents;
-  emoji: string;
+  Icon: LucideIcon;
+  iconColor: string;
   title: string;
   subtitle: string;
   path: string;
@@ -42,7 +48,8 @@ function LiveListSection({
     <View className={tw.liveListCard}>
       <View className={tw.liveListHeader}>
         <DashboardCardHeader
-          emoji={emoji}
+          Icon={Icon}
+          iconColor={iconColor}
           iconClass={styles.icon}
           title={title}
           subtitle={subtitle}
@@ -65,7 +72,7 @@ function LiveListSection({
               <View className={tw.liveTileBody}>
                 <View className="flex-row items-start gap-3">
                   <View className={cn('h-10 w-10 items-center justify-center rounded-xl', styles.icon)}>
-                    <Text className="text-lg">{emoji}</Text>
+                    <Icon size={17} color={iconColor} strokeWidth={2.2} />
                   </View>
                   <View className="min-w-0 flex-1">
                     <Text className={tw.liveTileTitle} numberOfLines={2}>
@@ -79,7 +86,12 @@ function LiveListSection({
                   </View>
                 </View>
                 {renderHighlight?.(item) ? (
-                  <Text className={tw.liveTileHighlight}>📅 {renderHighlight(item)}</Text>
+                  <View className="mt-2.5 flex-row items-center gap-1.5">
+                    <CalendarDays size={13} color={iconColor} strokeWidth={2.2} />
+                    <Text className="text-xs font-semibold text-brand-700 dark:text-brand-300">
+                      {renderHighlight(item)}
+                    </Text>
+                  </View>
                 ) : null}
                 {renderBadge?.(item) ? (
                   <View className="mt-3 flex-row flex-wrap gap-1.5">
@@ -148,7 +160,7 @@ export function DashboardDiscoverySection({
                       colors={['#0e7490', '#2563eb']}
                       style={StyleSheet.absoluteFill}
                       className="items-center justify-center">
-                      <Text className="text-4xl text-white">🛍️</Text>
+                      <ShoppingBag size={40} color="#ffffff" strokeWidth={1.8} />
                     </LinearGradient>
                   )}
                   <LinearGradient
@@ -163,7 +175,7 @@ export function DashboardDiscoverySection({
                       tw.listingHeart,
                       liked ? 'bg-rose-600' : 'bg-white/20',
                     )}>
-                    <Text className="text-sm text-white">♥</Text>
+                    <Heart size={16} color="#ffffff" strokeWidth={2.2} fill={liked ? '#ffffff' : 'transparent'} />
                   </Pressable>
                   <View className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
                     <View className="mb-1.5 flex-row flex-wrap gap-1">
@@ -183,7 +195,12 @@ export function DashboardDiscoverySection({
                           ? `${Number(listing.price).toLocaleString('fr-FR')} ${listing.currency || 'RUB'}`
                           : 'Sur devis'}
                       </Text>
-                      {listing.city ? <Text className={tw.listingCity}>📍 {listing.city}</Text> : null}
+                      {listing.city ? (
+                        <View className="flex-row items-center gap-1">
+                          <MapPin size={11} color="rgba(255,255,255,0.75)" strokeWidth={2.2} />
+                          <Text className={tw.listingCity}>{listing.city}</Text>
+                        </View>
+                      ) : null}
                     </View>
                   </View>
                 </View>
@@ -195,7 +212,8 @@ export function DashboardDiscoverySection({
 
       <LiveListSection
         accent="parcels"
-        emoji="📦"
+        Icon={Package}
+        iconColor="#059669"
         title="Colis disponibles"
         subtitle="Voyages récents avec kilos disponibles."
         path="/parcel"
@@ -215,7 +233,8 @@ export function DashboardDiscoverySection({
 
       <LiveListSection
         accent="jobs"
-        emoji="💼"
+        Icon={Briefcase}
+        iconColor="#7c3aed"
         title="Jobs récents"
         subtitle="Missions et opportunités disponibles."
         path="/jobs"
@@ -231,7 +250,8 @@ export function DashboardDiscoverySection({
 
       <LiveListSection
         accent="events"
-        emoji="📅"
+        Icon={CalendarDays}
+        iconColor="#d97706"
         title="Événements à venir"
         subtitle="Rencontres, ateliers et formations."
         path="/search"
@@ -249,7 +269,7 @@ export function DashboardDiscoverySection({
 
       <DashboardSectionHeading title="Actualités MOXT" linkLabel="Tout lire" onPress={() => router.push('/search' as any)} />
       <Card className="mx-4 items-center gap-3 py-10">
-        <Text className="text-3xl">📰</Text>
+        <Newspaper size={32} color="#9ca3af" strokeWidth={1.8} />
         <Text className="text-center text-sm text-app-text-muted dark:text-zinc-400">
           Aucune actualité pour le moment.
         </Text>
@@ -262,7 +282,7 @@ export function DashboardDiscoverySection({
         <View className={tw.activityCard}>
           <View className="absolute right-0 top-0 h-48 w-48 rounded-full bg-brand-500/25" />
           <View className={tw.activityIcon}>
-            <Text className="text-xl">🕐</Text>
+            <Clock size={20} color="#ffffff" strokeWidth={2.2} />
           </View>
           <Text className={tw.activityTitle}>Votre activité MOXT</Text>
           <Text className={tw.activitySubtitle}>
@@ -286,8 +306,9 @@ export function DashboardDiscoverySection({
             <Pressable className={tw.activityBtnPrimary} onPress={() => router.push('/favorites' as any)}>
               <Text className="text-sm font-black text-white dark:text-slate-950">Mes activités</Text>
             </Pressable>
-            <Pressable className={tw.activityBtnGhost} onPress={() => router.push('/messages' as any)}>
-              <Text className="text-sm font-black text-white">💬  Messages</Text>
+            <Pressable className={cn(tw.activityBtnGhost, 'flex-row items-center gap-2')} onPress={() => router.push('/messages' as any)}>
+              <MessageCircle size={16} color="#ffffff" strokeWidth={2.2} />
+              <Text className="text-sm font-black text-white">Messages</Text>
             </Pressable>
           </View>
         </View>

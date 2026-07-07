@@ -158,6 +158,7 @@ export function ParcelDetailPage() {
           <div className="mt-5">
             <ContactButton
               ownerId={parcel.ownerId}
+              relatedEntity={parcel}
               relatedId={parcel.id}
               relatedPath={`/parcels/${parcel.id}`}
               relatedTitle={`${parcel.origin} vers ${parcel.destination}`}

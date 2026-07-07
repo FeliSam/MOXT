@@ -124,6 +124,7 @@ export function JobDetailPage() {
           <div className="mt-4">
             <ContactButton
               ownerId={job.ownerId}
+              relatedEntity={job}
               relatedId={job.id}
               relatedPath={`/jobs/${job.id}`}
               relatedTitle={job.title}

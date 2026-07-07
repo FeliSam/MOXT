@@ -108,6 +108,7 @@ export function ExchangerDetailPage() {
             {business ? (
               <ContactButton
                 ownerId={business.ownerId}
+                relatedEntity={business}
                 relatedId={business.id}
                 relatedPath={`/exchangers/${business.id}`}
                 relatedTitle={business.name}

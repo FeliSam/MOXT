@@ -487,6 +487,7 @@ export function ListingDetailPage() {
         <ContactButton
           className="min-w-0 flex-1"
           ownerId={listing.ownerId}
+          relatedEntity={listing}
           relatedId={listing.id}
           relatedPath={`/marketplace/${listing.id}`}
           relatedTitle={listing.title}
@@ -760,6 +761,7 @@ function ListingActionPanel({
         <ContactButton
           className="w-full"
           ownerId={listing.ownerId}
+          relatedEntity={listing}
           relatedId={listing.id}
           relatedPath={`/marketplace/${listing.id}`}
           relatedTitle={listing.title}

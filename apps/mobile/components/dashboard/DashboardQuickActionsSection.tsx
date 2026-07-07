@@ -32,12 +32,16 @@ export function DashboardQuickActionsSection() {
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={{ width: dashboardWidths.quickAction, borderRadius: 16 }}
-              className={cn(tw.quickCard, 'shadow-sm')}>
-              <View>
+              className={tw.quickCard}>
+              <View
+                className="h-11 w-11 items-center justify-center rounded-2xl"
+                style={{ backgroundColor: action.tint + '22' }}>
+                <action.Icon size={22} color={action.tint} strokeWidth={2.2} />
+              </View>
+              <View className="mt-4">
                 <Text className={tw.quickTitle}>{action.label}</Text>
                 <Text className={tw.quickDesc}>{action.description}</Text>
               </View>
-              <Text className="self-end text-[2.5rem]">{action.emoji}</Text>
             </LinearGradient>
           </Pressable>
         ))}

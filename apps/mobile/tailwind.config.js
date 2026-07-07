@@ -23,9 +23,11 @@ module.exports = {
           900: '#06493f',
         },
         app: {
-          bg: '#f7f8fa',
+          bg: '#eef1ef',
           surface: '#ffffff',
-          'surface-muted': '#f3f4f6',
+          'surface-elevated': '#ffffff',
+          'surface-interactive': '#f5f7f6',
+          'surface-muted': '#f0f2f1',
           text: '#111827',
           'text-secondary': '#374151',
           'text-muted': '#6b7280',

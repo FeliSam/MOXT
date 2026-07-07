@@ -55,8 +55,8 @@ export default function NotificationsTabScreen() {
             style={[
               styles.notifCard,
               shadows.card,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-              !item.read && { backgroundColor: brand[50], borderColor: brand[200] },
+              { backgroundColor: colors.surfaceElevated },
+              !item.read && { backgroundColor: colors.accentSoft },
             ]}
             onPress={() => dispatch(markAsRead(item.id))}>
             {/* Left accent */}
@@ -122,7 +122,6 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     paddingLeft: spacing.xl,
     gap: spacing.md,
-    borderWidth: 1,
     overflow: 'hidden',
   },
   cardAccent: {

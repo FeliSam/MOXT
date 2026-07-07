@@ -23,7 +23,7 @@ export function DetailMetrics({ items }: { items: MetricItem[] }) {
       {items.map(({ emoji, label, value }) => (
         <View
           key={label}
-          style={[sx.metricCard, { backgroundColor: colors.surface, borderColor: colors.border }, shadows.card]}>
+          style={[sx.metricCard, { backgroundColor: colors.surfaceElevated }, shadows.card]}>
           <View style={[sx.metricIcon, { backgroundColor: colors.accentSoft }]}>
             <Text style={{ fontSize: 16 }}>{emoji}</Text>
           </View>
@@ -46,7 +46,7 @@ export function DetailSection({ title, description, children }: {
   const colors = useThemeColors();
   const shadows = useShadows();
   return (
-    <View style={[sx.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }, shadows.card]}>
+    <View style={[sx.sectionCard, { backgroundColor: colors.surfaceElevated }, shadows.card]}>
       <Text style={[sx.sectionTitle, { color: colors.text }]}>{title}</Text>
       {description ? (
         <Text style={[sx.sectionDesc, { color: colors.textMuted }]}>{description}</Text>
@@ -145,7 +145,6 @@ const sx = StyleSheet.create({
     width: '48%',
     flexGrow: 1,
     borderRadius: radii.lg,
-    borderWidth: 1,
     padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
@@ -164,7 +163,6 @@ const sx = StyleSheet.create({
   /* section */
   sectionCard: {
     borderRadius: radii.lg,
-    borderWidth: 1,
     padding: 20,
   },
   sectionTitle: { fontSize: 19, fontWeight: '900', letterSpacing: -0.3 },

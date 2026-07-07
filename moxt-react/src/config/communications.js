@@ -3,9 +3,10 @@ import { FiBox, FiBriefcase, FiCalendar, FiRepeat, FiShoppingBag, FiUsers } from
 export const RELATED_CONTENT_META = {
   business: { icon: FiBriefcase, label: 'Entreprise', tone: 'bg-violet-500' },
   event: { icon: FiCalendar, label: 'Événement', tone: 'bg-amber-500' },
-  job: { icon: FiBriefcase, label: 'Job', tone: 'bg-blue-500' },
+  job: { icon: FiBriefcase, label: 'Emploi', tone: 'bg-blue-500' },
   listing: { icon: FiShoppingBag, label: 'Annonce', tone: 'bg-pink-500' },
   parcel: { icon: FiBox, label: 'Colis', tone: 'bg-orange-500' },
+  p2p: { icon: FiRepeat, label: 'Échange P2P', tone: 'bg-cyan-600' },
   transfer: { icon: FiRepeat, label: 'Transfert', tone: 'bg-emerald-600' },
   general: { icon: FiUsers, label: 'Discussion', tone: 'bg-slate-500' },
 }
@@ -40,6 +41,11 @@ export const MESSAGE_SUGGESTIONS = {
     'Bonjour, pouvez-vous confirmer le statut du paiement ?',
     'La preuve de paiement est-elle suffisante ?',
     'Quel est le délai restant pour finaliser le transfert ?',
+  ],
+  p2p: [
+    'Bonjour, cette offre est-elle toujours disponible ?',
+    'Quel mode de paiement préférez-vous ?',
+    'Pouvez-vous confirmer le taux ?',
   ],
   general: [
     'Bonjour, je souhaite en savoir plus.',

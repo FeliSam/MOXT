@@ -1,6 +1,8 @@
 import { Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 
+import { Inbox, ArrowLeftRight, TrendingUp, UserRound, ShieldCheck, ArrowRightLeft, Check, ChevronRight } from 'lucide-react-native';
+
 import { RATE_RUB_TO_XOF, RATE_SOURCE, tw } from '@/constants/dashboardTailwind';
 import { DashboardCardHeader } from '@/components/dashboard/DashboardSectionHeading';
 import { Card } from '@/components/ui/Card';
@@ -38,7 +40,7 @@ export function DashboardOverviewSection({
         <View className={tw.verifyCard}>
           <View className="flex-row items-start gap-3">
             <View className={tw.verifyIcon}>
-              <Text className="text-lg">🛡️</Text>
+              <ShieldCheck size={20} color="#b45309" strokeWidth={2.2} />
             </View>
             <View className="min-w-0 flex-1">
               <Text className={tw.verifyTitle}>Vérifiez votre compte</Text>
@@ -55,7 +57,8 @@ export function DashboardOverviewSection({
 
       <Card className="mx-4">
         <DashboardCardHeader
-          emoji="📥"
+          Icon={Inbox}
+          iconColor="#b45309"
           iconClass="bg-amber-100 dark:bg-amber-900/40"
           title="Actions à faire"
           subtitle="Ce qui attend votre intervention."
@@ -64,10 +67,10 @@ export function DashboardOverviewSection({
           {toDeclareCount > 0 ? (
             <Pressable className={tw.todoRow} onPress={() => router.push('/transfers' as any)}>
               <View className={tw.todoIcon}>
-                <Text className="text-[13px] text-brand-700 dark:text-brand-400">💱</Text>
+                <ArrowLeftRight size={15} color="#08705f" strokeWidth={2.2} />
               </View>
               <Text className={tw.todoLabel}>{toDeclareCount} transfert(s) à déclarer</Text>
-              <Text className="text-app-text-muted dark:text-zinc-400">›</Text>
+              <ChevronRight size={16} color="#9ca3af" strokeWidth={2.4} />
             </Pressable>
           ) : (
             <View className={tw.todoEmpty}>
@@ -79,7 +82,7 @@ export function DashboardOverviewSection({
 
       <Card className="mx-4">
         <DashboardCardHeader
-          emoji="💱"
+          Icon={ArrowRightLeft}
           iconClass="bg-brand-100 dark:bg-brand-950/45"
           title="Mes transferts en cours"
           subtitle="Suivi de vos opérations actives."
@@ -122,7 +125,7 @@ export function DashboardOverviewSection({
 
       <Card className="mx-4">
         <DashboardCardHeader
-          emoji="📈"
+          Icon={TrendingUp}
           iconClass="bg-brand-100 dark:bg-brand-950/45"
           title="Taux du jour"
           subtitle={`${RATE_SOURCE} · ${rateDate}`}
@@ -145,7 +148,7 @@ export function DashboardOverviewSection({
       <Card className="mx-4">
         <View className="flex-row items-center gap-3">
           <View className={cn(tw.cardIcon, 'bg-brand-100 dark:bg-brand-950/45')}>
-            <Text className="text-lg">👤</Text>
+            <UserRound size={20} color="#08705f" strokeWidth={2.2} />
           </View>
           <View className="min-w-0 flex-1">
             <Text className={tw.cardTitle}>Profil complété</Text>
@@ -188,10 +191,10 @@ export function DashboardOverviewSection({
                     tw.stepCircle,
                     step.done ? 'bg-emerald-500' : 'border-2 border-app-border dark:border-zinc-700',
                   )}>
-                  {step.done ? <Text className="text-[10px] font-black text-white">✓</Text> : null}
+                  {step.done ? <Check size={12} color="#ffffff" strokeWidth={3} /> : null}
                 </View>
                 <Text className={cn(tw.stepLabel, step.done && 'line-through')}>{step.label}</Text>
-                {!step.done ? <Text className="text-app-text-muted dark:text-zinc-400">›</Text> : null}
+                {!step.done ? <ChevronRight size={16} color="#9ca3af" strokeWidth={2.4} /> : null}
               </View>
             ))}
           </View>

@@ -126,6 +126,7 @@ export function TransferDetailPage() {
           <div className="flex flex-wrap gap-2">
             <ContactButton
               ownerId={access.contactId}
+              relatedEntity={transfer}
               relatedId={transfer.id}
               relatedPath={`/transfers/${transfer.id}`}
               relatedTitle={`Transfert ${transfer.id} · ${access.contactTitle}`}

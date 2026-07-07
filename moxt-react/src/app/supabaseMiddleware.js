@@ -1,6 +1,6 @@
 import { supabase } from '../services/supabaseClient'
 import { saveListingRemote } from '../features/marketplace/marketplaceRemote'
-import { conversationToRemoteRow, messageToRemoteRow } from '../features/communications/messagingRemote'
+import { persistConversationRemote, persistMessageRemote } from '../features/communications/conversationPersist'
 import { addToast } from '../features/ui/uiSlice'
 
 async function triggerEmail(transferId, event) {
@@ -128,6 +128,16 @@ async function update(table, id, fields) {
   if (error) throw error
 }
 
+async function syncConversationRow(state, conversationId) {
+  const conversation = state.communications.conversations.find((c) => c.id === conversationId)
+  if (!conversation) return
+  await persistConversationRemote(conversation)
+}
+
+async function syncMessageRow(message, conversationId) {
+  await persistMessageRemote(message, conversationId)
+}
+
 // Retry avec backoff exponentiel — max 3 tentatives
 async function withRetry(fn, maxAttempts = 3) {
   let lastError
@@ -242,13 +252,10 @@ const handlers = {
   // ── Messagerie ────────────────────────────────────────────────────────────────
   'communications/createConversation': async (payload) => {
     const { messages, messagesLoaded, drafts: _drafts, ...conv } = payload
-    await upsert('conversations', conversationToRemoteRow(conv))
+    const canonicalId = await persistConversationRemote(conv)
     if (messages?.length) {
       for (const msg of messages) {
-        const { error } = await supabase
-          .from('messages')
-          .upsert(messageToRemoteRow(msg, payload.id), { onConflict: 'id' })
-        if (error) throw error
+        await persistMessageRemote(msg, canonicalId)
       }
     }
   },
@@ -258,24 +265,55 @@ const handlers = {
     )
 
     if (conversation) {
-      await supabase
-        .from('conversations')
-        .upsert(conversationToRemoteRow(conversation), { onConflict: 'id' })
+      await syncConversationRow(state, payload.conversationId)
     }
 
     const msg = payload.message
-    const { error } = await supabase
-      .from('messages')
-      .upsert(messageToRemoteRow(msg, payload.conversationId), { onConflict: 'id' })
-    if (error) throw error
+    await syncMessageRow(msg, payload.conversationId)
 
     await supabase
       .from('conversations')
       .update({
         updated_at: msg.createdAt,
+        message_count: conversation?.messageCount ?? null,
         unread_by: conversation?.unreadBy ?? null,
       })
       .eq('id', payload.conversationId)
+  },
+  'communications/markConversationRead': async (payload, state) => {
+    await syncConversationRow(state, payload.conversationId)
+  },
+  'communications/updateConversationContext': async (payload, state) => {
+    await syncConversationRow(state, payload.id)
+  },
+  'communications/archiveConversation': async (payload, state) => {
+    await syncConversationRow(state, payload.id)
+  },
+  'communications/restoreConversation': async (payload, state) => {
+    await syncConversationRow(state, payload.id)
+  },
+  'communications/toggleConversationPin': async (payload, state) => {
+    await syncConversationRow(state, payload.id)
+  },
+  'communications/toggleConversationMute': async (payload, state) => {
+    await syncConversationRow(state, payload.id)
+  },
+  'communications/toggleConversationBlock': async (payload, state) => {
+    await syncConversationRow(state, payload.id)
+  },
+  'communications/reactToMessage': async (payload, state) => {
+    const conversation = state.communications.conversations.find(
+      (c) => c.id === payload.conversationId,
+    )
+    const message = conversation?.messages.find((m) => m.id === payload.messageId)
+    if (message) await syncMessageRow(message, payload.conversationId)
+  },
+  'communications/deleteMessageLocally': async (payload, state) => {
+    const conversation = state.communications.conversations.find(
+      (c) => c.id === payload.conversationId,
+    )
+    const message = conversation?.messages.find((m) => m.id === payload.messageId)
+    if (message) await syncMessageRow(message, payload.conversationId)
   },
 
   // ── Transferts ────────────────────────────────────────────────────────────────

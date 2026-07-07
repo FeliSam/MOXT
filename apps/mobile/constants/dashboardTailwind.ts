@@ -1,4 +1,9 @@
 import { Dimensions } from 'react-native';
+import type { LucideIcon } from 'lucide-react-native';
+import {
+  Megaphone, PackagePlus, Briefcase, CalendarPlus,
+  ArrowLeftRight, ShoppingBag, Package, Handshake, Repeat, Building2, CalendarDays, Newspaper,
+} from 'lucide-react-native';
 
 const SW = Dimensions.get('window').width;
 const clamp = (min: number, val: number, max: number) => Math.max(min, Math.min(val, max));
@@ -180,12 +185,14 @@ export const badgeTones: Record<string, string> = {
   rose: 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300',
 };
 
-export const QUICK_ACTIONS = [
-  { emoji: '📢', label: 'Publier une annonce', description: 'Produit, service ou location', route: '/listing/create' },
-  { emoji: '📦', label: 'Envoyer un colis', description: 'Trouver ou proposer un trajet', route: '/parcels' },
-  { emoji: '💼', label: 'Publier un job', description: 'Mission ou opportunité', route: '/jobs' },
-  { emoji: '📅', label: 'Créer un événement', description: 'Rencontre, atelier ou formation', route: '/search' },
-] as const;
+export const QUICK_ACTIONS: {
+  Icon: LucideIcon; tint: string; label: string; description: string; route: string;
+}[] = [
+  { Icon: Megaphone, tint: '#08705f', label: 'Publier une annonce', description: 'Produit, service ou location', route: '/listing/create' },
+  { Icon: PackagePlus, tint: '#245de8', label: 'Envoyer un colis', description: 'Trouver ou proposer un trajet', route: '/parcels' },
+  { Icon: Briefcase, tint: '#b45309', label: 'Publier un job', description: 'Mission ou opportunité', route: '/jobs' },
+  { Icon: CalendarPlus, tint: '#7c3aed', label: 'Créer un événement', description: 'Rencontre, atelier ou formation', route: '/search' },
+];
 
 export const QUICK_ACCENTS_LIGHT: [string, string][] = [
   ['#ecfdf5', '#f0fdfa'],
@@ -208,17 +215,19 @@ export const TRUST_HIGHLIGHTS: [string, string][] = [
   ['Données maîtrisées', 'Vos préférences et brouillons restent accessibles sur cet appareil.'],
 ];
 
-export const CORE_SERVICES = [
-  { emoji: '💱', title: 'Transferts', description: 'Envoyez, suivez et gérez vos opérations simplement.', route: '/transfers', tag: 'Essentiel', tone: 'success' },
-  { emoji: '🛍️', title: 'Marketplace', description: 'Achetez et vendez entre particuliers et entreprises.', route: '/marketplace', tag: 'Découvrir', tone: 'info' },
-  { emoji: '📦', title: 'Colis', description: 'Publiez, trouvez et réservez des kilos disponibles.', route: '/parcels', tag: 'Voyages', tone: 'warning' },
-  { emoji: '💼', title: 'Jobs', description: 'Découvrez des missions, jobs et opportunités professionnelles.', route: '/jobs', tag: 'Carrière', tone: 'success' },
-  { emoji: '🤝', title: 'Échangeurs', description: 'Trouvez des partenaires fiables et vérifiés.', route: '/organization', tag: 'Vérifiés', tone: 'violet' },
-  { emoji: '🔄', title: 'P2P', description: 'Publiez et trouvez des offres entre utilisateurs vérifiés.', route: '/marketplace', tag: 'Échanges', tone: 'rose' },
-  { emoji: '🏢', title: 'Entreprises', description: 'Explorez les services des professionnels MOXT.', route: '/organization', tag: 'Professionnel', tone: 'info' },
-  { emoji: '📅', title: 'Événements', description: 'Participez aux rencontres, ateliers et activités de la communauté.', route: '/search', tag: 'Agenda', tone: 'warning' },
-  { emoji: '📰', title: 'Actualité', description: 'Jobs, événements, actualités et opportunités.', route: '/search', tag: 'En direct', tone: 'violet' },
-] as const;
+export const CORE_SERVICES: {
+  Icon: LucideIcon; title: string; description: string; route: string; tag: string; tone: string;
+}[] = [
+  { Icon: ArrowLeftRight, title: 'Transferts', description: 'Envoyez, suivez et gérez vos opérations simplement.', route: '/transfers', tag: 'Essentiel', tone: 'success' },
+  { Icon: ShoppingBag, title: 'Marketplace', description: 'Achetez et vendez entre particuliers et entreprises.', route: '/marketplace', tag: 'Découvrir', tone: 'info' },
+  { Icon: Package, title: 'Colis', description: 'Publiez, trouvez et réservez des kilos disponibles.', route: '/parcels', tag: 'Voyages', tone: 'warning' },
+  { Icon: Briefcase, title: 'Jobs', description: 'Découvrez des missions, jobs et opportunités professionnelles.', route: '/jobs', tag: 'Carrière', tone: 'success' },
+  { Icon: Handshake, title: 'Échangeurs', description: 'Trouvez des partenaires fiables et vérifiés.', route: '/organization', tag: 'Vérifiés', tone: 'violet' },
+  { Icon: Repeat, title: 'P2P', description: 'Publiez et trouvez des offres entre utilisateurs vérifiés.', route: '/marketplace', tag: 'Échanges', tone: 'rose' },
+  { Icon: Building2, title: 'Entreprises', description: 'Explorez les services des professionnels MOXT.', route: '/organization', tag: 'Professionnel', tone: 'info' },
+  { Icon: CalendarDays, title: 'Événements', description: 'Participez aux rencontres, ateliers et activités de la communauté.', route: '/search', tag: 'Agenda', tone: 'warning' },
+  { Icon: Newspaper, title: 'Actualité', description: 'Jobs, événements, actualités et opportunités.', route: '/search', tag: 'En direct', tone: 'violet' },
+];
 
 export const LISTING_TYPES: Record<string, string> = {
   product: 'Produit', service: 'Service', rental: 'Location', vehicle: 'Véhicule',

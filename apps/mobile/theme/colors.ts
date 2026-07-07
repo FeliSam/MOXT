@@ -14,9 +14,12 @@ export const brand = {
 } as const;
 
 export const lightColors = {
-  background: '#f7f8fa',
+  // Surfaces empilées par nuances (séparation sans bordure)
+  background: '#eef1ef',
   surface: '#ffffff',
-  surfaceMuted: '#f3f4f6',
+  surfaceElevated: '#ffffff',
+  surfaceInteractive: '#f5f7f6',
+  surfaceMuted: '#f0f2f1',
 
   text: '#111827',
   textSecondary: '#374151',
@@ -73,9 +76,12 @@ export const lightColors = {
 };
 
 export const darkColors: ThemeColors = {
-  background: '#0c0c0e',
-  surface: '#141416',
-  surfaceMuted: '#1a1a1e',
+  // Surfaces empilées par nuances (élévation = teinte plus claire)
+  background: '#0a0d0c',
+  surface: '#141a18',
+  surfaceElevated: '#1b2320',
+  surfaceInteractive: '#222c28',
+  surfaceMuted: '#171d1b',
 
   text: '#fafafa',
   textSecondary: '#e5e5e5',
@@ -134,6 +140,8 @@ export const darkColors: ThemeColors = {
 export type ThemeColors = {
   background: string;
   surface: string;
+  surfaceElevated: string;
+  surfaceInteractive: string;
   surfaceMuted: string;
   text: string;
   textSecondary: string;
@@ -201,35 +209,51 @@ export const radii = {
   full: 999,
 } as const;
 
+/**
+ * Ombres volontairement quasi-invisibles : la profondeur est portée par les
+ * nuances de surface (surface / surfaceElevated / surfaceInteractive), pas par
+ * des ombres marquées. En dark mode on n'utilise aucune ombre (l'élévation se
+ * lit par la teinte plus claire de la surface).
+ */
 export function getShadows(isDark: boolean) {
+  if (isDark) {
+    const none = {
+      shadowColor: 'transparent',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0,
+      shadowRadius: 0,
+      elevation: 0,
+    };
+    return { card: none, cardHover: none, float: none, finance: none } as const;
+  }
   return {
     card: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: isDark ? 4 : 2 },
-      shadowOpacity: isDark ? 0.35 : 0.04,
-      shadowRadius: isDark ? 16 : 8,
-      elevation: isDark ? 4 : 2,
+      shadowColor: '#0f1714',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.05,
+      shadowRadius: 18,
+      elevation: 1,
     },
     cardHover: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: isDark ? 4 : 4 },
-      shadowOpacity: isDark ? 0.35 : 0.06,
-      shadowRadius: isDark ? 20 : 12,
-      elevation: isDark ? 6 : 4,
+      shadowColor: '#0f1714',
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.07,
+      shadowRadius: 24,
+      elevation: 2,
     },
     float: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: isDark ? 24 : 10 },
-      shadowOpacity: isDark ? 0.5 : 0.12,
-      shadowRadius: isDark ? 64 : 24,
-      elevation: isDark ? 12 : 8,
+      shadowColor: '#0f1714',
+      shadowOffset: { width: 0, height: 16 },
+      shadowOpacity: 0.09,
+      shadowRadius: 34,
+      elevation: 3,
     },
     finance: {
-      shadowColor: isDark ? brand[400] : brand[700],
-      shadowOffset: { width: 0, height: isDark ? 8 : 4 },
-      shadowOpacity: isDark ? 0.12 : 0.08,
-      shadowRadius: isDark ? 32 : 24,
-      elevation: isDark ? 6 : 3,
+      shadowColor: brand[700],
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.06,
+      shadowRadius: 28,
+      elevation: 2,
     },
   } as const;
 }

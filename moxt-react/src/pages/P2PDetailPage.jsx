@@ -87,6 +87,7 @@ export function P2PDetailPage() {
           <div className="mt-5 grid gap-3">
             <ContactButton
               ownerId={offer.ownerId}
+              relatedEntity={offer}
               relatedId={offer.id}
               relatedPath={`/p2p/${offer.id}`}
               relatedTitle={`${offer.fromCurrency} vers ${offer.toCurrency}`}

@@ -1,5 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import { ArrowUpRight, ChevronRight, type LucideIcon } from 'lucide-react-native';
 
 import { tw } from '@/constants/dashboardTailwind';
 import { cn } from '@/lib/cn';
@@ -29,14 +30,16 @@ export function DashboardSectionHeading({
 }
 
 export function DashboardCardHeader({
-  emoji,
+  Icon,
   iconClass,
+  iconColor = '#08705f',
   title,
   subtitle,
   onOpen,
 }: {
-  emoji: string;
+  Icon: LucideIcon;
   iconClass: string;
+  iconColor?: string;
   title: string;
   subtitle: string;
   onOpen?: () => void;
@@ -44,7 +47,7 @@ export function DashboardCardHeader({
   return (
     <View className="flex-row items-start gap-3">
       <View className={cn(tw.cardIcon, iconClass)}>
-        <Text className="text-lg">{emoji}</Text>
+        <Icon size={20} color={iconColor} strokeWidth={2.2} />
       </View>
       <View className="min-w-0 flex-1">
         <Text className={cn(tw.cardTitle, 'text-lg font-display')}>{title}</Text>
@@ -54,7 +57,7 @@ export function DashboardCardHeader({
         <Pressable
           className="h-10 w-10 items-center justify-center rounded-2xl bg-app-surface-muted dark:bg-zinc-800"
           onPress={onOpen}>
-          <Text className="text-sm text-app-text dark:text-zinc-50">↗</Text>
+          <ArrowUpRight size={16} color="#6b7280" strokeWidth={2.4} />
         </Pressable>
       ) : null}
     </View>

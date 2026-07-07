@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { Search, ShoppingBag, Heart } from 'lucide-react-native';
 
 import { formatCurrency } from '@moxt/shared/utils/formatters.js';
 
@@ -65,14 +66,14 @@ function ListingCard({ listing, width }: { listing: ListingItem; width: number }
         {listing.images?.[0] ? (
           <Image source={{ uri: listing.images[0] }} style={StyleSheet.absoluteFill as any} resizeMode="cover" />
         ) : (
-          <Text style={{ fontSize: 28 }}>🛍️</Text>
+          <ShoppingBag size={28} color={brand[700]} strokeWidth={1.8} />
         )}
         {/* Heart */}
         <Pressable
           onPress={(e) => { e.stopPropagation(); toggleLike(); }}
           hitSlop={8}
           style={[styles.heartBtn, { backgroundColor: liked ? '#e11d48' : 'rgba(0,0,0,0.3)' }]}>
-          <Text style={{ fontSize: 12, color: '#fff' }}>♥</Text>
+          <Heart size={14} color="#fff" strokeWidth={2.2} fill={liked ? '#fff' : 'transparent'} />
         </Pressable>
       </View>
 
@@ -168,7 +169,7 @@ export default function MarketplaceScreen() {
           </Pressable>
         </View>
         <View style={[styles.searchBar, { backgroundColor: colors.inputBg }]}>
-          <Text style={{ fontSize: 14 }}>🔍</Text>
+          <Search size={16} color={colors.textFaint} strokeWidth={2.2} />
           <TextInput
             placeholder="Rechercher titre, ville, catégorie..."
             placeholderTextColor={colors.textFaint}
@@ -224,7 +225,7 @@ export default function MarketplaceScreen() {
           ListEmptyComponent={
             <View style={styles.empty}>
               <View style={[styles.emptyIcon, { backgroundColor: brand[50] }]}>
-                <Text style={{ fontSize: 32 }}>🛍️</Text>
+                <ShoppingBag size={32} color={brand[700]} strokeWidth={1.8} />
               </View>
               <Text style={[styles.emptyTitle, { color: colors.text }]}>Aucune annonce</Text>
               <Text style={[styles.emptyText, { color: colors.textMuted }]}>

@@ -145,6 +145,7 @@ export function BusinessDetailPage() {
           <div className="mt-5 flex flex-wrap gap-3">
             <ContactButton
               ownerId={business.ownerId}
+              relatedEntity={business}
               relatedId={business.id}
               relatedPath={`/businesses/${business.id}`}
               relatedTitle={business.name}

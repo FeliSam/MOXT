@@ -130,6 +130,7 @@ export function EventDetailPage() {
           <div className="mt-4">
             <ContactButton
               ownerId={event.ownerId}
+              relatedEntity={event}
               relatedId={event.id}
               relatedPath={`/events/${event.id}`}
               relatedTitle={event.title}

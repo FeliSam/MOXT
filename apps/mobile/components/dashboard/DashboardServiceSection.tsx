@@ -36,7 +36,7 @@ export function DashboardServiceSection() {
               style={{ width: dashboardWidths.service }}
               className={cn(tw.serviceCard, 'bg-white shadow-sm dark:bg-zinc-900')}>
               <View className="mx-auto -mb-1 h-16 w-16 items-center justify-center rounded-2xl bg-brand-100 dark:bg-brand-950/45">
-                <Text className="text-[2rem]">{service.emoji}</Text>
+                <service.Icon size={30} color="#08705f" strokeWidth={2.1} />
               </View>
               <Text className={tw.serviceTitle}>{service.title}</Text>
               <Text className={tw.serviceDesc} numberOfLines={3}>
