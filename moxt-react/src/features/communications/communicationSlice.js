@@ -1,4 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
+import { fetchUserConversations } from '@moxt/shared/utils/fetchUserConversations.js'
 import { supabase } from '../../services/supabaseClient'
 import { fromRow, fromRows } from '../../services/remoteRowMapper'
 import { createLocalStorage } from '../../services/createLocalStorage'
@@ -899,12 +900,7 @@ export const refreshConversations = createAsyncThunk(
     const uid = getState().auth.user?.id
     if (!uid || !supabase) return 0
 
-    const { data, error } = await supabase
-      .from('conversations')
-      .select('*')
-      .contains('participant_ids', [uid])
-      .order('updated_at', { ascending: false })
-      .limit(100)
+    const { data, error } = await fetchUserConversations(supabase, uid, { limit: 100 })
     if (error) throw error
 
     const conversations = mergeConversations(

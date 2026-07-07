@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+import { fetchUserConversations } from '@moxt/shared/utils/fetchUserConversations.js';
 import { supabase } from '../services/supabase';
 
 export type Message = {
@@ -241,11 +242,7 @@ export const loadConversations = createAsyncThunk(
   'messages/loadConversations',
   async (userId: string) => {
     if (!supabase) return [];
-    const { data, error } = await supabase
-      .from('conversations')
-      .select('*')
-      .contains('participant_ids', [userId])
-      .order('updated_at', { ascending: false });
+    const { data, error } = await fetchUserConversations(supabase, userId, { limit: 100 });
     if (error) throw new Error(error.message);
 
     const byKey = new Map<string, Conversation>();

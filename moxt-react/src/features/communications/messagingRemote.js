@@ -60,13 +60,33 @@ function isUuid(value) {
   )
 }
 
+function jsonbValue(value, fallback) {
+  if (value === undefined || value === null) return fallback
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value)
+    } catch {
+      return fallback
+    }
+  }
+  return value
+}
+
 export function conversationToRemoteRow(conversation) {
   const normalized = normalizeConversation(conversation)
   const row = {}
   for (const field of CONVERSATION_REMOTE_FIELDS) {
     if (normalized[field] === undefined) continue
     const remoteKey = FIELD_MAP[field] ?? field
-    row[remoteKey] = normalized[field]
+    if (remoteKey === 'participant_ids') {
+      row[remoteKey] = jsonbValue(normalized.participantIds, [])
+    } else if (['archived_by', 'pinned_by', 'muted_by', 'blocked_by'].includes(remoteKey)) {
+      row[remoteKey] = jsonbValue(normalized[field], [])
+    } else if (['unread_by', 'participant_profiles', 'related_snapshot', 'related_contexts'].includes(remoteKey)) {
+      row[remoteKey] = jsonbValue(normalized[field], remoteKey === 'unread_by' || remoteKey === 'participant_profiles' ? {} : null)
+    } else {
+      row[remoteKey] = normalized[field]
+    }
   }
   row.participant_key = participantKey(normalized.participantIds)
   row.message_count = normalized.messageCount ?? normalized.messages?.length ?? 0

@@ -298,12 +298,16 @@ const handlers = {
     )
 
     const msg = payload.message
+    const unreadBy =
+      conversation.unreadBy && typeof conversation.unreadBy === 'object'
+        ? { ...conversation.unreadBy }
+        : {}
     await supabase
       .from('conversations')
       .update({
         updated_at: msg.createdAt,
         message_count: conversation.messageCount ?? null,
-        unread_by: conversation.unreadBy ?? null,
+        unread_by: unreadBy,
       })
       .eq('id', canonicalId)
   },

@@ -16,6 +16,7 @@ import { setAll as setAccount } from '../features/account/accountSlice'
 import { setAll as setPosts } from '../features/posts/postsSlice'
 import { listingFromRemoteRow } from '../features/marketplace/marketplaceRemote'
 import { fromRow, fromRows } from '../services/remoteRowMapper'
+import { fetchUserConversations } from '@moxt/shared/utils/fetchUserConversations.js'
 
 // Nombre max de lignes pour les tables publiques paginées au login
 const PUBLIC_LIMIT = 50
@@ -53,8 +54,6 @@ export const loadAllData = createAsyncThunk(
       eventsRes, eventRegistrationsRes,
       businessesRes,
       transfersRes,
-      // Conversations sans messages — les messages sont chargés à la demande
-      conversationsRes,
       favoritesRes, transferProfilesRes, verificationRequestsRes, personalDocumentsRes,
       p2pOffersRes, p2pOrdersRes,
       reviewsRes,
@@ -72,8 +71,6 @@ export const loadAllData = createAsyncThunk(
       supabase.from('event_registrations').select('*').eq('user_id', uid).limit(USER_LIMIT),
       supabase.from('businesses').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
       supabase.from('transfers').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(USER_LIMIT),
-      // Métadonnées seulement — pas de messages embarqués pour éviter le chargement massif
-      supabase.from('conversations').select('*').contains('participant_ids', [uid]).order('updated_at', { ascending: false }).limit(100),
       supabase.from('favorites').select('*').eq('user_id', uid).limit(USER_LIMIT),
       supabase.from('transfer_profiles').select('*').eq('user_id', uid).limit(USER_LIMIT),
       supabase.from('verification_requests').select('*').eq('user_id', uid).limit(USER_LIMIT),
@@ -89,11 +86,19 @@ export const loadAllData = createAsyncThunk(
     ])
 
     assertLoaded(listingsRes, 'des annonces')
-    assertLoaded(conversationsRes, 'des conversations')
+
+    const { data: conversationRows, error: conversationsError } = await fetchUserConversations(
+      supabase,
+      uid,
+      { limit: 100 },
+    )
+    if (conversationsError) {
+      console.warn('[MOXT] Chargement des conversations:', conversationsError.message)
+    }
 
     const conversations = mergeConversations(
       getState().communications.conversations,
-      fromRows(conversationsRes.data).map((conv) =>
+      fromRows(conversationRows || []).map((conv) =>
         normalizeConversation({ ...conv, messages: [], messagesLoaded: false }),
       ),
     )
