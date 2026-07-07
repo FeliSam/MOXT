@@ -2,12 +2,13 @@
 # https://docs.netlify.com/configure-builds/file-based-configuration/
 
 [build]
-  command = "npm run web:build"
+  command = "node scripts/write-vite-env.mjs && npm run web:build"
   publish = "moxt-react/dist"
 
 [build.environment]
   NODE_VERSION = "22"
   NPM_FLAGS = "--include=dev"
+  VITE_SUPABASE_URL = "https://rbvqfkccbkwjxkvpnwqn.supabase.co"
 
 # React Router : toutes les routes → index.html
 [[redirects]]

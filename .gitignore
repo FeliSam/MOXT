@@ -11,6 +11,7 @@ web-build/
 .env
 .env.local
 .env.*.local
+moxt-react/.env.production
 
 # Logs & caches
 logs/
