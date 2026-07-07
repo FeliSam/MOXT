@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   FiArchive,
   FiArrowLeft,
@@ -12,7 +12,8 @@ import {
 } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { useSelector } from 'react-redux'
-import { RELATED_CONTENT_META } from '../../config/communications'
+import { getConversationPeer } from '../../features/communications/conversationDisplay'
+import { buildConversationTimeline } from '../../features/communications/conversationTimeline'
 import { resolveRelatedSnapshot } from '../../features/communications/relatedSnapshot'
 import {
   MessageAvatar,
@@ -23,8 +24,8 @@ import {
   shouldGroupMessages,
 } from './MessageBubble'
 import { conversationMessageCount } from './messageUtils'
-import { initials } from './format'
 import { RelatedContentPreview } from './RelatedContentPreview'
+import { MessageAvatar } from './MessageBubble'
 
 export function ConversationPanel({
   active,
@@ -50,8 +51,9 @@ export function ConversationPanel({
   muted,
   pinned,
 }) {
-  const meta = RELATED_CONTENT_META[active.relatedType] || RELATED_CONTENT_META.general
+  const peer = getConversationPeer(active, user.id)
   const relatedPreview = useSelector((state) => resolveRelatedSnapshot(state, active))
+  const timeline = useMemo(() => buildConversationTimeline(active, user.id), [active, user.id])
   const messageListRef = useRef(null)
   const composerRef = useRef(null)
   const menuRef = useRef(null)
@@ -65,7 +67,7 @@ export function ConversationPanel({
     if (messageList) {
       messageList.scrollTop = messageList.scrollHeight
     }
-  }, [active.id, active.messages.length])
+  }, [active.id, active.messages.length, active.relatedContexts?.length])
 
   useLayoutEffect(() => {
     const el = composerRef.current
@@ -95,26 +97,20 @@ export function ConversationPanel({
         >
           <FiArrowLeft />
         </button>
-        <span
-          className={`grid size-12 shrink-0 place-items-center rounded-[1rem] text-sm font-black text-white shadow-[var(--shadow-card)] ${meta.tone}`}
-          style={{
-            background: 'linear-gradient(135deg, var(--app-accent), var(--app-teal))',
-          }}
-        >
-          {initials(active.title)}
-        </span>
+        <MessageAvatar
+          avatarUrl={peer.avatarUrl}
+          className="!size-12 !rounded-[1rem] shadow-[var(--shadow-card)]"
+          name={peer.name}
+        />
         <div className="min-w-0 flex-1 pr-2">
           <div className="flex min-w-0 items-center gap-2">
             <h2 className="truncate text-base font-black tracking-tight sm:text-[1.05rem]">
-              {active.title}
+              {peer.name}
             </h2>
             {pinned ? <FiStar className="shrink-0 text-amber-500" aria-label="Épinglée" /> : null}
             {muted ? <FiBellOff className="shrink-0 text-[var(--app-text-faint)]" aria-label="En sourdine" /> : null}
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-2">
-            <span className="inline-flex rounded-full bg-[var(--app-accent-soft)] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--app-accent)]">
-              {meta.label}
-            </span>
             <span className="text-xs text-[var(--app-text-muted)]">
               {messageCount
                 ? `${messageCount} message${messageCount > 1 ? 's' : ''}`
@@ -209,7 +205,6 @@ export function ConversationPanel({
         data-testid="message-scroll-region"
       >
         <div className="mx-auto flex max-w-3xl flex-col">
-          {relatedPreview ? <RelatedContentPreview preview={relatedPreview} /> : null}
           {messagesLoading ? (
             <div className="flex flex-col gap-4 py-6">
               {[...Array(4)].map((_, i) => (
@@ -223,66 +218,86 @@ export function ConversationPanel({
               ))}
             </div>
           ) : (
-            <MessageThreadStart />
-          )}
-          {!messagesLoading &&
-            active.messages.map((message, index) => {
-              if (message.deletedBy?.includes(user.id)) return null
+            <>
+              <MessageThreadStart />
+              {timeline.map((item, index) => {
+                const previous = timeline[index - 1]
+                const showDate =
+                  !previous || previous.at.toDateString() !== item.at.toDateString()
 
-              const mine = message.senderId === user.id
-              const previous = active.messages[index - 1]
-              const next = active.messages[index + 1]
-              const showDate =
-                !previous ||
-                new Date(previous.createdAt).toDateString() !==
-                  new Date(message.createdAt).toDateString()
-              const groupedWithPrevious = shouldGroupMessages(previous, message, showDate)
-              const groupedWithNext =
-                next &&
-                !next.deletedBy?.includes(user.id) &&
-                shouldGroupMessages(
-                  message,
-                  next,
-                  new Date(message.createdAt).toDateString() !==
-                    new Date(next.createdAt).toDateString(),
-                )
-              const showSenderName = !mine && !groupedWithPrevious
-              const repliedMessage = active.messages.find((item) => item.id === message.replyToId)
+                if (item.kind === 'related') {
+                  return (
+                    <div key={item.id}>
+                      {showDate ? <MessageDateSeparator date={item.at} /> : null}
+                      <RelatedContentPreview inline preview={item.preview} />
+                    </div>
+                  )
+                }
 
-              return (
-                <div key={message.id}>
-                  {showDate ? <MessageDateSeparator date={new Date(message.createdAt)} /> : null}
-                  <div
-                    className={`message-row ${mine ? 'message-row--sent' : ''} ${
-                      groupedWithPrevious ? 'message-row--grouped' : 'message-row--spaced'
-                    }`}
-                  >
-                    {!mine ? (
-                      <MessageAvatar name={message.senderName} hidden={groupedWithPrevious} />
-                    ) : null}
-                    <MessageBubble
-                      groupedWithNext={groupedWithNext}
-                      groupedWithPrevious={groupedWithPrevious}
-                      message={message}
-                      mine={mine}
-                      onCloseActions={() => setOpenActionsId(null)}
-                      onDelete={onDelete}
-                      onEdit={onEdit}
-                      onReply={onReply}
-                      onShare={onShare}
-                      onToggleActions={() =>
-                        setOpenActionsId((current) => (current === message.id ? null : message.id))
-                      }
-                      openActions={openActionsId === message.id}
-                      repliedMessage={repliedMessage}
-                      showSenderName={showSenderName}
-                      user={user}
-                    />
+                const message = item.message
+                const mine = message.senderId === user.id
+                let previousMessage = null
+                for (let cursor = index - 1; cursor >= 0; cursor -= 1) {
+                  if (timeline[cursor].kind === 'message') {
+                    previousMessage = timeline[cursor].message
+                    break
+                  }
+                }
+                let nextMessage = null
+                for (let cursor = index + 1; cursor < timeline.length; cursor += 1) {
+                  if (timeline[cursor].kind === 'message') {
+                    nextMessage = timeline[cursor].message
+                    break
+                  }
+                }
+                const groupedWithPrevious = shouldGroupMessages(previousMessage, message, showDate)
+                const groupedWithNext =
+                  nextMessage &&
+                  shouldGroupMessages(
+                    message,
+                    nextMessage,
+                    new Date(message.createdAt).toDateString() !==
+                      new Date(nextMessage.createdAt).toDateString(),
+                  )
+                const showSenderName = !mine && !groupedWithPrevious
+                const repliedMessage = active.messages.find((entry) => entry.id === message.replyToId)
+
+                return (
+                  <div key={message.id}>
+                    {showDate ? <MessageDateSeparator date={item.at} /> : null}
+                    <div
+                      className={`message-row ${mine ? 'message-row--sent' : ''} ${
+                        groupedWithPrevious ? 'message-row--grouped' : 'message-row--spaced'
+                      }`}
+                    >
+                      {!mine ? (
+                        <MessageAvatar name={message.senderName} hidden={groupedWithPrevious} />
+                      ) : null}
+                      <MessageBubble
+                        groupedWithNext={groupedWithNext}
+                        groupedWithPrevious={groupedWithPrevious}
+                        message={message}
+                        mine={mine}
+                        onCloseActions={() => setOpenActionsId(null)}
+                        onDelete={onDelete}
+                        onEdit={onEdit}
+                        onReply={onReply}
+                        onShare={onShare}
+                        onToggleActions={() =>
+                          setOpenActionsId((current) => (current === message.id ? null : message.id))
+                        }
+                        openActions={openActionsId === message.id}
+                        repliedMessage={repliedMessage}
+                        showSenderName={showSenderName}
+                        user={user}
+                      />
+                    </div>
                   </div>
-                </div>
-              )
-            })}
-          {!messagesLoading && !active.messages.length ? <MessageEmptyState /> : null}
+                )
+              })}
+              {!timeline.length ? <MessageEmptyState /> : null}
+            </>
+          )}
         </div>
       </div>
 

@@ -8,6 +8,8 @@ const CONVERSATION_REMOTE_FIELDS = [
   'relatedId',
   'relatedPath',
   'relatedSnapshot',
+  'relatedContexts',
+  'participantProfiles',
   'participantIds',
   'createdBy',
   'status',
@@ -27,6 +29,8 @@ const FIELD_MAP = {
   relatedType: 'related_type',
   relatedPath: 'related_path',
   relatedSnapshot: 'related_snapshot',
+  relatedContexts: 'related_contexts',
+  participantProfiles: 'participant_profiles',
   participantIds: 'participant_ids',
   unreadBy: 'unread_by',
   archivedBy: 'archived_by',
@@ -49,6 +53,13 @@ function jsonOrNull(value) {
   return typeof value === 'string' ? value : JSON.stringify(value)
 }
 
+function isUuid(value) {
+  return (
+    typeof value === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+  )
+}
+
 export function conversationToRemoteRow(conversation) {
   const normalized = normalizeConversation(conversation)
   const row = {}
@@ -62,14 +73,21 @@ export function conversationToRemoteRow(conversation) {
   if (normalized.relatedSnapshot) {
     row.related_snapshot = normalized.relatedSnapshot
   }
+  if (!isUuid(normalized.createdBy)) {
+    delete row.created_by
+  }
   return row
 }
 
 export function messageToRemoteRow(message, conversationId) {
+  const senderId = isUuid(message.senderId) ? message.senderId : null
+  if (!senderId) {
+    throw new Error('Expéditeur du message invalide.')
+  }
   return {
     id: message.id,
     conversation_id: conversationId,
-    sender_id: message.senderId,
+    sender_id: senderId,
     sender_name: message.senderName,
     text: message.text,
     attachment: jsonOrNull(message.attachment),

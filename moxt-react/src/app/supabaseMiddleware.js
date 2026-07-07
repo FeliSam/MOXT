@@ -1,6 +1,13 @@
 import { supabase } from '../services/supabaseClient'
 import { saveListingRemote } from '../features/marketplace/marketplaceRemote'
-import { persistConversationRemote, persistMessageRemote } from '../features/communications/conversationPersist'
+import {
+  persistConversationRemote,
+  persistMessageForConversation,
+  persistMessageRemote,
+  resolveCanonicalConversationId,
+} from '../features/communications/conversationPersist'
+import { normalizeConversation, replaceConversationId } from '../features/communications/communicationSlice'
+import { fromRow } from '../services/remoteRowMapper'
 import { addToast } from '../features/ui/uiSlice'
 
 async function triggerEmail(transferId, event) {
@@ -134,8 +141,24 @@ async function syncConversationRow(state, conversationId) {
   await persistConversationRemote(conversation)
 }
 
-async function syncMessageRow(message, conversationId) {
-  await persistMessageRemote(message, conversationId)
+async function reconcileConversation(dispatch, conversation, remoteRow) {
+  dispatch(
+    replaceConversationId({
+      fromId: conversation.id,
+      conversation: normalizeConversation({
+        ...fromRow(remoteRow),
+        messages: conversation.messages || [],
+        messagesLoaded: conversation.messagesLoaded ?? false,
+      }),
+    }),
+  )
+}
+
+async function syncMessageRow(message, conversation, dispatch) {
+  const canonicalId = await resolveCanonicalConversationId(conversation, ({ fromId, remoteRow }) => {
+    if (fromId !== conversation.id) reconcileConversation(dispatch, conversation, remoteRow)
+  })
+  await persistMessageRemote(message, canonicalId)
 }
 
 // Retry avec backoff exponentiel — max 3 tentatives
@@ -258,27 +281,31 @@ const handlers = {
         await persistMessageRemote(msg, canonicalId)
       }
     }
+    return canonicalId
   },
-  'communications/sendMessage': async (payload, state) => {
+  'communications/sendMessage': async (payload, state, dispatch) => {
     const conversation = state.communications.conversations.find(
       (c) => c.id === payload.conversationId,
     )
-
-    if (conversation) {
-      await syncConversationRow(state, payload.conversationId)
+    if (!conversation) {
+      throw new Error('Conversation introuvable.')
     }
 
-    const msg = payload.message
-    await syncMessageRow(msg, payload.conversationId)
+    const canonicalId = await persistMessageForConversation(
+      payload.message,
+      conversation,
+      ({ remoteRow }) => reconcileConversation(dispatch, conversation, remoteRow),
+    )
 
+    const msg = payload.message
     await supabase
       .from('conversations')
       .update({
         updated_at: msg.createdAt,
-        message_count: conversation?.messageCount ?? null,
-        unread_by: conversation?.unreadBy ?? null,
+        message_count: conversation.messageCount ?? null,
+        unread_by: conversation.unreadBy ?? null,
       })
-      .eq('id', payload.conversationId)
+      .eq('id', canonicalId)
   },
   'communications/markConversationRead': async (payload, state) => {
     await syncConversationRow(state, payload.conversationId)
@@ -301,19 +328,23 @@ const handlers = {
   'communications/toggleConversationBlock': async (payload, state) => {
     await syncConversationRow(state, payload.id)
   },
-  'communications/reactToMessage': async (payload, state) => {
+  'communications/reactToMessage': async (payload, state, dispatch) => {
     const conversation = state.communications.conversations.find(
       (c) => c.id === payload.conversationId,
     )
     const message = conversation?.messages.find((m) => m.id === payload.messageId)
-    if (message) await syncMessageRow(message, payload.conversationId)
+    if (message && conversation) {
+      await syncMessageRow(message, conversation, dispatch)
+    }
   },
-  'communications/deleteMessageLocally': async (payload, state) => {
+  'communications/deleteMessageLocally': async (payload, state, dispatch) => {
     const conversation = state.communications.conversations.find(
       (c) => c.id === payload.conversationId,
     )
     const message = conversation?.messages.find((m) => m.id === payload.messageId)
-    if (message) await syncMessageRow(message, payload.conversationId)
+    if (message && conversation) {
+      await syncMessageRow(message, conversation, dispatch)
+    }
   },
 
   // ── Transferts ────────────────────────────────────────────────────────────────
@@ -490,7 +521,7 @@ export const supabaseMiddleware = (store) => (next) => (action) => {
 
   const handler = handlers[action.type]
   if (handler && supabase) {
-    withRetry(() => handler(action.payload, store.getState())).catch((err) => {
+    withRetry(() => handler(action.payload, store.getState(), store.dispatch)).catch((err) => {
       console.warn('[Supabase]', action.type, err?.message || err)
       store.dispatch(
         addToast({

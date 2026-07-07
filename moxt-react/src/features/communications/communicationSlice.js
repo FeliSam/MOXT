@@ -4,6 +4,13 @@ import { fromRow, fromRows } from '../../services/remoteRowMapper'
 import { createLocalStorage } from '../../services/createLocalStorage'
 import { findConversationByParticipants, participantKey } from './conversationUtils'
 import { persistConversationRemote } from './conversationPersist'
+import {
+  buildParticipantProfilesMap,
+  fetchParticipantProfilesFromRemote,
+  formatProfileName,
+  mergeParticipantProfiles,
+} from './conversationDisplay'
+import { appendRelatedContext, normalizeRelatedContexts } from './conversationTimeline'
 
 const PENDING_MESSAGE_MS = 15000
 
@@ -64,7 +71,9 @@ export function normalizeMessage(message) {
 
 export function normalizeConversation(conv) {
   if (!conv) return conv
-  return {
+  const relatedSnapshot = parseJsonValue(conv.relatedSnapshot, conv.relatedSnapshot ?? null)
+  const relatedContexts = parseJsonValue(conv.relatedContexts, conv.relatedContexts ?? [])
+  const base = {
     ...conv,
     participantIds: parseIdList(conv.participantIds),
     unreadBy: parseRecord(conv.unreadBy),
@@ -72,7 +81,8 @@ export function normalizeConversation(conv) {
     pinnedBy: parseIdList(conv.pinnedBy),
     mutedBy: parseIdList(conv.mutedBy),
     blockedBy: parseIdList(conv.blockedBy),
-    relatedSnapshot: parseJsonValue(conv.relatedSnapshot, conv.relatedSnapshot ?? null),
+    relatedSnapshot,
+    participantProfiles: parseJsonValue(conv.participantProfiles, conv.participantProfiles ?? {}),
     messages: Array.isArray(conv.messages) ? conv.messages : [],
     messagesLoaded: conv.messagesLoaded ?? false,
     messagesLoading: conv.messagesLoading ?? false,
@@ -80,6 +90,10 @@ export function normalizeConversation(conv) {
       Number(conv.messageCount) || 0,
       Array.isArray(conv.messages) ? conv.messages.length : 0,
     ),
+  }
+  return {
+    ...base,
+    relatedContexts: normalizeRelatedContexts({ ...base, relatedContexts }),
   }
 }
 
@@ -282,14 +296,29 @@ const communicationSlice = createSlice({
     updateConversationContext(state, action) {
       const conversation = state.conversations.find((item) => item.id === action.payload.id)
       if (!conversation) return
-      if (action.payload.title) conversation.title = action.payload.title
       if (action.payload.relatedType) conversation.relatedType = action.payload.relatedType
       if (action.payload.relatedId) conversation.relatedId = action.payload.relatedId
       if (action.payload.relatedPath) conversation.relatedPath = action.payload.relatedPath
       if (action.payload.relatedSnapshot !== undefined) {
         conversation.relatedSnapshot = action.payload.relatedSnapshot
+        const withContext = appendRelatedContext(conversation, {
+          relatedType: action.payload.relatedType || conversation.relatedType,
+          relatedId: action.payload.relatedId || conversation.relatedId,
+          relatedPath: action.payload.relatedPath || conversation.relatedPath,
+          relatedSnapshot: action.payload.relatedSnapshot,
+          introducedBy: action.payload.introducedBy,
+        })
+        conversation.relatedContexts = withContext.relatedContexts
       }
       conversation.updatedAt = new Date().toISOString()
+    },
+    mergeConversationParticipantProfiles(state, action) {
+      const conversation = state.conversations.find((item) => item.id === action.payload.id)
+      if (!conversation || !action.payload.participantProfiles) return
+      conversation.participantProfiles = mergeParticipantProfiles(
+        conversation.participantProfiles,
+        action.payload.participantProfiles,
+      )
     },
     createConversation: {
       reducer(state, action) {
@@ -298,15 +327,28 @@ const communicationSlice = createSlice({
         const existing = findConversationByParticipants(state.conversations, payload.participantIds)
         if (existing) {
           const index = state.conversations.findIndex((item) => item.id === existing.id)
-          state.conversations[index] = {
+          let merged = {
             ...state.conversations[index],
-            title: payload.title || state.conversations[index].title,
             relatedType: payload.relatedType || state.conversations[index].relatedType,
             relatedId: payload.relatedId || state.conversations[index].relatedId,
             relatedPath: payload.relatedPath || state.conversations[index].relatedPath,
             relatedSnapshot: payload.relatedSnapshot ?? state.conversations[index].relatedSnapshot,
+            participantProfiles: mergeParticipantProfiles(
+              state.conversations[index].participantProfiles,
+              payload.participantProfiles,
+            ),
             updatedAt: new Date().toISOString(),
           }
+          if (payload.relatedSnapshot && payload.relatedId) {
+            merged = appendRelatedContext(merged, {
+              relatedType: payload.relatedType,
+              relatedId: payload.relatedId,
+              relatedPath: payload.relatedPath,
+              relatedSnapshot: payload.relatedSnapshot,
+              introducedBy: payload.createdBy,
+            })
+          }
+          state.conversations[index] = merged
           bumpConversationToTop(state, existing.id)
           return
         }
@@ -314,37 +356,47 @@ const communicationSlice = createSlice({
       },
       prepare(values) {
         const now = new Date().toISOString()
-        return {
-          payload: {
-            id: `CONV-${Date.now().toString(36).toUpperCase()}`,
-            title: values.title,
-            relatedType: values.relatedType || 'general',
-            relatedId: values.relatedId || null,
-            relatedPath: values.relatedPath || null,
-            relatedSnapshot: values.relatedSnapshot || null,
-            participantIds: [...new Set(values.participantIds)],
-            createdBy: values.createdBy,
-            status: 'active',
-            unreadBy: Object.fromEntries(
-              values.participantIds.map((participantId) => [participantId, 0]),
-            ),
-            messages: values.initialMessage
-              ? [
-                  {
-                    id: `MSG-${Date.now().toString(36).toUpperCase()}`,
-                    senderId: values.createdBy,
-                    senderName: values.senderName,
-                    text: values.initialMessage,
-                    createdAt: now,
-                  },
-                ]
-              : [],
-            messageCount: values.initialMessage ? 1 : 0,
-            messagesLoaded: Boolean(values.initialMessage),
-            createdAt: now,
-            updatedAt: now,
-          },
+        let payload = {
+          id: `CONV-${Date.now().toString(36).toUpperCase()}`,
+          title: values.title,
+          relatedType: values.relatedType || 'general',
+          relatedId: values.relatedId || null,
+          relatedPath: values.relatedPath || null,
+          relatedSnapshot: values.relatedSnapshot || null,
+          participantProfiles: values.participantProfiles || {},
+          participantIds: [...new Set(values.participantIds)],
+          createdBy: values.createdBy,
+          status: 'active',
+          unreadBy: Object.fromEntries(
+            values.participantIds.map((participantId) => [participantId, 0]),
+          ),
+          messages: values.initialMessage
+            ? [
+                {
+                  id: `MSG-${Date.now().toString(36).toUpperCase()}`,
+                  senderId: values.createdBy,
+                  senderName: values.senderName,
+                  text: values.initialMessage,
+                  createdAt: now,
+                },
+              ]
+            : [],
+          messageCount: values.initialMessage ? 1 : 0,
+          messagesLoaded: Boolean(values.initialMessage),
+          createdAt: now,
+          updatedAt: now,
         }
+        if (values.relatedSnapshot && values.relatedId) {
+          payload = appendRelatedContext(payload, {
+            relatedType: values.relatedType,
+            relatedId: values.relatedId,
+            relatedPath: values.relatedPath,
+            relatedSnapshot: values.relatedSnapshot,
+            introducedBy: values.createdBy,
+            introducedAt: now,
+          })
+        }
+        return { payload }
       },
     },
     sendMessage: {
@@ -608,6 +660,16 @@ const communicationSlice = createSlice({
           conversation.messagesLoaded = true
         }
       })
+      .addCase('communications/loadParticipantProfiles/fulfilled', (state, action) => {
+        const profiles = action.payload || {}
+        if (!Object.keys(profiles).length) return
+        for (const conversation of state.conversations) {
+          const merged = mergeParticipantProfiles(conversation.participantProfiles, profiles)
+          if (JSON.stringify(merged) !== JSON.stringify(conversation.participantProfiles)) {
+            conversation.participantProfiles = merged
+          }
+        }
+      })
   },
 })
 
@@ -631,20 +693,44 @@ export const loadConversationMessages = createAsyncThunk(
   },
 )
 
+export const loadParticipantProfiles = createAsyncThunk(
+  'communications/loadParticipantProfiles',
+  async (participantIds) => fetchParticipantProfilesFromRemote(participantIds),
+)
+
 export const openConversationWithContact = createAsyncThunk(
   'communications/openConversationWithContact',
   async (
-    { ownerId, title, relatedType, relatedId, relatedPath, relatedSnapshot, createdBy, senderName },
+    {
+      ownerId,
+      relatedType,
+      relatedId,
+      relatedPath,
+      relatedSnapshot,
+      createdBy,
+      senderName,
+      contactProfile,
+    },
     { dispatch, getState },
   ) => {
     const participantIds = [createdBy, ownerId]
+    const currentUser = getState().auth.user
+    const remoteProfiles = await fetchParticipantProfilesFromRemote(participantIds)
+    const participantProfiles = buildParticipantProfilesMap({
+      participantIds,
+      remoteProfiles,
+      currentUser,
+      ownerId,
+      contactProfile,
+    })
+    const peerTitle = formatProfileName(participantProfiles[ownerId]) || 'Utilisateur'
+
     let conversation = findConversationByParticipants(
       getState().communications.conversations,
       participantIds,
     )
 
     const contextPatch = {
-      title,
       relatedType,
       relatedId,
       relatedPath,
@@ -656,6 +742,13 @@ export const openConversationWithContact = createAsyncThunk(
         updateConversationContext({
           id: conversation.id,
           ...contextPatch,
+          introducedBy: createdBy,
+        }),
+      )
+      dispatch(
+        mergeConversationParticipantProfiles({
+          id: conversation.id,
+          participantProfiles,
         }),
       )
       return normalizeConversation(
@@ -682,6 +775,13 @@ export const openConversationWithContact = createAsyncThunk(
         updateConversationContext({
           id: conversation.id,
           ...contextPatch,
+          introducedBy: createdBy,
+        }),
+      )
+      dispatch(
+        mergeConversationParticipantProfiles({
+          id: conversation.id,
+          participantProfiles,
         }),
       )
       return normalizeConversation(
@@ -691,8 +791,9 @@ export const openConversationWithContact = createAsyncThunk(
 
     const created = dispatch(
       createConversation({
-        title,
+        title: peerTitle,
         participantIds,
+        participantProfiles,
         createdBy,
         senderName,
         relatedType,
@@ -725,6 +826,13 @@ export const openConversationWithContact = createAsyncThunk(
           updateConversationContext({
             id: canonicalId,
             ...contextPatch,
+            introducedBy: createdBy,
+          }),
+        )
+        dispatch(
+          mergeConversationParticipantProfiles({
+            id: canonicalId,
+            participantProfiles,
           }),
         )
         return normalizeConversation(
@@ -777,6 +885,7 @@ export const {
   toggleConversationPin,
   replaceConversationId,
   updateConversationContext,
+  mergeConversationParticipantProfiles,
   updateSupportStatus,
   setAll,
   receiveRemoteMessage,

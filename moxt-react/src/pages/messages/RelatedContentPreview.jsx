@@ -2,7 +2,7 @@ import { FiExternalLink } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { RELATED_CONTENT_META } from '../../config/communications'
 
-export function RelatedContentPreview({ preview }) {
+export function RelatedContentPreview({ preview, inline = false }) {
   if (!preview?.path) return null
 
   const meta = RELATED_CONTENT_META[preview.type] || RELATED_CONTENT_META.general
@@ -11,7 +11,9 @@ export function RelatedContentPreview({ preview }) {
   return (
     <Link
       to={preview.path}
-      className="group mb-4 block overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-sm transition hover:border-brand-200 hover:shadow-md dark:hover:border-brand-800"
+      className={`group block overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-sm transition hover:border-brand-200 hover:shadow-md dark:hover:border-brand-800 ${
+        inline ? 'mx-auto my-3 w-full max-w-md' : 'mb-4'
+      }`}
       data-testid="related-content-preview"
     >
       <div className="flex gap-3 p-3 sm:gap-4 sm:p-4">
@@ -60,7 +62,7 @@ export function RelatedContentPreview({ preview }) {
         </span>
       </div>
       <div className="border-t border-[var(--app-border)] bg-[var(--app-surface-muted)]/60 px-3 py-2 text-center text-[11px] font-semibold text-[var(--app-text-muted)] sm:px-4">
-        Sujet de cette conversation — ouvrir la fiche
+        {inline ? 'Annonce liée à la discussion — ouvrir la fiche' : 'Sujet de cette conversation — ouvrir la fiche'}
       </div>
     </Link>
   )

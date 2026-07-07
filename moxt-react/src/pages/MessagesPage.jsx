@@ -18,6 +18,7 @@ import {
   deleteMessageLocally,
   ensureConversationFromRemote,
   loadConversationMessages,
+  loadParticipantProfiles,
   markConversationRead,
   restoreConversation,
   saveConversationDraft,
@@ -34,6 +35,7 @@ import { ConversationPanel } from './messages/ConversationPanel'
 import { ConversationRow } from './messages/ConversationRow'
 import { MessagesEmptyState } from './messages/MessagesEmptyState'
 import { countConversationsForFilter } from './messages/messageUtils'
+import { getConversationPeer } from '../features/communications/conversationDisplay'
 
 const ASSISTANT_ID = 'moxt-assistant'
 
@@ -99,7 +101,7 @@ export function MessagesPage() {
         if (showArchived !== Boolean(archived)) return false
         if (filter === 'unread' && !(item.unreadBy?.[user.id] > 0)) return false
         if (filter === 'pinned' && !item.pinnedBy?.includes(user.id)) return false
-        return `${item.title} ${item.messages.map((message) => message.text).join(' ')}`
+        return `${getConversationPeer(item, user.id).name} ${item.messages.map((message) => message.text).join(' ')}`
           .toLowerCase()
           .includes(normalized)
       })
@@ -165,6 +167,12 @@ export function MessagesPage() {
     }
     dispatch(ensureConversationFromRemote(requestedConversation))
   }, [conversations, dispatch, requestedConversation])
+
+  useEffect(() => {
+    const participantIds = conversations.flatMap((item) => item.participantIds || [])
+    if (!participantIds.length) return
+    dispatch(loadParticipantProfiles(participantIds))
+  }, [conversations, dispatch])
 
   useEffect(() => {
     const relatedType = searchParams.get('relatedType')

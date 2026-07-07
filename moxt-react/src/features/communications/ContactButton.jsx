@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { openConversationWithContact } from './communicationSlice'
 import { buildRelatedSnapshot } from './relatedSnapshot'
+import { resolveContactProfileFromEntity } from './conversationDisplay'
 
 export function ContactButton({
   className = '',
@@ -35,17 +36,18 @@ export function ContactButton({
       title: relatedTitle,
       path: relatedPath,
     })
+    const contactProfile = resolveContactProfileFromEntity(relatedEntity)
     try {
       const conversation = await dispatch(
         openConversationWithContact({
           ownerId,
-          title: relatedTitle,
           createdBy: user.id,
           senderName: `${user.firstName} ${user.lastName}`,
           relatedType,
           relatedId,
           relatedPath,
           relatedSnapshot,
+          contactProfile,
         }),
       ).unwrap()
       navigate(`/messages?conversation=${conversation.id}`)

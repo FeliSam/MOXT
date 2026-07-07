@@ -150,10 +150,20 @@ export function MessageBubble({
   )
 }
 
-export function MessageAvatar({ name, hidden = false }) {
+export function MessageAvatar({ name, avatarUrl, hidden = false, className = '' }) {
+  if (!hidden && avatarUrl) {
+    return (
+      <span
+        className={`message-avatar overflow-hidden ${hidden ? 'message-avatar--ghost' : ''} ${className}`}
+        aria-hidden={hidden}
+      >
+        <img src={avatarUrl} alt="" className="size-full object-cover" />
+      </span>
+    )
+  }
   return (
     <span
-      className={`message-avatar ${hidden ? 'message-avatar--ghost' : ''}`}
+      className={`message-avatar ${hidden ? 'message-avatar--ghost' : ''} ${className}`}
       aria-hidden={hidden}
     >
       {initials(name)}

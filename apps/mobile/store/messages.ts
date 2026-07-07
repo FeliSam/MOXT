@@ -10,6 +10,27 @@ export type Message = {
   createdAt: string;
 };
 
+export type RelatedSnapshot = {
+  type: string;
+  id: string;
+  title: string;
+  path: string;
+  subtitle?: string | null;
+  imageUrl?: string | null;
+  badge?: string | null;
+  details?: string[];
+};
+
+export type RelatedContext = {
+  id: string;
+  relatedType?: string;
+  relatedId?: string;
+  relatedPath?: string;
+  relatedSnapshot?: RelatedSnapshot | null;
+  introducedAt: string;
+  introducedBy?: string | null;
+};
+
 export type Conversation = {
   id: string;
   title: string;
@@ -17,16 +38,8 @@ export type Conversation = {
   relatedType?: string;
   relatedId?: string;
   relatedPath?: string;
-  relatedSnapshot?: {
-    type: string;
-    id: string;
-    title: string;
-    path: string;
-    subtitle?: string | null;
-    imageUrl?: string | null;
-    badge?: string | null;
-    details?: string[];
-  } | null;
+  relatedSnapshot?: RelatedSnapshot | null;
+  relatedContexts?: RelatedContext[];
   messages: Message[];
   messagesLoaded?: boolean;
   messagesLoading?: boolean;
@@ -53,21 +66,71 @@ function findByParticipants(conversations: Conversation[], participantIds: strin
   return conversations.find((c) => participantKey(c.participantIds) === key) ?? null;
 }
 
+function normalizeRelatedContexts(conversation: Partial<Conversation>): RelatedContext[] {
+  const parsed = Array.isArray(conversation.relatedContexts) ? conversation.relatedContexts : [];
+  if (parsed.length) return parsed;
+  if (!conversation.relatedSnapshot && !conversation.relatedId) return [];
+  return [
+    {
+      id: `CTX-legacy-${conversation.relatedId || 'unknown'}`,
+      relatedType: conversation.relatedType,
+      relatedId: conversation.relatedId,
+      relatedPath: conversation.relatedPath,
+      relatedSnapshot: conversation.relatedSnapshot,
+      introducedAt: conversation.createdAt || conversation.updatedAt || new Date().toISOString(),
+    },
+  ];
+}
+
 function mapConversationRow(row: Record<string, unknown>): Conversation {
-  return {
+  const relatedSnapshot = (row.related_snapshot as Conversation['relatedSnapshot']) || null;
+  const relatedContexts = (row.related_contexts as RelatedContext[]) || [];
+  const base = {
     id: String(row.id),
     title: String(row.title || 'Conversation'),
     participantIds: (row.participant_ids as string[]) || [],
     relatedType: row.related_type as string | undefined,
     relatedId: row.related_id as string | undefined,
     relatedPath: row.related_path as string | undefined,
-    relatedSnapshot: (row.related_snapshot as Conversation['relatedSnapshot']) || null,
+    relatedSnapshot,
+    relatedContexts,
     messages: [],
     messagesLoaded: false,
     messagesLoading: false,
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
   };
+  return {
+    ...base,
+    relatedContexts: normalizeRelatedContexts(base),
+  };
+}
+
+export type TimelineItem =
+  | { kind: 'related'; id: string; at: string; preview: RelatedSnapshot }
+  | { kind: 'message'; id: string; at: string; message: Message };
+
+export function buildConversationTimeline(conversation: Conversation): TimelineItem[] {
+  const relatedItems = (conversation.relatedContexts || []).flatMap((entry) => {
+    if (!entry.relatedSnapshot?.path) return [];
+    return [
+      {
+        kind: 'related' as const,
+        id: entry.id,
+        at: entry.introducedAt,
+        preview: entry.relatedSnapshot,
+      },
+    ];
+  });
+  const messageItems = conversation.messages.map((message) => ({
+    kind: 'message' as const,
+    id: message.id,
+    at: message.createdAt,
+    message,
+  }));
+  return [...relatedItems, ...messageItems].sort(
+    (left, right) => new Date(left.at).getTime() - new Date(right.at).getTime(),
+  );
 }
 
 export const loadConversations = createAsyncThunk(

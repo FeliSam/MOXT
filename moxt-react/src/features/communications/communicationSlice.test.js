@@ -289,6 +289,9 @@ describe('communications', () => {
     expect(second.conversations).toHaveLength(1)
     expect(second.conversations[0].relatedId).toBe('LST-2')
     expect(second.conversations[0].relatedSnapshot.title).toBe('Table')
+    expect(second.conversations[0].relatedContexts).toHaveLength(2)
+    expect(second.conversations[0].relatedContexts[0].relatedSnapshot.title).toBe('Velo')
+    expect(second.conversations[0].relatedContexts[1].relatedSnapshot.title).toBe('Table')
   })
 
   it('converge vers une seule conversation par paire de participants', () => {

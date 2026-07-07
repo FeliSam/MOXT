@@ -33,6 +33,7 @@ const camelMap = {
   related_type: 'relatedType',
   related_path: 'relatedPath',
   related_snapshot: 'relatedSnapshot',
+  related_contexts: 'relatedContexts',
   created_by: 'createdBy',
 }
 

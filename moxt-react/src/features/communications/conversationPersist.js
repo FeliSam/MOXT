@@ -46,11 +46,54 @@ export async function persistConversationRemote(conversation) {
   return targetId
 }
 
-/** Enregistre un message sans doublon (upsert par id). */
+/** Enregistre un message — la conversation doit déjà exister en base. */
 export async function persistMessageRemote(message, conversationId) {
-  if (!supabase) return
-  const { error } = await supabase
-    .from('messages')
-    .upsert(messageToRemoteRow(message, conversationId), { onConflict: 'id' })
+  if (!supabase) return conversationId
+
+  const { data: conversationRow, error: lookupError } = await supabase
+    .from('conversations')
+    .select('id')
+    .eq('id', conversationId)
+    .maybeSingle()
+  if (lookupError) throw lookupError
+  if (!conversationRow) {
+    throw new Error(
+      `Conversation introuvable (${conversationId}). Réouvrez la discussion avant d'envoyer.`,
+    )
+  }
+
+  const row = messageToRemoteRow(message, conversationId)
+  const { error } = await supabase.from('messages').upsert(row, { onConflict: 'id' })
   if (error) throw error
+  return conversationId
+}
+
+/** Résout l'id canonique Supabase pour une conversation locale. */
+export async function resolveCanonicalConversationId(conversation, onReconciled) {
+  const canonicalId = await persistConversationRemote(conversation)
+  if (!canonicalId) {
+    throw new Error('Impossible de synchroniser la conversation.')
+  }
+  if (canonicalId !== conversation.id && onReconciled) {
+    const { data, error } = await supabase
+      .from('conversations')
+      .select('*')
+      .eq('id', canonicalId)
+      .maybeSingle()
+    if (error) throw error
+    if (data) {
+      onReconciled({ fromId: conversation.id, remoteRow: data })
+    }
+  }
+  return canonicalId
+}
+
+/**
+ * Persiste la conversation puis le message avec le même id canonique
+ * (évite la violation FK messages.conversation_id).
+ */
+export async function persistMessageForConversation(message, conversation, onReconciled) {
+  const canonicalId = await resolveCanonicalConversationId(conversation, onReconciled)
+  await persistMessageRemote(message, canonicalId)
+  return canonicalId
 }

@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { Button } from '@/components/ui';
-import { loadConversationMessages, sendMessage } from '@/store/messages';
+import { buildConversationTimeline, loadConversationMessages, sendMessage } from '@/store/messages';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, radii, shadows, spacing, typography } from '@/theme/colors';
@@ -51,6 +51,8 @@ export default function ChatScreen() {
     );
   }
 
+  const timeline = buildConversationTimeline(conversation);
+
   const handleSend = () => {
     if (!text.trim() || !user) return;
     dispatch(
@@ -78,37 +80,39 @@ export default function ChatScreen() {
         </Text>
       </View>
 
-      {conversation.relatedSnapshot?.path || conversation.relatedPath ? (
-        <Pressable
-          style={[styles.previewCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          onPress={() =>
-            router.push((conversation.relatedSnapshot?.path || conversation.relatedPath) as any)
-          }>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.previewEyebrow, { color: colors.primary }]}>
-              {(conversation.relatedSnapshot?.type || conversation.relatedType || 'annonce').toUpperCase()}
-            </Text>
-            <Text style={[styles.previewTitle, { color: colors.text }]} numberOfLines={2}>
-              {conversation.relatedSnapshot?.title || conversation.title}
-            </Text>
-            {conversation.relatedSnapshot?.subtitle ? (
-              <Text style={[styles.previewSubtitle, { color: colors.textMuted }]}>
-                {conversation.relatedSnapshot.subtitle}
-              </Text>
-            ) : null}
-          </View>
-          <Text style={{ color: colors.primary, fontWeight: '800' }}>→</Text>
-        </Pressable>
-      ) : null}
 
       <FlatList
         ref={listRef}
-        data={conversation.messages}
+        data={timeline}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.messagesList}
         onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
         renderItem={({ item }) => {
-          const isMe = item.senderId === user?.id;
+          if (item.kind === 'related') {
+            return (
+              <Pressable
+                style={[styles.previewCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                onPress={() => router.push(item.preview.path as any)}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.previewEyebrow, { color: colors.primary }]}>
+                    {(item.preview.type || 'annonce').toUpperCase()}
+                  </Text>
+                  <Text style={[styles.previewTitle, { color: colors.text }]} numberOfLines={2}>
+                    {item.preview.title}
+                  </Text>
+                  {item.preview.subtitle ? (
+                    <Text style={[styles.previewSubtitle, { color: colors.textMuted }]}>
+                      {item.preview.subtitle}
+                    </Text>
+                  ) : null}
+                </View>
+                <Text style={{ color: colors.primary, fontWeight: '800' }}>→</Text>
+              </Pressable>
+            );
+          }
+
+          const message = item.message;
+          const isMe = message.senderId === user?.id;
           return (
             <View
               style={[
@@ -119,18 +123,18 @@ export default function ChatScreen() {
               ]}>
               {!isMe ? (
                 <Text style={[styles.senderName, { color: colors.primary }]}>
-                  {item.senderName}
+                  {message.senderName}
                 </Text>
               ) : null}
               <Text style={[styles.bubbleText, { color: isMe ? '#fff' : colors.text }]}>
-                {item.text}
+                {message.text}
               </Text>
               <Text
                 style={[
                   styles.bubbleTime,
                   { color: isMe ? 'rgba(255,255,255,0.7)' : colors.textFaint },
                 ]}>
-                {new Date(item.createdAt).toLocaleTimeString('fr-FR', {
+                {new Date(message.createdAt).toLocaleTimeString('fr-FR', {
                   hour: '2-digit',
                   minute: '2-digit',
                 })}
