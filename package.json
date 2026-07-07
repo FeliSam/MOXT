@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "postinstall": "node scripts/link-expo-router.cjs",
+    "build": "npm run web:build",
     "web": "npm run dev -w moxt",
     "web:build": "npm run build -w moxt",
     "web:cap:doctor": "npm run cap:doctor -w moxt",
