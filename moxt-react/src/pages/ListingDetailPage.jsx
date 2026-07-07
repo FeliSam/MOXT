@@ -183,7 +183,7 @@ export function ListingDetailPage() {
   }
 
   return (
-    <div className="grid min-w-0 gap-5 overflow-hidden pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:gap-7 xl:overflow-visible xl:pb-0">
+    <div className="grid min-w-0 gap-5 overflow-hidden pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:gap-7 md:pb-0 xl:overflow-visible xl:pb-0">
       <nav aria-label="Fil d'Ariane" className="flex min-w-0 items-center gap-2 overflow-hidden text-xs text-[var(--app-text-muted)]">
         <Link to="/marketplace">Marketplace</Link>
         <span>/</span>
@@ -484,7 +484,7 @@ export function ListingDetailPage() {
         </section>
       ) : null}
 
-      <div className="fixed inset-x-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-20 flex min-w-0 flex-wrap gap-2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]/95 p-2 shadow-[var(--shadow-float)] backdrop-blur-xl xl:hidden">
+      <div className="fixed inset-x-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-20 flex min-w-0 flex-wrap gap-2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]/95 p-2 shadow-[var(--shadow-float)] backdrop-blur-xl md:hidden">
         <ContactButton
           className="min-w-0 flex-1"
           ownerId={listing.ownerId}

@@ -136,10 +136,6 @@ export function MyListingCard({
                   Supprimer
                 </Button>
               </>
-            ) : active ? (
-              <Link to={`/marketplace/${listing.id}`}>
-                <Button size="sm">Interagir</Button>
-              </Link>
             ) : null}
           </div>
         </div>
