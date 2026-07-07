@@ -1,16 +1,19 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import {
   FiArchive,
   FiArrowLeft,
+  FiBriefcase,
+  FiCalendar,
   FiEye,
+  FiFileText,
   FiMapPin,
-  FiPlus,
+  FiPackage,
   FiShoppingBag,
   FiUser,
 } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
-import { Link, useParams } from 'react-router-dom'
-import { Badge } from '../components/ui/Badge'
+import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
+import { Badge, PillBadge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { CatalogArchiveTabs } from '../components/ui/CatalogArchiveTabs'
@@ -18,47 +21,96 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { MyListingCard } from '../features/marketplace/MyListingCard'
 import {
-  buildPublisherProfile,
-  groupListingsByType,
-  isActiveListing,
-  isArchivedListing,
-} from '../features/marketplace/listingCatalogUtils'
+  MyEventPublicationCard,
+  MyJobPublicationCard,
+  MyPostPublicationCard,
+  MyParcelPublicationCard,
+} from '../features/publications/MyPublicationCards'
+import {
+  buildUserPublicationProfile,
+  collectUserPublications,
+  filterPublicationsByTabs,
+  PUBLICATION_TYPE_TABS,
+  publicationArchiveCounts,
+  publicationTotalCount,
+  publicationTypeCounts,
+  visiblePublicationCount,
+} from '../features/publications/publicationCatalogUtils'
+
+const EMPTY_ICONS = {
+  listing: FiShoppingBag,
+  parcel: FiPackage,
+  job: FiBriefcase,
+  event: FiCalendar,
+  post: FiFileText,
+  other: FiFileText,
+}
 
 export function UserPublicationsPage() {
   const { userId } = useParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const currentUser = useSelector((state) => state.auth.user)
-  const listings = useSelector((state) =>
-    state.marketplace.items.filter((item) => item.ownerId === userId && !item.businessId),
-  )
-  const [tab, setTab] = useState('active')
+  const appState = useSelector((state) => state)
+
+  const archiveTab = searchParams.get('status') === 'archived' ? 'archived' : 'active'
+  const typeTab = PUBLICATION_TYPE_TABS.some((tab) => tab.id === searchParams.get('type'))
+    ? searchParams.get('type')
+    : 'listing'
 
   const isOwner = currentUser?.id === userId
-  const profile = useMemo(() => buildPublisherProfile(userId, listings), [listings, userId])
+  const publications = useMemo(
+    () => collectUserPublications(appState, userId),
+    [appState, userId],
+  )
+  const profile = useMemo(
+    () => buildUserPublicationProfile(userId, publications),
+    [publications, userId],
+  )
+  const archiveCounts = useMemo(() => publicationArchiveCounts(publications), [publications])
+  const typeCounts = useMemo(
+    () => publicationTypeCounts(publications, archiveTab),
+    [archiveTab, publications],
+  )
+  const visible = useMemo(
+    () => filterPublicationsByTabs(publications, { archiveTab, typeTab }),
+    [archiveTab, publications, typeTab],
+  )
+  const hasContent = visiblePublicationCount(visible) > 0
+  const EmptyIcon = EMPTY_ICONS[typeTab] || FiShoppingBag
 
-  const activeListings = useMemo(() => listings.filter(isActiveListing), [listings])
-  const archivedListings = useMemo(() => listings.filter(isArchivedListing), [listings])
-  const visibleListings = tab === 'active' ? activeListings : archivedListings
-  const grouped = useMemo(() => groupListingsByType(visibleListings), [visibleListings])
+  function setArchiveTab(next) {
+    const params = new URLSearchParams(searchParams)
+    if (next === 'active') params.delete('status')
+    else params.set('status', 'archived')
+    setSearchParams(params, { replace: true })
+  }
 
-  if (!listings.length) {
+  function setTypeTab(next) {
+    const params = new URLSearchParams(searchParams)
+    if (next === 'listing') params.delete('type')
+    else params.set('type', next)
+    setSearchParams(params, { replace: true })
+  }
+
+  if (!publicationTotalCount(publications)) {
     return (
       <div className="grid gap-7">
         <PageHeader
-          eyebrow="Marketplace"
-          title="Annonces du membre"
-          description="Ce membre n'a pas encore publié d'annonce visible."
+          eyebrow="Communauté"
+          title={isOwner ? 'Mes publications publiques' : 'Publications du membre'}
+          description="Ce membre n'a pas encore publié de contenu visible."
           actions={
-            <Link to="/marketplace">
+            <Link to={isOwner ? '/publications/mine' : '/dashboard'}>
               <Button variant="secondary" icon={FiArrowLeft}>
-                Retour
+                {isOwner ? 'Gérer mes publications' : 'Retour'}
               </Button>
             </Link>
           }
         />
         <EmptyState
           icon={FiShoppingBag}
-          title="Aucune annonce"
-          description="Les publications de ce membre apparaîtront ici."
+          title="Aucune publication"
+          description="Les annonces, colis, jobs, événements et publications de ce membre apparaîtront ici."
         />
       </div>
     )
@@ -67,25 +119,20 @@ export function UserPublicationsPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Marketplace"
-        title={isOwner ? 'Mes annonces publiques' : `Annonces de ${profile.name}`}
+        eyebrow="Communauté"
+        title={isOwner ? 'Mes publications publiques' : `Publications de ${profile.name}`}
         description={
           isOwner
-            ? 'Vue publique de vos annonces — partagez ce profil avec la communauté.'
-            : "Découvrez les annonces actives et l'historique publié par ce membre."
+            ? 'Vue publique de tout votre contenu — partagez ce profil avec la communauté.'
+            : 'Annonces, colis, jobs, événements et publications publiées par ce membre.'
         }
         actions={
           <>
-            <Link to={isOwner ? '/publications/mine?type=listing' : '/marketplace'}>
+            <Link to={isOwner ? '/publications/mine' : '/dashboard'}>
               <Button variant="secondary" icon={FiArrowLeft}>
-                {isOwner ? 'Gérer mes publications' : 'Marketplace'}
+                {isOwner ? 'Gérer mes publications' : 'Retour'}
               </Button>
             </Link>
-            {isOwner ? (
-              <Link to="/marketplace/publish">
-                <Button icon={FiPlus}>Publier</Button>
-              </Link>
-            ) : null}
           </>
         }
       />
@@ -100,7 +147,7 @@ export function UserPublicationsPage() {
               <h2 className="text-xl font-black">{profile.name}</h2>
               <Badge tone="success">
                 <FiUser className="mr-1 inline" />
-                Vendeur
+                Membre
               </Badge>
             </div>
             {profile.city ? (
@@ -113,10 +160,11 @@ export function UserPublicationsPage() {
             <div className="mt-4 flex flex-wrap gap-2">
               <Badge tone="success">{profile.activeCount} actives</Badge>
               <Badge tone="info">{profile.archivedCount} archivées</Badge>
+              <Badge tone="warning">{profile.totalCount} au total</Badge>
               {isOwner ? (
                 <Badge tone="warning">
                   <FiEye className="mr-1 inline" />
-                  {profile.totalViews} vues au total
+                  {profile.totalViews} vues annonces
                 </Badge>
               ) : null}
             </div>
@@ -124,47 +172,73 @@ export function UserPublicationsPage() {
         </div>
       </Card>
 
-      <CatalogArchiveTabs
-        active={tab}
-        onChange={setTab}
-        tabs={[
-          { key: 'active', label: 'Actives', count: activeListings.length },
-          { key: 'archived', label: 'Archives', count: archivedListings.length },
-        ]}
-      />
+      <div className="grid gap-4">
+        <CatalogArchiveTabs
+          active={archiveTab}
+          onChange={setArchiveTab}
+          tabs={[
+            { key: 'active', label: 'Actives', count: archiveCounts.active },
+            { key: 'archived', label: 'Archives', count: archiveCounts.archived },
+          ]}
+        />
 
-      {grouped.length ? (
-        grouped.map((group) => (
-          <section key={group.type} className="grid gap-4">
-            <div>
-              <h3 className="text-base font-black">{group.label}</h3>
-              <p className="text-sm text-[var(--app-text-muted)]">
-                {group.items.length} annonce{group.items.length > 1 ? 's' : ''}
-              </p>
-            </div>
-            <div className="grid gap-4">
-              {group.items.map((listing) => (
-                <MyListingCard
-                  key={listing.id}
-                  listing={listing}
-                  ownerMode={false}
-                  showViews={isOwner}
-                />
-              ))}
-            </div>
-          </section>
-        ))
+        <div className="scrollbar-hidden -mx-1 flex touch-pan-x gap-2 overflow-x-auto px-1 pb-1">
+          {PUBLICATION_TYPE_TABS.map((tab) => (
+            <PillBadge
+              key={tab.id}
+              active={typeTab === tab.id}
+              onClick={() => setTypeTab(tab.id)}
+              className="shrink-0 whitespace-nowrap"
+            >
+              {tab.label} ({typeCounts[tab.id]})
+            </PillBadge>
+          ))}
+        </div>
+      </div>
+
+      {hasContent ? (
+        <div className="grid gap-4">
+          {visible.listing.map((listing) => (
+            <MyListingCard
+              key={listing.id}
+              listing={listing}
+              ownerMode={false}
+              showViews={isOwner}
+            />
+          ))}
+          {visible.parcel.map((parcel) => (
+            <MyParcelPublicationCard key={parcel.id} parcel={parcel} readOnly />
+          ))}
+          {visible.job.map((job) => (
+            <MyJobPublicationCard key={job.id} job={job} readOnly />
+          ))}
+          {visible.event.map((event) => (
+            <MyEventPublicationCard key={event.id} event={event} readOnly />
+          ))}
+          {visible.post.map((post) => (
+            <MyPostPublicationCard key={post.id} post={post} readOnly />
+          ))}
+        </div>
       ) : (
         <EmptyState
-          icon={FiArchive}
-          title={tab === 'active' ? 'Aucune annonce active' : 'Aucune archive'}
-          description={
-            tab === 'active'
-              ? "Les annonces actives de ce membre s'afficheront ici."
-              : 'Les annonces archivées ou vendues apparaîtront ici.'
-          }
+          icon={archiveTab === 'archived' ? FiArchive : EmptyIcon}
+          title={archiveTab === 'active' ? 'Aucune publication active' : 'Aucune archive'}
+          description={`Aucun contenu dans ${PUBLICATION_TYPE_TABS.find((t) => t.id === typeTab)?.label || 'cette catégorie'}.`}
         />
       )}
     </div>
+  )
+}
+
+/** Redirection legacy */
+export function UserListingsRedirect() {
+  const { userId } = useParams()
+  const [searchParams] = useSearchParams()
+  const query = searchParams.toString()
+  return (
+    <Navigate
+      to={`/users/${userId}/publications${query ? `?${query}` : ''}`}
+      replace
+    />
   )
 }

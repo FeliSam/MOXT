@@ -22,6 +22,8 @@ export const ENGLISH_UI_CATALOG = {
   'Mes favoris': 'My favorites',
   'Mes publications': 'My publications',
   'Mes annonces': 'My listings',
+  'Mes publications publiques': 'My public publications',
+  'Publications du membre': 'Member publications',
   'Mes annonces publiques': 'My public listings',
   'Annonces du membre': 'Member listings',
   'Vue publique annonces': 'Public listings view',

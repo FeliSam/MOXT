@@ -3,6 +3,7 @@ import {
   FiBriefcase,
   FiCalendar,
   FiEye,
+  FiFileText,
   FiPackage,
   FiPlus,
   FiShoppingBag,
@@ -26,8 +27,9 @@ import {
   updateListingStatus,
 } from '../features/marketplace/marketplaceSlice'
 import {
+  MyEventPublicationCard,
   MyJobPublicationCard,
-  MyOtherPublicationCard,
+  MyPostPublicationCard,
   MyParcelPublicationCard,
 } from '../features/publications/MyPublicationCards'
 import {
@@ -37,13 +39,25 @@ import {
   publicationArchiveCounts,
   publicationTotalViews,
   publicationTypeCounts,
+  visiblePublicationCount,
 } from '../features/publications/publicationCatalogUtils'
 
 const PUBLISH_LINKS = {
   listing: { to: '/marketplace/publish', label: 'Publier une annonce' },
   parcel: { to: '/parcels/publish', label: 'Publier un colis' },
   job: { to: '/jobs/publish', label: 'Publier un job' },
-  other: { to: '/events/publish', label: 'Publier un événement' },
+  event: { to: '/events/publish', label: 'Publier un événement' },
+  post: { to: '/news', label: 'Publier sur le fil' },
+  other: { to: '/dashboard', label: 'Explorer les services' },
+}
+
+const EMPTY_ICONS = {
+  listing: FiShoppingBag,
+  parcel: FiPackage,
+  job: FiBriefcase,
+  event: FiCalendar,
+  post: FiFileText,
+  other: FiFileText,
 }
 
 export function MyPublicationsPage() {
@@ -72,8 +86,7 @@ export function MyPublicationsPage() {
     [archiveTab, publications, typeTab],
   )
   const totalViews = publicationTotalViews(publications)
-  const hasContent =
-    visible.listing.length + visible.parcel.length + visible.job.length + visible.other.length > 0
+  const hasContent = visiblePublicationCount(visible) > 0
 
   function setArchiveTab(next) {
     const params = new URLSearchParams(searchParams)
@@ -90,13 +103,14 @@ export function MyPublicationsPage() {
   }
 
   const publishLink = PUBLISH_LINKS[typeTab] || PUBLISH_LINKS.listing
+  const EmptyIcon = EMPTY_ICONS[typeTab] || FiShoppingBag
 
   return (
     <div className="grid gap-7">
       <PageHeader
         eyebrow="Compte"
         title="Mes publications"
-        description="Annonces, colis, jobs, événements et autres contenus — actifs et archives."
+        description="Annonces, colis, jobs, événements, publications et autres contenus."
         stats={[
           { label: 'Actives', value: archiveCounts.active },
           { label: 'Archives', value: archiveCounts.archived },
@@ -104,9 +118,9 @@ export function MyPublicationsPage() {
         ]}
         actions={
           <>
-            <Link to={`/users/${user.id}/annonces`}>
+            <Link to={`/users/${user.id}/publications`}>
               <Button variant="secondary" icon={FiEye}>
-                Vue publique annonces
+                Vue publique
               </Button>
             </Link>
             <Link to={publishLink.to}>
@@ -126,12 +140,13 @@ export function MyPublicationsPage() {
           ]}
         />
 
-        <div className="scrollbar-hidden -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        <div className="scrollbar-hidden -mx-1 flex touch-pan-x gap-2 overflow-x-auto px-1 pb-1">
           {PUBLICATION_TYPE_TABS.map((tab) => (
             <PillBadge
               key={tab.id}
               active={typeTab === tab.id}
               onClick={() => setTypeTab(tab.id)}
+              className="shrink-0 whitespace-nowrap"
             >
               {tab.label} ({typeCounts[tab.id]})
             </PillBadge>
@@ -180,47 +195,29 @@ export function MyPublicationsPage() {
               onReactivate={() => dispatch(moderateJob({ id: job.id, status: 'active' }))}
             />
           ))}
-          {visible.other.map((entry) => (
-            <MyOtherPublicationCard
-              key={`${entry.kind}-${entry.item.id}`}
-              entry={entry}
-              onArchive={() => {
-                if (entry.kind === 'event') {
-                  dispatch(moderateEvent({ id: entry.item.id, status: 'archived' }))
-                }
-              }}
-              onReactivate={() => {
-                if (entry.kind === 'event') {
-                  dispatch(moderateEvent({ id: entry.item.id, status: 'published' }))
-                }
-              }}
-              onDelete={
-                entry.kind === 'post'
-                  ? () => dispatch(deletePost(entry.item.id))
-                  : undefined
-              }
+          {visible.event.map((event) => (
+            <MyEventPublicationCard
+              key={event.id}
+              event={event}
+              onArchive={() => dispatch(moderateEvent({ id: event.id, status: 'archived' }))}
+              onReactivate={() => dispatch(moderateEvent({ id: event.id, status: 'published' }))}
+            />
+          ))}
+          {visible.post.map((post) => (
+            <MyPostPublicationCard
+              key={post.id}
+              post={post}
+              onDelete={() => dispatch(deletePost(post.id))}
             />
           ))}
         </div>
       ) : (
         <EmptyState
-          icon={
-            typeTab === 'parcel'
-              ? FiPackage
-              : typeTab === 'job'
-                ? FiBriefcase
-                : typeTab === 'other'
-                  ? FiCalendar
-                  : FiShoppingBag
-          }
-          title={
-            archiveTab === 'active'
-              ? `Aucune publication active`
-              : `Aucune archive`
-          }
+          icon={EmptyIcon}
+          title={archiveTab === 'active' ? 'Aucune publication active' : 'Aucune archive'}
           description={`Aucun contenu dans ${PUBLICATION_TYPE_TABS.find((t) => t.id === typeTab)?.label || 'cette catégorie'}.`}
           action={
-            archiveTab === 'active' ? (
+            archiveTab === 'active' && typeTab !== 'other' ? (
               <Link to={publishLink.to}>
                 <Button icon={FiPlus}>{publishLink.label}</Button>
               </Link>

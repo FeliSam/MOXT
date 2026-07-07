@@ -4,6 +4,8 @@ export const PUBLICATION_TYPE_TABS = [
   { id: 'listing', label: 'Annonces' },
   { id: 'parcel', label: 'Colis' },
   { id: 'job', label: 'Jobs' },
+  { id: 'event', label: 'Événements' },
+  { id: 'post', label: 'Publication' },
   { id: 'other', label: 'Autres' },
 ]
 
@@ -51,7 +53,7 @@ function isPersonal(item) {
 
 export function collectUserPublications(state, userId) {
   if (!userId) {
-    return { listings: [], parcels: [], jobs: [], others: [] }
+    return { listings: [], parcels: [], jobs: [], events: [], posts: [], others: [] }
   }
 
   const listings = (state.marketplace?.items || []).filter(
@@ -68,12 +70,43 @@ export function collectUserPublications(state, userId) {
   )
   const posts = (state.posts?.items || []).filter((item) => item.authorId === userId)
 
-  const others = [
-    ...events.map((item) => ({ kind: 'event', item })),
-    ...posts.map((item) => ({ kind: 'post', item })),
-  ]
+  return { listings, parcels, jobs, events, posts, others: [] }
+}
 
-  return { listings, parcels, jobs, others }
+export function publicationTotalCount(publications) {
+  return (
+    publications.listings.length +
+    publications.parcels.length +
+    publications.jobs.length +
+    publications.events.length +
+    publications.posts.length +
+    publications.others.length
+  )
+}
+
+export function buildUserPublicationProfile(userId, publications, fallbackName = 'Membre MOXT') {
+  const archiveCounts = publicationArchiveCounts(publications)
+  const sampleListing = publications.listings[0]
+  const sampleJob = publications.jobs[0]
+  const sampleParcel = publications.parcels[0]
+  const sampleEvent = publications.events[0]
+
+  return {
+    userId,
+    name:
+      sampleListing?.sellerName ||
+      sampleJob?.publisherName ||
+      sampleParcel?.ownerName ||
+      sampleEvent?.organizerName ||
+      fallbackName,
+    city: sampleListing?.city || sampleEvent?.city || '',
+    country:
+      sampleListing?.country || sampleParcel?.originCountry || sampleEvent?.country || 'RU',
+    activeCount: archiveCounts.active,
+    archivedCount: archiveCounts.archived,
+    totalViews: publicationTotalViews(publications),
+    totalCount: publicationTotalCount(publications),
+  }
 }
 
 function filterByArchive(items, isActiveFn, isArchivedFn, archiveTab) {
@@ -92,12 +125,9 @@ export function filterPublicationsByTabs(publications, { archiveTab, typeTab }) 
     ),
     parcel: filterByArchive(publications.parcels, isActiveParcel, isArchivedParcel, archiveTab),
     job: filterByArchive(publications.jobs, isActiveJob, isArchivedJob, archiveTab),
-    other: publications.others.filter(({ kind, item }) => {
-      if (kind === 'event') {
-        return archiveTab === 'active' ? isActiveEvent(item) : isArchivedEvent(item)
-      }
-      return archiveTab === 'active' ? isActivePost(item) : isArchivedPost(item)
-    }),
+    event: filterByArchive(publications.events, isActiveEvent, isArchivedEvent, archiveTab),
+    post: filterByArchive(publications.posts, isActivePost, isArchivedPost, archiveTab),
+    other: filterByArchive(publications.others, () => true, () => true, archiveTab),
   }
 
   if (typeTab === 'all') {
@@ -108,6 +138,8 @@ export function filterPublicationsByTabs(publications, { archiveTab, typeTab }) 
     listing: typeTab === 'listing' ? map.listing : [],
     parcel: typeTab === 'parcel' ? map.parcel : [],
     job: typeTab === 'job' ? map.job : [],
+    event: typeTab === 'event' ? map.event : [],
+    post: typeTab === 'post' ? map.post : [],
     other: typeTab === 'other' ? map.other : [],
   }
 }
@@ -118,6 +150,8 @@ export function publicationTypeCounts(publications, archiveTab) {
     listing: filtered.listing.length,
     parcel: filtered.parcel.length,
     job: filtered.job.length,
+    event: filtered.event.length,
+    post: filtered.post.length,
     other: filtered.other.length,
   }
 }
@@ -126,7 +160,12 @@ export function publicationArchiveCounts(publications) {
   const active = filterPublicationsByTabs(publications, { archiveTab: 'active', typeTab: 'all' })
   const archived = filterPublicationsByTabs(publications, { archiveTab: 'archived', typeTab: 'all' })
   const countAll = (bucket) =>
-    bucket.listing.length + bucket.parcel.length + bucket.job.length + bucket.other.length
+    bucket.listing.length +
+    bucket.parcel.length +
+    bucket.job.length +
+    bucket.event.length +
+    bucket.post.length +
+    bucket.other.length
   return {
     active: countAll(active),
     archived: countAll(archived),
@@ -135,4 +174,15 @@ export function publicationArchiveCounts(publications) {
 
 export function publicationTotalViews(publications) {
   return publications.listings.reduce((sum, item) => sum + (Number(item.views) || 0), 0)
+}
+
+export function visiblePublicationCount(visible) {
+  return (
+    visible.listing.length +
+    visible.parcel.length +
+    visible.job.length +
+    visible.event.length +
+    visible.post.length +
+    visible.other.length
+  )
 }

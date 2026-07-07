@@ -836,7 +836,7 @@ function SellerCard({ business, className = '', listing, rating, sellerListings 
           </Button>
         </Link>
       ) : listing.ownerId ? (
-        <Link to={`/users/${listing.ownerId}/annonces`}>
+        <Link to={`/users/${listing.ownerId}/publications`}>
           <Button className="mt-5 w-full" variant="secondary" icon={FiUser}>
             Voir toutes les annonces
           </Button>

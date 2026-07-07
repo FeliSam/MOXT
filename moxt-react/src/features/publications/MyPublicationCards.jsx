@@ -13,7 +13,7 @@ import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { statusMeta } from '../../config/statuses'
 import { formatMoney } from '../transfers/transferUtils'
-import { isActiveParcel, isActiveJob, isActiveEvent } from './publicationCatalogUtils'
+import { isActiveEvent, isActiveJob, isActiveParcel } from './publicationCatalogUtils'
 
 function PublicationCardShell({ icon: Icon, tone, badge, title, subtitle, meta, path, actions }) {
   return (
@@ -53,7 +53,7 @@ function PublicationCardShell({ icon: Icon, tone, badge, title, subtitle, meta, 
   )
 }
 
-export function MyParcelPublicationCard({ parcel, onArchive, onReactivate }) {
+export function MyParcelPublicationCard({ parcel, readOnly = false, onArchive, onReactivate }) {
   const status = statusMeta(parcel.status)
   const active = isActiveParcel(parcel)
   return (
@@ -73,28 +73,30 @@ export function MyParcelPublicationCard({ parcel, onArchive, onReactivate }) {
       ].filter(Boolean)}
       path={`/parcels/${parcel.id}`}
       actions={
-        <>
-          <Link to={`/parcels/${parcel.id}/edit`}>
-            <Button variant="secondary" icon={FiEdit2} size="sm">
-              Modifier
-            </Button>
-          </Link>
-          {active ? (
-            <Button variant="danger" icon={FiRotateCcw} size="sm" onClick={onArchive}>
-              Clôturer
-            </Button>
-          ) : (
-            <Button icon={FiRotateCcw} size="sm" onClick={onReactivate}>
-              Réactiver
-            </Button>
-          )}
-        </>
+        readOnly ? null : (
+          <>
+            <Link to={`/parcels/${parcel.id}/edit`}>
+              <Button variant="secondary" icon={FiEdit2} size="sm">
+                Modifier
+              </Button>
+            </Link>
+            {active ? (
+              <Button variant="danger" icon={FiRotateCcw} size="sm" onClick={onArchive}>
+                Clôturer
+              </Button>
+            ) : (
+              <Button icon={FiRotateCcw} size="sm" onClick={onReactivate}>
+                Réactiver
+              </Button>
+            )}
+          </>
+        )
       }
     />
   )
 }
 
-export function MyJobPublicationCard({ job, onArchive, onReactivate }) {
+export function MyJobPublicationCard({ job, readOnly = false, onArchive, onReactivate }) {
   const status = statusMeta(job.status)
   const active = isActiveJob(job)
   return (
@@ -104,49 +106,46 @@ export function MyJobPublicationCard({ job, onArchive, onReactivate }) {
       badge={<Badge tone={status.tone}>{status.label}</Badge>}
       title={job.title}
       subtitle={job.salary}
-      meta={[
-        job.publisherName,
-        job.location,
-        job.contractType,
-      ].filter(Boolean)}
+      meta={[job.publisherName, job.location, job.contractType].filter(Boolean)}
       path={`/jobs/${job.id}`}
       actions={
-        <>
-          <Link to={`/jobs/${job.id}/edit`}>
-            <Button variant="secondary" icon={FiEdit2} size="sm">
-              Modifier
-            </Button>
-          </Link>
-          {active ? (
-            <Button variant="danger" size="sm" onClick={onArchive}>
-              Archiver
-            </Button>
-          ) : (
-            <Button icon={FiRotateCcw} size="sm" onClick={onReactivate}>
-              Republier
-            </Button>
-          )}
-        </>
+        readOnly ? null : (
+          <>
+            <Link to={`/jobs/${job.id}/edit`}>
+              <Button variant="secondary" icon={FiEdit2} size="sm">
+                Modifier
+              </Button>
+            </Link>
+            {active ? (
+              <Button variant="danger" size="sm" onClick={onArchive}>
+                Archiver
+              </Button>
+            ) : (
+              <Button icon={FiRotateCcw} size="sm" onClick={onReactivate}>
+                Republier
+              </Button>
+            )}
+          </>
+        )
       }
     />
   )
 }
 
-export function MyOtherPublicationCard({ entry, onArchive, onReactivate, onDelete }) {
-  if (entry.kind === 'event') {
-    const event = entry.item
-    const status = statusMeta(event.status)
-    const active = isActiveEvent(event)
-    return (
-      <PublicationCardShell
-        icon={FiCalendar}
-        tone="from-amber-600 to-orange-700"
-        badge={<Badge tone={status.tone}>{status.label}</Badge>}
-        title={event.title}
-        subtitle={event.price > 0 ? formatMoney(event.price, event.currency) : 'Gratuit'}
-        meta={[event.city, event.startAt || event.date].filter(Boolean)}
-        path={`/events/${event.id}`}
-        actions={
+export function MyEventPublicationCard({ event, readOnly = false, onArchive, onReactivate }) {
+  const status = statusMeta(event.status)
+  const active = isActiveEvent(event)
+  return (
+    <PublicationCardShell
+      icon={FiCalendar}
+      tone="from-amber-600 to-orange-700"
+      badge={<Badge tone={status.tone}>{status.label}</Badge>}
+      title={event.title}
+      subtitle={event.price > 0 ? formatMoney(event.price, event.currency) : 'Gratuit'}
+      meta={[event.city, event.startAt || event.date].filter(Boolean)}
+      path={`/events/${event.id}`}
+      actions={
+        readOnly ? null : (
           <>
             <Link to={`/events/${event.id}/edit`}>
               <Button variant="secondary" icon={FiEdit2} size="sm">
@@ -163,35 +162,53 @@ export function MyOtherPublicationCard({ entry, onArchive, onReactivate, onDelet
               </Button>
             )}
           </>
-        }
-      />
-    )
-  }
+        )
+      }
+    />
+  )
+}
 
-  const post = entry.item
+export function MyPostPublicationCard({ post, readOnly = false, onDelete }) {
   return (
     <PublicationCardShell
       icon={FiFileText}
       tone="from-slate-600 to-slate-800"
-      badge={<Badge tone="info">Post</Badge>}
+      badge={<Badge tone="info">Publication</Badge>}
       title={post.message?.slice(0, 80) || 'Publication'}
       subtitle={post.sourceType !== 'free' ? post.sourceType : null}
       meta={[`${post.likes?.length || 0} j'aime`, `${post.comments?.length || 0} commentaires`]}
       path="/news"
       actions={
-        <>
-          <Link to={`/news/${post.id}/edit`}>
-            <Button variant="secondary" icon={FiEdit2} size="sm">
-              Modifier
-            </Button>
-          </Link>
-          {onDelete ? (
-            <Button variant="danger" size="sm" onClick={onDelete}>
-              Supprimer
-            </Button>
-          ) : null}
-        </>
+        readOnly ? null : (
+          <>
+            <Link to={`/news/${post.id}/edit`}>
+              <Button variant="secondary" icon={FiEdit2} size="sm">
+                Modifier
+              </Button>
+            </Link>
+            {onDelete ? (
+              <Button variant="danger" size="sm" onClick={onDelete}>
+                Supprimer
+              </Button>
+            ) : null}
+          </>
+        )
       }
     />
   )
+}
+
+/** @deprecated Utiliser MyEventPublicationCard ou MyPostPublicationCard */
+export function MyOtherPublicationCard({ entry, readOnly, onArchive, onReactivate, onDelete }) {
+  if (entry.kind === 'event') {
+    return (
+      <MyEventPublicationCard
+        event={entry.item}
+        readOnly={readOnly}
+        onArchive={onArchive}
+        onReactivate={onReactivate}
+      />
+    )
+  }
+  return <MyPostPublicationCard post={entry.item} readOnly={readOnly} onDelete={onDelete} />
 }

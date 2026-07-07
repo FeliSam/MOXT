@@ -75,6 +75,10 @@ const UserPublicationsPage = lazyPage(
   () => import('../pages/UserPublicationsPage'),
   'UserPublicationsPage',
 )
+const UserListingsRedirect = lazyPage(
+  () => import('../pages/UserPublicationsPage').then((m) => ({ default: m.UserListingsRedirect })),
+  'UserListingsRedirect',
+)
 const PublishListingPage = lazyPage(
   () => import('../pages/PublishListingPage'),
   'PublishListingPage',
@@ -225,7 +229,8 @@ export function AppRouter() {
             <Route path="/marketplace/publish" element={<PublishListingPage />} />
             <Route path="/publications/mine" element={<MyPublicationsPage />} />
             <Route path="/marketplace/mine" element={<MyListingsPage />} />
-            <Route path="/users/:userId/annonces" element={<UserPublicationsPage />} />
+            <Route path="/users/:userId/publications" element={<UserPublicationsPage />} />
+            <Route path="/users/:userId/annonces" element={<UserListingsRedirect />} />
             <Route path="/marketplace/:listingId/edit" element={<EditListingPage />} />
             <Route path="/marketplace/:listingId" element={<ListingDetailPage />} />
             {MARKETPLACE_LEGACY_PATHS.map((path) => (
