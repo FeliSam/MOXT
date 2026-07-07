@@ -2,20 +2,20 @@ import { FiExternalLink } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { RELATED_CONTENT_META } from '../../config/communications'
 
-export function RelatedContentPreview({ preview, inline = false }) {
+export function RelatedContentPreview({
+  preview,
+  inline = false,
+  onReply,
+  contextId,
+}) {
   if (!preview?.path) return null
 
   const meta = RELATED_CONTENT_META[preview.type] || RELATED_CONTENT_META.general
   const Icon = meta.icon
+  const interactive = Boolean(inline && onReply && contextId)
 
-  return (
-    <Link
-      to={preview.path}
-      className={`group block overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-sm transition hover:border-brand-200 hover:shadow-md dark:hover:border-brand-800 ${
-        inline ? 'mx-auto my-3 w-full max-w-md' : 'mb-4'
-      }`}
-      data-testid="related-content-preview"
-    >
+  const body = (
+    <>
       <div className="flex gap-3 p-3 sm:gap-4 sm:p-4">
         <div className="relative size-16 shrink-0 overflow-hidden rounded-xl bg-[var(--app-surface-muted)] sm:size-20">
           {preview.imageUrl ? (
@@ -57,13 +57,55 @@ export function RelatedContentPreview({ preview, inline = false }) {
             </p>
           ) : null}
         </div>
-        <span className="grid size-9 shrink-0 place-items-center self-center rounded-xl border border-[var(--app-border)] text-[var(--app-text-muted)] transition group-hover:border-brand-200 group-hover:bg-[var(--app-accent-soft)] group-hover:text-brand-700">
-          <FiExternalLink />
-        </span>
+        {interactive ? (
+          <Link
+            to={preview.path}
+            className="grid size-9 shrink-0 place-items-center self-center rounded-xl border border-[var(--app-border)] text-[var(--app-text-muted)] transition hover:border-brand-200 hover:bg-[var(--app-accent-soft)] hover:text-brand-700"
+            aria-label="Ouvrir la fiche"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <FiExternalLink />
+          </Link>
+        ) : (
+          <span className="grid size-9 shrink-0 place-items-center self-center rounded-xl border border-[var(--app-border)] text-[var(--app-text-muted)] transition group-hover:border-brand-200 group-hover:bg-[var(--app-accent-soft)] group-hover:text-brand-700">
+            <FiExternalLink />
+          </span>
+        )}
       </div>
       <div className="border-t border-[var(--app-border)] bg-[var(--app-surface-muted)]/60 px-3 py-2 text-center text-[11px] font-semibold text-[var(--app-text-muted)] sm:px-4">
-        {inline ? 'Annonce liée à la discussion — ouvrir la fiche' : 'Sujet de cette conversation — ouvrir la fiche'}
+        {interactive
+          ? 'Répondre à cette annonce — ouvrir la fiche via →'
+          : inline
+            ? 'Annonce liée à la discussion — ouvrir la fiche'
+            : 'Sujet de cette conversation — ouvrir la fiche'}
       </div>
+    </>
+  )
+
+  if (interactive) {
+    return (
+      <button
+        type="button"
+        className={`group block w-full overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] text-left shadow-sm transition hover:border-brand-200 hover:shadow-md dark:hover:border-brand-800 ${
+          inline ? 'mx-auto my-3 max-w-md' : 'mb-4'
+        }`}
+        data-testid="related-content-preview"
+        onClick={() => onReply(contextId)}
+      >
+        {body}
+      </button>
+    )
+  }
+
+  return (
+    <Link
+      to={preview.path}
+      className={`group block overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-sm transition hover:border-brand-200 hover:shadow-md dark:hover:border-brand-800 ${
+        inline ? 'mx-auto my-3 w-full max-w-md' : 'mb-4'
+      }`}
+      data-testid="related-content-preview"
+    >
+      {body}
     </Link>
   )
 }

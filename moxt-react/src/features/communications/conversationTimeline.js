@@ -76,6 +76,25 @@ export function relatedContextKey(relatedType, relatedId) {
   return `${relatedType || 'general'}:${relatedId || ''}`
 }
 
+export function findRelatedContext(conversation, relatedType, relatedId) {
+  if (!relatedType || !relatedId) return null
+  const key = relatedContextKey(relatedType, relatedId)
+  return (
+    normalizeRelatedContexts(conversation).find(
+      (entry) => relatedContextKey(entry.relatedType, entry.relatedId) === key,
+    ) || null
+  )
+}
+
+export function findRelatedContextById(conversation, contextId) {
+  if (!contextId) return null
+  return normalizeRelatedContexts(conversation).find((entry) => entry.id === contextId) || null
+}
+
+export function hasRelatedContext(conversation, relatedType, relatedId) {
+  return Boolean(findRelatedContext(conversation, relatedType, relatedId))
+}
+
 export function mergeRelatedContextArrays(remoteContexts = [], localContexts = []) {
   const normalize = (contexts) =>
     (Array.isArray(contexts) ? contexts : [])

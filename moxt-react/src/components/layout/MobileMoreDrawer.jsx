@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { FiLogOut, FiSearch, FiSettings, FiUser, FiX } from 'react-icons/fi'
+import { FiLogOut, FiSearch, FiSettings, FiX } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import { navigationGroups } from '../../config/navigation'
@@ -129,24 +129,14 @@ export function MobileMoreDrawer({ open, onClose }) {
         </div>
 
         <footer className="shrink-0 border-t border-[var(--app-border)] bg-[var(--app-surface)] px-4 py-3">
-          <div className="mb-2 grid grid-cols-2 gap-2">
-            <Link
-              to="/profile"
-              onClick={requestClose}
-              className="flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-btn)] border border-[var(--app-border)] bg-[var(--app-surface-muted)] text-xs font-semibold text-[var(--app-text)] transition hover:bg-[var(--app-surface)]"
-            >
-              <FiUser className="text-base text-[var(--app-accent)]" />
-              Mon profil
-            </Link>
-            <Link
-              to="/settings"
-              onClick={requestClose}
-              className="flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-btn)] border border-[var(--app-border)] bg-[var(--app-surface-muted)] text-xs font-semibold text-[var(--app-text)] transition hover:bg-[var(--app-surface)]"
-            >
-              <FiSettings className="text-base text-[var(--app-accent)]" />
-              Réglages
-            </Link>
-          </div>
+          <Link
+            to="/settings"
+            onClick={requestClose}
+            className="mb-2 flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-btn)] border border-[var(--app-border)] bg-[var(--app-surface-muted)] text-xs font-semibold text-[var(--app-text)] transition hover:bg-[var(--app-surface)]"
+          >
+            <FiSettings className="text-base text-[var(--app-accent)]" />
+            Réglages
+          </Link>
           <button
             type="button"
             onClick={handleLogout}

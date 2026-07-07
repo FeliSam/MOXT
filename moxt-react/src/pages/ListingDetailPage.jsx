@@ -11,6 +11,7 @@ import {
   FiMapPin,
   FiMaximize2,
   FiMessageSquare,
+  FiMoreHorizontal,
   FiPackage,
   FiPercent,
   FiShare2,
@@ -83,12 +84,11 @@ export function ListingDetailPage() {
   )
   const [selectedImage, setSelectedImage] = useState(null)
   const [imageOpen, setImageOpen] = useState(false)
-  const [offerOpen, setOfferOpen] = useState(false)
   const [soldOpen, setSoldOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('description')
   const [quantity, setQuantity] = useState(1)
-  const [offerAmount, setOfferAmount] = useState('')
   const [question, setQuestion] = useState('')
+  const [floatingActionsOpen, setFloatingActionsOpen] = useState(false)
   const isAdminViewer = ['admin', 'superadmin'].includes(user.role)
   const favorite = useSelector((state) =>
     state.account.favorites.some(
@@ -183,7 +183,7 @@ export function ListingDetailPage() {
   }
 
   return (
-    <div className="grid min-w-0 gap-5 overflow-hidden pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:gap-7 md:pb-0 xl:overflow-visible xl:pb-0">
+    <div className="grid min-w-0 gap-5 overflow-hidden max-md:pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:gap-7 md:pb-28 xl:overflow-visible xl:pb-0">
       <nav aria-label="Fil d'Ariane" className="flex min-w-0 items-center gap-2 overflow-hidden text-xs text-[var(--app-text-muted)]">
         <Link to="/marketplace">Marketplace</Link>
         <span>/</span>
@@ -233,16 +233,12 @@ export function ListingDetailPage() {
                 </Badge>
               ) : null}
             </div>
-            <ListingActionPanel
-              dispatch={dispatch}
-              favorite={favorite}
+            <ListingPurchaseOptions
               listing={listing}
               quantity={quantity}
-              setOfferOpen={setOfferOpen}
               setQuantity={setQuantity}
               stock={stock}
               total={total}
-              user={user}
             />
           </Card>
 
@@ -372,7 +368,6 @@ export function ListingDetailPage() {
               favorite={favorite}
               listing={listing}
               quantity={quantity}
-              setOfferOpen={setOfferOpen}
               setQuantity={setQuantity}
               stock={stock}
               total={total}
@@ -484,49 +479,24 @@ export function ListingDetailPage() {
         </section>
       ) : null}
 
-      <div className="fixed inset-x-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-20 flex min-w-0 flex-wrap gap-2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]/95 p-2 shadow-[var(--shadow-float)] backdrop-blur-xl md:hidden">
-        <ContactButton
-          className="min-w-0 flex-1"
-          ownerId={listing.ownerId}
-          relatedEntity={listing}
-          relatedId={listing.id}
-          relatedPath={`/marketplace/${listing.id}`}
-          relatedTitle={listing.title}
-          relatedType="listing"
-          onContact={() => dispatch(incrementListingContact(listing.id))}
+      <div className="fixed inset-x-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-20 md:hidden">
+        <ListingActionButtons
+          dispatch={dispatch}
+          favorite={favorite}
+          layout="bar"
+          listing={listing}
+          user={user}
         />
-        {listing.ownerId !== user.id ? (
-          <Button
-            className="min-w-0 flex-1"
-            icon={FiMessageSquare}
-            size="sm"
-            variant="secondary"
-            onClick={() => setOfferOpen(true)}
-          >
-            Offre
-          </Button>
-        ) : null}
-        <Button
-          className={`min-w-0 flex-1 ${favorite ? 'border-red-400 bg-red-50 text-red-600 hover:bg-red-100 dark:border-red-600 dark:bg-red-950 dark:text-red-400' : ''}`}
-          icon={FiHeart}
-          size="sm"
-          variant="secondary"
-          onClick={() =>
-            dispatch(
-              toggleAccountFavorite({
-                userId: user.id,
-                relatedType: 'listing',
-                relatedId: listing.id,
-                title: listing.title,
-                path: `/marketplace/${listing.id}`,
-                snapshot: buildListingFavoriteSnapshot(listing),
-              }),
-            )
-          }
-        >
-          {favorite ? 'Favori ✓' : 'Favori'}
-        </Button>
       </div>
+
+      <ListingFloatingActions
+        dispatch={dispatch}
+        favorite={favorite}
+        listing={listing}
+        open={floatingActionsOpen}
+        setOpen={setFloatingActionsOpen}
+        user={user}
+      />
 
       <Modal open={imageOpen} onClose={() => setImageOpen(false)} title="Galerie" size="wide">
         {activeImage ? (
@@ -577,37 +547,6 @@ export function ListingDetailPage() {
         ) : (
           <Placeholder listing={listing} />
         )}
-      </Modal>
-
-      <Modal open={offerOpen} onClose={() => setOfferOpen(false)} title="Faire une offre">
-        <p className="text-sm text-[var(--app-text-muted)]">
-          Cette offre sera discutée avec le vendeur dans la messagerie.
-        </p>
-        <label className="mt-5 grid gap-2 text-sm font-bold">
-          Votre proposition
-          <input
-            type="number"
-            className="min-h-12 rounded-2xl bg-[var(--app-surface-muted)] px-4"
-            value={offerAmount}
-            onChange={(event) => setOfferAmount(event.target.value)}
-          />
-        </label>
-        <Button
-          className="mt-5 w-full"
-          disabled={!offerAmount}
-          onClick={() => {
-            dispatch(
-              addToast({
-                title: 'Offre préparée',
-                message: `Proposition de ${formatMoney(offerAmount, listing.currency)} prête à être discutée.`,
-                tone: 'success',
-              }),
-            )
-            setOfferOpen(false)
-          }}
-        >
-          Préparer l’offre
-        </Button>
       </Modal>
 
       <ConfirmDialog
@@ -721,21 +660,7 @@ function Placeholder({ listing }) {
   )
 }
 
-function ListingActionPanel({
-  dispatch,
-  favorite,
-  listing,
-  quantity,
-  setOfferOpen,
-  setQuantity,
-  stock,
-  total,
-  user,
-}) {
-  const favoriteClass = favorite
-    ? 'border-red-400 bg-red-50 text-red-600 hover:bg-red-100 dark:border-red-600 dark:bg-red-950 dark:text-red-400'
-    : ''
-
+function ListingPurchaseOptions({ listing, quantity, setQuantity, stock, total }) {
   return (
     <>
       {listing.type === 'product' && stock > 0 ? (
@@ -759,41 +684,155 @@ function ListingActionPanel({
           Total estimé : <strong>{formatMoney(total, listing.currency)}</strong>
         </p>
       ) : null}
-      <div className="grid min-w-0 gap-3">
-        <ContactButton
-          className="w-full"
-          ownerId={listing.ownerId}
-          relatedEntity={listing}
-          relatedId={listing.id}
-          relatedPath={`/marketplace/${listing.id}`}
-          relatedTitle={listing.title}
-          relatedType="listing"
-          onContact={() => dispatch(incrementListingContact(listing.id))}
-        />
-        {listing.ownerId !== user.id ? (
-          <Button className="w-full" icon={FiMessageSquare} variant="secondary" onClick={() => setOfferOpen(true)}>
-            Faire une offre
-          </Button>
-        ) : null}
+    </>
+  )
+}
+
+function toggleListingFavorite(dispatch, listing, user) {
+  return () =>
+    dispatch(
+      toggleAccountFavorite({
+        userId: user.id,
+        relatedType: 'listing',
+        relatedId: listing.id,
+        title: listing.title,
+        path: `/marketplace/${listing.id}`,
+        snapshot: buildListingFavoriteSnapshot(listing),
+      }),
+    )
+}
+
+function ListingActionButtons({
+  dispatch,
+  favorite,
+  listing,
+  user,
+  layout = 'sidebar',
+}) {
+  const favoriteClass = favorite
+    ? 'border-red-400 bg-red-50 text-red-600 hover:bg-red-100 dark:border-red-600 dark:bg-red-950 dark:text-red-400'
+    : ''
+  const toggleFavorite = toggleListingFavorite(dispatch, listing, user)
+  const contactProps = {
+    ownerId: listing.ownerId,
+    relatedEntity: listing,
+    relatedId: listing.id,
+    relatedPath: `/marketplace/${listing.id}`,
+    relatedTitle: listing.title,
+    relatedType: 'listing',
+    onContact: () => dispatch(incrementListingContact(listing.id)),
+  }
+
+  if (layout === 'bar') {
+    return (
+      <div className="flex min-w-0 flex-wrap gap-2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]/95 p-2 shadow-[var(--shadow-float)] backdrop-blur-xl">
+        <ContactButton className="min-w-0 flex-1" {...contactProps} />
         <Button
-          className={`w-full ${favoriteClass}`}
+          className={`min-w-0 flex-1 ${favoriteClass}`}
           icon={FiHeart}
+          size="sm"
           variant="secondary"
-          onClick={() =>
-            dispatch(
-              toggleAccountFavorite({
-                userId: user.id,
-                relatedType: 'listing',
-                relatedId: listing.id,
-                title: listing.title,
-                path: `/marketplace/${listing.id}`,
-                snapshot: buildListingFavoriteSnapshot(listing),
-              }),
-            )
-          }
+          onClick={toggleFavorite}
         >
-          {favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+          {favorite ? 'Favori ✓' : 'Favori'}
         </Button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid min-w-0 gap-3">
+      <ContactButton className="w-full" {...contactProps} />
+      <Button className={`w-full ${favoriteClass}`} icon={FiHeart} variant="secondary" onClick={toggleFavorite}>
+        {favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+      </Button>
+    </div>
+  )
+}
+
+function ListingFloatingActions({
+  dispatch,
+  favorite,
+  listing,
+  open,
+  setOpen,
+  user,
+}) {
+  const toggleFavorite = toggleListingFavorite(dispatch, listing, user)
+  const contactProps = {
+    ownerId: listing.ownerId,
+    relatedEntity: listing,
+    relatedId: listing.id,
+    relatedPath: `/marketplace/${listing.id}`,
+    relatedTitle: listing.title,
+    relatedType: 'listing',
+    onContact: () => dispatch(incrementListingContact(listing.id)),
+  }
+  const favoriteClass = favorite
+    ? 'border-red-400 bg-red-50 text-red-600 dark:border-red-600 dark:bg-red-950 dark:text-red-400'
+    : ''
+
+  return (
+    <div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-20 hidden flex-col items-end gap-2 md:flex xl:hidden">
+      {open ? (
+        <div className="flex flex-col items-end gap-2">
+          <ContactButton
+            className="shadow-[var(--shadow-float)]"
+            variant="secondary"
+            {...contactProps}
+          />
+          <Button
+            className={`shadow-[var(--shadow-float)] ${favoriteClass}`}
+            icon={FiHeart}
+            variant="secondary"
+            onClick={() => {
+              toggleFavorite()
+              setOpen(false)
+            }}
+          >
+            {favorite ? 'Favori ✓' : 'Favoris'}
+          </Button>
+        </div>
+      ) : null}
+      <button
+        type="button"
+        className="grid size-14 place-items-center rounded-full bg-brand-700 text-2xl text-white shadow-[0_12px_28px_rgb(8_112_95/0.35)] transition hover:bg-brand-800"
+        aria-expanded={open}
+        aria-label={open ? 'Fermer le menu actions' : 'Ouvrir le menu actions'}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <FiMoreHorizontal />
+      </button>
+    </div>
+  )
+}
+
+function ListingActionPanel({
+  dispatch,
+  favorite,
+  listing,
+  quantity,
+  setQuantity,
+  stock,
+  total,
+  user,
+}) {
+  return (
+    <>
+      <ListingPurchaseOptions
+        listing={listing}
+        quantity={quantity}
+        setQuantity={setQuantity}
+        stock={stock}
+        total={total}
+      />
+      <div className="mt-3">
+        <ListingActionButtons
+          dispatch={dispatch}
+          favorite={favorite}
+          listing={listing}
+          user={user}
+        />
       </div>
     </>
   )

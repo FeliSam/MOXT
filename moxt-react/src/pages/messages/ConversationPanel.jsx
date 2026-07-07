@@ -14,7 +14,11 @@ import {
 import { Link } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { getConversationPeer } from '../../features/communications/conversationDisplay'
-import { buildConversationTimeline } from '../../features/communications/conversationTimeline'
+import {
+  buildConversationTimeline,
+  buildContextPreview,
+  findRelatedContextById,
+} from '../../features/communications/conversationTimeline'
 import { resolveRelatedSnapshot } from '../../features/communications/relatedSnapshot'
 import {
   MessageAvatar,
@@ -44,8 +48,10 @@ export function ConversationPanel({
   onDelete,
   onEdit,
   onReply,
+  onReplyToContext,
   onShare,
   replyToId,
+  replyToContextId,
   archived,
   onToggleSuggestions,
   suggestions,
@@ -74,6 +80,10 @@ export function ConversationPanel({
   const composerRef = useRef(null)
   const menuRef = useRef(null)
   const replyTarget = active.messages.find((item) => item.id === replyToId)
+  const replyContextEntry = findRelatedContextById(active, replyToContextId)
+  const replyContextPreview = replyContextEntry
+    ? buildContextPreview(replyContextEntry, active)
+    : null
   const messageCount = conversationMessageCount(active, user.id)
   const [openActionsId, setOpenActionsId] = useState(null)
   const closeMenu = () => menuRef.current?.removeAttribute('open')
@@ -257,7 +267,15 @@ export function ConversationPanel({
                   return (
                     <div key={item.id}>
                       {showDate ? <MessageDateSeparator date={item.at} /> : null}
-                      <RelatedContentPreview inline preview={item.preview} />
+                      <RelatedContentPreview
+                        inline
+                        preview={item.preview}
+                        contextId={item.id}
+                        onReply={(contextId) => {
+                          onReplyToContext?.(contextId)
+                          onReply?.(null)
+                        }}
+                      />
                     </div>
                   )
                 }
@@ -289,6 +307,12 @@ export function ConversationPanel({
                   )
                 const showSenderName = !mine && !groupedWithPrevious
                 const repliedMessage = active.messages.find((entry) => entry.id === message.replyToId)
+                const repliedContext = message.relatedContextId
+                  ? buildContextPreview(
+                      findRelatedContextById(active, message.relatedContextId),
+                      active,
+                    )
+                  : null
 
                 return (
                   <div key={message.id}>
@@ -316,6 +340,7 @@ export function ConversationPanel({
                         }
                         openActions={openActionsId === message.id}
                         repliedMessage={repliedMessage}
+                        repliedContext={repliedContext}
                         showSenderName={showSenderName}
                         user={user}
                       />
@@ -350,6 +375,27 @@ export function ConversationPanel({
         {attachment ? (
           <div className="mx-auto mb-2 flex max-w-3xl items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2 text-xs">
             <FiPaperclip /> {attachment.name}
+          </div>
+        ) : null}
+        {replyToContextId && replyContextPreview ? (
+          <div className="mx-auto mb-2 flex max-w-3xl items-center justify-between gap-3 rounded-xl border border-brand-200/70 border-l-[3px] border-l-brand-500 bg-[var(--app-accent-soft)]/50 px-3 py-2.5 text-xs">
+            <span className="min-w-0">
+              <span className="block font-bold text-[var(--app-accent)]">
+                Réponse à l’annonce
+              </span>
+              <span className="block truncate text-[var(--app-text-muted)]">
+                {replyContextPreview.title}
+                {replyContextPreview.subtitle ? ` · ${replyContextPreview.subtitle}` : ''}
+              </span>
+            </span>
+            <button
+              type="button"
+              className="shrink-0 rounded-lg px-2 py-1 font-bold text-[var(--app-accent)] hover:bg-[var(--app-surface)]"
+              onClick={() => onReplyToContext?.(null)}
+              aria-label="Annuler la réponse à l’annonce"
+            >
+              Annuler
+            </button>
           </div>
         ) : null}
         {replyToId ? (

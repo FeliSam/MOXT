@@ -38,7 +38,7 @@ export function ContactButton({
     })
     const contactProfile = resolveContactProfileFromEntity(relatedEntity)
     try {
-      const conversation = await dispatch(
+      const result = await dispatch(
         openConversationWithContact({
           ownerId,
           createdBy: user.id,
@@ -50,7 +50,11 @@ export function ContactButton({
           contactProfile,
         }),
       ).unwrap()
-      navigate(`/messages?conversation=${conversation.id}`)
+      const params = new URLSearchParams({ conversation: result.conversation.id })
+      if (result.contextAlreadyLinked && result.replyToContextId) {
+        params.set('replyContext', result.replyToContextId)
+      }
+      navigate(`/messages?${params}`)
     } catch {
       navigate('/messages')
     } finally {

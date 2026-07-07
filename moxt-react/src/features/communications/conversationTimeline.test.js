@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   appendRelatedContext,
   buildConversationTimeline,
+  findRelatedContext,
+  findRelatedContextById,
+  hasRelatedContext,
   normalizeRelatedContexts,
 } from './conversationTimeline'
 
@@ -102,5 +105,23 @@ describe('conversationTimeline', () => {
 
     expect(timeline.map((item) => item.kind)).toEqual(['related', 'message', 'related'])
     expect(timeline[1].message.text).toBe('Bonjour')
+  })
+
+  it('retrouve un contexte existant par type et id', () => {
+    const conversation = {
+      relatedContexts: [
+        {
+          id: 'CTX-1',
+          relatedType: 'listing',
+          relatedId: 'LST-1',
+          relatedSnapshot: snapshotA,
+        },
+      ],
+    }
+
+    expect(hasRelatedContext(conversation, 'listing', 'LST-1')).toBe(true)
+    expect(hasRelatedContext(conversation, 'listing', 'LST-2')).toBe(false)
+    expect(findRelatedContext(conversation, 'listing', 'LST-1')?.id).toBe('CTX-1')
+    expect(findRelatedContextById(conversation, 'CTX-1')?.relatedId).toBe('LST-1')
   })
 })

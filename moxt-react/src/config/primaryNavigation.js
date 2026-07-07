@@ -3,11 +3,11 @@ import { FiBox, FiBriefcase, FiHome, FiMessageSquare, FiRepeat, FiShoppingBag } 
 /** Sidebar — ordre complet (6 entrées) */
 export const primaryNavigationItems = [
   { id: 'home', label: 'Accueil', path: '/dashboard', icon: FiHome },
-  { id: 'transfers', label: 'Transferts', path: '/transfers', icon: FiRepeat },
-  { id: 'parcels', label: 'Colis', path: '/parcels', icon: FiBox },
+  { id: 'transfers', label: 'Transfert', path: '/transfers', icon: FiRepeat },
   { id: 'marketplace', label: 'Marketplace', path: '/marketplace', icon: FiShoppingBag },
+  { id: 'parcels', label: 'Colis', path: '/parcels', icon: FiBox },
   { id: 'jobs', label: 'Jobs', path: '/jobs', icon: FiBriefcase },
-  { id: 'messages', label: 'Messages', path: '/messages', icon: FiMessageSquare },
+  { id: 'messages', label: 'Messagerie', path: '/messages', icon: FiMessageSquare },
 ]
 
 const primaryById = Object.fromEntries(primaryNavigationItems.map((item) => [item.id, item]))

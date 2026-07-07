@@ -29,6 +29,7 @@ export function MessageBubble({
   onToggleActions,
   openActions,
   repliedMessage,
+  repliedContext,
   showSenderName = false,
   user,
 }) {
@@ -78,6 +79,15 @@ export function MessageBubble({
         {repliedMessage ? (
           <p className={`message-quote ${mine ? 'message-quote--sent' : 'message-quote--received'}`}>
             {repliedMessage.text}
+          </p>
+        ) : null}
+        {repliedContext ? (
+          <p className={`message-quote ${mine ? 'message-quote--sent' : 'message-quote--received'}`}>
+            <span className="block text-[10px] font-bold uppercase tracking-wide opacity-80">
+              Annonce
+            </span>
+            {repliedContext.title}
+            {repliedContext.subtitle ? ` · ${repliedContext.subtitle}` : ''}
           </p>
         ) : null}
 

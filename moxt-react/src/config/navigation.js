@@ -74,7 +74,7 @@ export const navigationGroups = [
     icon: FiRepeat,
     color: 'from-emerald-500 to-teal-500',
     children: [
-      { id: 'transfers', label: 'Transferts', path: '/transfers', icon: FiRepeat },
+      { id: 'transfers', label: 'Transfert', path: '/transfers', icon: FiRepeat },
       { id: 'p2p', label: 'Echanges P2P', path: '/p2p', icon: FiUsers },
       { id: 'exchangers', label: 'Échangeurs', path: '/exchangers', icon: FiRepeat },
     ],
@@ -110,7 +110,7 @@ export const navigationGroups = [
     children: [
       {
         id: 'messages',
-        label: 'Messages',
+        label: 'Messagerie',
         path: '/messages',
         icon: FiMessageSquare,
         badgeSelector: 'messages',
@@ -132,7 +132,6 @@ export const navigationGroups = [
     children: [
       { id: 'favorites', label: 'Mes favoris', path: '/favorites', icon: FiHeart },
       { id: 'my-publications', label: 'Mes publications', path: '/publications/mine', icon: FiList },
-      { id: 'profile', label: 'Mon profil', path: '/profile', icon: FiUser },
     ],
   },
   {

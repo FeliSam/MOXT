@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Search, X, UserRound, Settings, LogOut } from 'lucide-react-native';
+import { Search, X, Settings, LogOut } from 'lucide-react-native';
 
 import {
   badgeForItem,
@@ -173,30 +173,17 @@ export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () 
         </ScrollView>
 
         <View className="border-t border-app-border bg-app-surface px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
-          <View className="mb-2 flex-row gap-2">
-            <Pressable
-              className="min-h-11 flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-app-surface-muted dark:bg-zinc-800"
-              onPress={() => {
-                handleClose();
-                router.push('/profile/edit' as any);
-              }}>
-              <UserRound size={16} color="#6b7280" strokeWidth={2.2} />
-              <Text className="text-xs font-semibold text-app-text dark:text-zinc-50">
-                {translateLabel('Mon profil')}
-              </Text>
-            </Pressable>
-            <Pressable
-              className="min-h-11 flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-app-surface-muted dark:bg-zinc-800"
-              onPress={() => {
-                handleClose();
-                router.push('/settings' as any);
-              }}>
-              <Settings size={16} color="#6b7280" strokeWidth={2.2} />
-              <Text className="text-xs font-semibold text-app-text dark:text-zinc-50">
-                {translateLabel('Réglages')}
-              </Text>
-            </Pressable>
-          </View>
+          <Pressable
+            className="mb-2 min-h-11 flex-row items-center justify-center gap-2 rounded-xl bg-app-surface-muted dark:bg-zinc-800"
+            onPress={() => {
+              handleClose();
+              router.push('/settings' as any);
+            }}>
+            <Settings size={16} color="#6b7280" strokeWidth={2.2} />
+            <Text className="text-xs font-semibold text-app-text dark:text-zinc-50">
+              {translateLabel('Réglages')}
+            </Text>
+          </Pressable>
           <Pressable
             className="min-h-11 flex-row items-center justify-center gap-2 rounded-xl bg-red-50 dark:bg-red-950/20"
             onPress={handleLogout}>

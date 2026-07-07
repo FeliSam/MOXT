@@ -1,8 +1,6 @@
-import { useState } from 'react'
 import { FiArrowLeft, FiArrowRight, FiBox, FiCalendar, FiDownload, FiEdit2, FiMapPin, FiShield } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useParams } from 'react-router-dom'
-import { Alert } from '../components/ui/Alert'
 import { Badge, VerifiedBadge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
@@ -12,13 +10,11 @@ import {
   DetailSection,
   TrustPanel,
 } from '../components/ui/DetailBlocks'
-import { Input } from '../components/ui/Input'
 import { PageHeader } from '../components/ui/PageHeader'
 import { ReshareButton } from '../components/ui/ReshareButton'
 import { FavoriteButton } from '../features/account/FavoriteButton'
 import { ContactButton } from '../features/communications/ContactButton'
 import {
-  requestParcelReservation,
   updateParcelProofStatus,
   updateParcelRequestStatus,
 } from '../features/parcels/parcelSlice'
@@ -27,7 +23,6 @@ import { statusMeta } from '../config/statuses'
 import { formatMoney } from '../features/transfers/transferUtils'
 
 export function ParcelDetailPage() {
-  const [kg, setKg] = useState(1)
   const dispatch = useDispatch()
   const { parcelId } = useParams()
   const user = useSelector((state) => state.auth.user)
@@ -39,33 +34,9 @@ export function ParcelDetailPage() {
   if (!parcel) return <Card>Voyage introuvable.</Card>
 
   const depositDeadline = parcel.depositDeadline || parcel.departureDate
-  const canReserve = parcel.status === 'active' && user.id !== parcel.ownerId
   const isAdmin = ['admin', 'superadmin'].includes(user.role)
   const canSeeProof = isAdmin || user.id === parcel.ownerId
   const proofMeta = statusMeta(parcel.proofStatus)
-  const ownRequest = requests.find(
-    (item) => item.userId === user.id && !['rejected', 'cancelled'].includes(item.status),
-  )
-  const kgError =
-    !Number.isFinite(kg) || kg <= 0
-      ? 'Indiquez un poids valide.'
-      : kg > parcel.remainingKg
-        ? `Maximum disponible : ${parcel.remainingKg} kg.`
-        : null
-
-  function handleSendRequest() {
-    if (kgError) return
-    dispatch(
-      requestParcelReservation({
-        parcelId: parcel.id,
-        userId: user.id,
-        requesterName: `${user.firstName} ${user.lastName}`,
-        ownerId: parcel.ownerId,
-        businessId: parcel.businessId,
-        kg,
-      }),
-    )
-  }
 
   function handleRequestStatus(request, status) {
     dispatch(updateParcelRequestStatus({ id: request.id, status }))
@@ -176,9 +147,9 @@ export function ParcelDetailPage() {
             />
           </div>
         </Card>
-        <Card>
-          <h2 className="font-black">Réservation</h2>
-          {user.id === parcel.ownerId ? (
+        {user.id === parcel.ownerId ? (
+          <Card>
+            <h2 className="font-black">Demandes reçues</h2>
             <div className="mt-5 grid gap-3">
               {requests.length ? (
                 requests.map((request) => {
@@ -217,43 +188,8 @@ export function ParcelDetailPage() {
                 <p className="text-sm text-[var(--app-text-muted)]">Aucune demande reçue.</p>
               )}
             </div>
-          ) : ownRequest ? (
-            <Alert
-              variant={
-                ownRequest.status === 'approved'
-                  ? 'success'
-                  : ownRequest.status === 'rejected'
-                    ? 'error'
-                    : 'info'
-              }
-              title={statusMeta(ownRequest.status).label}
-            >
-              Votre demande de {ownRequest.kg} kg est suivie automatiquement. Vous recevrez une
-              notification à chaque action du transporteur.
-            </Alert>
-          ) : canReserve ? (
-            <div className="mt-5 grid gap-4">
-              <Input
-                id="reserve-kg"
-                label="Poids en kg"
-                type="number"
-                min="1"
-                max={parcel.remainingKg}
-                value={kg}
-                onChange={(event) => setKg(Number(event.target.value))}
-                error={kgError}
-              />
-              <Alert variant="info">
-                Total estimé : {formatMoney(kg * parcel.pricePerKg, parcel.currency)}
-              </Alert>
-              <Button onClick={handleSendRequest} disabled={Boolean(kgError)}>
-                Envoyer la demande
-              </Button>
-            </div>
-          ) : (
-            <p className="mt-4 text-sm text-slate-500">Ce voyage est complet.</p>
-          )}
-        </Card>
+          </Card>
+        ) : null}
       </div>
       <div className="grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
         <DetailSection title="Informations du transport">

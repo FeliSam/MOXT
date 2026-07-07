@@ -57,6 +57,7 @@ export function MessagesPage() {
   const [query, setQuery] = useState('')
   const [attachment, setAttachment] = useState(null)
   const [replyToId, setReplyToId] = useState(null)
+  const [replyToContextId, setReplyToContextId] = useState(null)
   const [showArchived, setShowArchived] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [filter, setFilter] = useState('all')
@@ -145,6 +146,7 @@ export function MessagesPage() {
             ? { name: attachment.name, size: attachment.size, type: attachment.type }
             : null,
           replyToId,
+          relatedContextId: replyToContextId,
         }),
       )
       const updated = store
@@ -162,10 +164,21 @@ export function MessagesPage() {
       }
       setAttachment(null)
       setReplyToId(null)
+      setReplyToContextId(null)
       dispatch(saveConversationDraft({ id: active.id, userId: user.id, text: '' }))
       helpers.resetForm()
     },
   })
+
+  useEffect(() => {
+    const replyContext = searchParams.get('replyContext')
+    if (!replyContext || !active?.id || active.id !== requestedConversation) return
+    setReplyToContextId(replyContext)
+    setReplyToId(null)
+    const params = new URLSearchParams(searchParams)
+    params.delete('replyContext')
+    setSearchParams(params, { replace: true })
+  }, [active?.id, requestedConversation, searchParams, setSearchParams])
 
   useEffect(() => {
     if (!user?.id) return
@@ -226,6 +239,8 @@ export function MessagesPage() {
   function selectConversation(id) {
     setSearchParams({ conversation: id })
     setAttachment(null)
+    setReplyToId(null)
+    setReplyToContextId(null)
     formik.resetForm()
   }
 
@@ -446,6 +461,7 @@ export function MessagesPage() {
                 onEdit={(message) => {
                   formik.setFieldValue('text', message.text)
                   setReplyToId(null)
+                  setReplyToContextId(null)
                 }}
                 onShare={async (message) => {
                   const text = message.text?.trim()
@@ -467,8 +483,13 @@ export function MessagesPage() {
                     /* annulation du partage natif */
                   }
                 }}
-                onReply={setReplyToId}
+                onReply={(messageId) => {
+                  setReplyToId(messageId)
+                  setReplyToContextId(null)
+                }}
+                onReplyToContext={setReplyToContextId}
                 replyToId={replyToId}
+                replyToContextId={replyToContextId}
                 archived={showArchived}
                 suggestions={suggestions}
                 user={user}

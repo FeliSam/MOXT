@@ -70,7 +70,7 @@ export const navigationGroups: MoreServiceGroup[] = [
     id: 'finance',
     label: 'Finances',
     children: [
-      item('transfers', 'Transferts', '/transfers', '💱'),
+      item('transfers', 'Transfert', '/transfers', '💱'),
       item('p2p', 'Echanges P2P', '/p2p', '🔄'),
       item('exchangers', 'Échangeurs', '/exchangers', '🤝'),
     ],
@@ -98,7 +98,7 @@ export const navigationGroups: MoreServiceGroup[] = [
     id: 'communication',
     label: 'Communication',
     children: [
-      item('messages', 'Messages', '/messages', '💬', { badgeSelector: 'messages' }),
+      item('messages', 'Messagerie', '/messages', '💬', { badgeSelector: 'messages' }),
       item('notifications', 'Notifications', '/notifications', '🔔', { badgeSelector: 'notifications' }),
     ],
   },
@@ -108,7 +108,6 @@ export const navigationGroups: MoreServiceGroup[] = [
     children: [
       item('favorites', 'Mes favoris', '/favorites', '❤️'),
       item('my-publications', 'Mes publications', '/publications/mine', '📋'),
-      item('profile', 'Mon profil', '/profile', '👤'),
     ],
   },
   {

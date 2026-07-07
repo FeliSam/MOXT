@@ -11,7 +11,7 @@ import {
   formatProfileName,
   mergeParticipantProfiles,
 } from './conversationDisplay'
-import { appendRelatedContext, mergeRelatedContextArrays, normalizeRelatedContexts } from './conversationTimeline'
+import { appendRelatedContext, findRelatedContext, hasRelatedContext, mergeRelatedContextArrays, normalizeRelatedContexts } from './conversationTimeline'
 
 const PENDING_MESSAGE_MS = 15000
 
@@ -470,7 +470,7 @@ const communicationSlice = createSlice({
           })
         bumpConversationToTop(state, action.payload.conversationId)
       },
-      prepare({ attachment, conversationId, replyToId, senderId, senderName, text }) {
+      prepare({ attachment, conversationId, relatedContextId, replyToId, senderId, senderName, text }) {
         return {
           payload: {
             conversationId,
@@ -482,6 +482,7 @@ const communicationSlice = createSlice({
               text: text.trim(),
               attachment: attachment || null,
               replyToId: replyToId || null,
+              relatedContextId: relatedContextId || null,
               reactions: {},
               deletedBy: [],
               deliveredTo: [],
@@ -781,6 +782,16 @@ export const loadConversationMessages = createAsyncThunk(
   },
 )
 
+function buildContactOpenResult(conversation, relatedType, relatedId, contextAlreadyLinked) {
+  const normalized = normalizeConversation(conversation)
+  const context = findRelatedContext(normalized, relatedType, relatedId)
+  return {
+    conversation: normalized,
+    replyToContextId: context?.id || null,
+    contextAlreadyLinked,
+  }
+}
+
 export const loadParticipantProfiles = createAsyncThunk(
   'communications/loadParticipantProfiles',
   async (participantIds) => fetchParticipantProfilesFromRemote(participantIds),
@@ -826,21 +837,27 @@ export const openConversationWithContact = createAsyncThunk(
     }
 
     if (conversation) {
-      dispatch(
-        updateConversationContext({
-          id: conversation.id,
-          ...contextPatch,
-          introducedBy: createdBy,
-        }),
-      )
+      const contextAlreadyLinked = hasRelatedContext(conversation, relatedType, relatedId)
+      if (!contextAlreadyLinked) {
+        dispatch(
+          updateConversationContext({
+            id: conversation.id,
+            ...contextPatch,
+            introducedBy: createdBy,
+          }),
+        )
+      }
       dispatch(
         mergeConversationParticipantProfiles({
           id: conversation.id,
           participantProfiles,
         }),
       )
-      return normalizeConversation(
+      return buildContactOpenResult(
         getState().communications.conversations.find((c) => c.id === conversation.id),
+        relatedType,
+        relatedId,
+        contextAlreadyLinked,
       )
     }
 
@@ -859,21 +876,27 @@ export const openConversationWithContact = createAsyncThunk(
         messagesLoaded: false,
       })
       dispatch(receiveRemoteConversation(conversation))
-      dispatch(
-        updateConversationContext({
-          id: conversation.id,
-          ...contextPatch,
-          introducedBy: createdBy,
-        }),
-      )
+      const contextAlreadyLinked = hasRelatedContext(conversation, relatedType, relatedId)
+      if (!contextAlreadyLinked) {
+        dispatch(
+          updateConversationContext({
+            id: conversation.id,
+            ...contextPatch,
+            introducedBy: createdBy,
+          }),
+        )
+      }
       dispatch(
         mergeConversationParticipantProfiles({
           id: conversation.id,
           participantProfiles,
         }),
       )
-      return normalizeConversation(
+      return buildContactOpenResult(
         getState().communications.conversations.find((c) => c.id === conversation.id),
+        relatedType,
+        relatedId,
+        contextAlreadyLinked,
       )
     }
 
@@ -923,13 +946,16 @@ export const openConversationWithContact = createAsyncThunk(
             participantProfiles,
           }),
         )
-        return normalizeConversation(
+        return buildContactOpenResult(
           getState().communications.conversations.find((c) => c.id === canonicalId),
+          relatedType,
+          relatedId,
+          false,
         )
       }
     }
 
-    return normalizeConversation(created)
+    return buildContactOpenResult(created, relatedType, relatedId, false)
   },
 )
 
