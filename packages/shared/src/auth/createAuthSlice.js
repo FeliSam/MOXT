@@ -89,6 +89,18 @@ export function createAuthSlice(authService) {
       setUser(state, action) {
         state.user = action.payload
       },
+      applySession(state, action) {
+        state.user = action.payload.user
+        state.token = action.payload.token
+        state.status = 'authenticated'
+        state.error = null
+      },
+      clearSession(state) {
+        state.user = null
+        state.token = null
+        state.status = 'anonymous'
+        state.error = null
+      },
     },
     extraReducers: (builder) => {
       builder

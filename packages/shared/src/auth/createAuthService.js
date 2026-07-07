@@ -234,13 +234,61 @@ export function createAuthService(supabase, redirects = {}) {
 
     async restoreSession() {
       if (!supabase) return null
-      const { data } = await supabase.auth.getSession()
-      if (!data.session) return null
+      const { data, error } = await supabase.auth.getSession()
+      if (error || !data.session) return null
+
       try {
         const user = await fetchOrCreateProfile(data.session.user)
         return { user, token: data.session.access_token }
+      } catch (profileError) {
+        console.warn('[MOXT] Profil indisponible, session conservée:', profileError?.message)
+        const authUser = data.session.user
+        const metadata = authUser.user_metadata || {}
+        return {
+          user: profileToUser({
+            id: authUser.id,
+            first_name: metadata.first_name || 'Utilisateur',
+            last_name: metadata.last_name || '',
+            email: authUser.email || metadata.email || '',
+            phone: authUser.phone || metadata.phone || '',
+            origin_phone: metadata.origin_phone || '',
+            country: 'RU',
+            origin_country: metadata.origin_country || 'BJ',
+            city: metadata.city || '',
+            avatar_url: metadata.avatar_url || '',
+            role: 'user',
+            status: 'active',
+          }),
+          token: data.session.access_token,
+        }
+      }
+    },
+
+    async sessionFromSupabaseUser(session) {
+      if (!session?.user) return null
+      try {
+        const user = await fetchOrCreateProfile(session.user)
+        return { user, token: session.access_token }
       } catch {
-        return null
+        const authUser = session.user
+        const metadata = authUser.user_metadata || {}
+        return {
+          user: profileToUser({
+            id: authUser.id,
+            first_name: metadata.first_name || 'Utilisateur',
+            last_name: metadata.last_name || '',
+            email: authUser.email || metadata.email || '',
+            phone: authUser.phone || metadata.phone || '',
+            origin_phone: metadata.origin_phone || '',
+            country: 'RU',
+            origin_country: metadata.origin_country || 'BJ',
+            city: metadata.city || '',
+            avatar_url: metadata.avatar_url || '',
+            role: 'user',
+            status: 'active',
+          }),
+          token: session.access_token,
+        }
       }
     },
 

@@ -14,6 +14,6 @@ export const {
   logout,
 } = authModule
 
-export const { clearAuthError, setUser } = authModule.actions
+export const { clearAuthError, setUser, applySession, clearSession } = authModule.actions
 
 export default authModule.reducer

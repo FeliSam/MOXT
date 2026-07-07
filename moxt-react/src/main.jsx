@@ -24,6 +24,9 @@ async function bootstrap() {
   const { restoreSession } = await import('./features/auth/authSlice')
   await store.dispatch(restoreSession())
 
+  const { startAuthSessionSync } = await import('./services/authSessionSync')
+  startAuthSessionSync(store)
+
   // Si une session existe, charger toutes les données depuis Supabase
   if (store.getState().auth.user) {
     const { loadAllData } = await import('./app/loadAllData')
