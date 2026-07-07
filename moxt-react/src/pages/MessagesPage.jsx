@@ -21,6 +21,7 @@ import {
   loadConversationMessages,
   loadParticipantProfiles,
   markConversationRead,
+  refreshConversations,
   restoreConversation,
   saveConversationDraft,
   sendMessage,
@@ -37,7 +38,6 @@ import { ConversationPanel } from './messages/ConversationPanel'
 import { ConversationRow } from './messages/ConversationRow'
 import { MessagesEmptyState } from './messages/MessagesEmptyState'
 import { countConversationsForFilter } from './messages/messageUtils'
-import { getConversationPeer } from '../features/communications/conversationDisplay'
 
 const ASSISTANT_ID = 'moxt-assistant'
 
@@ -168,6 +168,11 @@ export function MessagesPage() {
   })
 
   useEffect(() => {
+    if (!user?.id) return
+    dispatch(refreshConversations())
+  }, [dispatch, user?.id])
+
+  useEffect(() => {
     if (
       !requestedConversation ||
       requestedConversation === ASSISTANT_ID ||
@@ -197,13 +202,26 @@ export function MessagesPage() {
   }, [conversations, searchParams, setSearchParams])
 
   useEffect(() => {
-    if (active?.id) {
-      dispatch(markConversationRead({ conversationId: active.id, userId: user.id }))
-      if (!active.messagesLoaded || active.messages.length === 0) {
-        dispatch(loadConversationMessages(active.id))
-      }
+    if (!active?.id || active.messagesLoading) return
+    dispatch(markConversationRead({ conversationId: active.id, userId: user.id }))
+    const loadedCount = active.messages?.length || 0
+    const expectedCount = active.messageCount || 0
+    const needsReload =
+      !active.messagesLoaded ||
+      (expectedCount > 0 && loadedCount < expectedCount) ||
+      (expectedCount === 0 && loadedCount === 0 && !active.messagesLoaded)
+    if (needsReload) {
+      dispatch(loadConversationMessages(active.id))
     }
-  }, [active?.id, active?.messages.length, active?.messagesLoaded, dispatch, user.id])
+  }, [
+    active?.id,
+    active?.messageCount,
+    active?.messages?.length,
+    active?.messagesLoaded,
+    active?.messagesLoading,
+    dispatch,
+    user.id,
+  ])
 
   function selectConversation(id) {
     setSearchParams({ conversation: id })

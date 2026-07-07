@@ -73,7 +73,7 @@ export const loadAllData = createAsyncThunk(
       supabase.from('businesses').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
       supabase.from('transfers').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(USER_LIMIT),
       // Métadonnées seulement — pas de messages embarqués pour éviter le chargement massif
-      supabase.from('conversations').select('*').contains('participant_ids', [uid]).order('updated_at', { ascending: false }).limit(30),
+      supabase.from('conversations').select('*').contains('participant_ids', [uid]).order('updated_at', { ascending: false }).limit(100),
       supabase.from('favorites').select('*').eq('user_id', uid).limit(USER_LIMIT),
       supabase.from('transfer_profiles').select('*').eq('user_id', uid).limit(USER_LIMIT),
       supabase.from('verification_requests').select('*').eq('user_id', uid).limit(USER_LIMIT),
@@ -89,6 +89,7 @@ export const loadAllData = createAsyncThunk(
     ])
 
     assertLoaded(listingsRes, 'des annonces')
+    assertLoaded(conversationsRes, 'des conversations')
 
     const conversations = mergeConversations(
       getState().communications.conversations,

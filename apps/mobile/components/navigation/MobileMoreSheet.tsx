@@ -6,7 +6,7 @@ import { Search, X, UserRound, Settings, LogOut } from 'lucide-react-native';
 
 import {
   badgeForItem,
-  bottomNavigationPaths,
+  moreServicesExcludedPaths,
   filterNavigationGroups,
   navigationGroups,
   type MoreServiceItem,
@@ -80,7 +80,7 @@ export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () 
   const role = user?.role;
 
   const groups = useMemo(
-    () => filterNavigationGroups(navigationGroups, role, bottomNavigationPaths, query, translateLabel),
+    () => filterNavigationGroups(navigationGroups, role, moreServicesExcludedPaths, query, translateLabel),
     [role, query, translateLabel],
   );
 

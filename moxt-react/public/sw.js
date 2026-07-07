@@ -1,4 +1,4 @@
-const CACHE_NAME = 'moxt-v4';
+const CACHE_NAME = 'moxt-v5';
 const STATIC_ASSETS = [
   '/manifest.webmanifest',
   '/favicon.svg',

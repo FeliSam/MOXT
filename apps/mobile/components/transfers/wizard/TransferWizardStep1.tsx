@@ -129,9 +129,9 @@ export function TransferWizardStep1({
         </ScrollView>
       </View>
 
-      {/* Simulation */}
+      {/* Estimation */}
       {numAmount > 0 && exchangerId ? (
-        <TransferSimulationCard calc={calc} exchanger={exchanger} rateDate={rateDate} />
+        <TransferEstimateCard calc={calc} exchanger={exchanger} rateDate={rateDate} />
       ) : null}
     </View>
   );
@@ -195,7 +195,7 @@ function PartnerCard({ ex, active, onSelect }: { ex: Exchanger; active: boolean;
   );
 }
 
-function TransferSimulationCard({
+function TransferEstimateCard({
   calc,
   exchanger,
   rateDate,
@@ -213,7 +213,7 @@ function TransferSimulationCard({
         className={twTransfer.simGradient}>
         <View className="mb-3 flex-row items-center gap-2">
           <Text className="text-white/80">⚡</Text>
-          <Text className={twTransfer.simEyebrow}>SIMULATION DU TRANSFERT</Text>
+          <Text className={twTransfer.simEyebrow}>ESTIMATION DU TRANSFERT</Text>
         </View>
         <View className="flex-row items-center justify-between gap-2">
           <View className="min-w-0 flex-1">

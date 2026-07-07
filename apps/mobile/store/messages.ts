@@ -170,6 +170,13 @@ function mapConversationRow(row: Record<string, unknown>): Conversation {
   return normalizeConversation(base);
 }
 
+function preservedLocalMessages(conversation: Conversation) {
+  if (conversation.messagesLoaded || (conversation.messages?.length ?? 0) > 0) {
+    return conversation.messages || [];
+  }
+  return [];
+}
+
 function mergeLoadedConversations(
   existing: Conversation[],
   incoming: Conversation[],
@@ -180,8 +187,9 @@ function mergeLoadedConversations(
     if (!remote) continue;
     byId.set(local.id, {
       ...remote,
-      messages: local.messagesLoaded ? local.messages : [],
-      messagesLoaded: local.messagesLoaded ?? false,
+      messages: preservedLocalMessages(local),
+      messagesLoaded:
+        local.messagesLoaded ?? (local.messages?.length ?? 0) > 0,
       messagesLoading: local.messagesLoading ?? false,
       unreadBy: { ...remote.unreadBy, ...local.unreadBy },
       messageCount: Math.max(remote.messageCount || 0, local.messageCount || 0),
@@ -255,18 +263,64 @@ export const loadConversations = createAsyncThunk(
 
 export const loadConversationMessages = createAsyncThunk(
   'messages/loadConversationMessages',
-  async (conversationId: string) => {
+  async (conversationId: string, { getState }) => {
     if (!supabase) return { conversationId, messages: [] as Message[] };
+
+    const localConversation = getState().messages.conversations.find(
+      (item) => item.id === conversationId,
+    );
+    const conversationIds = new Set([conversationId]);
+    let canonicalId = conversationId;
+    let participantKeyValue = localConversation
+      ? participantKey(localConversation.participantIds)
+      : null;
+
+    const { data: row, error: rowError } = await supabase
+      .from('conversations')
+      .select('id, participant_key')
+      .eq('id', conversationId)
+      .maybeSingle();
+    if (rowError) throw new Error(rowError.message);
+
+    if (row) {
+      conversationIds.add(String(row.id));
+      canonicalId = String(row.id);
+      participantKeyValue ||= String(row.participant_key || '');
+    }
+
+    if (participantKeyValue) {
+      const { data: siblings, error: siblingsError } = await supabase
+        .from('conversations')
+        .select('id, updated_at')
+        .eq('participant_key', participantKeyValue)
+        .order('updated_at', { ascending: false });
+      if (siblingsError) throw new Error(siblingsError.message);
+      for (const sibling of siblings || []) {
+        conversationIds.add(String(sibling.id));
+      }
+      if (siblings?.[0]?.id) {
+        canonicalId = String(siblings[0].id);
+      }
+    }
+
     const { data, error } = await supabase
       .from('messages')
       .select('*')
-      .eq('conversation_id', conversationId)
+      .in('conversation_id', [...conversationIds])
       .order('created_at', { ascending: true })
       .limit(200);
     if (error) throw new Error(error.message);
 
-    const messages = (data || []).map((row: Record<string, unknown>) => mapMessageRow(row));
-    return { conversationId, messages };
+    const messagesById = new Map<string, Message>();
+    for (const item of data || []) {
+      const message = mapMessageRow(item as Record<string, unknown>);
+      messagesById.set(message.id, message);
+    }
+    const messages = [...messagesById.values()].sort(
+      (left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime(),
+    );
+
+    return { conversationId: canonicalId, messages, sourceConversationId: conversationId };
   },
 );
 
@@ -453,8 +507,16 @@ const messagesSlice = createSlice({
         if (conv) conv.messagesLoading = true;
       })
       .addCase(loadConversationMessages.fulfilled, (state, action) => {
-        const conv = state.conversations.find((c) => c.id === action.payload.conversationId);
+        const conv =
+          state.conversations.find((c) => c.id === action.payload.conversationId) ||
+          state.conversations.find((c) => c.id === action.meta.arg);
         if (!conv) return;
+        if (
+          action.payload.conversationId !== conv.id &&
+          action.payload.sourceConversationId === conv.id
+        ) {
+          conv.id = action.payload.conversationId;
+        }
         conv.messages = action.payload.messages;
         conv.messagesLoaded = true;
         conv.messagesLoading = false;
@@ -464,7 +526,7 @@ const messagesSlice = createSlice({
         const conv = state.conversations.find((c) => c.id === action.meta.arg);
         if (conv) {
           conv.messagesLoading = false;
-          conv.messagesLoaded = true;
+          conv.messagesLoaded = false;
         }
       })
       .addCase(markConversationRead.fulfilled, (state, action) => {

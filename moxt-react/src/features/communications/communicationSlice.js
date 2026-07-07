@@ -3,7 +3,7 @@ import { supabase } from '../../services/supabaseClient'
 import { fromRow, fromRows } from '../../services/remoteRowMapper'
 import { createLocalStorage } from '../../services/createLocalStorage'
 import { findConversationByParticipants, participantKey } from './conversationUtils'
-import { persistConversationRemote } from './conversationPersist'
+import { persistConversationRemote, resolveMessageLoadScope } from './conversationPersist'
 import {
   buildParticipantProfilesMap,
   fetchParticipantProfilesFromRemote,
@@ -97,6 +97,13 @@ export function normalizeConversation(conv) {
   }
 }
 
+function preservedLocalMessages(conversation) {
+  if (conversation.messagesLoaded || (conversation.messages?.length ?? 0) > 0) {
+    return conversation.messages || []
+  }
+  return []
+}
+
 export function mergeConversations(localConversations, remoteConversations) {
   const byId = new Map(
     remoteConversations.map((conv) => [conv.id, normalizeConversation(conv)]),
@@ -107,8 +114,9 @@ export function mergeConversations(localConversations, remoteConversations) {
     if (remoteConv) {
       byId.set(localConv.id, {
         ...remoteConv,
-        messages: localConv.messagesLoaded ? localConv.messages : [],
-        messagesLoaded: localConv.messagesLoaded ?? false,
+        messages: preservedLocalMessages(localConv),
+        messagesLoaded:
+          localConv.messagesLoaded ?? (localConv.messages?.length ?? 0) > 0,
         messagesLoading: localConv.messagesLoading ?? false,
         drafts: localConv.drafts ?? remoteConv.drafts,
         unreadBy: { ...remoteConv.unreadBy, ...localConv.unreadBy },
@@ -135,12 +143,14 @@ export function mergeConversations(localConversations, remoteConversations) {
     const older = newer === conv ? existing : conv
     byParticipant.set(key, {
       ...newer,
-      messages: newer.messagesLoaded
-        ? newer.messages
-        : older.messagesLoaded
-          ? older.messages
-          : [],
-      messagesLoaded: newer.messagesLoaded || older.messagesLoaded,
+      messages: preservedLocalMessages(newer).length
+        ? preservedLocalMessages(newer)
+        : preservedLocalMessages(older),
+      messagesLoaded:
+        newer.messagesLoaded ||
+        older.messagesLoaded ||
+        (newer.messages?.length ?? 0) > 0 ||
+        (older.messages?.length ?? 0) > 0,
       messagesLoading: newer.messagesLoading || older.messagesLoading,
       messageCount: Math.max(newer.messageCount || 0, older.messageCount || 0),
       unreadBy: { ...older.unreadBy, ...newer.unreadBy },
@@ -623,7 +633,12 @@ const communicationSlice = createSlice({
       if (!exists) state.notifications.unshift(action.payload)
     },
     setConversationMessages(state, action) {
-      const conversation = state.conversations.find((c) => c.id === action.payload.conversationId)
+      const conversation =
+        state.conversations.find((c) => c.id === action.payload.conversationId) ||
+        findConversationByParticipants(
+          state.conversations,
+          action.payload.participantIds || [],
+        )
       if (!conversation) return
       const remoteMessages = (action.payload.messages || []).map(normalizeMessage)
       const remoteIds = new Set(remoteMessages.map((message) => message.id))
@@ -657,7 +672,7 @@ const communicationSlice = createSlice({
         const conversation = state.conversations.find((c) => c.id === action.meta.arg)
         if (conversation) {
           conversation.messagesLoading = false
-          conversation.messagesLoaded = true
+          conversation.messagesLoaded = false
         }
       })
       .addCase('communications/loadParticipantProfiles/fulfilled', (state, action) => {
@@ -676,20 +691,53 @@ const communicationSlice = createSlice({
 export const loadConversationMessages = createAsyncThunk(
   'communications/loadConversationMessages',
   async (conversationId, { dispatch, getState }) => {
+    const localConversation = getState().communications.conversations.find(
+      (item) => item.id === conversationId,
+    )
+    const { canonicalId, conversationIds, remoteRow } = await resolveMessageLoadScope(
+      conversationId,
+      localConversation,
+    )
+
+    if (canonicalId !== conversationId && remoteRow) {
+      dispatch(
+        replaceConversationId({
+          fromId: conversationId,
+          conversation: normalizeConversation({
+            ...fromRow(remoteRow),
+            messages: localConversation?.messages || [],
+            messagesLoaded: localConversation?.messagesLoaded ?? false,
+            messagesLoading: localConversation?.messagesLoading ?? false,
+            drafts: localConversation?.drafts,
+          }),
+        }),
+      )
+    }
+
     const { data, error } = await supabase
       .from('messages')
       .select('*')
-      .eq('conversation_id', conversationId)
+      .in('conversation_id', conversationIds)
       .order('created_at', { ascending: true })
       .limit(200)
     if (error) throw error
+
+    const messagesById = new Map()
+    for (const row of data || []) {
+      const message = normalizeMessage(fromRow(row))
+      messagesById.set(message.id, message)
+    }
+    const messages = [...messagesById.values()].sort(
+      (left, right) => new Date(left.createdAt) - new Date(right.createdAt),
+    )
+
     dispatch(
       setConversationMessages({
-        conversationId,
-        messages: fromRows(data || []).map(normalizeMessage),
+        conversationId: canonicalId,
+        messages,
       }),
     )
-    return { conversationId, count: (data || []).length }
+    return { conversationId: canonicalId, count: messages.length }
   },
 )
 
@@ -842,6 +890,31 @@ export const openConversationWithContact = createAsyncThunk(
     }
 
     return normalizeConversation(created)
+  },
+)
+
+export const refreshConversations = createAsyncThunk(
+  'communications/refreshConversations',
+  async (_, { getState, dispatch }) => {
+    const uid = getState().auth.user?.id
+    if (!uid || !supabase) return 0
+
+    const { data, error } = await supabase
+      .from('conversations')
+      .select('*')
+      .contains('participant_ids', [uid])
+      .order('updated_at', { ascending: false })
+      .limit(100)
+    if (error) throw error
+
+    const conversations = mergeConversations(
+      getState().communications.conversations,
+      fromRows(data || []).map((conv) =>
+        normalizeConversation({ ...conv, messages: [], messagesLoaded: false }),
+      ),
+    )
+    dispatch(setAll({ conversations }))
+    return conversations.length
   },
 )
 

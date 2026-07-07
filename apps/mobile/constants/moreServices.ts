@@ -1,4 +1,5 @@
-import { bottomNavigationPaths } from '@moxt/shared';
+import { bottomNavigationPaths, moreServicesExcludedPaths } from '@moxt/shared';
+import { selectUnreadMessageCount } from '@/store/messages';
 
 export type MoreServiceItem = {
   id: string;
@@ -145,15 +146,19 @@ export function filterNavigationGroups(
 
 export function badgeForItem(
   item: MoreServiceItem,
-  state: { notifications: { items: { read?: boolean }[] }; messages: { conversations: unknown[] } },
+  state: {
+    auth: { user?: { id?: string } | null };
+    notifications: { items: { read?: boolean }[] };
+    messages: { conversations: Parameters<typeof selectUnreadMessageCount>[0] };
+  },
 ): number {
   if (item.badgeSelector === 'notifications') {
     return state.notifications.items.filter((n) => !n.read).length;
   }
   if (item.badgeSelector === 'messages') {
-    return state.messages.conversations.length;
+    return selectUnreadMessageCount(state.messages.conversations, state.auth.user?.id);
   }
   return 0;
 }
 
-export { bottomNavigationPaths };
+export { bottomNavigationPaths, moreServicesExcludedPaths };

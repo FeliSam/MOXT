@@ -63,6 +63,9 @@ const skipPersistence = new Set([
   'communications/loadConversationMessages/pending',
   'communications/loadConversationMessages/fulfilled',
   'communications/loadConversationMessages/rejected',
+  'communications/refreshConversations/pending',
+  'communications/refreshConversations/fulfilled',
+  'communications/refreshConversations/rejected',
 ])
 
 // Debounce timers per key — évite d'écrire en localStorage à chaque action Redux

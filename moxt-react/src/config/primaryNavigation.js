@@ -24,19 +24,7 @@ export const bottomNavigationPaths = new Set(bottomNavigationItems.map((item) =>
 
 export const primaryNavigationPaths = new Set(primaryNavigationItems.map((item) => item.path))
 
-/** Masqué dans la sidebar mobile — accessible via bottom nav ou header */
-export const sidebarMobileHiddenPaths = new Set([
-  '/dashboard',
-  '/transfers',
-  '/marketplace',
-  '/parcels',
-  '/messages',
-  '/notifications',
-  '/jobs/applications',
-])
-
-/** Menu « Plus » mobile — exclut la bottom nav et les raccourcis déjà dans l'en-tête */
-export const moreServicesExcludedPaths = new Set([
-  ...bottomNavigationPaths,
-  ...sidebarMobileHiddenPaths,
-])
+export {
+  moreServicesExcludedPaths,
+  sidebarMobileHiddenPaths,
+} from '@moxt/shared/config/navigation.js'

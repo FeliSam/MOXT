@@ -1,7 +1,6 @@
 import { supabase } from './supabaseClient'
 import {
   ensureConversationFromRemote,
-  loadConversationMessages,
   receiveRemoteConversation,
   receiveRemoteMessage,
   receiveRemoteNotification,
@@ -67,10 +66,25 @@ async function ingestRemoteMessage(conversationId, row, userId, dispatch, getSta
     await dispatch(ensureConversationFromRemote(conversationId))
     conversation = getState().communications.conversations.find((c) => c.id === conversationId)
   }
-  if (!conversation) {
-    await dispatch(loadConversationMessages(conversationId))
-    return
+  if (!conversation && supabase) {
+    const { data } = await supabase
+      .from('conversations')
+      .select('*')
+      .eq('id', conversationId)
+      .maybeSingle()
+    if (data) {
+      const remoteConversation = normalizeConversation({
+        ...fromRow(data),
+        messages: [],
+        messagesLoaded: false,
+      })
+      if (remoteConversation.participantIds.includes(userId)) {
+        dispatch(receiveRemoteConversation(remoteConversation))
+        conversation = getState().communications.conversations.find((c) => c.id === conversationId)
+      }
+    }
   }
+  if (!conversation) return
 
   const message = normalizeMessage(fromRow(row))
   const alreadyExists = conversation.messages.some((m) => m.id === message.id)
@@ -80,6 +94,7 @@ async function ingestRemoteMessage(conversationId, row, userId, dispatch, getSta
 
 let channel = null
 let activeUserId = null
+let reconnectTimer = null
 
 export function startRealtimeSubscription(userId, dispatch, getState) {
   if (channel && activeUserId === userId) return
@@ -88,6 +103,11 @@ export function startRealtimeSubscription(userId, dispatch, getState) {
     supabase.removeChannel(channel)
     channel = null
     activeUserId = null
+  }
+
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer)
+    reconnectTimer = null
   }
 
   activeUserId = userId
@@ -163,10 +183,25 @@ export function startRealtimeSubscription(userId, dispatch, getState) {
       (payload) => dispatch(removeRemoteListing(payload.old.id)),
     )
 
-    .subscribe()
+    .subscribe((status) => {
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        if (reconnectTimer) return
+        reconnectTimer = setTimeout(() => {
+          reconnectTimer = null
+          if (activeUserId === userId) {
+            channel = null
+            startRealtimeSubscription(userId, dispatch, getState)
+          }
+        }, 3000)
+      }
+    })
 }
 
 export function stopRealtimeSubscription() {
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer)
+    reconnectTimer = null
+  }
   if (channel) {
     supabase.removeChannel(channel)
     channel = null

@@ -343,7 +343,7 @@ export default function TransferDetailScreen() {
             ['Montant envoyé', formatMoney(amountSent, currFrom)],
             ['Montant reçu (estimé)', formatMoney(amountReceived, currTo)],
             ['Total à payer', formatMoney(totalToPay, currFrom)],
-            ['Simulation', 'Oui, aucun argent transmis'],
+            ['Mode', 'Estimation — aucun débit automatique'],
           ].map(([label, value]) => (
             <View key={label} className={twTransfer.factBlock}>
               <Text className={twTransfer.factLabel}>{label}</Text>

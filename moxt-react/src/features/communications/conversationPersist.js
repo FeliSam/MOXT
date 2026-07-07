@@ -1,5 +1,53 @@
 import { supabase } from '../../services/supabaseClient'
 import { conversationToRemoteRow, messageToRemoteRow } from './messagingRemote'
+import { participantKey } from './conversationUtils'
+
+/** Résout l'id canonique et tous les ids liés (doublons participant_key) pour charger les messages. */
+export async function resolveMessageLoadScope(conversationId, conversation) {
+  const conversationIds = new Set([conversationId])
+  let canonicalId = conversationId
+  let participantKeyValue = conversation ? participantKey(conversation.participantIds) : null
+  let remoteRow = null
+
+  if (!supabase) {
+    return { canonicalId, conversationIds: [...conversationIds], remoteRow }
+  }
+
+  const { data: row, error } = await supabase
+    .from('conversations')
+    .select('*')
+    .eq('id', conversationId)
+    .maybeSingle()
+  if (error) throw error
+
+  if (row) {
+    remoteRow = row
+    conversationIds.add(row.id)
+    canonicalId = row.id
+    participantKeyValue ||= row.participant_key
+  }
+
+  if (participantKeyValue) {
+    const { data: siblings, error: siblingsError } = await supabase
+      .from('conversations')
+      .select('id, updated_at')
+      .eq('participant_key', participantKeyValue)
+      .order('updated_at', { ascending: false })
+    if (siblingsError) throw siblingsError
+    for (const sibling of siblings || []) {
+      conversationIds.add(sibling.id)
+    }
+    if (siblings?.[0]?.id) {
+      canonicalId = siblings[0].id
+    }
+  }
+
+  return {
+    canonicalId,
+    conversationIds: [...conversationIds],
+    remoteRow,
+  }
+}
 
 /** Enregistre une conversation sans doublon participant_key (réutilise l'id existant). */
 export async function persistConversationRemote(conversation) {

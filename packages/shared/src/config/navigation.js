@@ -20,3 +20,19 @@ export const bottomNavigationItems = [
 ];
 
 export const bottomNavigationPaths = new Set(bottomNavigationItems.map((item) => item.path));
+
+/** Masqué dans le menu Plus — déjà dans la bottom nav ou l'en-tête */
+export const sidebarMobileHiddenPaths = new Set([
+  '/dashboard',
+  '/transfers',
+  '/marketplace',
+  '/parcels',
+  '/messages',
+  '/notifications',
+  '/jobs/applications',
+]);
+
+export const moreServicesExcludedPaths = new Set([
+  ...bottomNavigationPaths,
+  ...sidebarMobileHiddenPaths,
+]);

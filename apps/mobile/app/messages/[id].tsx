@@ -36,7 +36,13 @@ export default function ChatScreen() {
 
   useEffect(() => {
     if (!id || !conversation) return;
-    if (!conversation.messagesLoaded && !conversation.messagesLoading) {
+    if (conversation.messagesLoading) return;
+    const loadedCount = conversation.messages.length;
+    const expectedCount = conversation.messageCount || 0;
+    const needsReload =
+      !conversation.messagesLoaded ||
+      (expectedCount > 0 && loadedCount < expectedCount);
+    if (needsReload) {
       dispatch(loadConversationMessages(id));
     }
   }, [conversation, dispatch, id]);

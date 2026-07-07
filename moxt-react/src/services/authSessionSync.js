@@ -5,6 +5,17 @@ import { startRealtimeSubscription, stopRealtimeSubscription } from './realtimeS
 
 let authSubscription = null
 let visibilityHandler = null
+let lastConversationRefresh = 0
+const CONVERSATION_REFRESH_MS = 15000
+
+async function refreshConversationsIfNeeded(dispatch, getState) {
+  if (!getState().auth.user) return
+  const now = Date.now()
+  if (now - lastConversationRefresh < CONVERSATION_REFRESH_MS) return
+  lastConversationRefresh = now
+  const { refreshConversations } = await import('../features/communications/communicationSlice')
+  dispatch(refreshConversations())
+}
 
 async function syncSessionToStore(session, dispatch, getState) {
   if (!session) {
@@ -52,9 +63,10 @@ export function startAuthSessionSync(store) {
 
   visibilityHandler = () => {
     if (document.visibilityState !== 'visible') return
-    supabase.auth.getSession().then(({ data: sessionData }) => {
+    supabase.auth.getSession().then(async ({ data: sessionData }) => {
       if (sessionData.session) {
-        syncSessionToStore(sessionData.session, dispatch, getState)
+        await syncSessionToStore(sessionData.session, dispatch, getState)
+        await refreshConversationsIfNeeded(dispatch, getState)
       } else if (getState().auth.user) {
         stopRealtimeSubscription()
         dispatch(clearSession())
