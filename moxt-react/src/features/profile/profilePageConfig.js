@@ -117,7 +117,7 @@ export const accountSections = [
 
 export const quickStatsConfig = [
   { label: 'Transferts', icon: FiRepeat, to: '/transfers/history', key: 'transfers' },
-  { label: 'Annonces', icon: FiShoppingBag, to: '/marketplace/mine', key: 'listings' },
+  { label: 'Publications', icon: FiShoppingBag, to: '/publications/mine', key: 'listings' },
   { label: 'Colis', icon: FiPackage, to: '/parcels', key: 'parcels' },
   { label: 'Favoris', icon: FiHeart, to: '/favorites', key: 'favorites' },
 ]

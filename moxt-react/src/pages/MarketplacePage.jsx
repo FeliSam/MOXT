@@ -89,9 +89,9 @@ export function MarketplacePage() {
         ]}
         actions={
           <>
-            <Link to="/marketplace/mine">
+            <Link to="/publications/mine">
               <Button variant="secondary" icon={FiList}>
-                Mes annonces
+                Mes publications
               </Button>
             </Link>
             <Button icon={FiPlus} onClick={() => navigate('/marketplace/publish')}>

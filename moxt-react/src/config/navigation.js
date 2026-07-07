@@ -35,6 +35,7 @@ export const routePreloaders = {
   '/local-data': () => import('../pages/LocalDataPage'),
   '/news': () => import('../pages/NewsPage'),
   '/marketplace': () => import('../pages/MarketplacePage'),
+  '/publications/mine': () => import('../pages/MyPublicationsPage'),
   '/marketplace/mine': () => import('../pages/MyListingsPage'),
   '/messages': () => import('../pages/MessagesPage'),
   '/notifications': () => import('../pages/NotificationsPage'),
@@ -130,7 +131,7 @@ export const navigationGroups = [
     color: 'from-slate-500 to-slate-700',
     children: [
       { id: 'favorites', label: 'Mes favoris', path: '/favorites', icon: FiHeart },
-      { id: 'my-listings', label: 'Mes annonces', path: '/marketplace/mine', icon: FiList },
+      { id: 'my-publications', label: 'Mes publications', path: '/publications/mine', icon: FiList },
       { id: 'profile', label: 'Mon profil', path: '/profile', icon: FiUser },
     ],
   },

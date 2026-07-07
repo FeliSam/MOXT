@@ -4,10 +4,9 @@ import { FiEdit2, FiHeart, FiPlus, FiRepeat, FiShoppingBag, FiTrash2 } from 'rea
 import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import * as Yup from 'yup'
-import { Badge } from '../components/ui/Badge'
+import { Badge, PillBadge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
-import { CatalogArchiveTabs } from '../components/ui/CatalogArchiveTabs'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Input } from '../components/ui/Input'
@@ -131,7 +130,18 @@ export function FavoritesPage() {
       />
 
       <section className="grid gap-6">
-        <CatalogArchiveTabs active={categoryTab} onChange={setCategoryTab} tabs={categoryTabs} />
+        <div className="scrollbar-hidden -mx-1 flex touch-pan-x gap-2 overflow-x-auto px-1 pb-1">
+          {categoryTabs.map((tab) => (
+            <PillBadge
+              key={tab.key}
+              active={categoryTab === tab.key}
+              onClick={() => setCategoryTab(tab.key)}
+              className="shrink-0 whitespace-nowrap"
+            >
+              {tab.label} ({tab.count})
+            </PillBadge>
+          ))}
+        </div>
         {visibleCategories.length ? (
           visibleCategories.map((category) => (
             <FavoriteCategorySection

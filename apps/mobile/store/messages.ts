@@ -120,13 +120,47 @@ function normalizeRelatedContextEntry(entry) {
   };
 }
 
+function defaultRelatedPath(relatedType?: string, relatedId?: string) {
+  if (!relatedId) return null;
+  const builders: Record<string, (id: string) => string> = {
+    listing: (id) => `/listing/${id}`,
+    job: (id) => `/jobs/${id}`,
+    parcel: (id) => `/(tabs)/parcels`,
+    event: (id) => `/events/${id}`,
+    business: (id) => `/organization`,
+  };
+  return builders[relatedType || '']?.(relatedId) || null;
+}
+
+function buildContextPreview(
+  entry: Partial<RelatedContext>,
+  conversation: Partial<Conversation> = {},
+): RelatedSnapshot | null {
+  const snapshot = entry.relatedSnapshot;
+  const relatedType = entry.relatedType || conversation.relatedType;
+  const relatedId = entry.relatedId || conversation.relatedId;
+  const relatedPath = entry.relatedPath || conversation.relatedPath;
+  const path = snapshot?.path || relatedPath || defaultRelatedPath(relatedType, relatedId);
+  if (!path) return null;
+  return {
+    type: snapshot?.type || relatedType || 'general',
+    id: snapshot?.id || relatedId || '',
+    title: snapshot?.title || conversation.title || 'Annonce',
+    path,
+    subtitle: snapshot?.subtitle ?? null,
+    imageUrl: snapshot?.imageUrl ?? null,
+    badge: snapshot?.badge ?? null,
+    details: snapshot?.details ?? [],
+  };
+}
+
 function normalizeRelatedContexts(conversation: Partial<Conversation>): RelatedContext[] {
   const raw = conversation.relatedContexts ?? [];
   const parsed = Array.isArray(raw)
     ? raw.map(normalizeRelatedContextEntry).filter(Boolean) as RelatedContext[]
     : [];
   if (parsed.length) return parsed;
-  if (!conversation.relatedSnapshot && !conversation.relatedId) return [];
+  if (!conversation.relatedSnapshot && !conversation.relatedId && !conversation.relatedPath) return [];
   return [
     {
       id: `CTX-legacy-${conversation.relatedId || 'unknown'}`,
@@ -223,18 +257,14 @@ export type TimelineItem =
 
 export function buildConversationTimeline(conversation: Conversation): TimelineItem[] {
   const relatedItems = (conversation.relatedContexts || []).flatMap((entry) => {
-    const snapshot = entry.relatedSnapshot?.path
-      ? entry.relatedSnapshot
-      : entry.relatedSnapshot && entry.relatedPath
-        ? { ...entry.relatedSnapshot, path: entry.relatedPath }
-        : entry.relatedSnapshot;
-    if (!snapshot?.path) return [];
+    const preview = buildContextPreview(entry, conversation);
+    if (!preview?.path) return [];
     return [
       {
         kind: 'related' as const,
         id: entry.id,
         at: entry.introducedAt,
-        preview: snapshot,
+        preview,
       },
     ];
   });

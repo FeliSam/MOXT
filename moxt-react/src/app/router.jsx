@@ -67,6 +67,10 @@ const LoginPage = lazyPage(() => import('../pages/LoginPage'), 'LoginPage')
 const LocalDataPage = lazyPage(() => import('../pages/LocalDataPage'), 'LocalDataPage')
 const MarketplacePage = lazyPage(() => import('../pages/MarketplacePage'), 'MarketplacePage')
 const MyListingsPage = lazyPage(() => import('../pages/MyListingsPage'), 'MyListingsPage')
+const MyPublicationsPage = lazyPage(
+  () => import('../pages/MyPublicationsPage'),
+  'MyPublicationsPage',
+)
 const UserPublicationsPage = lazyPage(
   () => import('../pages/UserPublicationsPage'),
   'UserPublicationsPage',
@@ -219,6 +223,7 @@ export function AppRouter() {
             />
             <Route path="/marketplace" element={<MarketplacePage />} />
             <Route path="/marketplace/publish" element={<PublishListingPage />} />
+            <Route path="/publications/mine" element={<MyPublicationsPage />} />
             <Route path="/marketplace/mine" element={<MyListingsPage />} />
             <Route path="/users/:userId/annonces" element={<UserPublicationsPage />} />
             <Route path="/marketplace/:listingId/edit" element={<EditListingPage />} />
@@ -234,7 +239,7 @@ export function AppRouter() {
               <Route
                 key={path}
                 path={`/${path}`}
-                element={<Navigate to="/marketplace/mine" replace />}
+                element={<Navigate to="/publications/mine" replace />}
               />
             ))}
             <Route

@@ -56,7 +56,20 @@ export function ConversationPanel({
 }) {
   const peer = getConversationPeer(active, user.id)
   const relatedPreview = useSelector((state) => resolveRelatedSnapshot(state, active))
-  const timeline = useMemo(() => buildConversationTimeline(active, user.id), [active, user.id])
+  const timeline = useMemo(() => {
+    const items = buildConversationTimeline(active, user.id)
+    if (items.some((item) => item.kind === 'related')) return items
+    if (!relatedPreview?.path) return items
+    return [
+      {
+        kind: 'related',
+        id: `CTX-resolved-${active.relatedId || active.id}`,
+        at: new Date(active.createdAt || active.updatedAt || Date.now()),
+        preview: relatedPreview,
+      },
+      ...items,
+    ]
+  }, [active, relatedPreview, user.id])
   const messageListRef = useRef(null)
   const composerRef = useRef(null)
   const menuRef = useRef(null)

@@ -293,7 +293,7 @@ export function PublishListingPage() {
         sourceType="listing"
         sourceId={shareModal.sourceId}
         sourceData={shareModal.sourceData}
-        onClose={() => { setShareModal(null); navigate('/marketplace/mine') }}
+        onClose={() => { setShareModal(null); navigate('/publications/mine?type=listing') }}
       />
     )}
     <div className="mx-auto grid max-w-3xl gap-7">

@@ -9,21 +9,87 @@ import { useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { radii, shadows, spacing, typography } from '@/theme/colors';
 
-export default function MyListingsScreen() {
+type ArchiveTab = 'active' | 'archived';
+type TypeTab = 'listing' | 'parcel' | 'job' | 'other';
+
+const TYPE_TABS: { id: TypeTab; label: string }[] = [
+  { id: 'listing', label: 'Annonces' },
+  { id: 'parcel', label: 'Colis' },
+  { id: 'job', label: 'Jobs' },
+  { id: 'other', label: 'Autres' },
+];
+
+const todayIso = () => new Date().toISOString().slice(0, 10);
+
+function isActiveParcel(parcel: { status?: string; departureDate?: string }) {
+  if (!parcel || parcel.status !== 'active') return false;
+  if (parcel.departureDate && parcel.departureDate < todayIso()) return false;
+  return true;
+}
+
+export default function MyPublicationsScreen() {
   const { translateLabel } = useLanguage();
   const colors = useThemeColors();
   const user = useAppSelector((state) => state.auth.user);
   const listings = useAppSelector((state) =>
-    state.marketplace.items.filter((item) => item.ownerId === user?.id),
+    state.marketplace.items.filter((item) => item.ownerId === user?.id && !item.businessId),
   );
-  const [tab, setTab] = useState<'active' | 'archived'>('active');
+  const parcels = useAppSelector((state) =>
+    state.parcels.items.filter((item) => item.ownerId === user?.id && !item.businessId),
+  );
+  const [archiveTab, setArchiveTab] = useState<ArchiveTab>('active');
+  const [typeTab, setTypeTab] = useState<TypeTab>('listing');
 
-  const active = useMemo(() => listings.filter((item) => item.status === 'active'), [listings]);
-  const archived = useMemo(
+  const activeListings = useMemo(
+    () => listings.filter((item) => item.status === 'active'),
+    [listings],
+  );
+  const archivedListings = useMemo(
     () => listings.filter((item) => item.status !== 'active'),
     [listings],
   );
-  const visible = tab === 'active' ? active : archived;
+  const activeParcels = useMemo(() => parcels.filter(isActiveParcel), [parcels]);
+  const archivedParcels = useMemo(() => parcels.filter((item) => !isActiveParcel(item)), [parcels]);
+
+  const typeCounts = {
+    listing: archiveTab === 'active' ? activeListings.length : archivedListings.length,
+    parcel: archiveTab === 'active' ? activeParcels.length : archivedParcels.length,
+    job: 0,
+    other: 0,
+  };
+
+  const archiveCounts = {
+    active: activeListings.length + activeParcels.length,
+    archived: archivedListings.length + archivedParcels.length,
+  };
+
+  const visible = useMemo(() => {
+    if (typeTab === 'listing') {
+      return (archiveTab === 'active' ? activeListings : archivedListings).map((item) => ({
+        id: item.id,
+        title: item.title,
+        subtitle: `${item.status} · ${item.views || 0} ${translateLabel('vues')}`,
+        route: `/listing/${item.id}` as const,
+      }));
+    }
+    if (typeTab === 'parcel') {
+      return (archiveTab === 'active' ? activeParcels : archivedParcels).map((item) => ({
+        id: item.id,
+        title: `${item.origin} → ${item.destination}`,
+        subtitle: item.status,
+        route: `/(tabs)/parcels` as const,
+      }));
+    }
+    return [];
+  }, [
+    activeListings,
+    activeParcels,
+    archiveTab,
+    archivedListings,
+    archivedParcels,
+    translateLabel,
+    typeTab,
+  ]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -34,9 +100,9 @@ export default function MyListingsScreen() {
         </Pressable>
       </View>
       <PageHeader
-        eyebrow="Marketplace"
-        title={translateLabel('Mes annonces')}
-        description={`${active.length} active(s) · ${archived.length} archive(s)`}
+        eyebrow="Compte"
+        title={translateLabel('Mes publications')}
+        description={`${archiveCounts.active} active(s) · ${archiveCounts.archived} archive(s)`}
       />
 
       <View style={styles.tabs}>
@@ -46,40 +112,59 @@ export default function MyListingsScreen() {
             style={[
               styles.tab,
               {
-                backgroundColor: tab === key ? colors.primary : colors.surface,
+                backgroundColor: archiveTab === key ? colors.primary : colors.surface,
                 borderColor: colors.border,
               },
             ]}
-            onPress={() => setTab(key)}>
-            <Text style={{ color: tab === key ? '#fff' : colors.text, fontWeight: '800' }}>
+            onPress={() => setArchiveTab(key)}>
+            <Text style={{ color: archiveTab === key ? '#fff' : colors.text, fontWeight: '800' }}>
               {translateLabel(key === 'active' ? 'Actives' : 'Archives')} (
-              {key === 'active' ? active.length : archived.length})
+              {archiveCounts[key]})
             </Text>
           </Pressable>
         ))}
       </View>
 
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.typeTabs}>
+        {TYPE_TABS.map((tab) => (
+          <Pressable
+            key={tab.id}
+            style={[
+              styles.typeTab,
+              {
+                backgroundColor: typeTab === tab.id ? colors.primary : colors.surface,
+                borderColor: colors.border,
+              },
+            ]}
+            onPress={() => setTypeTab(tab.id)}>
+            <Text style={{ color: typeTab === tab.id ? '#fff' : colors.text, fontWeight: '700' }}>
+              {translateLabel(tab.label)} ({typeCounts[tab.id]})
+            </Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+
       <ScrollView contentContainerStyle={styles.list}>
         {visible.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={{ fontSize: 40 }}>🏪</Text>
+            <Text style={{ fontSize: 40 }}>{typeTab === 'parcel' ? '📦' : typeTab === 'job' ? '💼' : '📋'}</Text>
             <Text style={[styles.emptyTitle, { color: colors.text }]}>
-              {translateLabel(tab === 'active' ? 'Aucune annonce active' : 'Aucune archive')}
+              {translateLabel(
+                archiveTab === 'active' ? 'Aucune publication active' : 'Aucune archive',
+              )}
             </Text>
           </View>
         ) : (
-          visible.map((listing) => (
+          visible.map((item) => (
             <Pressable
-              key={listing.id}
+              key={item.id}
               style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }, shadows.card]}
-              onPress={() => router.push(`/listing/${listing.id}` as any)}>
+              onPress={() => router.push(item.route as any)}>
               <View style={{ flex: 1, gap: 4 }}>
                 <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={2}>
-                  {listing.title}
+                  {item.title}
                 </Text>
-                <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-                  {listing.status} · {listing.views || 0} {translateLabel('vues')}
-                </Text>
+                <Text style={{ color: colors.textMuted, fontSize: 12 }}>{item.subtitle}</Text>
               </View>
               <Text style={{ color: colors.primary, fontWeight: '800' }}>→</Text>
             </Pressable>
@@ -96,8 +181,10 @@ const styles = StyleSheet.create({
   backRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.sm },
   backArrow: { fontSize: 18, fontWeight: '800' },
   backLabel: { ...typography.bodyBold },
-  tabs: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, marginBottom: spacing.md },
+  tabs: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, marginBottom: spacing.sm },
   tab: { flex: 1, borderWidth: 1, borderRadius: radii.lg, paddingVertical: spacing.sm, alignItems: 'center' },
+  typeTabs: { gap: spacing.sm, paddingHorizontal: spacing.lg, marginBottom: spacing.md },
+  typeTab: { borderWidth: 1, borderRadius: radii.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   list: { padding: spacing.lg, gap: spacing.md },
   card: {
     borderWidth: 1,

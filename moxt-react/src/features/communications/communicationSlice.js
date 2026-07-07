@@ -11,7 +11,7 @@ import {
   formatProfileName,
   mergeParticipantProfiles,
 } from './conversationDisplay'
-import { appendRelatedContext, normalizeRelatedContexts } from './conversationTimeline'
+import { appendRelatedContext, mergeRelatedContextArrays, normalizeRelatedContexts } from './conversationTimeline'
 
 const PENDING_MESSAGE_MS = 15000
 
@@ -116,6 +116,28 @@ function preservedLocalMessages(conversation) {
   return []
 }
 
+function mergeConversationRelatedFields(remoteConv, localConv) {
+  const relatedContexts = mergeRelatedContextArrays(
+    remoteConv.relatedContexts,
+    localConv.relatedContexts,
+  )
+  return {
+    relatedType: remoteConv.relatedType || localConv.relatedType,
+    relatedId: remoteConv.relatedId || localConv.relatedId,
+    relatedPath: remoteConv.relatedPath || localConv.relatedPath,
+    relatedSnapshot: remoteConv.relatedSnapshot || localConv.relatedSnapshot,
+    relatedContexts: relatedContexts.length
+      ? relatedContexts
+      : normalizeRelatedContexts({
+          ...remoteConv,
+          relatedType: remoteConv.relatedType || localConv.relatedType,
+          relatedId: remoteConv.relatedId || localConv.relatedId,
+          relatedPath: remoteConv.relatedPath || localConv.relatedPath,
+          relatedSnapshot: remoteConv.relatedSnapshot || localConv.relatedSnapshot,
+        }),
+  }
+}
+
 export function mergeConversations(localConversations, remoteConversations) {
   const byId = new Map(
     remoteConversations.map((conv) => [conv.id, normalizeConversation(conv)]),
@@ -124,8 +146,9 @@ export function mergeConversations(localConversations, remoteConversations) {
   for (const localConv of localConversations.map(normalizeConversation)) {
     const remoteConv = byId.get(localConv.id)
     if (remoteConv) {
-      byId.set(localConv.id, {
+      byId.set(localConv.id, normalizeConversation({
         ...remoteConv,
+        ...mergeConversationRelatedFields(remoteConv, localConv),
         messages: preservedLocalMessages(localConv),
         messagesLoaded:
           localConv.messagesLoaded ?? (localConv.messages?.length ?? 0) > 0,
@@ -136,7 +159,7 @@ export function mergeConversations(localConversations, remoteConversations) {
         pinnedBy: localConv.pinnedBy?.length ? localConv.pinnedBy : remoteConv.pinnedBy,
         mutedBy: localConv.mutedBy?.length ? localConv.mutedBy : remoteConv.mutedBy,
         blockedBy: localConv.blockedBy?.length ? localConv.blockedBy : remoteConv.blockedBy,
-      })
+      }))
     } else {
       byId.set(localConv.id, localConv)
     }
@@ -153,8 +176,9 @@ export function mergeConversations(localConversations, remoteConversations) {
     const newer =
       new Date(conv.updatedAt) >= new Date(existing.updatedAt) ? conv : existing
     const older = newer === conv ? existing : conv
-    byParticipant.set(key, {
+    byParticipant.set(key, normalizeConversation({
       ...newer,
+      ...mergeConversationRelatedFields(newer, older),
       messages: preservedLocalMessages(newer).length
         ? preservedLocalMessages(newer)
         : preservedLocalMessages(older),
@@ -167,7 +191,7 @@ export function mergeConversations(localConversations, remoteConversations) {
       messageCount: Math.max(newer.messageCount || 0, older.messageCount || 0),
       unreadBy: { ...older.unreadBy, ...newer.unreadBy },
       drafts: { ...older.drafts, ...newer.drafts },
-    })
+    }))
   }
 
   return [...byParticipant.values()].sort(

@@ -1,3 +1,4 @@
+import { buildContextPreview } from './conversationTimeline'
 import { resolveRelatedSnapshot } from './relatedSnapshot'
 
 function truncate(text, max = 48) {
@@ -22,7 +23,10 @@ export function getLatestRelatedPreview(conversation, state) {
   if (!conversation) return null
   const contexts = conversation.relatedContexts || []
   const latestContext = contexts.at(-1)
-  if (latestContext?.relatedSnapshot) return latestContext.relatedSnapshot
+  if (latestContext) {
+    const preview = buildContextPreview(latestContext, conversation)
+    if (preview?.path) return preview
+  }
   return resolveRelatedSnapshot(state, conversation)
 }
 

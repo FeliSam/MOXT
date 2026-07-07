@@ -54,6 +54,25 @@ describe('conversationTimeline', () => {
     expect(third.relatedContexts).toHaveLength(2)
   })
 
+  it('reconstruit une preview depuis relatedPath sans snapshot.path', () => {
+    const timeline = buildConversationTimeline(
+      {
+        relatedType: 'listing',
+        relatedId: 'LST-1',
+        relatedPath: '/marketplace/LST-1',
+        relatedSnapshot: { type: 'listing', id: 'LST-1', title: 'Velo' },
+        createdAt: '2026-07-07T10:00:00.000Z',
+        messages: [],
+      },
+      'u1',
+    )
+
+    expect(timeline).toHaveLength(1)
+    expect(timeline[0].kind).toBe('related')
+    expect(timeline[0].preview.path).toBe('/marketplace/LST-1')
+    expect(timeline[0].preview.title).toBe('Velo')
+  })
+
   it('ordonne annonces et messages dans le fil', () => {
     const timeline = buildConversationTimeline(
       {

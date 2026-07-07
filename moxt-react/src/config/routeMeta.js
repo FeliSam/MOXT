@@ -2,7 +2,6 @@ export const routeMetadata = [
   { pattern: /^\/dashboard$/, title: 'Accueil', eyebrow: 'MOXT' },
   { pattern: /^\/activities$/, title: 'Mes activités', eyebrow: 'Compte' },
   { pattern: /^\/favorites$/, title: 'Mes favoris', eyebrow: 'Compte' },
-  { pattern: /^\/marketplace\/mine$/, title: 'Mes annonces', eyebrow: 'Marketplace' },
   {
     pattern: /^\/users\/[^/]+\/annonces$/,
     title: 'Annonces du membre',
@@ -77,16 +76,22 @@ export const routeMetadata = [
   },
   { pattern: /^\/p2p$/, title: 'Échanges P2P', eyebrow: 'Finances' },
   {
+    pattern: /^\/publications\/mine$/,
+    title: 'Mes publications',
+    eyebrow: 'Compte',
+    back: '/dashboard',
+  },
+  {
     pattern: /^\/marketplace\/mine$/,
-    title: 'Mes annonces',
-    eyebrow: 'Marketplace',
-    back: '/marketplace',
+    title: 'Mes publications',
+    eyebrow: 'Compte',
+    back: '/dashboard',
   },
   {
     pattern: /^\/marketplace\/[^/]+\/edit$/,
     title: 'Modifier l’annonce',
     eyebrow: 'Marketplace',
-    back: '/marketplace/mine',
+    back: '/publications/mine?type=listing',
   },
   {
     pattern: /^\/marketplace\/[^/]+$/,

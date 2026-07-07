@@ -76,9 +76,9 @@ export function UserPublicationsPage() {
         }
         actions={
           <>
-            <Link to={isOwner ? '/marketplace/mine' : '/marketplace'}>
+            <Link to={isOwner ? '/publications/mine?type=listing' : '/marketplace'}>
               <Button variant="secondary" icon={FiArrowLeft}>
-                {isOwner ? 'Gérer mes annonces' : 'Marketplace'}
+                {isOwner ? 'Gérer mes publications' : 'Marketplace'}
               </Button>
             </Link>
             {isOwner ? (

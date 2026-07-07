@@ -1,3 +1,40 @@
+const DEFAULT_PATH_BUILDERS = {
+  listing: (id) => `/marketplace/${id}`,
+  job: (id) => `/jobs/${id}`,
+  parcel: (id) => `/parcels/${id}`,
+  event: (id) => `/events/${id}`,
+  business: (id) => `/businesses/${id}`,
+  transfer: (id) => `/transfers/${id}`,
+  p2p: (id) => `/p2p/${id}`,
+}
+
+function defaultRelatedPath(relatedType, relatedId) {
+  if (!relatedId) return null
+  return DEFAULT_PATH_BUILDERS[relatedType]?.(relatedId) || null
+}
+
+export function buildContextPreview(entry, conversation = {}) {
+  const snapshot = entry?.relatedSnapshot
+  const relatedType = entry?.relatedType || conversation?.relatedType
+  const relatedId = entry?.relatedId || conversation?.relatedId
+  const relatedPath = entry?.relatedPath || conversation?.relatedPath
+  const path =
+    snapshot?.path || relatedPath || defaultRelatedPath(relatedType, relatedId)
+
+  if (!path) return null
+
+  return {
+    type: snapshot?.type || relatedType || 'general',
+    id: snapshot?.id || relatedId,
+    title: snapshot?.title || conversation?.title || 'Annonce',
+    path,
+    subtitle: snapshot?.subtitle ?? null,
+    imageUrl: snapshot?.imageUrl ?? null,
+    badge: snapshot?.badge ?? null,
+    details: snapshot?.details ?? [],
+  }
+}
+
 export function normalizeRelatedContextEntry(entry) {
   if (!entry) return null
   return {
@@ -19,14 +56,15 @@ export function normalizeRelatedContexts(conversation) {
 
   const snapshot = conversation?.relatedSnapshot
   const relatedId = conversation?.relatedId
-  if (!snapshot && !relatedId) return []
+  const relatedPath = conversation?.relatedPath
+  if (!snapshot && !relatedId && !relatedPath) return []
 
   return [
     {
       id: `CTX-legacy-${relatedId || 'unknown'}`,
       relatedType: conversation.relatedType,
       relatedId,
-      relatedPath: conversation.relatedPath,
+      relatedPath,
       relatedSnapshot: snapshot,
       introducedAt: conversation.createdAt || conversation.updatedAt || new Date().toISOString(),
       introducedBy: conversation.createdBy || null,
@@ -36,6 +74,22 @@ export function normalizeRelatedContexts(conversation) {
 
 export function relatedContextKey(relatedType, relatedId) {
   return `${relatedType || 'general'}:${relatedId || ''}`
+}
+
+export function mergeRelatedContextArrays(remoteContexts = [], localContexts = []) {
+  const normalize = (contexts) =>
+    (Array.isArray(contexts) ? contexts : [])
+      .map(normalizeRelatedContextEntry)
+      .filter(Boolean)
+
+  const merged = [...normalize(remoteContexts)]
+  for (const entry of normalize(localContexts)) {
+    const key = relatedContextKey(entry.relatedType, entry.relatedId)
+    if (!merged.some((item) => relatedContextKey(item.relatedType, item.relatedId) === key)) {
+      merged.push(entry)
+    }
+  }
+  return merged
 }
 
 export function appendRelatedContext(
@@ -69,17 +123,17 @@ export function appendRelatedContext(
 
 export function buildConversationTimeline(conversation, userId) {
   const relatedItems = normalizeRelatedContexts(conversation)
-    .map((entry) => ({
-      kind: 'related',
-      id: entry.id,
-      at: new Date(entry.introducedAt),
-      preview: entry.relatedSnapshot?.path
-        ? entry.relatedSnapshot
-        : entry.relatedSnapshot && entry.relatedPath
-          ? { ...entry.relatedSnapshot, path: entry.relatedPath }
-          : entry.relatedSnapshot,
-    }))
-    .filter((item) => item.preview?.path)
+    .map((entry) => {
+      const preview = buildContextPreview(entry, conversation)
+      if (!preview?.path) return null
+      return {
+        kind: 'related',
+        id: entry.id,
+        at: new Date(entry.introducedAt || conversation.createdAt || conversation.updatedAt),
+        preview,
+      }
+    })
+    .filter(Boolean)
 
   const messageItems = (conversation.messages || [])
     .filter((message) => !message.deletedBy?.includes(userId))
