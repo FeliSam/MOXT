@@ -25,7 +25,6 @@ import {
 } from './MessageBubble'
 import { conversationMessageCount } from './messageUtils'
 import { RelatedContentPreview } from './RelatedContentPreview'
-import { MessageAvatar } from './MessageBubble'
 
 export function ConversationPanel({
   active,
