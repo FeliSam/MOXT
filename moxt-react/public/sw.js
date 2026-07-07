@@ -1,11 +1,24 @@
-const CACHE_NAME = 'moxt-v1';
+const CACHE_NAME = 'moxt-v4';
 const STATIC_ASSETS = [
-  '/',
   '/manifest.webmanifest',
   '/favicon.svg',
   '/icon-192.png',
   '/icon-512.png',
 ];
+
+function canCacheRequest(request) {
+  const url = new URL(request.url);
+  // Ignore extensions Chrome, data:, blob:, etc.
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return false;
+  return url.origin === self.location.origin;
+}
+
+function cacheResponse(request, response) {
+  if (!canCacheRequest(request)) return;
+  if (!response || response.status !== 200 || response.type === 'opaque') return;
+  const clone = response.clone();
+  caches.open(CACHE_NAME).then((cache) => cache.put(request, clone)).catch(() => {});
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -23,19 +36,33 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+function isNavigation(request) {
+  return request.mode === 'navigate' || request.destination === 'document';
+}
+
+function isHashedAsset(url) {
+  return /\/assets\/[^/]+-[A-Za-z0-9_-]{4,}\.(js|css)$/.test(url.pathname);
+}
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
+  if (!canCacheRequest(request) && !url.hostname.includes('supabase')) return;
 
-  // API calls: network-first
-  if (url.pathname.startsWith('/api') || url.hostname.includes('supabase')) {
+  // Supabase : réseau seulement (pas de cache — évite les erreurs cross-origin)
+  if (url.hostname.includes('supabase')) {
+    event.respondWith(fetch(request).catch(() => caches.match(request)));
+    return;
+  }
+
+  // HTML : réseau en premier → toujours la dernière version du site
+  if (isNavigation(request) || url.pathname === '/' || url.pathname.endsWith('.html')) {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          cacheResponse(request, response);
           return response;
         })
         .catch(() => caches.match(request))
@@ -43,27 +70,30 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets & pages: cache-first with network fallback
+  // Assets Vite hashés : cache OK (immuables)
+  if (isHashedAsset(url)) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request).then((response) => {
+          cacheResponse(request, response);
+          return response;
+        });
+      })
+    );
+    return;
+  }
+
   event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) return cached;
-      return fetch(request).then((response) => {
-        if (response.status === 200 && response.type === 'basic') {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-        }
+    fetch(request)
+      .then((response) => {
+        cacheResponse(request, response);
         return response;
-      });
-    }).catch(() => {
-      // Offline fallback for navigation requests
-      if (request.mode === 'navigate') {
-        return caches.match('/');
-      }
-    })
+      })
+      .catch(() => caches.match(request))
   );
 });
 
-// Push notifications
 self.addEventListener('push', (event) => {
   if (!event.data) return;
   const data = event.data.json();

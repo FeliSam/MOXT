@@ -1,0 +1,33 @@
+# MOXT — configuration Supabase (projet rbvqfkccbkwjxkvpnwqn)
+# Appliquer : npm run setup:supabase
+
+project_id = "moxt"
+
+[auth]
+enabled = true
+site_url = "https://moxt.netlify.app"
+additional_redirect_urls = [
+  "http://localhost:5173/**",
+  "http://127.0.0.1:5173/**",
+  "https://moxt.netlify.app/**",
+]
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true
+
+[api]
+enabled = true
+
+[db]
+major_version = 17
+
+[storage]
+enabled = true
+
+[storage.vector]
+enabled = false
+
+[realtime]
+enabled = true

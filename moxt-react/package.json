@@ -20,6 +20,8 @@
     "cap:gradle:ensure": "powershell -ExecutionPolicy Bypass -File scripts/ensure-gradle.ps1",
     "cap:dev": "node scripts/cap-dev.mjs",
     "cap:dev:sync": "node scripts/cap-dev.mjs --sync",
+    "cap:prod:sync": "node scripts/cap-prod.mjs",
+    "cap:prod:android": "node scripts/cap-prod.mjs && cap open android",
     "lint": "eslint .",
     "test": "node ../node_modules/vitest/vitest.mjs run",
     "test:watch": "node ../node_modules/vitest/vitest.mjs",

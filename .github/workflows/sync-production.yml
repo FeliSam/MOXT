@@ -1,0 +1,58 @@
+# Synchronise Supabase + variables Netlify (déclenchement manuel)
+# Secrets GitHub requis :
+#   NETLIFY_AUTH_TOKEN, NETLIFY_SITE_ID
+#   VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+
+name: Sync production config
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Link Supabase
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: npx supabase link --project-ref rbvqfkccbkwjxkvpnwqn --yes
+
+      - name: Push Supabase auth config
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: npx supabase config push --yes
+
+      - name: Sync Netlify environment variables
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          for KEY in VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY; do
+            VALUE="${!KEY}"
+            curl -sf -X PUT "https://api.netlify.com/api/v1/accounts/self/env/${KEY}" \
+              -H "Authorization: Bearer ${NETLIFY_AUTH_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "{\"site_id\":\"${NETLIFY_SITE_ID}\",\"values\":[{\"value\":\"${VALUE}\",\"context\":\"all\"}]}"
+            echo "Set ${KEY}"
+          done
+
+      - name: Trigger Netlify rebuild
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          curl -sf -X POST "https://api.netlify.com/api/v1/sites/${NETLIFY_SITE_ID}/builds" \
+            -H "Authorization: Bearer ${NETLIFY_AUTH_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '{"clear_cache":true}'

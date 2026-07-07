@@ -50,9 +50,7 @@ export function onInstallAvailable(cb: () => void) {
 }
 
 function showUpdateAvailable() {
-  if (confirm('Une nouvelle version de MOXT est disponible. Mettre à jour ?')) {
-    window.location.reload();
-  }
+  window.location.reload();
 }
 
 export function isStandalone(): boolean {
