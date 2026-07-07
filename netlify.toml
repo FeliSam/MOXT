@@ -2,7 +2,7 @@
 # https://docs.netlify.com/configure-builds/file-based-configuration/
 
 [build]
-  command = "node scripts/write-vite-env.mjs && npm run web:build"
+  command = "npm run build -w moxt"
   publish = "moxt-react/dist"
 
 [build.environment]

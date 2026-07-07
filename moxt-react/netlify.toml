@@ -1,9 +1,29 @@
-# Si Netlify a Base directory = moxt-react, ce fichier est utilisé à la place du netlify.toml racine.
+# Netlify détecte ce fichier via packagePath: moxt-react
+# Les commandes s'exécutent depuis la racine du monorepo (/opt/build/repo).
+
 [build]
-  command = "npm run build"
-  publish = "dist"
+  command = "npm run build -w moxt"
+  publish = "moxt-react/dist"
 
 [build.environment]
   NODE_VERSION = "22"
+  NPM_FLAGS = "--include=dev"
   VITE_SUPABASE_URL = "https://rbvqfkccbkwjxkvpnwqn.supabase.co"
   VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJidnFma2NjYmt3anhrdnBud3FuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NjI2NDMsImV4cCI6MjA5ODIzODY0M30.ZpAr5eEnxoxy3TQ4hIA3SoX1NTuPg-0pt4UQ2mS5lDI"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
