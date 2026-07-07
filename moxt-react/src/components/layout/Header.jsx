@@ -1,12 +1,11 @@
-import { FiBell, FiCheckCircle, FiChevronDown, FiClock, FiMessageSquare, FiMoon, FiSun } from 'react-icons/fi'
+import { FiBell, FiCheckCircle, FiChevronDown, FiClock, FiHeart, FiMessageSquare, FiMoon, FiSun } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useLocation } from 'react-router-dom'
 import { getRouteMetadata } from '../../config/routeMeta'
 import { useTheme } from '../../contexts/useTheme'
 import { useLanguage } from '../../contexts/useLanguage'
-import { selectUnreadMessageCount } from '../../features/selectors'
+import { selectUnreadMessageCount, selectUnreadNotificationCount } from '../../features/selectors'
 import { useSmartNavbar } from '../../hooks/useSmartNavbar'
-import { LanguagePicker } from '../ui/LanguagePicker'
 import { Brand } from './Brand'
 import { GlobalSearch } from './GlobalSearch'
 
@@ -15,14 +14,10 @@ export function Header({ hideOnMobile = false }) {
   const location = useLocation()
   const route = getRouteMetadata(location.pathname)
   const user = useSelector((state) => state.auth.user)
-  const unreadCount = useSelector(
-    (state) =>
-      state.communications.notifications.filter((item) => item.userId === user?.id && !item.read)
-        .length,
-  )
+  const unreadCount = useSelector(selectUnreadNotificationCount)
   const unreadMessagesCount = useSelector(selectUnreadMessageCount)
   const { theme, toggleTheme } = useTheme()
-  const { language, setLanguage, translateLabel } = useLanguage()
+  const { translateLabel } = useLanguage()
   const visible = useSmartNavbar({ disabled: location.pathname === '/messages' })
 
   return (
@@ -86,7 +81,13 @@ export function Header({ hideOnMobile = false }) {
             ) : null}
           </Link>
 
-          <LanguagePicker language={language} setLanguage={setLanguage} className="hidden lg:block" />
+          <Link
+            to="/favorites"
+            className="hidden size-10 place-items-center rounded-2xl text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)] lg:grid"
+            aria-label="Mes favoris"
+          >
+            <FiHeart className="text-lg" />
+          </Link>
 
           <button
             className="hidden size-10 place-items-center rounded-2xl text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)] sm:grid"

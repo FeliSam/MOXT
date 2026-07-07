@@ -24,7 +24,9 @@ export function useNavigationBadges(userId) {
   return function badgeFor(item, state) {
     if (!userId || !item.badgeSelector) return 0
     if (item.badgeSelector === 'notifications') {
-      return state.communications.notifications.filter((n) => n.userId === userId && !n.read).length
+      return state.communications.notifications.filter(
+        (n) => n.userId === userId && n.type !== 'message' && !n.archived && !n.read,
+      ).length
     }
     if (item.badgeSelector === 'messages') {
       return state.communications.conversations

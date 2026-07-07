@@ -455,6 +455,13 @@ const handlers = {
     })
     if (error) throw error
   },
+  'communications/markNotificationRead': async (payload) => {
+    await update('notifications', payload, { read: true })
+  },
+  'communications/markAllNotificationsRead': async (userId) => {
+    const { error } = await supabase.from('notifications').update({ read: true }).eq('user_id', userId)
+    if (error) throw error
+  },
 
   // ── Posts / Fil d'actualité ───────────────────────────────────────────────────
   'posts/createPost': async (payload) => {

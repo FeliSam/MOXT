@@ -1,6 +1,6 @@
-import { FiBox, FiBriefcase, FiHome, FiMessageSquare, FiRepeat, FiShoppingBag } from 'react-icons/fi'
+import { FiBox, FiBriefcase, FiFileText, FiHome, FiMessageSquare, FiRepeat, FiShoppingBag, FiUsers } from 'react-icons/fi'
 
-/** Sidebar — ordre complet (6 entrées) */
+/** Sidebar — ordre complet (8 entrées desktop, messagerie + entreprise + actualité en fin) */
 export const primaryNavigationItems = [
   { id: 'home', label: 'Accueil', path: '/dashboard', icon: FiHome },
   { id: 'transfers', label: 'Transfert', path: '/transfers', icon: FiRepeat },
@@ -8,6 +8,8 @@ export const primaryNavigationItems = [
   { id: 'parcels', label: 'Colis', path: '/parcels', icon: FiBox },
   { id: 'jobs', label: 'Jobs', path: '/jobs', icon: FiBriefcase },
   { id: 'messages', label: 'Messagerie', path: '/messages', icon: FiMessageSquare, badgeSelector: 'messages' },
+  { id: 'businesses', label: 'Entreprise', path: '/businesses', icon: FiUsers },
+  { id: 'news', label: 'Actualité', path: '/news', icon: FiFileText },
 ]
 
 const primaryById = Object.fromEntries(primaryNavigationItems.map((item) => [item.id, item]))

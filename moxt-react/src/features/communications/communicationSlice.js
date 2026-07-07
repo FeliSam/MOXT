@@ -19,6 +19,15 @@ const conversationsStorage = createLocalStorage('moxt-conversations-v1')
 const supportStorage = createLocalStorage('moxt-support-v1')
 const notificationsStorage = createLocalStorage('moxt-notifications-v1')
 
+function normalizeNotification(notification) {
+  if (!notification) return notification
+  return {
+    ...notification,
+    read: notification.read === true,
+    archived: notification.archived === true,
+  }
+}
+
 function parseIdList(value) {
   if (Array.isArray(value)) return value
   if (typeof value === 'string') {
@@ -212,13 +221,31 @@ const communicationSlice = createSlice({
   initialState: {
     conversations: conversationsStorage.read().map(normalizeConversation),
     support: supportStorage.read(),
-    notifications: notificationsStorage.read(),
+    notifications: notificationsStorage.read().map(normalizeNotification),
   },
   reducers: {
     setAll(state, action) {
       const payload = { ...action.payload }
       if (payload.conversations) {
         payload.conversations = payload.conversations.map(normalizeConversation)
+      }
+      if (payload.notifications) {
+        const localById = Object.fromEntries(state.notifications.map((item) => [item.id, item]))
+        const merged = payload.notifications.map((remote) => {
+          const local = localById[remote.id]
+          const normalized = normalizeNotification(remote)
+          if (!local) return normalized
+          return normalizeNotification({
+            ...normalized,
+            read: normalized.read || local.read === true,
+            archived: normalized.archived || local.archived === true,
+          })
+        })
+        const remoteIds = new Set(merged.map((item) => item.id))
+        const localOnly = state.notifications
+          .filter((item) => !remoteIds.has(item.id))
+          .map(normalizeNotification)
+        payload.notifications = [...merged, ...localOnly]
       }
       Object.assign(state, payload)
     },
@@ -634,7 +661,7 @@ const communicationSlice = createSlice({
     },
     addNotification: {
       reducer(state, action) {
-        state.notifications.unshift(action.payload)
+        state.notifications.unshift(normalizeNotification(action.payload))
       },
       prepare(values) {
         return {
@@ -671,7 +698,7 @@ const communicationSlice = createSlice({
     receiveRemoteNotification(state, action) {
       if (action.payload.type === 'message') return
       const exists = state.notifications.some((n) => n.id === action.payload.id)
-      if (!exists) state.notifications.unshift(action.payload)
+      if (!exists) state.notifications.unshift(normalizeNotification(action.payload))
     },
     setConversationMessages(state, action) {
       const conversation =
