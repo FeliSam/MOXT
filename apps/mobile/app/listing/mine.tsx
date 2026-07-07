@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
   backRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.sm },
   backArrow: { fontSize: 18, fontWeight: '800' },
-  backLabel: { ...typography.bodyBold },
+  backLabel: { ...typography.label },
   tabs: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, marginBottom: spacing.sm },
   tab: { flex: 1, borderWidth: 1, borderRadius: radii.lg, paddingVertical: spacing.sm, alignItems: 'center' },
   typeTabs: { gap: spacing.sm, paddingHorizontal: spacing.lg, marginBottom: spacing.md },
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
   },
-  cardTitle: { ...typography.bodyBold },
+  cardTitle: { ...typography.label },
   empty: { alignItems: 'center', gap: spacing.sm, paddingTop: spacing.xl },
-  emptyTitle: { ...typography.h3 },
+  emptyTitle: { ...typography.sectionTitle },
 });

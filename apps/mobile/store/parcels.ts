@@ -2,6 +2,8 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export type ParcelItem = {
   id: string;
+  ownerId?: string;
+  businessId?: string;
   ownerName?: string;
   origin?: string;
   destination?: string;

@@ -16,6 +16,8 @@ export type ListingItem = {
   address?: string;
   images?: string[];
   ownerId?: string;
+  businessId?: string;
+  views?: number;
   sellerName?: string;
   contact?: string;
   whatsapp?: string;

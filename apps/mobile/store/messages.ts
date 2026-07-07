@@ -107,16 +107,19 @@ function bumpConversationToTop(state: MessagesState, conversationId: string) {
   state.conversations.unshift(conversation);
 }
 
-function normalizeRelatedContextEntry(entry) {
-  if (!entry) return null;
+function normalizeRelatedContextEntry(
+  entry: RelatedContext | Record<string, unknown> | null | undefined,
+): RelatedContext | null {
+  if (!entry || typeof entry !== 'object') return null;
+  const raw = entry as Record<string, unknown>;
   return {
-    id: String(entry.id),
-    relatedType: entry.relatedType || entry.related_type,
-    relatedId: entry.relatedId || entry.related_id,
-    relatedPath: entry.relatedPath || entry.related_path,
-    relatedSnapshot: (entry.relatedSnapshot || entry.related_snapshot) as RelatedSnapshot | null,
-    introducedAt: String(entry.introducedAt || entry.introduced_at || ''),
-    introducedBy: entry.introducedBy || entry.introduced_by || null,
+    id: String(raw.id),
+    relatedType: (raw.relatedType || raw.related_type) as string | undefined,
+    relatedId: (raw.relatedId || raw.related_id) as string | undefined,
+    relatedPath: (raw.relatedPath || raw.related_path) as string | undefined,
+    relatedSnapshot: (raw.relatedSnapshot || raw.related_snapshot) as RelatedSnapshot | null,
+    introducedAt: String(raw.introducedAt || raw.introduced_at || ''),
+    introducedBy: (raw.introducedBy || raw.introduced_by || null) as string | null,
   };
 }
 
