@@ -2,8 +2,9 @@ import { FiHeart } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Button } from '../../components/ui/Button'
 import { toggleAccountFavorite } from './accountSlice'
+import { buildFavoriteSnapshot } from './favoriteUtils'
 
-export function FavoriteButton({ relatedId, relatedType, title, path }) {
+export function FavoriteButton({ relatedId, relatedType, title, path, entity }) {
   const dispatch = useDispatch()
   const user = useSelector((state) => state.auth.user)
   const favorite = useSelector((state) =>
@@ -25,6 +26,7 @@ export function FavoriteButton({ relatedId, relatedType, title, path }) {
             relatedId,
             title,
             path,
+            snapshot: entity ? buildFavoriteSnapshot(relatedType, entity) : undefined,
           }),
         )
       }

@@ -67,6 +67,10 @@ const LoginPage = lazyPage(() => import('../pages/LoginPage'), 'LoginPage')
 const LocalDataPage = lazyPage(() => import('../pages/LocalDataPage'), 'LocalDataPage')
 const MarketplacePage = lazyPage(() => import('../pages/MarketplacePage'), 'MarketplacePage')
 const MyListingsPage = lazyPage(() => import('../pages/MyListingsPage'), 'MyListingsPage')
+const UserPublicationsPage = lazyPage(
+  () => import('../pages/UserPublicationsPage'),
+  'UserPublicationsPage',
+)
 const PublishListingPage = lazyPage(
   () => import('../pages/PublishListingPage'),
   'PublishListingPage',
@@ -216,6 +220,7 @@ export function AppRouter() {
             <Route path="/marketplace" element={<MarketplacePage />} />
             <Route path="/marketplace/publish" element={<PublishListingPage />} />
             <Route path="/marketplace/mine" element={<MyListingsPage />} />
+            <Route path="/users/:userId/annonces" element={<UserPublicationsPage />} />
             <Route path="/marketplace/:listingId/edit" element={<EditListingPage />} />
             <Route path="/marketplace/:listingId" element={<ListingDetailPage />} />
             {MARKETPLACE_LEGACY_PATHS.map((path) => (

@@ -507,7 +507,10 @@ const handlers = {
       const fav = state.account.favorites.find(
         (f) => f.relatedId === payload.relatedId && f.userId === payload.userId,
       )
-      if (fav) await upsert('favorites', fav)
+      if (fav) {
+        const { snapshot: _snapshot, ...remoteFav } = fav
+        await upsert('favorites', remoteFav)
+      }
     } else {
       await supabase
         .from('favorites')

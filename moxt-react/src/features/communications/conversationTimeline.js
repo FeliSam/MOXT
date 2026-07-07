@@ -68,12 +68,18 @@ export function appendRelatedContext(
 }
 
 export function buildConversationTimeline(conversation, userId) {
-  const relatedItems = normalizeRelatedContexts(conversation).map((entry) => ({
-    kind: 'related',
-    id: entry.id,
-    at: new Date(entry.introducedAt),
-    preview: entry.relatedSnapshot,
-  }))
+  const relatedItems = normalizeRelatedContexts(conversation)
+    .map((entry) => ({
+      kind: 'related',
+      id: entry.id,
+      at: new Date(entry.introducedAt),
+      preview: entry.relatedSnapshot?.path
+        ? entry.relatedSnapshot
+        : entry.relatedSnapshot && entry.relatedPath
+          ? { ...entry.relatedSnapshot, path: entry.relatedPath }
+          : entry.relatedSnapshot,
+    }))
+    .filter((item) => item.preview?.path)
 
   const messageItems = (conversation.messages || [])
     .filter((message) => !message.deletedBy?.includes(userId))

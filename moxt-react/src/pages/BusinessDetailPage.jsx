@@ -156,6 +156,7 @@ export function BusinessDetailPage() {
               relatedType="business"
               title={business.name}
               path={`/businesses/${business.id}`}
+              entity={business}
             />
           </div>
         </div>

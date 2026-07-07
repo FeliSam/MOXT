@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { Badge } from '../../components/ui/Badge'
 import { categoriesForType, LISTING_TYPES_META } from '../../config/listingConfig'
 import { markListingViewed, toggleAccountFavorite } from '../account/accountSlice'
+import { buildListingFavoriteSnapshot } from '../account/favoriteUtils'
 import { formatMoney } from '../transfers/transferUtils'
 
 // Memoise : la grille parente se re-rend a chaque frappe du formulaire de
@@ -40,6 +41,7 @@ function MarketplaceListingCardComponent({ listing }) {
         relatedId: listing.id,
         title: listing.title,
         path: `/marketplace/${listing.id}`,
+        snapshot: buildListingFavoriteSnapshot(listing),
       }),
     )
   }

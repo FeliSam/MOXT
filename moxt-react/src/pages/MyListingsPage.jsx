@@ -1,173 +1,133 @@
-import { useState } from 'react'
-import {
-  FiArchive,
-  FiArrowLeft,
-  FiCheckCircle,
-  FiCopy,
-  FiEdit2,
-  FiRotateCcw,
-  FiTrash2,
-} from 'react-icons/fi'
+import { useMemo, useState } from 'react'
+import { FiArrowLeft, FiEye, FiPlus, FiShoppingBag } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
-import { Card } from '../components/ui/Card'
-import { EmptyState } from '../components/ui/EmptyState'
+import { CatalogArchiveTabs } from '../components/ui/CatalogArchiveTabs'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { MyListingCard } from '../features/marketplace/MyListingCard'
 import {
   deleteListing,
   duplicateListing,
   updateListingStatus,
 } from '../features/marketplace/marketplaceSlice'
-import { formatMoney } from '../features/transfers/transferUtils'
+import {
+  groupListingsByType,
+  isActiveListing,
+  isArchivedListing,
+} from '../features/marketplace/listingCatalogUtils'
 
 export function MyListingsPage() {
   const dispatch = useDispatch()
   const [deleting, setDeleting] = useState(null)
+  const [tab, setTab] = useState('active')
   const user = useSelector((state) => state.auth.user)
   const listings = useSelector((state) =>
     state.marketplace.items.filter((item) => item.ownerId === user.id),
   )
+
+  const activeListings = useMemo(() => listings.filter(isActiveListing), [listings])
+  const archivedListings = useMemo(() => listings.filter(isArchivedListing), [listings])
+  const visibleListings = tab === 'active' ? activeListings : archivedListings
+  const grouped = useMemo(() => groupListingsByType(visibleListings), [visibleListings])
+  const totalViews = listings.reduce((sum, item) => sum + (Number(item.views) || 0), 0)
 
   return (
     <div className="grid gap-7">
       <PageHeader
         eyebrow="Marketplace"
         title="Mes annonces"
-        description="Publiez, suspendez, archivez ou remettez en ligne vos contenus."
+        description="Gérez vos publications par catégorie — actives, archives, vues et actions."
+        stats={[
+          { label: 'Actives', value: activeListings.length },
+          { label: 'Archives', value: archivedListings.length },
+          { label: 'Vues totales', value: totalViews },
+        ]}
         actions={
           <>
-            <Link
-              to="/profile"
-              className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-[var(--app-surface)] px-4 text-sm font-bold shadow-sm hover:bg-[var(--app-surface-muted)]"
-            >
-              <FiArrowLeft /> Retour
+            <Link to={`/users/${user.id}/annonces`}>
+              <Button variant="secondary" icon={FiEye}>
+                Vue publique
+              </Button>
             </Link>
             <Link to="/marketplace">
-              <Button>Explorer la marketplace</Button>
+              <Button variant="secondary" icon={FiArrowLeft}>
+                Marketplace
+              </Button>
+            </Link>
+            <Link to="/marketplace/publish">
+              <Button icon={FiPlus}>Publier</Button>
             </Link>
           </>
         }
       />
-      {listings.length ? (
-        <div className="grid gap-4">
-          {listings.map((listing) => (
-            <Card key={listing.id} className="h-full overflow-hidden">
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="flex min-w-0 gap-4">
-                  <Link
-                    className="w-20 shrink-0 overflow-hidden rounded-[1.25rem] bg-[var(--app-surface-muted)] sm:w-28"
-                    to={`/marketplace/${listing.id}`}
-                  >
-                    {listing.images?.[0] ? (
-                      <img
-                        src={listing.images[0]}
-                        alt={listing.title}
-                        className="h-[180px] w-full object-cover"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="grid h-[180px] w-full place-items-center text-xs font-black text-[var(--app-text-muted)]">
-                        MOXT
-                      </div>
-                    )}
-                  </Link>
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Link
-                        className="font-black hover:text-brand-700"
-                        to={`/marketplace/${listing.id}`}
-                      >
-                        {listing.title}
-                      </Link>
-                      <Badge>{listing.status}</Badge>
-                      <Badge tone="info">{listing.type}</Badge>
-                    </div>
-                    <p className="mt-2 text-sm text-[var(--app-text-muted)]">
-                      {formatMoney(listing.price, listing.currency)} · {listing.views || 0} vues ·{' '}
-                      {listing.favorites?.length || 0} favoris
-                    </p>
-                    <p className="mt-2 line-clamp-2 text-sm text-[var(--app-text-muted)]">
-                      {listing.description}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Link to={`/marketplace/${listing.id}/edit`}>
-                    <Button variant="secondary" icon={FiEdit2}>
-                      Modifier
-                    </Button>
-                  </Link>
-                  <Button
-                    variant="secondary"
-                    icon={FiCopy}
-                    onClick={() => dispatch(duplicateListing({ listing, ownerId: user.id }))}
-                  >
-                    Dupliquer
-                  </Button>
-                  {listing.status !== 'active' ? (
-                    <Button
-                      icon={FiRotateCcw}
-                      onClick={() =>
-                        dispatch(
-                          updateListingStatus({
-                            id: listing.id,
-                            status: 'active',
-                            actorId: user.id,
-                          }),
-                        )
-                      }
-                    >
-                      Republier
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="secondary"
-                      icon={FiCheckCircle}
-                      onClick={() =>
-                        dispatch(
-                          updateListingStatus({
-                            id: listing.id,
-                            status: 'sold',
-                            actorId: user.id,
-                          }),
-                        )
-                      }
-                    >
-                      Marquer vendu
-                    </Button>
-                  )}
-                  <Button
-                    variant="danger"
-                    icon={FiArchive}
-                    onClick={() =>
-                      dispatch(
-                        updateListingStatus({
-                          id: listing.id,
-                          status: 'archived',
-                          actorId: user.id,
-                        }),
-                      )
-                    }
-                  >
-                    Archiver
-                  </Button>
-                  <Button variant="danger" icon={FiTrash2} onClick={() => setDeleting(listing)}>
-                    Supprimer
-                  </Button>
-                </div>
+
+      <CatalogArchiveTabs
+        active={tab}
+        onChange={setTab}
+        tabs={[
+          { key: 'active', label: 'Actives', count: activeListings.length },
+          { key: 'archived', label: 'Archives', count: archivedListings.length },
+        ]}
+      />
+
+      {grouped.length ? (
+        grouped.map((group) => (
+          <section key={group.type} className="grid gap-4">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-black">{group.label}</h2>
+                <p className="text-sm text-[var(--app-text-muted)]">
+                  {group.items.length} annonce{group.items.length > 1 ? 's' : ''} dans cette catégorie
+                </p>
               </div>
-            </Card>
-          ))}
-        </div>
+              <Badge tone="info">{group.label}</Badge>
+            </div>
+            <div className="grid gap-4">
+              {group.items.map((listing) => (
+                <MyListingCard
+                  key={listing.id}
+                  listing={listing}
+                  ownerMode
+                  showViews
+                  onDuplicate={() => dispatch(duplicateListing({ listing, ownerId: user.id }))}
+                  onRepublish={() =>
+                    dispatch(updateListingStatus({ id: listing.id, status: 'active', actorId: user.id }))
+                  }
+                  onMarkSold={() =>
+                    dispatch(updateListingStatus({ id: listing.id, status: 'sold', actorId: user.id }))
+                  }
+                  onArchive={() =>
+                    dispatch(updateListingStatus({ id: listing.id, status: 'archived', actorId: user.id }))
+                  }
+                  onDelete={() => setDeleting(listing)}
+                />
+              ))}
+            </div>
+          </section>
+        ))
       ) : (
         <EmptyState
-          title="Aucune annonce personnelle"
-          description="Votre première publication apparaîtra ici."
+          icon={FiShoppingBag}
+          title={tab === 'active' ? 'Aucune annonce active' : 'Aucune archive'}
+          description={
+            tab === 'active'
+              ? 'Publiez votre première annonce pour la retrouver ici.'
+              : 'Les annonces archivées ou vendues apparaîtront dans cet onglet.'
+          }
+          action={
+            tab === 'active' ? (
+              <Link to="/marketplace/publish">
+                <Button icon={FiPlus}>Publier une annonce</Button>
+              </Link>
+            ) : null
+          }
         />
       )}
+
       <ConfirmDialog
         open={Boolean(deleting)}
         title="Supprimer cette annonce ?"

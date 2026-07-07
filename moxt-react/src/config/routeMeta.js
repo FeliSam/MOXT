@@ -2,6 +2,13 @@ export const routeMetadata = [
   { pattern: /^\/dashboard$/, title: 'Accueil', eyebrow: 'MOXT' },
   { pattern: /^\/activities$/, title: 'Mes activités', eyebrow: 'Compte' },
   { pattern: /^\/favorites$/, title: 'Mes favoris', eyebrow: 'Compte' },
+  { pattern: /^\/marketplace\/mine$/, title: 'Mes annonces', eyebrow: 'Marketplace' },
+  {
+    pattern: /^\/users\/[^/]+\/annonces$/,
+    title: 'Annonces du membre',
+    eyebrow: 'Marketplace',
+    back: '/marketplace',
+  },
   { pattern: /^\/documents$/, title: 'Mes documents', eyebrow: 'Compte' },
   { pattern: /^\/verification$/, title: 'Vérification', eyebrow: 'Compte' },
   { pattern: /^\/security$/, title: 'Sécurité', eyebrow: 'Compte' },

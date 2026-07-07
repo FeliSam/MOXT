@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react'
 import { FiEdit3, FiRss } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
+import { sortByCountryPriority, resolveUserCountryCode } from '@moxt/shared/utils/countryPriority.js'
 import { Button } from '../components/ui/Button'
 import { EmptyState } from '../components/ui/EmptyState'
 import { FeedPostCard } from '../components/ui/FeedPostCard'
 import { PageHeader } from '../components/ui/PageHeader'
 import { ShareToFeedModal } from '../components/ui/ShareToFeedModal'
 import { createPost } from '../features/posts/postsSlice'
+import { resolvePostCountry } from '../features/marketplace/listingCatalogUtils'
 import { SOURCE_TYPE_LABELS } from '../features/posts/postTemplates'
 
 const FILTER_TABS = [
@@ -23,17 +25,19 @@ export function NewsPage() {
   const dispatch = useDispatch()
   const user = useSelector((s) => s.auth.user)
   const posts = useSelector((s) => s.posts?.items ?? [])
+  const appState = useSelector((s) => s)
+  const preferredCountry = resolveUserCountryCode(user)
 
   const [activeFilter, setActiveFilter] = useState('all')
   const [showShareModal, setShowShareModal] = useState(false)
 
-  const filtered = useMemo(
-    () =>
-      activeFilter === 'all'
-        ? posts
-        : posts.filter((p) => p.sourceType === activeFilter),
-    [posts, activeFilter],
-  )
+  const filtered = useMemo(() => {
+    const base =
+      activeFilter === 'all' ? posts : posts.filter((p) => p.sourceType === activeFilter)
+    return sortByCountryPriority(base, preferredCountry, (post) =>
+      resolvePostCountry(post, appState),
+    )
+  }, [activeFilter, appState, posts, preferredCountry])
 
   return (
     <div className="grid gap-7">

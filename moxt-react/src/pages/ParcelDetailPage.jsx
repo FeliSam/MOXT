@@ -15,6 +15,7 @@ import {
 import { Input } from '../components/ui/Input'
 import { PageHeader } from '../components/ui/PageHeader'
 import { ReshareButton } from '../components/ui/ReshareButton'
+import { FavoriteButton } from '../features/account/FavoriteButton'
 import { ContactButton } from '../features/communications/ContactButton'
 import {
   requestParcelReservation,
@@ -163,6 +164,15 @@ export function ParcelDetailPage() {
               relatedPath={`/parcels/${parcel.id}`}
               relatedTitle={`${parcel.origin} vers ${parcel.destination}`}
               relatedType="parcel"
+            />
+          </div>
+          <div className="mt-3">
+            <FavoriteButton
+              relatedId={parcel.id}
+              relatedType="parcel"
+              title={`${parcel.origin} vers ${parcel.destination}`}
+              path={`/parcels/${parcel.id}`}
+              entity={parcel}
             />
           </div>
         </Card>

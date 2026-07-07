@@ -10,6 +10,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { navigationGroups, preloadRoute } from '../../config/navigation'
 import {
+  moreServicesExcludedPaths,
   primaryNavigationItems,
   sidebarMobileHiddenPaths,
 } from '../../config/primaryNavigation'
@@ -213,7 +214,7 @@ export function Sidebar({ open }) {
             >
               <MoreServicesContent
                 badgeFor={(item) => badgeForItem(item, appState)}
-                groups={filterNavigationGroups(groups, role, null, '', translateLabel)}
+                groups={filterNavigationGroups(groups, role, moreServicesExcludedPaths, '', translateLabel)}
                 layout="grid"
                 onNavigate={() => setMoreOpen(false)}
                 translateLabel={translateLabel}

@@ -109,6 +109,7 @@ const accountSlice = createSlice({
             relatedId: values.relatedId,
             title: values.title,
             path: values.path,
+            snapshot: values.snapshot || undefined,
             createdAt: new Date().toISOString(),
           },
         }

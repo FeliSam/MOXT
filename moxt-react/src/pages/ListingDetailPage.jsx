@@ -49,6 +49,7 @@ import {
   updateListingStatus,
 } from '../features/marketplace/marketplaceSlice'
 import { toggleAccountFavorite } from '../features/account/accountSlice'
+import { buildListingFavoriteSnapshot } from '../features/account/favoriteUtils'
 import { addToast } from '../features/ui/uiSlice'
 import { formatMoney } from '../features/transfers/transferUtils'
 import { formatDateTime, formatShortDate } from '../utils/formatters'
@@ -518,6 +519,7 @@ export function ListingDetailPage() {
                 relatedId: listing.id,
                 title: listing.title,
                 path: `/marketplace/${listing.id}`,
+                snapshot: buildListingFavoriteSnapshot(listing),
               }),
             )
           }
@@ -785,6 +787,7 @@ function ListingActionPanel({
                 relatedId: listing.id,
                 title: listing.title,
                 path: `/marketplace/${listing.id}`,
+                snapshot: buildListingFavoriteSnapshot(listing),
               }),
             )
           }
@@ -830,6 +833,12 @@ function SellerCard({ business, className = '', listing, rating, sellerListings 
         <Link to={`/businesses/${business.id}`}>
           <Button className="mt-5 w-full" variant="secondary" icon={FiUser}>
             Voir la fiche entreprise
+          </Button>
+        </Link>
+      ) : listing.ownerId ? (
+        <Link to={`/users/${listing.ownerId}/annonces`}>
+          <Button className="mt-5 w-full" variant="secondary" icon={FiUser}>
+            Voir toutes les annonces
           </Button>
         </Link>
       ) : null}

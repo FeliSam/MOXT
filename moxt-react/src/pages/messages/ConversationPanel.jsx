@@ -25,7 +25,7 @@ import {
   MessageThreadStart,
   shouldGroupMessages,
 } from './MessageBubble'
-import { conversationMessageCount } from './messageUtils'
+import { conversationMessageCount, isMessageFromUser } from './messageUtils'
 import { RelatedContentPreview } from './RelatedContentPreview'
 
 export function ConversationPanel({
@@ -250,7 +250,7 @@ export function ConversationPanel({
                 }
 
                 const message = item.message
-                const mine = message.senderId === user.id
+                const mine = isMessageFromUser(message, user.id)
                 let previousMessage = null
                 for (let cursor = index - 1; cursor >= 0; cursor -= 1) {
                   if (timeline[cursor].kind === 'message') {

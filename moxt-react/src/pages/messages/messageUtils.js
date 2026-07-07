@@ -1,5 +1,5 @@
 export function messageReadLabel(message, userId) {
-  if (message.senderId !== userId) return ''
+  if (!isMessageFromUser(message, userId)) return ''
   const readers = (message.readBy || []).filter((id) => id !== userId)
   if (readers.length > 0) return '· Lu'
   if (message.deliveredTo?.length) return '· Distribué'
@@ -12,7 +12,7 @@ export function conversationPreview(conversation, userId) {
     const total = conversationMessageCount(conversation, userId)
     return total > 0 ? `${total} message${total > 1 ? 's' : ''}` : 'Démarrez la conversation'
   }
-  const prefix = last.senderId === userId ? 'Vous : ' : ''
+  const prefix = isMessageFromUser(last, userId) ? 'Vous : ' : ''
   const attachmentHint = last.attachment ? '📎 ' : ''
   return `${prefix}${attachmentHint}${last.text}`
 }
@@ -71,4 +71,9 @@ export function resolveNotificationTarget(notification, conversations = []) {
 
 export function isMessageNotification(notification) {
   return notification.type === 'message' || notification.link?.startsWith('/messages')
+}
+
+export function isMessageFromUser(message, userId) {
+  if (!message || !userId) return false
+  return String(message.senderId ?? message.sender_id) === String(userId)
 }

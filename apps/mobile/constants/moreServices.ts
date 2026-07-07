@@ -33,6 +33,8 @@ const WEB_TO_MOBILE: Record<string, string> = {
   '/events': '/search',
   '/messages': '/messages',
   '/notifications': '/notifications',
+  '/favorites': '/favorites',
+  '/marketplace/mine': '/listing/mine',
   '/profile': '/profile/edit',
   '/admin': '/admin',
   '/feature-matrix': '/admin',
@@ -102,7 +104,11 @@ export const navigationGroups: MoreServiceGroup[] = [
   {
     id: 'account',
     label: 'Compte',
-    children: [item('profile', 'Mon profil', '/profile', '👤')],
+    children: [
+      item('favorites', 'Mes favoris', '/favorites', '❤️'),
+      item('my-listings', 'Mes annonces', '/marketplace/mine', '📋'),
+      item('profile', 'Mon profil', '/profile', '👤'),
+    ],
   },
   {
     id: 'administration',

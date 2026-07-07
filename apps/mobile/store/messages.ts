@@ -107,8 +107,24 @@ function bumpConversationToTop(state: MessagesState, conversationId: string) {
   state.conversations.unshift(conversation);
 }
 
+function normalizeRelatedContextEntry(entry) {
+  if (!entry) return null;
+  return {
+    id: String(entry.id),
+    relatedType: entry.relatedType || entry.related_type,
+    relatedId: entry.relatedId || entry.related_id,
+    relatedPath: entry.relatedPath || entry.related_path,
+    relatedSnapshot: (entry.relatedSnapshot || entry.related_snapshot) as RelatedSnapshot | null,
+    introducedAt: String(entry.introducedAt || entry.introduced_at || ''),
+    introducedBy: entry.introducedBy || entry.introduced_by || null,
+  };
+}
+
 function normalizeRelatedContexts(conversation: Partial<Conversation>): RelatedContext[] {
-  const parsed = Array.isArray(conversation.relatedContexts) ? conversation.relatedContexts : [];
+  const raw = conversation.relatedContexts ?? [];
+  const parsed = Array.isArray(raw)
+    ? raw.map(normalizeRelatedContextEntry).filter(Boolean) as RelatedContext[]
+    : [];
   if (parsed.length) return parsed;
   if (!conversation.relatedSnapshot && !conversation.relatedId) return [];
   return [
@@ -207,13 +223,18 @@ export type TimelineItem =
 
 export function buildConversationTimeline(conversation: Conversation): TimelineItem[] {
   const relatedItems = (conversation.relatedContexts || []).flatMap((entry) => {
-    if (!entry.relatedSnapshot?.path) return [];
+    const snapshot = entry.relatedSnapshot?.path
+      ? entry.relatedSnapshot
+      : entry.relatedSnapshot && entry.relatedPath
+        ? { ...entry.relatedSnapshot, path: entry.relatedPath }
+        : entry.relatedSnapshot;
+    if (!snapshot?.path) return [];
     return [
       {
         kind: 'related' as const,
         id: entry.id,
         at: entry.introducedAt,
-        preview: entry.relatedSnapshot,
+        preview: snapshot,
       },
     ];
   });

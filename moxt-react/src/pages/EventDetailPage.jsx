@@ -144,6 +144,7 @@ export function EventDetailPage() {
               relatedType="event"
               title={event.title}
               path={`/events/${event.id}`}
+              entity={event}
             />
           </div>
           {event.ownerId !== user.id ? (

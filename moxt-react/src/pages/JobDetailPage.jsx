@@ -138,6 +138,7 @@ export function JobDetailPage() {
               relatedType="job"
               title={job.title}
               path={`/jobs/${job.id}`}
+              entity={job}
             />
           </div>
           {job.ownerId !== user.id ? (

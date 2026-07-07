@@ -62,28 +62,39 @@ export function normalizeMessage(message) {
   if (!message) return message
   return {
     ...message,
+    senderId: String(message.senderId ?? message.sender_id ?? ''),
+    senderName: message.senderName ?? message.sender_name ?? '',
     attachment: parseJsonValue(message.attachment, null),
     reactions: parseJsonValue(message.reactions, {}),
-    deletedBy: parseIdList(message.deletedBy),
-    deliveredTo: parseIdList(message.deliveredTo),
-    readBy: parseIdList(message.readBy),
+    deletedBy: parseIdList(message.deletedBy ?? message.deleted_by),
+    deliveredTo: parseIdList(message.deliveredTo ?? message.delivered_to),
+    readBy: parseIdList(message.readBy ?? message.read_by),
   }
 }
 
 export function normalizeConversation(conv) {
   if (!conv) return conv
-  const relatedSnapshot = parseJsonValue(conv.relatedSnapshot, conv.relatedSnapshot ?? null)
-  const relatedContexts = parseJsonValue(conv.relatedContexts, conv.relatedContexts ?? [])
+  const relatedSnapshot = parseJsonValue(
+    conv.relatedSnapshot ?? conv.related_snapshot,
+    conv.relatedSnapshot ?? conv.related_snapshot ?? null,
+  )
+  const relatedContexts = parseJsonValue(
+    conv.relatedContexts ?? conv.related_contexts,
+    conv.relatedContexts ?? conv.related_contexts ?? [],
+  )
   const base = {
     ...conv,
-    participantIds: parseIdList(conv.participantIds),
-    unreadBy: parseRecord(conv.unreadBy),
-    archivedBy: parseIdList(conv.archivedBy),
-    pinnedBy: parseIdList(conv.pinnedBy),
-    mutedBy: parseIdList(conv.mutedBy),
-    blockedBy: parseIdList(conv.blockedBy),
+    participantIds: parseIdList(conv.participantIds ?? conv.participant_ids).map(String),
+    unreadBy: parseRecord(conv.unreadBy ?? conv.unread_by),
+    archivedBy: parseIdList(conv.archivedBy ?? conv.archived_by),
+    pinnedBy: parseIdList(conv.pinnedBy ?? conv.pinned_by),
+    mutedBy: parseIdList(conv.mutedBy ?? conv.muted_by),
+    blockedBy: parseIdList(conv.blockedBy ?? conv.blocked_by),
     relatedSnapshot,
-    participantProfiles: parseJsonValue(conv.participantProfiles, conv.participantProfiles ?? {}),
+    participantProfiles: parseJsonValue(
+      conv.participantProfiles ?? conv.participant_profiles,
+      conv.participantProfiles ?? conv.participant_profiles ?? {},
+    ),
     messages: Array.isArray(conv.messages) ? conv.messages : [],
     messagesLoaded: conv.messagesLoaded ?? false,
     messagesLoading: conv.messagesLoading ?? false,
@@ -416,15 +427,19 @@ const communicationSlice = createSlice({
           (item) => item.id === action.payload.conversationId,
         )
         if (!conversation) return
-        const participantIds = parseIdList(conversation.participantIds)
-        if (!participantIds.includes(action.payload.senderId)) return
+        const participantIds = parseIdList(conversation.participantIds).map(String)
+        const senderId = String(action.payload.senderId)
+        if (!participantIds.includes(senderId)) return
         conversation.participantIds = participantIds
-        conversation.messages.push(action.payload.message)
+        conversation.messages.push({
+          ...action.payload.message,
+          senderId: String(action.payload.message.senderId ?? senderId),
+        })
         conversation.messagesLoaded = true
         conversation.messageCount = conversation.messages.length
         conversation.updatedAt = action.payload.message.createdAt
         conversation.participantIds
-          .filter((participantId) => participantId !== action.payload.senderId)
+          .filter((participantId) => participantId !== senderId)
           .forEach((participantId) => {
             conversation.unreadBy ||= {}
             conversation.unreadBy[participantId] = (conversation.unreadBy[participantId] || 0) + 1
@@ -463,7 +478,7 @@ const communicationSlice = createSlice({
       conversation.messages.forEach((message) => {
         message.deliveredTo ||= []
         message.readBy ||= [message.senderId]
-        if (message.senderId !== action.payload.userId) {
+        if (String(message.senderId) !== String(action.payload.userId)) {
           if (!message.deliveredTo.includes(action.payload.userId)) {
             message.deliveredTo.push(action.payload.userId)
           }

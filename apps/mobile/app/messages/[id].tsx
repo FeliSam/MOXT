@@ -130,7 +130,7 @@ export default function ChatScreen() {
           }
 
           const message = item.message;
-          const isMe = message.senderId === user?.id;
+          const isMe = String(message.senderId) === String(user?.id);
           return (
             <View
               style={[

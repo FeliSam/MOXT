@@ -15,8 +15,10 @@ import { RevealListItem } from '../components/ui/RevealListItem'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { Select } from '../components/ui/Select'
 import { useGeographyOptions } from '../hooks/useGeographyOptions'
-import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
+import { sortByCountryPriority, resolveUserCountryCode } from '@moxt/shared/utils/countryPriority.js'
+import { resolveParcelCountry } from '../features/marketplace/listingCatalogUtils'
 import { formatMoney } from '../features/transfers/transferUtils'
+import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 
 export function ParcelsPage() {
   useScrollToSecondSection()
@@ -34,16 +36,16 @@ export function ParcelsPage() {
   const user = useSelector((state) => state.auth.user)
   const { countries } = useGeographyOptions()
   const parcels = useSelector((state) => state.parcels.items)
-  const preferredCountryCode = user.originCountry || user.country || 'RU'
-  const activeCountryCode = filters.country === 'ALL' ? null : filters.country || preferredCountryCode
+  const userCountry = resolveUserCountryCode(user) || 'RU'
+  const activeCountryCode = filters.country === 'ALL' ? null : filters.country || userCountry
   const today = new Date().toISOString().slice(0, 10)
 
   const isArchived = (parcel) =>
     parcel.status === 'completed' || (parcel.departureDate && parcel.departureDate < today)
 
   const visibleParcels = useMemo(
-    () =>
-      parcels.filter((parcel) => {
+    () => {
+      const filtered = parcels.filter((parcel) => {
         if (showMine && (parcel.ownerId !== user.id || parcel.businessId)) return false
         if (!showMine && isArchived(parcel)) return false
         const haystack =
@@ -63,8 +65,10 @@ export function ParcelsPage() {
             parcel.destination.toLowerCase().includes(filters.destination.toLowerCase())) &&
           (!filters.status || showMine || parcel.status === filters.status)
         )
-      }),
-    [activeCountryCode, filters, parcels, showMine, today, user.id],
+      })
+      return sortByCountryPriority(filtered, userCountry, resolveParcelCountry)
+    },
+    [activeCountryCode, filters, parcels, userCountry, showMine, today, user.id],
   )
 
   const archivedParcels = useMemo(

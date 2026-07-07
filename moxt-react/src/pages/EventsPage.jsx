@@ -15,6 +15,8 @@ import { Select } from '../components/ui/Select'
 import { EVENT_CATEGORIES } from '../config/options'
 import { EventRegistrationsPanel } from '../features/events/EventRegistrationsPanel'
 import { formatDate, formatMoney } from '../features/transfers/transferUtils'
+import { sortByCountryPriority, resolveUserCountryCode } from '@moxt/shared/utils/countryPriority.js'
+import { resolveEventCountry } from '../features/marketplace/listingCatalogUtils'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 
 export function EventsPage() {
@@ -26,9 +28,10 @@ export function EventsPage() {
   const user = useSelector((state) => state.auth.user)
   const canManage = !!user
   const events = useSelector((state) => state.events.items)
+  const preferredCountry = resolveUserCountryCode(user)
   const visibleEvents = useMemo(
-    () =>
-      events.filter((event) => {
+    () => {
+      const filtered = events.filter((event) => {
         if (showMine && (event.ownerId !== user.id || event.businessId)) return false
         const haystack =
           `${event.title} ${event.organizerName} ${event.category} ${event.city} ${event.venue}`.toLowerCase()
@@ -40,8 +43,10 @@ export function EventsPage() {
           (!filters.price ||
             (filters.price === 'free' ? Number(event.price) === 0 : Number(event.price) > 0))
         )
-      }),
-    [events, filters, showMine, user.id],
+      })
+      return sortByCountryPriority(filtered, preferredCountry, resolveEventCountry)
+    },
+    [events, filters, preferredCountry, showMine, user.id],
   )
   function clearFilters() {
     setFilters({ query: '', city: '', category: '', price: '' })

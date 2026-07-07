@@ -227,6 +227,6 @@ export function MessageEmptyState() {
 
 export function shouldGroupMessages(previous, current, showDate) {
   if (!previous || showDate) return false
-  if (previous.senderId !== current.senderId) return false
+  if (String(previous.senderId) !== String(current.senderId)) return false
   return new Date(current.createdAt) - new Date(previous.createdAt) < 5 * 60 * 1000
 }
