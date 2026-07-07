@@ -50,7 +50,8 @@ jobs:
 
   e2e-maestro:
     needs: [lint-and-typecheck, test-mobile]
-    if: github.ref == 'refs/heads/main'
+    # Nécessite EXPO_TOKEN + variable repo ENABLE_EAS_CI=true
+    if: github.ref == 'refs/heads/main' && vars.ENABLE_EAS_CI == 'true'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -76,7 +77,8 @@ jobs:
 
   eas-build:
     needs: [lint-and-typecheck, test-shared, test-mobile]
-    if: github.ref == 'refs/heads/main'
+    # Nécessite EXPO_TOKEN + variable repo ENABLE_EAS_CI=true
+    if: github.ref == 'refs/heads/main' && vars.ENABLE_EAS_CI == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -95,7 +97,7 @@ jobs:
 
   eas-submit:
     needs: [eas-build]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && vars.ENABLE_EAS_CI == 'true'
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -119,7 +121,7 @@ jobs:
 
   sentry-sourcemaps:
     needs: [eas-build]
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && vars.ENABLE_EAS_CI == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
