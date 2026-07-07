@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
@@ -8,8 +8,25 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url))
 const monorepoRoot = path.resolve(rootDir, '..')
 const sharedRoot = path.resolve(monorepoRoot, 'packages/shared/src')
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, rootDir, '')
+  const supabaseUrl =
+    env.VITE_SUPABASE_URL ||
+    process.env.VITE_SUPABASE_URL ||
+    'https://rbvqfkccbkwjxkvpnwqn.supabase.co'
+  const supabaseAnonKey =
+    env.VITE_SUPABASE_ANON_KEY ||
+    process.env.VITE_SUPABASE_ANON_KEY ||
+    env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    ''
+
+  return {
   base: './',
+  define: {
+    'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(supabaseUrl),
+    'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(supabaseAnonKey),
+  },
   resolve: {
     dedupe: ['react', 'react-dom', 'react-redux'],
     alias: {
@@ -51,4 +68,4 @@ export default defineConfig({
     globals: true,
     setupFiles: './src/test/setup.js',
   },
-})
+}})

@@ -9,6 +9,8 @@
   NODE_VERSION = "22"
   NPM_FLAGS = "--include=dev"
   VITE_SUPABASE_URL = "https://rbvqfkccbkwjxkvpnwqn.supabase.co"
+  # Clé anon publique (visible côté client — sécurité via RLS Supabase)
+  VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJidnFma2NjYmt3anhrdnBud3FuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NjI2NDMsImV4cCI6MjA5ODIzODY0M30.ZpAr5eEnxoxy3TQ4hIA3SoX1NTuPg-0pt4UQ2mS5lDI"
 
 # React Router : toutes les routes → index.html
 [[redirects]]
