@@ -10,7 +10,8 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { useSearchParams } from 'react-router-dom'
-import { messageSuggestionsFor } from '../config/communications'
+import { messageSuggestionsForConversation } from '../features/communications/messageSuggestions'
+import { getConversationPeer } from '../features/communications/conversationDisplay'
 import { AiAssistantPanel } from '../features/communications/AiAssistantPanel'
 import { messageSchema } from '../features/communications/communicationSchemas'
 import {
@@ -28,6 +29,7 @@ import {
   toggleConversationPin,
 } from '../features/communications/communicationSlice'
 import { selectUnreadMessageCount, selectUserConversations } from '../features/selectors'
+import { selectAccountPreferences, updateAccountPreferences } from '../features/account/accountSlice'
 import { addToast } from '../features/ui/uiSlice'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { ConversationNotFound } from './messages/ConversationNotFound'
@@ -117,7 +119,15 @@ export function MessagesPage() {
   const assistantActive = activeId === ASSISTANT_ID
   const integratedAssistant = assistantActive && defaultAssistant
   const blocked = active?.blockedBy?.includes(user.id)
-  const suggestions = messageSuggestionsFor(active?.relatedType)
+  const accountPreferences = useSelector((state) => selectAccountPreferences(state, user.id))
+  const suggestionsEnabled = accountPreferences.messageSuggestionsEnabled !== false
+  const suggestions = useSelector((state) => {
+    if (!suggestionsEnabled) return []
+    const conversation = state.communications.conversations.find((item) => item.id === activeId)
+    if (!conversation || assistantActive) return []
+    const peer = getConversationPeer(conversation, user.id)
+    return messageSuggestionsForConversation(state, conversation, user.id, peer.name)
+  })
   const formik = useFormik({
     initialValues: { text: active?.drafts?.[user.id] || '' },
     enableReinitialize: true,
@@ -391,6 +401,17 @@ export function MessagesPage() {
                 }
                 onMute={() => dispatch(toggleConversationMute({ id: active.id, userId: user.id }))}
                 onPin={() => dispatch(toggleConversationPin({ id: active.id, userId: user.id }))}
+                onToggleSuggestions={() =>
+                  dispatch(
+                    updateAccountPreferences({
+                      userId: user.id,
+                      preferences: {
+                        messageSuggestionsEnabled: !suggestionsEnabled,
+                      },
+                    }),
+                  )
+                }
+                suggestionsEnabled={suggestionsEnabled}
                 onDraft={(text) =>
                   dispatch(saveConversationDraft({ id: active.id, userId: user.id, text }))
                 }

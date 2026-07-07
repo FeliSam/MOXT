@@ -37,8 +37,8 @@ export const routeMetadata = [
     eyebrow: 'Finances',
     back: '/exchangers',
   },
-  { pattern: /^\/wallet$/, title: 'Portefeuille simulé', eyebrow: 'Finances' },
-  { pattern: /^\/payments$/, title: 'Paiements simulés', eyebrow: 'Finances' },
+  { pattern: /^\/wallet$/, title: 'Portefeuille', eyebrow: 'Finances' },
+  { pattern: /^\/payments$/, title: 'Paiements', eyebrow: 'Finances' },
   { pattern: /^\/receipts$/, title: 'Reçus', eyebrow: 'Finances' },
   { pattern: /^\/disputes$/, title: 'Mes litiges', eyebrow: 'Compte' },
   {

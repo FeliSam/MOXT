@@ -4,6 +4,7 @@ import {
   FiArrowLeft,
   FiBellOff,
   FiExternalLink,
+  FiMessageSquare,
   FiMoreVertical,
   FiPaperclip,
   FiSend,
@@ -20,6 +21,7 @@ import {
   MessageBubble,
   MessageDateSeparator,
   MessageEmptyState,
+  MessageSecurityNotice,
   MessageThreadStart,
   shouldGroupMessages,
 } from './MessageBubble'
@@ -45,7 +47,9 @@ export function ConversationPanel({
   onShare,
   replyToId,
   archived,
+  onToggleSuggestions,
   suggestions,
+  suggestionsEnabled,
   user,
   muted,
   pinned,
@@ -166,6 +170,17 @@ export function ConversationPanel({
               type="button"
               className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-[var(--app-surface-muted)]"
               onClick={() => {
+                onToggleSuggestions?.()
+                closeMenu()
+              }}
+            >
+              <FiMessageSquare />{' '}
+              {suggestionsEnabled ? 'Masquer les suggestions' : 'Afficher les suggestions'}
+            </button>
+            <button
+              type="button"
+              className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-[var(--app-surface-muted)]"
+              onClick={() => {
                 onArchive()
                 closeMenu()
               }}
@@ -219,6 +234,7 @@ export function ConversationPanel({
           ) : (
             <>
               <MessageThreadStart />
+              <MessageSecurityNotice />
               {timeline.map((item, index) => {
                 const previous = timeline[index - 1]
                 const showDate =
@@ -304,11 +320,11 @@ export function ConversationPanel({
         className="message-composer-shell relative z-10 shrink-0 border-t border-[var(--app-border)]/60 bg-[var(--app-surface)]/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl sm:p-4 sm:pb-[max(1rem,env(safe-area-inset-bottom))]"
         data-testid="message-composer"
       >
-        {!blocked ? (
+        {!blocked && suggestionsEnabled && suggestions.length ? (
           <div className="message-suggestions scrollbar-hidden mx-auto mb-3 flex max-w-3xl gap-2 overflow-x-auto pb-1 [&>*:nth-child(n+4)]:hidden sm:[&>*:nth-child(n+4)]:inline-flex">
-            {suggestions.map((suggestion) => (
+            {suggestions.map((suggestion, index) => (
               <button
-                key={suggestion}
+                key={`${index}-${suggestion.slice(0, 24)}`}
                 type="button"
                 className="shrink-0 rounded-full border border-[var(--app-border)] bg-[var(--app-surface)] px-3.5 py-2 text-xs font-semibold text-[var(--app-text-muted)] shadow-sm transition hover:border-brand-200 hover:bg-[var(--app-accent-soft)] hover:text-brand-700"
                 onClick={() => formik.setFieldValue('text', suggestion)}

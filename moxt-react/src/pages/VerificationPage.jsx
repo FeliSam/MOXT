@@ -20,6 +20,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { Select } from '../components/ui/Select'
 import { statusMeta } from '../config/statuses'
 import { addPersonalDocument, submitVerificationRequest } from '../features/account/accountSlice'
+import { VerificationGuidePanel } from '../features/verification/VerificationGuidePanel'
 import { supabase } from '../services/supabaseClient'
 import { storageService } from '../services/storageService'
 import { addToast } from '../features/ui/uiSlice'
@@ -160,7 +161,7 @@ export function VerificationPage() {
     dispatch(
       addToast({
         title: 'Dossier envoyé',
-        message: 'Votre vérification est en attente de revue (simulation).',
+        message: 'Votre dossier a été transmis. Notre équipe le traite sous 24 à 48 h.',
         tone: 'success',
       }),
     )
@@ -286,6 +287,7 @@ export function VerificationPage() {
                 label="Photo de la pièce d’identité"
                 hint="Image ou PDF, recto lisible."
               />
+              <VerificationGuidePanel type="identity" />
             </div>
           ) : null}
 
@@ -304,6 +306,7 @@ export function VerificationPage() {
                 label="Ajouter un selfie"
                 hint="Visage et document visibles."
               />
+              <VerificationGuidePanel type="selfie" />
             </div>
           ) : null}
 
@@ -364,6 +367,7 @@ export function VerificationPage() {
                 label="Ajouter un justificatif"
                 hint="Document de moins de 3 mois."
               />
+              <VerificationGuidePanel type="address" />
             </div>
           ) : null}
 
@@ -384,8 +388,8 @@ export function VerificationPage() {
                 ) : null}
               </div>
               <p className="rounded-2xl bg-[var(--app-surface-muted)] p-4 text-xs text-[var(--app-text-muted)]">
-                La vérification reste simulée tant que le backend n’est pas connecté. Vos documents
-                ne conservent que leurs métadonnées sur cet appareil.
+                Vérifiez que vos documents respectent les exemples acceptés. Le traitement prend
+                généralement 24 à 48 h ouvrées.
               </p>
             </div>
           ) : null}

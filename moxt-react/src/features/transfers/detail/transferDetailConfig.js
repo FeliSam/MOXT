@@ -40,7 +40,7 @@ export const transferNextStepConfig = {
   },
   [TRANSFER_STATUS.COMPLETED]: {
     title: 'Opération terminée',
-    description: 'Le reçu simulé est disponible et le transfert ne peut plus être annulé.',
+    description: 'Le reçu est disponible et le transfert ne peut plus être annulé.',
   },
   [TRANSFER_STATUS.CANCELLED]: {
     title: 'Opération annulée',

@@ -98,9 +98,9 @@ export const FEATURE_MATRIX = [
       },
       {
         id: 'wallet',
-        label: 'Portefeuille, paiements et reçus simulés',
+        label: 'Portefeuille, paiements et reçus',
         status: 'partial',
-        note: 'Les simulations existent mais font encore doublon avec le suivi de transfert et doivent être unifiées.',
+        note: 'Les parcours existent mais doivent encore être unifiés avec le suivi de transfert.',
       },
     ],
   },

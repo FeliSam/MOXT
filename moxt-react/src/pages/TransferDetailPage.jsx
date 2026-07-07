@@ -238,16 +238,16 @@ export function TransferDetailPage() {
                 label: 'Total à payer',
                 value: formatMoney(pricing.totalToPay, currFrom),
               },
-              { label: 'Simulation', value: 'Oui, aucun argent transmis' },
+              { label: 'Mode', value: 'Transfert assisté MOXT' },
             ]}
           />
         </DetailSection>
         <TrustPanel
           title="Protection de l’opération"
           items={[
-            'Cette version ne transmet aucun argent réel.',
-            'Les métadonnées de preuve restent enregistrées localement.',
-            'Le reçu téléchargeable sert uniquement de démonstration.',
+            'Vérifiez l’identité de l’échangeur et les coordonnées de paiement.',
+            'Conservez vos preuves de paiement dans MOXT.',
+            'Le reçu téléchargeable fait foi pour le suivi de l’opération.',
           ]}
         />
       </div>

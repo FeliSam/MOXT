@@ -43,7 +43,7 @@ export function PublicHomePage() {
             </div>
             <p className="mt-5 flex items-center gap-2 text-sm text-[var(--app-text-muted)]">
               <FiCheckCircle className="text-emerald-600" />
-              Navigation gratuite. Les opérations financières restent simulées.
+              Navigation gratuite. Les opérations financières sont suivies et sécurisées sur MOXT.
             </p>
           </div>
 

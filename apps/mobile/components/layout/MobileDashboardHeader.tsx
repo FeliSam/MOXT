@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 
 import { cn } from '@/lib/cn';
 import { useLanguage } from '@/providers/LanguageProvider';
+import { selectUnreadMessageCount } from '@/store/messages';
 import { useAppSelector } from '@/store/store';
 
 function UserAvatar({ size = 36 }: { size?: number }) {
@@ -41,10 +42,7 @@ export function MobileDashboardHeader({
   const user = useAppSelector((s) => s.auth.user);
   const unreadNotifications = useAppSelector((s) => s.notifications.items.filter((n) => !n.read).length);
   const unreadMessages = useAppSelector((s) =>
-    s.messages.conversations.filter((c) => {
-      const last = c.messages.at(-1);
-      return last && last.senderId !== user?.id;
-    }).length,
+    selectUnreadMessageCount(s.messages.conversations, user?.id),
   );
 
   return (

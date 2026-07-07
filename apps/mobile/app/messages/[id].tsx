@@ -13,7 +13,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { Button } from '@/components/ui';
-import { buildConversationTimeline, loadConversationMessages, sendMessage } from '@/store/messages';
+import {
+  buildConversationTimeline,
+  loadConversationMessages,
+  markConversationRead,
+  sendMessage,
+} from '@/store/messages';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, radii, shadows, spacing, typography } from '@/theme/colors';
@@ -35,6 +40,13 @@ export default function ChatScreen() {
       dispatch(loadConversationMessages(id));
     }
   }, [conversation, dispatch, id]);
+
+  useEffect(() => {
+    if (!id || !user?.id || !conversation) return;
+    if ((conversation.unreadBy?.[user.id] || 0) > 0) {
+      dispatch(markConversationRead({ conversationId: id, userId: user.id }));
+    }
+  }, [conversation, dispatch, id, user?.id]);
 
   if (!conversation) {
     return (

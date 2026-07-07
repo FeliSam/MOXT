@@ -378,7 +378,7 @@ export function ListingDetailPage() {
               user={user}
             />
             <p className="mt-5 rounded-2xl bg-amber-50 p-3 text-xs leading-5 text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
-              Paiement simulé uniquement. Vérifiez le produit avant toute transaction réelle.
+              Paiement via MOXT. Vérifiez le produit avant toute transaction.
             </p>
           </Card>
 
@@ -579,7 +579,7 @@ export function ListingDetailPage() {
 
       <Modal open={offerOpen} onClose={() => setOfferOpen(false)} title="Faire une offre">
         <p className="text-sm text-[var(--app-text-muted)]">
-          Cette offre est une simulation et sera discutée avec le vendeur dans la messagerie.
+          Cette offre sera discutée avec le vendeur dans la messagerie.
         </p>
         <label className="mt-5 grid gap-2 text-sm font-bold">
           Votre proposition

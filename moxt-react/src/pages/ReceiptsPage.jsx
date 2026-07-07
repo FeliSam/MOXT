@@ -22,13 +22,13 @@ export function ReceiptsPage() {
 
   function download(receipt) {
     const content = [
-      'MOXT — REÇU DE SIMULATION',
+      'MOXT — REÇU',
       `Référence: ${receipt.id}`,
       `Objet: ${receipt.title}`,
       `Montant: ${formatMoney(receipt.amount, receipt.currency)}`,
       `Statut: ${receipt.status || 'non défini'}`,
       `Créé le: ${formatDate(receipt.createdAt)}`,
-      'Ce document ne constitue pas une preuve de paiement réel.',
+      'Conservez ce document comme justificatif de votre opération.',
     ].join('\n')
     const url = URL.createObjectURL(new Blob([content], { type: 'text/plain;charset=utf-8' }))
     const link = document.createElement('a')
@@ -41,9 +41,9 @@ export function ReceiptsPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Finances simulées"
+        eyebrow="Finances"
         title="Reçus"
-        description="Documents locaux associés aux parcours de démonstration."
+        description="Justificatifs de vos opérations enregistrées sur MOXT."
       />
       {receipts.length ? (
         <CatalogGrid>
@@ -53,7 +53,7 @@ export function ReceiptsPage() {
               <Card key={receipt.id}>
                 <div className="flex items-start justify-between gap-3">
                   <FiFileText className="text-2xl text-brand-600" />
-                  <Badge tone="info">Simulation</Badge>
+                  <Badge tone="info">Reçu</Badge>
                 </div>
                 <h2 className="mt-4 font-black">{receipt.title}</h2>
                 <p className="mt-2 text-sm text-[var(--app-text-muted)]">

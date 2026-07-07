@@ -268,7 +268,7 @@ export const interactionMiddleware = (store) => (next) => (action) => {
     },
     'finance/createReceipt': {
       title: 'Reçu enregistré',
-      message: 'Le reçu simulé est disponible dans votre profil.',
+      message: 'Le reçu est disponible dans votre profil.',
     },
     'disputes/openDispute': {
       title: 'Réclamation enregistrée',

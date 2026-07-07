@@ -6,7 +6,7 @@ import { loadCoreData } from '@/store/data';
 import { loadConversations } from '@/store/messages';
 import { setPushToken } from '@/store/notifications';
 import { loadRatings } from '@/store/ratings';
-import { useAppDispatch, useAppSelector } from '@/store/store';
+import { useAppDispatch, useAppSelector, store } from '@/store/store';
 
 export function DataSync({ children }: { children: ReactNode }) {
   const dispatch = useAppDispatch();
@@ -23,7 +23,7 @@ export function DataSync({ children }: { children: ReactNode }) {
         if (token) dispatch(setPushToken(token));
       });
 
-      subscribeRealtime(userId, dispatch);
+      subscribeRealtime(userId, dispatch, () => store.getState());
 
       return () => {
         unsubscribeRealtime();

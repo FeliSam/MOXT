@@ -37,10 +37,26 @@ const camelMap = {
   created_by: 'createdBy',
 }
 
+function parseIdList(value) {
+  if (Array.isArray(value)) return value.map(String)
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value)
+      return Array.isArray(parsed) ? parsed.map(String) : value ? [value] : []
+    } catch {
+      return value ? [value] : []
+    }
+  }
+  return []
+}
+
 function fromRow(row) {
   const result = {}
   for (const [key, value] of Object.entries(row)) {
     result[camelMap[key] ?? key] = value
+  }
+  if (result.participantIds) {
+    result.participantIds = parseIdList(result.participantIds)
   }
   return result
 }

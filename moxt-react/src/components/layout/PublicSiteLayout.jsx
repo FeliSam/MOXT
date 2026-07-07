@@ -90,7 +90,7 @@ export function PublicSiteLayout() {
       <footer className="border-t border-[var(--app-border)] px-4 py-8 sm:px-6">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 text-sm text-[var(--app-text-muted)] sm:flex-row sm:items-center sm:justify-between">
           <Brand />
-          <p>Plateforme de démonstration. Aucun paiement réel n’est traité.</p>
+          <p>Plateforme de services pour la diaspora. Échangez en toute vigilance.</p>
           <div className="flex gap-4">
             <Link to="/trust">Sécurité</Link>
             <Link to="/faq">Aide</Link>

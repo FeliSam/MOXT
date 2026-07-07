@@ -23,10 +23,11 @@ async function syncSessionToStore(session, dispatch, getState) {
   const previousUserId = getState().auth.user?.id
   dispatch(applySession(payload))
 
+  startRealtimeSubscription(payload.user.id, dispatch, getState)
+
   if (payload.user.id !== previousUserId) {
     const { loadAllData } = await import('../app/loadAllData')
     dispatch(loadAllData())
-    startRealtimeSubscription(payload.user.id, dispatch, getState)
   }
 }
 

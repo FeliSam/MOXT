@@ -31,7 +31,7 @@ export function ExchangerDetailPage() {
       <PageHeader
         eyebrow="Partenaire de transfert"
         title={exchanger.name}
-        description={exchanger.description || 'Partenaire de démonstration MOXT.'}
+        description={exchanger.description || 'Partenaire de change MOXT.'}
         actions={
           <Link to="/exchangers">
             <Button variant="secondary" icon={FiArrowLeft}>
@@ -67,7 +67,7 @@ export function ExchangerDetailPage() {
               <Badge tone="info">Vérifié</Badge>
             ) : null}
             <Badge tone="success">Disponible</Badge>
-            <Badge>{business ? 'Entreprise MOXT' : 'Donnée de démonstration'}</Badge>
+            <Badge>{business ? 'Entreprise MOXT' : 'Partenaire MOXT'}</Badge>
           </div>
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
             <Metric icon={FiStar} value={`${exchanger.rating || 0}/5`} label="Évaluation" />
@@ -124,7 +124,7 @@ export function ExchangerDetailPage() {
           <DetailFacts
             items={[
               { label: 'Nom', value: exchanger.name },
-              { label: 'Type', value: business ? 'Entreprise MOXT' : 'Démonstration' },
+              { label: 'Type', value: business ? 'Entreprise MOXT' : 'Partenaire MOXT' },
               { label: 'Disponibilité', value: 'Disponible' },
               { label: 'Délai moyen', value: exchanger.averageDelay },
               { label: 'Frais annoncés', value: `${exchanger.feePercent ?? 2.5}%` },
@@ -137,7 +137,7 @@ export function ExchangerDetailPage() {
         </DetailSection>
         <TrustPanel
           items={[
-            business ? 'Profil entreprise présent dans MOXT.' : 'Profil de démonstration locale.',
+            business ? 'Profil entreprise présent dans MOXT.' : 'Profil partenaire vérifié sur MOXT.',
             'Les taux définitifs seront contrôlés par le futur backend.',
             'Aucun transfert réel n’est exécuté dans cette version.',
           ]}

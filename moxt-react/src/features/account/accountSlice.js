@@ -20,6 +20,7 @@ const defaultPreferences = {
   notifMarketplace: 'normal',
   notifActualites: 'low',
   notifSysteme: 'high',
+  messageSuggestionsEnabled: true,
 }
 
 const initialState = storage.read({

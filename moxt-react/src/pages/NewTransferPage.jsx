@@ -421,27 +421,27 @@ export function NewTransferPage() {
                   <div className="mb-3 flex items-center gap-2">
                     <FiZap className="text-white/80" />
                     <span className="text-xs font-bold uppercase tracking-widest text-white/80">
-                      Simulation du transfert
+                      Estimation du transfert
                     </span>
                   </div>
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
+                  <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="text-center sm:text-left">
                       <p className="text-xs font-bold text-white/70">Vous payez</p>
-                      <p className="text-2xl font-black text-white">
+                      <p className="text-xl font-black text-white sm:text-2xl">
                         {formatMoney(calculation.totalToPay, calculation.currencyFrom)}
                       </p>
                     </div>
                     <div className="flex shrink-0 flex-col items-center gap-1">
-                      <div className="flex items-center gap-1 rounded-full bg-white/20 px-3 py-1">
-                        <FiArrowRight className="text-xs text-white" />
-                        <span className="text-[10px] font-bold text-white">
+                      <div className="flex max-w-full flex-wrap items-center justify-center gap-1 rounded-full bg-white/20 px-3 py-1">
+                        <FiArrowRight className="shrink-0 text-xs text-white" />
+                        <span className="text-center text-[10px] font-bold leading-4 text-white">
                           1 {calculation.currencyFrom} = {calculation.rawRate} {calculation.currencyTo}
                         </span>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-center sm:text-right">
                       <p className="text-xs font-bold text-white/70">Le destinataire reçoit ~</p>
-                      <p className="text-2xl font-black text-white">
+                      <p className="text-xl font-black text-white sm:text-2xl">
                         {formatMoney(calculation.amountReceived, calculation.currencyTo)}
                       </p>
                     </div>
@@ -449,7 +449,7 @@ export function NewTransferPage() {
                 </div>
 
                 {/* Details grid */}
-                <div className="grid grid-cols-3 divide-x divide-[var(--app-border)] border-b border-[var(--app-border)]">
+                <div className="grid grid-cols-1 divide-y divide-[var(--app-border)] border-b border-[var(--app-border)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
                   {[
                     { label: 'Montant envoyé', value: formatMoney(calculation.amountSent, calculation.currencyFrom) },
                     { label: `Frais ${calculation.feePercent}%`, value: formatMoney(calculation.fees, calculation.currencyFrom), highlight: true },
@@ -494,7 +494,7 @@ export function NewTransferPage() {
                 </div>
               </Card>
             ) : !selectedExchanger ? null : (
-              <Alert variant="info">Saisissez un montant pour voir la simulation.</Alert>
+              <Alert variant="info">Saisissez un montant pour voir l'estimation.</Alert>
             )}
           </div>
         ) : null}
@@ -527,15 +527,15 @@ export function NewTransferPage() {
             <Card className="grid gap-4">
               <SectionTitle icon={FiShield} label="Récapitulatif et confirmation" />
               {/* Amount highlight */}
-              <div className="flex items-center justify-between gap-4 rounded-2xl bg-gradient-to-br from-brand-600 to-cyan-600 p-5 text-white">
-                <div>
+              <div className="flex flex-col items-stretch gap-4 rounded-2xl bg-gradient-to-br from-brand-600 to-cyan-600 p-5 text-white sm:flex-row sm:items-center sm:justify-between">
+                <div className="text-center sm:text-left">
                   <p className="text-xs font-bold opacity-80">Vous envoyez</p>
-                  <p className="text-2xl font-black">{formatMoney(calculation.totalToPay, calculation.currencyFrom)}</p>
+                  <p className="text-xl font-black sm:text-2xl">{formatMoney(calculation.totalToPay, calculation.currencyFrom)}</p>
                 </div>
-                <FiArrowRight className="shrink-0 text-3xl opacity-70" />
-                <div className="text-right">
+                <FiArrowRight className="mx-auto shrink-0 text-2xl opacity-70 sm:text-3xl" />
+                <div className="text-center sm:text-right">
                   <p className="text-xs font-bold opacity-80">Le destinataire reçoit ~</p>
-                  <p className="text-2xl font-black">{formatMoney(calculation.amountReceived, calculation.currencyTo)}</p>
+                  <p className="text-xl font-black sm:text-2xl">{formatMoney(calculation.amountReceived, calculation.currencyTo)}</p>
                 </div>
               </div>
               {[

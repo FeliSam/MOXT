@@ -3,7 +3,7 @@ import { FiLogOut, FiSearch, FiSettings, FiUser, FiX } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import { navigationGroups } from '../../config/navigation'
-import { bottomNavigationPaths } from '../../config/primaryNavigation'
+import { moreServicesExcludedPaths } from '../../config/primaryNavigation'
 import { logout } from '../../features/auth/authSlice'
 import { stopRealtimeSubscription } from '../../services/realtimeService'
 import { useLanguage } from '../../contexts/useLanguage'
@@ -41,7 +41,7 @@ export function MobileMoreDrawer({ open, onClose }) {
   )
 
   const filteredGroups = useMemo(
-    () => filterNavigationGroups(groups, role, bottomNavigationPaths, query, translateLabel),
+    () => filterNavigationGroups(groups, role, moreServicesExcludedPaths, query, translateLabel),
     [groups, query, role, translateLabel],
   )
 

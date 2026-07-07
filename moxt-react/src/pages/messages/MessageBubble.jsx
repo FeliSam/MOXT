@@ -194,6 +194,24 @@ export function MessageThreadStart() {
   )
 }
 
+export function MessageSecurityNotice() {
+  return (
+    <div
+      className="message-security-notice mx-auto my-4 max-w-md rounded-2xl border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-center shadow-sm dark:border-amber-900/40 dark:bg-amber-950/30"
+      data-testid="message-security-notice"
+    >
+      <p className="text-[11px] font-black uppercase tracking-wide text-amber-800 dark:text-amber-200">
+        Consignes de sécurité
+      </p>
+      <p className="mt-2 text-xs leading-5 text-amber-900/90 dark:text-amber-100/90">
+        Vérifiez l'identité de votre interlocuteur et les détails de l'annonce avant tout engagement.
+        Ne payez jamais en dehors de MOXT sans garanties, évitez les actions risquées et privilégiez
+        les échanges dans des lieux sûrs. Signalez tout comportement suspect.
+      </p>
+    </div>
+  )
+}
+
 export function MessageEmptyState() {
   return (
     <div className="mx-auto mt-8 max-w-sm rounded-[var(--radius-card-lg)] border border-dashed border-[var(--app-border)] bg-[var(--app-surface)]/90 px-6 py-8 text-center shadow-[var(--shadow-card)]">

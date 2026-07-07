@@ -34,3 +34,9 @@ export const sidebarMobileHiddenPaths = new Set([
   '/notifications',
   '/jobs/applications',
 ])
+
+/** Menu « Plus » mobile — exclut la bottom nav et les raccourcis déjà dans l'en-tête */
+export const moreServicesExcludedPaths = new Set([
+  ...bottomNavigationPaths,
+  ...sidebarMobileHiddenPaths,
+])

@@ -48,7 +48,7 @@ export function PaymentsPage() {
         direction: 'out',
         amount: payment.amount,
         currency: payment.currency,
-        label: `Paiement simulé ${payment.relatedId}`,
+        label: `Paiement ${payment.relatedId}`,
         relatedType: payment.relatedType,
         relatedId: payment.relatedId,
       }),
@@ -58,24 +58,24 @@ export function PaymentsPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Finances simulées"
+        eyebrow="Finances"
         title="Paiements"
-        description="Préparation des parcours de paiement sans fournisseur connecté."
+        description="Suivi et confirmation de vos paiements liés aux transferts."
         actions={
           <Button icon={FiPlus} onClick={() => setSimulationOpen(true)}>
-            Créer une simulation
+            Nouveau paiement
           </Button>
         }
       />
       <Card className="flex gap-3 border-amber-300 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30">
         <FiAlertTriangle className="mt-1 shrink-0 text-xl text-amber-600" />
-        <p className="text-sm">Aucune action de cette page ne transmet ou ne reçoit d’argent.</p>
+        <p className="text-sm">Confirmez chaque paiement uniquement après vérification des coordonnées et du montant.</p>
       </Card>
       <PublicationModal
         open={simulationOpen}
         onClose={() => setSimulationOpen(false)}
-        title="Créer une simulation"
-        description="Sélectionnez un transfert existant. Cette action ne déplace aucun argent réel."
+        title="Associer un paiement"
+        description="Sélectionnez un transfert existant pour enregistrer le paiement."
         icon={FiCreditCard}
       >
         <div className="mt-4 flex flex-wrap gap-2">
@@ -104,11 +104,11 @@ export function PaymentsPage() {
                     {payment.relatedId} · {formatDate(payment.createdAt)}
                   </p>
                 </div>
-                <Badge tone="info">Simulation</Badge>
+                <Badge tone="info">Paiement</Badge>
                 <Badge tone={meta.tone}>{meta.label}</Badge>
                 {payment.status === 'pending' ? (
                   <Button icon={FiCheckCircle} onClick={() => confirm(payment)}>
-                    Simuler la confirmation
+                    Confirmer le paiement
                   </Button>
                 ) : null}
               </Card>
@@ -116,7 +116,7 @@ export function PaymentsPage() {
           })}
         </div>
       ) : (
-        <EmptyState title="Aucun paiement simulé" />
+        <EmptyState title="Aucun paiement enregistré" />
       )}
     </div>
   )

@@ -113,7 +113,7 @@ export function P2PDetailPage() {
               { label: 'Devise demandée', value: offer.toCurrency },
               { label: 'Taux proposé', value: offer.rate },
               {
-                label: 'Frais simulés',
+                label: 'Frais',
                 value: formatMoney(
                   calculateP2PFee(offer.amount, offer.fromCurrency),
                   offer.fromCurrency,
@@ -128,7 +128,7 @@ export function P2PDetailPage() {
         <TrustPanel
           title="Sécurité P2P"
           items={[
-            'Cette opération est une simulation locale.',
+            'Cette opération est traitée via MOXT. Restez vigilant et conservez vos preuves.',
             'Conservez les preuves dans la conversation.',
             'Confirmez les montants avant toute remise réelle.',
           ]}

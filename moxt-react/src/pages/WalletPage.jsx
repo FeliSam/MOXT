@@ -20,15 +20,15 @@ export function WalletPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Finances simulées"
+        eyebrow="Finances"
         title="Portefeuille"
-        description="Vue locale de préparation. Aucun solde réel n’est détenu par MOXT."
+        description="Vue consolidée de vos soldes et mouvements sur MOXT."
       />
       <Card className="border-amber-300 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30">
         <div className="flex gap-3">
           <FiAlertTriangle className="mt-1 text-xl text-amber-600" />
           <p className="text-sm">
-            Tous les montants de cette page sont des simulations enregistrées dans votre navigateur.
+            Vérifiez toujours vos opérations et conservez vos justificatifs. En cas de doute, contactez le support MOXT.
           </p>
         </div>
       </Card>
@@ -39,7 +39,7 @@ export function WalletPage() {
             <strong className="mt-4 block text-2xl">
               {formatMoney(balances[currency] || 0, currency)}
             </strong>
-            <Badge tone="info">Simulation</Badge>
+            <Badge tone="info">{currency}</Badge>
           </Card>
         ))}
       </div>
@@ -65,7 +65,7 @@ export function WalletPage() {
           })}
         </div>
       ) : (
-        <EmptyState title="Aucune écriture simulée" />
+        <EmptyState title="Aucune écriture enregistrée" />
       )}
     </div>
   )

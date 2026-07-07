@@ -38,8 +38,8 @@ export function TransferDetailStatusSection({ canDeclare, countdown, transfer })
       {canDeclare ? (
         <Alert variant="info" title="Paiement attendu">
           Effectuez le paiement avant le {formatDate(transfer.paymentDeadlineAt)}, puis utilisez le
-          bouton de déclaration. Temps restant : <strong>{countdown.label}</strong>. Cette
-          simulation ne transmet aucun argent.
+          bouton de déclaration. Temps restant : <strong>{countdown.label}</strong>. Vérifiez les
+          coordonnées avant toute opération.
         </Alert>
       ) : null}
     </>
