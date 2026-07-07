@@ -17,6 +17,14 @@ async function refreshConversationsIfNeeded(dispatch, getState) {
   dispatch(refreshConversations())
 }
 
+async function resolveSupabaseSession() {
+  const { data } = await supabase.auth.getSession()
+  if (data.session) return data.session
+
+  const { data: refreshed } = await supabase.auth.refreshSession()
+  return refreshed.session ?? null
+}
+
 async function syncSessionToStore(session, dispatch, getState) {
   if (!session) {
     stopRealtimeSubscription()
@@ -63,15 +71,24 @@ export function startAuthSessionSync(store) {
 
   visibilityHandler = () => {
     if (document.visibilityState !== 'visible') return
-    supabase.auth.getSession().then(async ({ data: sessionData }) => {
-      if (sessionData.session) {
-        await syncSessionToStore(sessionData.session, dispatch, getState)
-        await refreshConversationsIfNeeded(dispatch, getState)
-      } else if (getState().auth.user) {
-        stopRealtimeSubscription()
-        dispatch(clearSession())
+
+    void (async () => {
+      try {
+        const session = await resolveSupabaseSession()
+        if (session) {
+          await syncSessionToStore(session, dispatch, getState)
+          await refreshConversationsIfNeeded(dispatch, getState)
+          return
+        }
+
+        if (getState().auth.user) {
+          stopRealtimeSubscription()
+          dispatch(clearSession())
+        }
+      } catch {
+        // Erreur réseau — conserver la session Redux en place.
       }
-    })
+    })()
   }
   document.addEventListener('visibilitychange', visibilityHandler)
 }

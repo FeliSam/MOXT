@@ -1,5 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit'
 import { beforeEach, describe, expect, it } from 'vitest'
+import businessesReducer, { moderateBusiness } from '../features/businesses/businessSlice'
 import communicationsReducer, { sendMessage } from '../features/communications/communicationSlice'
 import financeReducer from '../features/finance/financeSlice'
 import jobsReducer, { updateApplicationStatus } from '../features/jobs/jobSlice'
@@ -201,5 +202,80 @@ describe('interactionMiddleware', () => {
       relatedId: id,
       simulation: true,
     })
+  })
+
+  it('notifie le proprietaire quand son entreprise est verifiee', () => {
+    const store = configureStore({
+      reducer: {
+        auth: () => ({ user: { id: 'admin' } }),
+        communications: communicationsReducer,
+        ui: uiReducer,
+        jobs: () => ({ applications: [], items: [] }),
+        events: () => ({ registrations: [], items: [] }),
+        parcels: () => ({ items: [], requests: [] }),
+        businesses: businessesReducer,
+        marketplace: () => ({ items: [] }),
+        finance: () => ({ payments: [], receipts: [], walletEntries: [] }),
+      },
+      preloadedState: {
+        businesses: {
+          items: [
+            {
+              id: 'biz-1',
+              ownerId: 'owner-1',
+              name: 'MOXT Change',
+              status: 'pending_review',
+            },
+          ],
+          requests: [],
+        },
+        communications: { conversations: [], notifications: [], support: [] },
+      },
+      middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(interactionMiddleware),
+    })
+
+    store.dispatch(moderateBusiness({ id: 'biz-1', status: 'verified' }))
+
+    expect(store.getState().communications.notifications[0]).toMatchObject({
+      userId: 'owner-1',
+      title: 'Entreprise vérifiée',
+      type: 'business',
+      link: '/businesses/biz-1',
+    })
+  })
+
+  it('ne renvoie pas de notification de verification si deja verifiee', () => {
+    const store = configureStore({
+      reducer: {
+        auth: () => ({ user: { id: 'admin' } }),
+        communications: communicationsReducer,
+        ui: uiReducer,
+        jobs: () => ({ applications: [], items: [] }),
+        events: () => ({ registrations: [], items: [] }),
+        parcels: () => ({ items: [], requests: [] }),
+        businesses: businessesReducer,
+        marketplace: () => ({ items: [] }),
+        finance: () => ({ payments: [], receipts: [], walletEntries: [] }),
+      },
+      preloadedState: {
+        businesses: {
+          items: [
+            {
+              id: 'biz-1',
+              ownerId: 'owner-1',
+              name: 'MOXT Change',
+              status: 'verified',
+            },
+          ],
+          requests: [],
+        },
+        communications: { conversations: [], notifications: [], support: [] },
+      },
+      middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(interactionMiddleware),
+    })
+
+    store.dispatch(moderateBusiness({ id: 'biz-1', status: 'active' }))
+
+    expect(store.getState().communications.notifications).toHaveLength(0)
   })
 })

@@ -91,6 +91,8 @@ function toSnake(obj) {
     createdAt: 'created_at',
     updatedAt: 'updated_at',
     avatarUrl: 'avatar_url',
+    listingId: 'listing_id',
+    answeredAt: 'answered_at',
     jobId: 'job_id',
     eventId: 'event_id',
     parcelId: 'parcel_id',
@@ -187,6 +189,23 @@ const handlers = {
   'marketplace/updateListingStatus': async (payload) => {
     await update('listings', payload.id, { status: payload.status })
   },
+  'marketplace/addListingQuestion': async (payload) => {
+    await upsert('listing_questions', {
+      id: payload.question.id,
+      listingId: payload.listingId,
+      authorId: payload.question.authorId,
+      authorName: payload.question.authorName,
+      text: payload.question.text,
+      answer: '',
+      createdAt: payload.question.createdAt,
+    })
+  },
+  'marketplace/answerListingQuestion': async (payload) => {
+    await update('listing_questions', payload.questionId, {
+      answer: payload.answer,
+      answeredAt: payload.answeredAt,
+    })
+  },
 
   // ── Colis ────────────────────────────────────────────────────────────────────
   'parcels/createParcel': async (payload) => {
@@ -262,11 +281,11 @@ const handlers = {
   },
 
   // ── Entreprises ───────────────────────────────────────────────────────────────
-  'businesses/createBusiness': async (payload) => {
+  'businesses/saveBusiness': async (payload) => {
     await upsert('businesses', payload)
   },
-  'businesses/updateBusiness': async (payload) => {
-    await upsert('businesses', payload)
+  'businesses/moderateBusiness': async (payload) => {
+    await update('businesses', payload.id, { status: payload.status })
   },
   'businesses/updateBusinessStatus': async (payload) => {
     await update('businesses', payload.id, { status: payload.status })

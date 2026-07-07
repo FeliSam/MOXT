@@ -18,6 +18,7 @@ import { Card } from '../../components/ui/Card'
 import { statusMeta } from '../../config/statuses'
 import { formatMoney } from '../transfers/transferUtils'
 import { isActiveListing, listingCategoryLabel, listingTypeLabel } from './listingCatalogUtils'
+import { archivedPublicationCardClass } from '../publications/publicationCatalogUtils'
 
 export function MyListingCard({
   listing,
@@ -35,10 +36,12 @@ export function MyListingCard({
   const categoryLabel = listingCategoryLabel(listing.type, listing.category)
 
   return (
-    <Card className="overflow-hidden p-0">
+    <Card className={`overflow-hidden p-0 ${active ? '' : archivedPublicationCardClass}`}>
       <div className="flex flex-col gap-0 lg:flex-row">
         <Link
-          className="relative block h-48 w-full shrink-0 bg-gradient-to-br from-cyan-700 to-blue-600 lg:h-auto lg:w-56"
+          className={`relative block h-48 w-full shrink-0 bg-gradient-to-br from-cyan-700 to-blue-600 lg:h-auto lg:w-56 ${
+            active ? '' : 'opacity-75 saturate-[0.85]'
+          }`}
           to={`/marketplace/${listing.id}`}
         >
           {listing.images?.[0] ? (

@@ -13,14 +13,26 @@ import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { statusMeta } from '../../config/statuses'
 import { formatMoney } from '../transfers/transferUtils'
-import { isActiveEvent, isActiveJob, isActiveParcel } from './publicationCatalogUtils'
+import { isActiveEvent, isActiveJob, isActiveParcel, isActivePost, archivedPublicationCardClass } from './publicationCatalogUtils'
 
-function PublicationCardShell({ icon: Icon, tone, badge, title, subtitle, meta, path, actions }) {
+function PublicationCardShell({
+  archived = false,
+  icon: Icon,
+  tone,
+  badge,
+  title,
+  subtitle,
+  meta,
+  path,
+  actions,
+}) {
   return (
-    <Card className="overflow-hidden p-0">
+    <Card className={`overflow-hidden p-0 ${archived ? archivedPublicationCardClass : ''}`}>
       <div className="flex flex-col gap-0 lg:flex-row">
         <div
-          className={`relative flex h-40 w-full shrink-0 items-center justify-center bg-gradient-to-br lg:h-auto lg:w-48 ${tone}`}
+          className={`relative flex h-40 w-full shrink-0 items-center justify-center bg-gradient-to-br lg:h-auto lg:w-48 ${tone} ${
+            archived ? 'opacity-75 saturate-[0.85]' : ''
+          }`}
         >
           <Icon className="text-4xl text-white opacity-90" />
           <div className="absolute left-3 top-3">{badge}</div>
@@ -58,6 +70,7 @@ export function MyParcelPublicationCard({ parcel, readOnly = false, onArchive, o
   const active = isActiveParcel(parcel)
   return (
     <PublicationCardShell
+      archived={!active}
       icon={FiPackage}
       tone="from-sky-600 to-blue-700"
       badge={<Badge tone={status.tone}>{status.label}</Badge>}
@@ -101,6 +114,7 @@ export function MyJobPublicationCard({ job, readOnly = false, onArchive, onReact
   const active = isActiveJob(job)
   return (
     <PublicationCardShell
+      archived={!active}
       icon={FiBriefcase}
       tone="from-violet-600 to-purple-700"
       badge={<Badge tone={status.tone}>{status.label}</Badge>}
@@ -137,6 +151,7 @@ export function MyEventPublicationCard({ event, readOnly = false, onArchive, onR
   const active = isActiveEvent(event)
   return (
     <PublicationCardShell
+      archived={!active}
       icon={FiCalendar}
       tone="from-amber-600 to-orange-700"
       badge={<Badge tone={status.tone}>{status.label}</Badge>}
@@ -169,8 +184,10 @@ export function MyEventPublicationCard({ event, readOnly = false, onArchive, onR
 }
 
 export function MyPostPublicationCard({ post, readOnly = false, onDelete }) {
+  const active = isActivePost(post)
   return (
     <PublicationCardShell
+      archived={!active}
       icon={FiFileText}
       tone="from-slate-600 to-slate-800"
       badge={<Badge tone="info">Publication</Badge>}

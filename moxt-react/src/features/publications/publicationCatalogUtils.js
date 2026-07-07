@@ -9,6 +9,9 @@ export const PUBLICATION_TYPE_TABS = [
   { id: 'other', label: 'Autres' },
 ]
 
+export const archivedPublicationCardClass =
+  'bg-[var(--app-surface-muted)]/75 ring-1 ring-[var(--app-border)]/70'
+
 const todayIso = () => new Date().toISOString().slice(0, 10)
 
 export function isActiveParcel(parcel) {
@@ -47,8 +50,25 @@ export function isArchivedPost(post) {
   return post ? !isActivePost(post) : false
 }
 
-function isPersonal(item) {
-  return !item?.businessId
+function isBusinessPublication(item) {
+  return Boolean(item?.businessId)
+}
+
+export function filterPublicationsByScope(publications, scope = 'all') {
+  if (!scope || scope === 'all') return publications
+  const pick = (items) =>
+    scope === 'business'
+      ? items.filter(isBusinessPublication)
+      : items.filter((item) => !isBusinessPublication(item))
+
+  return {
+    listings: pick(publications.listings),
+    parcels: pick(publications.parcels),
+    jobs: pick(publications.jobs),
+    events: pick(publications.events),
+    posts: scope === 'business' ? [] : publications.posts,
+    others: pick(publications.others),
+  }
 }
 
 export function collectUserPublications(state, userId) {
@@ -56,18 +76,10 @@ export function collectUserPublications(state, userId) {
     return { listings: [], parcels: [], jobs: [], events: [], posts: [], others: [] }
   }
 
-  const listings = (state.marketplace?.items || []).filter(
-    (item) => item.ownerId === userId && isPersonal(item),
-  )
-  const parcels = (state.parcels?.items || []).filter(
-    (item) => item.ownerId === userId && isPersonal(item),
-  )
-  const jobs = (state.jobs?.items || []).filter(
-    (item) => item.ownerId === userId && isPersonal(item),
-  )
-  const events = (state.events?.items || []).filter(
-    (item) => item.ownerId === userId && isPersonal(item),
-  )
+  const listings = (state.marketplace?.items || []).filter((item) => item.ownerId === userId)
+  const parcels = (state.parcels?.items || []).filter((item) => item.ownerId === userId)
+  const jobs = (state.jobs?.items || []).filter((item) => item.ownerId === userId)
+  const events = (state.events?.items || []).filter((item) => item.ownerId === userId)
   const posts = (state.posts?.items || []).filter((item) => item.authorId === userId)
 
   return { listings, parcels, jobs, events, posts, others: [] }

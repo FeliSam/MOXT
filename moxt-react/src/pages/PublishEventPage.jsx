@@ -23,6 +23,7 @@ import { CitySelector } from '../components/ui/CitySelector'
 import { Input } from '../components/ui/Input'
 import { EVENT_CATEGORIES } from '../config/options'
 import { createEvent } from '../features/events/eventSlice'
+import { isBusinessPublishReady } from '../features/businesses/businessPublishUtils'
 
 /* ─── Steps ─────────────────────────────────────────────────────────────── */
 const STEPS = [
@@ -139,6 +140,7 @@ export function PublishEventPage() {
   const business = useSelector((state) =>
     state.businesses.items.find((item) => item.ownerId === user.id),
   )
+  const canPublishAsBusiness = isBusinessPublishReady(business)
   const [step, setStep] = useState(1)
   const [errors, setErrors] = useState({})
   const [shareModal, setShareModal] = useState(null)
@@ -203,8 +205,8 @@ export function PublishEventPage() {
       createEvent({
         ...form,
         ownerId: user.id,
-        organizerName: form.organizerName,
-        businessId: business?.id || null,
+        organizerName: canPublishAsBusiness ? business.name : form.organizerName,
+        businessId: canPublishAsBusiness ? business.id : null,
         price: form.freeEntry ? 0 : Number(form.price),
       }),
     )

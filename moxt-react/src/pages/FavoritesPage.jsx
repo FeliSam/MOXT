@@ -7,7 +7,6 @@ import * as Yup from 'yup'
 import { Badge, PillBadge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
-import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Input } from '../components/ui/Input'
 import { Modal } from '../components/ui/Modal'
@@ -186,9 +185,12 @@ export function FavoritesPage() {
           </Button>
         </div>
         {transferProfiles.length ? (
-          <CatalogGrid lazy={false}>
+          <div className="scrollbar-hidden -mx-1 flex touch-pan-x gap-3 overflow-x-auto px-1 pb-1 lg:mx-0 lg:grid lg:grid-cols-2 lg:gap-4 lg:overflow-visible lg:px-0 xl:grid-cols-3">
             {transferProfiles.map((profile) => (
-              <Card key={profile.id} className="min-w-0 p-4 sm:p-5">
+              <Card
+                key={profile.id}
+                className="w-[clamp(16rem,74vw,19rem)] shrink-0 p-4 sm:p-5 lg:w-auto lg:min-w-0 lg:shrink"
+              >
                 <div className="flex items-start justify-between gap-3">
                   <span className="grid size-11 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
                     <FiRepeat />
@@ -234,7 +236,7 @@ export function FavoritesPage() {
                 </div>
               </Card>
             ))}
-          </CatalogGrid>
+          </div>
         ) : (
           <EmptyState
             icon={FiRepeat}

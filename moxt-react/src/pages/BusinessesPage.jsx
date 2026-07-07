@@ -14,7 +14,9 @@ import { RevealListItem } from '../components/ui/RevealListItem'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { Select } from '../components/ui/Select'
 import { BUSINESS_ACTIVITIES, activityByValue } from '../config/businessActivities'
+import { Alert } from '../components/ui/Alert'
 import { statusMeta } from '../config/statuses'
+import { isBusinessDirectoryVisible } from '../features/businesses/businessPublishUtils'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 
 export function BusinessesPage() {
@@ -28,7 +30,7 @@ export function BusinessesPage() {
   const visibleBusinesses = useMemo(
     () =>
       businesses.filter((business) => {
-        if (!['verified', 'approved', 'active'].includes(business.status)) return false
+        if (!isBusinessDirectoryVisible(business)) return false
         const activityLabel = activityByValue(business.primaryActivity)?.label || business.sector
         const haystack =
           `${business.name} ${activityLabel} ${business.city} ${business.description} ${business.services?.join(' ')}`.toLowerCase()
@@ -51,7 +53,7 @@ export function BusinessesPage() {
       <PageHeader
         eyebrow="Services professionnels"
         title="Entreprises et echangeurs"
-        description="Creez un profil professionnel situe en Russie et consultez les prestataires valides sur MOXT."
+        description="Profils professionnels validés par MOXT. Seules les entreprises vérifiées apparaissent ici, quel que soit le pays d’origine du membre."
         stats={[{ label: 'Entreprises verifiees', value: visibleBusinesses.length }]}
         actions={
           <Link to="/businesses/setup">
@@ -59,6 +61,13 @@ export function BusinessesPage() {
           </Link>
         }
       />
+
+      {ownBusiness && !isBusinessDirectoryVisible(ownBusiness) ? (
+        <Alert variant="info" title="Votre entreprise est en cours de validation">
+          {ownBusiness.name} n’apparaît pas encore dans l’annuaire pour les autres membres. Une fois
+          le statut « Vérifié », elle sera visible par toute la communauté MOXT.
+        </Alert>
+      ) : null}
 
       <ScrollSectionAnchor className="scroll-mt-24 grid gap-5 lg:scroll-mt-28">
         <CatalogSearch
@@ -115,7 +124,8 @@ export function BusinessesPage() {
         <div>
           <h2 className="text-xl font-black">Annuaire professionnel</h2>
           <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-            Les entreprises apparaissent ici uniquement apres validation administrative.
+            L’annuaire affiche uniquement les entreprises vérifiées. Le pays du compte membre n’influe
+            pas sur cette liste : seul le statut de validation compte.
           </p>
         </div>
 
@@ -184,7 +194,7 @@ export function BusinessesPage() {
               className="col-span-full"
               icon={FiBriefcase}
               title="Aucune entreprise validee"
-              description="Les profils apparaissent ici des leur validation par l'equipe MOXT."
+              description="Aucune entreprise vérifiée pour le moment. Les profils apparaissent ici après validation par l’équipe MOXT, même si le membre partage votre pays d’origine."
             />
           )}
         </CatalogGrid>

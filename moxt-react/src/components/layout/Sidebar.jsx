@@ -90,6 +90,7 @@ export function Sidebar({ open }) {
               <SidebarLink
                 key={item.path}
                 item={item}
+                badge={item.badgeSelector ? badgeForItem(item, appState) : 0}
                 translateLabel={translateLabel}
                 hideOnMobile={mobileHiddenPaths.has(item.path)}
                 onClick={() => dispatch(closeSidebar())}
@@ -280,7 +281,7 @@ function NavigationGroup({ card = false, excludePaths, group, onNavigate, role, 
   )
 }
 
-function SidebarLink({ hideOnMobile = false, item, onClick, translateLabel }) {
+function SidebarLink({ badge = 0, hideOnMobile = false, item, onClick, translateLabel }) {
   const Icon = item.icon
   return (
     <NavLink
@@ -290,6 +291,9 @@ function SidebarLink({ hideOnMobile = false, item, onClick, translateLabel }) {
       onFocus={() => preloadRoute(item.path)}
       onMouseEnter={() => preloadRoute(item.path)}
       className={hideOnMobile ? 'hidden lg:block' : ''}
+      aria-label={
+        badge > 0 ? `${translateLabel(item.label)} (${badge > 9 ? '9+' : badge} non lus)` : undefined
+      }
     >
       {({ isActive }) => (
         <span
@@ -300,16 +304,26 @@ function SidebarLink({ hideOnMobile = false, item, onClick, translateLabel }) {
           }`}
         >
           <span
-            className={`grid size-9 shrink-0 place-items-center rounded-[0.7rem] transition-all duration-200 ${
+            className={`relative grid size-9 shrink-0 place-items-center rounded-[0.7rem] transition-all duration-200 ${
               isActive
                 ? 'text-[var(--app-accent)] dark:text-[var(--app-teal)]'
                 : 'text-[var(--app-text-muted)] group-hover:scale-105'
             }`}
           >
             <Icon className="text-lg" />
+            {badge > 0 ? (
+              <span className="absolute -right-0.5 -top-0.5 grid min-w-[1.05rem] place-items-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-sm">
+                {badge > 9 ? '9+' : badge}
+              </span>
+            ) : null}
           </span>
-          <span className="overflow-hidden truncate whitespace-nowrap lg:max-w-0 lg:opacity-0 lg:transition-all lg:duration-200 lg:group-hover:max-w-[10rem] lg:group-hover:opacity-100">
-            {translateLabel(item.label)}
+          <span className="flex min-w-0 flex-1 items-center justify-between gap-2 overflow-hidden whitespace-nowrap lg:max-w-0 lg:opacity-0 lg:transition-all lg:duration-200 lg:group-hover:max-w-[10rem] lg:group-hover:opacity-100">
+            <span className="truncate">{translateLabel(item.label)}</span>
+            {badge > 0 ? (
+              <span className="hidden shrink-0 rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-bold text-white lg:group-hover:inline">
+                {badge > 9 ? '9+' : badge}
+              </span>
+            ) : null}
           </span>
         </span>
       )}

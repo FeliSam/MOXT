@@ -29,6 +29,11 @@ import { Select } from '../components/ui/Select'
 import { constrainRussianPhone, phonePlaceholder } from '../config/phone'
 import { useGeographyOptions } from '../hooks/useGeographyOptions'
 import { createParcel } from '../features/parcels/parcelSlice'
+import { BusinessPublishNotice } from '../features/businesses/BusinessPublishNotice'
+import {
+  isBusinessPublishReady,
+  resolveBusinessPublishContext,
+} from '../features/businesses/businessPublishUtils'
 import { addToast } from '../features/ui/uiSlice'
 import { createId } from '../services/createId'
 
@@ -103,6 +108,7 @@ export function PublishParcelPage() {
   const business = useSelector((state) =>
     state.businesses.items.find((item) => item.ownerId === user.id),
   )
+  const canPublishAsBusiness = isBusinessPublishReady(business)
   const { countries } = useGeographyOptions()
 
   // Pays d'origine de l'utilisateur (hors Russie)
@@ -138,7 +144,7 @@ export function PublishParcelPage() {
     conditions:
       'Objets autorisés uniquement après vérification. Photos demandées avant acceptation.',
     contact: user.phone || '',
-    publishAs: business ? 'business' : 'person',
+    publishAs: canPublishAsBusiness && business ? 'business' : 'person',
     travelProofFile: null,
   })
   const [proofError, setProofError] = useState('')
@@ -248,16 +254,30 @@ export function PublishParcelPage() {
 
   function publish() {
     if (!validate(3)) return
+    const publishContext = resolveBusinessPublishContext({
+      business,
+      publishAsBusiness: form.publishAs === 'business',
+    })
+    if (publishContext.blocked) {
+      dispatch(
+        addToast({
+          title: 'Publication entreprise impossible',
+          message:
+            'Votre entreprise doit être vérifiée par MOXT avant de publier au nom de l’entreprise.',
+          tone: 'error',
+        }),
+      )
+      return
+    }
     const { travelProofFile, ...rest } = form
     const action = dispatch(
       createParcel({
         ...rest,
         ownerId: user.id,
-        ownerName:
-          form.publishAs === 'business' && business
-            ? business.name
-            : `${user.firstName} ${user.lastName}`,
-        businessId: form.publishAs === 'business' ? business?.id : null,
+        ownerName: publishContext.useBusiness
+          ? business.name
+          : `${user.firstName} ${user.lastName}`,
+        businessId: publishContext.businessId,
         fromCountry: fromCountry.code,
         toCountry: toCountry.code,
         originCountry: fromCountry.code,
@@ -563,15 +583,20 @@ export function PublishParcelPage() {
             error={errors.contact}
           />
           {business ? (
-            <Select
-              id="parcel-publisher"
-              label="Publier en tant que"
-              value={form.publishAs}
-              onChange={(e) => set('publishAs', e.target.value)}
-            >
-              <option value="business">{business.name} (entreprise)</option>
-              <option value="person">Particulier</option>
-            </Select>
+            <>
+              <BusinessPublishNotice business={business} />
+              <Select
+                id="parcel-publisher"
+                label="Publier en tant que"
+                value={form.publishAs}
+                onChange={(e) => set('publishAs', e.target.value)}
+              >
+                {canPublishAsBusiness ? (
+                  <option value="business">{business.name} (entreprise)</option>
+                ) : null}
+                <option value="person">Particulier</option>
+              </Select>
+            </>
           ) : null}
         </Card>
       ) : null}

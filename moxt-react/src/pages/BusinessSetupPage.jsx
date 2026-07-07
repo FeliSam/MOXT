@@ -37,6 +37,7 @@ import {
 import { ensurePhoneCountry, phonePlaceholder } from '../config/phone'
 import { businessSchema } from '../features/businesses/businessSchemas'
 import { saveBusiness } from '../features/businesses/businessSlice'
+import { createId } from '../services/createId'
 import { addToast } from '../features/ui/uiSlice'
 import { ShareToFeedModal } from '../components/ui/ShareToFeedModal'
 import {
@@ -247,6 +248,10 @@ export function BusinessSetupPage() {
   const user = useSelector((state) => state.auth.user)
   const businesses = useSelector((state) => state.businesses.items)
   const ownBusiness = businesses.find((item) => item.ownerId === user.id)
+  const draftBusinessId = useMemo(
+    () => ownBusiness?.id || createId('BIZ'),
+    [ownBusiness?.id],
+  )
   const originCountry = user.originCountry || (user.country !== 'RU' ? user.country : 'BJ')
   const transferCurrencies = transferCurrenciesForCountry(originCountry)
   const exchangeMethodOptions = [
@@ -258,6 +263,8 @@ export function BusinessSetupPage() {
   const formik = useFormik({
     enableReinitialize: true,
     initialValues: {
+      id: draftBusinessId,
+      ownerId: user.id,
       name: ownBusiness?.name || '',
       logoUrl: ownBusiness?.logoUrl || '',
       bannerUrl: ownBusiness?.bannerUrl || '',
@@ -383,7 +390,14 @@ export function BusinessSetupPage() {
         {/* Split layout: form + live preview */}
         <div className="grid gap-5 lg:grid-cols-[1fr_18rem] lg:items-start">
           <div className="grid gap-5">
-            {step === 1 ? <IdentityStep errorFor={errorFor} formik={formik} /> : null}
+            {step === 1 ? (
+              <IdentityStep
+                businessId={formik.values.id}
+                errorFor={errorFor}
+                formik={formik}
+                userId={user.id}
+              />
+            ) : null}
             {step === 2 ? (
               <ContactStep
                 errorFor={errorFor}
@@ -445,7 +459,7 @@ export function BusinessSetupPage() {
 }
 
 /* ─── Step 1 — Identity ─────────────────────────────────────────────────── */
-function IdentityStep({ errorFor, formik }) {
+function IdentityStep({ businessId, errorFor, formik, userId }) {
   const dispatch = useDispatch()
   const selectedActivity = BUSINESS_ACTIVITIES.find((a) => a.value === formik.values.primaryActivity)
   const logoInputRef = useRef(null)
@@ -456,7 +470,7 @@ function IdentityStep({ errorFor, formik }) {
     if (!file) return
     formik.setFieldValue('logoUrl', URL.createObjectURL(file))
     try {
-      const url = await storageService.uploadBusinessLogo(formik.values.ownerId || Date.now().toString(), formik.values.id || Date.now().toString(), file)
+      const url = await storageService.uploadBusinessLogo(userId, businessId, file)
       formik.setFieldValue('logoUrl', url)
       dispatch(
         addToast({
@@ -480,7 +494,7 @@ function IdentityStep({ errorFor, formik }) {
     if (!file) return
     formik.setFieldValue('bannerUrl', URL.createObjectURL(file))
     try {
-      const url = await storageService.uploadBusinessBanner(formik.values.ownerId || Date.now().toString(), formik.values.id || Date.now().toString(), file)
+      const url = await storageService.uploadBusinessBanner(userId, businessId, file)
       formik.setFieldValue('bannerUrl', url)
       dispatch(
         addToast({

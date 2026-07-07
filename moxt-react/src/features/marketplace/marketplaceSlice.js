@@ -231,19 +231,46 @@ const marketplaceSlice = createSlice({
         if (!listing) return
         listing.questions ||= []
         listing.questions.unshift(action.payload.question)
+        listing.updatedAt = action.payload.question.createdAt
       },
       prepare({ authorId, authorName, listingId, text }) {
+        const now = new Date().toISOString()
         return {
           payload: {
             listingId,
             question: {
               id: `QUE-${Date.now().toString(36).toUpperCase()}`,
+              listingId,
               authorId,
               authorName,
               text: text.trim(),
               answer: '',
-              createdAt: new Date().toISOString(),
+              answeredAt: null,
+              createdAt: now,
             },
+          },
+        }
+      },
+    },
+    answerListingQuestion: {
+      reducer(state, action) {
+        const listing = state.items.find((item) => item.id === action.payload.listingId)
+        if (!listing || listing.ownerId !== action.payload.ownerId) return
+        const question = listing.questions?.find((item) => item.id === action.payload.questionId)
+        if (!question || question.answer) return
+        question.answer = action.payload.answer.trim()
+        question.answeredAt = action.payload.answeredAt
+        listing.updatedAt = action.payload.answeredAt
+      },
+      prepare({ answer, listingId, ownerId, questionId }) {
+        const answeredAt = new Date().toISOString()
+        return {
+          payload: {
+            listingId,
+            questionId,
+            ownerId,
+            answer,
+            answeredAt,
           },
         }
       },
@@ -335,6 +362,7 @@ export const {
   duplicateListing,
   expireListings,
   addListingQuestion,
+  answerListingQuestion,
   incrementListingContact,
   incrementListingShare,
   incrementListingView,

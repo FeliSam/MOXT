@@ -1,4 +1,5 @@
 import { addNotification } from '../features/communications/communicationSlice'
+import { BUSINESS_VISIBLE_STATUSES } from '../features/businesses/businessPublishUtils'
 import { createReceipt } from '../features/finance/financeSlice'
 import { TRANSFER_STATUS } from '../features/transfers/transferConfig'
 import { addToast } from '../features/ui/uiSlice'
@@ -212,8 +213,83 @@ export const interactionMiddleware = (store) => (next) => (action) => {
     }
   }
 
+  if (action.type === 'marketplace/addListingQuestion') {
+    const listing = after.marketplace.items.find((item) => item.id === action.payload.listingId)
+    if (listing?.ownerId && listing.ownerId !== action.payload.question.authorId) {
+      notify(store, {
+        userId: listing.ownerId,
+        title: 'Nouvelle question sur votre annonce',
+        message: `${action.payload.question.authorName} a posé une question sur « ${listing.title} ».`,
+        type: 'marketplace',
+        link: `/marketplace/${listing.id}`,
+      })
+    }
+    store.dispatch(
+      addToast({
+        title: 'Question publiée',
+        message: 'Le vendeur pourra y répondre publiquement.',
+        tone: 'success',
+      }),
+    )
+  }
+
+  if (action.type === 'marketplace/answerListingQuestion') {
+    const listing = after.marketplace.items.find((item) => item.id === action.payload.listingId)
+    const question = listing?.questions?.find((item) => item.id === action.payload.questionId)
+    if (question?.authorId && question.authorId !== actorId) {
+      notify(store, {
+        userId: question.authorId,
+        title: 'Réponse à votre question',
+        message: `Le vendeur a répondu sur « ${listing?.title || 'votre annonce'} ».`,
+        type: 'marketplace',
+        link: `/marketplace/${action.payload.listingId}`,
+      })
+    }
+    store.dispatch(
+      addToast({
+        title: 'Réponse publiée',
+        message: 'Votre réponse est visible sur la fiche.',
+        tone: 'success',
+      }),
+    )
+  }
+
+  if (action.type === 'businesses/moderateBusiness') {
+    const previous = before.businesses.items.find((item) => item.id === action.payload.id)
+    const business = after.businesses.items.find((item) => item.id === action.payload.id)
+    const { status } = action.payload
+    if (business?.ownerId && business.ownerId !== actorId && previous?.status !== status) {
+      const wasPublishReady = BUSINESS_VISIBLE_STATUSES.includes(previous?.status)
+      const isPublishReady = BUSINESS_VISIBLE_STATUSES.includes(status)
+      if (isPublishReady && !wasPublishReady) {
+        notify(store, {
+          userId: business.ownerId,
+          title: 'Entreprise vérifiée',
+          message: `« ${business.name} » est maintenant vérifiée. Vous pouvez publier au nom de l'entreprise et apparaître dans l'annuaire.`,
+          type: 'business',
+          link: `/businesses/${business.id}`,
+        })
+      } else if (status === 'rejected') {
+        notify(store, {
+          userId: business.ownerId,
+          title: 'Entreprise refusée',
+          message: `La validation de « ${business.name} » a été refusée. Contactez le support MOXT pour plus d'informations.`,
+          type: 'moderation',
+          link: `/businesses/${business.id}`,
+        })
+      } else if (!isPublishReady) {
+        notify(store, {
+          userId: business.ownerId,
+          title: 'Entreprise mise à jour',
+          message: `Nouveau statut : ${status}.`,
+          type: 'moderation',
+          link: `/businesses/${business.id}`,
+        })
+      }
+    }
+  }
+
   const moderationDomains = {
-    'businesses/moderateBusiness': ['businesses', '/businesses/', 'Entreprise'],
     'events/moderateEvent': ['events', '/events/', 'Événement'],
     'jobs/moderateJob': ['jobs', '/jobs/', 'Job'],
     'marketplace/updateListingStatus': ['marketplace', '/marketplace/', 'Annonce'],

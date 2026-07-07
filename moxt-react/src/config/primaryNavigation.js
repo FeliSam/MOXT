@@ -7,7 +7,7 @@ export const primaryNavigationItems = [
   { id: 'marketplace', label: 'Marketplace', path: '/marketplace', icon: FiShoppingBag },
   { id: 'parcels', label: 'Colis', path: '/parcels', icon: FiBox },
   { id: 'jobs', label: 'Jobs', path: '/jobs', icon: FiBriefcase },
-  { id: 'messages', label: 'Messagerie', path: '/messages', icon: FiMessageSquare },
+  { id: 'messages', label: 'Messagerie', path: '/messages', icon: FiMessageSquare, badgeSelector: 'messages' },
 ]
 
 const primaryById = Object.fromEntries(primaryNavigationItems.map((item) => [item.id, item]))

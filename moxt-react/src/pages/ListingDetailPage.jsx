@@ -43,6 +43,7 @@ import { ContactButton } from '../features/communications/ContactButton'
 import { MarketplaceListingCard } from '../features/marketplace/MarketplaceListingCard'
 import {
   addListingQuestion,
+  answerListingQuestion,
   incrementListingContact,
   incrementListingShare,
   incrementListingView,
@@ -308,6 +309,7 @@ export function ListingDetailPage() {
               ) : null}
               {activeTab === 'questions' ? (
                 <Questions
+                  dispatch={dispatch}
                   listing={listing}
                   question={question}
                   setQuestion={setQuestion}
@@ -926,10 +928,30 @@ function PriceBlock({ listing }) {
   return <strong className="text-3xl text-brand-700">{formatMoney(listing.price, listing.currency)}</strong>
 }
 
-function Questions({ listing, question, setQuestion, submitQuestion, user }) {
+function Questions({ dispatch, listing, question, setQuestion, submitQuestion, user }) {
+  const [answers, setAnswers] = useState({})
+  const [replyingId, setReplyingId] = useState(null)
+  const isOwner = listing.ownerId === user.id
+
+  function submitAnswer(event, questionId) {
+    event.preventDefault()
+    const text = (answers[questionId] || '').trim()
+    if (text.length < 2) return
+    dispatch(
+      answerListingQuestion({
+        listingId: listing.id,
+        questionId,
+        ownerId: user.id,
+        answer: text,
+      }),
+    )
+    setAnswers((current) => ({ ...current, [questionId]: '' }))
+    setReplyingId(null)
+  }
+
   return (
     <div>
-      {listing.ownerId !== user.id ? (
+      {!isOwner ? (
         <form className="grid gap-3" onSubmit={submitQuestion}>
           <label className="grid gap-2 text-sm font-bold">
             Poser une question publique
@@ -944,7 +966,11 @@ function Questions({ listing, question, setQuestion, submitQuestion, user }) {
             Publier la question
           </Button>
         </form>
-      ) : null}
+      ) : (
+        <p className="rounded-2xl bg-[var(--app-surface-muted)] p-4 text-sm text-[var(--app-text-muted)]">
+          Répondez publiquement aux questions des acheteurs pour rassurer les futurs visiteurs.
+        </p>
+      )}
       <div className="mt-6 grid gap-3">
         {(listing.questions || []).length ? (
           listing.questions.map((item) => (
@@ -957,10 +983,55 @@ function Questions({ listing, question, setQuestion, submitQuestion, user }) {
               </div>
               <p className="mt-2 text-sm">{item.text}</p>
               {item.answer ? (
-                <p className="mt-3 rounded-xl bg-[var(--app-surface)] p-3 text-sm">
-                  <strong>Réponse du vendeur :</strong> {item.answer}
+                <div className="mt-3 rounded-xl bg-[var(--app-surface)] p-3 text-sm">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--app-accent)]">
+                    Réponse du vendeur
+                  </p>
+                  <p className="mt-1">{item.answer}</p>
+                  {item.answeredAt ? (
+                    <p className="mt-2 text-[10px] text-[var(--app-text-faint)]">
+                      {formatShortDate(item.answeredAt)}
+                    </p>
+                  ) : null}
+                </div>
+              ) : isOwner ? (
+                replyingId === item.id ? (
+                  <form className="mt-3 grid gap-3" onSubmit={(event) => submitAnswer(event, item.id)}>
+                    <label className="grid gap-2 text-sm font-bold">
+                      Votre réponse publique
+                      <textarea
+                        className="min-h-24 rounded-2xl bg-[var(--app-surface)] p-4"
+                        placeholder="Répondez clairement pour aider les autres acheteurs..."
+                        value={answers[item.id] || ''}
+                        onChange={(event) =>
+                          setAnswers((current) => ({ ...current, [item.id]: event.target.value }))
+                        }
+                      />
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      <Button type="submit" disabled={(answers[item.id] || '').trim().length < 2}>
+                        Publier la réponse
+                      </Button>
+                      <Button type="button" variant="secondary" onClick={() => setReplyingId(null)}>
+                        Annuler
+                      </Button>
+                    </div>
+                  </form>
+                ) : (
+                  <Button
+                    className="mt-3"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setReplyingId(item.id)}
+                  >
+                    Répondre
+                  </Button>
+                )
+              ) : (
+                <p className="mt-3 text-xs text-[var(--app-text-faint)]">
+                  En attente de réponse du vendeur.
                 </p>
-              ) : null}
+              )}
             </div>
           ))
         ) : (

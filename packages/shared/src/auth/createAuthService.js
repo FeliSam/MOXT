@@ -234,15 +234,28 @@ export function createAuthService(supabase, redirects = {}) {
 
     async restoreSession() {
       if (!supabase) return null
-      const { data, error } = await supabase.auth.getSession()
-      if (error || !data.session) return null
+
+      let session = null
+      try {
+        const { data } = await supabase.auth.getSession()
+        session = data.session
+        if (!session) {
+          const { data: refreshed } = await supabase.auth.refreshSession()
+          session = refreshed.session
+        }
+      } catch (error) {
+        console.warn('[MOXT] Session Supabase indisponible au démarrage:', error?.message)
+        return null
+      }
+
+      if (!session) return null
 
       try {
-        const user = await fetchOrCreateProfile(data.session.user)
-        return { user, token: data.session.access_token }
+        const user = await fetchOrCreateProfile(session.user)
+        return { user, token: session.access_token }
       } catch (profileError) {
         console.warn('[MOXT] Profil indisponible, session conservée:', profileError?.message)
-        const authUser = data.session.user
+        const authUser = session.user
         const metadata = authUser.user_metadata || {}
         return {
           user: profileToUser({
@@ -259,7 +272,7 @@ export function createAuthService(supabase, redirects = {}) {
             role: 'user',
             status: 'active',
           }),
-          token: data.session.access_token,
+          token: session.access_token,
         }
       }
     },

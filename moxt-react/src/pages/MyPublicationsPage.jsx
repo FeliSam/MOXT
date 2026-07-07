@@ -34,6 +34,7 @@ import {
 } from '../features/publications/MyPublicationCards'
 import {
   collectUserPublications,
+  filterPublicationsByScope,
   filterPublicationsByTabs,
   PUBLICATION_TYPE_TABS,
   publicationArchiveCounts,
@@ -41,6 +42,9 @@ import {
   publicationTypeCounts,
   visiblePublicationCount,
 } from '../features/publications/publicationCatalogUtils'
+import { PublicationScopeButton } from '../features/publications/PublicationScopeButton'
+import { canRepublishBusinessItem } from '../features/businesses/businessPublishUtils'
+import { addToast } from '../features/ui/uiSlice'
 
 const PUBLISH_LINKS = {
   listing: { to: '/marketplace/publish', label: 'Publier une annonce' },
@@ -66,15 +70,36 @@ export function MyPublicationsPage() {
   const [deletingListing, setDeletingListing] = useState(null)
   const user = useSelector((state) => state.auth.user)
   const appState = useSelector((state) => state)
+  const ownBusiness = useSelector((state) =>
+    state.businesses.items.find((item) => item.ownerId === user.id),
+  )
+  const businessById = useMemo(
+    () => new Map(appState.businesses.items.map((item) => [item.id, item])),
+    [appState.businesses.items],
+  )
+
+  function guardBusinessRepublish(item) {
+    if (canRepublishBusinessItem(item, businessById)) return true
+    dispatch(
+      addToast({
+        title: 'Republication impossible',
+        message:
+          'Votre entreprise doit être vérifiée par MOXT pour republier ce contenu au nom de l’entreprise.',
+        tone: 'error',
+      }),
+    )
+    return false
+  }
 
   const archiveTab = searchParams.get('status') === 'archived' ? 'archived' : 'active'
   const typeTab = PUBLICATION_TYPE_TABS.some((tab) => tab.id === searchParams.get('type'))
     ? searchParams.get('type')
     : 'listing'
+  const scope = searchParams.get('scope') === 'business' ? 'business' : 'all'
 
   const publications = useMemo(
-    () => collectUserPublications(appState, user.id),
-    [appState, user.id],
+    () => filterPublicationsByScope(collectUserPublications(appState, user.id), scope),
+    [appState, scope, user.id],
   )
   const archiveCounts = useMemo(() => publicationArchiveCounts(publications), [publications])
   const typeCounts = useMemo(
@@ -102,6 +127,13 @@ export function MyPublicationsPage() {
     setSearchParams(params, { replace: true })
   }
 
+  function setScope(next) {
+    const params = new URLSearchParams(searchParams)
+    if (next === 'all') params.delete('scope')
+    else params.set('scope', next)
+    setSearchParams(params, { replace: true })
+  }
+
   const publishLink = PUBLISH_LINKS[typeTab] || PUBLISH_LINKS.listing
   const EmptyIcon = EMPTY_ICONS[typeTab] || FiShoppingBag
 
@@ -110,7 +142,11 @@ export function MyPublicationsPage() {
       <PageHeader
         eyebrow="Compte"
         title="Mes publications"
-        description="Annonces, colis, jobs, événements, publications et autres contenus."
+        description={
+          scope === 'business' && ownBusiness
+            ? `Publications publiées au nom de ${ownBusiness.name}.`
+            : 'Annonces, colis, jobs, événements, publications et autres contenus.'
+        }
         stats={[
           { label: 'Actives', value: archiveCounts.active },
           { label: 'Archives', value: archiveCounts.archived },
@@ -118,7 +154,14 @@ export function MyPublicationsPage() {
         ]}
         actions={
           <>
-            <Link to={`/users/${user.id}/publications`}>
+            <PublicationScopeButton
+              business={ownBusiness}
+              onScopeChange={setScope}
+              scope={scope}
+            />
+            <Link
+              to={`/users/${user.id}/publications${scope === 'business' ? '?scope=business' : ''}`}
+            >
               <Button variant="secondary" icon={FiEye}>
                 Vue publique
               </Button>
@@ -163,9 +206,10 @@ export function MyPublicationsPage() {
               ownerMode
               showViews
               onDuplicate={() => dispatch(duplicateListing({ listing, ownerId: user.id }))}
-              onRepublish={() =>
+              onRepublish={() => {
+                if (!guardBusinessRepublish(listing)) return
                 dispatch(updateListingStatus({ id: listing.id, status: 'active', actorId: user.id }))
-              }
+              }}
               onMarkSold={() =>
                 dispatch(updateListingStatus({ id: listing.id, status: 'sold', actorId: user.id }))
               }
@@ -182,9 +226,10 @@ export function MyPublicationsPage() {
               onArchive={() =>
                 dispatch(updateParcelStatus({ id: parcel.id, status: 'completed' }))
               }
-              onReactivate={() =>
+              onReactivate={() => {
+                if (!guardBusinessRepublish(parcel)) return
                 dispatch(updateParcelStatus({ id: parcel.id, status: 'active' }))
-              }
+              }}
             />
           ))}
           {visible.job.map((job) => (
@@ -192,7 +237,10 @@ export function MyPublicationsPage() {
               key={job.id}
               job={job}
               onArchive={() => dispatch(moderateJob({ id: job.id, status: 'archived' }))}
-              onReactivate={() => dispatch(moderateJob({ id: job.id, status: 'active' }))}
+              onReactivate={() => {
+                if (!guardBusinessRepublish(job)) return
+                dispatch(moderateJob({ id: job.id, status: 'active' }))
+              }}
             />
           ))}
           {visible.event.map((event) => (
@@ -200,7 +248,10 @@ export function MyPublicationsPage() {
               key={event.id}
               event={event}
               onArchive={() => dispatch(moderateEvent({ id: event.id, status: 'archived' }))}
-              onReactivate={() => dispatch(moderateEvent({ id: event.id, status: 'published' }))}
+              onReactivate={() => {
+                if (!guardBusinessRepublish(event)) return
+                dispatch(moderateEvent({ id: event.id, status: 'published' }))
+              }}
             />
           ))}
           {visible.post.map((post) => (

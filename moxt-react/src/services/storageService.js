@@ -37,11 +37,15 @@ export const storageService = {
   },
 
   async uploadBusinessLogo(userId, businessId, file) {
-    return upload('businesses', `${userId}/${businessId}/logo.${ext(file)}`, file)
+    const compressed = await compressImage(file, { maxPx: 512, quality: 0.88 })
+    const extension = compressed.type === 'image/png' ? 'png' : 'jpg'
+    return upload('businesses', `${userId}/${businessId}/logo.${extension}`, compressed)
   },
 
   async uploadBusinessBanner(userId, businessId, file) {
-    return upload('businesses', `${userId}/${businessId}/banner.${ext(file)}`, file)
+    const compressed = await compressImage(file, { maxPx: 1920, quality: 0.82 })
+    const extension = compressed.type === 'image/png' ? 'png' : 'jpg'
+    return upload('businesses', `${userId}/${businessId}/banner.${extension}`, compressed)
   },
 
   async uploadListingImages(userId, listingId, files) {

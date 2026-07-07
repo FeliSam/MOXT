@@ -30,6 +30,9 @@ import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
 import { JOB_CONTRACTS } from '../config/options'
 import { createJob } from '../features/jobs/jobSlice'
+import { BusinessPublishNotice } from '../features/businesses/BusinessPublishNotice'
+import { isBusinessPublishReady } from '../features/businesses/businessPublishUtils'
+import { addToast } from '../features/ui/uiSlice'
 
 /* ─── Steps ─────────────────────────────────────────────────────────────── */
 const STEPS = [
@@ -125,8 +128,7 @@ export function PublishJobPage() {
     state.businesses.items.find((item) => item.ownerId === user.id),
   )
   const eligibleBusiness =
-    ['verified', 'approved', 'active'].includes(business?.status) &&
-    business?.services?.includes('Jobs')
+    isBusinessPublishReady(business) && business?.services?.includes('Jobs')
 
   const [step, setStep] = useState(1)
   const [errors, setErrors] = useState({})
@@ -182,6 +184,17 @@ export function PublishJobPage() {
 
   function publish() {
     if (!validate(3)) return
+    if (form.publisherType === 'business' && !eligibleBusiness) {
+      dispatch(
+        addToast({
+          title: 'Publication entreprise impossible',
+          message:
+            'Votre entreprise doit être vérifiée et disposer du module Jobs avant publication.',
+          tone: 'error',
+        }),
+      )
+      return
+    }
     const publishAsBusiness = form.publisherType === 'business' && eligibleBusiness
     const action = dispatch(
       createJob({
@@ -447,6 +460,7 @@ export function PublishJobPage() {
               onChange={(e) => set('applicationDeadline', e.target.value)}
             />
           </div>
+          {business ? <BusinessPublishNotice business={business} className="mb-1" /> : null}
           <Select
             id="job-publisher"
             label="Profil de publication"

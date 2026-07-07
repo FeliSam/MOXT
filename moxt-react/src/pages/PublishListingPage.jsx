@@ -37,7 +37,13 @@ import {
   validatePhone,
 } from '../config/phone'
 import { CitySelector } from '../components/ui/CitySelector'
+import { BusinessPublishNotice } from '../features/businesses/BusinessPublishNotice'
+import {
+  isBusinessPublishReady,
+  resolveBusinessPublishContext,
+} from '../features/businesses/businessPublishUtils'
 import { publishListing } from '../features/marketplace/marketplaceSlice'
+import { addToast } from '../features/ui/uiSlice'
 
 const STEPS = [
   { key: 'type', label: 'Type', icon: FiTag },
@@ -53,6 +59,7 @@ export function PublishListingPage() {
   const business = useSelector((state) =>
     state.businesses.items.find((item) => item.ownerId === user.id),
   )
+  const canPublishAsBusiness = isBusinessPublishReady(business)
   const [step, setStep] = useState(1)
   const [listingType, setListingType] = useState(null)
   const [category, setCategory] = useState('')
@@ -69,7 +76,7 @@ export function PublishListingPage() {
     address: '',
     contact: ensurePhoneCountry(user.phone, 'RU'),
     whatsapp: ensurePhoneCountry(user.phone, 'RU'),
-    sellerType: business ? 'business' : 'person',
+    sellerType: canPublishAsBusiness && business ? 'business' : 'person',
     deliveryOptions: [],
     deliveryFee: 0,
     // Réduction
@@ -199,6 +206,21 @@ export function PublishListingPage() {
   // ── Publication ───────────────────────────────────────────────────────────
   async function publish() {
     if (!validate(4)) return
+    const publishContext = resolveBusinessPublishContext({
+      business,
+      publishAsBusiness: form.sellerType === 'business',
+    })
+    if (publishContext.blocked) {
+      dispatch(
+        addToast({
+          title: 'Publication entreprise impossible',
+          message:
+            'Votre entreprise doit être vérifiée par MOXT avant de publier au nom de l’entreprise.',
+          tone: 'error',
+        }),
+      )
+      return
+    }
     setPublishing(true)
     const sanitizedForm = sanitizeListingByType({
       ...form,
@@ -211,11 +233,10 @@ export function PublishListingPage() {
         values: {
           ...sanitizedForm,
           ownerId: user.id,
-          sellerName:
-            form.sellerType === 'business' && business
-              ? business.name
-              : `${user.firstName} ${user.lastName}`,
-          businessId: form.sellerType === 'business' ? business?.id : null,
+          sellerName: publishContext.useBusiness
+            ? business.name
+            : `${user.firstName} ${user.lastName}`,
+          businessId: publishContext.businessId,
           currency: 'RUB',
           country: 'RU',
         },
@@ -831,15 +852,20 @@ export function PublishListingPage() {
 
           {/* Vendeur pro ou particulier */}
           {business ? (
-            <Select
-              id="pub-seller"
-              label="Publier en tant que"
-              value={form.sellerType}
-              onChange={(e) => setField('sellerType', e.target.value)}
-            >
-              <option value="business">{business.name} (entreprise)</option>
-              <option value="person">Particulier</option>
-            </Select>
+            <>
+              <BusinessPublishNotice business={business} />
+              <Select
+                id="pub-seller"
+                label="Publier en tant que"
+                value={form.sellerType}
+                onChange={(e) => setField('sellerType', e.target.value)}
+              >
+                {canPublishAsBusiness ? (
+                  <option value="business">{business.name} (entreprise)</option>
+                ) : null}
+                <option value="person">Particulier</option>
+              </Select>
+            </>
           ) : null}
 
           {/* Récapitulatif */}

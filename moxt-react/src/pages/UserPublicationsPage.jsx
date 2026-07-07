@@ -29,6 +29,7 @@ import {
 import {
   buildUserPublicationProfile,
   collectUserPublications,
+  filterPublicationsByScope,
   filterPublicationsByTabs,
   PUBLICATION_TYPE_TABS,
   publicationArchiveCounts,
@@ -36,6 +37,7 @@ import {
   publicationTypeCounts,
   visiblePublicationCount,
 } from '../features/publications/publicationCatalogUtils'
+import { PublicationScopeButton } from '../features/publications/PublicationScopeButton'
 
 const EMPTY_ICONS = {
   listing: FiShoppingBag,
@@ -58,9 +60,13 @@ export function UserPublicationsPage() {
     : 'listing'
 
   const isOwner = currentUser?.id === userId
+  const ownBusiness = useSelector((state) =>
+    state.businesses.items.find((item) => item.ownerId === userId),
+  )
+  const scope = searchParams.get('scope') === 'business' ? 'business' : 'all'
   const publications = useMemo(
-    () => collectUserPublications(appState, userId),
-    [appState, userId],
+    () => filterPublicationsByScope(collectUserPublications(appState, userId), scope),
+    [appState, scope, userId],
   )
   const profile = useMemo(
     () => buildUserPublicationProfile(userId, publications),
@@ -92,6 +98,13 @@ export function UserPublicationsPage() {
     setSearchParams(params, { replace: true })
   }
 
+  function setScope(next) {
+    const params = new URLSearchParams(searchParams)
+    if (next === 'all') params.delete('scope')
+    else params.set('scope', next)
+    setSearchParams(params, { replace: true })
+  }
+
   if (!publicationTotalCount(publications)) {
     return (
       <div className="grid gap-7">
@@ -100,7 +113,13 @@ export function UserPublicationsPage() {
           title={isOwner ? 'Mes publications publiques' : 'Publications du membre'}
           description="Ce membre n'a pas encore publié de contenu visible."
           actions={
-            <Link to={isOwner ? '/publications/mine' : '/dashboard'}>
+            <Link
+              to={
+                isOwner
+                  ? `/publications/mine${scope === 'business' ? '?scope=business' : ''}`
+                  : '/dashboard'
+              }
+            >
               <Button variant="secondary" icon={FiArrowLeft}>
                 {isOwner ? 'Gérer mes publications' : 'Retour'}
               </Button>
@@ -123,12 +142,27 @@ export function UserPublicationsPage() {
         title={isOwner ? 'Mes publications publiques' : `Publications de ${profile.name}`}
         description={
           isOwner
-            ? 'Vue publique de tout votre contenu — partagez ce profil avec la communauté.'
+            ? scope === 'business' && ownBusiness
+              ? `Vue publique des publications de ${ownBusiness.name}.`
+              : 'Vue publique de tout votre contenu — partagez ce profil avec la communauté.'
             : 'Annonces, colis, jobs, événements et publications publiées par ce membre.'
         }
         actions={
           <>
-            <Link to={isOwner ? '/publications/mine' : '/dashboard'}>
+            {isOwner ? (
+              <PublicationScopeButton
+                business={ownBusiness}
+                onScopeChange={setScope}
+                scope={scope}
+              />
+            ) : null}
+            <Link
+              to={
+                isOwner
+                  ? `/publications/mine${scope === 'business' ? '?scope=business' : ''}`
+                  : '/dashboard'
+              }
+            >
               <Button variant="secondary" icon={FiArrowLeft}>
                 {isOwner ? 'Gérer mes publications' : 'Retour'}
               </Button>
@@ -149,6 +183,12 @@ export function UserPublicationsPage() {
                 <FiUser className="mr-1 inline" />
                 Membre
               </Badge>
+              {scope === 'business' && ownBusiness ? (
+                <Badge tone="info">
+                  <FiBriefcase className="mr-1 inline" />
+                  {ownBusiness.name}
+                </Badge>
+              ) : null}
             </div>
             {profile.city ? (
               <p className="mt-1 flex items-center gap-1 text-sm text-[var(--app-text-muted)]">

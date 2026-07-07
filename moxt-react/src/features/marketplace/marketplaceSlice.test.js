@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import reducer, {
-  createListing,
   addListingQuestion,
+  answerListingQuestion,
+  createListing,
   deleteListing,
   duplicateListing,
   expireListings,
@@ -171,6 +172,32 @@ describe('marketplaceSlice', () => {
     expect(favorite.items[0].shareCount).toBe(1)
     expect(favorite.items[0].questions).toHaveLength(1)
     expect(favorite.items[0].favorites).toEqual(['u1'])
+  })
+
+  it('permet au vendeur de répondre à une question publique', () => {
+    const created = reducer({ items: [] }, createListing(listing))
+    const id = created.items[0].id
+    const withQuestion = reducer(
+      created,
+      addListingQuestion({
+        listingId: id,
+        authorId: 'buyer',
+        authorName: 'Acheteur',
+        text: 'Est-ce encore disponible ?',
+      }),
+    )
+    const answered = reducer(
+      withQuestion,
+      answerListingQuestion({
+        listingId: id,
+        questionId: withQuestion.items[0].questions[0].id,
+        ownerId: listing.ownerId,
+        answer: 'Oui, toujours disponible.',
+      }),
+    )
+
+    expect(answered.items[0].questions[0].answer).toBe('Oui, toujours disponible.')
+    expect(answered.items[0].questions[0].answeredAt).toBeTruthy()
   })
 
   it('fusionne une annonce distante sans créer de doublon', () => {

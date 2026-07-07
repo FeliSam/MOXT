@@ -14,7 +14,7 @@ import { setAll as setDisputes } from '../features/disputes/disputeSlice'
 import { setAll as setFinance } from '../features/finance/financeSlice'
 import { setAll as setAccount } from '../features/account/accountSlice'
 import { setAll as setPosts } from '../features/posts/postsSlice'
-import { listingFromRemoteRow } from '../features/marketplace/marketplaceRemote'
+import { listingFromRemoteRow, mergeListingQuestions } from '../features/marketplace/marketplaceRemote'
 import { fromRow, fromRows } from '../services/remoteRowMapper'
 import { fetchUserConversations } from '@moxt/shared/utils/fetchUserConversations.js'
 
@@ -40,6 +40,14 @@ function parseJsonField(value, fallback) {
   }
 }
 
+function mergeRemoteItems(localItems = [], remoteItems = []) {
+  const merged = new Map((localItems || []).map((item) => [item.id, item]))
+  for (const item of remoteItems || []) {
+    merged.set(item.id, { ...merged.get(item.id), ...item })
+  }
+  return [...merged.values()]
+}
+
 export const loadAllData = createAsyncThunk(
   'app/loadAllData',
   async (_, { getState, dispatch }) => {
@@ -49,7 +57,7 @@ export const loadAllData = createAsyncThunk(
     const uid = user.id
 
     const [
-      listingsRes, parcelsRes, parcelRequestsRes,
+      listingsRes, listingQuestionsRes, parcelsRes, parcelRequestsRes,
       jobsRes, jobApplicationsRes,
       eventsRes, eventRegistrationsRes,
       businessesRes,
@@ -63,6 +71,11 @@ export const loadAllData = createAsyncThunk(
       postsRes,
     ] = await Promise.all([
       supabase.from('listings').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
+      supabase
+        .from('listing_questions')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(500),
       supabase.from('parcels').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
       supabase.from('parcel_requests').select('*').eq('user_id', uid).limit(USER_LIMIT),
       supabase.from('jobs').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
@@ -86,6 +99,17 @@ export const loadAllData = createAsyncThunk(
     ])
 
     assertLoaded(listingsRes, 'des annonces')
+    if (listingQuestionsRes.error) {
+      console.warn('[MOXT] Chargement des questions annonces:', listingQuestionsRes.error.message)
+    }
+    if (businessesRes.error) {
+      console.warn('[MOXT] Chargement des entreprises:', businessesRes.error.message)
+    }
+
+    const listingsWithQuestions = mergeListingQuestions(
+      listingsRes.data.map(listingFromRemoteRow),
+      listingQuestionsRes.data || [],
+    )
 
     const { data: conversationRows, error: conversationsError } = await fetchUserConversations(
       supabase,
@@ -103,12 +127,17 @@ export const loadAllData = createAsyncThunk(
       ),
     )
 
+    const mergedBusinesses = mergeRemoteItems(
+      getState().businesses.items,
+      fromRows(businessesRes.data || []),
+    )
+
     batch(() => {
-      dispatch(setMarketplace({ items: listingsRes.data.map(listingFromRemoteRow) }))
+      dispatch(setMarketplace({ items: listingsWithQuestions }))
       dispatch(setParcels({ items: fromRows(parcelsRes.data), requests: fromRows(parcelRequestsRes.data) }))
       dispatch(setJobs({ items: fromRows(jobsRes.data), applications: fromRows(jobApplicationsRes.data) }))
       dispatch(setEvents({ items: fromRows(eventsRes.data), registrations: fromRows(eventRegistrationsRes.data) }))
-      dispatch(setBusinesses({ items: fromRows(businessesRes.data) }))
+      dispatch(setBusinesses({ items: mergedBusinesses }))
       dispatch(setTransfers({ items: fromRows(transfersRes.data) }))
       dispatch(setCommunications({ conversations, notifications: fromRows(notificationsRes.data) }))
       dispatch(setP2P({ offers: fromRows(p2pOffersRes.data), orders: fromRows(p2pOrdersRes.data) }))
