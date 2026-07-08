@@ -122,10 +122,14 @@ export function SettingsPage() {
               value={preferences.activityVisibility}
               onChange={(event) => updatePreference('activityVisibility', event.target.value)}
             >
-              <option value="private">Privée</option>
-              <option value="contacts">Mes contacts</option>
-              <option value="public">Publique</option>
+              <option value="private">Privée — vous seul</option>
+              <option value="contacts">Mes contacts — interlocuteurs messagerie</option>
+              <option value="public">Publique — toute la communauté</option>
             </Select>
+            <p className="text-xs text-[var(--app-text-muted)]">
+              Contrôle qui peut voir vos publications publiques sur votre page membre.
+              Enregistré sur votre profil MOXT.
+            </p>
           </div>
         </Card>
         <Card className="md:col-span-2">

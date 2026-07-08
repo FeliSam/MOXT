@@ -69,7 +69,10 @@ export function PaymentsPage() {
       />
       <Card className="flex gap-3 border-amber-300 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30">
         <FiAlertTriangle className="mt-1 shrink-0 text-xl text-amber-600" />
-        <p className="text-sm">Confirmez chaque paiement uniquement après vérification des coordonnées et du montant.</p>
+        <p className="text-sm">
+          Les paiements sont enregistrés sur votre compte MOXT et synchronisés entre appareils.
+          Vérifiez toujours montant et coordonnées avant confirmation.
+        </p>
       </Card>
       <PublicationModal
         open={simulationOpen}

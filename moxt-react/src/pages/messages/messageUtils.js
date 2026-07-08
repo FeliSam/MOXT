@@ -8,13 +8,21 @@ export function messageReadLabel(message, userId) {
 
 export function conversationPreview(conversation, userId) {
   const last = conversation.messages.at(-1)
-  if (!last?.text) {
-    const total = conversationMessageCount(conversation, userId)
-    return total > 0 ? `${total} message${total > 1 ? 's' : ''}` : 'Démarrez la conversation'
+  if (last?.text) {
+    const prefix = isMessageFromUser(last, userId) ? 'Vous : ' : ''
+    const attachmentHint = last.attachment ? '📎 ' : ''
+    return `${prefix}${attachmentHint}${last.text}`
   }
-  const prefix = isMessageFromUser(last, userId) ? 'Vous : ' : ''
-  const attachmentHint = last.attachment ? '📎 ' : ''
-  return `${prefix}${attachmentHint}${last.text}`
+
+  const previewText = conversation.lastMessageText ?? conversation.last_message_text
+  if (previewText) {
+    const senderId = conversation.lastMessageSenderId ?? conversation.last_message_sender_id
+    const prefix = isMessageFromUser({ senderId }, userId) ? 'Vous : ' : ''
+    return `${prefix}${previewText}`
+  }
+
+  const total = conversationMessageCount(conversation, userId)
+  return total > 0 ? `${total} message${total > 1 ? 's' : ''}` : 'Démarrez la conversation'
 }
 
 export function conversationMessageCount(conversation, userId) {

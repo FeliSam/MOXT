@@ -1,14 +1,21 @@
 import { configureStore, createSlice } from '@reduxjs/toolkit'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { persistenceMiddleware } from './persistenceMiddleware'
 
 describe('persistenceMiddleware', () => {
-  beforeEach(() => localStorage.clear())
+  beforeEach(() => {
+    localStorage.clear()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
 
   it('persiste le domaine apres le reducer', () => {
     const businesses = createSlice({
       name: 'businesses',
-      initialState: { items: [] },
+      initialState: { items: [], members: [], documents: [], requests: [] },
       reducers: {
         add(state, action) {
           state.items.push(action.payload)
@@ -20,17 +27,18 @@ describe('persistenceMiddleware', () => {
         businesses: businesses.reducer,
         audit: () => ({ items: [] }),
         communications: () => ({ conversations: [], notifications: [], support: [] }),
-        events: () => ({ items: [], registrations: [] }),
-        jobs: () => ({ applications: [], items: [] }),
-        marketplace: () => ({ items: [] }),
+        events: () => ({ items: [], registrations: [], reports: [] }),
+        jobs: () => ({ applications: [], items: [], reports: [] }),
+        marketplace: () => ({ items: [], reports: [], filters: {}, draft: null }),
         p2p: () => ({ offers: [], orders: [] }),
-        parcels: () => ({ items: [] }),
+        parcels: () => ({ items: [], requests: [] }),
         transfers: () => ({ items: [] }),
       },
       middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(persistenceMiddleware),
     })
 
     store.dispatch(businesses.actions.add({ id: 'BIZ-1' }))
+    vi.advanceTimersByTime(500)
 
     expect(JSON.parse(localStorage.getItem('moxt-businesses-v1'))).toEqual([{ id: 'BIZ-1' }])
   })

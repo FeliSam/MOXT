@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { createId } from '../../services/createId'
 import { createLocalStorage } from '../../services/createLocalStorage'
+import { mergeRemoteById } from '@moxt/shared/utils/mergeRemoteById.js'
 
 const storage = createLocalStorage('moxt-disputes-v1')
 
@@ -9,7 +10,12 @@ const disputeSlice = createSlice({
   initialState: { items: storage.read() },
   reducers: {
     setAll(state, action) {
-      Object.assign(state, action.payload)
+      const remote = (action.payload.items || []).map((item) => ({
+        ...item,
+        openedBy: item.openedBy || item.reporterId || null,
+        reporterId: item.reporterId || item.openedBy || null,
+      }))
+      state.items = mergeRemoteById(state.items, remote)
     },
     openDispute: {
       reducer(state, action) {
@@ -27,6 +33,7 @@ const disputeSlice = createSlice({
           payload: {
             id: createId('DSP'),
             openedBy: values.openedBy,
+            reporterId: values.openedBy,
             businessId: values.businessId || null,
             relatedType: values.relatedType,
             relatedId: values.relatedId,

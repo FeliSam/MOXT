@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { createId } from '../../services/createId'
 import { createLocalStorage } from '../../services/createLocalStorage'
+import { mergeRemoteById } from '@moxt/shared/utils/mergeRemoteById.js'
 
 const storage = createLocalStorage('moxt-finance-v1')
 
@@ -9,7 +10,10 @@ const financeSlice = createSlice({
   initialState: storage.read({ payments: [], receipts: [], walletEntries: [] }),
   reducers: {
     setAll(state, action) {
-      Object.assign(state, action.payload)
+      const { payments, walletEntries, receipts } = action.payload
+      if (payments) state.payments = mergeRemoteById(state.payments, payments)
+      if (walletEntries) state.walletEntries = mergeRemoteById(state.walletEntries, walletEntries)
+      if (receipts) state.receipts = mergeRemoteById(state.receipts, receipts)
     },
     createSimulatedPayment: {
       reducer(state, action) {

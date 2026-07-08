@@ -30,8 +30,6 @@ export const sidebarMobileHiddenPaths = new Set([
   '/jobs',
   '/messages',
   '/notifications',
-  '/businesses',
-  '/news',
   '/jobs/applications',
 ]);
 

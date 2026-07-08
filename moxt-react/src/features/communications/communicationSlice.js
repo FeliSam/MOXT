@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import { fetchUserConversations } from '@moxt/shared/utils/fetchUserConversations.js'
+import { mergeUnreadBy } from '@moxt/shared/utils/mergeUnreadBy.js'
 import { supabase } from '../../services/supabaseClient'
 import { fromRow, fromRows } from '../../services/remoteRowMapper'
 import { createLocalStorage } from '../../services/createLocalStorage'
@@ -78,6 +79,7 @@ export function normalizeMessage(message) {
     deletedBy: parseIdList(message.deletedBy ?? message.deleted_by),
     deliveredTo: parseIdList(message.deliveredTo ?? message.delivered_to),
     readBy: parseIdList(message.readBy ?? message.read_by),
+    relatedContextId: message.relatedContextId ?? message.related_context_id ?? null,
   }
 }
 
@@ -111,11 +113,21 @@ export function normalizeConversation(conv) {
       Number(conv.messageCount) || 0,
       Array.isArray(conv.messages) ? conv.messages.length : 0,
     ),
+    lastMessageText: conv.lastMessageText ?? conv.last_message_text ?? '',
+    lastMessageSenderId: String(conv.lastMessageSenderId ?? conv.last_message_sender_id ?? ''),
+    lastMessageAt: conv.lastMessageAt ?? conv.last_message_at ?? null,
   }
   return {
     ...base,
     relatedContexts: normalizeRelatedContexts({ ...base, relatedContexts }),
   }
+}
+
+function applyLastMessagePreview(conversation, message) {
+  if (!message?.text) return
+  conversation.lastMessageText = message.text
+  conversation.lastMessageSenderId = String(message.senderId ?? message.sender_id ?? '')
+  conversation.lastMessageAt = message.createdAt ?? message.created_at ?? new Date().toISOString()
 }
 
 function preservedLocalMessages(conversation) {
@@ -163,7 +175,7 @@ export function mergeConversations(localConversations, remoteConversations) {
           localConv.messagesLoaded ?? (localConv.messages?.length ?? 0) > 0,
         messagesLoading: localConv.messagesLoading ?? false,
         drafts: localConv.drafts ?? remoteConv.drafts,
-        unreadBy: { ...remoteConv.unreadBy, ...localConv.unreadBy },
+        unreadBy: mergeUnreadBy(remoteConv.unreadBy, localConv.unreadBy),
         archivedBy: localConv.archivedBy?.length ? localConv.archivedBy : remoteConv.archivedBy,
         pinnedBy: localConv.pinnedBy?.length ? localConv.pinnedBy : remoteConv.pinnedBy,
         mutedBy: localConv.mutedBy?.length ? localConv.mutedBy : remoteConv.mutedBy,
@@ -198,7 +210,7 @@ export function mergeConversations(localConversations, remoteConversations) {
         (older.messages?.length ?? 0) > 0,
       messagesLoading: newer.messagesLoading || older.messagesLoading,
       messageCount: Math.max(newer.messageCount || 0, older.messageCount || 0),
-      unreadBy: { ...older.unreadBy, ...newer.unreadBy },
+      unreadBy: mergeUnreadBy(newer.unreadBy, older.unreadBy),
       drafts: { ...older.drafts, ...newer.drafts },
     }))
   }
@@ -247,6 +259,13 @@ const communicationSlice = createSlice({
           .map(normalizeNotification)
         payload.notifications = [...merged, ...localOnly]
       }
+      if (payload.support) {
+        const localById = Object.fromEntries(state.support.map((item) => [item.id, item]))
+        const merged = payload.support.map((remote) => ({ ...localById[remote.id], ...remote }))
+        const remoteIds = new Set(merged.map((item) => item.id))
+        const localOnly = state.support.filter((item) => !remoteIds.has(item.id))
+        payload.support = [...merged, ...localOnly]
+      }
       Object.assign(state, payload)
     },
     receiveRemoteMessage(state, action) {
@@ -267,6 +286,7 @@ const communicationSlice = createSlice({
         .forEach((participantId) => {
           conversation.unreadBy[participantId] = (conversation.unreadBy[participantId] || 0) + 1
         })
+      applyLastMessagePreview(conversation, normalizedMessage)
       bumpConversationToTop(state, conversationId)
     },
     receiveRemoteConversation(state, action) {
@@ -285,6 +305,7 @@ const communicationSlice = createSlice({
           messages: existing.messages,
           messagesLoaded: existing.messagesLoaded,
           messagesLoading: existing.messagesLoading,
+          unreadBy: mergeUnreadBy(conversation.unreadBy, existing.unreadBy),
         }
         bumpConversationToTop(state, existing.id)
         return
@@ -310,7 +331,7 @@ const communicationSlice = createSlice({
             messages: existing.messages,
             messagesLoaded: existing.messagesLoaded,
             messagesLoading: existing.messagesLoading,
-            unreadBy: { ...incoming.unreadBy, ...existing.unreadBy },
+            unreadBy: mergeUnreadBy(incoming.unreadBy, existing.unreadBy),
             messageCount: Math.max(
               existing.messageCount || 0,
               incoming.messageCount || existing.messages.length,
@@ -329,7 +350,7 @@ const communicationSlice = createSlice({
         messages: existing.messages,
         messagesLoaded: existing.messagesLoaded,
         messagesLoading: existing.messagesLoading,
-        unreadBy: { ...incoming.unreadBy, ...existing.unreadBy },
+        unreadBy: mergeUnreadBy(incoming.unreadBy, existing.unreadBy),
         messageCount: Math.max(
           existing.messageCount || 0,
           incoming.messageCount || existing.messages.length,
@@ -355,7 +376,7 @@ const communicationSlice = createSlice({
         messagesLoaded: local.messagesLoaded || keeper.messagesLoaded,
         messagesLoading: local.messagesLoading || keeper.messagesLoading,
         drafts: { ...keeper.drafts, ...local.drafts },
-        unreadBy: { ...keeper.unreadBy, ...local.unreadBy },
+        unreadBy: mergeUnreadBy(keeper.unreadBy, local.unreadBy),
       }
 
       if (keeperIndex >= 0 && keeperIndex !== fromIndex) {
@@ -495,6 +516,7 @@ const communicationSlice = createSlice({
             conversation.unreadBy ||= {}
             conversation.unreadBy[participantId] = (conversation.unreadBy[participantId] || 0) + 1
           })
+        applyLastMessagePreview(conversation, action.payload.message)
         bumpConversationToTop(state, action.payload.conversationId)
       },
       prepare({ attachment, conversationId, relatedContextId, replyToId, senderId, senderName, text }) {

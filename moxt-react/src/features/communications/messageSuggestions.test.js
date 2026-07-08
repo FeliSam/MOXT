@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildMessageSuggestions,
+  filterAlreadySentSuggestions,
   resolveConversationRole,
 } from './messageSuggestions'
 
@@ -67,5 +68,62 @@ describe('messageSuggestions', () => {
 
     expect(suggestions[0]).toMatch(/Développeur React/i)
     expect(suggestions.some((item) => /postuler|candidature|recrutement/i.test(item))).toBe(true)
+  })
+
+  it('retire les suggestions déjà envoyées et propose les suivantes', () => {
+    const pool = [
+      'Bonjour, est-ce encore disponible ?',
+      'Quel est le prix final ?',
+      'Pouvez-vous confirmer la localisation ?',
+      'Merci pour votre retour.',
+    ]
+    const remaining = filterAlreadySentSuggestions(pool, [
+      'Bonjour, est-ce encore disponible ?',
+    ])
+    expect(remaining).not.toContain('Bonjour, est-ce encore disponible ?')
+    expect(remaining.length).toBeGreaterThan(0)
+    expect(remaining[0]).toMatch(/prix|localisation|retour/i)
+  })
+
+  it('adapte les suggestions après envoi dans la conversation', () => {
+    const conversationWithMessage = {
+      id: 'CONV-1',
+      createdBy: 'buyer',
+      participantIds: ['buyer', 'seller'],
+      relatedType: 'listing',
+      relatedContexts: [
+        {
+          id: 'CTX-1',
+          relatedSnapshot: {
+            type: 'listing',
+            id: 'LST-1',
+            title: 'Vélo électrique',
+            subtitle: '350 EUR',
+          },
+        },
+      ],
+      messages: [
+        {
+          senderId: 'buyer',
+          text: 'Bonjour, « Vélo électrique » est-il encore disponible ?',
+        },
+      ],
+    }
+    const first = buildMessageSuggestions({
+      conversation: conversationWithMessage,
+      userId: 'buyer',
+      relatedPreview: conversationWithMessage.relatedContexts[0].relatedSnapshot,
+      peerName: 'Marie',
+      sentTexts: [],
+    })
+    const next = buildMessageSuggestions({
+      conversation: conversationWithMessage,
+      userId: 'buyer',
+      relatedPreview: conversationWithMessage.relatedContexts[0].relatedSnapshot,
+      peerName: 'Marie',
+      sentTexts: [conversationWithMessage.messages[0].text],
+    })
+    expect(first[0]).toMatch(/encore disponible/i)
+    expect(next[0]).not.toMatch(/encore disponible/i)
   })
 })

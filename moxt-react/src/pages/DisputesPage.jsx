@@ -10,7 +10,9 @@ import { formatDate } from '../features/transfers/transferUtils'
 export function DisputesPage() {
   const user = useSelector((state) => state.auth.user)
   const disputes = useSelector((state) =>
-    state.disputes.items.filter((item) => item.openedBy === user.id),
+    state.disputes.items.filter(
+      (item) => (item.openedBy || item.reporterId) === user.id,
+    ),
   )
 
   return (

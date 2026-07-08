@@ -361,7 +361,9 @@ export const interactionMiddleware = (store) => (next) => (action) => {
 
   if (
     action.type.endsWith('/rejected') &&
-    !['auth/login/rejected', 'auth/register/rejected'].includes(action.type)
+    !['auth/login/rejected', 'auth/register/rejected', 'app/loadAllData/rejected'].includes(
+      action.type,
+    )
   ) {
     const message =
       typeof action.payload === 'string'

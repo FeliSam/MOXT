@@ -8,8 +8,8 @@ export const primaryNavigationItems = [
   { id: 'parcels', label: 'Colis', path: '/parcels', icon: FiBox },
   { id: 'jobs', label: 'Jobs', path: '/jobs', icon: FiBriefcase },
   { id: 'messages', label: 'Messagerie', path: '/messages', icon: FiMessageSquare, badgeSelector: 'messages' },
-  { id: 'businesses', label: 'Entreprise', path: '/businesses', icon: FiUsers },
-  { id: 'news', label: 'Actualité', path: '/news', icon: FiFileText },
+  { id: 'businesses', label: 'Entreprise', path: '/businesses', icon: FiUsers, desktopOnly: true },
+  { id: 'news', label: 'Actualité', path: '/news', icon: FiFileText, desktopOnly: true },
 ]
 
 const primaryById = Object.fromEntries(primaryNavigationItems.map((item) => [item.id, item]))

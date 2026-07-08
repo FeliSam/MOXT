@@ -6,6 +6,7 @@ import {
   FiCalendar,
   FiEye,
   FiFileText,
+  FiLock,
   FiMapPin,
   FiPackage,
   FiShoppingBag,
@@ -19,6 +20,8 @@ import { Card } from '../components/ui/Card'
 import { CatalogArchiveTabs } from '../components/ui/CatalogArchiveTabs'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { canViewUserActivity } from '../features/account/activityVisibility'
+import { useProfileActivityVisibility } from '../features/account/useProfileActivityVisibility'
 import { MyListingCard } from '../features/marketplace/MyListingCard'
 import {
   MyEventPublicationCard,
@@ -60,6 +63,17 @@ export function UserPublicationsPage() {
     : 'listing'
 
   const isOwner = currentUser?.id === userId
+  const conversations = useSelector((state) => state.communications.conversations)
+  const { visibility, loading: visibilityLoading } = useProfileActivityVisibility(
+    userId,
+    currentUser?.id,
+  )
+  const canView = canViewUserActivity({
+    viewerId: currentUser?.id,
+    ownerId: userId,
+    visibility,
+    conversations,
+  })
   const ownBusiness = useSelector((state) =>
     state.businesses.items.find((item) => item.ownerId === userId),
   )
@@ -103,6 +117,30 @@ export function UserPublicationsPage() {
     if (next === 'all') params.delete('scope')
     else params.set('scope', next)
     setSearchParams(params, { replace: true })
+  }
+
+  if (!isOwner && !visibilityLoading && !canView) {
+    return (
+      <div className="grid gap-7">
+        <PageHeader
+          eyebrow="Communauté"
+          title="Publications du membre"
+          description="Ce membre a restreint la visibilité de son activité."
+        />
+        <EmptyState
+          icon={FiLock}
+          title="Profil non accessible"
+          description="Seuls les contacts autorisés ou le membre lui-même peuvent consulter ces publications."
+          action={
+            <Link to="/dashboard">
+              <Button variant="secondary" icon={FiArrowLeft}>
+                Retour
+              </Button>
+            </Link>
+          }
+        />
+      </div>
+    )
   }
 
   if (!publicationTotalCount(publications)) {

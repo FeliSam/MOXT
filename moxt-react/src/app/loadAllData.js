@@ -12,8 +12,9 @@ import { setAll as setCommunications, mergeConversations, normalizeConversation 
 import { setAll as setReviews } from '../features/reviews/reviewSlice'
 import { setAll as setDisputes } from '../features/disputes/disputeSlice'
 import { setAll as setFinance } from '../features/finance/financeSlice'
-import { setAll as setAccount } from '../features/account/accountSlice'
 import { setAll as setPosts } from '../features/posts/postsSlice'
+import { setRecipientAddresses } from '../features/addresses/recipientAddressesSlice'
+import { hydrateAccountPreferences, mergeRemoteAccount } from '../features/account/accountSlice'
 import { listingFromRemoteRow, mergeListingQuestions } from '../features/marketplace/marketplaceRemote'
 import { fromRow, fromRows } from '../services/remoteRowMapper'
 import { fetchUserConversations } from '@moxt/shared/utils/fetchUserConversations.js'
@@ -22,11 +23,12 @@ import { fetchUserConversations } from '@moxt/shared/utils/fetchUserConversation
 const PUBLIC_LIMIT = 50
 const USER_LIMIT = 200
 
-function assertLoaded(result, label) {
-  if (result.error) {
-    throw new Error(`Chargement ${label} impossible : ${result.error.message}`)
+function safeRows(result, label) {
+  if (result?.error) {
+    console.warn(`[MOXT] Chargement ${label}:`, result.error.message)
+    return []
   }
-  return result.data || []
+  return result?.data || []
 }
 
 function parseJsonField(value, fallback) {
@@ -48,6 +50,26 @@ function mergeRemoteItems(localItems = [], remoteItems = []) {
   return [...merged.values()]
 }
 
+function mergeRemoteRowsById(...groups) {
+  const merged = new Map()
+  for (const group of groups) {
+    for (const row of fromRows(group || [])) {
+      if (row?.id) merged.set(row.id, { ...merged.get(row.id), ...row })
+    }
+  }
+  return [...merged.values()]
+}
+
+async function fetchIncomingRows(table, foreignKey, ownerIds, limit = USER_LIMIT) {
+  if (!ownerIds.length) return []
+  const { data, error } = await supabase.from(table).select('*').in(foreignKey, ownerIds).limit(limit)
+  if (error) {
+    console.warn(`[MOXT] Chargement ${table} (vue propriétaire):`, error.message)
+    return []
+  }
+  return data || []
+}
+
 export const loadAllData = createAsyncThunk(
   'app/loadAllData',
   async (_, { getState, dispatch }) => {
@@ -67,8 +89,12 @@ export const loadAllData = createAsyncThunk(
       reviewsRes,
       disputesRes,
       paymentsRes, walletEntriesRes,
+      receiptsRes,
       notificationsRes,
       postsRes,
+      supportTicketsRes,
+      recipientAddressesRes,
+      profileRes,
     ] = await Promise.all([
       supabase.from('listings').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
       supabase
@@ -89,16 +115,19 @@ export const loadAllData = createAsyncThunk(
       supabase.from('verification_requests').select('*').eq('user_id', uid).limit(USER_LIMIT),
       supabase.from('personal_documents').select('*').eq('user_id', uid).limit(USER_LIMIT),
       supabase.from('p2p_offers').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
-      supabase.from('p2p_orders').select('*').eq('buyer_id', uid).limit(USER_LIMIT),
+      supabase.from('p2p_orders').select('*').or(`buyer_id.eq.${uid},seller_id.eq.${uid}`).limit(USER_LIMIT),
       supabase.from('reviews').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
       supabase.from('disputes').select('*').or(`reporter_id.eq.${uid},target_id.eq.${uid}`).limit(USER_LIMIT),
       supabase.from('payments').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(USER_LIMIT),
       supabase.from('wallet_entries').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(USER_LIMIT),
+      supabase.from('receipts').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(USER_LIMIT),
       supabase.from('notifications').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(50),
       supabase.from('posts').select('*').eq('status', 'published').order('created_at', { ascending: false }).limit(100),
+      supabase.from('support_tickets').select('*').eq('user_id', uid).order('updated_at', { ascending: false }).limit(50),
+      supabase.from('recipient_addresses').select('*').eq('user_id', uid).order('updated_at', { ascending: false }).limit(USER_LIMIT),
+      supabase.from('profiles').select('activity_visibility').eq('id', uid).maybeSingle(),
     ])
 
-    assertLoaded(listingsRes, 'des annonces')
     if (listingQuestionsRes.error) {
       console.warn('[MOXT] Chargement des questions annonces:', listingQuestionsRes.error.message)
     }
@@ -106,9 +135,41 @@ export const loadAllData = createAsyncThunk(
       console.warn('[MOXT] Chargement des entreprises:', businessesRes.error.message)
     }
 
-    const listingsWithQuestions = mergeListingQuestions(
-      listingsRes.data.map(listingFromRemoteRow),
-      listingQuestionsRes.data || [],
+    const listingsWithQuestions = listingsRes.error
+      ? getState().marketplace.items
+      : mergeListingQuestions(
+          (listingsRes.data || []).map(listingFromRemoteRow),
+          safeRows(listingQuestionsRes, 'des questions annonces'),
+        )
+
+    const ownedParcelIds = (parcelsRes.data || [])
+      .filter((parcel) => parcel.owner_id === uid)
+      .map((parcel) => parcel.id)
+    const ownedJobIds = (jobsRes.data || [])
+      .filter((job) => job.owner_id === uid)
+      .map((job) => job.id)
+    const ownedEventIds = (eventsRes.data || [])
+      .filter((event) => event.owner_id === uid)
+      .map((event) => event.id)
+
+    const [incomingParcelRequests, incomingJobApplications, incomingEventRegistrations] =
+      await Promise.all([
+        fetchIncomingRows('parcel_requests', 'parcel_id', ownedParcelIds),
+        fetchIncomingRows('job_applications', 'job_id', ownedJobIds),
+        fetchIncomingRows('event_registrations', 'event_id', ownedEventIds),
+      ])
+
+    const parcelRequests = mergeRemoteRowsById(
+      parcelRequestsRes.data,
+      incomingParcelRequests,
+    )
+    const jobApplications = mergeRemoteRowsById(
+      jobApplicationsRes.data,
+      incomingJobApplications,
+    )
+    const eventRegistrations = mergeRemoteRowsById(
+      eventRegistrationsRes.data,
+      incomingEventRegistrations,
     )
 
     const { data: conversationRows, error: conversationsError } = await fetchUserConversations(
@@ -132,29 +193,62 @@ export const loadAllData = createAsyncThunk(
       fromRows(businessesRes.data || []),
     )
 
+    const supportTickets = safeRows(supportTicketsRes, 'des tickets support').map((row) => {
+      const ticket = fromRow(row)
+      return {
+        ...ticket,
+        messages: parseJsonField(ticket.messages, []),
+      }
+    })
+
     batch(() => {
       dispatch(setMarketplace({ items: listingsWithQuestions }))
-      dispatch(setParcels({ items: fromRows(parcelsRes.data), requests: fromRows(parcelRequestsRes.data) }))
-      dispatch(setJobs({ items: fromRows(jobsRes.data), applications: fromRows(jobApplicationsRes.data) }))
-      dispatch(setEvents({ items: fromRows(eventsRes.data), registrations: fromRows(eventRegistrationsRes.data) }))
+      dispatch(setParcels({ items: fromRows(parcelsRes.data), requests: parcelRequests }))
+      dispatch(setJobs({ items: fromRows(jobsRes.data), applications: jobApplications }))
+      dispatch(setEvents({ items: fromRows(eventsRes.data), registrations: eventRegistrations }))
       dispatch(setBusinesses({ items: mergedBusinesses }))
       dispatch(setTransfers({ items: fromRows(transfersRes.data) }))
-      dispatch(setCommunications({ conversations, notifications: fromRows(notificationsRes.data) }))
+      dispatch(setCommunications({
+        conversations,
+        notifications: fromRows(notificationsRes.data),
+        support: supportTickets,
+      }))
       dispatch(setP2P({ offers: fromRows(p2pOffersRes.data), orders: fromRows(p2pOrdersRes.data) }))
       dispatch(setReviews({ items: fromRows(reviewsRes.data) }))
       dispatch(setDisputes({ items: fromRows(disputesRes.data) }))
-      dispatch(setFinance({ payments: fromRows(paymentsRes.data), walletEntries: fromRows(walletEntriesRes.data) }))
+      dispatch(setFinance({
+        payments: fromRows(safeRows(paymentsRes, 'des paiements')),
+        walletEntries: fromRows(safeRows(walletEntriesRes, 'du portefeuille')),
+        receipts: fromRows(safeRows(receiptsRes, 'des recus')).map((item) => ({
+          ...item,
+          details: parseJsonField(item.details, {}),
+        })),
+      }))
       dispatch(setPosts({ items: fromRows(postsRes.data).map((p) => ({
         ...p,
         likes: parseJsonField(p.likes, []),
         comments: parseJsonField(p.comments, []),
       })) }))
-      dispatch(setAccount({
-        favorites: fromRows(favoritesRes.data),
-        transferProfiles: fromRows(transferProfilesRes.data),
-        documents: fromRows(personalDocumentsRes.data),
-        verificationRequests: fromRows(verificationRequestsRes.data),
+      dispatch(mergeRemoteAccount({
+        favorites: fromRows(safeRows(favoritesRes, 'des favoris')),
+        transferProfiles: fromRows(safeRows(transferProfilesRes, 'des profils transfert')),
+        documents: fromRows(safeRows(personalDocumentsRes, 'des documents')),
+        verificationRequests: fromRows(
+          safeRows(verificationRequestsRes, 'des demandes de verification'),
+        ).map((item) => ({
+          ...item,
+          documentIds: parseJsonField(item.documentIds, []),
+        })),
       }))
+      dispatch(setRecipientAddresses(fromRows(safeRows(recipientAddressesRes, 'des adresses')))
+      if (profileRes.data?.activity_visibility) {
+        dispatch(
+          hydrateAccountPreferences({
+            userId: uid,
+            preferences: { activityVisibility: profileRes.data.activity_visibility },
+          }),
+        )
+      }
     })
   },
 )

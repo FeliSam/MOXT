@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { createId } from '../../services/createId'
 import { createLocalStorage } from '../../services/createLocalStorage'
+import { mergeRemoteById } from '@moxt/shared/utils/mergeRemoteById.js'
 
 const storage = createLocalStorage('moxt-account-v1')
 
@@ -39,6 +40,20 @@ const accountSlice = createSlice({
   reducers: {
     setAll(state, action) {
       Object.assign(state, action.payload)
+    },
+    mergeRemoteAccount(state, action) {
+      const { favorites, transferProfiles, documents, verificationRequests } = action.payload
+      if (favorites) state.favorites = mergeRemoteById(state.favorites, favorites)
+      if (transferProfiles) {
+        state.transferProfiles = mergeRemoteById(state.transferProfiles, transferProfiles)
+      }
+      if (documents) state.documents = mergeRemoteById(state.documents, documents)
+      if (verificationRequests) {
+        state.verificationRequests = mergeRemoteById(
+          state.verificationRequests,
+          verificationRequests,
+        )
+      }
     },
     saveTransferProfile: {
       reducer(state, action) {
@@ -128,6 +143,7 @@ const accountSlice = createSlice({
             name: values.name,
             size: Number(values.size) || 0,
             type: values.type || 'application/octet-stream',
+            url: values.url || null,
             status: 'pending_review',
             createdAt: new Date().toISOString(),
           },
@@ -169,6 +185,13 @@ const accountSlice = createSlice({
       request.reviewedBy = action.payload.reviewedBy
     },
     updateAccountPreferences(state, action) {
+      state.preferences[action.payload.userId] = {
+        ...defaultPreferences,
+        ...state.preferences[action.payload.userId],
+        ...action.payload.preferences,
+      }
+    },
+    hydrateAccountPreferences(state, action) {
       state.preferences[action.payload.userId] = {
         ...defaultPreferences,
         ...state.preferences[action.payload.userId],
@@ -222,6 +245,8 @@ export const {
   toggleAccountFavorite,
   updateAccountPreferences,
   updateVerificationStatus,
+  hydrateAccountPreferences,
+  mergeRemoteAccount,
   setAll,
 } = accountSlice.actions
 export default accountSlice.reducer

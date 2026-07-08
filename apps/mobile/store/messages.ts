@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 import { fetchUserConversations } from '@moxt/shared/utils/fetchUserConversations.js';
+import { mergeUnreadBy } from '@moxt/shared/utils/mergeUnreadBy.js';
 import { supabase } from '../services/supabase';
 
 export type Message = {
@@ -46,6 +47,9 @@ export type Conversation = {
   messagesLoading?: boolean;
   unreadBy?: Record<string, number>;
   messageCount?: number;
+  lastMessageText?: string;
+  lastMessageSenderId?: string;
+  lastMessageAt?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -218,6 +222,9 @@ function mapConversationRow(row: Record<string, unknown>): Conversation {
     messagesLoading: false,
     unreadBy: parseRecord(row.unread_by),
     messageCount: Number(row.message_count) || 0,
+    lastMessageText: row.last_message_text ? String(row.last_message_text) : undefined,
+    lastMessageSenderId: row.last_message_sender_id ? String(row.last_message_sender_id) : undefined,
+    lastMessageAt: row.last_message_at ? String(row.last_message_at) : null,
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
   };
@@ -245,7 +252,7 @@ function mergeLoadedConversations(
       messagesLoaded:
         local.messagesLoaded ?? (local.messages?.length ?? 0) > 0,
       messagesLoading: local.messagesLoading ?? false,
-      unreadBy: { ...remote.unreadBy, ...local.unreadBy },
+      unreadBy: mergeUnreadBy(remote.unreadBy, local.unreadBy),
       messageCount: Math.max(remote.messageCount || 0, local.messageCount || 0),
     });
   }
@@ -521,7 +528,7 @@ const messagesSlice = createSlice({
             messages: existing.messages,
             messagesLoaded: existing.messagesLoaded,
             messagesLoading: existing.messagesLoading,
-            unreadBy: { ...incoming.unreadBy, ...existing.unreadBy },
+            unreadBy: mergeUnreadBy(incoming.unreadBy, existing.unreadBy),
           };
           bumpConversationToTop(state, existing.id);
           return;
@@ -536,7 +543,7 @@ const messagesSlice = createSlice({
         messages: existing.messages,
         messagesLoaded: existing.messagesLoaded,
         messagesLoading: existing.messagesLoading,
-        unreadBy: { ...incoming.unreadBy, ...existing.unreadBy },
+        unreadBy: mergeUnreadBy(incoming.unreadBy, existing.unreadBy),
         messageCount: Math.max(existing.messageCount || 0, incoming.messageCount || 0),
       };
       bumpConversationToTop(state, incoming.id);

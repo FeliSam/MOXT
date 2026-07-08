@@ -23,8 +23,12 @@ import { MoreServicesContent } from './MoreServicesContent'
 import { filterNavigationGroups, useNavigationBadges } from './moreServicesUtils'
 
 const primaryItems = primaryNavigationItems
-const primaryPaths = new Set(primaryItems.map((item) => item.path))
 const mobileHiddenPaths = sidebarMobileHiddenPaths
+/** Chemins déjà listés dans la nav mobile — exclut les entrées réservées au desktop */
+const mobileSidebarExcludePaths = new Set([
+  ...primaryItems.filter((item) => !item.desktopOnly).map((item) => item.path),
+  ...mobileHiddenPaths,
+])
 
 function initials(name = '') {
   return name.split(' ').map((w) => w[0] || '').slice(0, 2).join('').toUpperCase()
@@ -92,7 +96,7 @@ export function Sidebar({ open }) {
                 item={item}
                 badge={item.badgeSelector ? badgeForItem(item, appState) : 0}
                 translateLabel={translateLabel}
-                hideOnMobile={mobileHiddenPaths.has(item.path)}
+                hideOnMobile={mobileHiddenPaths.has(item.path) || item.desktopOnly}
                 onClick={() => dispatch(closeSidebar())}
               />
             ))}
@@ -120,7 +124,7 @@ export function Sidebar({ open }) {
                 key={group.id}
                 group={group}
                 role={role}
-                excludePaths={new Set([...primaryPaths, ...mobileHiddenPaths])}
+                excludePaths={mobileSidebarExcludePaths}
                 onNavigate={() => dispatch(closeSidebar())}
                 translateLabel={translateLabel}
               />

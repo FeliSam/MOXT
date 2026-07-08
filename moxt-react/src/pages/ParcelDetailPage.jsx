@@ -1,6 +1,7 @@
-import { FiArrowLeft, FiArrowRight, FiBox, FiCalendar, FiDownload, FiEdit2, FiMapPin, FiShield } from 'react-icons/fi'
+import { FiArrowLeft, FiArrowRight, FiBox, FiCalendar, FiDownload, FiEdit2, FiMapPin, FiSend, FiShield } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useParams } from 'react-router-dom'
+import { useState } from 'react'
 import { Badge, VerifiedBadge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
@@ -15,9 +16,11 @@ import { ReshareButton } from '../components/ui/ReshareButton'
 import { FavoriteButton } from '../features/account/FavoriteButton'
 import { ContactButton } from '../features/communications/ContactButton'
 import {
+  requestParcelReservation,
   updateParcelProofStatus,
   updateParcelRequestStatus,
 } from '../features/parcels/parcelSlice'
+import { Input } from '../components/ui/Input'
 import { addToast } from '../features/ui/uiSlice'
 import { statusMeta } from '../config/statuses'
 import { formatMoney } from '../features/transfers/transferUtils'
@@ -29,6 +32,10 @@ export function ParcelDetailPage() {
   const parcel = useSelector((state) => state.parcels.items.find((item) => item.id === parcelId))
   const requests = useSelector((state) =>
     state.parcels.requests.filter((item) => item.parcelId === parcelId),
+  )
+  const [reserveKg, setReserveKg] = useState('')
+  const myRequest = requests.find(
+    (item) => item.userId === user.id && item.status === 'submitted',
   )
 
   if (!parcel) return <Card>Voyage introuvable.</Card>
@@ -45,6 +52,38 @@ export function ParcelDetailPage() {
         title: status === 'approved' ? 'Demande acceptée' : 'Demande refusée',
         message: `${request.requesterName} · ${request.kg} kg`,
         tone: status === 'approved' ? 'success' : 'error',
+      }),
+    )
+  }
+
+  function submitReservation() {
+    const kg = Number(reserveKg)
+    if (!kg || kg <= 0 || kg > parcel.remainingKg) {
+      dispatch(
+        addToast({
+          title: 'Poids invalide',
+          message: `Indiquez un poids entre 1 et ${parcel.remainingKg} kg.`,
+          tone: 'error',
+        }),
+      )
+      return
+    }
+    dispatch(
+      requestParcelReservation({
+        parcelId: parcel.id,
+        userId: user.id,
+        requesterName: `${user.firstName} ${user.lastName}`.trim(),
+        ownerId: parcel.ownerId,
+        businessId: parcel.businessId || null,
+        kg,
+      }),
+    )
+    setReserveKg('')
+    dispatch(
+      addToast({
+        title: 'Demande envoyée',
+        message: `Votre demande de ${kg} kg a été transmise au transporteur.`,
+        tone: 'success',
       }),
     )
   }
@@ -147,6 +186,34 @@ export function ParcelDetailPage() {
             />
           </div>
         </Card>
+        {user.id !== parcel.ownerId && parcel.status === 'active' && parcel.remainingKg > 0 ? (
+          <Card>
+            <h2 className="font-black">Réserver de la place</h2>
+            <p className="mt-2 text-sm text-[var(--app-text-muted)]">
+              Demandez une réservation. Le transporteur validera votre demande.
+            </p>
+            {myRequest ? (
+              <p className="mt-4 rounded-2xl bg-[var(--app-surface-muted)] p-3 text-sm font-bold">
+                Demande en cours · {myRequest.kg} kg · en attente de réponse
+              </p>
+            ) : (
+              <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+                <Input
+                  id="parcel-reserve-kg"
+                  label="Poids (kg)"
+                  type="number"
+                  min="1"
+                  max={parcel.remainingKg}
+                  value={reserveKg}
+                  onChange={(event) => setReserveKg(event.target.value)}
+                />
+                <Button icon={FiSend} onClick={submitReservation}>
+                  Envoyer la demande
+                </Button>
+              </div>
+            )}
+          </Card>
+        ) : null}
         {user.id === parcel.ownerId ? (
           <Card>
             <h2 className="font-black">Demandes reçues</h2>

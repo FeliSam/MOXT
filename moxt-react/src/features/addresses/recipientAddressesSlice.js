@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { createId } from '../../services/createId'
 import { createLocalStorage } from '../../services/createLocalStorage'
+import { mergeRemoteById } from '@moxt/shared/utils/mergeRemoteById.js'
 
 const storage = createLocalStorage('moxt-recipient-addresses-v1')
 
@@ -63,7 +64,8 @@ const recipientAddressesSlice = createSlice({
       state.items = state.items.filter((item) => item.id !== action.payload)
     },
     setRecipientAddresses(state, action) {
-      state.items = (action.payload || []).map(normalizeRecipient)
+      const normalized = (action.payload || []).map(normalizeRecipient)
+      state.items = mergeRemoteById(state.items, normalized)
     },
   },
 })

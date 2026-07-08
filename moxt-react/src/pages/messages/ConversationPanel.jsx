@@ -359,12 +359,16 @@ export function ConversationPanel({
         data-testid="message-composer"
       >
         {!blocked && suggestionsEnabled && suggestions.length ? (
-          <div className="message-suggestions scrollbar-hidden mx-auto mb-3 flex max-w-3xl gap-2 overflow-x-auto pb-1 [&>*:nth-child(n+4)]:hidden sm:[&>*:nth-child(n+4)]:inline-flex">
+          <div
+            className="message-suggestions scrollbar-hidden mx-auto mb-2 flex max-w-3xl gap-1.5 overflow-x-auto pb-0.5 sm:mb-3 sm:gap-2 sm:pb-1"
+            data-testid="message-suggestions"
+          >
             {suggestions.map((suggestion, index) => (
               <button
                 key={`${index}-${suggestion.slice(0, 24)}`}
                 type="button"
-                className="shrink-0 rounded-full border border-[var(--app-border)] bg-[var(--app-surface)] px-3.5 py-2 text-xs font-semibold text-[var(--app-text-muted)] shadow-sm transition hover:border-brand-200 hover:bg-[var(--app-accent-soft)] hover:text-brand-700"
+                className="max-w-[9.5rem] shrink-0 truncate rounded-full border border-[var(--app-border)] bg-[var(--app-surface)] px-2 py-1 text-[10px] font-semibold leading-tight text-[var(--app-text-muted)] shadow-sm transition hover:border-brand-200 hover:bg-[var(--app-accent-soft)] hover:text-brand-700 sm:max-w-[14rem] sm:px-3 sm:py-1.5 sm:text-[11px] lg:max-w-none lg:px-3.5 lg:py-2 lg:text-xs"
+                title={suggestion}
                 onClick={() => formik.setFieldValue('text', suggestion)}
               >
                 {suggestion}

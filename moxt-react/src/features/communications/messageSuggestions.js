@@ -11,6 +11,43 @@ function uniqueSuggestions(items) {
   return [...new Set(items.map((item) => item.trim()).filter(Boolean))]
 }
 
+function normalizeForMatch(text) {
+  return String(text || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/** Retire les suggestions déjà envoyées dans le fil pour laisser place aux suivantes. */
+export function filterAlreadySentSuggestions(pool, sentTexts = []) {
+  const normalizedSent = sentTexts.map(normalizeForMatch).filter(Boolean)
+  if (!normalizedSent.length) return pool
+
+  return pool.filter((suggestion) => {
+    const normalizedSuggestion = normalizeForMatch(suggestion)
+    if (!normalizedSuggestion) return false
+    return !normalizedSent.some((sent) => {
+      if (sent === normalizedSuggestion) return true
+      if (sent.includes(normalizedSuggestion) || normalizedSuggestion.includes(sent)) return true
+      const suggestionWords = normalizedSuggestion.split(' ').filter((word) => word.length > 3)
+      if (!suggestionWords.length) return false
+      const matched = suggestionWords.filter((word) => sent.includes(word)).length
+      return matched / suggestionWords.length >= 0.65
+    })
+  })
+}
+
+export function sentTextsFromConversation(conversation, userId) {
+  if (!conversation?.messages?.length) return []
+  return conversation.messages
+    .filter((message) => !userId || message.senderId === userId)
+    .map((message) => message.text)
+    .filter(Boolean)
+}
+
 export function resolveConversationRole(conversation, userId) {
   if (!conversation || !userId) return 'contact'
   if (conversation.createdBy && conversation.createdBy === userId) return 'contact'
@@ -45,6 +82,8 @@ function listingSuggestions({ role, title, subtitle, peerName }) {
     subtitle ? `Bonjour, le prix affiché (${subtitle}) est-il négociable ?` : `Bonjour, pouvez-vous me donner plus de détails ?`,
     `Bonjour ${peerName || ''}, je suis intéressé(e) par cette annonce.`,
     `Serait-il possible d'organiser une visite ou un essai ?`,
+    `Quelle est la localisation pour la remise ?`,
+    `Acceptez-vous un paiement sécurisé via MOXT ?`,
   ])
 }
 
@@ -185,6 +224,7 @@ export function buildMessageSuggestions({
   userId,
   relatedPreview,
   peerName,
+  sentTexts = [],
   limit = 3,
 }) {
   const role = resolveConversationRole(conversation, userId)
@@ -197,15 +237,18 @@ export function buildMessageSuggestions({
     peerName: peerName?.split(' ')[0] || peerName,
   })
 
-  return pool.slice(0, limit)
+  const available = filterAlreadySentSuggestions(pool, sentTexts)
+  return available.slice(0, limit)
 }
 
 export function messageSuggestionsForConversation(state, conversation, userId, peerName) {
   const relatedPreview = getLatestRelatedPreview(conversation, state)
+  const sentTexts = sentTextsFromConversation(conversation, userId)
   return buildMessageSuggestions({
     conversation,
     userId,
     relatedPreview,
     peerName,
+    sentTexts,
   })
 }

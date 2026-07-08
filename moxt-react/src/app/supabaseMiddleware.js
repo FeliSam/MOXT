@@ -34,6 +34,8 @@ function toSnake(obj) {
     targetId: 'target_id',
     targetType: 'target_type',
     relatedId: 'related_id',
+    provider: 'provider',
+    simulation: 'simulation',
     relatedType: 'related_type',
     relatedPath: 'related_path',
     requesterName: 'requester_name',
@@ -114,8 +116,21 @@ function toSnake(obj) {
     registrationDeadline: 'registration_deadline',
     freeEntry: 'free_entry',
     organizerName: 'organizer_name',
-    organizerContact: 'organizer_contact',
-  }
+    reviewedAt: 'reviewed_at',
+    reviewedBy: 'reviewed_by',
+    documentIds: 'document_ids',
+    receivedAmount: 'received_amount',
+    receivedMethod: 'received_method',
+    receivedProof: 'received_proof',
+    receivedAt: 'received_at',
+    ownerType: 'owner_type',
+    addressLine: 'address_line',
+    identityProfileId: 'identity_profile_id',
+    userName: 'user_name',
+    assignedTo: 'assigned_to',
+    activityVisibility: 'activity_visibility',
+    firstName: 'first_name',
+    lastName: 'last_name',
   const result = {}
   for (const [key, value] of Object.entries(obj)) {
     const snakeKey = map[key] ?? key
@@ -189,6 +204,14 @@ const handlers = {
   'marketplace/updateListingStatus': async (payload) => {
     await update('listings', payload.id, { status: payload.status })
   },
+  'marketplace/updateListing': async (payload, state) => {
+    const listing = state.marketplace.items.find((item) => item.id === payload.id)
+    if (listing) await saveListingRemote(listing)
+  },
+  'marketplace/deleteListing': async (payload) => {
+    const { error } = await supabase.from('listings').delete().eq('id', payload.id)
+    if (error) throw error
+  },
   'marketplace/addListingQuestion': async (payload) => {
     await upsert('listing_questions', {
       id: payload.question.id,
@@ -249,6 +272,38 @@ const handlers = {
   'parcels/updateParcelStatus': async (payload) => {
     await update('parcels', payload.id, { status: payload.status })
   },
+  'parcels/updateParcel': async (payload, state) => {
+    const parcel = state.parcels.items.find((item) => item.id === payload.id)
+    if (parcel) await upsert('parcels', parcel)
+  },
+  'parcels/cancelParcelRequest': async (payload) => {
+    await update('parcel_requests', payload.id, { status: 'cancelled' })
+  },
+
+  // ── Litiges ───────────────────────────────────────────────────────────────────
+  'disputes/openDispute': async (payload) => {
+    await upsert('disputes', {
+      id: payload.id,
+      reporterId: payload.reporterId || payload.openedBy,
+      businessId: payload.businessId,
+      relatedType: payload.relatedType,
+      relatedId: payload.relatedId,
+      reason: payload.reason,
+      evidence: payload.evidence,
+      status: payload.status,
+      createdAt: payload.createdAt,
+    })
+  },
+  'disputes/updateDisputeStatus': async (payload, state) => {
+    const dispute = state.disputes.items.find((item) => item.id === payload.id)
+    if (dispute) {
+      await update('disputes', dispute.id, {
+        status: dispute.status,
+        updatedAt: dispute.updatedAt,
+        updatedBy: dispute.updatedBy,
+      })
+    }
+  },
 
   // ── Jobs ─────────────────────────────────────────────────────────────────────
   'jobs/createJob': async (payload) => {
@@ -264,6 +319,10 @@ const handlers = {
   'jobs/updateApplicationStatus': async (payload) => {
     await update('job_applications', payload.id, { status: payload.status })
   },
+  'jobs/updateJob': async (payload, state) => {
+    const job = state.jobs.items.find((item) => item.id === payload.id)
+    if (job) await upsert('jobs', job)
+  },
 
   // ── Événements ───────────────────────────────────────────────────────────────
   'events/createEvent': async (payload) => {
@@ -278,6 +337,13 @@ const handlers = {
   },
   'events/updateRegistrationStatus': async (payload) => {
     await update('event_registrations', payload.id, { status: payload.status })
+  },
+  'events/updateEvent': async (payload, state) => {
+    const event = state.events.items.find((item) => item.id === payload.id)
+    if (event) await upsert('events', event)
+  },
+  'events/cancelRegistration': async (payload) => {
+    await update('event_registrations', payload.id, { status: 'cancelled' })
   },
 
   // ── Entreprises ───────────────────────────────────────────────────────────────
@@ -327,6 +393,9 @@ const handlers = {
         updated_at: msg.createdAt,
         message_count: conversation.messageCount ?? null,
         unread_by: unreadBy,
+        last_message_text: msg.text,
+        last_message_sender_id: msg.senderId,
+        last_message_at: msg.createdAt,
       })
       .eq('id', canonicalId)
   },
@@ -430,13 +499,36 @@ const handlers = {
       }
     }
   },
+  'transfers/receiveTransfer': async (payload, state) => {
+    const transfer = state.transfers.items.find((t) => t.id === payload.id)
+    if (transfer) {
+      await update('transfers', transfer.id, {
+        receivedAmount: transfer.receivedAmount,
+        receivedMethod: transfer.receivedMethod,
+        receivedProof: transfer.receivedProof,
+        receivedAt: transfer.receivedAt,
+        timeline: transfer.timeline,
+        updatedAt: transfer.updatedAt,
+      })
+    }
+  },
 
   // ── P2P ───────────────────────────────────────────────────────────────────────
-  'p2p/createP2POffer': async (payload) => {
+  'p2p/createOffer': async (payload) => {
     await upsert('p2p_offers', payload)
   },
-  'p2p/createP2POrder': async (payload) => {
+  'p2p/acceptOffer': async (payload) => {
     await upsert('p2p_orders', payload)
+    await update('p2p_offers', payload.offerId, { status: 'accepted' })
+  },
+  'p2p/updateOrderStatus': async (payload, state) => {
+    const order = state.p2p.orders.find((item) => item.id === payload.id)
+    if (order) {
+      await update('p2p_orders', order.id, {
+        status: order.status,
+        timeline: order.timeline,
+      })
+    }
   },
 
   // ── Notifications ─────────────────────────────────────────────────────────────
@@ -543,6 +635,147 @@ const handlers = {
         .delete()
         .eq('user_id', payload.userId)
         .eq('related_id', payload.relatedId)
+    }
+  },
+  'account/saveTransferProfile': async (payload) => {
+    await upsert('transfer_profiles', payload)
+  },
+  'account/removeTransferProfile': async (payload) => {
+    const { error } = await supabase
+      .from('transfer_profiles')
+      .delete()
+      .eq('id', payload.id)
+      .eq('user_id', payload.userId)
+    if (error) throw error
+  },
+  'account/addPersonalDocument': async (payload) => {
+    await upsert('personal_documents', payload)
+  },
+  'account/removePersonalDocument': async (payload) => {
+    const { error } = await supabase
+      .from('personal_documents')
+      .delete()
+      .eq('id', payload.id)
+      .eq('user_id', payload.userId)
+    if (error) throw error
+  },
+  'account/submitVerificationRequest': async (payload) => {
+    await upsert('verification_requests', {
+      ...payload,
+      documentIds: payload.documentIds || [],
+    })
+  },
+  'account/updateVerificationStatus': async (payload, state) => {
+    const request = state.account.verificationRequests.find((item) => item.id === payload.id)
+    if (request) {
+      await update('verification_requests', request.id, {
+        status: request.status,
+        reviewedAt: request.reviewedAt,
+        reviewedBy: request.reviewedBy,
+      })
+    }
+  },
+  'account/updateAccountPreferences': async (payload) => {
+    if (payload.preferences?.activityVisibility) {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          activity_visibility: payload.preferences.activityVisibility,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', payload.userId)
+      if (error) throw error
+    }
+  },
+
+  // ── Adresses destinataires ────────────────────────────────────────────────────
+  'recipientAddresses/addRecipientAddress': async (payload) => {
+    await upsert('recipient_addresses', payload)
+  },
+  'recipientAddresses/updateRecipientAddress': async (payload) => {
+    await upsert('recipient_addresses', payload)
+  },
+  'recipientAddresses/removeRecipientAddress': async (payload) => {
+    const { error } = await supabase.from('recipient_addresses').delete().eq('id', payload)
+    if (error) throw error
+  },
+
+  // ── Support ───────────────────────────────────────────────────────────────────
+  'communications/createSupportTicket': async (payload) => {
+    const { error } = await supabase.from('support_tickets').insert({
+      id: payload.id,
+      user_id: payload.userId,
+      user_name: payload.userName,
+      subject: payload.subject,
+      priority: payload.priority,
+      status: payload.status,
+      messages: payload.messages,
+      created_at: payload.createdAt,
+      updated_at: payload.updatedAt,
+    })
+    if (error) throw error
+  },
+  'communications/replySupportTicket': async (payload, state) => {
+    const ticket = state.communications.support.find((item) => item.id === payload.ticketId)
+    if (ticket) {
+      const { error } = await supabase
+        .from('support_tickets')
+        .update({
+          messages: ticket.messages,
+          status: ticket.status,
+          updated_at: ticket.updatedAt,
+        })
+        .eq('id', ticket.id)
+      if (error) throw error
+    }
+  },
+  'communications/updateSupportStatus': async (payload, state) => {
+    const ticket = state.communications.support.find((item) => item.id === payload.id)
+    if (ticket) {
+      const { error } = await supabase
+        .from('support_tickets')
+        .update({
+          status: ticket.status,
+          updated_at: ticket.updatedAt,
+        })
+        .eq('id', ticket.id)
+      if (error) throw error
+    }
+  },
+
+  // ── Finance ───────────────────────────────────────────────────────────────────
+  'finance/createSimulatedPayment': async (payload) => {
+    await upsert('payments', payload)
+  },
+  'finance/updateSimulatedPaymentStatus': async (payload, state) => {
+    const payment = state.finance.payments.find((item) => item.id === payload.id)
+    if (payment) {
+      await update('payments', payment.id, {
+        status: payment.status,
+        updatedAt: payment.updatedAt,
+      })
+    }
+  },
+  'finance/addWalletEntry': async (payload) => {
+    await upsert('wallet_entries', payload)
+  },
+  'finance/createReceipt': async (payload) => {
+    await upsert('receipts', {
+      ...payload,
+      details: payload.details || {},
+    })
+  },
+
+  // ── Entreprises (compléments) ─────────────────────────────────────────────────
+  'businesses/updateBusinessTransferAccounts': async (payload, state) => {
+    const business = state.businesses.items.find(
+      (item) => item.id === payload.businessId && item.ownerId === payload.ownerId,
+    )
+    if (business) {
+      await update('businesses', business.id, {
+        transferAccounts: business.transferAccounts,
+        updatedAt: business.updatedAt,
+      })
     }
   },
 }

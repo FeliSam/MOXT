@@ -86,8 +86,7 @@ export function DocumentsPage() {
           </label>
         </div>
         <p className="mt-3 text-xs text-[var(--app-text-muted)]">
-          Le fichier lui-même n’est pas stocké. Seuls son nom, son type et sa taille sont
-          enregistrés localement.
+          Les fichiers sont stockés sur le serveur MOXT et synchronisés avec votre compte.
         </p>
       </Card>
 
