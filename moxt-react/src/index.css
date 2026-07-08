@@ -739,14 +739,16 @@ html.capacitor-native .capacitor-safe-bottom {
 :root {
   --sidebar-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --sidebar-ease-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
+  --sidebar-ease-fluid: cubic-bezier(0.33, 1, 0.68, 1);
 }
 
 .sidebar-nav-icon {
   transition:
-    transform 0.42s var(--sidebar-ease-spring),
-    background-color 0.38s var(--sidebar-ease),
-    box-shadow 0.38s var(--sidebar-ease),
-    color 0.38s var(--sidebar-ease);
+    transform 0.58s var(--sidebar-ease-fluid),
+    opacity 0.52s var(--sidebar-ease-fluid),
+    background-color 0.45s var(--sidebar-ease-fluid),
+    box-shadow 0.45s var(--sidebar-ease-fluid),
+    color 0.45s var(--sidebar-ease-fluid);
 }
 
 .sidebar-rail-label {
@@ -766,14 +768,14 @@ html.capacitor-native .capacitor-safe-bottom {
   transform-origin: left center;
   white-space: nowrap;
   transition:
-    opacity 0.42s var(--sidebar-ease),
-    transform 0.48s var(--sidebar-ease-spring),
+    opacity 0.52s var(--sidebar-ease-fluid),
+    transform 0.6s var(--sidebar-ease-fluid),
     visibility 0.42s var(--sidebar-ease),
-    border-color 0.38s var(--sidebar-ease),
-    background-color 0.38s var(--sidebar-ease),
-    box-shadow 0.42s var(--sidebar-ease),
-    color 0.38s var(--sidebar-ease),
-    font-size 0.42s var(--sidebar-ease-spring);
+    border-color 0.45s var(--sidebar-ease-fluid),
+    background-color 0.45s var(--sidebar-ease-fluid),
+    box-shadow 0.5s var(--sidebar-ease-fluid),
+    color 0.45s var(--sidebar-ease-fluid),
+    font-size 0.55s var(--sidebar-ease-fluid);
 }
 
 .sidebar-rail-label--row {
@@ -853,11 +855,15 @@ html.capacitor-native .capacitor-safe-bottom {
 
 .sidebar-rail-label-chevron {
   color: var(--app-text-faint);
-  transition: transform 0.42s var(--sidebar-ease-spring);
+  transition:
+    transform 0.55s var(--sidebar-ease-fluid),
+    opacity 0.5s var(--sidebar-ease-fluid);
 }
 
 .sidebar-rail-label-badge {
-  transition: transform 0.48s var(--sidebar-ease-spring);
+  transition:
+    transform 0.55s var(--sidebar-ease-fluid),
+    opacity 0.5s var(--sidebar-ease-fluid);
 }
 
 .sidebar-rail-label--action {
@@ -897,6 +903,21 @@ html.capacitor-native .capacitor-safe-bottom {
     transition-delay: 0s;
   }
 
+  /* État neutre quand un autre item est en focus — transitions fluides */
+  .group\/sidebar:hover .sidebar-rail-item:not(.sidebar-proximity-focus):not(.sidebar-proximity-near) .sidebar-nav-icon {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  .group\/sidebar:hover .sidebar-rail-item:not(.sidebar-proximity-focus):not(.sidebar-proximity-near) .sidebar-rail-label--row {
+    opacity: 1;
+    font-size: 0.75rem;
+    transform: translateX(0) scale(1);
+    color: var(--app-text);
+    border-color: var(--app-border);
+    box-shadow: var(--shadow-float);
+  }
+
   /* Footer : reste ouvert tant que le rail OU le flyout est survolé */
   .group\/sidebar:hover .sidebar-footer-flyout,
   .group\/footer:hover .sidebar-footer-flyout,
@@ -909,10 +930,14 @@ html.capacitor-native .capacitor-safe-bottom {
   }
 
   .group\/footer:hover .group\/profile .sidebar-nav-icon {
-    transform: scale(1.08);
+    transform: scale(1.1);
     box-shadow:
       0 0 0 2px color-mix(in srgb, white 35%, transparent),
       0 10px 24px -10px color-mix(in srgb, var(--app-accent) 45%, transparent);
+    transition:
+      transform 0.58s var(--sidebar-ease-fluid),
+      opacity 0.52s var(--sidebar-ease-fluid),
+      box-shadow 0.45s var(--sidebar-ease-fluid);
   }
 
   .sidebar-footer-flyout .sidebar-rail-label--interactive:hover {
@@ -926,129 +951,132 @@ html.capacitor-native .capacitor-safe-bottom {
     transform: translateX(6px) scale(1.08);
   }
 
-  /* Proximité rail — focus (survolé) + near (voisins haut/bas) */
+  /* Proximité rail — focus ressorti, voisins légèrement réduits */
   .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-near .sidebar-nav-icon {
-    transform: scale(1.06);
-    background: color-mix(in srgb, var(--app-accent) 8%, var(--app-surface));
-    color: color-mix(in srgb, var(--app-accent) 72%, var(--app-text-muted));
-    box-shadow: 0 6px 18px -12px color-mix(in srgb, var(--app-accent) 35%, transparent);
+    transform: scale(0.92);
+    opacity: 0.8;
+    background: color-mix(in srgb, var(--app-surface-muted) 85%, var(--app-surface));
+    color: color-mix(in srgb, var(--app-text-muted) 88%, transparent);
+    box-shadow: none;
   }
 
   .dark .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-near .sidebar-nav-icon {
-    background: color-mix(in srgb, var(--app-teal) 10%, var(--app-surface));
-    color: color-mix(in srgb, var(--app-teal) 75%, var(--app-text-muted));
-    box-shadow: 0 6px 18px -12px color-mix(in srgb, var(--app-teal) 32%, transparent);
+    background: color-mix(in srgb, var(--app-surface-muted) 70%, var(--app-surface));
+    color: color-mix(in srgb, var(--app-text-muted) 82%, transparent);
   }
 
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-near .sidebar-rail-label--row,
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-near > .sidebar-rail-label--row {
-    z-index: 55;
-    border-color: color-mix(in srgb, var(--app-accent) 22%, var(--app-border));
-    color: color-mix(in srgb, var(--app-accent) 80%, var(--app-text));
-    font-size: 0.78125rem;
-    transform: translateX(7px) scale(1.09);
-    box-shadow: 0 10px 28px -16px color-mix(in srgb, var(--app-accent) 28%, transparent);
+  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-near .sidebar-rail-label--row {
+    z-index: 52;
+    opacity: 0.8;
+    border-color: color-mix(in srgb, var(--app-border) 92%, transparent);
+    background: color-mix(in srgb, var(--app-surface) 92%, transparent);
+    color: var(--app-text-muted);
+    font-size: 0.7rem;
+    transform: translateX(-2px) scale(0.92);
+    box-shadow: 0 4px 16px -14px color-mix(in srgb, var(--app-text) 12%, transparent);
   }
 
-  .dark .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-near .sidebar-rail-label--row,
-  .dark .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-near > .sidebar-rail-label--row {
-    border-color: color-mix(in srgb, var(--app-teal) 25%, var(--app-border));
-    color: color-mix(in srgb, var(--app-teal) 82%, var(--app-text));
-    box-shadow: 0 10px 28px -16px color-mix(in srgb, var(--app-teal) 26%, transparent);
+  .dark .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-near .sidebar-rail-label--row {
+    background: color-mix(in srgb, var(--app-surface) 88%, transparent);
+    color: color-mix(in srgb, var(--app-text-muted) 90%, transparent);
   }
 
   .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus .sidebar-nav-icon {
-    transform: scale(1.1);
+    transform: scale(1.14);
+    opacity: 1;
   }
 
   .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus > span:not(.nav-item-active) .sidebar-nav-icon,
   .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus:not(:has(.nav-item-active)) .sidebar-nav-icon {
-    background: color-mix(in srgb, var(--app-accent) 14%, var(--app-surface));
+    background: color-mix(in srgb, var(--app-accent) 16%, var(--app-surface));
     color: var(--app-accent);
     box-shadow:
-      0 0 0 2px color-mix(in srgb, var(--app-accent) 28%, transparent),
-      0 10px 24px -10px color-mix(in srgb, var(--app-accent) 45%, transparent);
+      0 0 0 2px color-mix(in srgb, var(--app-accent) 32%, transparent),
+      0 14px 32px -10px color-mix(in srgb, var(--app-accent) 50%, transparent);
   }
 
   .dark .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus > span:not(.nav-item-active) .sidebar-nav-icon,
   .dark .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus:not(:has(.nav-item-active)) .sidebar-nav-icon {
-    background: color-mix(in srgb, var(--app-teal) 18%, var(--app-surface));
+    background: color-mix(in srgb, var(--app-teal) 20%, var(--app-surface));
     color: var(--app-teal);
     box-shadow:
-      0 0 0 2px color-mix(in srgb, var(--app-teal) 32%, transparent),
-      0 10px 24px -10px color-mix(in srgb, var(--app-teal) 40%, transparent);
+      0 0 0 2px color-mix(in srgb, var(--app-teal) 36%, transparent),
+      0 14px 32px -10px color-mix(in srgb, var(--app-teal) 45%, transparent);
   }
 
   .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus > span.nav-item-active .sidebar-nav-icon,
   .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus:has(.nav-item-active) .sidebar-nav-icon {
-    transform: scale(1.14);
+    transform: scale(1.18);
     box-shadow:
-      0 0 0 2px color-mix(in srgb, var(--app-accent) 45%, transparent),
-      0 12px 28px -8px color-mix(in srgb, var(--app-accent) 50%, transparent);
+      0 0 0 2px color-mix(in srgb, var(--app-accent) 48%, transparent),
+      0 16px 36px -8px color-mix(in srgb, var(--app-accent) 55%, transparent);
   }
 
   .dark .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus > span.nav-item-active .sidebar-nav-icon,
   .dark .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus:has(.nav-item-active) .sidebar-nav-icon {
     box-shadow:
-      0 0 0 2px color-mix(in srgb, var(--app-teal) 45%, transparent),
-      0 12px 28px -8px color-mix(in srgb, var(--app-teal) 45%, transparent);
+      0 0 0 2px color-mix(in srgb, var(--app-teal) 48%, transparent),
+      0 16px 36px -8px color-mix(in srgb, var(--app-teal) 50%, transparent);
   }
 
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus .sidebar-rail-label--row,
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus > .sidebar-rail-label--row {
+  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus .sidebar-rail-label--row {
     z-index: 60;
-    border-color: color-mix(in srgb, var(--app-accent) 42%, var(--app-border));
+    opacity: 1;
+    border-color: color-mix(in srgb, var(--app-accent) 48%, var(--app-border));
     background: var(--app-surface);
     color: var(--app-accent);
-    font-size: 0.8125rem;
-    transform: translateX(12px) scale(1.18);
+    font-size: 0.84375rem;
+    transform: translateX(14px) scale(1.22);
     box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--app-accent) 18%, transparent),
-      0 18px 44px -14px color-mix(in srgb, var(--app-accent) 38%, transparent);
+      0 0 0 1px color-mix(in srgb, var(--app-accent) 22%, transparent),
+      0 22px 48px -12px color-mix(in srgb, var(--app-accent) 42%, transparent);
   }
 
-  .dark .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus .sidebar-rail-label--row,
-  .dark .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus > .sidebar-rail-label--row {
-    border-color: color-mix(in srgb, var(--app-teal) 45%, var(--app-border));
+  .dark .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus .sidebar-rail-label--row {
+    border-color: color-mix(in srgb, var(--app-teal) 50%, var(--app-border));
     color: var(--app-teal);
     box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--app-teal) 20%, transparent),
-      0 18px 44px -14px color-mix(in srgb, var(--app-teal) 35%, transparent);
+      0 0 0 1px color-mix(in srgb, var(--app-teal) 24%, transparent),
+      0 22px 48px -12px color-mix(in srgb, var(--app-teal) 38%, transparent);
   }
 
   .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus .sidebar-rail-label-chevron {
-    transform: translateX(3px) scale(1.1);
+    transform: translateX(4px) scale(1.12);
   }
 
   .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-near .sidebar-rail-label-chevron {
-    transform: translateX(2px) scale(1.04);
+    transform: translateX(-1px) scale(0.9);
+    opacity: 0.75;
   }
 
   .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus .sidebar-rail-label-badge {
-    transform: scale(1.1);
+    transform: scale(1.12);
   }
 
   .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-near .sidebar-rail-label-badge {
-    transform: scale(1.05);
+    transform: scale(0.9);
+    opacity: 0.88;
   }
 
   .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus.group\/more .sidebar-nav-icon {
-    background: color-mix(in srgb, var(--app-accent) 14%, var(--app-surface-muted));
+    background: color-mix(in srgb, var(--app-accent) 16%, var(--app-surface-muted));
     box-shadow:
-      0 0 0 2px color-mix(in srgb, var(--app-accent) 28%, transparent),
-      0 10px 24px -10px color-mix(in srgb, var(--app-accent) 40%, transparent);
+      0 0 0 2px color-mix(in srgb, var(--app-accent) 32%, transparent),
+      0 14px 32px -10px color-mix(in srgb, var(--app-accent) 45%, transparent);
   }
 
   .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus.group\/profile .sidebar-nav-icon {
-    transform: scale(1.1);
+    transform: scale(1.14);
+    opacity: 1;
     box-shadow:
-      0 0 0 2px color-mix(in srgb, white 35%, transparent),
-      0 10px 24px -10px color-mix(in srgb, var(--app-accent) 45%, transparent);
+      0 0 0 2px color-mix(in srgb, white 38%, transparent),
+      0 14px 32px -10px color-mix(in srgb, var(--app-accent) 50%, transparent);
   }
 
   .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-near.group\/profile .sidebar-nav-icon {
-    transform: scale(1.05);
-    box-shadow: 0 8px 20px -12px color-mix(in srgb, var(--app-accent) 35%, transparent);
+    transform: scale(0.92);
+    opacity: 0.8;
+    box-shadow: none;
   }
 }
 
