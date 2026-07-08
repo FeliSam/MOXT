@@ -650,28 +650,46 @@ html.capacitor-native .capacitor-safe-bottom {
 
 /* ─── Skeleton shimmer ───────────────────────────────────────────────────── */
 .skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--app-surface-muted) 92%, var(--app-border));
+  isolation: isolate;
+}
+
+.skeleton-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
   background: linear-gradient(
-    110deg,
-    var(--app-surface-muted) 0%,
-    var(--app-surface-muted) 35%,
-    color-mix(in srgb, var(--app-surface) 88%, white) 50%,
-    var(--app-surface-muted) 65%,
-    var(--app-surface-muted) 100%
+    105deg,
+    transparent 0%,
+    transparent 38%,
+    color-mix(in srgb, white 55%, transparent) 50%,
+    transparent 62%,
+    transparent 100%
   );
-  background-size: 220% 100%;
-  animation: shimmer 1.65s ease-in-out infinite;
+  transform: translateX(-120%);
+  animation: skeleton-shine 1.7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 .dark .skeleton-shimmer {
+  background: color-mix(in srgb, var(--app-surface-muted) 88%, black);
+}
+
+.dark .skeleton-shimmer::after {
   background: linear-gradient(
-    110deg,
-    var(--app-surface-muted) 0%,
-    var(--app-surface-muted) 35%,
-    color-mix(in srgb, var(--app-surface) 70%, white 12%) 50%,
-    var(--app-surface-muted) 65%,
-    var(--app-surface-muted) 100%
+    105deg,
+    transparent 0%,
+    transparent 38%,
+    color-mix(in srgb, white 14%, transparent) 50%,
+    transparent 62%,
+    transparent 100%
   );
-  background-size: 220% 100%;
+}
+
+@keyframes skeleton-shine {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
 }
 
 /* ─── Favorite / like ────────────────────────────────────────────────────── */
@@ -1594,4 +1612,18 @@ nav[aria-label='Navigation mobile rapide'] a {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+  /* Soft pulse instead of a broken flash for loading placeholders */
+  .skeleton-shimmer::after {
+    animation: none !important;
+    opacity: 0;
+  }
+  .skeleton-shimmer {
+    animation: skeleton-pulse 1.6s ease-in-out infinite !important;
+    animation-duration: 1.6s !important;
+  }
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
 }

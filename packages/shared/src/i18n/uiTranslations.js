@@ -2,6 +2,8 @@
 // Les autres langues sont obtenues par traduction du DOM (voir LanguageProvider) :
 // chaque texte est cherche dans PHRASES[langue], avec repli mot a mot via REPLACEMENTS.
 import { ENGLISH_UI_CATALOG } from './englishUiCatalog'
+import { PLACEHOLDER_CATALOGS } from './placeholderCatalog'
+import { PUBLISH_AUTH_CATALOGS } from './publishAuthCatalog'
 import { STATUS_META } from '../config/statuses.js'
 
 export const SOURCE_LANGUAGE = 'fr'
@@ -143,6 +145,9 @@ Object.values(STATUS_META).forEach(({ label }) => {
     ENGLISH_PHRASES[label] = ENGLISH_UI_CATALOG[label]
   }
 })
+
+Object.assign(ENGLISH_PHRASES, PLACEHOLDER_CATALOGS.en)
+Object.assign(ENGLISH_PHRASES, PUBLISH_AUTH_CATALOGS.en)
 
 const RUSSIAN_PHRASES = {
   // Navigation & groupes
@@ -1294,8 +1299,8 @@ const PORTUGUESE_REPLACEMENTS = [
 
 const PHRASES = {
   en: ENGLISH_PHRASES,
-  ru: RUSSIAN_PHRASES,
-  pt: PORTUGUESE_PHRASES,
+  ru: Object.assign(RUSSIAN_PHRASES, PLACEHOLDER_CATALOGS.ru, PUBLISH_AUTH_CATALOGS.ru),
+  pt: Object.assign(PORTUGUESE_PHRASES, PLACEHOLDER_CATALOGS.pt, PUBLISH_AUTH_CATALOGS.pt),
 }
 
 const REPLACEMENTS = {

@@ -25,6 +25,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { ShareToFeedModal } from '../components/ui/ShareToFeedModal'
+import { useActionBurst } from '../components/ui/ActionBurst'
 import { CitySelector } from '../components/ui/CitySelector'
 import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
@@ -133,6 +134,7 @@ export function PublishJobPage() {
   const [step, setStep] = useState(1)
   const [errors, setErrors] = useState({})
   const [shareModal, setShareModal] = useState(null)
+  const { trigger: triggerBurst, node: burstNode } = useActionBurst()
   const [form, setForm] = useState({
     title: '',
     sector: '',
@@ -205,6 +207,8 @@ export function PublishJobPage() {
         businessId: publishAsBusiness ? business.id : null,
       }),
     )
+    triggerBurst()
+    dispatch(addToast({ title: 'Offre publiée', message: 'Votre offre est en ligne.', tone: 'success' }))
     setShareModal({ sourceId: action.payload.id, sourceData: action.payload })
   }
 
@@ -212,12 +216,14 @@ export function PublishJobPage() {
 
   return (
     <>
+    {burstNode}
     {shareModal && (
       <ShareToFeedModal
         sourceType="job"
         sourceId={shareModal.sourceId}
         sourceData={shareModal.sourceData}
         onClose={() => { setShareModal(null); navigate('/jobs') }}
+        onPublished={triggerBurst}
       />
     )}
     <div className="mx-auto grid max-w-2xl gap-7">

@@ -23,6 +23,7 @@ import { Alert } from '../components/ui/Alert'
 import { AirportSelector } from '../components/ui/AirportSelector'
 import { Button } from '../components/ui/Button'
 import { ShareToFeedModal } from '../components/ui/ShareToFeedModal'
+import { useActionBurst } from '../components/ui/ActionBurst'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
@@ -122,6 +123,7 @@ export function PublishParcelPage() {
   const [step, setStep] = useState(1)
   const [shareModal, setShareModal] = useState(null)
   const [errors, setErrors] = useState({})
+  const { trigger: triggerBurst, node: burstNode } = useActionBurst()
 
   const fromCountry =
     direction === 'RU_TO_AFRICA' ? RUSSIA : originCountry || { code: 'BJ', name: 'Bénin' }
@@ -289,17 +291,21 @@ export function PublishParcelPage() {
         travelProofUrl: travelProofFile.url || null,
       }),
     )
+    triggerBurst()
+    dispatch(addToast({ title: 'Voyage publié', message: 'Votre voyage est en ligne.', tone: 'success' }))
     setShareModal({ sourceId: action.payload.id, sourceData: action.payload })
   }
 
   return (
     <>
+    {burstNode}
     {shareModal && (
       <ShareToFeedModal
         sourceType="parcel"
         sourceId={shareModal.sourceId}
         sourceData={shareModal.sourceData}
         onClose={() => { setShareModal(null); navigate('/parcels') }}
+        onPublished={triggerBurst}
       />
     )}
     <div className="mx-auto grid max-w-2xl gap-7">

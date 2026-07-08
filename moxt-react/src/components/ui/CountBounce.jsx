@@ -22,7 +22,9 @@ export function CountBounce({
     return () => clearTimeout(t)
   }, [value])
 
-  if (!value) return null
+  if (value == null || value === 0) {
+    return <Tag className={className}>{display}</Tag>
+  }
 
   return (
     <Tag className={`count-bounce ${bump ? 'count-bounce--active' : ''} ${className}`}>

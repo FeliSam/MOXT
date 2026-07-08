@@ -14,11 +14,12 @@
 */
 
 /* ─── Bloc generique ─────────────────────────────────────────────────────── */
-export function Skeleton({ className = '', rounded = 'rounded-xl' }) {
+export function Skeleton({ className = '', rounded = 'rounded-xl', style }) {
   return (
     <div
       aria-hidden="true"
       className={`skeleton-shimmer ${rounded} ${className}`}
+      style={style}
     />
   )
 }

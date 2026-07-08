@@ -15,6 +15,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { Select } from '../components/ui/Select'
+import { CatalogFavoriteButton } from '../features/account/CatalogFavoriteButton'
 import { formatMoney } from '../features/transfers/transferUtils'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 
@@ -170,86 +171,96 @@ export function JobsPage() {
         <CatalogGrid lazy={false} columns="grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
           {displayedJobs.length ? (
             displayedJobs.map((job, index) => (
-              <RevealListItem key={job.id} index={index}>
-                <Link to={`/jobs/${job.id}`}>
-                  {tab === 'archived' ? (
+              <RevealListItem key={job.id} index={index} className="h-full overflow-visible">
+                <div className="relative h-full">
+                  <Link to={`/jobs/${job.id}`} className="block h-full">
+                    {tab === 'archived' ? (
+                      <Card
+                        variant="interactive"
+                        className="group relative flex h-full flex-col overflow-hidden p-4 opacity-80 sm:p-5"
+                      >
+                        <span className="absolute right-2 top-2 z-10 rounded-full bg-[var(--app-surface-muted)] px-1.5 py-0.5 text-[9px] font-black text-[var(--app-text-faint)]">
+                          Archivé
+                        </span>
+                        <div className="flex items-start gap-2">
+                          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]">
+                            <FiBriefcase />
+                          </span>
+                        </div>
+                        <h2 className="mt-3.5 line-clamp-2 text-sm font-black leading-snug sm:text-base">
+                          {job.title}
+                        </h2>
+                        <p className="mt-1.5 truncate text-xs text-[var(--app-text-faint)]">
+                          {job.publisherName}
+                        </p>
+                        <div className="mt-4 flex items-center gap-2 rounded-2xl bg-[var(--app-surface-muted)] p-3">
+                          <Badge tone={sectorTone(job.sector)} className="min-w-0 truncate normal-case">
+                            {job.sector}
+                          </Badge>
+                          <span className="flex min-w-0 flex-1 items-center justify-end gap-1.5 truncate text-xs font-bold text-[var(--app-text-muted)]">
+                            <FiMapPin className="shrink-0" />
+                            <span className="truncate">{job.location}</span>
+                          </span>
+                        </div>
+                      </Card>
+                    ) : (
                     <Card
                       variant="interactive"
-                      className="group relative flex h-full flex-col overflow-hidden p-4 opacity-80 sm:p-5"
+                      className="group relative flex h-full flex-col overflow-hidden p-4 ring-1 ring-transparent transition-shadow duration-300 hover:ring-brand-200 sm:p-5 dark:hover:ring-brand-800"
                     >
-                      <span className="absolute right-2 top-2 z-10 rounded-full bg-[var(--app-surface-muted)] px-1.5 py-0.5 text-[9px] font-black text-[var(--app-text-faint)]">
-                        Archivé
+                      <span className="absolute left-2 top-2 z-10">
+                        {job.businessId ? (
+                          <VerifiedBadge size="sm" label="Entreprise" />
+                        ) : (
+                          <span className="rounded-full bg-[var(--app-surface-muted)] px-1.5 py-0.5 text-[9px] font-black text-[var(--app-text-faint)]">
+                            Particulier
+                          </span>
+                        )}
                       </span>
-                      <div className="flex items-start gap-2">
-                        <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]">
+                      <div className="flex items-start gap-2 pr-10">
+                        <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand-700 dark:bg-brand-900 dark:text-brand-200">
                           <FiBriefcase />
                         </span>
                       </div>
+
                       <h2 className="mt-3.5 line-clamp-2 text-sm font-black leading-snug sm:text-base">
                         {job.title}
                       </h2>
                       <p className="mt-1.5 truncate text-xs text-[var(--app-text-faint)]">
                         {job.publisherName}
                       </p>
+
                       <div className="mt-4 flex items-center gap-2 rounded-2xl bg-[var(--app-surface-muted)] p-3">
                         <Badge tone={sectorTone(job.sector)} className="min-w-0 truncate normal-case">
                           {job.sector}
                         </Badge>
                         <span className="flex min-w-0 flex-1 items-center justify-end gap-1.5 truncate text-xs font-bold text-[var(--app-text-muted)]">
-                          <FiMapPin className="shrink-0" />
+                          <FiMapPin className="shrink-0 text-brand-700 dark:text-brand-300" />
                           <span className="truncate">{job.location}</span>
                         </span>
                       </div>
+
+                      <div className="mt-4 grid flex-1 content-start gap-2 sm:grid-cols-2">
+                        <JobMetric value={normalizeJobSalary(job.salary)} label="Rémunération" />
+                        <JobMetric value={job.contractType || '—'} label="Type de contrat" icon={FiClock} />
+                      </div>
+
+                      <span className="mt-4 flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-brand-700 px-2 text-center text-xs font-black text-white transition group-hover:bg-brand-800 sm:min-h-11 sm:text-sm dark:bg-brand-600">
+                        Voir l'offre <FiArrowRight className="text-xs" />
+                      </span>
                     </Card>
-                  ) : (
-                  <Card
-                    variant="interactive"
-                    className="group relative flex h-full flex-col overflow-hidden p-4 ring-1 ring-transparent transition-shadow duration-300 hover:ring-brand-200 sm:p-5 dark:hover:ring-brand-800"
-                  >
-                    <span className="absolute right-2 top-2 z-10">
-                      {job.businessId ? (
-                        <VerifiedBadge size="sm" label="Entreprise" />
-                      ) : (
-                        <span className="rounded-full bg-[var(--app-surface-muted)] px-1.5 py-0.5 text-[9px] font-black text-[var(--app-text-faint)]">
-                          Particulier
-                        </span>
-                      )}
-                    </span>
-                    <div className="flex items-start gap-2">
-                      <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand-700 dark:bg-brand-900 dark:text-brand-200">
-                        <FiBriefcase />
-                      </span>
-                    </div>
-
-                    <h2 className="mt-3.5 line-clamp-2 text-sm font-black leading-snug sm:text-base">
-                      {job.title}
-                    </h2>
-                    <p className="mt-1.5 truncate text-xs text-[var(--app-text-faint)]">
-                      {job.publisherName}
-                    </p>
-
-                    {/* Bandeau secteur + lieu, sur le modèle de la carte Colis */}
-                    <div className="mt-4 flex items-center gap-2 rounded-2xl bg-[var(--app-surface-muted)] p-3">
-                      <Badge tone={sectorTone(job.sector)} className="min-w-0 truncate normal-case">
-                        {job.sector}
-                      </Badge>
-                      <span className="flex min-w-0 flex-1 items-center justify-end gap-1.5 truncate text-xs font-bold text-[var(--app-text-muted)]">
-                        <FiMapPin className="shrink-0 text-brand-700 dark:text-brand-300" />
-                        <span className="truncate">{job.location}</span>
-                      </span>
-                    </div>
-
-                    <div className="mt-4 grid flex-1 content-start gap-2 sm:grid-cols-2">
-                      <JobMetric value={normalizeJobSalary(job.salary)} label="Rémunération" />
-                      <JobMetric value={job.contractType || '—'} label="Type de contrat" icon={FiClock} />
-                    </div>
-
-                    <span className="mt-4 flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-brand-700 px-2 text-center text-xs font-black text-white transition group-hover:bg-brand-800 sm:min-h-11 sm:text-sm dark:bg-brand-600">
-                      Voir l'offre <FiArrowRight className="text-xs" />
-                    </span>
-                  </Card>
-                  )}
-                </Link>
+                    )}
+                  </Link>
+                  {tab !== 'archived' ? (
+                    <CatalogFavoriteButton
+                      relatedId={job.id}
+                      relatedType="job"
+                      title={job.title}
+                      path={`/jobs/${job.id}`}
+                      entity={job}
+                    />
+                  ) : null}
+                </div>
               </RevealListItem>
             ))
           ) : (

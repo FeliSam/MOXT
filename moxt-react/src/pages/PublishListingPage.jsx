@@ -43,6 +43,7 @@ import {
   resolveBusinessPublishContext,
 } from '../features/businesses/businessPublishUtils'
 import { publishListing } from '../features/marketplace/marketplaceSlice'
+import { useActionBurst } from '../components/ui/ActionBurst'
 import { addToast } from '../features/ui/uiSlice'
 
 const STEPS = [
@@ -112,6 +113,7 @@ export function PublishListingPage() {
   const [shareModal, setShareModal] = useState(null)
   const [publishing, setPublishing] = useState(false)
   const fileInputRef = useRef(null)
+  const { trigger: triggerBurst, node: burstNode } = useActionBurst()
 
   const rules = listingType ? (TYPE_RULES[listingType] ?? TYPE_RULES.other) : null
   const categories = listingType ? (CATEGORIES_BY_TYPE[listingType] ?? []) : []
@@ -244,6 +246,8 @@ export function PublishListingPage() {
     )
     setPublishing(false)
     if (publishListing.fulfilled.match(result)) {
+      triggerBurst()
+      dispatch(addToast({ title: 'Annonce publiée', message: 'Votre annonce est en ligne.', tone: 'success' }))
       setShareModal({ sourceId: result.payload?.id, sourceData: result.payload ?? {} })
     }
   }
@@ -309,12 +313,14 @@ export function PublishListingPage() {
 
   return (
     <>
+    {burstNode}
     {shareModal && (
       <ShareToFeedModal
         sourceType="listing"
         sourceId={shareModal.sourceId}
         sourceData={shareModal.sourceData}
         onClose={() => { setShareModal(null); navigate('/publications/mine?type=listing') }}
+        onPublished={triggerBurst}
       />
     )}
     <div className="mx-auto grid max-w-3xl gap-7">

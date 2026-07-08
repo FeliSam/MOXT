@@ -18,17 +18,17 @@ const NAV_EXTRAS = {
     Communauté: 'Community',
     Confiance: 'Trust',
     'Couverture fonctionnelle': 'Feature coverage',
-    Deconnexion: 'Sign out',
     'Echanges P2P': 'P2P exchange',
-    'Fermer les services': 'Close services',
     'Gérer les demandes': 'Manage requests',
     'Gérer les demandes de job': 'Manage job applications',
     'Gérer les inscriptions': 'Manage registrations',
-    'Plus de services': 'More services',
     Quitter: 'Sign out',
     Reglages: 'Settings',
     Réglages: 'Settings',
     'Tous les services': 'All services',
+    'Plus de services': 'More services',
+    'Fermer les services': 'Close services',
+    'Compte et session': 'Account and session',
   },
 }
 
@@ -70,21 +70,32 @@ export function LanguageProvider({ children }) {
       if (node.nodeValue !== next) node.nodeValue = next
     }
 
+    function translateElementAttributes(element) {
+      let attributes = attributeOriginals.get(element)
+      if (!attributes) {
+        attributes = {}
+        attributeOriginals.set(element, attributes)
+      }
+      translatedAttributes.forEach((name) => {
+        if (!element.hasAttribute(name)) return
+        const current = element.getAttribute(name)
+        const knownOriginal = attributes[name]
+        if (
+          knownOriginal == null ||
+          (current !== knownOriginal && current !== translateUiText(knownOriginal, language))
+        ) {
+          attributes[name] = current
+        }
+        const next = translateUiText(attributes[name], language)
+        if (current !== next) element.setAttribute(name, next)
+      })
+    }
+
     function translateElement(element) {
       if (!(element instanceof Element)) return
       const tag = element.tagName
       if (tag === 'SCRIPT' || tag === 'STYLE') return
-      let attributes = attributeOriginals.get(element)
-      if (!attributes) {
-        attributes = {}
-        translatedAttributes.forEach((name) => {
-          if (element.hasAttribute(name)) attributes[name] = element.getAttribute(name)
-        })
-        attributeOriginals.set(element, attributes)
-      }
-      Object.entries(attributes).forEach(([name, original]) => {
-        element.setAttribute(name, translateUiText(original, language))
-      })
+      translateElementAttributes(element)
       element.childNodes.forEach((child) => {
         if (child.nodeType === Node.TEXT_NODE) translateTextNode(child)
         else if (child.nodeType === Node.ELEMENT_NODE) translateElement(child)
@@ -104,6 +115,9 @@ export function LanguageProvider({ children }) {
         pending = []
         for (const mutation of batch) {
           if (mutation.type === 'characterData') translateTextNode(mutation.target)
+          if (mutation.type === 'attributes' && mutation.target instanceof Element) {
+            translateElementAttributes(mutation.target)
+          }
           for (const node of mutation.addedNodes) {
             if (node.nodeType === Node.TEXT_NODE) translateTextNode(node)
             else if (node.nodeType === Node.ELEMENT_NODE) translateElement(node)
@@ -111,7 +125,13 @@ export function LanguageProvider({ children }) {
         }
       })
     })
-    observer.observe(document.body, { characterData: true, childList: true, subtree: true })
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: translatedAttributes,
+      characterData: true,
+      childList: true,
+      subtree: true,
+    })
     return () => {
       observer.disconnect()
       if (rafId) cancelAnimationFrame(rafId)

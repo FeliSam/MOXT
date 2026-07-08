@@ -37,8 +37,13 @@ describe('translateUiText', () => {
     expect(translateUiText('', 'en')).toBe('')
   })
 
-  it('applique le repli mot à mot quand la phrase entière est inconnue', () => {
-    expect(translateUiText('Supprimer maintenant', 'en')).toBe('Delete maintenant')
+  it('traduit les placeholders de recherche', () => {
+    expect(translateUiText('Recherche globale', 'en')).toBe('Global search')
+    expect(translateUiText('Recherche globale', 'ru')).toBe('Глобальный поиск')
+    expect(translateUiText('Recherche globale', 'pt')).toBe('Pesquisa global')
+    expect(
+      translateUiText('Rechercher : iPhone, coiffure, appartement, électricien...', 'en'),
+    ).toBe('Search: iPhone, haircut, apartment, electrician...')
   })
 })
 

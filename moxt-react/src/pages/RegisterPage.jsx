@@ -16,6 +16,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { AuthCard } from '../components/auth/AuthCard'
 import { GoogleButton } from '../components/auth/GoogleButton'
 import { Alert } from '../components/ui/Alert'
+import { useActionBurst } from '../components/ui/ActionBurst'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { PasswordInput } from '../components/ui/PasswordInput'
@@ -103,6 +104,7 @@ export function RegisterPage() {
   const [telegramSending, setTelegramSending] = useState(false)
   const [telegramResendIn, setTelegramResendIn] = useState(0)
   const telegramSendRef = useRef(false)
+  const { trigger: triggerBurst, node: burstNode } = useActionBurst()
   const { countries } = useGeographyOptions()
   const alreadyRegistered = error === 'ALREADY_REGISTERED'
   const showRegisterError = Boolean(error && !alreadyRegistered && !pendingVerification)
@@ -363,6 +365,7 @@ export function RegisterPage() {
       dispatch(clearAuthError())
       await dispatch(loadAllData())
       startRealtimeSubscription(store.getState().auth.user.id, dispatch, store.getState)
+      triggerBurst()
       if (result.payload.emailLinkDeferred) {
         dispatch(
           addToast({
@@ -372,8 +375,16 @@ export function RegisterPage() {
             tone: 'success',
           }),
         )
+      } else {
+        dispatch(
+          addToast({
+            title: 'Vérification réussie',
+            message: 'Bienvenue sur MOXT.',
+            tone: 'success',
+          }),
+        )
       }
-      navigate('/profile', { replace: true })
+      window.setTimeout(() => navigate('/profile', { replace: true }), 550)
     }
   }
 
@@ -397,6 +408,7 @@ export function RegisterPage() {
       title="Créer votre compte MOXT"
       description="Résidence en Russie : un numéro russe valide est obligatoire."
     >
+      {burstNode}
       <Stepper step={step} />
 
       {/* @container : le passage en 2 colonnes depend de la largeur reelle de

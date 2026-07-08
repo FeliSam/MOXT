@@ -17,6 +17,7 @@ import { Select } from '../components/ui/Select'
 import { useGeographyOptions } from '../hooks/useGeographyOptions'
 import { sortByCountryPriority, resolveUserCountryCode } from '@moxt/shared/utils/countryPriority.js'
 import { sortBySubscriptionPriority } from '@moxt/shared/utils/subscriptionUtils.js'
+import { CatalogFavoriteButton } from '../features/account/CatalogFavoriteButton'
 import { resolveParcelCountry } from '../features/marketplace/listingCatalogUtils'
 import { formatMoney } from '../features/transfers/transferUtils'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
@@ -184,61 +185,70 @@ export function ParcelsPage() {
           {tab === 'active' ? (
             visibleParcels.length ? (
               visibleParcels.map((parcel, index) => (
-                <RevealListItem key={parcel.id} index={index}>
-                  <Link to={`/parcels/${parcel.id}`}>
-                    <Card variant="interactive" className="group relative h-full overflow-hidden p-4 sm:p-5">
-                      <span className="absolute right-2 top-2 z-10 flex items-center gap-1">
-                        {parcel.proofStatus === 'verified' ? (
-                          <VerifiedBadge size="sm" label="Preuve vérifiée" />
-                        ) : null}
-                        {parcel.businessId ? (
-                          <VerifiedBadge size="sm" label="Entreprise" />
-                        ) : (
-                          <span className="rounded-full bg-[var(--app-surface-muted)] px-1.5 py-0.5 text-[9px] font-black text-[var(--app-text-faint)]">
-                            Particulier
+                <RevealListItem key={parcel.id} index={index} className="h-full overflow-visible">
+                  <div className="relative h-full">
+                    <Link to={`/parcels/${parcel.id}`} className="block h-full">
+                      <Card variant="interactive" className="group relative h-full overflow-hidden p-4 sm:p-5">
+                        <span className="absolute left-2 top-2 z-10 flex items-center gap-1">
+                          {parcel.proofStatus === 'verified' ? (
+                            <VerifiedBadge size="sm" label="Preuve vérifiée" />
+                          ) : null}
+                          {parcel.businessId ? (
+                            <VerifiedBadge size="sm" label="Entreprise" />
+                          ) : (
+                            <span className="rounded-full bg-[var(--app-surface-muted)] px-1.5 py-0.5 text-[9px] font-black text-[var(--app-text-faint)]">
+                              Particulier
+                            </span>
+                          )}
+                        </span>
+                        <div className="flex items-center gap-2 pr-10">
+                          <h2 className="truncate text-sm font-black sm:text-base">
+                            {parcel.ownerName}
+                          </h2>
+                        </div>
+                        <div className="mt-4 flex items-center gap-2 rounded-2xl bg-[var(--app-surface-muted)] p-3">
+                          <div className="min-w-0 flex-1 text-center">
+                            <p className="truncate text-xs font-black uppercase tracking-wide text-[var(--app-text)]">
+                              {parcel.origin}
+                            </p>
+                          </div>
+                          <span className="grid size-7 shrink-0 place-items-center rounded-full bg-brand-700 text-white dark:bg-brand-600">
+                            <FiArrowRight className="text-xs" />
                           </span>
-                        )}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <h2 className="truncate text-sm font-black sm:text-base">
-                          {parcel.ownerName}
-                        </h2>
-                      </div>
-                      <div className="mt-4 flex items-center gap-2 rounded-2xl bg-[var(--app-surface-muted)] p-3">
-                        <div className="min-w-0 flex-1 text-center">
-                          <p className="truncate text-xs font-black uppercase tracking-wide text-[var(--app-text)]">
-                            {parcel.origin}
-                          </p>
+                          <div className="min-w-0 flex-1 text-center">
+                            <p className="truncate text-xs font-black uppercase tracking-wide text-[var(--app-text)]">
+                              {parcel.destination}
+                            </p>
+                          </div>
                         </div>
-                        <span className="grid size-7 shrink-0 place-items-center rounded-full bg-brand-700 text-white dark:bg-brand-600">
-                          <FiArrowRight className="text-xs" />
-                        </span>
-                        <div className="min-w-0 flex-1 text-center">
-                          <p className="truncate text-xs font-black uppercase tracking-wide text-[var(--app-text)]">
-                            {parcel.destination}
-                          </p>
+                        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                          <ParcelMetric value={`${parcel.remainingKg} kg`} label="Disponible" />
+                          <ParcelMetric
+                            value={formatMoney(parcel.pricePerKg, parcel.currency)}
+                            label="Par kg"
+                          />
                         </div>
-                      </div>
-                      <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                        <ParcelMetric value={`${parcel.remainingKg} kg`} label="Disponible" />
-                        <ParcelMetric
-                          value={formatMoney(parcel.pricePerKg, parcel.currency)}
-                          label="Par kg"
-                        />
-                      </div>
-                      <div className="mt-4 hidden gap-2 text-sm text-[var(--app-text-muted)] sm:grid">
-                        <span className="flex items-center gap-2">
-                          <FiCalendar /> Départ {parcel.departureDate}
+                        <div className="mt-4 hidden gap-2 text-sm text-[var(--app-text-muted)] sm:grid">
+                          <span className="flex items-center gap-2">
+                            <FiCalendar /> Départ {parcel.departureDate}
+                          </span>
+                          <span className="flex items-center gap-2">
+                            <FiCalendar /> Dépôt avant {parcel.depositDeadline || parcel.departureDate}
+                          </span>
+                        </div>
+                        <span className="mt-4 flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-brand-700 px-2 text-center text-xs font-black text-white transition group-hover:bg-brand-800 sm:min-h-11 sm:text-sm dark:bg-brand-600">
+                          Voir le détail <FiArrowRight className="text-xs" />
                         </span>
-                        <span className="flex items-center gap-2">
-                          <FiCalendar /> Dépôt avant {parcel.depositDeadline || parcel.departureDate}
-                        </span>
-                      </div>
-                      <span className="mt-4 flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-brand-700 px-2 text-center text-xs font-black text-white transition group-hover:bg-brand-800 sm:min-h-11 sm:text-sm dark:bg-brand-600">
-                        Voir le détail <FiArrowRight className="text-xs" />
-                      </span>
-                    </Card>
-                  </Link>
+                      </Card>
+                    </Link>
+                    <CatalogFavoriteButton
+                      relatedId={parcel.id}
+                      relatedType="parcel"
+                      title={`${parcel.origin} → ${parcel.destination}`}
+                      path={`/parcels/${parcel.id}`}
+                      entity={parcel}
+                    />
+                  </div>
                 </RevealListItem>
               ))
             ) : (

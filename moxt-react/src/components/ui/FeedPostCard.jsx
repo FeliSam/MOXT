@@ -1,7 +1,9 @@
 import { useState } from 'react'
-import { FiEdit2, FiHeart, FiMessageCircle, FiMoreHorizontal, FiShare2, FiTrash2 } from 'react-icons/fi'
+import { FiEdit2, FiMessageCircle, FiMoreHorizontal, FiShare2, FiTrash2 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
+import { FavoriteButton } from './FavoriteButton'
+import { CountBounce } from './CountBounce'
 import { addComment, deleteComment, deletePost, toggleLike, updatePost } from '../../features/posts/postsSlice'
 import { SOURCE_TYPE_LABELS } from '../../features/posts/postTemplates'
 import { formatDate } from '../../features/transfers/transferUtils'
@@ -181,14 +183,25 @@ export function FeedPostCard({ post }) {
 
       {/* Actions */}
       <div className="flex items-center gap-4 border-t border-[var(--app-border)] px-4 py-3">
-        <button
-          type="button"
-          onClick={handleLike}
-          className={`flex items-center gap-1.5 text-sm font-bold transition ${liked ? 'text-red-500' : 'text-[var(--app-text-muted)] hover:text-red-500'}`}
-        >
-          <FiHeart className={liked ? 'fill-current' : ''} />
-          {post.likes?.length || 0}
-        </button>
+        <div className="flex items-center gap-1.5">
+          <FavoriteButton
+            active={liked}
+            size="sm"
+            variant="solid"
+            className={`!size-8 !shadow-none ${
+              liked
+                ? '!border-transparent !bg-transparent !text-red-500'
+                : '!border-transparent !bg-transparent !text-[var(--app-text-muted)] hover:!text-red-500'
+            }`}
+            onToggle={handleLike}
+            ariaLabel={liked ? 'Retirer le like' : 'Aimer'}
+          />
+          <CountBounce
+            value={post.likes?.length || 0}
+            maxDisplay={999}
+            className={`text-sm font-bold ${liked ? 'text-red-500' : 'text-[var(--app-text-muted)]'}`}
+          />
+        </div>
         <button
           type="button"
           onClick={() => setShowComments((v) => !v)}

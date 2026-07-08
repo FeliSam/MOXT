@@ -19,11 +19,13 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { ShareToFeedModal } from '../components/ui/ShareToFeedModal'
+import { useActionBurst } from '../components/ui/ActionBurst'
 import { CitySelector } from '../components/ui/CitySelector'
 import { Input } from '../components/ui/Input'
 import { EVENT_CATEGORIES } from '../config/options'
 import { createEvent } from '../features/events/eventSlice'
 import { isBusinessPublishReady } from '../features/businesses/businessPublishUtils'
+import { addToast } from '../features/ui/uiSlice'
 
 /* ─── Steps ─────────────────────────────────────────────────────────────── */
 const STEPS = [
@@ -144,6 +146,7 @@ export function PublishEventPage() {
   const [step, setStep] = useState(1)
   const [errors, setErrors] = useState({})
   const [shareModal, setShareModal] = useState(null)
+  const { trigger: triggerBurst, node: burstNode } = useActionBurst()
   const [form, setForm] = useState({
     title: '',
     category: '',
@@ -210,6 +213,8 @@ export function PublishEventPage() {
         price: form.freeEntry ? 0 : Number(form.price),
       }),
     )
+    triggerBurst()
+    dispatch(addToast({ title: 'Événement publié', message: 'Votre événement est en ligne.', tone: 'success' }))
     setShareModal({ sourceId: action.payload.id, sourceData: action.payload })
   }
 
@@ -218,12 +223,14 @@ export function PublishEventPage() {
 
   return (
     <>
+    {burstNode}
     {shareModal && (
       <ShareToFeedModal
         sourceType="event"
         sourceId={shareModal.sourceId}
         sourceData={shareModal.sourceData}
         onClose={() => { setShareModal(null); navigate('/events') }}
+        onPublished={triggerBurst}
       />
     )}
     <div className="mx-auto grid max-w-2xl gap-7">

@@ -15,7 +15,6 @@ const CONFETTI = [
 
 /**
  * Micro-confetti + check morphé, ancré au point de clic (ou au centre).
- * Appeler via `triggerActionBurst(x, y)` ou monter `<ActionBurst active onDone />`.
  */
 export function ActionBurst({
   active = false,
@@ -62,11 +61,13 @@ export function ActionBurst({
 export function useActionBurst() {
   const [burst, setBurst] = useState({ active: false, x: 0, y: 0 })
 
-  function trigger(event) {
+  function trigger(eventOrPoint) {
     const point =
-      event?.clientX != null
-        ? { x: event.clientX, y: event.clientY }
-        : { x: window.innerWidth / 2, y: window.innerHeight * 0.4 }
+      eventOrPoint?.clientX != null
+        ? { x: eventOrPoint.clientX, y: eventOrPoint.clientY }
+        : eventOrPoint?.x != null
+          ? { x: eventOrPoint.x, y: eventOrPoint.y }
+          : { x: window.innerWidth / 2, y: window.innerHeight * 0.38 }
     setBurst({ active: true, ...point })
   }
 
@@ -78,5 +79,5 @@ export function useActionBurst() {
     <ActionBurst active={burst.active} x={burst.x} y={burst.y} onDone={clear} />
   )
 
-  return { trigger, node }
+  return { trigger, node, active: burst.active }
 }

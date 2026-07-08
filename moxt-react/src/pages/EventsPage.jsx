@@ -12,6 +12,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { Select } from '../components/ui/Select'
+import { CatalogFavoriteButton } from '../features/account/CatalogFavoriteButton'
 import { EVENT_CATEGORIES } from '../config/options'
 import { EventRegistrationsPanel } from '../features/events/EventRegistrationsPanel'
 import { formatDate, formatMoney } from '../features/transfers/transferUtils'
@@ -149,31 +150,40 @@ export function EventsPage() {
         <CatalogGrid lazy={false} columns="grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
           {visibleEvents.length ? (
             visibleEvents.map((event, index) => (
-              <RevealListItem key={event.id} index={index}>
-                <Link to={`/events/${event.id}`}>
-                  <Card className="h-full transition hover:-translate-y-1 hover:shadow-xl">
-                    <div className="flex justify-between gap-3">
-                      <span className="grid size-11 place-items-center rounded-2xl bg-brand-50 text-brand-700 dark:bg-brand-900">
-                        <FiCalendar />
-                      </span>
-                      <Badge>{event.category}</Badge>
-                    </div>
-                    <h2 className="mt-4 font-black">{event.title}</h2>
-                    <p className="mt-2 text-sm text-slate-500">
-                      {event.businessId ? 'Entreprise' : 'Particulier'} · {event.organizerName}
-                    </p>
-                    <div className="mt-3 grid gap-2 text-sm">
-                      <span>{formatDate(event.startAt)}</span>
-                      <span className="flex items-center gap-2">
-                        <FiMapPin className="text-brand-700" />
-                        {event.venue}, {event.city}
-                      </span>
-                      <strong className="text-brand-700">
-                        {event.price ? formatMoney(event.price, event.currency) : 'Gratuit'}
-                      </strong>
-                    </div>
-                  </Card>
-                </Link>
+              <RevealListItem key={event.id} index={index} className="h-full overflow-visible">
+                <div className="relative h-full">
+                  <Link to={`/events/${event.id}`} className="block h-full">
+                    <Card className="relative h-full overflow-hidden transition hover:-translate-y-1 hover:shadow-xl">
+                      <div className="flex justify-between gap-3 pr-10">
+                        <span className="grid size-11 place-items-center rounded-2xl bg-brand-50 text-brand-700 dark:bg-brand-900">
+                          <FiCalendar />
+                        </span>
+                        <Badge>{event.category}</Badge>
+                      </div>
+                      <h2 className="mt-4 font-black">{event.title}</h2>
+                      <p className="mt-2 text-sm text-slate-500">
+                        {event.businessId ? 'Entreprise' : 'Particulier'} · {event.organizerName}
+                      </p>
+                      <div className="mt-3 grid gap-2 text-sm">
+                        <span>{formatDate(event.startAt)}</span>
+                        <span className="flex items-center gap-2">
+                          <FiMapPin className="text-brand-700" />
+                          {event.venue}, {event.city}
+                        </span>
+                        <strong className="text-brand-700">
+                          {event.price ? formatMoney(event.price, event.currency) : 'Gratuit'}
+                        </strong>
+                      </div>
+                    </Card>
+                  </Link>
+                  <CatalogFavoriteButton
+                    relatedId={event.id}
+                    relatedType="event"
+                    title={event.title}
+                    path={`/events/${event.id}`}
+                    entity={event}
+                  />
+                </div>
               </RevealListItem>
             ))
           ) : (

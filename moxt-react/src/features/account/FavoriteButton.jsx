@@ -1,9 +1,11 @@
-import { FiHeart } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
-import { Button } from '../../components/ui/Button'
+import { FavoriteButton as AnimatedFavoriteButton } from '../../components/ui/FavoriteButton'
 import { toggleAccountFavorite } from './accountSlice'
 import { buildFavoriteSnapshot } from './favoriteUtils'
 
+/**
+ * CTA favori pages détail — version animée (pop + burst).
+ */
 export function FavoriteButton({ relatedId, relatedType, title, path, entity }) {
   const dispatch = useDispatch()
   const user = useSelector((state) => state.auth.user)
@@ -15,10 +17,12 @@ export function FavoriteButton({ relatedId, relatedType, title, path, entity }) 
   )
 
   return (
-    <Button
-      variant={favorite ? 'primary' : 'secondary'}
-      icon={FiHeart}
-      onClick={() =>
+    <AnimatedFavoriteButton
+      active={favorite}
+      variant="solid"
+      label={favorite ? 'Enregistré' : 'Ajouter aux favoris'}
+      className="w-full !shadow-none"
+      onToggle={() =>
         dispatch(
           toggleAccountFavorite({
             userId: user.id,
@@ -30,8 +34,6 @@ export function FavoriteButton({ relatedId, relatedType, title, path, entity }) 
           }),
         )
       }
-    >
-      {favorite ? 'Enregistré' : 'Ajouter aux favoris'}
-    </Button>
+    />
   )
 }
