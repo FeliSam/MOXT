@@ -27,6 +27,7 @@ import {
   businessRequestFromRemoteRow,
   syncLocalBusinessesToRemote,
 } from '../features/businesses/businessRemote'
+import { filterByBusinessIds, reconcileBusinesses } from '../features/businesses/businessSyncUtils'
 import { reviewFromRemoteRow } from '../features/reviews/reviewRemote'
 import { identityFromRemoteRow } from '../features/identity/identityRemote'
 import { p2pOrderFromRemoteRow, reportFromRemoteRow } from '../features/sync/entityRemote'
@@ -95,6 +96,7 @@ export const loadAllData = createAsyncThunk(
       jobsRes, jobApplicationsRes,
       eventsRes, eventRegistrationsRes,
       businessesRes,
+      ownedBusinessesRes,
       transfersRes,
       favoritesRes, subscriptionsRes, subscriberBansRes, subscriberReportsRes, transferProfilesRes, verificationRequestsRes, personalDocumentsRes,
       p2pOffersRes, p2pOrdersRes,
@@ -121,6 +123,7 @@ export const loadAllData = createAsyncThunk(
       supabase.from('events').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
       supabase.from('event_registrations').select('*').eq('user_id', uid).limit(USER_LIMIT),
       supabase.from('businesses').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
+      supabase.from('businesses').select('*').eq('owner_id', uid),
       supabase.from('transfers').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(USER_LIMIT),
       supabase.from('favorites').select('*').eq('user_id', uid).limit(USER_LIMIT),
       supabase.from('publisher_subscriptions').select('*').limit(USER_LIMIT),
@@ -147,9 +150,27 @@ export const loadAllData = createAsyncThunk(
       profileRes.data?.role || user.role || '',
     )
 
-    const ownedBusinessIds = getState().businesses.items
-      .filter((item) => String(item.ownerId) === String(uid))
-      .map((item) => item.id)
+    if (listingQuestionsRes.error) {
+      console.warn('[MOXT] Chargement des questions annonces:', listingQuestionsRes.error.message)
+    }
+    if (businessesRes.error) {
+      console.warn('[MOXT] Chargement des entreprises:', businessesRes.error.message)
+    }
+    if (ownedBusinessesRes.error) {
+      console.warn('[MOXT] Chargement des entreprises possédées:', ownedBusinessesRes.error.message)
+    }
+
+    await syncLocalBusinessesToRemote(getState().businesses.items, uid)
+
+    const remoteBusinessRows = mergeRemoteRowsById(
+      businessesRes.error ? [] : safeRows(businessesRes, 'des entreprises'),
+      ownedBusinessesRes.error ? [] : safeRows(ownedBusinessesRes, 'des entreprises possédées'),
+    )
+
+    const ownedBusinessIds = remoteBusinessRows
+      .filter((row) => String(row.owner_id) === String(uid))
+      .map((row) => row.id)
+      .filter(Boolean)
 
     const businessRequestsQueries = [
       supabase.from('business_requests').select('*').eq('owner_id', uid).limit(USER_LIMIT),
@@ -205,27 +226,6 @@ export const loadAllData = createAsyncThunk(
         .limit(20),
     ])
 
-    if (listingQuestionsRes.error) {
-      console.warn('[MOXT] Chargement des questions annonces:', listingQuestionsRes.error.message)
-    }
-    if (businessesRes.error) {
-      console.warn('[MOXT] Chargement des entreprises:', businessesRes.error.message)
-    }
-
-    await syncLocalBusinessesToRemote(getState().businesses.items, uid)
-
-    const remoteBusinessRows = businessesRes.error
-      ? []
-      : safeRows(businessesRes, 'des entreprises')
-    if (!businessesRes.error && remoteBusinessRows.length === 0) {
-      const { data: refetched } = await supabase
-        .from('businesses')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(PUBLIC_LIMIT)
-      if (refetched?.length) remoteBusinessRows.push(...refetched)
-    }
-
     const listingsWithQuestions = listingsRes.error
       ? getState().marketplace.items
       : mergeListingQuestions(
@@ -279,22 +279,34 @@ export const loadAllData = createAsyncThunk(
       ),
     )
 
-    const mergedBusinesses = mergeRemoteItems(
+    const remoteBusinesses = remoteBusinessRows.map(businessFromRemoteRow).filter(Boolean)
+    const mergedBusinesses = reconcileBusinesses(
       getState().businesses.items,
-      remoteBusinessRows.map(businessFromRemoteRow).filter(Boolean),
+      remoteBusinesses,
+      uid,
     )
+    const mergedBusinessIds = mergedBusinesses.map((item) => item.id)
 
-    const mergedMembers = mergeRemoteItems(
-      getState().businesses.members,
-      safeRows(businessMembersRes, 'des membres entreprise').map(businessMemberFromRemoteRow).filter(Boolean),
+    const mergedMembers = filterByBusinessIds(
+      mergeRemoteItems(
+        getState().businesses.members,
+        safeRows(businessMembersRes, 'des membres entreprise').map(businessMemberFromRemoteRow).filter(Boolean),
+      ),
+      mergedBusinessIds,
     )
-    const mergedDocuments = mergeRemoteItems(
-      getState().businesses.documents,
-      safeRows(businessDocumentsRes, 'des documents entreprise').map(businessDocumentFromRemoteRow).filter(Boolean),
+    const mergedDocuments = filterByBusinessIds(
+      mergeRemoteItems(
+        getState().businesses.documents,
+        safeRows(businessDocumentsRes, 'des documents entreprise').map(businessDocumentFromRemoteRow).filter(Boolean),
+      ),
+      mergedBusinessIds,
     )
-    const mergedRequests = mergeRemoteItems(
-      getState().businesses.requests,
-      businessRequestsRows.map(businessRequestFromRemoteRow).filter(Boolean),
+    const mergedRequests = filterByBusinessIds(
+      mergeRemoteItems(
+        getState().businesses.requests,
+        businessRequestsRows.map(businessRequestFromRemoteRow).filter(Boolean),
+      ),
+      mergedBusinessIds,
     )
 
     const mergedReviews = mergeRemoteItems(

@@ -53,6 +53,7 @@ export function EventDetailPage() {
   const registrations = useSelector((state) =>
     state.events.registrations.filter((item) => item.eventId === eventId),
   )
+  const publisherProfile = usePublisherDetailProfile(event, 'event')
   if (!event) return <Card>Événement introuvable.</Card>
   const registration = registrations.find((item) => item.userId === user.id)
   const registered = registration && registration.status !== 'cancelled'
@@ -61,7 +62,6 @@ export function EventDetailPage() {
   const eventStatus = statusMeta(event.status)
   const registrationStatus = registration ? statusMeta(registration.status) : null
   const nextStep = registration ? registrationNextSteps[registration.status] : null
-  const publisherProfile = usePublisherDetailProfile(event, 'event')
 
   return (
     <div className="grid gap-7">

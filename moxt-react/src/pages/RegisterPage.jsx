@@ -1,5 +1,5 @@
 import { useFormik } from 'formik'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   FiArrowLeft,
   FiArrowRight,
@@ -10,6 +10,7 @@ import {
   FiShield,
   FiUser,
 } from 'react-icons/fi'
+import { FaTelegram } from 'react-icons/fa6'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import { AuthCard } from '../components/auth/AuthCard'
@@ -31,7 +32,9 @@ import {
   register,
   verifyEmailRegistration,
   verifyPhoneRegistration,
+  verifyTelegramPhoneRegistration,
 } from '../features/auth/authSlice'
+import { sendTelegramVerificationCode } from '../services/telegramGatewayService'
 import { addToast } from '../features/ui/uiSlice'
 import { loadAllData } from '../app/loadAllData'
 import { startRealtimeSubscription } from '../services/realtimeService'
@@ -97,6 +100,8 @@ export function RegisterPage() {
   const [step, setStep] = useState(1)
   const [pendingVerification, setPendingVerification] = useState(null) // { method, phone?, email }
   const [verificationCode, setVerificationCode] = useState('')
+  const [telegramSending, setTelegramSending] = useState(false)
+  const telegramSendRef = useRef(false)
   const { countries } = useGeographyOptions()
   const alreadyRegistered = error === 'ALREADY_REGISTERED'
   const showRegisterError = Boolean(error && !alreadyRegistered && !pendingVerification)
@@ -120,6 +125,7 @@ export function RegisterPage() {
       confirmPassword: '',
       acceptTerms: false,
       verificationMethod: 'phone',
+      phoneDeliveryChannel: 'sms',
     },
     validationSchema: registerSchema,
     onSubmit: async (values) => {
@@ -142,6 +148,17 @@ export function RegisterPage() {
         return
       }
       dispatch(clearAuthError())
+      if (result.payload.requiresTelegramPhoneConfirmation) {
+        setPendingVerification({
+          method: 'telegram',
+          phone: result.payload.phone,
+          email: result.payload.email,
+          userId: result.payload.pendingUserId,
+          password: values.password,
+          requestId: null,
+        })
+        return
+      }
       if (result.payload.requiresPhoneConfirmation) {
         setPendingVerification({ method: 'phone', phone: result.payload.phone, email: result.payload.email })
         return
@@ -192,12 +209,126 @@ export function RegisterPage() {
     }
   }, [dispatch, formik.setValues])
 
+  useEffect(() => {
+    if (pendingVerification?.method !== 'telegram') {
+      telegramSendRef.current = false
+      return undefined
+    }
+    if (telegramSendRef.current || pendingVerification.requestId) return undefined
+
+    let cancelled = false
+    telegramSendRef.current = true
+    setTelegramSending(true)
+
+    sendTelegramVerificationCode({
+      phone: pendingVerification.phone,
+      userId: pendingVerification.userId,
+    })
+      .then((result) => {
+        if (cancelled) return
+        setPendingVerification((current) =>
+          current
+            ? {
+                ...current,
+                requestId: result.requestId,
+              }
+            : current,
+        )
+        dispatch(
+          addToast({
+            title: 'Code Telegram envoyé',
+            message: 'Consultez Telegram sur le numéro associé à votre compte.',
+            tone: 'success',
+          }),
+        )
+      })
+      .catch((error) => {
+        if (cancelled) return
+        telegramSendRef.current = false
+        dispatch(
+          addToast({
+            title: 'Envoi Telegram impossible',
+            message:
+              error?.message ||
+              'Vérifiez que votre numéro est lié à Telegram, ou choisissez la vérification par SMS.',
+            tone: 'error',
+          }),
+        )
+      })
+      .finally(() => {
+        if (!cancelled) setTelegramSending(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [dispatch, pendingVerification])
+
+  async function resendTelegramCode() {
+    if (!pendingVerification || pendingVerification.method !== 'telegram') return
+    setTelegramSending(true)
+    try {
+      const result = await sendTelegramVerificationCode({
+        phone: pendingVerification.phone,
+        userId: pendingVerification.userId,
+        requestId: pendingVerification.requestId,
+      })
+      setPendingVerification((current) =>
+        current ? { ...current, requestId: result.requestId || current.requestId } : current,
+      )
+      dispatch(
+        addToast({
+          title: 'Code renvoyé',
+          message: 'Un nouveau code a été envoyé sur Telegram.',
+          tone: 'success',
+        }),
+      )
+    } catch (error) {
+      dispatch(
+        addToast({
+          title: 'Renvoi impossible',
+          message: error?.message || 'Réessayez dans quelques instants.',
+          tone: 'error',
+        }),
+      )
+    } finally {
+      setTelegramSending(false)
+    }
+  }
+
   const showVerificationError = Boolean(error && pendingVerification)
 
   async function confirmCode() {
-    if (!/^\d{6}$/.test(verificationCode)) return
-    const thunk = pendingVerification.method === 'email' ? verifyEmailRegistration : verifyPhoneRegistration
-    const result = await dispatch(thunk({ ...pendingVerification, token: verificationCode }))
+    if (!/^\d{6}$/.test(verificationCode) || !pendingVerification) return
+
+    let thunk = verifyPhoneRegistration
+    let payload = { ...pendingVerification, token: verificationCode }
+
+    if (pendingVerification.method === 'email') {
+      thunk = verifyEmailRegistration
+    } else if (pendingVerification.method === 'telegram') {
+      if (!pendingVerification.requestId) {
+        dispatch(
+          addToast({
+            title: 'Code non envoyé',
+            message: 'Attendez l’envoi Telegram ou renvoyez le code.',
+            tone: 'warning',
+          }),
+        )
+        return
+      }
+      thunk = verifyTelegramPhoneRegistration
+      payload = {
+        phone: pendingVerification.phone,
+        token: verificationCode,
+        requestId: pendingVerification.requestId,
+        userId: pendingVerification.userId,
+        password: pendingVerification.password,
+        email: pendingVerification.email,
+      }
+    }
+
+    const result = await dispatch(thunk(payload))
     if (thunk.fulfilled.match(result)) {
       dispatch(clearAuthError())
       await dispatch(loadAllData())
@@ -462,16 +593,34 @@ export function RegisterPage() {
           <>
             {pendingVerification ? (
               <>
-                <Alert title={pendingVerification.method === 'email' ? 'Confirmez votre e-mail' : 'Confirmez votre numéro'} variant="info">
-                  Un code à 6 chiffres a été envoyé
+                <Alert
+                  title={
+                    pendingVerification.method === 'email'
+                      ? 'Confirmez votre e-mail'
+                      : pendingVerification.method === 'telegram'
+                        ? 'Confirmez via Telegram'
+                        : 'Confirmez votre numéro'
+                  }
+                  variant="info"
+                >
                   {pendingVerification.method === 'email'
-                    ? ` à ${pendingVerification.email}.`
-                    : ` au ${pendingVerification.phone}.`}
+                    ? `Un code à 6 chiffres a été envoyé à ${pendingVerification.email}.`
+                    : pendingVerification.method === 'telegram'
+                      ? telegramSending
+                        ? `Envoi du code Telegram au ${pendingVerification.phone}…`
+                        : `Un code à 6 chiffres a été envoyé sur Telegram au ${pendingVerification.phone}.`
+                      : `Un code à 6 chiffres a été envoyé au ${pendingVerification.phone} par SMS.`}
                 </Alert>
                 {showVerificationError ? <Alert variant="error">{error}</Alert> : null}
                 <Input
                   id="verification-code"
-                  label={pendingVerification.method === 'email' ? 'Code reçu par e-mail' : 'Code reçu par SMS'}
+                  label={
+                    pendingVerification.method === 'email'
+                      ? 'Code reçu par e-mail'
+                      : pendingVerification.method === 'telegram'
+                        ? 'Code reçu sur Telegram'
+                        : 'Code reçu par SMS'
+                  }
                   inputMode="numeric"
                   autoComplete="one-time-code"
                   maxLength={6}
@@ -481,11 +630,24 @@ export function RegisterPage() {
                     setVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 6))
                   }
                 />
+                {pendingVerification.method === 'telegram' ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    loading={telegramSending}
+                    onClick={resendTelegramCode}
+                  >
+                    Renvoyer le code Telegram
+                  </Button>
+                ) : null}
                 <Button
                   type="button"
                   icon={FiCheck}
                   loading={status === 'loading'}
-                  disabled={verificationCode.length !== 6}
+                  disabled={
+                    verificationCode.length !== 6 ||
+                    (pendingVerification.method === 'telegram' && !pendingVerification.requestId)
+                  }
                   onClick={confirmCode}
                 >
                   Confirmer et accéder à MOXT
@@ -498,43 +660,63 @@ export function RegisterPage() {
                     Comment souhaitez-vous confirmer votre compte ?
                   </p>
                   <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-                    Le téléphone russe est recommandé. L’autre identifiant pourra être confirmé
-                    ensuite dans Sécurité.
+                    Le téléphone russe est recommandé. Telegram est une alternative au SMS si votre
+                    numéro est lié à l’application. L’autre identifiant pourra être confirmé ensuite
+                    dans Sécurité.
                   </p>
                 </div>
-                <div className="grid gap-3 @md:grid-cols-2">
+                <div className="grid gap-3 @md:grid-cols-3">
                   {[
                     {
                       value: 'phone',
+                      channel: 'sms',
                       icon: FiMessageSquare,
                       title: 'Par SMS',
                       detail: formik.values.russianPhone,
                     },
                     {
+                      value: 'phone',
+                      channel: 'telegram',
+                      icon: FaTelegram,
+                      title: 'Par Telegram',
+                      detail: `${formik.values.russianPhone} · Telegram`,
+                    },
+                    {
                       value: 'email',
+                      channel: 'sms',
                       icon: FiMail,
                       title: 'Par e-mail',
                       detail: formik.values.email,
                     },
                   ].map((method) => {
                     const Icon = method.icon
-                    const selected = formik.values.verificationMethod === method.value
+                    const selected =
+                      formik.values.verificationMethod === method.value &&
+                      (method.value !== 'phone' ||
+                        formik.values.phoneDeliveryChannel === method.channel)
                     return (
                       <button
-                        key={method.value}
+                        key={`${method.value}-${method.channel}`}
                         type="button"
                         className={`rounded-2xl p-4 text-left shadow-sm transition ${
                           selected
-                            ? 'bg-brand-700 text-white shadow-lg shadow-brand-900/15'
+                            ? method.channel === 'telegram'
+                              ? 'bg-[#229ED9] text-white shadow-lg shadow-sky-900/20'
+                              : 'bg-brand-700 text-white shadow-lg shadow-brand-900/15'
                             : 'bg-[var(--app-surface)] text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]'
                         }`}
-                        onClick={() =>
+                        onClick={() => {
                           formik.setFieldValue('verificationMethod', method.value)
-                        }
+                          if (method.value === 'phone') {
+                            formik.setFieldValue('phoneDeliveryChannel', method.channel)
+                          }
+                        }}
                       >
                         <Icon className="text-xl" />
                         <strong className="mt-3 block">{method.title}</strong>
-                        <span className={`mt-1 block truncate text-xs ${selected ? 'text-white/75' : 'text-[var(--app-text-muted)]'}`}>
+                        <span
+                          className={`mt-1 block truncate text-xs ${selected ? 'text-white/75' : 'text-[var(--app-text-muted)]'}`}
+                        >
                           {method.detail}
                         </span>
                       </button>

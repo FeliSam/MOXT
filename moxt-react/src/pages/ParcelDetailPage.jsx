@@ -39,6 +39,7 @@ export function ParcelDetailPage() {
   const myRequest = requests.find(
     (item) => item.userId === user.id && item.status === 'submitted',
   )
+  const publisherProfile = usePublisherDetailProfile(parcel, 'parcel')
 
   if (!parcel) return <Card>Voyage introuvable.</Card>
 
@@ -46,7 +47,6 @@ export function ParcelDetailPage() {
   const isAdmin = ['admin', 'superadmin'].includes(user.role)
   const canSeeProof = isAdmin || user.id === parcel.ownerId
   const proofMeta = statusMeta(parcel.proofStatus)
-  const publisherProfile = usePublisherDetailProfile(parcel, 'parcel')
 
   function handleRequestStatus(request, status) {
     dispatch(updateParcelRequestStatus({ id: request.id, status }))

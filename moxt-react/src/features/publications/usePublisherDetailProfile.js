@@ -22,10 +22,7 @@ const PROFILE_META = {
     resolveName: (entity) => entity?.sellerName,
     countItems: (publications, entity) =>
       publications.listings.filter(
-        (item) =>
-          item.ownerId === entity?.ownerId &&
-          isActiveListing(item) &&
-          (entity?.businessId ? item.businessId === entity.businessId : !item.businessId),
+        (item) => item.ownerId === entity?.ownerId && isActiveListing(item),
       ).length,
   },
   parcel: {
@@ -112,6 +109,10 @@ export function usePublisherDetailProfile(entity, kind) {
     countLabel: meta.countLabel,
     descriptionFallback: meta.descriptionFallback,
     ctaLabel: meta.ctaLabel,
-    publicationsPath: ownerId ? `/users/${ownerId}/publications?type=${kind}` : null,
+    publicationsPath: ownerId
+      ? kind === 'listing'
+        ? `/users/${ownerId}/publications`
+        : `/users/${ownerId}/publications?type=${kind}`
+      : null,
   }
 }

@@ -6,7 +6,9 @@ import { startRealtimeSubscription, stopRealtimeSubscription } from './realtimeS
 let authSubscription = null
 let visibilityHandler = null
 let lastConversationRefresh = 0
+let lastDataRefresh = 0
 const CONVERSATION_REFRESH_MS = 15000
+const DATA_REFRESH_MS = 30000
 
 async function refreshConversationsIfNeeded(dispatch, getState) {
   if (!getState().auth.user) return
@@ -15,6 +17,15 @@ async function refreshConversationsIfNeeded(dispatch, getState) {
   lastConversationRefresh = now
   const { refreshConversations } = await import('../features/communications/communicationSlice')
   dispatch(refreshConversations())
+}
+
+async function refreshDataIfNeeded(dispatch, getState) {
+  if (!getState().auth.user) return
+  const now = Date.now()
+  if (now - lastDataRefresh < DATA_REFRESH_MS) return
+  lastDataRefresh = now
+  const { loadAllData } = await import('../app/loadAllData')
+  dispatch(loadAllData())
 }
 
 async function resolveSupabaseSession() {
@@ -77,6 +88,7 @@ export function startAuthSessionSync(store) {
         const session = await resolveSupabaseSession()
         if (session) {
           await syncSessionToStore(session, dispatch, getState)
+          await refreshDataIfNeeded(dispatch, getState)
           await refreshConversationsIfNeeded(dispatch, getState)
           return
         }

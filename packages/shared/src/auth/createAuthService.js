@@ -28,7 +28,8 @@ function profileToUser(profile) {
  *   getPasswordResetRedirectUrl?: () => string,
  * }} redirects
  */
-export function createAuthService(supabase, redirects = {}) {
+export function createAuthService(supabase, redirects = {}, integrations = {}) {
+  const { invokeTelegramGateway } = integrations
   const getOAuthRedirectUrl = redirects.getOAuthRedirectUrl ?? (() => '')
   const getEmailRedirectUrl = redirects.getEmailRedirectUrl ?? (() => '')
   const getPasswordResetRedirectUrl = redirects.getPasswordResetRedirectUrl ?? (() => '')
@@ -139,6 +140,8 @@ export function createAuthService(supabase, redirects = {}) {
       }
 
       const verificationMethod = details.verificationMethod || 'phone'
+      const phoneDeliveryChannel =
+        verificationMethod === 'phone' ? details.phoneDeliveryChannel || 'sms' : 'sms'
       const credentials =
         verificationMethod === 'phone'
           ? {
@@ -178,11 +181,16 @@ export function createAuthService(supabase, redirects = {}) {
       if (data.session) await upsertProfileSafely(data.user.id, profileFields)
 
       const user = profileToUser({ id: data.user.id, ...profileFields })
+      const pendingConfirmation = verificationMethod === 'phone' && !data.session
+      const usesTelegram = phoneDeliveryChannel === 'telegram'
       return {
         user,
         token: data.session?.access_token || '',
         requiresEmailConfirmation: verificationMethod === 'email' && !data.session,
-        requiresPhoneConfirmation: verificationMethod === 'phone' && !data.session,
+        requiresPhoneConfirmation: pendingConfirmation && !usesTelegram,
+        requiresTelegramPhoneConfirmation: pendingConfirmation && usesTelegram,
+        pendingUserId: data.user.id,
+        phoneDeliveryChannel,
         verificationMethod,
         email,
         phone: normalizeRussianAuthPhone(details.russianPhone),
@@ -222,6 +230,57 @@ export function createAuthService(supabase, redirects = {}) {
         })
         if (emailError) {
           console.warn('[MOXT] Liaison e-mail différée après inscription SMS:', emailError.message)
+        }
+      }
+
+      const user = await fetchOrCreateProfile(data.user)
+      return {
+        user,
+        token: data.session.access_token,
+        emailLinkDeferred: Boolean(email && !data.user.email),
+      }
+    },
+
+    async verifyTelegramPhoneRegistration({
+      phone,
+      token,
+      requestId,
+      userId,
+      password,
+      email,
+    }) {
+      if (!supabase) throw new Error('Supabase non configuré.')
+      if (!invokeTelegramGateway) {
+        throw new Error('La vérification Telegram n’est pas configurée sur cette application.')
+      }
+      if (!requestId || !userId) {
+        throw new Error('Session de vérification Telegram invalide. Recommencez l’inscription.')
+      }
+
+      const normalizedPhone = normalizeRussianAuthPhone(phone)
+      await invokeTelegramGateway({
+        action: 'verify',
+        phone: normalizedPhone,
+        userId,
+        requestId,
+        code: token.trim(),
+      })
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        phone: normalizedPhone,
+        password,
+      })
+      if (error) throw new Error(translateAuthError(error))
+      if (!data.session || !data.user) {
+        throw new Error('Connexion impossible après vérification Telegram.')
+      }
+
+      if (email && !data.user.email) {
+        const { error: emailError } = await supabase.auth.updateUser({
+          email: email.trim().toLowerCase(),
+        })
+        if (emailError) {
+          console.warn('[MOXT] Liaison e-mail différée après inscription Telegram:', emailError.message)
         }
       }
 

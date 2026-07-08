@@ -114,10 +114,10 @@ export function ConversationPanel({
 
   return (
     <>
-      <header className="message-thread-header relative z-10 flex min-h-[4.75rem] shrink-0 items-center gap-3 border-b border-[var(--app-border)]/60 bg-[var(--app-surface)]/95 px-4 py-3 backdrop-blur-xl sm:px-5 lg:px-6">
+      <header className="message-thread-header relative z-10 flex min-h-[4.25rem] shrink-0 items-center gap-2.5 border-b border-[var(--app-border)]/60 bg-[var(--app-surface)]/95 px-3 py-2.5 backdrop-blur-xl sm:gap-3 sm:px-4 lg:px-5">
         <button
           type="button"
-          className="grid size-10 shrink-0 place-items-center rounded-xl text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)] hover:text-[var(--app-text)] lg:hidden"
+          className="grid size-9 shrink-0 place-items-center rounded-xl text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)] hover:text-[var(--app-text)] lg:hidden"
           onClick={onBack}
           aria-label="Retour aux conversations"
         >
@@ -125,19 +125,19 @@ export function ConversationPanel({
         </button>
         <MessageAvatar
           avatarUrl={peer.avatarUrl}
-          className="!size-12 !rounded-[1rem] shadow-[var(--shadow-card)]"
+          className="!size-10 !rounded-[0.9rem] shadow-[var(--shadow-card)]"
           name={peer.name}
         />
-        <div className="min-w-0 flex-1 pr-2">
-          <div className="flex min-w-0 items-center gap-2">
-            <h2 className="truncate text-base font-black tracking-tight sm:text-[1.05rem]">
+        <div className="min-w-0 flex-1 pr-1">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <h2 className="truncate text-sm font-black tracking-tight sm:text-[0.9375rem]">
               {peer.name}
             </h2>
-            {pinned ? <FiStar className="shrink-0 text-amber-500" aria-label="Épinglée" /> : null}
-            {muted ? <FiBellOff className="shrink-0 text-[var(--app-text-faint)]" aria-label="En sourdine" /> : null}
+            {pinned ? <FiStar className="size-3.5 shrink-0 text-amber-500" aria-label="Épinglée" /> : null}
+            {muted ? <FiBellOff className="size-3.5 shrink-0 text-[var(--app-text-faint)]" aria-label="En sourdine" /> : null}
           </div>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            <span className="text-xs text-[var(--app-text-muted)]">
+          <div className="mt-0.5 flex flex-wrap items-center gap-2">
+            <span className="text-[11px] leading-tight text-[var(--app-text-muted)]">
               {messageCount
                 ? `${messageCount} message${messageCount > 1 ? 's' : ''}`
                 : 'Nouvelle conversation'}
@@ -147,14 +147,14 @@ export function ConversationPanel({
         {(active.relatedPath || relatedPreview?.path) ? (
           <>
             <Link
-              className="grid size-10 shrink-0 place-items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-brand-700 transition hover:border-brand-200 hover:bg-[var(--app-accent-soft)] lg:hidden dark:text-brand-300"
+              className="grid size-9 shrink-0 place-items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-brand-700 transition hover:border-brand-200 hover:bg-[var(--app-accent-soft)] lg:hidden dark:text-brand-300"
               to={active.relatedPath || relatedPreview.path}
               aria-label="Voir la fiche"
             >
               <FiExternalLink />
             </Link>
             <Link
-              className="hidden shrink-0 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2 text-sm font-bold text-brand-700 transition hover:border-brand-200 hover:bg-[var(--app-accent-soft)] lg:inline-flex dark:text-brand-300"
+              className="hidden shrink-0 items-center gap-1.5 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-2.5 py-1.5 text-xs font-bold text-brand-700 transition hover:border-brand-200 hover:bg-[var(--app-accent-soft)] lg:inline-flex dark:text-brand-300"
               to={active.relatedPath || relatedPreview.path}
             >
               Voir la fiche <FiExternalLink />
@@ -163,7 +163,7 @@ export function ConversationPanel({
         ) : null}
         <details ref={menuRef} className="relative">
           <summary
-            className="grid size-10 cursor-pointer list-none place-items-center rounded-xl border border-transparent text-[var(--app-text-muted)] transition hover:border-[var(--app-border)] hover:bg-[var(--app-surface-muted)]"
+            className="grid size-9 cursor-pointer list-none place-items-center rounded-xl border border-transparent text-[var(--app-text-muted)] transition hover:border-[var(--app-border)] hover:bg-[var(--app-surface-muted)]"
             aria-label="Options de conversation"
           >
             <FiMoreVertical />
@@ -238,7 +238,7 @@ export function ConversationPanel({
 
       <div
         ref={messageListRef}
-        className="message-thread-canvas scrollbar-hidden min-h-0 flex-1 overscroll-contain overflow-y-auto p-4 sm:p-6"
+        className="message-thread-canvas scrollbar-hidden min-h-0 flex-1 overscroll-contain overflow-y-auto p-3 sm:p-4"
         data-testid="message-scroll-region"
       >
         <div className="mx-auto flex max-w-3xl flex-col">
@@ -423,11 +423,11 @@ export function ConversationPanel({
           </div>
         ) : null}
         <form
-          className="mx-auto flex max-w-3xl items-end gap-2 rounded-[1.35rem] border border-[var(--app-border)] bg-[var(--app-surface-muted)]/80 p-2 shadow-[inset_0_1px_0_rgb(255_255_255/0.35)]"
+          className="mx-auto flex max-w-3xl items-end gap-1.5 rounded-[1.2rem] border border-[var(--app-border)] bg-[var(--app-surface-muted)]/80 p-1.5 shadow-[inset_0_1px_0_rgb(255_255_255/0.35)]"
           onSubmit={formik.handleSubmit}
         >
           <label
-            className="grid size-11 shrink-0 cursor-pointer place-items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-lg text-[var(--app-accent)] shadow-sm transition hover:border-brand-200 hover:bg-[var(--app-accent-soft)]"
+            className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-base text-[var(--app-accent)] shadow-sm transition hover:border-brand-200 hover:bg-[var(--app-accent-soft)]"
             aria-label="Ajouter un document"
           >
             <FiPaperclip aria-hidden="true" />
@@ -440,7 +440,7 @@ export function ConversationPanel({
           </label>
           <textarea
             ref={composerRef}
-            className="max-h-32 min-h-11 flex-1 resize-none overflow-y-auto bg-transparent px-1 py-2.5 text-sm leading-6 outline-none placeholder:text-[var(--app-text-faint)]"
+            className="max-h-28 min-h-9 flex-1 resize-none overflow-y-auto bg-transparent px-1 py-2 text-xs leading-5 outline-none placeholder:text-[var(--app-text-faint)] sm:text-[13px] sm:leading-5"
             placeholder={blocked ? 'Cette conversation est bloquée' : 'Écrire un message…'}
             aria-label="Écrire un message"
             rows={1}
@@ -452,7 +452,7 @@ export function ConversationPanel({
             }}
           />
           <button
-            className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand-700 text-lg text-white shadow-[0_10px_24px_rgb(8_112_95/0.28)] transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-40"
+            className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-700 text-base text-white shadow-[0_10px_24px_rgb(8_112_95/0.28)] transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-40"
             type="submit"
             aria-label="Envoyer"
             disabled={blocked || !formik.values.text.trim() || formik.isSubmitting}

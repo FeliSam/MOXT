@@ -17,7 +17,7 @@ export function ConversationRow({ active, assistant = false, conversation, onCli
     <button
       type="button"
       onClick={onClick}
-      className={`group mb-2 flex min-h-[5.6rem] min-w-0 w-full items-center gap-3 rounded-[1.35rem] p-3.5 text-left transition-all duration-[var(--transition-fast)] sm:p-4 ${
+      className={`group mb-2 flex min-h-[5rem] min-w-0 w-full items-center gap-2.5 rounded-[1.2rem] p-3 text-left transition-all duration-[var(--transition-fast)] sm:gap-3 sm:p-3.5 ${
         active
           ? 'bg-[var(--app-accent-soft)] shadow-[0_14px_34px_rgb(15_23_42/0.12)] ring-1 ring-brand-200/70 dark:ring-brand-900/70'
           : 'bg-[var(--app-surface)] shadow-[0_8px_24px_rgb(15_23_42/0.05)] hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgb(15_23_42/0.1)]'
@@ -30,23 +30,23 @@ export function ConversationRow({ active, assistant = false, conversation, onCli
       ) : (
         <MessageAvatar
           avatarUrl={peer?.avatarUrl}
-          className="!size-14 !rounded-[1.15rem] !text-lg shadow-md"
+          className="!size-11 !rounded-[1rem] !text-sm shadow-md"
           name={peer?.name}
         />
       )}
       <span className="min-w-0 flex-1">
         <span className="flex items-start justify-between gap-2">
-          <strong className="flex min-w-0 items-center gap-1.5 truncate text-[15px] leading-5">
-            {pinned ? <FiStar className="shrink-0 text-amber-500" /> : null}
+          <strong className="flex min-w-0 items-center gap-1.5 truncate text-[13px] font-bold leading-4">
+            {pinned ? <FiStar className="size-3 shrink-0 text-amber-500" /> : null}
             <span className="truncate">{assistant ? 'Assistant MOXT' : peer?.name}</span>
-            {muted ? <FiBellOff className="shrink-0 text-[var(--app-text-faint)]" /> : null}
+            {muted ? <FiBellOff className="size-3 shrink-0 text-[var(--app-text-faint)]" /> : null}
           </strong>
-          <time className="shrink-0 text-[10px] font-bold text-[var(--app-text-faint)] sm:rounded-full sm:bg-[var(--app-surface-muted)] sm:px-2 sm:py-0.5">
+          <time className="shrink-0 text-[10px] font-semibold text-[var(--app-text-faint)] sm:rounded-full sm:bg-[var(--app-surface-muted)] sm:px-1.5 sm:py-0.5">
             {assistant ? 'Toujours là' : shortTime(conversation.updatedAt)}
           </time>
         </span>
-        <span className="mt-1 flex items-center gap-2">
-          <span className="min-w-0 flex-1 truncate text-xs text-[var(--app-text-faint)]">
+        <span className="mt-0.5 flex items-center gap-1.5">
+          <span className="min-w-0 flex-1 truncate text-[11px] leading-4 text-[var(--app-text-faint)]">
             {lastMessage}
           </span>
           {unread ? (

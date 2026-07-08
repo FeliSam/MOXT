@@ -51,6 +51,17 @@ export function createAuthSlice(authService) {
     },
   )
 
+  const verifyTelegramPhoneRegistration = createAsyncThunk(
+    'auth/verifyTelegramPhoneRegistration',
+    async (details, { rejectWithValue }) => {
+      try {
+        return await authService.verifyTelegramPhoneRegistration(details)
+      } catch (error) {
+        return rejectWithValue(error.message)
+      }
+    },
+  )
+
   const updateProfile = createAsyncThunk('auth/updateProfile', async (details, { getState, rejectWithValue }) => {
     try {
       return await authService.updateProfile(getState().auth.user, details)
@@ -129,7 +140,11 @@ export function createAuthSlice(authService) {
         .addCase(loginWithGoogle.rejected, setFailure)
         .addCase(register.pending, setLoading)
         .addCase(register.fulfilled, (state, action) => {
-          if (action.payload.requiresEmailConfirmation || action.payload.requiresPhoneConfirmation) {
+          if (
+            action.payload.requiresEmailConfirmation ||
+            action.payload.requiresPhoneConfirmation ||
+            action.payload.requiresTelegramPhoneConfirmation
+          ) {
             state.user = null
             state.token = null
             state.status = 'anonymous'
@@ -147,6 +162,9 @@ export function createAuthSlice(authService) {
         .addCase(verifyPhoneRegistration.pending, setLoading)
         .addCase(verifyPhoneRegistration.fulfilled, setSession)
         .addCase(verifyPhoneRegistration.rejected, setFailure)
+        .addCase(verifyTelegramPhoneRegistration.pending, setLoading)
+        .addCase(verifyTelegramPhoneRegistration.fulfilled, setSession)
+        .addCase(verifyTelegramPhoneRegistration.rejected, setFailure)
         .addCase(updateProfile.pending, setLoading)
         .addCase(updateProfile.fulfilled, (state, action) => {
           state.user = action.payload
@@ -170,6 +188,7 @@ export function createAuthSlice(authService) {
     register,
     verifyEmailRegistration,
     verifyPhoneRegistration,
+    verifyTelegramPhoneRegistration,
     updateProfile,
     restoreSession,
     logout,

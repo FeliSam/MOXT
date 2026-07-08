@@ -31,3 +31,6 @@ enabled = false
 
 [realtime]
 enabled = true
+
+[functions.telegram-gateway]
+verify_jwt = false

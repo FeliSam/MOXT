@@ -218,6 +218,7 @@ export function MyPublicationsPage() {
         <CatalogArchiveTabs
           active={archiveTab}
           onChange={setArchiveTab}
+          variant="filter"
           tabs={[
             { key: 'active', label: 'Actives', count: archiveCounts.active },
             { key: 'archived', label: 'Archives', count: archiveCounts.archived },

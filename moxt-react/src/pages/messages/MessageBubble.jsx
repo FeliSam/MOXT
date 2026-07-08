@@ -83,7 +83,7 @@ export function MessageBubble({
         ) : null}
         {repliedContext ? (
           <p className={`message-quote ${mine ? 'message-quote--sent' : 'message-quote--received'}`}>
-            <span className="block text-[10px] font-bold uppercase tracking-wide opacity-80">
+            <span className="block text-[9px] font-bold uppercase tracking-wide opacity-80">
               Annonce
             </span>
             {repliedContext.title}
@@ -213,7 +213,7 @@ export function MessageSecurityNotice() {
       <p className="text-[11px] font-black uppercase tracking-wide text-amber-800 dark:text-amber-200">
         Consignes de sécurité
       </p>
-      <p className="mt-2 text-xs leading-5 text-amber-900/90 dark:text-amber-100/90">
+      <p className="mt-1.5 text-[11px] leading-[1.35] text-amber-900/90 dark:text-amber-100/90">
         Vérifiez l'identité de votre interlocuteur et les détails de l'annonce avant tout engagement.
         Ne payez jamais en dehors de MOXT sans garanties, évitez les actions risquées et privilégiez
         les échanges dans des lieux sûrs. Signalez tout comportement suspect.

@@ -4,21 +4,17 @@ import {
   FiArrowLeft,
   FiChevronLeft,
   FiChevronRight,
-  FiCheckCircle,
   FiEdit2,
   FiEye,
   FiHeart,
   FiMapPin,
   FiMaximize2,
-  FiMessageSquare,
   FiMoreHorizontal,
   FiPackage,
   FiPercent,
   FiShare2,
   FiShield,
   FiShoppingBag,
-  FiStar,
-  FiUser,
 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useParams } from 'react-router-dom'
@@ -38,7 +34,6 @@ import {
   listingSpecificDetails,
 } from '../config/listingConfig'
 import { DELIVERY_OPTIONS, LISTING_CONDITIONS, optionLabel } from '../config/options'
-import { calculateBusinessRating } from '../features/businesses/businessSelectors'
 import { ContactButton } from '../features/communications/ContactButton'
 import { MarketplaceListingCard } from '../features/marketplace/MarketplaceListingCard'
 import {
@@ -55,6 +50,8 @@ import { buildListingFavoriteSnapshot } from '../features/account/favoriteUtils'
 import { addToast } from '../features/ui/uiSlice'
 import { formatMoney } from '../features/transfers/transferUtils'
 import { formatDateTime, formatShortDate } from '../utils/formatters'
+import { PublisherDetailCard } from '../features/publications/PublisherDetailCard'
+import { usePublisherDetailProfile } from '../features/publications/usePublisherDetailProfile'
 
 const tabs = [
   { value: 'description', label: 'Description' },
@@ -72,17 +69,6 @@ export function ListingDetailPage() {
     state.marketplace.items.find((item) => item.id === listingId),
   )
   const allListings = useSelector((state) => state.marketplace.items)
-  const business = useSelector((state) =>
-    state.businesses.items.find((item) => item.id === listing?.businessId),
-  )
-  const reviews = useSelector((state) =>
-    state.reviews.items.filter(
-      (item) =>
-        item.targetType === 'business' &&
-        item.targetId === listing?.businessId &&
-        item.status === 'published',
-    ),
-  )
   const [selectedImage, setSelectedImage] = useState(null)
   const [imageOpen, setImageOpen] = useState(false)
   const [soldOpen, setSoldOpen] = useState(false)
@@ -99,6 +85,7 @@ export function ListingDetailPage() {
         item.relatedId === listingId,
     ),
   )
+  const publisherProfile = usePublisherDetailProfile(listing, 'listing')
 
   useEffect(() => {
     if (listingId) dispatch(incrementListingView(listingId))
@@ -120,7 +107,6 @@ export function ListingDetailPage() {
   if (!listing) return <Card>Annonce introuvable.</Card>
 
   const images = listing.images || []
-  const rating = calculateBusinessRating(reviews)
   const rules = listingRulesFor(listing.type)
   const listingTypeLabel =
     LISTING_TYPES_META.find(({ value }) => value === listing.type)?.label || listing.type
@@ -135,9 +121,6 @@ export function ListingDetailPage() {
     images.findIndex((image) => image === activeImage),
   )
   const total = Number(listing.price || 0) * quantity
-  const sellerListings = allListings.filter(
-    (item) => item.ownerId === listing.ownerId && item.status === 'active',
-  )
 
   function selectImageAt(nextIndex) {
     if (!images.length) return
@@ -243,13 +226,9 @@ export function ListingDetailPage() {
             />
           </Card>
 
-          <SellerCard
-            business={business}
-            className="xl:hidden"
-            listing={listing}
-            rating={rating}
-            sellerListings={sellerListings}
-          />
+          {publisherProfile ? (
+            <PublisherDetailCard {...publisherProfile} className="xl:hidden" />
+          ) : null}
 
           <Card className="min-w-0 overflow-hidden p-4 sm:p-6">
             <Tabs active={activeTab} items={tabs} onChange={setActiveTab} label="Détail annonce" />
@@ -390,13 +369,9 @@ export function ListingDetailPage() {
             </div>
           </Card>
 
-          <SellerCard
-            business={business}
-            className="hidden xl:block"
-            listing={listing}
-            rating={rating}
-            sellerListings={sellerListings}
-          />
+          {publisherProfile ? (
+            <PublisherDetailCard {...publisherProfile} className="hidden xl:block" />
+          ) : null}
 
           <Card>
             <FiShield className="text-2xl text-brand-600" />
@@ -837,67 +812,6 @@ function ListingActionPanel({
         />
       </div>
     </>
-  )
-}
-
-function SellerCard({ business, className = '', listing, rating, sellerListings }) {
-  return (
-    <Card className={`min-w-0 overflow-hidden ${className}`}>
-      <div className="flex items-center gap-3">
-        <span className="grid size-14 place-items-center rounded-2xl bg-[var(--app-accent-soft)] text-xl font-black text-[var(--app-accent)]">
-          {listing.sellerName?.slice(0, 2).toUpperCase()}
-        </span>
-        <div>
-          <h2 className="font-black">{listing.sellerName}</h2>
-          <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-[var(--app-text-muted)]">
-            <FiCheckCircle className="text-emerald-500" />
-            {business ? 'Entreprise MOXT' : 'Particulier'}
-            {business && ['verified', 'approved', 'active'].includes(business.status) ? (
-              <VerifiedBadge size="sm" />
-            ) : null}
-          </p>
-        </div>
-      </div>
-      <div className="mt-5 grid grid-cols-3 gap-2 text-center">
-        <SellerStat
-          icon={FiStar}
-          value={`${rating.average || business?.rating || 0}/5`}
-          label="Note"
-        />
-        <SellerStat icon={FiShoppingBag} value={sellerListings.length} label="Annonces" />
-        <SellerStat icon={FiMessageSquare} value={listing.contactCount || 0} label="Contacts" />
-      </div>
-      <p className="mt-5 text-sm leading-6 text-[var(--app-text-muted)]">
-        {business?.description || 'Vendeur actif sur la Marketplace MOXT.'}
-      </p>
-      {business ? (
-        <Link to={`/businesses/${business.id}`}>
-          <Button className="mt-5 w-full" variant="secondary" icon={FiUser}>
-            Voir la fiche entreprise
-          </Button>
-        </Link>
-      ) : listing.ownerId ? (
-        <Link to={`/users/${listing.ownerId}/publications`}>
-          <Button className="mt-5 w-full" variant="secondary" icon={FiUser}>
-            Voir toutes les annonces
-          </Button>
-        </Link>
-      ) : null}
-      <div className="mt-4 flex items-center justify-between text-xs text-[var(--app-text-muted)]">
-        <span>{listing.shareCount || 0} partage(s)</span>
-        <span>Mis à jour le {formatShortDate(listing.updatedAt)}</span>
-      </div>
-    </Card>
-  )
-}
-
-function SellerStat({ icon: Icon, label, value }) {
-  return (
-    <div className="rounded-2xl bg-[var(--app-surface-muted)] p-3">
-      <Icon className="mx-auto text-brand-600" />
-      <strong className="mt-2 block">{value}</strong>
-      <span className="text-[10px] text-[var(--app-text-muted)]">{label}</span>
-    </div>
   )
 }
 

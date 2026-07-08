@@ -244,6 +244,7 @@ export function UserPublicationsPage() {
       <CatalogArchiveTabs
         active={mainTab}
         onChange={setMainTab}
+        variant="section"
         tabs={[
           { key: 'publications', label: 'Publications', count: profile.totalCount },
           { key: 'avis', label: 'Avis', count: aggregateRating.count },
@@ -255,6 +256,7 @@ export function UserPublicationsPage() {
           <CatalogArchiveTabs
             active={archiveTab}
             onChange={setArchiveTab}
+            variant="filter"
             tabs={[
               { key: 'active', label: 'Actives', count: archiveCounts.active },
               { key: 'archived', label: 'Archives', count: archiveCounts.archived },

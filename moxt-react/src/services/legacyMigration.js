@@ -319,6 +319,26 @@ function normalizeNotification(item, index) {
   }
 }
 
+const BUSINESS_SYNC_VERSION_KEY = 'moxt-business-sync-v1'
+const CURRENT_BUSINESS_SYNC_VERSION = 1
+
+const BUSINESS_CACHE_KEYS = [
+  'moxt-businesses-v1',
+  'moxt-business-members-v1',
+  'moxt-business-documents-v1',
+  'moxt-business-requests-v1',
+]
+
+function cleanupStaleBusinessCache(storage) {
+  const current = Number(storage.getItem(BUSINESS_SYNC_VERSION_KEY) || 0)
+  if (current >= CURRENT_BUSINESS_SYNC_VERSION) return
+
+  for (const key of BUSINESS_CACHE_KEYS) {
+    storage.removeItem(key)
+  }
+  storage.setItem(BUSINESS_SYNC_VERSION_KEY, String(CURRENT_BUSINESS_SYNC_VERSION))
+}
+
 /**
  * Nettoie les données stales suite aux changements d'architecture :
  * - Supprime les messages embarqués dans les conversations (lazy-load depuis v3)
@@ -328,6 +348,8 @@ function normalizeNotification(item, index) {
  */
 export function cleanupLocalStorage(storage = globalThis.localStorage) {
   if (!storage) return
+
+  cleanupStaleBusinessCache(storage)
 
   // Supprimer l'audit du localStorage (données sensibles)
   storage.removeItem('moxt-audit-v1')

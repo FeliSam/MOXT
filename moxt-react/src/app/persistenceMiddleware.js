@@ -1,3 +1,5 @@
+import { setAll as resetBusinesses } from '../features/businesses/businessSlice'
+
 const persistenceMap = {
   account: [{ key: 'moxt-account-v1', select: (state) => state.account }],
   administration: [{ key: 'moxt-administration-v1', select: (state) => state.administration }],
@@ -102,13 +104,24 @@ function clearAllPersistedKeys() {
     })
 }
 
+function clearSessionData(store) {
+  clearAllPersistedKeys()
+  store.dispatch(
+    resetBusinesses({
+      items: [],
+      members: [],
+      documents: [],
+      requests: [],
+    }),
+  )
+}
+
 export const persistenceMiddleware = (store) => (next) => (action) => {
   const result = next(action)
 
-  // Vider tout le localStorage domaine au logout — protège contre la fuite
-  // de données si un autre utilisateur se connecte sur le même appareil.
-  if (action.type === 'auth/logout/fulfilled') {
-    clearAllPersistedKeys()
+  // Vider le cache local et la mémoire Redux à la déconnexion.
+  if (action.type === 'auth/logout/fulfilled' || action.type === 'auth/clearSession') {
+    clearSessionData(store)
     return result
   }
 
