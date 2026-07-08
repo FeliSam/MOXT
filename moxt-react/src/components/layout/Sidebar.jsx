@@ -34,6 +34,29 @@ function initials(name = '') {
   return name.split(' ').map((w) => w[0] || '').slice(0, 2).join('').toUpperCase()
 }
 
+const RAIL_KEYS = [
+  ...primaryItems.map((item) => item.path),
+  'more',
+  'profile',
+]
+
+function railProximity(hoveredKey, key) {
+  if (hoveredKey == null) return null
+  const hoveredIndex = RAIL_KEYS.indexOf(hoveredKey)
+  const itemIndex = RAIL_KEYS.indexOf(key)
+  if (hoveredIndex < 0 || itemIndex < 0) return null
+  const distance = Math.abs(hoveredIndex - itemIndex)
+  if (distance === 0) return 'focus'
+  if (distance === 1) return 'near'
+  return null
+}
+
+function proximityClass(proximity) {
+  if (proximity === 'focus') return 'sidebar-proximity-focus'
+  if (proximity === 'near') return 'sidebar-proximity-near'
+  return ''
+}
+
 export function Sidebar({ open }) {
   const dispatch = useDispatch()
   const navigate = useNavigate()
@@ -42,6 +65,7 @@ export function Sidebar({ open }) {
   const appState = useSelector((state) => state)
   const badgeForItem = useNavigationBadges(user?.id)
   const [moreOpen, setMoreOpen] = useState(false)
+  const [hoveredRailKey, setHoveredRailKey] = useState(null)
   const { translateLabel } = useLanguage()
   const groups = navigationGroups.filter((group) => !group.roles || group.roles.includes(role))
   const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim()
@@ -56,6 +80,7 @@ export function Sidebar({ open }) {
     <>
       {/* ── Sidebar : dock flottant, rail fixe desktop, libellés simultanés au survol ── */}
       <aside
+        onMouseLeave={() => setHoveredRailKey(null)}
         className={`group/sidebar fixed inset-y-0 left-0 z-40 flex w-[18rem] flex-col bg-[var(--app-surface)] shadow-2xl transition-transform duration-300 ease-out ${
           open ? 'translate-x-0' : '-translate-x-full'
         } lg:inset-y-3 lg:left-3 lg:w-[4.75rem] lg:translate-x-0 lg:overflow-visible lg:rounded-[1.75rem] lg:border lg:border-[var(--app-border)] lg:bg-[var(--app-surface)]/95 lg:shadow-[var(--shadow-float)] lg:backdrop-blur-xl`}
@@ -97,6 +122,8 @@ export function Sidebar({ open }) {
                 badge={item.badgeSelector ? badgeForItem(item, appState) : 0}
                 translateLabel={translateLabel}
                 hideOnMobile={mobileHiddenPaths.has(item.path) || item.desktopOnly}
+                proximity={railProximity(hoveredRailKey, item.path)}
+                onRailHover={() => setHoveredRailKey(item.path)}
                 onClick={() => dispatch(closeSidebar())}
               />
             ))}
@@ -106,7 +133,8 @@ export function Sidebar({ open }) {
           <button
             type="button"
             onClick={() => setMoreOpen(true)}
-            className="group/more relative mt-2 hidden w-full min-h-11 items-center justify-center rounded-xl px-2 text-left text-sm font-bold text-[var(--app-text-muted)] transition hover:text-[var(--app-text)] lg:flex"
+            onMouseEnter={() => setHoveredRailKey('more')}
+            className={`sidebar-rail-item group/more relative mt-2 hidden w-full min-h-11 items-center justify-center rounded-xl px-2 text-left text-sm font-bold text-[var(--app-text-muted)] transition hover:text-[var(--app-text)] lg:flex ${proximityClass(railProximity(hoveredRailKey, 'more'))}`}
           >
             <span className="sidebar-nav-icon grid size-9 shrink-0 place-items-center rounded-[0.7rem] bg-[var(--app-surface-muted)] text-brand-700 dark:text-brand-300">
               <FiGrid className="text-base" />
@@ -133,11 +161,15 @@ export function Sidebar({ open }) {
         </nav>
 
         {/* Profil bas de sidebar — flyout accessible (pont de survol vers le rail) */}
-        <div className="sidebar-footer-zone group/footer hidden shrink-0 border-t border-[var(--app-border)]/70 p-3 lg:block">
+        <div
+          className="sidebar-footer-zone group/footer hidden shrink-0 border-t border-[var(--app-border)]/70 p-3 lg:block"
+          onMouseEnter={() => setHoveredRailKey('profile')}
+        >
           <NavLink
             to="/profile"
             onClick={() => dispatch(closeSidebar())}
-            className="group/profile relative flex min-h-11 items-center justify-center rounded-2xl p-2 transition hover:bg-[var(--app-surface-muted)]"
+            onMouseEnter={() => setHoveredRailKey('profile')}
+            className={`sidebar-rail-item group/profile relative flex min-h-11 items-center justify-center rounded-2xl p-2 transition hover:bg-[var(--app-surface-muted)] ${proximityClass(railProximity(hoveredRailKey, 'profile'))}`}
           >
             <span className="sidebar-nav-icon grid size-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-700 to-[var(--app-teal)] text-xs font-black text-white">
               {initials(fullName) || 'M'}
@@ -291,7 +323,15 @@ function NavigationGroup({ card = false, excludePaths, group, onNavigate, role, 
   )
 }
 
-function SidebarLink({ badge = 0, hideOnMobile = false, item, onClick, translateLabel }) {
+function SidebarLink({
+  badge = 0,
+  hideOnMobile = false,
+  item,
+  onClick,
+  onRailHover,
+  proximity = null,
+  translateLabel,
+}) {
   const Icon = item.icon
   const label = translateLabel(item.label)
   return (
@@ -300,11 +340,14 @@ function SidebarLink({ badge = 0, hideOnMobile = false, item, onClick, translate
       end={item.path === '/dashboard'}
       onClick={onClick}
       onFocus={() => preloadRoute(item.path)}
-      onMouseEnter={() => preloadRoute(item.path)}
+      onMouseEnter={() => {
+        preloadRoute(item.path)
+        onRailHover?.()
+      }}
       className={({ isActive }) =>
-        `group/link relative block ${hideOnMobile ? 'hidden lg:block' : ''} ${
-          isActive ? 'lg:z-[1]' : ''
-        }`
+        `sidebar-rail-item group/link relative block ${proximityClass(proximity)} ${
+          hideOnMobile ? 'hidden lg:block' : ''
+        } ${isActive ? 'lg:z-[1]' : ''}`
       }
       aria-label={badge > 0 ? `${label} (${badge > 9 ? '9+' : badge} non lus)` : undefined}
     >
