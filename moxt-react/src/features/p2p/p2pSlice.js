@@ -2,6 +2,7 @@ import { createSlice } from '@reduxjs/toolkit'
 import { createId } from '../../services/createId'
 import { createLocalStorage } from '../../services/createLocalStorage'
 import { calculateP2PFee } from './p2pUtils'
+import { mergeRemoteById } from '@moxt/shared/utils/mergeRemoteById.js'
 
 const offersStorage = createLocalStorage('moxt-p2p-offers-v1')
 const ordersStorage = createLocalStorage('moxt-p2p-orders-v1')
@@ -11,7 +12,12 @@ const p2pSlice = createSlice({
   initialState: { offers: offersStorage.read(), orders: ordersStorage.read() },
   reducers: {
     setAll(state, action) {
-      Object.assign(state, action.payload)
+      if (action.payload.offers) {
+        state.offers = mergeRemoteById(state.offers, action.payload.offers)
+      }
+      if (action.payload.orders) {
+        state.orders = mergeRemoteById(state.orders, action.payload.orders)
+      }
     },
     createOffer: {
       reducer(state, action) {

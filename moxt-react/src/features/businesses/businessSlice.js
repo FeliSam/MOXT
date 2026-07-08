@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { createId } from '../../services/createId'
 import { createLocalStorage } from '../../services/createLocalStorage'
+import { mergeRemoteById } from '@moxt/shared/utils/mergeRemoteById.js'
 
 const storage = createLocalStorage('moxt-businesses-v1')
 const membersStorage = createLocalStorage('moxt-business-members-v1')
@@ -33,7 +34,11 @@ const businessSlice = createSlice({
   },
   reducers: {
     setAll(state, action) {
-      Object.assign(state, action.payload)
+      const { items, members, documents, requests } = action.payload
+      if (items) state.items = mergeRemoteById(state.items, items)
+      if (members) state.members = mergeRemoteById(state.members, members)
+      if (documents) state.documents = mergeRemoteById(state.documents, documents)
+      if (requests) state.requests = mergeRemoteById(state.requests, requests)
     },
     saveBusiness: {
       reducer(state, action) {

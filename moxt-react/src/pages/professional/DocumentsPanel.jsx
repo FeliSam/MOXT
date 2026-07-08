@@ -22,7 +22,7 @@ export function DocumentsPanel({ business, dispatch, documents }) {
     dispatch(
       addToast({
         title: 'Document ajouté',
-        message: 'Seules les métadonnées sont conservées localement.',
+        message: 'Le document sera synchronisé avec votre espace entreprise.',
         tone: 'success',
       }),
     )

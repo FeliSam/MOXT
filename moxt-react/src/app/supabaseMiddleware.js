@@ -1,5 +1,9 @@
 import { supabase } from '../services/supabaseClient'
 import { saveListingRemote } from '../features/marketplace/marketplaceRemote'
+import { saveBusinessRemote, upsertBusinessDocumentRemote, upsertBusinessMemberRemote, upsertBusinessRequestRemote } from '../features/businesses/businessRemote'
+import { reviewToRemoteRow } from '../features/reviews/reviewRemote'
+import { identityToRemoteRow } from '../features/identity/identityRemote'
+import { p2pOfferToRemoteRow, p2pOrderToRemoteRow, reportToRemoteRow } from '../features/sync/entityRemote'
 import {
   persistConversationRemote,
   persistMessageForConversation,
@@ -38,7 +42,8 @@ function toSnake(obj) {
     simulation: 'simulation',
     relatedType: 'related_type',
     relatedPath: 'related_path',
-    requesterName: 'requester_name',
+    moderatedAt: 'moderated_at',
+    moderatedBy: 'moderated_by',
     sellerName: 'seller_name',
     sellerType: 'seller_type',
     originCountry: 'origin_country',
@@ -131,6 +136,8 @@ function toSnake(obj) {
     activityVisibility: 'activity_visibility',
     firstName: 'first_name',
     lastName: 'last_name',
+    originPhone: 'origin_phone',
+  }
   const result = {}
   for (const [key, value] of Object.entries(obj)) {
     const snakeKey = map[key] ?? key
@@ -229,6 +236,12 @@ const handlers = {
       answeredAt: payload.answeredAt,
     })
   },
+  'marketplace/reportListing': async (payload) => {
+    await upsert('listing_reports', reportToRemoteRow(payload, 'listing_id'))
+  },
+  'marketplace/updateListingReportStatus': async (payload) => {
+    await update('listing_reports', payload.id, { status: payload.status })
+  },
 
   // ── Colis ────────────────────────────────────────────────────────────────────
   'parcels/createParcel': async (payload) => {
@@ -323,6 +336,15 @@ const handlers = {
     const job = state.jobs.items.find((item) => item.id === payload.id)
     if (job) await upsert('jobs', job)
   },
+  'jobs/moderateJob': async (payload) => {
+    await update('jobs', payload.id, { status: payload.status })
+  },
+  'jobs/reportJob': async (payload) => {
+    await upsert('job_reports', reportToRemoteRow(payload, 'job_id'))
+  },
+  'jobs/updateJobReportStatus': async (payload) => {
+    await update('job_reports', payload.id, { status: payload.status })
+  },
 
   // ── Événements ───────────────────────────────────────────────────────────────
   'events/createEvent': async (payload) => {
@@ -342,13 +364,55 @@ const handlers = {
     const event = state.events.items.find((item) => item.id === payload.id)
     if (event) await upsert('events', event)
   },
+  'events/moderateEvent': async (payload) => {
+    await update('events', payload.id, { status: payload.status })
+  },
+  'events/reportEvent': async (payload) => {
+    await upsert('event_reports', reportToRemoteRow(payload, 'event_id'))
+  },
+  'events/updateEventReportStatus': async (payload) => {
+    await update('event_reports', payload.id, { status: payload.status })
+  },
   'events/cancelRegistration': async (payload) => {
     await update('event_registrations', payload.id, { status: 'cancelled' })
   },
 
   // ── Entreprises ───────────────────────────────────────────────────────────────
   'businesses/saveBusiness': async (payload) => {
-    await upsert('businesses', payload)
+    await saveBusinessRemote(payload)
+  },
+  'businesses/addBusinessMember': async (payload) => {
+    await upsertBusinessMemberRemote(payload)
+  },
+  'businesses/updateBusinessMember': async (payload, state) => {
+    const member = state.businesses.members.find(
+      (item) => item.id === payload.id && item.businessId === payload.businessId,
+    )
+    if (member) await upsertBusinessMemberRemote(member)
+  },
+  'businesses/removeBusinessMember': async (payload) => {
+    const { error } = await supabase
+      .from('business_members')
+      .delete()
+      .eq('id', payload.id)
+      .eq('business_id', payload.businessId)
+    if (error) throw error
+  },
+  'businesses/addBusinessDocument': async (payload) => {
+    await upsertBusinessDocumentRemote(payload)
+  },
+  'businesses/updateBusinessDocumentStatus': async (payload, state) => {
+    const document = state.businesses.documents.find((item) => item.id === payload.id)
+    if (document) await upsertBusinessDocumentRemote(document)
+  },
+  'businesses/createBusinessRequest': async (payload) => {
+    await upsertBusinessRequestRemote(payload)
+  },
+  'businesses/updateBusinessRequestStatus': async (payload, state) => {
+    const request = state.businesses.requests.find(
+      (item) => item.id === payload.id && item.businessId === payload.businessId,
+    )
+    if (request) await upsertBusinessRequestRemote(request)
   },
   'businesses/moderateBusiness': async (payload) => {
     await update('businesses', payload.id, { status: payload.status })
@@ -515,20 +579,25 @@ const handlers = {
 
   // ── P2P ───────────────────────────────────────────────────────────────────────
   'p2p/createOffer': async (payload) => {
-    await upsert('p2p_offers', payload)
+    await upsert('p2p_offers', p2pOfferToRemoteRow(payload))
   },
   'p2p/acceptOffer': async (payload) => {
-    await upsert('p2p_orders', payload)
+    await upsert('p2p_orders', p2pOrderToRemoteRow(payload))
     await update('p2p_offers', payload.offerId, { status: 'accepted' })
   },
   'p2p/updateOrderStatus': async (payload, state) => {
     const order = state.p2p.orders.find((item) => item.id === payload.id)
     if (order) {
-      await update('p2p_orders', order.id, {
-        status: order.status,
-        timeline: order.timeline,
-      })
+      await upsert('p2p_orders', p2pOrderToRemoteRow(order))
     }
+  },
+  'p2p/addOrderProof': async (payload, state) => {
+    const order = state.p2p.orders.find((item) => item.id === payload.id)
+    if (order) await upsert('p2p_orders', p2pOrderToRemoteRow(order))
+  },
+  'p2p/rateOrder': async (payload, state) => {
+    const order = state.p2p.orders.find((item) => item.id === payload.id)
+    if (order) await upsert('p2p_orders', p2pOrderToRemoteRow(order))
   },
 
   // ── Notifications ─────────────────────────────────────────────────────────────
@@ -777,6 +846,34 @@ const handlers = {
         updatedAt: business.updatedAt,
       })
     }
+  },
+
+  // ── Avis ──────────────────────────────────────────────────────────────────────
+  'reviews/createReview': async (payload) => {
+    await upsert('reviews', reviewToRemoteRow(payload))
+  },
+  'reviews/moderateReview': async (payload, state) => {
+    const review = state.reviews.items.find((item) => item.id === payload.id)
+    if (review) {
+      await update('reviews', review.id, {
+        status: review.status,
+        moderatedAt: review.moderatedAt,
+        moderatedBy: review.moderatedBy,
+      })
+    }
+  },
+
+  // ── Identite ──────────────────────────────────────────────────────────────────
+  'identity/addIdentityProfile': async (payload) => {
+    await upsert('identity_profiles', identityToRemoteRow(payload))
+  },
+  'identity/updateIdentityProfile': async (payload, state) => {
+    const profile = state.identity.profiles.find((item) => item.id === payload.id)
+    if (profile) await upsert('identity_profiles', identityToRemoteRow(profile))
+  },
+  'identity/removeIdentityProfile': async (payload) => {
+    const { error } = await supabase.from('identity_profiles').delete().eq('id', payload)
+    if (error) throw error
   },
 }
 

@@ -15,9 +15,20 @@ import { setAll as setFinance } from '../features/finance/financeSlice'
 import { setAll as setPosts } from '../features/posts/postsSlice'
 import { setRecipientAddresses } from '../features/addresses/recipientAddressesSlice'
 import { hydrateAccountPreferences, mergeRemoteAccount } from '../features/account/accountSlice'
+import { setIdentityProfiles } from '../features/identity/identitySlice'
 import { listingFromRemoteRow, mergeListingQuestions } from '../features/marketplace/marketplaceRemote'
 import { fromRow, fromRows } from '../services/remoteRowMapper'
 import { fetchUserConversations } from '@moxt/shared/utils/fetchUserConversations.js'
+import {
+  businessFromRemoteRow,
+  businessDocumentFromRemoteRow,
+  businessMemberFromRemoteRow,
+  businessRequestFromRemoteRow,
+  syncLocalBusinessesToRemote,
+} from '../features/businesses/businessRemote'
+import { reviewFromRemoteRow } from '../features/reviews/reviewRemote'
+import { identityFromRemoteRow } from '../features/identity/identityRemote'
+import { p2pOrderFromRemoteRow, reportFromRemoteRow } from '../features/sync/entityRemote'
 
 // Nombre max de lignes pour les tables publiques paginées au login
 const PUBLIC_LIMIT = 50
@@ -125,7 +136,54 @@ export const loadAllData = createAsyncThunk(
       supabase.from('posts').select('*').eq('status', 'published').order('created_at', { ascending: false }).limit(100),
       supabase.from('support_tickets').select('*').eq('user_id', uid).order('updated_at', { ascending: false }).limit(50),
       supabase.from('recipient_addresses').select('*').eq('user_id', uid).order('updated_at', { ascending: false }).limit(USER_LIMIT),
-      supabase.from('profiles').select('activity_visibility').eq('id', uid).maybeSingle(),
+      supabase.from('profiles').select('activity_visibility, role').eq('id', uid).maybeSingle(),
+    ])
+
+    const isAdmin = ['admin', 'superadmin'].includes(
+      profileRes.data?.role || user.role || '',
+    )
+
+    const ownedBusinessIds = getState().businesses.items
+      .filter((item) => String(item.ownerId) === String(uid))
+      .map((item) => item.id)
+
+    const businessRequestsQueries = [
+      supabase.from('business_requests').select('*').eq('owner_id', uid).limit(USER_LIMIT),
+    ]
+    if (ownedBusinessIds.length) {
+      businessRequestsQueries.push(
+        supabase.from('business_requests').select('*').in('business_id', ownedBusinessIds).limit(USER_LIMIT),
+      )
+    }
+    const businessRequestsResults = await Promise.all(businessRequestsQueries)
+    const businessRequestsRows = mergeRemoteRowsById(
+      ...businessRequestsResults.map((result) => safeRows(result, 'des demandes entreprise')),
+    )
+
+    const [
+      businessMembersRes,
+      businessDocumentsRes,
+      identityProfilesRes,
+      listingReportsRes,
+      jobReportsRes,
+      eventReportsRes,
+    ] = await Promise.all([
+      ownedBusinessIds.length
+        ? supabase.from('business_members').select('*').in('business_id', ownedBusinessIds).limit(USER_LIMIT)
+        : Promise.resolve({ data: [] }),
+      ownedBusinessIds.length
+        ? supabase.from('business_documents').select('*').in('business_id', ownedBusinessIds).limit(USER_LIMIT)
+        : Promise.resolve({ data: [] }),
+      supabase.from('identity_profiles').select('*').eq('user_id', uid).limit(USER_LIMIT),
+      isAdmin
+        ? supabase.from('listing_reports').select('*').order('created_at', { ascending: false }).limit(USER_LIMIT)
+        : supabase.from('listing_reports').select('*').eq('reporter_id', uid).limit(USER_LIMIT),
+      isAdmin
+        ? supabase.from('job_reports').select('*').order('created_at', { ascending: false }).limit(USER_LIMIT)
+        : supabase.from('job_reports').select('*').eq('reporter_id', uid).limit(USER_LIMIT),
+      isAdmin
+        ? supabase.from('event_reports').select('*').order('created_at', { ascending: false }).limit(USER_LIMIT)
+        : supabase.from('event_reports').select('*').eq('reporter_id', uid).limit(USER_LIMIT),
     ])
 
     if (listingQuestionsRes.error) {
@@ -133,6 +191,20 @@ export const loadAllData = createAsyncThunk(
     }
     if (businessesRes.error) {
       console.warn('[MOXT] Chargement des entreprises:', businessesRes.error.message)
+    }
+
+    await syncLocalBusinessesToRemote(getState().businesses.items, uid)
+
+    const remoteBusinessRows = businessesRes.error
+      ? []
+      : safeRows(businessesRes, 'des entreprises')
+    if (!businessesRes.error && remoteBusinessRows.length === 0) {
+      const { data: refetched } = await supabase
+        .from('businesses')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(PUBLIC_LIMIT)
+      if (refetched?.length) remoteBusinessRows.push(...refetched)
     }
 
     const listingsWithQuestions = listingsRes.error
@@ -190,8 +262,45 @@ export const loadAllData = createAsyncThunk(
 
     const mergedBusinesses = mergeRemoteItems(
       getState().businesses.items,
-      fromRows(businessesRes.data || []),
+      remoteBusinessRows.map(businessFromRemoteRow).filter(Boolean),
     )
+
+    const mergedMembers = mergeRemoteItems(
+      getState().businesses.members,
+      safeRows(businessMembersRes, 'des membres entreprise').map(businessMemberFromRemoteRow).filter(Boolean),
+    )
+    const mergedDocuments = mergeRemoteItems(
+      getState().businesses.documents,
+      safeRows(businessDocumentsRes, 'des documents entreprise').map(businessDocumentFromRemoteRow).filter(Boolean),
+    )
+    const mergedRequests = mergeRemoteItems(
+      getState().businesses.requests,
+      businessRequestsRows.map(businessRequestFromRemoteRow).filter(Boolean),
+    )
+
+    const mergedReviews = mergeRemoteItems(
+      getState().reviews.items,
+      safeRows(reviewsRes, 'des avis').map(reviewFromRemoteRow).filter(Boolean),
+    )
+
+    const mergedIdentity = mergeRemoteItems(
+      getState().identity.profiles,
+      safeRows(identityProfilesRes, 'des profils identite').map(identityFromRemoteRow).filter(Boolean),
+    )
+
+    const listingReports = safeRows(listingReportsRes, 'des signalements annonces')
+      .map((row) => reportFromRemoteRow(row, 'listing_id', 'listingId'))
+      .filter(Boolean)
+    const jobReports = safeRows(jobReportsRes, 'des signalements jobs')
+      .map((row) => reportFromRemoteRow(row, 'job_id', 'jobId'))
+      .filter(Boolean)
+    const eventReports = safeRows(eventReportsRes, 'des signalements events')
+      .map((row) => reportFromRemoteRow(row, 'event_id', 'eventId'))
+      .filter(Boolean)
+
+    const p2pOrders = safeRows(p2pOrdersRes, 'des commandes P2P')
+      .map(p2pOrderFromRemoteRow)
+      .filter(Boolean)
 
     const supportTickets = safeRows(supportTicketsRes, 'des tickets support').map((row) => {
       const ticket = fromRow(row)
@@ -202,19 +311,38 @@ export const loadAllData = createAsyncThunk(
     })
 
     batch(() => {
-      dispatch(setMarketplace({ items: listingsWithQuestions }))
+      dispatch(setMarketplace({
+        items: listingsWithQuestions,
+        reports: mergeRemoteItems(getState().marketplace.reports, listingReports),
+      }))
       dispatch(setParcels({ items: fromRows(parcelsRes.data), requests: parcelRequests }))
-      dispatch(setJobs({ items: fromRows(jobsRes.data), applications: jobApplications }))
-      dispatch(setEvents({ items: fromRows(eventsRes.data), registrations: eventRegistrations }))
-      dispatch(setBusinesses({ items: mergedBusinesses }))
+      dispatch(setJobs({
+        items: fromRows(jobsRes.data),
+        applications: jobApplications,
+        reports: mergeRemoteItems(getState().jobs.reports, jobReports),
+      }))
+      dispatch(setEvents({
+        items: fromRows(eventsRes.data),
+        registrations: eventRegistrations,
+        reports: mergeRemoteItems(getState().events.reports, eventReports),
+      }))
+      dispatch(setBusinesses({
+        items: mergedBusinesses,
+        members: mergedMembers,
+        documents: mergedDocuments,
+        requests: mergedRequests,
+      }))
       dispatch(setTransfers({ items: fromRows(transfersRes.data) }))
       dispatch(setCommunications({
         conversations,
         notifications: fromRows(notificationsRes.data),
         support: supportTickets,
       }))
-      dispatch(setP2P({ offers: fromRows(p2pOffersRes.data), orders: fromRows(p2pOrdersRes.data) }))
-      dispatch(setReviews({ items: fromRows(reviewsRes.data) }))
+      dispatch(setP2P({
+        offers: fromRows(p2pOffersRes.data),
+        orders: mergeRemoteItems(getState().p2p.orders, p2pOrders),
+      }))
+      dispatch(setReviews({ items: mergedReviews }))
       dispatch(setDisputes({ items: fromRows(disputesRes.data) }))
       dispatch(setFinance({
         payments: fromRows(safeRows(paymentsRes, 'des paiements')),
@@ -240,7 +368,8 @@ export const loadAllData = createAsyncThunk(
           documentIds: parseJsonField(item.documentIds, []),
         })),
       }))
-      dispatch(setRecipientAddresses(fromRows(safeRows(recipientAddressesRes, 'des adresses')))
+      dispatch(setRecipientAddresses(fromRows(safeRows(recipientAddressesRes, 'des adresses'))))
+      dispatch(setIdentityProfiles(mergedIdentity))
       if (profileRes.data?.activity_visibility) {
         dispatch(
           hydrateAccountPreferences({

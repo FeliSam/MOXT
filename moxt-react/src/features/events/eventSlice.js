@@ -1,5 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { createLocalStorage } from '../../services/createLocalStorage'
+import { mergeRemoteById } from '@moxt/shared/utils/mergeRemoteById.js'
 
 const eventsStorage = createLocalStorage('moxt-events-v1')
 const registrationsStorage = createLocalStorage('moxt-event-registrations-v1')
@@ -14,7 +15,10 @@ const eventSlice = createSlice({
   },
   reducers: {
     setAll(state, action) {
-      Object.assign(state, action.payload)
+      const { items, registrations, reports } = action.payload
+      if (items) state.items = mergeRemoteById(state.items, items)
+      if (registrations) state.registrations = mergeRemoteById(state.registrations, registrations)
+      if (reports) state.reports = mergeRemoteById(state.reports, reports)
     },
     createEvent: {
       reducer(state, action) {

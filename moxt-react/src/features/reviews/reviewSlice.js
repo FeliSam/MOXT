@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { createId } from '../../services/createId'
 import { createLocalStorage } from '../../services/createLocalStorage'
+import { mergeRemoteById } from '@moxt/shared/utils/mergeRemoteById.js'
 
 const storage = createLocalStorage('moxt-reviews-v1')
 
@@ -9,7 +10,9 @@ const reviewSlice = createSlice({
   initialState: { items: storage.read() },
   reducers: {
     setAll(state, action) {
-      Object.assign(state, action.payload)
+      if (action.payload.items) {
+        state.items = mergeRemoteById(state.items, action.payload.items)
+      }
     },
     createReview: {
       reducer(state, action) {

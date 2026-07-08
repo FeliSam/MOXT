@@ -54,24 +54,24 @@ export function Sidebar({ open }) {
 
   return (
     <>
-      {/* ── Sidebar : dock flottant, replié sur desktop, déploiement au survol ── */}
+      {/* ── Sidebar : dock flottant, rail fixe desktop, libellés simultanés au survol ── */}
       <aside
-        className={`group fixed inset-y-0 left-0 z-40 flex w-[18rem] flex-col bg-[var(--app-surface)] shadow-2xl transition-transform duration-300 ease-out ${
+        className={`group/sidebar fixed inset-y-0 left-0 z-40 flex w-[18rem] flex-col bg-[var(--app-surface)] shadow-2xl transition-transform duration-300 ease-out ${
           open ? 'translate-x-0' : '-translate-x-full'
-        } lg:inset-y-3 lg:left-3 lg:w-[4.75rem] lg:translate-x-0 lg:overflow-hidden lg:rounded-[1.75rem] lg:border lg:border-[var(--app-border)] lg:bg-[var(--app-surface)]/95 lg:shadow-[var(--shadow-float)] lg:backdrop-blur-xl lg:transition-[width] lg:duration-300 lg:ease-out lg:hover:w-64 lg:hover:shadow-2xl`}
+        } lg:inset-y-3 lg:left-3 lg:w-[4.75rem] lg:translate-x-0 lg:overflow-visible lg:rounded-[1.75rem] lg:border lg:border-[var(--app-border)] lg:bg-[var(--app-surface)]/95 lg:shadow-[var(--shadow-float)] lg:backdrop-blur-xl`}
       >
-        {/* Logo zone — marque repliée sur desktop, logo complet sur mobile et au survol */}
-        <div className="flex h-[4.5rem] shrink-0 items-center justify-between px-5 lg:justify-center lg:border-b lg:border-[var(--app-border)]/70 lg:px-0 lg:group-hover:justify-between lg:group-hover:px-4">
+        {/* Logo — icône seule sur desktop */}
+        <div className="flex h-[4.5rem] shrink-0 items-center justify-between px-5 lg:justify-center lg:border-b lg:border-[var(--app-border)]/70 lg:px-0">
           <Link to="/dashboard" aria-label="MOXT" className="flex min-w-0 items-center justify-center">
             <img
               src="/assets/logos/X.svg"
               alt=""
-              className="hidden h-9 w-9 shrink-0 object-contain transition-opacity duration-200 lg:block lg:group-hover:hidden"
+              className="hidden h-9 w-9 shrink-0 object-contain lg:block"
             />
             <img
               src="/assets/logos/MOXTlogo.svg"
               alt="MOXT"
-              className="block h-9 max-w-[9rem] object-contain object-left transition-opacity duration-200 lg:hidden lg:group-hover:block"
+              className="block h-9 max-w-[9rem] object-contain object-left lg:hidden"
             />
           </Link>
           <button
@@ -86,7 +86,7 @@ export function Sidebar({ open }) {
 
         {/* Nav principale */}
         <nav
-          className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-3 py-4 lg:overflow-x-hidden"
+          className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-3 py-4 lg:overflow-visible"
           aria-label="Navigation principale"
         >
           <div className="grid gap-1">
@@ -102,18 +102,18 @@ export function Sidebar({ open }) {
             ))}
           </div>
 
-          {/* "Tous les services" — desktop ouvre le panel flottant */}
+          {/* "Tous les services" — desktop, libellé flottant au survol du rail */}
           <button
             type="button"
             onClick={() => setMoreOpen(true)}
-            className="mt-2 hidden w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left text-sm font-bold text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)] hover:text-[var(--app-text)] lg:flex"
+            className="group/more relative mt-2 hidden w-full min-h-11 items-center justify-center rounded-xl px-2 text-left text-sm font-bold text-[var(--app-text-muted)] transition hover:text-[var(--app-text)] lg:flex"
           >
-            <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[var(--app-surface-muted)] text-brand-700 transition-transform duration-200 group-hover:scale-105 dark:text-brand-300">
+            <span className="sidebar-nav-icon grid size-9 shrink-0 place-items-center rounded-[0.7rem] bg-[var(--app-surface-muted)] text-brand-700 dark:text-brand-300">
               <FiGrid className="text-base" />
             </span>
-            <span className="flex flex-1 items-center justify-between gap-2 overflow-hidden whitespace-nowrap lg:max-w-0 lg:opacity-0 lg:transition-all lg:duration-200 lg:group-hover:max-w-[10rem] lg:group-hover:opacity-100">
+            <span className="sidebar-rail-label pointer-events-none absolute left-full z-50 ml-2.5 hidden items-center gap-1.5 whitespace-nowrap rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]/98 px-3 py-1.5 text-xs font-bold text-[var(--app-text)] shadow-[var(--shadow-float)] backdrop-blur-md lg:group-hover/sidebar:flex">
               Tous les services
-              <FiChevronRight className="shrink-0 text-[var(--app-text-faint)]" />
+              <FiChevronRight className="text-[var(--app-text-faint)]" />
             </span>
           </button>
 
@@ -133,17 +133,17 @@ export function Sidebar({ open }) {
         </nav>
 
         {/* Profil bas de sidebar — desktop uniquement */}
-        <div className="hidden shrink-0 border-t border-[var(--app-border)]/70 p-3 lg:block">
+        <div className="relative hidden shrink-0 border-t border-[var(--app-border)]/70 p-3 lg:block">
           <NavLink
             to="/profile"
             onClick={() => dispatch(closeSidebar())}
-            className="flex items-center gap-2.5 rounded-2xl p-2 transition hover:bg-[var(--app-surface-muted)]"
+            className="group/profile relative flex min-h-11 items-center justify-center rounded-2xl p-2 transition hover:bg-[var(--app-surface-muted)]"
           >
-            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-700 to-[var(--app-teal)] text-xs font-black text-white">
+            <span className="sidebar-nav-icon grid size-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-700 to-[var(--app-teal)] text-xs font-black text-white">
               {initials(fullName) || 'M'}
             </span>
-            <span className="min-w-0 flex-1 overflow-hidden whitespace-nowrap lg:max-w-0 lg:opacity-0 lg:transition-all lg:duration-200 lg:group-hover:max-w-[10rem] lg:group-hover:opacity-100">
-              <strong className="block truncate text-xs font-black">
+            <span className="sidebar-rail-label pointer-events-none absolute left-full z-50 ml-2.5 hidden min-w-[9rem] flex-col rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]/98 px-3 py-2 shadow-[var(--shadow-float)] backdrop-blur-md lg:group-hover/sidebar:flex">
+              <strong className="truncate text-xs font-black text-[var(--app-text)]">
                 {fullName || 'Mon profil'}
               </strong>
               {user?.verified ? (
@@ -153,10 +153,10 @@ export function Sidebar({ open }) {
               )}
             </span>
           </NavLink>
-          <div className="mt-1 grid grid-cols-2 gap-1.5 overflow-hidden whitespace-nowrap lg:max-w-0 lg:opacity-0 lg:transition-all lg:duration-200 lg:group-hover:max-w-[14rem] lg:group-hover:opacity-100">
+          <div className="sidebar-rail-actions pointer-events-none absolute bottom-3 left-full z-50 ml-2.5 hidden flex-col gap-1 opacity-0 transition-opacity duration-200 lg:group-hover/sidebar:pointer-events-auto lg:group-hover/sidebar:flex lg:group-hover/sidebar:opacity-100">
             <NavLink
               to="/settings"
-              className="flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)]"
+              className="sidebar-rail-label pointer-events-auto flex items-center gap-2 whitespace-nowrap rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]/98 px-3 py-1.5 text-xs font-bold text-[var(--app-text-muted)] shadow-[var(--shadow-float)] backdrop-blur-md transition hover:bg-[var(--app-surface-muted)] hover:text-[var(--app-text)]"
             >
               <FiSettings className="text-sm" />
               Reglages
@@ -164,7 +164,7 @@ export function Sidebar({ open }) {
             <button
               type="button"
               onClick={handleLogout}
-              className="flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold text-red-600 transition hover:bg-red-50 dark:hover:bg-red-950/30"
+              className="sidebar-rail-label pointer-events-auto flex items-center gap-2 whitespace-nowrap rounded-xl border border-red-200 bg-red-50/95 px-3 py-1.5 text-xs font-bold text-red-600 shadow-sm backdrop-blur-md transition hover:bg-red-100 dark:border-red-900/40 dark:bg-red-950/30"
             >
               <FiLogOut className="text-sm" />
               Quitter
@@ -287,6 +287,7 @@ function NavigationGroup({ card = false, excludePaths, group, onNavigate, role, 
 
 function SidebarLink({ badge = 0, hideOnMobile = false, item, onClick, translateLabel }) {
   const Icon = item.icon
+  const label = translateLabel(item.label)
   return (
     <NavLink
       to={item.path}
@@ -294,37 +295,51 @@ function SidebarLink({ badge = 0, hideOnMobile = false, item, onClick, translate
       onClick={onClick}
       onFocus={() => preloadRoute(item.path)}
       onMouseEnter={() => preloadRoute(item.path)}
-      className={hideOnMobile ? 'hidden lg:block' : ''}
-      aria-label={
-        badge > 0 ? `${translateLabel(item.label)} (${badge > 9 ? '9+' : badge} non lus)` : undefined
+      className={({ isActive }) =>
+        `group/link relative block ${hideOnMobile ? 'hidden lg:block' : ''} ${
+          isActive ? 'lg:z-[1]' : ''
+        }`
       }
+      aria-label={badge > 0 ? `${label} (${badge > 9 ? '9+' : badge} non lus)` : undefined}
     >
       {({ isActive }) => (
         <span
-          className={`flex min-h-11 items-center gap-3 rounded-xl px-2.5 text-sm font-bold transition-all duration-[var(--transition-fast)] ${
+          className={`flex min-h-11 items-center justify-center rounded-xl px-2.5 transition-all duration-200 lg:justify-start ${
             isActive
-              ? 'nav-item-active'
-              : 'text-[var(--app-text-muted)] hover:bg-[var(--app-surface-muted)] hover:text-[var(--app-text)]'
+              ? 'nav-item-active text-sm font-bold'
+              : 'text-sm font-bold text-[var(--app-text-muted)] hover:bg-[var(--app-surface-muted)]/80 hover:text-[var(--app-text)]'
           }`}
         >
           <span
-            className={`relative grid size-9 shrink-0 place-items-center rounded-[0.7rem] transition-all duration-200 ${
+            className={`sidebar-nav-icon relative grid size-9 shrink-0 place-items-center rounded-[0.7rem] transition-all duration-200 ${
               isActive
-                ? 'text-[var(--app-accent)] dark:text-[var(--app-teal)]'
-                : 'text-[var(--app-text-muted)] group-hover:scale-105'
+                ? 'bg-[var(--app-accent-soft)] text-[var(--app-accent)] shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--app-accent)_25%,transparent)] dark:text-[var(--app-teal)]'
+                : 'text-[var(--app-text-muted)]'
             }`}
           >
-            <Icon className="text-lg" />
+            <Icon className="text-lg transition-transform duration-200" />
             {badge > 0 ? (
               <span className="absolute -right-0.5 -top-0.5 grid min-w-[1.05rem] place-items-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-sm">
                 {badge > 9 ? '9+' : badge}
               </span>
             ) : null}
           </span>
-          <span className="flex min-w-0 flex-1 items-center justify-between gap-2 overflow-hidden whitespace-nowrap lg:max-w-0 lg:opacity-0 lg:transition-all lg:duration-200 lg:group-hover:max-w-[10rem] lg:group-hover:opacity-100">
-            <span className="truncate">{translateLabel(item.label)}</span>
+
+          {/* Mobile : libellé inline */}
+          <span className="ml-3 flex min-w-0 flex-1 items-center justify-between gap-2 lg:hidden">
+            <span className="truncate">{label}</span>
             {badge > 0 ? (
-              <span className="hidden shrink-0 rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-bold text-white lg:group-hover:inline">
+              <span className="shrink-0 rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-bold text-white">
+                {badge > 9 ? '9+' : badge}
+              </span>
+            ) : null}
+          </span>
+
+          {/* Desktop : libellé flottant — tous visibles au survol du rail */}
+          <span className="sidebar-rail-label pointer-events-none absolute left-full z-50 ml-2.5 hidden max-w-[11rem] items-center justify-between gap-2 whitespace-nowrap rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]/98 px-3 py-1.5 text-xs font-bold text-[var(--app-text)] shadow-[var(--shadow-float)] backdrop-blur-md lg:group-hover/sidebar:flex">
+            <span className="truncate">{label}</span>
+            {badge > 0 ? (
+              <span className="shrink-0 rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-bold text-white">
                 {badge > 9 ? '9+' : badge}
               </span>
             ) : null}
