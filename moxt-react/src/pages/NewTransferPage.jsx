@@ -259,7 +259,7 @@ export function NewTransferPage() {
           </>
         }
       />
-      <ScrollSectionAnchor as={Card} className="scroll-mt-24 px-6 py-5 lg:scroll-mt-28">
+      <ScrollSectionAnchor as={Card} className="scroll-mt-24 overflow-hidden px-3 py-4 sm:px-6 sm:py-5 lg:scroll-mt-28">
         <Stepper step={step} onGoTo={setStep} />
       </ScrollSectionAnchor>
 

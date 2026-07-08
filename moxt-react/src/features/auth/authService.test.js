@@ -205,7 +205,7 @@ describe('authService', () => {
 describe('translateAuthError', () => {
   it('mappe les codes Supabase vers des messages utilisateur', () => {
     expect(translateAuthError({ code: 'email_exists', message: 'duplicate' })).toBe('ALREADY_REGISTERED')
-    expect(translateAuthError({ code: 'sms_send_failed', message: 'failed' })).toContain('SMS')
+    expect(translateAuthError({ code: 'sms_send_failed', message: 'failed' })).toMatch(/SMS|Telegram/i)
   })
 })
 

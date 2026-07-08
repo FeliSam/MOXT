@@ -25,6 +25,8 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { DetailFacts, DetailMetrics, DetailTimeline } from '../components/ui/DetailBlocks'
 import { Modal } from '../components/ui/Modal'
 import { PageHeader } from '../components/ui/PageHeader'
+import { FavoriteButton } from '../components/ui/FavoriteButton'
+import { RevealListItem } from '../components/ui/RevealListItem'
 import { ReshareButton } from '../components/ui/ReshareButton'
 import { Tabs } from '../components/ui/Tabs'
 import {
@@ -446,11 +448,11 @@ export function ListingDetailPage() {
               Même catégorie ou même zone géographique.
             </p>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {similar.map((item) => (
-              <Link key={item.id} to={`/marketplace/${item.id}`}>
+          <div className="grid gap-4 overflow-visible sm:grid-cols-2 xl:grid-cols-3">
+            {similar.map((item, index) => (
+              <RevealListItem key={item.id} index={index} className="h-full overflow-visible">
                 <MarketplaceListingCard listing={item} />
-              </Link>
+              </RevealListItem>
             ))}
           </div>
         </section>
@@ -686,9 +688,6 @@ function ListingActionButtons({
   user,
   layout = 'sidebar',
 }) {
-  const favoriteClass = favorite
-    ? 'border-red-400 bg-red-50 text-red-600 hover:bg-red-100 dark:border-red-600 dark:bg-red-950 dark:text-red-400'
-    : ''
   const toggleFavorite = toggleListingFavorite(dispatch, listing, user)
   const contactProps = {
     ownerId: listing.ownerId,
@@ -702,17 +701,15 @@ function ListingActionButtons({
 
   if (layout === 'bar') {
     return (
-      <div className="flex min-w-0 flex-wrap gap-2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]/95 p-2 shadow-[var(--shadow-float)] backdrop-blur-xl">
+      <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]/95 p-2 shadow-[var(--shadow-float)] backdrop-blur-xl">
         <ContactButton className="min-w-0 flex-1" {...contactProps} />
-        <Button
-          className={`min-w-0 flex-1 ${favoriteClass}`}
-          icon={FiHeart}
-          size="sm"
-          variant="secondary"
-          onClick={toggleFavorite}
-        >
-          {favorite ? 'Favori ✓' : 'Favori'}
-        </Button>
+        <FavoriteButton
+          active={favorite}
+          onToggle={toggleFavorite}
+          variant="solid"
+          label={favorite ? 'Favori ✓' : 'Favori'}
+          className="min-w-0 flex-1 !min-h-9 !rounded-[0.7rem] !px-3.5 !text-xs !shadow-none"
+        />
       </div>
     )
   }
@@ -720,9 +717,13 @@ function ListingActionButtons({
   return (
     <div className="grid min-w-0 gap-3">
       <ContactButton className="w-full" {...contactProps} />
-      <Button className={`w-full ${favoriteClass}`} icon={FiHeart} variant="secondary" onClick={toggleFavorite}>
-        {favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-      </Button>
+      <FavoriteButton
+        active={favorite}
+        onToggle={toggleFavorite}
+        variant="solid"
+        label
+        className="w-full !shadow-none"
+      />
     </div>
   )
 }
@@ -745,9 +746,6 @@ function ListingFloatingActions({
     relatedType: 'listing',
     onContact: () => dispatch(incrementListingContact(listing.id)),
   }
-  const favoriteClass = favorite
-    ? 'border-red-400 bg-red-50 text-red-600 dark:border-red-600 dark:bg-red-950 dark:text-red-400'
-    : ''
 
   return (
     <div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-20 hidden flex-col items-end gap-2 md:flex xl:hidden">
@@ -758,22 +756,21 @@ function ListingFloatingActions({
             variant="secondary"
             {...contactProps}
           />
-          <Button
-            className={`shadow-[var(--shadow-float)] ${favoriteClass}`}
-            icon={FiHeart}
-            variant="secondary"
-            onClick={() => {
+          <FavoriteButton
+            active={favorite}
+            onToggle={() => {
               toggleFavorite()
               setOpen(false)
             }}
-          >
-            {favorite ? 'Favori ✓' : 'Favoris'}
-          </Button>
+            variant="solid"
+            label={favorite ? 'Favori ✓' : 'Favoris'}
+            className="shadow-[var(--shadow-float)]"
+          />
         </div>
       ) : null}
       <button
         type="button"
-        className="grid size-14 place-items-center rounded-full bg-brand-700 text-2xl text-white shadow-[0_12px_28px_rgb(8_112_95/0.35)] transition hover:bg-brand-800"
+        className="btn-press grid size-14 place-items-center rounded-full bg-brand-700 text-2xl text-white shadow-[0_12px_28px_rgb(8_112_95/0.35)] transition hover:bg-brand-800"
         aria-expanded={open}
         aria-label={open ? 'Fermer le menu actions' : 'Ouvrir le menu actions'}
         onClick={() => setOpen((current) => !current)}

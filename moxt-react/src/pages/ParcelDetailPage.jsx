@@ -15,6 +15,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { ReshareButton } from '../components/ui/ReshareButton'
 import { FavoriteButton } from '../features/account/FavoriteButton'
 import { ContactButton } from '../features/communications/ContactButton'
+import { buildParcelSnapshot } from '../features/communications/relatedSnapshot'
 import {
   requestParcelReservation,
   updateParcelProofStatus,
@@ -224,14 +225,51 @@ export function ParcelDetailPage() {
               {requests.length ? (
                 requests.map((request) => {
                   const meta = statusMeta(request.status)
+                  const canMessageRequester =
+                    request.status === 'approved' && request.userId && request.userId !== user.id
+                  const reservationSnapshot = buildParcelSnapshot(parcel, `/parcels/${parcel.id}`, {
+                    reservedKg: request.kg,
+                    requesterName: request.requesterName,
+                  })
+                  const reservationMessage = [
+                    `Bonjour ${request.requesterName || ''},`.trim(),
+                    `Votre réservation de ${request.kg} kg sur le trajet ${parcel.origin} → ${parcel.destination} est acceptée.`,
+                    'Écrivez-moi ici pour plus d’informations (lieu de dépôt, horaires, conditions).',
+                  ].join('\n')
                   return (
                     <div
                       key={request.id}
                       className="rounded-2xl bg-[var(--app-surface-muted)] p-4 shadow-sm"
                     >
                       <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                          <strong>{request.requesterName}</strong>
+                        <div className="min-w-0">
+                          {canMessageRequester ? (
+                            <ContactButton
+                              asLink
+                              ownerId={request.userId}
+                              relatedEntity={parcel}
+                              relatedId={parcel.id}
+                              relatedPath={`/parcels/${parcel.id}`}
+                              relatedTitle={`${parcel.origin} vers ${parcel.destination}`}
+                              relatedType="parcel"
+                              relatedSnapshot={reservationSnapshot}
+                              contactProfile={{
+                                firstName: String(request.requesterName || 'Client')
+                                  .trim()
+                                  .split(/\s+/)[0],
+                                lastName: String(request.requesterName || '')
+                                  .trim()
+                                  .split(/\s+/)
+                                  .slice(1)
+                                  .join(' '),
+                              }}
+                              initialMessage={reservationMessage}
+                            >
+                              {request.requesterName}
+                            </ContactButton>
+                          ) : (
+                            <strong>{request.requesterName}</strong>
+                          )}
                           <p className="mt-1 text-sm text-[var(--app-text-muted)]">
                             {request.kg} kg demandés
                           </p>

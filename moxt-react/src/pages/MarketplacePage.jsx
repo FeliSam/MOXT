@@ -197,10 +197,8 @@ export function MarketplacePage() {
           {visible.length ? (
             <CatalogGrid lazy={false}>
               {visible.map((listing, index) => (
-                <RevealListItem key={listing.id} index={index}>
-                  <Link to={`/marketplace/${listing.id}`}>
-                    <MarketplaceListingCard listing={listing} />
-                  </Link>
+                <RevealListItem key={listing.id} index={index} className="h-full overflow-visible">
+                  <MarketplaceListingCard listing={listing} />
                 </RevealListItem>
               ))}
             </CatalogGrid>

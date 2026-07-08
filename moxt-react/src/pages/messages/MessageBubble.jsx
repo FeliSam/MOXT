@@ -59,7 +59,10 @@ export function MessageBubble({
   }
 
   return (
-    <div ref={stackRef} className={`message-stack ${mine ? 'message-stack--sent' : ''}`}>
+    <div
+      ref={stackRef}
+      className={`message-stack message-stack--enter ${mine ? 'message-stack--sent' : ''}`}
+    >
       {showSenderName && !mine ? (
         <span className="message-sender-name">{message.senderName}</span>
       ) : null}

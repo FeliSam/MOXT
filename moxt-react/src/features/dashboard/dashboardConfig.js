@@ -146,7 +146,7 @@ export const dashboardListingTrackClass =
   'scrollbar-hidden -mx-4 flex touch-pan-x gap-3 overflow-x-auto px-4 py-2 sm:gap-4 lg:mx-0 lg:grid lg:grid-cols-4 lg:gap-4 lg:overflow-visible lg:px-0'
 
 export const dashboardListingItemClass =
-  'w-[clamp(12rem,25vw,16rem)] shrink-0 lg:w-auto lg:min-w-0 lg:shrink'
+  'w-[clamp(12rem,25vw,16rem)] shrink-0 overflow-visible lg:w-auto lg:min-w-0 lg:shrink'
 
 /** Services essentiels — carrousel horizontal sur tous les écrans. */
 export const dashboardServicesTrackClass =

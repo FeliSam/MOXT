@@ -47,9 +47,7 @@ export function DashboardDiscoverySection({
               ))
             : listings.map((listing, index) => (
                 <RevealListItem key={listing.id} index={index} className={dashboardListingItemClass}>
-                  <Link className="block h-full" to={`/marketplace/${listing.id}`}>
-                    <MarketplaceListingCard listing={listing} />
-                  </Link>
+                  <MarketplaceListingCard listing={listing} />
                 </RevealListItem>
               ))}
         </div>

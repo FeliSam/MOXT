@@ -20,8 +20,8 @@ describe('route metadata', () => {
   it('keeps the mobile navigation short and unique', () => {
     expect(bottomNavigationItems).toHaveLength(4)
     expect(bottomNavigationItems.map((item) => item.id)).toEqual([
-      'home',
       'transfers',
+      'home',
       'marketplace',
       'parcels',
     ])

@@ -84,10 +84,16 @@ function ToastItem({ toast }) {
       />
 
       <div className="flex items-start gap-3 p-4">
-        <Icon
-          className={`mt-0.5 shrink-0 text-xl ${config.iconCls}`}
-          aria-hidden="true"
-        />
+        {toast.tone === 'success' ? (
+          <span className={`success-check shrink-0 !size-8 ${config.iconCls}`} aria-hidden="true">
+            <Icon className="!h-4 !w-4" strokeWidth={2.5} />
+          </span>
+        ) : (
+          <Icon
+            className={`mt-0.5 shrink-0 text-xl ${config.iconCls}`}
+            aria-hidden="true"
+          />
+        )}
 
         <div className="min-w-0 flex-1">
           {toast.title ? (

@@ -14,14 +14,30 @@ function json(body: Record<string, unknown>, status = 200) {
   })
 }
 
+function digitsOnly(phone = '') {
+  return String(phone).replace(/\D/g, '')
+}
+
 function normalizeE164(phone = '') {
   const trimmed = String(phone).trim()
   const hasPlus = trimmed.startsWith('+')
-  const digits = trimmed.replace(/\D/g, '')
+  const digits = digitsOnly(trimmed)
   if (!digits) return ''
   if (hasPlus || trimmed.startsWith('+')) return `+${digits}`
   if (/^8\d{10}$/.test(digits)) return `+7${digits.slice(1)}`
   return `+${digits}`
+}
+
+function phonesMatch(a: string, b: string) {
+  const left = digitsOnly(a)
+  const right = digitsOnly(b)
+  if (!left || !right) return false
+  if (left === right) return true
+  // RU : 8XXXXXXXXXX vs 7XXXXXXXXXX
+  if (left.length === 11 && right.length === 11) {
+    return left.slice(1) === right.slice(1)
+  }
+  return false
 }
 
 async function tgPost(token: string, method: string, body: Record<string, unknown>) {
@@ -43,6 +59,14 @@ async function tgPost(token: string, method: string, body: Record<string, unknow
     throw new Error(String(message))
   }
   return payload?.result ?? payload
+}
+
+function verificationStatusOf(result: Record<string, unknown> | null | undefined) {
+  const status =
+    (result?.verification_status as { status?: string } | undefined)?.status ||
+    (result as { status?: string } | undefined)?.status ||
+    ''
+  return String(status)
 }
 
 Deno.serve(async (req) => {
@@ -68,35 +92,98 @@ Deno.serve(async (req) => {
     const userId = String(body?.userId || '')
     const requestId = String(body?.requestId || '')
     const code = String(body?.code || '').trim()
+    const password = String(body?.password || '')
+    const email = String(body?.email || '').trim().toLowerCase()
+    const profileFields =
+      body?.profileFields && typeof body.profileFields === 'object' ? body.profileFields : {}
 
     const admin = createClient(supabaseUrl, serviceRoleKey)
 
-    async function assertPendingSignup() {
-      if (!userId || !phone) {
+    async function assertPendingSignup(existingUserId: string, expectedPhone: string) {
+      if (!existingUserId || !expectedPhone) {
         throw new Error('Paramètres manquants.')
       }
-      const { data, error } = await admin.auth.admin.getUserById(userId)
+      const { data, error } = await admin.auth.admin.getUserById(existingUserId)
       if (error || !data.user) {
         throw new Error('Compte introuvable.')
       }
       const userPhone = normalizeE164(data.user.phone || '')
-      if (userPhone !== phone) {
-        throw new Error('Ce numéro ne correspond pas au compte en cours de création.')
+      if (!phonesMatch(userPhone, expectedPhone)) {
+        throw new Error(
+          `Ce numéro ne correspond pas au compte en cours de création (${userPhone || 'vide'}).`,
+        )
       }
       if (data.user.phone_confirmed_at) {
-        throw new Error('Ce numéro est déjà confirmé.')
+        throw new Error('Ce numéro est déjà confirmé. Connectez-vous avec votre mot de passe.')
       }
       return data.user
     }
 
-    if (action === 'send') {
-      await assertPendingSignup()
-
-      let gatewayRequestId = requestId || ''
-      if (!gatewayRequestId) {
-        const ability = await tgPost(token, 'checkSendAbility', { phone_number: phone })
-        gatewayRequestId = String(ability?.request_id || '')
+    if (action === 'register') {
+      if (!phone || !password) {
+        return json({ error: 'Numéro et mot de passe obligatoires.' }, 400)
       }
+      if (password.length < 8) {
+        return json({ error: 'Le mot de passe doit contenir au moins 8 caractères.' }, 400)
+      }
+
+      const createPayload: Record<string, unknown> = {
+        phone,
+        password,
+        phone_confirm: false,
+        user_metadata: profileFields,
+      }
+      if (email) {
+        createPayload.email = email
+        // Requis pour pouvoir se connecter ensuite (Phone auth désactivé côté projet).
+        createPayload.email_confirm = true
+      }
+
+      const { data, error } = await admin.auth.admin.createUser(createPayload as never)
+      if (error) {
+        const message = String(error.message || '')
+        if (
+          message.toLowerCase().includes('already') ||
+          message.toLowerCase().includes('exists') ||
+          message.toLowerCase().includes('registered')
+        ) {
+          return json({ error: 'ALREADY_REGISTERED' }, 409)
+        }
+        return json({ error: message || 'Création du compte impossible.' }, 400)
+      }
+
+      const createdUser = data.user
+      if (!createdUser?.id) {
+        return json({ error: 'Échec de création du compte.' }, 500)
+      }
+
+      const { error: profileError } = await admin.from('profiles').upsert(
+        {
+          id: createdUser.id,
+          ...profileFields,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'id' },
+      )
+      if (profileError) {
+        console.warn('[MOXT] Profil inscription Telegram:', profileError.message)
+      }
+
+      return json({
+        ok: true,
+        userId: createdUser.id,
+        phone,
+        email: email || null,
+      })
+    }
+
+    if (action === 'send') {
+      await assertPendingSignup(userId, phone)
+
+      // Nouveau request_id à chaque envoi (renvoi inclus) — un request_id
+      // déjà consommé par sendVerificationMessage ne peut pas être réutilisé.
+      const ability = await tgPost(token, 'checkSendAbility', { phone_number: phone })
+      const gatewayRequestId = String(ability?.request_id || '')
 
       const sendPayload: Record<string, unknown> = {
         phone_number: phone,
@@ -116,7 +203,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'verify') {
-      await assertPendingSignup()
+      await assertPendingSignup(userId, phone)
 
       if (!requestId || !/^\d{4,8}$/.test(code)) {
         return json({ error: 'Code ou identifiant de requête invalide.' }, 400)
@@ -126,15 +213,17 @@ Deno.serve(async (req) => {
         request_id: requestId,
         code,
       })
-      const verificationStatus = statusResult?.verification_status?.status
+      const verificationStatus = verificationStatusOf(statusResult as Record<string, unknown>)
       if (verificationStatus !== 'code_valid') {
-        return json(
-          {
-            error: 'Code Telegram invalide ou expiré.',
-            status: verificationStatus || 'code_invalid',
-          },
-          400,
-        )
+        const friendly =
+          verificationStatus === 'code_invalid'
+            ? 'Code Telegram incorrect. Vérifiez les chiffres ou renvoyez un nouveau code.'
+            : verificationStatus === 'expired'
+              ? 'Le code Telegram a expiré. Renvoyez un nouveau code.'
+              : verificationStatus === 'code_max_attempts_exceeded'
+                ? 'Trop de tentatives. Renvoyez un nouveau code Telegram.'
+                : `Code Telegram invalide ou expiré${verificationStatus ? ` (${verificationStatus})` : ''}.`
+        return json({ error: friendly, status: verificationStatus || 'code_invalid' }, 400)
       }
 
       const { error: confirmError } = await admin.auth.admin.updateUserById(userId, {

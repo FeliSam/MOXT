@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   FiChevronRight,
   FiGrid,
@@ -18,6 +18,7 @@ import { logout } from '../../features/auth/authSlice'
 import { stopRealtimeSubscription } from '../../services/realtimeService'
 import { closeSidebar } from '../../features/ui/uiSlice'
 import { useLanguage } from '../../contexts/useLanguage'
+import { CountBounce } from '../ui/CountBounce'
 import { VerifiedBadge } from '../ui/Badge'
 import { MoreServicesContent } from './MoreServicesContent'
 import { filterNavigationGroups, useNavigationBadges } from './moreServicesUtils'
@@ -48,12 +49,16 @@ function railProximity(hoveredKey, key) {
   const distance = Math.abs(hoveredIndex - itemIndex)
   if (distance === 0) return 'focus'
   if (distance === 1) return 'near'
+  if (distance === 2) return 'far'
+  if (distance === 3) return 'edge'
   return null
 }
 
 function proximityClass(proximity) {
   if (proximity === 'focus') return 'sidebar-proximity-focus'
   if (proximity === 'near') return 'sidebar-proximity-near'
+  if (proximity === 'far') return 'sidebar-proximity-far'
+  if (proximity === 'edge') return 'sidebar-proximity-edge'
   return ''
 }
 
@@ -66,9 +71,23 @@ export function Sidebar({ open }) {
   const badgeForItem = useNavigationBadges(user?.id)
   const [moreOpen, setMoreOpen] = useState(false)
   const [hoveredRailKey, setHoveredRailKey] = useState(null)
+  const hoverFrameRef = useRef(0)
   const { translateLabel } = useLanguage()
   const groups = navigationGroups.filter((group) => !group.roles || group.roles.includes(role))
   const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim()
+
+  function setRailHover(key) {
+    if (hoverFrameRef.current) cancelAnimationFrame(hoverFrameRef.current)
+    hoverFrameRef.current = requestAnimationFrame(() => {
+      setHoveredRailKey(key)
+    })
+  }
+
+  useEffect(() => {
+    return () => {
+      if (hoverFrameRef.current) cancelAnimationFrame(hoverFrameRef.current)
+    }
+  }, [])
 
   async function handleLogout() {
     stopRealtimeSubscription()
@@ -78,9 +97,9 @@ export function Sidebar({ open }) {
 
   return (
     <>
-      {/* ── Sidebar : dock flottant, rail fixe desktop, libellés simultanés au survol ── */}
+      {/* ── Sidebar : dock flottant, rail fixe desktop, cascade 4 niveaux au survol ── */}
       <aside
-        onMouseLeave={() => setHoveredRailKey(null)}
+        onMouseLeave={() => setRailHover(null)}
         className={`group/sidebar fixed inset-y-0 left-0 z-40 flex w-[18rem] flex-col bg-[var(--app-surface)] shadow-2xl transition-transform duration-300 ease-out ${
           open ? 'translate-x-0' : '-translate-x-full'
         } lg:inset-y-3 lg:left-3 lg:w-[4.75rem] lg:translate-x-0 lg:overflow-visible lg:rounded-[1.75rem] lg:border lg:border-[var(--app-border)] lg:bg-[var(--app-surface)]/95 lg:shadow-[var(--shadow-float)] lg:backdrop-blur-xl`}
@@ -123,7 +142,7 @@ export function Sidebar({ open }) {
                 translateLabel={translateLabel}
                 hideOnMobile={mobileHiddenPaths.has(item.path) || item.desktopOnly}
                 proximity={railProximity(hoveredRailKey, item.path)}
-                onRailHover={() => setHoveredRailKey(item.path)}
+                onRailHover={() => setRailHover(item.path)}
                 onClick={() => dispatch(closeSidebar())}
               />
             ))}
@@ -133,7 +152,7 @@ export function Sidebar({ open }) {
           <button
             type="button"
             onClick={() => setMoreOpen(true)}
-            onMouseEnter={() => setHoveredRailKey('more')}
+            onMouseEnter={() => setRailHover('more')}
             className={`sidebar-rail-item group/more relative mt-2 hidden w-full min-h-11 items-center justify-center rounded-xl px-2 text-left text-sm font-bold text-[var(--app-text-muted)] transition hover:text-[var(--app-text)] lg:flex ${proximityClass(railProximity(hoveredRailKey, 'more'))}`}
           >
             <span className="sidebar-nav-icon grid size-9 shrink-0 place-items-center rounded-[0.7rem] bg-[var(--app-surface-muted)] text-brand-700 dark:text-brand-300">
@@ -163,12 +182,12 @@ export function Sidebar({ open }) {
         {/* Profil bas de sidebar — flyout accessible (pont de survol vers le rail) */}
         <div
           className="sidebar-footer-zone group/footer hidden shrink-0 border-t border-[var(--app-border)]/70 p-3 lg:block"
-          onMouseEnter={() => setHoveredRailKey('profile')}
+          onMouseEnter={() => setRailHover('profile')}
         >
           <NavLink
             to="/profile"
             onClick={() => dispatch(closeSidebar())}
-            onMouseEnter={() => setHoveredRailKey('profile')}
+            onMouseEnter={() => setRailHover('profile')}
             className={`sidebar-rail-item group/profile relative flex min-h-11 items-center justify-center rounded-2xl p-2 transition hover:bg-[var(--app-surface-muted)] ${proximityClass(railProximity(hoveredRailKey, 'profile'))}`}
           >
             <span className="sidebar-nav-icon grid size-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-700 to-[var(--app-teal)] text-xs font-black text-white">
@@ -368,9 +387,10 @@ function SidebarLink({
           >
             <Icon className="text-lg" />
             {badge > 0 ? (
-              <span className="absolute -right-0.5 -top-0.5 grid min-w-[1.05rem] place-items-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-sm">
-                {badge > 9 ? '9+' : badge}
-              </span>
+              <CountBounce
+                value={badge}
+                className="absolute -right-0.5 -top-0.5 grid min-w-[1.05rem] place-items-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-sm"
+              />
             ) : null}
           </span>
 

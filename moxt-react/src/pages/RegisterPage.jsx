@@ -101,6 +101,7 @@ export function RegisterPage() {
   const [pendingVerification, setPendingVerification] = useState(null) // { method, phone?, email }
   const [verificationCode, setVerificationCode] = useState('')
   const [telegramSending, setTelegramSending] = useState(false)
+  const [telegramResendIn, setTelegramResendIn] = useState(0)
   const telegramSendRef = useRef(false)
   const { countries } = useGeographyOptions()
   const alreadyRegistered = error === 'ALREADY_REGISTERED'
@@ -125,22 +126,39 @@ export function RegisterPage() {
       confirmPassword: '',
       acceptTerms: false,
       verificationMethod: 'phone',
-      phoneDeliveryChannel: 'sms',
+      phoneDeliveryChannel: 'telegram',
     },
     validationSchema: registerSchema,
     onSubmit: async (values) => {
       const result = await dispatch(register(values))
       if (!register.fulfilled.match(result)) {
-        if (
-          values.verificationMethod === 'email' &&
-          (result.payload || '').toLowerCase().includes('e-mail')
-        ) {
+        const payload = String(result.payload || '').toLowerCase()
+        if (values.verificationMethod === 'email' && payload.includes('e-mail')) {
           formik.setFieldValue('verificationMethod', 'phone')
+          formik.setFieldValue('phoneDeliveryChannel', 'telegram')
           dispatch(clearAuthError())
           dispatch(
             addToast({
               title: 'E-mail indisponible',
-              message: 'La vérification par e-mail est indisponible. Nous avons basculé vers le SMS — réessayez.',
+              message:
+                'La vérification par e-mail est indisponible. Nous avons basculé vers Telegram — réessayez.',
+              tone: 'warning',
+            }),
+          )
+          return
+        }
+        if (
+          values.verificationMethod === 'phone' &&
+          values.phoneDeliveryChannel === 'sms' &&
+          (payload.includes('sms') || payload.includes('telegram'))
+        ) {
+          formik.setFieldValue('phoneDeliveryChannel', 'telegram')
+          dispatch(clearAuthError())
+          dispatch(
+            addToast({
+              title: 'SMS indisponible',
+              message:
+                'L’envoi SMS n’est pas disponible. Choisissez « Par Telegram » (déjà sélectionné) puis réessayez.',
               tone: 'warning',
             }),
           )
@@ -212,6 +230,7 @@ export function RegisterPage() {
   useEffect(() => {
     if (pendingVerification?.method !== 'telegram') {
       telegramSendRef.current = false
+      setTelegramResendIn(0)
       return undefined
     }
     if (telegramSendRef.current || pendingVerification.requestId) return undefined
@@ -234,6 +253,7 @@ export function RegisterPage() {
               }
             : current,
         )
+        setTelegramResendIn(60)
         dispatch(
           addToast({
             title: 'Code Telegram envoyé',
@@ -264,18 +284,28 @@ export function RegisterPage() {
     }
   }, [dispatch, pendingVerification])
 
+  useEffect(() => {
+    if (telegramResendIn <= 0) return undefined
+    const timer = window.setTimeout(() => {
+      setTelegramResendIn((value) => Math.max(0, value - 1))
+    }, 1000)
+    return () => window.clearTimeout(timer)
+  }, [telegramResendIn])
+
   async function resendTelegramCode() {
     if (!pendingVerification || pendingVerification.method !== 'telegram') return
+    if (telegramResendIn > 0 || telegramSending) return
     setTelegramSending(true)
     try {
       const result = await sendTelegramVerificationCode({
         phone: pendingVerification.phone,
         userId: pendingVerification.userId,
-        requestId: pendingVerification.requestId,
       })
       setPendingVerification((current) =>
         current ? { ...current, requestId: result.requestId || current.requestId } : current,
       )
+      setVerificationCode('')
+      setTelegramResendIn(60)
       dispatch(
         addToast({
           title: 'Code renvoyé',
@@ -635,9 +665,12 @@ export function RegisterPage() {
                     type="button"
                     variant="secondary"
                     loading={telegramSending}
+                    disabled={telegramSending || telegramResendIn > 0}
                     onClick={resendTelegramCode}
                   >
-                    Renvoyer le code Telegram
+                    {telegramResendIn > 0
+                      ? `Renvoyer dans ${telegramResendIn}s`
+                      : 'Renvoyer le code Telegram'}
                   </Button>
                 ) : null}
                 <Button

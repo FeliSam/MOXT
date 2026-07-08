@@ -631,10 +631,25 @@ const handlers = {
     if (error) throw error
   },
   'communications/markNotificationRead': async (payload) => {
-    await update('notifications', payload, { read: true })
+    const { error } = await supabase
+      .from('notifications')
+      .update({ read: true, updated_at: new Date().toISOString() })
+      .eq('id', payload)
+    if (error) throw error
   },
   'communications/markAllNotificationsRead': async (userId) => {
-    const { error } = await supabase.from('notifications').update({ read: true }).eq('user_id', userId)
+    const { error } = await supabase
+      .from('notifications')
+      .update({ read: true, updated_at: new Date().toISOString() })
+      .eq('user_id', userId)
+    if (error) throw error
+  },
+  'communications/archiveNotification': async (payload) => {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ archived: true, updated_at: new Date().toISOString() })
+      .eq('id', payload.id)
+      .eq('user_id', payload.userId)
     if (error) throw error
   },
 

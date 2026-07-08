@@ -26,6 +26,8 @@ import { FavoriteButton } from '../features/account/FavoriteButton'
 import { ContactButton } from '../features/communications/ContactButton'
 import { applicationSchema } from '../features/jobs/jobSchemas'
 import { applyToJob, reportJob, withdrawApplication } from '../features/jobs/jobSlice'
+import { PublisherDetailCard } from '../features/publications/PublisherDetailCard'
+import { usePublisherDetailProfile } from '../features/publications/usePublisherDetailProfile'
 import { statusMeta } from '../config/statuses'
 
 const applicationNextSteps = {
@@ -53,6 +55,7 @@ export function JobDetailPage() {
   const existing = applications.find(
     (item) => item.jobId === jobId && item.userId === user.id && item.status !== 'withdrawn',
   )
+  const publisherProfile = usePublisherDetailProfile(job, 'job')
   const formik = useFormik({
     initialValues: { message: '' },
     validationSchema: applicationSchema,
@@ -235,14 +238,17 @@ export function JobDetailPage() {
             ]}
           />
         </DetailSection>
-        <TrustPanel
-          title="Conseils aux candidats"
-          items={[
-            'Ne transmettez aucun paiement pour candidater.',
-            'Échangez avec le recruteur dans la messagerie.',
-            'Vérifiez les conditions avant d’accepter une mission.',
-          ]}
-        />
+        <div className="grid gap-5">
+          {publisherProfile ? <PublisherDetailCard {...publisherProfile} /> : null}
+          <TrustPanel
+            title="Conseils aux candidats"
+            items={[
+              'Ne transmettez aucun paiement pour candidater.',
+              'Échangez avec le recruteur dans la messagerie.',
+              'Vérifiez les conditions avant d’accepter une mission.',
+            ]}
+          />
+        </div>
       </div>
     </div>
   )

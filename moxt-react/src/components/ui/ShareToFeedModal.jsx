@@ -17,7 +17,7 @@ import { addToast } from '../../features/ui/uiSlice'
  *
  * Usage : <ShareToFeedModal sourceType="job" sourceId={job.id} sourceData={job} onClose={() => setOpen(false)} />
  */
-export function ShareToFeedModal({ sourceType = 'free', sourceId = null, sourceData = {}, onClose }) {
+export function ShareToFeedModal({ sourceType = 'free', sourceId = null, sourceData = {}, onClose, onPublished }) {
   const dispatch = useDispatch()
   const user = useSelector((s) => s.auth.user)
   const textareaRef = useRef(null)
@@ -79,6 +79,7 @@ export function ShareToFeedModal({ sourceType = 'free', sourceId = null, sourceD
       }),
     )
     dispatch(addToast({ title: 'Post publié !', message: 'Votre partage est visible dans le fil d\'actualité.', tone: 'success' }))
+    onPublished?.()
     onClose()
   }
 

@@ -16,10 +16,12 @@ export function translateAuthError(error) {
   }
   if (
     code === 'phone_provider_disabled' ||
-    code === 'sms_send_failed' ||
-    code === 'over_sms_send_rate_limit'
+    message.toLowerCase().includes('phone logins are disabled')
   ) {
-    return "Impossible d'envoyer le SMS de confirmation. Vérifiez votre numéro russe ou réessayez plus tard."
+    return 'La connexion par numéro est désactivée côté serveur. Utilisez votre e-mail, ou réessayez après activation Phone dans Supabase Auth.'
+  }
+  if (code === 'sms_send_failed' || code === 'over_sms_send_rate_limit') {
+    return "L'envoi SMS est indisponible. Choisissez « Par Telegram » pour confirmer votre numéro, ou réessayez plus tard."
   }
   if (code === 'email_provider_disabled' || code === 'over_email_send_rate_limit') {
     return "Le service d'inscription par e-mail est indisponible. Utilisez la vérification par téléphone ou réessayez plus tard."

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ThemeContext } from './theme-context'
 const STORAGE_KEY = 'moxt-theme'
 
@@ -10,14 +10,22 @@ function getInitialTheme() {
 
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(getInitialTheme)
+  const isFirstThemeEffect = useRef(true)
 
   useEffect(() => {
     const isDark = theme === 'dark'
-    document.documentElement.classList.toggle('dark', isDark)
+    const root = document.documentElement
+    const shouldAnimate = !isFirstThemeEffect.current
+    isFirstThemeEffect.current = false
+    if (shouldAnimate) root.classList.add('theme-animating')
+    root.classList.toggle('dark', isDark)
     // Garde en phase le fond pose par theme-init.js (anti-FOUC) lors d'un changement.
-    document.documentElement.style.backgroundColor = isDark ? '#0c0c0e' : '#f7f8fa'
+    root.style.backgroundColor = isDark ? '#0c0c0e' : '#f7f8fa'
     localStorage.setItem(STORAGE_KEY, theme)
     import('../platform/capacitor').then(({ syncCapacitorStatusBar }) => syncCapacitorStatusBar(isDark))
+    if (!shouldAnimate) return undefined
+    const t = window.setTimeout(() => root.classList.remove('theme-animating'), 420)
+    return () => window.clearTimeout(t)
   }, [theme])
 
   const value = useMemo(

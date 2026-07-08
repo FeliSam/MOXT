@@ -6,6 +6,7 @@ import { useTheme } from '../../contexts/useTheme'
 import { useLanguage } from '../../contexts/useLanguage'
 import { selectUnreadMessageCount, selectUnreadNotificationCount } from '../../features/selectors'
 import { useSmartNavbar } from '../../hooks/useSmartNavbar'
+import { CountBounce } from '../ui/CountBounce'
 import { Brand } from './Brand'
 import { GlobalSearch } from './GlobalSearch'
 
@@ -62,9 +63,10 @@ export function Header({ hideOnMobile = false }) {
           >
             <FiBell className="text-lg" />
             {unreadCount ? (
-              <span className="absolute right-0 top-0 grid min-w-[1.05rem] place-items-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-sm">
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
+              <CountBounce
+                value={unreadCount}
+                className="absolute right-0 top-0 grid min-w-[1.05rem] place-items-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-sm"
+              />
             ) : null}
           </Link>
 
@@ -75,9 +77,10 @@ export function Header({ hideOnMobile = false }) {
           >
             <FiMessageSquare className="text-lg" />
             {unreadMessagesCount ? (
-              <span className="absolute right-0 top-0 grid min-w-[1.05rem] place-items-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-sm">
-                {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
-              </span>
+              <CountBounce
+                value={unreadMessagesCount}
+                className="absolute right-0 top-0 grid min-w-[1.05rem] place-items-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-sm"
+              />
             ) : null}
           </Link>
 
@@ -90,11 +93,12 @@ export function Header({ hideOnMobile = false }) {
           </Link>
 
           <button
-            className="hidden size-10 place-items-center rounded-2xl text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)] sm:grid"
+            type="button"
+            className="btn-press hidden size-10 place-items-center rounded-2xl text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)] sm:grid"
             aria-label={theme === 'dark' ? 'Activer le theme clair' : 'Activer le theme sombre'}
             onClick={toggleTheme}
           >
-            {theme === 'dark' ? <FiSun /> : <FiMoon />}
+            {theme === 'dark' ? <FiSun className="transition-transform duration-300" /> : <FiMoon className="transition-transform duration-300" />}
           </button>
 
           <Link

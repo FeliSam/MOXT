@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { FiCheck, FiRepeat } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
+import { useActionBurst } from './ActionBurst'
 import { ShareToFeedModal } from './ShareToFeedModal'
 
 /**
@@ -10,6 +11,7 @@ import { ShareToFeedModal } from './ShareToFeedModal'
 export function ReshareButton({ sourceType, sourceId, sourceData, className = '' }) {
   const user = useSelector((s) => s.auth.user)
   const [open, setOpen] = useState(false)
+  const { trigger: triggerBurst, node: burstNode } = useActionBurst()
 
   const isOwner = user && (sourceData?.ownerId === user.id || sourceData?.userId === user.id)
 
@@ -33,10 +35,11 @@ export function ReshareButton({ sourceType, sourceId, sourceData, className = ''
 
   return (
     <>
+      {burstNode}
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`flex items-center gap-2 rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-700 transition hover:border-emerald-400 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 dark:hover:border-emerald-500 ${className}`}
+        className={`btn-press flex items-center gap-2 rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-700 transition hover:border-emerald-400 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 dark:hover:border-emerald-500 ${className}`}
       >
         <FiRepeat className="text-sm" /> Republier
       </button>
@@ -46,6 +49,7 @@ export function ReshareButton({ sourceType, sourceId, sourceData, className = ''
           sourceId={sourceId}
           sourceData={sourceData}
           onClose={() => setOpen(false)}
+          onPublished={triggerBurst}
         />
       )}
     </>

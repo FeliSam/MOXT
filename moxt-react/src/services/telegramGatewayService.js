@@ -1,9 +1,23 @@
 import { supabase } from './supabaseClient'
 
-function parseGatewayError(error, data) {
+async function extractFunctionError(error, data) {
   if (data?.error) return String(data.error)
-  if (error?.message) return error.message
-  return 'Le service Telegram est indisponible.'
+
+  const context = error?.context
+  if (context && typeof context.json === 'function') {
+    try {
+      const body = await context.json()
+      if (body?.error) return String(body.error)
+      if (typeof body?.message === 'string') return body.message
+    } catch {
+      // corps non JSON
+    }
+  }
+
+  if (error?.message && !/non-2xx|FunctionsHttpError/i.test(error.message)) {
+    return error.message
+  }
+  return 'La vérification Telegram a échoué. Vérifiez le code ou renvoyez-en un nouveau.'
 }
 
 export async function invokeTelegramGateway(payload) {
@@ -16,7 +30,7 @@ export async function invokeTelegramGateway(payload) {
   })
 
   if (error) {
-    throw new Error(parseGatewayError(error, data))
+    throw new Error(await extractFunctionError(error, data))
   }
   if (data?.error) {
     throw new Error(String(data.error))
@@ -24,12 +38,11 @@ export async function invokeTelegramGateway(payload) {
   return data
 }
 
-export async function sendTelegramVerificationCode({ phone, userId, requestId }) {
+export async function sendTelegramVerificationCode({ phone, userId }) {
   return invokeTelegramGateway({
     action: 'send',
     phone,
     userId,
-    ...(requestId ? { requestId } : {}),
   })
 }
 

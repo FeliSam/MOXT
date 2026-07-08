@@ -20,6 +20,17 @@ function profileToUser(profile) {
   }
 }
 
+function isPhoneLoginDisabledError(error) {
+  const message = String(error?.message || error || '').toLowerCase()
+  const code = error?.code
+  return (
+    code === 'phone_provider_disabled' ||
+    message.includes('phone logins are disabled') ||
+    message.includes('phone provider') ||
+    message.includes('unsupported phone provider')
+  )
+}
+
 /**
  * @param {import('@supabase/supabase-js').SupabaseClient | null} supabase
  * @param {{
@@ -33,6 +44,73 @@ export function createAuthService(supabase, redirects = {}, integrations = {}) {
   const getOAuthRedirectUrl = redirects.getOAuthRedirectUrl ?? (() => '')
   const getEmailRedirectUrl = redirects.getEmailRedirectUrl ?? (() => '')
   const getPasswordResetRedirectUrl = redirects.getPasswordResetRedirectUrl ?? (() => '')
+
+  async function signInWithPhoneFallback(phone, password) {
+    // 1) Tentative native Supabase (si Phone est activé dans le dashboard)
+    const phoneResult = await supabase.auth.signInWithPassword({ phone, password })
+    if (!phoneResult.error && phoneResult.data?.session) {
+      return phoneResult
+    }
+
+    if (phoneResult.error && !isPhoneLoginDisabledError(phoneResult.error)) {
+      if (
+        String(phoneResult.error.message || '')
+          .toLowerCase()
+          .includes('invalid login credentials')
+      ) {
+        return phoneResult
+      }
+    }
+
+    // 2) Fallback Edge Function : login e-mail du profil lié au numéro
+    const { data, error } = await supabase.functions.invoke('phone-login', {
+      body: { phone, password },
+    })
+    if (error || data?.error) {
+      let detail = data?.error
+      if (!detail && error?.context && typeof error.context.json === 'function') {
+        try {
+          const body = await error.context.json()
+          detail = body?.error
+        } catch {
+          // ignore
+        }
+      }
+      return {
+        data: { user: null, session: null },
+        error: {
+          message:
+            detail ||
+            phoneResult.error?.message ||
+            error?.message ||
+            'Connexion par numéro impossible.',
+        },
+      }
+    }
+
+    if (!data?.access_token || !data?.refresh_token) {
+      return {
+        data: { user: null, session: null },
+        error: { message: 'Session invalide après connexion téléphone.' },
+      }
+    }
+
+    const sessionResult = await supabase.auth.setSession({
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+    })
+    if (sessionResult.error) {
+      return { data: { user: null, session: null }, error: sessionResult.error }
+    }
+
+    return {
+      data: {
+        user: sessionResult.data.user || data.user,
+        session: sessionResult.data.session,
+      },
+      error: null,
+    }
+  }
 
   async function fetchProfile(userId) {
     const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
@@ -88,11 +166,17 @@ export function createAuthService(supabase, redirects = {}, integrations = {}) {
     async login({ identifier, email, password }) {
       if (!supabase) throw new Error('Supabase non configuré.')
       const loginIdentifier = (identifier || email || '').trim()
-      const credentials = loginIdentifier.includes('@')
-        ? { email: loginIdentifier.toLowerCase(), password }
-        : { phone: normalizeRussianAuthPhone(loginIdentifier), password }
-      const { data, error } = await supabase.auth.signInWithPassword({ ...credentials })
-      if (error) throw new Error(error.message)
+      const isEmail = loginIdentifier.includes('@')
+      const { data, error } = isEmail
+        ? await supabase.auth.signInWithPassword({
+            email: loginIdentifier.toLowerCase(),
+            password,
+          })
+        : await signInWithPhoneFallback(normalizeRussianAuthPhone(loginIdentifier), password)
+      if (error) throw new Error(translateAuthError(error))
+      if (!data?.session || !data?.user) {
+        throw new Error('Connexion impossible. Vérifiez vos identifiants.')
+      }
       const user = await fetchOrCreateProfile(data.user)
       return { user, token: data.session.access_token }
     },
@@ -142,6 +226,37 @@ export function createAuthService(supabase, redirects = {}, integrations = {}) {
       const verificationMethod = details.verificationMethod || 'phone'
       const phoneDeliveryChannel =
         verificationMethod === 'phone' ? details.phoneDeliveryChannel || 'sms' : 'sms'
+
+      // Telegram : crée le compte côté Edge Function (sans SMS Supabase).
+      if (verificationMethod === 'phone' && phoneDeliveryChannel === 'telegram') {
+        if (!invokeTelegramGateway) {
+          throw new Error('La vérification Telegram n’est pas configurée sur cette application.')
+        }
+        const phone = normalizeRussianAuthPhone(details.russianPhone)
+        const registered = await invokeTelegramGateway({
+          action: 'register',
+          phone,
+          password: details.password,
+          email,
+          profileFields,
+        })
+        if (!registered?.userId) {
+          throw new Error('Échec de création du compte Telegram.')
+        }
+        return {
+          user: profileToUser({ id: registered.userId, ...profileFields }),
+          token: '',
+          requiresEmailConfirmation: false,
+          requiresPhoneConfirmation: false,
+          requiresTelegramPhoneConfirmation: true,
+          pendingUserId: registered.userId,
+          phoneDeliveryChannel: 'telegram',
+          verificationMethod: 'phone',
+          email,
+          phone,
+        }
+      }
+
       const credentials =
         verificationMethod === 'phone'
           ? {
@@ -182,13 +297,12 @@ export function createAuthService(supabase, redirects = {}, integrations = {}) {
 
       const user = profileToUser({ id: data.user.id, ...profileFields })
       const pendingConfirmation = verificationMethod === 'phone' && !data.session
-      const usesTelegram = phoneDeliveryChannel === 'telegram'
       return {
         user,
         token: data.session?.access_token || '',
         requiresEmailConfirmation: verificationMethod === 'email' && !data.session,
-        requiresPhoneConfirmation: pendingConfirmation && !usesTelegram,
-        requiresTelegramPhoneConfirmation: pendingConfirmation && usesTelegram,
+        requiresPhoneConfirmation: pendingConfirmation,
+        requiresTelegramPhoneConfirmation: false,
         pendingUserId: data.user.id,
         phoneDeliveryChannel,
         verificationMethod,
@@ -266,18 +380,27 @@ export function createAuthService(supabase, redirects = {}, integrations = {}) {
         code: token.trim(),
       })
 
-      const { data, error } = await supabase.auth.signInWithPassword({
-        phone: normalizedPhone,
-        password,
-      })
+      // Prefer email login when available — Phone provider may be disabled.
+      let authResult = null
+      const emailLogin = email?.trim().toLowerCase()
+      if (emailLogin) {
+        authResult = await supabase.auth.signInWithPassword({
+          email: emailLogin,
+          password,
+        })
+      }
+      if (authResult?.error || !authResult?.data?.session) {
+        authResult = await signInWithPhoneFallback(normalizedPhone, password)
+      }
+      const { data, error } = authResult
       if (error) throw new Error(translateAuthError(error))
-      if (!data.session || !data.user) {
+      if (!data?.session || !data?.user) {
         throw new Error('Connexion impossible après vérification Telegram.')
       }
 
-      if (email && !data.user.email) {
+      if (emailLogin && !data.user.email) {
         const { error: emailError } = await supabase.auth.updateUser({
-          email: email.trim().toLowerCase(),
+          email: emailLogin,
         })
         if (emailError) {
           console.warn('[MOXT] Liaison e-mail différée après inscription Telegram:', emailError.message)
@@ -288,7 +411,7 @@ export function createAuthService(supabase, redirects = {}, integrations = {}) {
       return {
         user,
         token: data.session.access_token,
-        emailLinkDeferred: Boolean(email && !data.user.email),
+        emailLinkDeferred: Boolean(emailLogin && !data.user.email),
       }
     },
 

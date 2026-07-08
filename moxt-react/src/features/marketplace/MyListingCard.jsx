@@ -12,10 +12,14 @@ import {
   FiTrash2,
 } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
+import { useDispatch, useSelector } from 'react-redux'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import { FavoriteButton } from '../../components/ui/FavoriteButton'
 import { statusMeta } from '../../config/statuses'
+import { toggleAccountFavorite } from '../account/accountSlice'
+import { buildListingFavoriteSnapshot } from '../account/favoriteUtils'
 import { formatMoney } from '../transfers/transferUtils'
 import { isActiveListing, listingCategoryLabel, listingTypeLabel } from './listingCatalogUtils'
 import { archivedPublicationCardClass } from '../publications/publicationCatalogUtils'
@@ -30,37 +34,71 @@ export function MyListingCard({
   onArchive,
   onDelete,
 }) {
+  const dispatch = useDispatch()
+  const user = useSelector((state) => state.auth.user)
+  const liked = useSelector((state) =>
+    state.account.favorites.some(
+      (item) =>
+        item.userId === user?.id && item.relatedType === 'listing' && item.relatedId === listing.id,
+    ),
+  )
   const status = statusMeta(listing.status)
   const active = isActiveListing(listing)
   const typeLabel = listingTypeLabel(listing.type)
   const categoryLabel = listingCategoryLabel(listing.type, listing.category)
+  const detailPath = `/marketplace/${listing.id}`
+
+  function handleToggleLike(event) {
+    event.preventDefault()
+    event.stopPropagation()
+    if (!user) return
+    dispatch(
+      toggleAccountFavorite({
+        userId: user.id,
+        relatedType: 'listing',
+        relatedId: listing.id,
+        title: listing.title,
+        path: detailPath,
+        snapshot: buildListingFavoriteSnapshot(listing),
+      }),
+    )
+  }
 
   return (
-    <Card className={`overflow-hidden p-0 ${active ? '' : archivedPublicationCardClass}`}>
+    <Card className={`overflow-visible p-0 ${active ? '' : archivedPublicationCardClass}`}>
       <div className="flex flex-col gap-0 lg:flex-row">
-        <Link
-          className={`relative block h-48 w-full shrink-0 bg-gradient-to-br from-cyan-700 to-blue-600 lg:h-auto lg:w-56 ${
+        <div
+          className={`relative h-48 w-full shrink-0 overflow-hidden rounded-t-[inherit] bg-gradient-to-br from-cyan-700 to-blue-600 lg:h-auto lg:w-56 lg:rounded-l-[inherit] lg:rounded-tr-none ${
             active ? '' : 'opacity-75 saturate-[0.85]'
           }`}
-          to={`/marketplace/${listing.id}`}
         >
-          {listing.images?.[0] ? (
-            <img
-              src={listing.images[0]}
-              alt={listing.title}
-              className="h-full w-full object-cover"
-              loading="lazy"
-            />
-          ) : (
-            <div className="grid h-full min-h-[12rem] w-full place-items-center text-white">
-              <FiShoppingBag className="text-4xl opacity-90" />
+          <Link className="absolute inset-0 block" to={detailPath}>
+            {listing.images?.[0] ? (
+              <img
+                src={listing.images[0]}
+                alt={listing.title}
+                className="h-full w-full object-cover"
+                loading="lazy"
+              />
+            ) : (
+              <div className="grid h-full min-h-[12rem] w-full place-items-center text-white">
+                <FiShoppingBag className="text-4xl opacity-90" />
+              </div>
+            )}
+            <div className="absolute left-3 top-3 flex flex-wrap gap-1">
+              <Badge tone={status.tone}>{status.label}</Badge>
+              <Badge tone="info">{typeLabel}</Badge>
             </div>
-          )}
-          <div className="absolute left-3 top-3 flex flex-wrap gap-1">
-            <Badge tone={status.tone}>{status.label}</Badge>
-            <Badge tone="info">{typeLabel}</Badge>
-          </div>
-        </Link>
+          </Link>
+
+          {!ownerMode && active ? (
+            <FavoriteButton
+              active={liked}
+              onToggle={handleToggleLike}
+              className="!absolute !right-2.5 !top-2.5 z-30"
+            />
+          ) : null}
+        </div>
 
         <div className="flex min-w-0 flex-1 flex-col gap-4 p-4 sm:p-5">
           <div className="min-w-0">
@@ -68,7 +106,7 @@ export function MyListingCard({
               <div className="min-w-0">
                 <Link
                   className="line-clamp-2 text-lg font-black hover:text-brand-700"
-                  to={`/marketplace/${listing.id}`}
+                  to={detailPath}
                 >
                   {listing.title}
                 </Link>
@@ -108,7 +146,7 @@ export function MyListingCard({
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Link to={`/marketplace/${listing.id}`}>
+            <Link to={detailPath}>
               <Button variant="secondary" icon={FiExternalLink} size="sm">
                 {active ? 'Voir la fiche' : 'Consulter'}
               </Button>

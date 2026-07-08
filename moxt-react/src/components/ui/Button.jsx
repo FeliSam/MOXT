@@ -1,3 +1,5 @@
+import { useRef } from 'react'
+
 /* ─── Spinner interne ────────────────────────────────────────────────────── */
 function Spinner({ size }) {
   return (
@@ -39,6 +41,19 @@ const iconSizes = {
   lg: 'size-13 rounded-[0.875rem]',
 }
 
+function spawnRipple(button, clientX, clientY) {
+  const rect = button.getBoundingClientRect()
+  const size = Math.max(rect.width, rect.height) * 1.15
+  const ink = document.createElement('span')
+  ink.className = 'btn-ripple-ink'
+  ink.style.width = `${size}px`
+  ink.style.height = `${size}px`
+  ink.style.left = `${clientX - rect.left - size / 2}px`
+  ink.style.top = `${clientY - rect.top - size / 2}px`
+  button.appendChild(ink)
+  ink.addEventListener('animationend', () => ink.remove(), { once: true })
+}
+
 /* ─── Composant ──────────────────────────────────────────────────────────── */
 export function Button({
   children,
@@ -50,12 +65,14 @@ export function Button({
   loading = false,
   iconOnly = false,
   type = 'button',
+  onClick,
   ...props
 }) {
   const isDisabled = loading || props.disabled
+  const buttonRef = useRef(null)
 
   const base =
-    'inline-flex shrink-0 items-center justify-center font-semibold transition-all duration-[var(--transition-fast)] focus-visible:ring-2 focus-visible:ring-[var(--app-teal)] focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none select-none'
+    'btn-press inline-flex shrink-0 items-center justify-center font-semibold focus-visible:ring-2 focus-visible:ring-[var(--app-teal)] focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none select-none'
 
   const sizeClass = iconOnly ? iconSizes[size] ?? iconSizes.md : sizes[size] ?? sizes.md
 
@@ -66,26 +83,35 @@ export function Button({
     lg: 'text-lg',
   }[size] ?? 'text-base'
 
+  function handleClick(event) {
+    if (!isDisabled && buttonRef.current) {
+      spawnRipple(buttonRef.current, event.clientX, event.clientY)
+    }
+    onClick?.(event)
+  }
+
   return (
     <button
+      ref={buttonRef}
       type={type}
       disabled={isDisabled}
       aria-busy={loading}
       className={`${base} ${sizeClass} ${variants[variant] ?? variants.primary} ${className}`}
+      onClick={handleClick}
       {...props}
     >
       {loading ? (
         <Spinner size={size === 'lg' ? 18 : size === 'sm' || size === 'xs' ? 14 : 16} />
       ) : Icon ? (
-        <Icon className={iconClass} aria-hidden="true" />
+        <Icon className={`relative z-[1] ${iconClass}`} aria-hidden="true" />
       ) : null}
 
       {!iconOnly && children ? (
-        <span className={loading ? 'opacity-70' : ''}>{children}</span>
+        <span className={`relative z-[1] ${loading ? 'opacity-70' : ''}`}>{children}</span>
       ) : null}
 
       {!loading && IconRight ? (
-        <IconRight className={`${iconClass} ml-auto`} aria-hidden="true" />
+        <IconRight className={`relative z-[1] ${iconClass} ml-auto`} aria-hidden="true" />
       ) : null}
     </button>
   )

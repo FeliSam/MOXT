@@ -860,6 +860,7 @@ export const openConversationWithContact = createAsyncThunk(
       createdBy,
       senderName,
       contactProfile,
+      initialMessage,
     },
     { dispatch, getState },
   ) => {
@@ -887,6 +888,19 @@ export const openConversationWithContact = createAsyncThunk(
       relatedSnapshot,
     }
 
+    function maybeSendIntro(conversationId, shouldSend) {
+      const text = typeof initialMessage === 'string' ? initialMessage.trim() : ''
+      if (!shouldSend || !text || !conversationId) return
+      dispatch(
+        sendMessage({
+          conversationId,
+          senderId: createdBy,
+          senderName,
+          text,
+        }),
+      )
+    }
+
     if (conversation) {
       const contextAlreadyLinked = hasRelatedContext(conversation, relatedType, relatedId)
       if (!contextAlreadyLinked) {
@@ -904,6 +918,7 @@ export const openConversationWithContact = createAsyncThunk(
           participantProfiles,
         }),
       )
+      maybeSendIntro(conversation.id, !contextAlreadyLinked)
       return buildContactOpenResult(
         getState().communications.conversations.find((c) => c.id === conversation.id),
         relatedType,
@@ -943,6 +958,7 @@ export const openConversationWithContact = createAsyncThunk(
           participantProfiles,
         }),
       )
+      maybeSendIntro(conversation.id, !contextAlreadyLinked)
       return buildContactOpenResult(
         getState().communications.conversations.find((c) => c.id === conversation.id),
         relatedType,
@@ -962,6 +978,7 @@ export const openConversationWithContact = createAsyncThunk(
         relatedId,
         relatedPath,
         relatedSnapshot,
+        initialMessage,
       }),
     ).payload
 
@@ -997,6 +1014,7 @@ export const openConversationWithContact = createAsyncThunk(
             participantProfiles,
           }),
         )
+        maybeSendIntro(canonicalId, !(created.messages || []).length)
         return buildContactOpenResult(
           getState().communications.conversations.find((c) => c.id === canonicalId),
           relatedType,

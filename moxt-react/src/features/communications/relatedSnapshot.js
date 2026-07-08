@@ -42,19 +42,32 @@ export function buildJobSnapshot(job, path) {
   })
 }
 
-export function buildParcelSnapshot(parcel, path) {
+export function buildParcelSnapshot(parcel, path, extras = {}) {
   if (!parcel) return null
+  const reservedKg = extras.reservedKg != null ? Number(extras.reservedKg) : null
   return baseSnapshot({
     type: 'parcel',
     id: parcel.id,
     title: `${parcel.origin} → ${parcel.destination}`,
     path: path || `/parcels/${parcel.id}`,
     subtitle:
-      parcel.pricePerKg != null
-        ? `${formatMoney(parcel.pricePerKg, parcel.currency || 'EUR')}/kg`
-        : null,
-    badge: parcel.remainingKg != null ? `${parcel.remainingKg} kg restants` : null,
-    details: [parcel.departureDate, parcel.arrivalDate].filter(Boolean),
+      reservedKg != null
+        ? `${reservedKg} kg réservés`
+        : parcel.pricePerKg != null
+          ? `${formatMoney(parcel.pricePerKg, parcel.currency || 'EUR')}/kg`
+          : null,
+    badge:
+      reservedKg != null
+        ? 'Réservation acceptée'
+        : parcel.remainingKg != null
+          ? `${parcel.remainingKg} kg restants`
+          : null,
+    details: [
+      reservedKg != null ? `Poids réservé : ${reservedKg} kg` : null,
+      parcel.departureDate ? `Départ ${parcel.departureDate}` : null,
+      parcel.arrivalDate,
+      extras.requesterName ? `Client : ${extras.requesterName}` : null,
+    ].filter(Boolean),
   })
 }
 
@@ -121,10 +134,14 @@ export function buildP2PSnapshot(offer, path) {
 
 export function buildRelatedSnapshot(relatedType, entity, fallbacks = {}) {
   const path = fallbacks.path
+  const parcelExtras = {
+    reservedKg: fallbacks.reservedKg,
+    requesterName: fallbacks.requesterName,
+  }
   const builders = {
     listing: () => buildListingSnapshot(entity, path),
     job: () => buildJobSnapshot(entity, path),
-    parcel: () => buildParcelSnapshot(entity, path),
+    parcel: () => buildParcelSnapshot(entity, path, parcelExtras),
     event: () => buildEventSnapshot(entity, path),
     business: () => buildBusinessSnapshot(entity, path),
     transfer: () => buildTransferSnapshot(entity, path),

@@ -17,6 +17,13 @@ enable_signup = true
 double_confirm_changes = true
 enable_confirmations = true
 
+# Auth téléphone / SMS — requis pour signInWithPassword({ phone }).
+# Sans provider SMS, les OTP SMS restent indisponibles ; le login mot de passe
+# via numéro passe par l’Edge Function phone-login (e-mail du profil).
+[auth.sms]
+enable_signup = true
+enable_confirmations = false
+
 [api]
 enabled = true
 
@@ -33,4 +40,7 @@ enabled = false
 enabled = true
 
 [functions.telegram-gateway]
+verify_jwt = false
+
+[functions.phone-login]
 verify_jwt = false

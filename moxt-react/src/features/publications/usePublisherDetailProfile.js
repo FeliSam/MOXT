@@ -11,6 +11,7 @@ import { isActiveListing } from '../marketplace/listingCatalogUtils'
 import {
   collectUserPublications,
   isActiveEvent,
+  isActiveJob,
   isActiveParcel,
 } from './publicationCatalogUtils'
 
@@ -48,6 +49,19 @@ const PROFILE_META = {
         (item) =>
           item.ownerId === entity?.ownerId &&
           isActiveEvent(item) &&
+          (entity?.businessId ? item.businessId === entity.businessId : !item.businessId),
+      ).length,
+  },
+  job: {
+    countLabel: 'Offres',
+    descriptionFallback: 'Recruteur actif sur MOXT.',
+    ctaLabel: 'Voir toutes les publications',
+    resolveName: (entity) => entity?.publisherName,
+    countItems: (publications, entity) =>
+      publications.jobs.filter(
+        (item) =>
+          item.ownerId === entity?.ownerId &&
+          isActiveJob(item) &&
           (entity?.businessId ? item.businessId === entity.businessId : !item.businessId),
       ).length,
   },
