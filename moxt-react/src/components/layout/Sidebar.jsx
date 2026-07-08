@@ -111,9 +111,9 @@ export function Sidebar({ open }) {
             <span className="sidebar-nav-icon grid size-9 shrink-0 place-items-center rounded-[0.7rem] bg-[var(--app-surface-muted)] text-brand-700 dark:text-brand-300">
               <FiGrid className="text-base" />
             </span>
-            <span className="sidebar-rail-label pointer-events-none absolute left-full z-50 ml-2.5 hidden items-center gap-1.5 whitespace-nowrap rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]/98 px-3 py-1.5 text-xs font-bold text-[var(--app-text)] shadow-[var(--shadow-float)] backdrop-blur-md lg:group-hover/sidebar:flex">
+            <span className="sidebar-rail-label sidebar-rail-label--row">
               Tous les services
-              <FiChevronRight className="text-[var(--app-text-faint)]" />
+              <FiChevronRight className="sidebar-rail-label-chevron" />
             </span>
           </button>
 
@@ -142,8 +142,8 @@ export function Sidebar({ open }) {
             <span className="sidebar-nav-icon grid size-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-700 to-[var(--app-teal)] text-xs font-black text-white">
               {initials(fullName) || 'M'}
             </span>
-            <span className="sidebar-rail-label pointer-events-none absolute left-full z-50 ml-2.5 hidden min-w-[9rem] flex-col rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]/98 px-3 py-2 shadow-[var(--shadow-float)] backdrop-blur-md lg:group-hover/sidebar:flex">
-              <strong className="truncate text-xs font-black text-[var(--app-text)]">
+            <span className="sidebar-rail-label sidebar-rail-label--stack">
+              <strong className="sidebar-rail-label-title truncate">
                 {fullName || 'Mon profil'}
               </strong>
               {user?.verified ? (
@@ -153,10 +153,10 @@ export function Sidebar({ open }) {
               )}
             </span>
           </NavLink>
-          <div className="sidebar-rail-actions pointer-events-none absolute bottom-3 left-full z-50 ml-2.5 hidden flex-col gap-1 opacity-0 transition-opacity duration-200 lg:group-hover/sidebar:pointer-events-auto lg:group-hover/sidebar:flex lg:group-hover/sidebar:opacity-100">
+          <div className="sidebar-rail-actions">
             <NavLink
               to="/settings"
-              className="sidebar-rail-label pointer-events-auto flex items-center gap-2 whitespace-nowrap rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]/98 px-3 py-1.5 text-xs font-bold text-[var(--app-text-muted)] shadow-[var(--shadow-float)] backdrop-blur-md transition hover:bg-[var(--app-surface-muted)] hover:text-[var(--app-text)]"
+              className="sidebar-rail-label sidebar-rail-label--action"
             >
               <FiSettings className="text-sm" />
               Reglages
@@ -164,7 +164,7 @@ export function Sidebar({ open }) {
             <button
               type="button"
               onClick={handleLogout}
-              className="sidebar-rail-label pointer-events-auto flex items-center gap-2 whitespace-nowrap rounded-xl border border-red-200 bg-red-50/95 px-3 py-1.5 text-xs font-bold text-red-600 shadow-sm backdrop-blur-md transition hover:bg-red-100 dark:border-red-900/40 dark:bg-red-950/30"
+              className="sidebar-rail-label sidebar-rail-label--action sidebar-rail-label--danger"
             >
               <FiLogOut className="text-sm" />
               Quitter
@@ -304,20 +304,20 @@ function SidebarLink({ badge = 0, hideOnMobile = false, item, onClick, translate
     >
       {({ isActive }) => (
         <span
-          className={`flex min-h-11 items-center justify-center rounded-xl px-2.5 transition-all duration-200 lg:justify-start ${
+          className={`flex min-h-11 items-center justify-center rounded-xl px-2.5 lg:justify-start ${
             isActive
               ? 'nav-item-active text-sm font-bold'
-              : 'text-sm font-bold text-[var(--app-text-muted)] hover:bg-[var(--app-surface-muted)]/80 hover:text-[var(--app-text)]'
+              : 'text-sm font-bold text-[var(--app-text-muted)]'
           }`}
         >
           <span
-            className={`sidebar-nav-icon relative grid size-9 shrink-0 place-items-center rounded-[0.7rem] transition-all duration-200 ${
+            className={`sidebar-nav-icon relative grid size-9 shrink-0 place-items-center rounded-[0.7rem] ${
               isActive
                 ? 'bg-[var(--app-accent-soft)] text-[var(--app-accent)] shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--app-accent)_25%,transparent)] dark:text-[var(--app-teal)]'
                 : 'text-[var(--app-text-muted)]'
             }`}
           >
-            <Icon className="text-lg transition-transform duration-200" />
+            <Icon className="text-lg" />
             {badge > 0 ? (
               <span className="absolute -right-0.5 -top-0.5 grid min-w-[1.05rem] place-items-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-sm">
                 {badge > 9 ? '9+' : badge}
@@ -336,10 +336,10 @@ function SidebarLink({ badge = 0, hideOnMobile = false, item, onClick, translate
           </span>
 
           {/* Desktop : libellé flottant — tous visibles au survol du rail */}
-          <span className="sidebar-rail-label pointer-events-none absolute left-full z-50 ml-2.5 hidden max-w-[11rem] items-center justify-between gap-2 whitespace-nowrap rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]/98 px-3 py-1.5 text-xs font-bold text-[var(--app-text)] shadow-[var(--shadow-float)] backdrop-blur-md lg:group-hover/sidebar:flex">
+          <span className="sidebar-rail-label sidebar-rail-label--row">
             <span className="truncate">{label}</span>
             {badge > 0 ? (
-              <span className="shrink-0 rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-bold text-white">
+              <span className="sidebar-rail-label-badge shrink-0 rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-bold text-white">
                 {badge > 9 ? '9+' : badge}
               </span>
             ) : null}

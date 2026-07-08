@@ -735,40 +735,188 @@ html.capacitor-native .capacitor-safe-bottom {
   box-shadow: inset 0 3px 0 var(--app-teal);
 }
 
-/* ─── Sidebar rail desktop — libellés simultanés + focus icône au survol ─── */
-@keyframes sidebar-label-in {
-  from {
-    opacity: 0;
-    transform: translateX(-6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+/* ─── Sidebar rail desktop — libellés simultanés + focus icône/label au survol ─── */
+:root {
+  --sidebar-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --sidebar-ease-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
 }
 
 .sidebar-nav-icon {
   transition:
-    transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1),
-    background-color 0.2s ease,
-    box-shadow 0.2s ease,
-    color 0.2s ease;
+    transform 0.42s var(--sidebar-ease-spring),
+    background-color 0.38s var(--sidebar-ease),
+    box-shadow 0.38s var(--sidebar-ease),
+    color 0.38s var(--sidebar-ease);
+}
+
+.sidebar-rail-label {
+  pointer-events: none;
+  position: absolute;
+  left: calc(100% + 0.625rem);
+  z-index: 50;
+  max-width: 12rem;
+  border-radius: 0.85rem;
+  border: 1px solid var(--app-border);
+  background: color-mix(in srgb, var(--app-surface) 98%, transparent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--app-text);
+  box-shadow: var(--shadow-float);
+  backdrop-filter: blur(12px);
+  transform-origin: left center;
+  white-space: nowrap;
+  transition:
+    opacity 0.42s var(--sidebar-ease),
+    transform 0.48s var(--sidebar-ease-spring),
+    visibility 0.42s var(--sidebar-ease),
+    border-color 0.38s var(--sidebar-ease),
+    background-color 0.38s var(--sidebar-ease),
+    box-shadow 0.42s var(--sidebar-ease),
+    color 0.38s var(--sidebar-ease),
+    font-size 0.42s var(--sidebar-ease-spring);
+}
+
+.sidebar-rail-label--row {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4375rem 0.75rem;
+}
+
+.sidebar-rail-label--stack {
+  display: none;
+  min-width: 9rem;
+  flex-direction: column;
+  padding: 0.5rem 0.75rem;
+}
+
+.sidebar-rail-label-title {
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: var(--app-text);
+}
+
+.sidebar-rail-label-chevron {
+  color: var(--app-text-faint);
+  transition: transform 0.42s var(--sidebar-ease-spring);
+}
+
+.sidebar-rail-actions {
+  pointer-events: none;
+  position: absolute;
+  bottom: 0.75rem;
+  left: calc(100% + 0.625rem);
+  z-index: 50;
+  display: none;
+  flex-direction: column;
+  gap: 0.35rem;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-8px);
+  transition:
+    opacity 0.42s var(--sidebar-ease),
+    transform 0.48s var(--sidebar-ease-spring),
+    visibility 0.42s var(--sidebar-ease);
+}
+
+.sidebar-rail-label--action {
+  pointer-events: auto;
+  position: static;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  color: var(--app-text-muted);
+}
+
+.sidebar-rail-label--danger {
+  border-color: color-mix(in srgb, #ef4444 35%, var(--app-border));
+  background: color-mix(in srgb, #fef2f2 95%, var(--app-surface));
+  color: #dc2626;
+}
+
+.dark .sidebar-rail-label--danger {
+  border-color: color-mix(in srgb, #ef4444 30%, var(--app-border));
+  background: color-mix(in srgb, #450a0a 40%, var(--app-surface));
+  color: #f87171;
 }
 
 @media (min-width: 1024px) {
-  .group\/sidebar:hover .sidebar-rail-label {
-    animation: sidebar-label-in 0.2s ease-out both;
+  .sidebar-rail-label--row,
+  .sidebar-rail-label--stack {
+    display: flex;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-10px) scale(0.9);
+  }
+
+  .group\/sidebar:hover .sidebar-rail-label--row,
+  .group\/sidebar:hover .sidebar-rail-label--stack {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0) scale(1);
+  }
+
+  .group\/sidebar:hover .sidebar-rail-actions {
+    display: flex;
+    pointer-events: auto;
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+  }
+
+  /* Label de l’entrée survolée — grossit en synchronie avec l’icône */
+  .group\/link:hover .sidebar-rail-label,
+  .group\/more:hover > .sidebar-rail-label,
+  .group\/profile:hover > .sidebar-rail-label {
+    z-index: 60;
+    border-color: color-mix(in srgb, var(--app-accent) 42%, var(--app-border));
+    background: var(--app-surface);
+    color: var(--app-accent);
+    font-size: 0.8125rem;
+    transform: translateX(12px) scale(1.18);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--app-accent) 18%, transparent),
+      0 18px 44px -14px color-mix(in srgb, var(--app-accent) 38%, transparent);
+  }
+
+  .dark .group\/link:hover .sidebar-rail-label,
+  .dark .group\/more:hover > .sidebar-rail-label,
+  .dark .group\/profile:hover > .sidebar-rail-label {
+    border-color: color-mix(in srgb, var(--app-teal) 45%, var(--app-border));
+    color: var(--app-teal);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--app-teal) 20%, transparent),
+      0 18px 44px -14px color-mix(in srgb, var(--app-teal) 35%, transparent);
+  }
+
+  .group\/more:hover .sidebar-rail-label-chevron {
+    transform: translateX(3px) scale(1.1);
+  }
+
+  .sidebar-rail-actions .sidebar-rail-label--action:hover {
+    transform: translateX(8px) scale(1.12);
+    border-color: color-mix(in srgb, var(--app-accent) 35%, var(--app-border));
+    color: var(--app-text);
+    background: var(--app-surface);
+  }
+
+  .sidebar-rail-actions .sidebar-rail-label--danger:hover {
+    transform: translateX(8px) scale(1.12);
+  }
+
+  .group\/link:hover .sidebar-rail-label-badge {
+    transform: scale(1.1);
+    transition: transform 0.48s var(--sidebar-ease-spring);
   }
 
   .group\/link:hover .sidebar-nav-icon,
   .group\/more:hover .sidebar-nav-icon,
   .group\/profile:hover .sidebar-nav-icon {
     transform: scale(1.1);
-  }
-
-  .group\/link:hover .sidebar-nav-icon .text-lg,
-  .group\/more:hover .sidebar-nav-icon .text-base {
-    transform: scale(1.05);
   }
 
   .group\/link:hover > span:not(.nav-item-active) .sidebar-nav-icon {
