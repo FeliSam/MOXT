@@ -145,6 +145,7 @@ export const ENGLISH_UI_CATALOG = {
   Contacter: 'Contact',
   'Ouverture…': 'Opening…',
   'Ouverture...': 'Opening...',
+  Favori: 'Favorite',
   Favoris: 'Favorites',
   'Favori ✓': 'Favorite ✓',
   'Retirer des favoris': 'Remove from favorites',

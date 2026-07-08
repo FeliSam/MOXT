@@ -18,10 +18,17 @@ const NAV_EXTRAS = {
     Communauté: 'Community',
     Confiance: 'Trust',
     'Couverture fonctionnelle': 'Feature coverage',
+    Deconnexion: 'Sign out',
     'Echanges P2P': 'P2P exchange',
+    'Fermer les services': 'Close services',
     'Gérer les demandes': 'Manage requests',
     'Gérer les demandes de job': 'Manage job applications',
     'Gérer les inscriptions': 'Manage registrations',
+    'Plus de services': 'More services',
+    Quitter: 'Sign out',
+    Reglages: 'Settings',
+    Réglages: 'Settings',
+    'Tous les services': 'All services',
   },
 }
 

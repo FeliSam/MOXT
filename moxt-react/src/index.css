@@ -844,6 +844,107 @@ html.theme-animating *::after {
   flex-shrink: 0;
 }
 
+/* ─── Global search (desktop header) ─────────────────────────────────────── */
+@keyframes global-search-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes global-search-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.global-search-panel {
+  transform-origin: top center;
+  animation: global-search-panel-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.global-search-item {
+  position: relative;
+  overflow: hidden;
+  opacity: 0;
+  animation: global-search-item-in 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--search-stagger, 0ms);
+  transition:
+    background-color 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    padding-left 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.global-search-item::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--app-accent);
+  opacity: 0;
+  transform: scaleY(0.4);
+  transition:
+    opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dark .global-search-item::before {
+  background: var(--app-teal);
+}
+
+.global-search-item:hover,
+.global-search-item:focus-visible {
+  background: color-mix(in srgb, var(--app-surface-muted) 92%, var(--app-accent) 8%);
+  transform: translateX(4px);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--app-border) 70%, transparent);
+  outline: none;
+}
+
+.dark .global-search-item:hover,
+.dark .global-search-item:focus-visible {
+  background: color-mix(in srgb, var(--app-surface-muted) 88%, var(--app-teal) 12%);
+}
+
+.global-search-item:hover::before,
+.global-search-item:focus-visible::before {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+.global-search-item:active {
+  transform: translateX(2px) scale(0.99);
+}
+
+.global-search-empty {
+  animation: global-search-item-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .global-search-panel,
+  .global-search-item,
+  .global-search-empty {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .global-search-item,
+  .global-search-item::before {
+    transition: none !important;
+  }
+}
+
 /* ─── Toast ──────────────────────────────────────────────────────────────── */
 .toast-enter  { animation: toast-in  280ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
 .toast-exit   { animation: toast-out 200ms ease-in forwards; }

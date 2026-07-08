@@ -28,12 +28,12 @@ export function GlobalSearch() {
   }, [])
 
   return (
-    <div className="relative w-full max-w-[34rem]">
-      <FiSearch className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+    <div className="group relative w-full max-w-[34rem]">
+      <FiSearch className="pointer-events-none absolute left-4 top-1/2 z-[1] -translate-y-1/2 text-slate-400 transition-colors duration-300 group-focus-within:text-brand-700" />
       <input
         ref={inputRef}
         aria-label="Recherche globale"
-        className="min-h-12 w-full rounded-[1.15rem] bg-[var(--app-surface-muted)] pl-11 pr-20 text-sm outline-none transition focus:bg-white focus:shadow-[0_0_0_4px_rgb(8_112_95/0.08)] dark:focus:bg-[var(--app-surface)]"
+        className="min-h-12 w-full rounded-[1.15rem] bg-[var(--app-surface-muted)] pl-11 pr-20 text-sm outline-none transition-[background-color,box-shadow,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-[color-mix(in_srgb,var(--app-surface-muted)_85%,white)] focus:bg-white focus:shadow-[0_0_0_4px_rgb(8_112_95/0.08)] dark:hover:bg-[var(--app-surface)] dark:focus:bg-[var(--app-surface)]"
         placeholder="Recherche globale"
         value={query}
         onChange={(event) => setQuery(event.target.value)}
@@ -41,39 +41,52 @@ export function GlobalSearch() {
       {query ? (
         <button
           type="button"
-          className="absolute right-3 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-xl text-slate-400 hover:bg-white dark:hover:bg-slate-800"
+          className="absolute right-3 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-xl text-slate-400 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-105 hover:bg-white hover:text-[var(--app-text)] active:scale-95 dark:hover:bg-slate-800"
           onClick={() => setQuery('')}
           aria-label="Effacer la recherche"
         >
           <FiX />
         </button>
       ) : (
-        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-lg bg-white px-2 py-1 text-[10px] font-bold text-slate-400 shadow-sm dark:bg-slate-800">
+        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-lg bg-white px-2 py-1 text-[10px] font-bold text-slate-400 shadow-sm transition-opacity duration-300 dark:bg-slate-800">
           Ctrl K
         </span>
       )}
       {query.trim().length >= 2 ? (
-        <div className="absolute left-0 right-0 top-14 z-50 overflow-hidden rounded-[1.35rem] bg-[var(--app-surface)] p-2 shadow-[0_24px_70px_rgb(15_23_42/0.18)]">
+        <div className="global-search-panel absolute left-0 right-0 top-14 z-50 overflow-hidden rounded-[1.35rem] border border-[var(--app-border)]/60 bg-[var(--app-surface)] p-2 shadow-[0_24px_70px_rgb(15_23_42/0.18)]">
           {results.length ? (
-            results.map(({ id, path, subtitle, title, type, typeLabel }) => {
+            results.map(({ id, path, subtitle, title, type, typeLabel }, index) => {
               const meta = searchTypeMeta(type, typeLabel)
               return (
                 <Link
                   key={`${path}-${id}`}
                   to={path}
                   onClick={() => setQuery('')}
-                  className="flex items-center gap-3 rounded-xl p-3 hover:bg-[var(--app-surface-muted)]"
+                  style={{ '--search-stagger': `${Math.min(index * 28, 160)}ms` }}
+                  className="global-search-item group/item flex items-center gap-3 rounded-xl p-3"
                 >
-                  <Badge tone={meta.tone}>{meta.label}</Badge>
-                  <span className="min-w-0">
-                    <strong className="block truncate text-sm">{title}</strong>
-                    <span className="text-xs text-[var(--app-text-muted)]">{subtitle}</span>
+                  <span className="global-search-item-badge shrink-0 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/item:scale-105">
+                    <Badge tone={meta.tone}>{meta.label}</Badge>
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <strong className="block truncate text-sm transition-colors duration-300 group-hover/item:text-brand-700 dark:group-hover/item:text-brand-300">
+                      {title}
+                    </strong>
+                    <span className="block truncate text-xs text-[var(--app-text-muted)] transition-colors duration-300">
+                      {subtitle}
+                    </span>
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className="global-search-item-chevron ml-auto shrink-0 text-[var(--app-text-faint)] opacity-0 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/item:translate-x-0.5 group-hover/item:opacity-100"
+                  >
+                    →
                   </span>
                 </Link>
               )
             })
           ) : (
-            <p className="p-3 text-sm text-[var(--app-text-muted)]">Aucun résultat.</p>
+            <p className="global-search-empty p-3 text-sm text-[var(--app-text-muted)]">Aucun résultat.</p>
           )}
         </div>
       ) : null}
