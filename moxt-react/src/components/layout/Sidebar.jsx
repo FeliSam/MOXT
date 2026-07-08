@@ -132,8 +132,8 @@ export function Sidebar({ open }) {
           </div>
         </nav>
 
-        {/* Profil bas de sidebar — desktop uniquement */}
-        <div className="relative hidden shrink-0 border-t border-[var(--app-border)]/70 p-3 lg:block">
+        {/* Profil bas de sidebar — flyout accessible (pont de survol vers le rail) */}
+        <div className="sidebar-footer-zone group/footer hidden shrink-0 border-t border-[var(--app-border)]/70 p-3 lg:block">
           <NavLink
             to="/profile"
             onClick={() => dispatch(closeSidebar())}
@@ -142,7 +142,14 @@ export function Sidebar({ open }) {
             <span className="sidebar-nav-icon grid size-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-700 to-[var(--app-teal)] text-xs font-black text-white">
               {initials(fullName) || 'M'}
             </span>
-            <span className="sidebar-rail-label sidebar-rail-label--stack">
+          </NavLink>
+
+          <div className="sidebar-footer-flyout" role="group" aria-label="Compte et session">
+            <NavLink
+              to="/profile"
+              onClick={() => dispatch(closeSidebar())}
+              className="sidebar-rail-label sidebar-rail-label--stack sidebar-rail-label--interactive"
+            >
               <strong className="sidebar-rail-label-title truncate">
                 {fullName || 'Mon profil'}
               </strong>
@@ -151,12 +158,11 @@ export function Sidebar({ open }) {
               ) : (
                 <span className="text-[10px] text-[var(--app-text-faint)]">{role || 'Membre'}</span>
               )}
-            </span>
-          </NavLink>
-          <div className="sidebar-rail-actions">
+            </NavLink>
             <NavLink
               to="/settings"
-              className="sidebar-rail-label sidebar-rail-label--action"
+              onClick={() => dispatch(closeSidebar())}
+              className="sidebar-rail-label sidebar-rail-label--action sidebar-rail-label--interactive"
             >
               <FiSettings className="text-sm" />
               Reglages
@@ -164,7 +170,7 @@ export function Sidebar({ open }) {
             <button
               type="button"
               onClick={handleLogout}
-              className="sidebar-rail-label sidebar-rail-label--action sidebar-rail-label--danger"
+              className="sidebar-rail-label sidebar-rail-label--action sidebar-rail-label--danger sidebar-rail-label--interactive"
             >
               <FiLogOut className="text-sm" />
               Quitter
