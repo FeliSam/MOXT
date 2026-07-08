@@ -10,6 +10,7 @@ export const {
   verifyEmailRegistration,
   verifyPhoneRegistration,
   verifyTelegramPhoneRegistration,
+  verifyMobileIdPhoneRegistration,
   updateProfile,
   restoreSession,
   logout,

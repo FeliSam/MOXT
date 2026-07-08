@@ -40,7 +40,7 @@ function isPhoneLoginDisabledError(error) {
  * }} redirects
  */
 export function createAuthService(supabase, redirects = {}, integrations = {}) {
-  const { invokeTelegramGateway } = integrations
+  const { invokeTelegramGateway, invokeMobileIdGateway } = integrations
   const getOAuthRedirectUrl = redirects.getOAuthRedirectUrl ?? (() => '')
   const getEmailRedirectUrl = redirects.getEmailRedirectUrl ?? (() => '')
   const getPasswordResetRedirectUrl = redirects.getPasswordResetRedirectUrl ?? (() => '')
@@ -257,6 +257,37 @@ export function createAuthService(supabase, redirects = {}, integrations = {}) {
         }
       }
 
+      // MobileID : crée le compte puis vérifie le numéro via le SDK SMS Aero.
+      if (verificationMethod === 'phone' && phoneDeliveryChannel === 'mobileid') {
+        if (!invokeMobileIdGateway) {
+          throw new Error('La vérification MobileID n’est pas configurée sur cette application.')
+        }
+        const phone = normalizeRussianAuthPhone(details.russianPhone)
+        const registered = await invokeMobileIdGateway({
+          action: 'register',
+          phone,
+          password: details.password,
+          email,
+          profileFields,
+        })
+        if (!registered?.userId) {
+          throw new Error('Échec de création du compte MobileID.')
+        }
+        return {
+          user: profileToUser({ id: registered.userId, ...profileFields }),
+          token: '',
+          requiresEmailConfirmation: false,
+          requiresPhoneConfirmation: false,
+          requiresTelegramPhoneConfirmation: false,
+          requiresMobileIdPhoneConfirmation: true,
+          pendingUserId: registered.userId,
+          phoneDeliveryChannel: 'mobileid',
+          verificationMethod: 'phone',
+          email,
+          phone,
+        }
+      }
+
       const credentials =
         verificationMethod === 'phone'
           ? {
@@ -412,6 +443,64 @@ export function createAuthService(supabase, redirects = {}, integrations = {}) {
         user,
         token: data.session.access_token,
         emailLinkDeferred: Boolean(emailLogin && !data.user.email),
+      }
+    },
+
+    async verifyMobileIdPhoneRegistration({
+      phone,
+      sessionId,
+      verifyToken,
+      userId,
+      password,
+      email,
+    }) {
+      if (!supabase) throw new Error('Supabase non configuré.')
+      if (!invokeMobileIdGateway) {
+        throw new Error('La vérification MobileID n’est pas configurée sur cette application.')
+      }
+      if (!sessionId || !verifyToken || !userId) {
+        throw new Error('Session MobileID invalide. Recommencez l’inscription.')
+      }
+
+      const normalizedPhone = normalizeRussianAuthPhone(phone)
+      const result = await invokeMobileIdGateway({
+        action: 'complete',
+        phone: normalizedPhone,
+        userId,
+        session_id: sessionId,
+        verify_token: verifyToken,
+        password,
+        email: email?.trim().toLowerCase(),
+      })
+
+      if (!result?.access_token || !result?.refresh_token) {
+        throw new Error('Session invalide après vérification MobileID.')
+      }
+
+      const sessionResult = await supabase.auth.setSession({
+        access_token: result.access_token,
+        refresh_token: result.refresh_token,
+      })
+      if (sessionResult.error) {
+        throw new Error(translateAuthError(sessionResult.error))
+      }
+      if (!sessionResult.data.session || !sessionResult.data.user) {
+        throw new Error('Connexion impossible après MobileID.')
+      }
+
+      const emailLogin = email?.trim().toLowerCase()
+      if (emailLogin && !sessionResult.data.user.email) {
+        const { error: emailError } = await supabase.auth.updateUser({ email: emailLogin })
+        if (emailError) {
+          console.warn('[MOXT] Liaison e-mail différée après MobileID:', emailError.message)
+        }
+      }
+
+      const user = await fetchOrCreateProfile(sessionResult.data.user)
+      return {
+        user,
+        token: sessionResult.data.session.access_token,
+        emailLinkDeferred: Boolean(result.emailLinkDeferred || (emailLogin && !sessionResult.data.user.email)),
       }
     },
 

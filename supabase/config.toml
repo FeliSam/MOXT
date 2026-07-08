@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.phone-login]
 verify_jwt = false
+
+[functions.mobileid-gateway]
+verify_jwt = false

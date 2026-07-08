@@ -5,5 +5,7 @@
   ],
   "files.watcherExclude": {
     "**/.npm-cache/**": true
-  }
+  },
+  "deno.enablePaths": ["supabase/functions"],
+  "deno.config": "./supabase/functions/deno.json"
 }

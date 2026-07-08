@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { FiSearch, FiX } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
@@ -9,11 +10,37 @@ import { Badge } from '../ui/Badge'
 export function GlobalSearch() {
   const [query, setQuery] = useState('')
   const inputRef = useRef(null)
+  const anchorRef = useRef(null)
+  const [panelRect, setPanelRect] = useState(null)
   const index = useSelector(selectSearchIndex)
   const results = useMemo(
     () => (query.trim().length < 2 ? [] : filterSearchIndex(index, query).slice(0, 10)),
     [index, query],
   )
+  const showPanel = query.trim().length >= 2
+
+  useLayoutEffect(() => {
+    if (!showPanel || !anchorRef.current) {
+      setPanelRect(null)
+      return
+    }
+    function updateRect() {
+      if (!anchorRef.current) return
+      const rect = anchorRef.current.getBoundingClientRect()
+      setPanelRect({
+        top: rect.bottom + 8,
+        left: rect.left,
+        width: rect.width,
+      })
+    }
+    updateRect()
+    window.addEventListener('resize', updateRect)
+    window.addEventListener('scroll', updateRect, true)
+    return () => {
+      window.removeEventListener('resize', updateRect)
+      window.removeEventListener('scroll', updateRect, true)
+    }
+  }, [showPanel, query])
 
   useEffect(() => {
     function focusSearch(event) {
@@ -28,7 +55,7 @@ export function GlobalSearch() {
   }, [])
 
   return (
-    <div className="group relative w-full max-w-[34rem]">
+    <div ref={anchorRef} className="group relative w-full max-w-[34rem]">
       <FiSearch className="pointer-events-none absolute left-4 top-1/2 z-[1] -translate-y-1/2 text-slate-400 transition-colors duration-300 group-focus-within:text-brand-700" />
       <input
         ref={inputRef}
@@ -52,44 +79,55 @@ export function GlobalSearch() {
           Ctrl K
         </span>
       )}
-      {query.trim().length >= 2 ? (
-        <div className="global-search-panel absolute left-0 right-0 top-14 z-50 overflow-hidden rounded-[1.35rem] border border-[var(--app-border)]/60 bg-[var(--app-surface)] p-2 shadow-[0_24px_70px_rgb(15_23_42/0.18)]">
-          {results.length ? (
-            results.map(({ id, path, subtitle, title, type, typeLabel }, index) => {
-              const meta = searchTypeMeta(type, typeLabel)
-              return (
-                <Link
-                  key={`${path}-${id}`}
-                  to={path}
-                  onClick={() => setQuery('')}
-                  style={{ '--search-stagger': `${Math.min(index * 28, 160)}ms` }}
-                  className="global-search-item group/item flex items-center gap-3 rounded-xl p-3"
-                >
-                  <span className="global-search-item-badge shrink-0 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/item:scale-105">
-                    <Badge tone={meta.tone}>{meta.label}</Badge>
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <strong className="block truncate text-sm transition-colors duration-300 group-hover/item:text-brand-700 dark:group-hover/item:text-brand-300">
-                      {title}
-                    </strong>
-                    <span className="block truncate text-xs text-[var(--app-text-muted)] transition-colors duration-300">
-                      {subtitle}
-                    </span>
-                  </span>
-                  <span
-                    aria-hidden="true"
-                    className="global-search-item-chevron ml-auto shrink-0 text-[var(--app-text-faint)] opacity-0 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/item:translate-x-0.5 group-hover/item:opacity-100"
-                  >
-                    →
-                  </span>
-                </Link>
-              )
-            })
-          ) : (
-            <p className="global-search-empty p-3 text-sm text-[var(--app-text-muted)]">Aucun résultat.</p>
-          )}
-        </div>
-      ) : null}
+      {showPanel && panelRect
+        ? createPortal(
+            <div
+              className="global-search-panel fixed z-[100] overflow-y-auto overflow-x-hidden rounded-[1.35rem] border border-[var(--app-border)]/60 bg-[var(--app-surface)] p-2 shadow-[0_24px_70px_rgb(15_23_42/0.18)]"
+              style={{
+                top: panelRect.top,
+                left: panelRect.left,
+                width: panelRect.width,
+                maxHeight: `min(24rem, calc(100dvh - ${panelRect.top}px - 1rem))`,
+              }}
+            >
+              {results.length ? (
+                results.map(({ id, path, subtitle, title, type, typeLabel }, index) => {
+                  const meta = searchTypeMeta(type, typeLabel)
+                  return (
+                    <Link
+                      key={`${path}-${id}`}
+                      to={path}
+                      onClick={() => setQuery('')}
+                      style={{ '--search-stagger': `${Math.min(index * 28, 160)}ms` }}
+                      className="global-search-item group/item flex items-center gap-3 rounded-xl p-3"
+                    >
+                      <span className="global-search-item-badge shrink-0 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/item:scale-105">
+                        <Badge tone={meta.tone}>{meta.label}</Badge>
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <strong className="block truncate text-sm transition-colors duration-300 group-hover/item:text-brand-700 dark:group-hover/item:text-brand-300">
+                          {title}
+                        </strong>
+                        <span className="block truncate text-xs text-[var(--app-text-muted)] transition-colors duration-300">
+                          {subtitle}
+                        </span>
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        className="global-search-item-chevron ml-auto shrink-0 text-[var(--app-text-faint)] opacity-0 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/item:translate-x-0.5 group-hover/item:opacity-100"
+                      >
+                        →
+                      </span>
+                    </Link>
+                  )
+                })
+              ) : (
+                <p className="global-search-empty p-3 text-sm text-[var(--app-text-muted)]">Aucun résultat.</p>
+              )}
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   )
 }

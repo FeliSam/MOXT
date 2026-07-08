@@ -32,10 +32,13 @@ import {
   clearAuthError,
   register,
   verifyEmailRegistration,
+  verifyMobileIdPhoneRegistration,
   verifyPhoneRegistration,
   verifyTelegramPhoneRegistration,
 } from '../features/auth/authSlice'
 import { sendTelegramVerificationCode } from '../services/telegramGatewayService'
+import { isMobileIdConfigured } from '../config/mobileId'
+import { useMobileIdVerification } from '../hooks/useMobileIdVerification'
 import { addToast } from '../features/ui/uiSlice'
 import { loadAllData } from '../app/loadAllData'
 import { startRealtimeSubscription } from '../services/realtimeService'
@@ -104,7 +107,10 @@ export function RegisterPage() {
   const [telegramSending, setTelegramSending] = useState(false)
   const [telegramResendIn, setTelegramResendIn] = useState(0)
   const telegramSendRef = useRef(false)
+  const mobileIdStartedRef = useRef(false)
   const { trigger: triggerBurst, node: burstNode } = useActionBurst()
+  const mobileId = useMobileIdVerification()
+  const mobileIdReady = isMobileIdConfigured()
   const { countries } = useGeographyOptions()
   const alreadyRegistered = error === 'ALREADY_REGISTERED'
   const showRegisterError = Boolean(error && !alreadyRegistered && !pendingVerification)
@@ -176,6 +182,17 @@ export function RegisterPage() {
           userId: result.payload.pendingUserId,
           password: values.password,
           requestId: null,
+        })
+        return
+      }
+      if (result.payload.requiresMobileIdPhoneConfirmation) {
+        mobileIdStartedRef.current = false
+        setPendingVerification({
+          method: 'mobileid',
+          phone: result.payload.phone,
+          email: result.payload.email,
+          userId: result.payload.pendingUserId,
+          password: values.password,
         })
         return
       }
@@ -294,6 +311,94 @@ export function RegisterPage() {
     return () => window.clearTimeout(timer)
   }, [telegramResendIn])
 
+  useEffect(() => {
+    if (pendingVerification?.method !== 'mobileid') {
+      mobileIdStartedRef.current = false
+      return undefined
+    }
+    if (mobileIdStartedRef.current) return undefined
+
+    let cancelled = false
+    mobileIdStartedRef.current = true
+
+    mobileId
+      .start(pendingVerification.phone)
+      .catch((error) => {
+        if (cancelled) return
+        mobileIdStartedRef.current = false
+        dispatch(
+          addToast({
+            title: 'MobileID indisponible',
+            message: error?.message || 'Impossible de lancer la vérification MobileID.',
+            tone: 'error',
+          }),
+        )
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [dispatch, mobileId, pendingVerification])
+
+  useEffect(() => {
+    if (pendingVerification?.method !== 'mobileid') return undefined
+    if (mobileId.phase !== 'verified' || !mobileId.verifyToken) return undefined
+
+    let cancelled = false
+
+    async function finishMobileId() {
+      const result = await dispatch(
+        verifyMobileIdPhoneRegistration({
+          phone: pendingVerification.phone,
+          sessionId: mobileId.sessionId,
+          verifyToken: mobileId.verifyToken,
+          userId: pendingVerification.userId,
+          password: pendingVerification.password,
+          email: pendingVerification.email,
+        }),
+      )
+      if (cancelled || !verifyMobileIdPhoneRegistration.fulfilled.match(result)) return
+
+      dispatch(clearAuthError())
+      await dispatch(loadAllData())
+      startRealtimeSubscription(store.getState().auth.user.id, dispatch, store.getState)
+      triggerBurst()
+      if (result.payload.emailLinkDeferred) {
+        dispatch(
+          addToast({
+            title: 'Compte créé',
+            message:
+              'Votre compte est actif. Vous pourrez confirmer votre e-mail plus tard dans Sécurité.',
+            tone: 'success',
+          }),
+        )
+      } else {
+        dispatch(
+          addToast({
+            title: 'Vérification réussie',
+            message: 'Bienvenue sur MOXT.',
+            tone: 'success',
+          }),
+        )
+      }
+      window.setTimeout(() => navigate('/profile', { replace: true }), 550)
+    }
+
+    finishMobileId()
+    return () => {
+      cancelled = true
+    }
+  }, [
+    dispatch,
+    mobileId.phase,
+    mobileId.sessionId,
+    mobileId.verifyToken,
+    navigate,
+    pendingVerification,
+    store,
+    triggerBurst,
+  ])
+
   async function resendTelegramCode() {
     if (!pendingVerification || pendingVerification.method !== 'telegram') return
     if (telegramResendIn > 0 || telegramSending) return
@@ -331,7 +436,8 @@ export function RegisterPage() {
   const showVerificationError = Boolean(error && pendingVerification)
 
   async function confirmCode() {
-    if (!/^\d{6}$/.test(verificationCode) || !pendingVerification) return
+    if (!pendingVerification) return
+    if (pendingVerification.method !== 'mobileid' && !/^\d{6}$/.test(verificationCode)) return
 
     let thunk = verifyPhoneRegistration
     let payload = { ...pendingVerification, token: verificationCode }
@@ -358,6 +464,20 @@ export function RegisterPage() {
         password: pendingVerification.password,
         email: pendingVerification.email,
       }
+    } else if (pendingVerification.method === 'mobileid') {
+      if (!mobileId.otpRequired) return
+      try {
+        await mobileId.submitOtp(verificationCode)
+      } catch (error) {
+        dispatch(
+          addToast({
+            title: 'Code MobileID incorrect',
+            message: error?.message || mobileId.error || 'Réessayez.',
+            tone: 'error',
+          }),
+        )
+      }
+      return
     }
 
     const result = await dispatch(thunk(payload))
@@ -641,7 +761,9 @@ export function RegisterPage() {
                       ? 'Confirmez votre e-mail'
                       : pendingVerification.method === 'telegram'
                         ? 'Confirmez via Telegram'
-                        : 'Confirmez votre numéro'
+                        : pendingVerification.method === 'mobileid'
+                          ? 'Confirmez via Mobile ID'
+                          : 'Confirmez votre numéro'
                   }
                   variant="info"
                 >
@@ -651,27 +773,50 @@ export function RegisterPage() {
                       ? telegramSending
                         ? `Envoi du code Telegram au ${pendingVerification.phone}…`
                         : `Un code à 6 chiffres a été envoyé sur Telegram au ${pendingVerification.phone}.`
+                      : pendingVerification.method === 'mobileid'
+                        ? mobileId.otpRequired
+                          ? `Saisissez le code reçu pour ${pendingVerification.phone}.`
+                          : mobileId.loading
+                            ? `Vérification Mobile ID en cours pour ${pendingVerification.phone}…`
+                            : `Validez votre numéro ${pendingVerification.phone} avec Mobile ID.`
                       : `Un code à 6 chiffres a été envoyé au ${pendingVerification.phone} par SMS.`}
                 </Alert>
-                {showVerificationError ? <Alert variant="error">{error}</Alert> : null}
-                <Input
-                  id="verification-code"
-                  label={
-                    pendingVerification.method === 'email'
-                      ? 'Code reçu par e-mail'
-                      : pendingVerification.method === 'telegram'
-                        ? 'Code reçu sur Telegram'
-                        : 'Code reçu par SMS'
-                  }
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  maxLength={6}
-                  placeholder="000000"
-                  value={verificationCode}
-                  onChange={(event) =>
-                    setVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 6))
-                  }
-                />
+                {showVerificationError || mobileId.error ? (
+                  <Alert variant="error">{error || mobileId.error}</Alert>
+                ) : null}
+                {pendingVerification.method === 'mobileid' && mobileId.otpRequired ? (
+                  <Input
+                    id="verification-code"
+                    label="Code Mobile ID"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={8}
+                    placeholder="0000"
+                    value={verificationCode}
+                    onChange={(event) =>
+                      setVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 8))
+                    }
+                  />
+                ) : pendingVerification.method !== 'mobileid' ? (
+                  <Input
+                    id="verification-code"
+                    label={
+                      pendingVerification.method === 'email'
+                        ? 'Code reçu par e-mail'
+                        : pendingVerification.method === 'telegram'
+                          ? 'Code reçu sur Telegram'
+                          : 'Code reçu par SMS'
+                    }
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    placeholder="000000"
+                    value={verificationCode}
+                    onChange={(event) =>
+                      setVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 6))
+                    }
+                  />
+                ) : null}
                 {pendingVerification.method === 'telegram' ? (
                   <Button
                     type="button"
@@ -685,18 +830,30 @@ export function RegisterPage() {
                       : 'Renvoyer le code Telegram'}
                   </Button>
                 ) : null}
-                <Button
-                  type="button"
-                  icon={FiCheck}
-                  loading={status === 'loading'}
-                  disabled={
-                    verificationCode.length !== 6 ||
-                    (pendingVerification.method === 'telegram' && !pendingVerification.requestId)
-                  }
-                  onClick={confirmCode}
-                >
-                  Confirmer et accéder à MOXT
-                </Button>
+                {pendingVerification.method === 'mobileid' && mobileId.otpRequired ? (
+                  <Button
+                    type="button"
+                    icon={FiCheck}
+                    loading={status === 'loading' || mobileId.loading}
+                    disabled={!verificationCode.trim()}
+                    onClick={confirmCode}
+                  >
+                    Valider le code Mobile ID
+                  </Button>
+                ) : pendingVerification.method !== 'mobileid' ? (
+                  <Button
+                    type="button"
+                    icon={FiCheck}
+                    loading={status === 'loading'}
+                    disabled={
+                      verificationCode.length !== 6 ||
+                      (pendingVerification.method === 'telegram' && !pendingVerification.requestId)
+                    }
+                    onClick={confirmCode}
+                  >
+                    Confirmer et accéder à MOXT
+                  </Button>
+                ) : null}
               </>
             ) : (
               <>
@@ -710,7 +867,7 @@ export function RegisterPage() {
                     dans Sécurité.
                   </p>
                 </div>
-                <div className="grid gap-3 @md:grid-cols-3">
+                <div className={`grid gap-3 ${mobileIdReady ? '@md:grid-cols-2 @xl:grid-cols-4' : '@md:grid-cols-3'}`}>
                   {[
                     {
                       value: 'phone',
@@ -726,6 +883,17 @@ export function RegisterPage() {
                       title: 'Par Telegram',
                       detail: `${formik.values.russianPhone} · Telegram`,
                     },
+                    ...(mobileIdReady
+                      ? [
+                          {
+                            value: 'phone',
+                            channel: 'mobileid',
+                            icon: FiShield,
+                            title: 'Mobile ID',
+                            detail: `${formik.values.russianPhone} · Web`,
+                          },
+                        ]
+                      : []),
                     {
                       value: 'email',
                       channel: 'sms',
@@ -747,6 +915,8 @@ export function RegisterPage() {
                           selected
                             ? method.channel === 'telegram'
                               ? 'bg-[#229ED9] text-white shadow-lg shadow-sky-900/20'
+                              : method.channel === 'mobileid'
+                                ? 'bg-violet-700 text-white shadow-lg shadow-violet-900/20'
                               : 'bg-brand-700 text-white shadow-lg shadow-brand-900/15'
                             : 'bg-[var(--app-surface)] text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]'
                         }`}

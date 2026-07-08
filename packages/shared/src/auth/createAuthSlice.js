@@ -62,6 +62,17 @@ export function createAuthSlice(authService) {
     },
   )
 
+  const verifyMobileIdPhoneRegistration = createAsyncThunk(
+    'auth/verifyMobileIdPhoneRegistration',
+    async (details, { rejectWithValue }) => {
+      try {
+        return await authService.verifyMobileIdPhoneRegistration(details)
+      } catch (error) {
+        return rejectWithValue(error.message)
+      }
+    },
+  )
+
   const updateProfile = createAsyncThunk('auth/updateProfile', async (details, { getState, rejectWithValue }) => {
     try {
       return await authService.updateProfile(getState().auth.user, details)
@@ -143,7 +154,8 @@ export function createAuthSlice(authService) {
           if (
             action.payload.requiresEmailConfirmation ||
             action.payload.requiresPhoneConfirmation ||
-            action.payload.requiresTelegramPhoneConfirmation
+            action.payload.requiresTelegramPhoneConfirmation ||
+            action.payload.requiresMobileIdPhoneConfirmation
           ) {
             state.user = null
             state.token = null
@@ -165,6 +177,9 @@ export function createAuthSlice(authService) {
         .addCase(verifyTelegramPhoneRegistration.pending, setLoading)
         .addCase(verifyTelegramPhoneRegistration.fulfilled, setSession)
         .addCase(verifyTelegramPhoneRegistration.rejected, setFailure)
+        .addCase(verifyMobileIdPhoneRegistration.pending, setLoading)
+        .addCase(verifyMobileIdPhoneRegistration.fulfilled, setSession)
+        .addCase(verifyMobileIdPhoneRegistration.rejected, setFailure)
         .addCase(updateProfile.pending, setLoading)
         .addCase(updateProfile.fulfilled, (state, action) => {
           state.user = action.payload
@@ -189,6 +204,7 @@ export function createAuthSlice(authService) {
     verifyEmailRegistration,
     verifyPhoneRegistration,
     verifyTelegramPhoneRegistration,
+    verifyMobileIdPhoneRegistration,
     updateProfile,
     restoreSession,
     logout,

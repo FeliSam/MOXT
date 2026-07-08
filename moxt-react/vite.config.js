@@ -57,10 +57,34 @@ export default defineConfig(({ mode }) => {
   server: {
     host: true,
     port: 5173,
+    proxy: {
+      '/midsdk': {
+        target: 'https://midsdk.smsaero.ru',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/midsdk/, ''),
+      },
+      '/mobileid-token': {
+        target: supabaseUrl,
+        changeOrigin: true,
+        rewrite: () => '/functions/v1/mobileid-gateway',
+      },
+    },
   },
   preview: {
     host: '127.0.0.1',
     port: 5173,
+    proxy: {
+      '/midsdk': {
+        target: 'https://midsdk.smsaero.ru',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/midsdk/, ''),
+      },
+      '/mobileid-token': {
+        target: supabaseUrl,
+        changeOrigin: true,
+        rewrite: () => '/functions/v1/mobileid-gateway',
+      },
+    },
   },
   test: {
     environment: 'jsdom',

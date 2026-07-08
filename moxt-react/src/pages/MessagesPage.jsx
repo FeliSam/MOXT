@@ -7,7 +7,7 @@ import {
   FiStar,
   FiX,
 } from 'react-icons/fi'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { useSearchParams } from 'react-router-dom'
 import { messageSuggestionsForConversation } from '../features/communications/messageSuggestions'
@@ -61,7 +61,9 @@ export function MessagesPage() {
   const [showArchived, setShowArchived] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [filter, setFilter] = useState('all')
+  const listRef = useRef(null)
   const desktop = useMediaQuery('(min-width: 1024px)')
+  const isFiltering = Boolean(query.trim())
   const relatedConversation = conversations.find(
     (item) =>
       item.relatedType === searchParams.get('relatedType') &&
@@ -186,6 +188,11 @@ export function MessagesPage() {
   }, [dispatch, user?.id])
 
   useEffect(() => {
+    if (!searchOpen || !listRef.current) return
+    listRef.current.scrollTop = 0
+  }, [searchOpen, query, isFiltering])
+
+  useEffect(() => {
     if (
       !requestedConversation ||
       requestedConversation === ASSISTANT_ID ||
@@ -242,6 +249,13 @@ export function MessagesPage() {
     setReplyToId(null)
     setReplyToContextId(null)
     formik.resetForm()
+    setQuery('')
+    setSearchOpen(false)
+  }
+
+  function closeSearch() {
+    setQuery('')
+    setSearchOpen(false)
   }
 
   function returnToList() {
@@ -249,7 +263,57 @@ export function MessagesPage() {
   }
 
   return (
-    <div className="h-full min-h-0 overflow-hidden bg-transparent" data-testid="messages-viewport">
+    <div className="relative h-full min-h-0 overflow-hidden bg-transparent" data-testid="messages-viewport">
+      {searchOpen ? (
+        <div
+          className="absolute inset-0 z-50 flex flex-col bg-[var(--app-surface)]"
+          data-testid="messages-search-layer"
+        >
+          <div className="shrink-0 border-b border-[var(--app-border)]/60 bg-[var(--app-surface)] p-4 shadow-[0_10px_30px_rgb(15_23_42/0.06)] sm:p-5">
+            <div className="flex min-h-12 items-center gap-2 rounded-2xl bg-[var(--app-surface-muted)] px-3">
+              <FiSearch className="shrink-0 text-[var(--app-text-muted)]" />
+              <input
+                autoFocus
+                className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Rechercher une conversation"
+                aria-label="Rechercher une conversation"
+              />
+              <button
+                type="button"
+                className="grid size-9 place-items-center rounded-xl bg-[var(--app-surface)]"
+                onClick={closeSearch}
+                aria-label="Fermer la recherche"
+              >
+                <FiX />
+              </button>
+            </div>
+          </div>
+          <div
+            ref={listRef}
+            className="scrollbar-hidden min-h-0 flex-1 overscroll-contain overflow-y-auto bg-[var(--app-surface-muted)]/45 p-2 sm:p-3"
+          >
+            <p className="px-2 pb-1 pt-1 text-[10px] font-bold uppercase tracking-wide text-[var(--app-text-faint)]">
+              {isFiltering ? `Résultats (${visible.length})` : 'Conversations'}
+            </p>
+            {visible.map((conversation) => (
+              <ConversationRow
+                key={conversation.id}
+                active={active?.id === conversation.id}
+                conversation={conversation}
+                userId={user.id}
+                onClick={() => selectConversation(conversation.id)}
+              />
+            ))}
+            {isFiltering && !visible.length ? (
+              <p className="p-6 text-center text-sm text-[var(--app-text-faint)]">
+                Aucune conversation trouvée.
+              </p>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
       <div
         className={
           integratedAssistant
@@ -344,30 +408,6 @@ export function MessagesPage() {
                 </div>
               </details>
             </div>
-            {searchOpen ? (
-              <div className="absolute inset-x-3 top-3 z-20 flex min-h-12 items-center gap-2 rounded-2xl bg-[var(--app-surface)] px-3 shadow-2xl">
-                <FiSearch className="shrink-0 text-[var(--app-text-muted)]" />
-                <input
-                  autoFocus
-                  className="min-w-0 flex-1 bg-transparent text-sm outline-none"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Rechercher une conversation"
-                  aria-label="Rechercher une conversation"
-                />
-                <button
-                  type="button"
-                  className="grid size-9 place-items-center rounded-xl bg-[var(--app-surface-muted)]"
-                  onClick={() => {
-                    setQuery('')
-                    setSearchOpen(false)
-                  }}
-                  aria-label="Fermer la recherche"
-                >
-                  <FiX />
-                </button>
-              </div>
-            ) : null}
           </div>
 
           <div className="scrollbar-hidden min-h-0 flex-1 overscroll-contain overflow-y-auto bg-[var(--app-surface-muted)]/45 p-2 sm:p-3">
@@ -376,7 +416,7 @@ export function MessagesPage() {
               assistant
               onClick={() => selectConversation(ASSISTANT_ID)}
             />
-            {visible.length || showArchived || query || filter !== 'all' ? (
+            {visible.length || showArchived || filter !== 'all' ? (
               <p className="px-2 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wide text-[var(--app-text-faint)]">
                 Vos conversations
               </p>
@@ -390,15 +430,13 @@ export function MessagesPage() {
                 onClick={() => selectConversation(conversation.id)}
               />
             ))}
-            {!visible.length && !query && filter === 'all' && !showArchived ? (
+            {!visible.length && filter === 'all' && !showArchived ? (
               <MessagesEmptyState />
-            ) : !visible.length && (query || filter !== 'all') ? (
+            ) : !visible.length && filter !== 'all' ? (
               <p className="p-6 text-center text-sm text-[var(--app-text-faint)]">
                 {filter === 'pinned'
                   ? 'Aucune conversation épinglée.'
-                  : filter === 'unread'
-                    ? 'Aucune conversation non lue.'
-                    : 'Aucune conversation trouvée.'}
+                  : 'Aucune conversation non lue.'}
               </p>
             ) : null}
           </div>

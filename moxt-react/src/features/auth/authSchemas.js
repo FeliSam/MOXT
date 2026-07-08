@@ -65,7 +65,7 @@ export const registerSchema = Yup.object({
     .required('Choisissez une méthode de vérification.'),
   phoneDeliveryChannel: Yup.string().when('verificationMethod', {
     is: 'phone',
-    then: (schema) => schema.oneOf(['sms', 'telegram']).default('sms'),
+    then: (schema) => schema.oneOf(['sms', 'telegram', 'mobileid']).default('sms'),
     otherwise: (schema) => schema.strip(),
   }),
 })
