@@ -1,39 +1,62 @@
 import { createSlice } from '@reduxjs/toolkit'
-import { demoAccounts } from '../auth/authService'
 import { createLocalStorage } from '../../services/createLocalStorage'
 
 const storage = createLocalStorage('moxt-administration-v1')
-const defaultUsers = demoAccounts.map(({ user }) => ({
-  ...user,
-  status: 'active',
-  createdAt: '2026-01-01T00:00:00.000Z',
-}))
+
+function profileRowToAdminUser(row) {
+  if (!row) return null
+  const status = ['suspended', 'pending_deletion'].includes(row.status)
+    ? row.status
+    : row.status === 'verified'
+      ? 'active'
+      : row.status || 'active'
+  return {
+    id: row.id,
+    firstName: row.first_name || row.firstName || '',
+    lastName: row.last_name || row.lastName || '',
+    email: row.email || '',
+    phone: row.phone || '',
+    city: row.city || '',
+    role: row.role || 'user',
+    status,
+    verified: row.status === 'verified',
+    createdAt: row.created_at || row.createdAt || null,
+    updatedAt: row.updated_at || row.updatedAt || null,
+  }
+}
 
 const administrationSlice = createSlice({
   name: 'administration',
-  initialState: storage.read({ users: defaultUsers }),
+  initialState: storage.read({ users: [] }),
   reducers: {
+    setAdminUsers(state, action) {
+      state.users = action.payload
+    },
     registerAdministrativeUser(state, action) {
       if (!state.users.some((item) => item.id === action.payload.id)) {
-        state.users.unshift({ ...action.payload, status: 'active' })
+        state.users.unshift({ ...action.payload, status: action.payload.status || 'active' })
       }
     },
     updateUserRole(state, action) {
       const user = state.users.find((item) => item.id === action.payload.id)
-      if (!user || !['user', 'professional', 'admin', 'superadmin'].includes(action.payload.role))
+      if (!user || !['user', 'professional', 'admin', 'superadmin'].includes(action.payload.role)) {
         return
+      }
       user.role = action.payload.role
       user.updatedAt = new Date().toISOString()
     },
     updateUserStatus(state, action) {
       const user = state.users.find((item) => item.id === action.payload.id)
-      if (!user || !['active', 'suspended'].includes(action.payload.status)) return
+      if (!user || !['active', 'suspended', 'pending_deletion'].includes(action.payload.status)) {
+        return
+      }
       user.status = action.payload.status
       user.updatedAt = new Date().toISOString()
     },
   },
 })
 
-export const { registerAdministrativeUser, updateUserRole, updateUserStatus } =
+export { profileRowToAdminUser }
+export const { setAdminUsers, registerAdministrativeUser, updateUserRole, updateUserStatus } =
   administrationSlice.actions
 export default administrationSlice.reducer

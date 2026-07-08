@@ -152,6 +152,10 @@ export function MyPublicationsPage() {
     scope === 'business' && ownBusiness ? ownBusiness.id : user.id
   const subscriberPublisherName =
     scope === 'business' && ownBusiness ? ownBusiness.name : fullName || 'Mon profil'
+  const subscriberPublisherPath =
+    scope === 'business' && ownBusiness
+      ? `/businesses/${ownBusiness.id}`
+      : `/users/${user.id}/publications`
 
   return (
     <div className="grid gap-7">
@@ -206,6 +210,7 @@ export function MyPublicationsPage() {
           publisherType={subscriberPublisherType}
           publisherId={subscriberPublisherId}
           publisherName={subscriberPublisherName}
+          publisherPath={subscriberPublisherPath}
         />
       ) : (
         <>

@@ -1,6 +1,6 @@
 export function PageHeader({ eyebrow, title, description, actions, stats }) {
   return (
-    <header className="flex min-w-0 max-w-full flex-col gap-5 overflow-hidden rounded-[var(--radius-card-lg)] border border-[var(--app-border)] bg-[var(--app-surface)]/80 p-5 shadow-[var(--shadow-card)] backdrop-blur-xl sm:p-7">
+    <header className="flex min-w-0 max-w-full flex-col gap-5 overflow-visible rounded-[var(--radius-card-lg)] border border-[var(--app-border)] bg-[var(--app-surface)]/80 p-5 shadow-[var(--shadow-card)] backdrop-blur-xl sm:p-7">
       <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           {eyebrow ? (
@@ -17,7 +17,9 @@ export function PageHeader({ eyebrow, title, description, actions, stats }) {
             </p>
           ) : null}
         </div>
-        {actions ? <div className="flex min-w-0 flex-wrap gap-2 sm:shrink-0">{actions}</div> : null}
+        {actions ? (
+          <div className="relative z-20 flex min-w-0 flex-wrap gap-2 sm:shrink-0">{actions}</div>
+        ) : null}
       </div>
 
       {stats?.length ? (

@@ -23,6 +23,7 @@ const WEB_TO_MOBILE: Record<string, string> = {
   '/dashboard': '/(tabs)/index',
   '/transfers': '/transfer/wizard',
   '/p2p': '/search',
+  '/subscriptions': '/settings',
   '/exchangers': '/exchangers',
   '/businesses': '/organization',
   '/professional': '/organization',
@@ -108,6 +109,7 @@ export const navigationGroups: MoreServiceGroup[] = [
     children: [
       item('favorites', 'Mes favoris', '/favorites', '❤️'),
       item('my-publications', 'Mes publications', '/publications/mine', '📋'),
+      item('subscriptions', 'Mes abonnements', '/subscriptions', '🔔'),
     ],
   },
   {

@@ -11,6 +11,7 @@ import { Badge } from '../../../components/ui/Badge'
 import { updateVerificationStatus } from '../../account/accountSlice'
 import { updateDisputeStatus } from '../../disputes/disputeSlice'
 import { moderateReview } from '../../reviews/reviewSlice'
+import { REVIEW_DISPUTE_STATUS } from '@moxt/shared/utils/reviewUtils.js'
 import { handleReportApprove, handleReportReject } from '../adminActions'
 import { CARD, ITEM } from '../adminConfig'
 import { Empty, SectionTitle } from './AdminShared'
@@ -71,6 +72,47 @@ export function AdminQueuesPanel({ dispatch, queues, setSelected }) {
           <>
             <Button onClick={() => dispatch(updateDisputeStatus({ id: i.id, status: 'resolved', updatedBy: 'admin' }))}>Resoudre</Button>
             <Button variant="secondary" onClick={() => dispatch(updateDisputeStatus({ id: i.id, status: 'closed', updatedBy: 'admin' }))}>Cloturer</Button>
+          </>
+        )}
+      />
+      <QueueSection
+        icon={FiStar}
+        items={queues.contestedReviews}
+        label="Avis contestés"
+        kind="contestedReview"
+        setSelected={setSelected}
+        renderMeta={(i) => `${i.targetType} · ${i.authorName || i.authorId}`}
+        renderActions={(i) => (
+          <>
+            <Button
+              variant="danger"
+              onClick={() =>
+                dispatch(
+                  moderateReview({
+                    id: i.id,
+                    status: 'hidden',
+                    disputeStatus: REVIEW_DISPUTE_STATUS.UPHELD,
+                    moderatedBy: 'admin',
+                  }),
+                )
+              }
+            >
+              Retirer l&apos;avis
+            </Button>
+            <Button
+              onClick={() =>
+                dispatch(
+                  moderateReview({
+                    id: i.id,
+                    status: 'published',
+                    disputeStatus: REVIEW_DISPUTE_STATUS.REJECTED,
+                    moderatedBy: 'admin',
+                  }),
+                )
+              }
+            >
+              Refuser la contestation
+            </Button>
           </>
         )}
       />

@@ -26,6 +26,8 @@ import { ContactButton } from '../features/communications/ContactButton'
 import { cancelRegistration, registerForEvent, reportEvent } from '../features/events/eventSlice'
 import { statusMeta } from '../config/statuses'
 import { formatDate, formatMoney } from '../features/transfers/transferUtils'
+import { PublisherDetailCard } from '../features/publications/PublisherDetailCard'
+import { usePublisherDetailProfile } from '../features/publications/usePublisherDetailProfile'
 
 const registrationNextSteps = {
   registered: {
@@ -59,6 +61,7 @@ export function EventDetailPage() {
   const eventStatus = statusMeta(event.status)
   const registrationStatus = registration ? statusMeta(registration.status) : null
   const nextStep = registration ? registrationNextSteps[registration.status] : null
+  const publisherProfile = usePublisherDetailProfile(event, 'event')
 
   return (
     <div className="grid gap-7">
@@ -230,14 +233,17 @@ export function EventDetailPage() {
             ]}
           />
         </DetailSection>
-        <TrustPanel
-          title="Avant de participer"
-          items={[
-            'Vérifiez le lieu et l’horaire avant le déplacement.',
-            'Conservez votre confirmation d’inscription.',
-            'Contactez l’organisateur depuis la messagerie MOXT.',
-          ]}
-        />
+        <div className="grid gap-5">
+          {publisherProfile ? <PublisherDetailCard {...publisherProfile} /> : null}
+          <TrustPanel
+            title="Avant de participer"
+            items={[
+              'Vérifiez le lieu et l’horaire avant le déplacement.',
+              'Conservez votre confirmation d’inscription.',
+              'Contactez l’organisateur depuis la messagerie MOXT.',
+            ]}
+          />
+        </div>
       </div>
     </div>
   )

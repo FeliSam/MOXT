@@ -109,7 +109,13 @@ export function MyParcelPublicationCard({ parcel, readOnly = false, onArchive, o
   )
 }
 
-export function MyJobPublicationCard({ job, readOnly = false, onArchive, onReactivate }) {
+export function MyJobPublicationCard({
+  job,
+  readOnly = false,
+  ownerDisplayName,
+  onArchive,
+  onReactivate,
+}) {
   const status = statusMeta(job.status)
   const active = isActiveJob(job)
   return (
@@ -120,7 +126,7 @@ export function MyJobPublicationCard({ job, readOnly = false, onArchive, onReact
       badge={<Badge tone={status.tone}>{status.label}</Badge>}
       title={job.title}
       subtitle={job.salary}
-      meta={[job.publisherName, job.location, job.contractType].filter(Boolean)}
+      meta={[ownerDisplayName || job.publisherName, job.location, job.contractType].filter(Boolean)}
       path={`/jobs/${job.id}`}
       actions={
         readOnly ? null : (

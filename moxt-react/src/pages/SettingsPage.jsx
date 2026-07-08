@@ -146,6 +146,12 @@ export function SettingsPage() {
               onChange={(v) => updatePreference('pushNotifications', v)}
             />
             <NotifToggle
+              label="Nouveaux abonnés"
+              description="Quand un membre s'abonne à vos publications"
+              checked={preferences.notifNewSubscribers !== false}
+              onChange={(v) => updatePreference('notifNewSubscribers', v)}
+            />
+            <NotifToggle
               label="Notifications e-mail"
               description="Résumés et alertes par e-mail"
               checked={preferences.emailNotifications}
@@ -236,15 +242,15 @@ export function SettingsPage() {
 
         open={confirmDeletion}
         title="Demander la suppression du compte"
-        description="Cette action crée uniquement une demande locale de démonstration. Aucune donnée n’est supprimée."
+        description="Votre compte sera marqué pour suppression. La modération MOXT traitera la demande sous 30 jours."
         onCancel={() => setConfirmDeletion(false)}
         onConfirm={() => {
           dispatch(requestAccountDeletion({ userId: user.id }))
           dispatch(
             addToast({
               title: 'Demande enregistrée',
-              message: 'Aucune donnée réelle n’a été supprimée.',
-              tone: 'info',
+              message: 'Votre demande de suppression a été transmise.',
+              tone: 'success',
             }),
           )
           setConfirmDeletion(false)

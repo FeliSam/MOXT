@@ -1,15 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { LANGUAGE_LABELS, SUPPORTED_LANGUAGES } from '@moxt/shared';
+import { DEFAULT_NOTIFICATION_PREFERENCES } from '@moxt/shared/utils/notificationUtils.js';
 
 import { Button } from '@/components/ui/Button';
 import { AppScreen, Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { cn } from '@/lib/cn';
 import { useLanguage } from '@/providers/LanguageProvider';
+import { authService } from '@/store/auth';
 import { logout } from '@/store/auth';
-import { useAppDispatch } from '@/store/store';
+import { useAppDispatch, useAppSelector } from '@/store/store';
+import { supabase } from '@/services/supabase';
 import { useTheme } from '@/theme/ThemeContext';
 
 /* ── Web : NOTIF_CATEGORIES + priorités ── */
@@ -27,6 +30,7 @@ export default function SettingsScreen() {
   const { language, setLanguage, translateLabel } = useLanguage();
   const { isDark, theme, toggleTheme } = useTheme();
   const dispatch = useAppDispatch();
+  const user = useAppSelector((state) => state.auth.user);
 
   const [pushEnabled, setPushEnabled] = useState(true);
   const [emailEnabled, setEmailEnabled] = useState(false);
@@ -34,13 +38,78 @@ export default function SettingsScreen() {
     Object.fromEntries(NOTIF_CATEGORIES.map((c) => [c.key, 'Normale'])),
   );
 
+  useEffect(() => {
+    if (!user?.id || !supabase) return;
+    supabase
+      .from('profiles')
+      .select('preferences')
+      .eq('id', user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        const prefs = { ...DEFAULT_NOTIFICATION_PREFERENCES, ...(data?.preferences || {}) };
+        setPushEnabled(prefs.pushNotifications !== false);
+        setEmailEnabled(Boolean(prefs.emailNotifications));
+        setPriorities({
+          notifMessages: prefs.notifMessages === 'high' ? 'Haute' : prefs.notifMessages === 'low' ? 'Faible' : prefs.notifMessages === 'off' ? 'Off' : 'Normale',
+          notifTransfers: prefs.notifTransfers === 'high' ? 'Haute' : prefs.notifTransfers === 'low' ? 'Faible' : prefs.notifTransfers === 'off' ? 'Off' : 'Normale',
+          notifParcels: prefs.notifParcels === 'high' ? 'Haute' : prefs.notifParcels === 'low' ? 'Faible' : prefs.notifParcels === 'off' ? 'Off' : 'Normale',
+          notifJobs: prefs.notifJobs === 'high' ? 'Haute' : prefs.notifJobs === 'low' ? 'Faible' : prefs.notifJobs === 'off' ? 'Off' : 'Normale',
+          notifEvents: prefs.notifEvents === 'high' ? 'Haute' : prefs.notifEvents === 'low' ? 'Faible' : prefs.notifEvents === 'off' ? 'Off' : 'Normale',
+          notifActualites: prefs.notifActualites === 'high' ? 'Haute' : prefs.notifActualites === 'low' ? 'Faible' : prefs.notifActualites === 'off' ? 'Off' : 'Normale',
+        });
+      })
+      .catch(() => undefined);
+  }, [user?.id]);
+
+  async function persistPreferences(overrides: {
+    priorities?: Record<string, string>;
+    pushNotifications?: boolean;
+    emailNotifications?: boolean;
+  } = {}) {
+    if (!user?.id || !supabase) return;
+    const priorityMap: Record<string, string> = {
+      Haute: 'high',
+      Normale: 'normal',
+      Faible: 'low',
+      Off: 'off',
+    };
+    const sourcePriorities = overrides.priorities || priorities;
+    const mappedPriorities = Object.fromEntries(
+      Object.entries(sourcePriorities).map(([key, value]) => [key, priorityMap[value] || 'normal']),
+    );
+    await supabase
+      .from('profiles')
+      .update({
+        preferences: {
+          ...DEFAULT_NOTIFICATION_PREFERENCES,
+          ...mappedPriorities,
+          pushNotifications: overrides.pushNotifications ?? pushEnabled,
+          emailNotifications: overrides.emailNotifications ?? emailEnabled,
+        },
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', user.id);
+  }
+
   function confirmDelete() {
     Alert.alert(
       'Demander la suppression du compte',
-      "Cette action crée uniquement une demande locale de démonstration. Aucune donnée n'est supprimée.",
+      'Votre compte sera marqué pour suppression. La modération MOXT traitera la demande.',
       [
         { text: 'Annuler', style: 'cancel' },
-        { text: 'Demander', style: 'destructive', onPress: () => Alert.alert('Demande enregistrée', "Aucune donnée réelle n'a été supprimée.") },
+        {
+          text: 'Demander',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              if (!user?.id) return;
+              await authService.requestAccountDeletion(user.id);
+              Alert.alert('Demande enregistrée', 'Votre demande de suppression a été transmise.');
+            } catch (error: any) {
+              Alert.alert('Erreur', error?.message || 'Impossible d’enregistrer la demande.');
+            }
+          },
+        },
       ],
     );
   }
@@ -121,14 +190,28 @@ export default function SettingsScreen() {
               <Text className="text-sm font-extrabold text-app-text dark:text-zinc-50">Notifications push</Text>
               <Text className="text-xs text-app-text-muted dark:text-zinc-400 mt-0.5">Alertes en temps réel sur l'appareil</Text>
             </View>
-            <Switch value={pushEnabled} onValueChange={setPushEnabled} trackColor={{ true: '#0b8975' }} />
+            <Switch
+              value={pushEnabled}
+              onValueChange={(value) => {
+                setPushEnabled(value);
+                void persistPreferences({ pushNotifications: value });
+              }}
+              trackColor={{ true: '#0b8975' }}
+            />
           </View>
           <View className="flex-row items-center gap-3 mt-3">
             <View className="flex-1">
               <Text className="text-sm font-extrabold text-app-text dark:text-zinc-50">Notifications e-mail</Text>
               <Text className="text-xs text-app-text-muted dark:text-zinc-400 mt-0.5">Résumés et alertes par e-mail</Text>
             </View>
-            <Switch value={emailEnabled} onValueChange={setEmailEnabled} trackColor={{ true: '#0b8975' }} />
+            <Switch
+              value={emailEnabled}
+              onValueChange={(value) => {
+                setEmailEnabled(value);
+                void persistPreferences({ emailNotifications: value });
+              }}
+              trackColor={{ true: '#0b8975' }}
+            />
           </View>
 
           <Text className="text-[11px] font-black tracking-widest text-app-text-faint dark:text-zinc-500 mt-5 mb-1">
@@ -148,7 +231,11 @@ export default function SettingsScreen() {
                         'flex-1 rounded-lg py-1.5 items-center',
                         selected ? 'bg-brand-700' : 'bg-app-surface-muted dark:bg-zinc-800',
                       )}
-                      onPress={() => setPriorities((p) => ({ ...p, [key]: opt }))}>
+                      onPress={() => {
+                        const next = { ...priorities, [key]: opt };
+                        setPriorities(next);
+                        void persistPreferences({ priorities: next });
+                      }}>
                       <Text className={cn('text-[11px] font-black', selected ? 'text-white' : 'text-app-text-muted dark:text-zinc-400')}>
                         {opt}
                       </Text>

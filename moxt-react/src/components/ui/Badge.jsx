@@ -1,4 +1,4 @@
-import { FiCheckCircle, FiStar, FiZap } from 'react-icons/fi'
+import { FiCheck, FiCheckCircle, FiStar, FiZap } from 'react-icons/fi'
 
 /* ─── Tones (fond coloré, conserve l'API existante) ─────────────────────── */
 const tones = {
@@ -21,6 +21,29 @@ export function Badge({ children, className = '', tone = 'brand' }) {
       className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.06em] ${tones[tone] ?? tones.brand} ${className}`}
     >
       {children}
+    </span>
+  )
+}
+
+/* ─── Icône vérifiée (rond vert + check) ─────────────────────────────────── */
+export function VerifiedIcon({ size = 'md', className = '', title = 'Profil vérifié' }) {
+  const box = {
+    sm: 'size-5',
+    md: 'size-6',
+    lg: 'size-7',
+  }
+  const icon = {
+    sm: 'text-[10px]',
+    md: 'text-xs',
+    lg: 'text-sm',
+  }
+  return (
+    <span
+      title={title}
+      aria-label={title}
+      className={`inline-grid shrink-0 place-items-center rounded-full bg-emerald-500 text-white shadow-[0_0_0_2px_rgba(16,185,129,0.18)] ${box[size] ?? box.md} ${className}`}
+    >
+      <FiCheck className={icon[size] ?? icon.md} strokeWidth={3} aria-hidden="true" />
     </span>
   )
 }

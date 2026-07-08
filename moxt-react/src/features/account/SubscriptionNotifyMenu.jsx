@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { FiBell, FiBellOff, FiCheck, FiStar, FiVolumeX } from 'react-icons/fi'
 import {
   SUBSCRIPTION_NOTIFY_HINTS,
@@ -18,6 +19,55 @@ const PREF_TONES = {
   muted: 'text-slate-600 bg-slate-100 dark:text-slate-300 dark:bg-slate-800/60',
 }
 
+const MENU_ESTIMATED_HEIGHT = 320
+const VIEWPORT_GAP = 8
+
+function useFloatingStyle(open, anchorRef, align) {
+  const [style, setStyle] = useState(null)
+
+  useLayoutEffect(() => {
+    if (!open || !anchorRef.current) {
+      setStyle(null)
+      return undefined
+    }
+
+    function update() {
+      const rect = anchorRef.current.getBoundingClientRect()
+      const spaceBelow = window.innerHeight - rect.bottom - VIEWPORT_GAP
+      const spaceAbove = rect.top - VIEWPORT_GAP
+      const openUp = spaceBelow < MENU_ESTIMATED_HEIGHT && spaceAbove > spaceBelow
+
+      const next = {
+        position: 'fixed',
+        minWidth: '15.5rem',
+        maxWidth: `calc(100vw - ${VIEWPORT_GAP * 2}px)`,
+        maxHeight: openUp
+          ? Math.min(MENU_ESTIMATED_HEIGHT, spaceAbove)
+          : Math.min(MENU_ESTIMATED_HEIGHT, Math.max(spaceBelow, 180)),
+        zIndex: 80,
+      }
+
+      if (openUp) next.bottom = window.innerHeight - rect.top + VIEWPORT_GAP
+      else next.top = rect.bottom + VIEWPORT_GAP
+
+      if (align === 'left') next.left = Math.max(VIEWPORT_GAP, rect.left)
+      else next.right = Math.max(VIEWPORT_GAP, window.innerWidth - rect.right)
+
+      setStyle(next)
+    }
+
+    update()
+    window.addEventListener('resize', update)
+    window.addEventListener('scroll', update, true)
+    return () => {
+      window.removeEventListener('resize', update)
+      window.removeEventListener('scroll', update, true)
+    }
+  }, [open, align, anchorRef])
+
+  return style
+}
+
 export function SubscriptionNotifyMenu({
   activePref = 'all',
   isSubscribed = false,
@@ -27,12 +77,16 @@ export function SubscriptionNotifyMenu({
   align = 'right',
 }) {
   const [open, setOpen] = useState(false)
-  const rootRef = useRef(null)
+  const anchorRef = useRef(null)
+  const menuRef = useRef(null)
+  const floatingStyle = useFloatingStyle(open, anchorRef, align)
 
   useEffect(() => {
     if (!open) return undefined
     function handlePointer(event) {
-      if (!rootRef.current?.contains(event.target)) setOpen(false)
+      if (anchorRef.current?.contains(event.target)) return
+      if (menuRef.current?.contains(event.target)) return
+      setOpen(false)
     }
     function handleEscape(event) {
       if (event.key === 'Escape') setOpen(false)
@@ -50,14 +104,12 @@ export function SubscriptionNotifyMenu({
     setOpen(false)
   }
 
-  return (
-    <div ref={rootRef} className="relative inline-flex">
-      <div onClick={() => setOpen((value) => !value)}>{trigger}</div>
-      {open ? (
+  const menu = open && floatingStyle
+    ? createPortal(
         <div
-          className={`absolute top-[calc(100%+0.5rem)] z-50 min-w-[15.5rem] overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-1.5 shadow-[var(--shadow-float)] backdrop-blur-xl ${
-            align === 'left' ? 'left-0' : 'right-0'
-          }`}
+          ref={menuRef}
+          style={floatingStyle}
+          className="panel-pop overflow-y-auto rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-1.5 shadow-[var(--shadow-float)] backdrop-blur-xl"
           role="menu"
           aria-label="Préférences de notification d'abonnement"
         >
@@ -112,8 +164,17 @@ export function SubscriptionNotifyMenu({
               </button>
             </>
           ) : null}
-        </div>
-      ) : null}
-    </div>
+        </div>,
+        document.body,
+      )
+    : null
+
+  return (
+    <>
+      <div ref={anchorRef} className="inline-flex" onClick={() => setOpen((value) => !value)}>
+        {trigger}
+      </div>
+      {menu}
+    </>
   )
 }

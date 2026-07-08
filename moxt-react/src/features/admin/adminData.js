@@ -13,20 +13,35 @@ import {
   FiUserCheck,
   FiUsers,
 } from 'react-icons/fi'
-import { formatDate, formatMoney } from '../transfers/transferUtils'
+import { REVIEW_DISPUTE_STATUS } from '@moxt/shared/utils/reviewUtils.js'
 
 export function buildQueues(state) {
   return {
     verifications: state.account.verificationRequests.filter((i) => ['pending_review', 'pending'].includes(i.status)),
     disputes: state.disputes.items.filter((i) => ['new', 'open'].includes(i.status)),
     reviews: state.reviews.items.filter((i) => i.status === 'pending'),
+    contestedReviews: state.reviews.items.filter(
+      (i) => i.disputeStatus === REVIEW_DISPUTE_STATUS.PENDING,
+    ),
     reports: [
-      ...state.marketplace.reports.filter((i) => i.status === 'pending').map((i) => ({ ...i, reportType: 'listing', relatedId: i.listingId })),
-      ...state.jobs.reports.filter((i) => i.status === 'pending').map((i) => ({ ...i, reportType: 'job', relatedId: i.jobId })),
-      ...state.events.reports.filter((i) => i.status === 'pending').map((i) => ({ ...i, reportType: 'event', relatedId: i.eventId })),
+      ...state.marketplace.reports.filter((i) => ['pending', 'new'].includes(i.status)).map((i) => ({ ...i, reportType: 'listing', relatedId: i.listingId })),
+      ...state.jobs.reports.filter((i) => ['pending', 'new'].includes(i.status)).map((i) => ({ ...i, reportType: 'job', relatedId: i.jobId })),
+      ...state.events.reports.filter((i) => ['pending', 'new'].includes(i.status)).map((i) => ({ ...i, reportType: 'event', relatedId: i.eventId })),
+      ...(state.account.subscriberReports || [])
+        .filter((i) => ['pending', 'new'].includes(i.status))
+        .map((i) => ({
+          ...i,
+          reportType: 'subscriber',
+          relatedId: i.subscriberId,
+        })),
     ],
     get urgent() {
-      return this.verifications.length + this.disputes.length + this.reports.length
+      return (
+        this.verifications.length +
+        this.disputes.length +
+        this.reports.length +
+        this.contestedReviews.length
+      )
     },
   }
 }
@@ -38,7 +53,11 @@ export function buildAdminMetrics(state) {
   const jobs = state.jobs.items
   const events = state.events.items
   const parcels = state.parcels.items
-  const reports = state.marketplace.reports.length + state.jobs.reports.length + state.events.reports.length
+  const reports =
+    state.marketplace.reports.length +
+    state.jobs.reports.length +
+    state.events.reports.length +
+    (state.account.subscriberReports || []).length
   const queues = buildQueues(state)
 
   return {
@@ -73,6 +92,11 @@ export function buildContentCollections(state) {
     ...state.marketplace.reports.map((i) => ({ ...i, reportType: 'annonce', relatedId: i.listingId })),
     ...state.jobs.reports.map((i) => ({ ...i, reportType: 'emploi', relatedId: i.jobId })),
     ...state.events.reports.map((i) => ({ ...i, reportType: 'evenement', relatedId: i.eventId })),
+    ...(state.account.subscriberReports || []).map((i) => ({
+      ...i,
+      reportType: 'abonne',
+      relatedId: i.subscriberId,
+    })),
   ]
   return {
     businesses: state.businesses.items,

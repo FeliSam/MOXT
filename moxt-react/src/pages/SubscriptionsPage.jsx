@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { FiBell, FiBriefcase, FiExternalLink, FiUser } from 'react-icons/fi'
+import { FiBell, FiBriefcase, FiExternalLink, FiStar, FiUser, FiVolumeX } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
@@ -148,9 +148,21 @@ function SubscriptionGroup({ title, icon: Icon, items, onPrefChange, onUnsubscri
                 onSelect={(pref) => onPrefChange(item, pref)}
                 onUnsubscribe={() => onUnsubscribe(item)}
                 trigger={
-                  <Button size="sm" variant="primary" icon={FiBell}>
-                    Notifications
-                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    iconOnly
+                    icon={
+                      item.notifyPref === 'muted'
+                        ? FiVolumeX
+                        : item.notifyPref === 'important'
+                          ? FiStar
+                          : FiBell
+                    }
+                    aria-label={`Notifications : ${SUBSCRIPTION_NOTIFY_LABELS[item.notifyPref] || item.notifyPref}`}
+                    title={SUBSCRIPTION_NOTIFY_LABELS[item.notifyPref] || 'Notifications'}
+                    className="border border-[var(--app-border)] bg-[var(--app-surface)] hover:bg-[var(--app-surface-muted)]"
+                  />
                 }
               />
             </div>

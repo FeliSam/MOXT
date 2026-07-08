@@ -3,7 +3,7 @@ import { saveListingRemote } from '../features/marketplace/marketplaceRemote'
 import { saveBusinessRemote, upsertBusinessDocumentRemote, upsertBusinessMemberRemote, upsertBusinessRequestRemote } from '../features/businesses/businessRemote'
 import { reviewToRemoteRow } from '../features/reviews/reviewRemote'
 import { identityToRemoteRow } from '../features/identity/identityRemote'
-import { p2pOfferToRemoteRow, p2pOrderToRemoteRow, reportToRemoteRow } from '../features/sync/entityRemote'
+import { p2pOfferToRemoteRow, p2pOrderToRemoteRow, reportToRemoteRow, subscriberBanToRemoteRow, subscriberReportToRemoteRow } from '../features/sync/entityRemote'
 import {
   persistConversationRemote,
   persistMessageForConversation,
@@ -13,6 +13,8 @@ import {
 import { normalizeConversation, replaceConversationId } from '../features/communications/communicationSlice'
 import { fromRow } from '../services/remoteRowMapper'
 import { addToast } from '../features/ui/uiSlice'
+import { authService } from '../features/auth/authService'
+import { selectAccountPreferences } from '../features/account/accountSlice'
 
 async function triggerEmail(transferId, event) {
   await supabase.functions.invoke('send-email', {
@@ -51,6 +53,7 @@ function toSnake(obj) {
     publisherName: 'publisher_name',
     publisherPath: 'publisher_path',
     subscriberId: 'subscriber_id',
+    bannedBy: 'banned_by',
     moderatedAt: 'moderated_at',
     moderatedBy: 'moderated_by',
     sellerName: 'seller_name',
@@ -739,6 +742,38 @@ const handlers = {
       .eq('publisher_id', payload.publisherId)
     if (error) throw error
   },
+  'account/removeSubscriberByPublisher': async (payload) => {
+    const { error } = await supabase
+      .from('publisher_subscriptions')
+      .delete()
+      .eq('subscriber_id', payload.subscriberId)
+      .eq('publisher_type', payload.publisherType)
+      .eq('publisher_id', payload.publisherId)
+    if (error) throw error
+  },
+  'account/banPublisherSubscriber': async (payload) => {
+    await upsert('publisher_subscriber_bans', subscriberBanToRemoteRow(payload))
+    const { error } = await supabase
+      .from('publisher_subscriptions')
+      .delete()
+      .eq('subscriber_id', payload.subscriberId)
+      .eq('publisher_type', payload.publisherType)
+      .eq('publisher_id', payload.publisherId)
+    if (error) throw error
+  },
+  'account/unbanPublisherSubscriber': async (payload) => {
+    const { error } = await supabase
+      .from('publisher_subscriber_bans')
+      .delete()
+      .eq('id', payload.id)
+    if (error) throw error
+  },
+  'account/reportPublisherSubscriber': async (payload) => {
+    await upsert('subscriber_reports', subscriberReportToRemoteRow(payload))
+  },
+  'account/updateSubscriberReportStatus': async (payload) => {
+    await update('subscriber_reports', payload.id, { status: payload.status })
+  },
   'account/toggleAccountFavorite': async (payload, state) => {
     const exists = state.account.favorites.some(
       (f) => f.relatedId === payload.relatedId && f.userId === payload.userId,
@@ -797,17 +832,42 @@ const handlers = {
       })
     }
   },
-  'account/updateAccountPreferences': async (payload) => {
-    if (payload.preferences?.activityVisibility) {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          activity_visibility: payload.preferences.activityVisibility,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', payload.userId)
-      if (error) throw error
+  'account/updateAccountPreferences': async (payload, state) => {
+    const mergedPreferences = {
+      ...selectAccountPreferences(state, payload.userId),
+      ...payload.preferences,
     }
+    const updates = {
+      updated_at: new Date().toISOString(),
+      preferences: mergedPreferences,
+    }
+    if (payload.preferences?.activityVisibility) {
+      updates.activity_visibility = payload.preferences.activityVisibility
+    }
+    const { error } = await supabase.from('profiles').update(updates).eq('id', payload.userId)
+    if (error) throw error
+  },
+  'account/requestAccountDeletion': async (payload) => {
+    await authService.requestAccountDeletion(payload.userId, payload.id)
+  },
+  'account/cancelAccountDeletion': async (payload) => {
+    await authService.cancelAccountDeletion(payload)
+    return payload
+  },
+  'administration/updateUserRole': async (payload) => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ role: payload.role, updated_at: new Date().toISOString() })
+      .eq('id', payload.id)
+    if (error) throw error
+  },
+  'administration/updateUserStatus': async (payload) => {
+    const profileStatus = payload.status === 'suspended' ? 'suspended' : 'active'
+    const { error } = await supabase
+      .from('profiles')
+      .update({ status: profileStatus, updated_at: new Date().toISOString() })
+      .eq('id', payload.id)
+    if (error) throw error
   },
 
   // ── Adresses destinataires ────────────────────────────────────────────────────
@@ -902,8 +962,25 @@ const handlers = {
   },
 
   // ── Avis ──────────────────────────────────────────────────────────────────────
-  'reviews/createReview': async (payload) => {
-    await upsert('reviews', reviewToRemoteRow(payload))
+  'reviews/createReview': async (payload, state) => {
+    const review =
+      state.reviews.items.find((item) => item.id === payload.id) ||
+      state.reviews.items.find(
+        (item) =>
+          item.authorId === payload.authorId &&
+          item.targetType === payload.targetType &&
+          item.targetId === payload.targetId,
+      ) ||
+      payload
+    await upsert('reviews', reviewToRemoteRow(review))
+  },
+  'reviews/replyToReview': async (payload, state) => {
+    const review = state.reviews.items.find((item) => item.id === payload.id)
+    if (review) await upsert('reviews', reviewToRemoteRow(review))
+  },
+  'reviews/contestReview': async (payload, state) => {
+    const review = state.reviews.items.find((item) => item.id === payload.id)
+    if (review) await upsert('reviews', reviewToRemoteRow(review))
   },
   'reviews/moderateReview': async (payload, state) => {
     const review = state.reviews.items.find((item) => item.id === payload.id)

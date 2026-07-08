@@ -96,24 +96,18 @@ export function publicationTotalCount(publications) {
   )
 }
 
-export function buildUserPublicationProfile(userId, publications, fallbackName = 'Membre MOXT') {
+export function buildUserPublicationProfile(userId, publications, options = {}) {
+  const { displayName = 'Membre MOXT' } = options
   const archiveCounts = publicationArchiveCounts(publications)
   const sampleListing = publications.listings[0]
-  const sampleJob = publications.jobs[0]
-  const sampleParcel = publications.parcels[0]
   const sampleEvent = publications.events[0]
 
   return {
     userId,
-    name:
-      sampleListing?.sellerName ||
-      sampleJob?.publisherName ||
-      sampleParcel?.ownerName ||
-      sampleEvent?.organizerName ||
-      fallbackName,
+    name: displayName,
     city: sampleListing?.city || sampleEvent?.city || '',
     country:
-      sampleListing?.country || sampleParcel?.originCountry || sampleEvent?.country || 'RU',
+      sampleListing?.country || publications.parcels[0]?.originCountry || sampleEvent?.country || 'RU',
     activeCount: archiveCounts.active,
     archivedCount: archiveCounts.archived,
     totalViews: publicationTotalViews(publications),

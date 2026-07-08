@@ -15,6 +15,7 @@ import { setAll as setFinance } from '../features/finance/financeSlice'
 import { setAll as setPosts } from '../features/posts/postsSlice'
 import { setRecipientAddresses } from '../features/addresses/recipientAddressesSlice'
 import { hydrateAccountPreferences, mergeRemoteAccount } from '../features/account/accountSlice'
+import { profileRowToAdminUser, setAdminUsers } from '../features/administration/administrationSlice'
 import { setIdentityProfiles } from '../features/identity/identitySlice'
 import { listingFromRemoteRow, mergeListingQuestions } from '../features/marketplace/marketplaceRemote'
 import { fromRow, fromRows } from '../services/remoteRowMapper'
@@ -95,7 +96,7 @@ export const loadAllData = createAsyncThunk(
       eventsRes, eventRegistrationsRes,
       businessesRes,
       transfersRes,
-      favoritesRes, subscriptionsRes, transferProfilesRes, verificationRequestsRes, personalDocumentsRes,
+      favoritesRes, subscriptionsRes, subscriberBansRes, subscriberReportsRes, transferProfilesRes, verificationRequestsRes, personalDocumentsRes,
       p2pOffersRes, p2pOrdersRes,
       reviewsRes,
       disputesRes,
@@ -123,6 +124,8 @@ export const loadAllData = createAsyncThunk(
       supabase.from('transfers').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(USER_LIMIT),
       supabase.from('favorites').select('*').eq('user_id', uid).limit(USER_LIMIT),
       supabase.from('publisher_subscriptions').select('*').limit(USER_LIMIT),
+      supabase.from('publisher_subscriber_bans').select('*').limit(USER_LIMIT),
+      supabase.from('subscriber_reports').select('*').limit(USER_LIMIT),
       supabase.from('transfer_profiles').select('*').eq('user_id', uid).limit(USER_LIMIT),
       supabase.from('verification_requests').select('*').eq('user_id', uid).limit(USER_LIMIT),
       supabase.from('personal_documents').select('*').eq('user_id', uid).limit(USER_LIMIT),
@@ -137,7 +140,7 @@ export const loadAllData = createAsyncThunk(
       supabase.from('posts').select('*').eq('status', 'published').order('created_at', { ascending: false }).limit(100),
       supabase.from('support_tickets').select('*').eq('user_id', uid).order('updated_at', { ascending: false }).limit(50),
       supabase.from('recipient_addresses').select('*').eq('user_id', uid).order('updated_at', { ascending: false }).limit(USER_LIMIT),
-      supabase.from('profiles').select('activity_visibility, role').eq('id', uid).maybeSingle(),
+      supabase.from('profiles').select('activity_visibility, role, preferences').eq('id', uid).maybeSingle(),
     ])
 
     const isAdmin = ['admin', 'superadmin'].includes(
@@ -168,6 +171,8 @@ export const loadAllData = createAsyncThunk(
       listingReportsRes,
       jobReportsRes,
       eventReportsRes,
+      adminProfilesRes,
+      deletionRequestsRes,
     ] = await Promise.all([
       ownedBusinessIds.length
         ? supabase.from('business_members').select('*').in('business_id', ownedBusinessIds).limit(USER_LIMIT)
@@ -185,6 +190,19 @@ export const loadAllData = createAsyncThunk(
       isAdmin
         ? supabase.from('event_reports').select('*').order('created_at', { ascending: false }).limit(USER_LIMIT)
         : supabase.from('event_reports').select('*').eq('reporter_id', uid).limit(USER_LIMIT),
+      isAdmin
+        ? supabase
+            .from('profiles')
+            .select('id, first_name, last_name, email, phone, city, role, status, created_at, updated_at')
+            .order('created_at', { ascending: false })
+            .limit(USER_LIMIT)
+        : Promise.resolve({ data: [] }),
+      supabase
+        .from('account_deletion_requests')
+        .select('*')
+        .eq('user_id', uid)
+        .order('created_at', { ascending: false })
+        .limit(20),
     ])
 
     if (listingQuestionsRes.error) {
@@ -368,6 +386,18 @@ export const loadAllData = createAsyncThunk(
           ...item,
           userId: item.userId || item.subscriberId,
         })),
+        subscriberBans: fromRows(safeRows(subscriberBansRes, 'des bannissements abonnes')).map(
+          (item) => ({
+            ...item,
+            subscriberId: item.subscriberId || item.userId,
+          }),
+        ),
+        subscriberReports: fromRows(safeRows(subscriberReportsRes, 'des signalements abonnes')).map(
+          (item) => ({
+            ...item,
+            subscriberId: item.subscriberId || item.userId,
+          }),
+        ),
         transferProfiles: fromRows(safeRows(transferProfilesRes, 'des profils transfert')),
         documents: fromRows(safeRows(personalDocumentsRes, 'des documents')),
         verificationRequests: fromRows(
@@ -376,14 +406,35 @@ export const loadAllData = createAsyncThunk(
           ...item,
           documentIds: parseJsonField(item.documentIds, []),
         })),
+        deletionRequests: fromRows(
+          safeRows(deletionRequestsRes, 'des demandes de suppression'),
+        ).map((item) => ({
+          ...item,
+          userId: item.userId || item.user_id,
+        })),
       }))
+      if (isAdmin) {
+        dispatch(
+          setAdminUsers(
+            safeRows(adminProfilesRes, 'des profils utilisateurs')
+              .map(profileRowToAdminUser)
+              .filter(Boolean),
+          ),
+        )
+      }
       dispatch(setRecipientAddresses(fromRows(safeRows(recipientAddressesRes, 'des adresses'))))
       dispatch(setIdentityProfiles(mergedIdentity))
-      if (profileRes.data?.activity_visibility) {
+      const profilePreferences = parseJsonField(profileRes.data?.preferences, {})
+      if (profileRes.data?.activity_visibility || Object.keys(profilePreferences).length) {
         dispatch(
           hydrateAccountPreferences({
             userId: uid,
-            preferences: { activityVisibility: profileRes.data.activity_visibility },
+            preferences: {
+              ...profilePreferences,
+              ...(profileRes.data?.activity_visibility
+                ? { activityVisibility: profileRes.data.activity_visibility }
+                : {}),
+            },
           }),
         )
       }

@@ -8,7 +8,6 @@ import {
   FiShoppingBag,
   FiStar,
 } from 'react-icons/fi'
-import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useParams } from 'react-router-dom'
 import { Badge, VerifiedBadge } from '../components/ui/Badge'
@@ -28,12 +27,12 @@ import { statusMeta } from '../config/statuses'
 import { FavoriteButton } from '../features/account/FavoriteButton'
 import { SubscribeButton } from '../features/account/SubscribeButton'
 import {
-  calculateBusinessRating,
   selectBusinessContent,
 } from '../features/businesses/businessSelectors'
 import { moderateBusiness } from '../features/businesses/businessSlice'
 import { ContactButton } from '../features/communications/ContactButton'
-import { createReview } from '../features/reviews/reviewSlice'
+import { selectBusinessReviewsBundle } from '../features/reviews/reviewSelectors'
+import { ReviewsSection, REVIEW_TARGET_TYPES } from '../features/reviews/ReviewsSection'
 
 const serviceSections = [
   { key: 'listings', label: 'Annonces', icon: FiShoppingBag, service: 'Marketplace' },
@@ -50,15 +49,9 @@ export function BusinessDetailPage() {
     state.businesses.items.find((item) => item.id === businessId),
   )
   const content = useSelector((state) => selectBusinessContent(state, business))
-  const reviews = useSelector((state) =>
-    state.reviews.items.filter(
-      (item) =>
-        item.targetType === 'business' &&
-        item.targetId === businessId &&
-        item.status === 'published',
-    ),
+  const { reviews, rating } = useSelector((state) =>
+    selectBusinessReviewsBundle(state, business),
   )
-  const [review, setReview] = useState({ rating: 5, comment: '' })
 
   const canPreview =
     business?.ownerId === user.id ||
@@ -68,7 +61,6 @@ export function BusinessDetailPage() {
     return <EmptyState title="Entreprise introuvable ou en attente de validation" />
   }
 
-  const rating = calculateBusinessRating(reviews)
   const activity = activityByValue(business.primaryActivity)
   const experience = businessExperienceForActivity(business.primaryActivity)
   const isAdminViewer = ['admin', 'superadmin'].includes(user.role)
@@ -304,73 +296,15 @@ export function BusinessDetailPage() {
           </div>
         </div>
       ) : null}
-      <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
-        {business.ownerId !== user.id ? (
-          <Card>
-            <h2 className="font-black">Laisser un avis</h2>
-            <form
-              className="mt-5 grid gap-4"
-              onSubmit={(event) => {
-                event.preventDefault()
-                if (review.comment.trim().length < 5) return
-                dispatch(
-                  createReview({
-                    targetType: 'business',
-                    targetId: business.id,
-                    authorId: user.id,
-                    authorName: `${user.firstName} ${user.lastName}`,
-                    rating: review.rating,
-                    comment: review.comment,
-                  }),
-                )
-                setReview({ rating: 5, comment: '' })
-              }}
-            >
-              <label className="grid gap-1.5 text-sm font-semibold">
-                Note
-                <select
-                  className="min-h-11 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3"
-                  value={review.rating}
-                  onChange={(event) => setReview({ ...review, rating: Number(event.target.value) })}
-                >
-                  {[5, 4, 3, 2, 1].map((value) => (
-                    <option key={value} value={value}>
-                      {value}/5
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="grid gap-1.5 text-sm font-semibold">
-                Commentaire
-                <textarea
-                  className="min-h-28 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3"
-                  value={review.comment}
-                  onChange={(event) => setReview({ ...review, comment: event.target.value })}
-                />
-              </label>
-              <Button type="submit">Publier l’avis</Button>
-            </form>
-          </Card>
-        ) : null}
-        <Card>
-          <h2 className="font-black">Avis de la communauté</h2>
-          <div className="mt-5 grid gap-3">
-            {reviews.length ? (
-              reviews.map((item) => (
-                <div key={item.id} className="rounded-xl bg-[var(--app-surface-muted)] p-4">
-                  <div className="flex justify-between gap-3">
-                    <strong>{item.authorName}</strong>
-                    <Badge tone="warning">{item.rating}/5</Badge>
-                  </div>
-                  <p className="mt-2 text-sm text-[var(--app-text-muted)]">{item.comment}</p>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-[var(--app-text-muted)]">Aucun avis publié.</p>
-            )}
-          </div>
-        </Card>
-      </div>
+
+      <ReviewsSection
+        ownerId={business.ownerId}
+        ownerName={business.name}
+        profileTargetType={REVIEW_TARGET_TYPES.BUSINESS}
+        profileTargetId={business.id}
+        reviews={reviews}
+        currentUser={user}
+      />
     </div>
   )
 }

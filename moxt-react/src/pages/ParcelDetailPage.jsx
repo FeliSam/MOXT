@@ -24,6 +24,8 @@ import { Input } from '../components/ui/Input'
 import { addToast } from '../features/ui/uiSlice'
 import { statusMeta } from '../config/statuses'
 import { formatMoney } from '../features/transfers/transferUtils'
+import { PublisherDetailCard } from '../features/publications/PublisherDetailCard'
+import { usePublisherDetailProfile } from '../features/publications/usePublisherDetailProfile'
 
 export function ParcelDetailPage() {
   const dispatch = useDispatch()
@@ -44,6 +46,7 @@ export function ParcelDetailPage() {
   const isAdmin = ['admin', 'superadmin'].includes(user.role)
   const canSeeProof = isAdmin || user.id === parcel.ownerId
   const proofMeta = statusMeta(parcel.proofStatus)
+  const publisherProfile = usePublisherDetailProfile(parcel, 'parcel')
 
   function handleRequestStatus(request, status) {
     dispatch(updateParcelRequestStatus({ id: request.id, status }))
@@ -333,14 +336,17 @@ export function ParcelDetailPage() {
             </div>
           ) : null}
         </DetailSection>
-        <TrustPanel
-          title="Transport sécurisé"
-          items={[
-            'Les preuves de voyage restent privées et réservées à l\'administration.',
-            'Les objets transportés doivent être déclarés.',
-            'La réservation est confirmée par le transporteur.',
-          ]}
-        />
+        <div className="grid gap-5">
+          {publisherProfile ? <PublisherDetailCard {...publisherProfile} /> : null}
+          <TrustPanel
+            title="Transport sécurisé"
+            items={[
+              'Les preuves de voyage restent privées et réservées à l\'administration.',
+              'Les objets transportés doivent être déclarés.',
+              'La réservation est confirmée par le transporteur.',
+            ]}
+          />
+        </div>
       </div>
     </div>
   )

@@ -1,6 +1,8 @@
 import {
   findSubscription,
+  filterPublisherBans,
   filterPublisherSubscribers,
+  isSubscriberBanned,
 } from '@moxt/shared/utils/subscriptionUtils.js'
 
 export function selectUserSubscriptions(state, userId) {
@@ -14,6 +16,19 @@ export function selectPublisherSubscription(state, userId, publisherType, publis
 
 export function selectPublisherSubscribers(state, publisherType, publisherId) {
   return filterPublisherSubscribers(state.account.subscriptions, publisherType, publisherId)
+}
+
+export function selectPublisherBans(state, publisherType, publisherId) {
+  return filterPublisherBans(state.account.subscriberBans, publisherType, publisherId)
+}
+
+export function selectIsSubscriberBanned(state, subscriberId, publisherType, publisherId) {
+  return isSubscriberBanned(
+    state.account.subscriberBans,
+    subscriberId,
+    publisherType,
+    publisherId,
+  )
 }
 
 export function selectSubscribedPublisherKeys(state, userId) {

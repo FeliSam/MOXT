@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
-import { updateVerificationStatus } from '../account/accountSlice'
+import { updateVerificationStatus, updateSubscriberReportStatus } from '../account/accountSlice'
 import { updateUserRole } from '../administration/administrationSlice'
 import { moderateBusiness } from '../businesses/businessSlice'
 import { updateDisputeStatus } from '../disputes/disputeSlice'
@@ -30,6 +30,10 @@ export function handleReportApprove(dispatch, item) {
   if (item.reportType === 'event') {
     dispatch(updateEventReportStatus({ id: item.id, status: 'resolved' }))
     dispatch(moderateEvent({ id: item.relatedId, status: 'rejected' }))
+    return
+  }
+  if (item.reportType === 'subscriber') {
+    dispatch(updateSubscriberReportStatus({ id: item.id, status: 'resolved' }))
   }
 }
 
@@ -44,6 +48,10 @@ export function handleReportReject(dispatch, item) {
   }
   if (item.reportType === 'event') {
     dispatch(updateEventReportStatus({ id: item.id, status: 'dismissed' }))
+    return
+  }
+  if (item.reportType === 'subscriber') {
+    dispatch(updateSubscriberReportStatus({ id: item.id, status: 'dismissed' }))
   }
 }
 

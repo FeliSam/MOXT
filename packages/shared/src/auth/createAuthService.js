@@ -16,6 +16,7 @@ function profileToUser(profile) {
     role: profile.role || 'user',
     verified: profile.status === 'verified',
     status: profile.status || 'active',
+    createdAt: profile.created_at || profile.updated_at || null,
   }
 }
 
@@ -310,6 +311,23 @@ export function createAuthService(supabase, redirects = {}) {
       await supabase.auth.signOut()
     },
 
+    async signOutOtherSessions() {
+      if (!supabase) return
+      const { error } = await supabase.auth.signOut({ scope: 'others' })
+      if (error) throw new Error(error.message)
+    },
+
+    async updatePassword(newPassword) {
+      if (!supabase) throw new Error('Supabase non configuré.')
+      const password = String(newPassword || '').trim()
+      if (password.length < 8) {
+        throw new Error('Le mot de passe doit contenir au moins 8 caractères.')
+      }
+      const { error } = await supabase.auth.updateUser({ password })
+      if (error) throw new Error(translateAuthError(error))
+      return true
+    },
+
     async requestPasswordReset(email) {
       if (!supabase) return true
       const redirectTo = getPasswordResetRedirectUrl()
@@ -317,6 +335,94 @@ export function createAuthService(supabase, redirects = {}) {
         redirectTo: redirectTo || undefined,
       })
       if (error) throw new Error(error.message)
+      return true
+    },
+
+    async listMfaFactors() {
+      if (!supabase) return { totp: [] }
+      const { data, error } = await supabase.auth.mfa.listFactors()
+      if (error) throw new Error(error.message)
+      return data || { totp: [] }
+    },
+
+    async enrollMfa() {
+      if (!supabase) throw new Error('Supabase non configuré.')
+      const { data, error } = await supabase.auth.mfa.enroll({
+        factorType: 'totp',
+        friendlyName: 'MOXT Authenticator',
+      })
+      if (error) throw new Error(error.message)
+      return data
+    },
+
+    async verifyMfaEnrollment({ factorId, challengeId, code }) {
+      if (!supabase) throw new Error('Supabase non configuré.')
+      const { data, error } = await supabase.auth.mfa.verify({
+        factorId,
+        challengeId,
+        code: String(code || '').trim(),
+      })
+      if (error) throw new Error(error.message)
+      return data
+    },
+
+    async challengeMfa(factorId) {
+      if (!supabase) throw new Error('Supabase non configuré.')
+      const { data, error } = await supabase.auth.mfa.challenge({ factorId })
+      if (error) throw new Error(error.message)
+      return data
+    },
+
+    async unenrollMfa(factorId) {
+      if (!supabase) throw new Error('Supabase non configuré.')
+      const { error } = await supabase.auth.mfa.unenroll({ factorId })
+      if (error) throw new Error(error.message)
+      return true
+    },
+
+    async requestAccountDeletion(userId, requestId) {
+      if (!supabase || !userId) throw new Error('Session expirée.')
+      const now = new Date().toISOString()
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ status: 'pending_deletion', updated_at: now })
+        .eq('id', userId)
+      if (profileError) throw new Error(profileError.message)
+
+      const id = requestId || `DEL-${Date.now().toString(36).toUpperCase()}`
+      const { error } = await supabase.from('account_deletion_requests').insert({
+        id,
+        user_id: userId,
+        status: 'requested',
+        created_at: now,
+      })
+      if (error) throw new Error(error.message)
+      return { id, userId, status: 'requested', createdAt: now }
+    },
+
+    async cancelAccountDeletion(userId) {
+      if (!supabase || !userId) throw new Error('Session expirée.')
+      const now = new Date().toISOString()
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ status: 'active', updated_at: now })
+        .eq('id', userId)
+      if (profileError) throw new Error(profileError.message)
+
+      const { data: rows } = await supabase
+        .from('account_deletion_requests')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('status', 'requested')
+        .limit(1)
+
+      if (rows?.[0]?.id) {
+        const { error } = await supabase
+          .from('account_deletion_requests')
+          .update({ status: 'cancelled', cancelled_at: now })
+          .eq('id', rows[0].id)
+        if (error) throw new Error(error.message)
+      }
       return true
     },
 

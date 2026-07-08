@@ -8,6 +8,10 @@ import {
   resolvePublisherFromContent,
 } from '../features/account/publisherSubscriptionNotify'
 
+import { createNotificationDispatcher } from './notificationTriggers'
+import { hasReviewEligibility } from '@moxt/shared/utils/reviewEligibility.js'
+import { setUser } from '../features/auth/authSlice'
+
 function notify(store, payload) {
   if (payload.userId) store.dispatch(addNotification(payload))
 }
@@ -30,11 +34,112 @@ function fanOutPublication(store, state, item, contentType, title, linkBuilder, 
   })
 }
 
-export const interactionMiddleware = (store) => (next) => (action) => {
+export const interactionMiddleware = (store) => {
+  const triggers = createNotificationDispatcher(store)
+  return (next) => (action) => {
   const before = store.getState()
+
+  if (action.type === 'reviews/createReview') {
+    const existed = before.reviews.items.some(
+      (item) =>
+        item.authorId === action.payload.authorId &&
+        item.targetType === action.payload.targetType &&
+        item.targetId === action.payload.targetId,
+    )
+    if (!existed) {
+      const eligibility = hasReviewEligibility(
+        before,
+        action.payload.authorId,
+        action.payload.targetType,
+        action.payload.targetId,
+      )
+      if (!eligibility.allowed) {
+        store.dispatch(
+          addToast({
+            title: 'Avis non autorisé',
+            message: eligibility.reason,
+            tone: 'error',
+          }),
+        )
+        return action
+      }
+    }
+  }
+
   const result = next(action)
   const after = store.getState()
   const actorId = after.auth.user?.id
+
+  if (action.type === 'reviews/createReview') {
+    const existed = before.reviews.items.some(
+      (item) =>
+        item.authorId === action.payload.authorId &&
+        item.targetType === action.payload.targetType &&
+        item.targetId === action.payload.targetId,
+    )
+    const created = after.reviews.items.some(
+      (item) =>
+        item.authorId === action.payload.authorId &&
+        item.targetType === action.payload.targetType &&
+        item.targetId === action.payload.targetId,
+    )
+    if (!existed && created) {
+      triggers.handleReviewCreated(before, after, action)
+    }
+  }
+  if (action.type === 'reviews/replyToReview') {
+    triggers.handleReviewReply(before, after, action)
+  }
+  if (action.type === 'reviews/contestReview') {
+    triggers.handleReviewContest(before, after, action)
+  }
+  if (action.type === 'account/upsertPublisherSubscription') {
+    triggers.handleNewSubscriber(before, after, action)
+  }
+  if (action.type === 'account/removeSubscriberByPublisher') {
+    triggers.handleSubscriberRemovedByPublisher(before, after, action)
+  }
+  if (action.type === 'account/banPublisherSubscriber') {
+    triggers.handleSubscriberBanned(before, after, action)
+  }
+  if (action.type === 'account/reportPublisherSubscriber') {
+    triggers.handleSubscriberReported(before, after, action)
+  }
+  if (action.type === 'administration/updateUserRole' && action.payload.id === actorId) {
+    const user = after.auth.user
+    if (user) store.dispatch(setUser({ ...user, role: action.payload.role }))
+  }
+  if (action.type === 'administration/updateUserStatus' && action.payload.id === actorId) {
+    const user = after.auth.user
+    if (user) store.dispatch(setUser({ ...user, status: action.payload.status }))
+  }
+  if (action.type === 'posts/toggleLike') {
+    triggers.handlePostLike(before, after, action)
+  }
+  if (action.type === 'posts/addComment') {
+    triggers.handlePostComment(before, after, action)
+  }
+  if (action.type === 'p2p/acceptOffer') {
+    triggers.handleP2PAcceptOffer(after, action)
+  }
+  if (action.type === 'p2p/updateOrderStatus') {
+    triggers.handleP2POrderStatus(before, after, action, actorId)
+  }
+  if (action.type === 'p2p/addOrderProof') {
+    triggers.handleP2POrderProof(after, action, actorId)
+  }
+  if (action.type === 'p2p/rateOrder') {
+    triggers.handleP2PRateOrder(after, action, actorId)
+  }
+  if (action.type === 'account/updateVerificationStatus') {
+    triggers.handleVerificationStatus(before, after, action, actorId)
+  }
+  if (action.type === 'disputes/openDispute') {
+    triggers.handleDisputeOpened(before, after, action, actorId)
+  }
+  if (action.type === 'disputes/updateDisputeStatus') {
+    triggers.handleDisputeStatus(before, after, action, actorId)
+  }
 
   if (action.type === 'transfers/createTransfer') {
     notify(store, {
@@ -368,6 +473,18 @@ export const interactionMiddleware = (store) => (next) => (action) => {
       title: 'Reçu enregistré',
       message: 'Le reçu est disponible dans votre profil.',
     },
+    'account/reportPublisherSubscriber': {
+      title: 'Signalement envoyé',
+      message: 'La modération MOXT examinera ce dossier.',
+    },
+    'account/banPublisherSubscriber': {
+      title: 'Abonné banni',
+      message: "L'abonné ne pourra plus suivre vos publications.",
+    },
+    'account/removeSubscriberByPublisher': {
+      title: 'Abonné retiré',
+      message: "L'abonnement a été supprimé.",
+    },
     'disputes/openDispute': {
       title: 'Réclamation enregistrée',
       message: 'Votre demande sera examinée.',
@@ -452,4 +569,5 @@ export const interactionMiddleware = (store) => (next) => (action) => {
   }
 
   return result
+  }
 }

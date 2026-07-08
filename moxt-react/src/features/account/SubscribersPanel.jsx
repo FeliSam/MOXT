@@ -1,19 +1,48 @@
-import { FiBell, FiUser } from 'react-icons/fi'
-import { useSelector } from 'react-redux'
+import { FiBell, FiShield, FiUser } from 'react-icons/fi'
+import { useDispatch, useSelector } from 'react-redux'
 import { Card } from '../../components/ui/Card'
 import { EmptyState } from '../../components/ui/EmptyState'
-import { PillBadge } from '../../components/ui/Badge'
-import {
-  SUBSCRIPTION_NOTIFY_LABELS,
-} from '@moxt/shared/utils/subscriptionUtils.js'
-import { selectPublisherSubscribers } from '../subscriptionSelectors'
+import { Button } from '../../components/ui/Button'
+import { selectPublisherBans, selectPublisherSubscribers } from './subscriptionSelectors'
+import { SubscriberRow } from './SubscriberRow'
+import { unbanPublisherSubscriber } from './accountSlice'
+import { usePublicationProfile } from '../publications/usePublicationProfile'
 
-export function SubscribersPanel({ publisherType, publisherId, publisherName }) {
+function BannedSubscriberRow({ ban, publisherType, publisherId, onUnban }) {
+  const user = useSelector((state) => state.auth.user)
+  const { profile } = usePublicationProfile(ban.subscriberId, user)
+  const displayName =
+    `${profile?.firstName || ''} ${profile?.lastName || ''}`.trim() || 'Membre MOXT'
+
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-red-200/60 bg-red-50/40 px-4 py-3 dark:border-red-900/40 dark:bg-red-950/20">
+      <div className="min-w-0">
+        <strong className="block truncate text-sm">{displayName}</strong>
+        <p className="text-xs text-[var(--app-text-muted)]">
+          Banni le {new Date(ban.createdAt).toLocaleDateString('fr-FR')}
+          {ban.reason ? ` — ${ban.reason}` : ''}
+        </p>
+      </div>
+      <Button size="sm" variant="secondary" onClick={() => onUnban(ban)}>
+        Lever le ban
+      </Button>
+    </div>
+  )
+}
+
+export function SubscribersPanel({
+  publisherType,
+  publisherId,
+  publisherName,
+  publisherPath,
+}) {
+  const dispatch = useDispatch()
   const subscribers = useSelector((state) =>
     selectPublisherSubscribers(state, publisherType, publisherId),
   )
+  const bans = useSelector((state) => selectPublisherBans(state, publisherType, publisherId))
 
-  if (!subscribers.length) {
+  if (!subscribers.length && !bans.length) {
     return (
       <EmptyState
         icon={FiBell}
@@ -28,29 +57,55 @@ export function SubscribersPanel({ publisherType, publisherId, publisherName }) 
   }
 
   return (
-    <div className="grid gap-3">
-      <p className="text-sm text-[var(--app-text-muted)]">
-        {subscribers.length} abonné(s) — ils voient vos annonces en priorité selon leurs
-        préférences.
-      </p>
-      {subscribers.map((subscriber) => (
-        <Card key={subscriber.id} className="flex items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
-              <FiUser />
-            </span>
-            <div className="min-w-0">
-              <strong className="block truncate">Abonné MOXT</strong>
-              <span className="text-xs text-[var(--app-text-faint)]">
-                Depuis {new Date(subscriber.createdAt).toLocaleDateString('fr-FR')}
-              </span>
-            </div>
+    <div className="grid gap-5">
+      {subscribers.length ? (
+        <div className="grid gap-3">
+          <p className="text-sm text-[var(--app-text-muted)]">
+            {subscribers.length} abonné(s) — gérez les notifications, retraits, bannissements et
+            signalements.
+          </p>
+          {subscribers.map((subscriber) => (
+            <Card key={subscriber.id}>
+              <SubscriberRow
+                subscriber={subscriber}
+                publisherType={publisherType}
+                publisherId={publisherId}
+                publisherName={publisherName}
+                publisherPath={publisherPath}
+              />
+            </Card>
+          ))}
+        </div>
+      ) : null}
+
+      {bans.length ? (
+        <section className="grid gap-3">
+          <div className="flex items-center gap-2">
+            <FiShield className="text-red-600" />
+            <h3 className="text-sm font-semibold">Membres bannis ({bans.length})</h3>
           </div>
-          <PillBadge tone={subscriber.notifyPref === 'muted' ? 'neutral' : 'success'}>
-            {SUBSCRIPTION_NOTIFY_LABELS[subscriber.notifyPref] || subscriber.notifyPref}
-          </PillBadge>
-        </Card>
-      ))}
+          <p className="text-xs text-[var(--app-text-muted)]">
+            Ces membres ne peuvent plus s'abonner à vos publications.
+          </p>
+          {bans.map((ban) => (
+            <BannedSubscriberRow
+              key={ban.id}
+              ban={ban}
+              publisherType={publisherType}
+              publisherId={publisherId}
+              onUnban={(item) => dispatch(unbanPublisherSubscriber({ id: item.id }))}
+            />
+          ))}
+        </section>
+      ) : null}
+
+      {!subscribers.length && bans.length ? (
+        <EmptyState
+          icon={FiUser}
+          title="Aucun abonné actif"
+          description="Tous vos abonnés actuels sont bannis ou ont été retirés."
+        />
+      ) : null}
     </div>
   )
 }

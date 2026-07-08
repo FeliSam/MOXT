@@ -73,6 +73,31 @@ export function reportToRemoteRow(report, foreignKey) {
   return row
 }
 
+export function subscriberBanToRemoteRow(ban) {
+  return {
+    id: ban.id,
+    publisher_type: ban.publisherType,
+    publisher_id: ban.publisherId,
+    subscriber_id: ban.subscriberId,
+    reason: ban.reason || '',
+    banned_by: ban.bannedBy,
+    created_at: ban.createdAt || new Date().toISOString(),
+  }
+}
+
+export function subscriberReportToRemoteRow(report) {
+  return {
+    id: report.id,
+    publisher_type: report.publisherType,
+    publisher_id: report.publisherId,
+    subscriber_id: report.subscriberId,
+    reporter_id: report.reporterId,
+    reason: report.reason || '',
+    status: report.status || 'new',
+    created_at: report.createdAt || new Date().toISOString(),
+  }
+}
+
 export function reportFromRemoteRow(row, foreignKey, camelKey) {
   if (!row) return null
   const base = fromRow(row)

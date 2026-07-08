@@ -2,6 +2,7 @@ import { createSlice } from '@reduxjs/toolkit'
 import { createId } from '../../services/createId'
 import { createLocalStorage } from '../../services/createLocalStorage'
 import { mergeRemoteById } from '@moxt/shared/utils/mergeRemoteById.js'
+import { isSubscriberBanned } from '@moxt/shared/utils/subscriptionUtils.js'
 
 const storage = createLocalStorage('moxt-account-v1')
 
@@ -21,12 +22,15 @@ const defaultPreferences = {
   notifMarketplace: 'normal',
   notifActualites: 'low',
   notifSysteme: 'high',
+  notifNewSubscribers: true,
   messageSuggestionsEnabled: true,
 }
 
 const initialState = storage.read({
   favorites: [],
   subscriptions: [],
+  subscriberBans: [],
+  subscriberReports: [],
   transferProfiles: [],
   documents: [],
   verificationRequests: [],
@@ -43,10 +47,24 @@ const accountSlice = createSlice({
       Object.assign(state, action.payload)
     },
     mergeRemoteAccount(state, action) {
-      const { favorites, subscriptions, transferProfiles, documents, verificationRequests } =
-        action.payload
+      const {
+        favorites,
+        subscriptions,
+        subscriberBans,
+        subscriberReports,
+        transferProfiles,
+        documents,
+        verificationRequests,
+        deletionRequests,
+      } = action.payload
       if (favorites) state.favorites = mergeRemoteById(state.favorites, favorites)
       if (subscriptions) state.subscriptions = mergeRemoteById(state.subscriptions, subscriptions)
+      if (subscriberBans) {
+        state.subscriberBans = mergeRemoteById(state.subscriberBans || [], subscriberBans)
+      }
+      if (subscriberReports) {
+        state.subscriberReports = mergeRemoteById(state.subscriberReports || [], subscriberReports)
+      }
       if (transferProfiles) {
         state.transferProfiles = mergeRemoteById(state.transferProfiles, transferProfiles)
       }
@@ -56,6 +74,9 @@ const accountSlice = createSlice({
           state.verificationRequests,
           verificationRequests,
         )
+      }
+      if (deletionRequests) {
+        state.deletionRequests = mergeRemoteById(state.deletionRequests || [], deletionRequests)
       }
     },
     saveTransferProfile: {
@@ -135,6 +156,16 @@ const accountSlice = createSlice({
     },
     upsertPublisherSubscription: {
       reducer(state, action) {
+        if (
+          isSubscriberBanned(
+            state.subscriberBans,
+            action.payload.userId,
+            action.payload.publisherType,
+            action.payload.publisherId,
+          )
+        ) {
+          return
+        }
         state.subscriptions ||= []
         const index = state.subscriptions.findIndex(
           (item) =>
@@ -182,6 +213,92 @@ const accountSlice = createSlice({
       if (!subscription) return
       subscription.notifyPref = action.payload.notifyPref
       subscription.updatedAt = new Date().toISOString()
+    },
+    removeSubscriberByPublisher: {
+      reducer(state, action) {
+        const { publisherType, publisherId, subscriberId } = action.payload
+        state.subscriptions = (state.subscriptions || []).filter(
+          (item) =>
+            !(
+              item.userId === subscriberId &&
+              item.publisherType === publisherType &&
+              item.publisherId === publisherId
+            ),
+        )
+      },
+      prepare(values) {
+        return { payload: values }
+      },
+    },
+    banPublisherSubscriber: {
+      reducer(state, action) {
+        state.subscriberBans ||= []
+        const exists = state.subscriberBans.some((item) => item.id === action.payload.id)
+        if (!exists) state.subscriberBans.unshift(action.payload)
+        state.subscriptions = (state.subscriptions || []).filter(
+          (item) =>
+            !(
+              item.userId === action.payload.subscriberId &&
+              item.publisherType === action.payload.publisherType &&
+              item.publisherId === action.payload.publisherId
+            ),
+        )
+      },
+      prepare(values) {
+        return {
+          payload: {
+            id: values.id || createId('SBAN'),
+            publisherType: values.publisherType,
+            publisherId: values.publisherId,
+            subscriberId: values.subscriberId,
+            reason: values.reason?.trim() || '',
+            bannedBy: values.bannedBy,
+            publisherName: values.publisherName || '',
+            publisherPath: values.publisherPath || '',
+            createdAt: values.createdAt || new Date().toISOString(),
+          },
+        }
+      },
+    },
+    unbanPublisherSubscriber(state, action) {
+      state.subscriberBans = (state.subscriberBans || []).filter(
+        (item) => item.id !== action.payload.id,
+      )
+    },
+    reportPublisherSubscriber: {
+      reducer(state, action) {
+        state.subscriberReports ||= []
+        const duplicate = state.subscriberReports.some(
+          (item) =>
+            item.publisherType === action.payload.publisherType &&
+            item.publisherId === action.payload.publisherId &&
+            item.subscriberId === action.payload.subscriberId &&
+            item.reporterId === action.payload.reporterId &&
+            item.status === 'new',
+        )
+        if (!duplicate) state.subscriberReports.unshift(action.payload)
+      },
+      prepare(values) {
+        return {
+          payload: {
+            id: values.id || createId('SREP'),
+            publisherType: values.publisherType,
+            publisherId: values.publisherId,
+            subscriberId: values.subscriberId,
+            reporterId: values.reporterId,
+            reason: values.reason.trim(),
+            status: 'new',
+            publisherName: values.publisherName || '',
+            createdAt: new Date().toISOString(),
+          },
+        }
+      },
+    },
+    updateSubscriberReportStatus(state, action) {
+      const report = (state.subscriberReports || []).find((item) => item.id === action.payload.id)
+      if (!report) return
+      report.status = action.payload.status
+      report.updatedAt = new Date().toISOString()
     },
     addPersonalDocument: {
       reducer(state, action) {
@@ -264,7 +381,6 @@ const accountSlice = createSlice({
             id: createId('DEL'),
             userId,
             status: 'requested',
-            simulation: true,
             createdAt: new Date().toISOString(),
           },
         }
@@ -298,6 +414,11 @@ export const {
   toggleAccountFavorite,
   upsertPublisherSubscription,
   removePublisherSubscription,
+  removeSubscriberByPublisher,
+  banPublisherSubscriber,
+  unbanPublisherSubscriber,
+  reportPublisherSubscriber,
+  updateSubscriberReportStatus,
   updatePublisherSubscriptionPref,
   updateAccountPreferences,
   updateVerificationStatus,

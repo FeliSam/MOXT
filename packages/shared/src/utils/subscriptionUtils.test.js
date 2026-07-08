@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   isItemFromSubscribedPublisher,
+  isSubscriberBanned,
   shouldNotifySubscriber,
   sortBySubscriptionPriority,
 } from './subscriptionUtils.js'
@@ -51,5 +52,18 @@ describe('subscriptionUtils', () => {
       'listing',
     )
     expect(sorted[0].id).toBe('2')
+  })
+
+  it('detects subscriber bans', () => {
+    const bans = [
+      {
+        id: 'B1',
+        publisherType: 'user',
+        publisherId: 'pub-1',
+        subscriberId: 'user-a',
+      },
+    ]
+    expect(isSubscriberBanned(bans, 'user-a', 'user', 'pub-1')).toBe(true)
+    expect(isSubscriberBanned(bans, 'user-b', 'user', 'pub-1')).toBe(false)
   })
 })

@@ -108,3 +108,22 @@ export function filterPublisherSubscribers(subscriptions, publisherType, publish
     (item) => item.publisherType === publisherType && item.publisherId === publisherId,
   )
 }
+
+export function findSubscriberBan(bans, publisherType, publisherId, subscriberId) {
+  return (bans || []).find(
+    (item) =>
+      item.publisherType === publisherType &&
+      item.publisherId === publisherId &&
+      (item.subscriberId === subscriberId || item.userId === subscriberId),
+  )
+}
+
+export function isSubscriberBanned(bans, subscriberId, publisherType, publisherId) {
+  return Boolean(findSubscriberBan(bans, publisherType, publisherId, subscriberId))
+}
+
+export function filterPublisherBans(bans, publisherType, publisherId) {
+  return (bans || []).filter(
+    (item) => item.publisherType === publisherType && item.publisherId === publisherId,
+  )
+}
