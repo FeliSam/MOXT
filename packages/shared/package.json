@@ -3,66 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "main": "./src/index.js",
   "exports": {
     ".": {
       "import": "./src/index.js",
       "default": "./src/index.js"
     },
-    "./auth/createAuthService.js": {
-      "import": "./src/auth/createAuthService.js",
-      "default": "./src/auth/createAuthService.js"
-    },
-    "./auth/createAuthSlice.js": {
-      "import": "./src/auth/createAuthSlice.js",
-      "default": "./src/auth/createAuthSlice.js"
-    },
-    "./auth/translateAuthError.js": {
-      "import": "./src/auth/translateAuthError.js",
-      "default": "./src/auth/translateAuthError.js"
-    },
-    "./supabase/createSupabaseClient.js": {
-      "import": "./src/supabase/createSupabaseClient.js",
-      "default": "./src/supabase/createSupabaseClient.js"
-    },
-    "./supabase/createBrowserSessionStorage.js": {
-      "import": "./src/supabase/createBrowserSessionStorage.js",
-      "default": "./src/supabase/createBrowserSessionStorage.js"
-    },
-    "./config/*": {
-      "import": "./src/config/*",
-      "default": "./src/config/*"
-    },
-    "./i18n/*": {
-      "import": "./src/i18n/*",
-      "default": "./src/i18n/*"
-    },
-    "./utils/*": {
-      "import": "./src/utils/*",
-      "default": "./src/utils/*"
-    },
-    "./storage/*": {
-      "import": "./src/storage/*",
-      "default": "./src/storage/*"
-    },
-    "./auth/*": {
-      "import": "./src/auth/*",
-      "default": "./src/auth/*"
-    },
-    "./supabase/*": {
-      "import": "./src/supabase/*",
-      "default": "./src/supabase/*"
-    },
-    "./constants/*": {
-      "import": "./src/constants/*",
-      "default": "./src/constants/*"
-    },
-    "./data/*": {
-      "import": "./src/data/*",
-      "default": "./src/data/*"
-    },
-    "./slices/*": {
-      "import": "./src/slices/*",
-      "default": "./src/slices/*"
+    "./*": {
+      "import": "./src/*",
+      "default": "./src/*"
     }
   },
   "scripts": {

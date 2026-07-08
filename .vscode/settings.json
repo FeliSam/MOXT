@@ -1,0 +1,9 @@
+{
+  "npm.exclude": [
+    "**/node_modules/**",
+    "**/.npm-cache/**"
+  ],
+  "files.watcherExclude": {
+    "**/.npm-cache/**": true
+  }
+}

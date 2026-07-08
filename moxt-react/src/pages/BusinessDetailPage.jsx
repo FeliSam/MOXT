@@ -26,6 +26,7 @@ import { ReshareButton } from '../components/ui/ReshareButton'
 import { activityByValue, businessExperienceForActivity } from '../config/businessActivities'
 import { statusMeta } from '../config/statuses'
 import { FavoriteButton } from '../features/account/FavoriteButton'
+import { SubscribeButton } from '../features/account/SubscribeButton'
 import {
   calculateBusinessRating,
   selectBusinessContent,
@@ -151,6 +152,14 @@ export function BusinessDetailPage() {
               relatedTitle={business.name}
               relatedType="business"
             />
+            {business.ownerId !== user.id ? (
+              <SubscribeButton
+                publisherType="business"
+                publisherId={business.id}
+                publisherName={business.name}
+                publisherPath={`/businesses/${business.id}`}
+              />
+            ) : null}
             <FavoriteButton
               relatedId={business.id}
               relatedType="business"

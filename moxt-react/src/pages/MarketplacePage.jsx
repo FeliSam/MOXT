@@ -22,6 +22,7 @@ import {
   setMarketplaceFilters,
 } from '../features/marketplace/marketplaceSlice'
 import { sortByCountryPriority, resolveUserCountryCode } from '@moxt/shared/utils/countryPriority.js'
+import { sortBySubscriptionPriority } from '@moxt/shared/utils/subscriptionUtils.js'
 import { resolveListingCountry } from '../features/marketplace/listingCatalogUtils'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
@@ -38,6 +39,7 @@ export function MarketplacePage() {
     [filters.type],
   )
   const user = useSelector((state) => state.auth.user)
+  const subscriptions = useSelector((state) => state.account.subscriptions || [])
   const preferredCountry = resolveUserCountryCode(user)
   const visible = useMemo(
     () => {
@@ -72,9 +74,14 @@ export function MarketplacePage() {
           (!filters.max || Number(item.price) <= Number(filters.max))
         )
       })
-      return sortByCountryPriority(filtered, preferredCountry, resolveListingCountry)
+      return sortBySubscriptionPriority(
+        sortByCountryPriority(filtered, preferredCountry, resolveListingCountry),
+        subscriptions,
+        user?.id,
+        'listing',
+      )
     },
-    [filters, listings, preferredCountry],
+    [filters, listings, preferredCountry, subscriptions, user?.id],
   )
 
   return (

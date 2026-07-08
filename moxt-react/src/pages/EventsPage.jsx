@@ -16,6 +16,7 @@ import { EVENT_CATEGORIES } from '../config/options'
 import { EventRegistrationsPanel } from '../features/events/EventRegistrationsPanel'
 import { formatDate, formatMoney } from '../features/transfers/transferUtils'
 import { sortByCountryPriority, resolveUserCountryCode } from '@moxt/shared/utils/countryPriority.js'
+import { sortBySubscriptionPriority } from '@moxt/shared/utils/subscriptionUtils.js'
 import { resolveEventCountry } from '../features/marketplace/listingCatalogUtils'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 
@@ -26,6 +27,7 @@ export function EventsPage() {
   const [filters, setFilters] = useState({ query: '', city: '', category: '', price: '' })
   const navigate = useNavigate()
   const user = useSelector((state) => state.auth.user)
+  const subscriptions = useSelector((state) => state.account.subscriptions || [])
   const canManage = !!user
   const events = useSelector((state) => state.events.items)
   const preferredCountry = resolveUserCountryCode(user)
@@ -44,9 +46,14 @@ export function EventsPage() {
             (filters.price === 'free' ? Number(event.price) === 0 : Number(event.price) > 0))
         )
       })
-      return sortByCountryPriority(filtered, preferredCountry, resolveEventCountry)
+      return sortBySubscriptionPriority(
+        sortByCountryPriority(filtered, preferredCountry, resolveEventCountry),
+        subscriptions,
+        user?.id,
+        'event',
+      )
     },
-    [events, filters, preferredCountry, showMine, user.id],
+    [events, filters, preferredCountry, showMine, subscriptions, user?.id, user.id],
   )
   function clearFilters() {
     setFilters({ query: '', city: '', category: '', price: '' })

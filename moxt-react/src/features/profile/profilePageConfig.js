@@ -1,6 +1,7 @@
 import {
   FiActivity,
   FiAlertTriangle,
+  FiBell,
   FiCheckCircle,
   FiDatabase,
   FiFileText,
@@ -38,6 +39,12 @@ export const accountSections = [
         description: 'Contenus et profils de transfert',
         icon: FiHeart,
         path: '/favorites',
+      },
+      {
+        label: 'Mes abonnements',
+        description: 'Membres et entreprises suivis, alertes personnalisées',
+        icon: FiBell,
+        path: '/subscriptions',
       },
       {
         label: 'Mes activités',

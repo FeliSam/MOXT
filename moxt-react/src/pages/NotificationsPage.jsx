@@ -1,4 +1,4 @@
-import { FiArchive, FiBell, FiCheck, FiMessageSquare } from 'react-icons/fi'
+import { FiArchive, FiBell, FiCheck, FiMessageSquare, FiStar, FiZap } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
@@ -16,6 +16,41 @@ import {
   isMessageNotification,
   resolveNotificationTarget,
 } from './messages/messageUtils'
+
+const PRIORITY_STYLES = {
+  high: {
+    unread:
+      'border-rose-300 bg-gradient-to-r from-rose-50/80 via-[var(--app-surface)] to-[var(--app-surface)] dark:from-rose-950/25',
+    icon: 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-200',
+    badge: 'warning',
+    label: 'Urgent',
+  },
+  normal: {
+    unread:
+      'border-brand-300 bg-gradient-to-r from-brand-50/70 via-[var(--app-surface)] to-[var(--app-surface)] dark:from-brand-950/20',
+    icon: 'bg-brand-50 text-brand-700 dark:bg-brand-900',
+    badge: 'info',
+    label: 'Standard',
+  },
+  low: {
+    unread: 'border-slate-200 bg-[var(--app-surface-muted)]/60',
+    icon: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+    badge: 'neutral',
+    label: 'Faible',
+  },
+}
+
+function notificationPriority(notification) {
+  if (notification.type === 'subscription' && notification.priority) return notification.priority
+  if (notification.priority) return notification.priority
+  return 'normal'
+}
+
+function PriorityIcon({ priority }) {
+  if (priority === 'high') return <FiZap />
+  if (priority === 'low') return <FiBell />
+  return <FiStar className="opacity-80" />
+}
 
 export function NotificationsPage() {
   const dispatch = useDispatch()
@@ -62,14 +97,14 @@ export function NotificationsPage() {
             const messageAlert = isMessageNotification(notification)
             const target = resolveNotificationTarget(notification, conversations)
             const canOpen = Boolean(target)
+            const priority = notificationPriority(notification)
+            const styles = PRIORITY_STYLES[priority] || PRIORITY_STYLES.normal
 
             return (
               <Card
                 key={notification.id}
                 className={`min-w-0 overflow-hidden transition hover:shadow-[var(--shadow-card-lg)] ${
-                  !notification.read
-                    ? 'border-brand-300 bg-gradient-to-r from-brand-50/70 via-[var(--app-surface)] to-[var(--app-surface)] dark:from-brand-950/20'
-                    : ''
+                  !notification.read ? styles.unread : ''
                 } ${canOpen ? 'cursor-pointer' : ''}`}
                 onClick={canOpen ? () => openNotification(notification) : undefined}
                 role={canOpen ? 'button' : undefined}
@@ -90,17 +125,22 @@ export function NotificationsPage() {
                     className={`grid size-10 shrink-0 place-items-center rounded-xl ${
                       messageAlert
                         ? 'bg-[var(--app-accent-soft)] text-[var(--app-accent)]'
-                        : 'bg-brand-50 text-brand-700 dark:bg-brand-900'
+                        : styles.icon
                     }`}
                   >
-                    {messageAlert ? <FiMessageSquare /> : <FiBell />}
+                    {messageAlert ? <FiMessageSquare /> : <PriorityIcon priority={priority} />}
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                       <strong className="min-w-0 break-words leading-snug">{notification.title}</strong>
-                      <Badge className="shrink-0 self-start" tone={notification.read ? 'info' : 'warning'}>
-                        {notification.read ? 'Lue' : 'Nouvelle'}
-                      </Badge>
+                      <div className="flex shrink-0 flex-wrap gap-2 self-start">
+                        {!notification.read ? (
+                          <Badge tone={styles.badge}>{styles.label}</Badge>
+                        ) : null}
+                        <Badge tone={notification.read ? 'info' : 'warning'}>
+                          {notification.read ? 'Lue' : 'Nouvelle'}
+                        </Badge>
+                      </div>
                     </div>
                     <p className="mt-2 break-words text-sm leading-5 text-slate-500">
                       {notification.message}

@@ -45,6 +45,10 @@ const EventDetailPage = lazyPage(() => import('../pages/EventDetailPage'), 'Even
 const EventsPage = lazyPage(() => import('../pages/EventsPage'), 'EventsPage')
 const EditListingPage = lazyPage(() => import('../pages/EditListingPage'), 'EditListingPage')
 const FavoritesPage = lazyPage(() => import('../pages/FavoritesPage'), 'FavoritesPage')
+const SubscriptionsPage = lazyPage(
+  () => import('../pages/SubscriptionsPage'),
+  'SubscriptionsPage',
+)
 const FeatureMatrixPage = lazyPage(() => import('../pages/FeatureMatrixPage'), 'FeatureMatrixPage')
 const ExchangersPage = lazyPage(() => import('../pages/ExchangersPage'), 'ExchangersPage')
 const ExchangerDetailPage = lazyPage(
@@ -170,6 +174,7 @@ export function AppRouter() {
             <Route path="/profile/information" element={<PersonalInformationPage />} />
             <Route path="/activities" element={<ActivitiesPage />} />
             <Route path="/favorites" element={<FavoritesPage />} />
+            <Route path="/subscriptions" element={<SubscriptionsPage />} />
             <Route path="/documents" element={<DocumentsPage />} />
             <Route path="/addresses" element={<AddressesPage />} />
             <Route path="/verification" element={<VerificationPage />} />

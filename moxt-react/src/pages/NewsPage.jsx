@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { FiEdit3, FiRss } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { sortByCountryPriority, resolveUserCountryCode } from '@moxt/shared/utils/countryPriority.js'
+import { sortBySubscriptionPriority } from '@moxt/shared/utils/subscriptionUtils.js'
 import { Button } from '../components/ui/Button'
 import { EmptyState } from '../components/ui/EmptyState'
 import { FeedPostCard } from '../components/ui/FeedPostCard'
@@ -24,6 +25,7 @@ const FILTER_TABS = [
 export function NewsPage() {
   const dispatch = useDispatch()
   const user = useSelector((s) => s.auth.user)
+  const subscriptions = useSelector((s) => s.account.subscriptions || [])
   const posts = useSelector((s) => s.posts?.items ?? [])
   const appState = useSelector((s) => s)
   const preferredCountry = resolveUserCountryCode(user)
@@ -34,10 +36,15 @@ export function NewsPage() {
   const filtered = useMemo(() => {
     const base =
       activeFilter === 'all' ? posts : posts.filter((p) => p.sourceType === activeFilter)
-    return sortByCountryPriority(base, preferredCountry, (post) =>
-      resolvePostCountry(post, appState),
+    return sortBySubscriptionPriority(
+      sortByCountryPriority(base, preferredCountry, (post) =>
+        resolvePostCountry(post, appState),
+      ),
+      subscriptions,
+      user?.id,
+      'post',
     )
-  }, [activeFilter, appState, posts, preferredCountry])
+  }, [activeFilter, appState, posts, preferredCountry, subscriptions, user?.id])
 
   return (
     <div className="grid gap-7">

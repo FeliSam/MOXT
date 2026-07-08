@@ -42,6 +42,15 @@ function toSnake(obj) {
     simulation: 'simulation',
     relatedType: 'related_type',
     relatedPath: 'related_path',
+    priority: 'priority',
+    archived: 'archived',
+    updatedBy: 'updated_by',
+    publisherType: 'publisher_type',
+    publisherId: 'publisher_id',
+    notifyPref: 'notify_pref',
+    publisherName: 'publisher_name',
+    publisherPath: 'publisher_path',
+    subscriberId: 'subscriber_id',
     moderatedAt: 'moderated_at',
     moderatedBy: 'moderated_by',
     sellerName: 'seller_name',
@@ -611,7 +620,9 @@ const handlers = {
       message: payload.message,
       type: payload.type || 'system',
       link: payload.link || null,
+      priority: payload.priority || 'normal',
       read: false,
+      archived: payload.archived === true,
       created_at: payload.createdAt,
     })
     if (error) throw error
@@ -686,6 +697,48 @@ const handlers = {
   },
 
   // ── Favoris ───────────────────────────────────────────────────────────────────
+  'account/upsertPublisherSubscription': async (payload) => {
+    await upsert('publisher_subscriptions', {
+      id: payload.id,
+      subscriber_id: payload.userId,
+      publisher_type: payload.publisherType,
+      publisher_id: payload.publisherId,
+      notify_pref: payload.notifyPref,
+      publisher_name: payload.publisherName,
+      publisher_path: payload.publisherPath,
+      created_at: payload.createdAt,
+      updated_at: payload.updatedAt,
+    })
+  },
+  'account/updatePublisherSubscriptionPref': async (payload, state) => {
+    const subscription = (state.account.subscriptions || []).find(
+      (item) =>
+        item.userId === payload.userId &&
+        item.publisherType === payload.publisherType &&
+        item.publisherId === payload.publisherId,
+    )
+    if (!subscription) return
+    await upsert('publisher_subscriptions', {
+      id: subscription.id,
+      subscriber_id: subscription.userId,
+      publisher_type: subscription.publisherType,
+      publisher_id: subscription.publisherId,
+      notify_pref: subscription.notifyPref,
+      publisher_name: subscription.publisherName,
+      publisher_path: subscription.publisherPath,
+      created_at: subscription.createdAt,
+      updated_at: subscription.updatedAt,
+    })
+  },
+  'account/removePublisherSubscription': async (payload) => {
+    const { error } = await supabase
+      .from('publisher_subscriptions')
+      .delete()
+      .eq('subscriber_id', payload.userId)
+      .eq('publisher_type', payload.publisherType)
+      .eq('publisher_id', payload.publisherId)
+    if (error) throw error
+  },
   'account/toggleAccountFavorite': async (payload, state) => {
     const exists = state.account.favorites.some(
       (f) => f.relatedId === payload.relatedId && f.userId === payload.userId,

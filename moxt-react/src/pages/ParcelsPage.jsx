@@ -16,6 +16,7 @@ import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { Select } from '../components/ui/Select'
 import { useGeographyOptions } from '../hooks/useGeographyOptions'
 import { sortByCountryPriority, resolveUserCountryCode } from '@moxt/shared/utils/countryPriority.js'
+import { sortBySubscriptionPriority } from '@moxt/shared/utils/subscriptionUtils.js'
 import { resolveParcelCountry } from '../features/marketplace/listingCatalogUtils'
 import { formatMoney } from '../features/transfers/transferUtils'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
@@ -34,6 +35,7 @@ export function ParcelsPage() {
   })
   const navigate = useNavigate()
   const user = useSelector((state) => state.auth.user)
+  const subscriptions = useSelector((state) => state.account.subscriptions || [])
   const { countries } = useGeographyOptions()
   const parcels = useSelector((state) => state.parcels.items)
   const userCountry = resolveUserCountryCode(user) || 'RU'
@@ -66,9 +68,14 @@ export function ParcelsPage() {
           (!filters.status || showMine || parcel.status === filters.status)
         )
       })
-      return sortByCountryPriority(filtered, userCountry, resolveParcelCountry)
+      return sortBySubscriptionPriority(
+        sortByCountryPriority(filtered, userCountry, resolveParcelCountry),
+        subscriptions,
+        user?.id,
+        'parcel',
+      )
     },
-    [activeCountryCode, filters, parcels, userCountry, showMine, today, user.id],
+    [activeCountryCode, filters, parcels, subscriptions, user?.id, userCountry, showMine, today, user.id],
   )
 
   const archivedParcels = useMemo(

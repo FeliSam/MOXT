@@ -26,6 +26,7 @@ const defaultPreferences = {
 
 const initialState = storage.read({
   favorites: [],
+  subscriptions: [],
   transferProfiles: [],
   documents: [],
   verificationRequests: [],
@@ -42,8 +43,10 @@ const accountSlice = createSlice({
       Object.assign(state, action.payload)
     },
     mergeRemoteAccount(state, action) {
-      const { favorites, transferProfiles, documents, verificationRequests } = action.payload
+      const { favorites, subscriptions, transferProfiles, documents, verificationRequests } =
+        action.payload
       if (favorites) state.favorites = mergeRemoteById(state.favorites, favorites)
+      if (subscriptions) state.subscriptions = mergeRemoteById(state.subscriptions, subscriptions)
       if (transferProfiles) {
         state.transferProfiles = mergeRemoteById(state.transferProfiles, transferProfiles)
       }
@@ -129,6 +132,56 @@ const accountSlice = createSlice({
           },
         }
       },
+    },
+    upsertPublisherSubscription: {
+      reducer(state, action) {
+        state.subscriptions ||= []
+        const index = state.subscriptions.findIndex(
+          (item) =>
+            item.userId === action.payload.userId &&
+            item.publisherType === action.payload.publisherType &&
+            item.publisherId === action.payload.publisherId,
+        )
+        if (index >= 0) state.subscriptions[index] = action.payload
+        else state.subscriptions.unshift(action.payload)
+      },
+      prepare(values) {
+        const now = new Date().toISOString()
+        return {
+          payload: {
+            id: values.id || createId('SUB'),
+            userId: values.userId,
+            publisherType: values.publisherType,
+            publisherId: values.publisherId,
+            notifyPref: values.notifyPref || 'all',
+            publisherName: values.publisherName || '',
+            publisherPath: values.publisherPath || '',
+            createdAt: values.createdAt || now,
+            updatedAt: now,
+          },
+        }
+      },
+    },
+    removePublisherSubscription(state, action) {
+      state.subscriptions = (state.subscriptions || []).filter(
+        (item) =>
+          !(
+            item.userId === action.payload.userId &&
+            item.publisherType === action.payload.publisherType &&
+            item.publisherId === action.payload.publisherId
+          ),
+      )
+    },
+    updatePublisherSubscriptionPref(state, action) {
+      const subscription = (state.subscriptions || []).find(
+        (item) =>
+          item.userId === action.payload.userId &&
+          item.publisherType === action.payload.publisherType &&
+          item.publisherId === action.payload.publisherId,
+      )
+      if (!subscription) return
+      subscription.notifyPref = action.payload.notifyPref
+      subscription.updatedAt = new Date().toISOString()
     },
     addPersonalDocument: {
       reducer(state, action) {
@@ -243,6 +296,9 @@ export const {
   saveTransferProfile,
   submitVerificationRequest,
   toggleAccountFavorite,
+  upsertPublisherSubscription,
+  removePublisherSubscription,
+  updatePublisherSubscriptionPref,
   updateAccountPreferences,
   updateVerificationStatus,
   hydrateAccountPreferences,

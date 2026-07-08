@@ -134,6 +134,18 @@ create table if not exists public.identity_profiles (
 
 create index if not exists identity_profiles_user_idx on public.identity_profiles (user_id);
 
+-- Colonnes manquantes sur tables legacy (idempotent)
+alter table public.business_documents add column if not exists owner_id uuid references auth.users (id) on delete cascade;
+alter table public.business_requests add column if not exists owner_id uuid references auth.users (id) on delete cascade;
+alter table public.reviews add column if not exists author_id uuid references auth.users (id) on delete cascade;
+alter table public.p2p_offers add column if not exists owner_id uuid references auth.users (id) on delete cascade;
+alter table public.p2p_orders add column if not exists buyer_id uuid references auth.users (id) on delete cascade;
+alter table public.p2p_orders add column if not exists seller_id uuid references auth.users (id) on delete cascade;
+alter table public.listing_reports add column if not exists reporter_id uuid references auth.users (id) on delete cascade;
+alter table public.job_reports add column if not exists reporter_id uuid references auth.users (id) on delete cascade;
+alter table public.event_reports add column if not exists reporter_id uuid references auth.users (id) on delete cascade;
+alter table public.identity_profiles add column if not exists user_id uuid references auth.users (id) on delete cascade;
+
 -- RLS
 alter table public.reviews enable row level security;
 alter table public.p2p_offers enable row level security;
@@ -156,7 +168,7 @@ set search_path = public
 as $$
   select exists (
     select 1 from public.businesses b
-    where b.id = bid and b.owner_id = (select auth.uid())
+    where b.id = bid and b.owner_id::text = (select auth.uid())::text
   );
 $$;
 
@@ -165,10 +177,10 @@ drop policy if exists "MOXT read reviews" on public.reviews;
 create policy "MOXT read reviews" on public.reviews for select to authenticated using (true);
 drop policy if exists "MOXT insert own reviews" on public.reviews;
 create policy "MOXT insert own reviews" on public.reviews for insert to authenticated
-  with check (author_id = (select auth.uid()));
+  with check (author_id::text = (select auth.uid())::text);
 drop policy if exists "MOXT update reviews" on public.reviews;
 create policy "MOXT update reviews" on public.reviews for update to authenticated using (
-  author_id = (select auth.uid())
+  author_id::text = (select auth.uid())::text
   or exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role in ('admin', 'superadmin'))
 );
 
@@ -177,18 +189,18 @@ drop policy if exists "MOXT read p2p offers" on public.p2p_offers;
 create policy "MOXT read p2p offers" on public.p2p_offers for select to authenticated using (true);
 drop policy if exists "MOXT manage own p2p offers" on public.p2p_offers;
 create policy "MOXT manage own p2p offers" on public.p2p_offers for all to authenticated
-  using (owner_id = (select auth.uid())) with check (owner_id = (select auth.uid()));
+  using (owner_id::text = (select auth.uid())::text) with check (owner_id::text = (select auth.uid())::text);
 
 drop policy if exists "MOXT read own p2p orders" on public.p2p_orders;
 create policy "MOXT read own p2p orders" on public.p2p_orders for select to authenticated using (
-  buyer_id = (select auth.uid()) or seller_id = (select auth.uid())
+  buyer_id::text = (select auth.uid())::text or seller_id::text = (select auth.uid())::text
   or exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role in ('admin', 'superadmin'))
 );
 drop policy if exists "MOXT manage p2p orders" on public.p2p_orders;
 create policy "MOXT manage p2p orders" on public.p2p_orders for all to authenticated using (
-  buyer_id = (select auth.uid()) or seller_id = (select auth.uid())
+  buyer_id::text = (select auth.uid())::text or seller_id::text = (select auth.uid())::text
 ) with check (
-  buyer_id = (select auth.uid()) or seller_id = (select auth.uid())
+  buyer_id::text = (select auth.uid())::text or seller_id::text = (select auth.uid())::text
 );
 
 -- Business members
@@ -200,31 +212,31 @@ create policy "MOXT manage business members" on public.business_members for all 
 -- Business documents
 drop policy if exists "MOXT manage business documents" on public.business_documents;
 create policy "MOXT manage business documents" on public.business_documents for all to authenticated
-  using (owner_id = (select auth.uid()) or public.moxt_owns_business(business_id))
-  with check (owner_id = (select auth.uid()) or public.moxt_owns_business(business_id));
+  using (owner_id::text = (select auth.uid())::text or public.moxt_owns_business(business_id))
+  with check (owner_id::text = (select auth.uid())::text or public.moxt_owns_business(business_id));
 
 -- Business requests
 drop policy if exists "MOXT read business requests" on public.business_requests;
 create policy "MOXT read business requests" on public.business_requests for select to authenticated using (
-  owner_id = (select auth.uid()) or public.moxt_owns_business(business_id)
+  owner_id::text = (select auth.uid())::text or public.moxt_owns_business(business_id)
 );
 drop policy if exists "MOXT insert business requests" on public.business_requests;
 create policy "MOXT insert business requests" on public.business_requests for insert to authenticated
-  with check (owner_id = (select auth.uid()));
+  with check (owner_id::text = (select auth.uid())::text);
 drop policy if exists "MOXT update business requests" on public.business_requests;
 create policy "MOXT update business requests" on public.business_requests for update to authenticated using (
-  owner_id = (select auth.uid()) or public.moxt_owns_business(business_id)
+  owner_id::text = (select auth.uid())::text or public.moxt_owns_business(business_id)
 );
 
 -- Reports policies (reporter + admin)
 drop policy if exists "MOXT read listing reports" on public.listing_reports;
 create policy "MOXT read listing reports" on public.listing_reports for select to authenticated using (
-  reporter_id = (select auth.uid())
+  reporter_id::text = (select auth.uid())::text
   or exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role in ('admin', 'superadmin'))
 );
 drop policy if exists "MOXT insert listing reports" on public.listing_reports;
 create policy "MOXT insert listing reports" on public.listing_reports for insert to authenticated
-  with check (reporter_id = (select auth.uid()));
+  with check (reporter_id::text = (select auth.uid())::text);
 drop policy if exists "MOXT update listing reports" on public.listing_reports;
 create policy "MOXT update listing reports" on public.listing_reports for update to authenticated using (
   exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role in ('admin', 'superadmin'))
@@ -232,12 +244,12 @@ create policy "MOXT update listing reports" on public.listing_reports for update
 
 drop policy if exists "MOXT read job reports" on public.job_reports;
 create policy "MOXT read job reports" on public.job_reports for select to authenticated using (
-  reporter_id = (select auth.uid())
+  reporter_id::text = (select auth.uid())::text
   or exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role in ('admin', 'superadmin'))
 );
 drop policy if exists "MOXT insert job reports" on public.job_reports;
 create policy "MOXT insert job reports" on public.job_reports for insert to authenticated
-  with check (reporter_id = (select auth.uid()));
+  with check (reporter_id::text = (select auth.uid())::text);
 drop policy if exists "MOXT update job reports" on public.job_reports;
 create policy "MOXT update job reports" on public.job_reports for update to authenticated using (
   exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role in ('admin', 'superadmin'))
@@ -245,12 +257,12 @@ create policy "MOXT update job reports" on public.job_reports for update to auth
 
 drop policy if exists "MOXT read event reports" on public.event_reports;
 create policy "MOXT read event reports" on public.event_reports for select to authenticated using (
-  reporter_id = (select auth.uid())
+  reporter_id::text = (select auth.uid())::text
   or exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role in ('admin', 'superadmin'))
 );
 drop policy if exists "MOXT insert event reports" on public.event_reports;
 create policy "MOXT insert event reports" on public.event_reports for insert to authenticated
-  with check (reporter_id = (select auth.uid()));
+  with check (reporter_id::text = (select auth.uid())::text);
 drop policy if exists "MOXT update event reports" on public.event_reports;
 create policy "MOXT update event reports" on public.event_reports for update to authenticated using (
   exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role in ('admin', 'superadmin'))
@@ -259,7 +271,7 @@ create policy "MOXT update event reports" on public.event_reports for update to 
 -- Identity profiles
 drop policy if exists "MOXT manage own identity profiles" on public.identity_profiles;
 create policy "MOXT manage own identity profiles" on public.identity_profiles for all to authenticated
-  using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+  using (user_id::text = (select auth.uid())::text) with check (user_id::text = (select auth.uid())::text);
 
 grant select, insert, update, delete on public.reviews to authenticated;
 grant select, insert, update, delete on public.p2p_offers to authenticated;

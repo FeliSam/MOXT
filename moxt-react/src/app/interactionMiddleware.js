@@ -3,9 +3,31 @@ import { BUSINESS_VISIBLE_STATUSES } from '../features/businesses/businessPublis
 import { createReceipt } from '../features/finance/financeSlice'
 import { TRANSFER_STATUS } from '../features/transfers/transferConfig'
 import { addToast } from '../features/ui/uiSlice'
+import {
+  notifyPublisherSubscribers,
+  resolvePublisherFromContent,
+} from '../features/account/publisherSubscriptionNotify'
 
 function notify(store, payload) {
   if (payload.userId) store.dispatch(addNotification(payload))
+}
+
+function fanOutPublication(store, state, item, contentType, title, linkBuilder, priority = 'normal') {
+  const publisher = resolvePublisherFromContent(state, item)
+  if (!publisher.publisherId) return
+  notifyPublisherSubscribers(store, {
+    ...publisher,
+    contentType,
+    contentLabel: item.title
+      ? `« ${item.title} »`
+      : item.body
+        ? String(item.body).slice(0, 120)
+        : 'Nouveau contenu publié',
+    title,
+    link: linkBuilder(item.id),
+    actorId: state.auth.user?.id,
+    priority,
+  })
 }
 
 export const interactionMiddleware = (store) => (next) => (action) => {
@@ -357,6 +379,63 @@ export const interactionMiddleware = (store) => (next) => (action) => {
   }
   if (successActions[action.type]) {
     store.dispatch(addToast({ ...successActions[action.type], tone: 'success' }))
+  }
+
+  if (action.type === 'marketplace/publishListing/fulfilled') {
+    fanOutPublication(
+      store,
+      after,
+      action.payload,
+      'listing',
+      'Nouvelle annonce',
+      (id) => `/marketplace/${id}`,
+      'high',
+    )
+  }
+
+  if (action.type === 'jobs/createJob') {
+    fanOutPublication(
+      store,
+      after,
+      action.payload,
+      'job',
+      'Nouveau job',
+      (id) => `/jobs/${id}`,
+    )
+  }
+
+  if (action.type === 'events/createEvent') {
+    fanOutPublication(
+      store,
+      after,
+      action.payload,
+      'event',
+      'Nouvel événement',
+      (id) => `/events/${id}`,
+    )
+  }
+
+  if (action.type === 'parcels/createParcel') {
+    fanOutPublication(
+      store,
+      after,
+      action.payload,
+      'parcel',
+      'Nouveau colis',
+      (id) => `/parcels/${id}`,
+    )
+  }
+
+  if (action.type === 'posts/createPost') {
+    fanOutPublication(
+      store,
+      after,
+      action.payload,
+      'post',
+      'Nouvelle publication',
+      () => '/news',
+      'high',
+    )
   }
 
   if (

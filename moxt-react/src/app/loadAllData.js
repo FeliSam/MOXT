@@ -95,7 +95,7 @@ export const loadAllData = createAsyncThunk(
       eventsRes, eventRegistrationsRes,
       businessesRes,
       transfersRes,
-      favoritesRes, transferProfilesRes, verificationRequestsRes, personalDocumentsRes,
+      favoritesRes, subscriptionsRes, transferProfilesRes, verificationRequestsRes, personalDocumentsRes,
       p2pOffersRes, p2pOrdersRes,
       reviewsRes,
       disputesRes,
@@ -122,6 +122,7 @@ export const loadAllData = createAsyncThunk(
       supabase.from('businesses').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
       supabase.from('transfers').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(USER_LIMIT),
       supabase.from('favorites').select('*').eq('user_id', uid).limit(USER_LIMIT),
+      supabase.from('publisher_subscriptions').select('*').limit(USER_LIMIT),
       supabase.from('transfer_profiles').select('*').eq('user_id', uid).limit(USER_LIMIT),
       supabase.from('verification_requests').select('*').eq('user_id', uid).limit(USER_LIMIT),
       supabase.from('personal_documents').select('*').eq('user_id', uid).limit(USER_LIMIT),
@@ -335,7 +336,11 @@ export const loadAllData = createAsyncThunk(
       dispatch(setTransfers({ items: fromRows(transfersRes.data) }))
       dispatch(setCommunications({
         conversations,
-        notifications: fromRows(notificationsRes.data),
+        notifications: fromRows(safeRows(notificationsRes, 'des notifications')).map((item) => ({
+          ...item,
+          priority: item.priority || 'normal',
+          archived: item.archived === true,
+        })),
         support: supportTickets,
       }))
       dispatch(setP2P({
@@ -359,6 +364,10 @@ export const loadAllData = createAsyncThunk(
       })) }))
       dispatch(mergeRemoteAccount({
         favorites: fromRows(safeRows(favoritesRes, 'des favoris')),
+        subscriptions: fromRows(safeRows(subscriptionsRes, 'des abonnements')).map((item) => ({
+          ...item,
+          userId: item.userId || item.subscriberId,
+        })),
         transferProfiles: fromRows(safeRows(transferProfilesRes, 'des profils transfert')),
         documents: fromRows(safeRows(personalDocumentsRes, 'des documents')),
         verificationRequests: fromRows(

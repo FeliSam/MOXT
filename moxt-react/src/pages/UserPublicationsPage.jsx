@@ -41,6 +41,7 @@ import {
   visiblePublicationCount,
 } from '../features/publications/publicationCatalogUtils'
 import { PublicationScopeButton } from '../features/publications/PublicationScopeButton'
+import { SubscribeButton } from '../features/account/SubscribeButton'
 
 const EMPTY_ICONS = {
   listing: FiShoppingBag,
@@ -187,6 +188,14 @@ export function UserPublicationsPage() {
         }
         actions={
           <>
+            {!isOwner ? (
+              <SubscribeButton
+                publisherType="user"
+                publisherId={userId}
+                publisherName={profile.name}
+                publisherPath={`/users/${userId}/publications`}
+              />
+            ) : null}
             {isOwner ? (
               <PublicationScopeButton
                 business={ownBusiness}

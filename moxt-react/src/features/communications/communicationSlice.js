@@ -26,6 +26,7 @@ function normalizeNotification(notification) {
     ...notification,
     read: notification.read === true,
     archived: notification.archived === true,
+    priority: notification.priority || 'normal',
   }
 }
 
@@ -694,6 +695,7 @@ const communicationSlice = createSlice({
             message: values.message,
             type: values.type || 'system',
             link: values.link || null,
+            priority: values.priority || 'normal',
             read: false,
             createdAt: new Date().toISOString(),
           },

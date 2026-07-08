@@ -7,6 +7,7 @@ import {
   FiPackage,
   FiPlus,
   FiShoppingBag,
+  FiUsers,
 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -43,6 +44,7 @@ import {
   visiblePublicationCount,
 } from '../features/publications/publicationCatalogUtils'
 import { PublicationScopeButton } from '../features/publications/PublicationScopeButton'
+import { SubscribersPanel } from '../features/account/SubscribersPanel'
 import { canRepublishBusinessItem } from '../features/businesses/businessPublishUtils'
 import { addToast } from '../features/ui/uiSlice'
 
@@ -92,6 +94,7 @@ export function MyPublicationsPage() {
   }
 
   const archiveTab = searchParams.get('status') === 'archived' ? 'archived' : 'active'
+  const panel = searchParams.get('panel') === 'subscribers' ? 'subscribers' : 'publications'
   const typeTab = PUBLICATION_TYPE_TABS.some((tab) => tab.id === searchParams.get('type'))
     ? searchParams.get('type')
     : 'listing'
@@ -134,8 +137,21 @@ export function MyPublicationsPage() {
     setSearchParams(params, { replace: true })
   }
 
+  function setPanel(next) {
+    const params = new URLSearchParams(searchParams)
+    if (next === 'publications') params.delete('panel')
+    else params.set('panel', next)
+    setSearchParams(params, { replace: true })
+  }
+
   const publishLink = PUBLISH_LINKS[typeTab] || PUBLISH_LINKS.listing
   const EmptyIcon = EMPTY_ICONS[typeTab] || FiShoppingBag
+  const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim()
+  const subscriberPublisherType = scope === 'business' && ownBusiness ? 'business' : 'user'
+  const subscriberPublisherId =
+    scope === 'business' && ownBusiness ? ownBusiness.id : user.id
+  const subscriberPublisherName =
+    scope === 'business' && ownBusiness ? ownBusiness.name : fullName || 'Mon profil'
 
   return (
     <div className="grid gap-7">
@@ -143,9 +159,11 @@ export function MyPublicationsPage() {
         eyebrow="Compte"
         title="Mes publications"
         description={
-          scope === 'business' && ownBusiness
-            ? `Publications publiées au nom de ${ownBusiness.name}.`
-            : 'Annonces, colis, jobs, événements, publications et autres contenus.'
+          panel === 'subscribers'
+            ? 'Membres abonnés à vos annonces et publications.'
+            : scope === 'business' && ownBusiness
+              ? `Publications publiées au nom de ${ownBusiness.name}.`
+              : 'Annonces, colis, jobs, événements, publications et autres contenus.'
         }
         stats={[
           { label: 'Actives', value: archiveCounts.active },
@@ -173,6 +191,24 @@ export function MyPublicationsPage() {
         }
       />
 
+      <div className="flex flex-wrap gap-2">
+        <PillBadge active={panel === 'publications'} onClick={() => setPanel('publications')}>
+          Publications
+        </PillBadge>
+        <PillBadge active={panel === 'subscribers'} onClick={() => setPanel('subscribers')}>
+          <FiUsers className="mr-1 inline" />
+          Mes abonnés
+        </PillBadge>
+      </div>
+
+      {panel === 'subscribers' ? (
+        <SubscribersPanel
+          publisherType={subscriberPublisherType}
+          publisherId={subscriberPublisherId}
+          publisherName={subscriberPublisherName}
+        />
+      ) : (
+        <>
       <div className="grid gap-4">
         <CatalogArchiveTabs
           active={archiveTab}
@@ -275,6 +311,8 @@ export function MyPublicationsPage() {
             ) : null
           }
         />
+      )}
+        </>
       )}
 
       <ConfirmDialog

@@ -1,5 +1,6 @@
-import { FiArrowRight, FiBriefcase, FiClock, FiMapPin, FiPlus, FiUser, FiUsers } from 'react-icons/fi'
 import { useMemo, useState } from 'react'
+import { FiArrowRight, FiBriefcase, FiClock, FiMapPin, FiPlus, FiUser, FiUsers } from 'react-icons/fi'
+import { sortBySubscriptionPriority } from '@moxt/shared/utils/subscriptionUtils.js'
 import { useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import { Card } from '../components/ui/Card'
@@ -42,6 +43,7 @@ export function JobsPage() {
   const [filters, setFilters] = useState({ query: '', location: '', contractType: '', sector: '' })
   const navigate = useNavigate()
   const user = useSelector((state) => state.auth.user)
+  const subscriptions = useSelector((state) => state.account.subscriptions || [])
   const canPublish = !!user
   const jobs = useSelector((state) => state.jobs.items)
 
@@ -64,8 +66,14 @@ export function JobsPage() {
   )
 
   const activeJobs = useMemo(
-    () => filteredJobs.filter((job) => job.status === 'active'),
-    [filteredJobs],
+    () =>
+      sortBySubscriptionPriority(
+        filteredJobs.filter((job) => job.status === 'active'),
+        subscriptions,
+        user?.id,
+        'job',
+      ),
+    [filteredJobs, subscriptions, user?.id],
   )
 
   const archivedJobs = useMemo(
