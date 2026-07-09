@@ -122,6 +122,68 @@ function ensureCdnFixed(resource) {
   return { id, providerCname: updated.provider_cname || providerCname }
 }
 
+function ensureWebsiteOrigin(resource) {
+  const groupId = resource.origin_group_id
+  if (!groupId) return
+
+  const group = ycJson('cdn', 'origin-group', 'get', String(groupId))
+  const origin = group?.origins?.[0]
+  const source = origin?.source || ''
+  const websiteMeta = origin?.meta?.website?.name
+  const usesWebsite = source === websiteHost && websiteMeta === bucket
+
+  if (usesWebsite) {
+    log('Origine CDN', `hébergement web OK (${websiteHost})`)
+    return
+  }
+
+  log(
+    'Correction origine CDN',
+    `storage → ${websiteHost} (évite AccessDenied sur /)`,
+  )
+  ycInherit(
+    'cdn',
+    'origin-group',
+    'update',
+    '--id',
+    String(groupId),
+    '--name',
+    group.name || `s3-${bucket}`,
+    '--origin',
+    `source=${websiteHost},enabled=true,meta-website-name=${bucket}`,
+  )
+}
+
+function ensureRootRewrite(resource) {
+  const id = resource.id
+  const rewrite = resource.options?.rewrite
+  const body = rewrite?.body || ''
+  const flag = (rewrite?.flag || '').toUpperCase()
+
+  if (body === '/ /index.html' && (flag === 'LAST' || flag === 'REDIRECT')) {
+    log('Rewrite CDN', 'racine / → index.html déjà configuré')
+    return
+  }
+
+  log('Rewrite CDN', '/ → /index.html (SPA)')
+  ycInherit(
+    'cdn',
+    'resource',
+    'update',
+    id,
+    '--rewrite-body',
+    '/ /index.html',
+    '--rewrite-flag',
+    'last',
+  )
+}
+
+function purgeCdnCache(resourceId) {
+  if (process.env.MOXT_SKIP_CDN_PURGE === '1') return
+  log('Purge cache CDN', resourceId)
+  ycInherit('cdn', 'cache', 'purge', '--resource-id', resourceId, '--all')
+}
+
 function getZoneNameservers(zoneId) {
   const records = ycJson('dns', 'zone', 'list-records', zoneId, '--record-type', 'NS')
   const items = records?.record_sets || records || []
@@ -383,6 +445,9 @@ async function main() {
   }
 
   const { id: resourceId, providerCname } = ensureCdnFixed(resource)
+  ensureWebsiteOrigin(resource)
+  ensureRootRewrite(resource)
+  purgeCdnCache(resourceId)
 
   const zone = ensureDnsZone()
   if (zone) {
