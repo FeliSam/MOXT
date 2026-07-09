@@ -39,8 +39,7 @@ function isPhoneLoginDisabledError(error) {
  *   getPasswordResetRedirectUrl?: () => string,
  * }} redirects
  */
-export function createAuthService(supabase, redirects = {}, integrations = {}) {
-  const { invokeTelegramGateway, invokeMobileIdGateway } = integrations
+export function createAuthService(supabase, redirects = {}) {
   const getOAuthRedirectUrl = redirects.getOAuthRedirectUrl ?? (() => '')
   const getEmailRedirectUrl = redirects.getEmailRedirectUrl ?? (() => '')
   const getPasswordResetRedirectUrl = redirects.getPasswordResetRedirectUrl ?? (() => '')
@@ -224,69 +223,6 @@ export function createAuthService(supabase, redirects = {}, integrations = {}) {
       }
 
       const verificationMethod = details.verificationMethod || 'phone'
-      const phoneDeliveryChannel =
-        verificationMethod === 'phone' ? details.phoneDeliveryChannel || 'sms' : 'sms'
-
-      // Telegram : crée le compte côté Edge Function (sans SMS Supabase).
-      if (verificationMethod === 'phone' && phoneDeliveryChannel === 'telegram') {
-        if (!invokeTelegramGateway) {
-          throw new Error('La vérification Telegram n’est pas configurée sur cette application.')
-        }
-        const phone = normalizeRussianAuthPhone(details.russianPhone)
-        const registered = await invokeTelegramGateway({
-          action: 'register',
-          phone,
-          password: details.password,
-          email,
-          profileFields,
-        })
-        if (!registered?.userId) {
-          throw new Error('Échec de création du compte Telegram.')
-        }
-        return {
-          user: profileToUser({ id: registered.userId, ...profileFields }),
-          token: '',
-          requiresEmailConfirmation: false,
-          requiresPhoneConfirmation: false,
-          requiresTelegramPhoneConfirmation: true,
-          pendingUserId: registered.userId,
-          phoneDeliveryChannel: 'telegram',
-          verificationMethod: 'phone',
-          email,
-          phone,
-        }
-      }
-
-      // MobileID : crée le compte puis vérifie le numéro via le SDK SMS Aero.
-      if (verificationMethod === 'phone' && phoneDeliveryChannel === 'mobileid') {
-        if (!invokeMobileIdGateway) {
-          throw new Error('La vérification MobileID n’est pas configurée sur cette application.')
-        }
-        const phone = normalizeRussianAuthPhone(details.russianPhone)
-        const registered = await invokeMobileIdGateway({
-          action: 'register',
-          phone,
-          password: details.password,
-          email,
-          profileFields,
-        })
-        if (!registered?.userId) {
-          throw new Error('Échec de création du compte MobileID.')
-        }
-        return {
-          user: profileToUser({ id: registered.userId, ...profileFields }),
-          token: '',
-          requiresEmailConfirmation: false,
-          requiresPhoneConfirmation: false,
-          requiresTelegramPhoneConfirmation: false,
-          requiresMobileIdPhoneConfirmation: true,
-          pendingUserId: registered.userId,
-          phoneDeliveryChannel: 'mobileid',
-          verificationMethod: 'phone',
-          email,
-          phone,
-        }
-      }
 
       const credentials =
         verificationMethod === 'phone'
@@ -333,9 +269,7 @@ export function createAuthService(supabase, redirects = {}, integrations = {}) {
         token: data.session?.access_token || '',
         requiresEmailConfirmation: verificationMethod === 'email' && !data.session,
         requiresPhoneConfirmation: pendingConfirmation,
-        requiresTelegramPhoneConfirmation: false,
         pendingUserId: data.user.id,
-        phoneDeliveryChannel,
         verificationMethod,
         email,
         phone: normalizeRussianAuthPhone(details.russianPhone),
@@ -383,124 +317,6 @@ export function createAuthService(supabase, redirects = {}, integrations = {}) {
         user,
         token: data.session.access_token,
         emailLinkDeferred: Boolean(email && !data.user.email),
-      }
-    },
-
-    async verifyTelegramPhoneRegistration({
-      phone,
-      token,
-      requestId,
-      userId,
-      password,
-      email,
-    }) {
-      if (!supabase) throw new Error('Supabase non configuré.')
-      if (!invokeTelegramGateway) {
-        throw new Error('La vérification Telegram n’est pas configurée sur cette application.')
-      }
-      if (!requestId || !userId) {
-        throw new Error('Session de vérification Telegram invalide. Recommencez l’inscription.')
-      }
-
-      const normalizedPhone = normalizeRussianAuthPhone(phone)
-      await invokeTelegramGateway({
-        action: 'verify',
-        phone: normalizedPhone,
-        userId,
-        requestId,
-        code: token.trim(),
-      })
-
-      // Prefer email login when available — Phone provider may be disabled.
-      let authResult = null
-      const emailLogin = email?.trim().toLowerCase()
-      if (emailLogin) {
-        authResult = await supabase.auth.signInWithPassword({
-          email: emailLogin,
-          password,
-        })
-      }
-      if (authResult?.error || !authResult?.data?.session) {
-        authResult = await signInWithPhoneFallback(normalizedPhone, password)
-      }
-      const { data, error } = authResult
-      if (error) throw new Error(translateAuthError(error))
-      if (!data?.session || !data?.user) {
-        throw new Error('Connexion impossible après vérification Telegram.')
-      }
-
-      if (emailLogin && !data.user.email) {
-        const { error: emailError } = await supabase.auth.updateUser({
-          email: emailLogin,
-        })
-        if (emailError) {
-          console.warn('[MOXT] Liaison e-mail différée après inscription Telegram:', emailError.message)
-        }
-      }
-
-      const user = await fetchOrCreateProfile(data.user)
-      return {
-        user,
-        token: data.session.access_token,
-        emailLinkDeferred: Boolean(emailLogin && !data.user.email),
-      }
-    },
-
-    async verifyMobileIdPhoneRegistration({
-      phone,
-      sessionId,
-      verifyToken,
-      userId,
-      password,
-      email,
-    }) {
-      if (!supabase) throw new Error('Supabase non configuré.')
-      if (!invokeMobileIdGateway) {
-        throw new Error('La vérification MobileID n’est pas configurée sur cette application.')
-      }
-      if (!sessionId || !verifyToken || !userId) {
-        throw new Error('Session MobileID invalide. Recommencez l’inscription.')
-      }
-
-      const normalizedPhone = normalizeRussianAuthPhone(phone)
-      const result = await invokeMobileIdGateway({
-        action: 'complete',
-        phone: normalizedPhone,
-        userId,
-        session_id: sessionId,
-        verify_token: verifyToken,
-        password,
-        email: email?.trim().toLowerCase(),
-      })
-
-      if (!result?.access_token || !result?.refresh_token) {
-        throw new Error('Session invalide après vérification MobileID.')
-      }
-
-      const sessionResult = await supabase.auth.setSession({
-        access_token: result.access_token,
-        refresh_token: result.refresh_token,
-      })
-      if (sessionResult.error) {
-        throw new Error(translateAuthError(sessionResult.error))
-      }
-      if (!sessionResult.data.session || !sessionResult.data.user) {
-        throw new Error('Connexion impossible après MobileID.')
-      }
-
-      const emailLogin = email?.trim().toLowerCase()
-      if (emailLogin && !sessionResult.data.user.email) {
-        const { error: emailError } = await supabase.auth.updateUser({ email: emailLogin })
-        if (emailError) {
-          console.warn('[MOXT] Liaison e-mail différée après MobileID:', emailError.message)
-        }
-      }
-
-      const user = await fetchOrCreateProfile(sessionResult.data.user)
-      return {
-        user,
-        token: sessionResult.data.session.access_token,
-        emailLinkDeferred: Boolean(result.emailLinkDeferred || (emailLogin && !sessionResult.data.user.email)),
       }
     },
 

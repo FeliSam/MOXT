@@ -1,11 +1,18 @@
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi'
 
 export function ScrollArrows({ scrollRef }) {
+  function scrollByPage(direction) {
+    const el = scrollRef.current
+    if (!el) return
+    const amount = Math.max(240, Math.round(el.clientWidth * 0.82))
+    el.scrollBy({ left: direction * amount, behavior: 'smooth' })
+  }
+
   function scrollLeft() {
-    scrollRef.current?.scrollBy({ left: -300, behavior: 'smooth' })
+    scrollByPage(-1)
   }
   function scrollRight() {
-    scrollRef.current?.scrollBy({ left: 300, behavior: 'smooth' })
+    scrollByPage(1)
   }
 
   return (

@@ -5,11 +5,12 @@ project_id = "moxt"
 
 [auth]
 enabled = true
-site_url = "https://moxt.netlify.app"
+site_url = "https://moxtapp.ru"
 additional_redirect_urls = [
   "http://localhost:5173/**",
   "http://127.0.0.1:5173/**",
-  "https://moxt.netlify.app/**",
+  "https://moxtapp.ru/**",
+  "https://www.moxtapp.ru/**",
 ]
 
 [auth.email]
@@ -17,12 +18,24 @@ enable_signup = true
 double_confirm_changes = true
 enable_confirmations = true
 
-# Auth téléphone / SMS — requis pour signInWithPassword({ phone }).
-# Sans provider SMS, les OTP SMS restent indisponibles ; le login mot de passe
-# via numéro passe par l’Edge Function phone-login (e-mail du profil).
+# Yandex Cloud Postbox — variables lues au `config push` (voir scripts/phase2.env.example)
+[auth.email.smtp]
+host = "postbox.cloud.yandex.net"
+port = 587
+user = "env(MOXT_POSTBOX_SMTP_USER)"
+pass = "env(MOXT_POSTBOX_SMTP_PASS)"
+admin_email = "env(MOXT_POSTBOX_FROM)"
+sender_name = "MOXT"
+
+# Auth téléphone / SMS — OTP via hook send-sms → Yandex Cloud Notification Service
 [auth.sms]
 enable_signup = true
 enable_confirmations = false
+
+[auth.hook.send_sms]
+enabled = true
+uri = "https://rbvqfkccbkwjxkvpnwqn.supabase.co/functions/v1/send-sms"
+secrets = "env(SEND_SMS_HOOK_SECRET)"
 
 [api]
 enabled = true
@@ -39,11 +52,8 @@ enabled = false
 [realtime]
 enabled = true
 
-[functions.telegram-gateway]
-verify_jwt = false
-
 [functions.phone-login]
 verify_jwt = false
 
-[functions.mobileid-gateway]
+[functions.send-sms]
 verify_jwt = false

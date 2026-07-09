@@ -1,5 +1,11 @@
 import { useEffect, useRef } from 'react'
 
+const AXIS_LOCK_PX = 8
+
+/**
+ * Ref pour carrousels horizontaux : verrouillage d'axe tactile + molette Shift.
+ * Le défilement natif (inertie) est conservé — pas de détournement du scroll vertical.
+ */
 export function useHorizontalScroll() {
   const ref = useRef(null)
 
@@ -7,14 +13,75 @@ export function useHorizontalScroll() {
     const el = ref.current
     if (!el) return
 
-    function onWheel(e) {
-      if (e.deltaY === 0) return
-      e.preventDefault()
-      el.scrollLeft += e.deltaY
+    let startX = 0
+    let startY = 0
+    let axis = null
+
+    function resetGesture() {
+      axis = null
     }
 
+    function canScrollX() {
+      return el.scrollWidth - el.clientWidth > 1
+    }
+
+    function onTouchStart(event) {
+      if (event.touches.length !== 1) return
+      startX = event.touches[0].clientX
+      startY = event.touches[0].clientY
+      axis = null
+    }
+
+    function onTouchMove(event) {
+      if (!canScrollX() || event.touches.length !== 1) return
+
+      const dx = event.touches[0].clientX - startX
+      const dy = event.touches[0].clientY - startY
+
+      if (!axis) {
+        if (Math.abs(dx) < AXIS_LOCK_PX && Math.abs(dy) < AXIS_LOCK_PX) return
+        axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'
+      }
+
+      if (axis !== 'x') return
+
+      const maxScroll = el.scrollWidth - el.clientWidth
+      const goingRight = dx > 0
+      const goingLeft = dx < 0
+      const atStart = el.scrollLeft <= 0
+      const atEnd = el.scrollLeft >= maxScroll - 1
+
+      if ((goingRight && atStart) || (goingLeft && atEnd)) return
+
+      event.stopPropagation()
+    }
+
+    function onWheel(event) {
+      if (!event.shiftKey || !canScrollX()) return
+
+      const maxScroll = el.scrollWidth - el.clientWidth
+      const atStart = el.scrollLeft <= 0
+      const atEnd = el.scrollLeft >= maxScroll - 1
+      if (event.deltaY < 0 && atStart) return
+      if (event.deltaY > 0 && atEnd) return
+
+      event.preventDefault()
+      el.scrollLeft += event.deltaY
+    }
+
+    el.addEventListener('touchstart', onTouchStart, { passive: true })
+    el.addEventListener('touchmove', onTouchMove, { passive: false })
+    el.addEventListener('touchend', resetGesture, { passive: true })
+    el.addEventListener('touchcancel', resetGesture, { passive: true })
     el.addEventListener('wheel', onWheel, { passive: false })
-    return () => el.removeEventListener('wheel', onWheel)
+
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart)
+      el.removeEventListener('touchmove', onTouchMove)
+      el.removeEventListener('touchend', resetGesture)
+      el.removeEventListener('touchcancel', resetGesture)
+      el.removeEventListener('wheel', onWheel)
+    }
   }, [])
 
   return ref

@@ -63,11 +63,6 @@ export const registerSchema = Yup.object({
   verificationMethod: Yup.string()
     .oneOf(['phone', 'email'])
     .required('Choisissez une méthode de vérification.'),
-  phoneDeliveryChannel: Yup.string().when('verificationMethod', {
-    is: 'phone',
-    then: (schema) => schema.oneOf(['sms', 'telegram', 'mobileid']).default('sms'),
-    otherwise: (schema) => schema.strip(),
-  }),
 })
 
 export const registerStepFields = {
@@ -82,7 +77,7 @@ export const registerStepFields = {
     'confirmPassword',
     'acceptTerms',
   ],
-  4: ['verificationMethod', 'phoneDeliveryChannel'],
+  4: ['verificationMethod'],
 }
 
 export const forgotPasswordSchema = Yup.object({

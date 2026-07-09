@@ -12,6 +12,8 @@ web-build/
 .env.local
 .env.*.local
 moxt-react/.env.production
+scripts/phase2.env
+scripts/github-deploy-sa.json
 
 # Logs & caches
 logs/

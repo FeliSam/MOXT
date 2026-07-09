@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const envLocalPath = path.join(root, 'moxt-react', '.env.local')
-const siteUrl = process.env.MOXT_SITE_URL || 'https://moxt.netlify.app'
+const siteUrl = process.env.MOXT_SITE_URL || 'https://moxtapp.ru'
 
 function log(title, message = '') {
   console.log(`\n▸ ${title}${message ? `\n  ${message}` : ''}`)
@@ -127,7 +127,7 @@ async function main() {
     process.exit(1)
   }
 
-  log('Supabase — URLs auth (site + redirects Netlify)')
+  log('Supabase — URLs auth (site + redirects moxtapp.ru)')
   if (run('npx', ['supabase', 'config', 'push', '--yes']) !== 0) {
     process.exit(1)
   }

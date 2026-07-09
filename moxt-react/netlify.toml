@@ -12,18 +12,6 @@
   VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJidnFma2NjYmt3anhrdnBud3FuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NjI2NDMsImV4cCI6MjA5ODIzODY0M30.ZpAr5eEnxoxy3TQ4hIA3SoX1NTuPg-0pt4UQ2mS5lDI"
 
 [[redirects]]
-  from = "/midsdk/*"
-  to = "https://midsdk.smsaero.ru/:splat"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/mobileid-token"
-  to = "https://rbvqfkccbkwjxkvpnwqn.supabase.co/functions/v1/mobileid-gateway"
-  status = 200
-  force = true
-
-[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200

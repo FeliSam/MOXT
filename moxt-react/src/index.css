@@ -1002,6 +1002,44 @@ html.theme-animating *::after {
 }
 .scrollbar-hidden::-webkit-scrollbar { display: none; }
 
+/* Carrousels horizontaux — inertie native, snap, sans conflit avec le scroll vertical */
+.horizontal-track {
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 1rem;
+  touch-action: pan-x pinch-zoom;
+}
+
+.horizontal-track > * {
+  scroll-snap-align: start;
+  scroll-snap-stop: normal;
+}
+
+/* Les animations reveal perturbent le scroll horizontal sur mobile */
+.horizontal-track .reveal-on-scroll {
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+
+.horizontal-track a {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+@media (min-width: 1024px) {
+  .horizontal-track--lg-grid {
+    overflow: visible;
+    scroll-snap-type: none;
+    touch-action: auto;
+  }
+}
+
 /* Icônes services dashboard — effet 3D (perspective + ombre portée) */
 .dashboard-icon-3d {
   perspective: 900px;

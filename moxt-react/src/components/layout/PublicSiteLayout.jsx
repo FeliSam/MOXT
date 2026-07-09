@@ -20,7 +20,7 @@ export function PublicSiteLayout() {
   const visible = useSmartNavbar()
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen overflow-x-clip">
       <header
         className={`sticky top-0 z-30 border-b border-[var(--app-border)] bg-[color:var(--app-bg)]/90 px-4 py-3 backdrop-blur-xl transition-transform duration-300 sm:px-6 ${
           visible ? 'translate-y-0' : '-translate-y-full'

@@ -10,6 +10,7 @@ import { MarketplaceListingCard } from '../../marketplace/MarketplaceListingCard
 import { formatParcelDepartureLabel } from '../../parcels/parcelUtils'
 import { formatDate } from '../../transfers/transferUtils'
 import {
+  dashboardCarouselTrackClass,
   dashboardListingItemClass,
   dashboardListingTrackClass,
 } from '../dashboardConfig'
@@ -120,7 +121,7 @@ export function DashboardDiscoverySection({
         <DashboardSectionHeading title="Actualités MOXT" link="/news" linkLabel="Tout lire" />
       </RevealOnScroll>
       {posts.length > 0 ? (
-        <div className="scrollbar-hidden -mx-4 flex touch-pan-x gap-3 overflow-x-auto px-4 py-2 sm:gap-4">
+        <div className={dashboardCarouselTrackClass}>
           {posts.map((post, index) => (
             <RevealListItem
               key={post.id}

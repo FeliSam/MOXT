@@ -10,6 +10,16 @@
     "postinstall": "node scripts/link-expo-router.cjs",
     "web": "npm run dev -w moxt",
     "web:build": "npm run build -w moxt",
+    "web:deploy:yandex": "node scripts/deploy-yandex.mjs",
+    "web:deploy:yandex:init": "node scripts/deploy-yandex.mjs --init",
+    "setup:github-yandex": "node scripts/setup-github-yandex.mjs",
+    "setup:github-secrets": "node scripts/setup-github-secrets.mjs",
+    "setup:github": "node scripts/setup-github-yandex.mjs && node scripts/setup-github-secrets.mjs",
+    "setup:github:win": "powershell -ExecutionPolicy Bypass -File scripts/setup-github-secrets.ps1",
+    "setup:yandex-cdn": "node scripts/setup-yandex-cdn.mjs",
+    "setup:yandex-provision": "node scripts/provision-yandex-auth.mjs",
+    "setup:yandex-all": "node scripts/setup-yandex-all.mjs",
+    "setup:phase2": "node scripts/setup-phase2-postbox-sms.mjs",
     "setup:supabase": "npx supabase link --project-ref rbvqfkccbkwjxkvpnwqn --yes && npx supabase config push --yes && npx supabase db push --linked --yes",
     "setup:production": "node scripts/setup-production.mjs",
     "web:cap:doctor": "npm run cap:doctor -w moxt",
@@ -37,9 +47,11 @@
     "test": "npm run shared:test && npm run web:test"
   },
   "devDependencies": {
+    "@aws-sdk/client-sesv2": "^3.1083.0",
     "jsdom": "^29.1.1",
     "styleq": "^0.1.3",
     "typescript": "~6.0.3",
+    "tweetsodium": "^0.0.4",
     "vite": "^8.1.2",
     "vitest": "^4.1.8"
   },

@@ -1,0 +1,71 @@
+# Déploie le site web sur Yandex Object Storage à chaque push sur main.
+#
+# Secrets GitHub requis (Settings → Secrets and variables → Actions) :
+#   YC_SA_JSON              clé JSON du compte de service (npm run setup:github-yandex)
+#   VITE_SUPABASE_URL       URL Supabase
+#   VITE_SUPABASE_ANON_KEY  clé anon Supabase
+#
+# Secret optionnel :
+#   (aucun)
+#
+# Variables repo optionnelles :
+#   MOXT_YC_BUCKET          défaut moxtapp-web
+#   MOXT_CDN_RESOURCE_ID    purge le cache CDN après upload
+
+name: Deploy — Yandex Cloud
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'moxt-react/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'scripts/deploy-yandex.mjs'
+      - '.github/workflows/deploy-yandex.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-yandex-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build web (production)
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run web:build
+
+      - name: Install Yandex CLI
+        run: |
+          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i /tmp/yc -n
+          echo "/tmp/yc/bin" >> "$GITHUB_PATH"
+
+      - name: Configure Yandex Cloud credentials
+        env:
+          YC_SA_JSON: ${{ secrets.YC_SA_JSON }}
+        run: |
+          printf '%s' "$YC_SA_JSON" > /tmp/yc-sa.json
+          yc config profile create github --service-account-key /tmp/yc-sa.json
+          yc config set profile github
+
+      - name: Upload to Object Storage
+        env:
+          MOXT_YC_BUCKET: ${{ vars.MOXT_YC_BUCKET || 'moxtapp-web' }}
+          MOXT_CDN_RESOURCE_ID: ${{ vars.MOXT_CDN_RESOURCE_ID }}
+          YC_BIN: yc
+        run: node scripts/deploy-yandex.mjs --skip-build --purge-cdn

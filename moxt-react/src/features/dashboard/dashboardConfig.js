@@ -130,27 +130,29 @@ export const trustHighlights = [
   ['Données maîtrisées', 'Vos préférences et brouillons restent accessibles sur cet appareil.'],
 ]
 
+/** Base commune des pistes horizontales dashboard. */
+export const dashboardTrackBase =
+  'horizontal-track scrollbar-hidden flex gap-3 px-4 py-2 sm:gap-4'
+
 /** Carrousel horizontal — mobile & tablette (< lg), débordement bord à bord. */
-export const dashboardCarouselTrackClass =
-  'scrollbar-hidden -mx-4 flex touch-pan-x gap-3 overflow-x-auto px-4 py-2 sm:gap-4'
+export const dashboardCarouselTrackClass = `${dashboardTrackBase} -mx-4`
 
 /** Grille 4 colonnes à partir de lg — actions rapides, cartes confiance. */
 export const dashboardFourUpTrackClass =
-  'scrollbar-hidden -mx-4 flex touch-pan-x gap-3 overflow-x-auto px-4 py-2 sm:gap-4 lg:mx-0 lg:grid lg:grid-cols-4 lg:gap-4 lg:overflow-visible lg:px-0'
+  `${dashboardTrackBase} horizontal-track--lg-grid -mx-4 lg:mx-0 lg:grid lg:grid-cols-4 lg:gap-4 lg:px-0`
 
 export const dashboardFourUpItemClass =
   'w-[clamp(10.5rem,22vw,14rem)] shrink-0 lg:w-auto lg:min-w-0 lg:shrink'
 
 /** Annonces — carrousel puis grille 4 colonnes (lg). */
 export const dashboardListingTrackClass =
-  'scrollbar-hidden -mx-4 flex touch-pan-x gap-3 overflow-x-auto px-4 py-2 sm:gap-4 lg:mx-0 lg:grid lg:grid-cols-4 lg:gap-4 lg:overflow-visible lg:px-0'
+  `${dashboardTrackBase} horizontal-track--lg-grid -mx-4 lg:mx-0 lg:grid lg:grid-cols-4 lg:gap-4 lg:px-0`
 
 export const dashboardListingItemClass =
   'w-[clamp(12rem,25vw,16rem)] shrink-0 overflow-visible lg:w-auto lg:min-w-0 lg:shrink'
 
 /** Services essentiels — carrousel horizontal sur tous les écrans. */
-export const dashboardServicesTrackClass =
-  'scrollbar-hidden -mx-4 flex touch-pan-x gap-3 overflow-x-auto px-4 py-2 sm:gap-4'
+export const dashboardServicesTrackClass = `${dashboardTrackBase} -mx-4`
 
 export const dashboardServiceItemClass =
   'w-[clamp(13.5rem,62vw,17.5rem)] shrink-0 sm:w-[clamp(12.5rem,44vw,16rem)] lg:w-[clamp(14rem,20vw,18rem)]'
@@ -161,7 +163,7 @@ export const dashboardLiveItemClass =
 
 /** Liste live — scroll horizontal, largeur bornée (scroll fiable dans une Card). */
 export const dashboardLiveTrackClass =
-  'scrollbar-hidden flex w-full max-w-full min-w-0 touch-pan-x gap-3 overflow-x-auto overscroll-x-contain py-1 sm:gap-4'
+  'horizontal-track scrollbar-hidden flex w-full max-w-full min-w-0 gap-3 py-1 sm:gap-4'
 
 export const dashboardLiveCardClass = 'min-w-0 overflow-hidden !p-0'
 

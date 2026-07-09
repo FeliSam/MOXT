@@ -9,8 +9,6 @@ export const {
   register,
   verifyEmailRegistration,
   verifyPhoneRegistration,
-  verifyTelegramPhoneRegistration,
-  verifyMobileIdPhoneRegistration,
   updateProfile,
   restoreSession,
   logout,

@@ -35,7 +35,7 @@ export function DashboardPage() {
   const rate = useExchangeRate()
 
   return (
-    <div className="grid min-w-0 gap-6 sm:gap-8">
+    <div className="grid min-w-0 gap-6 overflow-x-clip sm:gap-8">
       <DashboardHero user={user} onOpenCalculator={() => setCalculatorOpen(true)} />
 
       <RevealOnScroll delay={60} className="relative z-30 lg:hidden">

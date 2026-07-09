@@ -49,7 +49,7 @@ export function AppLayout() {
         <main
           id="main-content"
           tabIndex={-1}
-          className={`mx-auto w-full min-w-0 max-w-[96rem] ${
+          className={`mx-auto w-full min-w-0 max-w-[96rem] overflow-x-clip ${
             isMessagesRoute
               ? `min-h-0 flex-1 overflow-hidden ${
                   isMessageThread

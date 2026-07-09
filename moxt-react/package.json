@@ -51,7 +51,6 @@
     "react-icons": "^5.6.0",
     "react-redux": "^9.3.0",
     "react-router-dom": "^7.17.0",
-    "smsaero-mobileid-sdk": "^1.0.3",
     "yup": "^1.7.1"
   },
   "devDependencies": {
