@@ -1,16 +1,14 @@
 # Déploie le site web sur Yandex Object Storage à chaque push sur main.
 #
-# Secrets GitHub requis (Settings → Secrets and variables → Actions) :
-#   YC_SA_JSON              clé JSON du compte de service (npm run setup:github-yandex)
-#   VITE_SUPABASE_URL       URL Supabase
-#   VITE_SUPABASE_ANON_KEY  clé anon Supabase
+# Secrets GitHub requis :
+#   YC_SA_JSON_B64           clé SA Yandex (base64, généré par setup:github-secrets)
+#   VITE_SUPABASE_URL
+#   VITE_SUPABASE_ANON_KEY
 #
-# Secret optionnel :
-#   (aucun)
-#
-# Variables repo optionnelles :
-#   MOXT_YC_BUCKET          défaut moxtapp-web
-#   MOXT_CDN_RESOURCE_ID    purge le cache CDN après upload
+# Variables repo :
+#   MOXT_YC_BUCKET           défaut moxtapp-web
+#   MOXT_CDN_RESOURCE_ID     purge cache CDN
+#   MOXT_YC_FOLDER_ID        défaut b1gmns3k9udjtgk89c9i
 
 name: Deploy — Yandex Cloud
 
@@ -56,13 +54,17 @@ jobs:
 
       - name: Configure Yandex Cloud credentials
         env:
-          YC_SA_JSON: ${{ secrets.YC_SA_JSON }}
+          YC_SA_JSON_B64: ${{ secrets.YC_SA_JSON_B64 }}
           MOXT_YC_FOLDER_ID: ${{ vars.MOXT_YC_FOLDER_ID || 'b1gmns3k9udjtgk89c9i' }}
         run: |
-          printf '%s' "$YC_SA_JSON" > /tmp/yc-sa.json
+          if [ -z "$YC_SA_JSON_B64" ]; then
+            echo "YC_SA_JSON_B64 secret is empty — relancez npm run setup:github-secrets"
+            exit 1
+          fi
+          echo "$YC_SA_JSON_B64" | base64 -d > /tmp/yc-sa.json
           python3 -c "import json; json.load(open('/tmp/yc-sa.json'))"
-          yc config profile create github --service-account-key /tmp/yc-sa.json
-          yc config set profile github
+          yc config profile create moxt-deploy --service-account-key /tmp/yc-sa.json
+          yc config set profile moxt-deploy
           yc config set folder-id "$MOXT_YC_FOLDER_ID"
 
       - name: Upload to Object Storage

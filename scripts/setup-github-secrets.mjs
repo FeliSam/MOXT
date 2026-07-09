@@ -152,6 +152,11 @@ async function setSecret(name, value) {
   console.log(`  ✓ secret ${name}`)
 }
 
+async function setSecretBase64(name, filePath) {
+  const b64 = Buffer.from(readFileSync(filePath, 'utf8'), 'utf8').toString('base64')
+  await setSecret(name, b64)
+}
+
 async function setVariable(name, value) {
   const { owner, repo } = gitRepo()
   const url = `https://api.github.com/repos/${owner}/${repo}/actions/variables/${name}`
@@ -199,6 +204,7 @@ async function main() {
   log('Repository GitHub', `${repo.owner}/${repo.repo}`)
   log('Secrets Actions')
 
+  await setSecretBase64('YC_SA_JSON_B64', saKeyPath)
   await setSecret('YC_SA_JSON', readFileSync(saKeyPath, 'utf8'))
   await setSecret('VITE_SUPABASE_URL', supabaseUrl)
   await setSecret('VITE_SUPABASE_ANON_KEY', supabaseAnon)
