@@ -1,5 +1,8 @@
 /**
  * Fusionne les compteurs non lus — la source distante (Supabase) prime pour un 0 (lu ailleurs).
+ * @param {Record<string, number>} [remote]
+ * @param {Record<string, number>} [local]
+ * @returns {Record<string, number>}
  */
 export function mergeUnreadBy(remote = {}, local = {}) {
   const keys = new Set([...Object.keys(remote ?? {}), ...Object.keys(local ?? {})])

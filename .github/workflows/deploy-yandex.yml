@@ -55,14 +55,22 @@ jobs:
       - name: Configure Yandex Cloud credentials
         env:
           YC_SA_JSON_B64: ${{ secrets.YC_SA_JSON_B64 }}
+          YC_SA_JSON: ${{ secrets.YC_SA_JSON }}
           MOXT_YC_FOLDER_ID: ${{ vars.MOXT_YC_FOLDER_ID || 'b1gmns3k9udjtgk89c9i' }}
         run: |
-          if [ -z "$YC_SA_JSON_B64" ]; then
-            echo "YC_SA_JSON_B64 secret is empty — relancez npm run setup:github-secrets"
-            exit 1
-          fi
-          echo "$YC_SA_JSON_B64" | base64 -d > /tmp/yc-sa.json
-          python3 -c "import json; json.load(open('/tmp/yc-sa.json'))"
+          python3 <<'PY'
+          import base64, json, os, pathlib
+          b64 = os.environ.get("YC_SA_JSON_B64", "").strip()
+          raw = os.environ.get("YC_SA_JSON", "").strip()
+          if b64:
+              content = base64.b64decode(b64).decode("utf-8")
+          elif raw:
+              content = raw
+          else:
+              raise SystemExit("YC_SA_JSON_B64 or YC_SA_JSON required — run: npm run setup:github-secrets")
+          pathlib.Path("/tmp/yc-sa.json").write_text(content)
+          json.load(open("/tmp/yc-sa.json"))
+          PY
           yc config profile create moxt-deploy --service-account-key /tmp/yc-sa.json
           yc config set profile moxt-deploy
           yc config set folder-id "$MOXT_YC_FOLDER_ID"

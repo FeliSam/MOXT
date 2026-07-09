@@ -40,12 +40,13 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     if (!user?.id || !supabase) return;
-    supabase
-      .from('profiles')
-      .select('preferences')
-      .eq('id', user.id)
-      .maybeSingle()
-      .then(({ data }) => {
+    void (async () => {
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('preferences')
+          .eq('id', user.id)
+          .maybeSingle();
         const prefs = { ...DEFAULT_NOTIFICATION_PREFERENCES, ...(data?.preferences || {}) };
         setPushEnabled(prefs.pushNotifications !== false);
         setEmailEnabled(Boolean(prefs.emailNotifications));
@@ -57,8 +58,10 @@ export default function SettingsScreen() {
           notifEvents: prefs.notifEvents === 'high' ? 'Haute' : prefs.notifEvents === 'low' ? 'Faible' : prefs.notifEvents === 'off' ? 'Off' : 'Normale',
           notifActualites: prefs.notifActualites === 'high' ? 'Haute' : prefs.notifActualites === 'low' ? 'Faible' : prefs.notifActualites === 'off' ? 'Off' : 'Normale',
         });
-      })
-      .catch(() => undefined);
+      } catch {
+        // ignore profile preference load errors
+      }
+    })();
   }, [user?.id]);
 
   async function persistPreferences(overrides: {
