@@ -6,8 +6,13 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { SESv2Client, CreateEmailIdentityCommand, GetEmailIdentityCommand } from '@aws-sdk/client-sesv2'
-import { folderId, ycInherit, ycJson, ycRun } from './lib/yandex.mjs'
+import { folderId, ycJson, ycRun } from './lib/yandex.mjs'
+import {
+  dkimTokensFromAddress,
+  ensurePostboxAddress,
+  ensurePostboxDkimDns,
+  findDnsZone as findYandexDnsZone,
+} from './lib/postbox.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const envPath = path.join(root, 'scripts', 'phase2.env')
@@ -91,9 +96,36 @@ function bindRole(folder, saId, role) {
 }
 
 function ensureRoles(folder, saId) {
-  log('Rôles IAM', 'postbox.sender + notifications.publisher')
+  log('Rôles IAM', 'postbox.editor + postbox.sender + dns.editor + notifications.publisher')
+  bindRole(folder, saId, 'postbox.editor')
   bindRole(folder, saId, 'postbox.sender')
+  bindRole(folder, saId, 'dns.editor')
   bindRole(folder, saId, 'notifications.publisher')
+}
+
+function createYcAuthorizedKey(saId) {
+  const keyPath = path.join(root, 'scripts', 'moxt-auth-yc.json')
+  if (existsSync(keyPath) && process.env.MOXT_PROVISION_FORCE !== '1') {
+    log('Clé CLI locale', 'scripts/moxt-auth-yc.json déjà présente')
+    return keyPath
+  }
+  log('Clé CLI locale', 'scripts/moxt-auth-yc.json (npm run setup:yc)')
+  const { code, stderr, stdout } = ycRun([
+    'iam',
+    'key',
+    'create',
+    '--service-account-id',
+    saId,
+    '--output',
+    keyPath,
+    '--description',
+    'MOXT local yc CLI',
+  ])
+  if (code !== 0) {
+    log('Clé CLI locale', `ignorée : ${stderr || stdout}`)
+    return null
+  }
+  return keyPath
 }
 
 function createPostboxApiKey(saId) {
@@ -120,11 +152,12 @@ function createPostboxApiKey(saId) {
   } catch {
     throw new Error(`Clé API Postbox — réponse invalide : ${stdout || stderr}`)
   }
+  const id = key?.api_key?.id || key?.id
   const secret = key?.secret
-  if (!key?.id || !secret) {
-    throw new Error(`Clé API Postbox — champs manquants : ${stdout}`)
+  if (!id || !secret) {
+    throw new Error('Clé API Postbox — id ou secret manquant dans la réponse yc.')
   }
-  return { id: key.id, secret }
+  return { id, secret }
 }
 
 function createStaticAccessKey(saId) {
@@ -136,73 +169,31 @@ function createStaticAccessKey(saId) {
   return { id: key.access_key.key_id, secret: key.secret }
 }
 
-function findDnsZone() {
-  const list = ycJson('dns', 'zone', 'list')
-  const zones = Array.isArray(list) ? list : list?.dns_zones || []
-  return (
-    zones.find((z) => z.name === dnsZoneName) ||
-    zones.find((z) => z.zone === `${domain}.` || z.zone === domain) ||
-    null
-  )
+function resolveDnsZone() {
+  return findYandexDnsZone(dnsZoneName, domain)
 }
 
-function dnsRecordExists(zoneId, name, type) {
-  const records = ycJson('dns', 'zone', 'list-records', zoneId)
-  const items = records?.record_sets || records || []
-  const arr = Array.isArray(items) ? items : []
-  const normalized = name.endsWith('.') ? name : `${name}.`
-  return arr.some((r) => r.name === normalized && r.type === type)
-}
-
-function addDnsRecord(zoneId, spec) {
-  ycInherit('dns', 'zone', 'add-records', zoneId, '--record', spec)
-}
-
-async function ensurePostboxIdentity(staticKeyId, staticSecret) {
-  const client = new SESv2Client({
-    region: 'ru-central1',
-    endpoint: 'https://postbox.cloud.yandex.net',
-    credentials: {
-      accessKeyId: staticKeyId,
-      secretAccessKey: staticSecret,
-    },
-  })
-
+async function ensurePostboxSetup() {
   try {
-    await client.send(new CreateEmailIdentityCommand({ EmailIdentity: domain }))
-    log('Identité Postbox', domain)
+    const address = await ensurePostboxAddress(domain)
+    return dkimTokensFromAddress(address)
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
-    if (!msg.includes('AlreadyExists') && !msg.includes('already exists')) {
-      log('Identité Postbox', `existante ou erreur ignorée : ${msg.slice(0, 120)}`)
-    }
+    log('Postbox API', `ignoré (${msg.slice(0, 100)}) — npm run setup:postbox`)
+    return []
   }
-
-  const identity = await client.send(new GetEmailIdentityCommand({ EmailIdentity: domain }))
-  return identity.DkimAttributes?.Tokens || []
 }
 
 function ensurePostboxDns(zone, dkimTokens) {
   if (!zone?.id) {
-    log('DNS Postbox', 'zone introuvable — ajoutez SPF/DKIM manuellement')
+    log('DNS Postbox', 'zone introuvable — npm run setup:postbox')
     return
   }
-
-  const zoneId = zone.id
-  const spfName = `${domain}.`
-  const spfValue = 'v=spf1 include:spf.postbox.yandexcloud.net ~all'
-  if (!dnsRecordExists(zoneId, domain, 'TXT')) {
-    log('DNS SPF Postbox', spfName)
-    addDnsRecord(zoneId, `${spfName} 600 TXT "${spfValue}"`)
-  }
-
-  for (const token of dkimTokens) {
-    const name = `${token}._domainkey.${domain}.`
-    const target = `${token}.dkim.postbox.yandexcloud.net.`
-    if (!dnsRecordExists(zoneId, name.replace(/\.$/, ''), 'CNAME')) {
-      log('DNS DKIM Postbox', name)
-      addDnsRecord(zoneId, `${name} 600 CNAME ${target}`)
-    }
+  try {
+    const added = ensurePostboxDkimDns(zone, domain, dkimTokens)
+    if (added) log('DNS DKIM Postbox', `${added} enregistrement(s)`)
+  } catch (error) {
+    log('DNS DKIM Postbox', `ignoré : ${error instanceof Error ? error.message : error}`)
   }
 }
 
@@ -226,22 +217,10 @@ async function main() {
 
   const saId = ensureServiceAccount(folder)
   ensureRoles(folder, saId)
+  createYcAuthorizedKey(saId)
 
   const postboxKey = createPostboxApiKey(saId)
   const cnsKey = createStaticAccessKey(saId)
-
-  let dkimTokens = []
-  try {
-    dkimTokens = await ensurePostboxIdentity(cnsKey.id, cnsKey.secret)
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error)
-    log('Postbox SES API', `ignoré (${msg.slice(0, 100)}) — configurez l’identité dans la console`)
-  }
-
-  const zone = findDnsZone()
-  if (zone) {
-    ensurePostboxDns(zone, dkimTokens)
-  }
 
   const vars = {
     MOXT_POSTBOX_SMTP_USER: postboxKey.id,
@@ -255,6 +234,17 @@ async function main() {
   }
   writePhase2Env(vars)
 
+  let dkimTokens = await ensurePostboxSetup()
+
+  const zone = resolveDnsZone()
+  if (zone) {
+    try {
+      ensurePostboxDns(zone, dkimTokens)
+    } catch (error) {
+      log('DNS Postbox', `partiel : ${error instanceof Error ? error.message : error}`)
+    }
+  }
+
   console.log('\n══════════════════════════════════════')
   console.log('  Provision terminée → scripts/phase2.env')
   console.log('══════════════════════════════════════')
@@ -262,7 +252,7 @@ async function main() {
   console.log('  1. Console → Cloud Notification Service → demander l’accès')
   console.log('  2. Créer canal SMS + modèle « Авторизационный »')
   console.log('  3. Sortir de la sandbox')
-  console.log('\n  Puis : npm run setup:phase2')
+  console.log('\n  Puis : npm run setup:postbox && npm run setup:phase2')
 
   return vars
 }

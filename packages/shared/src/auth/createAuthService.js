@@ -222,7 +222,8 @@ export function createAuthService(supabase, redirects = {}) {
         status: 'active',
       }
 
-      const verificationMethod = details.verificationMethod || 'phone'
+      const verificationMethod =
+        details.verificationMethod === 'email' ? 'email' : 'phone'
 
       const credentials =
         verificationMethod === 'phone'
@@ -260,15 +261,16 @@ export function createAuthService(supabase, redirects = {}) {
       }
       if (!data.user) throw new Error('Échec de création du compte.')
 
-      if (data.session) await upsertProfileSafely(data.user.id, profileFields)
+      if (data.session) {
+        await supabase.auth.signOut()
+      }
 
       const user = profileToUser({ id: data.user.id, ...profileFields })
-      const pendingConfirmation = verificationMethod === 'phone' && !data.session
       return {
         user,
-        token: data.session?.access_token || '',
-        requiresEmailConfirmation: verificationMethod === 'email' && !data.session,
-        requiresPhoneConfirmation: pendingConfirmation,
+        token: '',
+        requiresEmailConfirmation: verificationMethod === 'email',
+        requiresPhoneConfirmation: verificationMethod === 'phone',
         pendingUserId: data.user.id,
         verificationMethod,
         email,

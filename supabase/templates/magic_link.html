@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,Helvetica,sans-serif;color:#18181b;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:12px;padding:32px;">
+            <tr>
+              <td>
+                <p style="margin:0 0 8px;font-size:20px;font-weight:700;">MOXT</p>
+                <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;">Вход в аккаунт</h1>
+                <p style="margin:0 0 20px;line-height:1.6;">Нажмите кнопку ниже, чтобы войти. Ссылка одноразовая и действует ограниченное время.</p>
+                <p style="margin:0 0 24px;">
+                  <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#18181b;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;">Войти</a>
+                </p>
+                <p style="margin:0 0 12px;line-height:1.6;font-size:14px;color:#52525b;">Или введите код: <strong>{{ .Token }}</strong></p>
+                <p style="margin:0;line-height:1.6;font-size:13px;color:#71717a;">Если вы не запрашивали вход, проигнорируйте это письмо.</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const auth = {
   signInWithPassword: vi.fn(),
   signUp: vi.fn(),
+  signOut: vi.fn(),
   updateUser: vi.fn(),
   verifyOtp: vi.fn(),
 }
@@ -32,14 +33,15 @@ describe('authService', () => {
     profileQuery.upsert.mockResolvedValue({ error: null })
   })
 
-  it('crée le profil avec une session immédiatement disponible', async () => {
+  it('exige la confirmation SMS avant de créer le profil même avec une session', async () => {
     auth.signUp.mockResolvedValue({
       data: {
-        user: { id: 'user-1' },
+        user: { id: 'user-1', identities: [{ id: 'identity-1' }] },
         session: { access_token: 'session-token' },
       },
       error: null,
     })
+    auth.signOut.mockResolvedValue({ error: null })
 
     const result = await authService.register(registrationDetails())
 
@@ -53,9 +55,10 @@ describe('authService', () => {
         }),
       }),
     )
-    expect(profileQuery.upsert).toHaveBeenCalledOnce()
-    expect(result.requiresEmailConfirmation).toBe(false)
-    expect(result.token).toBe('session-token')
+    expect(auth.signOut).toHaveBeenCalledOnce()
+    expect(profileQuery.upsert).not.toHaveBeenCalled()
+    expect(result.requiresPhoneConfirmation).toBe(true)
+    expect(result.token).toBe('')
   })
 
   it("n'écrit pas anonymement dans profiles si l'e-mail doit être confirmé", async () => {
@@ -177,28 +180,25 @@ describe('authService', () => {
     expect(result.emailLinkDeferred).toBe(true)
   })
 
-  it('continue l inscription si le profil existe deja cote serveur', async () => {
+  it('exige la confirmation e-mail avant de créer le profil même avec une session', async () => {
     auth.signUp.mockResolvedValue({
       data: {
-        user: { id: 'user-1', identities: [{ id: 'identity-1' }] },
+        user: { id: 'user-2', identities: [{ id: 'identity-2' }] },
         session: { access_token: 'session-token' },
       },
       error: null,
     })
-    profileQuery.upsert.mockResolvedValue({ error: { message: 'duplicate key value violates unique constraint' } })
-    profileQuery.maybeSingle.mockResolvedValue({
-      data: {
-        id: 'user-1',
-        email: 'personne@example.com',
-        role: 'user',
-        status: 'active',
-      },
-      error: null,
+    auth.signOut.mockResolvedValue({ error: null })
+
+    const result = await authService.register({
+      ...registrationDetails(),
+      verificationMethod: 'email',
     })
 
-    const result = await authService.register(registrationDetails())
-
-    expect(result.token).toBe('session-token')
+    expect(auth.signOut).toHaveBeenCalledOnce()
+    expect(profileQuery.upsert).not.toHaveBeenCalled()
+    expect(result.requiresEmailConfirmation).toBe(true)
+    expect(result.token).toBe('')
   })
 })
 

@@ -71,8 +71,8 @@ jobs:
           pathlib.Path("/tmp/yc-sa.json").write_text(content)
           json.load(open("/tmp/yc-sa.json"))
           PY
-          yc config profile create moxt-deploy --service-account-key /tmp/yc-sa.json
-          yc config set profile moxt-deploy
+          yc config profile create moxt-deploy
+          yc config set service-account-key /tmp/yc-sa.json
           yc config set folder-id "$MOXT_YC_FOLDER_ID"
 
       - name: Upload to Object Storage

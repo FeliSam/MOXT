@@ -7,6 +7,8 @@ const EN = {
   'E-mail indisponible': 'Email unavailable',
   'La vérification par e-mail est indisponible. Nous avons basculé vers Telegram — réessayez.':
     'Email verification is unavailable. We switched to Telegram — please try again.',
+  'Postbox n’a pas encore validé le domaine (DKIM). Utilisez le SMS pour l’instant, ou lancez npm run setup:postbox puis réessayez.':
+    'Postbox has not validated the domain yet (DKIM). Use SMS for now, or run npm run setup:postbox then try again.',
   'SMS indisponible': 'SMS unavailable',
   'L’envoi SMS n’est pas disponible. Choisissez « Par Telegram » (déjà sélectionné) puis réessayez.':
     'SMS sending is unavailable. Choose “Via Telegram” (already selected) then try again.',
@@ -165,6 +167,8 @@ const RU = {
   'E-mail indisponible': 'Электронная почта недоступна',
   'La vérification par e-mail est indisponible. Nous avons basculé vers Telegram — réessayez.':
     'Проверка по электронной почте недоступна. Мы переключились на Telegram — попробуйте снова.',
+  'Postbox n’a pas encore validé le domaine (DKIM). Utilisez le SMS pour l’instant, ou lancez npm run setup:postbox puis réessayez.':
+    'Postbox ещё не подтвердил домен (DKIM). Пока используйте SMS или выполните npm run setup:postbox и повторите.',
   'SMS indisponible': 'SMS недоступны',
   'L’envoi SMS n’est pas disponible. Choisissez « Par Telegram » (déjà sélectionné) puis réessayez.':
     'Отправка SMS недоступна. Выберите « Через Telegram » (уже выбрано) и попробуйте снова.',
@@ -320,6 +324,8 @@ const PT = {
   'E-mail indisponible': 'E-mail indisponível',
   'La vérification par e-mail est indisponible. Nous avons basculé vers Telegram — réessayez.':
     'A verificação por e-mail está indisponível. Mudámos para o Telegram — tente novamente.',
+  'Postbox n’a pas encore validé le domaine (DKIM). Utilisez le SMS pour l’instant, ou lancez npm run setup:postbox puis réessayez.':
+    'O Postbox ainda não validou o domínio (DKIM). Use SMS por agora ou execute npm run setup:postbox e tente de novo.',
   'SMS indisponible': 'SMS indisponível',
   'L’envoi SMS n’est pas disponible. Choisissez « Par Telegram » (déjà sélectionné) puis réessayez.':
     'O envio de SMS não está disponível. Escolha « Via Telegram » (já selecionado) e tente novamente.',

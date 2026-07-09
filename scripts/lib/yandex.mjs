@@ -59,3 +59,11 @@ export function folderId() {
   const match = stdout.match(/^folder-id:\s*(\S+)/m)
   return match?.[1] || null
 }
+
+export function cloudId() {
+  if (process.env.MOXT_YC_CLOUD_ID) return process.env.MOXT_YC_CLOUD_ID
+  const { code, stdout } = ycRun(['config', 'list'])
+  if (code !== 0 || !stdout) return null
+  const match = stdout.match(/^cloud-id:\s*(\S+)/m)
+  return match?.[1] || null
+}

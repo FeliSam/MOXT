@@ -66,6 +66,9 @@ export default function VerifyScreen() {
           <Text style={[styles.description, { color: colors.textMuted }]}>
             Entrez le code à 6 chiffres reçu par {isEmail ? 'e-mail' : 'SMS'} à{' '}
             <Text style={{ fontWeight: '700', color: colors.text }}>{identifier}</Text>
+            {isEmail
+              ? '. Vérifiez que l’adresse e-mail est correctement saisie et consultez vos courriers indésirables (spam) si vous ne le recevez pas.'
+              : '.'}
           </Text>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}

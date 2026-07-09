@@ -115,17 +115,18 @@ async function main() {
   }
 
   log('Secrets Edge Function send-sms')
-  const secretArgs = [
-    'supabase',
-    'secrets',
-    'set',
+  const secretsPath = path.join(root, 'scripts', 'phase2.supabase-secrets.env')
+  const secretLines = [
     `YC_SNS_ACCESS_KEY_ID=${vars.YC_SNS_ACCESS_KEY_ID}`,
     `YC_SNS_SECRET_ACCESS_KEY=${vars.YC_SNS_SECRET_ACCESS_KEY}`,
     `YC_SNS_SENDER_ID=${vars.YC_SNS_SENDER_ID || 'MOXT'}`,
     `YC_SNS_MESSAGE_TEMPLATE=${vars.YC_SNS_MESSAGE_TEMPLATE || 'Код MOXT: {otp}. Никому не сообщайте.'}`,
     `SEND_SMS_HOOK_SECRET=${vars.SEND_SMS_HOOK_SECRET}`,
   ]
-  if (run('npx', secretArgs).code !== 0) process.exit(1)
+  writeFileSync(secretsPath, `${secretLines.join('\n')}\n`, 'utf8')
+  if (run('npx', ['supabase', 'secrets', 'set', '--env-file', secretsPath]).code !== 0) {
+    process.exit(1)
+  }
 
   log('Déploiement Edge Function', 'send-sms')
   if (run('npx', ['supabase', 'functions', 'deploy', 'send-sms', '--no-verify-jwt']).code !== 0) {
@@ -144,6 +145,28 @@ async function main() {
     process.exit(1)
   }
 
+  log('Postbox', 'adresse + DKIM automatiques')
+  if (
+    spawnSync(process.execPath, [path.join(root, 'scripts', 'setup-postbox-domain.mjs')], {
+      cwd: root,
+      stdio: 'inherit',
+      env: process.env,
+    }).status !== 0
+  ) {
+    console.log('\n  Relancez plus tard : npm run setup:postbox')
+  }
+
+  log('CNS', 'canal SMS + sandbox automatiques')
+  if (
+    spawnSync(process.execPath, [path.join(root, 'scripts', 'setup-cns-sms.mjs')], {
+      cwd: root,
+      stdio: 'inherit',
+      env: { ...process.env, MOXT_CNS_SKIP_PHASE2: '1' },
+    }).status !== 0
+  ) {
+    console.log('\n  Relancez plus tard : npm run setup:cns')
+  }
+
   console.log('\n══════════════════════════════════════')
   console.log('  Phase 2 Yandex configurée')
   console.log('══════════════════════════════════════')
@@ -151,9 +174,9 @@ async function main() {
   console.log('  SMS OTP → Yandex Cloud Notification Service')
   console.log('\n  Étapes console Yandex (si pas encore fait) :')
   console.log('  1. Postbox : vérifier le domaine moxtapp.ru (SPF/DKIM)')
-  console.log('  2. CNS : demander l’accès Preview (support Yandex)')
-  console.log('  3. CNS : canal SMS + modèle « Авторизационный »')
-  console.log('  4. CNS : sortir de la sandbox pour la production')
+  console.log('  2. CNS : modèle SMS type Authorization (2–4 semaines)')
+  console.log('  3. CNS : sortir de la sandbox pour la production')
+  console.log('\n  Test sandbox : $env:MOXT_CNS_TEST_PHONE="+7999..."; npm run setup:cns')
   console.log('\n  Test : inscription /register (e-mail + téléphone)')
 }
 

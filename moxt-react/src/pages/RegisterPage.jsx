@@ -37,6 +37,7 @@ import { addToast } from '../features/ui/uiSlice'
 import { loadAllData } from '../app/loadAllData'
 import { startRealtimeSubscription } from '../services/realtimeService'
 import { useGeographyOptions } from '../hooks/useGeographyOptions'
+import { markWelcomePending } from '../features/onboarding/welcomeStorage'
 
 const STEPS = [
   { key: 'identity', label: 'Identité', icon: FiUser },
@@ -135,7 +136,7 @@ export function RegisterPage() {
             addToast({
               title: 'E-mail indisponible',
               message:
-                'La vérification par e-mail est indisponible. Nous avons basculé vers le SMS — réessayez.',
+                'Postbox n’a pas encore validé le domaine (DKIM). Utilisez le SMS pour l’instant, ou lancez npm run setup:postbox puis réessayez.',
               tone: 'warning',
             }),
           )
@@ -239,7 +240,8 @@ export function RegisterPage() {
           }),
         )
       }
-      window.setTimeout(() => navigate('/profile', { replace: true }), 550)
+      markWelcomePending()
+      window.setTimeout(() => navigate('/dashboard', { replace: true }), 550)
     }
   }
 
@@ -498,9 +500,15 @@ export function RegisterPage() {
                   }
                   variant="info"
                 >
-                  {pendingVerification.method === 'email'
-                    ? `Un code à 6 chiffres a été envoyé à ${pendingVerification.email}.`
-                    : `Un code à 6 chiffres a été envoyé au ${pendingVerification.phone} par SMS.`}
+                  {pendingVerification.method === 'email' ? (
+                    <>
+                      Un code à 6 chiffres a été envoyé à {pendingVerification.email}. Vérifiez que
+                      l’adresse e-mail est correctement saisie. Consultez aussi vos courriers
+                      indésirables (spam) si vous ne le recevez pas.
+                    </>
+                  ) : (
+                    `Un code à 6 chiffres a été envoyé au ${pendingVerification.phone} par SMS.`
+                  )}
                 </Alert>
                 {showVerificationError ? <Alert variant="error">{error}</Alert> : null}
                 <Input
@@ -538,6 +546,13 @@ export function RegisterPage() {
                   <p className="mt-1 text-sm text-[var(--app-text-muted)]">
                     Le téléphone russe est recommandé. L’autre identifiant pourra être confirmé ensuite
                     dans Sécurité.
+                    {formik.values.verificationMethod === 'email' ? (
+                      <>
+                        {' '}
+                        Vérifiez que votre adresse e-mail est correctement orthographiée avant
+                        d’envoyer le code.
+                      </>
+                    ) : null}
                   </p>
                 </div>
                 <div className="grid gap-3 @md:grid-cols-2">

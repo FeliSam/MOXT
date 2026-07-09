@@ -72,7 +72,7 @@ async function main() {
   console.log('\n  Site test : https://moxtapp-web.website.yandexcloud.net')
   console.log('  Prod      : https://moxtapp.ru (après propagation DNS)')
   console.log('\n  Si NS encore chez REG.RU → ns1/ns2.yandexcloud.net')
-  console.log('  CNS SMS   : canal + modèle OTP dans la console (Preview)')
+  console.log('  CNS SMS   : npm run setup:cns (sandbox) puis modèle Authorization en console')
 }
 
 main().catch((err) => {

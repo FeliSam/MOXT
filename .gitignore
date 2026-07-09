@@ -13,7 +13,9 @@ web-build/
 .env.*.local
 moxt-react/.env.production
 scripts/phase2.env
+scripts/phase2.supabase-secrets.env
 scripts/github-deploy-sa.json
+scripts/moxt-auth-yc.json
 
 # Logs & caches
 logs/

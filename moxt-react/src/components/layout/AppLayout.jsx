@@ -6,6 +6,7 @@ import { AppThemeScope } from './AppThemeScope'
 import { BottomNavigation } from './BottomNavigation'
 import { Header } from './Header'
 import { Sidebar } from './Sidebar'
+import { WelcomeGate } from '../onboarding/WelcomeGate'
 
 export function AppLayout() {
   const dispatch = useDispatch()
@@ -69,6 +70,7 @@ export function AppLayout() {
       <div className={isMessageThread ? 'hidden lg:block' : ''}>
         <BottomNavigation />
       </div>
+      <WelcomeGate />
     </div>
   )
 }

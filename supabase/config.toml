@@ -20,12 +20,36 @@ enable_confirmations = true
 
 # Yandex Cloud Postbox — variables lues au `config push` (voir scripts/phase2.env.example)
 [auth.email.smtp]
+enabled = true
 host = "postbox.cloud.yandex.net"
 port = 587
 user = "env(MOXT_POSTBOX_SMTP_USER)"
 pass = "env(MOXT_POSTBOX_SMTP_PASS)"
 admin_email = "env(MOXT_POSTBOX_FROM)"
 sender_name = "MOXT"
+
+[auth.rate_limit]
+email_sent = 30
+
+[auth.email.template.confirmation]
+subject = "Подтвердите email — MOXT"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Сброс пароля — MOXT"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.magic_link]
+subject = "Вход в MOXT"
+content_path = "./supabase/templates/magic_link.html"
+
+[auth.email.template.email_change]
+subject = "Подтвердите новый email — MOXT"
+content_path = "./supabase/templates/email_change.html"
+
+[auth.email.template.reauthentication]
+subject = "{{ .Token }} — код подтверждения MOXT"
+content_path = "./supabase/templates/reauthentication.html"
 
 # Auth téléphone / SMS — OTP via hook send-sms → Yandex Cloud Notification Service
 [auth.sms]
