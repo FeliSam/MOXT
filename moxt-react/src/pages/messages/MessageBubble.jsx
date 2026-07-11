@@ -1,10 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
+  FiCopy,
   FiCornerUpLeft,
   FiEdit2,
   FiPaperclip,
   FiRefreshCw,
-  FiShare2,
   FiTrash2,
 } from 'react-icons/fi'
 import { initials, shortTime, formatDateLabel } from './format'
@@ -129,7 +129,9 @@ export function MessageBubble({
     }
     const selection = window.getSelection?.()
     if (selection?.toString().length) return
-    if (event.pointerType === 'mouse' || event.detail === 0) return
+    // Ne pas déclencher au clavier ; sinon le clic (souris/tactile) ouvre le menu
+    // flottant sur desktop, tablette et mobile.
+    if (event.detail === 0) return
     onToggleActions?.()
   }
 
@@ -255,10 +257,10 @@ export function MessageBubble({
           <button
             type="button"
             onClick={(event) => runAction(event, onShare)}
-            aria-label="Partager"
+            aria-label="Copier"
             className="message-action-menu-btn"
           >
-            <FiShare2 />
+            <FiCopy />
           </button>
           {mine ? (
             <button
