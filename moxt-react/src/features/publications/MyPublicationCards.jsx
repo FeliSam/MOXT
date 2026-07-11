@@ -220,18 +220,3 @@ export function MyPostPublicationCard({ post, readOnly = false, onDelete }) {
     />
   )
 }
-
-/** @deprecated Utiliser MyEventPublicationCard ou MyPostPublicationCard */
-export function MyOtherPublicationCard({ entry, readOnly, onArchive, onReactivate, onDelete }) {
-  if (entry.kind === 'event') {
-    return (
-      <MyEventPublicationCard
-        event={entry.item}
-        readOnly={readOnly}
-        onArchive={onArchive}
-        onReactivate={onReactivate}
-      />
-    )
-  }
-  return <MyPostPublicationCard post={entry.item} readOnly={readOnly} onDelete={onDelete} />
-}

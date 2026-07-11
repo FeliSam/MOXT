@@ -54,7 +54,7 @@ npm test
 
 ### Phase 2 — Validée (données + listes + détails)
 
-- `remoteRowMapper`, `createLoadCoreData`, `createItemsSlice` dans `@moxt/shared`
+- `remoteRowMapper`, `createLoadCoreData` dans `@moxt/shared`
 - Sync Supabase mobile : transferts + colis (`loadCoreData`)
 - Écrans liste **Transferts** et **Colis** (pull-to-refresh, recherche)
 - Écrans **détail** transfert (progression, timeline, montants) et colis (trajet, capacité)
@@ -130,7 +130,6 @@ npm test
 | `auth/` | createAuthService, createAuthSlice |
 | `supabase/` | createSupabaseClient, createBrowserSessionStorage |
 | `data/` | createLoadCoreData |
-| `slices/` | createItemsSlice |
 
 Le web réexporte ces modules — une seule source de vérité.
 
