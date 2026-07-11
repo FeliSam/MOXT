@@ -17,10 +17,13 @@ import {
   folderId,
   listSandboxPhones,
   phase2EnvPath,
-  readPhase2Env,
   requestSandboxPhoneVerification,
-  sendTestSms,
+  sendChannelTestSms,
   verifySandboxPhone,
+  getSmsChannelAttributes,
+  probeSandboxChannel,
+  channelStateLabel,
+  isSandboxChannel,
 } from './lib/cns.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -46,6 +49,13 @@ async function main() {
   console.log('\n══════════════════════════════════════')
   console.log('  CNS — SMS OTP automatique')
   console.log('══════════════════════════════════════')
+  console.log('\n  ⚠ Facturation Yandex CNS (payant) :')
+  console.log('  • Enregistrement expéditeur individuel (ex. MOXT) — abonnement mensuel fixe')
+  console.log('  • Traitement des envois SMS — y compris numéros de test sandbox')
+  console.log('  • Détails : https://yandex.cloud/en/docs/notifications/pricing')
+  if (!useSharedSandbox) {
+    console.log('\n  Astuce dev : MOXT_CNS_SHARED_SANDBOX=1 → expéditeur partagé, sans abonnement MOXT')
+  }
 
   if (!existsSync(phase2EnvPath)) {
     console.error('\n✗ scripts/phase2.env introuvable.')
@@ -69,14 +79,50 @@ async function main() {
   }
 
   log('Canal ARN', channel.arn)
-  log('État canal', channel.attributes?.ChannelState || 'inconnu')
+  channel = await getSmsChannelAttributes(channel.arn)
+  log('État canal', channelStateLabel(channel))
 
   const phone = normalizePhone(testPhone)
+  let sandboxMode = isSandboxChannel(channel)
+  if (sandboxMode === null) {
+    sandboxMode = await probeSandboxChannel(channel.arn)
+    log('Mode détecté', sandboxMode ? 'sandbox' : 'production (hors sandbox)')
+  }
+
+  async function sendDirectTestSms() {
+    log('SMS test', `${phone} via ${sandboxMode ? 'sandbox' : 'production'}`)
+    const { messageId, senderId: resolvedSender } = await sendChannelTestSms({
+      phone,
+      channel,
+      senderId,
+      useSharedSandbox,
+    })
+    console.log(`  ✓ MessageId ${messageId} (expéditeur ${resolvedSender})`)
+  }
+
   if (phone) {
-    if (verifyOtp) {
+    if (!sandboxMode) {
+      if (verifyOtp) {
+        console.log('\n  Le canal n’est plus en sandbox — la vérification OTP sandbox est ignorée.')
+      }
+      try {
+        await sendDirectTestSms()
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error)
+        if (/template|authorization|not found|inactive/i.test(msg)) {
+          console.error('\n✗ Envoi production impossible — modèle SMS Authorization requis.')
+          console.error('  Console Yandex → CNS → canal MOXT → Templates → type Authorization')
+          console.error('  Texte : Код MOXT: {code}. Никому не сообщайте.')
+        }
+        throw error
+      }
+    } else if (verifyOtp) {
       log('Vérification sandbox', phone)
       await verifySandboxPhone(channel.arn, phone, verifyOtp)
       console.log('  ✓ numéro vérifié')
+      if (process.env.MOXT_CNS_SEND_TEST === '1') {
+        await sendDirectTestSms()
+      }
     } else {
       const verified = await listSandboxPhones(channel.arn)
       const already = verified.some(
@@ -92,25 +138,19 @@ async function main() {
         console.log(`    $env:YC_CNS_VERIFY_OTP="123456"; $env:MOXT_CNS_TEST_PHONE="${phone}"; npm run setup:cns`)
       } else {
         log('Numéro sandbox', `${phone} déjà vérifié`)
+        if (process.env.MOXT_CNS_SEND_TEST === '1') {
+          await sendDirectTestSms()
+        }
       }
     }
-
-    if (verifyOtp || process.env.MOXT_CNS_SEND_TEST === '1') {
-      const env = readPhase2Env()
-      const template =
-        env.YC_SNS_MESSAGE_TEMPLATE || 'Код MOXT: {otp}. Никому не сообщайте.'
-      const message = template.replaceAll('{otp}', '123456')
-      log('SMS test', phone)
-      const messageId = await sendTestSms(
-        phone,
-        message,
-        useSharedSandbox ? 'cns.shared' : senderId,
-      )
-      console.log(`  ✓ MessageId ${messageId}`)
-    }
   } else {
-    console.log('\n  Option test sandbox :')
-    console.log('    $env:MOXT_CNS_TEST_PHONE="+79991234567"; npm run setup:cns')
+    console.log('\n  Option test :')
+    if (sandboxMode) {
+      console.log('    $env:MOXT_CNS_TEST_PHONE="+79991234567"; npm run setup:cns')
+    } else {
+      console.log('    $env:MOXT_CNS_TEST_PHONE="+79991234567"; npm run setup:cns')
+      console.log('    (canal production — envoi SMS direct, sans étape sandbox)')
+    }
   }
 
   if (process.env.MOXT_CNS_SKIP_PHASE2 !== '1') {
@@ -133,14 +173,19 @@ async function main() {
   console.log('\n══════════════════════════════════════')
   console.log('  CNS configuré (partie automatique)')
   console.log('══════════════════════════════════════')
-  console.log('\n  Manuel (console Yandex, 2–4 semaines) :')
+  console.log('\n  Manuel (console Yandex, si modèle SMS pas encore actif) :')
   console.log('  1. CNS → canal MOXT → Templates → Create')
   console.log('     Type : Authorization')
   console.log('     Texte : Код MOXT: {code}. Никому не сообщайте.')
-  console.log('  2. Attendre statut Active du modèle')
-  console.log('  3. Canal MOXT → Leave sandbox (ticket support)')
-  console.log('\n  Test immédiat (sandbox) :')
-  console.log('    $env:MOXT_CNS_TEST_PHONE="+7999..."; npm run setup:cns')
+  console.log('  2. Attendre statut Active du modèle (2–4 semaines)')
+  if (sandboxMode) {
+    console.log('  3. Canal MOXT → Leave sandbox (ticket support)')
+    console.log('\n  Test sandbox :')
+    console.log('    $env:MOXT_CNS_TEST_PHONE="+7999..."; npm run setup:cns')
+  } else {
+    console.log('\n  Canal hors sandbox — test direct :')
+    console.log('    $env:MOXT_CNS_TEST_PHONE="+7999..."; npm run setup:cns')
+  }
 }
 
 main().catch((err) => {

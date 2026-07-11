@@ -283,6 +283,47 @@ export async function listSandboxPhones(channelArn) {
   return phones
 }
 
+export function channelStateLabel(channel) {
+  return (
+    channel?.attributes?.ChannelState ||
+    channel?.attributes?.channelState ||
+    'inconnu'
+  )
+}
+
+export function isNotSandboxError(error) {
+  const msg = error instanceof Error ? error.message : String(error)
+  return /not in Sandbox state/i.test(msg)
+}
+
+/** null = état indéterminé */
+export function isSandboxChannel(channel) {
+  const state = String(channelStateLabel(channel)).toLowerCase()
+  if (state === 'sandbox') return true
+  if (state && state !== 'inconnu' && state !== 'unknown') return false
+  return null
+}
+
+export async function probeSandboxChannel(channelArn) {
+  try {
+    await listSandboxPhones(channelArn)
+    return true
+  } catch (error) {
+    if (isNotSandboxError(error)) return false
+    throw error
+  }
+}
+
+export async function sendChannelTestSms({ phone, channel, senderId, useSharedSandbox }) {
+  const env = readPhase2Env()
+  const template =
+    env.YC_SNS_MESSAGE_TEMPLATE || 'Код MOXT: {otp}. Никому не сообщайте.'
+  const message = template.replaceAll('{otp}', '123456').replaceAll('{code}', '123456')
+  const resolvedSender = useSharedSandbox ? 'cns.shared' : senderId
+  const messageId = await sendTestSms(phone, message, resolvedSender)
+  return { messageId, message, senderId: resolvedSender }
+}
+
 export async function sendTestSms(phone, message, senderId) {
   const credentials = staticCredentials()
   if (!credentials) {

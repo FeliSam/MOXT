@@ -52,6 +52,11 @@ YC_SNS_SECRET_ACCESS_KEY=${vars.YC_SNS_SECRET_ACCESS_KEY}
 YC_SNS_SENDER_ID=${vars.YC_SNS_SENDER_ID}
 YC_SNS_MESSAGE_TEMPLATE=${vars.YC_SNS_MESSAGE_TEMPLATE}
 SEND_SMS_HOOK_SECRET=${vars.SEND_SMS_HOOK_SECRET || ''}
+SMS_RU_API_ID=${vars.SMS_RU_API_ID || ''}
+SMS_PROVIDER=${vars.SMS_PROVIDER || 'auto'}
+SMS_RU_FROM=${vars.SMS_RU_FROM || ''}
+SMS_MESSAGE_TEMPLATE=${vars.SMS_MESSAGE_TEMPLATE || vars.YC_SNS_MESSAGE_TEMPLATE || ''}
+SUPABASE_DB_PASSWORD=${vars.SUPABASE_DB_PASSWORD || ''}
 `
   writeFileSync(envPath, content, 'utf8')
 }
@@ -231,6 +236,12 @@ async function main() {
     YC_SNS_SENDER_ID: smsSender,
     YC_SNS_MESSAGE_TEMPLATE: smsTemplate,
     SEND_SMS_HOOK_SECRET: existing.SEND_SMS_HOOK_SECRET || '',
+    SMS_RU_API_ID: existing.SMS_RU_API_ID || '',
+    SMS_PROVIDER: existing.SMS_RU_API_ID ? existing.SMS_PROVIDER || 'smsru' : existing.SMS_PROVIDER || 'auto',
+    SMS_RU_FROM: existing.SMS_RU_FROM || '',
+    SMS_MESSAGE_TEMPLATE:
+      existing.SMS_MESSAGE_TEMPLATE || existing.YC_SNS_MESSAGE_TEMPLATE || smsTemplate,
+    SUPABASE_DB_PASSWORD: existing.SUPABASE_DB_PASSWORD || '',
   }
   writePhase2Env(vars)
 

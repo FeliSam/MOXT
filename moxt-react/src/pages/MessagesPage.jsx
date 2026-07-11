@@ -187,7 +187,7 @@ export function MessagesPage() {
       setReplyToId(null)
       setReplyToContextId(null)
       dispatch(saveConversationDraft({ id: active.id, userId: user.id, text: '' }))
-      helpers.resetForm()
+      helpers.resetForm({ values: { text: '' } })
     },
   })
 

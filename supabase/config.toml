@@ -1,5 +1,5 @@
 # MOXT — configuration Supabase (projet rbvqfkccbkwjxkvpnwqn)
-# Appliquer : npm run setup:supabase
+# Appliquer : npm run setup:supabase (charge scripts/phase2.env pour env(MOXT_*))
 
 project_id = "moxt"
 

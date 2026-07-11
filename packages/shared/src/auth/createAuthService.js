@@ -180,6 +180,32 @@ export function createAuthService(supabase, redirects = {}) {
       return { user, token: data.session.access_token }
     },
 
+    async requestPhoneLoginOtp(phone) {
+      if (!supabase) throw new Error('Supabase non configuré.')
+      const normalizedPhone = normalizeRussianAuthPhone(phone)
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: normalizedPhone,
+        options: { shouldCreateUser: false },
+      })
+      if (error) throw new Error(translateAuthError(error))
+      return { phone: normalizedPhone }
+    },
+
+    async verifyPhoneLogin({ phone, token }) {
+      if (!supabase) throw new Error('Supabase non configuré.')
+      const { data, error } = await supabase.auth.verifyOtp({
+        phone: normalizeRussianAuthPhone(phone),
+        token: String(token || '').trim(),
+        type: 'sms',
+      })
+      if (error) throw new Error(translateAuthError(error))
+      if (!data?.session || !data?.user) {
+        throw new Error('Le code est invalide ou a expiré.')
+      }
+      const user = await fetchOrCreateProfile(data.user)
+      return { user, token: data.session.access_token }
+    },
+
     async loginWithGoogle() {
       if (!supabase) throw new Error('Supabase non configuré.')
       const redirectTo = getOAuthRedirectUrl()
@@ -206,7 +232,7 @@ export function createAuthService(supabase, redirects = {}) {
 
     async register(details) {
       if (!supabase) throw new Error('Supabase non configuré.')
-      const email = details.email.trim().toLowerCase()
+      const email = String(details.email || '').trim().toLowerCase()
 
       const profileFields = {
         first_name: details.firstName.trim(),
@@ -224,6 +250,10 @@ export function createAuthService(supabase, redirects = {}) {
 
       const verificationMethod =
         details.verificationMethod === 'email' ? 'email' : 'phone'
+
+      if (verificationMethod === 'email' && !email) {
+        throw new Error("L'e-mail est obligatoire pour confirmer votre compte par e-mail.")
+      }
 
       const credentials =
         verificationMethod === 'phone'
@@ -244,6 +274,12 @@ export function createAuthService(supabase, redirects = {}) {
       const { data, error } = await supabase.auth.signUp(credentials)
       if (error) {
         if (error.status === 500 || error.status >= 500) {
+          const hookFailure =
+            error.code === 'unexpected_failure' &&
+            String(error.message || '').toLowerCase().includes('hook')
+          if (hookFailure) {
+            throw new Error(translateAuthError(error))
+          }
           throw new Error(
             verificationMethod === 'email'
               ? "L'envoi d'e-mail de confirmation est indisponible. Choisissez la vérification par téléphone ou réessayez plus tard."
@@ -305,9 +341,10 @@ export function createAuthService(supabase, redirects = {}) {
         throw new Error('Le code de vérification est invalide.')
       }
 
-      if (email && !data.user.email) {
+      const linkedEmail = String(email || '').trim().toLowerCase()
+      if (linkedEmail && !data.user.email) {
         const { error: emailError } = await supabase.auth.updateUser({
-          email: email.trim().toLowerCase(),
+          email: linkedEmail,
         })
         if (emailError) {
           console.warn('[MOXT] Liaison e-mail différée après inscription SMS:', emailError.message)
@@ -318,8 +355,19 @@ export function createAuthService(supabase, redirects = {}) {
       return {
         user,
         token: data.session.access_token,
-        emailLinkDeferred: Boolean(email && !data.user.email),
+        emailLinkDeferred: Boolean(linkedEmail && !data.user.email),
       }
+    },
+
+    async resendPhoneRegistrationOtp(phone) {
+      if (!supabase) throw new Error('Supabase non configuré.')
+      const normalizedPhone = normalizeRussianAuthPhone(phone)
+      const { error } = await supabase.auth.resend({
+        type: 'sms',
+        phone: normalizedPhone,
+      })
+      if (error) throw new Error(translateAuthError(error))
+      return true
     },
 
     async restoreSession() {

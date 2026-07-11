@@ -2,10 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const auth = {
   signInWithPassword: vi.fn(),
+  signInWithOtp: vi.fn(),
   signUp: vi.fn(),
   signOut: vi.fn(),
   updateUser: vi.fn(),
   verifyOtp: vi.fn(),
+  resend: vi.fn(),
 }
 
 const profileQuery = {
@@ -199,6 +201,57 @@ describe('authService', () => {
     expect(profileQuery.upsert).not.toHaveBeenCalled()
     expect(result.requiresEmailConfirmation).toBe(true)
     expect(result.token).toBe('')
+  })
+
+  it('renvoie un code SMS pour finaliser l inscription', async () => {
+    auth.resend.mockResolvedValue({ error: null })
+
+    await authService.resendPhoneRegistrationOtp('+79000000010')
+
+    expect(auth.resend).toHaveBeenCalledWith({
+      type: 'sms',
+      phone: '+79000000010',
+    })
+  })
+
+  it('envoie un code SMS pour la connexion', async () => {
+    auth.signInWithOtp.mockResolvedValue({ error: null })
+
+    const result = await authService.requestPhoneLoginOtp('8 900 000 00 10')
+
+    expect(auth.signInWithOtp).toHaveBeenCalledWith({
+      phone: '+79000000010',
+      options: { shouldCreateUser: false },
+    })
+    expect(result.phone).toBe('+79000000010')
+  })
+
+  it('valide un code SMS de connexion', async () => {
+    auth.verifyOtp.mockResolvedValue({
+      data: {
+        user: { id: 'user-sms', email: 'personne@example.com', user_metadata: {} },
+        session: { access_token: 'login-sms-session' },
+      },
+      error: null,
+    })
+    profileQuery.maybeSingle.mockResolvedValue({
+      data: {
+        id: 'user-sms',
+        email: 'personne@example.com',
+        role: 'user',
+        status: 'active',
+      },
+      error: null,
+    })
+
+    const result = await authService.verifyPhoneLogin({ phone: '+79000000010', token: '123456' })
+
+    expect(auth.verifyOtp).toHaveBeenCalledWith({
+      phone: '+79000000010',
+      token: '123456',
+      type: 'sms',
+    })
+    expect(result.token).toBe('login-sms-session')
   })
 })
 

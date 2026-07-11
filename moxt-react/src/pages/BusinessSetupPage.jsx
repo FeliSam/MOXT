@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   FiArrowLeft,
   FiArrowRight,
+  FiBriefcase,
   FiCamera,
   FiCheck,
   FiCheckCircle,
@@ -13,6 +14,7 @@ import {
   FiPhone,
   FiSend,
   FiSettings,
+  FiShare2,
   FiUser,
   FiZap,
 } from 'react-icons/fi'
@@ -40,6 +42,7 @@ import { saveBusiness } from '../features/businesses/businessSlice'
 import { createId } from '../services/createId'
 import { addToast } from '../features/ui/uiSlice'
 import { ShareToFeedModal } from '../components/ui/ShareToFeedModal'
+import { useActionBurst } from '../components/ui/ActionBurst'
 import {
   paymentMethodsForCountry,
   transferCurrenciesForCountry,
@@ -243,6 +246,7 @@ function BusinessPreview({ formik, serviceOptions }) {
 export function BusinessSetupPage() {
   const [step, setStep] = useState(1)
   const [shareModal, setShareModal] = useState(null)
+  const [createdBusiness, setCreatedBusiness] = useState(null)
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const user = useSelector((state) => state.auth.user)
@@ -306,7 +310,7 @@ export function BusinessSetupPage() {
         }),
       )
       if (isNew) {
-        setShareModal({ sourceId: action.payload.id, sourceData: action.payload })
+        setCreatedBusiness(action.payload)
       } else {
         navigate('/professional')
       }
@@ -355,16 +359,47 @@ export function BusinessSetupPage() {
     setStep((current) => Math.min(4, current + 1))
   }
 
+  if (createdBusiness) {
+    const successServices = servicesForActivities(
+      createdBusiness.primaryActivity,
+      createdBusiness.secondaryActivity,
+    )
+    return (
+      <>
+        {shareModal ? (
+          <ShareToFeedModal
+            sourceType="business"
+            sourceId={shareModal.sourceId}
+            sourceData={shareModal.sourceData}
+            onClose={() => {
+              setShareModal(null)
+              navigate('/professional')
+            }}
+          />
+        ) : null}
+        <BusinessCreatedSuccess
+          business={createdBusiness}
+          hasTransfer={successServices.includes('Transfert')}
+          serviceOptions={successServices}
+          onGoProfessional={() => navigate('/professional')}
+          onShare={() =>
+            setShareModal({ sourceId: createdBusiness.id, sourceData: createdBusiness })
+          }
+        />
+      </>
+    )
+  }
+
   return (
     <>
-    {shareModal && (
+    {shareModal ? (
       <ShareToFeedModal
         sourceType="business"
         sourceId={shareModal.sourceId}
         sourceData={shareModal.sourceData}
         onClose={() => { setShareModal(null); navigate('/professional') }}
       />
-    )}
+    ) : null}
     <div className="grid gap-7">
       <PageHeader
         eyebrow="Espace entreprise"
@@ -987,9 +1022,111 @@ function ChoiceGroup({ error, label, onToggle, options, values }) {
 
 function ReviewRow({ label, value }) {
   return (
-    <div className="flex justify-between gap-4 rounded-xl bg-[var(--app-surface-muted)] p-3">
-      <span className="text-[var(--app-text-muted)]">{label}</span>
-      <strong className="text-right">{value || '—'}</strong>
+    <div className="flex items-start justify-between gap-4 text-sm">
+      <span className="font-semibold text-[var(--app-text-muted)]">{label}</span>
+      <span className="text-right font-bold text-[var(--app-text)]">{value || '—'}</span>
+    </div>
+  )
+}
+
+function BusinessCreatedSuccess({
+  business,
+  hasTransfer,
+  onGoProfessional,
+  onShare,
+  serviceOptions,
+}) {
+  const { trigger, node } = useActionBurst()
+  const experience = businessExperienceForActivity(business.primaryActivity)
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => trigger(), 180)
+    return () => window.clearTimeout(timer)
+  }, [trigger])
+
+  return (
+    <div className="business-created-success grid gap-6">
+      {node}
+      <Card variant="featured" className="overflow-hidden p-0">
+        <div className="business-created-hero bg-gradient-to-br from-brand-700 via-brand-600 to-[var(--app-teal)] px-6 py-8 text-white sm:px-8 sm:py-10">
+          <div className="business-created-hero-icon grid size-16 place-items-center rounded-3xl bg-white/15 backdrop-blur">
+            <FiBriefcase className="text-3xl" aria-hidden="true" />
+          </div>
+          <p className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-white/75">
+            Félicitations
+          </p>
+          <h1 className="mt-2 font-display text-2xl font-black sm:text-3xl">
+            Votre entreprise est créée
+          </h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-white/88">
+            <strong>{business.name}</strong> est enregistrée sur MOXT. Notre équipe va valider votre
+            fiche avant publication dans l&apos;annuaire — vous pouvez déjà préparer votre espace pro.
+          </p>
+        </div>
+      </Card>
+
+      <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+        <Card className="grid gap-4">
+          <SectionTitle icon={FiUser} label="Récapitulatif" />
+          <div className="flex items-center gap-4">
+            {business.logoUrl ? (
+              <img
+                src={business.logoUrl}
+                alt=""
+                className="size-16 rounded-2xl object-cover shadow ring-2 ring-[var(--app-border)]"
+              />
+            ) : (
+              <div className="grid size-16 place-items-center rounded-2xl bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]">
+                <FiImage className="text-xl" aria-hidden="true" />
+              </div>
+            )}
+            <div>
+              <p className="font-black text-[var(--app-text)]">{business.name}</p>
+              <p className="text-sm text-[var(--app-text-muted)]">{business.primaryActivity}</p>
+              {business.secondaryActivity ? (
+                <p className="text-xs text-[var(--app-text-muted)]">+ {business.secondaryActivity}</p>
+              ) : null}
+            </div>
+          </div>
+          <ReviewRow label="Ville" value={business.city} />
+          <ReviewRow label="Téléphone" value={business.phone} />
+          {business.email ? <ReviewRow label="E-mail" value={business.email} /> : null}
+          <ReviewRow label="Horaires" value={business.scheduleSummary} />
+          <ReviewRow label="Services" value={serviceOptions.join(', ')} />
+          {hasTransfer ? (
+            <>
+              <ReviewRow label="Frais" value={`${business.feePercent}%`} />
+              <ReviewRow label="Devises" value={(business.currencies || []).join(', ')} />
+            </>
+          ) : null}
+        </Card>
+
+        <div className="grid gap-4">
+          <Card className="grid gap-3">
+            <SectionTitle icon={FiCheckCircle} label="Prochaines étapes" />
+            <ul className="grid gap-2 text-sm text-[var(--app-text-muted)]">
+              <li className="rounded-xl bg-[var(--app-surface-muted)] px-3 py-2">
+                Validation administrateur (24–48 h en moyenne)
+              </li>
+              <li className="rounded-xl bg-[var(--app-surface-muted)] px-3 py-2">
+                Points forts : {experience.spotlight.join(', ').toLowerCase()}
+              </li>
+              <li className="rounded-xl bg-[var(--app-surface-muted)] px-3 py-2">
+                Complétez votre espace pro pour accueillir vos premiers clients
+              </li>
+            </ul>
+          </Card>
+
+          <div className="grid gap-2">
+            <Button className="w-full" icon={FiBriefcase} onClick={onGoProfessional}>
+              Accéder à mon espace entreprise
+            </Button>
+            <Button className="w-full" variant="secondary" icon={FiShare2} onClick={onShare}>
+              Partager sur le fil
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

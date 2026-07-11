@@ -82,6 +82,17 @@ export function JobDetailPage() {
         description={`${job.publisherName} · ${job.location}`}
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            {/* Favori — icône seule, coin droit, distinct de la candidature */}
+            <FavoriteButton
+              relatedId={job.id}
+              relatedType="job"
+              title={job.title}
+              path={`/jobs/${job.id}`}
+              entity={job}
+              variant="overlay"
+              showLabel={false}
+              className="size-11 bg-[var(--app-surface)] shadow-[var(--shadow-card)]"
+            />
             <ReshareButton sourceType="job" sourceId={job.id} sourceData={job} />
             {job.ownerId === user.id ? (
               <Link to={`/jobs/${jobId}/edit`}>
@@ -94,6 +105,27 @@ export function JobDetailPage() {
           </div>
         }
       />
+
+      {job.images?.length ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {job.images.map((src, index) => (
+            <a
+              key={src}
+              href={src}
+              target="_blank"
+              rel="noreferrer"
+              className={`overflow-hidden rounded-2xl border border-[var(--app-border)] ${index === 0 ? 'col-span-2 row-span-2' : ''}`}
+            >
+              <img
+                src={src}
+                alt={`${job.title} — affiche ${index + 1}`}
+                className="h-full w-full object-cover"
+                loading="lazy"
+              />
+            </a>
+          ))}
+        </div>
+      ) : null}
       <DetailMetrics
         items={[
           { icon: FiBriefcase, label: 'Contrat', value: job.contractType },
@@ -133,15 +165,6 @@ export function JobDetailPage() {
               relatedTitle={job.title}
               relatedType="job"
               variant="secondary"
-            />
-          </div>
-          <div className="mt-3">
-            <FavoriteButton
-              relatedId={job.id}
-              relatedType="job"
-              title={job.title}
-              path={`/jobs/${job.id}`}
-              entity={job}
             />
           </div>
           {job.ownerId !== user.id ? (

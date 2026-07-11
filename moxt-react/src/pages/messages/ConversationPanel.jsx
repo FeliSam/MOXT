@@ -174,7 +174,7 @@ export function ConversationPanel({
 
   return (
     <>
-      <header className="message-thread-header relative z-10 flex min-h-[4.25rem] shrink-0 items-center gap-2.5 border-b border-[var(--app-border)]/60 bg-[var(--app-surface)]/95 px-3 py-2.5 backdrop-blur-xl sm:gap-3 sm:px-4 lg:px-5">
+      <header className="message-thread-header relative z-30 flex min-h-[4.25rem] shrink-0 items-center gap-2.5 border-b border-[var(--app-border)]/60 bg-[var(--app-surface)]/95 px-3 py-2.5 backdrop-blur-xl sm:gap-3 sm:px-4 lg:px-5">
         <button
           type="button"
           className="message-touch-target grid size-9 shrink-0 place-items-center rounded-xl text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)] hover:text-[var(--app-text)] lg:hidden"
@@ -652,11 +652,9 @@ export function ConversationPanel({
             <FiSend aria-hidden="true" />
           </button>
         </form>
-        {(formik.errors.text && formik.touched.text) || showDraftHint || formik.values.text.length >= 1800 ? (
+        {showDraftHint || formik.values.text.length >= 1800 ? (
           <div className="mx-auto mt-2 flex max-w-3xl items-start justify-between gap-3 px-1">
-            {formik.errors.text && formik.touched.text ? (
-              <p className="text-xs font-semibold text-red-600 dark:text-red-400">{formik.errors.text}</p>
-            ) : showDraftHint ? (
+            {showDraftHint ? (
               <span className="text-[10px] text-[var(--app-text-faint)]">Brouillon enregistré</span>
             ) : (
               <span />

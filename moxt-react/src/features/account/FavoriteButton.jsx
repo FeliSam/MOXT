@@ -6,7 +6,16 @@ import { buildFavoriteSnapshot } from './favoriteUtils'
 /**
  * CTA favori pages détail — version animée (pop + burst).
  */
-export function FavoriteButton({ relatedId, relatedType, title, path, entity }) {
+export function FavoriteButton({
+  relatedId,
+  relatedType,
+  title,
+  path,
+  entity,
+  variant = 'solid',
+  className = 'w-full !shadow-none',
+  showLabel = true,
+}) {
   const dispatch = useDispatch()
   const user = useSelector((state) => state.auth.user)
   const favorite = useSelector((state) =>
@@ -19,9 +28,9 @@ export function FavoriteButton({ relatedId, relatedType, title, path, entity }) 
   return (
     <AnimatedFavoriteButton
       active={favorite}
-      variant="solid"
-      label={favorite ? 'Enregistré' : 'Ajouter aux favoris'}
-      className="w-full !shadow-none"
+      variant={variant}
+      label={showLabel ? (favorite ? 'Enregistré' : 'Ajouter aux favoris') : undefined}
+      className={className}
       onToggle={() =>
         dispatch(
           toggleAccountFavorite({

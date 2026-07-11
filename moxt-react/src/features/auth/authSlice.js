@@ -6,9 +6,12 @@ const authModule = createAuthSlice(authService)
 export const {
   login,
   loginWithGoogle,
+  requestPhoneLoginOtp,
+  verifyPhoneLogin,
   register,
   verifyEmailRegistration,
   verifyPhoneRegistration,
+  resendPhoneRegistrationOtp,
   updateProfile,
   restoreSession,
   logout,

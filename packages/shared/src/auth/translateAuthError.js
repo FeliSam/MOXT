@@ -23,6 +23,9 @@ export function translateAuthError(error) {
   if (code === 'sms_send_failed' || code === 'over_sms_send_rate_limit') {
     return "L'envoi SMS est indisponible. Choisissez la vérification par e-mail ou réessayez plus tard."
   }
+  if (code === 'unexpected_failure' && message.toLowerCase().includes('hook')) {
+    return "L'envoi du code SMS a échoué. Sur SMS.ru, enregistrez un expéditeur (MOXT) : sms.ru → Отправители. Sinon utilisez l'e-mail."
+  }
   if (code === 'email_provider_disabled' || code === 'over_email_send_rate_limit') {
     return "Le service d'inscription par e-mail est indisponible. Utilisez la vérification par téléphone ou réessayez plus tard."
   }
@@ -31,6 +34,9 @@ export function translateAuthError(error) {
   }
   if (code === 'otp_expired' || code === 'mfa_verification_failed') {
     return "Le code est invalide ou a expiré. Recommencez le processus d'inscription."
+  }
+  if (code === 'user_not_found' || message.toLowerCase().includes('user not found')) {
+    return 'Aucun compte MOXT associé à ce numéro. Créez un compte ou vérifiez le numéro saisi.'
   }
   if (code === 'bad_jwt' || message.toLowerCase().includes('invalid api key')) {
     return "Configuration du service d'authentification incorrecte. Réessayez plus tard ou contactez le support."

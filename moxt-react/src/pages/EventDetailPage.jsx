@@ -71,6 +71,17 @@ export function EventDetailPage() {
         description={`${formatDate(event.startAt)} · ${event.venue}, ${event.city}`}
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            {/* Favori — icône seule, coin droit, distinct de l'inscription */}
+            <FavoriteButton
+              relatedId={event.id}
+              relatedType="event"
+              title={event.title}
+              path={`/events/${event.id}`}
+              entity={event}
+              variant="overlay"
+              showLabel={false}
+              className="size-11 bg-[var(--app-surface)] shadow-[var(--shadow-card)]"
+            />
             <ReshareButton sourceType="event" sourceId={event.id} sourceData={event} />
             {event.ownerId === user.id ? (
               <Link to={`/events/${eventId}/edit`}>
@@ -99,6 +110,26 @@ export function EventDetailPage() {
           },
         ]}
       />
+      {event.images?.length ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {event.images.map((src, index) => (
+            <a
+              key={src}
+              href={src}
+              target="_blank"
+              rel="noreferrer"
+              className={`overflow-hidden rounded-2xl border border-[var(--app-border)] ${index === 0 ? 'col-span-2 row-span-2' : ''}`}
+            >
+              <img
+                src={src}
+                alt={`${event.title} — affiche ${index + 1}`}
+                className="h-full w-full object-cover"
+                loading="lazy"
+              />
+            </a>
+          ))}
+        </div>
+      ) : null}
       <div className="grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
         <Card>
           <div className="mb-5 flex flex-wrap gap-2">
@@ -139,15 +170,6 @@ export function EventDetailPage() {
               relatedTitle={event.title}
               relatedType="event"
               variant="secondary"
-            />
-          </div>
-          <div className="mt-3">
-            <FavoriteButton
-              relatedId={event.id}
-              relatedType="event"
-              title={event.title}
-              path={`/events/${event.id}`}
-              entity={event}
             />
           </div>
           {event.ownerId !== user.id ? (

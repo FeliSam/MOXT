@@ -25,13 +25,43 @@ export const loginSchema = Yup.object({
   password: Yup.string().required('Le mot de passe est obligatoire.'),
 })
 
+export const loginEmailSchema = Yup.object({
+  email: Yup.string().email('Adresse e-mail invalide.').required("L'e-mail est obligatoire."),
+  password: Yup.string().required('Le mot de passe est obligatoire.'),
+})
+
+export const loginPhonePasswordSchema = Yup.object({
+  phone: Yup.string()
+    .test('russian-phone', 'Utilisez le format russe +7 suivi de 10 chiffres.', (value) =>
+      validatePhone(value, 'RU'),
+    )
+    .required('Le numéro russe est obligatoire.'),
+  password: Yup.string().required('Le mot de passe est obligatoire.'),
+})
+
+export const loginPhoneOtpRequestSchema = Yup.object({
+  phone: Yup.string()
+    .test('russian-phone', 'Utilisez le format russe +7 suivi de 10 chiffres.', (value) =>
+      validatePhone(value, 'RU'),
+    )
+    .required('Le numéro russe est obligatoire.'),
+})
+
 export const registerSchema = Yup.object({
   firstName: Yup.string()
     .trim()
     .min(2, 'Minimum 2 caracteres.')
     .required('Le prenom est obligatoire.'),
   lastName: Yup.string().trim().min(2, 'Minimum 2 caracteres.').required('Le nom est obligatoire.'),
-  email: Yup.string().email('Adresse email invalide.').required("L'email est obligatoire."),
+  email: Yup.string().when('verificationMethod', {
+    is: 'email',
+    then: (schema) =>
+      schema.email('Adresse email invalide.').required("L'email est obligatoire pour la confirmation par e-mail."),
+    otherwise: (schema) =>
+      schema
+        .transform((value) => (typeof value === 'string' ? value.trim() : ''))
+        .test('optional-email', 'Adresse email invalide.', (value) => !value || Yup.string().email().isValidSync(value)),
+  }),
   originCountry: Yup.string().required('Le pays de provenance est obligatoire.'),
   residenceCountry: Yup.string().oneOf(['RU']).required('La résidence doit être en Russie.'),
   residenceCity: Yup.string()
@@ -66,7 +96,7 @@ export const registerSchema = Yup.object({
 })
 
 export const registerStepFields = {
-  1: ['firstName', 'lastName', 'email'],
+  1: ['firstName', 'lastName'],
   2: ['originCountry'],
   3: [
     'residenceCountry',
@@ -77,7 +107,7 @@ export const registerStepFields = {
     'confirmPassword',
     'acceptTerms',
   ],
-  4: ['verificationMethod'],
+  4: ['verificationMethod', 'email'],
 }
 
 export const forgotPasswordSchema = Yup.object({

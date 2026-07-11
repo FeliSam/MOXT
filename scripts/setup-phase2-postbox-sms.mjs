@@ -98,13 +98,16 @@ async function main() {
   }
 
   const vars = parseEnvFile(envPath)
-  requireVars(vars, [
+  const smsRuReady = Boolean(vars.SMS_RU_API_ID && !vars.SMS_RU_API_ID.includes('REMPLACER'))
+  const requiredKeys = [
     'MOXT_POSTBOX_SMTP_USER',
     'MOXT_POSTBOX_SMTP_PASS',
     'MOXT_POSTBOX_FROM',
-    'YC_SNS_ACCESS_KEY_ID',
-    'YC_SNS_SECRET_ACCESS_KEY',
-  ])
+  ]
+  if (!smsRuReady) {
+    requiredKeys.push('YC_SNS_ACCESS_KEY_ID', 'YC_SNS_SECRET_ACCESS_KEY')
+  }
+  requireVars(vars, requiredKeys)
 
   const hookSecret = ensureHookSecret(vars)
   vars.SEND_SMS_HOOK_SECRET = hookSecret
@@ -117,12 +120,20 @@ async function main() {
   log('Secrets Edge Function send-sms')
   const secretsPath = path.join(root, 'scripts', 'phase2.supabase-secrets.env')
   const secretLines = [
-    `YC_SNS_ACCESS_KEY_ID=${vars.YC_SNS_ACCESS_KEY_ID}`,
-    `YC_SNS_SECRET_ACCESS_KEY=${vars.YC_SNS_SECRET_ACCESS_KEY}`,
-    `YC_SNS_SENDER_ID=${vars.YC_SNS_SENDER_ID || 'MOXT'}`,
+    `SMS_PROVIDER=${vars.SMS_PROVIDER || (smsRuReady ? 'smsru' : 'yandex')}`,
     `YC_SNS_MESSAGE_TEMPLATE=${vars.YC_SNS_MESSAGE_TEMPLATE || 'Код MOXT: {otp}. Никому не сообщайте.'}`,
+    `SMS_MESSAGE_TEMPLATE=${vars.SMS_MESSAGE_TEMPLATE || vars.YC_SNS_MESSAGE_TEMPLATE || 'Код MOXT: {otp}. Никому не сообщайте.'}`,
     `SEND_SMS_HOOK_SECRET=${vars.SEND_SMS_HOOK_SECRET}`,
   ]
+  if (smsRuReady) {
+    secretLines.push(`SMS_RU_API_ID=${vars.SMS_RU_API_ID}`)
+    if (vars.SMS_RU_FROM) secretLines.push(`SMS_RU_FROM=${vars.SMS_RU_FROM}`)
+  }
+  if (vars.YC_SNS_ACCESS_KEY_ID) secretLines.push(`YC_SNS_ACCESS_KEY_ID=${vars.YC_SNS_ACCESS_KEY_ID}`)
+  if (vars.YC_SNS_SECRET_ACCESS_KEY) {
+    secretLines.push(`YC_SNS_SECRET_ACCESS_KEY=${vars.YC_SNS_SECRET_ACCESS_KEY}`)
+  }
+  secretLines.push(`YC_SNS_SENDER_ID=${vars.YC_SNS_SENDER_ID || 'MOXT'}`)
   writeFileSync(secretsPath, `${secretLines.join('\n')}\n`, 'utf8')
   if (run('npx', ['supabase', 'secrets', 'set', '--env-file', secretsPath]).code !== 0) {
     process.exit(1)
@@ -133,7 +144,12 @@ async function main() {
     process.exit(1)
   }
 
-  log('Config Auth', 'Postbox SMTP + hook send_sms → Yandex CNS')
+  log('Déploiement Edge Function', 'phone-login')
+  if (run('npx', ['supabase', 'functions', 'deploy', 'phone-login', '--no-verify-jwt']).code !== 0) {
+    process.exit(1)
+  }
+
+  log('Config Auth', smsRuReady ? 'Postbox SMTP + hook send_sms → SMS.ru' : 'Postbox SMTP + hook send_sms → Yandex CNS')
   const pushEnv = {
     ...process.env,
     MOXT_POSTBOX_SMTP_USER: vars.MOXT_POSTBOX_SMTP_USER,
@@ -171,12 +187,13 @@ async function main() {
   console.log('  Phase 2 Yandex configurée')
   console.log('══════════════════════════════════════')
   console.log('\n  E-mails → Yandex Postbox')
-  console.log('  SMS OTP → Yandex Cloud Notification Service')
+  console.log(smsRuReady ? '  SMS OTP → SMS.ru' : '  SMS OTP → Yandex Cloud Notification Service')
   console.log('\n  Étapes console Yandex (si pas encore fait) :')
   console.log('  1. Postbox : vérifier le domaine moxtapp.ru (SPF/DKIM)')
   console.log('  2. CNS : modèle SMS type Authorization (2–4 semaines)')
   console.log('  3. CNS : sortir de la sandbox pour la production')
-  console.log('\n  Test sandbox : $env:MOXT_CNS_TEST_PHONE="+7999..."; npm run setup:cns')
+  console.log('\n  CNS facturé : abonnement expéditeur MOXT + chaque envoi SMS (tests inclus)')
+  console.log('  Test sandbox : $env:MOXT_CNS_TEST_PHONE="+7999..."; npm run setup:cns')
   console.log('\n  Test : inscription /register (e-mail + téléphone)')
 }
 

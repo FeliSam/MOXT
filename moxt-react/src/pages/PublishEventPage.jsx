@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { PosterUploader } from '../components/ui/PosterUploader'
+import { storageService } from '../services/storageService'
 import {
   FiArrowLeft,
   FiArrowRight,
@@ -146,7 +148,23 @@ export function PublishEventPage() {
   const [step, setStep] = useState(1)
   const [errors, setErrors] = useState({})
   const [shareModal, setShareModal] = useState(null)
+  const [photos, setPhotos] = useState([])
+  const [publishing, setPublishing] = useState(false)
   const { trigger: triggerBurst, node: burstNode } = useActionBurst()
+
+  function addPhotos(files) {
+    const added = Array.from(files)
+      .slice(0, 5 - photos.length)
+      .filter((file) => file.type.startsWith('image/'))
+      .map((file) => ({ file, url: URL.createObjectURL(file), name: file.name }))
+    setPhotos((current) => [...current, ...added])
+  }
+  function removePhoto(index) {
+    setPhotos((current) => {
+      URL.revokeObjectURL(current[index].url)
+      return current.filter((_, idx) => idx !== index)
+    })
+  }
   const [form, setForm] = useState({
     title: '',
     category: '',
@@ -202,17 +220,36 @@ export function PublishEventPage() {
     setStep((s) => Math.max(s - 1, 1))
   }
 
-  function publish() {
+  async function publish() {
     if (!validate(3)) return
+    setPublishing(true)
+    let images = []
+    try {
+      if (photos.length) {
+        images = await storageService.uploadEventImages(
+          user.id,
+          Date.now().toString(36),
+          photos.map((photo) => photo.file),
+        )
+      }
+    } catch (error) {
+      setPublishing(false)
+      dispatch(
+        addToast({ title: 'Images non envoyées', message: error.message || 'Réessayez.', tone: 'error' }),
+      )
+      return
+    }
     const action = dispatch(
       createEvent({
         ...form,
+        images,
         ownerId: user.id,
         organizerName: canPublishAsBusiness ? business.name : form.organizerName,
         businessId: canPublishAsBusiness ? business.id : null,
         price: form.freeEntry ? 0 : Number(form.price),
       }),
     )
+    setPublishing(false)
     triggerBurst()
     dispatch(addToast({ title: 'Événement publié', message: 'Votre événement est en ligne.', tone: 'success' }))
     setShareModal({ sourceId: action.payload.id, sourceData: action.payload })
@@ -406,6 +443,16 @@ export function PublishEventPage() {
       {/* ── Étape 3 ─────────────────────────────────────────────────────── */}
       {step === 3 ? (
         <div className="grid gap-5">
+          <Card className="grid gap-4">
+            <SectionTitle icon={FiMapPin} label="Affiches de l’événement" />
+            <PosterUploader
+              photos={photos}
+              onAdd={addPhotos}
+              onRemove={removePhoto}
+              label="Affiches / visuels (optionnel)"
+              hint="Ajoutez une ou plusieurs affiches. La première sert d’image principale."
+            />
+          </Card>
           {/* Conditional location block */}
           {form.format !== 'online' ? (
             <Card className="grid gap-5">
@@ -541,7 +588,7 @@ export function PublishEventPage() {
         {step < STEPS.length ? (
           <Button icon={FiArrowRight} onClick={next}>Continuer</Button>
         ) : (
-          <Button icon={FiCheckCircle} onClick={publish}>Créer l'événement</Button>
+          <Button icon={FiCheckCircle} onClick={publish} loading={publishing} disabled={publishing}>Créer l'événement</Button>
         )}
       </div>
     </div>

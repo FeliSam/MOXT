@@ -30,6 +30,7 @@ import { authService } from '../features/auth/authService'
 import {
   clearAuthError,
   register,
+  resendPhoneRegistrationOtp,
   verifyEmailRegistration,
   verifyPhoneRegistration,
 } from '../features/auth/authSlice'
@@ -99,6 +100,7 @@ export function RegisterPage() {
   const [step, setStep] = useState(1)
   const [pendingVerification, setPendingVerification] = useState(null) // { method, phone?, email }
   const [verificationCode, setVerificationCode] = useState('')
+  const [resendCooldown, setResendCooldown] = useState(0)
   const { trigger: triggerBurst, node: burstNode } = useActionBurst()
   const { countries } = useGeographyOptions()
   const alreadyRegistered = error === 'ALREADY_REGISTERED'
@@ -107,6 +109,14 @@ export function RegisterPage() {
   useEffect(() => {
     return () => dispatch(clearAuthError())
   }, [dispatch])
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return undefined
+    const timer = window.setInterval(() => {
+      setResendCooldown((value) => Math.max(0, value - 1))
+    }, 1000)
+    return () => window.clearInterval(timer)
+  }, [resendCooldown])
 
   const formik = useFormik({
     initialValues: {
@@ -158,6 +168,7 @@ export function RegisterPage() {
       }
       dispatch(clearAuthError())
       if (result.payload.requiresPhoneConfirmation) {
+        setResendCooldown(60)
         setPendingVerification({ method: 'phone', phone: result.payload.phone, email: result.payload.email })
         return
       }
@@ -208,6 +219,22 @@ export function RegisterPage() {
   }, [dispatch, formik.setValues])
 
   const showVerificationError = Boolean(error && pendingVerification)
+
+  async function resendSmsCode() {
+    if (!pendingVerification?.phone || resendCooldown > 0) return
+    const result = await dispatch(resendPhoneRegistrationOtp(pendingVerification.phone))
+    if (resendPhoneRegistrationOtp.fulfilled.match(result)) {
+      dispatch(clearAuthError())
+      setResendCooldown(60)
+      dispatch(
+        addToast({
+          title: 'Code renvoyé',
+          message: `Un nouveau SMS a été envoyé au ${pendingVerification.phone}.`,
+          tone: 'success',
+        }),
+      )
+    }
+  }
 
   async function confirmCode() {
     if (!pendingVerification || !/^\d{6}$/.test(verificationCode)) return
@@ -263,7 +290,7 @@ export function RegisterPage() {
       compact
       eyebrow="Inscription"
       title="Créer votre compte MOXT"
-      description="Résidence en Russie : un numéro russe valide est obligatoire."
+      description="Inscription avec numéro russe (+7) et confirmation par SMS."
     >
       {burstNode}
       <Stepper step={step} />
@@ -274,11 +301,11 @@ export function RegisterPage() {
       <form className="@container mt-4 grid gap-3" onSubmit={formik.handleSubmit} noValidate>
         {alreadyRegistered ? (
           <Alert variant="error" title="Compte déjà existant">
-            Un compte existe déjà avec cet e-mail.{' '}
+            Un compte existe déjà avec cet e-mail ou ce numéro russe.{' '}
             <Link className="font-bold underline" to="/login">
               Se connecter
             </Link>{' '}
-            ou utilisez un autre e-mail.
+            ou utilisez d'autres identifiants.
           </Alert>
         ) : null}
 
@@ -289,7 +316,7 @@ export function RegisterPage() {
             <GoogleButton mode="identity" label="S'inscrire avec Google" />
             <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-wider text-[var(--app-text-faint)]">
               <span className="h-px flex-1 bg-[var(--app-border)]" />
-              ou avec votre email
+              ou avec vos informations
               <span className="h-px flex-1 bg-[var(--app-border)]" />
             </div>
 
@@ -311,7 +338,7 @@ export function RegisterPage() {
             </div>
             <Input
               id="register-email"
-              label="Adresse e-mail"
+              label="Adresse e-mail (optionnelle si confirmation par SMS)"
               type="email"
               autoComplete="email"
               {...formik.getFieldProps('email')}
@@ -536,6 +563,19 @@ export function RegisterPage() {
                 >
                   Confirmer et accéder à MOXT
                 </Button>
+                {pendingVerification.method === 'phone' ? (
+                  <div className="flex flex-col items-center gap-1 text-center text-sm text-[var(--app-text-muted)]">
+                    <span>Vous n'avez pas reçu le SMS ?</span>
+                    <button
+                      type="button"
+                      className="font-bold text-brand-700 disabled:cursor-not-allowed disabled:opacity-50 dark:text-brand-300"
+                      disabled={resendCooldown > 0 || status === 'loading'}
+                      onClick={resendSmsCode}
+                    >
+                      {resendCooldown > 0 ? `Renvoyer dans ${resendCooldown}s` : 'Renvoyer le code SMS'}
+                    </button>
+                  </div>
+                ) : null}
               </>
             ) : (
               <>
@@ -544,8 +584,8 @@ export function RegisterPage() {
                     Comment souhaitez-vous confirmer votre compte ?
                   </p>
                   <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-                    Le téléphone russe est recommandé. L’autre identifiant pourra être confirmé ensuite
-                    dans Sécurité.
+                    Par défaut, votre compte est confirmé par SMS sur votre numéro russe. L'e-mail
+                    reste optionnel et pourra être ajouté plus tard dans votre profil.
                     {formik.values.verificationMethod === 'email' ? (
                       <>
                         {' '}
@@ -560,14 +600,14 @@ export function RegisterPage() {
                     {
                       value: 'phone',
                       icon: FiMessageSquare,
-                      title: 'Par SMS',
+                      title: 'Par SMS (recommandé)',
                       detail: formik.values.russianPhone,
                     },
                     {
                       value: 'email',
                       icon: FiMail,
                       title: 'Par e-mail',
-                      detail: formik.values.email,
+                      detail: formik.values.email || 'E-mail requis',
                     },
                   ].map((method) => {
                     const Icon = method.icon

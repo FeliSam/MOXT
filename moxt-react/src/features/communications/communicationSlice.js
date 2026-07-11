@@ -667,6 +667,7 @@ const communicationSlice = createSlice({
             userName: values.userName,
             subject: values.subject.trim(),
             priority: values.priority,
+            category: values.category || 'question',
             status: 'waiting_agent',
             messages: [
               {
@@ -675,6 +676,7 @@ const communicationSlice = createSlice({
                 senderName: values.userName,
                 role: 'user',
                 text: values.message.trim(),
+                imageUrl: values.screenshotUrl || null,
                 createdAt: now,
               },
             ],

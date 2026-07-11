@@ -1,6 +1,6 @@
 import { useFormik } from 'formik'
-import { FiHelpCircle, FiPlus, FiSend } from 'react-icons/fi'
-import { useState } from 'react'
+import { FiAlertTriangle, FiHelpCircle, FiImage, FiPlus, FiSend, FiX } from 'react-icons/fi'
+import { useRef, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
@@ -17,10 +17,13 @@ import {
   createSupportTicket,
   replySupportTicket,
 } from '../features/communications/communicationSlice'
+import { addToast } from '../features/ui/uiSlice'
 import { formatDate } from '../features/transfers/transferUtils'
+import { storageService } from '../services/storageService'
 
 export function SupportPage() {
   const [requestOpen, setRequestOpen] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
   const dispatch = useDispatch()
   const user = useSelector((state) => state.auth.user)
   const tickets = useSelector((state) =>
@@ -59,10 +62,21 @@ export function SupportPage() {
         title="Support MOXT"
         description="Demandes, reclamations et suivi avec l'equipe support."
         actions={
-          <Button icon={FiPlus} onClick={() => setRequestOpen(true)}>
-            Nouvelle demande
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" icon={FiAlertTriangle} onClick={() => setReportOpen(true)}>
+              Signaler une erreur
+            </Button>
+            <Button icon={FiPlus} onClick={() => setRequestOpen(true)}>
+              Nouvelle demande
+            </Button>
+          </div>
         }
+      />
+      <ErrorReportModal
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        dispatch={dispatch}
+        user={user}
       />
       <div>
         <PublicationModal
@@ -116,6 +130,139 @@ export function SupportPage() {
   )
 }
 
+function ErrorReportModal({ open, onClose, dispatch, user }) {
+  const fileInputRef = useRef(null)
+  const [file, setFile] = useState(null)
+  const [previewUrl, setPreviewUrl] = useState(null)
+  const [message, setMessage] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  function pickFile(event) {
+    const selected = event.target.files?.[0]
+    if (!selected) return
+    if (!selected.type.startsWith('image/')) {
+      dispatch(addToast({ title: 'Format invalide', message: 'Choisissez une image.', tone: 'error' }))
+      return
+    }
+    if (previewUrl) URL.revokeObjectURL(previewUrl)
+    setFile(selected)
+    setPreviewUrl(URL.createObjectURL(selected))
+  }
+
+  function clearFile() {
+    if (previewUrl) URL.revokeObjectURL(previewUrl)
+    setFile(null)
+    setPreviewUrl(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  function close() {
+    clearFile()
+    setMessage('')
+    onClose()
+  }
+
+  async function submit(event) {
+    event.preventDefault()
+    if (message.trim().length < 10) {
+      dispatch(addToast({ title: 'Description trop courte', message: 'Décrivez le problème (10 caractères min).', tone: 'error' }))
+      return
+    }
+    setSubmitting(true)
+    try {
+      let screenshotUrl = null
+      if (file) {
+        screenshotUrl = await storageService.uploadSupportScreenshot(user.id, file)
+      }
+      const action = dispatch(
+        createSupportTicket({
+          userId: user.id,
+          userName: `${user.firstName} ${user.lastName}`,
+          subject: 'Signalement d’erreur',
+          priority: 'important',
+          category: 'bug',
+          message: message.trim(),
+          screenshotUrl,
+        }),
+      )
+      dispatch(
+        addNotification({
+          userId: user.id,
+          title: 'Signalement envoyé',
+          message: `Votre signalement ${action.payload.id} a été transmis au support.`,
+          type: 'support',
+          link: '/support',
+        }),
+      )
+      dispatch(addToast({ title: 'Merci !', message: 'Votre signalement a été envoyé.', tone: 'success' }))
+      close()
+    } catch (error) {
+      dispatch(addToast({ title: 'Envoi impossible', message: error.message || 'Réessayez plus tard.', tone: 'error' }))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <PublicationModal
+      open={open}
+      onClose={close}
+      title="Signaler une erreur"
+      description="Décrivez le problème rencontré et joignez une capture d’écran pour aider l’équipe."
+      icon={FiAlertTriangle}
+    >
+      <form className="mt-5 grid gap-4" onSubmit={submit} noValidate>
+        <label className="grid gap-1.5">
+          <span className="text-sm font-semibold">Description du problème</span>
+          <textarea
+            className="min-h-32 rounded-xl border border-slate-200 bg-slate-50 p-3.5 dark:border-slate-700 dark:bg-slate-950"
+            placeholder="Ex. : le bouton Publier ne répond pas sur la page annonce…"
+            value={message}
+            onChange={(event) => setMessage(event.target.value)}
+          />
+        </label>
+
+        <div className="grid gap-1.5">
+          <span className="text-sm font-semibold">Capture d’écran (optionnelle)</span>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={pickFile}
+          />
+          {previewUrl ? (
+            <div className="relative overflow-hidden rounded-xl border border-[var(--app-border)]">
+              <img src={previewUrl} alt="Aperçu de la capture" className="max-h-64 w-full object-contain bg-[var(--app-surface-muted)]" />
+              <button
+                type="button"
+                onClick={clearFile}
+                aria-label="Retirer la capture"
+                className="absolute right-2 top-2 grid size-8 place-items-center rounded-full bg-black/55 text-white hover:bg-black/70"
+              >
+                <FiX />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex min-h-24 flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] text-sm text-[var(--app-text-muted)] hover:border-[var(--app-accent)]"
+            >
+              <FiImage className="text-xl" />
+              Ajouter une capture d’écran
+            </button>
+          )}
+        </div>
+
+        <Button type="submit" icon={FiSend} loading={submitting} disabled={submitting}>
+          Envoyer le signalement
+        </Button>
+      </form>
+    </PublicationModal>
+  )
+}
+
 function TicketCard({ dispatch, ticket, user }) {
   const formik = useFormik({
     initialValues: { text: '' },
@@ -152,6 +299,16 @@ function TicketCard({ dispatch, ticket, user }) {
           >
             <strong className="block text-xs">{message.senderName}</strong>
             <p className="mt-1">{message.text}</p>
+            {message.imageUrl ? (
+              <a href={message.imageUrl} target="_blank" rel="noreferrer" className="mt-2 block">
+                <img
+                  src={message.imageUrl}
+                  alt="Capture jointe"
+                  className="max-h-56 w-full rounded-lg border border-[var(--app-border)] object-contain"
+                  loading="lazy"
+                />
+              </a>
+            ) : null}
           </div>
         ))}
       </div>

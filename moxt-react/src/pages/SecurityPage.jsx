@@ -14,6 +14,8 @@ import {
 import { authService } from '../features/auth/authService'
 import { addToast } from '../features/ui/uiSlice'
 
+const MFA_AVAILABLE = false
+
 export function SecurityPage() {
   const dispatch = useDispatch()
   const user = useSelector((state) => state.auth.user)
@@ -33,6 +35,7 @@ export function SecurityPage() {
   const [mfaEnabled, setMfaEnabled] = useState(false)
 
   useEffect(() => {
+    if (!MFA_AVAILABLE) return undefined
     let cancelled = false
     authService
       .listMfaFactors()
@@ -170,19 +173,29 @@ export function SecurityPage() {
             Modifier le mot de passe
           </Button>
         </Card>
-        <Card>
-          <FiKey className="text-2xl text-brand-600" />
+        <Card
+          className={!MFA_AVAILABLE ? 'opacity-55' : undefined}
+          aria-disabled={!MFA_AVAILABLE || undefined}
+        >
+          <FiKey className={`text-2xl ${MFA_AVAILABLE ? 'text-brand-600' : 'text-[var(--app-text-muted)]'}`} />
           <h2 className="mt-4 font-black">Double authentification</h2>
           <p className="mt-2 text-sm text-[var(--app-text-muted)]">
-            État : {mfaEnabled ? 'activée (TOTP)' : 'désactivée'}.
+            {MFA_AVAILABLE
+              ? `État : ${mfaEnabled ? 'activée (TOTP)' : 'désactivée'}.`
+              : 'Cette fonctionnalité n’est pas encore disponible. Elle sera proposée prochainement.'}
           </p>
           <Button
             className="mt-5"
             variant="secondary"
-            disabled={mfaLoading}
+            disabled={!MFA_AVAILABLE || mfaLoading}
+            title={!MFA_AVAILABLE ? 'Bientôt disponible' : undefined}
             onClick={mfaEnabled ? disableMfa : startMfaEnrollment}
           >
-            {mfaEnabled ? 'Désactiver la 2FA' : 'Activer la 2FA'}
+            {MFA_AVAILABLE
+              ? mfaEnabled
+                ? 'Désactiver la 2FA'
+                : 'Activer la 2FA'
+              : 'Bientôt disponible'}
           </Button>
         </Card>
         <Card>

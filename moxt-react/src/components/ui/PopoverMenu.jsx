@@ -49,7 +49,7 @@ export function PopoverMenu({ ariaLabel, children, className = '', trigger }) {
         <div
           id={menuId}
           role="menu"
-          className="panel-pop absolute right-0 top-[calc(100%+0.4rem)] z-30 grid min-w-44 gap-1 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-1.5 shadow-[var(--shadow-card-lg)]"
+          className="panel-pop absolute right-0 top-[calc(100%+0.4rem)] z-50 grid min-w-44 gap-1 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-1.5 shadow-[var(--shadow-card-lg)]"
           onClick={() => setOpen(false)}
         >
           {children}

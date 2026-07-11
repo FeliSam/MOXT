@@ -1,6 +1,6 @@
 import { useFormik } from 'formik'
-import { useEffect } from 'react'
-import { FiLock, FiUser } from 'react-icons/fi'
+import { useEffect, useState } from 'react'
+import { FiLock, FiMail, FiMessageSquare, FiUser } from 'react-icons/fi'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { AuthCard } from '../components/auth/AuthCard'
@@ -9,11 +9,30 @@ import { Alert } from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { PasswordInput } from '../components/ui/PasswordInput'
+import { flagEmoji } from '../config/flags'
+import { constrainPhone } from '../config/phone'
 import { useLanguage } from '../contexts/useLanguage'
-import { clearAuthError, login } from '../features/auth/authSlice'
 import { loadAllData } from '../app/loadAllData'
+import {
+  clearAuthError,
+  login,
+  requestPhoneLoginOtp,
+  verifyPhoneLogin,
+} from '../features/auth/authSlice'
+import { loginEmailSchema, loginPhonePasswordSchema } from '../features/auth/authSchemas'
 import { startRealtimeSubscription } from '../services/realtimeService'
-import { loginSchema } from '../features/auth/authSchemas'
+
+const LOGIN_MODES = [
+  { id: 'email', label: 'E-mail', icon: FiMail },
+  { id: 'phone-password', label: 'Tél. + mot de passe', icon: FiLock },
+  { id: 'phone-otp', label: 'Code SMS', icon: FiMessageSquare },
+]
+
+function finishLogin(dispatch, store, navigate, location) {
+  dispatch(loadAllData())
+  startRealtimeSubscription(store.getState().auth.user.id, dispatch, store.getState)
+  navigate(location.state?.from || '/dashboard', { replace: true })
+}
 
 export function LoginPage() {
   const dispatch = useDispatch()
@@ -23,64 +42,248 @@ export function LoginPage() {
   const { t } = useLanguage()
   const { error, status } = useSelector((state) => state.auth)
 
+  const [mode, setMode] = useState('email')
+  const [otpSent, setOtpSent] = useState(false)
+  const [otpPhone, setOtpPhone] = useState('+7')
+  const [otpCode, setOtpCode] = useState('')
+  const [resendCooldown, setResendCooldown] = useState(0)
+
   useEffect(() => () => dispatch(clearAuthError()), [dispatch])
 
-  const formik = useFormik({
-    initialValues: { identifier: '', password: '' },
-    validationSchema: loginSchema,
+  useEffect(() => {
+    if (resendCooldown <= 0) return undefined
+    const timer = window.setInterval(() => {
+      setResendCooldown((value) => Math.max(0, value - 1))
+    }, 1000)
+    return () => window.clearInterval(timer)
+  }, [resendCooldown])
+
+  function switchMode(nextMode) {
+    setMode(nextMode)
+    setOtpSent(false)
+    setOtpCode('')
+    dispatch(clearAuthError())
+  }
+
+  const emailFormik = useFormik({
+    initialValues: { email: '', password: '' },
+    validationSchema: loginEmailSchema,
     onSubmit: async (values) => {
-      const result = await dispatch(login(values))
+      const result = await dispatch(login({ identifier: values.email.trim(), password: values.password }))
       if (login.fulfilled.match(result)) {
-        dispatch(loadAllData())
-        startRealtimeSubscription(store.getState().auth.user.id, dispatch, store.getState)
-        navigate(location.state?.from || '/dashboard', { replace: true })
+        finishLogin(dispatch, store, navigate, location)
       }
     },
   })
 
+  const phoneFormik = useFormik({
+    initialValues: { phone: '+7', password: '' },
+    validationSchema: loginPhonePasswordSchema,
+    onSubmit: async (values) => {
+      const result = await dispatch(login({ identifier: values.phone, password: values.password }))
+      if (login.fulfilled.match(result)) {
+        finishLogin(dispatch, store, navigate, location)
+      }
+    },
+  })
+
+  async function sendLoginOtp() {
+    const errors = await phoneFormik.validateForm()
+    if (errors.phone) {
+      phoneFormik.setFieldTouched('phone', true, false)
+      return
+    }
+    const phone = phoneFormik.values.phone
+    const result = await dispatch(requestPhoneLoginOtp(phone))
+    if (requestPhoneLoginOtp.fulfilled.match(result)) {
+      setOtpPhone(result.payload.phone)
+      setOtpSent(true)
+      setOtpCode('')
+      setResendCooldown(60)
+      dispatch(clearAuthError())
+    }
+  }
+
+  async function confirmLoginOtp() {
+    if (!/^\d{6}$/.test(otpCode)) return
+    const result = await dispatch(verifyPhoneLogin({ phone: otpPhone, token: otpCode }))
+    if (verifyPhoneLogin.fulfilled.match(result)) {
+      finishLogin(dispatch, store, navigate, location)
+    }
+  }
+
+  const emailError = (field) => (emailFormik.touched[field] ? emailFormik.errors[field] : undefined)
+  const phoneError = (field) => (phoneFormik.touched[field] ? phoneFormik.errors[field] : undefined)
+
   return (
-    <AuthCard title={t('auth.login.title')} description={t('auth.login.description')}>
+    <AuthCard title={t('auth.login.title')} description="Connectez-vous par e-mail, numéro russe ou code SMS.">
       <div className="mt-6">
         <GoogleButton to="/dashboard" />
       </div>
       <div className="my-5 flex items-center gap-3 text-xs font-bold uppercase tracking-wider text-[var(--app-text-faint)]">
         <span className="h-px flex-1 bg-[var(--app-border)]" />
-        ou avec votre email
+        ou avec vos identifiants
         <span className="h-px flex-1 bg-[var(--app-border)]" />
       </div>
-      <form className="grid gap-4" onSubmit={formik.handleSubmit} noValidate>
-        {location.state?.notice ? <Alert variant="success">{location.state.notice}</Alert> : null}
-        {error ? <Alert variant="error">{error}</Alert> : null}
-        <Input
-          id="identifier"
-          label="E-mail ou numéro russe"
-          type="text"
-          autoComplete="username"
-          placeholder="nom@example.com ou +7XXXXXXXXXX"
-          iconLeft={<FiUser />}
-          {...formik.getFieldProps('identifier')}
-          error={formik.touched.identifier ? formik.errors.identifier : undefined}
-        />
-        <PasswordInput
-          id="password"
-          label={t('auth.login.password')}
-          autoComplete="current-password"
-          iconLeft={<FiLock />}
-          {...formik.getFieldProps('password')}
-          error={formik.touched.password ? formik.errors.password : undefined}
-        />
-        <div className="flex justify-end">
-          <Link
-            className="text-sm font-bold text-brand-700 dark:text-brand-300"
-            to="/forgot-password"
-          >
-            {t('auth.login.forgot')}
-          </Link>
+
+      <div className="grid gap-2 sm:grid-cols-3">
+        {LOGIN_MODES.map((item) => {
+          const Icon = item.icon
+          const active = mode === item.id
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => switchMode(item.id)}
+              className={`flex min-h-11 items-center justify-center gap-2 rounded-2xl border px-3 py-2 text-xs font-bold transition ${
+                active
+                  ? 'border-brand-600 bg-brand-700 text-white shadow-md'
+                  : 'border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text-muted)] hover:border-brand-300'
+              }`}
+            >
+              <Icon className="shrink-0 text-sm" aria-hidden="true" />
+              {item.label}
+            </button>
+          )
+        })}
+      </div>
+
+      {location.state?.notice ? <Alert className="mt-4" variant="success">{location.state.notice}</Alert> : null}
+      {error ? <Alert className="mt-4" variant="error">{error}</Alert> : null}
+
+      {mode === 'email' ? (
+        <form className="mt-4 grid gap-4" onSubmit={emailFormik.handleSubmit} noValidate>
+          <Input
+            id="login-email"
+            label="Adresse e-mail"
+            type="email"
+            autoComplete="username"
+            placeholder="nom@example.com"
+            iconLeft={<FiMail />}
+            {...emailFormik.getFieldProps('email')}
+            error={emailError('email')}
+          />
+          <PasswordInput
+            id="login-password"
+            label={t('auth.login.password')}
+            autoComplete="current-password"
+            iconLeft={<FiLock />}
+            {...emailFormik.getFieldProps('password')}
+            error={emailError('password')}
+          />
+          <div className="flex justify-end">
+            <Link className="text-sm font-bold text-brand-700 dark:text-brand-300" to="/forgot-password">
+              {t('auth.login.forgot')}
+            </Link>
+          </div>
+          <Button className="w-full" type="submit" loading={status === 'loading'}>
+            {status === 'loading' ? t('auth.login.submitting') : t('auth.login.submit')}
+          </Button>
+        </form>
+      ) : null}
+
+      {mode === 'phone-password' ? (
+        <form className="mt-4 grid gap-4" onSubmit={phoneFormik.handleSubmit} noValidate>
+          <Input
+            id="login-phone-password"
+            label="Numéro russe"
+            type="tel"
+            autoComplete="tel"
+            placeholder="+7XXXXXXXXXX"
+            iconLeft={<span className="text-base leading-none">{flagEmoji('RU')}</span>}
+            {...phoneFormik.getFieldProps('phone')}
+            onChange={(event) =>
+              phoneFormik.setFieldValue('phone', constrainPhone(event.target.value, '+7', 10))
+            }
+            error={phoneError('phone')}
+          />
+          <PasswordInput
+            id="login-phone-password-field"
+            label={t('auth.login.password')}
+            autoComplete="current-password"
+            iconLeft={<FiLock />}
+            {...phoneFormik.getFieldProps('password')}
+            error={phoneError('password')}
+          />
+          <Button className="w-full" type="submit" loading={status === 'loading'}>
+            {status === 'loading' ? t('auth.login.submitting') : 'Se connecter'}
+          </Button>
+        </form>
+      ) : null}
+
+      {mode === 'phone-otp' ? (
+        <div className="mt-4 grid gap-4">
+          {!otpSent ? (
+            <>
+              <Input
+                id="login-phone-otp"
+                label="Numéro russe"
+                type="tel"
+                autoComplete="tel"
+                placeholder="+7XXXXXXXXXX"
+                iconLeft={<span className="text-base leading-none">{flagEmoji('RU')}</span>}
+                {...phoneFormik.getFieldProps('phone')}
+                onChange={(event) =>
+                  phoneFormik.setFieldValue('phone', constrainPhone(event.target.value, '+7', 10))
+                }
+                error={phoneError('phone')}
+              />
+              <Button className="w-full" type="button" loading={status === 'loading'} onClick={sendLoginOtp}>
+                Envoyer le code SMS
+              </Button>
+            </>
+          ) : (
+            <>
+              <Alert variant="info">
+                Un code à 6 chiffres a été envoyé au {otpPhone}.
+              </Alert>
+              <Input
+                id="login-otp-code"
+                label="Code reçu par SMS"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                placeholder="000000"
+                iconLeft={<FiUser />}
+                value={otpCode}
+                onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+              />
+              <Button
+                className="w-full"
+                type="button"
+                loading={status === 'loading'}
+                disabled={otpCode.length !== 6}
+                onClick={confirmLoginOtp}
+              >
+                Valider et se connecter
+              </Button>
+              <div className="text-center text-sm text-[var(--app-text-muted)]">
+                <span>Vous n'avez pas reçu le SMS ? </span>
+                <button
+                  type="button"
+                  className="font-bold text-brand-700 disabled:cursor-not-allowed disabled:opacity-50 dark:text-brand-300"
+                  disabled={resendCooldown > 0 || status === 'loading'}
+                  onClick={sendLoginOtp}
+                >
+                  {resendCooldown > 0 ? `Renvoyer dans ${resendCooldown}s` : 'Renvoyer le code'}
+                </button>
+              </div>
+              <button
+                type="button"
+                className="text-sm font-bold text-[var(--app-text-muted)] hover:text-brand-700 dark:hover:text-brand-300"
+                onClick={() => {
+                  setOtpSent(false)
+                  setOtpCode('')
+                  dispatch(clearAuthError())
+                }}
+              >
+                Modifier le numéro
+              </button>
+            </>
+          )}
         </div>
-        <Button className="w-full" type="submit" loading={status === 'loading'}>
-          {status === 'loading' ? t('auth.login.submitting') : t('auth.login.submit')}
-        </Button>
-      </form>
+      ) : null}
+
       <p className="mt-5 text-center text-sm text-[var(--app-text-muted)]">
         {t('auth.login.newToMoxt')}{' '}
         <Link className="font-bold text-brand-700 dark:text-brand-300" to="/register">

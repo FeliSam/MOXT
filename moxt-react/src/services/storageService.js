@@ -59,6 +59,39 @@ export const storageService = {
     return urls
   },
 
+  // Bucket public 'listings' réutilisé — la RLS impose ${userId}/... comme préfixe.
+  async uploadJobImages(userId, jobId, files) {
+    return Promise.all(
+      files.map(async (file, i) => {
+        const compressed = await compressImage(file, { maxPx: 1600, quality: 0.82 })
+        const extension = compressed.type === 'image/png' ? 'png' : 'jpg'
+        return upload('listings', `${userId}/jobs/${jobId}/${i}.${extension}`, compressed)
+      }),
+    )
+  },
+
+  async uploadEventImages(userId, eventId, files) {
+    return Promise.all(
+      files.map(async (file, i) => {
+        const compressed = await compressImage(file, { maxPx: 1600, quality: 0.82 })
+        const extension = compressed.type === 'image/png' ? 'png' : 'jpg'
+        return upload('listings', `${userId}/events/${eventId}/${i}.${extension}`, compressed)
+      }),
+    )
+  },
+
+  async uploadSupportScreenshot(userId, file) {
+    const compressed = await compressImage(file, { maxPx: 1600, quality: 0.82 })
+    const extension = compressed.type === 'image/png' ? 'png' : 'jpg'
+    return upload('listings', `${userId}/support/${Date.now()}.${extension}`, compressed)
+  },
+
+  async uploadMessageImage(userId, conversationId, file) {
+    const compressed = await compressImage(file, { maxPx: 1600, quality: 0.82 })
+    const extension = compressed.type === 'image/png' ? 'png' : 'jpg'
+    return upload('listings', `${userId}/messages/${conversationId}/${Date.now()}.${extension}`, compressed)
+  },
+
   async uploadDocument(userId, category, file) {
     const path = `${userId}/${category}-${Date.now()}.${ext(file)}`
     return uploadPrivate('documents', path, file)

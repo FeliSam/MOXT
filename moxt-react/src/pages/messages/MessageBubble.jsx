@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
+  FiCheck,
   FiCopy,
   FiCornerUpLeft,
   FiEdit2,
@@ -19,6 +20,34 @@ function bubbleClassName(mine, groupedWithPrevious, groupedWithNext, failed) {
 }
 
 const LONG_PRESS_MS = 450
+
+function MessageReadStatus({ label }) {
+  if (!label) return null
+  const isRead = label.includes('Lu')
+  const isDelivered = label.includes('Distribué')
+  const text = isRead ? 'Lu' : isDelivered ? 'Distribué' : 'Envoyé'
+
+  return (
+    <span
+      className={`message-meta-status ${isRead ? 'message-meta-status--read' : ''} ${
+        isDelivered ? 'message-meta-status--delivered' : ''
+      }`}
+      title={text}
+    >
+      {isRead ? (
+        <span className="message-read-icons" aria-hidden="true">
+          <FiCheck className="message-read-icon" />
+          <FiCheck className="message-read-icon message-read-icon--second" />
+        </span>
+      ) : isDelivered ? (
+        <FiCheck className="message-read-icon" aria-hidden="true" />
+      ) : (
+        <FiCheck className="message-read-icon message-read-icon--sent" aria-hidden="true" />
+      )}
+      <span>{text}</span>
+    </span>
+  )
+}
 
 export function MessageBubble({
   groupedWithNext = false,
@@ -44,16 +73,10 @@ export function MessageBubble({
   const menuRef = useRef(null)
   const longPressTimer = useRef(null)
   const longPressTriggered = useRef(false)
-  const [hoverActions, setHoverActions] = useState(false)
   const [placeAbove, setPlaceAbove] = useState(false)
   const readLabel = messageReadLabel(message, user.id)
   const failed = Boolean(message.syncFailed)
-  const statusClass = readLabel.includes('Lu')
-    ? 'message-meta-status'
-    : readLabel.includes('Distribué')
-      ? 'message-meta-status opacity-80'
-      : ''
-  const showActions = openActions || hoverActions
+  const showActions = openActions
 
   // Bascule le menu au-dessus de la bulle s'il n'y a pas assez de place en bas
   // (dernier message, bord du conteneur scrollable) pour éviter qu'il soit coupé.
@@ -100,7 +123,6 @@ export function MessageBubble({
     event.stopPropagation()
     handler(message)
     onCloseActions?.()
-    setHoverActions(false)
   }
 
   function handlePointerDown(event) {
@@ -119,7 +141,6 @@ export function MessageBubble({
 
   function handlePointerLeave() {
     clearLongPress()
-    setHoverActions(false)
   }
 
   function handleBubbleClick(event) {
@@ -138,21 +159,24 @@ export function MessageBubble({
   return (
     <div
       ref={stackRef}
-      className={`message-stack message-stack--enter ${mine ? 'message-stack--sent' : ''} ${
-        highlight ? 'message-stack--highlight' : ''
-      } ${showActions && !failed ? 'message-stack--actions' : ''}`}
-      onMouseEnter={() => setHoverActions(true)}
-      onMouseLeave={handlePointerLeave}
+      className={`message-stack message-stack--enter message-stack--interactive ${
+        mine ? 'message-stack--sent' : ''
+      } ${highlight ? 'message-stack--highlight' : ''} ${
+        showActions && !failed ? 'message-stack--actions' : ''
+      }`}
     >
       {showSenderName && !mine ? (
         <span className="message-sender-name">{message.senderName}</span>
       ) : null}
 
       <div
-        className={bubbleClassName(mine, groupedWithPrevious, groupedWithNext, failed)}
+        className={`${bubbleClassName(mine, groupedWithPrevious, groupedWithNext, failed)} ${
+          openActions ? 'message-bubble--active' : ''
+        }`}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         onPointerCancel={clearLongPress}
+        onPointerLeave={handlePointerLeave}
         onClick={handleBubbleClick}
       >
         {repliedMessage ? (
@@ -196,9 +220,9 @@ export function MessageBubble({
                       event.stopPropagation()
                       onReact?.(message.id, emoji)
                     }}
-                    aria-label={`${emoji} ${users.length}`}
+                    aria-label={`Réaction ${emoji}`}
                   >
-                    {emoji} {users.length}
+                    {emoji}
                   </button>
                 )
               })}
@@ -224,7 +248,7 @@ export function MessageBubble({
           ref={menuRef}
           className={`message-action-menu ${mine ? 'message-action-menu--sent' : ''} ${
             placeAbove ? 'message-action-menu--above' : ''
-          } ${hoverActions && !openActions ? 'message-action-menu--hover' : ''}`}
+          }`}
           role="menu"
           onClick={(event) => event.stopPropagation()}
         >
@@ -237,7 +261,6 @@ export function MessageBubble({
                     event.stopPropagation()
                     onReact(message.id, emoji)
                     onCloseActions?.()
-                    setHoverActions(false)
                   }}
                   aria-label={`Réagir ${emoji}`}
                   className="message-action-menu-btn message-action-menu-btn--emoji"
@@ -289,7 +312,7 @@ export function MessageBubble({
       {!groupedWithNext ? (
         <div className={`message-meta ${mine ? 'message-meta--sent' : ''}`}>
           <time dateTime={message.createdAt}>{shortTime(message.createdAt)}</time>
-          {mine && readLabel && !failed ? <span className={statusClass}>{readLabel}</span> : null}
+          {mine && readLabel && !failed ? <MessageReadStatus label={readLabel} /> : null}
           {mine && failed ? <span className="message-meta-failed">Non synchronisé</span> : null}
         </div>
       ) : null}

@@ -324,6 +324,31 @@ html.capacitor-native .capacitor-safe-bottom {
   transform: translateY(-0.5px);
 }
 
+.message-bubble--received:hover {
+  border-color: color-mix(in srgb, var(--app-accent) 38%, var(--app-border));
+  background: color-mix(in srgb, var(--app-accent-soft) 46%, var(--app-surface));
+  box-shadow: var(--shadow-card-hover);
+}
+
+.message-bubble--sent:hover {
+  filter: brightness(1.04);
+  box-shadow: 0 8px 22px rgb(8 112 95 / 28%);
+}
+
+.message-bubble--active.message-bubble--received {
+  border-color: color-mix(in srgb, var(--app-accent) 52%, var(--app-border));
+  background: color-mix(in srgb, var(--app-accent-soft) 58%, var(--app-surface));
+}
+
+.message-bubble--active.message-bubble--sent {
+  filter: brightness(1.06);
+  box-shadow: 0 10px 26px rgb(8 112 95 / 32%);
+}
+
+.message-stack--interactive .message-bubble {
+  cursor: pointer;
+}
+
 .message-bubble--sent {
   color: #fff;
   background: linear-gradient(145deg, var(--app-accent) 0%, color-mix(in srgb, var(--app-accent) 88%, #000) 100%);
@@ -419,7 +444,79 @@ html.capacitor-native .capacitor-safe-bottom {
 }
 
 .message-meta-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  color: var(--app-text-faint);
+}
+
+.message-meta-status--delivered {
+  color: color-mix(in srgb, var(--app-accent) 70%, var(--app-text-faint));
+}
+
+.message-meta-status--read {
   color: var(--app-accent);
+}
+
+.dark .message-meta-status--read {
+  color: var(--app-teal);
+}
+
+.message-read-icons {
+  position: relative;
+  display: inline-flex;
+  width: 0.95rem;
+  height: 0.7rem;
+}
+
+.message-read-icon {
+  width: 0.7rem;
+  height: 0.7rem;
+  stroke-width: 2.5;
+}
+
+.message-read-icon--second {
+  position: absolute;
+  left: 0.28rem;
+  top: 0.02rem;
+}
+
+.message-read-icon--sent {
+  opacity: 0.55;
+}
+
+.business-created-success {
+  animation: page-enter 0.45s ease-out both;
+}
+
+.business-created-hero {
+  animation: business-created-hero-in 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.business-created-hero-icon {
+  animation: business-created-icon-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.12s both;
+}
+
+@keyframes business-created-hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes business-created-icon-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .dark .message-meta-status {
@@ -480,28 +577,6 @@ html.capacitor-native .capacitor-safe-bottom {
 .message-action-menu-btn--danger:hover {
   background: rgb(239 68 68 / 12%);
   color: rgb(220 38 38);
-}
-
-.message-action-menu--hover {
-  pointer-events: auto;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .message-stack:hover .message-action-menu--hover {
-    opacity: 1;
-    transform: translateY(0);
-    visibility: visible;
-  }
-
-  .message-action-menu--hover {
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(4px);
-    transition:
-      opacity var(--transition-fast),
-      transform var(--transition-fast),
-      visibility var(--transition-fast);
-  }
 }
 
 .message-failed-banner {
@@ -667,39 +742,89 @@ html.capacitor-native .capacitor-safe-bottom {
   gap: 0.35rem;
 }
 
+/* Réactions posées en absolu sur le trait bas de la bulle : juste l'emoji,
+   sans bordure ni fond, pour ne pas modifier la taille du message. */
 .message-reactions {
-  margin-top: 0.35rem;
+  position: absolute;
+  bottom: -0.55rem;
+  z-index: 2;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
+  gap: 0.05rem;
+  line-height: 1;
+  pointer-events: auto;
+}
+
+/* Emojis sur le bord OPPOSÉ à l'heure/statut pour ne rien recouvrir :
+   messages reçus (heure à gauche) → emojis à droite ;
+   messages envoyés (heure à droite) → emojis à gauche. */
+.message-bubble--received .message-reactions {
+  right: 0.55rem;
+}
+
+.message-bubble--sent .message-reactions {
+  left: 0.55rem;
 }
 
 .message-reaction {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  border-radius: 9999px;
-  border: 1px solid var(--app-border);
-  background: var(--app-surface);
-  padding: 0.125rem 0.5rem;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--app-text);
-  box-shadow: var(--shadow-card);
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-size: 0.95rem;
+  line-height: 1;
   cursor: pointer;
-  transition:
-    border-color var(--transition-fast),
-    background var(--transition-fast);
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.25));
+  transition: transform var(--transition-fast);
+  transform-origin: center bottom;
+  animation: reaction-pop 0.34s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .message-reaction:hover {
-  border-color: color-mix(in srgb, var(--app-accent) 35%, var(--app-border));
+  transform: scale(1.25) rotate(-6deg);
+}
+
+.message-reaction:active {
+  transform: scale(0.9);
 }
 
 .message-reaction--own {
-  border-color: var(--app-accent);
-  background: var(--app-accent-soft);
-  color: var(--app-accent);
+  transform: scale(1.08);
+  animation: reaction-pop 0.34s cubic-bezier(0.34, 1.56, 0.64, 1), reaction-wiggle 0.4s ease 0.34s;
+}
+
+/* Apparition : petit pop avec léger rebond. */
+@keyframes reaction-pop {
+  0% {
+    transform: scale(0) translateY(6px);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.25) translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Petit dandinement quand c'est ma réaction. */
+@keyframes reaction-wiggle {
+  0%,
+  100% {
+    rotate: 0deg;
+  }
+  30% {
+    rotate: -12deg;
+  }
+  65% {
+    rotate: 10deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .message-reaction,
+  .message-reaction--own {
+    animation: none;
+  }
 }
 
 /* ─── Mobile ─────────────────────────────────────────────────────────────── */

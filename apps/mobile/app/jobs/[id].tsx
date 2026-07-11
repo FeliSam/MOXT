@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,13 +11,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import { Heart } from 'lucide-react-native';
 
 import { formatShortDate } from '@moxt/shared/utils/formatters.js';
 
 import { Button, Card, Input, PageHeader } from '@/components/ui';
 import { DetailFacts, DetailMetrics, DetailSection, TrustPanel } from '@/components/ui/DetailBlocks';
 import { supabase } from '@/services/supabase';
-import { useAppSelector } from '@/store/store';
+import { addFavorite, removeFavorite } from '@/store/favorites';
+import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, spacing, typography } from '@/theme/colors';
 
@@ -42,11 +45,24 @@ type JobDetail = {
 export default function JobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colors = useThemeColors();
+  const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);
+  const liked = useAppSelector((state) =>
+    state.favorites.items.some((f) => f.id === id && f.type === 'job'),
+  );
   const [job, setJob] = useState<JobDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
   const [message, setMessage] = useState('');
+
+  function toggleFavorite() {
+    if (!job) return;
+    if (liked) {
+      dispatch(removeFavorite({ id: job.id, type: 'job' }));
+    } else {
+      dispatch(addFavorite({ id: job.id, type: 'job', title: job.title, subtitle: job.company }));
+    }
+  }
 
   useEffect(() => {
     if (!supabase || !id) return;
@@ -103,6 +119,20 @@ export default function JobDetailScreen() {
 
   return (
     <SafeAreaView style={[sx.container, { backgroundColor: colors.background }]}>
+      {/* Favori flottant — coin haut droit */}
+      <Pressable
+        onPress={toggleFavorite}
+        hitSlop={10}
+        accessibilityLabel={liked ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+        style={[sx.favFloat, { backgroundColor: liked ? '#e11d48' : colors.surface }]}>
+        <Heart
+          size={20}
+          color={liked ? '#ffffff' : colors.textMuted}
+          fill={liked ? '#ffffff' : 'transparent'}
+          strokeWidth={2.2}
+        />
+      </Pressable>
+
       <ScrollView contentContainerStyle={{ paddingBottom: 40, gap: spacing.lg }}>
         {/* ── Web : PageHeader eyebrow = secteur, titre du poste ── */}
         <PageHeader
@@ -111,7 +141,6 @@ export default function JobDetailScreen() {
           description={[job.company, job.created_at ? `Publié le ${formatShortDate(job.created_at)}` : null]
             .filter(Boolean)
             .join(' · ') || undefined}
-          actions={<Button variant="secondary" onPress={() => router.back()}>← Retour</Button>}
         />
 
         <View style={{ paddingHorizontal: spacing.lg, gap: spacing.lg }}>
@@ -161,20 +190,31 @@ export default function JobDetailScreen() {
               loading={applying}
               disabled={applying}
               onPress={handleApply}>
-              Envoyer ma candidature
+              Soumettre ma candidature
             </Button>
-            <View style={sx.contactRow}>
-              {job.contact ? (
-                <Button variant="secondary" style={{ flex: 1 }} onPress={() => Linking.openURL(`tel:${job.contact}`)}>
-                  📞 Appeler
-                </Button>
-              ) : null}
-              {job.whatsapp ? (
-                <Button variant="teal" style={{ flex: 1 }} onPress={() => Linking.openURL(`https://wa.me/${job.whatsapp}`)}>
-                  WhatsApp
-                </Button>
-              ) : null}
-            </View>
+            <Text style={[sx.body, { color: colors.textMuted, marginTop: 4 }]}>
+              Vous serez recontacté par {job.company ? 'l’entreprise' : 'le recruteur'} après examen de votre candidature.
+            </Text>
+
+            {job.contact || job.whatsapp ? (
+              <>
+                <Text style={[sx.contactLabel, { color: colors.textFaint }]}>
+                  OU CONTACTER {job.company ? 'L’ENTREPRISE' : 'LE PARTICULIER'} DIRECTEMENT
+                </Text>
+                <View style={sx.contactRow}>
+                  {job.contact ? (
+                    <Button variant="secondary" style={{ flex: 1 }} onPress={() => Linking.openURL(`tel:${job.contact}`)}>
+                      📞 Appeler
+                    </Button>
+                  ) : null}
+                  {job.whatsapp ? (
+                    <Button variant="teal" style={{ flex: 1 }} onPress={() => Linking.openURL(`https://wa.me/${job.whatsapp}`)}>
+                      WhatsApp
+                    </Button>
+                  ) : null}
+                </View>
+              </>
+            ) : null}
           </Card>
 
           {/* ── Web : DetailSection "Informations sur le poste" ── */}
@@ -213,4 +253,21 @@ const sx = StyleSheet.create({
   h2: { fontSize: 15, fontWeight: '900' },
   body: { marginTop: 8, fontSize: 14, lineHeight: 22 },
   contactRow: { flexDirection: 'row', gap: spacing.md },
+  contactLabel: { marginTop: 6, fontSize: 10, fontWeight: '900', letterSpacing: 0.8 },
+  favFloat: {
+    position: 'absolute',
+    top: 8,
+    right: 16,
+    zIndex: 20,
+    width: 42,
+    height: 42,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#0f1714',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 4,
+  },
 });

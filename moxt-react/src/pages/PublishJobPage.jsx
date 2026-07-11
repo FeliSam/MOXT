@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { PosterUploader } from '../components/ui/PosterUploader'
+import { storageService } from '../services/storageService'
 import {
   FiArrowLeft,
   FiArrowRight,
@@ -134,6 +136,22 @@ export function PublishJobPage() {
   const [step, setStep] = useState(1)
   const [errors, setErrors] = useState({})
   const [shareModal, setShareModal] = useState(null)
+  const [photos, setPhotos] = useState([])
+  const [publishing, setPublishing] = useState(false)
+
+  function addPhotos(files) {
+    const added = Array.from(files)
+      .slice(0, 5 - photos.length)
+      .filter((file) => file.type.startsWith('image/'))
+      .map((file) => ({ file, url: URL.createObjectURL(file), name: file.name }))
+    setPhotos((current) => [...current, ...added])
+  }
+  function removePhoto(index) {
+    setPhotos((current) => {
+      URL.revokeObjectURL(current[index].url)
+      return current.filter((_, idx) => idx !== index)
+    })
+  }
   const { trigger: triggerBurst, node: burstNode } = useActionBurst()
   const [form, setForm] = useState({
     title: '',
@@ -184,7 +202,7 @@ export function PublishJobPage() {
     setStep((s) => Math.max(s - 1, 1))
   }
 
-  function publish() {
+  async function publish() {
     if (!validate(3)) return
     if (form.publisherType === 'business' && !eligibleBusiness) {
       dispatch(
@@ -198,15 +216,34 @@ export function PublishJobPage() {
       return
     }
     const publishAsBusiness = form.publisherType === 'business' && eligibleBusiness
+    setPublishing(true)
+    let images = []
+    try {
+      if (photos.length) {
+        images = await storageService.uploadJobImages(
+          user.id,
+          Date.now().toString(36),
+          photos.map((photo) => photo.file),
+        )
+      }
+    } catch (error) {
+      setPublishing(false)
+      dispatch(
+        addToast({ title: 'Images non envoyées', message: error.message || 'Réessayez.', tone: 'error' }),
+      )
+      return
+    }
     const action = dispatch(
       createJob({
         ...form,
+        images,
         salary: form.salary.toUpperCase().includes('RUB') ? form.salary : `${form.salary} RUB`,
         ownerId: user.id,
         publisherName: publishAsBusiness ? business.name : `${user.firstName} ${user.lastName}`,
         businessId: publishAsBusiness ? business.id : null,
       }),
     )
+    setPublishing(false)
     triggerBurst()
     dispatch(addToast({ title: 'Offre publiée', message: 'Votre offre est en ligne.', tone: 'success' }))
     setShareModal({ sourceId: action.payload.id, sourceData: action.payload })
@@ -466,6 +503,13 @@ export function PublishJobPage() {
               onChange={(e) => set('applicationDeadline', e.target.value)}
             />
           </div>
+          <PosterUploader
+            photos={photos}
+            onAdd={addPhotos}
+            onRemove={removePhoto}
+            label="Affiches de l’offre (optionnel)"
+            hint="Ajoutez une ou plusieurs images (logo, affiche, visuel). La première sert d’image principale."
+          />
           {business ? <BusinessPublishNotice business={business} className="mb-1" /> : null}
           <Select
             id="job-publisher"
@@ -537,7 +581,7 @@ export function PublishJobPage() {
         {step < STEPS.length ? (
           <Button icon={FiArrowRight} onClick={next}>Continuer</Button>
         ) : (
-          <Button icon={FiCheckCircle} onClick={publish}>Publier l'offre</Button>
+          <Button icon={FiCheckCircle} onClick={publish} loading={publishing} disabled={publishing}>Publier l'offre</Button>
         )}
       </div>
     </div>
