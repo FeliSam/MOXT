@@ -108,7 +108,7 @@ export function RegisterPage() {
   const [searchParams] = useSearchParams()
   const store = useStore()
   const authUser = useSelector((state) => state.auth.user)
-  const { language, setLanguage } = useLanguage()
+  const { language, setLanguage, t } = useLanguage()
   const { error, status } = useSelector((state) => state.auth)
   const fromGoogle = searchParams.get('from') === 'google'
   const [oauthCompletion, setOauthCompletion] = useState(false)
@@ -326,10 +326,10 @@ export function RegisterPage() {
       setResendCooldown(RESEND_COOLDOWN_SECONDS)
       dispatch(
         addToast({
-          title: 'Code renvoyé',
+          title: t('auth.register.codeResentTitle'),
           message: isEmail
-            ? `Un nouvel e-mail a été envoyé à ${pendingVerification.email}.`
-            : `Un nouveau SMS a été envoyé au ${pendingVerification.phone}.`,
+            ? t('auth.register.codeResentEmail', { email: pendingVerification.email })
+            : t('auth.register.codeResentSms', { phone: pendingVerification.phone }),
           tone: 'success',
         }),
       )
@@ -712,8 +712,8 @@ export function RegisterPage() {
                 <div className="grid gap-2 text-center">
                   <p className="text-sm text-[var(--app-text-muted)]">
                     {pendingVerification.method === 'email'
-                      ? "Vous n'avez pas reçu le code ?"
-                      : "Vous n'avez pas reçu le SMS ?"}
+                      ? t('auth.register.codeNotReceivedEmail')
+                      : t('auth.register.codeNotReceivedSms')}
                   </p>
                   <Button
                     type="button"
@@ -723,10 +723,10 @@ export function RegisterPage() {
                     onClick={resendVerificationCode}
                   >
                     {resendCooldown > 0
-                      ? `Renvoyer dans ${resendCooldown}s`
+                      ? t('auth.register.resendCooldown', { seconds: resendCooldown })
                       : pendingVerification.method === 'email'
-                        ? "Renvoyer l'e-mail"
-                        : 'Renvoyer le SMS'}
+                        ? t('auth.register.resendEmail')
+                        : t('auth.register.resendSms')}
                   </Button>
                 </div>
               </>

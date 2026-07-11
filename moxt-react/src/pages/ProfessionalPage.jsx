@@ -23,6 +23,8 @@ import {
   calculateBusinessRating,
   selectBusinessContent,
 } from '../features/businesses/businessSelectors'
+import { selectActiveBusinessForOwner } from '../features/businesses/businessVisibility'
+import { ActionsPanel } from './professional/ActionsPanel'
 import { DocumentsPanel } from './professional/DocumentsPanel'
 import { MembersPanel } from './professional/MembersPanel'
 import { Overview } from './professional/Overview'
@@ -42,6 +44,7 @@ const baseTabs = [
   { value: 'members', label: 'Membres' },
   { value: 'statistics', label: 'Statistiques' },
   { value: 'reviews', label: 'Avis' },
+  { value: 'actions', label: 'Actions' },
 ]
 
 const serviceContentMap = {
@@ -57,7 +60,7 @@ export function ProfessionalPage() {
   const [active, setActive] = useState('profile')
   const user = useSelector((state) => state.auth.user)
   const business = useSelector((state) =>
-    state.businesses.items.find((item) => item.ownerId === user.id),
+    selectActiveBusinessForOwner(state.businesses.items, user.id),
   )
   const content = useSelector((state) => selectBusinessContent(state, business))
   const members = useSelector((state) =>
@@ -193,6 +196,7 @@ export function ProfessionalPage() {
         />
       ) : null}
       {safeActive === 'reviews' ? <ReviewsPanel reviews={reviews} /> : null}
+      {safeActive === 'actions' ? <ActionsPanel business={business} /> : null}
     </div>
   )
 }

@@ -8,6 +8,7 @@ export function businessFromRemoteRow(row) {
   return {
     ...payload,
     ...base,
+    deletedByUserAt: base.deletedByUserAt || payload.deletedByUserAt || null,
     hours: base.hours || payload.hours || base.scheduleSummary || '',
   }
 }
@@ -48,6 +49,7 @@ export function businessToRemoteRow(business) {
     schedule: business.schedule || [],
     payload: {
       hours: business.hours?.trim() || business.scheduleSummary || '',
+      ...(business.deletedByUserAt ? { deletedByUserAt: business.deletedByUserAt } : {}),
     },
     rating: Number(business.rating) || 0,
     created_at: business.createdAt || new Date().toISOString(),

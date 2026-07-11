@@ -27,9 +27,8 @@ import { statusMeta } from '../config/statuses'
 import { FavoriteButton } from '../features/account/FavoriteButton'
 import { SubscribeButton } from '../features/account/SubscribeButton'
 import { ProfileQrShareButton } from '../features/share/ProfileQrShareButton'
-import {
-  selectBusinessContent,
-} from '../features/businesses/businessSelectors'
+import { selectBusinessContent } from '../features/businesses/businessSelectors'
+import { isBusinessVisibleToViewer } from '../features/businesses/businessVisibility'
 import { moderateBusiness } from '../features/businesses/businessSlice'
 import { ContactButton } from '../features/communications/ContactButton'
 import { selectBusinessReviewsBundle } from '../features/reviews/reviewSelectors'
@@ -54,20 +53,47 @@ export function BusinessDetailPage() {
     selectBusinessReviewsBundle(state, business),
   )
 
+  const isOwner = business?.ownerId === user.id
+  const isAdminViewer = ['admin', 'superadmin'].includes(user.role)
   const canPreview =
-    business?.ownerId === user.id ||
-    ['admin', 'superadmin'].includes(user.role) ||
-    ['verified', 'approved', 'active'].includes(business?.status)
+    business &&
+    isBusinessVisibleToViewer(business, user) &&
+    (isOwner || isAdminViewer || ['verified', 'approved', 'active'].includes(business?.status))
+
   if (!business || !canPreview) {
     return <EmptyState title="Entreprise introuvable ou en attente de validation" />
   }
 
   const activity = activityByValue(business.primaryActivity)
   const experience = businessExperienceForActivity(business.primaryActivity)
-  const isAdminViewer = ['admin', 'superadmin'].includes(user.role)
+  const hasTransfer = business.services?.includes('Transfert')
+  const ratingValue = rating.count ? rating.average : business.rating || 0
   const sections = serviceSections.filter(
     ({ key, service }) => business.services?.includes(service) || content[key]?.length,
   )
+
+  const metricItems = [
+    {
+      icon: FiStar,
+      label: `${rating.count} avis`,
+      value: `${ratingValue}/5`,
+    },
+    { icon: FiShield, label: 'Statut', value: statusMeta(business.status).label },
+    { icon: FiMapPin, label: 'Localisation', value: business.city },
+    {
+      icon: FiBriefcase,
+      label: 'Publications',
+      value: `${Object.values(content).reduce((total, items) => total + items.length, 0)}`,
+    },
+  ]
+
+  if (hasTransfer) {
+    metricItems.splice(1, 0, {
+      icon: FiBriefcase,
+      label: 'Frais annoncés',
+      value: `${business.feePercent}%`,
+    })
+  }
 
   return (
     <div className="grid gap-7">
@@ -76,55 +102,54 @@ export function BusinessDetailPage() {
         title={business.name}
         description={`${business.sector} · ${business.city}`}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <ReshareButton sourceType="business" sourceId={business.id} sourceData={business} />
+            {!isOwner ? (
+              <FavoriteButton
+                relatedId={business.id}
+                relatedType="business"
+                title={business.name}
+                path={`/businesses/${business.id}`}
+                entity={business}
+                className="!w-auto !shadow-none"
+              />
+            ) : null}
             <Link to="/businesses">
               <Button variant="secondary" icon={FiArrowLeft}>Annuaire</Button>
             </Link>
           </div>
         }
       />
-      <DetailMetrics
-        items={[
-          {
-            icon: FiStar,
-            label: 'Évaluation',
-            value: `${rating.count ? rating.average : business.rating || 0}/5`,
-          },
-          { icon: FiShield, label: 'Statut', value: statusMeta(business.status).label },
-          { icon: FiMapPin, label: 'Localisation', value: business.city },
-          {
-            icon: FiBriefcase,
-            label: 'Publications',
-            value: `${Object.values(content).reduce((total, items) => total + items.length, 0)}`,
-          },
-        ]}
-      />
-      <Card className="grid gap-6 lg:grid-cols-[1fr_auto]">
-        <div>
+      <DetailMetrics items={metricItems} />
+      <Card className="grid gap-6">
+        <div className="relative">
           {business.bannerUrl ? (
             <img
               src={business.bannerUrl}
               alt={`Bannière ${business.name}`}
-              className="mb-5 h-44 w-full rounded-[1.8rem] object-cover"
+              className="h-44 w-full rounded-[1.8rem] object-cover"
               loading="lazy"
               decoding="async"
             />
-          ) : null}
-          <div className="mb-4 flex items-start justify-between gap-3">
+          ) : (
+            <div className="h-44 w-full rounded-[1.8rem] bg-gradient-to-br from-brand-600 to-cyan-600" />
+          )}
+          <div className="absolute -bottom-8 left-5 z-10">
             {business.logoUrl ? (
               <img
                 src={business.logoUrl}
                 alt={`${business.name} logo`}
-                className="size-16 rounded-3xl object-cover shadow-md"
+                className="size-16 rounded-3xl border-4 border-[var(--app-surface)] object-cover shadow-md"
                 loading="lazy"
                 decoding="async"
               />
             ) : (
-              <span className="grid size-16 place-items-center rounded-3xl bg-[var(--app-accent-soft)] text-xl font-black text-[var(--app-accent)]">
+              <span className="grid size-16 place-items-center rounded-3xl border-4 border-[var(--app-surface)] bg-[var(--app-accent-soft)] text-xl font-black text-[var(--app-accent)] shadow-md">
                 {business.name.slice(0, 2).toUpperCase()}
               </span>
             )}
+          </div>
+          <div className="absolute right-4 top-4">
             <ProfileQrShareButton
               type="business"
               targetPath={`/businesses/${business.id}/publications/listings`}
@@ -136,23 +161,26 @@ export function BusinessDetailPage() {
               logoUrl={business.logoUrl}
             />
           </div>
+        </div>
+
+        <div className="grid gap-4 pt-8">
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone={statusMeta(business.status).tone}>{statusMeta(business.status).label}</Badge>
             {['verified', 'approved', 'active'].includes(business.status) ? <VerifiedBadge /> : null}
           </div>
-          <p className="mt-4 max-w-3xl leading-7 text-[var(--app-text-muted)]">
+          <p className="max-w-3xl whitespace-pre-line leading-7 text-[var(--app-text-muted)]">
             {business.description}
           </p>
-          <div className="mt-4 rounded-[1.5rem] bg-[var(--app-surface-muted)] p-4 text-sm leading-6 text-[var(--app-text-muted)]">
+          <div className="rounded-[1.5rem] bg-[var(--app-surface-muted)] p-4 text-sm leading-6 text-[var(--app-text-muted)]">
             <strong className="block text-[var(--app-text)]">
               {activity?.label || business.sector}
             </strong>
             <span>{experience.promise}</span>
           </div>
-          <p className="mt-4 flex items-center gap-2 text-sm">
+          <p className="flex items-center gap-2 text-sm">
             <FiMapPin className="text-brand-600" /> {business.city} · {business.country}
           </p>
-          <div className="mt-5 flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3">
             <ContactButton
               ownerId={business.ownerId}
               relatedEntity={business}
@@ -161,7 +189,7 @@ export function BusinessDetailPage() {
               relatedTitle={business.name}
               relatedType="business"
             />
-            {business.ownerId !== user.id ? (
+            {!isOwner ? (
               <SubscribeButton
                 publisherType="business"
                 publisherId={business.id}
@@ -169,21 +197,7 @@ export function BusinessDetailPage() {
                 publisherPath={`/businesses/${business.id}`}
               />
             ) : null}
-            <FavoriteButton
-              relatedId={business.id}
-              relatedType="business"
-              title={business.name}
-              path={`/businesses/${business.id}`}
-              entity={business}
-            />
           </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <Stat
-            value={`${rating.count ? rating.average : business.rating || 0}/5`}
-            label={`${rating.count} avis`}
-          />
-          <Stat value={`${business.feePercent}%`} label="Frais" />
         </div>
       </Card>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -209,8 +223,15 @@ export function BusinessDetailPage() {
               { label: 'Pays', value: business.country },
               { label: 'Ville', value: business.city },
               { label: 'Téléphone', value: business.phone },
-              { label: 'Frais annoncés', value: `${business.feePercent}%` },
-              { label: 'Délai moyen', value: business.averageDelay },
+              ...(hasTransfer
+                ? [
+                    { label: 'Frais annoncés', value: `${business.feePercent}%` },
+                    { label: 'Délai moyen', value: business.averageDelay },
+                  ]
+                : []),
+              ...(!hasTransfer && business.averageDelay
+                ? [{ label: 'Délai moyen', value: business.averageDelay }]
+                : []),
             ]}
           />
           <div className="mt-5 flex flex-wrap gap-2">
@@ -322,15 +343,6 @@ export function BusinessDetailPage() {
         reviews={reviews}
         currentUser={user}
       />
-    </div>
-  )
-}
-
-function Stat({ label, value }) {
-  return (
-    <div className="rounded-2xl bg-[var(--app-surface-muted)] p-4 text-center">
-      <strong className="block text-xl">{value}</strong>
-      <span className="text-xs text-[var(--app-text-muted)]">{label}</span>
     </div>
   )
 }

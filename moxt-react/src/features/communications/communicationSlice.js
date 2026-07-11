@@ -19,6 +19,32 @@ const PENDING_MESSAGE_MS = 15000
 const PERSISTED_MESSAGES_LIMIT = 200
 const MESSAGE_FETCH_LIMIT = 200
 const MESSAGE_INCREMENTAL_LIMIT = 100
+const MESSAGE_OLDER_LIMIT = 100
+
+export function mergeMessageBatch(existingMessages, remoteRows) {
+  const messagesById = new Map()
+  for (const message of (existingMessages || []).map(normalizeMessage)) {
+    messagesById.set(message.id, message)
+  }
+  for (const row of remoteRows || []) {
+    const message = normalizeMessage(fromRow(row))
+    messagesById.set(message.id, message)
+  }
+  return [...messagesById.values()].sort(
+    (left, right) => new Date(left.createdAt) - new Date(right.createdAt),
+  )
+}
+
+export function shouldSkipMessageReload({ messagesLoaded, expectedCount, loadedCount }) {
+  return Boolean(messagesLoaded && expectedCount > 0 && loadedCount >= expectedCount)
+}
+
+export function resolveHasOlderMessages({ messages, messageCount, fetchedCount, fetchLimit }) {
+  const loaded = messages?.length ?? 0
+  const expected = Number(messageCount) || 0
+  if (expected > loaded) return true
+  return fetchedCount >= fetchLimit
+}
 
 const conversationsStorage = createLocalStorage('moxt-conversations-v1')
 const supportStorage = createLocalStorage('moxt-support-v1')
@@ -31,20 +57,6 @@ function hydrateStoredConversations() {
       messages: Array.isArray(conv.messages) ? conv.messages.map(normalizeMessage) : [],
       messagesLoaded: conv.messagesLoaded ?? (conv.messages?.length > 0),
     }),
-  )
-}
-
-function mergeMessageBatch(existingMessages, remoteRows) {
-  const messagesById = new Map()
-  for (const message of (existingMessages || []).map(normalizeMessage)) {
-    messagesById.set(message.id, message)
-  }
-  for (const row of remoteRows || []) {
-    const message = normalizeMessage(fromRow(row))
-    messagesById.set(message.id, message)
-  }
-  return [...messagesById.values()].sort(
-    (left, right) => new Date(left.createdAt) - new Date(right.createdAt),
   )
 }
 
@@ -138,6 +150,8 @@ export function normalizeConversation(conv) {
     messages: Array.isArray(conv.messages) ? conv.messages : [],
     messagesLoaded: conv.messagesLoaded ?? false,
     messagesLoading: conv.messagesLoading ?? false,
+    messagesLoadingOlder: conv.messagesLoadingOlder ?? false,
+    hasOlderMessages: conv.hasOlderMessages ?? false,
     messageCount: Math.max(
       Number(conv.messageCount) || 0,
       Array.isArray(conv.messages) ? conv.messages.length : 0,
@@ -208,6 +222,7 @@ export function mergeConversations(localConversations, remoteConversations) {
         messagesLoaded:
           localConv.messagesLoaded ?? (localConv.messages?.length ?? 0) > 0,
         messagesLoading: localConv.messagesLoading ?? false,
+        hasOlderMessages: localConv.hasOlderMessages ?? remoteConv.hasOlderMessages ?? false,
         drafts: localConv.drafts ?? remoteConv.drafts,
         unreadBy: mergeUnreadBy(remoteConv.unreadBy, localConv.unreadBy),
         archivedBy: localConv.archivedBy?.length ? localConv.archivedBy : remoteConv.archivedBy,
@@ -243,6 +258,7 @@ export function mergeConversations(localConversations, remoteConversations) {
         (newer.messages?.length ?? 0) > 0 ||
         (older.messages?.length ?? 0) > 0,
       messagesLoading: newer.messagesLoading || older.messagesLoading,
+      hasOlderMessages: newer.hasOlderMessages || older.hasOlderMessages,
       messageCount: Math.max(newer.messageCount || 0, older.messageCount || 0),
       unreadBy: mergeUnreadBy(newer.unreadBy, older.unreadBy),
       drafts: { ...older.drafts, ...newer.drafts },
@@ -812,6 +828,16 @@ const communicationSlice = createSlice({
       )
       conversation.messagesLoaded = true
       conversation.messagesLoading = false
+      if (action.payload.hasOlderMessages !== undefined) {
+        conversation.hasOlderMessages = action.payload.hasOlderMessages
+      } else {
+        conversation.hasOlderMessages = resolveHasOlderMessages({
+          messages: conversation.messages,
+          messageCount: conversation.messageCount,
+          fetchedCount: conversation.messages.length,
+          fetchLimit: MESSAGE_FETCH_LIMIT,
+        })
+      }
     },
   },
   extraReducers: (builder) => {
@@ -832,6 +858,20 @@ const communicationSlice = createSlice({
           conversation.messagesLoading = false
           conversation.messagesLoaded = false
         }
+      })
+      .addCase('communications/loadOlderConversationMessages/pending', (state, action) => {
+        const conversation = state.conversations.find((c) => c.id === action.meta.arg)
+        if (conversation) conversation.messagesLoadingOlder = true
+      })
+      .addCase('communications/loadOlderConversationMessages/fulfilled', (state, action) => {
+        const conversation = state.conversations.find(
+          (c) => c.id === action.payload.conversationId,
+        )
+        if (conversation) conversation.messagesLoadingOlder = false
+      })
+      .addCase('communications/loadOlderConversationMessages/rejected', (state, action) => {
+        const conversation = state.conversations.find((c) => c.id === action.meta.arg)
+        if (conversation) conversation.messagesLoadingOlder = false
       })
       .addCase('communications/loadParticipantProfiles/fulfilled', (state, action) => {
         const profiles = action.payload || {}
@@ -881,7 +921,7 @@ export const loadConversationMessages = createAsyncThunk(
     const expectedCount = Number(syncedConversation?.messageCount ?? localConversation?.messageCount) || 0
     const loadedCount = existingMessages.length
 
-    if (messagesLoaded && expectedCount > 0 && loadedCount >= expectedCount) {
+    if (shouldSkipMessageReload({ messagesLoaded, expectedCount, loadedCount })) {
       return { conversationId: canonicalId, count: loadedCount, skipped: true }
     }
 
@@ -903,6 +943,12 @@ export const loadConversationMessages = createAsyncThunk(
           setConversationMessages({
             conversationId: canonicalId,
             messages,
+            hasOlderMessages: resolveHasOlderMessages({
+              messages,
+              messageCount: expectedCount,
+              fetchedCount: data.length,
+              fetchLimit: MESSAGE_INCREMENTAL_LIMIT,
+            }),
           }),
         )
         return { conversationId: canonicalId, count: messages.length, incremental: true }
@@ -917,21 +963,79 @@ export const loadConversationMessages = createAsyncThunk(
       .from('messages')
       .select('*')
       .in('conversation_id', conversationIds)
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false })
       .limit(MESSAGE_FETCH_LIMIT)
     if (error) throw error
 
+    const remoteRows = [...(data || [])].reverse()
     const messages = canIncremental
-      ? mergeMessageBatch(existingMessages, data || [])
-      : mergeMessageBatch([], data || [])
+      ? mergeMessageBatch(existingMessages, remoteRows)
+      : mergeMessageBatch([], remoteRows)
 
     dispatch(
       setConversationMessages({
         conversationId: canonicalId,
         messages,
+        hasOlderMessages: resolveHasOlderMessages({
+          messages,
+          messageCount: expectedCount,
+          fetchedCount: remoteRows.length,
+          fetchLimit: MESSAGE_FETCH_LIMIT,
+        }),
       }),
     )
     return { conversationId: canonicalId, count: messages.length }
+  },
+)
+
+export const loadOlderConversationMessages = createAsyncThunk(
+  'communications/loadOlderConversationMessages',
+  async (conversationId, { dispatch, getState }) => {
+    const localConversation = getState().communications.conversations.find(
+      (item) => item.id === conversationId,
+    )
+    const { canonicalId, conversationIds } = await resolveMessageLoadScope(
+      conversationId,
+      localConversation,
+    )
+
+    const syncedConversation = getState().communications.conversations.find(
+      (item) => item.id === canonicalId,
+    )
+    const existingMessages = syncedConversation?.messages || localConversation?.messages || []
+    const firstMessageAt = existingMessages[0]?.createdAt
+    if (!firstMessageAt) {
+      return { conversationId: canonicalId, count: existingMessages.length, hasOlder: false }
+    }
+
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .in('conversation_id', conversationIds)
+      .lt('created_at', firstMessageAt)
+      .order('created_at', { ascending: false })
+      .limit(MESSAGE_OLDER_LIMIT)
+    if (error) throw error
+
+    const olderRows = [...(data || [])].reverse()
+    const messages = mergeMessageBatch(existingMessages, olderRows)
+    const expectedCount =
+      Number(syncedConversation?.messageCount ?? localConversation?.messageCount) || 0
+    const hasOlder = resolveHasOlderMessages({
+      messages,
+      messageCount: expectedCount,
+      fetchedCount: olderRows.length,
+      fetchLimit: MESSAGE_OLDER_LIMIT,
+    })
+
+    dispatch(
+      setConversationMessages({
+        conversationId: canonicalId,
+        messages,
+        hasOlderMessages: hasOlder,
+      }),
+    )
+    return { conversationId: canonicalId, count: messages.length, hasOlder }
   },
 )
 

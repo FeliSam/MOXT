@@ -26,6 +26,7 @@ import { CitySelector } from '../components/ui/CitySelector'
 import { Input } from '../components/ui/Input'
 import { EVENT_CATEGORIES } from '../config/options'
 import { createEvent } from '../features/events/eventSlice'
+import { useScrollToTopOnStep } from '../hooks/useScrollToTopOnStep'
 import { isBusinessPublishReady } from '../features/businesses/businessPublishUtils'
 import { addToast } from '../features/ui/uiSlice'
 
@@ -146,6 +147,7 @@ export function PublishEventPage() {
   )
   const canPublishAsBusiness = isBusinessPublishReady(business)
   const [step, setStep] = useState(1)
+  useScrollToTopOnStep(step)
   const [errors, setErrors] = useState({})
   const [shareModal, setShareModal] = useState(null)
   const [photos, setPhotos] = useState([])

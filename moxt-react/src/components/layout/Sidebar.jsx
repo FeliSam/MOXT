@@ -138,7 +138,7 @@ export function Sidebar({ open }) {
           className="sidebar-mobile-nav scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-3 py-4 lg:overflow-visible"
           aria-label="Navigation principale"
         >
-          <div className="grid gap-1">
+          <div className="grid gap-1 lg:gap-2">
             {primaryItems.map((item) => (
               <SidebarLink
                 key={item.path}
@@ -153,19 +153,19 @@ export function Sidebar({ open }) {
             ))}
           </div>
 
-          {/* "Tous les services" — desktop, libellé flottant au survol du rail */}
+          {/* "Services supplémentaires" — desktop, libellé flottant au survol du rail */}
           <button
             type="button"
             onClick={() => setMoreOpen(true)}
             onMouseEnter={() => setRailHover('more')}
             onFocus={() => setRailHover('more')}
-            className={`sidebar-rail-item group/more relative mt-2 hidden w-full min-h-11 items-center justify-center rounded-xl px-2 text-left text-sm font-bold text-[var(--app-text-muted)] transition hover:text-[var(--app-text)] lg:flex ${proximityClass(railProximity(hoveredRailKey, 'more'))}`}
+            className={`sidebar-rail-item group/more relative mt-2 hidden w-full min-h-11 items-center justify-center rounded-xl px-2 text-left text-sm font-bold text-[var(--app-text-muted)] transition hover:text-[var(--app-text)] lg:mt-3 lg:flex ${proximityClass(railProximity(hoveredRailKey, 'more'))}`}
           >
             <span className="sidebar-nav-icon grid size-9 shrink-0 place-items-center rounded-[0.7rem] bg-[var(--app-surface-muted)] text-brand-700 dark:text-brand-300">
               <FiGrid className="text-base" />
             </span>
             <span className="sidebar-rail-label sidebar-rail-label--row">
-              Tous les services
+              {translateLabel('Services supplémentaires')}
               <FiChevronRight className="sidebar-rail-label-chevron" />
             </span>
           </button>
@@ -216,22 +216,24 @@ export function Sidebar({ open }) {
                 <span className="text-[10px] text-[var(--app-text-faint)]">{role || 'Membre'}</span>
               )}
             </NavLink>
-            <NavLink
-              to="/settings"
-              onClick={() => dispatch(closeSidebar())}
-              className="sidebar-rail-label sidebar-rail-label--action sidebar-rail-label--interactive"
-            >
-              <FiSettings className="text-sm" />
-              Reglages
-            </NavLink>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="sidebar-rail-label sidebar-rail-label--action sidebar-rail-label--danger sidebar-rail-label--interactive"
-            >
-              <FiLogOut className="text-sm" />
-              Quitter
-            </button>
+            <div className="sidebar-footer-flyout-actions">
+              <NavLink
+                to="/settings"
+                onClick={() => dispatch(closeSidebar())}
+                className="sidebar-rail-label sidebar-rail-label--action sidebar-rail-label--interactive"
+              >
+                <FiSettings className="text-sm" />
+                Reglages
+              </NavLink>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="sidebar-rail-label sidebar-rail-label--action sidebar-rail-label--danger sidebar-rail-label--interactive"
+              >
+                <FiLogOut className="text-sm" />
+                Quitter
+              </button>
+            </div>
           </div>
         </div>
 
@@ -246,7 +248,7 @@ export function Sidebar({ open }) {
         </button>
       </aside>
 
-      {/* ── Panel "Tous les services" desktop ── */}
+      {/* ── Panel "Services supplémentaires" desktop ── */}
       {moreOpen ? (
         <div className="fixed inset-0 z-50 hidden lg:block">
           <button
@@ -263,7 +265,7 @@ export function Sidebar({ open }) {
                     MOXT
                   </p>
                   <h2 className="mt-1 font-display text-xl font-extrabold tracking-tight">
-                    Tous les services
+                    {translateLabel('Services supplémentaires')}
                   </h2>
                 </div>
                 <button

@@ -19,6 +19,7 @@ import {
   editMessage,
   ensureConversationFromRemote,
   loadConversationMessages,
+  loadOlderConversationMessages,
   loadParticipantProfiles,
   markConversationRead,
   reactToMessage,
@@ -561,6 +562,9 @@ export function MessagesPage() {
               <ConversationPanel
                 active={active}
                 messagesLoading={Boolean(active.messagesLoading)}
+                messagesLoadingOlder={Boolean(active.messagesLoadingOlder)}
+                hasOlderMessages={Boolean(active.hasOlderMessages)}
+                onLoadOlder={() => dispatch(loadOlderConversationMessages(active.id))}
                 attachment={attachment}
                 blocked={blocked}
                 formik={formik}

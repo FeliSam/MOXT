@@ -196,13 +196,18 @@ export function createSimulatedBaseQuery() {
 
       if (path === '/exchangers') {
         const items = state.businesses.items.filter(
-          (i) => i.services?.includes('Transfert') && ['verified', 'approved', 'active'].includes(i.status),
+          (i) =>
+            !i.deletedByUserAt &&
+            i.services?.includes('Transfert') &&
+            ['verified', 'approved', 'active'].includes(i.status),
         )
         return { data: paginate(items, params) }
       }
 
       if (path === '/businesses') {
-        const items = state.businesses.items.filter((i) => ['verified', 'approved', 'active'].includes(i.status))
+        const items = state.businesses.items.filter(
+          (i) => !i.deletedByUserAt && ['verified', 'approved', 'active'].includes(i.status),
+        )
         return { data: paginate(items, params) }
       }
 

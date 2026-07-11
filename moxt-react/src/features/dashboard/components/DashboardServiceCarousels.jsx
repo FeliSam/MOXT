@@ -15,8 +15,11 @@ import {
 import { Dashboard3DIcon } from './Dashboard3DIcon'
 import { DashboardSectionHeading } from './DashboardSectionHeading'
 import { ScrollArrows } from './ScrollArrows'
+import { useAutoHorizontalScroll } from '../../../hooks/useAutoHorizontalScroll'
 
 export function DashboardServiceCarousels({ coreServicesRef, trustHighlightsRef }) {
+  useAutoHorizontalScroll(coreServicesRef, { loop: true })
+  const essentialServices = [...coreServices, ...coreServices]
   return (
     <>
       <div className="relative min-w-0 pb-3">
@@ -41,15 +44,19 @@ export function DashboardServiceCarousels({ coreServicesRef, trustHighlightsRef 
       </RevealOnScroll>
       <div className="relative min-w-0 pb-3">
         <div ref={coreServicesRef} className={`${dashboardServicesTrackClass} min-w-0`}>
-          {coreServices.map(({ description, image, imageLogo, path, tag, title }, index) => (
-            <RevealListItem key={title} index={index} className={dashboardServiceItemClass}>
-              <Link className="block h-full" to={path}>
+          {essentialServices.map(({ description, image, imageLogo, path, tag, title }, index) => (
+            <RevealListItem
+              key={`${title}-${index}`}
+              index={index % coreServices.length}
+              className={dashboardServiceItemClass}
+            >
+              <Link className="block h-full" to={path} tabIndex={index < coreServices.length ? undefined : -1} aria-hidden={index >= coreServices.length}>
                 <Card className="group flex h-full flex-col overflow-hidden p-3 transition duration-300 hover:-translate-y-1 hover:shadow-xl">
                   <Dashboard3DIcon className="mx-auto -mb-1" imageLogo={imageLogo} size="lg" src={image} />
                   <h3 className="mt-3 font-black tracking-tight">{title}</h3>
                   <p className="mt-2 flex-1 text-xs leading-5 text-[var(--app-text-muted)]">{description}</p>
                   <div className="mt-4">
-                    <Badge tone={serviceTones[index]}>{tag}</Badge>
+                    <Badge tone={serviceTones[index % coreServices.length]}>{tag}</Badge>
                   </div>
                 </Card>
               </Link>

@@ -161,6 +161,10 @@ const EN = {
   'Chargement…': 'Loading…',
   'Vérification réussie': 'Verification successful',
   'Bienvenue sur MOXT': 'Welcome to MOXT',
+  'Un nouvel e-mail a été envoyé à {email}.': 'A new email was sent to {email}.',
+  'Un nouveau SMS a été envoyé au {phone}.': 'A new SMS was sent to {phone}.',
+  'Synchronisation…': 'Syncing…',
+  'Charger les messages précédents': 'Load earlier messages',
 }
 
 const RU = {
@@ -318,6 +322,10 @@ const RU = {
   'Chargement…': 'Загрузка…',
   'Vérification réussie': 'Проверка успешна',
   'Bienvenue sur MOXT': 'Добро пожаловать в MOXT',
+  'Un nouvel e-mail a été envoyé à {email}.': 'Новое письмо отправлено на {email}.',
+  'Un nouveau SMS a été envoyé au {phone}.': 'Новое SMS отправлено на {phone}.',
+  'Synchronisation…': 'Синхронизация…',
+  'Charger les messages précédents': 'Загрузить предыдущие сообщения',
 }
 
 const PT = {
@@ -475,6 +483,10 @@ const PT = {
   'Chargement…': 'A carregar…',
   'Vérification réussie': 'Verificação bem-sucedida',
   'Bienvenue sur MOXT': 'Bem-vindo ao MOXT',
+  'Un nouvel e-mail a été envoyé à {email}.': 'Um novo e-mail foi enviado para {email}.',
+  'Un nouveau SMS a été envoyé au {phone}.': 'Um novo SMS foi enviado para {phone}.',
+  'Synchronisation…': 'A sincronizar…',
+  'Charger les messages précédents': 'Carregar mensagens anteriores',
 }
 
 export const PUBLISH_AUTH_CATALOGS = { en: EN, ru: RU, pt: PT }

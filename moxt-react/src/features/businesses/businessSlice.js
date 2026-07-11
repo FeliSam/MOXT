@@ -83,11 +83,21 @@ const businessSlice = createSlice({
             services: values.services || [],
             status: values.status || 'pending_review',
             rating: values.rating || 0,
+            deletedByUserAt: null,
             createdAt: values.createdAt || now,
             updatedAt: now,
           },
         }
       },
+    },
+    deleteBusinessByUser(state, action) {
+      const business = state.items.find(
+        (item) => item.id === action.payload.id && item.ownerId === action.payload.ownerId,
+      )
+      if (!business) return
+      const now = new Date().toISOString()
+      business.deletedByUserAt = now
+      business.updatedAt = now
     },
     moderateBusiness(state, action) {
       const business = state.items.find((item) => item.id === action.payload.id)
@@ -207,6 +217,7 @@ export const {
   addBusinessDocument,
   addBusinessMember,
   createBusinessRequest,
+  deleteBusinessByUser,
   moderateBusiness,
   removeBusinessMember,
   saveBusiness,

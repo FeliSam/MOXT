@@ -29,6 +29,7 @@ import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
 import { constrainRussianPhone, phonePlaceholder } from '../config/phone'
 import { useGeographyOptions } from '../hooks/useGeographyOptions'
+import { useScrollToTopOnStep } from '../hooks/useScrollToTopOnStep'
 import { createParcel } from '../features/parcels/parcelSlice'
 import { BusinessPublishNotice } from '../features/businesses/BusinessPublishNotice'
 import {
@@ -121,6 +122,7 @@ export function PublishParcelPage() {
   const isInRussia = user.country === 'RU'
   const [direction, setDirection] = useState(isInRussia ? 'RU_TO_AFRICA' : 'AFRICA_TO_RU')
   const [step, setStep] = useState(1)
+  useScrollToTopOnStep(step)
   const [shareModal, setShareModal] = useState(null)
   const [errors, setErrors] = useState({})
   const { trigger: triggerBurst, node: burstNode } = useActionBurst()

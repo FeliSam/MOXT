@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import reducer, {
   addBusinessMember,
+  deleteBusinessByUser,
   moderateBusiness,
   saveBusiness,
   updateBusinessTransferAccounts,
@@ -132,5 +133,23 @@ describe('businessSlice', () => {
       phone: '+2290190000000',
       active: true,
     })
+  })
+
+  it('masque une entreprise supprimee par son proprietaire', () => {
+    const state = reducer(
+      {
+        items: [
+          {
+            id: 'b1',
+            ownerId: 'u1',
+            name: 'Ancienne entreprise',
+            status: 'verified',
+          },
+        ],
+      },
+      deleteBusinessByUser({ id: 'b1', ownerId: 'u1' }),
+    )
+
+    expect(state.items[0].deletedByUserAt).toBeTruthy()
   })
 })

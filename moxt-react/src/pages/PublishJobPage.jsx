@@ -33,6 +33,7 @@ import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
 import { JOB_CONTRACTS } from '../config/options'
 import { createJob } from '../features/jobs/jobSlice'
+import { useScrollToTopOnStep } from '../hooks/useScrollToTopOnStep'
 import { BusinessPublishNotice } from '../features/businesses/BusinessPublishNotice'
 import { isBusinessPublishReady } from '../features/businesses/businessPublishUtils'
 import { addToast } from '../features/ui/uiSlice'
@@ -134,6 +135,7 @@ export function PublishJobPage() {
     isBusinessPublishReady(business) && business?.services?.includes('Jobs')
 
   const [step, setStep] = useState(1)
+  useScrollToTopOnStep(step)
   const [errors, setErrors] = useState({})
   const [shareModal, setShareModal] = useState(null)
   const [photos, setPhotos] = useState([])

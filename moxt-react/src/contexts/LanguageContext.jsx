@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  ENGLISH_PHRASES,
   SOURCE_LANGUAGE,
   SUPPORTED_LANGUAGES,
   normalizeStoredLanguage,
@@ -10,31 +9,6 @@ import { translate } from '../i18n/translate'
 import { LanguageContext } from './language-context'
 
 const STORAGE_KEY = 'moxt-language'
-
-const NAV_EXTRAS = {
-  en: {
-    Aide: 'Help',
-    'Centre de contrôle': 'Control center',
-    Communauté: 'Community',
-    Confiance: 'Trust',
-    'Couverture fonctionnelle': 'Feature coverage',
-    'Echanges P2P': 'P2P exchange',
-    'Gérer les demandes': 'Manage requests',
-    'Gérer les demandes de job': 'Manage job applications',
-    'Gérer les inscriptions': 'Manage registrations',
-    Quitter: 'Sign out',
-    Reglages: 'Settings',
-    Réglages: 'Settings',
-    'Tous les services': 'All services',
-    'Plus de services': 'More services',
-    'Fermer les services': 'Close services',
-    'Compte et session': 'Account and session',
-  },
-}
-
-const LABELS = {
-  en: { ...ENGLISH_PHRASES, ...NAV_EXTRAS.en },
-}
 
 function initialLanguage() {
   return normalizeStoredLanguage(localStorage.getItem(STORAGE_KEY))
@@ -144,9 +118,7 @@ export function LanguageProvider({ children }) {
       setLanguage: (next) => setLanguage(normalizeStoredLanguage(next)),
       t: (key, vars) => translate(language, key, vars),
       translateLabel: (label) =>
-        language === SOURCE_LANGUAGE
-          ? label
-          : LABELS[language]?.[label] || translateUiText(label, language),
+        language === SOURCE_LANGUAGE ? label : translateUiText(label, language),
     }),
     [language],
   )

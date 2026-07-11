@@ -2,32 +2,8 @@ import { useMemo, useState } from 'react'
 import { FiBriefcase, FiCheck, FiCopy, FiMapPin, FiShare2 } from 'react-icons/fi'
 import { VerifiedBadge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
+import { useLanguage } from '../../contexts/useLanguage'
 import { makeQrCodeUrl } from '../../utils/qrCode'
-
-const THEMES = {
-  invite: {
-    gradient:
-      'linear-gradient(165deg, #0f766e 0%, #0d9488 38%, #155e75 72%, #1e293b 100%)',
-    hint: 'Scannez pour rejoindre MOXT',
-    shareTitle: 'Rejoignez MOXT',
-    shareText:
-      'Transferts, colis et services entre l’Afrique et la Russie. Rejoignez-moi sur MOXT :',
-  },
-  profile: {
-    gradient:
-      'linear-gradient(165deg, #0f766e 0%, #0d9488 42%, #134e4a 78%, #0f172a 100%)',
-    hint: 'Scannez pour voir mes publications',
-    shareTitle: null,
-    shareText: null,
-  },
-  business: {
-    gradient:
-      'linear-gradient(165deg, #020617 0%, #0f172a 32%, #1e293b 58%, #0f766e 100%)',
-    hint: 'Scannez pour découvrir cette entreprise',
-    shareTitle: null,
-    shareText: null,
-  },
-}
 
 function initialsFromTitle(title = '') {
   const parts = title.trim().split(/\s+/).filter(Boolean)
@@ -51,16 +27,23 @@ export function QrSharePanel({
   showActions = true,
   className = '',
 }) {
-  const theme = THEMES[variant] || THEMES.profile
+  const { t } = useLanguage()
   const [copied, setCopied] = useState(false)
   const qrUrl = useMemo(() => makeQrCodeUrl(shareUrl, qrSize), [shareUrl, qrSize])
-  const resolvedShareTitle = shareTitle || theme.shareTitle || `${title} sur MOXT`
+
+  const hint = t(`share.hints.${variant}`)
+  const resolvedShareTitle =
+    shareTitle ||
+    (variant === 'invite'
+      ? t('share.shareTitles.invite')
+      : t('share.shareTitles.onMoxt', { name: title }))
   const resolvedShareText =
     shareText ||
-    theme.shareText ||
-    (variant === 'business'
-      ? `Découvrez ${title} sur MOXT.`
-      : `Consultez les publications de ${title} sur MOXT.`)
+    (variant === 'invite'
+      ? t('share.shareTexts.invite')
+      : variant === 'business'
+        ? t('share.shareTexts.business', { name: title })
+        : t('share.shareTexts.profile', { name: title }))
 
   async function copyLink() {
     try {
@@ -91,7 +74,14 @@ export function QrSharePanel({
   return (
     <div
       className={`relative overflow-hidden rounded-[2rem] text-white shadow-[0_24px_60px_-20px_rgba(15,118,110,0.55)] ${className}`}
-      style={{ background: theme.gradient }}
+      style={{
+        background:
+          variant === 'invite'
+            ? 'linear-gradient(165deg, #0f766e 0%, #0d9488 38%, #155e75 72%, #1e293b 100%)'
+            : variant === 'business'
+              ? 'linear-gradient(165deg, #020617 0%, #0f172a 32%, #1e293b 58%, #0f766e 100%)'
+              : 'linear-gradient(165deg, #0f766e 0%, #0d9488 42%, #134e4a 78%, #0f172a 100%)',
+      }}
     >
       <div
         aria-hidden="true"
@@ -153,7 +143,7 @@ export function QrSharePanel({
           />
         </div>
 
-        <p className="mt-4 text-xs text-white/55">{theme.hint}</p>
+        <p className="mt-4 text-xs text-white/55">{hint}</p>
 
         {showActions ? (
           <div className="mt-5 w-full max-w-md">
@@ -175,7 +165,7 @@ export function QrSharePanel({
                 icon={copied ? FiCheck : FiCopy}
                 onClick={copyLink}
               >
-                {copied ? 'Copié' : 'Copier le lien'}
+                {copied ? t('share.copied') : t('share.copyLink')}
               </Button>
               <Button
                 variant="secondary"
@@ -183,7 +173,7 @@ export function QrSharePanel({
                 icon={FiShare2}
                 onClick={shareLink}
               >
-                Partager
+                {t('share.share')}
               </Button>
             </div>
           </div>

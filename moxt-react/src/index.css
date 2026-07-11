@@ -1892,7 +1892,8 @@ html.theme-animating *::after {
 .sidebar-rail-label {
   pointer-events: none;
   position: absolute;
-  left: calc(100% + 0.625rem);
+  top: 50%;
+  left: calc(100% + 0.75rem);
   z-index: 50;
   max-width: 12rem;
   border-radius: 0.85rem;
@@ -1905,6 +1906,7 @@ html.theme-animating *::after {
   backdrop-filter: blur(12px);
   transform-origin: left center;
   white-space: nowrap;
+  translate: 0 -50%;
   will-change: opacity, transform;
   transition:
     opacity 0.7s var(--sidebar-ease-soft),
@@ -1922,7 +1924,7 @@ html.theme-animating *::after {
   display: none;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.625rem;
   padding: 0.4375rem 0.75rem;
 }
 
@@ -1945,18 +1947,18 @@ html.theme-animating *::after {
 
 .sidebar-footer-flyout {
   position: absolute;
-  bottom: 0;
+  bottom: -0.625rem;
   left: 100%;
   z-index: 60;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.125rem;
   padding: 0.25rem 0 0.25rem 0.75rem;
   margin-left: -0.75rem;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transform: translateX(-6px);
+  transform: translateX(-6px) translateY(4px);
   transition:
     opacity 0.32s var(--sidebar-ease),
     transform 0.38s var(--sidebar-ease-spring),
@@ -1985,6 +1987,25 @@ html.theme-animating *::after {
   transform: none;
   max-width: 11rem;
   white-space: nowrap;
+  transition:
+    transform 0.28s var(--sidebar-ease-fluid),
+    border-color 0.28s var(--sidebar-ease-soft),
+    background-color 0.28s var(--sidebar-ease-soft),
+    box-shadow 0.28s var(--sidebar-ease-soft),
+    color 0.28s var(--sidebar-ease-soft);
+}
+
+.sidebar-footer-flyout-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0.35rem;
+}
+
+.sidebar-footer-flyout-actions .sidebar-rail-label--action {
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: center;
 }
 
 .sidebar-rail-label-title {
@@ -2091,36 +2112,27 @@ html.theme-animating *::after {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
-    transform: translateX(0);
+    transform: translateX(0) translateY(4px);
     transition-delay: 0s;
   }
 
   .group\/footer:is(:hover, :focus-within) .group\/profile .sidebar-nav-icon {
-    transform: scale(1.1);
     box-shadow:
       0 0 0 2px color-mix(in srgb, white 35%, transparent),
       0 10px 24px -10px color-mix(in srgb, var(--app-accent) 45%, transparent);
     transition:
-      transform 0.58s var(--sidebar-ease-fluid),
       opacity 0.52s var(--sidebar-ease-fluid),
       box-shadow 0.45s var(--sidebar-ease-fluid);
   }
 
-  .sidebar-footer-flyout .sidebar-rail-label--interactive:hover {
-    transform: translateX(6px) scale(1.08);
-    border-color: color-mix(in srgb, var(--app-accent) 35%, var(--app-border));
-    color: var(--app-text);
-    background: var(--app-surface);
+  /* Icônes : taille fixe au survol — seuls les libellés varient */
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item .sidebar-nav-icon {
+    transform: scale(1);
+    opacity: 1;
   }
 
-  .sidebar-footer-flyout .sidebar-rail-label--danger:hover {
-    transform: translateX(6px) scale(1.08);
-  }
-
-  /* Proximité rail — 1 survolé > 2 voisins > 3e rangée plus petite */
+  /* Proximité rail — labels uniquement (cascade taille / opacité) */
   .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-near .sidebar-nav-icon {
-    transform: scale(0.92);
-    opacity: 0.8;
     background: color-mix(in srgb, var(--app-surface-muted) 85%, var(--app-surface));
     color: color-mix(in srgb, var(--app-text-muted) 88%, transparent);
     box-shadow: none;
@@ -2132,8 +2144,6 @@ html.theme-animating *::after {
   }
 
   .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-far .sidebar-nav-icon {
-    transform: scale(0.84);
-    opacity: 0.62;
     background: color-mix(in srgb, var(--app-surface-muted) 70%, var(--app-surface));
     color: color-mix(in srgb, var(--app-text-muted) 75%, transparent);
     box-shadow: none;
@@ -2142,6 +2152,17 @@ html.theme-animating *::after {
   .dark .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-far .sidebar-nav-icon {
     background: color-mix(in srgb, var(--app-surface-muted) 55%, var(--app-surface));
     color: color-mix(in srgb, var(--app-text-muted) 70%, transparent);
+  }
+
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-edge .sidebar-nav-icon {
+    background: color-mix(in srgb, var(--app-surface-muted) 55%, var(--app-surface));
+    color: color-mix(in srgb, var(--app-text-muted) 68%, transparent);
+    box-shadow: none;
+  }
+
+  .dark .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-edge .sidebar-nav-icon {
+    background: color-mix(in srgb, var(--app-surface-muted) 45%, var(--app-surface));
+    color: color-mix(in srgb, var(--app-text-muted) 62%, transparent);
   }
 
   .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-near .sidebar-rail-label--row {
@@ -2178,19 +2199,6 @@ html.theme-animating *::after {
     color: color-mix(in srgb, var(--app-text-muted) 82%, transparent);
   }
 
-  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-edge .sidebar-nav-icon {
-    transform: scale(0.78);
-    opacity: 0.48;
-    background: color-mix(in srgb, var(--app-surface-muted) 55%, var(--app-surface));
-    color: color-mix(in srgb, var(--app-text-muted) 68%, transparent);
-    box-shadow: none;
-  }
-
-  .dark .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-edge .sidebar-nav-icon {
-    background: color-mix(in srgb, var(--app-surface-muted) 45%, var(--app-surface));
-    color: color-mix(in srgb, var(--app-text-muted) 62%, transparent);
-  }
-
   .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-edge .sidebar-rail-label--row {
     z-index: 50;
     opacity: 0.55;
@@ -2208,8 +2216,46 @@ html.theme-animating *::after {
     color: color-mix(in srgb, var(--app-text-muted) 70%, transparent);
   }
 
+  .sidebar-footer-flyout .sidebar-rail-label--stack:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--app-accent) 42%, var(--app-border));
+    background: var(--app-surface);
+    color: var(--app-text);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--app-accent) 18%, transparent),
+      0 10px 22px -12px color-mix(in srgb, var(--app-accent) 32%, transparent);
+  }
+
+  .dark .sidebar-footer-flyout .sidebar-rail-label--stack:hover {
+    border-color: color-mix(in srgb, var(--app-teal) 45%, var(--app-border));
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--app-teal) 20%, transparent),
+      0 10px 22px -12px color-mix(in srgb, var(--app-teal) 28%, transparent);
+  }
+
+  .sidebar-footer-flyout .sidebar-rail-label--action:not(.sidebar-rail-label--danger):hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--app-accent) 38%, var(--app-border));
+    background: var(--app-surface-muted);
+    color: var(--app-text);
+    box-shadow: 0 8px 18px -12px color-mix(in srgb, var(--app-text) 14%, transparent);
+  }
+
+  .sidebar-footer-flyout .sidebar-rail-label--danger:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, #ef4444 55%, var(--app-border));
+    background: color-mix(in srgb, #fee2e2 98%, var(--app-surface));
+    color: #b91c1c;
+    box-shadow: 0 8px 18px -12px color-mix(in srgb, #ef4444 28%, transparent);
+  }
+
+  .dark .sidebar-footer-flyout .sidebar-rail-label--danger:hover {
+    background: color-mix(in srgb, #450a0a 55%, var(--app-surface));
+    color: #fca5a5;
+    box-shadow: 0 8px 18px -12px color-mix(in srgb, #ef4444 22%, transparent);
+  }
+
   .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-focus .sidebar-nav-icon {
-    transform: scale(1.14);
     opacity: 1;
   }
 
@@ -2233,7 +2279,6 @@ html.theme-animating *::after {
 
   .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-focus > span.nav-item-active .sidebar-nav-icon,
   .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-focus:has(.nav-item-active) .sidebar-nav-icon {
-    transform: scale(1.18);
     box-shadow:
       0 0 0 2px color-mix(in srgb, var(--app-accent) 48%, transparent),
       0 16px 36px -8px color-mix(in srgb, var(--app-accent) 55%, transparent);
@@ -2313,28 +2358,14 @@ html.theme-animating *::after {
   }
 
   .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-focus.group\/profile .sidebar-nav-icon {
-    transform: scale(1.14);
-    opacity: 1;
     box-shadow:
       0 0 0 2px color-mix(in srgb, white 38%, transparent),
       0 14px 32px -10px color-mix(in srgb, var(--app-accent) 50%, transparent);
   }
 
-  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-near.group\/profile .sidebar-nav-icon {
-    transform: scale(0.92);
-    opacity: 0.8;
-    box-shadow: none;
-  }
-
-  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-far.group\/profile .sidebar-nav-icon {
-    transform: scale(0.84);
-    opacity: 0.62;
-    box-shadow: none;
-  }
-
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-near.group\/profile .sidebar-nav-icon,
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-far.group\/profile .sidebar-nav-icon,
   .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-edge.group\/profile .sidebar-nav-icon {
-    transform: scale(0.78);
-    opacity: 0.48;
     box-shadow: none;
   }
 }
@@ -2394,7 +2425,7 @@ nav[aria-label='Navigation mobile rapide'] a {
     .sidebar-footer-flyout,
     .group\/footer:is(:hover, :focus-within) .sidebar-footer-flyout {
       transition-delay: 0s !important;
-      transform: none !important;
+      transform: translateY(4px) !important;
     }
   }
   /* Soft pulse instead of a broken flash for loading placeholders */

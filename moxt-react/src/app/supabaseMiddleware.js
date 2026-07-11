@@ -393,6 +393,10 @@ const handlers = {
   'businesses/saveBusiness': async (payload) => {
     await saveBusinessRemote(payload)
   },
+  'businesses/deleteBusinessByUser': async (payload, getState) => {
+    const business = getState().businesses.items.find((item) => item.id === payload.id)
+    if (business) await saveBusinessRemote(business)
+  },
   'businesses/addBusinessMember': async (payload) => {
     await upsertBusinessMemberRemote(payload)
   },

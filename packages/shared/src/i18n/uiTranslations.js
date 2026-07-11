@@ -4,6 +4,7 @@
 import { ENGLISH_UI_CATALOG } from './englishUiCatalog'
 import { PLACEHOLDER_CATALOGS } from './placeholderCatalog'
 import { PUBLISH_AUTH_CATALOGS } from './publishAuthCatalog'
+import { SHARE_REFERRAL_CATALOGS } from './shareReferralCatalog'
 import { STATUS_META } from '../config/statuses.js'
 
 export const SOURCE_LANGUAGE = 'fr'
@@ -130,6 +131,9 @@ const ENGLISH_PHRASES = {
   Supprimer: 'Delete',
   'Sur devis': 'On request',
   'Tous les services': 'All services',
+  'Services supplémentaires': 'Additional services',
+  'QR & invitation': 'QR & invite',
+  'QR code & invitation': 'QR code & invitation',
   Transfert: 'Transfer',
   Transferts: 'Transfers',
   'Ville de résidence en Russie': 'City of residence in Russia',
@@ -148,6 +152,7 @@ Object.values(STATUS_META).forEach(({ label }) => {
 
 Object.assign(ENGLISH_PHRASES, PLACEHOLDER_CATALOGS.en)
 Object.assign(ENGLISH_PHRASES, PUBLISH_AUTH_CATALOGS.en)
+Object.assign(ENGLISH_PHRASES, SHARE_REFERRAL_CATALOGS.en)
 
 const RUSSIAN_PHRASES = {
   // Navigation & groupes
@@ -281,6 +286,9 @@ const RUSSIAN_PHRASES = {
   Reglages: 'Настройки',
   Réglages: 'Настройки',
   'Tous les services': 'Все услуги',
+  'Services supplémentaires': 'Дополнительные услуги',
+  'QR & invitation': 'QR и приглашение',
+  'QR code & invitation': 'QR-код и приглашение',
   'Plus de services': 'Больше услуг',
   'Fermer les services': 'Закрыть услуги',
   'Compte et session': 'Аккаунт и сессия',
@@ -856,6 +864,9 @@ const PORTUGUESE_PHRASES = {
   Reglages: 'Configurações',
   Réglages: 'Configurações',
   'Tous les services': 'Todos os serviços',
+  'Services supplémentaires': 'Serviços adicionais',
+  'QR & invitation': 'QR e convite',
+  'QR code & invitation': 'QR code e convite',
   'Plus de services': 'Mais serviços',
   'Fermer les services': 'Fechar serviços',
   'Compte et session': 'Conta e sessão',
@@ -1299,8 +1310,18 @@ const PORTUGUESE_REPLACEMENTS = [
 
 const PHRASES = {
   en: ENGLISH_PHRASES,
-  ru: Object.assign(RUSSIAN_PHRASES, PLACEHOLDER_CATALOGS.ru, PUBLISH_AUTH_CATALOGS.ru),
-  pt: Object.assign(PORTUGUESE_PHRASES, PLACEHOLDER_CATALOGS.pt, PUBLISH_AUTH_CATALOGS.pt),
+  ru: Object.assign(
+    RUSSIAN_PHRASES,
+    PLACEHOLDER_CATALOGS.ru,
+    PUBLISH_AUTH_CATALOGS.ru,
+    SHARE_REFERRAL_CATALOGS.ru,
+  ),
+  pt: Object.assign(
+    PORTUGUESE_PHRASES,
+    PLACEHOLDER_CATALOGS.pt,
+    PUBLISH_AUTH_CATALOGS.pt,
+    SHARE_REFERRAL_CATALOGS.pt,
+  ),
 }
 
 const REPLACEMENTS = {

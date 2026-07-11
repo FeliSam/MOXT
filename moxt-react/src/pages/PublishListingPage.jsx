@@ -37,6 +37,7 @@ import {
   validatePhone,
 } from '../config/phone'
 import { CitySelector } from '../components/ui/CitySelector'
+import { useScrollToTopOnStep } from '../hooks/useScrollToTopOnStep'
 import { BusinessPublishNotice } from '../features/businesses/BusinessPublishNotice'
 import {
   isBusinessPublishReady,
@@ -62,6 +63,7 @@ export function PublishListingPage() {
   )
   const canPublishAsBusiness = isBusinessPublishReady(business)
   const [step, setStep] = useState(1)
+  useScrollToTopOnStep(step)
   const [listingType, setListingType] = useState(null)
   const [category, setCategory] = useState('')
   const [form, setForm] = useState({

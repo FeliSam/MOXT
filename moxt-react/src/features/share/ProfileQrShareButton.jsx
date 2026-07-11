@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { HiQrCode } from 'react-icons/hi2'
 import { Modal } from '../../components/ui/Modal'
+import { useLanguage } from '../../contexts/useLanguage'
 import { buildAbsoluteUrl } from '../../utils/siteUrl'
 import { QrSharePanel } from './QrSharePanel'
 
@@ -15,6 +16,7 @@ export function ProfileQrShareButton({
   sector,
   logoUrl,
 }) {
+  const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const shareUrl = useMemo(() => buildAbsoluteUrl(targetPath), [targetPath])
   const isBusiness = type === 'business'
@@ -25,8 +27,8 @@ export function ProfileQrShareButton({
         type="button"
         className={`grid size-10 shrink-0 place-items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-accent)] shadow-[var(--shadow-card)] transition hover:border-brand-200 hover:bg-[var(--app-surface-muted)] dark:hover:border-brand-800 ${className}`}
         onClick={() => setOpen(true)}
-        aria-label={isBusiness ? 'Afficher le QR code entreprise' : 'Afficher le QR code du profil'}
-        title="QR code à partager"
+        aria-label={isBusiness ? t('share.showBusinessQr') : t('share.showProfileQr')}
+        title={t('share.qrToShare')}
       >
         <HiQrCode className="text-lg" />
       </button>
@@ -34,7 +36,7 @@ export function ProfileQrShareButton({
       <Modal
         open={open}
         onClose={() => setOpen(false)}
-        title={isBusiness ? 'QR code entreprise' : 'QR code profil'}
+        title={isBusiness ? t('share.qrBusiness') : t('share.qrProfile')}
         size="default"
       >
         <QrSharePanel
@@ -46,11 +48,15 @@ export function ProfileQrShareButton({
           city={city}
           sector={sector}
           shareUrl={shareUrl}
-          shareTitle={isBusiness ? `${title} sur MOXT` : `Publications de ${title}`}
+          shareTitle={
+            isBusiness
+              ? t('share.shareTitles.onMoxt', { name: title })
+              : t('share.shareTitles.publications', { name: title })
+          }
           shareText={
             isBusiness
-              ? `Découvrez ${title} sur MOXT.`
-              : `Consultez les publications de ${title} sur MOXT.`
+              ? t('share.shareTexts.business', { name: title })
+              : t('share.shareTexts.profile', { name: title })
           }
           qrSize={240}
         />

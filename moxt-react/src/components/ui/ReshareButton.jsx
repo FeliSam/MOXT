@@ -41,7 +41,7 @@ export function ReshareButton({ sourceType, sourceId, sourceData, className = ''
         onClick={() => setOpen(true)}
         className={`btn-press flex items-center gap-2 rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-700 transition hover:border-emerald-400 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 dark:hover:border-emerald-500 ${className}`}
       >
-        <FiRepeat className="text-sm" /> Republier
+        <FiRepeat className="text-sm" /> Republier annuaire
       </button>
       {open && (
         <ShareToFeedModal

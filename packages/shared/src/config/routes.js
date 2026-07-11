@@ -23,11 +23,11 @@ export const ROUTES = {
   p2p: '/p2p',
   marketplace: '/marketplace',
   myPublications: '/publications/mine',
-  myListings: '/publications/mine',
   jobs: '/jobs',
   jobApplications: '/jobs/applications',
   events: '/events',
   messages: '/messages',
+  referral: '/referral',
   notifications: '/notifications',
   support: '/support',
   admin: '/admin',
@@ -50,6 +50,7 @@ export const SIMPLE_LEGACY_REDIRECTS = [
   ['/conversations', ROUTES.messages],
   ['/message', ROUTES.messages],
   ['/community-management', ROUTES.jobApplications],
+  ['/profile/share-badge', ROUTES.referral],
 ]
 
 export const MARKETPLACE_LEGACY_PATHS = ['sales', 'market', 'annonces', 'vente', 'ventes']

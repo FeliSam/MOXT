@@ -12,6 +12,7 @@ import {
   FiMail,
   FiMapPin,
   FiPhone,
+  FiRepeat,
   FiSend,
   FiSettings,
   FiShare2,
@@ -26,7 +27,7 @@ import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { CitySelector } from '../components/ui/CitySelector'
-import { Input } from '../components/ui/Input'
+import { Input, Textarea } from '../components/ui/Input'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Select } from '../components/ui/Select'
 import {
@@ -39,6 +40,9 @@ import {
 import { ensurePhoneCountry, phonePlaceholder } from '../config/phone'
 import { businessSchema } from '../features/businesses/businessSchemas'
 import { saveBusiness } from '../features/businesses/businessSlice'
+import { generateBusinessPresentation } from '../features/businesses/generateBusinessPresentation'
+import { selectActiveBusinessForOwner } from '../features/businesses/businessVisibility'
+import { useScrollToTopOnStep } from '../hooks/useScrollToTopOnStep'
 import { createId } from '../services/createId'
 import { addToast } from '../features/ui/uiSlice'
 import { ShareToFeedModal } from '../components/ui/ShareToFeedModal'
@@ -47,6 +51,9 @@ import {
   paymentMethodsForCountry,
   transferCurrenciesForCountry,
 } from '../features/transfers/transferConfig'
+import { statusMeta } from '../config/statuses'
+import { buildAbsoluteUrl } from '../utils/siteUrl'
+import { makeQrCodeUrl } from '../utils/qrCode'
 
 /* ─── Step definition ──────────────────────────────────────────────────── */
 const STEPS = [
@@ -83,13 +90,17 @@ const ACTIVITY_COLORS = {
 }
 
 /* ─── Section title ─────────────────────────────────────────────────────── */
-function SectionTitle({ icon: Icon, label, description }) {
+function SectionTitle({ action, description, icon: Icon, label }) {
   return (
     <div className="flex items-start gap-3 border-b border-[var(--app-border)] pb-4">
-      <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
-        <Icon className="text-base" />
-      </span>
-      <div>
+      {action ? (
+        action
+      ) : (
+        <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
+          <Icon className="text-base" />
+        </span>
+      )}
+      <div className="min-w-0 flex-1">
         <h3 className="text-sm font-black uppercase tracking-wide text-[var(--app-text-muted)]">{label}</h3>
         {description ? <p className="mt-0.5 text-xs text-[var(--app-text-muted)]">{description}</p> : null}
       </div>
@@ -145,11 +156,16 @@ function Stepper({ step, onGoTo }) {
 }
 
 /* ─── Live preview card ─────────────────────────────────────────────────── */
-function BusinessPreview({ formik, serviceOptions }) {
+function BusinessPreview({ formik, hasTransfer, serviceOptions, user }) {
   const v = formik.values
   const activity = BUSINESS_ACTIVITIES.find((a) => a.value === v.primaryActivity)
+  const experience = businessExperienceForActivity(v.primaryActivity)
   const colors = ACTIVITY_COLORS[v.primaryActivity] || ACTIVITY_COLORS.services
   const Icon = activity?.icon
+  const status = statusMeta('pending_review')
+  const sharePath = v.id ? `/businesses/${v.id}` : '/businesses'
+  const qrUrl = makeQrCodeUrl(buildAbsoluteUrl(sharePath), 120)
+  const userInitials = `${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`.toUpperCase() || 'MO'
 
   const initials = v.name
     ? v.name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase()
@@ -161,45 +177,104 @@ function BusinessPreview({ formik, serviceOptions }) {
         Apercu de votre fiche
       </p>
       <div className="overflow-hidden rounded-[1.6rem] border border-[var(--app-border)] bg-[var(--app-surface)] shadow-xl">
-        {/* Banner */}
-        <div className="relative h-24 bg-gradient-to-br from-brand-600 to-cyan-600">
-          {v.bannerUrl ? (
-            <img src={v.bannerUrl} alt="" className="h-full w-full object-cover" />
-          ) : null}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+        <div className="flex flex-wrap items-center justify-end gap-2 border-b border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2">
+          <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[10px] font-bold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+            <FiRepeat className="text-xs" />
+            Republier annuaire
+          </span>
         </div>
 
-        {/* Logo */}
-        <div className="-mt-8 px-4">
-          {v.logoUrl ? (
-            <img
-              src={v.logoUrl}
-              alt="Logo"
-              className="size-16 rounded-2xl border-4 border-[var(--app-surface)] object-cover shadow-lg"
-            />
-          ) : (
-            <div
-              className={`grid size-16 place-items-center rounded-2xl border-4 border-[var(--app-surface)] shadow-lg ${colors.bg}`}
-            >
-              {Icon ? <Icon className={`text-2xl ${colors.text}`} /> : (
-                <span className={`text-lg font-black ${colors.text}`}>{initials}</span>
-              )}
+        <div className="grid gap-3 border-b border-[var(--app-border)] p-4 sm:grid-cols-[1fr_auto] sm:items-center">
+          <div className="flex items-start gap-3">
+            {user?.avatarUrl ? (
+              <img src={user.avatarUrl} alt="" className="size-10 rounded-full object-cover" />
+            ) : (
+              <span className="grid size-10 place-items-center rounded-full bg-brand-600 text-xs font-black text-white">
+                {userInitials}
+              </span>
+            )}
+            <div className="min-w-0 text-xs text-[var(--app-text-muted)]">
+              <p className="font-bold text-[var(--app-text)]">Profil utilisateur actif sur MOXT</p>
+              {user?.city ? (
+                <p className="mt-1 flex items-center gap-1">
+                  <FiMapPin className="shrink-0" /> {user.city}
+                </p>
+              ) : null}
+              {user?.email ? (
+                <p className="mt-0.5 flex items-center gap-1">
+                  <FiMail className="shrink-0" /> {user.email}
+                </p>
+              ) : null}
+              {user?.phone ? (
+                <p className="mt-0.5 flex items-center gap-1">
+                  <FiPhone className="shrink-0" /> {user.phone}
+                </p>
+              ) : null}
             </div>
-          )}
+          </div>
+          <img src={qrUrl} alt="QR code apercu" className="size-20 rounded-xl border border-[var(--app-border)] bg-white p-1" />
         </div>
 
-        <div className="grid gap-3 p-4">
+        <div className="relative">
+          <div className="relative h-28 bg-gradient-to-br from-brand-600 to-cyan-600">
+            {v.bannerUrl ? (
+              <img src={v.bannerUrl} alt="" className="h-full w-full object-cover" />
+            ) : null}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
+          </div>
+
+          <div className="absolute -bottom-8 left-4 z-10">
+            {v.logoUrl ? (
+              <img
+                src={v.logoUrl}
+                alt="Logo"
+                className="size-16 rounded-2xl border-4 border-[var(--app-surface)] object-cover shadow-lg"
+              />
+            ) : (
+              <div
+                className={`grid size-16 place-items-center rounded-2xl border-4 border-[var(--app-surface)] shadow-lg ${colors.bg}`}
+              >
+                {Icon ? <Icon className={`text-2xl ${colors.text}`} /> : (
+                  <span className={`text-lg font-black ${colors.text}`}>{initials}</span>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="grid gap-3 px-4 pb-4 pt-12">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge tone={status.tone}>{status.label}</Badge>
+          </div>
+
           <div>
-            <p className="font-black leading-tight">{v.name || <span className="italic text-[var(--app-text-muted)]">Nom de l entreprise</span>}</p>
+            <p className="font-black leading-tight">
+              {v.name || <span className="italic text-[var(--app-text-muted)]">Nom de l entreprise</span>}
+            </p>
             {activity ? (
               <p className={`mt-0.5 text-xs font-bold ${colors.text}`}>{activity.label}</p>
             ) : null}
           </div>
 
-          {v.city ? (
-            <div className="flex items-center gap-1.5 text-xs text-[var(--app-text-muted)]">
-              <FiMapPin className="shrink-0" /> {v.city}, Russie
+          {v.description ? (
+            <p className="whitespace-pre-line text-xs leading-5 text-[var(--app-text-muted)]">{v.description}</p>
+          ) : (
+            <p className="text-xs italic text-[var(--app-text-faint)]">
+              Votre presentation apparaitra ici.
+            </p>
+          )}
+
+          {activity ? (
+            <div className={`rounded-2xl p-3 text-xs leading-5 ${colors.bg}`}>
+              <strong className={`block ${colors.text}`}>{activity.label}</strong>
+              <span className="text-[var(--app-text-muted)]">{experience.promise}</span>
             </div>
+          ) : null}
+
+          {v.city ? (
+            <p className="flex items-center gap-1.5 text-xs text-[var(--app-text-muted)]">
+              <FiMapPin className="shrink-0 text-brand-600" /> {v.city} · Russie
+            </p>
           ) : null}
 
           {serviceOptions.length ? (
@@ -215,9 +290,18 @@ function BusinessPreview({ formik, serviceOptions }) {
             </div>
           ) : null}
 
-          {v.description ? (
-            <p className="line-clamp-2 text-xs text-[var(--app-text-muted)]">{v.description}</p>
-          ) : null}
+          <div className={`grid gap-2 ${hasTransfer ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            <div className="rounded-2xl bg-[var(--app-surface-muted)] p-3 text-center">
+              <strong className="block text-base">0/5</strong>
+              <span className="text-[10px] text-[var(--app-text-muted)]">0 avis</span>
+            </div>
+            {hasTransfer ? (
+              <div className="rounded-2xl bg-[var(--app-surface-muted)] p-3 text-center">
+                <strong className="block text-base">{v.feePercent ?? 0}%</strong>
+                <span className="text-[10px] text-[var(--app-text-muted)]">Frais</span>
+              </div>
+            ) : null}
+          </div>
 
           {(v.phone || v.email) ? (
             <div className="border-t border-[var(--app-border)] pt-3">
@@ -245,13 +329,14 @@ function BusinessPreview({ formik, serviceOptions }) {
 /* ─── Main page ─────────────────────────────────────────────────────────── */
 export function BusinessSetupPage() {
   const [step, setStep] = useState(1)
+  useScrollToTopOnStep(step)
   const [shareModal, setShareModal] = useState(null)
   const [createdBusiness, setCreatedBusiness] = useState(null)
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const user = useSelector((state) => state.auth.user)
   const businesses = useSelector((state) => state.businesses.items)
-  const ownBusiness = businesses.find((item) => item.ownerId === user.id)
+  const ownBusiness = selectActiveBusinessForOwner(businesses, user.id)
   const draftBusinessId = useMemo(
     () => ownBusiness?.id || createId('BIZ'),
     [ownBusiness?.id],
@@ -462,7 +547,12 @@ export function BusinessSetupPage() {
           {/* Live preview — desktop only, hidden on step 4 (full recap already shown) */}
           {step < 4 ? (
             <div className="hidden lg:block">
-              <BusinessPreview formik={formik} serviceOptions={serviceOptions} />
+              <BusinessPreview
+                formik={formik}
+                hasTransfer={hasTransfer}
+                serviceOptions={serviceOptions}
+                user={user}
+              />
             </div>
           ) : null}
         </div>
@@ -787,10 +877,30 @@ function ContactStep({ errorFor, formik, onScheduleChange, onUseAccountPhone }) 
 
       {/* Description */}
       <Card className="grid gap-5">
-        <SectionTitle icon={FiGlobe} label="Presentation" description="Decrivez votre entreprise, votre specialite et votre zone d intervention." />
-        <Input
+        <SectionTitle
+          action={
+            <button
+              type="button"
+              title="Generer automatiquement la presentation"
+              aria-label="Generer automatiquement la presentation"
+              onClick={() => {
+                const generated = generateBusinessPresentation(formik.values)
+                formik.setFieldValue('description', generated)
+                formik.setFieldTouched('description', true, false)
+              }}
+              className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] text-brand-700 transition hover:border-brand-300 hover:bg-brand-50 dark:hover:bg-brand-950/30"
+            >
+              <FiZap className="text-base" />
+            </button>
+          }
+          icon={FiGlobe}
+          label="Presentation"
+          description="Decrivez votre entreprise, votre specialite et votre zone d intervention. Cliquez sur l'eclair pour generer un texte a partir de vos informations."
+        />
+        <Textarea
           id="business-description"
           label="A propos de votre entreprise"
+          rows={5}
           placeholder="Nous proposons... Notre specialite est... Nous intervenons sur..."
           {...formik.getFieldProps('description')}
           error={errorFor('description')}
@@ -1122,7 +1232,7 @@ function BusinessCreatedSuccess({
               Accéder à mon espace entreprise
             </Button>
             <Button className="w-full" variant="secondary" icon={FiShare2} onClick={onShare}>
-              Partager sur le fil
+              Republier dans l&apos;annuaire
             </Button>
           </div>
         </div>

@@ -9,13 +9,17 @@ import reducer, {
   markAllNotificationsRead,
   markConversationRead,
   mergeConversations,
+  mergeMessageBatch,
   normalizeConversation,
+  normalizeMessage,
   replySupportTicket,
   reactToMessage,
   restoreConversation,
+  resolveHasOlderMessages,
   saveConversationDraft,
   sendMessage,
   setConversationMessages,
+  shouldSkipMessageReload,
   toggleConversationBlock,
   toggleConversationMute,
   toggleConversationPin,
@@ -393,5 +397,78 @@ describe('communications', () => {
     expect(merged[0].messages).toHaveLength(1)
     expect(merged[0].messages[0].text).toBe('Cache local')
     expect(merged[0].messagesLoaded).toBe(true)
+  })
+
+  it('fusionne mergeMessageBatch sans doublons et trie par date', () => {
+    const existing = [
+      normalizeMessage({
+        id: 'MSG-1',
+        senderId: 'u1',
+        text: 'Ancien',
+        createdAt: '2026-01-02T10:00:00.000Z',
+      }),
+      normalizeMessage({
+        id: 'MSG-2',
+        senderId: 'u2',
+        text: 'Recent',
+        createdAt: '2026-01-02T11:00:00.000Z',
+      }),
+    ]
+    const remoteRows = [
+      {
+        id: 'MSG-2',
+        sender_id: 'u2',
+        text: 'Recent mis a jour',
+        created_at: '2026-01-02T11:00:00.000Z',
+      },
+      {
+        id: 'MSG-3',
+        sender_id: 'u1',
+        text: 'Nouveau',
+        created_at: '2026-01-02T12:00:00.000Z',
+      },
+    ]
+    const merged = mergeMessageBatch(existing, remoteRows)
+    expect(merged.map((item) => item.id)).toEqual(['MSG-1', 'MSG-2', 'MSG-3'])
+    expect(merged[1].text).toBe('Recent mis a jour')
+  })
+
+  it('skip le rechargement quand le cache couvre le compteur distant', () => {
+    expect(
+      shouldSkipMessageReload({ messagesLoaded: true, expectedCount: 12, loadedCount: 12 }),
+    ).toBe(true)
+    expect(
+      shouldSkipMessageReload({ messagesLoaded: true, expectedCount: 20, loadedCount: 12 }),
+    ).toBe(false)
+    expect(
+      shouldSkipMessageReload({ messagesLoaded: false, expectedCount: 5, loadedCount: 5 }),
+    ).toBe(false)
+  })
+
+  it('detecte les messages plus anciens a charger', () => {
+    expect(
+      resolveHasOlderMessages({
+        messages: [{ id: '1' }, { id: '2' }],
+        messageCount: 5,
+        fetchedCount: 2,
+        fetchLimit: 200,
+      }),
+    ).toBe(true)
+    expect(
+      resolveHasOlderMessages({
+        messages: Array.from({ length: 200 }, (_, index) => ({ id: String(index) })),
+        messageCount: 200,
+        fetchedCount: 200,
+        fetchLimit: 200,
+      }),
+    ).toBe(true)
+    expect(
+      resolveHasOlderMessages({
+        messages: [{ id: '1' }],
+        messageCount: 1,
+        fetchedCount: 1,
+        fetchLimit: 200,
+      }),
+    ).toBe(false)
   })
 })

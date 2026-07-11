@@ -14,26 +14,34 @@ export function ProfilePanel({ activity, business, secondaryActivity }) {
     <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
       <Card>
         {business.bannerUrl ? (
-          <img
-            src={business.bannerUrl}
-            alt={`Bannière ${business.name}`}
-            className="mb-5 h-44 w-full rounded-[1.8rem] object-cover"
-          />
-        ) : null}
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
+          <div className="relative mb-10">
+            <img
+              src={business.bannerUrl}
+              alt={`Bannière ${business.name}`}
+              className="h-44 w-full rounded-[1.8rem] object-cover"
+            />
             {business.logoUrl ? (
               <img
                 src={business.logoUrl}
                 alt={`${business.name} logo`}
-                className="mb-4 size-16 rounded-3xl object-cover shadow-md"
+                className="absolute -bottom-8 left-4 size-16 rounded-3xl border-4 border-[var(--app-surface)] object-cover shadow-md"
               />
             ) : null}
+          </div>
+        ) : business.logoUrl ? (
+          <img
+            src={business.logoUrl}
+            alt={`${business.name} logo`}
+            className="mb-4 size-16 rounded-3xl object-cover shadow-md"
+          />
+        ) : null}
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
             <p className="text-xs font-black uppercase tracking-[0.18em] text-brand-700">
               Profil professionnel
             </p>
             <h2 className="mt-1 text-2xl font-black">{business.name}</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--app-text-muted)]">
+            <p className="mt-2 max-w-2xl whitespace-pre-line text-sm leading-6 text-[var(--app-text-muted)]">
               {business.description}
             </p>
           </div>

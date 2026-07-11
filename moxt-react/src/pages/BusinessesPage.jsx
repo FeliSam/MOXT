@@ -17,6 +17,7 @@ import { BUSINESS_ACTIVITIES, activityByValue } from '../config/businessActiviti
 import { Alert } from '../components/ui/Alert'
 import { statusMeta } from '../config/statuses'
 import { isBusinessDirectoryVisible } from '../features/businesses/businessPublishUtils'
+import { filterDirectoryBusinesses, selectActiveBusinessForOwner } from '../features/businesses/businessVisibility'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 
 export function BusinessesPage() {
@@ -25,11 +26,11 @@ export function BusinessesPage() {
   const [filters, setFilters] = useState({ query: '', city: '', sector: '', service: '' })
   const user = useSelector((state) => state.auth.user)
   const businesses = useSelector((state) => state.businesses.items)
-  const ownBusiness = businesses.find((item) => item.ownerId === user.id)
+  const ownBusiness = selectActiveBusinessForOwner(businesses, user.id)
 
   const visibleBusinesses = useMemo(
     () =>
-      businesses.filter((business) => {
+      filterDirectoryBusinesses(businesses).filter((business) => {
         if (!isBusinessDirectoryVisible(business)) return false
         const activityLabel = activityByValue(business.primaryActivity)?.label || business.sector
         const haystack =

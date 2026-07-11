@@ -45,6 +45,17 @@ describe('translateUiText', () => {
       translateUiText('Rechercher : iPhone, coiffure, appartement, électricien...', 'en'),
     ).toBe('Search: iPhone, haircut, apartment, electrician...')
   })
+
+  it('traduit les libellés récents partage et navigation', () => {
+    expect(translateUiText('Services supplémentaires', 'en')).toBe('Additional services')
+    expect(translateUiText('Services supplémentaires', 'ru')).toBe('Дополнительные услуги')
+    expect(translateUiText('QR code & invitation', 'pt')).toBe('QR code e convite')
+    expect(translateUiText('Copier le lien', 'en')).toBe('Copy link')
+    expect(translateUiText('Services essentiels', 'ru')).toBe('Основные сервисы')
+    expect(translateUiText('Charger les messages précédents', 'pt')).toBe(
+      'Carregar mensagens anteriores',
+    )
+  })
 })
 
 describe('cycleLanguage', () => {

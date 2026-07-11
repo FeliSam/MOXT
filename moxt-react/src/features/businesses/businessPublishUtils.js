@@ -5,6 +5,7 @@ export function isBusinessPublishReady(business) {
 }
 
 export function isBusinessDirectoryVisible(business) {
+  if (!business || business.deletedByUserAt) return false
   return isBusinessPublishReady(business)
 }
 

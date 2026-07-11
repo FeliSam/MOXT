@@ -17,6 +17,7 @@ import {
 import { Link } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { RELATED_CONTENT_META } from '../../config/communications'
+import { useLanguage } from '../../contexts/useLanguage'
 import { getConversationPeer } from '../../features/communications/conversationDisplay'
 import {
   buildConversationTimeline,
@@ -51,6 +52,9 @@ export function ConversationPanel({
   blocked,
   formik,
   messagesLoading,
+  messagesLoadingOlder = false,
+  hasOlderMessages = false,
+  onLoadOlder,
   onArchive,
   onBack,
   onBlock,
@@ -77,6 +81,7 @@ export function ConversationPanel({
   muted,
   pinned,
 }) {
+  const { t } = useLanguage()
   const peer = getConversationPeer(active, user.id)
   const relatedPreview = useSelector((state) => resolveRelatedSnapshot(state, active))
   const relatedMeta = RELATED_CONTENT_META[relatedPreview?.type || active.relatedType] || RELATED_CONTENT_META.general
@@ -358,7 +363,12 @@ export function ConversationPanel({
           data-testid="message-scroll-region"
         >
           <div className="mx-auto flex max-w-3xl flex-col">
-            {messagesLoading ? (
+            {messagesLoading && active.messages?.length > 0 ? (
+              <p className="sticky top-0 z-10 mb-3 rounded-full border border-[var(--app-border)] bg-[var(--app-surface)]/95 px-3 py-1.5 text-center text-xs font-medium text-[var(--app-text-muted)] backdrop-blur-sm">
+                {t('messages.syncing')}
+              </p>
+            ) : null}
+            {messagesLoading && !active.messages?.length ? (
               <div className="flex flex-col gap-4 py-6">
                 {[...Array(4)].map((_, i) => (
                   <div
@@ -372,6 +382,18 @@ export function ConversationPanel({
               </div>
             ) : (
               <>
+                {hasOlderMessages ? (
+                  <div className="mb-4 flex justify-center">
+                    <button
+                      type="button"
+                      className="rounded-full border border-[var(--app-border)] bg-[var(--app-surface)] px-4 py-1.5 text-xs font-semibold text-[var(--app-text-muted)] transition hover:border-brand-200 hover:text-[var(--app-text)] disabled:opacity-60"
+                      disabled={messagesLoadingOlder}
+                      onClick={onLoadOlder}
+                    >
+                      {messagesLoadingOlder ? t('messages.loadingOlder') : t('messages.loadOlder')}
+                    </button>
+                  </div>
+                ) : null}
                 <MessageThreadStart />
                 <MessageSecurityNotice />
                 {threadQuery.trim() && !filteredTimeline.length ? (

@@ -48,14 +48,16 @@ describe('legacy storage migration', () => {
     expect(JSON.parse(localStorage.getItem('moxt-listings-v1'))).toEqual([{ id: 'current' }])
   })
 
-  it('migrates a legacy current user to the session format', () => {
+  it('ne migre plus currentUser vers une session locale (auth Supabase)', () => {
     localStorage.setItem('currentUser', JSON.stringify({ id: 'user-1', email: 'user@moxt.test' }))
 
     const result = migrateLegacyStorage()
 
-    expect(result.session).toBe(true)
-    expect(JSON.parse(localStorage.getItem('moxt-session-v1'))).toMatchObject({
-      user: { id: 'user-1', email: 'user@moxt.test' },
+    expect(result.session).toBeUndefined()
+    expect(localStorage.getItem('moxt-session-v1')).toBeNull()
+    expect(JSON.parse(localStorage.getItem('currentUser'))).toMatchObject({
+      id: 'user-1',
+      email: 'user@moxt.test',
     })
   })
 
