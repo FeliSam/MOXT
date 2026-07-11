@@ -134,6 +134,16 @@ function resolveCdnResourceId() {
   return found?.id || null
 }
 
+function uploadCacheControl(key) {
+  if (key === 'index.html' || key === 'sw.js' || key === 'offline.html') {
+    return 'no-cache, must-revalidate'
+  }
+  if (/^assets\/[^/]+-[A-Za-z0-9_-]+\.(js|css)$/.test(key)) {
+    return 'public, max-age=31536000, immutable'
+  }
+  return 'public, max-age=3600'
+}
+
 function uploadDist(bin, bucketName, sourceDir) {
   const files = walkFiles(sourceDir)
   log('Upload', `${files.length} fichiers → s3://${bucketName}/`)
@@ -147,6 +157,8 @@ function uploadDist(bin, bucketName, sourceDir) {
       `s3://${bucketName}/${key}`,
       '--acl',
       'public-read',
+      '--cache-control',
+      uploadCacheControl(key),
     ])
     if (code !== 0) process.exit(code)
   }

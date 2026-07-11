@@ -150,7 +150,24 @@ export function attachCertificate(resourceId, certId) {
 }
 
 export function purgeCdnCache(resourceId) {
-  const { code, stderr, stdout } = ycRun([
+  const paths = ['/index.html', '/sw.js', '/assets/*']
+  const selective = ycRun([
+    'cdn',
+    'cache',
+    'purge',
+    '--resource-id',
+    resourceId,
+    '--path',
+    paths.join(','),
+  ])
+  if (selective.code === 0) return { ok: true }
+
+  const msg = `${selective.stderr}\n${selective.stdout}`
+  if (msg.includes('purge operation limit')) {
+    return { ok: false, reason: 'rate_limit' }
+  }
+
+  const full = ycRun([
     'cdn',
     'cache',
     'purge',
@@ -158,14 +175,13 @@ export function purgeCdnCache(resourceId) {
     resourceId,
     '--all',
   ])
-  if (code !== 0) {
-    const msg = `${stderr}\n${stdout}`
-    if (msg.includes('purge operation limit')) {
-      return { ok: false, reason: 'rate_limit' }
-    }
-    return { ok: false, reason: msg.trim() || String(code) }
+  if (full.code === 0) return { ok: true }
+
+  const fullMsg = `${full.stderr}\n${full.stdout}`
+  if (fullMsg.includes('purge operation limit')) {
+    return { ok: false, reason: 'rate_limit' }
   }
-  return { ok: true }
+  return { ok: false, reason: fullMsg.trim() || String(full.code) }
 }
 
 export function findCertificate(domain, wwwDomain, certName = 'moxtapp-ru-letsencrypt') {
