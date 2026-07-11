@@ -18,7 +18,7 @@ async function filesIn(directory) {
   return nested.flat()
 }
 
-const required = ['index.html', 'manifest.webmanifest', 'offline.html', 'sw.js']
+const required = ['index.html', 'manifest.webmanifest', 'offline.html', 'sw.js', 'version.json']
 await Promise.all(
   required.map(async (name) => {
     const content = await readFile(new URL(name, DIST), 'utf8')

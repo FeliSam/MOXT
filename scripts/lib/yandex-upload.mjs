@@ -21,7 +21,7 @@ export function toObjectKey(sourceDir, file) {
 }
 
 export function uploadCacheControl(key) {
-  if (key === 'index.html' || key === 'sw.js' || key === 'offline.html') {
+  if (key === 'index.html' || key === 'sw.js' || key === 'offline.html' || key === 'version.json') {
     return 'no-cache, must-revalidate'
   }
   if (/^assets\/[^/]+-[A-Za-z0-9_-]+\.(js|css)$/.test(key)) {

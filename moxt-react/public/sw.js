@@ -1,4 +1,4 @@
-const CACHE_NAME = 'moxt-v6';
+const CACHE_NAME = 'moxt-v7';
 const STATIC_ASSETS = [
   '/manifest.webmanifest',
   '/favicon.svg',
@@ -19,6 +19,12 @@ function cacheResponse(request, response) {
   const clone = response.clone();
   caches.open(CACHE_NAME).then((cache) => cache.put(request, clone)).catch(() => {});
 }
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -54,6 +60,12 @@ self.addEventListener('fetch', (event) => {
   // Supabase : réseau seulement (pas de cache — évite les erreurs cross-origin)
   if (url.hostname.includes('supabase')) {
     event.respondWith(fetch(request).catch(() => caches.match(request)));
+    return;
+  }
+
+  // Fichiers de version / shell : toujours réseau (mises à jour silencieuses)
+  if (url.pathname === '/version.json' || url.pathname === '/sw.js') {
+    event.respondWith(fetch(request, { cache: 'no-store' }));
     return;
   }
 

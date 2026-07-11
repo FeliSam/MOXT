@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { moxtBuildVersion } from './vite-plugin-build-version.mjs'
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url))
 const monorepoRoot = path.resolve(rootDir, '..')
@@ -26,6 +27,7 @@ export default defineConfig(({ mode }) => {
   define: {
     'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(supabaseUrl),
     'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(supabaseAnonKey),
+    __MOXT_BUILD_ID__: JSON.stringify(process.env.GITHUB_SHA?.slice(0, 12) || 'dev'),
   },
   resolve: {
     dedupe: ['react', 'react-dom', 'react-redux'],
@@ -41,6 +43,7 @@ export default defineConfig(({ mode }) => {
   plugins: [
     react(),
     tailwindcss(),
+    moxtBuildVersion({ rootDir }),
     {
       name: 'moxt-shared-subpath-alias',
       resolveId(source) {

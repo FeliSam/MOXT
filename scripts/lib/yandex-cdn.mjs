@@ -150,7 +150,7 @@ export function attachCertificate(resourceId, certId) {
 }
 
 export function purgeCdnCache(resourceId) {
-  const paths = ['/index.html', '/sw.js', '/assets/*']
+  const paths = ['/', '/index.html', '/version.json', '/sw.js', '/assets/*']
   const selective = ycRun([
     'cdn',
     'cache',
