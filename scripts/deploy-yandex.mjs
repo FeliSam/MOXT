@@ -17,10 +17,13 @@ import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
 import { parseEnvFile } from './lib/env.mjs'
+import { purgeCdnCache, findCdnResource } from './lib/yandex-cdn.mjs'
+import { ycJson } from './lib/yandex.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const distDir = path.join(root, 'moxt-react', 'dist')
 const bucket = process.env.MOXT_YC_BUCKET || 'moxtapp-web'
+const domain = (process.env.MOXT_DOMAIN || 'moxtapp.ru').replace(/\.$/, '')
 const initMode = process.argv.includes('--init')
 const spaOnly = process.argv.includes('--spa')
 const skipBuild = process.argv.includes('--skip-build')
@@ -111,6 +114,26 @@ function walkFiles(dir) {
 }
 
 /** Upload fichier par fichier — évite les backslashes Windows dans les clés S3. */
+function resolveCdnResourceId() {
+  const phase2 = parseEnvFile(path.join(root, 'scripts', 'phase2.env'))
+  const configured = process.env.MOXT_CDN_RESOURCE_ID || phase2.MOXT_CDN_RESOURCE_ID
+  if (configured) {
+    try {
+      ycJson('cdn', 'resource', 'get', configured)
+      return configured
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      if (msg.includes('not found') || msg.includes('NOT_FOUND')) {
+        console.warn(`\n  ⚠ MOXT_CDN_RESOURCE_ID obsolète (${configured}) — auto-détection…`)
+      } else {
+        console.warn(`\n  ⚠ CDN resource get : ${msg}`)
+      }
+    }
+  }
+  const found = findCdnResource(domain, `www.${domain}`)
+  return found?.id || null
+}
+
 function uploadDist(bin, bucketName, sourceDir) {
   const files = walkFiles(sourceDir)
   log('Upload', `${files.length} fichiers → s3://${bucketName}/`)
@@ -172,13 +195,20 @@ if (spaOnly) {
 uploadDist(ycPath(), bucket, distDir)
 
 if (purgeCdn) {
-  const phase2 = parseEnvFile(path.join(root, 'scripts', 'phase2.env'))
-  const resourceId = process.env.MOXT_CDN_RESOURCE_ID || phase2.MOXT_CDN_RESOURCE_ID
+  const resourceId = resolveCdnResourceId()
   if (!resourceId) {
-    console.log('\n  (purge CDN ignoré — MOXT_CDN_RESOURCE_ID non défini)')
+    console.log('\n  (purge CDN ignoré — ressource CDN introuvable)')
   } else {
     log('Purge cache CDN', resourceId)
-    yc('cdn', 'cache', 'purge', '--resource-id', resourceId, '--all')
+    const result = purgeCdnCache(resourceId)
+    if (!result.ok) {
+      if (result.reason === 'rate_limit') {
+        console.warn('\n  ⚠ Purge CDN limitée (rate limit) — déploiement OK')
+      } else {
+        console.warn(`\n  ⚠ Purge CDN échouée : ${result.reason}`)
+        console.warn('    Upload terminé ; purge manuelle dans Cloud CDN si besoin.')
+      }
+    }
   }
 }
 

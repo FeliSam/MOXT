@@ -7,7 +7,7 @@
 #
 # Variables repo :
 #   MOXT_YC_BUCKET           défaut moxtapp-web
-#   MOXT_CDN_RESOURCE_ID     purge cache CDN
+#   MOXT_CDN_RESOURCE_ID     purge cache CDN (auto-détecté si obsolète)
 #   MOXT_YC_FOLDER_ID        défaut b1gmns3k9udjtgk89c9i
 
 name: Deploy — Yandex Cloud

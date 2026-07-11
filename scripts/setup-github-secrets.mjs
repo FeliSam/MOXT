@@ -13,13 +13,27 @@ import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import sodium from 'tweetsodium'
+import { findCdnResource } from './lib/yandex-cdn.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const saKeyPath = path.join(root, 'scripts', 'github-deploy-sa.json')
 const envProdPath = path.join(root, 'moxt-react', '.env.production')
 
 let token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN
-const cdnResourceId = process.env.MOXT_CDN_RESOURCE_ID || 'bc8rp7f3wlebqdapj3lx'
+
+function detectCdnResourceId() {
+  if (process.env.MOXT_CDN_RESOURCE_ID) return process.env.MOXT_CDN_RESOURCE_ID
+  try {
+    const domain = (process.env.MOXT_DOMAIN || 'moxtapp.ru').replace(/\.$/, '')
+    const found = findCdnResource(domain, `www.${domain}`)
+    if (found?.id) return found.id
+  } catch {
+    // yc indisponible — fallback ci-dessous
+  }
+  return 'bc8rz327qbtedt3vbafl'
+}
+
+const cdnResourceId = detectCdnResourceId()
 const bucket = process.env.MOXT_YC_BUCKET || 'moxtapp-web'
 
 function log(title, detail = '') {
