@@ -1,18 +1,23 @@
 import { useSelector } from 'react-redux'
+import {
+  canUserAccessTransfer,
+  selectOwnedBusinessIds,
+} from '../transferSelectors'
 
 export function useTransferDetail(transferId, user) {
-  const business = useSelector((state) =>
-    state.businesses.items.find((item) => item.ownerId === user.id),
+  const ownedBusinessIds = useSelector((state) => selectOwnedBusinessIds(state, user?.id))
+  const transfer = useSelector((state) => {
+    const item = state.transfers.items.find((entry) => entry.id === transferId)
+    return canUserAccessTransfer(item, user, ownedBusinessIds) ? item : null
+  })
+  const ownedBusiness = useSelector((state) =>
+    state.businesses.items.find((item) => item.ownerId === user?.id),
   )
-  const transfer = useSelector((state) =>
-    state.transfers.items.find(
-      (item) =>
-        item.id === transferId &&
-        (item.userId === user.id ||
-          item.businessId === business?.id ||
-          ['admin', 'superadmin'].includes(user.role)),
-    ),
+  const transferBusiness = useSelector((state) =>
+    transfer?.businessId
+      ? state.businesses.items.find((item) => item.id === transfer.businessId)
+      : null,
   )
 
-  return { business, transfer }
+  return { business: transferBusiness || ownedBusiness, transfer }
 }

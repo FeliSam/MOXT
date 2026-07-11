@@ -30,7 +30,7 @@ import {
 import { filterByBusinessIds, reconcileBusinesses } from '../features/businesses/businessSyncUtils'
 import { reviewFromRemoteRow } from '../features/reviews/reviewRemote'
 import { identityFromRemoteRow } from '../features/identity/identityRemote'
-import { p2pOrderFromRemoteRow, reportFromRemoteRow } from '../features/sync/entityRemote'
+import { transfersFromRemoteRows } from '../features/transfers/transferRemote'
 
 // Nombre max de lignes pour les tables publiques paginées au login
 const PUBLIC_LIMIT = 50
@@ -97,7 +97,6 @@ export const loadAllData = createAsyncThunk(
       eventsRes, eventRegistrationsRes,
       businessesRes,
       ownedBusinessesRes,
-      transfersRes,
       favoritesRes, subscriptionsRes, subscriberBansRes, subscriberReportsRes, transferProfilesRes, verificationRequestsRes, personalDocumentsRes,
       p2pOffersRes, p2pOrdersRes,
       reviewsRes,
@@ -124,7 +123,6 @@ export const loadAllData = createAsyncThunk(
       supabase.from('event_registrations').select('*').eq('user_id', uid).limit(USER_LIMIT),
       supabase.from('businesses').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
       supabase.from('businesses').select('*').eq('owner_id', uid),
-      supabase.from('transfers').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(USER_LIMIT),
       supabase.from('favorites').select('*').eq('user_id', uid).limit(USER_LIMIT),
       supabase.from('publisher_subscriptions').select('*').limit(USER_LIMIT),
       supabase.from('publisher_subscriber_bans').select('*').limit(USER_LIMIT),
@@ -183,6 +181,35 @@ export const loadAllData = createAsyncThunk(
     const businessRequestsResults = await Promise.all(businessRequestsQueries)
     const businessRequestsRows = mergeRemoteRowsById(
       ...businessRequestsResults.map((result) => safeRows(result, 'des demandes entreprise')),
+    )
+
+    const transferFetchQueries = [
+      supabase
+        .from('transfers')
+        .select('*')
+        .eq('user_id', uid)
+        .order('created_at', { ascending: false })
+        .limit(USER_LIMIT),
+      supabase
+        .from('transfers')
+        .select('*')
+        .eq('business_owner_id', uid)
+        .order('created_at', { ascending: false })
+        .limit(USER_LIMIT),
+    ]
+    if (ownedBusinessIds.length) {
+      transferFetchQueries.push(
+        supabase
+          .from('transfers')
+          .select('*')
+          .in('business_id', ownedBusinessIds)
+          .order('created_at', { ascending: false })
+          .limit(USER_LIMIT),
+      )
+    }
+    const transferFetchResults = await Promise.all(transferFetchQueries)
+    const mergedTransferRows = mergeRemoteRowsById(
+      ...transferFetchResults.map((result) => safeRows(result, 'des transferts')),
     )
 
     const [
@@ -361,7 +388,12 @@ export const loadAllData = createAsyncThunk(
         documents: mergedDocuments,
         requests: mergedRequests,
       }))
-      dispatch(setTransfers({ items: fromRows(transfersRes.data) }))
+      dispatch(setTransfers({
+        items: mergeRemoteItems(
+          getState().transfers.items,
+          transfersFromRemoteRows(mergedTransferRows),
+        ),
+      }))
       dispatch(setCommunications({
         conversations,
         notifications: fromRows(safeRows(notificationsRes, 'des notifications')).map((item) => ({

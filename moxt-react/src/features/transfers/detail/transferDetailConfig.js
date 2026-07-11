@@ -52,27 +52,4 @@ export const transferNextStepConfig = {
   },
 }
 
-export function getTransferDetailAccess(transfer, user, business) {
-  const isSender = transfer.userId === user.id
-  const isBusinessViewer = business?.id === transfer.businessId
-  const isAdminViewer = ['admin', 'superadmin'].includes(user.role)
-
-  return {
-    isSender,
-    isBusinessViewer,
-    isAdminViewer,
-    canDeclare: transfer.status === TRANSFER_STATUS.PENDING,
-    canCancel: [TRANSFER_STATUS.PENDING, TRANSFER_STATUS.DECLARED].includes(transfer.status),
-    canReceive:
-      isSender &&
-      [TRANSFER_STATUS.DECLARED, TRANSFER_STATUS.VALIDATING, TRANSFER_STATUS.PAID].includes(
-        transfer.status,
-      ) &&
-      !transfer.receivedAt,
-    contactId: isBusinessViewer ? transfer.userId : transfer.businessOwnerId,
-    contactTitle: isBusinessViewer
-      ? `${transfer.sender.firstName} ${transfer.sender.lastName}`
-      : transfer.exchanger?.name,
-    nextStep: transferNextStepConfig[transfer.status],
-  }
-}
+export { getTransferDetailAccess } from './transferDetailRoleLogic'

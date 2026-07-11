@@ -1,6 +1,12 @@
 import { FiBriefcase, FiCalendar, FiEye, FiMapPin, FiStar, FiUser } from 'react-icons/fi'
 import { Badge, VerifiedIcon } from '../../components/ui/Badge'
 import { Card } from '../../components/ui/Card'
+import {
+  buildBusinessShareText,
+  buildBusinessShareUrl,
+  businessCityLabel,
+  businessShareVersion,
+} from '../share/businessShareUtils'
 import { ProfileQrShareButton } from '../share/ProfileQrShareButton'
 import { formatMemberSince } from './usePublicationProfile'
 
@@ -108,11 +114,14 @@ export function PublicationProfileCard({
           <ProfileQrShareButton
             className="justify-self-end sm:col-start-3 sm:row-span-2 sm:self-start"
             type={isBusinessScope ? 'business' : 'user'}
-            targetPath={qrTargetPath}
+            targetPath={!isBusinessScope ? qrTargetPath : undefined}
+            refreshKey={isBusinessScope ? businessShareVersion(ownBusiness) : undefined}
+            shareUrl={isBusinessScope ? buildBusinessShareUrl(ownBusiness) : undefined}
+            shareText={isBusinessScope ? buildBusinessShareText(ownBusiness) : undefined}
             title={headlineName}
             subtitle={isBusinessScope ? ownBusiness.sector : displayName}
             verified={showVerifiedIcon}
-            city={city}
+            city={isBusinessScope ? businessCityLabel(ownBusiness) : city}
             sector={isBusinessScope ? ownBusiness.sector : undefined}
             logoUrl={isBusinessScope ? ownBusiness.logoUrl : avatarUrl}
           />

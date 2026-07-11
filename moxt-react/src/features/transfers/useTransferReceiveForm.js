@@ -1,8 +1,10 @@
 import { useCallback, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { receiveTransfer } from './transferSlice'
+import { canClientDeclareReception } from './transferActionUtils'
 import { validateReceiveTransferForm, normalizeReceivedAmount } from './transferReceiveValidation'
 import { storageService } from '../../services/storageService'
+import { addToast } from '../ui/uiSlice'
 
 const initialValues = {
   receivedAmount: '',
@@ -33,7 +35,7 @@ export function useTransferReceiveForm({ transfer, user, onSuccess }) {
     let proofPayload = null
     try {
       if (values.proofFile) {
-        const url = await storageService.uploadTransferProof(
+        const { url, path } = await storageService.uploadTransferProof(
           user.id,
           `${transfer.id}-receive`,
           values.proofFile,
@@ -43,8 +45,22 @@ export function useTransferReceiveForm({ transfer, user, onSuccess }) {
           size: values.proofFile.size,
           type: values.proofFile.type,
           url,
+          path,
           uploadedAt: new Date().toISOString(),
         }
+      }
+
+      if (!canClientDeclareReception(transfer, transfer.userId === user.id)) {
+        dispatch(
+          addToast({
+            title: 'Action impossible',
+            message:
+              "L'entreprise doit d'abord confirmer le virement avec preuve avant de déclarer la réception.",
+            tone: 'error',
+          }),
+        )
+        setSubmitting(false)
+        return
       }
 
       dispatch(

@@ -8,11 +8,13 @@ import {
   FiShoppingBag,
   FiStar,
 } from 'react-icons/fi'
+import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useParams } from 'react-router-dom'
 import { Badge, VerifiedBadge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
+import { CatalogArchiveTabs } from '../components/ui/CatalogArchiveTabs'
 import {
   DetailFacts,
   DetailMetrics,
@@ -27,6 +29,12 @@ import { statusMeta } from '../config/statuses'
 import { FavoriteButton } from '../features/account/FavoriteButton'
 import { SubscribeButton } from '../features/account/SubscribeButton'
 import { ProfileQrShareButton } from '../features/share/ProfileQrShareButton'
+import {
+  buildBusinessShareText,
+  buildBusinessShareUrl,
+  businessCityLabel,
+  businessShareVersion,
+} from '../features/share/businessShareUtils'
 import { selectBusinessContent } from '../features/businesses/businessSelectors'
 import { isBusinessVisibleToViewer } from '../features/businesses/businessVisibility'
 import { moderateBusiness } from '../features/businesses/businessSlice'
@@ -43,6 +51,7 @@ const serviceSections = [
 
 export function BusinessDetailPage() {
   const dispatch = useDispatch()
+  const [detailTab, setDetailTab] = useState('informations')
   const { businessId } = useParams()
   const user = useSelector((state) => state.auth.user)
   const business = useSelector((state) =>
@@ -152,12 +161,14 @@ export function BusinessDetailPage() {
           <div className="absolute right-4 top-4">
             <ProfileQrShareButton
               type="business"
-              targetPath={`/businesses/${business.id}/publications/listings`}
+              refreshKey={businessShareVersion(business)}
+              shareUrl={buildBusinessShareUrl(business)}
+              shareText={buildBusinessShareText(business)}
               title={business.name}
               subtitle={activity?.label || business.sector}
               verified={['verified', 'approved', 'active'].includes(business.status)}
-              city={`${business.city}${business.country ? ` · ${business.country}` : ''}`}
-              sector={business.sector}
+              city={businessCityLabel(business)}
+              sector={activity?.label || business.sector}
               logoUrl={business.logoUrl}
             />
           </div>
@@ -215,134 +226,148 @@ export function BusinessDetailPage() {
           </Card>
         ))}
       </div>
-      <div className="grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
-        <DetailSection title="Informations professionnelles">
-          <DetailFacts
-            items={[
-              { label: 'Secteur', value: activity?.label || business.sector },
-              { label: 'Pays', value: business.country },
-              { label: 'Ville', value: business.city },
-              { label: 'Téléphone', value: business.phone },
-              ...(hasTransfer
-                ? [
-                    { label: 'Frais annoncés', value: `${business.feePercent}%` },
-                    { label: 'Délai moyen', value: business.averageDelay },
-                  ]
-                : []),
-              ...(!hasTransfer && business.averageDelay
-                ? [{ label: 'Délai moyen', value: business.averageDelay }]
-                : []),
-            ]}
-          />
-          <div className="mt-5 flex flex-wrap gap-2">
-            {business.services.map((service) => (
-              <Badge key={service}>{service}</Badge>
-            ))}
-          </div>
-        </DetailSection>
-        <TrustPanel
-          items={[
-            `Profil ${statusMeta(business.status).label.toLowerCase()}.`,
-            `${rating.count} avis publié(s) par la communauté.`,
-            'Les coordonnées sensibles sont partagées dans les opérations confirmées.',
-          ]}
-        />
-      </div>
-      {isAdminViewer ? (
-        <Card className="border border-brand-100 bg-brand-50/60 dark:border-brand-900/40 dark:bg-brand-950/20">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="flex items-center gap-2 font-black">
-                <FiShield className="text-brand-700" />
-                Actions administrateur
-              </h2>
-              <p className="mt-2 text-sm text-[var(--app-text-muted)]">
-                Validation et contrôle direct de l’entreprise depuis sa fiche publique.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={() => dispatch(moderateBusiness({ id: business.id, status: 'verified' }))}>
-                Valider
-              </Button>
-              <Button variant="secondary" onClick={() => dispatch(moderateBusiness({ id: business.id, status: 'active' }))}>
-                Activer
-              </Button>
-              <Button variant="danger" onClick={() => dispatch(moderateBusiness({ id: business.id, status: 'rejected' }))}>
-                Rejeter
-              </Button>
-            </div>
-          </div>
-        </Card>
-      ) : null}
-      <div className="grid gap-5 lg:grid-cols-[1fr_1fr]">
-        <DetailSection title="Points mis en avant">
-          <div className="grid gap-3 sm:grid-cols-2">
-            {experience.spotlight.map((item) => (
-              <div key={item} className="rounded-2xl bg-[var(--app-surface-muted)] p-4 text-sm">
-                <strong className="block">{item}</strong>
-                <span className="mt-1 block text-[var(--app-text-muted)]">
-                  {resolveBusinessSpotlightValue(business, item)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </DetailSection>
-        <DetailSection title="À propos de cette activité">
-          <p className="text-sm leading-7 text-[var(--app-text-muted)]">{experience.audience}</p>
-          <div className="mt-4 grid gap-3">
-            {experience.onboarding.map((item) => (
-              <div key={item} className="rounded-2xl bg-[var(--app-surface-muted)] p-4 text-sm">
-                {item}
-              </div>
-            ))}
-          </div>
-        </DetailSection>
-      </div>
-      {sections.length ? (
-        <div className="grid gap-4">
-          <div>
-            <h2 className="text-2xl font-black">Publications liées</h2>
-            <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-              Accédez aux contenus réellement publiés par cette entreprise selon son activité.
-            </p>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {sections.map(({ icon: Icon, key, label }) => (
-              <Link key={key} to={`/businesses/${business.id}/publications/${key}`}>
-                <Card className="h-full">
-                  <Icon className="text-2xl text-brand-600" />
-                  <strong className="mt-4 block text-xl">{label}</strong>
-                  <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-                    {content[key].length} élément(s) publiés
-                  </p>
-                  <div className="mt-4">
-                    {content[key][0]?.images?.[0] ? (
-                      <img
-                        src={content[key][0].images[0]}
-                        alt={content[key][0].title || label}
-                        className="h-36 w-full rounded-[1.25rem] object-cover"
-                      />
-                    ) : (
-                      <div className="grid h-36 place-items-center rounded-[1.25rem] bg-[var(--app-surface-muted)] text-sm text-[var(--app-text-muted)]">
-                        Voir la liste publiée
-                      </div>
-                    )}
-                  </div>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      <ReviewsSection
-        ownerId={business.ownerId}
-        ownerName={business.name}
-        profileTargetType={REVIEW_TARGET_TYPES.BUSINESS}
-        profileTargetId={business.id}
-        reviews={reviews}
-        currentUser={user}
+      <CatalogArchiveTabs
+        active={detailTab}
+        onChange={setDetailTab}
+        variant="section"
+        tabs={[
+          { key: 'informations', label: 'Informations' },
+          { key: 'avis', label: 'Avis', count: rating.count },
+        ]}
       />
+      {detailTab === 'informations' ? (
+        <>
+          <div className="grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
+            <DetailSection title="Informations professionnelles">
+              <DetailFacts
+                items={[
+                  { label: 'Secteur', value: activity?.label || business.sector },
+                  { label: 'Pays', value: business.country },
+                  { label: 'Ville', value: business.city },
+                  { label: 'Téléphone', value: business.phone },
+                  ...(hasTransfer
+                    ? [
+                        { label: 'Frais annoncés', value: `${business.feePercent}%` },
+                        { label: 'Délai moyen', value: business.averageDelay },
+                      ]
+                    : []),
+                  ...(!hasTransfer && business.averageDelay
+                    ? [{ label: 'Délai moyen', value: business.averageDelay }]
+                    : []),
+                ]}
+              />
+              <div className="mt-5 flex flex-wrap gap-2">
+                {(business.services || []).map((service) => (
+                  <Badge key={service}>{service}</Badge>
+                ))}
+              </div>
+            </DetailSection>
+            <TrustPanel
+              items={[
+                `Profil ${statusMeta(business.status).label.toLowerCase()}.`,
+                `${rating.count} avis publié(s) par la communauté.`,
+                'Les coordonnées sensibles sont partagées dans les opérations confirmées.',
+              ]}
+            />
+          </div>
+          {isAdminViewer ? (
+            <Card className="border border-brand-100 bg-brand-50/60 dark:border-brand-900/40 dark:bg-brand-950/20">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="flex items-center gap-2 font-black">
+                    <FiShield className="text-brand-700" />
+                    Actions administrateur
+                  </h2>
+                  <p className="mt-2 text-sm text-[var(--app-text-muted)]">
+                    Validation et contrôle direct de l’entreprise depuis sa fiche publique.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={() => dispatch(moderateBusiness({ id: business.id, status: 'verified' }))}>
+                    Valider
+                  </Button>
+                  <Button variant="secondary" onClick={() => dispatch(moderateBusiness({ id: business.id, status: 'active' }))}>
+                    Activer
+                  </Button>
+                  <Button variant="danger" onClick={() => dispatch(moderateBusiness({ id: business.id, status: 'rejected' }))}>
+                    Rejeter
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          ) : null}
+          <div className="grid gap-5 lg:grid-cols-[1fr_1fr]">
+            <DetailSection title="Points mis en avant">
+              <div className="grid gap-3 sm:grid-cols-2">
+                {experience.spotlight.map((item) => (
+                  <div key={item} className="rounded-2xl bg-[var(--app-surface-muted)] p-4 text-sm">
+                    <strong className="block">{item}</strong>
+                    <span className="mt-1 block text-[var(--app-text-muted)]">
+                      {resolveBusinessSpotlightValue(business, item)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </DetailSection>
+            <DetailSection title="À propos de cette activité">
+              <p className="text-sm leading-7 text-[var(--app-text-muted)]">{experience.audience}</p>
+              <div className="mt-4 grid gap-3">
+                {experience.onboarding.map((item) => (
+                  <div key={item} className="rounded-2xl bg-[var(--app-surface-muted)] p-4 text-sm">
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </DetailSection>
+          </div>
+          {sections.length ? (
+            <div className="grid gap-4">
+              <div>
+                <h2 className="text-2xl font-black">Publications liées</h2>
+                <p className="mt-1 text-sm text-[var(--app-text-muted)]">
+                  Accédez aux contenus réellement publiés par cette entreprise selon son activité.
+                </p>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                {sections.map(({ icon: Icon, key, label }) => (
+                  <Link key={key} to={`/businesses/${business.id}/publications/${key}`}>
+                    <Card className="h-full">
+                      <Icon className="text-2xl text-brand-600" />
+                      <strong className="mt-4 block text-xl">{label}</strong>
+                      <p className="mt-1 text-sm text-[var(--app-text-muted)]">
+                        {content[key].length} élément(s) publiés
+                      </p>
+                      <div className="mt-4">
+                        {content[key][0]?.images?.[0] ? (
+                          <img
+                            src={content[key][0].images[0]}
+                            alt={content[key][0].title || label}
+                            className="h-36 w-full rounded-[1.25rem] object-cover"
+                          />
+                        ) : (
+                          <div className="grid h-36 place-items-center rounded-[1.25rem] bg-[var(--app-surface-muted)] text-sm text-[var(--app-text-muted)]">
+                            Voir la liste publiée
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </>
+      ) : (
+        <ReviewsSection
+          embedded
+          ownerId={business.ownerId}
+          ownerName={business.name}
+          profileTargetType={REVIEW_TARGET_TYPES.BUSINESS}
+          profileTargetId={business.id}
+          reviews={reviews}
+          currentUser={user}
+        />
+      )}
     </div>
   )
 }

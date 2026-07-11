@@ -1,4 +1,4 @@
-import { FiBox, FiBriefcase, FiFileText, FiHome, FiMessageSquare, FiRepeat, FiShoppingBag, FiUsers } from 'react-icons/fi'
+import { FiBox, FiBriefcase, FiFileText, FiHome, FiMessageSquare, FiRepeat, FiShoppingBag } from 'react-icons/fi'
 
 /** Sidebar — ordre complet (8 entrées desktop, messagerie + entreprise + actualité en fin) */
 export const primaryNavigationItems = [
@@ -8,7 +8,7 @@ export const primaryNavigationItems = [
   { id: 'parcels', label: 'Colis', path: '/parcels', icon: FiBox },
   { id: 'jobs', label: 'Jobs', path: '/jobs', icon: FiBriefcase },
   { id: 'messages', label: 'Messagerie', path: '/messages', icon: FiMessageSquare, badgeSelector: 'messages' },
-  { id: 'businesses', label: 'Entreprise', path: '/businesses', icon: FiUsers, desktopOnly: true },
+  { id: 'businesses', label: 'Entreprise', path: '/businesses', icon: FiBriefcase, desktopOnly: true },
   { id: 'news', label: 'Actualité', path: '/news', icon: FiFileText, desktopOnly: true },
 ]
 

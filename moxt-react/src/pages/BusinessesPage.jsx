@@ -26,12 +26,14 @@ export function BusinessesPage() {
   const [filters, setFilters] = useState({ query: '', city: '', sector: '', service: '' })
   const user = useSelector((state) => state.auth.user)
   const businesses = useSelector((state) => state.businesses.items)
-  const ownBusiness = selectActiveBusinessForOwner(businesses, user.id)
+  const ownBusiness = selectActiveBusinessForOwner(businesses, user?.id)
+  const ownBusinessInDirectory = ownBusiness && isBusinessDirectoryVisible(ownBusiness)
 
   const visibleBusinesses = useMemo(
     () =>
       filterDirectoryBusinesses(businesses).filter((business) => {
         if (!isBusinessDirectoryVisible(business)) return false
+        if (ownBusiness && business.id === ownBusiness.id) return false
         const activityLabel = activityByValue(business.primaryActivity)?.label || business.sector
         const haystack =
           `${business.name} ${activityLabel} ${business.city} ${business.description} ${business.services?.join(' ')}`.toLowerCase()
@@ -42,7 +44,7 @@ export function BusinessesPage() {
           (!filters.service || business.services?.includes(filters.service))
         )
       }),
-    [businesses, filters],
+    [businesses, filters, ownBusiness],
   )
 
   function clearFilters() {
@@ -63,11 +65,49 @@ export function BusinessesPage() {
         }
       />
 
-      {ownBusiness && !isBusinessDirectoryVisible(ownBusiness) ? (
-        <Alert variant="info" title="Votre entreprise est en cours de validation">
-          {ownBusiness.name} n’apparaît pas encore dans l’annuaire pour les autres membres. Une fois
-          le statut « Vérifié », elle sera visible par toute la communauté MOXT.
+      {ownBusiness && !ownBusinessInDirectory ? (
+        <Alert variant="warning" title="Votre entreprise est en cours de validation">
+          <strong>{ownBusiness.name}</strong> n’apparaît pas encore dans l’annuaire pour les autres
+          membres. Une fois le statut « Vérifié », elle sera visible par toute la communauté MOXT.
+          Vous pouvez la consulter et la modifier depuis votre{' '}
+          <Link className="font-bold underline" to="/professional">
+            espace professionnel
+          </Link>
+          .
         </Alert>
+      ) : null}
+
+      {ownBusiness ? (
+        <Card variant="featured" className="grid gap-4 p-5 sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-brand-700">
+                Votre entreprise
+              </p>
+              <h2 className="mt-1 text-xl font-black">{ownBusiness.name}</h2>
+              <p className="mt-1 text-sm text-[var(--app-text-muted)]">
+                {activityByValue(ownBusiness.primaryActivity)?.label || ownBusiness.sector} ·{' '}
+                {ownBusiness.city}
+              </p>
+            </div>
+            <Badge tone={statusMeta(ownBusiness.status).tone}>
+              {statusMeta(ownBusiness.status).label}
+            </Badge>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link to="/professional">
+              <Button variant="secondary">Espace professionnel</Button>
+            </Link>
+            <Link to="/businesses/setup">
+              <Button variant="secondary">Modifier</Button>
+            </Link>
+            {ownBusinessInDirectory ? (
+              <Link to={`/businesses/${ownBusiness.id}`}>
+                <Button>Voir la fiche publique</Button>
+              </Link>
+            ) : null}
+          </div>
+        </Card>
       ) : null}
 
       <ScrollSectionAnchor className="scroll-mt-24 grid gap-5 lg:scroll-mt-28">

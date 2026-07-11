@@ -104,6 +104,25 @@ export const storageService = {
 
   async uploadTransferProof(userId, transferId, file) {
     const path = `${userId}/${transferId}/proof.${ext(file)}`
-    return uploadPrivate('transfers', path, file)
+    const url = await uploadPrivate('transfers', path, file)
+    return { url, path }
+  },
+
+  async uploadBusinessTransferProof(userId, transferId, file) {
+    const path = `${userId}/${transferId}/business.${ext(file)}`
+    const url = await uploadPrivate('transfers', path, file)
+    return { url, path }
+  },
+
+  async getTransferProofSignedUrl(path) {
+    const { data, error } = await supabase.storage.from('transfers').createSignedUrl(path, 3600)
+    if (error) throw new Error(error.message)
+    return data.signedUrl
+  },
+
+  async downloadTransferProof(path) {
+    const { data, error } = await supabase.storage.from('transfers').download(path)
+    if (error) throw new Error(error.message)
+    return data
   },
 }

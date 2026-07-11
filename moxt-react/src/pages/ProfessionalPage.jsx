@@ -16,14 +16,23 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { ReshareButton } from '../components/ui/ReshareButton'
 import { Tabs } from '../components/ui/Tabs'
 import { activityByValue } from '../config/businessActivities'
+import {
+  buildBusinessShareText,
+  buildBusinessShareUrl,
+  businessCityLabel,
+  businessShareVersion,
+} from '../features/share/businessShareUtils'
+import { ProfileQrShareButton } from '../features/share/ProfileQrShareButton'
 import {
   calculateBusinessCompletion,
   calculateBusinessRating,
   selectBusinessContent,
 } from '../features/businesses/businessSelectors'
 import { selectActiveBusinessForOwner } from '../features/businesses/businessVisibility'
+import { selectTransfersVisibleToUser } from '../features/transfers/transferSelectors'
 import { ActionsPanel } from './professional/ActionsPanel'
 import { DocumentsPanel } from './professional/DocumentsPanel'
 import { MembersPanel } from './professional/MembersPanel'
@@ -72,9 +81,11 @@ export function ProfessionalPage() {
   const requests = useSelector((state) =>
     state.businesses.requests.filter((item) => item.businessId === business?.id),
   )
-  const transfers = useSelector((state) =>
-    state.transfers.items.filter((item) => item.businessId === business?.id),
-  )
+  const transfers = useSelector((state) => {
+    const visible = selectTransfersVisibleToUser(state, user.id)
+    if (!business?.id) return visible
+    return visible.filter((item) => item.businessId === business.id)
+  })
   const reviews = useSelector((state) =>
     state.reviews.items.filter(
       (item) => item.targetType === 'business' && item.targetId === business?.id,
@@ -137,9 +148,24 @@ export function ProfessionalPage() {
         title={business.name}
         description="Demandes, équipe, documents, publications et performances dans un espace adapté à votre activité."
         actions={
-          <Link to={`/businesses/${business.id}`}>
-            <Button variant="secondary">Voir la fiche publique</Button>
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <ProfileQrShareButton
+              type="business"
+              refreshKey={businessShareVersion(business)}
+              shareUrl={buildBusinessShareUrl(business)}
+              shareText={buildBusinessShareText(business)}
+              title={business.name}
+              subtitle={activity?.label || business.sector}
+              verified={['verified', 'approved', 'active'].includes(business.status)}
+              city={businessCityLabel(business)}
+              sector={activity?.label || business.sector}
+              logoUrl={business.logoUrl}
+            />
+            <ReshareButton sourceType="business" sourceId={business.id} sourceData={business} />
+            <Link to={`/businesses/${business.id}`}>
+              <Button variant="secondary">Voir la fiche publique</Button>
+            </Link>
+          </div>
         }
       />
 

@@ -105,6 +105,7 @@ const transferSlice = createSlice({
       if (!transfer) return
       const expectedStatus = TRANSFER_TRANSITIONS[transfer.status]
       if (!expectedStatus || action.payload.status !== expectedStatus) return
+      if (expectedStatus === TRANSFER_STATUS.PAID_OUT && !action.payload.proof) return
       transfer.status = expectedStatus
       if (action.payload.proof) transfer.businessProof = action.payload.proof
       transfer.updatedAt = new Date().toISOString()
@@ -121,17 +122,23 @@ const transferSlice = createSlice({
     receiveTransfer(state, action) {
       const transfer = state.items.find((item) => item.id === action.payload.id)
       if (!transfer) return
+      if (!transfer.businessProof || transfer.status !== TRANSFER_STATUS.PAID_OUT) return
       transfer.receivedAmount = action.payload.receivedAmount
       transfer.receivedMethod = action.payload.receivedMethod
       transfer.receivedProof = action.payload.receivedProof || null
       transfer.receivedAt = action.payload.receivedAt
       transfer.updatedAt = action.payload.receivedAt
+      transfer.status = TRANSFER_STATUS.COMPLETED
       transfer.timeline ||= []
       transfer.timeline.push({
         status: 'received',
         at: action.payload.receivedAt,
         amount: action.payload.receivedAmount,
         method: action.payload.receivedMethod,
+      })
+      transfer.timeline.push({
+        status: TRANSFER_STATUS.COMPLETED,
+        at: action.payload.receivedAt,
       })
     },
     expireOverdueTransfers(state, action) {

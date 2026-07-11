@@ -1,7 +1,7 @@
 import { addNotification } from '../features/communications/communicationSlice'
 import { BUSINESS_VISIBLE_STATUSES } from '../features/businesses/businessPublishUtils'
-import { createReceipt } from '../features/finance/financeSlice'
-import { TRANSFER_STATUS } from '../features/transfers/transferConfig'
+import { upsertTransferReceipt } from '../features/finance/financeSlice'
+import { syncTransferReceipt } from '../features/transfers/transferReceiptSync'
 import { addToast } from '../features/ui/uiSlice'
 import {
   notifyPublisherSubscribers,
@@ -178,37 +178,25 @@ export const interactionMiddleware = (store) => {
       )
     }
 
-    // Créer un reçu quand le transfert est complété
-    if (
-      transfer?.status === TRANSFER_STATUS.COMPLETED &&
-      !before.finance?.receipts?.some(
-        (receipt) => receipt.relatedType === 'transfer' && receipt.relatedId === transfer.id,
-      )
-    ) {
-      store.dispatch(
-        createReceipt({
-          userId: transfer.userId,
-          relatedType: 'transfer',
-          relatedId: transfer.id,
-          title: `Recu transfert ${transfer.id}`,
-          amount: transfer.totalToPay || transfer.amount,
-          currency: transfer.fromCurrency,
-          status: transfer.status,
-          details: {
-            direction: transfer.direction,
-            exchanger: transfer.exchanger?.name,
-            receivedAmount: transfer.receivedAmount,
-            receivedCurrency: transfer.toCurrency,
-            simulation: true,
-          },
-        }),
-      )
+    // Conserver reçu et preuves à chaque étape
+    if (transfer) {
+      syncTransferReceipt(store, transfer)
+    }
+  }
+
+  if (action.type === 'transfers/receiveTransfer') {
+    const transfer = after.transfers.items.find((item) => item.id === action.payload.id)
+    if (transfer) {
+      syncTransferReceipt(store, transfer)
     }
   }
 
   if (action.type === 'transfers/declarePayment') {
     const transferId = typeof action.payload === 'string' ? action.payload : action.payload.id
     const transfer = after.transfers.items.find((item) => item.id === transferId)
+    if (transfer) {
+      syncTransferReceipt(store, transfer)
+    }
     if (transfer?.businessOwnerId) {
       notify(store, {
         userId: transfer.businessOwnerId,

@@ -20,7 +20,7 @@ export function createLoadCoreData({ supabase, setTransfers, setParcels }) {
       supabase
         .from('transfers')
         .select('*')
-        .eq('user_id', uid)
+        .or(`user_id.eq.${uid},business_owner_id.eq.${uid}`)
         .order('created_at', { ascending: false }),
       supabase.from('parcels').select('*').order('created_at', { ascending: false }),
       supabase.from('parcel_requests').select('*').eq('user_id', uid),

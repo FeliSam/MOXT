@@ -108,9 +108,13 @@ describe('transferSlice', () => {
         proof: { name: 'virement.pdf' },
       }),
     )
-    const completed = reducer(paidOut, moderateTransfer({ id, status: TRANSFER_STATUS.COMPLETED }))
+    const paidOutWithoutProof = reducer(
+      duplicate,
+      moderateTransfer({ id, status: TRANSFER_STATUS.PAID_OUT }),
+    )
+    expect(paidOutWithoutProof.items[0].status).toBe(TRANSFER_STATUS.RECEIVED)
     expect(paidOut.items[0].businessProof.name).toBe('virement.pdf')
-    expect(completed.items[0].status).toBe(TRANSFER_STATUS.COMPLETED)
-    expect(completed.items[0].timeline).toHaveLength(5)
+    expect(paidOut.items[0].status).toBe(TRANSFER_STATUS.PAID_OUT)
+    expect(paidOut.items[0].timeline).toHaveLength(4)
   })
 })

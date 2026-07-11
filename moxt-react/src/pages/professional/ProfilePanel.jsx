@@ -1,14 +1,19 @@
 import { activityByValue } from '../../config/businessActivities'
-import { buildAbsoluteUrl } from '../../utils/siteUrl'
+import {
+  buildBusinessShareText,
+  buildBusinessShareUrl,
+  businessCityLabel,
+  businessShareVersion,
+} from '../../features/share/businessShareUtils'
 import { QrSharePanel } from '../../features/share/QrSharePanel'
 import { Badge } from '../../components/ui/Badge'
 import { Card } from '../../components/ui/Card'
 import { statusMeta } from '../../config/statuses'
 
 export function ProfilePanel({ activity, business, secondaryActivity }) {
-  const businessShareUrl = buildAbsoluteUrl(
-    `/businesses/${business.id}/publications/listings`,
-  )
+  const businessShareUrl = buildBusinessShareUrl(business)
+  const shareText = buildBusinessShareText(business)
+  const sectorLabel = activity?.label || business.sector
 
   return (
     <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
@@ -64,16 +69,17 @@ export function ProfilePanel({ activity, business, secondaryActivity }) {
       </Card>
 
       <QrSharePanel
+        key={businessShareVersion(business)}
         variant="business"
         title={business.name}
         subtitle={activityByValue(business.primaryActivity)?.label || business.sector}
         avatarUrl={business.logoUrl}
         verified={['verified', 'approved', 'active'].includes(business.status)}
-        city={business.city}
-        sector={activity?.label || business.sector}
+        city={businessCityLabel(business)}
+        sector={sectorLabel}
         shareUrl={businessShareUrl}
         shareTitle={`${business.name} sur MOXT`}
-        shareText={`Découvrez ${business.name} sur MOXT.`}
+        shareText={shareText}
       />
     </div>
   )

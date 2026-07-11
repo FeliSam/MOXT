@@ -117,6 +117,7 @@ export function DashboardOverviewPanels({
                   <Link
                     key={transfer.id}
                     to={`/transfers/${transfer.id}`}
+                    state={{ transferView: 'client' }}
                     className="relative rounded-2xl bg-[var(--app-surface-muted)] p-3 transition hover:bg-[var(--app-accent-soft)]"
                   >
                     <span className="absolute top-0 right-2">

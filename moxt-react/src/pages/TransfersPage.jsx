@@ -11,6 +11,7 @@ import { Modal } from '../components/ui/Modal'
 import { TransferCalculator } from '../features/transfers/TransferCalculator'
 import { TransferStatusBadge } from '../features/transfers/TransferStatusBadge'
 import { expireOverdueTransfers } from '../features/transfers/transferSlice'
+import { selectTransfersVisibleToUser } from '../features/transfers/transferSelectors'
 import {
   directionLabel,
   formatDate,
@@ -25,19 +26,19 @@ export function TransfersPage() {
   const [status, setStatus] = useState('')
   const [calculatorOpen, setCalculatorOpen] = useState(false)
   const user = useSelector((state) => state.auth.user)
-  const transfers = useSelector((state) => state.transfers.items)
+  const transfers = useSelector((state) => selectTransfersVisibleToUser(state, user.id))
   const visibleTransfers = useMemo(
     () =>
       transfers.filter(
         (transfer) =>
-          transfer.userId === user.id &&
           (!status || transfer.status === status) &&
           (!query ||
             transfer.id.toLowerCase().includes(query.toLowerCase()) ||
             transfer.recipient.firstName.toLowerCase().includes(query.toLowerCase()) ||
-            transfer.recipient.lastName.toLowerCase().includes(query.toLowerCase())),
+            transfer.recipient.lastName.toLowerCase().includes(query.toLowerCase()) ||
+            transfer.exchanger?.name?.toLowerCase().includes(query.toLowerCase())),
       ),
-    [query, status, transfers, user.id],
+    [query, status, transfers],
   )
 
   useEffect(() => {
@@ -106,7 +107,12 @@ export function TransfersPage() {
               const currTo = transfer.currencyTo || 'RUB'
 
               return (
-                <Link key={transfer.id} className="block h-full" to={`/transfers/${transfer.id}`}>
+                <Link
+                  key={transfer.id}
+                  className="block h-full"
+                  to={`/transfers/${transfer.id}`}
+                  state={{ transferView: 'client' }}
+                >
                   <Card className="relative h-full transition hover:border-brand-300 hover:shadow-md">
                     <span className="absolute -top-3 right-3">
                       <TransferStatusBadge status={transfer.status} />

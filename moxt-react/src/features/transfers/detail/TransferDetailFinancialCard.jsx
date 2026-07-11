@@ -46,6 +46,12 @@ export function TransferDetailFinancialCard({ onCopyReference, onDownloadReceipt
           label="Coordonnees de paiement"
           value={transfer.exchanger?.paymentAccount || 'A confirmer avec l entreprise'}
         />
+        {transfer.exchanger?.paymentDetails?.country ? (
+          <TransferDetailRow
+            label="Pays de reception"
+            value={transfer.exchanger.paymentDetails.country}
+          />
+        ) : null}
       </div>
       <Button variant="secondary" icon={FiCopy} className="mt-5" onClick={onCopyReference}>
         Copier la reference

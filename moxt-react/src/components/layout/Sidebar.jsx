@@ -105,9 +105,9 @@ export function Sidebar({ open }) {
             setHoveredRailKey(null)
           }
         }}
-        className={`group/sidebar fixed inset-y-0 left-0 z-40 flex w-[18rem] flex-col bg-[var(--app-surface)] shadow-2xl transition-transform duration-300 ease-out ${
+        className={`group/sidebar fixed inset-y-0 left-0 z-40 flex max-h-dvh w-[18rem] flex-col bg-[var(--app-surface)] shadow-2xl transition-transform duration-300 ease-out ${
           open ? 'translate-x-0' : '-translate-x-full'
-        } lg:inset-y-3 lg:left-3 lg:w-[4.75rem] lg:translate-x-0 lg:overflow-visible lg:rounded-[1.75rem] lg:border lg:border-[var(--app-border)] lg:bg-[var(--app-surface)]/95 lg:shadow-[var(--shadow-float)] lg:backdrop-blur-xl`}
+        } lg:inset-y-3 lg:left-3 lg:flex lg:max-h-[calc(100dvh-1.5rem)] lg:w-[4.75rem] lg:translate-x-0 lg:overflow-visible lg:rounded-[1.75rem] lg:border lg:border-[var(--app-border)] lg:bg-[var(--app-surface)]/95 lg:shadow-[var(--shadow-float)] lg:backdrop-blur-xl`}
       >
         {/* Logo — icône seule sur desktop */}
         <div className="flex h-[4.5rem] shrink-0 items-center justify-between px-5 lg:justify-center lg:border-b lg:border-[var(--app-border)]/70 lg:px-0">
@@ -133,61 +133,62 @@ export function Sidebar({ open }) {
           </button>
         </div>
 
-        {/* Nav principale */}
-        <nav
-          className="sidebar-mobile-nav scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-3 py-4 lg:overflow-visible"
-          aria-label="Navigation principale"
-        >
-          <div className="grid gap-1 lg:gap-2">
-            {primaryItems.map((item) => (
-              <SidebarLink
-                key={item.path}
-                item={item}
-                badge={item.badgeSelector ? badgeForItem(item, appState) : 0}
-                translateLabel={translateLabel}
-                hideOnMobile={mobileHiddenPaths.has(item.path) || item.desktopOnly}
-                proximity={railProximity(hoveredRailKey, item.path)}
-                onRailHover={() => setRailHover(item.path)}
-                onClick={() => dispatch(closeSidebar())}
-              />
-            ))}
-          </div>
-
-          {/* "Services supplémentaires" — desktop, libellé flottant au survol du rail */}
-          <button
-            type="button"
-            onClick={() => setMoreOpen(true)}
-            onMouseEnter={() => setRailHover('more')}
-            onFocus={() => setRailHover('more')}
-            className={`sidebar-rail-item group/more relative mt-2 hidden w-full min-h-11 items-center justify-center rounded-xl px-2 text-left text-sm font-bold text-[var(--app-text-muted)] transition hover:text-[var(--app-text)] lg:mt-3 lg:flex ${proximityClass(railProximity(hoveredRailKey, 'more'))}`}
+        {/* Corps du rail — icônes + services, profil séparé en bas */}
+        <div className="sidebar-rail-body flex min-h-0 flex-1 flex-col overflow-visible lg:justify-between">
+          <nav
+            className="sidebar-mobile-nav sidebar-rail-nav scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-3 py-4 lg:overflow-visible lg:overscroll-none lg:px-2 lg:py-2"
+            aria-label="Navigation principale"
           >
-            <span className="sidebar-nav-icon grid size-9 shrink-0 place-items-center rounded-[0.7rem] bg-[var(--app-surface-muted)] text-brand-700 dark:text-brand-300">
-              <FiGrid className="text-base" />
-            </span>
-            <span className="sidebar-rail-label sidebar-rail-label--row">
-              {translateLabel('Services supplémentaires')}
-              <FiChevronRight className="sidebar-rail-label-chevron" />
-            </span>
-          </button>
+            <div className="sidebar-rail-stack grid gap-1 lg:gap-1.5">
+              {primaryItems.map((item) => (
+                <SidebarLink
+                  key={item.path}
+                  item={item}
+                  badge={item.badgeSelector ? badgeForItem(item, appState) : 0}
+                  translateLabel={translateLabel}
+                  hideOnMobile={mobileHiddenPaths.has(item.path) || item.desktopOnly}
+                  proximity={railProximity(hoveredRailKey, item.path)}
+                  onRailHover={() => setRailHover(item.path)}
+                  onClick={() => dispatch(closeSidebar())}
+                />
+              ))}
 
-          {/* Mobile : groupes complets */}
-          <div className="mt-5 border-t border-[var(--app-border)] pt-4 lg:hidden">
-            {groups.map((group) => (
-              <NavigationGroup
-                key={group.id}
-                group={group}
-                role={role}
-                excludePaths={mobileSidebarExcludePaths}
-                onNavigate={() => dispatch(closeSidebar())}
-                translateLabel={translateLabel}
-              />
-            ))}
-          </div>
-        </nav>
+              <button
+                type="button"
+                onClick={() => setMoreOpen(true)}
+                onMouseEnter={() => setRailHover('more')}
+                onFocus={() => setRailHover('more')}
+                className={`sidebar-rail-item group/more relative hidden w-full min-h-11 shrink-0 items-center justify-center rounded-xl px-2 text-left text-sm font-bold text-[var(--app-text-muted)] transition hover:text-[var(--app-text)] lg:flex ${proximityClass(railProximity(hoveredRailKey, 'more'))}`}
+              >
+                <span className="sidebar-nav-icon grid size-9 shrink-0 place-items-center rounded-[0.7rem] bg-[var(--app-surface-muted)] text-brand-700 dark:text-brand-300">
+                  <FiGrid className="text-base" />
+                </span>
+                <span className="sidebar-rail-label sidebar-rail-label--row">
+                  {translateLabel('Services supplémentaires')}
+                  <FiChevronRight className="sidebar-rail-label-chevron" />
+                </span>
+              </button>
+            </div>
+
+            {/* Mobile : groupes complets */}
+            <div className="mt-5 border-t border-[var(--app-border)] pt-4 lg:hidden">
+              {groups.map((group) => (
+                <NavigationGroup
+                  key={group.id}
+                  group={group}
+                  role={role}
+                  excludePaths={mobileSidebarExcludePaths}
+                  onNavigate={() => dispatch(closeSidebar())}
+                  translateLabel={translateLabel}
+                />
+              ))}
+            </div>
+          </nav>
+        </div>
 
         {/* Profil bas de sidebar — flyout accessible (pont de survol vers le rail) */}
         <div
-          className="sidebar-footer-zone group/footer hidden shrink-0 border-t border-[var(--app-border)]/70 p-3 lg:block"
+          className="sidebar-footer-zone group/footer relative z-10 hidden shrink-0 overflow-visible border-t border-[var(--app-border)]/70 bg-[var(--app-surface)] p-3 lg:block"
           onMouseEnter={() => setRailHover('profile')}
         >
           <NavLink
@@ -241,7 +242,7 @@ export function Sidebar({ open }) {
         <button
           type="button"
           onClick={handleLogout}
-          className="mx-3 mb-3 flex min-h-12 items-center justify-center gap-2 rounded-2xl text-sm font-bold text-red-600 hover:bg-red-50 lg:hidden dark:hover:bg-red-950/30"
+          className="mx-3 mb-3 mt-auto flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-2xl text-sm font-bold text-red-600 hover:bg-red-50 lg:hidden dark:hover:bg-red-950/30"
         >
           <FiLogOut className="text-lg" />
           Deconnexion

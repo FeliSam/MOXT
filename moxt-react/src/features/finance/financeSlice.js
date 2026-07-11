@@ -48,6 +48,38 @@ const financeSlice = createSlice({
       payment.status = action.payload.status
       payment.updatedAt = new Date().toISOString()
     },
+    upsertTransferReceipt(state, action) {
+      const payload = action.payload
+      const existing = state.receipts.find(
+        (item) =>
+          item.userId === payload.userId &&
+          item.relatedType === payload.relatedType &&
+          item.relatedId === payload.relatedId,
+      )
+      if (existing) {
+        existing.title = payload.title || existing.title
+        existing.amount = payload.amount ?? existing.amount
+        existing.currency = payload.currency || existing.currency
+        existing.status = payload.status || existing.status
+        existing.details = { ...existing.details, ...payload.details }
+        existing.updatedAt = new Date().toISOString()
+        return
+      }
+      state.receipts.unshift({
+        id: createId('REC'),
+        userId: payload.userId,
+        relatedType: payload.relatedType,
+        relatedId: payload.relatedId,
+        title: payload.title,
+        amount: Number(payload.amount),
+        currency: payload.currency,
+        status: payload.status,
+        details: payload.details || {},
+        simulation: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+    },
     createReceipt: {
       reducer(state, action) {
         const duplicate = state.receipts.find(
@@ -105,6 +137,7 @@ export const {
   createReceipt,
   createSimulatedPayment,
   updateSimulatedPaymentStatus,
+  upsertTransferReceipt,
   setAll,
 } = financeSlice.actions
 export default financeSlice.reducer

@@ -7,6 +7,7 @@ import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { formatDate, formatMoney } from '../features/transfers/transferUtils'
+import { TransferProofsSection } from '../features/transfers/detail/TransferProofsSection'
 import {
   downloadReceiptImage,
   printReceipt,
@@ -59,47 +60,56 @@ export function ReceiptsPage() {
                 <p className="mt-2 text-sm text-[var(--app-text-muted)]">
                   {formatMoney(receipt.amount, receipt.currency)} · {formatDate(receipt.createdAt)}
                 </p>
-                {transfer ? (
+                {transfer || receipt.details?.proofs?.length ? (
                   <>
-                    <div className="mt-5 rounded-2xl bg-[var(--app-surface-muted)] p-4">
-                      <h3 className="text-sm font-black">Traitement</h3>
-                      <div className="mt-3 grid gap-2">
-                        {(transfer.timeline || []).map((event) => (
-                          <div
-                            key={`${event.status}-${event.at}`}
-                            className="flex justify-between gap-3 text-xs"
-                          >
-                            <strong>{event.status}</strong>
-                            <span className="text-[var(--app-text-muted)]">
-                              {formatDate(event.at)}
-                            </span>
-                          </div>
-                        ))}
+                    {transfer ? (
+                      <div className="mt-5 rounded-2xl bg-[var(--app-surface-muted)] p-4">
+                        <h3 className="text-sm font-black">Traitement</h3>
+                        <div className="mt-3 grid gap-2">
+                          {(transfer.timeline || []).map((event) => (
+                            <div
+                              key={`${event.status}-${event.at}`}
+                              className="flex justify-between gap-3 text-xs"
+                            >
+                              <strong>{event.status}</strong>
+                              <span className="text-[var(--app-text-muted)]">
+                                {formatDate(event.at)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                    <div className="mt-5 flex flex-wrap gap-2">
-                      <Button
-                        variant="secondary"
-                        icon={FiDownload}
-                        onClick={() => printReceipt(transfer)}
-                      >
-                        PDF
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        icon={FiDownload}
-                        onClick={() => downloadReceiptImage(transfer)}
-                      >
-                        Image
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        icon={FiShare2}
-                        onClick={() => shareReceipt(transfer)}
-                      >
-                        Partager
-                      </Button>
-                    </div>
+                    ) : null}
+                    <TransferProofsSection
+                      className="mt-5"
+                      receipt={receipt}
+                      transfer={transfer}
+                    />
+                    {transfer ? (
+                      <div className="mt-5 flex flex-wrap gap-2">
+                        <Button
+                          variant="secondary"
+                          icon={FiDownload}
+                          onClick={() => printReceipt(transfer)}
+                        >
+                          Reçu PDF
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          icon={FiDownload}
+                          onClick={() => downloadReceiptImage(transfer)}
+                        >
+                          Reçu image
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          icon={FiShare2}
+                          onClick={() => shareReceipt(transfer)}
+                        >
+                          Partager
+                        </Button>
+                      </div>
+                    ) : null}
                   </>
                 ) : (
                   <Button

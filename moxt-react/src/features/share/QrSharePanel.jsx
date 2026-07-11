@@ -29,7 +29,7 @@ export function QrSharePanel({
 }) {
   const { t } = useLanguage()
   const [copied, setCopied] = useState(false)
-  const qrUrl = useMemo(() => makeQrCodeUrl(shareUrl, qrSize), [shareUrl, qrSize])
+  const qrUrl = useMemo(() => makeQrCodeUrl(shareUrl, qrSize), [shareUrl, qrSize, title, city, sector, avatarUrl])
 
   const hint = t(`share.hints.${variant}`)
   const resolvedShareTitle =
@@ -134,6 +134,7 @@ export function QrSharePanel({
 
         <div className="mt-7 rounded-[1.35rem] bg-white p-3.5 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.35)]">
           <img
+            key={shareUrl}
             src={qrUrl}
             alt=""
             width={qrSize}

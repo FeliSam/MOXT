@@ -6,10 +6,13 @@ const membersStorage = createLocalStorage('moxt-business-members-v1')
 const documentsStorage = createLocalStorage('moxt-business-documents-v1')
 const requestsStorage = createLocalStorage('moxt-business-requests-v1')
 
-function normalizeTransferAccount(account = {}) {
+function normalizeTransferAccount(account = {}, originCountry = 'BJ') {
+  const country = account.country || 'RU'
+  const slot = account.slot || (country === 'RU' ? 'ru' : 'origin')
   return {
     id: account.id || createId('BACC'),
-    country: account.country || 'RU',
+    slot,
+    country: slot === 'ru' ? 'RU' : originCountry,
     label: account.label?.trim() || account.method || 'Compte de reception',
     method: account.method?.trim() || '',
     recipientName: account.recipientName?.trim() || '',
@@ -18,6 +21,7 @@ function normalizeTransferAccount(account = {}) {
     bankName: account.bankName?.trim() || '',
     instructions: account.instructions?.trim() || '',
     active: account.active !== false,
+    isDefault: account.isDefault === true,
     updatedAt: new Date().toISOString(),
   }
 }
@@ -110,7 +114,9 @@ const businessSlice = createSlice({
         (item) => item.id === action.payload.businessId && item.ownerId === action.payload.ownerId,
       )
       if (!business || !business.services?.includes('Transfert')) return
-      business.transferAccounts = (action.payload.accounts || []).map(normalizeTransferAccount)
+      business.transferAccounts = (action.payload.accounts || []).map((account) =>
+        normalizeTransferAccount(account, action.payload.originCountry || 'BJ'),
+      )
       business.updatedAt = new Date().toISOString()
     },
     addBusinessMember: {

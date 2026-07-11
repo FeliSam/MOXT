@@ -52,7 +52,7 @@ import {
   transferCurrenciesForCountry,
 } from '../features/transfers/transferConfig'
 import { statusMeta } from '../config/statuses'
-import { buildAbsoluteUrl } from '../utils/siteUrl'
+import { buildBusinessShareUrlFromValues } from '../features/share/businessShareUtils'
 import { makeQrCodeUrl } from '../utils/qrCode'
 
 /* ─── Step definition ──────────────────────────────────────────────────── */
@@ -156,16 +156,15 @@ function Stepper({ step, onGoTo }) {
 }
 
 /* ─── Live preview card ─────────────────────────────────────────────────── */
-function BusinessPreview({ formik, hasTransfer, serviceOptions, user }) {
+function BusinessPreview({ formik, hasTransfer, serviceOptions }) {
   const v = formik.values
   const activity = BUSINESS_ACTIVITIES.find((a) => a.value === v.primaryActivity)
   const experience = businessExperienceForActivity(v.primaryActivity)
   const colors = ACTIVITY_COLORS[v.primaryActivity] || ACTIVITY_COLORS.services
   const Icon = activity?.icon
   const status = statusMeta('pending_review')
-  const sharePath = v.id ? `/businesses/${v.id}` : '/businesses'
-  const qrUrl = makeQrCodeUrl(buildAbsoluteUrl(sharePath), 120)
-  const userInitials = `${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`.toUpperCase() || 'MO'
+  const shareUrl = buildBusinessShareUrlFromValues(v)
+  const qrUrl = makeQrCodeUrl(shareUrl, 120)
 
   const initials = v.name
     ? v.name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase()
@@ -186,33 +185,39 @@ function BusinessPreview({ formik, hasTransfer, serviceOptions, user }) {
 
         <div className="grid gap-3 border-b border-[var(--app-border)] p-4 sm:grid-cols-[1fr_auto] sm:items-center">
           <div className="flex items-start gap-3">
-            {user?.avatarUrl ? (
-              <img src={user.avatarUrl} alt="" className="size-10 rounded-full object-cover" />
+            {v.logoUrl ? (
+              <img src={v.logoUrl} alt="" className="size-10 rounded-xl object-cover" />
             ) : (
-              <span className="grid size-10 place-items-center rounded-full bg-brand-600 text-xs font-black text-white">
-                {userInitials}
+              <span className="grid size-10 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-xs font-black text-[var(--app-accent)]">
+                {initials}
               </span>
             )}
             <div className="min-w-0 text-xs text-[var(--app-text-muted)]">
-              <p className="font-bold text-[var(--app-text)]">Profil utilisateur actif sur MOXT</p>
-              {user?.city ? (
+              <p className="font-bold text-[var(--app-text)]">{v.name || 'Nom de l entreprise'}</p>
+              {activity ? <p className="mt-0.5 font-semibold text-brand-700">{activity.label}</p> : null}
+              {v.city ? (
                 <p className="mt-1 flex items-center gap-1">
-                  <FiMapPin className="shrink-0" /> {user.city}
+                  <FiMapPin className="shrink-0" /> {v.city}, Russie
                 </p>
               ) : null}
-              {user?.email ? (
+              {v.phone ? (
                 <p className="mt-0.5 flex items-center gap-1">
-                  <FiMail className="shrink-0" /> {user.email}
+                  <FiPhone className="shrink-0" /> {v.phone}
                 </p>
               ) : null}
-              {user?.phone ? (
+              {v.email ? (
                 <p className="mt-0.5 flex items-center gap-1">
-                  <FiPhone className="shrink-0" /> {user.phone}
+                  <FiMail className="shrink-0" /> {v.email}
                 </p>
               ) : null}
             </div>
           </div>
-          <img src={qrUrl} alt="QR code apercu" className="size-20 rounded-xl border border-[var(--app-border)] bg-white p-1" />
+          <img
+            key={shareUrl}
+            src={qrUrl}
+            alt="QR code apercu"
+            className="size-20 rounded-xl border border-[var(--app-border)] bg-white p-1"
+          />
         </div>
 
         <div className="relative">
@@ -551,7 +556,6 @@ export function BusinessSetupPage() {
                 formik={formik}
                 hasTransfer={hasTransfer}
                 serviceOptions={serviceOptions}
-                user={user}
               />
             </div>
           ) : null}

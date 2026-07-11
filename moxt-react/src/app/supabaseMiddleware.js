@@ -531,7 +531,7 @@ const handlers = {
       status: payload.status,
       direction: payload.direction,
       amount: payload.amountSent,
-      fee: payload.fee,
+      fee: payload.fees ?? payload.fee ?? 0,
       receivedAmount: payload.amountReceived,
       rate: payload.rate,
       rateDate: payload.rateDate,
@@ -543,6 +543,17 @@ const handlers = {
       createdAt: payload.createdAt,
       updatedAt: payload.updatedAt,
       paymentDeadlineAt: payload.paymentDeadlineAt,
+      payload: {
+        amountSent: payload.amountSent,
+        amountReceived: payload.amountReceived,
+        fees: payload.fees,
+        totalToPay: payload.totalToPay,
+        currencyFrom: payload.currencyFrom,
+        currencyTo: payload.currencyTo,
+        feePercent: payload.feePercent,
+        rateMarginPercent: payload.rateMarginPercent,
+        rawRate: payload.rawRate,
+      },
     })
     triggerEmail(payload.id, 'created').catch(() => {})
   },
@@ -572,7 +583,9 @@ const handlers = {
     if (transfer) {
       await update('transfers', transfer.id, {
         status: transfer.status,
+        business_proof: transfer.businessProof,
         timeline: transfer.timeline,
+        updated_at: transfer.updatedAt,
       })
       if (transfer.status === 'completed') {
         triggerEmail(transfer.id, 'validated').catch(() => {})
@@ -581,16 +594,29 @@ const handlers = {
   },
   'transfers/receiveTransfer': async (payload, state) => {
     const transfer = state.transfers.items.find((t) => t.id === payload.id)
-    if (transfer) {
-      await update('transfers', transfer.id, {
-        receivedAmount: transfer.receivedAmount,
-        receivedMethod: transfer.receivedMethod,
-        receivedProof: transfer.receivedProof,
-        receivedAt: transfer.receivedAt,
-        timeline: transfer.timeline,
-        updatedAt: transfer.updatedAt,
-      })
+    if (!transfer) return
+
+    const mergedPayload = {
+      ...(typeof transfer.payload === 'object' && transfer.payload ? transfer.payload : {}),
+      amountSent: transfer.amountSent,
+      amountReceived: transfer.amountReceived,
+      fees: transfer.fees,
+      totalToPay: transfer.totalToPay,
+      currencyFrom: transfer.currencyFrom,
+      currencyTo: transfer.currencyTo,
+      feePercent: transfer.feePercent,
+      receivedAt: transfer.receivedAt,
+      receivedMethod: transfer.receivedMethod,
+      receivedProof: transfer.receivedProof,
     }
+
+    await update('transfers', transfer.id, {
+      status: transfer.status,
+      receivedAmount: transfer.receivedAmount,
+      timeline: transfer.timeline,
+      updatedAt: transfer.updatedAt,
+      payload: mergedPayload,
+    })
   },
 
   // ── P2P ───────────────────────────────────────────────────────────────────────
@@ -961,6 +987,12 @@ const handlers = {
     await upsert('wallet_entries', payload)
   },
   'finance/createReceipt': async (payload) => {
+    await upsert('receipts', {
+      ...payload,
+      details: payload.details || {},
+    })
+  },
+  'finance/upsertTransferReceipt': async (payload) => {
     await upsert('receipts', {
       ...payload,
       details: payload.details || {},

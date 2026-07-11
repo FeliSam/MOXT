@@ -7,6 +7,9 @@ import { QrSharePanel } from './QrSharePanel'
 
 export function ProfileQrShareButton({
   className = '',
+  refreshKey,
+  shareText: shareTextProp,
+  shareUrl: shareUrlProp,
   subtitle,
   title,
   type = 'user',
@@ -18,8 +21,16 @@ export function ProfileQrShareButton({
 }) {
   const { t } = useLanguage()
   const [open, setOpen] = useState(false)
-  const shareUrl = useMemo(() => buildAbsoluteUrl(targetPath), [targetPath])
+  const shareUrl = useMemo(
+    () => shareUrlProp || buildAbsoluteUrl(targetPath),
+    [shareUrlProp, targetPath],
+  )
   const isBusiness = type === 'business'
+  const resolvedShareText =
+    shareTextProp ||
+    (isBusiness
+      ? t('share.shareTexts.business', { name: title })
+      : t('share.shareTexts.profile', { name: title }))
 
   return (
     <>
@@ -40,6 +51,7 @@ export function ProfileQrShareButton({
         size="default"
       >
         <QrSharePanel
+          key={refreshKey || shareUrl}
           variant={isBusiness ? 'business' : 'profile'}
           title={title}
           subtitle={subtitle}
@@ -53,11 +65,7 @@ export function ProfileQrShareButton({
               ? t('share.shareTitles.onMoxt', { name: title })
               : t('share.shareTitles.publications', { name: title })
           }
-          shareText={
-            isBusiness
-              ? t('share.shareTexts.business', { name: title })
-              : t('share.shareTexts.profile', { name: title })
-          }
+          shareText={resolvedShareText}
           qrSize={240}
         />
       </Modal>

@@ -25,6 +25,8 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { flagColor, flagEmoji } from '../config/flags'
 import { ensurePhoneCountry, phonePlaceholder, phonePrefix } from '../config/phone'
+import { isBusinessPublishReady } from '../features/businesses/businessPublishUtils'
+import { selectActiveBusinessForOwner } from '../features/businesses/businessVisibility'
 import {
   DIRECTIONS,
   FALLBACK_EXCHANGERS,
@@ -33,6 +35,11 @@ import {
 import { transferSchema } from '../features/transfers/transferSchemas'
 import { createTransfer } from '../features/transfers/transferSlice'
 import { TransferCalculator } from '../features/transfers/TransferCalculator'
+import { TransferReceivingAccountCard } from '../features/transfers/TransferReceivingAccountCard'
+import {
+  buildExchangerPaymentView,
+  resolveBusinessReceivingAccount,
+} from '../features/transfers/transferAccountUtils'
 import { useExchangeRate } from '../features/transfers/useExchangeRate'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 import {
@@ -59,6 +66,10 @@ export function NewTransferPage() {
   const [searchParams] = useSearchParams()
   const user = useSelector((state) => state.auth.user)
   const businesses = useSelector((state) => state.businesses.items)
+  const ownTransferBusiness = useMemo(() => {
+    const own = selectActiveBusinessForOwner(businesses, user.id)
+    return own?.services?.includes('Transfert') ? own : null
+  }, [businesses, user.id])
   const transfers = useSelector((state) => state.transfers.items)
   const transferProfiles = useSelector((state) =>
     (state.account.transferProfiles || []).filter((item) => item.userId === user.id),
@@ -76,22 +87,7 @@ export function NewTransferPage() {
           business.services?.includes('Transfert') &&
           business.ownerId !== user.id,
       )
-      .map((business) => {
-        const transferAccounts = (business.transferAccounts || []).filter(
-          (account) => account.active !== false,
-        )
-        const primaryAccount = transferAccounts[0]
-        const paymentAccount = primaryAccount
-          ? [
-              primaryAccount.recipientName,
-              primaryAccount.phone || primaryAccount.accountNumber,
-              primaryAccount.method || primaryAccount.bankName,
-            ]
-              .filter(Boolean)
-              .join(' · ')
-          : (business.exchangeMethods || business.paymentMethods || []).join(', ') ||
-            "Coordonnees communiquees par l'entreprise"
-        return {
+      .map((business) => ({
           id: business.id,
           ownerId: business.ownerId,
           name: business.name,
@@ -99,10 +95,7 @@ export function NewTransferPage() {
           feePercent: Number(business.feePercent || 0),
           averageDelay: business.averageDelay || 'À confirmer',
           methods: business.exchangeMethods || business.paymentMethods || [],
-          paymentAccount,
-          paymentDetails: primaryAccount || null,
-        }
-      })
+        }))
     return approved.length ? approved : FALLBACK_EXCHANGERS
   }, [businesses, user.id])
   const formik = useFormik({
@@ -126,12 +119,21 @@ export function NewTransferPage() {
     validationSchema: transferSchema,
     onSubmit: (values) => {
       const exchanger = exchangers.find((item) => item.id === values.exchangerId)
-      if (!exchanger) {
+      const business = businesses.find((item) => item.id === values.exchangerId)
+      if (!exchanger || !business) {
         formik.setFieldError('exchangerId', 'Choisissez une entreprise disponible.')
         return
       }
       if (exchanger?.ownerId === user.id) {
         formik.setFieldError('exchangerId', 'Vous ne pouvez pas utiliser votre propre entreprise.')
+        return
+      }
+      const paymentView = buildExchangerPaymentView(business, values.direction, originCountry)
+      if (!paymentView.paymentDetails) {
+        formik.setFieldError(
+          'exchangerId',
+          "Cette entreprise n'a pas encore configuré le compte de réception pour ce sens de transfert.",
+        )
         return
       }
       const transferInfo = directionInfo(values.direction)
@@ -152,7 +154,11 @@ export function NewTransferPage() {
           direction: values.direction,
           originCountry,
           user,
-          exchanger,
+          exchanger: {
+            ...exchanger,
+            paymentAccount: paymentView.paymentAccount,
+            paymentDetails: paymentView.paymentDetails,
+          },
           rateOverride:
             values.direction === DIRECTIONS.BJ_TO_RU ? liveRate.xofToRub : liveRate.rubToXof,
           rateSource: liveRate.source,
@@ -172,7 +178,7 @@ export function NewTransferPage() {
         }),
       )
       clearTransferDraft()
-      navigate(`/transfers/${action.payload.id}`)
+      navigate(`/transfers/${action.payload.id}`, { state: { transferView: 'client' } })
     },
   })
 
@@ -184,6 +190,15 @@ export function NewTransferPage() {
   }, [formik.values, step, user.id])
 
   const selectedExchanger = exchangers.find((item) => item.id === formik.values.exchangerId)
+  const selectedExchangerBusiness = businesses.find((item) => item.id === formik.values.exchangerId)
+  const selectedReceivingAccount = useMemo(() => {
+    if (!selectedExchangerBusiness) return null
+    return resolveBusinessReceivingAccount(
+      selectedExchangerBusiness.transferAccounts,
+      formik.values.direction,
+      originCountry,
+    )
+  }, [selectedExchangerBusiness, formik.values.direction, originCountry])
   const calculation = calculateTransfer(
     formik.values.amount,
     formik.values.direction,
@@ -259,6 +274,30 @@ export function NewTransferPage() {
           </>
         }
       />
+      {ownTransferBusiness ? (
+        <Alert
+          variant={isBusinessPublishReady(ownTransferBusiness) ? 'info' : 'warning'}
+          title={
+            isBusinessPublishReady(ownTransferBusiness)
+              ? 'Votre entreprise de transfert est active'
+              : 'Votre entreprise est en cours de validation'
+          }
+        >
+          {isBusinessPublishReady(ownTransferBusiness) ? (
+            <>
+              <strong>{ownTransferBusiness.name}</strong> est visible par les autres membres dans
+              cette liste. En tant que propriétaire, vous ne pouvez pas l&apos;utiliser pour créer
+              un transfert — c&apos;est votre activité de réception, pas un partenaire à sélectionner.
+            </>
+          ) : (
+            <>
+              <strong>{ownTransferBusiness.name}</strong> n&apos;apparaît pas encore ici : MOXT doit
+              d&apos;abord valider votre fiche. Une fois le statut « Vérifié », les membres pourront
+              vous choisir comme partenaire de transfert.
+            </>
+          )}
+        </Alert>
+      ) : null}
       <ScrollSectionAnchor as={Card} className="scroll-mt-24 overflow-hidden px-3 py-4 sm:px-6 sm:py-5 lg:scroll-mt-28">
         <Stepper step={step} onGoTo={setStep} />
       </ScrollSectionAnchor>
@@ -413,6 +452,14 @@ export function NewTransferPage() {
               </div>
             </Card>
 
+            {selectedExchanger ? (
+              <TransferReceivingAccountCard
+                account={selectedReceivingAccount}
+                direction={formik.values.direction}
+                originCountry={originCountry}
+              />
+            ) : null}
+
             {/* Calculation block */}
             {Number(formik.values.amount) > 0 && selectedExchanger ? (
               <Card className="overflow-hidden p-0">
@@ -468,26 +515,6 @@ export function NewTransferPage() {
 
                 {/* Payment details + rate note */}
                 <div className="grid gap-3 p-5">
-                  {selectedExchanger?.paymentDetails ? (
-                    <div className="flex items-start gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-4">
-                      <div className="grid size-8 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300">
-                        <FiShield className="text-sm" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-black">Coordonnées de paiement</p>
-                        <p className="mt-0.5 text-xs text-[var(--app-text-muted)]">
-                          {selectedExchanger.paymentDetails.recipientName} ·{' '}
-                          {selectedExchanger.paymentDetails.method || selectedExchanger.paymentDetails.bankName} ·{' '}
-                          {selectedExchanger.paymentDetails.phone || selectedExchanger.paymentDetails.accountNumber}
-                        </p>
-                        {selectedExchanger.paymentDetails.instructions ? (
-                          <p className="mt-1 text-xs text-[var(--app-text-muted)]">
-                            {selectedExchanger.paymentDetails.instructions}
-                          </p>
-                        ) : null}
-                      </div>
-                    </div>
-                  ) : null}
                   <p className="text-[10px] leading-5 text-[var(--app-text-faint)]">
                     Taux indicatif · source {liveRate.source} · {liveRate.date || 'date non disponible'} · marge {calculation.rateMarginPercent}%. Le montant reçu peut varier légèrement.
                   </p>
