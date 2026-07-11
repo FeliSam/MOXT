@@ -13,7 +13,6 @@ import { messageSuggestionsForConversation } from '../features/communications/me
 import { getConversationPeer } from '../features/communications/conversationDisplay'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { AiAssistantPanel } from '../features/communications/AiAssistantPanel'
-import { messageSchema } from '../features/communications/communicationSchemas'
 import {
   archiveConversation,
   deleteMessageLocally,
@@ -36,11 +35,13 @@ import { selectUnreadMessageCount, selectUserConversations } from '../features/s
 import { selectAccountPreferences, updateAccountPreferences } from '../features/account/accountSlice'
 import { addToast } from '../features/ui/uiSlice'
 import { useMediaQuery } from '../hooks/useMediaQuery'
+import { ConversationFilterMenu } from './messages/ConversationFilterMenu'
 import { ConversationNotFound } from './messages/ConversationNotFound'
 import { ConversationPanel } from './messages/ConversationPanel'
 import { ConversationRow } from './messages/ConversationRow'
 import { MessagesEmptyState } from './messages/MessagesEmptyState'
 import { countConversationsForFilter } from './messages/messageUtils'
+import { storageService } from '../services/storageService'
 
 const ASSISTANT_ID = 'moxt-assistant'
 
@@ -139,8 +140,17 @@ export function MessagesPage() {
   const formik = useFormik({
     initialValues: { text: active?.drafts?.[user.id] || '' },
     enableReinitialize: true,
-    validationSchema: messageSchema,
-    onSubmit: (values, helpers) => {
+    validate: (values) => {
+      const errors = {}
+      const text = values.text?.trim() || ''
+      if (!text && !attachment) {
+        errors.text = 'Ajoutez un message ou une pièce jointe.'
+      } else if (text.length > 2000) {
+        errors.text = 'Message trop long.'
+      }
+      return errors
+    },
+    onSubmit: async (values, helpers) => {
       if (!active || blocked) return
       // Mode édition : on modifie le message existant, sans en renvoyer un nouveau.
       if (editingId) {
@@ -156,16 +166,47 @@ export function MessagesPage() {
         helpers.resetForm({ values: { text: '' } })
         return
       }
+
+      const trimmedText = values.text.trim()
+      if (!trimmedText && !attachment) return
+
+      helpers.setSubmitting(true)
+      let attachmentPayload = null
+      try {
+        if (attachment) {
+          attachmentPayload = {
+            name: attachment.name,
+            size: attachment.size,
+            type: attachment.type,
+          }
+          if (attachment.type?.startsWith('image/')) {
+            attachmentPayload.url = await storageService.uploadMessageImage(
+              user.id,
+              active.id,
+              attachment,
+            )
+          }
+        }
+      } catch (error) {
+        dispatch(
+          addToast({
+            title: 'Image non envoyée',
+            message: error?.message || 'Impossible d’envoyer cette image pour le moment.',
+            tone: 'error',
+          }),
+        )
+        helpers.setSubmitting(false)
+        return
+      }
+
       const previousCount = active.messages.length
       dispatch(
         sendMessage({
           conversationId: active.id,
           senderId: user.id,
           senderName: `${user.firstName} ${user.lastName}`,
-          text: values.text,
-          attachment: attachment
-            ? { name: attachment.name, size: attachment.size, type: attachment.type }
-            : null,
+          text: trimmedText,
+          attachment: attachmentPayload,
           replyToId,
           relatedContextId: replyToContextId,
         }),
@@ -181,6 +222,7 @@ export function MessagesPage() {
             tone: 'error',
           }),
         )
+        helpers.setSubmitting(false)
         return
       }
       setAttachment(null)
@@ -188,6 +230,7 @@ export function MessagesPage() {
       setReplyToContextId(null)
       dispatch(saveConversationDraft({ id: active.id, userId: user.id, text: '' }))
       helpers.resetForm({ values: { text: '' } })
+      helpers.setSubmitting(false)
     },
   })
 
@@ -407,17 +450,31 @@ export function MessagesPage() {
                     : ''}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setSearchOpen(true)}
-                className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--app-surface-muted)] text-[var(--app-accent)] shadow-sm"
-                aria-label="Rechercher une conversation"
-              >
-                <FiSearch />
-              </button>
+              <div className="flex shrink-0 items-center gap-2">
+                <ConversationFilterMenu
+                  className="lg:hidden"
+                  conversations={conversations}
+                  filter={filter}
+                  onFilterChange={(next) => {
+                    setFilter(next)
+                    setShowArchived(false)
+                  }}
+                  showArchived={showArchived}
+                  onToggleArchived={() => setShowArchived((value) => !value)}
+                  userId={user.id}
+                />
+                <button
+                  type="button"
+                  onClick={() => setSearchOpen(true)}
+                  className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--app-surface-muted)] text-[var(--app-accent)] shadow-sm"
+                  aria-label="Rechercher une conversation"
+                >
+                  <FiSearch />
+                </button>
+              </div>
             </div>
             <div
-              className="message-filter-chips scrollbar-hidden mt-3 flex gap-2 overflow-x-auto pb-0.5"
+              className="message-filter-chips scrollbar-hidden mt-3 hidden gap-2 overflow-x-auto pb-0.5 lg:flex"
               role="toolbar"
               aria-label="Filtrer les conversations"
             >

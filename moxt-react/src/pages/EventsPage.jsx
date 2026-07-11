@@ -1,5 +1,5 @@
-import { FiCalendar, FiMapPin, FiPlus, FiUser, FiUsers } from 'react-icons/fi'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { FiCalendar, FiMapPin, FiPlus, FiUser } from 'react-icons/fi'
+import { useMemo, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
@@ -14,11 +14,10 @@ import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { Select } from '../components/ui/Select'
 import { CatalogFavoriteButton } from '../features/account/CatalogFavoriteButton'
 import { EVENT_CATEGORIES } from '../config/options'
-import { EventRegistrationsPanel } from '../features/events/EventRegistrationsPanel'
+import { resolveEventCountry } from '../features/marketplace/listingCatalogUtils'
 import { formatDate, formatMoney } from '../features/transfers/transferUtils'
 import { sortByCountryPriority, resolveUserCountryCode } from '@moxt/shared/utils/countryPriority.js'
 import { sortBySubscriptionPriority } from '@moxt/shared/utils/subscriptionUtils.js'
-import { resolveEventCountry } from '../features/marketplace/listingCatalogUtils'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 
 export function EventsPage() {
@@ -60,16 +59,6 @@ export function EventsPage() {
     setFilters({ query: '', city: '', category: '', price: '' })
   }
 
-  const scrollToRegistrations = useCallback(() => {
-    document
-      .getElementById('event-registrations')
-      ?.scrollIntoView({ block: 'start', behavior: 'smooth' })
-  }, [])
-
-  useEffect(() => {
-    if (window.location.hash === '#inscriptions') scrollToRegistrations()
-  }, [scrollToRegistrations])
-
   return (
     <div className="grid gap-7">
       <PageHeader
@@ -79,18 +68,13 @@ export function EventsPage() {
         actions={
           <>
             {canManage ? (
-              <>
-                <Button
-                  variant={showMine ? 'primary' : 'secondary'}
-                  icon={FiUser}
-                  onClick={() => setShowMine((v) => !v)}
-                >
-                  {showMine ? 'Tous les événements' : 'Mes événements'}
-                </Button>
-                <Button variant="secondary" icon={FiUsers} onClick={scrollToRegistrations}>
-                  Inscriptions
-                </Button>
-              </>
+              <Button
+                variant={showMine ? 'primary' : 'secondary'}
+                icon={FiUser}
+                onClick={() => setShowMine((v) => !v)}
+              >
+                {showMine ? 'Tous les événements' : 'Mes événements'}
+              </Button>
             ) : null}
             <Button icon={FiPlus} onClick={() => navigate('/events/publish')}>
               Créer un événement
@@ -98,7 +82,6 @@ export function EventsPage() {
           </>
         }
       />
-      {canManage ? <EventRegistrationsPanel /> : null}
       <ScrollSectionAnchor className="scroll-mt-24 grid gap-5 lg:scroll-mt-28">
         <CatalogSearch
           advancedOpen={advancedOpen}

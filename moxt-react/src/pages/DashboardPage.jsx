@@ -38,7 +38,7 @@ export function DashboardPage() {
     <div className="grid min-w-0 gap-6 overflow-x-clip sm:gap-8">
       <DashboardHero user={user} onOpenCalculator={() => setCalculatorOpen(true)} />
 
-      <RevealOnScroll delay={60} className="relative z-30 lg:hidden">
+      <RevealOnScroll delay={60} className="lg:hidden">
         <DashboardSearch />
       </RevealOnScroll>
 

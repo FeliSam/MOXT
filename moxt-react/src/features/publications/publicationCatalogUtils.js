@@ -54,8 +54,7 @@ function isBusinessPublication(item) {
   return Boolean(item?.businessId)
 }
 
-export function filterPublicationsByScope(publications, scope = 'all') {
-  if (!scope || scope === 'all') return publications
+export function filterPublicationsByScope(publications, scope = 'personal') {
   const pick = (items) =>
     scope === 'business'
       ? items.filter(isBusinessPublication)
@@ -66,8 +65,23 @@ export function filterPublicationsByScope(publications, scope = 'all') {
     parcels: pick(publications.parcels),
     jobs: pick(publications.jobs),
     events: pick(publications.events),
-    posts: scope === 'business' ? [] : publications.posts,
+    posts: scope === 'business' ? [] : publications.posts.filter((item) => !isBusinessPublication(item)),
     others: pick(publications.others),
+  }
+}
+
+export function collectBusinessPublications(state, businessId) {
+  if (!businessId) {
+    return { listings: [], parcels: [], jobs: [], events: [], posts: [], others: [] }
+  }
+  const match = (item) => item?.businessId === businessId
+  return {
+    listings: (state.marketplace?.items || []).filter(match),
+    parcels: (state.parcels?.items || []).filter(match),
+    jobs: (state.jobs?.items || []).filter(match),
+    events: (state.events?.items || []).filter(match),
+    posts: [],
+    others: (state.p2p?.offers || []).filter(match),
   }
 }
 

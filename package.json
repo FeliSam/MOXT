@@ -25,6 +25,7 @@
     "setup:yandex-all": "node scripts/setup-yandex-all.mjs",
     "setup:phase2": "node scripts/setup-phase2-postbox-sms.mjs",
     "setup:sms-ru": "node scripts/setup-sms-ru.mjs",
+    "setup:google-auth": "node scripts/setup-google-auth.mjs",
     "setup:postbox": "node scripts/setup-postbox-domain.mjs",
     "setup:smtp": "node scripts/setup-smtp.mjs",
     "setup:cns": "node scripts/setup-cns-sms.mjs",

@@ -47,21 +47,63 @@ export const loginPhoneOtpRequestSchema = Yup.object({
     .required('Le numéro russe est obligatoire.'),
 })
 
+export const oauthProfileCompletionSchema = Yup.object({
+  firstName: Yup.string()
+    .trim()
+    .min(2, 'Minimum 2 caracteres.')
+    .required('Le prenom est obligatoire.'),
+  lastName: Yup.string().trim().min(2, 'Minimum 2 caracteres.').required('Le nom est obligatoire.'),
+  email: Yup.string()
+    .trim()
+    .email('Adresse e-mail invalide.')
+    .required("L'e-mail est obligatoire."),
+  originCountry: Yup.string().required('Le pays de provenance est obligatoire.'),
+  residenceCountry: Yup.string().oneOf(['RU']).required('La résidence doit être en Russie.'),
+  residenceCity: Yup.string()
+    .trim()
+    .min(2, 'Ville invalide.')
+    .required('La ville est obligatoire.'),
+  russianPhone: Yup.string()
+    .test('russian-phone', 'Utilisez le format russe +7 suivi de 10 chiffres.', (value) =>
+      validatePhone(value, 'RU'),
+    )
+    .required('Le numéro russe est obligatoire.'),
+  originPhone: Yup.string().test(
+    'origin-phone',
+    'Le numéro du pays de provenance est invalide.',
+    function (value) {
+      const country = FALLBACK_AFRICAN_COUNTRIES.find(
+        (item) => item.code === this.parent.originCountry,
+      )
+      const prefix = phonePrefixForCallingCode(country?.callingCode || '')
+      if (!value || value === prefix) return true
+      return validateInternationalPhone(value, prefix)
+    },
+  ),
+  acceptTerms: Yup.boolean().oneOf([true], 'Vous devez accepter les conditions.'),
+})
+
+export const oauthProfileStepFields = {
+  2: ['originCountry'],
+  3: [
+    'residenceCountry',
+    'residenceCity',
+    'russianPhone',
+    'originPhone',
+    'acceptTerms',
+  ],
+}
+
 export const registerSchema = Yup.object({
   firstName: Yup.string()
     .trim()
     .min(2, 'Minimum 2 caracteres.')
     .required('Le prenom est obligatoire.'),
   lastName: Yup.string().trim().min(2, 'Minimum 2 caracteres.').required('Le nom est obligatoire.'),
-  email: Yup.string().when('verificationMethod', {
-    is: 'email',
-    then: (schema) =>
-      schema.email('Adresse email invalide.').required("L'email est obligatoire pour la confirmation par e-mail."),
-    otherwise: (schema) =>
-      schema
-        .transform((value) => (typeof value === 'string' ? value.trim() : ''))
-        .test('optional-email', 'Adresse email invalide.', (value) => !value || Yup.string().email().isValidSync(value)),
-  }),
+  email: Yup.string()
+    .trim()
+    .email('Adresse e-mail invalide.')
+    .required("L'e-mail est obligatoire."),
   originCountry: Yup.string().required('Le pays de provenance est obligatoire.'),
   residenceCountry: Yup.string().oneOf(['RU']).required('La résidence doit être en Russie.'),
   residenceCity: Yup.string()
@@ -96,7 +138,7 @@ export const registerSchema = Yup.object({
 })
 
 export const registerStepFields = {
-  1: ['firstName', 'lastName'],
+  1: ['firstName', 'lastName', 'email'],
   2: ['originCountry'],
   3: [
     'residenceCountry',
@@ -111,7 +153,14 @@ export const registerStepFields = {
 }
 
 export const forgotPasswordSchema = Yup.object({
-  email: Yup.string().email('Adresse email invalide.').required("L'email est obligatoire."),
+  email: Yup.string().email('Adresse e-mail invalide.').required("L'e-mail est obligatoire."),
+})
+
+export const resetPasswordSchema = Yup.object({
+  password,
+  confirmPassword: Yup.string()
+    .oneOf([Yup.ref('password')], 'Les mots de passe ne correspondent pas.')
+    .required('Confirmez votre mot de passe.'),
 })
 
 export const profileSchema = Yup.object({

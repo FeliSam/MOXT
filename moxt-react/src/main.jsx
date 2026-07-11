@@ -33,7 +33,7 @@ async function bootstrap() {
     store.dispatch(loadAllData())
 
     const { startRealtimeSubscription } = await import('./services/realtimeService')
-    startRealtimeSubscription(store.getState().auth.user.id, store.dispatch, store.getState)
+    void startRealtimeSubscription(store.getState().auth.user.id, store.dispatch, store.getState)
   }
 
   createRoot(document.getElementById('root')).render(

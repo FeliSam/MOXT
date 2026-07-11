@@ -3,8 +3,10 @@ import {
   disableEngagementAlerts,
 } from '../app/engagementToastMiddleware'
 import { supabase } from './supabaseClient'
+import { findConversationByParticipants } from '../features/communications/conversationUtils'
 import {
   ensureConversationFromRemote,
+  loadConversationMessages,
   receiveRemoteConversation,
   receiveRemoteMessage,
   receiveRemoteNotification,
@@ -64,12 +66,24 @@ function fromRow(row) {
   return result
 }
 
+function resolveConversationForMessage(state, conversationId, participantIds) {
+  const byId = state.communications.conversations.find((c) => c.id === conversationId)
+  if (byId) return byId
+  if (participantIds?.length) {
+    return findConversationByParticipants(state.communications.conversations, participantIds)
+  }
+  return null
+}
+
 async function ingestRemoteMessage(conversationId, row, userId, dispatch, getState) {
-  let conversation = getState().communications.conversations.find((c) => c.id === conversationId)
+  let conversation = resolveConversationForMessage(getState(), conversationId)
+  let remoteParticipantIds = null
+
   if (!conversation) {
     await dispatch(ensureConversationFromRemote(conversationId))
-    conversation = getState().communications.conversations.find((c) => c.id === conversationId)
+    conversation = resolveConversationForMessage(getState(), conversationId)
   }
+
   if (!conversation && supabase) {
     const { data } = await supabase
       .from('conversations')
@@ -82,25 +96,71 @@ async function ingestRemoteMessage(conversationId, row, userId, dispatch, getSta
         messages: [],
         messagesLoaded: false,
       })
+      remoteParticipantIds = remoteConversation.participantIds
       if (remoteConversation.participantIds.includes(userId)) {
-        dispatch(receiveRemoteConversation(remoteConversation))
-        conversation = getState().communications.conversations.find((c) => c.id === conversationId)
+        const duplicate = findConversationByParticipants(
+          getState().communications.conversations,
+          remoteConversation.participantIds,
+        )
+        if (duplicate) {
+          conversation = duplicate
+        } else {
+          dispatch(receiveRemoteConversation(remoteConversation))
+          conversation = resolveConversationForMessage(
+            getState(),
+            conversationId,
+            remoteConversation.participantIds,
+          )
+        }
       }
     }
+  }
+
+  if (!conversation) {
+    conversation = resolveConversationForMessage(getState(), conversationId, remoteParticipantIds)
   }
   if (!conversation) return
 
   const message = normalizeMessage(fromRow(row))
   const alreadyExists = conversation.messages.some((m) => m.id === message.id)
   if (alreadyExists) return
-  dispatch(receiveRemoteMessage({ conversationId, message }))
+  dispatch(receiveRemoteMessage({ conversationId: conversation.id, message }))
+}
+
+function maybeReloadConversationMessages(conversation, dispatch, getState) {
+  const local = resolveConversationForMessage(
+    getState(),
+    conversation.id,
+    conversation.participantIds,
+  )
+  if (!local?.messagesLoaded) return
+  const remoteCount = conversation.messageCount || 0
+  const localCount = local.messages?.length || 0
+  if (remoteCount > localCount) {
+    dispatch(loadConversationMessages(local.id))
+  }
 }
 
 let channel = null
 let activeUserId = null
 let reconnectTimer = null
 
-export function startRealtimeSubscription(userId, dispatch, getState) {
+/** Propage le JWT Supabase au socket Realtime (requis pour les événements RLS). */
+export async function syncRealtimeAuthToken() {
+  if (!supabase) return false
+  const { data } = await supabase.auth.getSession()
+  const token = data.session?.access_token
+  if (!token) return false
+  await supabase.realtime.setAuth(token)
+  return true
+}
+
+export async function startRealtimeSubscription(userId, dispatch, getState) {
+  if (!supabase || !userId) return
+
+  const authed = await syncRealtimeAuthToken()
+  if (!authed) return
+
   if (channel && activeUserId === userId) return
 
   if (channel) {
@@ -124,7 +184,7 @@ export function startRealtimeSubscription(userId, dispatch, getState) {
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'messages' },
       (payload) => {
-        ingestRemoteMessage(payload.new.conversation_id, payload.new, userId, dispatch, getState)
+        void ingestRemoteMessage(payload.new.conversation_id, payload.new, userId, dispatch, getState)
       },
     )
 
@@ -147,6 +207,7 @@ export function startRealtimeSubscription(userId, dispatch, getState) {
         const conversation = normalizeConversation({ ...row, messages: [] })
         if (!conversation.participantIds.includes(userId)) return
         dispatch(syncRemoteConversation(conversation))
+        maybeReloadConversationMessages(conversation, dispatch, getState)
       },
     )
 
@@ -195,7 +256,7 @@ export function startRealtimeSubscription(userId, dispatch, getState) {
           reconnectTimer = null
           if (activeUserId === userId) {
             channel = null
-            startRealtimeSubscription(userId, dispatch, getState)
+            void startRealtimeSubscription(userId, dispatch, getState)
           }
         }, 3000)
       }

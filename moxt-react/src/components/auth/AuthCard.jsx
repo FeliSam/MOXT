@@ -1,8 +1,16 @@
 import { Card } from '../ui/Card'
 
-export function AuthCard({ children, compact = false, corner, description, eyebrow = 'MOXT', title }) {
+export function AuthCard({
+  children,
+  compact = false,
+  corner,
+  description,
+  eyebrow = 'MOXT',
+  title,
+  titleClassName = '',
+}) {
   return (
-    <Card variant="featured" className={compact ? 'p-4 sm:p-6' : 'p-6 sm:p-8'}>
+    <Card variant="featured" className={`auth-card-shell ${compact ? 'p-4 sm:p-6' : 'p-6 sm:p-8'}`}>
       <div className="relative flex items-start justify-between gap-3">
         <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-brand-700 dark:text-brand-300">
           <span className="ds-dot-pulse size-1.5 rounded-full bg-brand-600 dark:bg-brand-300" />
@@ -13,7 +21,7 @@ export function AuthCard({ children, compact = false, corner, description, eyebr
       <h1
         className={`font-display relative font-extrabold tracking-tight text-[var(--app-text)] ${
           compact ? 'mt-2 text-xl sm:text-2xl' : 'mt-3 text-2xl sm:text-3xl'
-        }`}
+        } ${titleClassName}`}
       >
         {title}
       </h1>

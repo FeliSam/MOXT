@@ -1,3 +1,5 @@
+import { attachmentPreviewLabel } from '../../features/communications/attachmentUtils'
+
 export function messageReadLabel(message, userId) {
   if (!isMessageFromUser(message, userId)) return ''
   const readers = (message.readBy || []).filter((id) => id !== userId)
@@ -6,12 +8,25 @@ export function messageReadLabel(message, userId) {
   return '· Envoyé'
 }
 
+export function messageHasReactions(message) {
+  return Boolean(
+    message?.reactions &&
+      Object.entries(message.reactions).some(([, users]) => users?.length),
+  )
+}
+
 export function conversationPreview(conversation, userId) {
   const last = conversation.messages.at(-1)
+  if (last?.attachment) {
+    const prefix = isMessageFromUser(last, userId) ? 'Vous : ' : ''
+    const label = attachmentPreviewLabel(last.attachment)
+    if (!last.text?.trim()) return `${prefix}${label}`
+    const attachmentHint = `${label} · `
+    return `${prefix}${attachmentHint}${last.text}`
+  }
   if (last?.text) {
     const prefix = isMessageFromUser(last, userId) ? 'Vous : ' : ''
-    const attachmentHint = last.attachment ? '📎 ' : ''
-    return `${prefix}${attachmentHint}${last.text}`
+    return `${prefix}${last.text}`
   }
 
   const previewText = conversation.lastMessageText ?? conversation.last_message_text

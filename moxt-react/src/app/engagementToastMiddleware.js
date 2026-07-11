@@ -4,6 +4,7 @@ import {
   isMessageFromUser,
   resolveNotificationTarget,
 } from '../pages/messages/messageUtils'
+import { attachmentPreviewLabel } from '../features/communications/attachmentUtils'
 
 let alertsEnabled = false
 let enableTimer = null
@@ -41,8 +42,8 @@ function previewMessage(message) {
   if (text) {
     return text.length > 72 ? `${text.slice(0, 72)}…` : text
   }
-  if (message.attachment?.name) {
-    return `📎 ${message.attachment.name}`
+  if (message.attachment) {
+    return attachmentPreviewLabel(message.attachment)
   }
   return 'Nouveau message'
 }

@@ -34,4 +34,13 @@ describe('publicationCatalogUtils', () => {
     expect(businessOnly.parcels).toHaveLength(1)
     expect(businessOnly.posts).toHaveLength(0)
   })
+
+  it('filtre les publications personnelles', () => {
+    const publications = collectUserPublications(state, 'u1')
+    const personalOnly = filterPublicationsByScope(publications, 'personal')
+    expect(personalOnly.listings).toHaveLength(1)
+    expect(personalOnly.listings[0].id).toBe('L1')
+    expect(personalOnly.parcels).toHaveLength(0)
+    expect(personalOnly.posts).toHaveLength(1)
+  })
 })

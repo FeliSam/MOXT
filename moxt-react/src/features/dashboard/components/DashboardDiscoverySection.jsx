@@ -38,7 +38,7 @@ export function DashboardDiscoverySection({
       <RevealOnScroll delay={80}>
         <DashboardSectionHeading title="Dernières annonces" link="/marketplace" linkLabel="Voir le marché" />
       </RevealOnScroll>
-      <div className="relative min-w-0">
+      <div className="relative min-w-0 pb-3">
         <div ref={listingsScrollRef} className={`${dashboardListingTrackClass} min-w-0`}>
           {listingsLoading
             ? Array.from({ length: 4 }).map((_, i) => (

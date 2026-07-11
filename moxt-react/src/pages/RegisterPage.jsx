@@ -11,7 +11,8 @@ import {
   FiUser,
 } from 'react-icons/fi'
 import { useDispatch, useSelector, useStore } from 'react-redux'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { isProfileComplete } from '@moxt/shared/auth/profileCompletion.js'
 import { AuthCard } from '../components/auth/AuthCard'
 import { GoogleButton } from '../components/auth/GoogleButton'
 import { Alert } from '../components/ui/Alert'
@@ -25,16 +26,23 @@ import { flagEmoji } from '../config/flags'
 import { constrainPhone, phonePrefixForCallingCode } from '../config/phone'
 import { LANGUAGE_LABELS, SUPPORTED_LANGUAGES } from '../config/uiTranslations'
 import { useLanguage } from '../contexts/useLanguage'
-import { registerSchema, registerStepFields } from '../features/auth/authSchemas'
+import {
+  oauthProfileCompletionSchema,
+  oauthProfileStepFields,
+  registerSchema,
+  registerStepFields,
+} from '../features/auth/authSchemas'
 import { authService } from '../features/auth/authService'
 import {
   clearAuthError,
+  completeOAuthProfile,
   register,
   resendPhoneRegistrationOtp,
   verifyEmailRegistration,
   verifyPhoneRegistration,
 } from '../features/auth/authSlice'
 import { addToast } from '../features/ui/uiSlice'
+import { authErrorToast } from '../features/auth/authErrorMessages'
 import { loadAllData } from '../app/loadAllData'
 import { startRealtimeSubscription } from '../services/realtimeService'
 import { useGeographyOptions } from '../hooks/useGeographyOptions'
@@ -50,16 +58,17 @@ const STEPS = [
 const LANGUAGE_TILES = LANGUAGE_LABELS
 
 /* ─── Stepper visuel — meme pattern que Transfert / Job / Evenement ──────── */
-function Stepper({ step }) {
+function Stepper({ step, oauthCompletion = false }) {
+  const steps = oauthCompletion ? STEPS.slice(0, 3) : STEPS
   return (
     <div className="relative mt-4 flex items-start justify-between">
-      <div className="absolute left-0 right-0 top-4 h-px bg-[var(--app-border)]" aria-hidden />
+      <div className="auth-stepper-track" aria-hidden />
       <div
-        className="absolute left-0 top-4 h-px bg-brand-600 transition-all duration-500"
-        style={{ width: `${((step - 1) / (STEPS.length - 1)) * 100}%` }}
+        className="auth-stepper-progress"
+        style={{ width: `${steps.length > 1 ? ((step - 1) / (steps.length - 1)) * 100 : 0}%` }}
         aria-hidden
       />
-      {STEPS.map((s, i) => {
+      {steps.map((s, i) => {
         const n = i + 1
         const done = step > n
         const active = step === n
@@ -94,9 +103,13 @@ function Stepper({ step }) {
 export function RegisterPage() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const store = useStore()
+  const authUser = useSelector((state) => state.auth.user)
   const { language, setLanguage } = useLanguage()
   const { error, status } = useSelector((state) => state.auth)
+  const fromGoogle = searchParams.get('from') === 'google'
+  const [oauthCompletion, setOauthCompletion] = useState(false)
   const [step, setStep] = useState(1)
   const [pendingVerification, setPendingVerification] = useState(null) // { method, phone?, email }
   const [verificationCode, setVerificationCode] = useState('')
@@ -104,11 +117,34 @@ export function RegisterPage() {
   const { trigger: triggerBurst, node: burstNode } = useActionBurst()
   const { countries } = useGeographyOptions()
   const alreadyRegistered = error === 'ALREADY_REGISTERED'
-  const showRegisterError = Boolean(error && !alreadyRegistered && !pendingVerification)
 
   useEffect(() => {
     return () => dispatch(clearAuthError())
   }, [dispatch])
+
+  // Les erreurs d'inscription passent uniquement par des toasts (aucun message
+  // inline en double sur la page).
+  useEffect(() => {
+    if (!error) return
+    if (alreadyRegistered) {
+      dispatch(
+        addToast({
+          title: 'Compte déjà existant',
+          message:
+            'Un compte existe déjà avec cet e-mail ou ce numéro russe. Connectez-vous ou utilisez d’autres identifiants.',
+          tone: 'error',
+        }),
+      )
+    } else if (pendingVerification) {
+      dispatch(addToast(authErrorToast('Vérification impossible', error)))
+    } else if (oauthCompletion) {
+      dispatch(addToast(authErrorToast('Profil incomplet', error)))
+    } else {
+      dispatch(addToast(authErrorToast('Inscription impossible', error)))
+    }
+    dispatch(clearAuthError())
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error, alreadyRegistered, pendingVerification])
 
   useEffect(() => {
     if (resendCooldown <= 0) return undefined
@@ -134,8 +170,28 @@ export function RegisterPage() {
       acceptTerms: false,
       verificationMethod: 'phone',
     },
-    validationSchema: registerSchema,
+    validationSchema: oauthCompletion ? oauthProfileCompletionSchema : registerSchema,
+    enableReinitialize: true,
     onSubmit: async (values) => {
+      if (oauthCompletion) {
+        const result = await dispatch(completeOAuthProfile(values))
+        if (!completeOAuthProfile.fulfilled.match(result)) return
+        dispatch(clearAuthError())
+        await dispatch(loadAllData())
+        startRealtimeSubscription(store.getState().auth.user.id, dispatch, store.getState)
+        markWelcomePending()
+        triggerBurst()
+        dispatch(
+          addToast({
+            title: 'Profil complété',
+            message: 'Votre compte Google est prêt. Bienvenue sur MOXT.',
+            tone: 'success',
+          }),
+        )
+        navigate('/dashboard', { replace: true })
+        return
+      }
+
       const result = await dispatch(register(values))
       if (!register.fulfilled.match(result)) {
         const payload = String(result.payload || '').toLowerCase()
@@ -146,7 +202,7 @@ export function RegisterPage() {
             addToast({
               title: 'E-mail indisponible',
               message:
-                'Postbox n’a pas encore validé le domaine (DKIM). Utilisez le SMS pour l’instant, ou lancez npm run setup:postbox puis réessayez.',
+                "L'envoi d'e-mail est momentanément indisponible. Nous avons basculé vers la confirmation par SMS.",
               tone: 'warning',
             }),
           )
@@ -159,7 +215,7 @@ export function RegisterPage() {
             addToast({
               title: 'SMS indisponible',
               message:
-                'L’envoi SMS n’est pas disponible. Nous avons basculé vers l’e-mail — réessayez.',
+                "L'envoi SMS est momentanément indisponible. Essayez la confirmation par e-mail si vous en avez renseigné une.",
               tone: 'warning',
             }),
           )
@@ -178,7 +234,8 @@ export function RegisterPage() {
       }
       await dispatch(loadAllData())
       startRealtimeSubscription(store.getState().auth.user.id, dispatch, store.getState)
-      navigate('/profile', { replace: true })
+      markWelcomePending()
+      navigate('/dashboard', { replace: true })
     },
   })
 
@@ -186,13 +243,24 @@ export function RegisterPage() {
     let cancelled = false
 
     async function hydrateFromGoogle() {
-      const fromGoogle = new URLSearchParams(window.location.search).get('from') === 'google'
       if (!fromGoogle) return
 
       try {
         const profile = await authService.fetchGoogleProfile()
         if (cancelled) return
-        formik.setValues((current) => ({ ...current, ...profile }))
+        formik.setValues((current) => ({
+          ...current,
+          ...profile,
+          acceptTerms: false,
+        }))
+
+        const sessionUser = store.getState().auth.user
+        if (sessionUser && isProfileComplete(sessionUser)) {
+          navigate('/dashboard', { replace: true })
+          return
+        }
+
+        setOauthCompletion(true)
         setStep(2)
       } catch {
         if (!cancelled) {
@@ -207,18 +275,36 @@ export function RegisterPage() {
         }
       } finally {
         if (!cancelled) {
-          window.history.replaceState({}, '', '/register')
+          const nextParams = new URLSearchParams(window.location.search)
+          nextParams.delete('from')
+          const query = nextParams.toString()
+          window.history.replaceState({}, '', query ? `/register?${query}` : '/register')
         }
       }
     }
 
-    hydrateFromGoogle()
+    if (fromGoogle) {
+      hydrateFromGoogle()
+    } else if (authUser && !isProfileComplete(authUser)) {
+      setOauthCompletion(true)
+      setStep(2)
+      formik.setValues((current) => ({
+        ...current,
+        firstName: authUser.firstName || current.firstName,
+        lastName: authUser.lastName || current.lastName,
+        email: authUser.email || current.email,
+        avatarUrl: authUser.avatarUrl || current.avatarUrl,
+        originCountry: authUser.originCountry || current.originCountry,
+        residenceCity: authUser.city || current.residenceCity,
+        russianPhone: authUser.phone || current.russianPhone,
+        originPhone: authUser.secondaryPhone || current.originPhone,
+      }))
+    }
+
     return () => {
       cancelled = true
     }
-  }, [dispatch, formik.setValues])
-
-  const showVerificationError = Boolean(error && pendingVerification)
+  }, [authUser, dispatch, formik.setValues, fromGoogle, navigate, store])
 
   async function resendSmsCode() {
     if (!pendingVerification?.phone || resendCooldown > 0) return
@@ -280,45 +366,36 @@ export function RegisterPage() {
 
   async function nextStep() {
     const errors = await formik.validateForm()
-    const fields = registerStepFields[step] || []
+    const fields = (oauthCompletion ? oauthProfileStepFields : registerStepFields)[step] || []
     fields.forEach((field) => formik.setFieldTouched(field, true, false))
-    if (!fields.some((field) => errors[field])) setStep((value) => Math.min(value + 1, STEPS.length))
+    if (!fields.some((field) => errors[field])) {
+      const maxStep = oauthCompletion ? 3 : STEPS.length
+      setStep((value) => Math.min(value + 1, maxStep))
+    }
   }
 
   return (
     <AuthCard
       compact
-      eyebrow="Inscription"
-      title="Créer votre compte MOXT"
-      description="Inscription avec numéro russe (+7) et confirmation par SMS."
+      eyebrow={oauthCompletion ? 'MOXT · Profil Google' : 'MOXT · Inscription'}
+      title={oauthCompletion ? 'Complétez votre profil' : 'Créer votre compte MOXT'}
+      description={
+        oauthCompletion
+          ? 'Votre compte Google est connecté. Ajoutez votre pays, ville et numéro russe pour utiliser MOXT.'
+          : 'Inscription avec e-mail, numéro russe (+7) et confirmation par SMS.'
+      }
     >
       {burstNode}
-      <Stepper step={step} />
+      <Stepper step={step} oauthCompletion={oauthCompletion} />
 
       {/* @container : le passage en 2 colonnes depend de la largeur reelle de
           la carte, pas du viewport — corrige l'ecrasement des champs sur les
           ecrans intermediaires ou la colonne du formulaire est etroite. */}
       <form className="@container mt-4 grid gap-3" onSubmit={formik.handleSubmit} noValidate>
-        {alreadyRegistered ? (
-          <Alert variant="error" title="Compte déjà existant">
-            Un compte existe déjà avec cet e-mail ou ce numéro russe.{' '}
-            <Link className="font-bold underline" to="/login">
-              Se connecter
-            </Link>{' '}
-            ou utilisez d'autres identifiants.
-          </Alert>
-        ) : null}
-
-        {showRegisterError ? <Alert variant="error">{error}</Alert> : null}
-
-        {step === 1 ? (
+        {step === 1 && !oauthCompletion ? (
           <>
-            <GoogleButton mode="identity" label="S'inscrire avec Google" />
-            <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-wider text-[var(--app-text-faint)]">
-              <span className="h-px flex-1 bg-[var(--app-border)]" />
-              ou avec vos informations
-              <span className="h-px flex-1 bg-[var(--app-border)]" />
-            </div>
+            <GoogleButton label="S'inscrire avec Google" />
+            <p className="auth-flow-divider">ou avec vos informations</p>
 
             <div className="grid min-w-0 gap-3 @md:grid-cols-2">
               <Input
@@ -338,9 +415,10 @@ export function RegisterPage() {
             </div>
             <Input
               id="register-email"
-              label="Adresse e-mail (optionnelle si confirmation par SMS)"
+              label="Adresse e-mail"
               type="email"
               autoComplete="email"
+              required
               {...formik.getFieldProps('email')}
               error={errorFor('email')}
             />
@@ -352,6 +430,35 @@ export function RegisterPage() {
 
         {step === 2 ? (
           <>
+            {oauthCompletion ? (
+              <div className="grid min-w-0 gap-3 @md:grid-cols-2">
+                <Input
+                  id="oauth-firstName"
+                  label="Prénom"
+                  autoComplete="given-name"
+                  {...formik.getFieldProps('firstName')}
+                  error={errorFor('firstName')}
+                />
+                <Input
+                  id="oauth-lastName"
+                  label="Nom"
+                  autoComplete="family-name"
+                  {...formik.getFieldProps('lastName')}
+                  error={errorFor('lastName')}
+                />
+                <Input
+                  id="oauth-email"
+                  className="@md:col-span-2"
+                  label="Adresse e-mail"
+                  type="email"
+                  autoComplete="email"
+                  readOnly
+                  {...formik.getFieldProps('email')}
+                  error={errorFor('email')}
+                />
+              </div>
+            ) : null}
+
             <div>
               <p className="text-xs font-black uppercase tracking-[0.1em] text-[var(--app-text-muted)]">
                 Langue de l'interface
@@ -404,10 +511,14 @@ export function RegisterPage() {
               ))}
             </Select>
 
-            <div className="grid min-w-0 gap-2.5 @md:grid-cols-2">
-              <Button type="button" variant="secondary" icon={FiArrowLeft} onClick={() => setStep(1)}>
-                Retour
-              </Button>
+            <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-3">
+              {!oauthCompletion ? (
+                <Button type="button" variant="secondary" icon={FiArrowLeft} onClick={() => setStep(1)}>
+                  Retour
+                </Button>
+              ) : (
+                <span />
+              )}
               <Button type="button" icon={FiArrowRight} onClick={nextStep}>
                 Continuer
               </Button>
@@ -417,17 +528,23 @@ export function RegisterPage() {
 
         {step === 3 ? (
           <>
+            {oauthCompletion ? (
+              <Alert variant="info">
+                Dernière étape : renseignez votre résidence en Russie et votre numéro +7 pour activer
+                votre compte.
+              </Alert>
+            ) : null}
             <CitySelector
               id="residenceCity"
-              label="Ville de résidence en Russie"
+              label="Ville de résidence"
               value={formik.values.residenceCity}
               onChange={(city) => formik.setFieldValue('residenceCity', city)}
               error={errorFor('residenceCity')}
             />
-            <div className="grid min-w-0 gap-3 @md:grid-cols-2">
+            <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-3">
               <Input
                 id="russianPhone"
-                label="Numéro russe obligatoire"
+                label="N° russe"
                 type="tel"
                 autoComplete="tel"
                 placeholder="+7XXXXXXXXXX"
@@ -440,7 +557,7 @@ export function RegisterPage() {
               />
               <Input
                 id="originPhone"
-                label="Numéro local (optionnel)"
+                label="N° local"
                 type="tel"
                 placeholder={`${selectedCountry?.callingCode || ''}...`}
                 iconLeft={
@@ -458,25 +575,27 @@ export function RegisterPage() {
                 error={errorFor('originPhone')}
               />
             </div>
-            <div className="grid min-w-0 gap-3 @md:grid-cols-2">
-              <PasswordInput
-                id="register-password"
-                label="Mot de passe"
-                autoComplete="new-password"
-                {...formik.getFieldProps('password')}
-                error={errorFor('password')}
-              />
-              <PasswordInput
-                id="confirmPassword"
-                label="Confirmation"
-                autoComplete="new-password"
-                {...formik.getFieldProps('confirmPassword')}
-                error={errorFor('confirmPassword')}
-              />
-            </div>
+            {!oauthCompletion ? (
+              <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-3">
+                <PasswordInput
+                  id="register-password"
+                  label="Mot de passe"
+                  autoComplete="new-password"
+                  {...formik.getFieldProps('password')}
+                  error={errorFor('password')}
+                />
+                <PasswordInput
+                  id="confirmPassword"
+                  label="Confirmer"
+                  autoComplete="new-password"
+                  {...formik.getFieldProps('confirmPassword')}
+                  error={errorFor('confirmPassword')}
+                />
+              </div>
+            ) : null}
 
             <label
-              className={`flex cursor-pointer items-start gap-3 rounded-2xl border-2 p-3 transition-all duration-[var(--transition-fast)] ${
+              className={`flex cursor-pointer items-start gap-2.5 rounded-2xl border-2 p-2.5 transition-all duration-[var(--transition-fast)] sm:gap-3 sm:p-3 ${
                 formik.values.acceptTerms
                   ? 'border-brand-500 bg-[var(--app-accent-soft)]'
                   : 'border-[var(--app-border-md)] hover:border-brand-300'
@@ -488,15 +607,23 @@ export function RegisterPage() {
                 {...formik.getFieldProps('acceptTerms')}
                 checked={formik.values.acceptTerms}
               />
-              <span className="text-sm text-[var(--app-text-2)]">
-                J'accepte les conditions d'utilisation et la politique de confidentialité.
+              <span className="text-xs leading-5 text-[var(--app-text-2)] sm:text-sm">
+                J'accepte les{' '}
+                <Link className="auth-flow-link" to="/trust" target="_blank" rel="noreferrer">
+                  conditions d'utilisation
+                </Link>{' '}
+                et la{' '}
+                <Link className="auth-flow-link" to="/faq" target="_blank" rel="noreferrer">
+                  politique de confidentialité
+                </Link>
+                .
               </span>
             </label>
             {errorFor('acceptTerms') ? (
               <span role="alert" className="-mt-2 text-xs text-red-600">{errorFor('acceptTerms')}</span>
             ) : null}
 
-            <div className="flex items-center gap-1.5 rounded-2xl bg-[var(--app-surface-muted)] px-4 py-2 text-sm font-bold">
+            <div className="hidden items-center gap-1.5 rounded-2xl bg-[var(--app-surface-muted)] px-4 py-2 text-sm font-bold sm:flex">
               <span className="text-base leading-none">{flagEmoji(formik.values.originCountry)}</span>
               {selectedCountry?.name || 'Pays de provenance'}
               <FiArrowRight className="text-xs text-[var(--app-text-faint)]" />
@@ -504,18 +631,24 @@ export function RegisterPage() {
               {formik.values.residenceCity || 'Russie'}
             </div>
 
-            <div className="grid min-w-0 gap-3 @md:grid-cols-2">
+            <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-3">
               <Button type="button" variant="secondary" icon={FiArrowLeft} onClick={() => setStep(2)}>
                 Retour
               </Button>
-              <Button type="button" icon={FiArrowRight} onClick={nextStep}>
-                Continuer
-              </Button>
+              {oauthCompletion ? (
+                <Button type="submit" icon={FiCheck} loading={status === 'loading'}>
+                  {status === 'loading' ? 'Enregistrement...' : 'Terminer mon profil'}
+                </Button>
+              ) : (
+                <Button type="button" icon={FiArrowRight} onClick={nextStep}>
+                  Continuer
+                </Button>
+              )}
             </div>
           </>
         ) : null}
 
-        {step === 4 ? (
+        {step === 4 && !oauthCompletion ? (
           <>
             {pendingVerification ? (
               <>
@@ -537,7 +670,6 @@ export function RegisterPage() {
                     `Un code à 6 chiffres a été envoyé au ${pendingVerification.phone} par SMS.`
                   )}
                 </Alert>
-                {showVerificationError ? <Alert variant="error">{error}</Alert> : null}
                 <Input
                   id="verification-code"
                   label={
@@ -579,22 +711,9 @@ export function RegisterPage() {
               </>
             ) : (
               <>
-                <div>
-                  <p className="text-sm font-black text-[var(--app-text)]">
-                    Comment souhaitez-vous confirmer votre compte ?
-                  </p>
-                  <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-                    Par défaut, votre compte est confirmé par SMS sur votre numéro russe. L'e-mail
-                    reste optionnel et pourra être ajouté plus tard dans votre profil.
-                    {formik.values.verificationMethod === 'email' ? (
-                      <>
-                        {' '}
-                        Vérifiez que votre adresse e-mail est correctement orthographiée avant
-                        d’envoyer le code.
-                      </>
-                    ) : null}
-                  </p>
-                </div>
+                <p className="text-sm font-black text-[var(--app-text)]">
+                  Comment souhaitez-vous confirmer votre compte ?
+                </p>
                 <div className="grid gap-3 @md:grid-cols-2">
                   {[
                     {
@@ -607,7 +726,7 @@ export function RegisterPage() {
                       value: 'email',
                       icon: FiMail,
                       title: 'Par e-mail',
-                      detail: formik.values.email || 'E-mail requis',
+                      detail: formik.values.email,
                     },
                   ].map((method) => {
                     const Icon = method.icon

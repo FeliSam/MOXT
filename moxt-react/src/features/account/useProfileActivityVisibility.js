@@ -23,7 +23,7 @@ export function useProfileActivityVisibility(userId, currentUserId) {
     setLoading(true)
 
     if (!supabase) {
-      setRemoteVisibility('private')
+      setRemoteVisibility('public')
       setLoading(false)
       return undefined
     }
@@ -37,9 +37,9 @@ export function useProfileActivityVisibility(userId, currentUserId) {
         if (cancelled) return
         if (error) {
           console.warn('[MOXT] Visibilité profil:', error.message)
-          setRemoteVisibility('private')
+          setRemoteVisibility('public')
         } else {
-          setRemoteVisibility(data?.activity_visibility || 'private')
+          setRemoteVisibility(data?.activity_visibility || 'public')
         }
         setLoading(false)
       })
@@ -51,8 +51,8 @@ export function useProfileActivityVisibility(userId, currentUserId) {
 
   const visibility =
     userId === currentUserId
-      ? ownPreferences?.activityVisibility || 'private'
-      : remoteVisibility || 'private'
+      ? ownPreferences?.activityVisibility || 'public'
+      : remoteVisibility || 'public'
 
   return { visibility, loading }
 }

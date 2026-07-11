@@ -137,16 +137,18 @@ export function createAuthService(supabase, redirects = {}) {
 
   function profileFieldsFromAuthUser(authUser) {
     const metadata = authUser.user_metadata || {}
+    const fullName = metadata.full_name || metadata.name || ''
+    const nameParts = String(fullName).trim().split(/\s+/).filter(Boolean)
     return {
-      first_name: metadata.first_name || metadata.full_name?.split(' ')[0] || 'Utilisateur',
-      last_name: metadata.last_name || metadata.full_name?.split(' ').slice(1).join(' ') || '',
+      first_name: metadata.first_name || nameParts[0] || 'Utilisateur',
+      last_name: metadata.last_name || nameParts.slice(1).join(' ') || '',
       email: authUser.email || metadata.email || '',
       phone: authUser.phone || metadata.phone || '',
       origin_phone: metadata.origin_phone || '',
       country: 'RU',
       origin_country: metadata.origin_country || 'BJ',
       city: metadata.city || '',
-      avatar_url: metadata.avatar_url || '',
+      avatar_url: metadata.avatar_url || metadata.picture || '',
       role: 'user',
       status: 'active',
     }
@@ -222,12 +224,60 @@ export function createAuthService(supabase, redirects = {}) {
       if (!supabase) throw new Error('Supabase non configuré.')
       const { data } = await supabase.auth.getUser()
       if (!data?.user) throw new Error('Aucune session Google active.')
+      const metadata = data.user.user_metadata || {}
+      const fullName = metadata.full_name || metadata.name || ''
+      const nameParts = String(fullName).trim().split(/\s+/).filter(Boolean)
       return {
-        firstName: data.user.user_metadata?.full_name?.split(' ')[0] || 'Utilisateur',
-        lastName: data.user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || 'Google',
+        firstName: metadata.first_name || nameParts[0] || 'Utilisateur',
+        lastName: metadata.last_name || nameParts.slice(1).join(' ') || '',
         email: data.user.email || '',
-        avatarUrl: data.user.user_metadata?.avatar_url || '',
+        avatarUrl: metadata.avatar_url || metadata.picture || '',
       }
+    },
+
+    async completeOAuthProfile(details) {
+      if (!supabase) throw new Error('Supabase non configuré.')
+      const { data: sessionData } = await supabase.auth.getSession()
+      const authUser = sessionData.session?.user
+      if (!authUser) throw new Error('Session expirée. Reconnectez-vous avec Google.')
+
+      const profileFields = {
+        first_name: details.firstName.trim(),
+        last_name: details.lastName.trim(),
+        phone: normalizeRussianAuthPhone(details.russianPhone),
+        origin_phone: details.originPhone?.trim() || '',
+        country: 'RU',
+        origin_country: details.originCountry,
+        city: details.residenceCity?.trim() || '',
+        avatar_url: details.avatarUrl?.trim() || authUser.user_metadata?.picture || authUser.user_metadata?.avatar_url || '',
+        role: 'user',
+        status: 'active',
+        updated_at: new Date().toISOString(),
+      }
+
+      await upsertProfile(authUser.id, {
+        ...profileFields,
+        email: authUser.email || details.email?.trim().toLowerCase() || '',
+      })
+
+      const { error: metadataError } = await supabase.auth.updateUser({
+        data: {
+          first_name: profileFields.first_name,
+          last_name: profileFields.last_name,
+          origin_country: profileFields.origin_country,
+          city: profileFields.city,
+          phone: profileFields.phone,
+          origin_phone: profileFields.origin_phone,
+          avatar_url: profileFields.avatar_url,
+        },
+      })
+      if (metadataError) {
+        console.warn('[MOXT] Métadonnées Google non mises à jour:', metadataError.message)
+      }
+
+      const user = await fetchProfile(authUser.id)
+      if (!user) throw new Error('Impossible de charger le profil après complétion.')
+      return { user, token: sessionData.session.access_token }
     },
 
     async register(details) {
@@ -468,10 +518,10 @@ export function createAuthService(supabase, redirects = {}) {
     async requestPasswordReset(email) {
       if (!supabase) return true
       const redirectTo = getPasswordResetRedirectUrl()
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(String(email || '').trim().toLowerCase(), {
         redirectTo: redirectTo || undefined,
       })
-      if (error) throw new Error(error.message)
+      if (error) throw new Error(translateAuthError(error))
       return true
     },
 

@@ -19,7 +19,7 @@ import { ScrollArrows } from './ScrollArrows'
 export function DashboardServiceCarousels({ coreServicesRef, trustHighlightsRef }) {
   return (
     <>
-      <div className="relative min-w-0">
+      <div className="relative min-w-0 pb-3">
         <div ref={trustHighlightsRef} className={`${dashboardFourUpTrackClass} min-w-0`}>
           {trustHighlights.map(([title, description], index) => (
             <RevealListItem key={title} index={index} className={dashboardFourUpItemClass}>
@@ -39,7 +39,7 @@ export function DashboardServiceCarousels({ coreServicesRef, trustHighlightsRef 
       <RevealOnScroll delay={80}>
         <DashboardSectionHeading title="Services essentiels" link="/businesses" linkLabel="Tout explorer" />
       </RevealOnScroll>
-      <div className="relative min-w-0">
+      <div className="relative min-w-0 pb-3">
         <div ref={coreServicesRef} className={`${dashboardServicesTrackClass} min-w-0`}>
           {coreServices.map(({ description, image, imageLogo, path, tag, title }, index) => (
             <RevealListItem key={title} index={index} className={dashboardServiceItemClass}>

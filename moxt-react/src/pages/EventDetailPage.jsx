@@ -24,6 +24,7 @@ import { ReshareButton } from '../components/ui/ReshareButton'
 import { FavoriteButton } from '../features/account/FavoriteButton'
 import { ContactButton } from '../features/communications/ContactButton'
 import { cancelRegistration, registerForEvent, reportEvent } from '../features/events/eventSlice'
+import { EventParticipantsSection } from '../features/events/EventParticipantsSection'
 import { statusMeta } from '../config/statuses'
 import { formatDate, formatMoney } from '../features/transfers/transferUtils'
 import { PublisherDetailCard } from '../features/publications/PublisherDetailCard'
@@ -191,8 +192,8 @@ export function EventDetailPage() {
             </Button>
           ) : null}
           {event.ownerId === user.id ? (
-            <p className="mt-3 text-sm text-slate-500">
-              {activeRegistrations.length} participant(s) inscrit(s).
+            <p className="mt-3 text-sm text-[var(--app-text-muted)]">
+              Gérez les inscriptions dans la section « Participants inscrits » ci-dessous.
             </p>
           ) : registered ? (
             <div className="mt-4">
@@ -267,6 +268,9 @@ export function EventDetailPage() {
           />
         </div>
       </div>
+      {event.ownerId === user.id ? (
+        <EventParticipantsSection event={event} eventId={eventId} />
+      ) : null}
     </div>
   )
 }

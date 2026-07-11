@@ -75,6 +75,11 @@ export function usePublisherDetailProfile(entity, kind) {
   const business = useSelector((state) =>
     state.businesses.items.find((item) => item.id === businessId),
   )
+  const ownerBusiness = useSelector((state) =>
+    !businessId && ownerId
+      ? state.businesses.items.find((item) => item.ownerId === ownerId)
+      : null,
+  )
   const businessReviews = useSelector((state) =>
     state.reviews.items.filter(
       (item) =>
@@ -113,6 +118,7 @@ export function usePublisherDetailProfile(entity, kind) {
 
   return {
     business,
+    ownerBusiness,
     publisherName: meta.resolveName(entity) || 'Membre MOXT',
     publicationCount,
     rating,

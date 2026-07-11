@@ -10,7 +10,7 @@ const defaultPreferences = {
   language: 'fr',
   emailNotifications: true,
   pushNotifications: true,
-  activityVisibility: 'private',
+  activityVisibility: 'public',
   securityAlerts: true,
   twoFactorEnabled: false,
   marketingConsent: false,

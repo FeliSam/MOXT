@@ -87,7 +87,7 @@ export function UserPublicationsPage() {
   const ownBusiness = useSelector((state) =>
     state.businesses.items.find((item) => item.ownerId === userId),
   )
-  const scope = searchParams.get('scope') === 'business' ? 'business' : 'all'
+  const scope = searchParams.get('scope') === 'business' ? 'business' : 'personal'
   const publications = useMemo(
     () => filterPublicationsByScope(collectUserPublications(appState, userId), scope),
     [appState, scope, userId],
@@ -150,7 +150,7 @@ export function UserPublicationsPage() {
 
   function setScope(next) {
     const params = new URLSearchParams(searchParams)
-    if (next === 'all') params.delete('scope')
+    if (next === 'personal') params.delete('scope')
     else params.set('scope', next)
     setSearchParams(params, { replace: true })
   }
@@ -182,10 +182,12 @@ export function UserPublicationsPage() {
   const pageDescription = isOwner
     ? scope === 'business' && ownBusiness
       ? `Vue publique des publications de ${ownBusiness.name}.`
-      : 'Vue publique de tout votre contenu — partagez ce profil avec la communauté.'
-    : hasAnyPublication
-      ? 'Annonces, colis, jobs, événements et publications publiées par ce membre.'
-      : "Consultez les publications et les avis laissés sur ce membre."
+      : 'Vue publique de vos publications personnelles — partagez ce profil avec la communauté.'
+    : scope === 'business' && ownBusiness
+      ? `Publications publiées par ${ownBusiness.name}.`
+      : hasAnyPublication
+        ? 'Annonces, colis, jobs, événements et publications du profil personnel.'
+        : "Consultez les publications et les avis laissés sur ce membre."
 
   return (
     <div className="grid gap-7">
@@ -203,24 +205,31 @@ export function UserPublicationsPage() {
                 publisherPath={`/users/${userId}/publications`}
               />
             ) : null}
-            {isOwner ? (
+            {ownBusiness ? (
               <PublicationScopeButton
                 business={ownBusiness}
+                isOwner={isOwner}
                 onScopeChange={setScope}
                 scope={scope}
               />
             ) : null}
-            <Link
-              to={
-                isOwner
-                  ? `/publications/mine${scope === 'business' ? '?scope=business' : ''}`
-                  : '/dashboard'
-              }
-            >
-              <Button variant="secondary" icon={FiArrowLeft}>
-                {isOwner ? 'Gérer mes publications' : 'Retour'}
-              </Button>
-            </Link>
+            {isOwner ? (
+              <Link
+                to={
+                  `/publications/mine${scope === 'business' ? '?scope=business' : ''}`
+                }
+              >
+                <Button variant="secondary" icon={FiArrowLeft}>
+                  Gérer mes publications
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/dashboard">
+                <Button variant="secondary" icon={FiArrowLeft}>
+                  Retour
+                </Button>
+              </Link>
+            )}
           </>
         }
       />

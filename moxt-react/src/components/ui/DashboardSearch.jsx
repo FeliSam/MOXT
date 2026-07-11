@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { FiSearch, FiX } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
@@ -8,14 +9,43 @@ import { Badge } from './Badge'
 
 export function DashboardSearch() {
   const [query, setQuery] = useState('')
+  const anchorRef = useRef(null)
+  const [panelRect, setPanelRect] = useState(null)
   const index = useSelector(selectSearchIndex)
   const results = useMemo(
     () => (query.trim() ? filterSearchIndex(index, query) : []),
     [index, query],
   )
+  const showPanel = Boolean(query.trim())
+
+  useLayoutEffect(() => {
+    if (!showPanel || !anchorRef.current) {
+      setPanelRect(null)
+      return
+    }
+    function updateRect() {
+      if (!anchorRef.current) return
+      const rect = anchorRef.current.getBoundingClientRect()
+      setPanelRect({
+        top: rect.bottom + 8,
+        left: rect.left,
+        width: rect.width,
+      })
+    }
+    updateRect()
+    window.addEventListener('resize', updateRect)
+    window.addEventListener('scroll', updateRect, true)
+    return () => {
+      window.removeEventListener('resize', updateRect)
+      window.removeEventListener('scroll', updateRect, true)
+    }
+  }, [showPanel, query])
 
   return (
-    <section className="relative rounded-[2rem] bg-[var(--app-surface)] p-4 shadow-[0_20px_60px_rgb(16_24_40/0.07)] sm:p-5">
+    <section
+      ref={anchorRef}
+      className="relative rounded-[2rem] bg-[var(--app-surface)] p-4 shadow-[0_20px_60px_rgb(16_24_40/0.07)] sm:p-5"
+    >
       <div className="mb-3 flex items-start justify-between gap-4">
         <div>
           <h2 className="font-black">Recherche rapide</h2>
@@ -47,40 +77,49 @@ export function DashboardSearch() {
         ) : null}
       </label>
 
-      {query ? (
-        <div
-          data-navbar-ignore
-          className="scrollbar-hidden absolute left-0 right-0 top-[calc(100%-0.75rem)] z-40 max-h-[25rem] overflow-y-auto rounded-b-[2rem] rounded-t-[1.25rem] bg-[var(--app-surface)] p-3 pt-5 shadow-[0_30px_80px_rgb(16_24_40/0.22)]"
-        >
-          {results.length ? (
-            <div className="grid gap-2">
-              {results.map((result) => {
-                const type = searchTypeMeta(result.type, result.typeLabel)
-                return (
-                  <Link
-                    key={`${result.type}-${result.id}`}
-                    to={result.path}
-                    onClick={() => setQuery('')}
-                    className="flex items-center gap-3 rounded-2xl bg-[var(--app-surface-muted)] p-4 transition hover:-translate-y-0.5 hover:shadow-md"
-                  >
-                    <Badge tone={type.tone}>{type.label}</Badge>
-                    <span className="min-w-0">
-                      <strong className="block truncate">{result.title}</strong>
-                      <span className="mt-1 block truncate text-xs text-[var(--app-text-muted)]">
-                        {result.subtitle}
-                      </span>
-                    </span>
-                  </Link>
-                )
-              })}
-            </div>
-          ) : (
-            <p className="p-5 text-center text-sm text-[var(--app-text-muted)]">
-              Aucun résultat pour « {query} ».
-            </p>
-          )}
-        </div>
-      ) : null}
+      {showPanel && panelRect
+        ? createPortal(
+            <div
+              data-navbar-ignore
+              className="scrollbar-hidden fixed z-[60] overflow-y-auto rounded-[1.35rem] border border-[var(--app-border)]/60 bg-[var(--app-surface)] p-3 shadow-[0_30px_80px_rgb(16_24_40/0.22)]"
+              style={{
+                top: panelRect.top,
+                left: panelRect.left,
+                width: panelRect.width,
+                maxHeight: `min(25rem, calc(100dvh - ${panelRect.top}px - 1rem))`,
+              }}
+            >
+              {results.length ? (
+                <div className="grid gap-2">
+                  {results.map((result) => {
+                    const type = searchTypeMeta(result.type, result.typeLabel)
+                    return (
+                      <Link
+                        key={`${result.type}-${result.id}`}
+                        to={result.path}
+                        onClick={() => setQuery('')}
+                        className="flex items-center gap-3 rounded-2xl bg-[var(--app-surface-muted)] p-4 transition hover:-translate-y-0.5 hover:shadow-md"
+                      >
+                        <Badge tone={type.tone}>{type.label}</Badge>
+                        <span className="min-w-0">
+                          <strong className="block truncate">{result.title}</strong>
+                          <span className="mt-1 block truncate text-xs text-[var(--app-text-muted)]">
+                            {result.subtitle}
+                          </span>
+                        </span>
+                      </Link>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="p-5 text-center text-sm text-[var(--app-text-muted)]">
+                  Aucun résultat pour « {query} ».
+                </p>
+              )}
+            </div>,
+            document.body,
+          )
+        : null}
     </section>
   )
 }

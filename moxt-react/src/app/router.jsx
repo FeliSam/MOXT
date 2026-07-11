@@ -115,6 +115,7 @@ const PersonalInformationPage = lazyPage(
 const ProfessionalPage = lazyPage(() => import('../pages/ProfessionalPage'), 'ProfessionalPage')
 const PublicHomePage = lazyPage(() => import('../pages/PublicHomePage'), 'PublicHomePage')
 const RegisterPage = lazyPage(() => import('../pages/RegisterPage'), 'RegisterPage')
+const ResetPasswordPage = lazyPage(() => import('../pages/ResetPasswordPage'), 'ResetPasswordPage')
 const ReceiptsPage = lazyPage(() => import('../pages/ReceiptsPage'), 'ReceiptsPage')
 const SupportPage = lazyPage(() => import('../pages/SupportPage'), 'SupportPage')
 const SettingsPage = lazyPage(() => import('../pages/SettingsPage'), 'SettingsPage')
@@ -154,10 +155,14 @@ export function AppRouter() {
           <Route path="/faq" element={<FaqPage />} />
         </Route>
 
+        <Route element={<AuthLayout />}>
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+        </Route>
+
         <Route element={<PublicOnlyRoute />}>
           <Route element={<AuthLayout />}>
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           </Route>
         </Route>

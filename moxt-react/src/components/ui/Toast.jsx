@@ -131,10 +131,14 @@ function ToastItem({ toast }) {
 
         <div className="min-w-0 flex-1">
           {toast.title ? (
-            <strong className="block text-sm font-bold text-[var(--app-text)]">{toast.title}</strong>
+            <strong className="toast-item-title block text-sm font-bold text-[var(--app-text)]">
+              {toast.title}
+            </strong>
           ) : null}
           {toast.message ? (
-            <p className={`text-sm text-[var(--app-text-muted)] ${toast.title ? 'mt-0.5' : ''}`}>
+            <p
+              className={`toast-item-message text-sm text-[var(--app-text-muted)] ${toast.title ? 'mt-0.5' : ''}`}
+            >
               {toast.message}
             </p>
           ) : null}

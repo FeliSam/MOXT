@@ -13,6 +13,7 @@ import {
   mergeParticipantProfiles,
 } from './conversationDisplay'
 import { appendRelatedContext, findRelatedContext, hasRelatedContext, mergeRelatedContextArrays, normalizeRelatedContexts } from './conversationTimeline'
+import { attachmentPreviewLabel } from './attachmentUtils'
 
 const PENDING_MESSAGE_MS = 15000
 
@@ -125,8 +126,13 @@ export function normalizeConversation(conv) {
 }
 
 function applyLastMessagePreview(conversation, message) {
-  if (!message?.text) return
-  conversation.lastMessageText = message.text
+  if (message?.attachment && !message?.text?.trim()) {
+    conversation.lastMessageText = attachmentPreviewLabel(message.attachment)
+  } else if (message?.text?.trim()) {
+    conversation.lastMessageText = message.text
+  } else {
+    return
+  }
   conversation.lastMessageSenderId = String(message.senderId ?? message.sender_id ?? '')
   conversation.lastMessageAt = message.createdAt ?? message.created_at ?? new Date().toISOString()
 }
@@ -271,9 +277,14 @@ const communicationSlice = createSlice({
     },
     receiveRemoteMessage(state, action) {
       const { conversationId, message } = action.payload
-      const conversation = state.conversations.find((c) => c.id === conversationId)
-      if (!conversation) return
       const normalizedMessage = normalizeMessage(message)
+      let conversation = state.conversations.find((c) => c.id === conversationId)
+      if (!conversation && normalizedMessage.senderId) {
+        conversation = state.conversations.find((item) =>
+          item.messages.some((entry) => entry.id === normalizedMessage.id),
+        )
+      }
+      if (!conversation) return
       const alreadyExists = conversation.messages.some((m) => m.id === normalizedMessage.id)
       if (alreadyExists) return
       conversation.messages.push(normalizedMessage)
@@ -288,7 +299,7 @@ const communicationSlice = createSlice({
           conversation.unreadBy[participantId] = (conversation.unreadBy[participantId] || 0) + 1
         })
       applyLastMessagePreview(conversation, normalizedMessage)
-      bumpConversationToTop(state, conversationId)
+      bumpConversationToTop(state, conversation.id)
     },
     receiveRemoteConversation(state, action) {
       const conversation = normalizeConversation(action.payload)

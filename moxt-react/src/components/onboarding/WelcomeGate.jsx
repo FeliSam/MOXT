@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSelector } from 'react-redux'
+import { useLocation } from 'react-router-dom'
 import {
   hasSeenWelcome,
   isWelcomePending,
@@ -9,6 +10,7 @@ import { WelcomeModal } from './WelcomeModal'
 
 export function WelcomeGate() {
   const user = useSelector((state) => state.auth.user)
+  const location = useLocation()
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
@@ -17,7 +19,7 @@ export function WelcomeGate() {
       return
     }
     setOpen(isWelcomePending() && !hasSeenWelcome(user.id))
-  }, [user?.id])
+  }, [user?.id, location.pathname])
 
   function handleClose() {
     if (user?.id) markWelcomeSeen(user.id)

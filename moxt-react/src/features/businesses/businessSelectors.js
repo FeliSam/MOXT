@@ -2,10 +2,7 @@ import { createSelector } from '@reduxjs/toolkit'
 
 export function belongsToBusiness(resource, business) {
   if (!resource || !business) return false
-  return (
-    resource.businessId === business.id ||
-    (!resource.businessId && resource.ownerId === business.ownerId)
-  )
+  return resource.businessId === business.id
 }
 
 export const selectBusinessById = (state, businessId) =>

@@ -78,7 +78,7 @@ function translateSupabaseError(message, meta = {}) {
     return "Le service d'inscription par e-mail est indisponible. Utilisez la vérification par téléphone ou réessayez plus tard."
   }
   if (m.includes('password should be')) {
-    return 'Le mot de passe doit contenir au moins 6 caractères.'
+    return 'Le mot de passe doit contenir au moins 8 caractères, avec majuscule, minuscule et chiffre.'
   }
   if (
     m.includes('invalid phone') ||

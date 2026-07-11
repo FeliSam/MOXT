@@ -1,6 +1,6 @@
 import { useFormik } from 'formik'
 import { useEffect, useState } from 'react'
-import { FiLock, FiMail, FiMessageSquare, FiUser } from 'react-icons/fi'
+import { FiLock, FiMail, FiMessageSquare } from 'react-icons/fi'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { AuthCard } from '../components/auth/AuthCard'
@@ -13,6 +13,7 @@ import { flagEmoji } from '../config/flags'
 import { constrainPhone } from '../config/phone'
 import { useLanguage } from '../contexts/useLanguage'
 import { loadAllData } from '../app/loadAllData'
+import { authErrorToast } from '../features/auth/authErrorMessages'
 import {
   clearAuthError,
   login,
@@ -20,6 +21,7 @@ import {
   verifyPhoneLogin,
 } from '../features/auth/authSlice'
 import { loginEmailSchema, loginPhonePasswordSchema } from '../features/auth/authSchemas'
+import { addToast } from '../features/ui/uiSlice'
 import { startRealtimeSubscription } from '../services/realtimeService'
 
 const LOGIN_MODES = [
@@ -49,6 +51,12 @@ export function LoginPage() {
   const [resendCooldown, setResendCooldown] = useState(0)
 
   useEffect(() => () => dispatch(clearAuthError()), [dispatch])
+
+  useEffect(() => {
+    if (!error) return
+    dispatch(addToast(authErrorToast('Connexion impossible', error)))
+    dispatch(clearAuthError())
+  }, [dispatch, error])
 
   useEffect(() => {
     if (resendCooldown <= 0) return undefined
@@ -101,6 +109,13 @@ export function LoginPage() {
       setOtpCode('')
       setResendCooldown(60)
       dispatch(clearAuthError())
+      dispatch(
+        addToast({
+          title: 'Code envoyé',
+          message: `Vérifiez les SMS reçus au ${result.payload.phone}.`,
+          tone: 'info',
+        }),
+      )
     }
   }
 
@@ -116,15 +131,17 @@ export function LoginPage() {
   const phoneError = (field) => (phoneFormik.touched[field] ? phoneFormik.errors[field] : undefined)
 
   return (
-    <AuthCard title={t('auth.login.title')} description="Connectez-vous par e-mail, numéro russe ou code SMS.">
-      <div className="mt-6">
-        <GoogleButton to="/dashboard" />
+    <AuthCard
+      eyebrow="MOXT · Connexion"
+      title={t('auth.login.title')}
+      titleClassName="max-sm:hidden"
+      description="Accédez à votre espace par e-mail, numéro russe (+7) ou code SMS."
+    >
+      <div className="auth-flow-panel mt-5">
+        <GoogleButton label="Continuer avec Google" />
       </div>
-      <div className="my-5 flex items-center gap-3 text-xs font-bold uppercase tracking-wider text-[var(--app-text-faint)]">
-        <span className="h-px flex-1 bg-[var(--app-border)]" />
-        ou avec vos identifiants
-        <span className="h-px flex-1 bg-[var(--app-border)]" />
-      </div>
+
+      <p className="auth-flow-divider">ou avec vos identifiants</p>
 
       <div className="grid gap-2 sm:grid-cols-3">
         {LOGIN_MODES.map((item) => {
@@ -135,11 +152,7 @@ export function LoginPage() {
               key={item.id}
               type="button"
               onClick={() => switchMode(item.id)}
-              className={`flex min-h-11 items-center justify-center gap-2 rounded-2xl border px-3 py-2 text-xs font-bold transition ${
-                active
-                  ? 'border-brand-600 bg-brand-700 text-white shadow-md'
-                  : 'border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text-muted)] hover:border-brand-300'
-              }`}
+              className={`auth-mode-tab ${active ? 'auth-mode-tab--active' : ''}`}
             >
               <Icon className="shrink-0 text-sm" aria-hidden="true" />
               {item.label}
@@ -148,11 +161,14 @@ export function LoginPage() {
         })}
       </div>
 
-      {location.state?.notice ? <Alert className="mt-4" variant="success">{location.state.notice}</Alert> : null}
-      {error ? <Alert className="mt-4" variant="error">{error}</Alert> : null}
+      {location.state?.notice ? (
+        <Alert className="mt-4" variant="success">
+          {location.state.notice}
+        </Alert>
+      ) : null}
 
       {mode === 'email' ? (
-        <form className="mt-4 grid gap-4" onSubmit={emailFormik.handleSubmit} noValidate>
+        <form className="auth-flow-panel mt-4 grid gap-4" onSubmit={emailFormik.handleSubmit} noValidate>
           <Input
             id="login-email"
             label="Adresse e-mail"
@@ -172,7 +188,7 @@ export function LoginPage() {
             error={emailError('password')}
           />
           <div className="flex justify-end">
-            <Link className="text-sm font-bold text-brand-700 dark:text-brand-300" to="/forgot-password">
+            <Link className="auth-flow-link" to="/forgot-password">
               {t('auth.login.forgot')}
             </Link>
           </div>
@@ -183,7 +199,7 @@ export function LoginPage() {
       ) : null}
 
       {mode === 'phone-password' ? (
-        <form className="mt-4 grid gap-4" onSubmit={phoneFormik.handleSubmit} noValidate>
+        <form className="auth-flow-panel mt-4 grid gap-4" onSubmit={phoneFormik.handleSubmit} noValidate>
           <Input
             id="login-phone-password"
             label="Numéro russe"
@@ -205,6 +221,9 @@ export function LoginPage() {
             {...phoneFormik.getFieldProps('password')}
             error={phoneError('password')}
           />
+          <p className="auth-flow-hint text-xs text-[var(--app-text-muted)]">
+            Mot de passe oublié ? Utilisez la connexion par e-mail si votre compte en possède un.
+          </p>
           <Button className="w-full" type="submit" loading={status === 'loading'}>
             {status === 'loading' ? t('auth.login.submitting') : 'Se connecter'}
           </Button>
@@ -212,7 +231,7 @@ export function LoginPage() {
       ) : null}
 
       {mode === 'phone-otp' ? (
-        <div className="mt-4 grid gap-4">
+        <div className="auth-flow-panel mt-4 grid gap-4">
           {!otpSent ? (
             <>
               <Input
@@ -235,7 +254,7 @@ export function LoginPage() {
           ) : (
             <>
               <Alert variant="info">
-                Un code à 6 chiffres a été envoyé au {otpPhone}.
+                Un code à 6 chiffres a été envoyé au <strong>{otpPhone}</strong>.
               </Alert>
               <Input
                 id="login-otp-code"
@@ -244,7 +263,6 @@ export function LoginPage() {
                 autoComplete="one-time-code"
                 maxLength={6}
                 placeholder="000000"
-                iconLeft={<FiUser />}
                 value={otpCode}
                 onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
               />
@@ -270,7 +288,7 @@ export function LoginPage() {
               </div>
               <button
                 type="button"
-                className="text-sm font-bold text-[var(--app-text-muted)] hover:text-brand-700 dark:hover:text-brand-300"
+                className="auth-flow-link-muted"
                 onClick={() => {
                   setOtpSent(false)
                   setOtpCode('')
@@ -286,7 +304,7 @@ export function LoginPage() {
 
       <p className="mt-5 text-center text-sm text-[var(--app-text-muted)]">
         {t('auth.login.newToMoxt')}{' '}
-        <Link className="font-bold text-brand-700 dark:text-brand-300" to="/register">
+        <Link className="auth-flow-link" to="/register">
           {t('auth.login.createAccount')}
         </Link>
       </p>

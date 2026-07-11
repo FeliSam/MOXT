@@ -37,7 +37,7 @@ import {
   firstUnreadMessageIndex,
   shouldGroupMessages,
 } from './MessageBubble'
-import { conversationMessageCount, isMessageFromUser } from './messageUtils'
+import { conversationMessageCount, isMessageFromUser, messageHasReactions } from './messageUtils'
 import { RelatedContentPreview } from './RelatedContentPreview'
 
 function matchesThreadQuery(text, query) {
@@ -429,6 +429,7 @@ export function ConversationPanel({
                       new Date(message.createdAt).toDateString() !==
                         new Date(nextMessage.createdAt).toDateString(),
                     )
+                  const previousHasReactions = messageHasReactions(previousMessage)
                   const showSenderName = !mine && !groupedWithPrevious
                   const repliedMessage = active.messages.find((entry) => entry.id === message.replyToId)
                   const repliedContext = message.relatedContextId
@@ -449,7 +450,11 @@ export function ConversationPanel({
                       {showDate ? <MessageDateSeparator date={item.at} /> : null}
                       <div
                         className={`message-row ${mine ? 'message-row--sent' : ''} ${
-                          groupedWithPrevious ? 'message-row--grouped' : 'message-row--spaced'
+                          groupedWithPrevious
+                            ? previousHasReactions
+                              ? 'message-row--grouped message-row--after-reaction'
+                              : 'message-row--grouped'
+                            : 'message-row--spaced'
                         }`}
                       >
                         {!mine ? (
@@ -618,6 +623,7 @@ export function ConversationPanel({
             <input
               className="sr-only"
               type="file"
+              accept="image/*,application/pdf,.doc,.docx"
               disabled={blocked}
               onChange={(event) => onFile(event.target.files?.[0] || null)}
             />
@@ -637,7 +643,11 @@ export function ConversationPanel({
             onKeyDown={(event) => {
               if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault()
-                if (!blocked && formik.values.text.trim() && !formik.isSubmitting) {
+                if (
+                  !blocked &&
+                  (formik.values.text.trim() || attachment) &&
+                  !formik.isSubmitting
+                ) {
                   formik.handleSubmit()
                 }
               }
@@ -647,7 +657,7 @@ export function ConversationPanel({
             className="message-touch-target grid size-9 shrink-0 place-items-center rounded-xl bg-brand-700 text-base text-white shadow-[0_10px_24px_rgb(8_112_95/0.28)] transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-40"
             type="submit"
             aria-label="Envoyer"
-            disabled={blocked || !formik.values.text.trim() || formik.isSubmitting}
+            disabled={blocked || (!formik.values.text.trim() && !attachment) || formik.isSubmitting}
           >
             <FiSend aria-hidden="true" />
           </button>

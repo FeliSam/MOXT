@@ -98,7 +98,7 @@ export function MyPublicationsPage() {
   const typeTab = PUBLICATION_TYPE_TABS.some((tab) => tab.id === searchParams.get('type'))
     ? searchParams.get('type')
     : 'listing'
-  const scope = searchParams.get('scope') === 'business' ? 'business' : 'all'
+  const scope = searchParams.get('scope') === 'business' ? 'business' : 'personal'
 
   const publications = useMemo(
     () => filterPublicationsByScope(collectUserPublications(appState, user.id), scope),
@@ -132,7 +132,7 @@ export function MyPublicationsPage() {
 
   function setScope(next) {
     const params = new URLSearchParams(searchParams)
-    if (next === 'all') params.delete('scope')
+    if (next === 'personal') params.delete('scope')
     else params.set('scope', next)
     setSearchParams(params, { replace: true })
   }
@@ -167,7 +167,7 @@ export function MyPublicationsPage() {
             ? 'Membres abonnés à vos annonces et publications.'
             : scope === 'business' && ownBusiness
               ? `Publications publiées au nom de ${ownBusiness.name}.`
-              : 'Annonces, colis, jobs, événements, publications et autres contenus.'
+              : 'Annonces, colis, jobs, événements et publications de votre profil personnel.'
         }
         stats={[
           { label: 'Actives', value: archiveCounts.active },

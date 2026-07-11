@@ -12,8 +12,8 @@ describe('belongsToBusiness', () => {
     expect(belongsToBusiness({ businessId: 'BIZ-1', ownerId: 'USER-1' }, business)).toBe(true)
   })
 
-  it('reste compatible avec les donnees historiques sans businessId', () => {
-    expect(belongsToBusiness({ ownerId: 'USER-1' }, business)).toBe(true)
+  it('ignore les donnees historiques sans businessId', () => {
+    expect(belongsToBusiness({ ownerId: 'USER-1' }, business)).toBe(false)
   })
 
   it('calcule la complétion et la note publiée', () => {

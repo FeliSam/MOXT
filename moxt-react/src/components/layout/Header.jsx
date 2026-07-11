@@ -47,18 +47,16 @@ export function Header({ hideOnMobile = false }) {
         </div>
 
         <div className="min-w-0 flex-1 lg:hidden">
-          <p className="truncate text-[9px] font-black uppercase tracking-[0.16em] text-brand-700">
+          <p className="hidden truncate text-[9px] font-black uppercase tracking-[0.16em] text-brand-700 sm:block">
             {translateLabel(route.eyebrow)}
           </p>
-          <p className="truncate text-sm font-black">{translateLabel(route.title)}</p>
+          <p className="truncate text-sm font-black leading-tight">{translateLabel(route.title)}</p>
         </div>
 
-        <div className="hidden min-w-0 flex-1 md:block lg:hidden" />
-
-        <div className="ml-auto flex items-center gap-1 sm:gap-1.5">
+        <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1.5">
           <Link
             to="/notifications"
-            className="relative grid size-10 place-items-center rounded-2xl text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)]"
+            className="header-action-btn relative grid"
             aria-label={`Notifications${unreadCount ? ` (${unreadCount} non lues)` : ''}`}
           >
             <FiBell className="text-lg" />
@@ -71,8 +69,16 @@ export function Header({ hideOnMobile = false }) {
           </Link>
 
           <Link
+            to="/transfers/history"
+            className="header-action-btn grid"
+            aria-label="Historique des transferts"
+          >
+            <FiClock className="text-lg" />
+          </Link>
+
+          <Link
             to="/messages"
-            className="relative grid size-10 place-items-center rounded-2xl text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)] lg:hidden"
+            className="header-action-btn relative grid lg:hidden"
             aria-label={`Messagerie${unreadMessagesCount ? ` (${unreadMessagesCount} non lus)` : ''}`}
           >
             <FiMessageSquare className="text-lg" />
@@ -86,7 +92,7 @@ export function Header({ hideOnMobile = false }) {
 
           <Link
             to="/favorites"
-            className="hidden size-10 place-items-center rounded-2xl text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)] lg:grid"
+            className="header-action-btn hidden lg:grid"
             aria-label="Mes favoris"
           >
             <FiHeart className="text-lg" />
@@ -94,20 +100,12 @@ export function Header({ hideOnMobile = false }) {
 
           <button
             type="button"
-            className="btn-press hidden size-10 place-items-center rounded-2xl text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)] sm:grid"
+            className="header-action-btn btn-press hidden sm:grid"
             aria-label={theme === 'dark' ? 'Activer le theme clair' : 'Activer le theme sombre'}
             onClick={toggleTheme}
           >
             {theme === 'dark' ? <FiSun className="transition-transform duration-300" /> : <FiMoon className="transition-transform duration-300" />}
           </button>
-
-          <Link
-            to="/transfers/history"
-            className="hidden size-10 place-items-center rounded-2xl text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)] sm:grid"
-            aria-label="Historique des transferts"
-          >
-            <FiClock className="text-lg" />
-          </Link>
 
           <Link
             to="/profile"

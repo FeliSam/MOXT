@@ -54,9 +54,6 @@ export function AuthLayout() {
 
       <section className="scrollbar-hidden flex min-h-dvh items-center justify-center overflow-y-auto p-5 sm:p-8 lg:h-full lg:min-h-0">
         <div className={`w-full ${registering ? 'max-w-2xl' : 'max-w-md'}`}>
-          <div className="mb-6 lg:hidden">
-            <Brand />
-          </div>
           <Outlet />
         </div>
       </section>

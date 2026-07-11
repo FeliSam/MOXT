@@ -43,6 +43,17 @@ export function createAuthSlice(authService) {
     },
   )
 
+  const completeOAuthProfile = createAsyncThunk(
+    'auth/completeOAuthProfile',
+    async (details, { rejectWithValue }) => {
+      try {
+        return await authService.completeOAuthProfile(details)
+      } catch (error) {
+        return rejectWithValue(error.message)
+      }
+    },
+  )
+
   const register = createAsyncThunk('auth/register', async (details, { rejectWithValue }) => {
     try {
       return await authService.register(details)
@@ -169,6 +180,9 @@ export function createAuthSlice(authService) {
           if (action.payload) setSession(state, action)
         })
         .addCase(loginWithGoogle.rejected, setFailure)
+        .addCase(completeOAuthProfile.pending, setLoading)
+        .addCase(completeOAuthProfile.fulfilled, setSession)
+        .addCase(completeOAuthProfile.rejected, setFailure)
         .addCase(register.pending, setLoading)
         .addCase(register.fulfilled, (state, action) => {
           if (
@@ -218,6 +232,7 @@ export function createAuthSlice(authService) {
     actions: authSlice.actions,
     login,
     loginWithGoogle,
+    completeOAuthProfile,
     requestPhoneLoginOtp,
     verifyPhoneLogin,
     register,

@@ -4,7 +4,7 @@ import { supabase } from '../../services/supabaseClient'
 export { translateAuthError }
 
 export const authService = createAuthService(supabase, {
-  getOAuthRedirectUrl: () => `${window.location.origin}/dashboard`,
+  getOAuthRedirectUrl: () => `${window.location.origin}/register?from=google`,
   getEmailRedirectUrl: () => `${window.location.origin}/login`,
   getPasswordResetRedirectUrl: () => `${window.location.origin}/reset-password`,
 })

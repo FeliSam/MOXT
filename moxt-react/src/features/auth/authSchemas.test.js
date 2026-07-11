@@ -13,7 +13,7 @@ describe('schemas d authentification', () => {
       registerSchema.validate({
         firstName: 'Amina',
         lastName: 'Demo',
-        email: '',
+        email: 'amina@example.com',
         originCountry: 'BJ',
         residenceCountry: 'RU',
         residenceCity: 'Moscou',
@@ -27,7 +27,7 @@ describe('schemas d authentification', () => {
     ).rejects.toThrow()
   })
 
-  it('accepte une inscription SMS sans e-mail', async () => {
+  it('refuse une inscription sans e-mail', async () => {
     await expect(
       registerSchema.validate({
         firstName: 'Amina',
@@ -43,6 +43,6 @@ describe('schemas d authentification', () => {
         acceptTerms: true,
         verificationMethod: 'phone',
       }),
-    ).resolves.toBeTruthy()
+    ).rejects.toThrow("L'e-mail est obligatoire.")
   })
 })

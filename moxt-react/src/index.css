@@ -213,6 +213,11 @@ html.capacitor-native .capacitor-safe-bottom {
 
 /* ─── Messagerie — bulles alignées design system MOXT ───────────────────── */
 .message-thread-canvas {
+  container-type: inline-size;
+  container-name: message-thread;
+  --message-media-width: min(40cqw, 18rem);
+  --message-media-height: calc(var(--message-media-width) * 1.1);
+  --message-media-top: min(10cqw, 4.5rem);
   background:
     radial-gradient(circle at 10% 0%, rgb(22 169 143 / 5%), transparent 26rem),
     linear-gradient(180deg, rgb(255 255 255 / 0.45), transparent 12rem),
@@ -246,6 +251,10 @@ html.capacitor-native .capacitor-safe-bottom {
   max-width: min(82%, 26rem);
   gap: 0.4rem;
   align-items: flex-end;
+}
+
+.message-row:has(.message-stack--media) {
+  max-width: min(92%, 36rem);
 }
 
 .message-row--sent {
@@ -325,7 +334,6 @@ html.capacitor-native .capacitor-safe-bottom {
 }
 
 .message-bubble--received:hover {
-  border-color: color-mix(in srgb, var(--app-accent) 38%, var(--app-border));
   background: color-mix(in srgb, var(--app-accent-soft) 46%, var(--app-surface));
   box-shadow: var(--shadow-card-hover);
 }
@@ -336,8 +344,8 @@ html.capacitor-native .capacitor-safe-bottom {
 }
 
 .message-bubble--active.message-bubble--received {
-  border-color: color-mix(in srgb, var(--app-accent) 52%, var(--app-border));
   background: color-mix(in srgb, var(--app-accent-soft) 58%, var(--app-surface));
+  box-shadow: var(--shadow-card-hover);
 }
 
 .message-bubble--active.message-bubble--sent {
@@ -371,7 +379,6 @@ html.capacitor-native .capacitor-safe-bottom {
 .message-bubble--received {
   color: var(--app-text-2);
   background: color-mix(in srgb, var(--app-accent-soft) 28%, var(--app-surface));
-  border: 1px solid color-mix(in srgb, var(--app-accent) 18%, var(--app-border));
   box-shadow: var(--shadow-card);
   border-radius: 1rem 1rem 1rem 0.35rem;
 }
@@ -425,6 +432,124 @@ html.capacitor-native .capacitor-safe-bottom {
 .message-attachment--received {
   border: 1px solid var(--app-border);
   background: var(--app-surface-muted);
+}
+
+.message-stack--media {
+  width: var(--message-media-width, min(40%, 18rem));
+  max-width: 100%;
+}
+
+.message-bubble--has-image {
+  width: 100%;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+}
+
+.message-bubble--has-image.message-bubble--sent,
+.message-bubble--has-image.message-bubble--received {
+  color: inherit;
+  background: transparent;
+  box-shadow: none;
+}
+
+.message-bubble--has-image.message-bubble--sent:hover,
+.message-bubble--has-image.message-bubble--received:hover,
+.message-bubble--has-image.message-bubble--active.message-bubble--sent,
+.message-bubble--has-image.message-bubble--active.message-bubble--received {
+  transform: none;
+  filter: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.message-bubble--has-image .message-quote {
+  margin: 0 0 0.35rem;
+  width: 100%;
+}
+
+.message-bubble--has-image .message-failed-mark {
+  top: 0.35rem;
+  right: 0.35rem;
+}
+
+.message-attachment-image {
+  display: block;
+  width: 100%;
+  margin-top: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  line-height: 0;
+  cursor: zoom-in;
+  transition: transform var(--transition-fast), filter var(--transition-fast);
+}
+
+.message-bubble--has-image:not(.message-bubble--grouped-prev) .message-attachment-image {
+  margin-top: var(--message-media-top, min(10%, 4.5rem));
+}
+
+.message-bubble--has-image.message-bubble--grouped-prev .message-attachment-image {
+  margin-top: 0.2rem;
+}
+
+.message-attachment-image img {
+  display: block;
+  width: 100%;
+  height: var(--message-media-height, 13.2rem);
+  object-fit: cover;
+  border-radius: 0.875rem;
+  box-shadow: var(--shadow-card);
+}
+
+.message-bubble--has-image.message-bubble--sent .message-attachment-image img {
+  box-shadow: 0 8px 22px rgb(8 112 95 / 24%);
+}
+
+.message-attachment-image:hover img {
+  transform: translateY(-1px);
+  filter: brightness(1.02);
+}
+
+.message-bubble-text--caption {
+  margin-top: 0.35rem;
+  width: 100%;
+  padding: 0.45rem 0.7rem;
+  border-radius: 0.85rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.message-bubble--has-image.message-bubble--sent .message-bubble-text--caption {
+  color: #fff;
+  background: linear-gradient(
+    145deg,
+    var(--app-accent) 0%,
+    color-mix(in srgb, var(--app-accent) 88%, #000) 100%
+  );
+  box-shadow: var(--shadow-finance);
+}
+
+.message-bubble--has-image.message-bubble--received .message-bubble-text--caption {
+  color: var(--app-text);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--shadow-card);
+}
+
+.message-bubble--has-image .message-reactions {
+  margin-top: 0.35rem;
+}
+
+.message-bubble--has-image .message-failed-banner {
+  margin-top: 0.35rem;
+  width: 100%;
+}
+
+.message-image-lightbox {
+  position: fixed;
+  inset: 0;
 }
 
 .message-meta {
@@ -526,6 +651,45 @@ html.capacitor-native .capacitor-safe-bottom {
 /* Le stack dont le menu d'actions est ouvert passe au-dessus des messages voisins. */
 .message-stack--actions {
   z-index: 40;
+}
+
+/* Réserve de l'espace sous la bulle pour que l'emoji (posé en absolu sur le
+   bord bas) ne chevauche pas le message suivant. */
+.message-stack--reacted {
+  z-index: 5;
+  padding-bottom: 0.45rem;
+  margin-bottom: 0.5rem;
+}
+
+.message-row--after-reaction {
+  margin-top: 0.65rem !important;
+}
+
+/* Marqueur d'échec d'envoi : point d'exclamation rouge avant la bulle. */
+.message-failed-mark {
+  position: absolute;
+  top: 50%;
+  left: -1.65rem;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  color: #dc2626;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+}
+
+.message-failed-mark:hover {
+  transform: translateY(-50%) scale(1.15);
+}
+
+/* Messages reçus (rare en échec) : marqueur du côté opposé. */
+.message-bubble--received .message-failed-mark {
+  left: auto;
+  right: -1.65rem;
 }
 
 .message-action-menu {
@@ -1344,9 +1508,147 @@ html.theme-animating *::after {
   }
 }
 
+/* ─── Auth flows (connexion, inscription, récupération) ───────────────────── */
+.auth-flow-panel {
+  border: 1px solid color-mix(in srgb, var(--app-border) 88%, var(--app-accent) 12%);
+  border-radius: 1.15rem;
+  background: color-mix(in srgb, var(--app-surface) 92%, var(--app-accent-soft) 8%);
+  padding: 1rem;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 6%);
+}
+
+.auth-flow-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-block: 1.15rem;
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--app-text-faint);
+}
+
+.auth-flow-divider::before,
+.auth-flow-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--app-border) 70%, var(--app-accent) 30%),
+    transparent
+  );
+}
+
+.auth-mode-tab {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border-radius: 1rem;
+  border: 1.5px solid var(--app-border);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--app-text-muted);
+  background: var(--app-surface);
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.auth-mode-tab:hover {
+  border-color: color-mix(in srgb, var(--app-accent) 42%, var(--app-border));
+  transform: translateY(-0.5px);
+}
+
+.auth-mode-tab--active {
+  border-color: var(--app-accent);
+  color: #fff;
+  background: linear-gradient(145deg, var(--app-accent) 0%, color-mix(in srgb, var(--app-accent) 86%, #000) 100%);
+  box-shadow: 0 10px 24px rgb(8 112 95 / 22%);
+}
+
+.auth-flow-link {
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: var(--app-accent);
+}
+
+.auth-flow-link-muted {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--app-text-muted);
+  transition: color var(--transition-fast);
+}
+
+.auth-flow-link-muted:hover {
+  color: var(--app-accent);
+}
+
+.auth-flow-hint {
+  border-left: 3px solid color-mix(in srgb, var(--app-accent) 55%, transparent);
+  padding-left: 0.65rem;
+}
+
+.auth-flow-spinner {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  border: 2px solid color-mix(in srgb, var(--app-accent) 25%, transparent);
+  border-top-color: var(--app-accent);
+  animation: spin 0.75s linear infinite;
+}
+
+.auth-card-shell {
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-card-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, var(--app-accent), var(--app-teal), var(--app-accent));
+  opacity: 0.9;
+}
+
+.auth-stepper-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 1rem;
+  height: 2px;
+  background: var(--app-border);
+}
+
+.auth-stepper-progress {
+  position: absolute;
+  left: 0;
+  top: 1rem;
+  height: 2px;
+  background: linear-gradient(90deg, var(--app-accent), var(--app-teal));
+  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 /* ─── Toast ──────────────────────────────────────────────────────────────── */
 .toast-enter  { animation: toast-in  280ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
 .toast-exit   { animation: toast-out 200ms ease-in forwards; }
+.toast-item-title {
+  font-family: var(--font-display, inherit);
+  letter-spacing: -0.01em;
+}
+.toast-item-message {
+  line-height: 1.45;
+}
 .toast-progress {
   width: 100%;
   transform-origin: left;
@@ -1375,6 +1677,10 @@ html.theme-animating *::after {
 }
 
 /* ─── Utilitaires ────────────────────────────────────────────────────────── */
+.header-action-btn {
+  @apply size-9 shrink-0 place-items-center rounded-xl text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)] sm:size-10 sm:rounded-2xl;
+}
+
 .lazy-content { content-visibility: auto; }
 
 .scrollbar-hidden {
@@ -1382,6 +1688,19 @@ html.theme-animating *::after {
   -ms-overflow-style: none;
 }
 .scrollbar-hidden::-webkit-scrollbar { display: none; }
+
+/* Sidebar mobile — léger fondu bas pour signaler le défilement */
+.sidebar-mobile-nav {
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 2.5rem), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 2.5rem), transparent 100%);
+}
+
+@media (min-width: 1024px) {
+  .sidebar-mobile-nav {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
 
 /* Carrousels horizontaux — inertie native, snap, sans conflit avec le scroll vertical */
 .horizontal-track {
@@ -1394,6 +1713,8 @@ html.theme-animating *::after {
   scroll-snap-type: x proximity;
   scroll-padding-inline: 1rem;
   touch-action: pan-x pinch-zoom;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 0.65rem, #000 calc(100% - 0.65rem), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 0.65rem, #000 calc(100% - 0.65rem), transparent 100%);
 }
 
 .horizontal-track > * {
@@ -1418,6 +1739,8 @@ html.theme-animating *::after {
     overflow: visible;
     scroll-snap-type: none;
     touch-action: auto;
+    -webkit-mask-image: none;
+    mask-image: none;
   }
 }
 
@@ -1712,38 +2035,44 @@ html.theme-animating *::after {
     transform: translateX(-10px) scale(0.9);
   }
 
+  .sidebar-rail-item:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--app-accent) 55%, transparent);
+    outline-offset: 3px;
+    border-radius: 0.85rem;
+  }
+
   /* Cascade visible : 1 focus > 2 near > 3 far > 4 edge — délais pour défilement fluide */
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus .sidebar-rail-label--row {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-focus .sidebar-rail-label--row {
     opacity: 1;
     visibility: visible;
     transition-delay: 0s;
   }
 
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-near .sidebar-rail-label--row {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-near .sidebar-rail-label--row {
     opacity: 1;
     visibility: visible;
     transition-delay: 0.04s, 0.04s, 0s, 0.04s, 0.04s, 0.04s, 0.04s, 0.04s, 0.04s;
   }
 
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-far .sidebar-rail-label--row {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-far .sidebar-rail-label--row {
     opacity: 1;
     visibility: visible;
     transition-delay: 0.1s, 0.1s, 0s, 0.1s, 0.1s, 0.1s, 0.1s, 0.1s, 0.1s;
   }
 
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-edge .sidebar-rail-label--row {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-edge .sidebar-rail-label--row {
     opacity: 1;
     visibility: visible;
     transition-delay: 0.18s, 0.18s, 0s, 0.18s, 0.18s, 0.18s, 0.18s, 0.18s, 0.18s;
   }
 
   /* État neutre — icônes inchangées, labels masqués (sortie douce) */
-  .group\/sidebar:hover .sidebar-rail-item:not(.sidebar-proximity-focus):not(.sidebar-proximity-near):not(.sidebar-proximity-far):not(.sidebar-proximity-edge) .sidebar-nav-icon {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item:not(.sidebar-proximity-focus):not(.sidebar-proximity-near):not(.sidebar-proximity-far):not(.sidebar-proximity-edge) .sidebar-nav-icon {
     transform: scale(1);
     opacity: 1;
   }
 
-  .group\/sidebar:hover .sidebar-rail-item:not(.sidebar-proximity-focus):not(.sidebar-proximity-near):not(.sidebar-proximity-far):not(.sidebar-proximity-edge) .sidebar-rail-label--row {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item:not(.sidebar-proximity-focus):not(.sidebar-proximity-near):not(.sidebar-proximity-far):not(.sidebar-proximity-edge) .sidebar-rail-label--row {
     opacity: 0;
     visibility: hidden;
     font-size: 0.6875rem;
@@ -1756,8 +2085,8 @@ html.theme-animating *::after {
   }
 
   /* Footer : reste ouvert tant que le rail OU le flyout est survolé */
-  .group\/sidebar:hover .sidebar-footer-flyout,
-  .group\/footer:hover .sidebar-footer-flyout,
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-footer-flyout,
+  .group\/footer:is(:hover, :focus-within) .sidebar-footer-flyout,
   .sidebar-footer-flyout:hover {
     opacity: 1;
     visibility: visible;
@@ -1766,7 +2095,7 @@ html.theme-animating *::after {
     transition-delay: 0s;
   }
 
-  .group\/footer:hover .group\/profile .sidebar-nav-icon {
+  .group\/footer:is(:hover, :focus-within) .group\/profile .sidebar-nav-icon {
     transform: scale(1.1);
     box-shadow:
       0 0 0 2px color-mix(in srgb, white 35%, transparent),
@@ -1789,7 +2118,7 @@ html.theme-animating *::after {
   }
 
   /* Proximité rail — 1 survolé > 2 voisins > 3e rangée plus petite */
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-near .sidebar-nav-icon {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-near .sidebar-nav-icon {
     transform: scale(0.92);
     opacity: 0.8;
     background: color-mix(in srgb, var(--app-surface-muted) 85%, var(--app-surface));
@@ -1797,12 +2126,12 @@ html.theme-animating *::after {
     box-shadow: none;
   }
 
-  .dark .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-near .sidebar-nav-icon {
+  .dark .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-near .sidebar-nav-icon {
     background: color-mix(in srgb, var(--app-surface-muted) 70%, var(--app-surface));
     color: color-mix(in srgb, var(--app-text-muted) 82%, transparent);
   }
 
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-far .sidebar-nav-icon {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-far .sidebar-nav-icon {
     transform: scale(0.84);
     opacity: 0.62;
     background: color-mix(in srgb, var(--app-surface-muted) 70%, var(--app-surface));
@@ -1810,12 +2139,12 @@ html.theme-animating *::after {
     box-shadow: none;
   }
 
-  .dark .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-far .sidebar-nav-icon {
+  .dark .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-far .sidebar-nav-icon {
     background: color-mix(in srgb, var(--app-surface-muted) 55%, var(--app-surface));
     color: color-mix(in srgb, var(--app-text-muted) 70%, transparent);
   }
 
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-near .sidebar-rail-label--row {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-near .sidebar-rail-label--row {
     z-index: 52;
     opacity: 0.92;
     border-color: color-mix(in srgb, var(--app-border) 88%, transparent);
@@ -1827,12 +2156,12 @@ html.theme-animating *::after {
     box-shadow: 0 8px 22px -14px color-mix(in srgb, var(--app-text) 18%, transparent);
   }
 
-  .dark .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-near .sidebar-rail-label--row {
+  .dark .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-near .sidebar-rail-label--row {
     background: color-mix(in srgb, var(--app-surface) 90%, transparent);
     color: color-mix(in srgb, var(--app-text-muted) 94%, transparent);
   }
 
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-far .sidebar-rail-label--row {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-far .sidebar-rail-label--row {
     z-index: 51;
     opacity: 0.72;
     border-color: color-mix(in srgb, var(--app-border) 80%, transparent);
@@ -1844,12 +2173,12 @@ html.theme-animating *::after {
     box-shadow: 0 4px 14px -12px color-mix(in srgb, var(--app-text) 12%, transparent);
   }
 
-  .dark .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-far .sidebar-rail-label--row {
+  .dark .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-far .sidebar-rail-label--row {
     background: color-mix(in srgb, var(--app-surface) 86%, transparent);
     color: color-mix(in srgb, var(--app-text-muted) 82%, transparent);
   }
 
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-edge .sidebar-nav-icon {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-edge .sidebar-nav-icon {
     transform: scale(0.78);
     opacity: 0.48;
     background: color-mix(in srgb, var(--app-surface-muted) 55%, var(--app-surface));
@@ -1857,12 +2186,12 @@ html.theme-animating *::after {
     box-shadow: none;
   }
 
-  .dark .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-edge .sidebar-nav-icon {
+  .dark .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-edge .sidebar-nav-icon {
     background: color-mix(in srgb, var(--app-surface-muted) 45%, var(--app-surface));
     color: color-mix(in srgb, var(--app-text-muted) 62%, transparent);
   }
 
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-edge .sidebar-rail-label--row {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-edge .sidebar-rail-label--row {
     z-index: 50;
     opacity: 0.55;
     border-color: color-mix(in srgb, var(--app-border) 70%, transparent);
@@ -1874,18 +2203,18 @@ html.theme-animating *::after {
     box-shadow: 0 2px 10px -12px color-mix(in srgb, var(--app-text) 10%, transparent);
   }
 
-  .dark .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-edge .sidebar-rail-label--row {
+  .dark .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-edge .sidebar-rail-label--row {
     background: color-mix(in srgb, var(--app-surface) 82%, transparent);
     color: color-mix(in srgb, var(--app-text-muted) 70%, transparent);
   }
 
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus .sidebar-nav-icon {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-focus .sidebar-nav-icon {
     transform: scale(1.14);
     opacity: 1;
   }
 
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus > span:not(.nav-item-active) .sidebar-nav-icon,
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus:not(:has(.nav-item-active)) .sidebar-nav-icon {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-focus > span:not(.nav-item-active) .sidebar-nav-icon,
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-focus:not(:has(.nav-item-active)) .sidebar-nav-icon {
     background: color-mix(in srgb, var(--app-accent) 16%, var(--app-surface));
     color: var(--app-accent);
     box-shadow:
@@ -1893,8 +2222,8 @@ html.theme-animating *::after {
       0 14px 32px -10px color-mix(in srgb, var(--app-accent) 50%, transparent);
   }
 
-  .dark .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus > span:not(.nav-item-active) .sidebar-nav-icon,
-  .dark .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus:not(:has(.nav-item-active)) .sidebar-nav-icon {
+  .dark .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-focus > span:not(.nav-item-active) .sidebar-nav-icon,
+  .dark .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-focus:not(:has(.nav-item-active)) .sidebar-nav-icon {
     background: color-mix(in srgb, var(--app-teal) 20%, var(--app-surface));
     color: var(--app-teal);
     box-shadow:
@@ -1902,22 +2231,22 @@ html.theme-animating *::after {
       0 14px 32px -10px color-mix(in srgb, var(--app-teal) 45%, transparent);
   }
 
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus > span.nav-item-active .sidebar-nav-icon,
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus:has(.nav-item-active) .sidebar-nav-icon {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-focus > span.nav-item-active .sidebar-nav-icon,
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-focus:has(.nav-item-active) .sidebar-nav-icon {
     transform: scale(1.18);
     box-shadow:
       0 0 0 2px color-mix(in srgb, var(--app-accent) 48%, transparent),
       0 16px 36px -8px color-mix(in srgb, var(--app-accent) 55%, transparent);
   }
 
-  .dark .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus > span.nav-item-active .sidebar-nav-icon,
-  .dark .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus:has(.nav-item-active) .sidebar-nav-icon {
+  .dark .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-focus > span.nav-item-active .sidebar-nav-icon,
+  .dark .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-focus:has(.nav-item-active) .sidebar-nav-icon {
     box-shadow:
       0 0 0 2px color-mix(in srgb, var(--app-teal) 48%, transparent),
       0 16px 36px -8px color-mix(in srgb, var(--app-teal) 50%, transparent);
   }
 
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus .sidebar-rail-label--row {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-focus .sidebar-rail-label--row {
     z-index: 60;
     opacity: 1;
     border-color: color-mix(in srgb, var(--app-accent) 48%, var(--app-border));
@@ -1930,7 +2259,7 @@ html.theme-animating *::after {
       0 22px 48px -12px color-mix(in srgb, var(--app-accent) 42%, transparent);
   }
 
-  .dark .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus .sidebar-rail-label--row {
+  .dark .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-focus .sidebar-rail-label--row {
     border-color: color-mix(in srgb, var(--app-teal) 50%, var(--app-border));
     color: var(--app-teal);
     box-shadow:
@@ -1938,52 +2267,52 @@ html.theme-animating *::after {
       0 22px 48px -12px color-mix(in srgb, var(--app-teal) 38%, transparent);
   }
 
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus .sidebar-rail-label-chevron {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-focus .sidebar-rail-label-chevron {
     transform: translateX(4px) scale(1.12);
   }
 
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-near .sidebar-rail-label-chevron {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-near .sidebar-rail-label-chevron {
     transform: translateX(1px) scale(1.02);
     opacity: 0.85;
   }
 
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-far .sidebar-rail-label-chevron {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-far .sidebar-rail-label-chevron {
     transform: translateX(0) scale(0.9);
     opacity: 0.65;
   }
 
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-edge .sidebar-rail-label-chevron {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-edge .sidebar-rail-label-chevron {
     transform: translateX(-1px) scale(0.82);
     opacity: 0.5;
   }
 
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus .sidebar-rail-label-badge {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-focus .sidebar-rail-label-badge {
     transform: scale(1.12);
   }
 
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-near .sidebar-rail-label-badge {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-near .sidebar-rail-label-badge {
     transform: scale(1.05);
     opacity: 0.95;
   }
 
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-far .sidebar-rail-label-badge {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-far .sidebar-rail-label-badge {
     transform: scale(0.9);
     opacity: 0.78;
   }
 
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-edge .sidebar-rail-label-badge {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-edge .sidebar-rail-label-badge {
     transform: scale(0.82);
     opacity: 0.6;
   }
 
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus.group\/more .sidebar-nav-icon {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-focus.group\/more .sidebar-nav-icon {
     background: color-mix(in srgb, var(--app-accent) 16%, var(--app-surface-muted));
     box-shadow:
       0 0 0 2px color-mix(in srgb, var(--app-accent) 32%, transparent),
       0 14px 32px -10px color-mix(in srgb, var(--app-accent) 45%, transparent);
   }
 
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-focus.group\/profile .sidebar-nav-icon {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-focus.group\/profile .sidebar-nav-icon {
     transform: scale(1.14);
     opacity: 1;
     box-shadow:
@@ -1991,19 +2320,19 @@ html.theme-animating *::after {
       0 14px 32px -10px color-mix(in srgb, var(--app-accent) 50%, transparent);
   }
 
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-near.group\/profile .sidebar-nav-icon {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-near.group\/profile .sidebar-nav-icon {
     transform: scale(0.92);
     opacity: 0.8;
     box-shadow: none;
   }
 
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-far.group\/profile .sidebar-nav-icon {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-far.group\/profile .sidebar-nav-icon {
     transform: scale(0.84);
     opacity: 0.62;
     box-shadow: none;
   }
 
-  .group\/sidebar:hover .sidebar-rail-item.sidebar-proximity-edge.group\/profile .sidebar-nav-icon {
+  .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-edge.group\/profile .sidebar-nav-icon {
     transform: scale(0.78);
     opacity: 0.48;
     box-shadow: none;
@@ -2030,6 +2359,43 @@ nav[aria-label='Navigation mobile rapide'] a {
     scroll-behavior: auto !important;
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+  /* Sidebar rail — pas de cascade ni de zoom au survol */
+  @media (min-width: 1024px) {
+    .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item .sidebar-nav-icon {
+      transform: none !important;
+      opacity: 1 !important;
+      box-shadow: none !important;
+    }
+
+    .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-focus .sidebar-nav-icon,
+    .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-focus > span.nav-item-active .sidebar-nav-icon {
+      background: var(--app-accent-soft) !important;
+      color: var(--app-accent) !important;
+    }
+
+    .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item .sidebar-rail-label--row {
+      transition-delay: 0s !important;
+      transform: translateX(0) scale(1) !important;
+    }
+
+    .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item:not(.sidebar-proximity-focus) .sidebar-rail-label--row {
+      opacity: 0 !important;
+      visibility: hidden !important;
+    }
+
+    .group\/sidebar:is(:hover, :focus-within) .sidebar-rail-item.sidebar-proximity-focus .sidebar-rail-label--row {
+      opacity: 1 !important;
+      visibility: visible !important;
+      font-size: 0.8125rem !important;
+      padding: 0.5rem 0.85rem !important;
+    }
+
+    .sidebar-footer-flyout,
+    .group\/footer:is(:hover, :focus-within) .sidebar-footer-flyout {
+      transition-delay: 0s !important;
+      transform: none !important;
+    }
   }
   /* Soft pulse instead of a broken flash for loading placeholders */
   .skeleton-shimmer::after {

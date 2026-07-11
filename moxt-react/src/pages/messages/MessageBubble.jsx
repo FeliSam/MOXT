@@ -1,15 +1,20 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
+  FiAlertCircle,
   FiCheck,
   FiCopy,
   FiCornerUpLeft,
   FiEdit2,
-  FiPaperclip,
   FiRefreshCw,
   FiTrash2,
 } from 'react-icons/fi'
 import { initials, shortTime, formatDateLabel } from './format'
 import { messageReadLabel } from './messageUtils'
+import {
+  attachmentImageSrc,
+  isImageAttachment,
+} from '../../features/communications/attachmentUtils'
+import { MessageAttachment } from './MessageAttachment'
 
 function bubbleClassName(mine, groupedWithPrevious, groupedWithNext, failed) {
   const classes = ['message-bubble', mine ? 'message-bubble--sent' : 'message-bubble--received']
@@ -77,6 +82,13 @@ export function MessageBubble({
   const readLabel = messageReadLabel(message, user.id)
   const failed = Boolean(message.syncFailed)
   const showActions = openActions
+  const hasReactions =
+    message.reactions && Object.entries(message.reactions).some(([, u]) => u?.length)
+  const hasImageAttachment =
+    Boolean(message.attachment) &&
+    isImageAttachment(message.attachment) &&
+    Boolean(attachmentImageSrc(message.attachment))
+  const hasCaption = Boolean(message.text?.trim())
 
   // Bascule le menu au-dessus de la bulle s'il n'y a pas assez de place en bas
   // (dernier message, bord du conteneur scrollable) pour éviter qu'il soit coupé.
@@ -161,8 +173,10 @@ export function MessageBubble({
       ref={stackRef}
       className={`message-stack message-stack--enter message-stack--interactive ${
         mine ? 'message-stack--sent' : ''
-      } ${highlight ? 'message-stack--highlight' : ''} ${
-        showActions && !failed ? 'message-stack--actions' : ''
+      } ${hasImageAttachment ? 'message-stack--media' : ''} ${
+        highlight ? 'message-stack--highlight' : ''
+      } ${showActions ? 'message-stack--actions' : ''} ${
+        hasReactions ? 'message-stack--reacted' : ''
       }`}
     >
       {showSenderName && !mine ? (
@@ -171,14 +185,25 @@ export function MessageBubble({
 
       <div
         className={`${bubbleClassName(mine, groupedWithPrevious, groupedWithNext, failed)} ${
-          openActions ? 'message-bubble--active' : ''
-        }`}
+          hasImageAttachment ? 'message-bubble--has-image' : ''
+        } ${openActions ? 'message-bubble--active' : ''}`}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         onPointerCancel={clearLongPress}
         onPointerLeave={handlePointerLeave}
         onClick={handleBubbleClick}
       >
+        {failed ? (
+          <button
+            type="button"
+            className="message-failed-mark"
+            aria-label="Échec d’envoi — renvoyer"
+            title="Échec d’envoi — cliquer pour renvoyer"
+            onClick={(event) => runAction(event, () => onRetry?.(message))}
+          >
+            <FiAlertCircle aria-hidden="true" />
+          </button>
+        ) : null}
         {repliedMessage ? (
           <p className={`message-quote ${mine ? 'message-quote--sent' : 'message-quote--received'}`}>
             {repliedMessage.text}
@@ -194,15 +219,18 @@ export function MessageBubble({
           </p>
         ) : null}
 
-        <p className="message-bubble-text whitespace-pre-wrap break-words">{message.text}</p>
-
         {message.attachment ? (
-          <span
-            className={`message-attachment ${mine ? 'message-attachment--sent' : 'message-attachment--received'}`}
+          <MessageAttachment attachment={message.attachment} mine={mine} />
+        ) : null}
+
+        {hasCaption ? (
+          <p
+            className={`message-bubble-text whitespace-pre-wrap break-words ${
+              hasImageAttachment ? 'message-bubble-text--caption' : ''
+            }`}
           >
-            <FiPaperclip aria-hidden="true" />
-            {message.attachment.name}
-          </span>
+            {message.text}
+          </p>
         ) : null}
 
         {message.reactions && Object.entries(message.reactions).some(([, u]) => u?.length) ? (
@@ -243,7 +271,35 @@ export function MessageBubble({
         ) : null}
       </div>
 
-      {showActions && !failed ? (
+      {showActions && failed ? (
+        <div
+          ref={menuRef}
+          className={`message-action-menu ${mine ? 'message-action-menu--sent' : ''} ${
+            placeAbove ? 'message-action-menu--above' : ''
+          }`}
+          role="menu"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <button
+            type="button"
+            onClick={(event) => runAction(event, () => onRetry?.(message))}
+            aria-label="Renvoyer"
+            className="message-action-menu-btn"
+          >
+            <FiRefreshCw />
+          </button>
+          {mine ? (
+            <button
+              type="button"
+              onClick={(event) => runAction(event, () => onDelete(message.id))}
+              aria-label="Supprimer"
+              className="message-action-menu-btn message-action-menu-btn--danger"
+            >
+              <FiTrash2 />
+            </button>
+          ) : null}
+        </div>
+      ) : showActions && !failed ? (
         <div
           ref={menuRef}
           className={`message-action-menu ${mine ? 'message-action-menu--sent' : ''} ${

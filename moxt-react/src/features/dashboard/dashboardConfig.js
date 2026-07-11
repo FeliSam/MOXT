@@ -113,10 +113,10 @@ export const coreServices = [
 
 export const quickActionAccents = [
   'from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/30',
-  'from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/30',
-  'from-blue-50 to-cyan-50 dark:from-blue-950/40 dark:to-cyan-950/30',
+  'from-sky-50 to-blue-50 dark:from-sky-950/40 dark:to-blue-950/30',
+  'from-cyan-50 to-blue-50 dark:from-cyan-950/40 dark:to-blue-950/30',
+  'from-violet-50 to-indigo-50 dark:from-violet-950/40 dark:to-indigo-950/30',
   'from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30',
-  'from-violet-50 to-fuchsia-50 dark:from-violet-950/40 dark:to-fuchsia-950/30',
 ]
 
 export const serviceTones = [
@@ -145,7 +145,13 @@ export const dashboardTrackBase =
 /** Carrousel horizontal — mobile & tablette (< lg), débordement bord à bord. */
 export const dashboardCarouselTrackClass = `${dashboardTrackBase} -mx-4`
 
-/** Grille 4 colonnes à partir de lg — actions rapides, cartes confiance. */
+/** Actions rapides — carrousel horizontal sur tous les écrans. */
+export const dashboardQuickActionsTrackClass = `${dashboardTrackBase} -mx-4 lg:mx-0`
+
+export const dashboardQuickActionsItemClass =
+  'w-[clamp(12rem,68vw,16rem)] shrink-0 sm:w-[clamp(11rem,28vw,15rem)] lg:w-[clamp(13rem,18vw,16.5rem)]'
+
+/** Grille 4 colonnes à partir de lg — cartes confiance, annonces. */
 export const dashboardFourUpTrackClass =
   `${dashboardTrackBase} horizontal-track--lg-grid -mx-4 lg:mx-0 lg:grid lg:grid-cols-4 lg:gap-4 lg:px-0`
 

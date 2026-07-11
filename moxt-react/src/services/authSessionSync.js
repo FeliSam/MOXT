@@ -1,7 +1,11 @@
 import { applySession, clearSession } from '../features/auth/authSlice'
 import { authService } from '../features/auth/authService'
 import { supabase } from './supabaseClient'
-import { startRealtimeSubscription, stopRealtimeSubscription } from './realtimeService'
+import {
+  startRealtimeSubscription,
+  stopRealtimeSubscription,
+  syncRealtimeAuthToken,
+} from './realtimeService'
 
 let authSubscription = null
 let visibilityHandler = null
@@ -53,7 +57,7 @@ async function syncSessionToStore(session, dispatch, getState) {
   const previousUserId = getState().auth.user?.id
   dispatch(applySession(payload))
 
-  startRealtimeSubscription(payload.user.id, dispatch, getState)
+  void startRealtimeSubscription(payload.user.id, dispatch, getState)
 
   if (payload.user.id !== previousUserId) {
     const { loadAllData } = await import('../app/loadAllData')
@@ -74,7 +78,24 @@ export function startAuthSessionSync(store) {
       return
     }
 
+    if (event === 'PASSWORD_RECOVERY') {
+      if (!window.location.pathname.startsWith('/reset-password')) {
+        const hash = window.location.hash || ''
+        window.location.replace(`/reset-password${hash}`)
+        return
+      }
+      if (session) {
+        await syncSessionToStore(session, dispatch, getState)
+      }
+      return
+    }
+
+    if (event === 'TOKEN_REFRESHED' && session) {
+      await syncRealtimeAuthToken()
+    }
+
     if (session && ['INITIAL_SESSION', 'SIGNED_IN', 'TOKEN_REFRESHED', 'USER_UPDATED'].includes(event)) {
+      if (window.location.pathname.startsWith('/reset-password')) return
       await syncSessionToStore(session, dispatch, getState)
     }
   })

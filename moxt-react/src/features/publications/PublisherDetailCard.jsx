@@ -1,4 +1,5 @@
 import {
+  FiBriefcase,
   FiCheckCircle,
   FiMessageSquare,
   FiShoppingBag,
@@ -14,6 +15,7 @@ import { formatShortDate } from '../../utils/formatters'
 export function PublisherDetailCard({
   business,
   className = '',
+  ownerBusiness,
   publisherName,
   rating,
   publicationCount,
@@ -69,6 +71,13 @@ export function PublisherDetailCard({
         <Link to={profilePath}>
           <Button className="mt-5 w-full" variant="secondary" icon={FiUser}>
             {ctaLabel}
+          </Button>
+        </Link>
+      ) : null}
+      {!business && ownerBusiness ? (
+        <Link to={`/businesses/${ownerBusiness.id}/publications/listings`}>
+          <Button className="mt-3 w-full" variant="secondary" icon={FiBriefcase}>
+            Voir l&apos;entreprise
           </Button>
         </Link>
       ) : null}

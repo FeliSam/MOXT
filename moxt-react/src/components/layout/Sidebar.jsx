@@ -100,6 +100,11 @@ export function Sidebar({ open }) {
       {/* ── Sidebar : dock flottant, rail fixe desktop, cascade 4 niveaux au survol ── */}
       <aside
         onMouseLeave={() => setRailHover(null)}
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) {
+            setHoveredRailKey(null)
+          }
+        }}
         className={`group/sidebar fixed inset-y-0 left-0 z-40 flex w-[18rem] flex-col bg-[var(--app-surface)] shadow-2xl transition-transform duration-300 ease-out ${
           open ? 'translate-x-0' : '-translate-x-full'
         } lg:inset-y-3 lg:left-3 lg:w-[4.75rem] lg:translate-x-0 lg:overflow-visible lg:rounded-[1.75rem] lg:border lg:border-[var(--app-border)] lg:bg-[var(--app-surface)]/95 lg:shadow-[var(--shadow-float)] lg:backdrop-blur-xl`}
@@ -130,7 +135,7 @@ export function Sidebar({ open }) {
 
         {/* Nav principale */}
         <nav
-          className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-3 py-4 lg:overflow-visible"
+          className="sidebar-mobile-nav scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-3 py-4 lg:overflow-visible"
           aria-label="Navigation principale"
         >
           <div className="grid gap-1">
@@ -153,6 +158,7 @@ export function Sidebar({ open }) {
             type="button"
             onClick={() => setMoreOpen(true)}
             onMouseEnter={() => setRailHover('more')}
+            onFocus={() => setRailHover('more')}
             className={`sidebar-rail-item group/more relative mt-2 hidden w-full min-h-11 items-center justify-center rounded-xl px-2 text-left text-sm font-bold text-[var(--app-text-muted)] transition hover:text-[var(--app-text)] lg:flex ${proximityClass(railProximity(hoveredRailKey, 'more'))}`}
           >
             <span className="sidebar-nav-icon grid size-9 shrink-0 place-items-center rounded-[0.7rem] bg-[var(--app-surface-muted)] text-brand-700 dark:text-brand-300">
@@ -358,17 +364,20 @@ function SidebarLink({
       to={item.path}
       end={item.path === '/dashboard'}
       onClick={onClick}
-      onFocus={() => preloadRoute(item.path)}
       onMouseEnter={() => {
         preloadRoute(item.path)
         onRailHover?.()
       }}
+      onFocus={() => {
+        preloadRoute(item.path)
+        onRailHover?.()
+      }}
       className={({ isActive }) =>
-        `sidebar-rail-item group/link relative block ${proximityClass(proximity)} ${
+        `sidebar-rail-item group/link relative block outline-none ${proximityClass(proximity)} ${
           hideOnMobile ? 'hidden lg:block' : ''
         } ${isActive ? 'lg:z-[1]' : ''}`
       }
-      aria-label={badge > 0 ? `${label} (${badge > 9 ? '9+' : badge} non lus)` : undefined}
+      aria-label={badge > 0 ? `${label} (${badge > 9 ? '9+' : badge} non lus)` : label}
     >
       {({ isActive }) => (
         <span

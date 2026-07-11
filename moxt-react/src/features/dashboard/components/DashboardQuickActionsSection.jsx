@@ -3,8 +3,8 @@ import { Card } from '../../../components/ui/Card'
 import { RevealListItem } from '../../../components/ui/RevealListItem'
 import { RevealOnScroll } from '../../../components/ui/RevealOnScroll'
 import {
-  dashboardFourUpItemClass,
-  dashboardFourUpTrackClass,
+  dashboardQuickActionsItemClass,
+  dashboardQuickActionsTrackClass,
   quickActionAccents,
   quickActions,
 } from '../dashboardConfig'
@@ -18,17 +18,17 @@ export function DashboardQuickActionsSection({ scrollRef }) {
       <RevealOnScroll delay={80}>
         <DashboardSectionHeading title="Actions rapides" link="/activities" linkLabel="Mes activités" />
       </RevealOnScroll>
-      <div className="relative min-w-0">
-        <div ref={scrollRef} className={`${dashboardFourUpTrackClass} min-w-0`}>
+      <div className="relative min-w-0 pb-3">
+        <div ref={scrollRef} className={`${dashboardQuickActionsTrackClass} min-w-0`}>
           {quickActions.map(({ description, image, imageLogo, label, path }, index) => (
             <RevealListItem
               key={label}
               index={index}
-              className={`${dashboardFourUpItemClass} !w-[clamp(12rem,68vw,16rem)] md:!w-auto`}
+              className={dashboardQuickActionsItemClass}
             >
               <Link className="block h-full" to={path}>
                 <Card
-                  className={`group flex h-full min-h-[10.5rem] flex-col justify-between bg-gradient-to-br p-4 transition duration-300 hover:-translate-y-1 hover:shadow-xl sm:min-h-[11rem] sm:p-5 md:min-h-[11.5rem] lg:min-h-[10.5rem] lg:p-5 xl:flex-row xl:items-center xl:justify-between xl:gap-4 ${quickActionAccents[index]}`}
+                  className={`group flex h-full min-h-[10.5rem] flex-col justify-between bg-gradient-to-br p-4 transition duration-300 hover:-translate-y-1 hover:shadow-xl sm:min-h-[11rem] sm:p-5 lg:min-h-[10.5rem] lg:p-5 xl:flex-row xl:items-center xl:justify-between xl:gap-4 ${quickActionAccents[index]}`}
                 >
                   <div className="min-w-0 flex-1">
                     <h3 className="text-base font-black leading-snug">{label}</h3>
@@ -47,7 +47,7 @@ export function DashboardQuickActionsSection({ scrollRef }) {
             </RevealListItem>
           ))}
         </div>
-        <ScrollArrows scrollRef={scrollRef} />
+        <ScrollArrows scrollRef={scrollRef} showOnDesktop />
       </div>
     </section>
   )

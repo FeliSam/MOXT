@@ -1,7 +1,6 @@
 import { FiArrowRight, FiCheckCircle } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { VerifiedBadge } from '../../../components/ui/Badge'
-import { Button } from '../../../components/ui/Button'
 import { RevealOnScroll } from '../../../components/ui/RevealOnScroll'
 import { DashboardTransferCalculator } from '../../transfers/DashboardTransferCalculator'
 
@@ -33,14 +32,15 @@ export function DashboardHero({ user, onOpenCalculator }) {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               to="/transfers"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-white px-5 text-sm font-black text-slate-950 shadow-xl transition hover:-translate-y-0.5 hover:bg-slate-50"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-white px-5 text-sm font-black text-emerald-950 shadow-xl transition hover:-translate-y-0.5 hover:bg-emerald-50"
             >
               Créer un transfert <FiArrowRight />
             </Link>
-            <Link to="/businesses">
-              <Button className="border border-white/25 bg-white/10 text-white shadow-none hover:bg-white/20">
-                Explorer les services
-              </Button>
+            <Link
+              to="/jobs/publish"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-violet-200/80 bg-violet-500/90 px-5 text-sm font-black text-white shadow-lg shadow-violet-950/25 transition hover:-translate-y-0.5 hover:bg-violet-400/95"
+            >
+              Publier un job <FiArrowRight />
             </Link>
           </div>
         </div>
