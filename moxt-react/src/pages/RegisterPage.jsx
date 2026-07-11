@@ -37,6 +37,7 @@ import {
   clearAuthError,
   completeOAuthProfile,
   register,
+  resendEmailRegistrationOtp,
   resendPhoneRegistrationOtp,
   verifyEmailRegistration,
   verifyPhoneRegistration,
@@ -56,6 +57,7 @@ const STEPS = [
 ]
 
 const LANGUAGE_TILES = LANGUAGE_LABELS
+const RESEND_COOLDOWN_SECONDS = 60
 
 /* ─── Stepper visuel — meme pattern que Transfert / Job / Evenement ──────── */
 function Stepper({ step, oauthCompletion = false }) {
@@ -224,11 +226,12 @@ export function RegisterPage() {
       }
       dispatch(clearAuthError())
       if (result.payload.requiresPhoneConfirmation) {
-        setResendCooldown(60)
+        setResendCooldown(RESEND_COOLDOWN_SECONDS)
         setPendingVerification({ method: 'phone', phone: result.payload.phone, email: result.payload.email })
         return
       }
       if (result.payload.requiresEmailConfirmation) {
+        setResendCooldown(RESEND_COOLDOWN_SECONDS)
         setPendingVerification({ method: 'email', email: result.payload.email })
         return
       }
@@ -306,16 +309,27 @@ export function RegisterPage() {
     }
   }, [authUser, dispatch, formik.setValues, fromGoogle, navigate, store])
 
-  async function resendSmsCode() {
-    if (!pendingVerification?.phone || resendCooldown > 0) return
-    const result = await dispatch(resendPhoneRegistrationOtp(pendingVerification.phone))
-    if (resendPhoneRegistrationOtp.fulfilled.match(result)) {
+  async function resendVerificationCode() {
+    if (!pendingVerification || resendCooldown > 0) return
+
+    const isEmail = pendingVerification.method === 'email'
+    const result = isEmail
+      ? await dispatch(resendEmailRegistrationOtp(pendingVerification.email))
+      : await dispatch(resendPhoneRegistrationOtp(pendingVerification.phone))
+
+    const fulfilled = isEmail
+      ? resendEmailRegistrationOtp.fulfilled.match(result)
+      : resendPhoneRegistrationOtp.fulfilled.match(result)
+
+    if (fulfilled) {
       dispatch(clearAuthError())
-      setResendCooldown(60)
+      setResendCooldown(RESEND_COOLDOWN_SECONDS)
       dispatch(
         addToast({
           title: 'Code renvoyé',
-          message: `Un nouveau SMS a été envoyé au ${pendingVerification.phone}.`,
+          message: isEmail
+            ? `Un nouvel e-mail a été envoyé à ${pendingVerification.email}.`
+            : `Un nouveau SMS a été envoyé au ${pendingVerification.phone}.`,
           tone: 'success',
         }),
       )
@@ -695,19 +709,26 @@ export function RegisterPage() {
                 >
                   Confirmer et accéder à MOXT
                 </Button>
-                {pendingVerification.method === 'phone' ? (
-                  <div className="flex flex-col items-center gap-1 text-center text-sm text-[var(--app-text-muted)]">
-                    <span>Vous n'avez pas reçu le SMS ?</span>
-                    <button
-                      type="button"
-                      className="font-bold text-brand-700 disabled:cursor-not-allowed disabled:opacity-50 dark:text-brand-300"
-                      disabled={resendCooldown > 0 || status === 'loading'}
-                      onClick={resendSmsCode}
-                    >
-                      {resendCooldown > 0 ? `Renvoyer dans ${resendCooldown}s` : 'Renvoyer le code SMS'}
-                    </button>
-                  </div>
-                ) : null}
+                <div className="grid gap-2 text-center">
+                  <p className="text-sm text-[var(--app-text-muted)]">
+                    {pendingVerification.method === 'email'
+                      ? "Vous n'avez pas reçu le code ?"
+                      : "Vous n'avez pas reçu le SMS ?"}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="w-full"
+                    disabled={resendCooldown > 0 || status === 'loading'}
+                    onClick={resendVerificationCode}
+                  >
+                    {resendCooldown > 0
+                      ? `Renvoyer dans ${resendCooldown}s`
+                      : pendingVerification.method === 'email'
+                        ? "Renvoyer l'e-mail"
+                        : 'Renvoyer le SMS'}
+                  </Button>
+                </div>
               </>
             ) : (
               <>

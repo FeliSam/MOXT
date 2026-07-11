@@ -214,6 +214,17 @@ describe('authService', () => {
     })
   })
 
+  it('renvoie un code e-mail pour finaliser l inscription', async () => {
+    auth.resend.mockResolvedValue({ error: null })
+
+    await authService.resendEmailRegistrationOtp('personne@example.com')
+
+    expect(auth.resend).toHaveBeenCalledWith({
+      type: 'signup',
+      email: 'personne@example.com',
+    })
+  })
+
   it('envoie un code SMS pour la connexion', async () => {
     auth.signInWithOtp.mockResolvedValue({ error: null })
 

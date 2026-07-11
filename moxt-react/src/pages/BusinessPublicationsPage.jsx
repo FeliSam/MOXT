@@ -123,6 +123,7 @@ export function BusinessPublicationsPage() {
         totalViews={profile.totalViews}
         scope="business"
         ownBusiness={business}
+        avatarUrl={business.logoUrl}
       />
 
       <div className="grid gap-4">

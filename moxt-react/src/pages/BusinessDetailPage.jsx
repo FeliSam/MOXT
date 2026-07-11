@@ -26,6 +26,7 @@ import { activityByValue, businessExperienceForActivity } from '../config/busine
 import { statusMeta } from '../config/statuses'
 import { FavoriteButton } from '../features/account/FavoriteButton'
 import { SubscribeButton } from '../features/account/SubscribeButton'
+import { ProfileQrShareButton } from '../features/share/ProfileQrShareButton'
 import {
   selectBusinessContent,
 } from '../features/businesses/businessSelectors'
@@ -110,15 +111,31 @@ export function BusinessDetailPage() {
               decoding="async"
             />
           ) : null}
-          {business.logoUrl ? (
-            <img
-              src={business.logoUrl}
-              alt={`${business.name} logo`}
-              className="mb-4 size-16 rounded-3xl object-cover shadow-md"
-              loading="lazy"
-              decoding="async"
+          <div className="mb-4 flex items-start justify-between gap-3">
+            {business.logoUrl ? (
+              <img
+                src={business.logoUrl}
+                alt={`${business.name} logo`}
+                className="size-16 rounded-3xl object-cover shadow-md"
+                loading="lazy"
+                decoding="async"
+              />
+            ) : (
+              <span className="grid size-16 place-items-center rounded-3xl bg-[var(--app-accent-soft)] text-xl font-black text-[var(--app-accent)]">
+                {business.name.slice(0, 2).toUpperCase()}
+              </span>
+            )}
+            <ProfileQrShareButton
+              type="business"
+              targetPath={`/businesses/${business.id}/publications/listings`}
+              title={business.name}
+              subtitle={activity?.label || business.sector}
+              verified={['verified', 'approved', 'active'].includes(business.status)}
+              city={`${business.city}${business.country ? ` · ${business.country}` : ''}`}
+              sector={business.sector}
+              logoUrl={business.logoUrl}
             />
-          ) : null}
+          </div>
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone={statusMeta(business.status).tone}>{statusMeta(business.status).label}</Badge>
             {['verified', 'approved', 'active'].includes(business.status) ? <VerifiedBadge /> : null}

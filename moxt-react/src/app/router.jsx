@@ -121,7 +121,6 @@ const SupportPage = lazyPage(() => import('../pages/SupportPage'), 'SupportPage'
 const SettingsPage = lazyPage(() => import('../pages/SettingsPage'), 'SettingsPage')
 const VersionPage = lazyPage(() => import('../pages/VersionPage'), 'VersionPage')
 const SecurityPage = lazyPage(() => import('../pages/SecurityPage'), 'SecurityPage')
-const ShareBadgePage = lazyPage(() => import('../pages/ShareBadgePage'), 'ShareBadgePage')
 const SuperAdminPage = lazyPage(() => import('../pages/SuperAdminPage'), 'SuperAdminPage')
 const ReceiveTransferScreen = lazyPage(
   () => import('../pages/ReceiveTransferScreen'),
@@ -133,6 +132,7 @@ const TransferDetailPage = lazyPage(
 )
 const TransfersPage = lazyPage(() => import('../pages/TransfersPage'), 'TransfersPage')
 const ReferralPage = lazyPage(() => import('../pages/ReferralPage'), 'ReferralPage')
+const InviteRedirect = lazyPage(() => import('../pages/InviteRedirect'), 'InviteRedirect')
 const TrustPage = lazyPage(() => import('../pages/TrustPage'), 'TrustPage')
 const VerificationPage = lazyPage(() => import('../pages/VerificationPage'), 'VerificationPage')
 const WalletPage = lazyPage(() => import('../pages/WalletPage'), 'WalletPage')
@@ -153,6 +153,7 @@ export function AppRouter() {
           <Route path="/discover" element={<DiscoverPage />} />
           <Route path="/trust" element={<TrustPage />} />
           <Route path="/faq" element={<FaqPage />} />
+          <Route path="/invite/:code" element={<InviteRedirect />} />
         </Route>
 
         <Route element={<AuthLayout />}>
@@ -177,7 +178,7 @@ export function AppRouter() {
             ))}
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/profile/share-badge" element={<ShareBadgePage />} />
+            <Route path="/profile/share-badge" element={<Navigate to="/referral" replace />} />
             <Route path="/profile/information" element={<PersonalInformationPage />} />
             <Route path="/activities" element={<ActivitiesPage />} />
             <Route path="/favorites" element={<FavoritesPage />} />

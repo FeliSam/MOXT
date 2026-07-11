@@ -420,6 +420,20 @@ export function createAuthService(supabase, redirects = {}) {
       return true
     },
 
+    async resendEmailRegistrationOtp(email) {
+      if (!supabase) throw new Error('Supabase non configuré.')
+      const normalizedEmail = String(email || '').trim().toLowerCase()
+      if (!normalizedEmail) {
+        throw new Error("L'e-mail est obligatoire pour renvoyer le code.")
+      }
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: normalizedEmail,
+      })
+      if (error) throw new Error(translateAuthError(error))
+      return true
+    },
+
     async restoreSession() {
       if (!supabase) return null
 

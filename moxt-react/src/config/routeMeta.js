@@ -18,7 +18,7 @@ export const routeMetadata = [
   { pattern: /^\/verification$/, title: 'Vérification', eyebrow: 'Compte' },
   { pattern: /^\/security$/, title: 'Sécurité', eyebrow: 'Compte' },
   { pattern: /^\/profile$/, title: 'Mon profil', eyebrow: 'Compte' },
-  { pattern: /^\/profile\/share-badge$/, title: 'Mon badge partageable', eyebrow: 'Compte' },
+  { pattern: /^\/referral$/, title: 'QR code & invitation', eyebrow: 'Compte' },
   {
     pattern: /^\/profile\/information$/,
     title: 'Informations personnelles',

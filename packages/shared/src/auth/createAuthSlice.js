@@ -95,6 +95,17 @@ export function createAuthSlice(authService) {
     },
   )
 
+  const resendEmailRegistrationOtp = createAsyncThunk(
+    'auth/resendEmailRegistrationOtp',
+    async (email, { rejectWithValue }) => {
+      try {
+        return await authService.resendEmailRegistrationOtp(email)
+      } catch (error) {
+        return rejectWithValue(error.message)
+      }
+    },
+  )
+
   const updateProfile = createAsyncThunk('auth/updateProfile', async (details, { getState, rejectWithValue }) => {
     try {
       return await authService.updateProfile(getState().auth.user, details)
@@ -212,6 +223,12 @@ export function createAuthSlice(authService) {
           state.error = null
         })
         .addCase(resendPhoneRegistrationOtp.rejected, setFailure)
+        .addCase(resendEmailRegistrationOtp.pending, setLoading)
+        .addCase(resendEmailRegistrationOtp.fulfilled, (state) => {
+          state.status = 'anonymous'
+          state.error = null
+        })
+        .addCase(resendEmailRegistrationOtp.rejected, setFailure)
         .addCase(updateProfile.pending, setLoading)
         .addCase(updateProfile.fulfilled, (state, action) => {
           state.user = action.payload
@@ -239,6 +256,7 @@ export function createAuthSlice(authService) {
     verifyEmailRegistration,
     verifyPhoneRegistration,
     resendPhoneRegistrationOtp,
+    resendEmailRegistrationOtp,
     updateProfile,
     restoreSession,
     logout,

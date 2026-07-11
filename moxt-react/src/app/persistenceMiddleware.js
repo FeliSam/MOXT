@@ -13,9 +13,12 @@ const persistenceMap = {
   communications: [
     {
       key: 'moxt-conversations-v1',
-      // Ne persiste que les métadonnées — les messages sont rechargés depuis Supabase
       select: (state) =>
-        state.communications.conversations.map(({ messages: _msgs, ...conv }) => conv),
+        state.communications.conversations.map((conv) => ({
+          ...conv,
+          messages: (conv.messages || []).slice(-200),
+          messagesLoaded: Boolean(conv.messagesLoaded || conv.messages?.length),
+        })),
     },
     { key: 'moxt-support-v1', select: (state) => state.communications.support },
     { key: 'moxt-notifications-v1', select: (state) => state.communications.notifications },

@@ -87,7 +87,6 @@ export function ProfessionalPage() {
   const rating = calculateBusinessRating(reviews)
   const activity = activityByValue(business?.primaryActivity)
   const secondaryActivity = activityByValue(business?.secondaryActivity)
-  const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'https://moxt.local'
   const hasTransfers = enabledServices.includes('Transfert')
   const tabs = useMemo(
     () =>
@@ -154,7 +153,6 @@ export function ProfessionalPage() {
           activity={activity}
           business={business}
           secondaryActivity={secondaryActivity}
-          siteUrl={siteUrl}
         />
       ) : null}
       {safeActive === 'overview' ? (

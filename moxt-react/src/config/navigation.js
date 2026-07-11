@@ -133,7 +133,7 @@ export const navigationGroups = [
     color: 'from-slate-500 to-slate-700',
     children: [
       { id: 'favorites', label: 'Mes favoris', path: '/favorites', icon: FiHeart },
-      { id: 'referral', label: 'Inviter un ami', path: '/referral', icon: FiGift },
+      { id: 'referral', label: 'QR & invitation', path: '/referral', icon: FiGift },
       { id: 'my-publications', label: 'Mes publications', path: '/publications/mine', icon: FiList },
     ],
   },

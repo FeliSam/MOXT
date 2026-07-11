@@ -274,9 +274,7 @@ export const loadAllData = createAsyncThunk(
 
     const conversations = mergeConversations(
       getState().communications.conversations,
-      fromRows(conversationRows || []).map((conv) =>
-        normalizeConversation({ ...conv, messages: [], messagesLoaded: false }),
-      ),
+      fromRows(conversationRows || []).map((conv) => normalizeConversation({ ...conv, messages: [] })),
     )
 
     const remoteBusinesses = remoteBusinessRows.map(businessFromRemoteRow).filter(Boolean)

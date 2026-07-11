@@ -246,8 +246,10 @@ export function MessagesPage() {
 
   useEffect(() => {
     if (!user?.id) return
-    dispatch(refreshConversations())
-  }, [dispatch, user?.id])
+    if (!conversations.length) {
+      dispatch(refreshConversations())
+    }
+  }, [conversations.length, dispatch, user?.id])
 
   useEffect(() => {
     if (!searchOpen || !listRef.current) return
@@ -290,9 +292,8 @@ export function MessagesPage() {
     const expectedCount = active.messageCount || 0
     const needsReload =
       !active.messagesLoaded ||
-      (expectedCount > 0 && loadedCount < expectedCount) ||
-      (expectedCount === 0 && loadedCount === 0 && !active.messagesLoaded)
-    if (needsReload) {
+      (expectedCount > 0 && loadedCount < expectedCount)
+    if (needsReload && !active.messagesLoading) {
       dispatch(loadConversationMessages(active.id))
     }
   }, [

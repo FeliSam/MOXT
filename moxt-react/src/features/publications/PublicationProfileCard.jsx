@@ -1,6 +1,7 @@
 import { FiBriefcase, FiCalendar, FiEye, FiMapPin, FiStar, FiUser } from 'react-icons/fi'
 import { Badge, VerifiedIcon } from '../../components/ui/Badge'
 import { Card } from '../../components/ui/Card'
+import { ProfileQrShareButton } from '../share/ProfileQrShareButton'
 import { formatMemberSince } from './usePublicationProfile'
 
 function isBusinessVerified(business) {
@@ -21,16 +22,23 @@ export function PublicationProfileCard({
   isOwner = false,
   scope,
   ownBusiness,
+  shareUserId,
+  avatarUrl,
 }) {
   const memberSinceLabel = formatMemberSince(memberSince)
   const isBusinessScope = scope === 'business' && Boolean(ownBusiness)
   const businessVerified = isBusinessScope && isBusinessVerified(ownBusiness)
   const headlineName = isBusinessScope ? ownBusiness.name : displayName
   const showVerifiedIcon = isBusinessScope ? businessVerified : verified
+  const qrTargetPath = isBusinessScope
+    ? `/businesses/${ownBusiness.id}/publications/listings`
+    : shareUserId
+      ? `/users/${shareUserId}/publications`
+      : null
 
   return (
     <Card className="overflow-hidden p-0">
-      <div className="grid gap-5 p-5 sm:grid-cols-[auto_1fr] sm:items-center sm:p-6">
+      <div className="grid gap-5 p-5 sm:grid-cols-[auto_1fr_auto] sm:items-center sm:p-6">
         {isBusinessScope && ownBusiness.logoUrl ? (
           <img
             src={ownBusiness.logoUrl}
@@ -96,6 +104,19 @@ export function PublicationProfileCard({
             ) : null}
           </div>
         </div>
+        {qrTargetPath ? (
+          <ProfileQrShareButton
+            className="justify-self-end sm:col-start-3 sm:row-span-2 sm:self-start"
+            type={isBusinessScope ? 'business' : 'user'}
+            targetPath={qrTargetPath}
+            title={headlineName}
+            subtitle={isBusinessScope ? ownBusiness.sector : displayName}
+            verified={showVerifiedIcon}
+            city={city}
+            sector={isBusinessScope ? ownBusiness.sector : undefined}
+            logoUrl={isBusinessScope ? ownBusiness.logoUrl : avatarUrl}
+          />
+        ) : null}
       </div>
     </Card>
   )

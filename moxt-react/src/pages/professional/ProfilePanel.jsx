@@ -1,9 +1,15 @@
-import { ShareBadgeCard } from '../../components/share/ShareBadgeCard'
+import { activityByValue } from '../../config/businessActivities'
+import { buildAbsoluteUrl } from '../../utils/siteUrl'
+import { QrSharePanel } from '../../features/share/QrSharePanel'
 import { Badge } from '../../components/ui/Badge'
 import { Card } from '../../components/ui/Card'
 import { statusMeta } from '../../config/statuses'
 
-export function ProfilePanel({ activity, business, secondaryActivity, siteUrl }) {
+export function ProfilePanel({ activity, business, secondaryActivity }) {
+  const businessShareUrl = buildAbsoluteUrl(
+    `/businesses/${business.id}/publications/listings`,
+  )
+
   return (
     <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
       <Card>
@@ -48,20 +54,18 @@ export function ProfilePanel({ activity, business, secondaryActivity, siteUrl })
           <Info label="Zones" value={business.serviceZones || 'Russie'} />
         </div>
       </Card>
-      <ShareBadgeCard
-        type="business"
-        name={business.name}
-        logoUrl={business.logoUrl || ''}
-        sector={activity?.label || business.primaryActivity || business.sector || 'Entreprise MOXT'}
-        city={business.city || 'Russie'}
-        phone={business.phone || ''}
-        schedule={business.scheduleSummary || business.hours || ''}
-        status={business.status}
-        feePercent={business.feePercent}
-        rating={business.rating || 0}
-        businessId={business.id}
-        siteUrl={siteUrl}
-        filename={`moxt-entreprise-${business.id}.svg`}
+
+      <QrSharePanel
+        variant="business"
+        title={business.name}
+        subtitle={activityByValue(business.primaryActivity)?.label || business.sector}
+        avatarUrl={business.logoUrl}
+        verified={['verified', 'approved', 'active'].includes(business.status)}
+        city={business.city}
+        sector={activity?.label || business.sector}
+        shareUrl={businessShareUrl}
+        shareTitle={`${business.name} sur MOXT`}
+        shareText={`Découvrez ${business.name} sur MOXT.`}
       />
     </div>
   )

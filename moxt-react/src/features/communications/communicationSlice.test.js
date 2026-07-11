@@ -8,6 +8,8 @@ import reducer, {
   deleteMessageLocally,
   markAllNotificationsRead,
   markConversationRead,
+  mergeConversations,
+  normalizeConversation,
   replySupportTicket,
   reactToMessage,
   restoreConversation,
@@ -354,5 +356,42 @@ describe('communications', () => {
       'MSG-REMOTE',
       localId,
     ])
+  })
+
+  it('conserve le cache messages lors d une resynchronisation des conversations', () => {
+    const local = [
+      normalizeConversation({
+        id: 'CONV-1',
+        participantIds: ['u1', 'u2'],
+        messages: [
+          {
+            id: 'MSG-1',
+            senderId: 'u1',
+            senderName: 'Amina',
+            text: 'Cache local',
+            createdAt: '2026-01-02T10:00:00.000Z',
+          },
+        ],
+        messagesLoaded: true,
+        messageCount: 1,
+        updatedAt: '2026-01-02T10:00:00.000Z',
+      }),
+    ]
+    const remote = [
+      normalizeConversation({
+        id: 'CONV-1',
+        participantIds: ['u1', 'u2'],
+        messages: [],
+        messagesLoaded: false,
+        messageCount: 1,
+        updatedAt: '2026-01-02T11:00:00.000Z',
+      }),
+    ]
+
+    const merged = mergeConversations(local, remote)
+    expect(merged).toHaveLength(1)
+    expect(merged[0].messages).toHaveLength(1)
+    expect(merged[0].messages[0].text).toBe('Cache local')
+    expect(merged[0].messagesLoaded).toBe(true)
   })
 })

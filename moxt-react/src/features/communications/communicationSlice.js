@@ -16,10 +16,37 @@ import { appendRelatedContext, findRelatedContext, hasRelatedContext, mergeRelat
 import { attachmentPreviewLabel } from './attachmentUtils'
 
 const PENDING_MESSAGE_MS = 15000
+const PERSISTED_MESSAGES_LIMIT = 200
+const MESSAGE_FETCH_LIMIT = 200
+const MESSAGE_INCREMENTAL_LIMIT = 100
 
 const conversationsStorage = createLocalStorage('moxt-conversations-v1')
 const supportStorage = createLocalStorage('moxt-support-v1')
 const notificationsStorage = createLocalStorage('moxt-notifications-v1')
+
+function hydrateStoredConversations() {
+  return conversationsStorage.read().map((conv) =>
+    normalizeConversation({
+      ...conv,
+      messages: Array.isArray(conv.messages) ? conv.messages.map(normalizeMessage) : [],
+      messagesLoaded: conv.messagesLoaded ?? (conv.messages?.length > 0),
+    }),
+  )
+}
+
+function mergeMessageBatch(existingMessages, remoteRows) {
+  const messagesById = new Map()
+  for (const message of (existingMessages || []).map(normalizeMessage)) {
+    messagesById.set(message.id, message)
+  }
+  for (const row of remoteRows || []) {
+    const message = normalizeMessage(fromRow(row))
+    messagesById.set(message.id, message)
+  }
+  return [...messagesById.values()].sort(
+    (left, right) => new Date(left.createdAt) - new Date(right.createdAt),
+  )
+}
 
 function normalizeNotification(notification) {
   if (!notification) return notification
@@ -238,7 +265,7 @@ function bumpConversationToTop(state, conversationId) {
 const communicationSlice = createSlice({
   name: 'communications',
   initialState: {
-    conversations: conversationsStorage.read().map(normalizeConversation),
+    conversations: hydrateStoredConversations(),
     support: supportStorage.read(),
     notifications: notificationsStorage.read().map(normalizeNotification),
   },
@@ -779,7 +806,10 @@ const communicationSlice = createSlice({
       conversation.messages = [...remoteMessages, ...localOnly].sort(
         (left, right) => new Date(left.createdAt) - new Date(right.createdAt),
       )
-      conversation.messageCount = conversation.messages.length
+      conversation.messageCount = Math.max(
+        Number(conversation.messageCount) || 0,
+        conversation.messages.length,
+      )
       conversation.messagesLoaded = true
       conversation.messagesLoading = false
     },
@@ -842,22 +872,58 @@ export const loadConversationMessages = createAsyncThunk(
       )
     }
 
+    const syncedConversation = getState().communications.conversations.find(
+      (item) => item.id === canonicalId,
+    )
+    const existingMessages = syncedConversation?.messages || localConversation?.messages || []
+    const messagesLoaded = Boolean(syncedConversation?.messagesLoaded ?? localConversation?.messagesLoaded)
+    const lastMessageAt = existingMessages[existingMessages.length - 1]?.createdAt
+    const expectedCount = Number(syncedConversation?.messageCount ?? localConversation?.messageCount) || 0
+    const loadedCount = existingMessages.length
+
+    if (messagesLoaded && expectedCount > 0 && loadedCount >= expectedCount) {
+      return { conversationId: canonicalId, count: loadedCount, skipped: true }
+    }
+
+    const canIncremental = messagesLoaded && Boolean(lastMessageAt) && loadedCount > 0
+
+    if (canIncremental) {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .in('conversation_id', conversationIds)
+        .gt('created_at', lastMessageAt)
+        .order('created_at', { ascending: true })
+        .limit(MESSAGE_INCREMENTAL_LIMIT)
+      if (error) throw error
+
+      if (data?.length) {
+        const messages = mergeMessageBatch(existingMessages, data)
+        dispatch(
+          setConversationMessages({
+            conversationId: canonicalId,
+            messages,
+          }),
+        )
+        return { conversationId: canonicalId, count: messages.length, incremental: true }
+      }
+
+      if (loadedCount >= expectedCount) {
+        return { conversationId: canonicalId, count: loadedCount, skipped: true }
+      }
+    }
+
     const { data, error } = await supabase
       .from('messages')
       .select('*')
       .in('conversation_id', conversationIds)
       .order('created_at', { ascending: true })
-      .limit(200)
+      .limit(MESSAGE_FETCH_LIMIT)
     if (error) throw error
 
-    const messagesById = new Map()
-    for (const row of data || []) {
-      const message = normalizeMessage(fromRow(row))
-      messagesById.set(message.id, message)
-    }
-    const messages = [...messagesById.values()].sort(
-      (left, right) => new Date(left.createdAt) - new Date(right.createdAt),
-    )
+    const messages = canIncremental
+      ? mergeMessageBatch(existingMessages, data || [])
+      : mergeMessageBatch([], data || [])
 
     dispatch(
       setConversationMessages({
@@ -1075,9 +1141,7 @@ export const refreshConversations = createAsyncThunk(
 
     const conversations = mergeConversations(
       getState().communications.conversations,
-      fromRows(data || []).map((conv) =>
-        normalizeConversation({ ...conv, messages: [], messagesLoaded: false }),
-      ),
+      fromRows(data || []).map((conv) => normalizeConversation({ ...conv, messages: [] })),
     )
     dispatch(setAll({ conversations }))
     return conversations.length

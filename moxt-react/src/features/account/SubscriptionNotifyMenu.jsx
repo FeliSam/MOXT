@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { cloneElement, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { FiBell, FiBellOff, FiCheck, FiStar, FiVolumeX } from 'react-icons/fi'
 import {
@@ -36,6 +36,8 @@ function useFloatingStyle(open, anchorRef, align) {
       const spaceBelow = window.innerHeight - rect.bottom - VIEWPORT_GAP
       const spaceAbove = rect.top - VIEWPORT_GAP
       const openUp = spaceBelow < MENU_ESTIMATED_HEIGHT && spaceAbove > spaceBelow
+      const menuWidth = 248
+      const preferLeft = align === 'left' || rect.right - menuWidth < VIEWPORT_GAP
 
       const next = {
         position: 'fixed',
@@ -44,14 +46,17 @@ function useFloatingStyle(open, anchorRef, align) {
         maxHeight: openUp
           ? Math.min(MENU_ESTIMATED_HEIGHT, spaceAbove)
           : Math.min(MENU_ESTIMATED_HEIGHT, Math.max(spaceBelow, 180)),
-        zIndex: 80,
+        zIndex: 120,
       }
 
       if (openUp) next.bottom = window.innerHeight - rect.top + VIEWPORT_GAP
       else next.top = rect.bottom + VIEWPORT_GAP
 
-      if (align === 'left') next.left = Math.max(VIEWPORT_GAP, rect.left)
-      else next.right = Math.max(VIEWPORT_GAP, window.innerWidth - rect.right)
+      if (preferLeft) {
+        next.left = Math.max(VIEWPORT_GAP, Math.min(rect.left, window.innerWidth - menuWidth - VIEWPORT_GAP))
+      } else {
+        next.right = Math.max(VIEWPORT_GAP, window.innerWidth - rect.right)
+      }
 
       setStyle(next)
     }
@@ -169,11 +174,20 @@ export function SubscriptionNotifyMenu({
       )
     : null
 
+  const triggerElement = cloneElement(trigger, {
+    'aria-expanded': open,
+    'aria-haspopup': 'menu',
+    onClick: (event) => {
+      trigger.props.onClick?.(event)
+      if (!event.defaultPrevented) setOpen((value) => !value)
+    },
+  })
+
   return (
     <>
-      <div ref={anchorRef} className="inline-flex" onClick={() => setOpen((value) => !value)}>
-        {trigger}
-      </div>
+      <span ref={anchorRef} className="inline-flex">
+        {triggerElement}
+      </span>
       {menu}
     </>
   )

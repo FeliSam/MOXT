@@ -37,10 +37,10 @@ export function DashboardHero({ user, onOpenCalculator }) {
               Créer un transfert <FiArrowRight />
             </Link>
             <Link
-              to="/jobs/publish"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-violet-200/80 bg-violet-500/90 px-5 text-sm font-black text-white shadow-lg shadow-violet-950/25 transition hover:-translate-y-0.5 hover:bg-violet-400/95"
+              to="/marketplace"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-sky-200/80 bg-sky-500/90 px-5 text-sm font-black text-white shadow-lg shadow-sky-950/25 transition hover:-translate-y-0.5 hover:bg-sky-400/95"
             >
-              Publier un job <FiArrowRight />
+              Marketplace <FiArrowRight />
             </Link>
           </div>
         </div>

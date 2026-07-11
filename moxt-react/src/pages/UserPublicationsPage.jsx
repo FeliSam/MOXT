@@ -196,9 +196,10 @@ export function UserPublicationsPage() {
         title={isOwner ? 'Mes publications publiques' : `Publications de ${displayName}`}
         description={pageDescription}
         actions={
-          <>
+          <div className="relative z-30 flex min-w-0 flex-wrap items-center justify-end gap-2">
             {!isOwner ? (
               <SubscribeButton
+                className="relative z-30"
                 publisherType="user"
                 publisherId={userId}
                 publisherName={displayName}
@@ -230,7 +231,7 @@ export function UserPublicationsPage() {
                 </Button>
               </Link>
             )}
-          </>
+          </div>
         }
       />
 
@@ -248,6 +249,8 @@ export function UserPublicationsPage() {
         isOwner={isOwner}
         scope={scope}
         ownBusiness={ownBusiness}
+        shareUserId={userId}
+        avatarUrl={memberProfile?.avatarUrl}
       />
 
       <CatalogArchiveTabs

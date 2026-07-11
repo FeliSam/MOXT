@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { FiX } from 'react-icons/fi'
 
 const sizes = {
@@ -53,9 +54,9 @@ export function Modal({ children, open, onClose, size = 'default', title }) {
 
   if (!open) return null
 
-  return (
+  const modal = (
     <div
-      className="fixed inset-0 z-50 grid place-items-center p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4"
+      className="fixed inset-0 z-[70] grid place-items-center p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4"
       role="presentation"
     >
       <button
@@ -89,4 +90,6 @@ export function Modal({ children, open, onClose, size = 'default', title }) {
       </section>
     </div>
   )
+
+  return typeof document !== 'undefined' ? createPortal(modal, document.body) : modal
 }
