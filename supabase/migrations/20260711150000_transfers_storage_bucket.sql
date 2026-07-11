@@ -45,7 +45,10 @@ using (
         t.id = (storage.foldername(name))[2]
         or (storage.foldername(name))[2] like t.id || '-receive'
       )
-      and (t.user_id = (select auth.uid()) or t.business_owner_id = (select auth.uid()))
+      and (
+        t.user_id::text = (select auth.uid())::text
+        or t.business_owner_id::text = (select auth.uid())::text
+      )
     )
   )
 );
