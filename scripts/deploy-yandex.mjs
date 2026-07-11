@@ -11,11 +11,12 @@
  *   MOXT_SITE_URL    https://moxtapp.ru
  *   YC_BIN           chemin vers yc (auto sur Windows)
  */
-import { existsSync, writeFileSync, unlinkSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync, unlinkSync, readdirSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
+import { parseEnvFile } from './lib/env.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const distDir = path.join(root, 'moxt-react', 'dist')
@@ -164,13 +165,15 @@ if (initMode) {
 
 if (spaOnly) {
   log('Hébergement statique SPA', bucket)
+  yc('storage', 'bucket', 'update', '--name', bucket, '--public-read', '--public-list=false')
   setWebsiteSettings(ycPath(), bucket)
 }
 
 uploadDist(ycPath(), bucket, distDir)
 
 if (purgeCdn) {
-  const resourceId = process.env.MOXT_CDN_RESOURCE_ID
+  const phase2 = parseEnvFile(path.join(root, 'scripts', 'phase2.env'))
+  const resourceId = process.env.MOXT_CDN_RESOURCE_ID || phase2.MOXT_CDN_RESOURCE_ID
   if (!resourceId) {
     console.log('\n  (purge CDN ignoré — MOXT_CDN_RESOURCE_ID non défini)')
   } else {

@@ -52,7 +52,7 @@ function MoreServiceTile({
       }}>
       <View className="flex-row items-start justify-between gap-1">
         <View className="h-9 w-9 items-center justify-center rounded-[0.7rem] bg-app-surface-muted dark:bg-zinc-800">
-          <Text className="text-lg">{item.emoji}</Text>
+          <item.Icon size={18} color="#08705f" strokeWidth={2.1} />
         </View>
         {badge > 0 ? (
           <View className="rounded-full bg-red-500 px-1.5 py-0.5">

@@ -22,6 +22,7 @@ import { auditMiddleware } from './auditMiddleware'
 import { persistenceMiddleware } from './persistenceMiddleware'
 import { interactionMiddleware } from './interactionMiddleware'
 import { supabaseMiddleware } from './supabaseMiddleware'
+import { engagementToastMiddleware } from './engagementToastMiddleware'
 import { baseApi } from '../services/baseApi'
 
 export const store = configureStore({
@@ -58,5 +59,6 @@ export const store = configureStore({
       interactionMiddleware,
       persistenceMiddleware,
       supabaseMiddleware,
+      engagementToastMiddleware,
     ),
 })

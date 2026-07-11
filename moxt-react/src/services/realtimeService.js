@@ -1,3 +1,7 @@
+import {
+  enableEngagementAlerts,
+  disableEngagementAlerts,
+} from '../app/engagementToastMiddleware'
 import { supabase } from './supabaseClient'
 import {
   ensureConversationFromRemote,
@@ -111,6 +115,7 @@ export function startRealtimeSubscription(userId, dispatch, getState) {
   }
 
   activeUserId = userId
+  enableEngagementAlerts()
 
   channel = supabase
     .channel(`user-messaging-${userId}`)
@@ -198,6 +203,7 @@ export function startRealtimeSubscription(userId, dispatch, getState) {
 }
 
 export function stopRealtimeSubscription() {
+  disableEngagementAlerts()
   if (reconnectTimer) {
     clearTimeout(reconnectTimer)
     reconnectTimer = null

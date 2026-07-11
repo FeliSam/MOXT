@@ -13,12 +13,42 @@
  *   MOXT_SKIP_SUPABASE   1 = ne pas pousser supabase config
  *   YC_BIN               chemin vers yc
  */
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
+import {
+  SPA_REWRITE_BODY,
+  finalizeSpaCdn,
+  purgeCdnCache,
+} from './lib/yandex-cdn.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+const phase2EnvPath = path.join(root, 'scripts', 'phase2.env')
+
+function parseEnvFile(filePath) {
+  const vars = {}
+  if (!existsSync(filePath)) return vars
+  for (const line of readFileSync(filePath, 'utf8').split(/\r?\n/)) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#')) continue
+    const eq = trimmed.indexOf('=')
+    if (eq < 0) continue
+    vars[trimmed.slice(0, eq).trim()] = trimmed.slice(eq + 1).trim()
+  }
+  return vars
+}
+
+function loadPostboxEnv() {
+  const fromFile = parseEnvFile(phase2EnvPath)
+  return {
+    MOXT_POSTBOX_SMTP_USER:
+      process.env.MOXT_POSTBOX_SMTP_USER || fromFile.MOXT_POSTBOX_SMTP_USER || '',
+    MOXT_POSTBOX_SMTP_PASS:
+      process.env.MOXT_POSTBOX_SMTP_PASS || fromFile.MOXT_POSTBOX_SMTP_PASS || '',
+    MOXT_POSTBOX_FROM: process.env.MOXT_POSTBOX_FROM || fromFile.MOXT_POSTBOX_FROM || '',
+  }
+}
 
 const domain = (process.env.MOXT_DOMAIN || 'moxtapp.ru').replace(/\.$/, '')
 const wwwDomain = `www.${domain}`
@@ -122,66 +152,40 @@ function ensureCdnFixed(resource) {
   return { id, providerCname: updated.provider_cname || providerCname }
 }
 
-function ensureWebsiteOrigin(resource) {
-  const groupId = resource.origin_group_id
-  if (!groupId) return
-
-  const group = ycJson('cdn', 'origin-group', 'get', String(groupId))
-  const origin = group?.origins?.[0]
-  const source = origin?.source || ''
-  const websiteMeta = origin?.meta?.website?.name
-  const usesWebsite = source === websiteHost && websiteMeta === bucket
-
-  if (usesWebsite) {
-    log('Origine CDN', `hébergement web OK (${websiteHost})`)
-    return
-  }
-
-  log(
-    'Correction origine CDN',
-    `storage → ${websiteHost} (évite AccessDenied sur /)`,
-  )
-  ycInherit(
-    'cdn',
-    'origin-group',
-    'update',
-    '--id',
-    String(groupId),
-    '--name',
-    group.name || `s3-${bucket}`,
-    '--origin',
-    `source=${websiteHost},enabled=true,meta-website-name=${bucket}`,
-  )
+function ensureSpaCdn(resource) {
+  log('Origine CDN SPA', `${bucket}.storage.yandexcloud.net + rewrite break`)
+  finalizeSpaCdn(resource.id, bucket)
 }
 
-function ensureRootRewrite(resource) {
+function ensureNoDangerousRewrite(resource) {
   const id = resource.id
   const rewrite = resource.options?.rewrite
-  const body = rewrite?.body || ''
   const flag = (rewrite?.flag || '').toUpperCase()
 
-  if (body === '/ /index.html' && (flag === 'LAST' || flag === 'REDIRECT')) {
-    log('Rewrite CDN', 'racine / → index.html déjà configuré')
+  if (rewrite?.enabled && flag === 'PERMANENT') {
+    log('Suppression rewrite CDN', 'PERMANENT provoque ERR_TOO_MANY_REDIRECTS')
+    ycInherit('cdn', 'resource', 'update', id, '--clear-rewrite')
+    finalizeSpaCdn(id, bucket)
     return
   }
 
-  log('Rewrite CDN', '/ → /index.html (SPA)')
-  ycInherit(
-    'cdn',
-    'resource',
-    'update',
-    id,
-    '--rewrite-body',
-    '/ /index.html',
-    '--rewrite-flag',
-    'last',
-  )
-}
+  if (rewrite?.enabled && flag === 'LAST') {
+    log('Suppression rewrite CDN', 'last provoque des erreurs 500')
+    ycInherit('cdn', 'resource', 'update', id, '--clear-rewrite')
+    finalizeSpaCdn(id, bucket)
+    return
+  }
 
-function purgeCdnCache(resourceId) {
-  if (process.env.MOXT_SKIP_CDN_PURGE === '1') return
-  log('Purge cache CDN', resourceId)
-  ycInherit('cdn', 'cache', 'purge', '--resource-id', resourceId, '--all')
+  if (
+    rewrite?.enabled &&
+    rewrite.body === SPA_REWRITE_BODY &&
+    flag === 'BREAK'
+  ) {
+    log('Rewrite CDN', `${rewrite.body} [${rewrite.flag}]`)
+    return
+  }
+
+  log('Rewrite CDN', 'sera appliqué par finalizeSpaCdn')
 }
 
 function getZoneNameservers(zoneId) {
@@ -371,7 +375,20 @@ function attachCertificateToCdn(resourceId, certId) {
 
 function pushSupabase() {
   if (skipSupabase) return
-  log('Supabase config push', 'site_url + redirect URLs')
+
+  const postbox = loadPostboxEnv()
+  const missing = ['MOXT_POSTBOX_SMTP_USER', 'MOXT_POSTBOX_SMTP_PASS', 'MOXT_POSTBOX_FROM'].filter(
+    (key) => !postbox[key],
+  )
+  if (missing.length > 0) {
+    console.warn(
+      `\n  ⚠ Supabase config push ignoré — variables SMTP manquantes (${missing.join(', ')}).`,
+    )
+    console.warn('    Renseignez scripts/phase2.env puis : npm run setup:smtp')
+    return
+  }
+
+  log('Supabase config push', 'site_url + redirect URLs + SMTP')
   const link = spawnSync('npx', ['supabase', 'link', '--project-ref', 'rbvqfkccbkwjxkvpnwqn', '--yes'], {
     cwd: root,
     stdio: 'pipe',
@@ -385,8 +402,12 @@ function pushSupabase() {
     cwd: root,
     stdio: 'inherit',
     shell: process.platform === 'win32',
+    env: { ...process.env, ...postbox },
   })
-  if ((push.status ?? 1) !== 0) process.exit(push.status || 1)
+  if ((push.status ?? 1) !== 0) {
+    console.warn('\n  ⚠ config push Supabase en échec — le CDN reste opérationnel.')
+    console.warn('    Réessayez : npm run setup:smtp')
+  }
 }
 
 function printSummary({ resourceId, providerCname, zone, cert }) {
@@ -398,15 +419,16 @@ function printSummary({ resourceId, providerCname, zone, cert }) {
   console.log(`  Domaine    : https://${domain}`)
   console.log(`  CDN ID     : ${resourceId}`)
   console.log(`  CNAME CDN  : ${providerCname}`)
-  console.log(`  Origine    : ${websiteHost}`)
+  console.log(`  Bucket     : ${bucket}.storage.yandexcloud.net`)
+  console.log(`  Host CDN   : ${websiteHost}`)
+  console.log(`  Entrée SPA : https://${domain}/index.html`)
   if (zone) {
     console.log(`\n  Zone DNS   : ${zone.zone} (${zone.id})`)
     console.log('  Nameservers Yandex (à configurer chez REG.RU) :')
     for (const n of yandexNs) console.log(`    • ${n}`)
     if (!nsLive) {
-      console.log('\n  ⚠ ACTION REQUISE (une fois, ~2 min) :')
-      console.log('    REG.RU → moxtapp.ru → « Делегирование » / nameservers')
-      console.log('    Remplacez ns1.reg.ru / ns2.reg.ru par :')
+      console.log('\n  ℹ DNS actuel : CNAME REG.RU → CDN (site peut fonctionner sans changer les NS).')
+      console.log('  Pour gérer DNS + renouvellement certificat via Yandex, déléguez chez REG.RU :')
       for (const n of yandexNs) console.log(`      ${n}`)
       console.log('\n    Puis relancez : npm run setup:yandex-cdn')
       console.log('    (HTTPS + attachement certificat au CDN)')
@@ -445,9 +467,12 @@ async function main() {
   }
 
   const { id: resourceId, providerCname } = ensureCdnFixed(resource)
-  ensureWebsiteOrigin(resource)
-  ensureRootRewrite(resource)
-  purgeCdnCache(resourceId)
+  ensureSpaCdn(resource)
+  ensureNoDangerousRewrite(ycJson('cdn', 'resource', 'get', resourceId))
+  const purge = purgeCdnCache(resourceId)
+  if (!purge.ok && purge.reason !== 'rate_limit') {
+    console.warn(`\n  ⚠ Purge CDN : ${purge.reason}`)
+  }
 
   const zone = ensureDnsZone()
   if (zone) {

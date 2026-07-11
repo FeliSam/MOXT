@@ -538,10 +538,20 @@ const communicationSlice = createSlice({
               deliveredTo: [],
               readBy: [senderId],
               createdAt: new Date().toISOString(),
+              syncFailed: false,
             },
           },
         }
       },
+    },
+    setMessageSyncFailed(state, action) {
+      const conversation = state.conversations.find(
+        (item) => item.id === action.payload.conversationId,
+      )
+      const message = conversation?.messages.find((item) => item.id === action.payload.messageId)
+      if (message) {
+        message.syncFailed = Boolean(action.payload.failed)
+      }
     },
     markConversationRead(state, action) {
       const conversation = state.conversations.find(
@@ -611,6 +621,19 @@ const communicationSlice = createSlice({
       message.reactions[action.payload.reaction] = users.includes(action.payload.userId)
         ? users.filter((id) => id !== action.payload.userId)
         : [...users, action.payload.userId]
+    },
+    editMessage(state, action) {
+      const conversation = state.conversations.find(
+        (item) => item.id === action.payload.conversationId,
+      )
+      const message = conversation?.messages.find((item) => item.id === action.payload.messageId)
+      if (!message) return
+      // Un utilisateur ne peut modifier que ses propres messages.
+      if (String(message.senderId) !== String(action.payload.userId)) return
+      const text = action.payload.text?.trim()
+      if (!text) return
+      message.text = text
+      message.editedAt = new Date().toISOString()
     },
     deleteMessageLocally(state, action) {
       const conversation = state.conversations.find(
@@ -1075,6 +1098,7 @@ export const {
   createConversation,
   createSupportTicket,
   deleteMessageLocally,
+  editMessage,
   markAllNotificationsRead,
   markConversationRead,
   markNotificationRead,
@@ -1083,6 +1107,7 @@ export const {
   restoreConversation,
   saveConversationDraft,
   sendMessage,
+  setMessageSyncFailed,
   toggleConversationBlock,
   toggleConversationMute,
   toggleConversationPin,

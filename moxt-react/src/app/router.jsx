@@ -131,6 +131,7 @@ const TransferDetailPage = lazyPage(
   'TransferDetailPage',
 )
 const TransfersPage = lazyPage(() => import('../pages/TransfersPage'), 'TransfersPage')
+const ReferralPage = lazyPage(() => import('../pages/ReferralPage'), 'ReferralPage')
 const TrustPage = lazyPage(() => import('../pages/TrustPage'), 'TrustPage')
 const VerificationPage = lazyPage(() => import('../pages/VerificationPage'), 'VerificationPage')
 const WalletPage = lazyPage(() => import('../pages/WalletPage'), 'WalletPage')
@@ -145,6 +146,7 @@ export function AppRouter() {
       }
     >
       <Routes>
+        <Route path="/index.html" element={<Navigate to="/" replace />} />
         <Route element={<PublicSiteLayout />}>
           <Route path="/" element={<PublicHomePage />} />
           <Route path="/discover" element={<DiscoverPage />} />
@@ -192,6 +194,7 @@ export function AppRouter() {
             <Route path="/exchangers" element={<ExchangersPage />} />
             <Route path="/exchangers/:exchangerId" element={<ExchangerDetailPage />} />
             <Route path="/wallet" element={<WalletPage />} />
+            <Route path="/referral" element={<ReferralPage />} />
             <Route path="/payments" element={<PaymentsPage />} />
             <Route path="/receipts" element={<ReceiptsPage />} />
             <Route path="/disputes" element={<DisputesPage />} />

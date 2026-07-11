@@ -1031,6 +1031,19 @@ export const supabaseMiddleware = (store) => (next) => (action) => {
   if (handler && supabase) {
     withRetry(() => handler(action.payload, store.getState(), store.dispatch)).catch((err) => {
       console.warn('[Supabase]', action.type, err?.message || err)
+      if (action.type === 'communications/sendMessage') {
+        const messageId = action.payload?.message?.id
+        if (messageId) {
+          store.dispatch({
+            type: 'communications/setMessageSyncFailed',
+            payload: {
+              conversationId: action.payload.conversationId,
+              messageId,
+              failed: true,
+            },
+          })
+        }
+      }
       store.dispatch(
         addToast({
           title: 'Synchronisation impossible',

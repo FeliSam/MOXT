@@ -1,4 +1,5 @@
 import { FiBellOff, FiCpu, FiStar } from 'react-icons/fi'
+import { RELATED_CONTENT_META } from '../../config/communications'
 import { getConversationPeer } from '../../features/communications/conversationDisplay'
 import { conversationPreview } from './messageUtils'
 import { shortTime } from './format'
@@ -12,6 +13,11 @@ export function ConversationRow({ active, assistant = false, conversation, onCli
   const unread = assistant ? 0 : conversation.unreadBy?.[userId] || 0
   const pinned = !assistant && conversation.pinnedBy?.includes(userId)
   const muted = !assistant && conversation.mutedBy?.includes(userId)
+  const relatedMeta =
+    !assistant && conversation.relatedType
+      ? RELATED_CONTENT_META[conversation.relatedType] || RELATED_CONTENT_META.general
+      : null
+  const RelatedIcon = relatedMeta?.icon
 
   return (
     <button
@@ -28,15 +34,29 @@ export function ConversationRow({ active, assistant = false, conversation, onCli
           <FiCpu />
         </span>
       ) : (
-        <MessageAvatar
-          avatarUrl={peer?.avatarUrl}
-          className="!size-11 !rounded-[1rem] !text-sm shadow-md"
-          name={peer?.name}
-        />
+        <span className="relative shrink-0">
+          <MessageAvatar
+            avatarUrl={peer?.avatarUrl}
+            className="!size-11 !rounded-[1rem] !text-sm shadow-md"
+            name={peer?.name}
+          />
+          {RelatedIcon ? (
+            <span
+              className={`absolute -bottom-0.5 -right-0.5 grid size-5 place-items-center rounded-md text-[10px] text-white shadow-sm ${relatedMeta.tone}`}
+              aria-hidden="true"
+            >
+              <RelatedIcon />
+            </span>
+          ) : null}
+        </span>
       )}
       <span className="min-w-0 flex-1">
         <span className="flex items-start justify-between gap-2">
-          <strong className="flex min-w-0 items-center gap-1.5 truncate text-[13px] font-bold leading-4">
+          <strong
+            className={`flex min-w-0 items-center gap-1.5 truncate text-[13px] leading-4 ${
+              unread ? 'font-black text-[var(--app-text)]' : 'font-bold'
+            }`}
+          >
             {pinned ? <FiStar className="size-3 shrink-0 text-amber-500" /> : null}
             <span className="truncate">{assistant ? 'Assistant MOXT' : peer?.name}</span>
             {muted ? <FiBellOff className="size-3 shrink-0 text-[var(--app-text-faint)]" /> : null}
@@ -46,7 +66,11 @@ export function ConversationRow({ active, assistant = false, conversation, onCli
           </time>
         </span>
         <span className="mt-0.5 flex items-center gap-1.5">
-          <span className="min-w-0 flex-1 truncate text-[11px] leading-4 text-[var(--app-text-faint)]">
+          <span
+            className={`min-w-0 flex-1 truncate text-[11px] leading-4 ${
+              unread ? 'font-semibold text-[var(--app-text-muted)]' : 'text-[var(--app-text-faint)]'
+            }`}
+          >
             {lastMessage}
           </span>
           {unread ? (

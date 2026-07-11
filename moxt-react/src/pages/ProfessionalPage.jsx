@@ -36,8 +36,8 @@ import { TransfersPanel } from './professional/TransfersPanel'
 const baseTabs = [
   { value: 'profile', label: 'Profil entreprise' },
   { value: 'overview', label: 'Aperçu' },
-  { value: 'requests', label: 'Demandes' },
   { value: 'publications', label: 'Publications' },
+  { value: 'requests', label: 'Demandes' },
   { value: 'documents', label: 'Documents' },
   { value: 'members', label: 'Membres' },
   { value: 'statistics', label: 'Statistiques' },
@@ -92,7 +92,7 @@ export function ProfessionalPage() {
   const tabs = useMemo(
     () =>
       hasTransfers
-        ? [...baseTabs.slice(0, 3), { value: 'transfers', label: 'Transferts' }, ...baseTabs.slice(3)]
+        ? [...baseTabs.slice(0, 2), { value: 'transfers', label: 'Transferts' }, ...baseTabs.slice(2)]
         : baseTabs,
     [hasTransfers],
   )

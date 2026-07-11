@@ -1,7 +1,6 @@
 import { useFormik } from 'formik'
 import {
   FiArchive,
-  FiFilter,
   FiMessageSquare,
   FiSearch,
   FiStar,
@@ -12,19 +11,23 @@ import { useDispatch, useSelector, useStore } from 'react-redux'
 import { useSearchParams } from 'react-router-dom'
 import { messageSuggestionsForConversation } from '../features/communications/messageSuggestions'
 import { getConversationPeer } from '../features/communications/conversationDisplay'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { AiAssistantPanel } from '../features/communications/AiAssistantPanel'
 import { messageSchema } from '../features/communications/communicationSchemas'
 import {
   archiveConversation,
   deleteMessageLocally,
+  editMessage,
   ensureConversationFromRemote,
   loadConversationMessages,
   loadParticipantProfiles,
   markConversationRead,
+  reactToMessage,
   refreshConversations,
   restoreConversation,
   saveConversationDraft,
   sendMessage,
+  setMessageSyncFailed,
   toggleConversationBlock,
   toggleConversationMute,
   toggleConversationPin,
@@ -58,6 +61,8 @@ export function MessagesPage() {
   const [attachment, setAttachment] = useState(null)
   const [replyToId, setReplyToId] = useState(null)
   const [replyToContextId, setReplyToContextId] = useState(null)
+  const [editingId, setEditingId] = useState(null)
+  const [pendingDeleteId, setPendingDeleteId] = useState(null)
   const [showArchived, setShowArchived] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [filter, setFilter] = useState('all')
@@ -137,6 +142,20 @@ export function MessagesPage() {
     validationSchema: messageSchema,
     onSubmit: (values, helpers) => {
       if (!active || blocked) return
+      // Mode édition : on modifie le message existant, sans en renvoyer un nouveau.
+      if (editingId) {
+        dispatch(
+          editMessage({
+            conversationId: active.id,
+            messageId: editingId,
+            userId: user.id,
+            text: values.text,
+          }),
+        )
+        setEditingId(null)
+        helpers.resetForm({ values: { text: '' } })
+        return
+      }
       const previousCount = active.messages.length
       dispatch(
         sendMessage({
@@ -262,6 +281,48 @@ export function MessagesPage() {
     setSearchParams({})
   }
 
+  function retryMessage(message) {
+    if (!active || blocked) return
+    dispatch(
+      setMessageSyncFailed({
+        conversationId: active.id,
+        messageId: message.id,
+        failed: false,
+      }),
+    )
+    dispatch(
+      deleteMessageLocally({
+        conversationId: active.id,
+        messageId: message.id,
+        userId: user.id,
+      }),
+    )
+    const previousCount = active.messages.length - 1
+    dispatch(
+      sendMessage({
+        conversationId: active.id,
+        senderId: user.id,
+        senderName: `${user.firstName} ${user.lastName}`,
+        text: message.text,
+        attachment: message.attachment,
+        replyToId: message.replyToId,
+        relatedContextId: message.relatedContextId,
+      }),
+    )
+    const updated = store
+      .getState()
+      .communications.conversations.find((item) => item.id === active.id)
+    if (!updated || updated.messages.length <= previousCount) {
+      dispatch(
+        addToast({
+          title: 'Message non envoyé',
+          message: 'Impossible de renvoyer ce message pour le moment.',
+          tone: 'error',
+        }),
+      )
+    }
+  }
+
   return (
     <div className="relative h-full min-h-0 overflow-hidden bg-transparent" data-testid="messages-viewport">
       {searchOpen ? (
@@ -354,59 +415,46 @@ export function MessagesPage() {
               >
                 <FiSearch />
               </button>
-              <details className="relative">
-                <summary
-                  className="grid size-10 cursor-pointer list-none place-items-center rounded-xl bg-[var(--app-surface-muted)] text-[var(--app-accent)] shadow-sm"
-                  aria-label={showArchived ? 'Voir les conversations actives' : 'Voir les archives'}
-                >
-                  <FiArchive />
-                </summary>
-                <div className="panel-pop absolute right-0 top-[calc(100%+0.4rem)] z-30 grid min-w-44 gap-1 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-1.5 shadow-[var(--shadow-card-lg)]">
+            </div>
+            <div
+              className="message-filter-chips scrollbar-hidden mt-3 flex gap-2 overflow-x-auto pb-0.5"
+              role="toolbar"
+              aria-label="Filtrer les conversations"
+            >
+              {MESSAGE_FILTERS.map((item) => {
+                const count = countConversationsForFilter(
+                  conversations,
+                  item.id,
+                  user.id,
+                  showArchived,
+                )
+                const activeFilter = filter === item.id && !showArchived
+                return (
                   <button
+                    key={item.id}
                     type="button"
-                    className="rounded-xl px-3 py-2 text-left text-sm font-semibold text-[var(--app-text)] transition hover:bg-[var(--app-surface-muted)]"
-                    onClick={() => setShowArchived((value) => !value)}
+                    onClick={() => {
+                      setFilter(item.id)
+                      setShowArchived(false)
+                    }}
+                    className={`message-filter-chip shrink-0 ${activeFilter ? 'message-filter-chip--active' : ''}`}
+                    aria-pressed={activeFilter}
                   >
-                    {showArchived ? 'Voir les conversations actives' : 'Voir les archives'}
+                    {item.icon ? <item.icon className="size-3" aria-hidden="true" /> : null}
+                    {item.label}
+                    {count ? <span className="message-filter-chip-count">{count}</span> : null}
                   </button>
-                </div>
-              </details>
-              <details className="relative">
-                <summary
-                  className="grid size-10 cursor-pointer list-none place-items-center rounded-xl bg-[var(--app-surface-muted)] text-[var(--app-accent)] shadow-sm"
-                  aria-label="Filtrer les conversations"
-                >
-                  <FiFilter />
-                </summary>
-                <div className="panel-pop absolute right-0 top-[calc(100%+0.4rem)] z-30 grid min-w-44 gap-1 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-1.5 shadow-[var(--shadow-card-lg)]">
-                  {MESSAGE_FILTERS.map((item) => {
-                    const count = countConversationsForFilter(
-                      conversations,
-                      item.id,
-                      user.id,
-                      showArchived,
-                    )
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => setFilter(item.id)}
-                        className={`flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm font-semibold transition ${
-                          filter === item.id
-                            ? 'bg-[var(--app-accent-soft)] text-[var(--app-accent)]'
-                            : 'text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]'
-                        }`}
-                      >
-                        <span className="flex items-center gap-2">
-                          {item.icon ? <item.icon className="text-xs" /> : null}
-                          {item.label}
-                        </span>
-                        <span className="text-xs text-[var(--app-text-muted)]">{count || ''}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-              </details>
+                )
+              })}
+              <button
+                type="button"
+                onClick={() => setShowArchived((value) => !value)}
+                className={`message-filter-chip shrink-0 ${showArchived ? 'message-filter-chip--active' : ''}`}
+                aria-pressed={showArchived}
+              >
+                <FiArchive className="size-3" aria-hidden="true" />
+                {showArchived ? 'Actives' : 'Archives'}
+              </button>
             </div>
           </div>
 
@@ -487,49 +535,92 @@ export function MessagesPage() {
                   dispatch(saveConversationDraft({ id: active.id, userId: user.id, text }))
                 }
                 onFile={setAttachment}
-                onDelete={(messageId) =>
-                  dispatch(
-                    deleteMessageLocally({
-                      conversationId: active.id,
-                      messageId,
-                      userId: user.id,
-                    }),
-                  )
-                }
+                onDelete={(messageId) => setPendingDeleteId(messageId)}
                 onEdit={(message) => {
                   formik.setFieldValue('text', message.text)
+                  setEditingId(message.id)
                   setReplyToId(null)
                   setReplyToContextId(null)
                 }}
                 onShare={async (message) => {
                   const text = message.text?.trim()
                   if (!text) return
-                  try {
-                    if (navigator.share) {
+                  // 1) Partage natif si dispo (mobile / contexte sécurisé).
+                  if (navigator.share) {
+                    try {
                       await navigator.share({ text })
-                    } else {
-                      await navigator.clipboard.writeText(text)
-                      dispatch(
-                        addToast({
-                          title: 'Message copié',
-                          message: 'Le contenu a été copié dans le presse-papiers.',
-                          tone: 'success',
-                        }),
-                      )
+                      return
+                    } catch {
+                      /* partage annulé — on retombe sur la copie */
                     }
-                  } catch {
-                    /* annulation du partage natif */
                   }
+                  // 2) Presse-papiers moderne (HTTPS uniquement).
+                  let copied = false
+                  if (navigator.clipboard?.writeText) {
+                    try {
+                      await navigator.clipboard.writeText(text)
+                      copied = true
+                    } catch {
+                      copied = false
+                    }
+                  }
+                  // 3) Repli execCommand (fonctionne sur http LAN, contexte non sécurisé).
+                  if (!copied) {
+                    try {
+                      const area = document.createElement('textarea')
+                      area.value = text
+                      area.style.position = 'fixed'
+                      area.style.opacity = '0'
+                      document.body.appendChild(area)
+                      area.focus()
+                      area.select()
+                      copied = document.execCommand('copy')
+                      document.body.removeChild(area)
+                    } catch {
+                      copied = false
+                    }
+                  }
+                  dispatch(
+                    addToast(
+                      copied
+                        ? {
+                            title: 'Message copié',
+                            message: 'Le contenu a été copié dans le presse-papiers.',
+                            tone: 'success',
+                          }
+                        : {
+                            title: 'Copie impossible',
+                            message: 'Impossible de copier le message sur cet appareil.',
+                            tone: 'error',
+                          },
+                    ),
+                  )
                 }}
+                onReact={(messageId, emoji) =>
+                  dispatch(
+                    reactToMessage({
+                      conversationId: active.id,
+                      messageId,
+                      userId: user.id,
+                      reaction: emoji,
+                    }),
+                  )
+                }
                 onReply={(messageId) => {
                   setReplyToId(messageId)
                   setReplyToContextId(null)
                 }}
                 onReplyToContext={setReplyToContextId}
+                onRetry={retryMessage}
                 replyToId={replyToId}
                 replyToContextId={replyToContextId}
                 archived={showArchived}
                 suggestions={suggestions}
+                editingId={editingId}
+                onCancelEdit={() => {
+                  setEditingId(null)
+                  formik.setFieldValue('text', '')
+                }}
                 user={user}
                 muted={active.mutedBy?.includes(user.id)}
                 pinned={active.pinnedBy?.includes(user.id)}
@@ -538,6 +629,25 @@ export function MessagesPage() {
           </section>
         ) : null}
       </div>
+
+      <ConfirmDialog
+        open={Boolean(pendingDeleteId)}
+        title="Supprimer ce message ?"
+        description="Le message sera retiré de votre conversation. Cette action est définitive."
+        onCancel={() => setPendingDeleteId(null)}
+        onConfirm={() => {
+          if (active && pendingDeleteId) {
+            dispatch(
+              deleteMessageLocally({
+                conversationId: active.id,
+                messageId: pendingDeleteId,
+                userId: user.id,
+              }),
+            )
+          }
+          setPendingDeleteId(null)
+        }}
+      />
     </div>
   )
 }

@@ -13,7 +13,7 @@
  *   MOXT_SKIP_CDN=1       sauter CDN/DNS
  *   MOXT_SKIP_PHASE2=1    sauter Postbox/SMS
  *   MOXT_SKIP_SUPABASE=1  idem sur config push
- *   MOXT_PROVISION_FORCE=1 régénérer clés Yandex
+ *   MOXT_CDN_RECREATE=1    utiliser setup-yandex-cdn-recreate.mjs
  */
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
@@ -49,7 +49,11 @@ async function main() {
 
   if (process.env.MOXT_SKIP_CDN !== '1') {
     log('Étape 2/3', 'CDN + DNS + certificat')
-    runScript('setup-yandex-cdn.mjs')
+    const cdnScript =
+      process.env.MOXT_CDN_RECREATE === '1'
+        ? 'setup-yandex-cdn-recreate.mjs'
+        : 'setup-yandex-cdn.mjs'
+    runScript(cdnScript)
   }
 
   log('Étape 3/3', 'Déploiement site (optionnel)')

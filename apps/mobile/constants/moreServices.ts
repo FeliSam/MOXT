@@ -1,3 +1,10 @@
+import type { LucideIcon } from 'lucide-react-native';
+import {
+  Home, ArrowLeftRight, Repeat, Handshake, Building2, BriefcaseBusiness, Package,
+  ShoppingBag, Newspaper, Briefcase, CalendarDays, MessageSquare, Bell, Heart,
+  FileText, BellRing, SlidersHorizontal, BarChart3, ShieldCheck, Gift,
+} from 'lucide-react-native';
+
 import { bottomNavigationPaths, moreServicesExcludedPaths } from '@moxt/shared';
 import { selectUnreadMessageCount } from '@/store/messages';
 
@@ -7,6 +14,7 @@ export type MoreServiceItem = {
   path: string;
   mobileRoute: string;
   emoji: string;
+  Icon: LucideIcon;
   badgeSelector?: 'messages' | 'notifications';
   roles?: string[];
 };
@@ -35,6 +43,7 @@ const WEB_TO_MOBILE: Record<string, string> = {
   '/messages': '/messages',
   '/notifications': '/notifications',
   '/favorites': '/favorites',
+  '/referral': '/referral',
   '/publications/mine': '/listing/mine',
   '/marketplace/mine': '/listing/mine',
   '/profile': '/profile/edit',
@@ -48,6 +57,7 @@ function item(
   label: string,
   path: string,
   emoji: string,
+  Icon: LucideIcon,
   extra?: Partial<MoreServiceItem>,
 ): MoreServiceItem {
   return {
@@ -56,6 +66,7 @@ function item(
     path,
     mobileRoute: WEB_TO_MOBILE[path] ?? path,
     emoji,
+    Icon,
     ...extra,
   };
 }
@@ -65,51 +76,52 @@ export const navigationGroups: MoreServiceGroup[] = [
   {
     id: 'home',
     label: 'Accueil',
-    children: [item('dashboard', 'Accueil', '/dashboard', '🏠')],
+    children: [item('dashboard', 'Accueil', '/dashboard', '🏠', Home)],
   },
   {
     id: 'finance',
     label: 'Finances',
     children: [
-      item('transfers', 'Transfert', '/transfers', '💱'),
-      item('p2p', 'Echanges P2P', '/p2p', '🔄'),
-      item('exchangers', 'Échangeurs', '/exchangers', '🤝'),
+      item('transfers', 'Transfert', '/transfers', '💱', ArrowLeftRight),
+      item('p2p', 'Echanges P2P', '/p2p', '🔄', Repeat),
+      item('exchangers', 'Échangeurs', '/exchangers', '🤝', Handshake),
     ],
   },
   {
     id: 'services',
     label: 'Services',
     children: [
-      item('businesses', 'Entreprises', '/businesses', '🏢'),
-      item('professional', 'Espace professionnel', '/professional', '💼'),
-      item('parcels', 'Colis', '/parcels', '📦'),
-      item('marketplace', 'Marketplace', '/marketplace', '🛍️'),
+      item('businesses', 'Entreprises', '/businesses', '🏢', Building2),
+      item('professional', 'Espace professionnel', '/professional', '💼', BriefcaseBusiness),
+      item('parcels', 'Colis', '/parcels', '📦', Package),
+      item('marketplace', 'Marketplace', '/marketplace', '🛍️', ShoppingBag),
     ],
   },
   {
     id: 'community',
     label: 'Communauté',
     children: [
-      item('news', 'Actualités', '/news', '📰'),
-      item('jobs', 'Jobs', '/jobs', '💼'),
-      item('events', 'Evenements', '/events', '📅'),
+      item('news', 'Actualités', '/news', '📰', Newspaper),
+      item('jobs', 'Jobs', '/jobs', '💼', Briefcase),
+      item('events', 'Evenements', '/events', '📅', CalendarDays),
     ],
   },
   {
     id: 'communication',
     label: 'Communication',
     children: [
-      item('messages', 'Messagerie', '/messages', '💬', { badgeSelector: 'messages' }),
-      item('notifications', 'Notifications', '/notifications', '🔔', { badgeSelector: 'notifications' }),
+      item('messages', 'Messagerie', '/messages', '💬', MessageSquare, { badgeSelector: 'messages' }),
+      item('notifications', 'Notifications', '/notifications', '🔔', Bell, { badgeSelector: 'notifications' }),
     ],
   },
   {
     id: 'account',
     label: 'Compte',
     children: [
-      item('favorites', 'Mes favoris', '/favorites', '❤️'),
-      item('my-publications', 'Mes publications', '/publications/mine', '📋'),
-      item('subscriptions', 'Mes abonnements', '/subscriptions', '🔔'),
+      item('favorites', 'Mes favoris', '/favorites', '❤️', Heart),
+      item('referral', 'Inviter un ami', '/referral', '🎁', Gift),
+      item('my-publications', 'Mes publications', '/publications/mine', '📋', FileText),
+      item('subscriptions', 'Mes abonnements', '/subscriptions', '🔔', BellRing),
     ],
   },
   {
@@ -117,11 +129,11 @@ export const navigationGroups: MoreServiceGroup[] = [
     label: 'Administration',
     roles: ['admin', 'superadmin'],
     children: [
-      item('admin', 'Centre de contrôle', '/admin', '⚙️', { roles: ['admin', 'superadmin'] }),
-      item('feature-matrix', 'Couverture fonctionnelle', '/feature-matrix', '📊', {
+      item('admin', 'Centre de contrôle', '/admin', '⚙️', SlidersHorizontal, { roles: ['admin', 'superadmin'] }),
+      item('feature-matrix', 'Couverture fonctionnelle', '/feature-matrix', '📊', BarChart3, {
         roles: ['admin', 'superadmin'],
       }),
-      item('superadmin', 'Pilotage système', '/superadmin', '🛡️', { roles: ['superadmin'] }),
+      item('superadmin', 'Pilotage système', '/superadmin', '🛡️', ShieldCheck, { roles: ['superadmin'] }),
     ],
   },
 ];

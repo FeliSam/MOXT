@@ -11,26 +11,24 @@ function MoreServiceTile({ badge, item, onNavigate, translateLabel }) {
       onFocus={() => preloadRoute(item.path)}
       onMouseEnter={() => preloadRoute(item.path)}
       className={({ isActive }) =>
-        `relative flex min-h-[5.25rem] flex-col justify-between rounded-[var(--radius-card)] border p-3 transition-all duration-[var(--transition-fast)] ${
+        `relative flex min-h-[3.5rem] items-center gap-2.5 rounded-[var(--radius-card)] border p-2.5 transition-all duration-[var(--transition-fast)] ${
           isActive
             ? 'border-[var(--app-accent)] bg-[var(--app-accent-soft)] shadow-[var(--shadow-card)]'
             : 'border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--shadow-card)] hover:border-brand-200 hover:shadow-[var(--shadow-card-hover)] dark:hover:border-brand-800'
         }`
       }
     >
-      <span className="flex items-start justify-between gap-1">
-        <span className="grid size-9 shrink-0 place-items-center rounded-[0.7rem] bg-[var(--app-surface-muted)] text-[var(--app-accent)] dark:text-[var(--app-teal)]">
-          <Icon className="text-lg" aria-hidden="true" />
-        </span>
-        {badge > 0 ? (
-          <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-bold leading-none text-white">
-            {badge > 9 ? '9+' : badge}
-          </span>
-        ) : null}
+      <span className="grid size-9 shrink-0 place-items-center rounded-[0.7rem] bg-[var(--app-surface-muted)] text-[var(--app-accent)] dark:text-[var(--app-teal)]">
+        <Icon className="text-lg" aria-hidden="true" />
       </span>
-      <span className="line-clamp-2 text-xs font-semibold leading-snug text-[var(--app-text)]">
+      <span className="min-w-0 flex-1 line-clamp-2 text-xs font-semibold leading-snug text-[var(--app-text)]">
         {translateLabel(item.label)}
       </span>
+      {badge > 0 ? (
+        <span className="shrink-0 rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-bold leading-none text-white">
+          {badge > 9 ? '9+' : badge}
+        </span>
+      ) : null}
     </NavLink>
   )
 }

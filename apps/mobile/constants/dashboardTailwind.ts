@@ -1,7 +1,7 @@
 import { Dimensions } from 'react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import {
-  Megaphone, PackagePlus, Briefcase, CalendarPlus,
+  Megaphone, PackagePlus, Briefcase, CalendarPlus, Send,
   ArrowLeftRight, ShoppingBag, Package, Handshake, Repeat, Building2, CalendarDays, Newspaper,
 } from 'lucide-react-native';
 
@@ -188,6 +188,7 @@ export const badgeTones: Record<string, string> = {
 export const QUICK_ACTIONS: {
   Icon: LucideIcon; tint: string; label: string; description: string; route: string;
 }[] = [
+  { Icon: Send, tint: '#0b8975', label: 'Créer un transfert', description: 'Envoyer de l’argent en quelques étapes', route: '/transfer/wizard' },
   { Icon: Megaphone, tint: '#08705f', label: 'Publier une annonce', description: 'Produit, service ou location', route: '/listing/create' },
   { Icon: PackagePlus, tint: '#245de8', label: 'Envoyer un colis', description: 'Trouver ou proposer un trajet', route: '/parcels' },
   { Icon: Briefcase, tint: '#b45309', label: 'Publier un job', description: 'Mission ou opportunité', route: '/jobs' },
@@ -196,12 +197,14 @@ export const QUICK_ACTIONS: {
 
 export const QUICK_ACCENTS_LIGHT: [string, string][] = [
   ['#ecfdf5', '#f0fdfa'],
+  ['#ecfdf5', '#f0fdfa'],
   ['#eff6ff', '#ecfeff'],
   ['#fffbeb', '#fff7ed'],
   ['#f5f3ff', '#fdf4ff'],
 ];
 
 export const QUICK_ACCENTS_DARK: [string, string][] = [
+  ['rgba(6,78,59,0.40)', 'rgba(19,78,74,0.30)'],
   ['rgba(6,78,59,0.40)', 'rgba(19,78,74,0.30)'],
   ['rgba(30,58,138,0.40)', 'rgba(22,78,99,0.30)'],
   ['rgba(69,26,3,0.40)', 'rgba(67,20,7,0.30)'],

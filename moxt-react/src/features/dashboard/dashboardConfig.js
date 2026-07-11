@@ -1,5 +1,12 @@
 export const quickActions = [
   {
+    label: 'Créer un transfert',
+    description: 'Envoyer de l’argent en quelques étapes',
+    path: '/transfers',
+    image: '/assets/services/3d/service-transfer.png',
+    imageLogo: '/assets/services/service-transfer.png',
+  },
+  {
     label: 'Publier une annonce',
     description: 'Produit, service ou location',
     path: '/marketplace/publish',
@@ -105,6 +112,7 @@ export const coreServices = [
 ]
 
 export const quickActionAccents = [
+  'from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/30',
   'from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/30',
   'from-blue-50 to-cyan-50 dark:from-blue-950/40 dark:to-cyan-950/30',
   'from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30',

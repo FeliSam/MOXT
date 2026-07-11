@@ -25,20 +25,30 @@ const uiSlice = createSlice({
       reducer(state, action) {
         const duplicate = state.toasts.some(
           (toast) =>
-            toast.title === action.payload.title &&
-            toast.message === action.payload.message &&
-            toast.tone === action.payload.tone,
+            toast.id === action.payload.id ||
+            (toast.title === action.payload.title &&
+              toast.message === action.payload.message &&
+              toast.tone === action.payload.tone),
         )
         if (duplicate) return
         state.toasts.push(action.payload)
       },
-      prepare({ message, title, tone = 'info' }) {
+      prepare({
+        message,
+        title,
+        tone = 'info',
+        link = null,
+        engagement = false,
+        id,
+      }) {
         return {
           payload: {
-            id: `TOAST-${Date.now().toString(36).toUpperCase()}`,
+            id: id || `TOAST-${Date.now().toString(36).toUpperCase()}`,
             message,
             title,
             tone,
+            link,
+            engagement,
           },
         }
       },
