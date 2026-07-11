@@ -21,6 +21,9 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'scripts/deploy-yandex.mjs'
+      - 'scripts/verify-deploy-version.mjs'
+      - 'scripts/lib/yandex-upload.mjs'
+      - 'scripts/lib/yandex-cdn.mjs'
       - '.github/workflows/deploy-yandex.yml'
   workflow_dispatch:
 
@@ -43,6 +46,7 @@ jobs:
 
       - name: Build web (production)
         env:
+          GITHUB_SHA: ${{ github.sha }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run web:build
@@ -81,3 +85,8 @@ jobs:
           MOXT_CDN_RESOURCE_ID: ${{ vars.MOXT_CDN_RESOURCE_ID }}
           YC_BIN: yc
         run: node scripts/deploy-yandex.mjs --skip-build --purge-cdn
+
+      - name: Smoke test version.json
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: node scripts/verify-deploy-version.mjs

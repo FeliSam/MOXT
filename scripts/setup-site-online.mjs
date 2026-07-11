@@ -13,11 +13,13 @@ import { loadPhase2Env, root, upsertPhase2Env } from './lib/env.mjs'
 import { ensureYc, ycJson } from './lib/yandex.mjs'
 import { finalizeSpaCdn, purgeCdnCache } from './lib/yandex-cdn.mjs'
 import { ensureCdnDns, loadRegruCredentials } from './lib/regru.mjs'
+import { syncSiteDns } from './sync-site-dns.mjs'
 
 const domain = (process.env.MOXT_DOMAIN || 'moxtapp.ru').replace(/\.$/, '')
 const wwwDomain = `www.${domain}`
 const skipBuild = process.argv.includes('--skip-build')
 const checkOnly = process.argv.includes('--check-only')
+const dnsOnly = process.argv.includes('--dns-only')
 
 function log(title, detail = '') {
   console.log(`\n▸ ${title}${detail ? `\n  ${detail}` : ''}`)
@@ -38,6 +40,12 @@ async function main() {
   console.log('══════════════════════════════════════')
 
   if (checkOnly) {
+    await runChecks()
+    return
+  }
+
+  if (dnsOnly) {
+    await syncSiteDns()
     await runChecks()
     return
   }

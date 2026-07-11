@@ -18,6 +18,7 @@ import { findCdnResource } from './lib/yandex-cdn.mjs'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const saKeyPath = path.join(root, 'scripts', 'github-deploy-sa.json')
 const envProdPath = path.join(root, 'moxt-react', '.env.production')
+const phase2EnvPath = path.join(root, 'scripts', 'phase2.env')
 
 let token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN
 
@@ -207,8 +208,14 @@ async function main() {
   }
 
   const envProd = parseEnvFile(envProdPath)
+  const phase2 = parseEnvFile(phase2EnvPath)
   const supabaseUrl = process.env.VITE_SUPABASE_URL || envProd.VITE_SUPABASE_URL
   const supabaseAnon = process.env.VITE_SUPABASE_ANON_KEY || envProd.VITE_SUPABASE_ANON_KEY
+  const supabaseDbPassword =
+    process.env.SUPABASE_DB_PASSWORD || phase2.SUPABASE_DB_PASSWORD || phase2.MOXT_SUPABASE_DB_PASSWORD
+  const supabaseAccessToken = process.env.SUPABASE_ACCESS_TOKEN || phase2.SUPABASE_ACCESS_TOKEN
+  const regruUsername = process.env.MOXT_REGRU_USERNAME || phase2.MOXT_REGRU_USERNAME
+  const regruPassword = process.env.MOXT_REGRU_PASSWORD || phase2.MOXT_REGRU_PASSWORD
 
   if (!supabaseUrl || !supabaseAnon) {
     throw new Error('VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY introuvables (moxt-react/.env.production)')
@@ -223,6 +230,25 @@ async function main() {
   await setSecret('VITE_SUPABASE_URL', supabaseUrl)
   await setSecret('VITE_SUPABASE_ANON_KEY', supabaseAnon)
 
+  if (supabaseDbPassword) {
+    await setSecret('SUPABASE_DB_PASSWORD', supabaseDbPassword)
+  } else {
+    console.log('  ⚠ secret SUPABASE_DB_PASSWORD ignoré (absent de scripts/phase2.env)')
+  }
+
+  if (supabaseAccessToken) {
+    await setSecret('SUPABASE_ACCESS_TOKEN', supabaseAccessToken)
+  } else {
+    console.log('  ⚠ secret SUPABASE_ACCESS_TOKEN ignoré (dashboard Supabase → Account → Tokens)')
+  }
+
+  if (regruUsername && regruPassword) {
+    await setSecret('MOXT_REGRU_USERNAME', regruUsername)
+    await setSecret('MOXT_REGRU_PASSWORD', regruPassword)
+  } else {
+    console.log('  ⚠ secrets REG.RU ignorés (MOXT_REGRU_* dans scripts/phase2.env)')
+  }
+
   log('Variables Actions')
   await setVariable('MOXT_CDN_RESOURCE_ID', cdnResourceId)
   await setVariable('MOXT_YC_BUCKET', bucket)
@@ -230,7 +256,9 @@ async function main() {
   console.log('\n══════════════════════════════════════')
   console.log('  GitHub Actions configuré')
   console.log('══════════════════════════════════════')
-  console.log('\n  Push sur main → déploiement automatique Yandex')
+  console.log('\n  Push sur main → déploiement automatique Yandex + smoke test version.json')
+  console.log('  Migrations SQL → workflow Supabase — migrations (si supabase/ change)')
+  console.log('  DNS REG.RU (local) → npm run setup:site-dns')
   console.log('  Test manuel : Actions → Deploy — Yandex Cloud → Run workflow\n')
 }
 

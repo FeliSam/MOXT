@@ -71,6 +71,8 @@ async function main() {
 
   const env = {
     ...process.env,
+    SUPABASE_ACCESS_TOKEN:
+      process.env.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN || '',
     MOXT_POSTBOX_SMTP_USER: vars.MOXT_POSTBOX_SMTP_USER || process.env.MOXT_POSTBOX_SMTP_USER,
     MOXT_POSTBOX_SMTP_PASS: vars.MOXT_POSTBOX_SMTP_PASS || process.env.MOXT_POSTBOX_SMTP_PASS,
     MOXT_POSTBOX_FROM: vars.MOXT_POSTBOX_FROM || process.env.MOXT_POSTBOX_FROM,
@@ -91,7 +93,15 @@ async function main() {
     console.error('  Dashboard Supabase → Project Settings → Database → Database password')
     console.error('\n  Puis :')
     console.error('    $env:SUPABASE_DB_PASSWORD="votre_mot_de_passe"; npm run db:push')
-    console.error('  Ou ajoutez SUPABASE_DB_PASSWORD=... dans scripts/phase2.env')
+    console.error('  Ou ajoutez SUPABASE_DB_PASSWORD dans scripts/phase2.env ou secrets GitHub')
+    process.exit(1)
+  }
+
+  const isCi = Boolean(process.env.CI || process.env.GITHUB_ACTIONS)
+  if (isCi && !env.SUPABASE_ACCESS_TOKEN) {
+    console.error('\n✗ SUPABASE_ACCESS_TOKEN requis pour db push en CI.')
+    console.error('  https://supabase.com/dashboard/account/tokens')
+    console.error('  Puis : npm run setup:github-secrets')
     process.exit(1)
   }
 
