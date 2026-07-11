@@ -59,7 +59,9 @@ enable_confirmations = false
 [auth.hook.send_sms]
 enabled = true
 uri = "https://rbvqfkccbkwjxkvpnwqn.supabase.co/functions/v1/send-sms"
-secrets = "env(SEND_SMS_HOOK_SECRET)"
+# Placeholder valide pour Supabase Preview / CI sans secret.
+# sync-production remplace cette valeur par SEND_SMS_HOOK_SECRET avant config push.
+secrets = "v1,whsec_MOXTDbPreviewHookPlaceholderSecret000"
 
 [api]
 enabled = true
