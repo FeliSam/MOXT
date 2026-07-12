@@ -45,15 +45,16 @@ jobs:
           if [ -n "$MOXT_POSTBOX_SMTP_USER" ] && [ -n "$MOXT_POSTBOX_SMTP_PASS" ] && [ -n "$MOXT_POSTBOX_FROM" ]; then
             npx supabase config push --yes
           elif [ -n "$SEND_SMS_HOOK_SECRET" ]; then
-            npx supabase config push --yes
+            echo "Postbox absent — config push ignoré (SMTP requis dans config.toml)"
           else
-            echo "Postbox absent — config push ignoré (hook secret requis)"
+            echo "Postbox et hook SMS absents — config push ignoré"
           fi
 
       - name: Apply database migrations
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SEND_SMS_HOOK_SECRET: ${{ secrets.SEND_SMS_HOOK_SECRET }}
         run: npm run db:push
 
       - name: Set Edge Function secrets

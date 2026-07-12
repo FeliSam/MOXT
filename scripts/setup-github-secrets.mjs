@@ -216,6 +216,14 @@ async function main() {
   const supabaseAccessToken = process.env.SUPABASE_ACCESS_TOKEN || phase2.SUPABASE_ACCESS_TOKEN
   const regruUsername = process.env.MOXT_REGRU_USERNAME || phase2.MOXT_REGRU_USERNAME
   const regruPassword = process.env.MOXT_REGRU_PASSWORD || phase2.MOXT_REGRU_PASSWORD
+  const sendSmsHookSecret = process.env.SEND_SMS_HOOK_SECRET || phase2.SEND_SMS_HOOK_SECRET
+  const smscLogin = process.env.SMSC_LOGIN || phase2.SMSC_LOGIN
+  const smscPassword = process.env.SMSC_PASSWORD || phase2.SMSC_PASSWORD
+  const smscSender = process.env.SMSC_SENDER || phase2.SMSC_SENDER
+  const smscWebhookSecret = process.env.SMSC_WEBHOOK_SECRET || phase2.SMSC_WEBHOOK_SECRET
+  const postboxUser = process.env.MOXT_POSTBOX_SMTP_USER || phase2.MOXT_POSTBOX_SMTP_USER
+  const postboxPass = process.env.MOXT_POSTBOX_SMTP_PASS || phase2.MOXT_POSTBOX_SMTP_PASS
+  const postboxFrom = process.env.MOXT_POSTBOX_FROM || phase2.MOXT_POSTBOX_FROM
 
   if (!supabaseUrl || !supabaseAnon) {
     throw new Error('VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY introuvables (moxt-react/.env.production)')
@@ -247,6 +255,28 @@ async function main() {
     await setSecret('MOXT_REGRU_PASSWORD', regruPassword)
   } else {
     console.log('  ⚠ secrets REG.RU ignorés (MOXT_REGRU_* dans scripts/phase2.env)')
+  }
+
+  if (sendSmsHookSecret) {
+    await setSecret('SEND_SMS_HOOK_SECRET', sendSmsHookSecret)
+  } else {
+    console.log('  ⚠ secret SEND_SMS_HOOK_SECRET ignoré (absent de scripts/phase2.env)')
+  }
+
+  if (smscLogin) await setSecret('SMSC_LOGIN', smscLogin)
+  if (smscPassword) await setSecret('SMSC_PASSWORD', smscPassword)
+  if (smscSender) await setSecret('SMSC_SENDER', smscSender)
+  if (smscWebhookSecret) await setSecret('SMSC_WEBHOOK_SECRET', smscWebhookSecret)
+  if (!smscLogin || !smscPassword) {
+    console.log('  ⚠ secrets SMSC partiels (SMSC_LOGIN / SMSC_PASSWORD dans scripts/phase2.env)')
+  }
+
+  if (postboxUser && postboxPass && postboxFrom) {
+    await setSecret('MOXT_POSTBOX_SMTP_USER', postboxUser)
+    await setSecret('MOXT_POSTBOX_SMTP_PASS', postboxPass)
+    await setSecret('MOXT_POSTBOX_FROM', postboxFrom)
+  } else {
+    console.log('  ⚠ secrets Postbox ignorés (MOXT_POSTBOX_* dans scripts/phase2.env)')
   }
 
   log('Variables Actions')
