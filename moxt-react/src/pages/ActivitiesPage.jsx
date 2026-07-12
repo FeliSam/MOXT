@@ -56,7 +56,7 @@ export function ActivitiesPage() {
         .map((reservation, index) => ({
           id: `parcel-${parcel.id}-${index}`,
           title: `${parcel.origin} vers ${parcel.destination}`,
-          label: `Reservation ${reservation.kg} kg`,
+          label: `Réservation ${reservation.kg} kg`,
           path: `/parcels/${parcel.id}`,
           icon: FiPackage,
         })),
@@ -73,31 +73,34 @@ export function ActivitiesPage() {
   ]
 
   return (
-    <div className="grid gap-7">
+    <div className="grid min-w-0 max-w-full gap-6 sm:gap-7">
       <PageHeader
         eyebrow="Compte"
-        title="Mes activites"
-        description="Favoris, candidatures, inscriptions, reservations et conversations."
+        title="Mes activités"
+        description="Favoris, candidatures, inscriptions, réservations et conversations."
         actions={<BackButton appearance="link" />}
       />
       {activities.length ? (
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid min-w-0 gap-3 sm:grid-cols-2 sm:gap-4">
           {activities.map(({ icon: Icon, id: activityId, label, path, title }) => (
-            <Link key={activityId} className="block h-full" to={path}>
-              <Card className="flex h-full items-center gap-4 transition hover:border-brand-400">
-                <span className="grid size-11 place-items-center rounded-xl bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300">
-                  <Icon />
+            <Link key={activityId} className="block h-full min-w-0 max-w-full" to={path}>
+              <Card
+                variant="interactive"
+                className="flex h-full min-w-0 items-center gap-3 overflow-hidden !p-3 sm:gap-4 sm:!p-4"
+              >
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300 sm:size-11">
+                  <Icon className="text-base sm:text-lg" aria-hidden="true" />
                 </span>
-                <div className="min-w-0">
-                  <strong className="block truncate">{title}</strong>
-                  <Badge>{label}</Badge>
+                <div className="min-w-0 flex-1">
+                  <strong className="block truncate text-sm font-bold sm:text-base">{title}</strong>
+                  <Badge className="mt-1.5 max-w-full truncate">{label}</Badge>
                 </div>
               </Card>
             </Link>
           ))}
         </div>
       ) : (
-        <EmptyState title="Aucune activite" description="Vos interactions apparaitront ici." />
+        <EmptyState title="Aucune activité" description="Vos interactions apparaîtront ici." />
       )}
     </div>
   )

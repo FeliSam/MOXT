@@ -94,44 +94,65 @@ export function PublicationsPanel({ dispatch, publications }) {
         return (
           <Card
             key={`${item.contentType}-${item.id}`}
-            className="relative flex flex-wrap items-center gap-4"
+            className="relative min-w-0 overflow-hidden !p-3 sm:!p-5"
           >
-            <span className="absolute right-2 top-2 z-10">
-              <Badge tone={meta.tone} className="!px-1.5 !py-0.5 !text-[9px]">{meta.label}</Badge>
+            <span className="absolute right-2 top-2 z-10 max-w-[calc(100%-1rem)]">
+              <Badge tone={meta.tone} className="!px-1.5 !py-0.5 !text-[9px]">
+                {meta.label}
+              </Badge>
             </span>
-            {item.images?.[0] ? (
-              <img
-                src={item.images[0]}
-                alt={item.title}
-                className="hidden size-20 rounded-2xl object-cover sm:block"
-                loading="lazy"
-              />
-            ) : null}
-            <div className="min-w-0 flex-1">
-              <strong>{item.title || `${item.origin} vers ${item.destination}`}</strong>
-              <p className="text-xs text-[var(--app-text-muted)]">{item.contentType}</p>
+            <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+              <div className="flex min-w-0 flex-1 items-start gap-3 pr-14 sm:pr-0">
+                {item.images?.[0] ? (
+                  <img
+                    src={item.images[0]}
+                    alt={item.title}
+                    className="size-16 shrink-0 rounded-2xl object-cover sm:size-20"
+                    loading="lazy"
+                  />
+                ) : null}
+                <div className="min-w-0 flex-1">
+                  <strong className="block break-words text-sm sm:text-base">
+                    {item.title || `${item.origin} vers ${item.destination}`}
+                  </strong>
+                  <p className="mt-0.5 truncate text-xs text-[var(--app-text-muted)]">
+                    {item.contentType}
+                  </p>
+                </div>
+              </div>
+              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
+                <Link to={`${contentPath[item.contentType]}/${item.id}`} className="min-w-0">
+                  <Button variant="secondary" className="w-full sm:w-auto">
+                    Voir
+                  </Button>
+                </Link>
+                {editPath[item.contentType] ? (
+                  <Link to={editPath[item.contentType](item.id)} className="min-w-0">
+                    <Button variant="secondary" className="w-full sm:w-auto">
+                      Modifier
+                    </Button>
+                  </Link>
+                ) : null}
+                {update ? (
+                  <>
+                    <Button
+                      variant="secondary"
+                      className="w-full sm:w-auto"
+                      onClick={() => update(item.id, canPublish ? 'active' : 'suspended')}
+                    >
+                      {canPublish ? 'Publier' : 'Suspendre'}
+                    </Button>
+                    <Button
+                      variant="danger"
+                      className="w-full sm:w-auto"
+                      onClick={() => update(item.id, 'archived')}
+                    >
+                      Archiver
+                    </Button>
+                  </>
+                ) : null}
+              </div>
             </div>
-            <Link to={`${contentPath[item.contentType]}/${item.id}`}>
-              <Button variant="secondary">Voir</Button>
-            </Link>
-            {editPath[item.contentType] ? (
-              <Link to={editPath[item.contentType](item.id)}>
-                <Button variant="secondary">Modifier</Button>
-              </Link>
-            ) : null}
-            {update ? (
-              <>
-                <Button
-                  variant="secondary"
-                  onClick={() => update(item.id, canPublish ? 'active' : 'suspended')}
-                >
-                  {canPublish ? 'Publier' : 'Suspendre'}
-                </Button>
-                <Button variant="danger" onClick={() => update(item.id, 'archived')}>
-                  Archiver
-                </Button>
-              </>
-            ) : null}
           </Card>
         )
       })}

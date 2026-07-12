@@ -202,7 +202,7 @@ export function ProfessionalPage() {
   }
 
   return (
-    <div className="grid gap-7">
+    <div className="grid min-w-0 max-w-full gap-7">
       <PageHeader
         eyebrow="Espace professionnel"
         title={business.name}
