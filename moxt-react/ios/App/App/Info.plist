@@ -49,6 +49,12 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>MOXT utilise la caméra pour scanner les QR codes de profils, entreprises et invitations.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>MOXT accède à vos photos pour joindre des pièces justificatives ou des images à vos publications.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

@@ -131,4 +131,49 @@ export const en = {
     typing: 'typing',
     typingAria: '{name} is typing',
   },
+  legal: {
+    pageEyebrow: 'Legal information',
+    copyright: '© {year} MOXT. All rights reserved.',
+    footer:
+      'MOXT platform — Afro-Russian diaspora. Use services carefully and verify your contacts.',
+    nav: {
+      mentions: 'Legal notice',
+      cgu: 'Terms of use',
+      privacy: 'Privacy',
+    },
+    sections: {
+      mentions: {
+        title: 'Legal notice',
+        paragraphs: [
+          'MOXT is a digital services platform for the Afro-Russian diaspora (transfers, parcels, marketplace, jobs, events and messaging).',
+          'Service publisher: MOXT. Contact: support@moxtapp.ru.',
+          'Hosting and data processing: secure cloud infrastructure compliant with applicable personal data protection requirements.',
+          'For any legal question or complaint, email support@moxtapp.ru with your account identifier.',
+        ],
+      },
+      cgu: {
+        title: 'Terms of use',
+        paragraphs: [
+          'By creating a MOXT account, you agree to use the platform fairly, provide accurate information and comply with verification rules (phone, identity, business where applicable).',
+          'You agree not to publish fraudulent, misleading, unlawful content or content that infringes third-party rights. MOXT may suspend or delete an account in case of serious or repeated violations.',
+          'Sensitive operations (transfers, professional accounts, business publications) may require verified identity. An in-app declaration does not replace official payment or legal status confirmation.',
+          'MOXT connects members and facilitates communication; each user remains responsible for their commitments, payments and exchanges with other members.',
+          'MOXT may update these terms; the current version is available in the app. Continued use after an update constitutes acceptance of the new terms.',
+        ],
+      },
+      privacy: {
+        title: 'Privacy policy',
+        paragraphs: [
+          'This policy describes how MOXT collects and uses your data when you use the website and mobile app (Android / iOS via Capacitor).',
+          'Account data: identity, email, phone number, preferences, platform activity history, identity or business verification documents when you voluntarily provide them.',
+          'Camera: used only to scan MOXT QR codes (profiles, businesses, invitations) when you open the Scanner tab. The camera is not activated in the background and is not used for geolocation.',
+          'Push notifications (mobile app): if you enable them, a technical device identifier (FCM / APNs token) is generated to send you alerts (messages, transfers, subscriptions, etc.). You can disable push notifications in MOXT settings or in your phone settings.',
+          'Photos and files: when verifying identity, publishing listings or uploading proofs, you may select images from your device. MOXT does not read your SMS and does not access your GPS location.',
+          'Explicitly excluded permissions: MOXT does not request precise location access or SMS read access on Android.',
+          'Retention and deletion: a verified email or phone number may be used for at most two accounts. You may request account deletion from settings; some data may be retained as required by law or for platform security.',
+          'Your rights: you may access, correct or request deletion of your data by contacting support@moxtapp.ru.',
+        ],
+      },
+    },
+  },
 }

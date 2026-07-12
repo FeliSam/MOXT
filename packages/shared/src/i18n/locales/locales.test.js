@@ -32,6 +32,7 @@ describe('locales t()', () => {
       expect(locale.share.steps.step1Title).toBeTruthy()
       expect(locale.messages.syncing).toBeTruthy()
       expect(locale.auth.register.codeResentTitle).toBeTruthy()
+      expect(locale.legal.sections.privacy.paragraphs.length).toBeGreaterThan(3)
     }
   })
 })

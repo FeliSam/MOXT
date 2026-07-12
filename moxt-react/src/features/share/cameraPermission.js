@@ -1,10 +1,20 @@
+import {
+  queryNativeCameraPermission,
+  requestNativeCameraPermission,
+} from '../../platform/nativePermissions'
+import { isNative } from '../../platform/capacitor'
+
 /**
  * État de permission caméra pour le scanner QR.
  * @returns {'granted'|'denied'|'prompt'|'unsupported'}
  */
 export async function queryCameraPermission() {
-  if (!navigator.mediaDevices?.getUserMedia) return 'unsupported'
+  if (isNative) {
+    const nativeState = await queryNativeCameraPermission()
+    if (nativeState) return nativeState
+  }
 
+  if (!navigator.mediaDevices?.getUserMedia) return 'unsupported'
   try {
     if (navigator.permissions?.query) {
       const result = await navigator.permissions.query({ name: 'camera' })
@@ -22,6 +32,12 @@ export async function queryCameraPermission() {
  * Libère immédiatement le flux après accord — le scanner rouvrira sa propre session.
  */
 export async function requestCameraAccess() {
+  if (isNative) {
+    const nativeResult = await requestNativeCameraPermission()
+    if (nativeResult?.granted) return { granted: true }
+    if (nativeResult?.reason === 'denied') return nativeResult
+  }
+
   if (!navigator.mediaDevices?.getUserMedia) {
     return { granted: false, reason: 'unsupported' }
   }

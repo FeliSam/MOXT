@@ -19,6 +19,8 @@ import {
   updateAccountPreferences,
 } from '../features/account/accountSlice'
 import { addToast } from '../features/ui/uiSlice'
+import { isNative } from '../platform/capacitor'
+import { syncNativePushPreference } from '../platform/pushNotifications'
 
 export function SettingsPage() {
   const dispatch = useDispatch()
@@ -41,6 +43,20 @@ export function SettingsPage() {
         preferences: { [name]: value },
       }),
     )
+
+    if (name === 'pushNotifications' && isNative) {
+      void syncNativePushPreference(Boolean(value)).then((result) => {
+        if (value && result.reason === 'denied') {
+          dispatch(
+            addToast({
+              tone: 'warning',
+              title: 'Notifications refusées',
+              message: 'Autorisez les notifications MOXT dans les réglages de votre téléphone.',
+            }),
+          )
+        }
+      })
+    }
   }
 
   function exportOwnData() {

@@ -116,27 +116,6 @@ export const DISCOVERY_TYPES = [
   { value: 'event', label: 'Événements' },
 ]
 
-export const LEGAL_SECTIONS = [
-  {
-    id: 'mentions',
-    title: 'Mentions légales',
-    content:
-      'MOXT est une plateforme de services pour la diaspora afro-russe. L’éditeur du service est responsable du traitement des données conformément à la réglementation applicable. Contact : support@moxtapp.ru.',
-  },
-  {
-    id: 'cgu',
-    title: 'Conditions générales d’utilisation',
-    content:
-      'En créant un compte, vous acceptez d’utiliser MOXT de manière loyale, de fournir des informations exactes et de respecter les règles de vérification (téléphone, identité). Toute publication frauduleuse peut entraîner la suspension du compte.',
-  },
-  {
-    id: 'privacy',
-    title: 'Politique de confidentialité',
-    content:
-      'MOXT collecte les données nécessaires au compte (identité, téléphone, documents de vérification) et à la fourniture des services. Un e-mail ou numéro vérifié ne peut servir qu’à deux comptes au maximum ; après suppression, une réinscription est possible avec les mêmes identifiants. Vous pouvez demander la suppression de votre compte depuis les paramètres.',
-  },
-]
-
 export const PUBLIC_RECENT_LIMIT = 6
 
 export { FiCalendar }

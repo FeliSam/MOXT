@@ -70,6 +70,14 @@ export async function initCapacitor() {
   })
 
   await bindDeepLinks(App)
+
+  try {
+    const { initNativePushNotifications } = await import('./pushNotifications')
+    await initNativePushNotifications()
+  } catch {
+    /* push optionnel sans google-services.json */
+  }
+
   await SplashScreen.hide()
 }
 

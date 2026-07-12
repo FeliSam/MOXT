@@ -132,4 +132,49 @@ export const pt = {
     typing: 'a escrever',
     typingAria: '{name} está a escrever',
   },
+  legal: {
+    pageEyebrow: 'Informações legais',
+    copyright: '© {year} MOXT. Todos os direitos reservados.',
+    footer:
+      'Plataforma MOXT — diáspora afro-russa. Use os serviços com cautela e verifique os seus contactos.',
+    nav: {
+      mentions: 'Avisos legais',
+      cgu: 'Termos de uso',
+      privacy: 'Privacidade',
+    },
+    sections: {
+      mentions: {
+        title: 'Avisos legais',
+        paragraphs: [
+          'MOXT é uma plataforma digital de serviços para a diáspora afro-russa (transferências, encomendas, marketplace, empregos, eventos e comunicação).',
+          'Editor do serviço: MOXT. Contacto: support@moxtapp.ru.',
+          'Alojamento e tratamento de dados: infraestrutura cloud segura em conformidade com os requisitos aplicáveis de proteção de dados pessoais.',
+          'Para questões jurídicas ou reclamações, escreva para support@moxtapp.ru indicando o identificador da sua conta.',
+        ],
+      },
+      cgu: {
+        title: 'Termos de uso',
+        paragraphs: [
+          'Ao criar uma conta MOXT, aceita utilizar a plataforma de forma leal, fornecer informações exatas e respeitar as regras de verificação (telefone, identidade, empresa quando aplicável).',
+          'Compromete-se a não publicar conteúdos fraudulentos, enganosos, ilegais ou que violem direitos de terceiros. O MOXT pode suspender ou eliminar uma conta em caso de violação grave ou repetida.',
+          'Operações sensíveis (transferências, contas profissionais, publicações em nome de empresa) podem exigir identidade verificada. Uma declaração na aplicação não substitui confirmação oficial de pagamento ou estatuto jurídico.',
+          'O MOXT aproxima membros e facilita a comunicação; cada utilizador permanece responsável pelos seus compromissos, pagamentos e trocas com outros membros.',
+          'O MOXT pode atualizar estes termos; a versão em vigor está acessível na aplicação. A utilização continuada após atualização constitui aceitação dos novos termos.',
+        ],
+      },
+      privacy: {
+        title: 'Política de privacidade',
+        paragraphs: [
+          'Esta política descreve como o MOXT recolhe e utiliza os seus dados quando usa o site e a aplicação móvel (Android / iOS via Capacitor).',
+          'Dados de conta: identidade, e-mail, número de telefone, preferências, histórico de atividade na plataforma, documentos de verificação de identidade ou empresa quando os fornece voluntariamente.',
+          'Câmara: utilizada apenas para digitalizar códigos QR MOXT (perfis, empresas, convites) quando abre o separador Digitalizar. A câmara não é ativada em segundo plano nem é usada para geolocalização.',
+          'Notificações push (aplicação móvel): se as ativar, é gerado um identificador técnico do dispositivo (token FCM / APNs) para enviar alertas (mensagens, transferências, subscrições, etc.). Pode desativar as notificações push nas definições MOXT ou no telemóvel.',
+          'Fotos e ficheiros: na verificação de identidade, publicação de anúncios ou envio de comprovativos, pode selecionar imagens do dispositivo. O MOXT não lê SMS nem acede à posição GPS.',
+          'Permissões explicitamente excluídas: o MOXT não solicita localização precisa nem leitura de SMS no Android.',
+          'Conservação e eliminação: um e-mail ou número verificado pode servir no máximo duas contas. Pode pedir eliminação da conta nas definições; alguns dados podem ser conservados pelo tempo exigido por lei ou para segurança da plataforma.',
+          'Os seus direitos: pode aceder, corrigir ou pedir eliminação dos seus dados contactando support@moxtapp.ru.',
+        ],
+      },
+    },
+  },
 }
