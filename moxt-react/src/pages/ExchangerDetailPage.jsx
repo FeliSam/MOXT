@@ -1,7 +1,8 @@
 import { FiClock, FiMapPin, FiRepeat, FiShield, FiStar } from 'react-icons/fi'
+import { useMemo } from 'react'
 import { useSelector } from 'react-redux'
-import { useParams } from 'react-router-dom'
-import { Badge } from '../components/ui/Badge'
+import { Link, useParams } from 'react-router-dom'
+import { Badge, VerifiedDisplayName } from '../components/ui/Badge'
 import { BackButton } from '../components/ui/BackButton'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
@@ -13,19 +14,48 @@ import {
 } from '../components/ui/DetailBlocks'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { flagEmoji } from '../config/flags'
 import { ContactButton } from '../features/communications/ContactButton'
+import { ExchangerPickerAvatar } from '../features/transfers/ExchangerPickerAvatar'
+import {
+  businessToExchangerOption,
+  exchangerMatchesUserCountry,
+  resolveUserPartnerCountry,
+  resolveUserTransferCountry,
+} from '../features/transfers/exchangerListUtils'
 import { FALLBACK_EXCHANGERS } from '../features/transfers/transferConfig'
 
 export function ExchangerDetailPage() {
   const { exchangerId } = useParams()
-  const business = useSelector((state) =>
-    state.businesses.items.find(
-      (item) => item.id === exchangerId && item.services?.includes('Transfert'),
-    ),
-  )
-  const exchanger = business || FALLBACK_EXCHANGERS.find((item) => item.id === exchangerId)
+  const user = useSelector((state) => state.auth.user)
+  const businesses = useSelector((state) => state.businesses.items)
+  const originCountry = user?.originCountry || (user?.country !== 'RU' ? user?.country : 'BJ')
+  const partnerCountry = resolveUserPartnerCountry(user, originCountry)
 
-  if (!exchanger) return <EmptyState title="Échangeur introuvable" />
+  const business = useMemo(
+    () =>
+      businesses.find(
+        (item) => item.id === exchangerId && item.services?.includes('Transfert'),
+      ),
+    [businesses, exchangerId],
+  )
+
+  const exchanger = useMemo(() => {
+    if (business) {
+      if (!exchangerMatchesUserCountry(business, partnerCountry, originCountry)) return null
+      return businessToExchangerOption(business, resolveUserTransferCountry(user, originCountry), originCountry)
+    }
+    return FALLBACK_EXCHANGERS.find((item) => item.id === exchangerId) || null
+  }, [business, exchangerId, originCountry, partnerCountry, user])
+
+  if (!exchanger) {
+    return (
+      <EmptyState
+        title="Échangeur introuvable"
+        description="Ce partenaire n'est pas disponible pour votre pays d'origine."
+      />
+    )
+  }
 
   return (
     <div className="grid gap-7">
@@ -50,19 +80,27 @@ export function ExchangerDetailPage() {
           },
           {
             icon: FiMapPin,
-            label: 'Localisation',
-            value: exchanger.city || 'Service en ligne',
+            label: 'Pays',
+            value: `${flagEmoji(exchanger.country)} ${exchanger.city || exchanger.country}`,
           },
         ]}
       />
       <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
         <Card>
-          <div className="flex flex-wrap gap-2">
-            {business && ['verified', 'approved', 'active'].includes(business.status) ? (
-              <Badge tone="info">Vérifié</Badge>
-            ) : null}
-            <Badge tone="success">Disponible</Badge>
-            <Badge>{business ? 'Entreprise MOXT' : 'Partenaire MOXT'}</Badge>
+          <div className="flex items-start gap-4">
+            <ExchangerPickerAvatar exchanger={exchanger} />
+            <div className="min-w-0 flex-1">
+              <VerifiedDisplayName
+                as="h2"
+                name={exchanger.name}
+                verified={['verified', 'approved', 'active'].includes(exchanger.status)}
+                iconSize="md"
+                className="text-lg font-black"
+              />
+              <p className="mt-1 text-sm text-[var(--app-text-muted)]">
+                {flagEmoji(exchanger.country)} {exchanger.city || exchanger.country}
+              </p>
+            </div>
           </div>
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
             <Metric icon={FiStar} value={`${exchanger.rating || 0}/5`} label="Évaluation" />

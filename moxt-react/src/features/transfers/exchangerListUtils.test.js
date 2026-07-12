@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { DIRECTIONS } from './transferConfig'
 import {
   businessToExchangerOption,
+  exchangerMatchesUserCountry,
   listExchangersForTransfer,
   resolveExchangerCountry,
+  resolveExchangerOriginCountry,
   resolveUserTransferCountry,
 } from './exchangerListUtils'
 
@@ -26,21 +28,39 @@ const bjBusiness = {
   name: 'Change Cotonou',
   status: 'active',
   services: ['Transfert'],
-  country: 'BJ',
+  country: 'RU',
   rating: 4.5,
   logoUrl: 'https://cdn.example/logo-bj.png',
   transferAccounts: [{ slot: 'origin', country: 'BJ', active: true, isDefault: true }],
+}
+
+const tgBusiness = {
+  id: 'BIZ-TG',
+  ownerId: 'owner-tg',
+  name: 'Change Lomé',
+  status: 'active',
+  services: ['Transfert'],
+  country: 'RU',
+  rating: 4.2,
+  transferAccounts: [{ slot: 'origin', country: 'TG', active: true, isDefault: true }],
 }
 
 describe('exchangerListUtils', () => {
   it('résout le pays transfert de l utilisateur', () => {
     expect(resolveUserTransferCountry({ country: 'RU', originCountry: 'BJ' }, 'BJ')).toBe('RU')
     expect(resolveUserTransferCountry({ country: 'BJ', originCountry: 'BJ' }, 'BJ')).toBe('BJ')
+    expect(resolveUserTransferCountry({ country: 'RU', originCountry: 'TG' }, 'BJ')).toBe('RU')
+  })
+
+  it('ignore business.country (localisation RU) pour le pays partenaire', () => {
+    expect(resolveExchangerOriginCountry(bjBusiness, 'BJ')).toBe('BJ')
+    expect(resolveExchangerCountry(ruBusiness, 'RU', 'BJ')).toBe('RU')
+    expect(resolveExchangerCountry(bjBusiness, 'BJ', 'BJ')).toBe('BJ')
   })
 
   it('filtre les échangeurs du pays utilisateur uniquement', () => {
     const rows = listExchangersForTransfer({
-      businesses: [ruBusiness, bjBusiness],
+      businesses: [ruBusiness, bjBusiness, tgBusiness],
       user: { id: 'u1', country: 'RU', originCountry: 'BJ' },
       originCountry: 'BJ',
       direction: DIRECTIONS.RU_TO_BJ,
@@ -49,25 +69,21 @@ describe('exchangerListUtils', () => {
 
     expect(rows).toHaveLength(1)
     expect(rows[0].id).toBe('BIZ-RU')
-    expect(rows[0].logoUrl).toContain('logo-ru')
+    expect(rows[0].country).toBe('RU')
   })
 
-  it('classe les échangeurs du pays utilisateur en premier', () => {
-    const mixedRu = {
-      ...ruBusiness,
-      id: 'BIZ-RU-2',
-      name: 'Zeta Change',
-      rating: 3,
-    }
+  it('un membre béninois ne voit pas les échangeurs togolais', () => {
+    expect(exchangerMatchesUserCountry(bjBusiness, 'BJ', 'BJ')).toBe(true)
+    expect(exchangerMatchesUserCountry(tgBusiness, 'BJ', 'BJ')).toBe(false)
+
     const rows = listExchangersForTransfer({
-      businesses: [mixedRu, { ...ruBusiness, id: 'BIZ-RU-1', name: 'Alpha Change', rating: 5 }],
-      user: { id: 'u1', country: 'RU', originCountry: 'BJ' },
+      businesses: [bjBusiness, tgBusiness],
+      user: { id: 'u2', country: 'RU', originCountry: 'BJ' },
       originCountry: 'BJ',
-      direction: DIRECTIONS.RU_TO_BJ,
+      direction: DIRECTIONS.BJ_TO_RU,
     })
 
-    expect(rows[0].name).toBe('Alpha Change')
-    expect(resolveExchangerCountry(ruBusiness, 'BJ')).toBe('RU')
-    expect(businessToExchangerOption(ruBusiness, 'BJ').country).toBe('RU')
+    expect(rows.map((row) => row.id)).toEqual(['BIZ-BJ'])
+    expect(businessToExchangerOption(bjBusiness, 'BJ', 'BJ').country).toBe('BJ')
   })
 })

@@ -9,6 +9,33 @@ function line(ok, label, detail = '') {
   console.log(`  ${ok ? '✓' : '✗'}  ${label}${detail ? ` — ${detail}` : ''}`)
 }
 
+async function probeSmscSend(env, phone) {
+  const login = env.SMSC_LOGIN
+  const password = env.SMSC_PASSWORD
+  const apikey = env.SMSC_API_KEY
+  const body = new URLSearchParams({
+    login,
+    fmt: '3',
+    charset: 'utf-8',
+    phones: phone,
+    mes: 'Код MOXT: 000000. Тест.',
+    cost: '1',
+  })
+  if (apikey) body.set('apikey', apikey)
+  else body.set('psw', password)
+  const res = await fetch('https://smsc.ru/sys/send.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+    body,
+  })
+  const text = await res.text()
+  try {
+    return JSON.parse(text)
+  } catch {
+    return { error: text.slice(0, 120) }
+  }
+}
+
 async function fetchSmscBalance(env) {
   const login = env.SMSC_LOGIN
   const password = env.SMSC_PASSWORD
@@ -51,6 +78,19 @@ async function main() {
 
   const balance = await fetchSmscBalance(env)
   line(balance.ok, 'Solde SMSC', balance.detail)
+
+  const probe = await probeSmscSend(env, '79000000000')
+  const denied =
+    probe?.error && String(probe.error).toLowerCase().includes('denied')
+  if (denied) {
+    line(false, 'Mode test / numéro refusé', String(probe.error))
+    console.log('\n  ⚠ BLOQUANT : smsc.ru → Paramètres → désactiver « Mode test »')
+    console.log('    ou ajouter votre numéro +7 dans les numéros autorisés.')
+  } else if (probe?.error) {
+    line(false, 'Probe envoi SMSC', String(probe.error))
+  } else {
+    line(true, 'Probe envoi SMSC', `simulation OK (~${probe?.cost} ₽)`)
+  }
 
   console.log('\n▸ Causes fréquentes si le SMS échoue (solde OK, hors mode test)')
   console.log('  A. Secret hook Supabase désynchronisé (Auth ≠ Edge Function)')

@@ -1,11 +1,14 @@
 import { useMemo, useState } from 'react'
 import { HiQrCode } from 'react-icons/hi2'
+import { useSelector } from 'react-redux'
 import { Modal } from '../../components/ui/Modal'
+import { selectAccountPreferences } from '../account/accountSlice'
 import { useLanguage } from '../../contexts/useLanguage'
 import { buildAbsoluteUrl } from '../../utils/siteUrl'
 import { QrSharePanel } from './QrSharePanel'
 
 export function ProfileQrShareButton({
+  activityVisibility: activityVisibilityProp,
   className = '',
   refreshKey,
   shareText: shareTextProp,
@@ -21,6 +24,10 @@ export function ProfileQrShareButton({
   logoUrl,
 }) {
   const { t } = useLanguage()
+  const user = useSelector((state) => state.auth.user)
+  const preferences = useSelector((state) =>
+    user ? selectAccountPreferences(state, user.id) : null,
+  )
   const [open, setOpen] = useState(false)
   const sizeClass = size === 'sm' ? 'size-8 text-base' : 'size-10 text-lg'
   const shareUrl = useMemo(
@@ -28,6 +35,8 @@ export function ProfileQrShareButton({
     [shareUrlProp, targetPath],
   )
   const isBusiness = type === 'business'
+  const activityVisibility =
+    activityVisibilityProp || (!isBusiness ? preferences?.activityVisibility : undefined)
   const resolvedShareText =
     shareTextProp ||
     (isBusiness
@@ -55,6 +64,7 @@ export function ProfileQrShareButton({
         <QrSharePanel
           key={refreshKey || shareUrl}
           variant={isBusiness ? 'business' : 'profile'}
+          activityVisibility={activityVisibility}
           title={title}
           subtitle={subtitle}
           avatarUrl={logoUrl}

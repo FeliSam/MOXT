@@ -5,6 +5,7 @@ project_id = "moxt"
 
 [auth]
 enabled = true
+enable_signup = true
 site_url = "https://moxtapp.ru"
 additional_redirect_urls = [
   "http://localhost:5173/**",

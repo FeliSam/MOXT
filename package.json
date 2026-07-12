@@ -25,6 +25,7 @@
     "verify:deploy": "node scripts/verify-deploy-version.mjs",
     "check:site": "node scripts/check-site.mjs",
     "check:smsc": "node scripts/check-smsc.mjs",
+    "test:sms": "node scripts/test-sms-pipeline.mjs",
     "setup:yandex-provision": "node scripts/provision-yandex-auth.mjs",
     "setup:yandex-all": "node scripts/setup-yandex-all.mjs",
     "setup:phase2": "node scripts/setup-phase2-postbox-sms.mjs",

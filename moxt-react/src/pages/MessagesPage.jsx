@@ -150,8 +150,7 @@ export function MessagesPage() {
     return messageSuggestionsForConversation(state, conversation, user.id, peer.name)
   })
   const formik = useFormik({
-    initialValues: { text: active?.drafts?.[user.id] || '' },
-    enableReinitialize: true,
+    initialValues: { text: '' },
     validate: (values) => {
       const errors = {}
       const text = values.text?.trim() || ''
@@ -247,6 +246,22 @@ export function MessagesPage() {
     },
   })
 
+  const composerConversationIdRef = useRef(null)
+
+  useEffect(() => {
+    if (!active?.id || assistantActive) return
+    if (composerConversationIdRef.current === active.id) return
+    composerConversationIdRef.current = active.id
+    formik.setValues({ text: active.drafts?.[user.id] || '' })
+    setEditingId(null)
+  }, [active?.id, assistantActive, user.id])
+
+  useEffect(() => {
+    if (!active?.id || assistantActive) {
+      composerConversationIdRef.current = null
+    }
+  }, [active?.id, assistantActive])
+
   useEffect(() => {
     const replyContext = searchParams.get('replyContext')
     if (!replyContext || !active?.id || active.id !== requestedConversation) return
@@ -325,7 +340,7 @@ export function MessagesPage() {
     setAttachment(null)
     setReplyToId(null)
     setReplyToContextId(null)
-    formik.resetForm()
+    composerConversationIdRef.current = null
     setQuery('')
     setSearchOpen(false)
   }

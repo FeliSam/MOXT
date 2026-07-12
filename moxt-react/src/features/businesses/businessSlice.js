@@ -87,6 +87,7 @@ const businessSlice = createSlice({
               : [],
             services: values.services || [],
             status: values.status || 'pending_review',
+            activityVisibility: values.activityVisibility || 'public',
             rating: values.rating || 0,
             deletedByUserAt: null,
             createdAt: values.createdAt || now,
@@ -110,6 +111,24 @@ const businessSlice = createSlice({
       if (!business) return
       business.status = action.payload.status
       business.updatedAt = new Date().toISOString()
+    },
+    updateBusinessActivityVisibility(state, action) {
+      const business = state.items.find(
+        (item) =>
+          item.id === action.payload.businessId &&
+          matchUserId(item.ownerId, action.payload.ownerId),
+      )
+      if (!business) return
+      business.activityVisibility = action.payload.activityVisibility
+      business.updatedAt = new Date().toISOString()
+    },
+    patchBusiness(state, action) {
+      const business = state.items.find((item) => item.id === action.payload.id)
+      if (!business) return
+      Object.assign(business, action.payload.patch)
+      if (action.payload.patch.updatedAt) {
+        business.updatedAt = action.payload.patch.updatedAt
+      }
     },
     updateBusinessTransferAccounts(state, action) {
       const business = state.items.find(
@@ -227,8 +246,10 @@ export const {
   createBusinessRequest,
   deleteBusinessByUser,
   moderateBusiness,
+  patchBusiness,
   removeBusinessMember,
   saveBusiness,
+  updateBusinessActivityVisibility,
   updateBusinessDocumentStatus,
   updateBusinessMember,
   updateBusinessRequestStatus,

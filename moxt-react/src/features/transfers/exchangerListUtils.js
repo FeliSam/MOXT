@@ -8,31 +8,79 @@ export function resolveUserTransferCountry(user, originCountry = 'BJ') {
   return user?.originCountry || user?.country || originCountry
 }
 
-export function resolveExchangerCountry(business, originCountry = 'BJ') {
-  if (!business) return 'RU'
+/** Pays d'origine pour lister les partenaires (Bénin, Togo, Ghana…), pas la résidence en Russie. */
+export function resolveUserPartnerCountry(user, originCountry = 'BJ') {
+  if (user?.originCountry) return user.originCountry
+  if (user?.country === 'RU') return 'RU'
+  return user?.country || originCountry
+}
 
-  const declared = String(business.country || '').trim().toUpperCase()
-  if (declared && declared !== 'BJ_RU') return declared
+function activeTransferAccounts(business) {
+  return (business?.transferAccounts || []).filter((account) => account.active !== false)
+}
 
-  const accounts = (business.transferAccounts || []).filter((account) => account.active !== false)
-  if (!accounts.length) return declared || 'RU'
+export function resolveExchangerOriginCountry(business, fallbackOriginCountry = 'BJ') {
+  if (!business) return fallbackOriginCountry
 
+  const accounts = activeTransferAccounts(business)
+  const originAccounts = accounts.filter(
+    (account) =>
+      (account.slot || inferTransferAccountSlot(account.country, fallbackOriginCountry)) === 'origin',
+  )
+
+  if (originAccounts.length) {
+    const explicit = originAccounts.map((account) => account.country).find(Boolean)
+    if (explicit) return explicit
+  }
+
+  return business.ownerOriginCountry || business.originCountry || fallbackOriginCountry
+}
+
+/**
+ * Pays « partenaire » affiché (drapeau) : Russie pour les opérateurs RU,
+ * sinon pays d'origine de l'échangeur (Bénin, Togo, Ghana…).
+ */
+export function resolveExchangerCountry(business, userCountry, fallbackOriginCountry = 'BJ') {
+  if (!business) return userCountry === 'RU' ? 'RU' : fallbackOriginCountry
+
+  const accounts = activeTransferAccounts(business)
   const slots = accounts.map(
-    (account) => account.slot || inferTransferAccountSlot(account.country, originCountry),
+    (account) => account.slot || inferTransferAccountSlot(account.country, fallbackOriginCountry),
   )
   const hasRu = slots.includes('ru')
   const hasOrigin = slots.includes('origin')
 
+  if (userCountry === 'RU' && hasRu) return 'RU'
   if (hasRu && !hasOrigin) return 'RU'
-  if (hasOrigin && !hasRu) {
-    const originAccount = accounts.find(
+
+  return resolveExchangerOriginCountry(business, fallbackOriginCountry)
+}
+
+export function exchangerMatchesUserCountry(business, userCountry, fallbackOriginCountry = 'BJ') {
+  if (!business) return false
+
+  const accounts = activeTransferAccounts(business)
+
+  if (userCountry === 'RU') {
+    if (!accounts.length) return false
+    return accounts.some(
       (account) =>
-        (account.slot || inferTransferAccountSlot(account.country, originCountry)) === 'origin',
+        (account.slot || inferTransferAccountSlot(account.country, fallbackOriginCountry)) === 'ru',
     )
-    return originAccount?.country || originCountry
   }
 
-  return declared || 'RU'
+  const targetOrigin = userCountry
+  if (!accounts.length) {
+    const declared = business.ownerOriginCountry || business.originCountry
+    return declared === targetOrigin
+  }
+
+  return accounts.some((account) => {
+    const slot = account.slot || inferTransferAccountSlot(account.country, fallbackOriginCountry)
+    if (slot !== 'origin') return false
+    const accountCountry = account.country || fallbackOriginCountry
+    return accountCountry === targetOrigin
+  })
 }
 
 export function isApprovedTransferBusiness(business) {
@@ -44,9 +92,7 @@ export function isApprovedTransferBusiness(business) {
 
 export function exchangerSupportsDirection(business, direction, originCountry = 'BJ') {
   const paymentCountry = receivingCountryForDirection(direction, originCountry)
-  if (resolveExchangerCountry(business, originCountry) !== paymentCountry) return false
-
-  const accounts = (business.transferAccounts || []).filter((account) => account.active !== false)
+  const accounts = activeTransferAccounts(business)
   if (!accounts.length) return true
 
   return accounts.some((account) => {
@@ -56,7 +102,7 @@ export function exchangerSupportsDirection(business, direction, originCountry = 
   })
 }
 
-export function businessToExchangerOption(business, originCountry = 'BJ') {
+export function businessToExchangerOption(business, userCountry, fallbackOriginCountry = 'BJ') {
   return {
     id: business.id,
     ownerId: business.ownerId,
@@ -67,7 +113,8 @@ export function businessToExchangerOption(business, originCountry = 'BJ') {
     methods: business.exchangeMethods || business.paymentMethods || [],
     logoUrl: business.logoUrl || '',
     city: business.city || '',
-    country: resolveExchangerCountry(business, originCountry),
+    country: resolveExchangerCountry(business, userCountry, fallbackOriginCountry),
+    status: business.status,
   }
 }
 
@@ -79,19 +126,19 @@ export function listExchangersForTransfer({
   excludeOwnerId,
 }) {
   const userCountry = resolveUserTransferCountry(user, originCountry)
+  const partnerCountry = resolveUserPartnerCountry(user, originCountry)
 
-  const approved = businesses
+  return businesses
     .filter(isApprovedTransferBusiness)
     .filter((business) => !excludeOwnerId || String(business.ownerId) !== String(excludeOwnerId))
-    .filter((business) => resolveExchangerCountry(business, originCountry) === userCountry)
-    .filter((business) => !direction || exchangerSupportsDirection(business, direction, originCountry))
-    .map((business) => businessToExchangerOption(business, originCountry))
-
-  return approved.sort((left, right) => {
-    const leftOwn = left.country === userCountry ? 0 : 1
-    const rightOwn = right.country === userCountry ? 0 : 1
-    if (leftOwn !== rightOwn) return leftOwn - rightOwn
-    if (right.rating !== left.rating) return right.rating - left.rating
-    return left.name.localeCompare(right.name, 'fr')
-  })
+    .filter((business) =>
+      direction
+        ? exchangerSupportsDirection(business, direction, originCountry)
+        : exchangerMatchesUserCountry(business, partnerCountry, originCountry),
+    )
+    .map((business) => businessToExchangerOption(business, userCountry, originCountry))
+    .sort((left, right) => {
+      if (right.rating !== left.rating) return right.rating - left.rating
+      return left.name.localeCompare(right.name, 'fr')
+    })
 }

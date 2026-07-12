@@ -73,6 +73,56 @@ export const en = {
       step3Title: 'Everything in one place',
       step3Desc: 'Transfers, parcels, marketplace and diaspora services.',
     },
+    privateProfileWarning: {
+      title: 'Private profile',
+      description:
+        'Your activity is hidden: people who scan this QR code will not be able to view your profile.',
+      settingsLink: 'Change visibility in settings',
+    },
+    scanTab: 'Scan',
+    scanner: {
+      eyebrow: 'Smart reader',
+      title: 'Scan a MOXT QR code',
+      description:
+        'Frame a profile, business or invite QR code. We automatically detect the destination.',
+      starting: 'Starting camera…',
+      hint: 'Align the QR code in the frame — detection is automatic.',
+      deniedTitle: 'Camera access denied',
+      deniedDescription:
+        'Allow camera access in your browser to scan a QR code. Access is only requested on this tab.',
+      unsupportedTitle: 'Camera unavailable',
+      unsupportedDescription: 'Your browser cannot access the camera on this page.',
+      errorTitle: 'Unable to open camera',
+      errorDescription: 'Make sure no other app is using the camera, then try again.',
+      unknownTitle: 'Unrecognized QR code',
+      unknownDescription: 'This code does not match a MOXT profile, business or invite.',
+      scanAgain: 'Scan again',
+      targets: {
+        user: 'Member profile',
+        business: 'Business',
+        invite: 'MOXT invite',
+      },
+      descriptions: {
+        user: 'MOXT member profile detected. Open their publications.',
+        business: 'MOXT business page detected. View their publications.',
+        invite: 'MOXT invite detected ({id}).',
+      },
+      actions: {
+        user: 'Open profile',
+        business: 'View business',
+        invite: 'Join via invite',
+      },
+      permission: {
+        title: 'Camera access required',
+        description:
+          'To scan a MOXT QR code, allow camera access. It is only used on this tab and stops when you leave.',
+        allow: 'Allow camera',
+        requesting: 'Requesting permission…',
+        retry: 'Retry permission',
+        deniedHint:
+          'Camera access was denied. Allow MOXT in your browser or device settings, then try again.',
+      },
+    },
   },
   messages: {
     syncing: 'Syncing…',

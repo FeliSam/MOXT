@@ -530,6 +530,7 @@ export const loadAllData = createAsyncThunk(
         dispatch(
           hydrateAccountPreferences({
             userId: uid,
+            fromRemote: true,
             preferences: {
               ...profilePreferences,
               ...(profileRes.data?.activity_visibility

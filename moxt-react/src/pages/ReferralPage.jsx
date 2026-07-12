@@ -6,8 +6,10 @@ import { Card } from '../components/ui/Card'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Tabs } from '../components/ui/Tabs'
 import { useLanguage } from '../contexts/useLanguage'
+import { selectAccountPreferences } from '../features/account/accountSlice'
 import { buildReferralCode, buildReferralLink } from '../features/referral/referralUtils'
 import { loadInviteCount } from '../features/referral/referralService'
+import { QrCameraScanner } from '../features/share/QrCameraScanner'
 import { QrSharePanel } from '../features/share/QrSharePanel'
 import { buildAbsoluteUrl } from '../utils/siteUrl'
 
@@ -20,13 +22,19 @@ const STEP_KEYS = [
 export function ReferralPage() {
   const { t } = useLanguage()
   const user = useSelector((state) => state.auth.user)
+  const preferences = useSelector((state) =>
+    user ? selectAccountPreferences(state, user.id) : null,
+  )
   const [searchParams, setSearchParams] = useSearchParams()
-  const activeTab = searchParams.get('tab') === 'profile' ? 'profile' : 'invite'
+  const activeTab = ['profile', 'scan'].includes(searchParams.get('tab'))
+    ? searchParams.get('tab')
+    : 'invite'
 
   const tabs = useMemo(
     () => [
       { value: 'invite', label: t('share.inviteTab') },
       { value: 'profile', label: t('share.profileTab') },
+      { value: 'scan', label: t('share.scanTab') },
     ],
     [t],
   )
@@ -55,9 +63,9 @@ export function ReferralPage() {
   function setActiveTab(tab) {
     if (tab === 'invite') {
       setSearchParams({}, { replace: true })
-    } else {
-      setSearchParams({ tab }, { replace: true })
+      return
     }
+    setSearchParams({ tab }, { replace: true })
   }
 
   return (
@@ -70,7 +78,9 @@ export function ReferralPage() {
 
       <Tabs items={tabs} active={activeTab} onChange={setActiveTab} label={t('share.tabTypeLabel')} />
 
-      {activeTab === 'invite' ? (
+      {activeTab === 'scan' ? (
+        <QrCameraScanner active />
+      ) : activeTab === 'invite' ? (
         <QrSharePanel
           variant="invite"
           title={displayName}
@@ -85,6 +95,7 @@ export function ReferralPage() {
       ) : (
         <QrSharePanel
           variant="profile"
+          activityVisibility={preferences?.activityVisibility}
           title={displayName}
           subtitle={user.email}
           avatarUrl={user.avatarUrl || undefined}

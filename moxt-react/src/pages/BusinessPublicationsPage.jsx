@@ -1,4 +1,4 @@
-import { FiArrowLeft, FiBriefcase } from 'react-icons/fi'
+import { FiArrowLeft, FiBriefcase, FiLock } from 'react-icons/fi'
 import { useMemo } from 'react'
 import { useSelector } from 'react-redux'
 import { Link, useOutletContext, useParams, useSearchParams } from 'react-router-dom'
@@ -9,6 +9,10 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { PillBadge } from '../components/ui/Badge'
 import { activityByValue } from '../config/businessActivities'
 import { selectBusinessById } from '../features/businesses/businessSelectors'
+import { canViewBusinessActivity } from '../features/account/activityVisibility'
+import { useBusinessActivityVisibility } from '../features/businesses/useBusinessActivityVisibility'
+import { ContactButton } from '../features/communications/ContactButton'
+import { SubscribeButton } from '../features/account/SubscribeButton'
 import { MyListingCard } from '../features/marketplace/MyListingCard'
 import {
   MyEventPublicationCard,
@@ -47,6 +51,7 @@ export function BusinessPublicationsPage() {
   const { guestMode = false } = useOutletContext() || {}
   const { requireAccount } = useGuestAction()
   const user = useSelector((state) => state.auth.user)
+  const conversations = useSelector((state) => state.communications.conversations)
   const reduxBusiness = useSelector((state) => selectBusinessById(state, businessId))
   const guestPreview = useGuestBusinessPreview(guestMode ? businessId : null)
   const business = guestMode ? guestPreview.business : reduxBusiness
@@ -120,6 +125,17 @@ export function BusinessPublicationsPage() {
   const activity = activityByValue(business?.primaryActivity)
   const sectorLabel = activity?.label || business?.sector || ''
   const isOwner = !guestMode && Boolean(business && user?.id && business.ownerId === user.id)
+  const { visibility, loading: visibilityLoading } = useBusinessActivityVisibility(
+    business,
+    user?.id,
+  )
+  const canView = guestMode
+    ? !guestPreview.loading && !guestPreview.error && guestPreview.business
+    : canViewBusinessActivity({
+        viewerId: user?.id,
+        business: { ...business, activityVisibility: visibility },
+        conversations,
+      })
   const locationLabel = business ? businessCityLabel(business) : ''
   const handleGuestInteract = () => requireAccount('consulter cette publication')
 
@@ -136,6 +152,38 @@ export function BusinessPublicationsPage() {
           <Link to="/discover">
             <Button variant="secondary" icon={FiArrowLeft}>
               Découvrir MOXT
+            </Button>
+          </Link>
+        }
+      />
+    )
+  }
+
+  if (guestMode && (guestPreview.error === 'private' || guestPreview.error === 'contacts')) {
+    return (
+      <EmptyState
+        icon={FiLock}
+        title="Entreprise non accessible"
+        description="Créez un compte MOXT pour demander l'accès ou découvrir d'autres entreprises."
+        action={
+          <Link to="/register">
+            <Button>Créer un compte</Button>
+          </Link>
+        }
+      />
+    )
+  }
+
+  if (!isOwner && !guestMode && !visibilityLoading && business && !canView) {
+    return (
+      <EmptyState
+        icon={FiLock}
+        title="Entreprise non accessible"
+        description="Cette entreprise a restreint la visibilité de ses publications."
+        action={
+          <Link to="/businesses">
+            <Button variant="secondary" icon={FiArrowLeft}>
+              Retour à l'annuaire
             </Button>
           </Link>
         }
@@ -182,6 +230,24 @@ export function BusinessPublicationsPage() {
                     Fiche entreprise
                   </Button>
                 </Link>
+                {!isOwner ? (
+                  <>
+                    <ContactButton
+                      ownerId={business.ownerId}
+                      relatedEntity={business}
+                      relatedId={business.id}
+                      relatedPath={`/businesses/${business.id}/publications/listings`}
+                      relatedTitle={business.name}
+                      relatedType="business"
+                    />
+                    <SubscribeButton
+                      publisherType="business"
+                      publisherId={business.id}
+                      publisherName={business.name}
+                      publisherPath={`/businesses/${business.id}/publications/listings`}
+                    />
+                  </>
+                ) : null}
                 <Link to="/businesses">
                   <Button variant="secondary" icon={FiBriefcase}>
                     Annuaire
@@ -208,6 +274,11 @@ export function BusinessPublicationsPage() {
         scope="business"
         ownBusiness={business}
         avatarUrl={business.logoUrl}
+        contactOwnerId={!isOwner && !guestMode ? business.ownerId : null}
+        contactPath={`/businesses/${business.id}/publications/listings`}
+        contactTitle={business.name}
+        contactEntity={business}
+        contactType="business"
       />
 
       <div className="grid gap-4">

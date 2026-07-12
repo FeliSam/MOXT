@@ -17,6 +17,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Alert } from '../components/ui/Alert'
+import { VerifiedDisplayName } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
@@ -476,7 +477,14 @@ export function NewTransferPage() {
                         }`}
                       >
                         <ExchangerPickerAvatar exchanger={exchanger} active={active} />
-                        <p className="line-clamp-2 text-xs font-black leading-tight">{exchanger.name}</p>
+                        <VerifiedDisplayName
+                          as="p"
+                          name={exchanger.name}
+                          verified={['verified', 'approved', 'active'].includes(exchanger.status)}
+                          iconSize="sm"
+                          className="line-clamp-2 text-xs font-black leading-tight"
+                          nameClassName="line-clamp-2 text-xs font-black leading-tight"
+                        />
                         <span className="text-[10px] font-semibold text-[var(--app-text-muted)]">
                           {flagEmoji(exchanger.country)} {exchanger.city || exchanger.country}
                         </span>

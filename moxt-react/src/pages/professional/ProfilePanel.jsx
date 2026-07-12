@@ -1,4 +1,5 @@
 import { activityByValue } from '../../config/businessActivities'
+import { BusinessActivityVisibilitySection } from '../../features/businesses/BusinessActivityVisibilitySection'
 import { BusinessVerificationProgress } from '../../features/businesses/BusinessVerificationProgress'
 import {
   buildBusinessShareText,
@@ -19,6 +20,7 @@ export function ProfilePanel({ activity, business, documents = [], secondaryActi
   return (
     <div className="grid gap-5">
       <BusinessVerificationProgress business={business} documents={documents} />
+      <BusinessActivityVisibilitySection business={business} />
       <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
       <Card>
         {business.bannerUrl ? (

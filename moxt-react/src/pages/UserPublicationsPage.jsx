@@ -40,6 +40,7 @@ import { PublicationProfileCard } from '../features/publications/PublicationProf
 import { PublicationScopeButton } from '../features/publications/PublicationScopeButton'
 import { usePublicationProfile } from '../features/publications/usePublicationProfile'
 import { SubscribeButton } from '../features/account/SubscribeButton'
+import { ContactButton } from '../features/communications/ContactButton'
 import { useGuestAction } from '../features/guest/useGuestAction'
 import { useGuestUserPreview } from '../features/guest/useGuestPreview'
 import {
@@ -272,13 +273,27 @@ export function UserPublicationsPage() {
         actions={
           <div className="relative z-30 flex min-w-0 flex-wrap items-center justify-end gap-2">
             {!isOwner && !guestMode ? (
-              <SubscribeButton
-                className="relative z-30"
-                publisherType="user"
-                publisherId={userId}
-                publisherName={displayName}
-                publisherPath={`/users/${userId}/publications`}
-              />
+              <>
+                <ContactButton
+                  ownerId={userId}
+                  relatedEntity={{
+                    name: displayName,
+                    sellerName: displayName,
+                    avatarUrl: guestMode ? guestProfile?.avatarUrl : memberProfile?.avatarUrl,
+                  }}
+                  relatedId={userId}
+                  relatedPath={`/users/${userId}/publications`}
+                  relatedTitle={displayName}
+                  relatedType="profile"
+                />
+                <SubscribeButton
+                  className="relative z-30"
+                  publisherType="user"
+                  publisherId={userId}
+                  publisherName={displayName}
+                  publisherPath={`/users/${userId}/publications`}
+                />
+              </>
             ) : null}
             {ownBusiness && !guestMode ? (
               <PublicationScopeButton
@@ -331,6 +346,15 @@ export function UserPublicationsPage() {
         ownBusiness={ownBusiness}
         shareUserId={guestMode ? null : userId}
         avatarUrl={guestMode ? guestProfile?.avatarUrl : memberProfile?.avatarUrl}
+        contactOwnerId={!isOwner && !guestMode ? userId : null}
+        contactPath={`/users/${userId}/publications`}
+        contactTitle={displayName}
+        contactEntity={{
+          name: displayName,
+          sellerName: displayName,
+          avatarUrl: guestMode ? guestProfile?.avatarUrl : memberProfile?.avatarUrl,
+        }}
+        contactType="profile"
       />
 
       <CatalogArchiveTabs

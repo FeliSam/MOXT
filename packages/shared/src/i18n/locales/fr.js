@@ -76,6 +76,57 @@ export const fr = {
       step3Title: 'Tout au même endroit',
       step3Desc: 'Transferts, colis, marketplace et services diaspora.',
     },
+    privateProfileWarning: {
+      title: 'Profil en privé',
+      description:
+        'Votre activité est masquée : les personnes qui scannent ce QR code ne pourront pas consulter votre profil.',
+      settingsLink: 'Modifier la visibilité dans les paramètres',
+    },
+    scanTab: 'Scanner',
+    scanner: {
+      eyebrow: 'Lecture intelligente',
+      title: 'Scanner un QR MOXT',
+      description:
+        'Cadrez un QR code profil, entreprise ou invitation. Nous détectons automatiquement la destination.',
+      starting: 'Activation de la caméra…',
+      hint: 'Alignez le QR code dans le cadre — la détection est automatique.',
+      deniedTitle: 'Accès caméra refusé',
+      deniedDescription:
+        'Autorisez la caméra dans votre navigateur pour scanner un QR code. L’accès est demandé uniquement sur cet onglet.',
+      unsupportedTitle: 'Caméra indisponible',
+      unsupportedDescription:
+        'Votre navigateur ne permet pas d’accéder à la caméra sur cette page.',
+      errorTitle: 'Impossible d’ouvrir la caméra',
+      errorDescription: 'Vérifiez qu’aucune autre application n’utilise la caméra, puis réessayez.',
+      unknownTitle: 'QR code non reconnu',
+      unknownDescription: 'Ce code ne correspond pas à un profil, une entreprise ou une invitation MOXT.',
+      scanAgain: 'Scanner à nouveau',
+      targets: {
+        user: 'Profil membre',
+        business: 'Entreprise',
+        invite: 'Invitation MOXT',
+      },
+      descriptions: {
+        user: 'Profil membre MOXT détecté. Ouvrez ses publications.',
+        business: 'Fiche entreprise MOXT détectée. Consultez ses publications.',
+        invite: 'Invitation MOXT détectée ({id}).',
+      },
+      actions: {
+        user: 'Ouvrir le profil',
+        business: 'Voir l’entreprise',
+        invite: 'Rejoindre via l’invitation',
+      },
+      permission: {
+        title: 'Accès à la caméra requis',
+        description:
+          'Pour scanner un QR code MOXT, autorisez l’accès à la caméra. Elle n’est utilisée que sur cet onglet et s’arrête dès que vous le quittez.',
+        allow: 'Autoriser la caméra',
+        requesting: 'Demande d’autorisation en cours…',
+        retry: 'Réessayer l’autorisation',
+        deniedHint:
+          'L’accès à la caméra a été refusé. Autorisez MOXT dans les réglages de votre navigateur ou de l’appareil, puis réessayez.',
+      },
+    },
   },
   messages: {
     syncing: 'Synchronisation…',

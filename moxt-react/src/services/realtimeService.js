@@ -20,6 +20,9 @@ import {
   removeRemoteListing,
 } from '../features/marketplace/marketplaceSlice'
 import { listingFromRemoteRow } from '../features/marketplace/marketplaceRemote'
+import { hydrateAccountPreferences } from '../features/account/accountSlice'
+import { patchBusiness } from '../features/businesses/businessSlice'
+import { businessFromRemoteRow } from '../features/businesses/businessRemote'
 
 const camelMap = {
   conversation_id: 'conversationId',
@@ -295,6 +298,50 @@ function bindChannel(userId, dispatch, getState) {
       'postgres_changes',
       { event: 'DELETE', schema: 'public', table: 'listings' },
       (payload) => dispatch(removeRemoteListing(payload.old.id)),
+    )
+
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'profiles',
+        filter: `id=eq.${userId}`,
+      },
+      (payload) => {
+        const visibility = payload.new?.activity_visibility
+        if (!visibility) return
+        dispatch(
+          hydrateAccountPreferences({
+            userId,
+            fromRemote: true,
+            preferences: { activityVisibility: visibility },
+          }),
+        )
+      },
+    )
+
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'businesses',
+        filter: `owner_id=eq.${userId}`,
+      },
+      (payload) => {
+        const remote = businessFromRemoteRow(payload.new)
+        if (!remote?.id) return
+        dispatch(
+          patchBusiness({
+            id: remote.id,
+            patch: {
+              activityVisibility: remote.activityVisibility || 'public',
+              updatedAt: remote.updatedAt || new Date().toISOString(),
+            },
+          }),
+        )
+      },
     )
 
     .subscribe((status) => {

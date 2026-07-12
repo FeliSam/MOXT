@@ -68,12 +68,12 @@ export function VerifiedDisplayName({
   )
 }
 
-/* ─── Badge Verifie ──────────────────────────────────────────────────────── */
-/*
-  Utilisation : <VerifiedBadge /> ou <VerifiedBadge label="Partenaire MOXT" />
-  Taille : sm | md (defaut)
-*/
-export function VerifiedBadge({ label = 'Verifie MOXT', size = 'md', className = '' }) {
+/* ─── Badge vérifié (icône seule par défaut) ─────────────────────────────── */
+export function VerifiedBadge({ label = null, size = 'md', className = '' }) {
+  if (!label) {
+    return <VerifiedIcon size={size === 'sm' ? 'sm' : 'md'} className={className} />
+  }
+
   const styles = {
     sm: 'gap-1 rounded-full border border-[rgba(8,112,95,0.2)] bg-[rgba(8,112,95,0.07)] px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.07em] text-brand-700 dark:text-brand-300',
     md: 'gap-1.5 rounded-full border border-[rgba(8,112,95,0.2)] bg-[rgba(8,112,95,0.07)] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.07em] text-brand-700 dark:text-brand-300',

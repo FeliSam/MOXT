@@ -53,6 +53,7 @@ export function businessToRemoteRow(business) {
       ...(business.deletedByUserAt ? { deletedByUserAt: business.deletedByUserAt } : {}),
     },
     rating: Number(business.rating) || 0,
+    activity_visibility: business.activityVisibility || 'public',
     created_at: business.createdAt || new Date().toISOString(),
     updated_at: business.updatedAt || new Date().toISOString(),
   }

@@ -401,6 +401,29 @@ describe('communications', () => {
     expect(merged[0].messagesLoaded).toBe(true)
   })
 
+  it('conserve le brouillon local lors d une resynchronisation inbox', () => {
+    const local = [
+      normalizeConversation({
+        id: 'CONV-1',
+        participantIds: ['u1', 'u2'],
+        drafts: { u1: 'Message en cours' },
+        messages: [],
+        updatedAt: '2026-01-02T12:00:00.000Z',
+      }),
+    ]
+    const remote = [
+      normalizeConversation({
+        id: 'CONV-1',
+        participantIds: ['u1', 'u2'],
+        messages: [],
+        updatedAt: '2026-01-02T12:05:00.000Z',
+      }),
+    ]
+
+    const merged = mergeConversations(local, remote)
+    expect(merged[0].drafts.u1).toBe('Message en cours')
+  })
+
   it('fusionne mergeMessageBatch sans doublons et trie par date', () => {
     const existing = [
       normalizeMessage({

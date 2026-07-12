@@ -119,6 +119,11 @@ export async function fetchGuestBusinessPreview(businessId) {
     return { error: 'unavailable' }
   }
 
+  const visibility = businessRes.data.activity_visibility || 'public'
+  if (visibility !== 'public') {
+    return { error: visibility === 'contacts' ? 'contacts' : 'private', visibility }
+  }
+
   const [listingsRes, parcelsRes, jobsRes, eventsRes, reviewsRes] = await Promise.all([
     supabase.from('listings').select('*').eq('business_id', businessId).eq('status', 'active'),
     supabase.from('parcels').select('*').eq('business_id', businessId).in('status', ['active', 'full']),

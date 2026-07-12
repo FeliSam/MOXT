@@ -7,7 +7,7 @@ import {
   FiUser,
 } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
-import { VerifiedBadge, VerifiedDisplayName } from '../../components/ui/Badge'
+import { VerifiedDisplayName } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { formatShortDate } from '../../utils/formatters'
@@ -53,7 +53,6 @@ export function PublisherDetailCard({
           <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-[var(--app-text-muted)]">
             <FiCheckCircle className="text-emerald-500" />
             {business ? 'Entreprise MOXT' : 'Particulier'}
-            {publisherVerified ? <VerifiedBadge size="sm" /> : null}
           </p>
         </div>
       </div>

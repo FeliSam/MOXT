@@ -36,10 +36,13 @@ import {
   businessShareVersion,
 } from '../features/share/businessShareUtils'
 import { selectBusinessContent } from '../features/businesses/businessSelectors'
+import { BusinessSubscriptionSection } from '../features/businesses/BusinessSubscriptionSection'
 import { BusinessVerificationProgress } from '../features/businesses/BusinessVerificationProgress'
 import { isBusinessVisibleToViewer } from '../features/businesses/businessVisibility'
 import { moderateBusiness } from '../features/businesses/businessSlice'
 import { ContactButton } from '../features/communications/ContactButton'
+import { BusinessActivityVisibilitySection } from '../features/businesses/BusinessActivityVisibilitySection'
+import { canViewBusinessActivity } from '../features/account/activityVisibility'
 import { selectBusinessReviewsBundle } from '../features/reviews/reviewSelectors'
 import { ReviewsSection, REVIEW_TARGET_TYPES } from '../features/reviews/ReviewsSection'
 
@@ -55,6 +58,7 @@ export function BusinessDetailPage() {
   const [detailTab, setDetailTab] = useState('informations')
   const { businessId } = useParams()
   const user = useSelector((state) => state.auth.user)
+  const conversations = useSelector((state) => state.communications.conversations)
   const business = useSelector((state) =>
     state.businesses.items.find((item) => item.id === businessId),
   )
@@ -68,13 +72,34 @@ export function BusinessDetailPage() {
 
   const isOwner = business?.ownerId === user.id
   const isAdminViewer = ['admin', 'superadmin'].includes(user.role)
+  const canView =
+    business &&
+    canViewBusinessActivity({
+      viewerId: user?.id,
+      business,
+      conversations,
+    })
   const canPreview =
     business &&
+    canView &&
     isBusinessVisibleToViewer(business, user) &&
     (isOwner || isAdminViewer || ['verified', 'approved', 'active'].includes(business?.status))
 
   if (!business || !canPreview) {
-    return <EmptyState title="Entreprise introuvable ou en attente de validation" />
+    return (
+      <EmptyState
+        title={
+          business && !canView
+            ? 'Entreprise non accessible'
+            : 'Entreprise introuvable ou en attente de validation'
+        }
+        description={
+          business && !canView
+            ? 'Cette entreprise a restreint la visibilité de ses publications.'
+            : undefined
+        }
+      />
+    )
   }
 
   const activity = activityByValue(business.primaryActivity)
@@ -127,6 +152,16 @@ export function BusinessDetailPage() {
                 className="!w-auto !shadow-none"
               />
             ) : null}
+            {!isOwner ? (
+              <ContactButton
+                ownerId={business.ownerId}
+                relatedEntity={business}
+                relatedId={business.id}
+                relatedPath={`/businesses/${business.id}`}
+                relatedTitle={business.name}
+                relatedType="business"
+              />
+            ) : null}
             <BackButton fallback="/businesses" label="Annuaire" />
           </div>
         }
@@ -166,6 +201,7 @@ export function BusinessDetailPage() {
           <div className="absolute right-4 top-4">
             <ProfileQrShareButton
               type="business"
+              activityVisibility={business.activityVisibility}
               refreshKey={businessShareVersion(business)}
               shareUrl={buildBusinessShareUrl(business)}
               shareText={buildBusinessShareText(business)}
@@ -235,13 +271,16 @@ export function BusinessDetailPage() {
         active={detailTab}
         onChange={setDetailTab}
         variant="section"
+        className="!grid-cols-3 sm:!inline-flex"
         tabs={[
           { key: 'informations', label: 'Informations' },
+          { key: 'abonnements', label: 'Abonnements' },
           { key: 'avis', label: 'Avis', count: rating.count },
         ]}
       />
       {detailTab === 'informations' ? (
         <>
+          {isOwner ? <BusinessActivityVisibilitySection business={business} /> : null}
           <div className="grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
             <DetailSection title="Informations professionnelles">
               <DetailFacts
@@ -362,6 +401,12 @@ export function BusinessDetailPage() {
             </div>
           ) : null}
         </>
+      ) : detailTab === 'abonnements' ? (
+        <BusinessSubscriptionSection
+          business={business}
+          enabledServices={business.services || []}
+          isOwner={isOwner}
+        />
       ) : (
         <ReviewsSection
           embedded

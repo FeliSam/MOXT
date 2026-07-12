@@ -241,7 +241,7 @@ export function mergeConversations(localConversations, remoteConversations) {
           localConv.messagesLoaded ?? (localConv.messages?.length ?? 0) > 0,
         messagesLoading: localConv.messagesLoading ?? false,
         hasOlderMessages: localConv.hasOlderMessages ?? remoteConv.hasOlderMessages ?? false,
-        drafts: localConv.drafts ?? remoteConv.drafts,
+        drafts: { ...remoteConv.drafts, ...localConv.drafts },
         unreadBy: mergeUnreadBy(remoteConv.unreadBy, localConv.unreadBy),
         archivedBy: localConv.archivedBy?.length ? localConv.archivedBy : remoteConv.archivedBy,
         pinnedBy: localConv.pinnedBy?.length ? localConv.pinnedBy : remoteConv.pinnedBy,
@@ -407,6 +407,7 @@ const communicationSlice = createSlice({
           messagesLoaded: existing.messagesLoaded,
           messagesLoading: existing.messagesLoading,
           unreadBy: mergeUnreadBy(conversation.unreadBy, existing.unreadBy),
+          drafts: { ...conversation.drafts, ...existing.drafts },
         }
         bumpConversationToTop(state, existing.id)
         return
@@ -437,6 +438,7 @@ const communicationSlice = createSlice({
               existing.messageCount || 0,
               incoming.messageCount || existing.messages.length,
             ),
+            drafts: { ...incoming.drafts, ...existing.drafts },
           }
           bumpConversationToTop(state, existing.id)
           return
@@ -456,6 +458,7 @@ const communicationSlice = createSlice({
           existing.messageCount || 0,
           incoming.messageCount || existing.messages.length,
         ),
+        drafts: { ...incoming.drafts, ...existing.drafts },
       }
       bumpConversationToTop(state, incoming.id)
     },

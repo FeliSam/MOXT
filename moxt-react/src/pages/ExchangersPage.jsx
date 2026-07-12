@@ -1,8 +1,8 @@
-import { FiClock, FiRepeat, FiStar } from 'react-icons/fi'
 import { useMemo, useState } from 'react'
+import { FiClock, FiRepeat, FiStar } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
-import { Badge, VerifiedBadge } from '../components/ui/Badge'
+import { Badge, VerifiedDisplayName } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { CatalogSearch } from '../components/ui/CatalogSearch'
@@ -12,7 +12,9 @@ import { Input } from '../components/ui/Input'
 import { PageHeader } from '../components/ui/PageHeader'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
-import { FALLBACK_EXCHANGERS } from '../features/transfers/transferConfig'
+import { flagEmoji } from '../config/flags'
+import { ExchangerPickerAvatar } from '../features/transfers/ExchangerPickerAvatar'
+import { listExchangersForTransfer, resolveUserPartnerCountry } from '../features/transfers/exchangerListUtils'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 
 export function ExchangersPage() {
@@ -20,13 +22,21 @@ export function ExchangersPage() {
   const [query, setQuery] = useState('')
   const [city, setCity] = useState('')
   const [advancedOpen, setAdvancedOpen] = useState(false)
+  const user = useSelector((state) => state.auth.user)
   const businesses = useSelector((state) => state.businesses.items)
-  const verified = businesses.filter(
-    (business) =>
-      business.services?.includes('Transfert') &&
-      ['verified', 'approved', 'active'].includes(business.status),
+  const originCountry = user.originCountry || (user.country !== 'RU' ? user.country : 'BJ')
+  const userCountry = resolveUserPartnerCountry(user, originCountry)
+
+  const exchangers = useMemo(
+    () =>
+      listExchangersForTransfer({
+        businesses,
+        user,
+        originCountry,
+      }),
+    [businesses, originCountry, user],
   )
-  const exchangers = verified.length ? verified : FALLBACK_EXCHANGERS
+
   const visibleExchangers = useMemo(
     () =>
       exchangers.filter((exchanger) => {
@@ -45,7 +55,7 @@ export function ExchangersPage() {
       <PageHeader
         eyebrow="Finances"
         title="Échangeurs"
-        description="Comparez les partenaires disponibles avant de créer une opération."
+        description="Partenaires de votre pays d'origine uniquement — comparez avant de créer une opération."
         stats={[{ label: 'Partenaires', value: visibleExchangers.length }]}
         actions={
           <Link to="/transfers">
@@ -81,23 +91,23 @@ export function ExchangersPage() {
             <RevealListItem key={exchanger.id} index={index}>
               <Card variant="interactive" className="flex h-full flex-col">
                 <div className="flex items-start gap-3">
-                  <img
-                    src="/assets/services/service-exchangers.svg"
-                    alt=""
-                    className="size-12 shrink-0 object-contain"
-                    loading="lazy"
-                    decoding="async"
-                  />
+                  <ExchangerPickerAvatar exchanger={exchanger} />
                   <div className="min-w-0 flex-1">
-                    <strong className="block truncate">{exchanger.name}</strong>
-                    {['verified', 'approved', 'active'].includes(exchanger.status) ? (
-                      <VerifiedBadge size="sm" className="mt-1" />
-                    ) : null}
+                    <VerifiedDisplayName
+                      as="strong"
+                      name={exchanger.name}
+                      verified={['verified', 'approved', 'active'].includes(exchanger.status)}
+                      iconSize="sm"
+                      className="block"
+                      nameClassName="truncate"
+                    />
+                    <p className="mt-1 text-xs text-[var(--app-text-muted)]">
+                      {flagEmoji(exchanger.country)} {exchanger.city || exchanger.country}
+                    </p>
                   </div>
                   <Badge tone="success" className="shrink-0">Disponible</Badge>
                 </div>
 
-                {/* Comparaison rapide */}
                 <div className="mt-4 grid grid-cols-3 gap-2 rounded-2xl bg-[var(--app-surface-muted)] p-3">
                   <div className="text-center">
                     <p className="flex items-center justify-center gap-1 text-sm font-black tabular-nums">
@@ -130,7 +140,10 @@ export function ExchangersPage() {
           ))}
         </CatalogGrid>
         ) : (
-          <EmptyState title="Aucun échangeur disponible" />
+          <EmptyState
+            title="Aucun échangeur dans votre pays"
+            description={`Seuls les partenaires ${flagEmoji(userCountry)} de votre pays d'origine sont listés ici.`}
+          />
         )}
       </ScrollSectionAnchor>
     </div>

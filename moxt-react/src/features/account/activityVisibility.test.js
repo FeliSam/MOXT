@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canViewUserActivity } from './activityVisibility'
+import { canViewBusinessActivity, canViewUserActivity } from './activityVisibility'
 
 describe('activityVisibility', () => {
   const conversations = [
@@ -75,6 +75,20 @@ describe('activityVisibility', () => {
         visibility: 'private',
         conversations,
       }),
+    ).toBe(false)
+  })
+})
+
+describe('canViewBusinessActivity', () => {
+  const business = { ownerId: 'alice', activityVisibility: 'contacts' }
+  const conversations = [{ participantIds: ['alice', 'bob'] }]
+
+  it('réutilise les règles de visibilité du propriétaire', () => {
+    expect(
+      canViewBusinessActivity({ viewerId: 'bob', business, conversations }),
+    ).toBe(true)
+    expect(
+      canViewBusinessActivity({ viewerId: 'dave', business, conversations }),
     ).toBe(false)
   })
 })

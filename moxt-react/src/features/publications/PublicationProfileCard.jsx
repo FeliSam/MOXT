@@ -1,6 +1,8 @@
 import { FiBriefcase, FiCalendar, FiEye, FiMapPin, FiStar, FiUser } from 'react-icons/fi'
 import { Badge, VerifiedDisplayName } from '../../components/ui/Badge'
+import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import { ContactButton } from '../communications/ContactButton'
 import { activityByValue } from '../../config/businessActivities'
 import {
   buildBusinessShareText,
@@ -31,6 +33,11 @@ export function PublicationProfileCard({
   ownBusiness,
   shareUserId,
   avatarUrl,
+  contactOwnerId,
+  contactPath,
+  contactTitle,
+  contactEntity,
+  contactType = 'profile',
 }) {
   const memberSinceLabel = formatMemberSince(memberSince)
   const isBusinessScope = scope === 'business' && Boolean(ownBusiness)
@@ -118,11 +125,25 @@ export function PublicationProfileCard({
               </Badge>
             ) : null}
           </div>
+          {!isOwner && contactOwnerId ? (
+            <div className="mt-4">
+              <ContactButton
+                ownerId={contactOwnerId}
+                relatedEntity={contactEntity}
+                relatedId={isBusinessScope ? ownBusiness?.id : shareUserId}
+                relatedPath={contactPath}
+                relatedTitle={contactTitle || headlineName}
+                relatedType={contactType}
+                variant="secondary"
+              />
+            </div>
+          ) : null}
         </div>
         {qrTargetPath ? (
           <ProfileQrShareButton
             className="justify-self-end sm:col-start-3 sm:row-span-2 sm:self-start"
             type={isBusinessScope ? 'business' : 'user'}
+            activityVisibility={isBusinessScope ? ownBusiness?.activityVisibility : undefined}
             targetPath={!isBusinessScope ? qrTargetPath : undefined}
             refreshKey={isBusinessScope ? businessShareVersion(ownBusiness) : undefined}
             shareUrl={isBusinessScope ? buildBusinessShareUrl(ownBusiness) : undefined}

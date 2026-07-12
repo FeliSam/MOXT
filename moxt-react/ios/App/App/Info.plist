@@ -47,6 +47,8 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>MOXT utilise la caméra pour scanner les QR codes de profils, entreprises et invitations.</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

@@ -438,6 +438,12 @@ const handlers = {
   'businesses/moderateBusiness': async (payload) => {
     await update('businesses', payload.id, { status: payload.status })
   },
+  'businesses/updateBusinessActivityVisibility': async (payload) => {
+    await update('businesses', payload.businessId, {
+      activity_visibility: payload.activityVisibility,
+      updated_at: new Date().toISOString(),
+    })
+  },
   'businesses/updateBusinessStatus': async (payload) => {
     await update('businesses', payload.id, { status: payload.status })
   },

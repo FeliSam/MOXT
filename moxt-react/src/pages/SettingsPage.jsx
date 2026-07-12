@@ -11,6 +11,7 @@ import { Select } from '../components/ui/Select'
 import { useTheme } from '../contexts/useTheme'
 import { useLanguage } from '../contexts/useLanguage'
 import { LANGUAGE_LABELS, SUPPORTED_LANGUAGES } from '../config/uiTranslations'
+import { ActivityVisibilitySelect } from '../features/account/ActivityVisibilitySelect'
 import {
   cancelAccountDeletion,
   requestAccountDeletion,
@@ -110,20 +111,13 @@ export function SettingsPage() {
                 </option>
               ))}
             </Select>
-            <Select
+            <ActivityVisibilitySelect
               id="settings-visibility"
               label="Visibilité de l’activité"
               value={preferences.activityVisibility}
               onChange={(event) => updatePreference('activityVisibility', event.target.value)}
-            >
-              <option value="private">Privée — vous seul</option>
-              <option value="contacts">Mes contacts — interlocuteurs messagerie</option>
-              <option value="public">Publique — toute la communauté</option>
-            </Select>
-            <p className="text-xs text-[var(--app-text-muted)]">
-              Contrôle qui peut voir vos publications publiques sur votre page membre.
-              Enregistré sur votre profil MOXT.
-            </p>
+              hint="Contrôle qui peut voir vos publications publiques sur votre page membre. Enregistré sur votre profil MOXT et synchronisé entre vos appareils."
+            />
           </div>
         </Card>
         <Card className="md:col-span-2">

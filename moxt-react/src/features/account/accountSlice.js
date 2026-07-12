@@ -355,18 +355,28 @@ const accountSlice = createSlice({
       request.reviewedBy = action.payload.reviewedBy
     },
     updateAccountPreferences(state, action) {
-      state.preferences[action.payload.userId] = {
+      const { userId, preferences, fromRemote = false } = action.payload
+      const merged = {
         ...defaultPreferences,
-        ...state.preferences[action.payload.userId],
-        ...action.payload.preferences,
+        ...state.preferences[userId],
+        ...preferences,
       }
+      if (fromRemote && preferences.activityVisibility !== undefined) {
+        merged.activityVisibility = preferences.activityVisibility
+      }
+      state.preferences[userId] = merged
     },
     hydrateAccountPreferences(state, action) {
-      state.preferences[action.payload.userId] = {
+      const { userId, preferences, fromRemote = true } = action.payload
+      const merged = {
         ...defaultPreferences,
-        ...state.preferences[action.payload.userId],
-        ...action.payload.preferences,
+        ...state.preferences[userId],
+        ...preferences,
       }
+      if (fromRemote && preferences.activityVisibility !== undefined) {
+        merged.activityVisibility = preferences.activityVisibility
+      }
+      state.preferences[userId] = merged
     },
     requestAccountDeletion: {
       reducer(state, action) {

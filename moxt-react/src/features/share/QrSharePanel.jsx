@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { FiBriefcase, FiCheck, FiCopy, FiMapPin, FiShare2 } from 'react-icons/fi'
+import { Link } from 'react-router-dom'
+import { Alert } from '../../components/ui/Alert'
 import { VerifiedBadge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { useLanguage } from '../../contexts/useLanguage'
@@ -13,6 +15,7 @@ function initialsFromTitle(title = '') {
 
 export function QrSharePanel({
   variant = 'profile',
+  activityVisibility,
   title,
   subtitle,
   avatarUrl,
@@ -31,6 +34,8 @@ export function QrSharePanel({
   const { t } = useLanguage()
   const [copied, setCopied] = useState(false)
   const qrUrl = useMemo(() => makeQrCodeUrl(shareUrl, qrSize), [shareUrl, qrSize, title, city, sector, avatarUrl])
+  const showPrivateProfileWarning =
+    (variant === 'profile' || variant === 'business') && activityVisibility === 'private'
 
   const hint = t(`share.hints.${variant}`)
   const resolvedShareTitle =
@@ -73,8 +78,20 @@ export function QrSharePanel({
   }
 
   return (
-    <div
-      className={`relative overflow-hidden rounded-[2rem] text-white shadow-[0_24px_60px_-20px_rgba(15,118,110,0.55)] ${className}`}
+    <div className={`grid gap-4 ${className}`}>
+      {showPrivateProfileWarning ? (
+        <Alert variant="warning" title={t('share.privateProfileWarning.title')}>
+          {t('share.privateProfileWarning.description')}{' '}
+          <Link
+            to="/settings#settings-visibility"
+            className="font-semibold underline underline-offset-2"
+          >
+            {t('share.privateProfileWarning.settingsLink')}
+          </Link>
+        </Alert>
+      ) : null}
+      <div
+        className="relative overflow-hidden rounded-[2rem] text-white shadow-[0_24px_60px_-20px_rgba(15,118,110,0.55)]"
       style={{
         background:
           variant === 'invite'
@@ -192,6 +209,7 @@ export function QrSharePanel({
           </div>
         ) : null}
       </div>
+    </div>
     </div>
   )
 }

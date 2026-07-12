@@ -1,8 +1,8 @@
 /**
- * Contrôle qui peut consulter l'activité / publications d'un membre.
+ * Contrôle qui peut consulter l'activité / publications d'un membre ou d'une entreprise.
  * @param {'private'|'contacts'|'public'} visibility
  */
-export function canViewUserActivity({
+export function canViewActivity({
   viewerId,
   ownerId,
   visibility = 'private',
@@ -23,6 +23,20 @@ export function canViewUserActivity({
     )
   }
   return false
+}
+
+export function canViewUserActivity(params) {
+  return canViewActivity(params)
+}
+
+export function canViewBusinessActivity({ viewerId, business, conversations = [] }) {
+  if (!business) return false
+  return canViewActivity({
+    viewerId,
+    ownerId: business.ownerId,
+    visibility: business.activityVisibility || 'public',
+    conversations,
+  })
 }
 
 export function activityVisibilityLabel(visibility) {

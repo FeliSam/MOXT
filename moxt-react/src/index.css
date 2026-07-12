@@ -2676,3 +2676,26 @@ nav[aria-label='Navigation mobile rapide'] a {
   0%, 100% { opacity: 0.55; }
   50% { opacity: 1; }
 }
+
+@keyframes qr-scan-sweep {
+  0%, 100% {
+    top: 12%;
+    opacity: 0.35;
+  }
+  50% {
+    top: 82%;
+    opacity: 1;
+  }
+}
+
+.qr-scan-line {
+  animation: qr-scan-sweep 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qr-scan-line {
+    animation: none !important;
+    top: 50% !important;
+    opacity: 0.75 !important;
+  }
+}

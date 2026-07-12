@@ -74,6 +74,56 @@ export const pt = {
       step3Title: 'Tudo num só lugar',
       step3Desc: 'Transferências, encomendas, marketplace e serviços da diáspora.',
     },
+    privateProfileWarning: {
+      title: 'Perfil privado',
+      description:
+        'A sua atividade está oculta: quem digitalizar este QR code não conseguirá ver o seu perfil.',
+      settingsLink: 'Alterar a visibilidade nas definições',
+    },
+    scanTab: 'Digitalizar',
+    scanner: {
+      eyebrow: 'Leitura inteligente',
+      title: 'Digitalizar QR MOXT',
+      description:
+        'Enquadre um QR de perfil, empresa ou convite. Detetamos automaticamente o destino.',
+      starting: 'A ativar a câmara…',
+      hint: 'Alinhe o QR no quadro — a deteção é automática.',
+      deniedTitle: 'Acesso à câmara recusado',
+      deniedDescription:
+        'Autorize a câmara no navegador para digitalizar. O acesso só é pedido neste separador.',
+      unsupportedTitle: 'Câmara indisponível',
+      unsupportedDescription: 'O navegador não consegue aceder à câmara nesta página.',
+      errorTitle: 'Não foi possível abrir a câmara',
+      errorDescription: 'Verifique se outra app não está a usar a câmara e tente novamente.',
+      unknownTitle: 'QR não reconhecido',
+      unknownDescription: 'Este código não corresponde a um perfil, empresa ou convite MOXT.',
+      scanAgain: 'Digitalizar novamente',
+      targets: {
+        user: 'Perfil de membro',
+        business: 'Empresa',
+        invite: 'Convite MOXT',
+      },
+      descriptions: {
+        user: 'Perfil MOXT detetado. Abra as publicações.',
+        business: 'Empresa MOXT detetada. Veja as publicações.',
+        invite: 'Convite MOXT detetado ({id}).',
+      },
+      actions: {
+        user: 'Abrir perfil',
+        business: 'Ver empresa',
+        invite: 'Entrar pelo convite',
+      },
+      permission: {
+        title: 'Acesso à câmara necessário',
+        description:
+          'Para digitalizar um QR MOXT, autorize o acesso à câmara. Só é usada neste separador e desliga ao sair.',
+        allow: 'Autorizar câmara',
+        requesting: 'A pedir autorização…',
+        retry: 'Tentar autorização novamente',
+        deniedHint:
+          'O acesso à câmara foi recusado. Autorize o MOXT nas definições do navegador ou dispositivo e tente de novo.',
+      },
+    },
   },
   messages: {
     syncing: 'A sincronizar…',

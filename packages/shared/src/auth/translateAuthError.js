@@ -34,6 +34,9 @@ export function translateAuthError(error, context = {}) {
   if (code === 'unexpected_failure' && message.toLowerCase().includes('hook')) {
     return translateSmsHookFailure(message)
   }
+  if (message.toLowerCase().includes('signups not allowed for otp')) {
+    return 'Aucun compte MOXT associé à ce numéro. Créez un compte ou vérifiez le numéro saisi.'
+  }
   if (code === 'email_provider_disabled' || code === 'over_email_send_rate_limit') {
     return "Le service d'inscription par e-mail est indisponible. Choisissez la vérification par téléphone ou réessayez plus tard."
   }
@@ -94,16 +97,20 @@ function isSmsRelated(message = '', meta = {}) {
 
 function translateSmsHookFailure(message = '') {
   const lower = message.toLowerCase()
+  if (lower.includes('unexpected status code returned from hook')) {
+    return "L'envoi SMS est bloqué par le fournisseur (souvent le mode test SMSC). Sur smsc.ru : Paramètres → désactivez le mode test, ou ajoutez votre numéro +7 aux numéros autorisés."
+  }
   if (lower.includes('solde insuffisant') || lower.includes('insufficient balance')) {
     return "L'envoi du code SMS est temporairement indisponible. Réessayez plus tard ou contactez le support."
   }
   if (
     lower.includes('envoi refusé') ||
+    lower.includes('message is denied') ||
     lower.includes('mode test') ||
     lower.includes('запрещ') ||
     lower.includes('тест')
   ) {
-    return "Impossible d'envoyer un SMS à ce numéro pour le moment. Vérifiez le format +7XXXXXXXXXX ou réessayez avec un autre numéro russe."
+    return "L'envoi SMS est bloqué : désactivez le mode test sur smsc.ru (Paramètres) ou ajoutez votre numéro +7 aux numéros autorisés."
   }
   if (lower.includes('expéditeur') || lower.includes('sender') || lower.includes('smsc_sender_invalid')) {
     return "L'envoi du code SMS est temporairement indisponible. Réessayez dans quelques minutes."

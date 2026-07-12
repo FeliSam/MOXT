@@ -15,9 +15,10 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { EmptyState } from '../components/ui/EmptyState'
+import { flattenGroupedTabs, GroupedTabs } from '../components/ui/GroupedTabs'
 import { PageHeader } from '../components/ui/PageHeader'
 import { ReshareButton } from '../components/ui/ReshareButton'
-import { Tabs } from '../components/ui/Tabs'
+import { selectPublisherSubscribers } from '../features/account/subscriptionSelectors'
 import { activityByValue } from '../config/businessActivities'
 import {
   buildBusinessShareText,
@@ -43,19 +44,52 @@ import { PublicationsPanel } from './professional/PublicationsPanel'
 import { RequestsPanel } from './professional/RequestsPanel'
 import { ReviewsPanel } from './professional/ReviewsPanel'
 import { StatisticsPanel } from './professional/StatisticsPanel'
+import { SubscriptionsPanel } from './professional/SubscriptionsPanel'
 import { TransfersPanel } from './professional/TransfersPanel'
 
-const baseTabs = [
-  { value: 'profile', label: 'Profil entreprise' },
-  { value: 'overview', label: 'Aperçu' },
-  { value: 'publications', label: 'Publications' },
-  { value: 'requests', label: 'Demandes' },
-  { value: 'documents', label: 'Documents' },
-  { value: 'members', label: 'Membres' },
-  { value: 'statistics', label: 'Statistiques' },
-  { value: 'reviews', label: 'Avis' },
-  { value: 'actions', label: 'Actions' },
-]
+function buildProfessionalTabGroups({ hasTransfers, subscriberCount, reviewCount }) {
+  return [
+    {
+      id: 'identity',
+      label: 'Identité',
+      tabs: [
+        { value: 'profile', label: 'Profil' },
+        { value: 'overview', label: 'Aperçu' },
+      ],
+    },
+    {
+      id: 'activity',
+      label: 'Activité',
+      tabs: [
+        { value: 'publications', label: 'Publications' },
+        { value: 'requests', label: 'Demandes' },
+        ...(hasTransfers ? [{ value: 'transfers', label: 'Transferts' }] : []),
+      ],
+    },
+    {
+      id: 'community',
+      label: 'Communauté',
+      tabs: [
+        { value: 'subscriptions', label: 'Abonnements', count: subscriberCount },
+        { value: 'reviews', label: 'Avis', count: reviewCount || undefined },
+        { value: 'members', label: 'Membres' },
+      ],
+    },
+    {
+      id: 'compliance',
+      label: 'Conformité',
+      tabs: [{ value: 'documents', label: 'Documents' }],
+    },
+    {
+      id: 'insights',
+      label: 'Pilotage',
+      tabs: [
+        { value: 'statistics', label: 'Statistiques' },
+        { value: 'actions', label: 'Actions' },
+      ],
+    },
+  ]
+}
 
 const serviceContentMap = {
   Marketplace: 'listings',
@@ -93,6 +127,11 @@ export function ProfessionalPage() {
       (item) => item.targetType === 'business' && item.targetId === business?.id,
     ),
   )
+  const subscribers = useSelector((state) =>
+    business?.id
+      ? selectPublisherSubscribers(state, 'business', business.id)
+      : [],
+  )
 
   const enabledServices = useMemo(() => business?.services || [], [business])
   const enabledKeys = enabledServices.map((service) => serviceContentMap[service]).filter(Boolean)
@@ -104,13 +143,16 @@ export function ProfessionalPage() {
   const activity = activityByValue(business?.primaryActivity)
   const secondaryActivity = activityByValue(business?.secondaryActivity)
   const hasTransfers = enabledServices.includes('Transfert')
-  const tabs = useMemo(
+  const tabGroups = useMemo(
     () =>
-      hasTransfers
-        ? [...baseTabs.slice(0, 2), { value: 'transfers', label: 'Transferts' }, ...baseTabs.slice(2)]
-        : baseTabs,
-    [hasTransfers],
+      buildProfessionalTabGroups({
+        hasTransfers,
+        subscriberCount: subscribers.length,
+        reviewCount: reviews.length,
+      }),
+    [hasTransfers, reviews.length, subscribers.length],
   )
+  const tabs = useMemo(() => flattenGroupedTabs(tabGroups), [tabGroups])
   const safeActive = tabs.some((item) => item.value === active) ? active : 'profile'
   const documentCategory = searchParams.get('docType')
 
@@ -169,6 +211,7 @@ export function ProfessionalPage() {
           <div className="flex flex-wrap items-center gap-2">
             <ProfileQrShareButton
               type="business"
+              activityVisibility={business.activityVisibility}
               refreshKey={businessShareVersion(business)}
               shareUrl={buildBusinessShareUrl(business)}
               shareText={buildBusinessShareText(business)}
@@ -193,7 +236,12 @@ export function ProfessionalPage() {
         ))}
       </div>
 
-      <Tabs items={tabs} active={safeActive} onChange={handleTabChange} />
+      <GroupedTabs
+        groups={tabGroups}
+        active={safeActive}
+        onChange={handleTabChange}
+        label="Sections de l'espace professionnel"
+      />
 
       {safeActive === 'profile' ? (
         <ProfilePanel
@@ -245,6 +293,9 @@ export function ProfessionalPage() {
         />
       ) : null}
       {safeActive === 'reviews' ? <ReviewsPanel reviews={reviews} /> : null}
+      {safeActive === 'subscriptions' ? (
+        <SubscriptionsPanel business={business} enabledServices={enabledServices} />
+      ) : null}
       {safeActive === 'actions' ? <ActionsPanel business={business} /> : null}
     </div>
   )
