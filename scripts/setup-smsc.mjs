@@ -66,6 +66,37 @@ function run(cmd, args, { env = process.env } = {}) {
   }).status ?? 1
 }
 
+function buildSupabaseEnv(vars) {
+  return {
+    ...process.env,
+    SUPABASE_ACCESS_TOKEN:
+      process.env.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN || '',
+    SUPABASE_DB_PASSWORD:
+      process.env.SUPABASE_DB_PASSWORD ||
+      vars.SUPABASE_DB_PASSWORD ||
+      vars.MOXT_SUPABASE_DB_PASSWORD ||
+      '',
+    SEND_SMS_HOOK_SECRET: vars.SEND_SMS_HOOK_SECRET || process.env.SEND_SMS_HOOK_SECRET || '',
+    MOXT_POSTBOX_SMTP_USER: vars.MOXT_POSTBOX_SMTP_USER || process.env.MOXT_POSTBOX_SMTP_USER,
+    MOXT_POSTBOX_SMTP_PASS: vars.MOXT_POSTBOX_SMTP_PASS || process.env.MOXT_POSTBOX_SMTP_PASS,
+    MOXT_POSTBOX_FROM: vars.MOXT_POSTBOX_FROM || process.env.MOXT_POSTBOX_FROM,
+  }
+}
+
+function runSupabase(args, env) {
+  const supabaseJs = path.join(root, 'node_modules', 'supabase', 'dist', 'supabase.js')
+  if (existsSync(supabaseJs)) {
+    return (
+      spawnSync(process.execPath, [supabaseJs, ...args], {
+        cwd: root,
+        stdio: 'inherit',
+        env,
+      }).status ?? 1
+    )
+  }
+  return run('npx', ['supabase', ...args], { env })
+}
+
 function ensureHookSecret(vars) {
   if (vars.SEND_SMS_HOOK_SECRET && !vars.SEND_SMS_HOOK_SECRET.includes('REMPLACER')) {
     return vars.SEND_SMS_HOOK_SECRET
@@ -120,12 +151,26 @@ async function main() {
   log('Compte SMSC', login)
   log('Supabase', `projet ${projectRef}`)
 
-  if (run('npx', ['supabase', 'link', '--project-ref', projectRef, '--yes']) !== 0) {
+  const supabaseEnv = buildSupabaseEnv(vars)
+  if (!supabaseEnv.SUPABASE_ACCESS_TOKEN) {
+    console.error('\n✗ SUPABASE_ACCESS_TOKEN manquant pour la CLI Supabase.')
+    console.error('  1. Créez un token : https://supabase.com/dashboard/account/tokens')
+    console.error('  2. Ajoutez-le dans scripts/phase2.env :')
+    console.error('       SUPABASE_ACCESS_TOKEN=sbp_...')
+    console.error('  3. Ou dans PowerShell : $env:SUPABASE_ACCESS_TOKEN="sbp_..."')
+    console.error('  4. Ou : npx supabase login')
+    process.exit(1)
+  }
+
+  if (runSupabase(['link', '--project-ref', projectRef, '--yes'], supabaseEnv) !== 0) {
+    console.error('\n✗ Liaison Supabase échouée (Unauthorized).')
+    console.error('  Le token est peut-être expiré ou révoqué.')
+    console.error('  Regénérez-le : https://supabase.com/dashboard/account/tokens')
     process.exit(1)
   }
 
   log('Migration', 'smsc_events')
-  if (run('npm', ['run', 'db:push']) !== 0) {
+  if (run('npm', ['run', 'db:push'], { env: supabaseEnv }) !== 0) {
     console.log('\n  ⚠ db:push échoué — vérifiez SUPABASE_DB_PASSWORD dans phase2.env')
   }
 
@@ -149,17 +194,17 @@ async function main() {
 
   writeFileSync(secretsPath, `${secretLines.join('\n')}\n`, 'utf8')
   log('Secrets Edge Functions', 'send-sms + smsc-webhook')
-  if (run('npx', ['supabase', 'secrets', 'set', '--env-file', secretsPath]) !== 0) {
+  if (runSupabase(['secrets', 'set', '--env-file', secretsPath], supabaseEnv) !== 0) {
     process.exit(1)
   }
 
   log('Déploiement', 'send-sms')
-  if (run('npx', ['supabase', 'functions', 'deploy', 'send-sms', '--no-verify-jwt']) !== 0) {
+  if (runSupabase(['functions', 'deploy', 'send-sms', '--no-verify-jwt'], supabaseEnv) !== 0) {
     process.exit(1)
   }
 
   log('Déploiement', 'smsc-webhook')
-  if (run('npx', ['supabase', 'functions', 'deploy', 'smsc-webhook', '--no-verify-jwt']) !== 0) {
+  if (runSupabase(['functions', 'deploy', 'smsc-webhook', '--no-verify-jwt'], supabaseEnv) !== 0) {
     process.exit(1)
   }
 
@@ -182,7 +227,7 @@ async function main() {
       pushEnv.MOXT_POSTBOX_SMTP_PASS = vars.MOXT_POSTBOX_SMTP_PASS
       pushEnv.MOXT_POSTBOX_FROM = vars.MOXT_POSTBOX_FROM
     }
-    if (run('npx', ['supabase', 'config', 'push', '--yes'], { env: pushEnv }) !== 0) {
+    if (runSupabase(['config', 'push', '--yes'], { ...supabaseEnv, ...pushEnv }) !== 0) {
       console.log('\n  ⚠ config push échoué — relancez : npm run setup:supabase')
     }
   } else {

@@ -1,8 +1,9 @@
-import { FiArrowLeft, FiArrowRight, FiBox, FiCalendar, FiDownload, FiEdit2, FiMapPin, FiSend, FiShield } from 'react-icons/fi'
+import { FiArrowRight, FiBox, FiCalendar, FiDownload, FiEdit2, FiMapPin, FiSend, FiShield } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useParams } from 'react-router-dom'
 import { useState } from 'react'
 import { Badge, VerifiedBadge } from '../components/ui/Badge'
+import { BackButton } from '../components/ui/BackButton'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import {
@@ -115,9 +116,7 @@ export function ParcelDetailPage() {
                 <Button variant="secondary" icon={FiEdit2}>Modifier</Button>
               </Link>
             ) : null}
-            <Link to="/parcels">
-              <Button variant="secondary" icon={FiArrowLeft}>Retour</Button>
-            </Link>
+            <BackButton fallback="/parcels" />
           </div>
         }
       />

@@ -1,7 +1,8 @@
-import { FiArrowLeft, FiClock, FiMapPin, FiRepeat, FiShield, FiStar } from 'react-icons/fi'
+import { FiClock, FiMapPin, FiRepeat, FiShield, FiStar } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
+import { BackButton } from '../components/ui/BackButton'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import {
@@ -32,13 +33,7 @@ export function ExchangerDetailPage() {
         eyebrow="Partenaire de transfert"
         title={exchanger.name}
         description={exchanger.description || 'Partenaire de change MOXT.'}
-        actions={
-          <Link to="/exchangers">
-            <Button variant="secondary" icon={FiArrowLeft}>
-              Retour
-            </Button>
-          </Link>
-        }
+        actions={<BackButton fallback="/exchangers" />}
       />
       <DetailMetrics
         items={[

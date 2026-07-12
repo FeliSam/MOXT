@@ -1,6 +1,5 @@
 import {
   FiAlertTriangle,
-  FiArrowLeft,
   FiCalendar,
   FiCheckCircle,
   FiEdit2,
@@ -11,6 +10,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { Link, useParams } from 'react-router-dom'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
+import { BackButton } from '../components/ui/BackButton'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import {
@@ -88,9 +88,7 @@ export function EventDetailPage() {
                 <Button variant="secondary" icon={FiEdit2}>Modifier</Button>
               </Link>
             ) : null}
-            <Link to="/events">
-              <Button variant="secondary" icon={FiArrowLeft}>Retour</Button>
-            </Link>
+            <BackButton fallback="/events" />
           </div>
         }
       />

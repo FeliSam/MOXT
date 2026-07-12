@@ -1,7 +1,8 @@
-import { FiArrowLeft, FiCheckCircle, FiClock, FiCreditCard, FiRepeat, FiUser } from 'react-icons/fi'
+import { FiCheckCircle, FiClock, FiCreditCard, FiRepeat, FiUser } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
+import { BackButton } from '../components/ui/BackButton'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import {
@@ -37,13 +38,7 @@ export function P2PDetailPage() {
         eyebrow={offer.id}
         title={`${formatMoney(offer.amount, offer.fromCurrency)} vers ${offer.toCurrency}`}
         description={`Offre publiée par ${offer.ownerName}`}
-        actions={
-          <Link to="/p2p">
-            <Button variant="secondary" icon={FiArrowLeft}>
-              Retour
-            </Button>
-          </Link>
-        }
+        actions={<BackButton fallback="/p2p" />}
       />
       <DetailMetrics
         items={[

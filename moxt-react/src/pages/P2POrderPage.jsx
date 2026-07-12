@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import {
   FiAlertTriangle,
-  FiArrowLeft,
   FiCheckCircle,
   FiClock,
   FiFileText,
@@ -10,8 +9,9 @@ import {
   FiXCircle,
 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
+import { BackButton } from '../components/ui/BackButton'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -53,13 +53,7 @@ export function P2POrderPage() {
         eyebrow={order.id}
         title="Transaction P2P"
         description={`${order.sellerName} vers ${order.buyerName}`}
-        actions={
-          <Link to="/p2p">
-            <Button variant="secondary" icon={FiArrowLeft}>
-              Retour
-            </Button>
-          </Link>
-        }
+        actions={<BackButton fallback="/p2p" />}
       />
       <div className="grid gap-5 lg:grid-cols-2">
         <Card>

@@ -1,5 +1,4 @@
 import {
-  FiArrowLeft,
   FiBriefcase,
   FiCalendar,
   FiMapPin,
@@ -12,6 +11,7 @@ import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useParams } from 'react-router-dom'
 import { Badge, VerifiedBadge } from '../components/ui/Badge'
+import { BackButton } from '../components/ui/BackButton'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { CatalogArchiveTabs } from '../components/ui/CatalogArchiveTabs'
@@ -127,9 +127,7 @@ export function BusinessDetailPage() {
                 className="!w-auto !shadow-none"
               />
             ) : null}
-            <Link to="/businesses">
-              <Button variant="secondary" icon={FiArrowLeft}>Annuaire</Button>
-            </Link>
+            <BackButton fallback="/businesses" label="Annuaire" />
           </div>
         }
       />

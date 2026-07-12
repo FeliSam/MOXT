@@ -63,6 +63,8 @@ function requirePostboxVars(vars) {
 function buildPushEnv(vars) {
   return {
     ...process.env,
+    SUPABASE_ACCESS_TOKEN:
+      process.env.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN || '',
     MOXT_POSTBOX_SMTP_USER: vars.MOXT_POSTBOX_SMTP_USER,
     MOXT_POSTBOX_SMTP_PASS: vars.MOXT_POSTBOX_SMTP_PASS,
     MOXT_POSTBOX_FROM: vars.MOXT_POSTBOX_FROM,
