@@ -39,6 +39,8 @@ export const ru = {
     inviteTab: 'Пригласить',
     profileTab: 'Мой профиль',
     invitationSubtitle: 'Приглашение MOXT',
+    inviteCountOne: 'приглашённый',
+    inviteCountMany: 'приглашённых',
     copyLink: 'Копировать ссылку',
     copied: 'Скопировано',
     share: 'Поделиться',

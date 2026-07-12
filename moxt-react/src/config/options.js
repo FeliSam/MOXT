@@ -65,6 +65,20 @@ export const DELIVERY_OPTIONS = [
   { value: 'shipping', label: 'Expédition' },
 ]
 
+export const JOB_EXPERIENCE_LEVELS = [
+  { value: 'none', label: 'Débutant accepté' },
+  { value: 'junior', label: 'Junior (1-2 ans)' },
+  { value: 'mid', label: 'Confirmé (3-5 ans)' },
+  { value: 'senior', label: 'Senior (5+ ans)' },
+]
+
+export const JOB_SALARY_PERIODS = [
+  { value: 'hour', label: 'Heure' },
+  { value: 'day', label: 'Jour' },
+  { value: 'month', label: 'Mois' },
+  { value: 'project', label: 'Projet' },
+]
+
 export const JOB_CONTRACTS = [
   { value: 'full_time', label: 'Temps plein' },
   { value: 'part_time', label: 'Temps partiel' },

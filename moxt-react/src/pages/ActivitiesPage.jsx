@@ -5,6 +5,7 @@ import { Badge } from '../components/ui/Badge'
 import { Card } from '../components/ui/Card'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { applicationJobId, applicationUserId } from '../features/jobs/jobUtils'
 
 export function ActivitiesPage() {
   const user = useSelector((state) => state.auth.user)
@@ -29,12 +30,14 @@ export function ActivitiesPage() {
         icon: FiHeart,
       })),
     ...state.jobs.applications
-      .filter((item) => item.userId === user.id)
+      .filter((item) => applicationUserId(item) === user.id)
       .map((item) => ({
         id: `application-${item.id}`,
-        title: state.jobs.items.find((job) => job.id === item.jobId)?.title || item.jobId,
+        title:
+          state.jobs.items.find((job) => job.id === applicationJobId(item))?.title ||
+          applicationJobId(item),
         label: 'Candidature',
-        path: `/jobs/${item.jobId}`,
+        path: `/jobs/${applicationJobId(item)}`,
         icon: FiSend,
       })),
     ...state.events.registrations

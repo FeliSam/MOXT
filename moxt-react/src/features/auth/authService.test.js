@@ -17,10 +17,13 @@ const profileQuery = {
   upsert: vi.fn(),
 }
 
+const rpc = vi.fn()
+
 vi.mock('../../services/supabaseClient', () => ({
   supabase: {
     auth,
     from: vi.fn(() => profileQuery),
+    rpc,
   },
 }))
 
@@ -33,6 +36,7 @@ describe('authService', () => {
     profileQuery.eq.mockReturnValue(profileQuery)
     profileQuery.maybeSingle.mockResolvedValue({ data: null, error: null })
     profileQuery.upsert.mockResolvedValue({ error: null })
+    rpc.mockResolvedValue({ data: { available: true, reason: null }, error: null })
   })
 
   it('exige la confirmation SMS avant de créer le profil même avec une session', async () => {
@@ -333,11 +337,24 @@ describe('authService', () => {
     })
     expect(result.token).toBe('login-sms-session')
   })
+
+  it('bloque l inscription si le numéro est encore lié à un compte actif', async () => {
+    rpc.mockResolvedValueOnce({ data: { available: false, reason: 'active' }, error: null })
+
+    await expect(authService.register(registrationDetails())).rejects.toThrow('ALREADY_REGISTERED')
+    expect(auth.signUp).not.toHaveBeenCalled()
+    expect(rpc).toHaveBeenCalledWith('moxt_check_identity_available', {
+      p_kind: 'phone',
+      p_value: '+79000000010',
+      p_user_id: null,
+    })
+  })
 })
 
 describe('translateAuthError', () => {
   it('mappe les codes Supabase vers des messages utilisateur', () => {
     expect(translateAuthError({ code: 'email_exists', message: 'duplicate' })).toBe('ALREADY_REGISTERED')
+    expect(translateAuthError({ message: 'MOXT_IDENTITY_LIMIT_REACHED' })).toBe('IDENTITY_LIMIT_REACHED')
     expect(translateAuthError({ code: 'sms_send_failed', message: 'failed' })).toMatch(/SMS|Telegram/i)
   })
 })

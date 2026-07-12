@@ -12,7 +12,7 @@ import {
 } from 'react-icons/fi'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { needsOAuthProfileCompletion } from '@moxt/shared/auth/profileCompletion.js'
+import { needsOAuthProfileCompletion, needsRegisterProfileCompletion } from '@moxt/shared/auth/profileCompletion.js'
 import { AuthCard } from '../components/auth/AuthCard'
 import { Alert } from '../components/ui/Alert'
 import { useActionBurst } from '../components/ui/ActionBurst'
@@ -47,6 +47,7 @@ import { startRealtimeSubscription } from '../services/realtimeService'
 import { useGeographyOptions } from '../hooks/useGeographyOptions'
 import { markWelcomePending } from '../features/onboarding/welcomeStorage'
 import { storePendingInviteCode, resolveReturnTo, clearReturnTo } from '../features/guest/guestNavigation'
+import { applyPendingReferral } from '../features/referral/referralService'
 
 const STEPS = [
   { key: 'identity', label: 'Identité', icon: FiUser },
@@ -118,6 +119,7 @@ export function RegisterPage() {
   const { trigger: triggerBurst, node: burstNode } = useActionBurst()
   const { countries } = useGeographyOptions()
   const alreadyRegistered = error === 'ALREADY_REGISTERED'
+  const identityLimitReached = error === 'IDENTITY_LIMIT_REACHED'
 
   useEffect(() => {
     return () => dispatch(clearAuthError())
@@ -143,6 +145,15 @@ export function RegisterPage() {
           tone: 'error',
         }),
       )
+    } else if (identityLimitReached) {
+      dispatch(
+        addToast({
+          title: 'Réinscription impossible',
+          message:
+            'Cet e-mail ou ce numéro a déjà servi à deux comptes MOXT. Après suppression, une seule réinscription est possible avec les mêmes identifiants.',
+          tone: 'error',
+        }),
+      )
     } else if (pendingVerification) {
       dispatch(addToast(authErrorToast('Vérification impossible', error)))
     } else if (oauthCompletion) {
@@ -161,6 +172,15 @@ export function RegisterPage() {
     }, 1000)
     return () => window.clearInterval(timer)
   }, [resendCooldown])
+
+  async function completeRegistration(destination) {
+    await applyPendingReferral()
+    await dispatch(loadAllData())
+    startRealtimeSubscription(store.getState().auth.user.id, dispatch, store.getState)
+    markWelcomePending()
+    clearReturnTo()
+    navigate(destination, { replace: true })
+  }
 
   const formik = useFormik({
     initialValues: {
@@ -185,9 +205,6 @@ export function RegisterPage() {
         const result = await dispatch(completeOAuthProfile(values))
         if (!completeOAuthProfile.fulfilled.match(result)) return
         dispatch(clearAuthError())
-        await dispatch(loadAllData())
-        startRealtimeSubscription(store.getState().auth.user.id, dispatch, store.getState)
-        markWelcomePending()
         triggerBurst()
         dispatch(
           addToast({
@@ -197,8 +214,7 @@ export function RegisterPage() {
           }),
         )
         const destination = resolveReturnTo(searchParams, location.state)
-        clearReturnTo()
-        navigate(destination, { replace: true })
+        await completeRegistration(destination)
         return
       }
 
@@ -231,19 +247,20 @@ export function RegisterPage() {
         setPendingVerification({ method: 'email', email: result.payload.email })
         return
       }
-      await dispatch(loadAllData())
-      startRealtimeSubscription(store.getState().auth.user.id, dispatch, store.getState)
-      markWelcomePending()
       const destination = resolveReturnTo(searchParams, location.state)
-      clearReturnTo()
-      navigate(destination, { replace: true })
+      await completeRegistration(destination)
     },
   })
 
   useEffect(() => {
-    if (!authUser || pendingVerification || !needsOAuthProfileCompletion(authUser)) return
+    if (!authUser || pendingVerification || !needsRegisterProfileCompletion(authUser)) return
     setOauthCompletion(true)
-    setStep(2)
+    const missingPhone = needsOAuthProfileCompletion(authUser)
+    const missingIdentity =
+      String(authUser.firstName || '').trim().length < 2 ||
+      String(authUser.lastName || '').trim().length < 2 ||
+      !String(authUser.email || '').includes('@')
+    setStep(missingIdentity || missingPhone ? 2 : 3)
     formik.setValues((current) => ({
       ...current,
       firstName: authUser.firstName || current.firstName,
@@ -252,7 +269,8 @@ export function RegisterPage() {
       avatarUrl: authUser.avatarUrl || current.avatarUrl,
       originCountry: authUser.originCountry || current.originCountry,
       residenceCity: authUser.city || current.residenceCity,
-      russianPhone: authUser.phone || current.russianPhone,
+      russianPhone:
+        authUser.phone && authUser.phone !== '+7' ? authUser.phone : current.russianPhone,
       originPhone: authUser.secondaryPhone || current.originPhone,
     }))
   }, [authUser, formik.setValues, pendingVerification])
@@ -296,8 +314,6 @@ export function RegisterPage() {
       dispatch(clearAuthError())
       setPendingVerification(null)
       setVerificationCode('')
-      await dispatch(loadAllData())
-      startRealtimeSubscription(store.getState().auth.user.id, dispatch, store.getState)
       triggerBurst()
       if (result.payload.emailLinkDeferred) {
         dispatch(
@@ -317,10 +333,8 @@ export function RegisterPage() {
           }),
         )
       }
-      markWelcomePending()
       const destination = resolveReturnTo(searchParams, location.state)
-      clearReturnTo()
-      window.setTimeout(() => navigate(destination, { replace: true }), 550)
+      window.setTimeout(() => completeRegistration(destination), 550)
     }
   }
 
@@ -415,7 +429,8 @@ export function RegisterPage() {
                   label="Adresse e-mail"
                   type="email"
                   autoComplete="email"
-                  readOnly
+                  required
+                  readOnly={Boolean(String(formik.values.email || '').includes('@'))}
                   {...formik.getFieldProps('email')}
                   error={errorFor('email')}
                 />

@@ -1,5 +1,6 @@
 import { supabase } from '../services/supabaseClient'
 import { saveListingRemote } from '../features/marketplace/marketplaceRemote'
+import { saveJobApplicationRemote, saveJobRemote } from '../features/jobs/jobRemote'
 import { saveBusinessRemote, upsertBusinessDocumentRemote, upsertBusinessMemberRemote, upsertBusinessRequestRemote } from '../features/businesses/businessRemote'
 import { reviewToRemoteRow } from '../features/reviews/reviewRemote'
 import { identityToRemoteRow } from '../features/identity/identityRemote'
@@ -77,6 +78,11 @@ function toSnake(obj) {
     proofStatus: 'proof_status',
     proofNotes: 'proof_notes',
     contractType: 'contract_type',
+    experienceLevel: 'experience_level',
+    salaryPeriod: 'salary_period',
+    startDate: 'start_date',
+    applicationDeadline: 'application_deadline',
+    applicantName: 'applicant_name',
     expiresAt: 'expires_at',
     startAt: 'start_at',
     logoUrl: 'logo_url',
@@ -332,21 +338,20 @@ const handlers = {
 
   // ── Jobs ─────────────────────────────────────────────────────────────────────
   'jobs/createJob': async (payload) => {
-    await upsert('jobs', payload)
+    await saveJobRemote(payload)
   },
   'jobs/applyToJob': async (payload) => {
-    const { error } = await supabase.from('job_applications').upsert(
-      { ...toSnake(payload), job_id: payload.jobId, user_id: payload.userId },
-      { onConflict: 'id' },
-    )
-    if (error) throw error
+    await saveJobApplicationRemote(payload)
   },
   'jobs/updateApplicationStatus': async (payload) => {
     await update('job_applications', payload.id, { status: payload.status })
   },
+  'jobs/withdrawApplication': async (payload) => {
+    await update('job_applications', payload.id, { status: 'withdrawn' })
+  },
   'jobs/updateJob': async (payload, state) => {
     const job = state.jobs.items.find((item) => item.id === payload.id)
-    if (job) await upsert('jobs', job)
+    if (job) await saveJobRemote(job)
   },
   'jobs/moderateJob': async (payload) => {
     await update('jobs', payload.id, { status: payload.status })

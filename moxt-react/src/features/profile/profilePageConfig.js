@@ -41,8 +41,8 @@ export const accountSections = [
         path: '/favorites',
       },
       {
-        label: 'Mes abonnements',
-        description: 'Membres et entreprises suivis, alertes personnalisées',
+        label: 'Abonnements',
+        description: 'Membres et entreprises suivis, ainsi que vos abonnés',
         icon: FiBell,
         path: '/subscriptions',
       },

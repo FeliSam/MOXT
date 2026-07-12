@@ -35,6 +35,26 @@ describe('remoteRowMapper', () => {
     })
   })
 
+  it('mappe les champs jobs et candidatures', () => {
+    expect(
+      fromRow({
+        job_id: 'JOB-1',
+        applicant_name: 'Alice',
+        experience_level: 'mid',
+        salary_period: 'month',
+        start_date: '2026-08-01',
+        application_deadline: '2026-07-31',
+      }),
+    ).toEqual({
+      jobId: 'JOB-1',
+      applicantName: 'Alice',
+      experienceLevel: 'mid',
+      salaryPeriod: 'month',
+      startDate: '2026-08-01',
+      applicationDeadline: '2026-07-31',
+    })
+  })
+
   it('mappe un tableau de lignes', () => {
     expect(fromRows([{ owner_name: 'Alice' }])).toEqual([{ ownerName: 'Alice' }])
   })

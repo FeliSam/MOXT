@@ -5,6 +5,9 @@ export function sanitizeAuthMessage(message = '') {
   if (text === 'ALREADY_REGISTERED') {
     return 'Un compte existe déjà avec cet identifiant. Connectez-vous ou utilisez un autre numéro ou e-mail.'
   }
+  if (text === 'IDENTITY_LIMIT_REACHED') {
+    return 'Cet e-mail ou ce numéro a déjà servi à deux comptes MOXT. Après suppression, une seule réinscription est possible avec les mêmes identifiants.'
+  }
 
   const lower = text.toLowerCase()
   if (

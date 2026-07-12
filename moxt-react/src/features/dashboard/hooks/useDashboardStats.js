@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { FiBriefcase, FiPackage, FiRepeat } from 'react-icons/fi'
 import { shallowEqual, useSelector } from 'react-redux'
 import { selectActiveBusinessForOwner } from '../../businesses/businessVisibility'
+import { applicationJobId } from '../../jobs/jobUtils'
 import { TRANSFER_STATUS } from '../../transfers/transferConfig'
 
 export function useDashboardStats(user) {
@@ -25,7 +26,7 @@ export function useDashboardStats(user) {
       .filter((item) => item.ownerId === user.id)
       .map((item) => item.id)
     return state.jobs.applications.filter(
-      (item) => myJobIds.includes(item.jobId) && item.status === 'submitted',
+      (item) => myJobIds.includes(applicationJobId(item)) && item.status === 'submitted',
     )
   }, shallowEqual)
   const business = useSelector((state) =>

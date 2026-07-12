@@ -8,7 +8,7 @@ function profileToUser(profile) {
     firstName: profile.first_name,
     lastName: profile.last_name,
     email: profile.email,
-    phone: profile.phone || '',
+    phone: normalizeRussianAuthPhone(profile.phone || ''),
     secondaryPhone: profile.origin_phone || '',
     country: profile.country || 'RU',
     originCountry: profile.origin_country || 'BJ',
@@ -136,6 +136,33 @@ export function createAuthService(supabase, redirects = {}) {
     }
   }
 
+  async function assertIdentityAvailable(kind, value, userId = null, context = {}) {
+    if (!supabase || !value) return
+
+    const { data, error } = await supabase.rpc('moxt_check_identity_available', {
+      p_kind: kind,
+      p_value: value,
+      p_user_id: userId,
+    })
+
+    if (error) {
+      console.warn('[MOXT] Vérification identité indisponible:', error.message)
+      return
+    }
+
+    if (data?.available === false) {
+      if (data.reason === 'limit') {
+        throw new Error('IDENTITY_LIMIT_REACHED')
+      }
+      throw new Error(
+        translateAuthError(
+          { message: 'MOXT_IDENTITY_ACTIVE' },
+          { ...context, channel: kind === 'phone' ? 'phone' : 'email' },
+        ),
+      )
+    }
+  }
+
   async function getAuthenticatedAuthUser() {
     const { data, error } = await supabase.auth.getUser()
     if (error) throw new Error(translateAuthError(error, { channel: 'phone' }))
@@ -174,7 +201,7 @@ export function createAuthService(supabase, redirects = {}) {
       first_name: metadata.first_name || nameParts[0] || 'Utilisateur',
       last_name: metadata.last_name || nameParts.slice(1).join(' ') || '',
       email: authUser.email || metadata.email || '',
-      phone: authUser.phone || metadata.phone || '',
+      phone: normalizeRussianAuthPhone(authUser.phone || metadata.phone || ''),
       origin_phone: metadata.origin_phone || '',
       country: 'RU',
       origin_country: metadata.origin_country || 'BJ',
@@ -282,9 +309,21 @@ export function createAuthService(supabase, redirects = {}) {
         updated_at: new Date().toISOString(),
       }
 
+      const normalizedPhone = normalizeRussianAuthPhone(details.russianPhone)
+      const resolvedEmail = String(
+        details.email || authUser.email || authUser.user_metadata?.email || '',
+      )
+        .trim()
+        .toLowerCase()
+      const phoneVerified = /^\+7\d{10}$/.test(normalizedPhone)
+      const now = new Date().toISOString()
+
       await upsertProfile(authUser.id, {
         ...profileFields,
-        email: authUser.email || details.email?.trim().toLowerCase() || '',
+        email: resolvedEmail,
+        phone: normalizedPhone,
+        phone_verified: phoneVerified,
+        phone_verified_at: phoneVerified ? now : null,
       })
 
       const { error: metadataError } = await supabase.auth.updateUser({
@@ -315,7 +354,7 @@ export function createAuthService(supabase, redirects = {}) {
         first_name: details.firstName.trim(),
         last_name: details.lastName.trim(),
         email,
-        phone: details.russianPhone?.trim() || '',
+        phone: normalizeRussianAuthPhone(details.russianPhone || ''),
         origin_phone: details.originPhone?.trim() || '',
         country: 'RU',
         origin_country: details.originCountry,
@@ -349,6 +388,17 @@ export function createAuthService(supabase, redirects = {}) {
             }
 
       const authChannel = verificationMethod === 'phone' ? 'phone' : 'email'
+      if (verificationMethod === 'phone') {
+        await assertIdentityAvailable(
+          'phone',
+          normalizeRussianAuthPhone(details.russianPhone),
+          null,
+          { channel: 'phone' },
+        )
+      } else {
+        await assertIdentityAvailable('email', email, null, { channel: 'email' })
+      }
+
       const { data, error } = await supabase.auth.signUp(credentials)
       if (error) {
         throw new Error(translateAuthError(error, { channel: authChannel }))
@@ -417,12 +467,27 @@ export function createAuthService(supabase, redirects = {}) {
       }
 
       const profileFields = profileFieldsFromAuthUser(data.user)
+      const normalizedPhone = normalizeRussianAuthPhone(
+        data.user.phone || profileFields.phone || phone || '',
+      )
       if (linkedEmail) {
         profileFields.email = linkedEmail
       }
+      profileFields.phone = normalizedPhone
+
       const now = new Date().toISOString()
       await upsertProfile(data.user.id, {
-        ...profileFields,
+        first_name: profileFields.first_name,
+        last_name: profileFields.last_name,
+        email: profileFields.email,
+        phone: normalizedPhone,
+        origin_phone: profileFields.origin_phone,
+        country: profileFields.country || 'RU',
+        origin_country: profileFields.origin_country || 'BJ',
+        city: profileFields.city,
+        avatar_url: profileFields.avatar_url,
+        role: profileFields.role || 'user',
+        status: profileFields.status || 'active',
         phone_verified: true,
         phone_verified_at: now,
       })
@@ -493,6 +558,8 @@ export function createAuthService(supabase, redirects = {}) {
         }
         return { phone: normalizedPhone }
       }
+
+      await assertIdentityAvailable('phone', normalizedPhone, currentUser.id, phoneContext)
 
       const { error } = await supabase.auth.updateUser({ phone: normalizedPhone })
       if (error) throw new Error(translateAuthError(error, phoneContext))

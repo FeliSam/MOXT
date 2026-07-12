@@ -1,112 +1,156 @@
 import { useMemo } from 'react'
 import { FiBell, FiBriefcase, FiExternalLink, FiStar, FiUser, FiVolumeX } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { PillBadge } from '../components/ui/Badge'
-import {
-  SUBSCRIPTION_NOTIFY_LABELS,
-} from '@moxt/shared/utils/subscriptionUtils.js'
+import { Tabs } from '../components/ui/Tabs'
+import { SUBSCRIPTION_NOTIFY_LABELS } from '@moxt/shared/utils/subscriptionUtils.js'
 import {
   removePublisherSubscription,
   updatePublisherSubscriptionPref,
 } from '../features/account/accountSlice'
 import { SubscriptionNotifyMenu } from '../features/account/SubscriptionNotifyMenu'
-import { selectUserSubscriptions } from '../features/account/subscriptionSelectors'
+import { SubscribersPanel } from '../features/account/SubscribersPanel'
+import { selectPublisherSubscribers, selectUserSubscriptions } from '../features/account/subscriptionSelectors'
+
+const TAB_ITEMS = [
+  { value: 'following', label: 'Mes abonnements' },
+  { value: 'subscribers', label: 'Mes abonnés' },
+]
 
 export function SubscriptionsPage() {
   const dispatch = useDispatch()
   const user = useSelector((state) => state.auth.user)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeTab = searchParams.get('tab') === 'subscribers' ? 'subscribers' : 'following'
+
   const subscriptions = useSelector((state) => selectUserSubscriptions(state, user.id))
+  const subscribers = useSelector((state) => selectPublisherSubscribers(state, 'user', user.id))
+
   const grouped = useMemo(() => {
     const users = subscriptions.filter((item) => item.publisherType === 'user')
     const businesses = subscriptions.filter((item) => item.publisherType === 'business')
     return { users, businesses }
   }, [subscriptions])
 
-  if (!subscriptions.length) {
-    return (
-      <div className="grid gap-7">
-        <PageHeader
-          eyebrow="Communauté"
-          title="Mes abonnements"
-          description="Suivez des membres ou des entreprises pour voir leurs annonces en priorité."
-        />
-        <EmptyState
-          icon={FiBell}
-          title="Aucun abonnement"
-          description="Abonnez-vous depuis la page publications d'un membre ou la fiche d'une entreprise."
-          action={
-            <Link to="/businesses">
-              <Button variant="secondary">Explorer l'annuaire</Button>
-            </Link>
-          }
-        />
-      </div>
-    )
+  const displayName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Mon profil'
+  const publisherPath = `/users/${user.id}/publications`
+
+  function setActiveTab(tab) {
+    if (tab === 'following') {
+      setSearchParams({}, { replace: true })
+    } else {
+      setSearchParams({ tab }, { replace: true })
+    }
   }
+
+  const description =
+    activeTab === 'subscribers'
+      ? subscribers.length
+        ? `${subscribers.length} membre(s) suivent vos annonces et publications.`
+        : 'Les membres qui s’abonnent à votre profil apparaîtront ici.'
+      : subscriptions.length
+        ? `${subscriptions.length} abonnement(s) actif(s). Configurez les notifications pour chaque éditeur.`
+        : 'Suivez des membres ou des entreprises pour voir leurs annonces en priorité.'
 
   return (
     <div className="grid gap-7">
       <PageHeader
         eyebrow="Communauté"
-        title="Mes abonnements"
-        description={`${subscriptions.length} abonnement(s) actif(s). Configurez les notifications pour chaque éditeur.`}
+        title="Abonnements"
+        description={description}
+        stats={
+          activeTab === 'following'
+            ? [
+                { label: 'Membres', value: grouped.users.length },
+                { label: 'Entreprises', value: grouped.businesses.length },
+              ]
+            : [{ label: 'Abonnés', value: subscribers.length }]
+        }
       />
 
+      <Tabs
+        items={TAB_ITEMS}
+        active={activeTab}
+        onChange={setActiveTab}
+        label="Type d’abonnement"
+      />
+
+      {activeTab === 'following' ? (
+        <FollowingPanel
+          grouped={grouped}
+          subscriptions={subscriptions}
+          userId={user.id}
+          onPrefChange={(item, notifyPref) =>
+            dispatch(
+              updatePublisherSubscriptionPref({
+                userId: user.id,
+                publisherType: item.publisherType,
+                publisherId: item.publisherId,
+                notifyPref,
+              }),
+            )
+          }
+          onUnsubscribe={(item) =>
+            dispatch(
+              removePublisherSubscription({
+                userId: user.id,
+                publisherType: item.publisherType,
+                publisherId: item.publisherId,
+              }),
+            )
+          }
+        />
+      ) : (
+        <SubscribersPanel
+          publisherType="user"
+          publisherId={user.id}
+          publisherName={displayName}
+          publisherPath={publisherPath}
+        />
+      )}
+    </div>
+  )
+}
+
+function FollowingPanel({ grouped, subscriptions, onPrefChange, onUnsubscribe }) {
+  if (!subscriptions.length) {
+    return (
+      <EmptyState
+        icon={FiBell}
+        title="Aucun abonnement"
+        description="Abonnez-vous depuis la page publications d'un membre ou la fiche d'une entreprise."
+        action={
+          <Link to="/businesses">
+            <Button variant="secondary">Explorer l'annuaire</Button>
+          </Link>
+        }
+      />
+    )
+  }
+
+  return (
+    <>
       <SubscriptionGroup
         title="Membres"
         icon={FiUser}
         items={grouped.users}
-        onPrefChange={(item, notifyPref) =>
-          dispatch(
-            updatePublisherSubscriptionPref({
-              userId: user.id,
-              publisherType: item.publisherType,
-              publisherId: item.publisherId,
-              notifyPref,
-            }),
-          )
-        }
-        onUnsubscribe={(item) =>
-          dispatch(
-            removePublisherSubscription({
-              userId: user.id,
-              publisherType: item.publisherType,
-              publisherId: item.publisherId,
-            }),
-          )
-        }
+        onPrefChange={onPrefChange}
+        onUnsubscribe={onUnsubscribe}
       />
 
       <SubscriptionGroup
         title="Entreprises"
         icon={FiBriefcase}
         items={grouped.businesses}
-        onPrefChange={(item, notifyPref) =>
-          dispatch(
-            updatePublisherSubscriptionPref({
-              userId: user.id,
-              publisherType: item.publisherType,
-              publisherId: item.publisherId,
-              notifyPref,
-            }),
-          )
-        }
-        onUnsubscribe={(item) =>
-          dispatch(
-            removePublisherSubscription({
-              userId: user.id,
-              publisherType: item.publisherType,
-              publisherId: item.publisherId,
-            }),
-          )
-        }
+        onPrefChange={onPrefChange}
+        onUnsubscribe={onUnsubscribe}
       />
-    </div>
+    </>
   )
 }
 

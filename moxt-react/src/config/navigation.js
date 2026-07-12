@@ -50,6 +50,7 @@ export const routePreloaders = {
   '/support': () => import('../pages/SupportPage'),
   '/superadmin': () => import('../pages/SuperAdminPage'),
   '/settings': () => import('../pages/SettingsPage'),
+  '/subscriptions': () => import('../pages/SubscriptionsPage'),
   '/security': () => import('../pages/SecurityPage'),
   '/transfers': () => import('../pages/NewTransferPage'),
   '/transfers/history': () => import('../pages/TransfersPage'),

@@ -14,7 +14,7 @@ export function isProfileComplete(user) {
   const email = String(user.email || '').trim()
   const city = String(user.city || '').trim()
   const originCountry = String(user.originCountry || '').trim()
-  const phone = String(user.phone || '').trim()
+  const phone = normalizeRussianAuthPhone(user.phone || '')
 
   return (
     firstName.length >= 2 &&
@@ -24,6 +24,11 @@ export function isProfileComplete(user) {
     originCountry.length >= 2 &&
     isValidRussianPhone(phone)
   )
+}
+
+/** Redirection vers /register pour finaliser un profil incomplet (SMS, Google, etc.). */
+export function needsRegisterProfileCompletion(user) {
+  return Boolean(user?.id) && !isProfileComplete(user)
 }
 
 /** Complétion « OAuth » : utilisateur connecté sans inscription téléphone classique. */

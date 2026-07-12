@@ -4,6 +4,7 @@ import {
   FiGrid,
   FiLogOut,
   FiSettings,
+  FiUser,
   FiX,
 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
@@ -20,7 +21,6 @@ import { stopRealtimeSubscription } from '../../services/realtimeService'
 import { closeSidebar } from '../../features/ui/uiSlice'
 import { useLanguage } from '../../contexts/useLanguage'
 import { CountBounce } from '../ui/CountBounce'
-import { VerifiedDisplayName } from '../ui/Badge'
 import { MoreServicesContent } from './MoreServicesContent'
 import { filterNavigationGroups, useNavigationBadges } from './moreServicesUtils'
 
@@ -32,12 +32,8 @@ const mobileSidebarExcludePaths = new Set([
   ...mobileHiddenPaths,
 ])
 
-function initials(name = '') {
-  return name.split(' ').map((w) => w[0] || '').slice(0, 2).join('').toUpperCase()
-}
-
 function buildRailKeys(items) {
-  return [...items.map((item) => item.path), 'more', 'profile']
+  return [...items.map((item) => item.path), 'more', 'settings']
 }
 
 function railProximity(railKeys, hoveredKey, key) {
@@ -89,7 +85,6 @@ export function Sidebar({ open }) {
   const location = useLocation()
   const { translateLabel } = useLanguage()
   const groups = navigationGroups.filter((group) => !group.roles || group.roles.includes(role))
-  const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim()
 
   function setRailHover(key) {
     if (hoverFrameRef.current) cancelAnimationFrame(hoverFrameRef.current)
@@ -232,42 +227,39 @@ export function Sidebar({ open }) {
         {/* Profil bas de sidebar — flyout accessible (pont de survol vers le rail) */}
         <div
           className="sidebar-footer-zone group/footer relative z-10 hidden shrink-0 overflow-visible border-t border-[var(--app-border)]/70 bg-[var(--app-surface)] p-3 lg:block"
-          onMouseEnter={() => setRailHover('profile')}
+          onMouseEnter={() => setRailHover('settings')}
         >
           <NavLink
-            to="/profile"
+            to="/settings"
             onClick={() => dispatch(closeSidebar())}
-            onMouseEnter={() => setRailHover('profile')}
-            className={`sidebar-rail-item group/profile relative flex min-h-11 items-center justify-center rounded-2xl p-2 transition hover:bg-[var(--app-surface-muted)] ${proximityClass(railProximity(railKeys, hoveredRailKey, 'profile'))}`}
+            onMouseEnter={() => setRailHover('settings')}
+            className={`sidebar-rail-item group/settings relative flex min-h-11 items-center justify-center rounded-2xl p-2 transition hover:bg-[var(--app-surface-muted)] ${proximityClass(railProximity(railKeys, hoveredRailKey, 'settings'))}`}
           >
-            <span className="sidebar-nav-icon grid size-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-700 to-[var(--app-teal)] text-xs font-black text-white">
-              {initials(fullName) || 'M'}
+            <span className="sidebar-nav-icon grid size-9 shrink-0 place-items-center rounded-full bg-[var(--app-surface-muted)] text-lg text-[var(--app-accent)]">
+              <FiSettings />
             </span>
           </NavLink>
 
           <div className="sidebar-footer-flyout" role="group" aria-label="Compte et session">
             <NavLink
-              to="/profile"
+              to="/settings"
               onClick={() => dispatch(closeSidebar())}
               className="sidebar-rail-label sidebar-rail-label--stack sidebar-rail-label--interactive"
             >
-              <VerifiedDisplayName
-                as="strong"
-                name={fullName || 'Mon profil'}
-                verified={Boolean(user?.verified)}
-                iconSize="sm"
-                className="sidebar-rail-label-title truncate"
-              />
-              <span className="text-[10px] text-[var(--app-text-faint)]">{role || 'Membre'}</span>
+              <span className="flex items-center gap-2">
+                <FiSettings className="text-sm text-[var(--app-accent)]" />
+                <strong className="sidebar-rail-label-title truncate">Réglages</strong>
+              </span>
+              <span className="text-[10px] text-[var(--app-text-faint)]">Préférences et confidentialité</span>
             </NavLink>
             <div className="sidebar-footer-flyout-actions">
               <NavLink
-                to="/settings"
+                to="/profile"
                 onClick={() => dispatch(closeSidebar())}
                 className="sidebar-rail-label sidebar-rail-label--action sidebar-rail-label--interactive"
               >
-                <FiSettings className="text-sm" />
-                Reglages
+                <FiUser className="text-sm" />
+                Mon profil
               </NavLink>
               <button
                 type="button"

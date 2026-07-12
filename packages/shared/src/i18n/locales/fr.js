@@ -41,6 +41,8 @@ export const fr = {
     inviteTab: 'Inviter',
     profileTab: 'Mon profil',
     invitationSubtitle: 'Invitation MOXT',
+    inviteCountOne: 'personne invitée',
+    inviteCountMany: 'personnes invitées',
     copyLink: 'Copier le lien',
     copied: 'Copié',
     share: 'Partager',

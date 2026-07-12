@@ -26,8 +26,15 @@ import { FavoriteButton } from '../features/account/FavoriteButton'
 import { ContactButton } from '../features/communications/ContactButton'
 import { applicationSchema } from '../features/jobs/jobSchemas'
 import { applyToJob, reportJob, withdrawApplication } from '../features/jobs/jobSlice'
+import { applicationsForJob, applicationJobId, applicationUserId } from '../features/jobs/jobUtils'
 import { PublisherDetailCard } from '../features/publications/PublisherDetailCard'
 import { usePublisherDetailProfile } from '../features/publications/usePublisherDetailProfile'
+import {
+  JOB_CONTRACTS,
+  JOB_EXPERIENCE_LEVELS,
+  JOB_SALARY_PERIODS,
+  optionLabel,
+} from '../config/options'
 import { statusMeta } from '../config/statuses'
 
 const applicationNextSteps = {
@@ -52,10 +59,22 @@ export function JobDetailPage() {
   const user = useSelector((state) => state.auth.user)
   const job = useSelector((state) => state.jobs.items.find((item) => item.id === jobId))
   const applications = useSelector((state) => state.jobs.applications)
+  const jobApplications = applicationsForJob(applications, jobId)
   const existing = applications.find(
-    (item) => item.jobId === jobId && item.userId === user.id && item.status !== 'withdrawn',
+    (item) =>
+      applicationJobId(item) === jobId &&
+      applicationUserId(item) === user.id &&
+      item.status !== 'withdrawn',
   )
   const publisherProfile = usePublisherDetailProfile(job, 'job')
+  const contractLabel = optionLabel(JOB_CONTRACTS, job.contractType)
+  const experienceLabel =
+    job.experienceLevel && job.experienceLevel !== 'none'
+      ? optionLabel(JOB_EXPERIENCE_LEVELS, job.experienceLevel)
+      : null
+  const salaryLabel = job.salaryPeriod
+    ? `${job.salary} / ${optionLabel(JOB_SALARY_PERIODS, job.salaryPeriod)}`
+    : job.salary
   const formik = useFormik({
     initialValues: { message: '' },
     validationSchema: applicationSchema,
@@ -127,31 +146,40 @@ export function JobDetailPage() {
       ) : null}
       <DetailMetrics
         items={[
-          { icon: FiBriefcase, label: 'Contrat', value: job.contractType },
-          { icon: FiMapPin, label: 'Lieu', value: job.location },
+          { icon: FiBriefcase, label: 'Contrat', value: contractLabel },
+          { icon: FiMapPin, label: 'Lieu', value: job.location || '—' },
           {
             icon: FiUsers,
             label: 'Candidatures',
-            value: `${
-              applications.filter((item) => item.jobId === jobId && item.status !== 'withdrawn')
-                .length
-            }`,
+            value: `${jobApplications.length}`,
           },
-          { icon: FiBriefcase, label: 'Rémunération', value: job.salary },
+          { icon: FiBriefcase, label: 'Rémunération', value: salaryLabel || '—' },
         ]}
       />
       <div className="grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
         <Card>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge>{job.contractType}</Badge>
-            <Badge tone="success">{job.salary}</Badge>
+            <Badge>{contractLabel}</Badge>
+            <Badge tone="success">{salaryLabel}</Badge>
+            {experienceLabel ? <Badge tone="info">{experienceLabel}</Badge> : null}
+            {job.remote ? <Badge tone="slate">Télétravail</Badge> : null}
             <Badge tone={jobStatus.tone}>{jobStatus.label}</Badge>
             {job.businessId ? <VerifiedBadge size="sm" label="Entreprise" /> : null}
           </div>
           <h2 className="mt-6 font-black">Description</h2>
-          <p className="mt-3 leading-7 text-slate-600 dark:text-slate-300">{job.description}</p>
+          <p className="mt-3 leading-7 text-slate-600 dark:text-slate-300">
+            {job.description || '—'}
+          </p>
           <h2 className="mt-6 font-black">Profil recherché</h2>
-          <p className="mt-3 leading-7 text-slate-600 dark:text-slate-300">{job.requirements}</p>
+          <p className="mt-3 leading-7 text-slate-600 dark:text-slate-300">
+            {job.requirements || '—'}
+          </p>
+          {job.benefits ? (
+            <>
+              <h2 className="mt-6 font-black">Avantages</h2>
+              <p className="mt-3 leading-7 text-slate-600 dark:text-slate-300">{job.benefits}</p>
+            </>
+          ) : null}
         </Card>
         <Card>
           <h2 className="font-black">Candidature</h2>
@@ -186,11 +214,7 @@ export function JobDetailPage() {
           ) : null}
           {job.ownerId === user.id ? (
             <p className="mt-3 text-sm text-slate-500">
-              {
-                applications.filter((item) => item.jobId === jobId && item.status !== 'withdrawn')
-                  .length
-              }{' '}
-              candidature(s) reçue(s).
+              {jobApplications.length} candidature(s) reçue(s).
             </p>
           ) : existing ? (
             <div className="mt-4">
@@ -250,12 +274,15 @@ export function JobDetailPage() {
         <DetailSection title="Informations sur le poste">
           <DetailFacts
             items={[
-              { label: 'Entreprise', value: job.publisherName },
+              { label: 'Entreprise', value: job.publisherName || '—' },
               { label: 'Profil', value: job.businessId ? 'Entreprise' : 'Particulier' },
-              { label: 'Secteur', value: job.sector },
-              { label: 'Type de contrat', value: job.contractType },
-              { label: 'Localisation', value: job.location },
-              { label: 'Statut', value: job.status },
+              { label: 'Secteur', value: job.sector || '—' },
+              { label: 'Type de contrat', value: contractLabel },
+              { label: 'Expérience', value: experienceLabel || '—' },
+              { label: 'Localisation', value: job.location || '—' },
+              { label: 'Début', value: job.startDate || '—' },
+              { label: 'Date limite', value: job.applicationDeadline || '—' },
+              { label: 'Statut', value: jobStatus.label },
               { label: 'Référence', value: job.id },
             ]}
           />

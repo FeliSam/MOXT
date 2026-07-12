@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { FiGift, FiShare2, FiUsers } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
 import { useSearchParams } from 'react-router-dom'
@@ -7,6 +7,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { Tabs } from '../components/ui/Tabs'
 import { useLanguage } from '../contexts/useLanguage'
 import { buildReferralCode, buildReferralLink } from '../features/referral/referralUtils'
+import { loadInviteCount } from '../features/referral/referralService'
 import { QrSharePanel } from '../features/share/QrSharePanel'
 import { buildAbsoluteUrl } from '../utils/siteUrl'
 
@@ -29,6 +30,19 @@ export function ReferralPage() {
     ],
     [t],
   )
+
+  const [inviteCount, setInviteCount] = useState(null)
+
+  useEffect(() => {
+    if (!user?.id) return undefined
+    let cancelled = false
+    loadInviteCount(user.id).then((count) => {
+      if (!cancelled) setInviteCount(count)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [user?.id])
 
   const displayName = `${user.firstName} ${user.lastName}`.trim()
   const referralCode = useMemo(() => buildReferralCode(user), [user])
@@ -66,6 +80,7 @@ export function ReferralPage() {
           city={user.city}
           shareUrl={referralLink}
           code={referralCode}
+          inviteCount={inviteCount}
         />
       ) : (
         <QrSharePanel

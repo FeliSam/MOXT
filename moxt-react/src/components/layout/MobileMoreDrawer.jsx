@@ -131,20 +131,20 @@ export function MobileMoreDrawer({ open, onClose }) {
         <footer className="shrink-0 border-t border-[var(--app-border)] bg-[var(--app-surface)] px-4 py-3">
           <div className="mb-2 grid grid-cols-2 gap-2">
             <Link
-              to="/profile"
-              onClick={requestClose}
-              className="flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-btn)] border border-[var(--app-border)] bg-[var(--app-surface-muted)] text-xs font-semibold text-[var(--app-text)] transition hover:bg-[var(--app-surface)]"
-            >
-              <FiUser className="text-base text-[var(--app-accent)]" />
-              Mon profil
-            </Link>
-            <Link
               to="/settings"
               onClick={requestClose}
               className="flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-btn)] border border-[var(--app-border)] bg-[var(--app-surface-muted)] text-xs font-semibold text-[var(--app-text)] transition hover:bg-[var(--app-surface)]"
             >
               <FiSettings className="text-base text-[var(--app-accent)]" />
               Réglages
+            </Link>
+            <Link
+              to="/profile"
+              onClick={requestClose}
+              className="flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-btn)] border border-[var(--app-border)] bg-[var(--app-surface-muted)] text-xs font-semibold text-[var(--app-text)] transition hover:bg-[var(--app-surface)]"
+            >
+              <FiUser className="text-base text-[var(--app-accent)]" />
+              Mon profil
             </Link>
           </div>
           <button

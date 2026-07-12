@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { updateApplicationStatus } from './jobSlice'
+import { applicationJobId } from './jobUtils'
 
 export function JobApplicationsPanel({ embedded = false, id = 'job-applications' }) {
   const dispatch = useDispatch()
@@ -23,12 +24,12 @@ export function JobApplicationsPanel({ embedded = false, id = 'job-applications'
       )
       .map((job) => job.id),
   )
-  const rows = applications.filter((item) => ownedJobIds.has(item.jobId))
+  const rows = applications.filter((item) => ownedJobIds.has(applicationJobId(item)))
 
   const content = rows.length ? (
           <div className="grid gap-3">
             {rows.map((row) => {
-              const job = jobs.find((item) => item.id === row.jobId)
+              const job = jobs.find((item) => item.id === applicationJobId(row))
               return (
                 <Card key={row.id} className="h-full bg-[var(--app-surface-muted)] p-4">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

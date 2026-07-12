@@ -4,6 +4,7 @@ import { supabase } from '../services/supabaseClient'
 import { setAll as setMarketplace } from '../features/marketplace/marketplaceSlice'
 import { setAll as setParcels } from '../features/parcels/parcelSlice'
 import { setAll as setJobs } from '../features/jobs/jobSlice'
+import { jobsFromRemoteRows, jobApplicationsFromRemoteRows } from '../features/jobs/jobRemote'
 import { setAll as setEvents } from '../features/events/eventSlice'
 import { setAll as setBusinesses } from '../features/businesses/businessSlice'
 import { setAll as setTransfers } from '../features/transfers/transferSlice'
@@ -431,8 +432,8 @@ export const loadAllData = createAsyncThunk(
       }))
       dispatch(setParcels({ items: fromRows(parcelsRes.data), requests: parcelRequests }))
       dispatch(setJobs({
-        items: fromRows(jobsRes.data),
-        applications: jobApplications,
+        items: jobsFromRemoteRows(jobsRes.data),
+        applications: jobApplicationsFromRemoteRows(jobApplications),
         reports: mergeRemoteItems(getState().jobs.reports, jobReports),
       }))
       dispatch(setEvents({

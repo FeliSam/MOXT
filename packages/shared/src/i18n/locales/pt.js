@@ -39,6 +39,8 @@ export const pt = {
     inviteTab: 'Convidar',
     profileTab: 'O meu perfil',
     invitationSubtitle: 'Convite MOXT',
+    inviteCountOne: 'pessoa convidada',
+    inviteCountMany: 'pessoas convidadas',
     copyLink: 'Copiar ligação',
     copied: 'Copiado',
     share: 'Partilhar',

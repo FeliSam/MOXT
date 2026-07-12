@@ -84,7 +84,7 @@ export const oauthProfileCompletionSchema = Yup.object({
 })
 
 export const oauthProfileStepFields = {
-  2: ['originCountry'],
+  2: ['firstName', 'lastName', 'email', 'originCountry'],
   3: [
     'residenceCountry',
     'residenceCity',

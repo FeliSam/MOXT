@@ -38,6 +38,8 @@ export const en = {
     inviteTab: 'Invite',
     profileTab: 'My profile',
     invitationSubtitle: 'MOXT invitation',
+    inviteCountOne: 'person invited',
+    inviteCountMany: 'people invited',
     copyLink: 'Copy link',
     copied: 'Copied',
     share: 'Share',

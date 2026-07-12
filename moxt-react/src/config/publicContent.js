@@ -133,7 +133,7 @@ export const LEGAL_SECTIONS = [
     id: 'privacy',
     title: 'Politique de confidentialité',
     content:
-      'MOXT collecte les données nécessaires au compte (identité, téléphone, documents de vérification) et à la fourniture des services. Les numéros de téléphone vérifiés sont uniques par compte. Vous pouvez demander la suppression de votre compte depuis les paramètres.',
+      'MOXT collecte les données nécessaires au compte (identité, téléphone, documents de vérification) et à la fourniture des services. Un e-mail ou numéro vérifié ne peut servir qu’à deux comptes au maximum ; après suppression, une réinscription est possible avec les mêmes identifiants. Vous pouvez demander la suppression de votre compte depuis les paramètres.',
   },
 ]
 

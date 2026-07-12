@@ -4,6 +4,12 @@ export function translateAuthError(error, context = {}) {
   const status = typeof error === 'object' && error !== null ? error.status : undefined
   const channel = context.channel === 'phone' || context.channel === 'email' ? context.channel : inferChannel(message, context)
 
+  if (message.includes('MOXT_IDENTITY_LIMIT_REACHED')) {
+    return 'IDENTITY_LIMIT_REACHED'
+  }
+  if (message.includes('MOXT_IDENTITY_ACTIVE')) {
+    return duplicateIdentityMessage(context)
+  }
   if (
     code === 'user_already_exists' ||
     code === 'email_exists' ||

@@ -23,6 +23,7 @@ export function QrSharePanel({
   shareTitle,
   shareText,
   code,
+  inviteCount,
   qrSize = 260,
   showActions = true,
   className = '',
@@ -130,6 +131,17 @@ export function QrSharePanel({
 
         {code ? (
           <p className="mt-4 font-mono text-sm tracking-[0.2em] text-white/70">{code}</p>
+        ) : null}
+
+        {variant === 'invite' && inviteCount !== null ? (
+          <div className="mt-5 grid w-full max-w-xs grid-cols-1 gap-3">
+            <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3">
+              <p className="text-3xl font-black tracking-tight">{inviteCount}</p>
+              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-white/65">
+                {inviteCount === 1 ? t('share.inviteCountOne') : t('share.inviteCountMany')}
+              </p>
+            </div>
+          </div>
         ) : null}
 
         <div className="mt-7 rounded-[1.35rem] bg-white p-3.5 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.35)]">

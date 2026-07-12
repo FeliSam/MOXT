@@ -7,5 +7,7 @@ export function normalizePhone(value = '') {
 
 export function normalizeRussianAuthPhone(value) {
   const phone = normalizePhone(value)
-  return /^8\d{10}$/.test(phone) ? `+7${phone.slice(1)}` : phone
+  if (/^8\d{10}$/.test(phone)) return `+7${phone.slice(1)}`
+  if (/^7\d{10}$/.test(phone)) return `+${phone}`
+  return phone
 }

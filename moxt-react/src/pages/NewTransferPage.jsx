@@ -29,7 +29,6 @@ import { isBusinessPublishReady } from '../features/businesses/businessPublishUt
 import { isBusinessOwnedBy, selectActiveBusinessForOwner } from '../features/businesses/businessVisibility'
 import {
   DIRECTIONS,
-  FALLBACK_EXCHANGERS,
   paymentMethodsForCountry,
 } from '../features/transfers/transferConfig'
 import { transferSchema } from '../features/transfers/transferSchemas'
@@ -40,6 +39,8 @@ import {
   buildExchangerPaymentView,
   resolveBusinessReceivingAccount,
 } from '../features/transfers/transferAccountUtils'
+import { ExchangerPickerAvatar } from '../features/transfers/ExchangerPickerAvatar'
+import { listExchangersForTransfer, resolveUserTransferCountry } from '../features/transfers/exchangerListUtils'
 import { useExchangeRate } from '../features/transfers/useExchangeRate'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 import {
@@ -79,25 +80,6 @@ export function NewTransferPage() {
   const originCountry = user.originCountry || (user.country !== 'RU' ? user.country : 'BJ')
   const initialDirection = user.country === 'RU' ? DIRECTIONS.RU_TO_BJ : DIRECTIONS.BJ_TO_RU
   const initialInfo = directionInfo(initialDirection, originCountry)
-  const exchangers = useMemo(() => {
-    const approved = businesses
-      .filter(
-        (business) =>
-          ['approved', 'active', 'verified'].includes(business.status) &&
-          business.services?.includes('Transfert') &&
-          !isBusinessOwnedBy(business, user.id),
-      )
-      .map((business) => ({
-          id: business.id,
-          ownerId: business.ownerId,
-          name: business.name,
-          rating: business.rating || 0,
-          feePercent: Number(business.feePercent || 0),
-          averageDelay: business.averageDelay || 'À confirmer',
-          methods: business.exchangeMethods || business.paymentMethods || [],
-        }))
-    return approved.length ? approved : FALLBACK_EXCHANGERS
-  }, [businesses, user.id])
   const formik = useFormik({
     initialValues: {
       direction: initialDirection,
@@ -182,6 +164,18 @@ export function NewTransferPage() {
     },
   })
 
+  const exchangers = useMemo(
+    () =>
+      listExchangersForTransfer({
+        businesses,
+        user,
+        originCountry,
+        direction: formik.values.direction,
+        excludeOwnerId: user.id,
+      }),
+    [businesses, user, originCountry, formik.values.direction],
+  )
+
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       writeTransferDraft(user.id, step, formik.values)
@@ -191,11 +185,19 @@ export function NewTransferPage() {
 
   useEffect(() => {
     if (!formik.values.exchangerId) return
+    const stillVisible = exchangers.some((item) => item.id === formik.values.exchangerId)
+    if (!stillVisible) {
+      formik.setFieldValue('exchangerId', '')
+    }
+  }, [exchangers, formik, formik.values.exchangerId])
+
+  useEffect(() => {
+    if (!formik.values.exchangerId) return
     const selectedBusiness = businesses.find((item) => item.id === formik.values.exchangerId)
     if (selectedBusiness && isBusinessOwnedBy(selectedBusiness, user.id)) {
       formik.setFieldValue('exchangerId', '')
     }
-  }, [businesses, formik.values.exchangerId, user.id])
+  }, [businesses, formik, formik.values.exchangerId, user.id])
 
   const selectedExchanger = exchangers.find((item) => item.id === formik.values.exchangerId)
   const selectedExchangerBusiness = businesses.find((item) => item.id === formik.values.exchangerId)
@@ -422,6 +424,12 @@ export function NewTransferPage() {
               {errorFor('exchangerId') ? (
                 <p className="text-xs text-red-600">{errorFor('exchangerId')}</p>
               ) : null}
+              {!exchangers.length ? (
+                <Alert variant="warning" title="Aucun partenaire dans votre pays">
+                  Seuls les échangeurs de {flagEmoji(resolveUserTransferCountry(user, originCountry))}{' '}
+                  votre pays sont affichés pour garantir les bonnes devises.
+                </Alert>
+              ) : null}
               <div className="w-full min-w-0 max-w-full overflow-x-auto xl:overflow-visible">
                 <div className="flex w-max gap-3 xl:grid xl:w-full xl:grid-cols-4 xl:gap-3">
                   {ownTransferBusiness && isBusinessPublishReady(ownTransferBusiness) ? (
@@ -431,7 +439,16 @@ export function NewTransferPage() {
                       className="flex w-[9.25rem] shrink-0 cursor-not-allowed flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-brand-300 bg-[var(--app-surface-muted)] p-4 text-center opacity-80 sm:w-[10.5rem] xl:w-auto xl:shrink"
                     >
                       <div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-brand-100 text-base font-black text-brand-800 dark:bg-brand-950/50 dark:text-brand-200">
-                        {ownTransferBusiness.name[0]}
+                        {ownTransferBusiness.logoUrl ? (
+                          <img
+                            src={ownTransferBusiness.logoUrl}
+                            alt=""
+                            className="size-12 rounded-2xl object-cover"
+                            loading="lazy"
+                          />
+                        ) : (
+                          ownTransferBusiness.name[0]
+                        )}
                       </div>
                       <p className="line-clamp-2 text-xs font-black leading-tight">{ownTransferBusiness.name}</p>
                       <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-bold text-brand-800 dark:bg-brand-950/50 dark:text-brand-200">
@@ -458,10 +475,11 @@ export function NewTransferPage() {
                             : 'border-[var(--app-border)] hover:border-brand-400 hover:shadow-sm'
                         }`}
                       >
-                        <div className={`grid size-12 shrink-0 place-items-center rounded-2xl text-base font-black ${active ? 'bg-brand-700 text-white' : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'}`}>
-                          {exchanger.name[0]}
-                        </div>
+                        <ExchangerPickerAvatar exchanger={exchanger} active={active} />
                         <p className="line-clamp-2 text-xs font-black leading-tight">{exchanger.name}</p>
+                        <span className="text-[10px] font-semibold text-[var(--app-text-muted)]">
+                          {flagEmoji(exchanger.country)} {exchanger.city || exchanger.country}
+                        </span>
                         {exchanger.rating > 0 ? (
                           <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600">
                             <FiStar className="text-[9px]" /> {exchanger.rating.toFixed(1)}
