@@ -15,7 +15,7 @@ import { addToast } from '../ui/uiSlice'
 export function PhoneVerificationCard({ className = '' }) {
   const dispatch = useDispatch()
   const user = useSelector((state) => state.auth.user)
-  const status = useSelector((state) => state.auth.status)
+  const [busy, setBusy] = useState(false)
   const [otpSent, setOtpSent] = useState(false)
   const [otp, setOtp] = useState('')
   const [phone, setPhone] = useState(user?.phone || '+7')
@@ -41,8 +41,10 @@ export function PhoneVerificationCard({ className = '' }) {
       )
       return
     }
-    const result = await dispatch(requestPhoneVerificationOtp(phone))
-    if (requestPhoneVerificationOtp.fulfilled.match(result)) {
+    setBusy(true)
+    try {
+      const result = await dispatch(requestPhoneVerificationOtp(phone))
+      if (!requestPhoneVerificationOtp.fulfilled.match(result)) return
       if (result.payload.user) {
         dispatch(
           addToast({
@@ -61,13 +63,17 @@ export function PhoneVerificationCard({ className = '' }) {
           tone: 'info',
         }),
       )
+    } finally {
+      setBusy(false)
     }
   }
 
   async function confirmCode() {
     if (!/^\d{6}$/.test(otp)) return
-    const result = await dispatch(confirmPhoneVerification({ phone, token: otp }))
-    if (confirmPhoneVerification.fulfilled.match(result)) {
+    setBusy(true)
+    try {
+      const result = await dispatch(confirmPhoneVerification({ phone, token: otp }))
+      if (!confirmPhoneVerification.fulfilled.match(result)) return
       setOtp('')
       setOtpSent(false)
       dispatch(
@@ -77,6 +83,8 @@ export function PhoneVerificationCard({ className = '' }) {
           tone: 'success',
         }),
       )
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -101,7 +109,7 @@ export function PhoneVerificationCard({ className = '' }) {
         onChange={(event) => setPhone(event.target.value)}
       />
       {!otpSent ? (
-        <Button type="button" icon={FiSmartphone} loading={status === 'loading'} onClick={sendCode}>
+        <Button type="button" icon={FiSmartphone} loading={busy} onClick={sendCode}>
           Envoyer le code SMS
         </Button>
       ) : (
@@ -118,7 +126,7 @@ export function PhoneVerificationCard({ className = '' }) {
             <Button
               type="button"
               icon={FiCheckCircle}
-              loading={status === 'loading'}
+              loading={busy}
               disabled={otp.length !== 6}
               onClick={confirmCode}
             >

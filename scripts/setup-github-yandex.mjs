@@ -7,7 +7,7 @@
  *
  * Usage : npm run setup:github-yandex
  */
-import { existsSync, mkdirSync, readFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
@@ -16,6 +16,7 @@ import { folderId, ycJson, ycRun } from './lib/yandex.mjs'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const saName = process.env.MOXT_GITHUB_SA_NAME || 'moxt-github-deploy'
 const keyPath = path.join(root, 'scripts', 'github-deploy-sa.json')
+const s3KeyPath = path.join(root, 'scripts', 'github-deploy-s3-keys.json')
 
 function log(title, detail = '') {
   console.log(`\n▸ ${title}${detail ? `\n  ${detail}` : ''}`)
@@ -89,6 +90,29 @@ function createAuthorizedKey(saId) {
   return JSON.parse(readFileSync(keyPath, 'utf8'))
 }
 
+function ensureS3AccessKey(saId) {
+  if (existsSync(s3KeyPath)) {
+    try {
+      const existing = JSON.parse(readFileSync(s3KeyPath, 'utf8'))
+      if (existing?.access_key?.key_id && existing?.secret) {
+        log('Clé S3 statique existante', s3KeyPath)
+        return existing
+      }
+    } catch {
+      // recreate below
+    }
+  }
+
+  log('Clé S3 statique (upload natif)', s3KeyPath)
+  const created = ycJson('iam', 'access-key', 'create', '--service-account-id', saId, '--description', 'MOXT GitHub Actions S3 upload')
+  if (!created?.access_key?.key_id || !created?.secret) {
+    throw new Error('Création clé S3 statique impossible.')
+  }
+  mkdirSync(path.dirname(s3KeyPath), { recursive: true })
+  writeFileSync(s3KeyPath, JSON.stringify(created, null, 2), 'utf8')
+  return created
+}
+
 function detectCdnResourceId() {
   if (process.env.MOXT_CDN_RESOURCE_ID) return process.env.MOXT_CDN_RESOURCE_ID
   const list = ycJson('cdn', 'resource', 'list')
@@ -109,6 +133,7 @@ log('Dossier Yandex', folder)
 const saId = ensureServiceAccount(folder)
 ensureRoles(folder, saId)
 createAuthorizedKey(saId)
+ensureS3AccessKey(saId)
 
 const cdnId = detectCdnResourceId()
 const bucket = process.env.MOXT_YC_BUCKET || 'moxtapp-web'
@@ -124,6 +149,10 @@ console.log('  VITE_SUPABASE_URL')
 console.log('    https://rbvqfkccbkwjxkvpnwqn.supabase.co\n')
 console.log('  VITE_SUPABASE_ANON_KEY')
 console.log('    Clé anon Supabase (Dashboard → Project Settings → API)\n')
+console.log('  MOXT_YC_S3_ACCESS_KEY_ID')
+console.log(`    Contenu de : ${s3KeyPath} → access_key.key_id\n`)
+console.log('  MOXT_YC_S3_SECRET_ACCESS_KEY')
+console.log(`    Contenu de : ${s3KeyPath} → secret\n`)
 if (cdnId) {
   console.log('  MOXT_CDN_RESOURCE_ID  (variable repo — purge cache après deploy)')
   console.log(`    ${cdnId}\n`)
@@ -132,7 +161,7 @@ console.log('  Variable optionnelle (Repository variables) :')
 console.log(`    MOXT_YC_BUCKET = ${bucket}\n`)
 console.log('  Ensuite : git push sur main → workflow deploy-yandex.yml\n')
 console.log('  Automatique : $env:GITHUB_TOKEN="ghp_..." ; npm run setup:github-secrets\n')
-console.log('  ⚠  Ne commitez pas github-deploy-sa.json (déjà dans .gitignore)\n')
+console.log('  ⚠  Ne commitez pas github-deploy-sa.json ni github-deploy-s3-keys.json (déjà dans .gitignore)\n')
 
 if (process.env.GITHUB_TOKEN || process.env.GH_TOKEN) {
   log('Configuration GitHub Actions', 'GITHUB_TOKEN détecté')

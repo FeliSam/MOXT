@@ -11,6 +11,7 @@ on:
       - 'scripts/deploy-yandex.mjs'
       - 'scripts/verify-deploy-version.mjs'
       - 'scripts/lib/yandex-upload.mjs'
+      - 'scripts/lib/yandex-s3.mjs'
       - 'scripts/lib/deploy-manifest.mjs'
       - 'scripts/lib/yandex-cdn.mjs'
       - '.github/workflows/deploy-yandex.yml'
@@ -90,8 +91,10 @@ jobs:
           MOXT_YC_BUCKET: ${{ vars.MOXT_YC_BUCKET || 'moxtapp-web' }}
           MOXT_CDN_RESOURCE_ID: ${{ vars.MOXT_CDN_RESOURCE_ID }}
           MOXT_DEPLOY_STATE_PATH: ${{ github.workspace }}/scripts/.deploy-state.json
+          MOXT_YC_S3_ACCESS_KEY_ID: ${{ secrets.MOXT_YC_S3_ACCESS_KEY_ID }}
+          MOXT_YC_S3_SECRET_ACCESS_KEY: ${{ secrets.MOXT_YC_S3_SECRET_ACCESS_KEY }}
           YC_BIN: yc
-        run: node scripts/deploy-yandex.mjs --skip-build --purge-cdn --concurrency=16
+        run: node scripts/deploy-yandex.mjs --skip-build --purge-cdn --concurrency=32
 
       - name: Smoke test version.json
         env:

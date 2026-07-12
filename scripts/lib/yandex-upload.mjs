@@ -6,6 +6,12 @@ import {
   manifestKeysToUpload,
   readDeployManifest,
 } from './deploy-manifest.mjs'
+import {
+  createStorageS3Client,
+  listRemoteObjectsS3,
+  resolveS3Credentials,
+  runUploadBatchS3,
+} from './yandex-s3.mjs'
 import { ycRun } from './yandex.mjs'
 
 const SHELL_KEYS = new Set([
@@ -55,7 +61,7 @@ function md5File(filePath) {
   })
 }
 
-export function listRemoteObjects(bucketName) {
+export function listRemoteObjectsYc(bucketName) {
   const map = new Map()
   let continuationToken = ''
 
@@ -81,6 +87,13 @@ export function listRemoteObjects(bucketName) {
   } while (continuationToken)
 
   return map
+}
+
+export async function listRemoteObjects(bucketName, { s3Client } = {}) {
+  if (s3Client) {
+    return listRemoteObjectsS3(s3Client, bucketName)
+  }
+  return listRemoteObjectsYc(bucketName)
 }
 
 function remoteMatchesLocal(remote, localSize, localEtag) {
@@ -141,7 +154,48 @@ export function planManifestUpload({ sourceDir, currentManifest, previousManifes
   }
 }
 
-export function uploadObject(bin, bucketName, { file, key }, { quiet = false } = {}) {
+export async function runUploadBatch(
+  bin,
+  bucketName,
+  items,
+  { concurrency = 12, onProgress, transport = 'auto', s3Client } = {},
+) {
+  if (!items.length) return { uploaded: 0, failed: 0 }
+
+  const useS3 =
+    transport === 's3' || (transport === 'auto' && s3Client) || (transport === 'auto' && resolveS3Credentials())
+
+  if (useS3) {
+    const client = s3Client || createStorageS3Client(resolveS3Credentials())
+    return runUploadBatchS3(client, bucketName, items, {
+      concurrency: Math.max(concurrency, 16),
+      cacheControlFn: uploadCacheControl,
+      onProgress,
+    })
+  }
+
+  let uploaded = 0
+  let failed = 0
+  let index = 0
+
+  async function worker() {
+    while (index < items.length) {
+      const current = index
+      index += 1
+      const item = items[current]
+      const ok = uploadObjectYc(bin, bucketName, item, { quiet: true })
+      if (ok) uploaded += 1
+      else failed += 1
+      onProgress?.({ uploaded, failed, total: items.length, key: item.key })
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, () => worker())
+  await Promise.all(workers)
+  return { uploaded, failed }
+}
+
+export function uploadObjectYc(bin, bucketName, { file, key }, { quiet = false } = {}) {
   const { code } = ycRun(
     [
       'storage',
@@ -159,28 +213,20 @@ export function uploadObject(bin, bucketName, { file, key }, { quiet = false } =
   return code === 0
 }
 
-export async function runUploadBatch(bin, bucketName, items, { concurrency = 12, onProgress } = {}) {
-  if (!items.length) return { uploaded: 0, failed: 0 }
+/** @deprecated alias */
+export const uploadObject = uploadObjectYc
 
-  let uploaded = 0
-  let failed = 0
-  let index = 0
+export async function runUploadBatchYc(bin, bucketName, items, { concurrency = 12, onProgress } = {}) {
+  return runUploadBatch(bin, bucketName, items, {
+    concurrency,
+    onProgress,
+    transport: 'yc',
+  })
+}
 
-  async function worker() {
-    while (index < items.length) {
-      const current = index
-      index += 1
-      const item = items[current]
-      const ok = uploadObject(bin, bucketName, item, { quiet: true })
-      if (ok) uploaded += 1
-      else failed += 1
-      onProgress?.({ uploaded, failed, total: items.length, key: item.key })
-    }
-  }
-
-  const workers = Array.from({ length: Math.min(concurrency, items.length) }, () => worker())
-  await Promise.all(workers)
-  return { uploaded, failed }
+export function resolveUploadTransport({ forceYc = false } = {}) {
+  if (forceYc) return 'yc'
+  return resolveS3Credentials() ? 's3' : 'yc'
 }
 
 export async function syncDist(
@@ -193,6 +239,8 @@ export async function syncDist(
     concurrency = 12,
     deployStatePath = '',
     distManifestPath = '',
+    transport = 'auto',
+    s3Client = null,
   } = {},
 ) {
   const manifestPath = distManifestPath || path.join(sourceDir, 'deploy-manifest.json')
@@ -210,19 +258,29 @@ export async function syncDist(
   } else if (currentManifest && !full) {
     plan = planManifestUpload({ sourceDir, currentManifest, previousManifest: null, full: true })
   } else {
-    const remoteObjects = full ? new Map() : listRemoteObjects(bucketName)
+    const remoteObjects = full
+      ? new Map()
+      : await listRemoteObjects(bucketName, { s3Client: s3Client || undefined })
     plan = await planDistUpload({ sourceDir, remoteObjects, full })
   }
+
+  const uploadTransport =
+    transport === 'yc' ? 'yc' : s3Client || resolveS3Credentials() ? 's3' : 'yc'
 
   return {
     total: plan.files,
     skipped: plan.skipped,
     toUpload: plan.toUpload,
     mode: plan.mode,
+    transport: uploadTransport,
     currentManifest,
     async runUpload() {
       if (dryRun) return { uploaded: 0, failed: 0 }
-      return runUploadBatch(bin, bucketName, plan.toUpload, { concurrency })
+      return runUploadBatch(bin, bucketName, plan.toUpload, {
+        concurrency,
+        transport: uploadTransport,
+        s3Client,
+      })
     },
   }
 }

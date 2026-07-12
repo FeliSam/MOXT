@@ -17,6 +17,7 @@ import { findCdnResource } from './lib/yandex-cdn.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const saKeyPath = path.join(root, 'scripts', 'github-deploy-sa.json')
+const s3KeyPath = path.join(root, 'scripts', 'github-deploy-s3-keys.json')
 const envProdPath = path.join(root, 'moxt-react', '.env.production')
 const phase2EnvPath = path.join(root, 'scripts', 'phase2.env')
 
@@ -235,6 +236,19 @@ async function main() {
 
   await setSecretBase64('YC_SA_JSON_B64', saKeyPath)
   await setSecret('YC_SA_JSON', readFileSync(saKeyPath, 'utf8'))
+
+  if (existsSync(s3KeyPath)) {
+    const s3Keys = JSON.parse(readFileSync(s3KeyPath, 'utf8'))
+    if (s3Keys?.access_key?.key_id && s3Keys?.secret) {
+      await setSecret('MOXT_YC_S3_ACCESS_KEY_ID', s3Keys.access_key.key_id)
+      await setSecret('MOXT_YC_S3_SECRET_ACCESS_KEY', s3Keys.secret)
+    } else {
+      console.log('  ⚠ secrets S3 ignorés (fichier github-deploy-s3-keys.json incomplet)')
+    }
+  } else {
+    console.log('  ⚠ secrets S3 ignorés — relancez npm run setup:github-yandex pour créer github-deploy-s3-keys.json')
+  }
+
   await setSecret('VITE_SUPABASE_URL', supabaseUrl)
   await setSecret('VITE_SUPABASE_ANON_KEY', supabaseAnon)
 

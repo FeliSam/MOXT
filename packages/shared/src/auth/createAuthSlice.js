@@ -238,7 +238,7 @@ export function createAuthSlice(authService) {
           state.error = null
         })
         .addCase(resendEmailRegistrationOtp.rejected, setFailure)
-        .addCase(requestPhoneVerificationOtp.pending, setLoading)
+        .addCase(requestPhoneVerificationOtp.pending, clearAuthErrorOnly)
         .addCase(requestPhoneVerificationOtp.fulfilled, (state, action) => {
           state.status = 'authenticated'
           state.error = null
@@ -247,7 +247,7 @@ export function createAuthSlice(authService) {
           }
         })
         .addCase(requestPhoneVerificationOtp.rejected, setFailure)
-        .addCase(confirmPhoneVerification.pending, setLoading)
+        .addCase(confirmPhoneVerification.pending, clearAuthErrorOnly)
         .addCase(confirmPhoneVerification.fulfilled, (state, action) => {
           state.user = action.payload
           state.status = 'authenticated'
@@ -291,6 +291,10 @@ export function createAuthSlice(authService) {
 
 function setLoading(state) {
   state.status = 'loading'
+  state.error = null
+}
+
+function clearAuthErrorOnly(state) {
   state.error = null
 }
 

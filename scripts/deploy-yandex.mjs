@@ -14,6 +14,7 @@
  * Options :
  *   --full           envoie tous les fichiers (ignore la comparaison distante)
  *   --dry-run        affiche ce qui serait envoyé sans upload
+ *   --transport=yc   force l'upload via yc storage s3 cp (sinon S3 natif si clés dispo)
  */
 import { existsSync, writeFileSync, unlinkSync } from 'node:fs'
 import path from 'node:path'
@@ -24,6 +25,7 @@ import { parseEnvFile } from './lib/env.mjs'
 import { purgeCdnCache, findCdnResource } from './lib/yandex-cdn.mjs'
 import { writeDeployManifest } from './lib/deploy-manifest.mjs'
 import { syncDist } from './lib/yandex-upload.mjs'
+import { createStorageS3Client, ensureS3Credentials } from './lib/yandex-s3.mjs'
 import { ycJson } from './lib/yandex.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -37,7 +39,8 @@ const purgeCdn = process.argv.includes('--purge-cdn')
 const fullUpload = process.argv.includes('--full')
 const dryRun = process.argv.includes('--dry-run')
 const concurrencyArg = process.argv.find((arg) => arg.startsWith('--concurrency='))
-const uploadConcurrency = concurrencyArg ? Number(concurrencyArg.split('=')[1]) || 12 : 12
+const transportArg = process.argv.find((arg) => arg.startsWith('--transport='))
+const forceTransport = transportArg ? transportArg.split('=')[1] : ''
 const deployStatePath = process.env.MOXT_DEPLOY_STATE_PATH || path.join(root, 'scripts', '.deploy-state.json')
 
 function ycPath() {
@@ -173,13 +176,28 @@ async function main() {
   }
 
   const mode = fullUpload ? 'upload complet' : 'sync manifest (diff md5)'
-  log(dryRun ? 'Simulation upload' : 'Upload', `${mode} → s3://${bucket}/ · concurrence ${uploadConcurrency}`)
+  const forceYc = forceTransport === 'yc'
+  const s3Creds = forceYc ? null : ensureS3Credentials({ allowEphemeral: true })
+  const s3Client = s3Creds ? createStorageS3Client(s3Creds) : null
+  const uploadTransport = forceYc ? 'yc' : s3Client ? 's3' : 'yc'
+  const uploadConcurrency = concurrencyArg
+    ? Number(concurrencyArg.split('=')[1]) || 12
+    : uploadTransport === 's3'
+      ? 32
+      : 12
+
+  log(
+    dryRun ? 'Simulation upload' : 'Upload',
+    `${mode} → s3://${bucket}/ · transport ${uploadTransport} · concurrence ${uploadConcurrency}`,
+  )
 
   const plan = await syncDist(ycPath(), bucket, distDir, {
     full: fullUpload,
     dryRun,
     concurrency: uploadConcurrency,
     deployStatePath,
+    transport: forceYc ? 'yc' : 'auto',
+    s3Client,
   })
   console.log(`  mode ${plan.mode} — ${plan.total} fichiers — ${plan.skipped} inchangés — ${plan.toUpload.length} à envoyer`)
 
