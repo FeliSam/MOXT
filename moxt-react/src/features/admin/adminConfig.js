@@ -47,7 +47,7 @@ export const CHIP = 'rounded-full px-3 py-1.5 text-xs font-bold transition-all'
 export const VIEW_FILTERS = {
   transfers: ['all', 'pending', 'completed', 'cancelled'],
   support: ['all', 'open', 'resolved', 'pending'],
-  users: ['all', 'active', 'suspended', 'user', 'professional', 'admin'],
+  users: ['all', 'active', 'suspended', 'pending_deletion', 'user', 'professional', 'admin'],
   content: [],
   overview: [],
   queues: [],

@@ -18,7 +18,22 @@ import { adminDetailLink, normalizeAdminKind } from './adminLinkUtils'
 import { formatDate, formatMoney } from '../transfers/transferUtils'
 
 export function buildQueues(state) {
+  const accountDeletions = (state.account.deletionRequests || [])
+    .filter((item) => item.status === 'requested')
+    .map((item) => {
+      const user = state.administration.users.find((entry) => entry.id === item.userId)
+      const userName = user
+        ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email
+        : item.userId
+      return {
+        ...item,
+        userName,
+        userEmail: user?.email || '',
+      }
+    })
+
   return {
+    accountDeletions,
     verifications: state.account.verificationRequests.filter((i) => ['pending_review', 'pending'].includes(i.status)),
     disputes: state.disputes.items.filter((i) => ['new', 'open'].includes(i.status)),
     reviews: state.reviews.items.filter((i) => i.status === 'pending'),
@@ -39,6 +54,7 @@ export function buildQueues(state) {
     ],
     get urgent() {
       return (
+        this.accountDeletions.length +
         this.verifications.length +
         this.disputes.length +
         this.reports.length +
@@ -82,8 +98,13 @@ export function buildAdminMetrics(state) {
       suspended: state.administration.users.filter((i) => i.status === 'suspended').length,
     },
     queues: {
-      total: queues.verifications.length + queues.disputes.length + queues.reviews.length + queues.reports.length,
-      urgent: queues.verifications.length + queues.disputes.length + queues.reports.length,
+      total:
+        queues.accountDeletions.length +
+        queues.verifications.length +
+        queues.disputes.length +
+        queues.reviews.length +
+        queues.reports.length,
+      urgent: queues.urgent,
     },
     audit: { total: state.audit.items.length },
   }

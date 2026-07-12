@@ -3,6 +3,7 @@ import {
   FiAlertTriangle,
   FiCheckCircle,
   FiStar,
+  FiTrash2,
   FiUserCheck,
   FiX,
 } from 'react-icons/fi'
@@ -47,6 +48,27 @@ function QueueSection({ icon, items, kind, label, renderActions, renderMeta, set
 export function AdminQueuesPanel({ dispatch, queues, setSelected }) {
   return (
     <div className="grid gap-5">
+      <QueueSection
+        icon={FiTrash2}
+        items={queues.accountDeletions}
+        label="Suppressions de compte"
+        kind="accountDeletion"
+        setSelected={setSelected}
+        renderMeta={(item) => `${item.userName || item.userId}${item.userEmail ? ` · ${item.userEmail}` : ''}`}
+        renderActions={(item) => (
+          <Button
+            variant="secondary"
+            onClick={() =>
+              setSelected({
+                kind: 'user',
+                item: { id: item.userId, status: 'pending_deletion' },
+              })
+            }
+          >
+            Voir le profil
+          </Button>
+        )}
+      />
       <QueueSection
         icon={FiUserCheck}
         items={queues.verifications}

@@ -292,12 +292,19 @@ export const loadAllData = createAsyncThunk(
             .order('created_at', { ascending: false })
             .limit(USER_LIMIT)
         : Promise.resolve({ data: [] }),
-      supabase
-        .from('account_deletion_requests')
-        .select('*')
-        .eq('user_id', uid)
-        .order('created_at', { ascending: false })
-        .limit(20),
+      isAdmin
+        ? supabase
+            .from('account_deletion_requests')
+            .select('*')
+            .eq('status', 'requested')
+            .order('created_at', { ascending: false })
+            .limit(USER_LIMIT)
+        : supabase
+            .from('account_deletion_requests')
+            .select('*')
+            .eq('user_id', uid)
+            .order('created_at', { ascending: false })
+            .limit(20),
     ])
 
     const listingsWithQuestions = listingsRes.error
