@@ -204,11 +204,11 @@ export function Sidebar({ open }) {
           </NavLink>
 
           <div className="sidebar-footer-flyout" role="group" aria-label="Compte et session">
-            <div className="flex items-center gap-2">
+            <div className="flex min-w-0 items-center gap-2">
               <NavLink
                 to="/profile"
                 onClick={() => dispatch(closeSidebar())}
-                className="sidebar-rail-label sidebar-rail-label--stack sidebar-rail-label--interactive min-w-0 flex-[3]"
+                className="sidebar-rail-label sidebar-rail-label--stack sidebar-rail-label--interactive min-w-0 flex-1"
               >
                 <VerifiedDisplayName
                   as="strong"
@@ -220,7 +220,7 @@ export function Sidebar({ open }) {
                 <span className="text-[10px] text-[var(--app-text-faint)]">{role || 'Membre'}</span>
               </NavLink>
               <ProfileQrShareButton
-                className="size-10 flex-[1] min-w-0"
+                className="shrink-0"
                 title={fullName || 'Mon profil'}
                 subtitle={user?.city || 'MOXT'}
                 verified={Boolean(user?.verified)}

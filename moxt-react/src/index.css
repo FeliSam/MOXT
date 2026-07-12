@@ -2090,7 +2090,7 @@ html.theme-animating *::after {
   display: flex;
   width: max-content;
   min-width: 10.5rem;
-  max-width: 12.5rem;
+  max-width: 14.5rem;
   flex-direction: column;
   gap: 0.25rem;
   padding: 0.25rem 0 0.25rem 0.75rem;

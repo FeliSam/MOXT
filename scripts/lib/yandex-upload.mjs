@@ -1,7 +1,22 @@
 import { createHash } from 'node:crypto'
 import { createReadStream, readdirSync, statSync } from 'node:fs'
 import path from 'node:path'
+import {
+  diffDeployManifests,
+  manifestKeysToUpload,
+  readDeployManifest,
+} from './deploy-manifest.mjs'
 import { ycRun } from './yandex.mjs'
+
+const SHELL_KEYS = new Set([
+  'index.html',
+  'sw.js',
+  'offline.html',
+  'version.json',
+  'deploy-manifest.json',
+  'theme-init.js',
+  'manifest.webmanifest',
+])
 
 export function walkFiles(dir) {
   const files = []
@@ -21,7 +36,7 @@ export function toObjectKey(sourceDir, file) {
 }
 
 export function uploadCacheControl(key) {
-  if (key === 'index.html' || key === 'sw.js' || key === 'offline.html' || key === 'version.json') {
+  if (SHELL_KEYS.has(key)) {
     return 'no-cache, must-revalidate'
   }
   if (/^assets\/[^/]+-[A-Za-z0-9_-]+\.(js|css)$/.test(key)) {
@@ -109,10 +124,24 @@ export async function planDistUpload({ sourceDir, remoteObjects, full = false })
     toUpload.push({ file, key, size, localEtag })
   }
 
-  return { files, toUpload, skipped }
+  return { files, toUpload, skipped, mode: 'remote-md5' }
 }
 
-export function uploadObject(bin, bucketName, { file, key }) {
+export function planManifestUpload({ sourceDir, currentManifest, previousManifest, full = false }) {
+  const keys = full ? Object.keys(currentManifest?.files || {}) : diffDeployManifests(previousManifest, currentManifest)
+  const toUpload = manifestKeysToUpload(sourceDir, currentManifest, keys)
+  const total = Object.keys(currentManifest?.files || {}).length
+  const skipped = Math.max(0, total - toUpload.length)
+
+  return {
+    files: total,
+    toUpload,
+    skipped,
+    mode: previousManifest && !full ? 'manifest-diff' : 'manifest-full',
+  }
+}
+
+export function uploadObject(bin, bucketName, { file, key }, { quiet = false } = {}) {
   const { code } = ycRun(
     [
       'storage',
@@ -125,34 +154,75 @@ export function uploadObject(bin, bucketName, { file, key }) {
       '--cache-control',
       uploadCacheControl(key),
     ],
-    { inherit: true },
+    { inherit: !quiet },
   )
   return code === 0
 }
 
-export async function syncDist(bin, bucketName, sourceDir, { full = false, dryRun = false } = {}) {
-  const remoteObjects = full ? new Map() : listRemoteObjects(bucketName)
-  const { files, toUpload, skipped } = await planDistUpload({
-    sourceDir,
-    remoteObjects,
-    full,
-  })
+export async function runUploadBatch(bin, bucketName, items, { concurrency = 12, onProgress } = {}) {
+  if (!items.length) return { uploaded: 0, failed: 0 }
+
+  let uploaded = 0
+  let failed = 0
+  let index = 0
+
+  async function worker() {
+    while (index < items.length) {
+      const current = index
+      index += 1
+      const item = items[current]
+      const ok = uploadObject(bin, bucketName, item, { quiet: true })
+      if (ok) uploaded += 1
+      else failed += 1
+      onProgress?.({ uploaded, failed, total: items.length, key: item.key })
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, () => worker())
+  await Promise.all(workers)
+  return { uploaded, failed }
+}
+
+export async function syncDist(
+  bin,
+  bucketName,
+  sourceDir,
+  {
+    full = false,
+    dryRun = false,
+    concurrency = 12,
+    deployStatePath = '',
+    distManifestPath = '',
+  } = {},
+) {
+  const manifestPath = distManifestPath || path.join(sourceDir, 'deploy-manifest.json')
+  const currentManifest = readDeployManifest(manifestPath)
+  const previousManifest = deployStatePath ? readDeployManifest(deployStatePath) : null
+
+  let plan
+  if (currentManifest && (previousManifest || full)) {
+    plan = planManifestUpload({
+      sourceDir,
+      currentManifest,
+      previousManifest,
+      full: full || !previousManifest,
+    })
+  } else if (currentManifest && !full) {
+    plan = planManifestUpload({ sourceDir, currentManifest, previousManifest: null, full: true })
+  } else {
+    const remoteObjects = full ? new Map() : listRemoteObjects(bucketName)
+    plan = await planDistUpload({ sourceDir, remoteObjects, full })
+  }
 
   return {
-    total: files.length,
-    skipped,
-    toUpload,
+    total: plan.files,
+    skipped: plan.skipped,
+    toUpload: plan.toUpload,
+    mode: plan.mode,
+    currentManifest,
     async runUpload() {
       if (dryRun) return { uploaded: 0, failed: 0 }
-
-      let uploaded = 0
-      let failed = 0
-      for (const item of toUpload) {
-        const ok = uploadObject(bin, bucketName, item)
-        if (ok) uploaded += 1
-        else failed += 1
-      }
-      return { uploaded, failed }
+      return runUploadBatch(bin, bucketName, plan.toUpload, { concurrency })
     },
   }
 }

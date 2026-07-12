@@ -1,16 +1,4 @@
-# Déploie le site web sur Yandex Object Storage à chaque push sur main.
-#
-# Secrets GitHub requis :
-#   YC_SA_JSON_B64           clé SA Yandex (base64, généré par setup:github-secrets)
-#   VITE_SUPABASE_URL
-#   VITE_SUPABASE_ANON_KEY
-#
-# Variables repo :
-#   MOXT_YC_BUCKET           défaut moxtapp-web
-#   MOXT_CDN_RESOURCE_ID     purge cache CDN (auto-détecté si obsolète)
-#   MOXT_YC_FOLDER_ID        défaut b1gmns3k9udjtgk89c9i
-
-name: Deploy — Yandex Cloud
+# Deploy — Yandex Cloud
 
 on:
   push:
@@ -23,6 +11,7 @@ on:
       - 'scripts/deploy-yandex.mjs'
       - 'scripts/verify-deploy-version.mjs'
       - 'scripts/lib/yandex-upload.mjs'
+      - 'scripts/lib/deploy-manifest.mjs'
       - 'scripts/lib/yandex-cdn.mjs'
       - '.github/workflows/deploy-yandex.yml'
   workflow_dispatch:
@@ -42,6 +31,15 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Restore deploy manifest state
+        uses: actions/cache@v4
+        with:
+          path: scripts/.deploy-state.json
+          key: moxt-deploy-state-${{ github.ref_name }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            moxt-deploy-state-${{ github.ref_name }}-
+            moxt-deploy-state-
+
       - run: npm ci
 
       - name: Build web (production)
@@ -51,10 +49,18 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run web:build
 
+      - name: Cache Yandex CLI
+        uses: actions/cache@v4
+        id: yc-cache
+        with:
+          path: /tmp/yc
+          key: yc-cli-${{ runner.os }}-v1
+
       - name: Install Yandex CLI
+        if: steps.yc-cache.outputs.cache-hit != 'true'
         run: |
           curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i /tmp/yc -n
-          echo "/tmp/yc/bin" >> "$GITHUB_PATH"
+      - run: echo "/tmp/yc/bin" >> "$GITHUB_PATH"
 
       - name: Configure Yandex Cloud credentials
         env:
@@ -83,8 +89,9 @@ jobs:
         env:
           MOXT_YC_BUCKET: ${{ vars.MOXT_YC_BUCKET || 'moxtapp-web' }}
           MOXT_CDN_RESOURCE_ID: ${{ vars.MOXT_CDN_RESOURCE_ID }}
+          MOXT_DEPLOY_STATE_PATH: ${{ github.workspace }}/scripts/.deploy-state.json
           YC_BIN: yc
-        run: node scripts/deploy-yandex.mjs --skip-build --purge-cdn
+        run: node scripts/deploy-yandex.mjs --skip-build --purge-cdn --concurrency=16
 
       - name: Smoke test version.json
         env:

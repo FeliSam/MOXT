@@ -1,4 +1,4 @@
-const CACHE_NAME = 'moxt-v7';
+const CACHE_NAME = '__MOXT_CACHE_NAME__';
 const STATIC_ASSETS = [
   '/manifest.webmanifest',
   '/favicon.svg',
@@ -64,7 +64,12 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Fichiers de version / shell : toujours réseau (mises à jour silencieuses)
-  if (url.pathname === '/version.json' || url.pathname === '/sw.js') {
+  if (
+    url.pathname === '/version.json' ||
+    url.pathname === '/deploy-manifest.json' ||
+    url.pathname === '/sw.js' ||
+    url.pathname === '/theme-init.js'
+  ) {
     event.respondWith(fetch(request, { cache: 'no-store' }));
     return;
   }

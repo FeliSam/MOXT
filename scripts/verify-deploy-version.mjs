@@ -52,8 +52,8 @@ function sleep(ms) {
 export async function verifyDeployVersion({
   expectedBuildId,
   urls = DEFAULT_URLS,
-  attempts = 12,
-  delayMs = 10_000,
+  attempts = 20,
+  delayMs = 3_000,
   fetchImpl = fetch,
   log = console.log,
 } = {}) {

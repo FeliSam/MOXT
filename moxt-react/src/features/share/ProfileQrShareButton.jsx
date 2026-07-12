@@ -10,6 +10,7 @@ export function ProfileQrShareButton({
   refreshKey,
   shareText: shareTextProp,
   shareUrl: shareUrlProp,
+  size = 'md',
   subtitle,
   title,
   type = 'user',
@@ -21,6 +22,7 @@ export function ProfileQrShareButton({
 }) {
   const { t } = useLanguage()
   const [open, setOpen] = useState(false)
+  const sizeClass = size === 'sm' ? 'size-8 text-base' : 'size-10 text-lg'
   const shareUrl = useMemo(
     () => shareUrlProp || buildAbsoluteUrl(targetPath),
     [shareUrlProp, targetPath],
@@ -36,12 +38,12 @@ export function ProfileQrShareButton({
     <>
       <button
         type="button"
-        className={`grid size-10 shrink-0 place-items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-accent)] shadow-[var(--shadow-card)] transition hover:border-brand-200 hover:bg-[var(--app-surface-muted)] dark:hover:border-brand-800 ${className}`}
+        className={`grid ${sizeClass} shrink-0 place-items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-accent)] shadow-[var(--shadow-card)] transition hover:border-brand-200 hover:bg-[var(--app-surface-muted)] dark:hover:border-brand-800 ${className}`}
         onClick={() => setOpen(true)}
         aria-label={isBusiness ? t('share.showBusinessQr') : t('share.showProfileQr')}
         title={t('share.qrToShare')}
       >
-        <HiQrCode className="text-lg" />
+        <HiQrCode className={size === 'sm' ? 'text-base' : 'text-lg'} />
       </button>
 
       <Modal

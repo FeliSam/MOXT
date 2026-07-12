@@ -22,6 +22,7 @@ import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
 import { parseEnvFile } from './lib/env.mjs'
 import { purgeCdnCache, findCdnResource } from './lib/yandex-cdn.mjs'
+import { writeDeployManifest } from './lib/deploy-manifest.mjs'
 import { syncDist } from './lib/yandex-upload.mjs'
 import { ycJson } from './lib/yandex.mjs'
 
@@ -35,6 +36,9 @@ const skipBuild = process.argv.includes('--skip-build')
 const purgeCdn = process.argv.includes('--purge-cdn')
 const fullUpload = process.argv.includes('--full')
 const dryRun = process.argv.includes('--dry-run')
+const concurrencyArg = process.argv.find((arg) => arg.startsWith('--concurrency='))
+const uploadConcurrency = concurrencyArg ? Number(concurrencyArg.split('=')[1]) || 12 : 12
+const deployStatePath = process.env.MOXT_DEPLOY_STATE_PATH || path.join(root, 'scripts', '.deploy-state.json')
 
 function ycPath() {
   if (process.env.YC_BIN) return process.env.YC_BIN
@@ -168,11 +172,16 @@ async function main() {
     setWebsiteSettings(ycPath(), bucket)
   }
 
-  const mode = fullUpload ? 'upload complet' : 'sync incrémental (md5 + taille)'
-  log(dryRun ? 'Simulation upload' : 'Upload', `${mode} → s3://${bucket}/`)
+  const mode = fullUpload ? 'upload complet' : 'sync manifest (diff md5)'
+  log(dryRun ? 'Simulation upload' : 'Upload', `${mode} → s3://${bucket}/ · concurrence ${uploadConcurrency}`)
 
-  const plan = await syncDist(ycPath(), bucket, distDir, { full: fullUpload, dryRun })
-  console.log(`  ${plan.total} fichiers locaux — ${plan.skipped} inchangés — ${plan.toUpload.length} à envoyer`)
+  const plan = await syncDist(ycPath(), bucket, distDir, {
+    full: fullUpload,
+    dryRun,
+    concurrency: uploadConcurrency,
+    deployStatePath,
+  })
+  console.log(`  mode ${plan.mode} — ${plan.total} fichiers — ${plan.skipped} inchangés — ${plan.toUpload.length} à envoyer`)
 
   if (dryRun) {
     for (const item of plan.toUpload.slice(0, 20)) {
@@ -185,6 +194,11 @@ async function main() {
     const { uploaded, failed } = await plan.runUpload()
     console.log(`  ✓ ${uploaded} envoyés${failed ? ` — ✗ ${failed} échecs` : ''}`)
     if (failed > 0) process.exit(1)
+
+    if (plan.currentManifest) {
+      writeDeployManifest(deployStatePath, plan.currentManifest)
+      console.log(`  ✓ État déploiement enregistré (${deployStatePath})`)
+    }
   }
 
   if (purgeCdn && !dryRun) {

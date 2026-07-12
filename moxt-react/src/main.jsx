@@ -59,8 +59,10 @@ if (import.meta.env.PROD) {
       registerServiceWorker()
       listenForInstallPrompt()
     })
-    import('./services/appUpdate').then(({ startAppUpdateWatcher }) => {
-      startAppUpdateWatcher()
+    import('./services/releaseWatcher').then(({ startReleaseWatcher }) => {
+      import('./app/store').then(({ store }) => {
+        startReleaseWatcher(store)
+      })
     })
   })
 }
