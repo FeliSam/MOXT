@@ -79,5 +79,7 @@ export const pt = {
     syncing: 'A sincronizar…',
     loadOlder: 'Carregar mensagens anteriores',
     loadingOlder: 'A carregar…',
+    typing: 'a escrever',
+    typingAria: '{name} está a escrever',
   },
 }

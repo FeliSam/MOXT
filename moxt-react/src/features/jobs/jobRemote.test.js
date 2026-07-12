@@ -42,6 +42,31 @@ describe('jobRemote', () => {
     expect(restored.remote).toBe(true)
   })
 
+  it('récupère les champs texte depuis le payload si la colonne est vide', () => {
+    const restored = jobFromRemoteRow({
+      id: 'JOB-2',
+      title: '',
+      description: '',
+      requirements: '',
+      salary: '',
+      payload: {
+        title: 'Chef de projet',
+        description: 'Description complète dans le payload',
+        requirements: 'Gestion d’équipe',
+        salary: '150 000 RUB',
+        experienceLevel: 'senior',
+        language: 'fr_ru',
+      },
+    })
+
+    expect(restored.title).toBe('Chef de projet')
+    expect(restored.description).toBe('Description complète dans le payload')
+    expect(restored.requirements).toBe('Gestion d’équipe')
+    expect(restored.salary).toBe('150 000 RUB')
+    expect(restored.experienceLevel).toBe('senior')
+    expect(restored.language).toBe('fr_ru')
+  })
+
   it('mappe une candidature job_id ↔ jobId', () => {
     const remote = jobApplicationToRemoteRow({
       id: 'APP-1',

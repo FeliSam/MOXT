@@ -37,6 +37,7 @@ import { selectAccountPreferences, updateAccountPreferences } from '../features/
 import { addToast } from '../features/ui/uiSlice'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useMessagesRealtimeSync } from '../hooks/useMessagesRealtimeSync'
+import { useConversationTyping } from '../hooks/useConversationTyping'
 import { ConversationFilterMenu } from './messages/ConversationFilterMenu'
 import { ConversationNotFound } from './messages/ConversationNotFound'
 import { ConversationPanel } from './messages/ConversationPanel'

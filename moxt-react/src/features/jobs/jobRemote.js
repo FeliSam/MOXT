@@ -1,6 +1,14 @@
 import { fromRow } from '@moxt/shared/utils/remoteRowMapper.js'
 import { supabase } from '../../services/supabaseClient'
 
+/** Préfère la première valeur non vide (évite qu’une colonne vide masque le payload). */
+function pickField(...values) {
+  for (const value of values) {
+    if (value !== null && value !== undefined && value !== '') return value
+  }
+  return ''
+}
+
 const COLUMN_MAP = {
   ownerId: 'owner_id',
   businessId: 'business_id',
@@ -54,23 +62,23 @@ export function jobFromRemoteRow(row) {
     images: payload.images || [],
     ownerId: mapped.ownerId ?? payload.ownerId ?? null,
     businessId: mapped.businessId ?? payload.businessId ?? null,
-    publisherName: mapped.publisherName ?? payload.publisherName ?? '',
-    publisherType: mapped.publisherType ?? payload.publisherType ?? 'personal',
-    title: mapped.title ?? payload.title ?? '',
-    sector: mapped.sector ?? payload.sector ?? '',
-    contractType: mapped.contractType ?? payload.contractType ?? '',
-    experienceLevel: mapped.experienceLevel ?? payload.experienceLevel ?? 'none',
-    salaryPeriod: mapped.salaryPeriod ?? payload.salaryPeriod ?? 'month',
-    language: mapped.language ?? payload.language ?? '',
-    salary: mapped.salary ?? payload.salary ?? '',
-    description: mapped.description ?? payload.description ?? '',
-    requirements: mapped.requirements ?? payload.requirements ?? '',
-    benefits: mapped.benefits ?? payload.benefits ?? '',
-    location: mapped.location ?? payload.location ?? '',
+    publisherName: pickField(mapped.publisherName, payload.publisherName),
+    publisherType: pickField(mapped.publisherType, payload.publisherType) || 'personal',
+    title: pickField(mapped.title, payload.title),
+    sector: pickField(mapped.sector, payload.sector),
+    contractType: pickField(mapped.contractType, payload.contractType),
+    experienceLevel: pickField(mapped.experienceLevel, payload.experienceLevel) || 'none',
+    salaryPeriod: pickField(mapped.salaryPeriod, payload.salaryPeriod) || 'month',
+    language: pickField(mapped.language, payload.language),
+    salary: pickField(mapped.salary, payload.salary),
+    description: pickField(mapped.description, payload.description),
+    requirements: pickField(mapped.requirements, payload.requirements),
+    benefits: pickField(mapped.benefits, payload.benefits),
+    location: pickField(mapped.location, payload.location),
     remote: mapped.remote ?? payload.remote ?? false,
-    startDate: mapped.startDate ?? payload.startDate ?? '',
-    applicationDeadline: mapped.applicationDeadline ?? payload.applicationDeadline ?? '',
-    status: mapped.status ?? payload.status ?? 'active',
+    startDate: pickField(mapped.startDate, payload.startDate),
+    applicationDeadline: pickField(mapped.applicationDeadline, payload.applicationDeadline),
+    status: pickField(mapped.status, payload.status) || 'active',
     createdAt: mapped.createdAt ?? payload.createdAt ?? null,
     updatedAt: mapped.updatedAt ?? payload.updatedAt ?? null,
     expiresAt: mapped.expiresAt ?? payload.expiresAt ?? null,

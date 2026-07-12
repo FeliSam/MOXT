@@ -94,11 +94,25 @@ function isSmsRelated(message = '', meta = {}) {
 
 function translateSmsHookFailure(message = '') {
   const lower = message.toLowerCase()
-  if (lower.includes('mode test') || lower.includes('запрещ')) {
-    return "L'envoi SMS vers ce numéro est temporairement indisponible. Vérifiez votre numéro (+7) ou réessayez plus tard."
+  if (lower.includes('solde insuffisant') || lower.includes('insufficient balance')) {
+    return "L'envoi du code SMS est temporairement indisponible. Réessayez plus tard ou contactez le support."
   }
-  if (lower.includes('smsc') || lower.includes('solde') || lower.includes('test')) {
-    return "L'envoi du code SMS est temporairement indisponible. Réessayez plus tard."
+  if (
+    lower.includes('envoi refusé') ||
+    lower.includes('mode test') ||
+    lower.includes('запрещ') ||
+    lower.includes('тест')
+  ) {
+    return "Impossible d'envoyer un SMS à ce numéro pour le moment. Vérifiez le format +7XXXXXXXXXX ou réessayez avec un autre numéro russe."
+  }
+  if (lower.includes('expéditeur') || lower.includes('sender')) {
+    return "L'envoi du code SMS est temporairement indisponible. Réessayez plus tard ou contactez le support."
+  }
+  if (lower.includes('rate limit') || lower.includes('trop de tentatives')) {
+    return 'Trop de tentatives. Patientez quelques minutes avant de réessayer.'
+  }
+  if (lower.includes('sms.ru') && lower.includes('221')) {
+    return "L'envoi du code SMS est temporairement indisponible. Réessayez plus tard ou contactez le support."
   }
   return "L'envoi du code SMS a échoué. Réessayez plus tard ou contactez le support."
 }

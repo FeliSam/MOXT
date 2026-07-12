@@ -559,9 +559,14 @@ export const interactionMiddleware = (store) => {
       typeof action.payload === 'string'
         ? action.payload
         : action.error?.message || "L'action n'a pas pu être terminée."
+    const rejectedTitles = {
+      'auth/requestPhoneVerificationOtp/rejected': 'Envoi SMS impossible',
+      'auth/requestPhoneLoginOtp/rejected': 'Envoi SMS impossible',
+      'auth/confirmPhoneVerification/rejected': 'Vérification impossible',
+    }
     store.dispatch(
       addToast({
-        title: 'Une erreur est survenue',
+        title: rejectedTitles[action.type] || 'Une erreur est survenue',
         message: sanitizeAuthMessage(message),
         tone: 'error',
       }),

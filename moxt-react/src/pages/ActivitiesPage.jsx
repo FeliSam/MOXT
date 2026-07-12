@@ -1,6 +1,7 @@
-import { FiArrowLeft, FiCalendar, FiHeart, FiMessageSquare, FiPackage, FiSend } from 'react-icons/fi'
+import { FiCalendar, FiHeart, FiMessageSquare, FiPackage, FiSend } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
+import { BackButton } from '../components/ui/BackButton'
 import { Badge } from '../components/ui/Badge'
 import { Card } from '../components/ui/Card'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -77,14 +78,7 @@ export function ActivitiesPage() {
         eyebrow="Compte"
         title="Mes activites"
         description="Favoris, candidatures, inscriptions, reservations et conversations."
-        actions={
-          <Link
-            to="/profile"
-            className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-[var(--app-surface)] px-4 text-sm font-bold shadow-sm hover:bg-[var(--app-surface-muted)]"
-          >
-            <FiArrowLeft /> Retour
-          </Link>
-        }
+        actions={<BackButton appearance="link" />}
       />
       {activities.length ? (
         <div className="grid gap-3 md:grid-cols-2">

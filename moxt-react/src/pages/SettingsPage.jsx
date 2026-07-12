@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { FiArrowLeft, FiDownload, FiInfo, FiMoon, FiSun, FiTrash2 } from 'react-icons/fi'
+import { FiDownload, FiInfo, FiMoon, FiSun, FiTrash2 } from 'react-icons/fi'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { Link } from 'react-router-dom'
+import { BackButton } from '../components/ui/BackButton'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -74,14 +75,7 @@ export function SettingsPage() {
         eyebrow="Compte"
         title="Paramètres"
         description="Préférences simples et contrôle de vos données locales."
-        actions={
-          <Link
-            to="/profile"
-            className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-[var(--app-surface)] px-4 text-sm font-bold shadow-sm hover:bg-[var(--app-surface-muted)]"
-          >
-            <FiArrowLeft /> Retour
-          </Link>
-        }
+        actions={<BackButton appearance="link" />}
       />
       <div className="grid gap-4 md:grid-cols-2">
         <Card>

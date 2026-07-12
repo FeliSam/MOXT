@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { FiAlertTriangle, FiArrowLeft, FiDatabase, FiDownload, FiRefreshCw, FiTrash2 } from 'react-icons/fi'
-import { Link } from 'react-router-dom'
+import { FiAlertTriangle, FiDatabase, FiDownload, FiRefreshCw, FiTrash2 } from 'react-icons/fi'
+import { BackButton } from '../components/ui/BackButton'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
@@ -54,12 +54,7 @@ export function LocalDataPage() {
         description="Contrôlez les données enregistrées dans ce navigateur avant la connexion du backend."
         actions={
           <>
-            <Link
-              to="/profile"
-              className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-[var(--app-surface)] px-4 text-sm font-bold shadow-sm hover:bg-[var(--app-surface-muted)]"
-            >
-              <FiArrowLeft /> Retour
-            </Link>
+            <BackButton appearance="link" />
             <Button
               variant="secondary"
               icon={FiRefreshCw}

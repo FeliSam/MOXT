@@ -405,6 +405,60 @@ html.capacitor-native .capacitor-safe-bottom {
   border-radius: 0.35rem;
 }
 
+.message-typing-bubble {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  min-height: 2.25rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 1rem 1rem 1rem 0.35rem;
+  background: color-mix(in srgb, var(--app-accent-soft) 28%, var(--app-surface));
+  box-shadow: var(--shadow-card);
+}
+
+.message-typing-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.18rem;
+  margin-left: 0.1rem;
+}
+
+.message-typing-dot {
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 999px;
+  background: var(--app-text-muted);
+  animation: message-typing-bounce 1.2s ease-in-out infinite;
+}
+
+.message-typing-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.message-typing-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.message-typing-dot--inline {
+  width: 0.34rem;
+  height: 0.34rem;
+  background: currentColor;
+  opacity: 0.85;
+}
+
+@keyframes message-typing-bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  30% {
+    transform: translateY(-0.22rem);
+    opacity: 1;
+  }
+}
+
 .message-quote {
   margin-bottom: 0.3rem;
   border-radius: 0.5rem;

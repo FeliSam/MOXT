@@ -79,5 +79,7 @@ export const ru = {
     syncing: 'Синхронизация…',
     loadOlder: 'Загрузить предыдущие сообщения',
     loadingOlder: 'Загрузка…',
+    typing: 'печатает',
+    typingAria: '{name} печатает',
   },
 }

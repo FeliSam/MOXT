@@ -81,5 +81,7 @@ export const fr = {
     syncing: 'Synchronisation…',
     loadOlder: 'Charger les messages précédents',
     loadingOlder: 'Chargement…',
+    typing: 'écrit',
+    typingAria: '{name} est en train d’écrire',
   },
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { FiArrowLeft, FiFileText, FiTrash2, FiUpload } from 'react-icons/fi'
+import { FiFileText, FiTrash2, FiUpload } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
-import { Link } from 'react-router-dom'
+import { BackButton } from '../components/ui/BackButton'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
@@ -53,14 +53,7 @@ export function DocumentsPage() {
         eyebrow="Compte"
         title="Mes documents"
         description="Préparez les justificatifs nécessaires à la vérification de votre compte."
-        actions={
-          <Link
-            to="/profile"
-            className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-[var(--app-surface)] px-4 text-sm font-bold shadow-sm hover:bg-[var(--app-surface-muted)]"
-          >
-            <FiArrowLeft /> Retour
-          </Link>
-        }
+        actions={<BackButton appearance="link" />}
       />
       <Card>
         <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">

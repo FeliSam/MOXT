@@ -78,5 +78,7 @@ export const en = {
     syncing: 'Syncing…',
     loadOlder: 'Load earlier messages',
     loadingOlder: 'Loading…',
+    typing: 'typing',
+    typingAria: '{name} is typing',
   },
 }

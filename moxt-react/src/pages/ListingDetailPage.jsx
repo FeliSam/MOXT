@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   FiAlertTriangle,
-  FiArrowLeft,
   FiChevronLeft,
   FiChevronRight,
   FiEdit2,
@@ -19,6 +18,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useParams } from 'react-router-dom'
 import { Badge, VerifiedBadge } from '../components/ui/Badge'
+import { BackButton } from '../components/ui/BackButton'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -188,11 +188,7 @@ export function ListingDetailPage() {
             <Button variant="secondary" icon={FiShare2} onClick={shareListing}>
               Partager
             </Button>
-            <Link to="/marketplace">
-              <Button variant="secondary" icon={FiArrowLeft}>
-                Retour
-              </Button>
-            </Link>
+            <BackButton fallback="/marketplace" />
           </>
         }
       />

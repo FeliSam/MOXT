@@ -41,6 +41,7 @@ import {
 } from './MessageBubble'
 import { conversationMessageCount, isMessageFromUser, messageHasReactions } from './messageUtils'
 import { RelatedContentPreview } from './RelatedContentPreview'
+import { TypingDots, TypingIndicator } from './TypingIndicator'
 
 function matchesThreadQuery(text, query) {
   if (!query.trim()) return true
@@ -74,6 +75,9 @@ export function ConversationPanel({
   onCancelEdit,
   replyToId,
   replyToContextId,
+  peerTyping = false,
+  onTyping,
+  onStopTyping,
   archived,
   onToggleSuggestions,
   suggestions,

@@ -1,7 +1,6 @@
 import { useFormik } from 'formik'
 import {
   FiAlertTriangle,
-  FiArrowLeft,
   FiBriefcase,
   FiEdit2,
   FiMapPin,
@@ -11,6 +10,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useParams } from 'react-router-dom'
 import { Alert } from '../components/ui/Alert'
+import { BackButton } from '../components/ui/BackButton'
 import { Badge, VerifiedBadge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
@@ -27,12 +27,21 @@ import { ContactButton } from '../features/communications/ContactButton'
 import { applicationSchema } from '../features/jobs/jobSchemas'
 import { applyToJob, reportJob, withdrawApplication } from '../features/jobs/jobSlice'
 import { applicationsForJob, applicationJobId, applicationUserId } from '../features/jobs/jobUtils'
+import {
+  displayJobField,
+  formatJobDate,
+  formatJobExperienceLabel,
+  formatJobLanguageLabel,
+  formatJobLocationLabel,
+  formatJobSalaryLabel,
+  hasJobText,
+  jobHeaderSubtitle,
+  JOB_EMPTY_LABEL,
+} from '../features/jobs/jobDisplayUtils'
 import { PublisherDetailCard } from '../features/publications/PublisherDetailCard'
 import { usePublisherDetailProfile } from '../features/publications/usePublisherDetailProfile'
 import {
   JOB_CONTRACTS,
-  JOB_EXPERIENCE_LEVELS,
-  JOB_SALARY_PERIODS,
   optionLabel,
 } from '../config/options'
 import { statusMeta } from '../config/statuses'
@@ -68,13 +77,12 @@ export function JobDetailPage() {
   )
   const publisherProfile = usePublisherDetailProfile(job, 'job')
   const contractLabel = optionLabel(JOB_CONTRACTS, job.contractType)
-  const experienceLabel =
-    job.experienceLevel && job.experienceLevel !== 'none'
-      ? optionLabel(JOB_EXPERIENCE_LEVELS, job.experienceLevel)
-      : null
-  const salaryLabel = job.salaryPeriod
-    ? `${job.salary} / ${optionLabel(JOB_SALARY_PERIODS, job.salaryPeriod)}`
-    : job.salary
+  const experienceLabel = formatJobExperienceLabel(job.experienceLevel)
+  const salaryLabel = formatJobSalaryLabel(job)
+  const locationLabel = formatJobLocationLabel(job)
+  const languageLabel = formatJobLanguageLabel(job.language)
+  const startDateLabel = formatJobDate(job.startDate)
+  const deadlineLabel = formatJobDate(job.applicationDeadline)
   const formik = useFormik({
     initialValues: { message: '' },
     validationSchema: applicationSchema,
@@ -98,7 +106,7 @@ export function JobDetailPage() {
       <PageHeader
         eyebrow={job.sector}
         title={job.title}
-        description={`${job.publisherName} · ${job.location}`}
+        description={jobHeaderSubtitle(job)}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {/* Favori — icône seule, coin droit, distinct de la candidature */}
@@ -117,9 +125,7 @@ export function JobDetailPage() {
                 <Button variant="secondary" icon={FiEdit2}>Modifier</Button>
               </Link>
             ) : null}
-            <Link to="/jobs">
-              <Button variant="secondary" icon={FiArrowLeft}>Retour</Button>
-            </Link>
+            <BackButton fallback="/jobs" />
           </div>
         }
       />
@@ -146,34 +152,43 @@ export function JobDetailPage() {
       ) : null}
       <DetailMetrics
         items={[
-          { icon: FiBriefcase, label: 'Contrat', value: contractLabel },
-          { icon: FiMapPin, label: 'Lieu', value: job.location || '—' },
+          { icon: FiBriefcase, label: 'Contrat', value: contractLabel || JOB_EMPTY_LABEL },
+          { icon: FiMapPin, label: 'Lieu', value: locationLabel || JOB_EMPTY_LABEL },
           {
             icon: FiUsers,
             label: 'Candidatures',
             value: `${jobApplications.length}`,
           },
-          { icon: FiBriefcase, label: 'Rémunération', value: salaryLabel || '—' },
+          {
+            icon: FiBriefcase,
+            label: 'Rémunération',
+            value: salaryLabel || JOB_EMPTY_LABEL,
+          },
         ]}
       />
       <div className="grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
         <Card>
           <div className="flex flex-wrap items-center gap-2">
             <Badge>{contractLabel}</Badge>
-            <Badge tone="success">{salaryLabel}</Badge>
-            {experienceLabel ? <Badge tone="info">{experienceLabel}</Badge> : null}
+            {salaryLabel ? <Badge tone="success">{salaryLabel}</Badge> : null}
+            <Badge tone="info">{experienceLabel}</Badge>
+            {languageLabel ? <Badge tone="slate">{languageLabel}</Badge> : null}
             {job.remote ? <Badge tone="slate">Télétravail</Badge> : null}
             <Badge tone={jobStatus.tone}>{jobStatus.label}</Badge>
             {job.businessId ? <VerifiedBadge size="sm" label="Entreprise" /> : null}
           </div>
           <h2 className="mt-6 font-black">Description</h2>
           <p className="mt-3 leading-7 text-slate-600 dark:text-slate-300">
-            {job.description || '—'}
+            {displayJobField(job.description)}
           </p>
-          <h2 className="mt-6 font-black">Profil recherché</h2>
-          <p className="mt-3 leading-7 text-slate-600 dark:text-slate-300">
-            {job.requirements || '—'}
-          </p>
+          {hasJobText(job.requirements) ? (
+            <>
+              <h2 className="mt-6 font-black">Profil recherché</h2>
+              <p className="mt-3 leading-7 text-slate-600 dark:text-slate-300">
+                {job.requirements}
+              </p>
+            </>
+          ) : null}
           {job.benefits ? (
             <>
               <h2 className="mt-6 font-black">Avantages</h2>
@@ -274,14 +289,15 @@ export function JobDetailPage() {
         <DetailSection title="Informations sur le poste">
           <DetailFacts
             items={[
-              { label: 'Entreprise', value: job.publisherName || '—' },
+              { label: 'Entreprise', value: displayJobField(job.publisherName) },
               { label: 'Profil', value: job.businessId ? 'Entreprise' : 'Particulier' },
-              { label: 'Secteur', value: job.sector || '—' },
-              { label: 'Type de contrat', value: contractLabel },
-              { label: 'Expérience', value: experienceLabel || '—' },
-              { label: 'Localisation', value: job.location || '—' },
-              { label: 'Début', value: job.startDate || '—' },
-              { label: 'Date limite', value: job.applicationDeadline || '—' },
+              { label: 'Secteur', value: displayJobField(job.sector) },
+              { label: 'Type de contrat', value: contractLabel || JOB_EMPTY_LABEL },
+              { label: 'Expérience', value: experienceLabel },
+              ...(languageLabel ? [{ label: 'Langue', value: languageLabel }] : []),
+              { label: 'Localisation', value: locationLabel || JOB_EMPTY_LABEL },
+              ...(startDateLabel ? [{ label: 'Début', value: startDateLabel }] : []),
+              ...(deadlineLabel ? [{ label: 'Date limite', value: deadlineLabel }] : []),
               { label: 'Statut', value: jobStatus.label },
               { label: 'Référence', value: job.id },
             ]}

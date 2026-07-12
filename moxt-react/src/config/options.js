@@ -72,6 +72,13 @@ export const JOB_EXPERIENCE_LEVELS = [
   { value: 'senior', label: 'Senior (5+ ans)' },
 ]
 
+export const JOB_LANGUAGES = [
+  { value: 'fr', label: 'Français' },
+  { value: 'ru', label: 'Russe' },
+  { value: 'en', label: 'Anglais' },
+  { value: 'fr_ru', label: 'Français + Russe' },
+]
+
 export const JOB_SALARY_PERIODS = [
   { value: 'hour', label: 'Heure' },
   { value: 'day', label: 'Jour' },

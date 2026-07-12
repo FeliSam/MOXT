@@ -1,8 +1,9 @@
-import { FiArrowLeft, FiClock, FiRepeat, FiShield, FiUser } from 'react-icons/fi'
+import { FiClock, FiRepeat, FiShield, FiUser } from 'react-icons/fi'
 import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Link, useLocation, useParams } from 'react-router-dom'
+import { useLocation, useParams } from 'react-router-dom'
 import { Card } from '../components/ui/Card'
+import { BackButton } from '../components/ui/BackButton'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { CatalogArchiveTabs } from '../components/ui/CatalogArchiveTabs'
 import {
@@ -178,11 +179,9 @@ export function TransferDetailPage() {
               relatedType="transfer"
               variant="secondary"
             />
-            <Link to={access.isBusinessViewer ? '/professional' : '/transfers/history'}>
-              <Button variant="secondary" icon={FiArrowLeft}>
-                Retour
-              </Button>
-            </Link>
+            <BackButton
+              fallback={access.isBusinessViewer ? '/professional' : '/transfers/history'}
+            />
           </div>
         }
       />

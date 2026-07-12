@@ -1,7 +1,7 @@
 export const routeMetadata = [
   { pattern: /^\/dashboard$/, title: 'Accueil', eyebrow: 'MOXT' },
-  { pattern: /^\/activities$/, title: 'Mes activités', eyebrow: 'Compte' },
-  { pattern: /^\/favorites$/, title: 'Mes favoris', eyebrow: 'Compte' },
+  { pattern: /^\/activities$/, title: 'Mes activités', eyebrow: 'Compte', back: '/profile' },
+  { pattern: /^\/favorites$/, title: 'Mes favoris', eyebrow: 'Compte', back: '/profile' },
   {
     pattern: /^\/users\/[^/]+\/publications$/,
     title: 'Publications du membre',
@@ -14,10 +14,10 @@ export const routeMetadata = [
     eyebrow: 'Communauté',
     back: '/dashboard',
   },
-  { pattern: /^\/documents$/, title: 'Mes documents', eyebrow: 'Compte' },
-  { pattern: /^\/verification$/, title: 'Vérification', eyebrow: 'Compte' },
-  { pattern: /^\/security$/, title: 'Sécurité', eyebrow: 'Compte' },
-  { pattern: /^\/subscriptions$/, title: 'Abonnements', eyebrow: 'Communauté' },
+  { pattern: /^\/documents$/, title: 'Mes documents', eyebrow: 'Compte', back: '/profile' },
+  { pattern: /^\/verification$/, title: 'Vérification', eyebrow: 'Compte', back: '/profile' },
+  { pattern: /^\/security$/, title: 'Sécurité', eyebrow: 'Compte', back: '/profile' },
+  { pattern: /^\/subscriptions$/, title: 'Abonnements', eyebrow: 'Communauté', back: '/profile' },
   { pattern: /^\/profile$/, title: 'Mon profil', eyebrow: 'Compte' },
   { pattern: /^\/referral$/, title: 'QR code & invitation', eyebrow: 'Compte' },
   {
@@ -26,8 +26,8 @@ export const routeMetadata = [
     eyebrow: 'Compte',
     back: '/profile',
   },
-  { pattern: /^\/settings$/, title: 'Paramètres', eyebrow: 'Compte' },
-  { pattern: /^\/local-data$/, title: 'Données locales', eyebrow: 'Compte' },
+  { pattern: /^\/settings$/, title: 'Paramètres', eyebrow: 'Compte', back: '/profile' },
+  { pattern: /^\/local-data$/, title: 'Données locales', eyebrow: 'Compte', back: '/profile' },
   { pattern: /^\/news$/, title: 'Actualités', eyebrow: 'Communauté' },
   {
     pattern: /^\/transfers\/new$/,
