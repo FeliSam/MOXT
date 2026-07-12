@@ -73,6 +73,8 @@ describe('communications', () => {
       markConversationRead({ conversationId: created.conversations[0].id, userId: 'u2' }),
     )
     expect(read.conversations[0].unreadBy.u2).toBe(0)
+    const message = read.conversations[0].messages[0]
+    expect(message.readBy.map(String)).toContain('u2')
   })
 
   it('alterne le ticket entre attente agent et attente utilisateur', () => {

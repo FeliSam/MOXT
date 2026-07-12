@@ -9,6 +9,7 @@ import {
   loadConversationMessages,
   receiveRemoteConversation,
   receiveRemoteMessage,
+  syncRemoteMessage,
   receiveRemoteNotification,
   syncRemoteConversation,
   normalizeConversation,

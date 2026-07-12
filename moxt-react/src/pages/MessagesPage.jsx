@@ -300,15 +300,16 @@ export function MessagesPage() {
 
   useEffect(() => {
     if (!active?.id || active.messagesLoading) return
-    dispatch(markConversationRead({ conversationId: active.id, userId: user.id }))
     const loadedCount = active.messages?.length || 0
     const expectedCount = active.messageCount || 0
     const needsReload =
       !active.messagesLoaded ||
       (expectedCount > 0 && loadedCount < expectedCount)
-    if (needsReload && !active.messagesLoading) {
+    if (needsReload) {
       dispatch(loadConversationMessages(active.id))
+      return
     }
+    dispatch(markConversationRead({ conversationId: active.id, userId: user.id }))
   }, [
     active?.id,
     active?.messageCount,
