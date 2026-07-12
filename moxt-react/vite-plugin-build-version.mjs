@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process'
-import { writeFileSync } from 'node:fs'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 
 function resolveBuildId() {
@@ -29,8 +29,10 @@ export function moxtBuildVersion({ rootDir }) {
         buildId,
         builtAt: new Date().toISOString(),
       }
+      const distDir = path.join(rootDir, 'dist')
+      mkdirSync(distDir, { recursive: true })
       writeFileSync(
-        path.join(rootDir, 'dist', 'version.json'),
+        path.join(distDir, 'version.json'),
         `${JSON.stringify(meta, null, 2)}\n`,
         'utf8',
       )

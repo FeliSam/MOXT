@@ -666,6 +666,8 @@ export function NewTransferPage() {
     </SecurityGatePanel>
   )
 }
+
+function PartyCard({ title, prefix, profiles, formik, methods, errorFor, onProfile }) {
   const country =
     prefix === 'sender' ? formik.values.sourceCountry : formik.values.destinationCountry
   const isRecipient = prefix === 'recipient'
