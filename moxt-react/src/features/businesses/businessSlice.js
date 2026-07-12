@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { createId } from '../../services/createId'
 import { createLocalStorage } from '../../services/createLocalStorage'
+import { matchUserId } from './businessVisibility'
 const storage = createLocalStorage('moxt-businesses-v1')
 const membersStorage = createLocalStorage('moxt-business-members-v1')
 const documentsStorage = createLocalStorage('moxt-business-documents-v1')
@@ -44,7 +45,7 @@ const businessSlice = createSlice({
     },
     saveBusiness: {
       reducer(state, action) {
-        const index = state.items.findIndex((item) => item.ownerId === action.payload.ownerId)
+        const index = state.items.findIndex((item) => matchUserId(item.ownerId, action.payload.ownerId))
         if (index >= 0) state.items[index] = action.payload
         else state.items.unshift(action.payload)
       },
@@ -54,7 +55,7 @@ const businessSlice = createSlice({
         return {
           payload: {
             id: values.id || createId('BIZ'),
-            ownerId: values.ownerId,
+            ownerId: values.ownerId != null ? String(values.ownerId) : values.ownerId,
             name: values.name.trim(),
             logoUrl: values.logoUrl?.trim() || '',
             bannerUrl: values.bannerUrl?.trim() || '',
@@ -96,7 +97,8 @@ const businessSlice = createSlice({
     },
     deleteBusinessByUser(state, action) {
       const business = state.items.find(
-        (item) => item.id === action.payload.id && item.ownerId === action.payload.ownerId,
+        (item) =>
+          item.id === action.payload.id && matchUserId(item.ownerId, action.payload.ownerId),
       )
       if (!business) return
       const now = new Date().toISOString()

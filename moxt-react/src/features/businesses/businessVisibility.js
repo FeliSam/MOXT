@@ -1,9 +1,19 @@
+export function matchUserId(left, right) {
+  if (left == null || right == null) return false
+  return String(left) === String(right)
+}
+
 export function isBusinessDeletedByUser(business) {
   return Boolean(business?.deletedByUserAt)
 }
 
 export function selectActiveBusinessForOwner(businesses, ownerId) {
-  return businesses.find((item) => item.ownerId === ownerId && !isBusinessDeletedByUser(item))
+  if (!ownerId) return null
+  return (
+    businesses.find(
+      (item) => matchUserId(item.ownerId, ownerId) && !isBusinessDeletedByUser(item),
+    ) || null
+  )
 }
 
 export function isBusinessVisibleToViewer(business, viewer) {

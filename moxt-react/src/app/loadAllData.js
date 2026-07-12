@@ -16,6 +16,7 @@ import { setAll as setPosts } from '../features/posts/postsSlice'
 import { setRecipientAddresses } from '../features/addresses/recipientAddressesSlice'
 import { hydrateAccountPreferences, mergeRemoteAccount } from '../features/account/accountSlice'
 import { profileRowToAdminUser, setAdminUsers } from '../features/administration/administrationSlice'
+import { setUser } from '../features/auth/authSlice'
 import { setIdentityProfiles } from '../features/identity/identitySlice'
 import { listingFromRemoteRow, mergeListingQuestions } from '../features/marketplace/marketplaceRemote'
 import { fromRow, fromRows } from '../services/remoteRowMapper'
@@ -28,9 +29,11 @@ import {
   syncLocalBusinessesToRemote,
 } from '../features/businesses/businessRemote'
 import { filterByBusinessIds, reconcileBusinesses } from '../features/businesses/businessSyncUtils'
+import { matchUserId } from '../features/businesses/businessVisibility'
 import { reviewFromRemoteRow } from '../features/reviews/reviewRemote'
 import { identityFromRemoteRow } from '../features/identity/identityRemote'
 import { transfersFromRemoteRows } from '../features/transfers/transferRemote'
+import { p2pOrderFromRemoteRow, reportFromRemoteRow } from '../features/sync/entityRemote'
 
 // Nombre max de lignes pour les tables publiques paginées au login
 const PUBLIC_LIMIT = 50
@@ -85,11 +88,30 @@ async function fetchIncomingRows(table, foreignKey, ownerIds, limit = USER_LIMIT
 
 export const loadAllData = createAsyncThunk(
   'app/loadAllData',
-  async (_, { getState, dispatch }) => {
+  async (_, { getState, dispatch, rejectWithValue }) => {
     const { user } = getState().auth
     if (!user) return
 
+    if (!supabase) {
+      return rejectWithValue('Connexion à la base de données indisponible. Rechargez la page.')
+    }
+
     const uid = user.id
+
+    try {
+
+    const profileRes = await supabase
+      .from('profiles')
+      .select('activity_visibility, role, preferences')
+      .eq('id', uid)
+      .maybeSingle()
+
+    const resolvedRole = profileRes.data?.role || user.role || 'user'
+    const isAdmin = ['admin', 'superadmin'].includes(resolvedRole)
+
+    if (profileRes.data?.role && profileRes.data.role !== user.role) {
+      dispatch(setUser({ ...user, role: profileRes.data.role }))
+    }
 
     const [
       listingsRes, listingQuestionsRes, parcelsRes, parcelRequestsRes,
@@ -107,7 +129,6 @@ export const loadAllData = createAsyncThunk(
       postsRes,
       supportTicketsRes,
       recipientAddressesRes,
-      profileRes,
     ] = await Promise.all([
       supabase.from('listings').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
       supabase
@@ -141,12 +162,19 @@ export const loadAllData = createAsyncThunk(
       supabase.from('posts').select('*').eq('status', 'published').order('created_at', { ascending: false }).limit(100),
       supabase.from('support_tickets').select('*').eq('user_id', uid).order('updated_at', { ascending: false }).limit(50),
       supabase.from('recipient_addresses').select('*').eq('user_id', uid).order('updated_at', { ascending: false }).limit(USER_LIMIT),
-      supabase.from('profiles').select('activity_visibility, role, preferences').eq('id', uid).maybeSingle(),
     ])
 
-    const isAdmin = ['admin', 'superadmin'].includes(
-      profileRes.data?.role || user.role || '',
-    )
+    let adminBusinessesRes = { data: [], error: null }
+    if (isAdmin) {
+      adminBusinessesRes = await supabase
+        .from('businesses')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(USER_LIMIT)
+    }
+
+    const ownedBusinessesFailed = Boolean(ownedBusinessesRes.error)
+    const publicBusinessesFailed = Boolean(businessesRes.error)
 
     if (listingQuestionsRes.error) {
       console.warn('[MOXT] Chargement des questions annonces:', listingQuestionsRes.error.message)
@@ -157,16 +185,20 @@ export const loadAllData = createAsyncThunk(
     if (ownedBusinessesRes.error) {
       console.warn('[MOXT] Chargement des entreprises possédées:', ownedBusinessesRes.error.message)
     }
+    if (adminBusinessesRes.error) {
+      console.warn('[MOXT] Chargement admin des entreprises:', adminBusinessesRes.error.message)
+    }
 
     await syncLocalBusinessesToRemote(getState().businesses.items, uid)
 
     const remoteBusinessRows = mergeRemoteRowsById(
       businessesRes.error ? [] : safeRows(businessesRes, 'des entreprises'),
       ownedBusinessesRes.error ? [] : safeRows(ownedBusinessesRes, 'des entreprises possédées'),
+      adminBusinessesRes.error ? [] : safeRows(adminBusinessesRes, 'des entreprises admin'),
     )
 
     const ownedBusinessIds = remoteBusinessRows
-      .filter((row) => String(row.owner_id) === String(uid))
+      .filter((row) => matchUserId(row.owner_id, uid))
       .map((row) => row.id)
       .filter(Boolean)
 
@@ -309,6 +341,10 @@ export const loadAllData = createAsyncThunk(
       getState().businesses.items,
       remoteBusinesses,
       uid,
+      {
+        preserveLocalOwnedOnRemoteError:
+          ownedBusinessesFailed || publicBusinessesFailed || Boolean(adminBusinessesRes.error),
+      },
     )
     const mergedBusinessIds = mergedBusinesses.map((item) => item.id)
 
@@ -481,5 +517,11 @@ export const loadAllData = createAsyncThunk(
         )
       }
     })
+    } catch (error) {
+      console.error('[MOXT] Échec du chargement des données:', error)
+      return rejectWithValue(
+        error instanceof Error ? error.message : 'Impossible de charger les données du site.',
+      )
+    }
   },
 )

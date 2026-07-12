@@ -25,6 +25,16 @@ describe('businessSyncUtils', () => {
     ])
   })
 
+  it('conserve le cache local du compte si la sync distante a echoue', () => {
+    const local = [{ id: 'BIZ-1', ownerId: 'user-1', name: 'Local' }]
+
+    const result = reconcileBusinesses(local, [], 'user-1', {
+      preserveLocalOwnedOnRemoteError: true,
+    })
+
+    expect(result).toEqual(local)
+  })
+
   it('filtre les enfants par identifiants entreprise', () => {
     const members = [
       { id: 'MEM-1', businessId: 'BIZ-1' },

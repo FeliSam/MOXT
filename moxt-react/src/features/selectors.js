@@ -1,4 +1,5 @@
 import { createSelector } from '@reduxjs/toolkit'
+import { selectActiveBusinessForOwner } from './businesses/businessVisibility'
 import { normalizeConversation } from './communications/communicationSlice'
 
 export const selectCurrentUser = (state) => state.auth.user
@@ -6,7 +7,7 @@ export const selectBusinesses = (state) => state.businesses.items
 
 export const selectOwnBusiness = createSelector(
   [selectBusinesses, selectCurrentUser],
-  (businesses, user) => businesses.find((item) => item.ownerId === user?.id) || null,
+  (businesses, user) => selectActiveBusinessForOwner(businesses, user?.id),
 )
 
 export const selectVisibleNotifications = createSelector(

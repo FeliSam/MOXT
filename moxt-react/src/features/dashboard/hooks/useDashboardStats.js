@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { FiBriefcase, FiPackage, FiRepeat } from 'react-icons/fi'
 import { shallowEqual, useSelector } from 'react-redux'
+import { selectActiveBusinessForOwner } from '../../businesses/businessVisibility'
 import { TRANSFER_STATUS } from '../../transfers/transferConfig'
 
 export function useDashboardStats(user) {
@@ -28,7 +29,7 @@ export function useDashboardStats(user) {
     )
   }, shallowEqual)
   const business = useSelector((state) =>
-    state.businesses.items.find((item) => item.ownerId === user.id),
+    selectActiveBusinessForOwner(state.businesses.items, user.id),
   )
 
   return useMemo(() => {

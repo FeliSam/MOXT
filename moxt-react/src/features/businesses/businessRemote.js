@@ -8,6 +8,7 @@ export function businessFromRemoteRow(row) {
   return {
     ...payload,
     ...base,
+    ownerId: base.ownerId != null ? String(base.ownerId) : base.ownerId,
     deletedByUserAt: base.deletedByUserAt || payload.deletedByUserAt || null,
     hours: base.hours || payload.hours || base.scheduleSummary || '',
   }
