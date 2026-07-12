@@ -42,6 +42,8 @@ const camelMap = {
   created_by: 'createdBy',
 }
 
+const RECONNECT_DELAY_MS = 3000
+
 function parseIdList(value) {
   if (Array.isArray(value)) return value.map(String)
   if (typeof value === 'string') {
@@ -144,41 +146,67 @@ function maybeReloadConversationMessages(conversation, dispatch, getState) {
 let channel = null
 let activeUserId = null
 let reconnectTimer = null
+let onlineHandler = null
+let connectionStatus = 'idle'
 
-/** Propage le JWT Supabase au socket Realtime (requis pour les événements RLS). */
-export async function syncRealtimeAuthToken() {
-  if (!supabase) return false
-  const { data } = await supabase.auth.getSession()
-  const token = data.session?.access_token
-  if (!token) return false
-  await supabase.realtime.setAuth(token)
-  return true
+function setConnectionStatus(status) {
+  connectionStatus = status
 }
 
-export async function startRealtimeSubscription(userId, dispatch, getState) {
-  if (!supabase || !userId) return
+export function isRealtimeConnected() {
+  return connectionStatus === 'subscribed'
+}
 
-  const authed = await syncRealtimeAuthToken()
-  if (!authed) return
+export function getRealtimeConnectionStatus() {
+  return connectionStatus
+}
 
-  if (channel && activeUserId === userId) return
-
-  if (channel) {
-    supabase.removeChannel(channel)
-    channel = null
-    activeUserId = null
-  }
-
+function clearReconnectTimer() {
   if (reconnectTimer) {
     clearTimeout(reconnectTimer)
     reconnectTimer = null
   }
+}
 
-  activeUserId = userId
-  enableEngagementAlerts()
+function teardownChannel() {
+  if (channel) {
+    supabase.removeChannel(channel)
+    channel = null
+  }
+  activeUserId = null
+  setConnectionStatus('idle')
+}
+
+function scheduleReconnect(userId, dispatch, getState) {
+  if (reconnectTimer || !userId) return
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null
+    if (activeUserId !== userId) return
+    channel = null
+    void startRealtimeSubscription(userId, dispatch, getState, { force: true })
+  }, RECONNECT_DELAY_MS)
+}
+
+function ensureOnlineReconnect(userId, dispatch, getState) {
+  if (onlineHandler || typeof window === 'undefined') return
+  onlineHandler = () => {
+    if (!userId) return
+    void reconnectRealtimeSubscription(userId, dispatch, getState)
+  }
+  window.addEventListener('online', onlineHandler)
+}
+
+function removeOnlineReconnect() {
+  if (!onlineHandler || typeof window === 'undefined') return
+  window.removeEventListener('online', onlineHandler)
+  onlineHandler = null
+}
+
+function bindChannel(userId, dispatch, getState) {
+  setConnectionStatus('connecting')
 
   channel = supabase
-    .channel(`user-messaging-${userId}`)
+    .channel(`user-messaging-${userId}-${Date.now()}`)
 
     .on(
       'postgres_changes',
@@ -250,28 +278,57 @@ export async function startRealtimeSubscription(userId, dispatch, getState) {
     )
 
     .subscribe((status) => {
-      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        if (reconnectTimer) return
-        reconnectTimer = setTimeout(() => {
-          reconnectTimer = null
-          if (activeUserId === userId) {
-            channel = null
-            void startRealtimeSubscription(userId, dispatch, getState)
-          }
-        }, 3000)
+      if (status === 'SUBSCRIBED') {
+        clearReconnectTimer()
+        setConnectionStatus('subscribed')
+        return
+      }
+
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        setConnectionStatus(status === 'CLOSED' ? 'closed' : 'error')
+        channel = null
+        scheduleReconnect(userId, dispatch, getState)
       }
     })
 }
 
+/** Propage le JWT Supabase au socket Realtime (requis pour les événements RLS). */
+export async function syncRealtimeAuthToken() {
+  if (!supabase) return false
+  const { data } = await supabase.auth.getSession()
+  const token = data.session?.access_token
+  if (!token) return false
+  await supabase.realtime.setAuth(token)
+  return true
+}
+
+export async function startRealtimeSubscription(userId, dispatch, getState, options = {}) {
+  const { force = false } = options
+  if (!supabase || !userId) return
+
+  const authed = await syncRealtimeAuthToken()
+  if (!authed) return
+
+  if (!force && channel && activeUserId === userId && connectionStatus === 'subscribed') {
+    return
+  }
+
+  clearReconnectTimer()
+  teardownChannel()
+
+  activeUserId = userId
+  enableEngagementAlerts()
+  ensureOnlineReconnect(userId, dispatch, getState)
+  bindChannel(userId, dispatch, getState)
+}
+
+export function reconnectRealtimeSubscription(userId, dispatch, getState) {
+  return startRealtimeSubscription(userId, dispatch, getState, { force: true })
+}
+
 export function stopRealtimeSubscription() {
   disableEngagementAlerts()
-  if (reconnectTimer) {
-    clearTimeout(reconnectTimer)
-    reconnectTimer = null
-  }
-  if (channel) {
-    supabase.removeChannel(channel)
-    channel = null
-    activeUserId = null
-  }
+  removeOnlineReconnect()
+  clearReconnectTimer()
+  teardownChannel()
 }

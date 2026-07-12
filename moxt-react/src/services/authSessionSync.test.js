@@ -27,6 +27,7 @@ vi.mock('../features/auth/authService', () => ({
 
 vi.mock('./realtimeService', () => ({
   startRealtimeSubscription: vi.fn(),
+  reconnectRealtimeSubscription: vi.fn(),
   stopRealtimeSubscription: vi.fn(),
 }))
 

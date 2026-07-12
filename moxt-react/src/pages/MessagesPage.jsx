@@ -36,6 +36,7 @@ import { selectUnreadMessageCount, selectUserConversations } from '../features/s
 import { selectAccountPreferences, updateAccountPreferences } from '../features/account/accountSlice'
 import { addToast } from '../features/ui/uiSlice'
 import { useMediaQuery } from '../hooks/useMediaQuery'
+import { useMessagesRealtimeSync } from '../hooks/useMessagesRealtimeSync'
 import { ConversationFilterMenu } from './messages/ConversationFilterMenu'
 import { ConversationNotFound } from './messages/ConversationNotFound'
 import { ConversationPanel } from './messages/ConversationPanel'
@@ -104,6 +105,10 @@ export function MessagesPage() {
         : defaultAssistant
           ? ASSISTANT_ID
           : null)
+
+  useMessagesRealtimeSync(
+    activeId && activeId !== ASSISTANT_ID ? activeId : null,
+  )
 
   const visible = useMemo(() => {
     const normalized = query.trim().toLowerCase()

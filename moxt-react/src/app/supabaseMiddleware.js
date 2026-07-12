@@ -716,31 +716,24 @@ const handlers = {
     const { error } = await supabase.from('posts').delete().eq('id', payload)
     if (error) throw error
   },
-  'posts/toggleLike': async (payload, state) => {
-    const post = state.posts?.items?.find((p) => p.id === payload.postId)
-    if (!post) return
-    const { error } = await supabase
-      .from('posts')
-      .update({ likes: JSON.stringify(post.likes), updated_at: new Date().toISOString() })
-      .eq('id', payload.postId)
+  'posts/toggleLike': async (payload) => {
+    const { error } = await supabase.rpc('moxt_post_toggle_like', {
+      p_post_id: payload.postId,
+    })
     if (error) throw error
   },
-  'posts/addComment': async (payload, state) => {
-    const post = state.posts?.items?.find((p) => p.id === payload.postId)
-    if (!post) return
-    const { error } = await supabase
-      .from('posts')
-      .update({ comments: JSON.stringify(post.comments), updated_at: new Date().toISOString() })
-      .eq('id', payload.postId)
+  'posts/addComment': async (payload) => {
+    const { error } = await supabase.rpc('moxt_post_add_comment', {
+      p_post_id: payload.postId,
+      p_comment: payload.comment,
+    })
     if (error) throw error
   },
-  'posts/deleteComment': async (payload, state) => {
-    const post = state.posts?.items?.find((p) => p.id === payload.postId)
-    if (!post) return
-    const { error } = await supabase
-      .from('posts')
-      .update({ comments: JSON.stringify(post.comments), updated_at: new Date().toISOString() })
-      .eq('id', payload.postId)
+  'posts/deleteComment': async (payload) => {
+    const { error } = await supabase.rpc('moxt_post_delete_comment', {
+      p_post_id: payload.postId,
+      p_comment_id: payload.commentId,
+    })
     if (error) throw error
   },
 
