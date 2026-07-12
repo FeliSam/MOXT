@@ -52,6 +52,13 @@ async function main() {
   const balance = await fetchSmscBalance(env)
   line(balance.ok, 'Solde SMSC', balance.detail)
 
+  console.log('\n▸ Causes fréquentes si le SMS échoue (solde OK, hors mode test)')
+  console.log('  A. Secret hook Supabase désynchronisé (Auth ≠ Edge Function)')
+  console.log('     → npm run setup:smsc  (resynchronise SEND_SMS_HOOK_SECRET)')
+  console.log('  B. Expéditeur MOXT non validé chez SMSC')
+  console.log('     → smsc.ru → SMS → Имена отправителей, ou retirez SMSC_SENDER')
+  console.log('  C. Numéro déjà lié à un autre compte MOXT')
+  console.log('  D. Logs Supabase : Edge Functions → send-sms → Logs (erreur exacte)')
   console.log('\n▸ Si l’envoi SMS échoue malgré un solde OK')
   console.log('  1. smsc.ru → Paramètres → désactiver le « mode test »')
   console.log('     (ou ajouter le numéro +7 dans les numéros autorisés)')

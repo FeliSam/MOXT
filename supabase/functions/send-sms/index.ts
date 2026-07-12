@@ -115,7 +115,7 @@ async function sendViaSmsRu(phone: string, otp: string) {
   return entry.sms_id || 'ok'
 }
 
-async function sendViaSmsc(phone: string, otp: string) {
+async function sendViaSmscOnce(phone: string, otp: string, sender?: string) {
   const login = Deno.env.get('SMSC_LOGIN')
   const password = Deno.env.get('SMSC_PASSWORD')
   const apikey = Deno.env.get('SMSC_API_KEY')
@@ -136,7 +136,6 @@ async function sendViaSmsc(phone: string, otp: string) {
   if (apikey) body.set('apikey', apikey)
   else if (password) body.set('psw', password)
 
-  const sender = Deno.env.get('SMSC_SENDER')
   if (sender) body.set('sender', sender)
 
   const res = await fetch('https://smsc.ru/sys/send.php', {
@@ -175,11 +174,48 @@ async function sendViaSmsc(phone: string, otp: string) {
         'SMSC : envoi refusé pour ce numéro. Désactivez le mode test sur smsc.ru (Paramètres → Mode test) ou ajoutez le numéro aux numéros autorisés.',
       )
     }
+    if (isSmscSenderError(code, detail)) {
+      throw new Error(
+        `SMSC_SENDER_INVALID — ${detail}`,
+      )
+    }
     throw new Error(`SMSC ${code} — ${detail}`)
   }
 
   const id = data.id
   return id ? String(id) : 'ok'
+}
+
+function isSmscSenderError(code: unknown, detail = '') {
+  const lower = detail.toLowerCase()
+  return (
+    lower.includes('sender') ||
+    lower.includes('отправител') ||
+    lower.includes('имя отправителя') ||
+    lower.includes('подпись') ||
+    (Number(code) === 6 && (lower.includes('имя') || lower.includes('sender')))
+  )
+}
+
+async function sendViaSmsc(phone: string, otp: string) {
+  const sender = (Deno.env.get('SMSC_SENDER') || '').trim()
+  if (!sender) {
+    return sendViaSmscOnce(phone, otp)
+  }
+
+  try {
+    return await sendViaSmscOnce(phone, otp, sender)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : ''
+    if (
+      message.includes('SMSC_SENDER_INVALID') ||
+      isSmscSenderError('inconnu', message)
+    ) {
+      console.warn('[send-sms] expéditeur SMSC refusé, nouvel essai sans sender:', message)
+      return sendViaSmscOnce(phone, otp)
+    }
+    throw error
+  }
 }
 
 async function sendViaYandexCns(phone: string, otp: string) {
@@ -269,6 +305,20 @@ Deno.serve(async (req) => {
     return json({})
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Échec envoi SMS.'
+    const lower = message.toLowerCase()
+    if (lower.includes('signature') || lower.includes('webhook')) {
+      console.error('[send-sms] hook signature:', message)
+      return json(
+        {
+          error: {
+            http_code: 401,
+            message:
+              'Hook SMS : secret de signature invalide. Relancez npm run setup:smsc pour resynchroniser SEND_SMS_HOOK_SECRET.',
+          },
+        },
+        401,
+      )
+    }
     console.error('[send-sms]', message)
     return json(
       {

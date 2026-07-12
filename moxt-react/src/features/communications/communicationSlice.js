@@ -21,14 +21,32 @@ const MESSAGE_FETCH_LIMIT = 200
 const MESSAGE_INCREMENTAL_LIMIT = 100
 const MESSAGE_OLDER_LIMIT = 100
 
+export function mergeMessageReceipts(localMessage, remoteMessage) {
+  const local = normalizeMessage(localMessage)
+  const remote = normalizeMessage(remoteMessage)
+  const readBy = [...new Set([...(local.readBy || []), ...(remote.readBy || [])].map(String))]
+  const deliveredTo = [
+    ...new Set([...(local.deliveredTo || []), ...(remote.deliveredTo || [])].map(String)),
+  ]
+  return {
+    ...remote,
+    readBy,
+    deliveredTo,
+  }
+}
+
 export function mergeMessageBatch(existingMessages, remoteRows) {
   const messagesById = new Map()
   for (const message of (existingMessages || []).map(normalizeMessage)) {
     messagesById.set(message.id, message)
   }
   for (const row of remoteRows || []) {
-    const message = normalizeMessage(fromRow(row))
-    messagesById.set(message.id, message)
+    const remoteMessage = normalizeMessage(fromRow(row))
+    const existing = messagesById.get(remoteMessage.id)
+    messagesById.set(
+      remoteMessage.id,
+      existing ? mergeMessageReceipts(existing, remoteMessage) : remoteMessage,
+    )
   }
   return [...messagesById.values()].sort(
     (left, right) => new Date(left.createdAt) - new Date(right.createdAt),
@@ -329,7 +347,14 @@ const communicationSlice = createSlice({
       }
       if (!conversation) return
       const alreadyExists = conversation.messages.some((m) => m.id === normalizedMessage.id)
-      if (alreadyExists) return
+      if (alreadyExists) {
+        const index = conversation.messages.findIndex((m) => m.id === normalizedMessage.id)
+        conversation.messages[index] = mergeMessageReceipts(
+          conversation.messages[index],
+          normalizedMessage,
+        )
+        return
+      }
       conversation.messages.push(normalizedMessage)
       conversation.messagesLoaded = true
       conversation.messageCount = conversation.messages.length
@@ -343,6 +368,27 @@ const communicationSlice = createSlice({
         })
       applyLastMessagePreview(conversation, normalizedMessage)
       bumpConversationToTop(state, conversation.id)
+    },
+    syncRemoteMessage(state, action) {
+      const normalizedMessage = normalizeMessage(action.payload)
+      const conversationId = normalizedMessage.conversationId || action.payload.conversationId
+      if (!conversationId) return
+
+      let conversation = state.conversations.find((item) => item.id === conversationId)
+      if (!conversation) {
+        conversation = state.conversations.find((item) =>
+          item.messages.some((entry) => entry.id === normalizedMessage.id),
+        )
+      }
+      if (!conversation) return
+
+      const index = conversation.messages.findIndex((item) => item.id === normalizedMessage.id)
+      if (index < 0) return
+
+      conversation.messages[index] = mergeMessageReceipts(
+        conversation.messages[index],
+        normalizedMessage,
+      )
     },
     receiveRemoteConversation(state, action) {
       const conversation = normalizeConversation(action.payload)
@@ -612,18 +658,22 @@ const communicationSlice = createSlice({
         (item) => item.id === action.payload.conversationId,
       )
       if (!conversation || !conversation.participantIds.includes(action.payload.userId)) return
+      const readerId = String(action.payload.userId)
       conversation.unreadBy ||= {}
-      conversation.unreadBy[action.payload.userId] = 0
+      conversation.unreadBy[readerId] = 0
       conversation.messages.forEach((message) => {
         message.deliveredTo ||= []
-        message.readBy ||= [message.senderId]
-        if (String(message.senderId) !== String(action.payload.userId)) {
-          if (!message.deliveredTo.includes(action.payload.userId)) {
-            message.deliveredTo.push(action.payload.userId)
-          }
-          if (!message.readBy.includes(action.payload.userId)) {
-            message.readBy.push(action.payload.userId)
-          }
+        message.readBy ||= []
+        const senderId = String(message.senderId)
+        if (senderId === readerId) return
+        if (!message.readBy.map(String).includes(senderId)) {
+          message.readBy.push(senderId)
+        }
+        if (!message.deliveredTo.map(String).includes(readerId)) {
+          message.deliveredTo.push(readerId)
+        }
+        if (!message.readBy.map(String).includes(readerId)) {
+          message.readBy.push(readerId)
         }
       })
     },
@@ -1298,6 +1348,7 @@ export const {
   updateSupportStatus,
   setAll,
   receiveRemoteMessage,
+  syncRemoteMessage,
   receiveRemoteConversation,
   syncRemoteConversation,
   receiveRemoteNotification,

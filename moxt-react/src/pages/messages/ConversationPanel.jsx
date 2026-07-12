@@ -176,6 +176,17 @@ export function ConversationPanel({
     return () => URL.revokeObjectURL(url)
   }, [attachment])
 
+  useEffect(() => {
+    if (!peerTyping) return
+    const messageList = messageListRef.current
+    if (!messageList) return
+    const distanceFromBottom =
+      messageList.scrollHeight - messageList.scrollTop - messageList.clientHeight
+    if (distanceFromBottom < 160) {
+      messageList.scrollTo({ top: messageList.scrollHeight, behavior: 'smooth' })
+    }
+  }, [peerTyping])
+
   function scrollToBottom() {
     const messageList = messageListRef.current
     if (!messageList) return
@@ -211,9 +222,16 @@ export function ConversationPanel({
             {muted ? <FiBellOff className="size-3.5 shrink-0 text-[var(--app-text-faint)]" aria-label="En sourdine" /> : null}
           </div>
           <div className="mt-0.5 flex flex-wrap items-center gap-2">
-            <span className="text-[11px] leading-tight text-[var(--app-text-muted)]">
-              {peerActivityLabel(active.updatedAt)}
-            </span>
+            {peerTyping ? (
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold leading-tight text-brand-700 dark:text-brand-300">
+                {t('messages.typing')}
+                <TypingDots />
+              </span>
+            ) : (
+              <span className="text-[11px] leading-tight text-[var(--app-text-muted)]">
+                {peerActivityLabel(active.updatedAt)}
+              </span>
+            )}
             {messageCount ? (
               <span className="text-[11px] leading-tight text-[var(--app-text-faint)]">
                 · {messageCount} message{messageCount > 1 ? 's' : ''}
@@ -520,6 +538,12 @@ export function ConversationPanel({
                   )
                 })}
                 {!timeline.length ? <MessageEmptyState /> : null}
+                {peerTyping ? (
+                  <TypingIndicator
+                    peerName={peer.name}
+                    label={t('messages.typingAria', { name: peer.name })}
+                  />
+                ) : null}
               </>
             )}
           </div>
@@ -670,6 +694,12 @@ export function ConversationPanel({
             onChange={(event) => {
               formik.handleChange(event)
               onDraft(event.target.value)
+              if (blocked) return
+              if (event.target.value.trim()) {
+                onTyping?.()
+              } else {
+                onStopTyping?.()
+              }
             }}
             onKeyDown={(event) => {
               if (event.key === 'Enter' && !event.shiftKey) {

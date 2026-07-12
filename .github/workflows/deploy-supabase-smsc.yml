@@ -53,7 +53,7 @@ jobs:
           if [ -n "$MOXT_POSTBOX_SMTP_USER" ] && [ -n "$MOXT_POSTBOX_SMTP_PASS" ] && [ -n "$MOXT_POSTBOX_FROM" ]; then
             npx supabase config push --yes
           elif [ -n "$SEND_SMS_HOOK_SECRET" ]; then
-            echo "Postbox absent — config push ignoré (SMTP requis dans config.toml)"
+            echo "::warning::Postbox absent — le secret hook Auth n'est pas resynchronisé. Lancez npm run setup:smsc ou ajoutez MOXT_POSTBOX_* aux secrets GitHub."
           else
             echo "Postbox et hook SMS absents — config push ignoré"
           fi

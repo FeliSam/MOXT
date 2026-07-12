@@ -2,9 +2,11 @@ import { attachmentPreviewLabel } from '../../features/communications/attachment
 
 export function messageReadLabel(message, userId) {
   if (!isMessageFromUser(message, userId)) return ''
-  const readers = (message.readBy || []).filter((id) => id !== userId)
+  const selfId = String(userId)
+  const readers = (message.readBy || []).map(String).filter((id) => id && id !== selfId)
   if (readers.length > 0) return '· Lu'
-  if (message.deliveredTo?.length) return '· Distribué'
+  const delivered = (message.deliveredTo || []).map(String).filter((id) => id && id !== selfId)
+  if (delivered.length > 0) return '· Distribué'
   return '· Envoyé'
 }
 

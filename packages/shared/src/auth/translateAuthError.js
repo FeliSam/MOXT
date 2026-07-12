@@ -105,8 +105,11 @@ function translateSmsHookFailure(message = '') {
   ) {
     return "Impossible d'envoyer un SMS à ce numéro pour le moment. Vérifiez le format +7XXXXXXXXXX ou réessayez avec un autre numéro russe."
   }
-  if (lower.includes('expéditeur') || lower.includes('sender')) {
-    return "L'envoi du code SMS est temporairement indisponible. Réessayez plus tard ou contactez le support."
+  if (lower.includes('expéditeur') || lower.includes('sender') || lower.includes('smsc_sender_invalid')) {
+    return "L'envoi du code SMS est temporairement indisponible. Réessayez dans quelques minutes."
+  }
+  if (lower.includes('secret de signature') || lower.includes('send_sms_hook_secret')) {
+    return "L'envoi du code SMS est temporairement indisponible. Réessayez dans quelques minutes ou contactez le support."
   }
   if (lower.includes('rate limit') || lower.includes('trop de tentatives')) {
     return 'Trop de tentatives. Patientez quelques minutes avant de réessayer.'

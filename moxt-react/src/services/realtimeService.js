@@ -218,6 +218,25 @@ function bindChannel(userId, dispatch, getState) {
 
     .on(
       'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'messages' },
+      (payload) => {
+        const row = fromRow(payload.new)
+        const conversation = resolveConversationForMessage(
+          getState(),
+          row.conversationId || payload.new.conversation_id,
+        )
+        if (!conversation?.participantIds?.map(String).includes(String(userId))) return
+        dispatch(
+          syncRemoteMessage({
+            ...row,
+            conversationId: row.conversationId || payload.new.conversation_id,
+          }),
+        )
+      },
+    )
+
+    .on(
+      'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'conversations' },
       (payload) => {
         const row = fromRow(payload.new)

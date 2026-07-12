@@ -484,8 +484,23 @@ const handlers = {
       })
       .eq('id', canonicalId)
   },
-  'communications/markConversationRead': async (payload, state) => {
+  'communications/markConversationRead': async (payload, state, dispatch) => {
+    const conversation = state.communications.conversations.find(
+      (c) => c.id === payload.conversationId,
+    )
+    if (!conversation) return
+
     await syncConversationRow(state, payload.conversationId)
+
+    const readerId = String(payload.userId)
+    const peerMessages = conversation.messages.filter(
+      (message) => String(message.senderId) !== readerId,
+    )
+    for (const message of peerMessages) {
+      const readBy = (message.readBy || []).map(String)
+      if (!readBy.includes(readerId)) continue
+      await syncMessageRow(message, conversation, dispatch)
+    }
   },
   'communications/updateConversationContext': async (payload, state) => {
     await syncConversationRow(state, payload.id)

@@ -111,6 +111,11 @@ export function MessagesPage() {
     activeId && activeId !== ASSISTANT_ID ? activeId : null,
   )
 
+  const { peerTyping, notifyTyping, stopTyping } = useConversationTyping(
+    activeId && activeId !== ASSISTANT_ID ? activeId : null,
+    user.id,
+  )
+
   const visible = useMemo(() => {
     const normalized = query.trim().toLowerCase()
     return conversations
@@ -159,6 +164,7 @@ export function MessagesPage() {
     },
     onSubmit: async (values, helpers) => {
       if (!active || blocked) return
+      stopTyping()
       // Mode édition : on modifie le message existant, sans en renvoyer un nouveau.
       if (editingId) {
         dispatch(
@@ -692,6 +698,9 @@ export function MessagesPage() {
                 user={user}
                 muted={active.mutedBy?.includes(user.id)}
                 pinned={active.pinnedBy?.includes(user.id)}
+                peerTyping={peerTyping}
+                onTyping={notifyTyping}
+                onStopTyping={stopTyping}
               />
             ) : null}
           </section>
