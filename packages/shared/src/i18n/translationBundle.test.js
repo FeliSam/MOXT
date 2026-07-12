@@ -19,14 +19,14 @@ describe('translationBundle', () => {
     const current = buildTranslationBundle()
     const incoming = structuredClone(current)
     incoming.uiPhrases.find((row) => row.fr === 'Accueil').en = 'Homepage'
-    incoming.keys.find((row) => row.key === 'auth.login.title').en = 'Sign in'
+    incoming.keys.find((row) => row.key === 'auth.login.title').en = 'Log in to MOXT'
 
     const { uiChanges, keyChanges } = diffTranslationBundle(current, incoming)
     expect(uiChanges).toEqual([
       expect.objectContaining({ fr: 'Accueil', lang: 'en', to: 'Homepage' }),
     ])
     expect(keyChanges).toEqual([
-      expect.objectContaining({ key: 'auth.login.title', lang: 'en', to: 'Sign in' }),
+      expect.objectContaining({ key: 'auth.login.title', lang: 'en', to: 'Log in to MOXT' }),
     ])
   })
 
