@@ -142,6 +142,8 @@ const LegalPage = lazyPage(() => import('../pages/LegalPage'), 'LegalPage')
 const VerificationPage = lazyPage(() => import('../pages/VerificationPage'), 'VerificationPage')
 const WalletPage = lazyPage(() => import('../pages/WalletPage'), 'WalletPage')
 
+const isProd = import.meta.env.PROD
+
 export function AppRouter() {
   return (
     <Suspense
@@ -185,8 +187,12 @@ export function AppRouter() {
         </Route>
 
         <Route element={<ProtectedRoute />}>
-          <Route path="/design-directions" element={<DesignDirectionsIndexPage />} />
-          <Route path="/design-directions/:directionId" element={<DesignDirectionRoutePage />} />
+          {!isProd ? (
+            <>
+              <Route path="/design-directions" element={<DesignDirectionsIndexPage />} />
+              <Route path="/design-directions/:directionId" element={<DesignDirectionRoutePage />} />
+            </>
+          ) : null}
           <Route element={<AppLayout />}>
             <Route index element={<Navigate to="/dashboard" replace />} />
             {SIMPLE_LEGACY_REDIRECTS.map(([path, target]) => (
@@ -299,8 +305,12 @@ export function AppRouter() {
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/support" element={<SupportPage />} />
-            <Route path="/design-system" element={<DesignSystemPage />} />
-            <Route path="/feature-matrix" element={<FeatureMatrixPage />} />
+            {!isProd ? (
+              <>
+                <Route path="/design-system" element={<DesignSystemPage />} />
+                <Route path="/feature-matrix" element={<FeatureMatrixPage />} />
+              </>
+            ) : null}
             <Route element={<ProtectedRoute allowedRoles={['admin', 'superadmin']} />}>
               <Route path="/admin" element={<AdminPage />} />
             </Route>

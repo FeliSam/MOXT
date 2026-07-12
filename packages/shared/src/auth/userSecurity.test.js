@@ -35,9 +35,10 @@ describe('userSecurity', () => {
     expect(canCreateBusiness(phoneUser)).toBe(false)
   })
 
-  it('allows transfers for any signed-in user', () => {
+  it('requires phone verification for transfers', () => {
     expect(canUseTransferAccount(phoneUser)).toBe(true)
-    expect(canUseTransferAccount({ id: 'guest-oauth' })).toBe(true)
+    expect(canUseTransferAccount({ ...phoneUser, phoneVerified: false })).toBe(false)
+    expect(canUseTransferAccount({ id: 'guest-oauth' })).toBe(false)
     expect(canUseTransferAccount(null)).toBe(false)
   })
 

@@ -10,11 +10,19 @@
 name: Deploy — Supabase SMSC
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/**'
+      - '.github/workflows/deploy-supabase-smsc.yml'
   workflow_dispatch:
 
 concurrency:
   group: deploy-supabase-smsc
   cancel-in-progress: false
+
+permissions:
+  contents: read
 
 jobs:
   deploy:

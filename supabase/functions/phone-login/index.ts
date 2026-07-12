@@ -1,15 +1,57 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const DEFAULT_ORIGINS = ['https://moxtapp.ru', 'https://www.moxtapp.ru']
+const RATE_WINDOW_MS = 15 * 60 * 1000
+const RATE_MAX_PER_IP = 30
+const RATE_MAX_PER_PHONE = 8
+
+const rateBuckets = new Map<string, { count: number; resetAt: number }>()
+
+function allowedOrigins() {
+  const raw = Deno.env.get('MOXT_ALLOWED_ORIGINS') || ''
+  const fromEnv = raw
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+  return fromEnv.length ? fromEnv : DEFAULT_ORIGINS
 }
 
-function json(body: Record<string, unknown>, status = 200) {
+function corsHeaders(origin: string | null) {
+  const allowed = allowedOrigins()
+  const resolved =
+    origin && allowed.includes(origin) ? origin : allowed[0] || DEFAULT_ORIGINS[0]
+  return {
+    'Access-Control-Allow-Origin': resolved,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    Vary: 'Origin',
+  }
+}
+
+function json(body: Record<string, unknown>, status = 200, origin: string | null = null) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' },
   })
+}
+
+function clientIp(req: Request) {
+  return (
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    req.headers.get('x-real-ip') ||
+    'unknown'
+  )
+}
+
+function rateLimit(key: string, max: number) {
+  const now = Date.now()
+  const bucket = rateBuckets.get(key)
+  if (!bucket || bucket.resetAt <= now) {
+    rateBuckets.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS })
+    return false
+  }
+  bucket.count += 1
+  if (bucket.count > max) return true
+  return false
 }
 
 function digitsOnly(phone = '') {
@@ -56,24 +98,34 @@ function sessionPayload(session: {
   }
 }
 
+const GENERIC_AUTH_ERROR = 'Identifiants incorrects. Vérifiez votre numéro et mot de passe.'
+
 Deno.serve(async (req) => {
+  const origin = req.headers.get('Origin')
+
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders(origin) })
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
   if (!supabaseUrl || !serviceRoleKey || !anonKey) {
-    return json({ error: 'Configuration Supabase incomplète.' }, 503)
+    return json({ error: 'Configuration Supabase incomplète.' }, 503, origin)
   }
+
+  const ip = clientIp(req)
 
   try {
     const body = await req.json()
     const phone = normalizeE164(body?.phone)
     const password = String(body?.password || '')
     if (!phone || !password) {
-      return json({ error: 'Numéro et mot de passe obligatoires.' }, 400)
+      return json({ error: 'Numéro et mot de passe obligatoires.' }, 400, origin)
+    }
+
+    if (rateLimit(`ip:${ip}`, RATE_MAX_PER_IP) || rateLimit(`phone:${phone}`, RATE_MAX_PER_PHONE)) {
+      return json({ error: 'Trop de tentatives. Réessayez dans quelques minutes.' }, 429, origin)
     }
 
     const admin = createClient(supabaseUrl, serviceRoleKey, {
@@ -88,7 +140,7 @@ Deno.serve(async (req) => {
       .limit(5)
 
     if (profileError) {
-      return json({ error: profileError.message }, 500)
+      return json({ error: GENERIC_AUTH_ERROR }, 401, origin)
     }
 
     let profile = profiles?.[0] || null
@@ -105,18 +157,12 @@ Deno.serve(async (req) => {
     }
 
     if (!profile?.id) {
-      return json(
-        {
-          error:
-            'Aucun compte MOXT associé à ce numéro. Créez un compte ou terminez la confirmation SMS.',
-        },
-        401,
-      )
+      return json({ error: GENERIC_AUTH_ERROR }, 401, origin)
     }
 
     const { data: userData, error: userError } = await admin.auth.admin.getUserById(profile.id)
     if (userError || !userData.user) {
-      return json({ error: 'Compte introuvable.' }, 404)
+      return json({ error: GENERIC_AUTH_ERROR }, 401, origin)
     }
 
     const authUser = userData.user
@@ -124,61 +170,48 @@ Deno.serve(async (req) => {
     const phoneConfirmed = Boolean(authUser.phone_confirmed_at || profile.phone_verified)
 
     if (authPhone && !phoneConfirmed) {
-      return json(
-        {
-          error:
-            'Votre numéro n’est pas encore confirmé. Terminez l’inscription avec le code SMS reçu lors de la création du compte.',
-        },
-        403,
-      )
+      return json({ error: GENERIC_AUTH_ERROR }, 401, origin)
     }
 
-    // 1) Connexion native par téléphone (comptes inscrits par SMS)
     if (authPhone) {
       const phoneSignIn = await admin.auth.signInWithPassword({
         phone: authPhone,
         password,
       })
       if (phoneSignIn.data?.session && phoneSignIn.data.user) {
-        return json({
-          ...sessionPayload(phoneSignIn.data.session),
-          user: phoneSignIn.data.user,
-        })
+        return json(
+          {
+            ...sessionPayload(phoneSignIn.data.session),
+            user: phoneSignIn.data.user,
+          },
+          200,
+          origin,
+        )
       }
     }
 
-    // 2) Repli par e-mail lié au profil
     const email = (authUser.email || profile.email || '').trim().toLowerCase()
     if (!email) {
-      return json(
-        {
-          error:
-            'Connexion par numéro impossible : terminez d’abord la confirmation SMS de votre inscription.',
-        },
-        400,
-      )
+      return json({ error: GENERIC_AUTH_ERROR }, 401, origin)
     }
 
     const authClient = createClient(supabaseUrl, anonKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     })
     const { data, error } = await authClient.auth.signInWithPassword({ email, password })
-    if (error) {
-      return json(
-        { error: 'Identifiants incorrects. Vérifiez votre numéro russe et mot de passe.' },
-        401,
-      )
-    }
-    if (!data.session || !data.user) {
-      return json({ error: 'Connexion impossible.' }, 500)
+    if (error || !data.session || !data.user) {
+      return json({ error: GENERIC_AUTH_ERROR }, 401, origin)
     }
 
-    return json({
-      ...sessionPayload(data.session),
-      user: data.user,
-    })
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Erreur de connexion.'
-    return json({ error: message }, 400)
+    return json(
+      {
+        ...sessionPayload(data.session),
+        user: data.user,
+      },
+      200,
+      origin,
+    )
+  } catch {
+    return json({ error: GENERIC_AUTH_ERROR }, 401, origin)
   }
 })

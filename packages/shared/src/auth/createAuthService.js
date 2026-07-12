@@ -146,8 +146,7 @@ export function createAuthService(supabase, redirects = {}) {
     })
 
     if (error) {
-      console.warn('[MOXT] Vérification identité indisponible:', error.message)
-      return
+      throw new Error('IDENTITY_CHECK_UNAVAILABLE')
     }
 
     if (data?.available === false) {

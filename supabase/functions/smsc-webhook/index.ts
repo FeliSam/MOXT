@@ -29,6 +29,8 @@ function parseEventTime(value: string | null) {
 function verifySecret(req: Request) {
   const expected = Deno.env.get('SMSC_WEBHOOK_SECRET')
   if (!expected) return false
+  const auth = req.headers.get('authorization') || ''
+  if (auth === `Bearer ${expected}` || auth === expected) return true
   const url = new URL(req.url)
   return url.searchParams.get('secret') === expected
 }

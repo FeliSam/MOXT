@@ -39,9 +39,10 @@ export function canCreateBusiness(user) {
   return isIdentityVerified(user) && isPersonallyRegistered(user)
 }
 
-/** Transfert : tout utilisateur connecté, quelle que soit sa méthode de connexion. */
+/** Transfert : profil complet + numéro russe vérifié. */
 export function canUseTransferAccount(user) {
-  return canInteractNormally(user)
+  if (!user?.id) return false
+  return isPersonallyRegistered(user) && isPhoneVerified(user) && isValidRussianPhone(user.phone)
 }
 
 export function canPublishP2POffer(user) {

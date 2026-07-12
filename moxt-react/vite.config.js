@@ -13,21 +13,30 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, rootDir, '')
   const supabaseUrl =
     env.VITE_SUPABASE_URL ||
-    process.env.VITE_SUPABASE_URL ||
-    'https://rbvqfkccbkwjxkvpnwqn.supabase.co'
+    process.env.VITE_SUPABASE_URL
   const supabaseAnonKey =
     env.VITE_SUPABASE_ANON_KEY ||
     process.env.VITE_SUPABASE_ANON_KEY ||
     env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.VITE_SUPABASE_PUBLISHABLE_KEY
+
+  if (mode === 'production' && (!supabaseUrl || !supabaseAnonKey)) {
+    throw new Error(
+      'Build production : définissez VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY (pas de clés en dur).',
+    )
+  }
+
+  const resolvedSupabaseUrl = supabaseUrl || 'https://rbvqfkccbkwjxkvpnwqn.supabase.co'
+  const resolvedSupabaseAnonKey =
+    supabaseAnonKey ||
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJidnFma2NjYmt3anhrdnBud3FuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NjI2NDMsImV4cCI6MjA5ODIzODY0M30.ZpAr5eEnxoxy3TQ4hIA3SoX1NTuPg-0pt4UQ2mS5lDI'
 
   return {
   // Chemins absolus requis pour le SPA hébergé sur Yandex (QR, /invite/, publications invité).
   base: '/',
   define: {
-    'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(supabaseUrl),
-    'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(supabaseAnonKey),
+    'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(resolvedSupabaseUrl),
+    'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(resolvedSupabaseAnonKey),
   },
   resolve: {
     dedupe: ['react', 'react-dom', 'react-redux'],
