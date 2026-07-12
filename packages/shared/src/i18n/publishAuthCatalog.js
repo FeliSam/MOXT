@@ -7,8 +7,8 @@ const EN = {
   'E-mail indisponible': 'Email unavailable',
   'La vérification par e-mail est indisponible. Nous avons basculé vers Telegram — réessayez.':
     'Email verification is unavailable. We switched to Telegram — please try again.',
-  'Postbox n’a pas encore validé le domaine (DKIM). Utilisez le SMS pour l’instant, ou lancez npm run setup:postbox puis réessayez.':
-    'Postbox has not validated the domain yet (DKIM). Use SMS for now, or run npm run setup:postbox then try again.',
+  'Postbox n’a pas encore validé le domaine (DKIM). Utilisez le SMS pour l’instant, ou réessayez plus tard.':
+    'Email confirmation is temporarily unavailable. Use SMS for now, or try again later.',
   'SMS indisponible': 'SMS unavailable',
   'L’envoi SMS n’est pas disponible. Choisissez « Par Telegram » (déjà sélectionné) puis réessayez.':
     'SMS sending is unavailable. Choose “Via Telegram” (already selected) then try again.',
@@ -111,8 +111,21 @@ const EN = {
   // Auth / forgot / errors (translateAuthError.js + related UI)
   'Les inscriptions sont temporairement désactivées. Réessayez plus tard.':
     'Sign-ups are temporarily disabled. Please try again later.',
-  'La connexion par numéro est désactivée côté serveur. Utilisez votre e-mail, ou réessayez après activation Phone dans Supabase Auth.':
-    'Phone sign-in is disabled on the server. Use your email, or try again after enabling Phone in Supabase Auth.',
+  'La connexion par numéro est temporairement indisponible. Réessayez plus tard ou contactez le support.':
+    'Phone sign-in is temporarily unavailable. Try again later or contact support.',
+  "L'envoi du code SMS a échoué. Réessayez dans quelques instants ou choisissez la connexion par e-mail.":
+    'Could not send the SMS code. Try again in a moment or sign in with email.',
+  "L'envoi du code SMS est temporairement indisponible. Réessayez plus tard.":
+    'SMS sending is temporarily unavailable. Please try again later.',
+  "L'envoi SMS vers ce numéro est temporairement indisponible. Vérifiez votre numéro (+7) ou réessayez plus tard.":
+    'SMS to this number is temporarily unavailable. Check your number (+7) or try again later.',
+  "L'envoi du code SMS a échoué. Réessayez plus tard ou contactez le support.":
+    'Could not send the SMS code. Try again later or contact support.',
+  "L'envoi du code SMS a échoué. Réessayez dans quelques instants.":
+    'Could not send the SMS code. Try again in a moment.',
+  'Solde portefeuille': 'Wallet balance',
+  'Solde actuel : {amount} — la confirmation de réception n’ajuste pas automatiquement ce solde pour l’instant.':
+    'Current balance: {amount} — confirming receipt does not automatically update this balance yet.',
   "L'envoi SMS est indisponible. Choisissez « Par Telegram » pour confirmer votre numéro, ou réessayez plus tard.":
     'SMS sending is unavailable. Choose “Via Telegram” to confirm your number, or try again later.',
   'L’envoi SMS est indisponible. Choisissez « Par Telegram » pour confirmer votre numéro, ou réessayez plus tard.':
@@ -177,8 +190,8 @@ const RU = {
   'E-mail indisponible': 'Электронная почта недоступна',
   'La vérification par e-mail est indisponible. Nous avons basculé vers Telegram — réessayez.':
     'Проверка по электронной почте недоступна. Мы переключились на Telegram — попробуйте снова.',
-  'Postbox n’a pas encore validé le domaine (DKIM). Utilisez le SMS pour l’instant, ou lancez npm run setup:postbox puis réessayez.':
-    'Postbox ещё не подтвердил домен (DKIM). Пока используйте SMS или выполните npm run setup:postbox и повторите.',
+  'Postbox n’a pas encore validé le domaine (DKIM). Utilisez le SMS pour l’instant, ou réessayez plus tard.':
+    'Подтверждение по электронной почте временно недоступно. Пока используйте SMS или попробуйте позже.',
   'SMS indisponible': 'SMS недоступны',
   'L’envoi SMS n’est pas disponible. Choisissez « Par Telegram » (déjà sélectionné) puis réessayez.':
     'Отправка SMS недоступна. Выберите « Через Telegram » (уже выбрано) и попробуйте снова.',
@@ -273,8 +286,19 @@ const RU = {
 
   'Les inscriptions sont temporairement désactivées. Réessayez plus tard.':
     'Регистрация временно отключена. Попробуйте позже.',
-  'La connexion par numéro est désactivée côté serveur. Utilisez votre e-mail, ou réessayez après activation Phone dans Supabase Auth.':
-    'Вход по номеру отключён на сервере. Используйте электронную почту или повторите попытку после включения Phone в Supabase Auth.',
+  'La connexion par numéro est temporairement indisponible. Réessayez plus tard ou contactez le support.':
+    'Вход по номеру временно недоступен. Попробуйте позже или обратитесь в поддержку.',
+  "L'envoi du code SMS a échoué. Réessayez dans quelques instants ou choisissez la connexion par e-mail.":
+    'Не удалось отправить SMS-код. Попробуйте через несколько секунд или войдите по электронной почте.',
+  "L'envoi du code SMS est temporairement indisponible. Réessayez plus tard.":
+    'Отправка SMS временно недоступна. Попробуйте позже.',
+  "L'envoi SMS vers ce numéro est temporairement indisponible. Vérifiez votre numéro (+7) ou réessayez plus tard.":
+    'SMS на этот номер временно недоступны. Проверьте номер (+7) или попробуйте позже.',
+  "L'envoi du code SMS a échoué. Réessayez plus tard ou contactez le support.":
+    'Не удалось отправить SMS-код. Попробуйте позже или обратитесь в поддержку.',
+  "L'envoi du code SMS a échoué. Réessayez dans quelques instants.":
+    'Не удалось отправить SMS-код. Попробуйте через несколько секунд.',
+  'Solde portefeuille': 'Баланс кошелька',
   "L'envoi SMS est indisponible. Choisissez « Par Telegram » pour confirmer votre numéro, ou réessayez plus tard.":
     'Отправка SMS недоступна. Выберите « Через Telegram », чтобы подтвердить номер, или попробуйте позже.',
   'L’envoi SMS est indisponible. Choisissez « Par Telegram » pour confirmer votre numéro, ou réessayez plus tard.':
@@ -338,8 +362,8 @@ const PT = {
   'E-mail indisponible': 'E-mail indisponível',
   'La vérification par e-mail est indisponible. Nous avons basculé vers Telegram — réessayez.':
     'A verificação por e-mail está indisponível. Mudámos para o Telegram — tente novamente.',
-  'Postbox n’a pas encore validé le domaine (DKIM). Utilisez le SMS pour l’instant, ou lancez npm run setup:postbox puis réessayez.':
-    'O Postbox ainda não validou o domínio (DKIM). Use SMS por agora ou execute npm run setup:postbox e tente de novo.',
+  'Postbox n’a pas encore validé le domaine (DKIM). Utilisez le SMS pour l’instant, ou réessayez plus tard.':
+    'A confirmação por e-mail está temporariamente indisponível. Use SMS por agora ou tente mais tarde.',
   'SMS indisponible': 'SMS indisponível',
   'L’envoi SMS n’est pas disponible. Choisissez « Par Telegram » (déjà sélectionné) puis réessayez.':
     'O envio de SMS não está disponível. Escolha « Via Telegram » (já selecionado) e tente novamente.',
@@ -434,8 +458,19 @@ const PT = {
 
   'Les inscriptions sont temporairement désactivées. Réessayez plus tard.':
     'Os registos estão temporariamente desativados. Tente novamente mais tarde.',
-  'La connexion par numéro est désactivée côté serveur. Utilisez votre e-mail, ou réessayez après activation Phone dans Supabase Auth.':
-    'O início de sessão por número está desativado no servidor. Use o seu e-mail, ou tente novamente após ativar Phone no Supabase Auth.',
+  'La connexion par numéro est temporairement indisponible. Réessayez plus tard ou contactez le support.':
+    'O início de sessão por número está temporariamente indisponível. Tente mais tarde ou contacte o suporte.',
+  "L'envoi du code SMS a échoué. Réessayez dans quelques instants ou choisissez la connexion par e-mail.":
+    'Não foi possível enviar o código SMS. Tente novamente em instantes ou entre com e-mail.',
+  "L'envoi du code SMS est temporairement indisponible. Réessayez plus tard.":
+    'O envio de SMS está temporariamente indisponível. Tente mais tarde.',
+  "L'envoi SMS vers ce numéro est temporairement indisponible. Vérifiez votre numéro (+7) ou réessayez plus tard.":
+    'O SMS para este número está temporariamente indisponível. Verifique o número (+7) ou tente mais tarde.',
+  "L'envoi du code SMS a échoué. Réessayez plus tard ou contactez le support.":
+    'Não foi possível enviar o código SMS. Tente mais tarde ou contacte o suporte.',
+  "L'envoi du code SMS a échoué. Réessayez dans quelques instants.":
+    'Não foi possível enviar o código SMS. Tente novamente em instantes.',
+  'Solde portefeuille': 'Saldo da carteira',
   "L'envoi SMS est indisponible. Choisissez « Par Telegram » pour confirmer votre numéro, ou réessayez plus tard.":
     'O envio de SMS está indisponível. Escolha « Via Telegram » para confirmar o seu número, ou tente mais tarde.',
   'L’envoi SMS est indisponible. Choisissez « Par Telegram » pour confirmer votre numéro, ou réessayez plus tard.':

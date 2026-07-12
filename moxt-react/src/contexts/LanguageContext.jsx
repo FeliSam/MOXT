@@ -3,6 +3,7 @@ import {
   SOURCE_LANGUAGE,
   SUPPORTED_LANGUAGES,
   normalizeStoredLanguage,
+  resolveInitialLanguage,
   translateUiText,
 } from '../config/uiTranslations'
 import { translate } from '../i18n/translate'
@@ -11,7 +12,7 @@ import { LanguageContext } from './language-context'
 const STORAGE_KEY = 'moxt-language'
 
 function initialLanguage() {
-  return normalizeStoredLanguage(localStorage.getItem(STORAGE_KEY))
+  return resolveInitialLanguage(localStorage.getItem(STORAGE_KEY))
 }
 
 export function LanguageProvider({ children }) {

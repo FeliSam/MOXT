@@ -76,5 +76,6 @@ expo-env.d.ts
 # Artefacts locaux / exports
 .tmp-ui-captures/
 outputs/
+translations/moxt-translations.json
 apps/mobile/.expo-export*/
 supabase/.temp/

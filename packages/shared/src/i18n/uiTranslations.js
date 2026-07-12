@@ -1445,4 +1445,21 @@ export function normalizeStoredLanguage(stored) {
   return SUPPORTED_LANGUAGES.includes(stored) ? stored : SOURCE_LANGUAGE
 }
 
+/** Mappe navigator.language (ex. ru-RU, pt-BR) vers une langue MOXT supportée. */
+export function detectBrowserLanguage(navigatorLanguage = '') {
+  const tag = String(navigatorLanguage || '').trim().toLowerCase()
+  if (!tag) return SOURCE_LANGUAGE
+  const primary = tag.split('-')[0]
+  return SUPPORTED_LANGUAGES.includes(primary) ? primary : SOURCE_LANGUAGE
+}
+
+/** Préférence sauvegardée, sinon langue du navigateur, sinon français. */
+export function resolveInitialLanguage(stored) {
+  if (stored && SUPPORTED_LANGUAGES.includes(stored)) return stored
+  if (typeof globalThis.navigator !== 'undefined' && globalThis.navigator.language) {
+    return detectBrowserLanguage(globalThis.navigator.language)
+  }
+  return SOURCE_LANGUAGE
+}
+
 export { PHRASES, ENGLISH_PHRASES }

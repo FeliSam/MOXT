@@ -3,7 +3,9 @@ import {
   SOURCE_LANGUAGE,
   SUPPORTED_LANGUAGES,
   cycleLanguage,
+  detectBrowserLanguage,
   normalizeStoredLanguage,
+  resolveInitialLanguage,
   translateUiText,
 } from './uiTranslations.js'
 
@@ -79,6 +81,40 @@ describe('normalizeStoredLanguage', () => {
 
   it('reinitialise une langue inconnue vers le francais', () => {
     expect(normalizeStoredLanguage('es')).toBe('fr')
+  })
+})
+
+describe('detectBrowserLanguage', () => {
+  it('mappe les locales navigateur vers fr/en/ru/pt', () => {
+    expect(detectBrowserLanguage('ru-RU')).toBe('ru')
+    expect(detectBrowserLanguage('en-US')).toBe('en')
+    expect(detectBrowserLanguage('pt-BR')).toBe('pt')
+    expect(detectBrowserLanguage('fr-FR')).toBe('fr')
+  })
+
+  it('retombe sur le francais pour une locale non supportee', () => {
+    expect(detectBrowserLanguage('es-ES')).toBe('fr')
+    expect(detectBrowserLanguage('')).toBe('fr')
+  })
+})
+
+describe('resolveInitialLanguage', () => {
+  it('priorise la preference sauvegardee', () => {
+    expect(resolveInitialLanguage('en')).toBe('en')
+  })
+
+  it('utilise la langue du navigateur sans preference sauvegardee', () => {
+    const previous = globalThis.navigator
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: { language: 'ru-RU' },
+    })
+    expect(resolveInitialLanguage(null)).toBe('ru')
+    expect(resolveInitialLanguage(undefined)).toBe('ru')
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: previous,
+    })
   })
 })
 

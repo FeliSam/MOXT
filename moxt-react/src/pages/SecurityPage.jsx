@@ -167,7 +167,7 @@ export function SecurityPage() {
           <FiLock className="text-2xl text-brand-600" />
           <h2 className="mt-4 font-black">Mot de passe</h2>
           <p className="mt-2 text-sm text-[var(--app-text-muted)]">
-            Modifiez votre mot de passe via Supabase Auth. Il n’est jamais stocké localement.
+            Modifiez votre mot de passe en toute sécurité. Il n’est jamais stocké sur cet appareil.
           </p>
           <Button className="mt-5" variant="secondary" onClick={() => setPasswordOpen(true)}>
             Modifier le mot de passe

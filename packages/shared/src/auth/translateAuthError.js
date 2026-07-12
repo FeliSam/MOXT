@@ -26,10 +26,10 @@ export function translateAuthError(error, context = {}) {
     message.toLowerCase().includes('phone logins are disabled') ||
     message.toLowerCase().includes('phone provider disabled')
   ) {
-    return 'La connexion par numéro est désactivée côté serveur. Relancez npm run setup:supabase pour réactiver Phone Auth.'
+    return 'La connexion par numéro est temporairement indisponible. Réessayez plus tard ou contactez le support.'
   }
   if (code === 'sms_send_failed' || code === 'over_sms_send_rate_limit') {
-    return "L'envoi du code SMS a échoué. Vérifiez le mode test SMSC, le solde et l'expéditeur MOXT, ou réessayez plus tard."
+    return "L'envoi du code SMS a échoué. Réessayez dans quelques instants ou choisissez la connexion par e-mail."
   }
   if (code === 'unexpected_failure' && message.toLowerCase().includes('hook')) {
     return translateSmsHookFailure(message)
@@ -94,13 +94,13 @@ function isSmsRelated(message = '', meta = {}) {
 
 function translateSmsHookFailure(message = '') {
   const lower = message.toLowerCase()
-  if (lower.includes('smsc') || lower.includes('solde')) {
-    return "L'envoi du code SMS a échoué. Vérifiez le solde et l'expéditeur MOXT sur smsc.ru."
+  if (lower.includes('mode test') || lower.includes('запрещ')) {
+    return "L'envoi SMS vers ce numéro est temporairement indisponible. Vérifiez votre numéro (+7) ou réessayez plus tard."
   }
-  if (lower.includes('mode test') || lower.includes('test') || lower.includes('запрещ')) {
-    return "L'envoi SMS est bloqué pour ce numéro. Sur smsc.ru, désactivez le mode test ou autorisez l'envoi vers tous les numéros russes."
+  if (lower.includes('smsc') || lower.includes('solde') || lower.includes('test')) {
+    return "L'envoi du code SMS est temporairement indisponible. Réessayez plus tard."
   }
-  return "L'envoi du code SMS a échoué. Vérifiez la configuration SMSC (solde, expéditeur MOXT, mode test désactivé)."
+  return "L'envoi du code SMS a échoué. Réessayez plus tard ou contactez le support."
 }
 
 function translateSupabaseError(message, meta = {}, context = {}) {
@@ -145,7 +145,7 @@ function translateSupabaseError(message, meta = {}, context = {}) {
       return "Le service d'inscription par e-mail est indisponible. Choisissez la vérification par téléphone ou réessayez plus tard."
     }
     return phoneContext
-      ? "L'envoi du code SMS a échoué. Vérifiez le mode test SMSC, le solde et réessayez."
+      ? "L'envoi du code SMS a échoué. Réessayez dans quelques instants."
       : "Le service d'inscription par e-mail est indisponible. Utilisez la vérification par téléphone ou réessayez plus tard."
   }
   if (m.includes('password should be')) {

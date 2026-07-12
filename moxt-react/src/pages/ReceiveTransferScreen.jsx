@@ -169,11 +169,11 @@ export function ReceiveTransferScreen() {
         </Card>
       ) : null}
 
-      <Alert variant="info" title="Solde portefeuille (simulation)">
+      <Alert variant="info" title="Solde portefeuille">
         <span className="flex items-center gap-2">
           <FiInfo />
-          Solde actuel : {formatMoney(walletBalance, transfer.toCurrency)} — la réception déclarée
-          n’ajuste pas automatiquement ce solde dans cette version.
+          Solde actuel : {formatMoney(walletBalance, transfer.toCurrency)} — la confirmation de
+          réception n’ajuste pas automatiquement ce solde pour l’instant.
         </span>
       </Alert>
 
