@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { FiGrid } from 'react-icons/fi'
 import { NavLink, useLocation } from 'react-router-dom'
 import { bottomNavigationItems } from '../../config/bottomNavigation'
@@ -69,6 +69,18 @@ export function BottomNavigation() {
     if (item.path === '/dashboard') return location.pathname === '/dashboard'
     return location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)
   })
+
+  useLayoutEffect(() => {
+    setMoreOpen(false)
+  }, [location.pathname])
+
+  useEffect(() => {
+    function onPageShow(event) {
+      if (event.persisted) setMoreOpen(false)
+    }
+    window.addEventListener('pageshow', onPageShow)
+    return () => window.removeEventListener('pageshow', onPageShow)
+  }, [])
 
   useLayoutEffect(() => {
     function update() {

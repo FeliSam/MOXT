@@ -30,10 +30,15 @@ describe('userSecurity', () => {
     expect(canPublishContent({ ...phoneUser, phoneVerified: false })).toBe(false)
   })
 
-  it('requires identity for business and transfer', () => {
+  it('requires identity for business only', () => {
     expect(canCreateBusiness(identityUser)).toBe(true)
-    expect(canUseTransferAccount(identityUser)).toBe(true)
     expect(canCreateBusiness(phoneUser)).toBe(false)
+  })
+
+  it('allows transfers for any signed-in user', () => {
+    expect(canUseTransferAccount(phoneUser)).toBe(true)
+    expect(canUseTransferAccount({ id: 'guest-oauth' })).toBe(true)
+    expect(canUseTransferAccount(null)).toBe(false)
   })
 
   it('detects stale verification requests', () => {

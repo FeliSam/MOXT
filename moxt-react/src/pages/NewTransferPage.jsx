@@ -52,8 +52,6 @@ import {
 
 import { TransferWizardSectionTitle as SectionTitle } from '../features/transfers/wizard/TransferWizardSectionTitle'
 import { TransferWizardStepper as Stepper } from '../features/transfers/wizard/TransferWizardStepper'
-import { SecurityGatePanel } from '../features/security/SecurityGatePanel'
-import { useSecurityGate } from '../features/security/useSecurityGate'
 import {
   clearTransferDraft,
   readTransferDraft,
@@ -61,7 +59,6 @@ import {
 } from '../features/transfers/wizard/transferWizardConfig'
 export function NewTransferPage() {
   useScrollToSecondSection()
-  const { requireTransfer } = useSecurityGate()
   const [step, setStep] = useState(1)
   const [calculatorOpen, setCalculatorOpen] = useState(false)
   const dispatch = useDispatch()
@@ -121,7 +118,6 @@ export function NewTransferPage() {
     },
     validationSchema: transferSchema,
     onSubmit: (values) => {
-      if (!requireTransfer()) return
       const exchanger = exchangers.find((item) => item.id === values.exchangerId)
       const business = businesses.find((item) => item.id === values.exchangerId)
       if (!exchanger || !business) {
@@ -269,7 +265,6 @@ export function NewTransferPage() {
   }
 
   return (
-    <SecurityGatePanel kind="transfer" backTo="/transfers">
     <div className="grid gap-7">
       <PageHeader
         eyebrow="Transfert"
@@ -663,7 +658,6 @@ export function NewTransferPage() {
         <TransferCalculator verified={user.verified} />
       </Modal>
     </div>
-    </SecurityGatePanel>
   )
 }
 

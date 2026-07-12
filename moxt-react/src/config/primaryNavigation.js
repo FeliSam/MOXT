@@ -8,7 +8,14 @@ export const primaryNavigationItems = [
   { id: 'parcels', label: 'Colis', path: '/parcels', icon: FiBox },
   { id: 'jobs', label: 'Jobs', path: '/jobs', icon: FiBriefcase },
   { id: 'messages', label: 'Messagerie', path: '/messages', icon: FiMessageSquare, badgeSelector: 'messages' },
-  { id: 'businesses', label: 'Entreprise', path: '/businesses', icon: FiBriefcase, desktopOnly: true },
+  {
+    id: 'businesses',
+    label: 'Entreprise',
+    path: '/businesses',
+    icon: FiBriefcase,
+    desktopOnly: true,
+    requiresOwnedBusiness: true,
+  },
   { id: 'news', label: 'Actualité', path: '/news', icon: FiFileText, desktopOnly: true },
 ]
 

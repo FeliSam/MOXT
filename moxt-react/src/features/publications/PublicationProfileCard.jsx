@@ -48,7 +48,7 @@ export function PublicationProfileCard({
 
   return (
     <Card className="overflow-hidden p-0">
-      <div className="grid gap-5 p-5 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-start sm:p-6">
+      <div className="grid gap-5 p-5 sm:grid-cols-[auto_1fr_auto] sm:items-center sm:p-6">
         {isBusinessScope && ownBusiness.logoUrl ? (
           <img
             src={ownBusiness.logoUrl}
@@ -70,23 +70,6 @@ export function PublicationProfileCard({
               iconSize="md"
               className="text-xl font-black"
             />
-            {qrTargetPath ? (
-              <ProfileQrShareButton
-                size="sm"
-                className="shrink-0"
-                type={isBusinessScope ? 'business' : 'user'}
-                targetPath={!isBusinessScope ? qrTargetPath : undefined}
-                refreshKey={isBusinessScope ? businessShareVersion(ownBusiness) : undefined}
-                shareUrl={isBusinessScope ? buildBusinessShareUrl(ownBusiness) : undefined}
-                shareText={isBusinessScope ? buildBusinessShareText(ownBusiness) : undefined}
-                title={headlineName}
-                subtitle={isBusinessScope ? sectorLabel || ownBusiness.sector : displayName}
-                verified={showVerifiedIcon}
-                city={isBusinessScope ? businessCityLabel(ownBusiness) : city}
-                sector={isBusinessScope ? sectorLabel || ownBusiness.sector : undefined}
-                logoUrl={isBusinessScope ? ownBusiness.logoUrl : avatarUrl}
-              />
-            ) : null}
             <Badge tone="success">
               {isBusinessScope ? (
                 <FiBriefcase className="mr-1 inline" />
@@ -136,6 +119,22 @@ export function PublicationProfileCard({
             ) : null}
           </div>
         </div>
+        {qrTargetPath ? (
+          <ProfileQrShareButton
+            className="justify-self-end sm:col-start-3 sm:row-span-2 sm:self-start"
+            type={isBusinessScope ? 'business' : 'user'}
+            targetPath={!isBusinessScope ? qrTargetPath : undefined}
+            refreshKey={isBusinessScope ? businessShareVersion(ownBusiness) : undefined}
+            shareUrl={isBusinessScope ? buildBusinessShareUrl(ownBusiness) : undefined}
+            shareText={isBusinessScope ? buildBusinessShareText(ownBusiness) : undefined}
+            title={headlineName}
+            subtitle={isBusinessScope ? sectorLabel || ownBusiness.sector : displayName}
+            verified={showVerifiedIcon}
+            city={isBusinessScope ? businessCityLabel(ownBusiness) : city}
+            sector={isBusinessScope ? sectorLabel || ownBusiness.sector : undefined}
+            logoUrl={isBusinessScope ? ownBusiness.logoUrl : avatarUrl}
+          />
+        ) : null}
       </div>
     </Card>
   )

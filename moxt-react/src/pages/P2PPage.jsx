@@ -23,6 +23,7 @@ import { calculateP2PFee, p2pLimit } from '../features/p2p/p2pUtils'
 import { transferCurrenciesForCountry } from '../features/transfers/transferConfig'
 import { formatMoney } from '../features/transfers/transferUtils'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
+import { useSecurityGate } from '../features/security/useSecurityGate'
 
 export function P2PPage() {
   useScrollToSecondSection()
@@ -36,6 +37,7 @@ export function P2PPage() {
   })
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const { requireP2PPublish } = useSecurityGate()
   const user = useSelector((state) => state.auth.user)
   const offers = useSelector((state) => state.p2p.offers)
   const orders = useSelector((state) => state.p2p.orders)
@@ -94,6 +96,7 @@ export function P2PPage() {
       return errors
     },
     onSubmit: (values, helpers) => {
+      if (!requireP2PPublish()) return
       dispatch(
         createOffer({
           ...values,
@@ -119,10 +122,15 @@ export function P2PPage() {
       <PageHeader
         eyebrow="Échanges communautaires"
         title="Échanges P2P"
-        description="Publiez ou acceptez une offre d'échange entre utilisateurs vérifiés."
+        description="Publiez une offre après vérification de votre compte, ou acceptez une offre existante."
         stats={[{ label: 'Offres actives', value: activeOffers.length }]}
         actions={
-          <Button icon={FiPlus} onClick={() => setPublishOpen(true)}>
+          <Button
+            icon={FiPlus}
+            onClick={() => {
+              if (requireP2PPublish()) setPublishOpen(true)
+            }}
+          >
             Proposer une offre
           </Button>
         }

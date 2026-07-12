@@ -39,9 +39,13 @@ export function canCreateBusiness(user) {
   return isIdentityVerified(user) && isPersonallyRegistered(user)
 }
 
+/** Transfert : tout utilisateur connecté, quelle que soit sa méthode de connexion. */
 export function canUseTransferAccount(user) {
-  if (!user?.id) return false
-  return isIdentityVerified(user) && isPersonallyRegistered(user)
+  return canInteractNormally(user)
+}
+
+export function canPublishP2POffer(user) {
+  return canPublishContent(user)
 }
 
 export function verificationRequestIsStale(request, now = Date.now()) {
@@ -57,7 +61,7 @@ export function securityGateMessage(kind, user) {
       if (!isValidRussianPhone(user?.phone)) {
         return 'Ajoutez un numéro russe (+7) valide dans votre profil.'
       }
-      return 'Confirmez votre numéro russe par SMS avant de publier une annonce, un colis, un job ou un événement.'
+      return 'Confirmez votre numéro russe par SMS avant de publier une annonce, un colis, un job, un événement ou une offre P2P.'
     case 'business':
       if (!isPersonallyRegistered(user)) {
         return 'Complétez vos informations personnelles avant de créer une entreprise.'

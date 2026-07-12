@@ -16,6 +16,7 @@ scripts/phase2.env
 scripts/phase2.supabase-secrets.env
 scripts/.deploy-state.json
 scripts/moxt-auth-yc.json
+scripts/github-deploy-sa.json
 
 # Logs & caches
 logs/

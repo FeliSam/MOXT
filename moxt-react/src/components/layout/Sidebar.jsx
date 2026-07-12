@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   FiChevronRight,
   FiGrid,
@@ -7,20 +7,20 @@ import {
   FiX,
 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { navigationGroups, preloadRoute } from '../../config/navigation'
 import {
   moreServicesExcludedPaths,
   primaryNavigationItems,
   sidebarMobileHiddenPaths,
 } from '../../config/primaryNavigation'
+import { selectActiveBusinessForOwner } from '../../features/businesses/businessVisibility'
 import { logout } from '../../features/auth/authSlice'
 import { stopRealtimeSubscription } from '../../services/realtimeService'
 import { closeSidebar } from '../../features/ui/uiSlice'
 import { useLanguage } from '../../contexts/useLanguage'
 import { CountBounce } from '../ui/CountBounce'
 import { VerifiedDisplayName } from '../ui/Badge'
-import { ProfileQrShareButton } from '../../features/share/ProfileQrShareButton'
 import { MoreServicesContent } from './MoreServicesContent'
 import { filterNavigationGroups, useNavigationBadges } from './moreServicesUtils'
 
@@ -36,16 +36,14 @@ function initials(name = '') {
   return name.split(' ').map((w) => w[0] || '').slice(0, 2).join('').toUpperCase()
 }
 
-const RAIL_KEYS = [
-  ...primaryItems.map((item) => item.path),
-  'more',
-  'profile',
-]
+function buildRailKeys(items) {
+  return [...items.map((item) => item.path), 'more', 'profile']
+}
 
-function railProximity(hoveredKey, key) {
+function railProximity(railKeys, hoveredKey, key) {
   if (hoveredKey == null) return null
-  const hoveredIndex = RAIL_KEYS.indexOf(hoveredKey)
-  const itemIndex = RAIL_KEYS.indexOf(key)
+  const hoveredIndex = railKeys.indexOf(hoveredKey)
+  const itemIndex = railKeys.indexOf(key)
   if (hoveredIndex < 0 || itemIndex < 0) return null
   const distance = Math.abs(hoveredIndex - itemIndex)
   if (distance === 0) return 'focus'
@@ -69,10 +67,26 @@ export function Sidebar({ open }) {
   const user = useSelector((state) => state.auth.user)
   const role = user?.role
   const appState = useSelector((state) => state)
+  const businesses = useSelector((state) => state.businesses.items)
+  const ownBusiness = useMemo(
+    () => selectActiveBusinessForOwner(businesses, user?.id),
+    [businesses, user?.id],
+  )
+  const visiblePrimaryItems = useMemo(
+    () =>
+      primaryItems.filter((item) => {
+        if (item.requiresOwnedBusiness && !ownBusiness) return false
+        return true
+      }),
+    [ownBusiness],
+  )
+  const railKeys = useMemo(() => buildRailKeys(visiblePrimaryItems), [visiblePrimaryItems])
   const badgeForItem = useNavigationBadges(user?.id)
   const [moreOpen, setMoreOpen] = useState(false)
   const [hoveredRailKey, setHoveredRailKey] = useState(null)
   const hoverFrameRef = useRef(0)
+  const asideRef = useRef(null)
+  const location = useLocation()
   const { translateLabel } = useLanguage()
   const groups = navigationGroups.filter((group) => !group.roles || group.roles.includes(role))
   const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim()
@@ -90,6 +104,26 @@ export function Sidebar({ open }) {
     }
   }, [])
 
+  useLayoutEffect(() => {
+    setMoreOpen(false)
+    setHoveredRailKey(null)
+    const active = document.activeElement
+    if (active && asideRef.current?.contains(active)) {
+      active.blur()
+    }
+  }, [location.pathname])
+
+  useEffect(() => {
+    function onPageShow(event) {
+      if (!event.persisted) return
+      setMoreOpen(false)
+      setHoveredRailKey(null)
+      dispatch(closeSidebar())
+    }
+    window.addEventListener('pageshow', onPageShow)
+    return () => window.removeEventListener('pageshow', onPageShow)
+  }, [dispatch])
+
   async function handleLogout() {
     stopRealtimeSubscription()
     await dispatch(logout())
@@ -100,13 +134,14 @@ export function Sidebar({ open }) {
     <>
       {/* ── Sidebar : dock flottant, rail fixe desktop, cascade 4 niveaux au survol ── */}
       <aside
+        ref={asideRef}
         onMouseLeave={() => setRailHover(null)}
         onBlur={(event) => {
           if (!event.currentTarget.contains(event.relatedTarget)) {
             setHoveredRailKey(null)
           }
         }}
-        className={`group/sidebar fixed inset-y-0 left-0 z-[var(--z-nav)] flex max-h-dvh w-[18rem] flex-col bg-[var(--app-surface)] shadow-2xl transition-transform duration-300 ease-out ${
+        className={`group/sidebar fixed inset-y-0 left-0 z-[var(--z-nav)] flex max-h-dvh w-[18rem] flex-col bg-[var(--app-surface)] shadow-2xl transition-transform duration-300 ease-out lg:z-[var(--z-nav-menu)] ${
           open ? 'translate-x-0' : '-translate-x-full'
         } lg:inset-y-3 lg:left-3 lg:flex lg:max-h-[calc(100dvh-1.5rem)] lg:w-[4.75rem] lg:translate-x-0 lg:overflow-visible lg:rounded-[1.75rem] lg:border lg:border-[var(--app-border)] lg:bg-[var(--app-surface)]/95 lg:shadow-[var(--shadow-float)] lg:backdrop-blur-xl`}
       >
@@ -135,31 +170,38 @@ export function Sidebar({ open }) {
         </div>
 
         {/* Corps du rail — icônes + services, profil séparé en bas */}
-        <div className="sidebar-rail-body flex min-h-0 flex-1 flex-col overflow-visible lg:justify-between">
+        <div className="sidebar-rail-body flex min-h-0 flex-1 flex-col overflow-visible">
+          <div className="sidebar-rail-leading-spacer hidden min-h-0 shrink-0 lg:block" aria-hidden="true" />
           <nav
             className="sidebar-mobile-nav sidebar-rail-nav scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-3 py-4 lg:overflow-visible lg:overscroll-none lg:px-2 lg:py-2"
             aria-label="Navigation principale"
           >
             <div className="sidebar-rail-stack grid gap-1 lg:gap-1.5">
-              {primaryItems.map((item) => (
+              {visiblePrimaryItems.map((item) => {
+                const itemPath =
+                  item.id === 'businesses' && ownBusiness
+                    ? `/businesses/${ownBusiness.id}`
+                    : item.path
+                return (
                 <SidebarLink
-                  key={item.path}
-                  item={item}
+                  key={item.id}
+                  item={{ ...item, path: itemPath }}
                   badge={item.badgeSelector ? badgeForItem(item, appState) : 0}
                   translateLabel={translateLabel}
                   hideOnMobile={mobileHiddenPaths.has(item.path) || item.desktopOnly}
-                  proximity={railProximity(hoveredRailKey, item.path)}
+                  proximity={railProximity(railKeys, hoveredRailKey, item.path)}
                   onRailHover={() => setRailHover(item.path)}
                   onClick={() => dispatch(closeSidebar())}
                 />
-              ))}
+                )
+              })}
 
               <button
                 type="button"
                 onClick={() => setMoreOpen(true)}
                 onMouseEnter={() => setRailHover('more')}
                 onFocus={() => setRailHover('more')}
-                className={`sidebar-rail-item group/more relative hidden w-full min-h-11 shrink-0 items-center justify-center rounded-xl px-2 text-left text-sm font-bold text-[var(--app-text-muted)] transition hover:text-[var(--app-text)] lg:flex ${proximityClass(railProximity(hoveredRailKey, 'more'))}`}
+                className={`sidebar-rail-item group/more relative hidden w-full min-h-11 shrink-0 items-center justify-center rounded-xl px-2 text-left text-sm font-bold text-[var(--app-text-muted)] transition hover:text-[var(--app-text)] lg:flex ${proximityClass(railProximity(railKeys, hoveredRailKey, 'more'))}`}
               >
                 <span className="sidebar-nav-icon grid size-9 shrink-0 place-items-center rounded-[0.7rem] bg-[var(--app-surface-muted)] text-brand-700 dark:text-brand-300">
                   <FiGrid className="text-base" />
@@ -196,7 +238,7 @@ export function Sidebar({ open }) {
             to="/profile"
             onClick={() => dispatch(closeSidebar())}
             onMouseEnter={() => setRailHover('profile')}
-            className={`sidebar-rail-item group/profile relative flex min-h-11 items-center justify-center rounded-2xl p-2 transition hover:bg-[var(--app-surface-muted)] ${proximityClass(railProximity(hoveredRailKey, 'profile'))}`}
+            className={`sidebar-rail-item group/profile relative flex min-h-11 items-center justify-center rounded-2xl p-2 transition hover:bg-[var(--app-surface-muted)] ${proximityClass(railProximity(railKeys, hoveredRailKey, 'profile'))}`}
           >
             <span className="sidebar-nav-icon grid size-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-700 to-[var(--app-teal)] text-xs font-black text-white">
               {initials(fullName) || 'M'}
@@ -204,30 +246,20 @@ export function Sidebar({ open }) {
           </NavLink>
 
           <div className="sidebar-footer-flyout" role="group" aria-label="Compte et session">
-            <div className="flex min-w-0 items-center gap-2">
-              <NavLink
-                to="/profile"
-                onClick={() => dispatch(closeSidebar())}
-                className="sidebar-rail-label sidebar-rail-label--stack sidebar-rail-label--interactive min-w-0 flex-1"
-              >
-                <VerifiedDisplayName
-                  as="strong"
-                  name={fullName || 'Mon profil'}
-                  verified={Boolean(user?.verified)}
-                  iconSize="sm"
-                  className="sidebar-rail-label-title truncate"
-                />
-                <span className="text-[10px] text-[var(--app-text-faint)]">{role || 'Membre'}</span>
-              </NavLink>
-              <ProfileQrShareButton
-                className="shrink-0"
-                title={fullName || 'Mon profil'}
-                subtitle={user?.city || 'MOXT'}
+            <NavLink
+              to="/profile"
+              onClick={() => dispatch(closeSidebar())}
+              className="sidebar-rail-label sidebar-rail-label--stack sidebar-rail-label--interactive"
+            >
+              <VerifiedDisplayName
+                as="strong"
+                name={fullName || 'Mon profil'}
                 verified={Boolean(user?.verified)}
-                city={user?.city}
-                targetPath={`/users/${user?.id}/publications`}
+                iconSize="sm"
+                className="sidebar-rail-label-title truncate"
               />
-            </div>
+              <span className="text-[10px] text-[var(--app-text-faint)]">{role || 'Membre'}</span>
+            </NavLink>
             <div className="sidebar-footer-flyout-actions">
               <NavLink
                 to="/settings"

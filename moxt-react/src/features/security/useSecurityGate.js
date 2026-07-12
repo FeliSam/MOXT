@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux'
 import {
   canCreateBusiness,
   canPublishContent,
+  canPublishP2POffer,
   canUseTransferAccount,
   securityGateMessage,
 } from '@moxt/shared/auth/userSecurity.js'
@@ -32,6 +33,12 @@ export function useSecurityGate() {
     return false
   }, [notifyBlocked, user])
 
+  const requireP2PPublish = useCallback(() => {
+    if (canPublishP2POffer(user)) return true
+    notifyBlocked('publish')
+    return false
+  }, [notifyBlocked, user])
+
   const requireBusiness = useCallback(() => {
     if (canCreateBusiness(user)) return true
     notifyBlocked('business')
@@ -44,5 +51,5 @@ export function useSecurityGate() {
     return false
   }, [notifyBlocked, user])
 
-  return { user, requirePublish, requireBusiness, requireTransfer }
+  return { user, requirePublish, requireP2PPublish, requireBusiness, requireTransfer }
 }

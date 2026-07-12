@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
+import { useEffect, useLayoutEffect } from 'react'
 import { closeSidebar } from '../../features/ui/uiSlice'
 import { useContentLifecycle } from '../../features/content/useContentLifecycle'
 import { AppThemeScope } from './AppThemeScope'
@@ -19,6 +20,18 @@ export function AppLayout({ children }) {
     (messageParams.has('conversation') ||
       (messageParams.has('relatedType') && messageParams.has('relatedId')))
   useContentLifecycle()
+
+  useLayoutEffect(() => {
+    dispatch(closeSidebar())
+  }, [dispatch, location.pathname])
+
+  useEffect(() => {
+    function onPageShow(event) {
+      if (event.persisted) dispatch(closeSidebar())
+    }
+    window.addEventListener('pageshow', onPageShow)
+    return () => window.removeEventListener('pageshow', onPageShow)
+  }, [dispatch])
 
   return (
     <div
