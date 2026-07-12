@@ -49,6 +49,12 @@ const EN = {
 
   // Publish toasts & UI
   'Publication entreprise impossible': 'Business publishing unavailable',
+  'Vérification requise': 'Verification required',
+  'Numéro russe requis pour publier': 'Russian phone required to publish',
+  'Identité vérifiée requise': 'Verified identity required',
+  'Compte vérifié requis': 'Verified account required',
+  'Confirmer votre numéro russe': 'Confirm your Russian phone number',
+  'Numéro russe vérifié': 'Russian phone verified',
   'Votre entreprise doit être vérifiée par MOXT avant de publier au nom de l’entreprise.':
     'Your business must be verified by MOXT before publishing on behalf of the company.',
   "Votre entreprise doit être vérifiée par MOXT avant de publier au nom de l'entreprise.":

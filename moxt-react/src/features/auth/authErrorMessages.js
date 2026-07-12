@@ -2,7 +2,9 @@
 export function sanitizeAuthMessage(message = '') {
   const text = String(message || '').trim()
   if (!text) return 'Une erreur est survenue. Réessayez dans un instant.'
-  if (text === 'ALREADY_REGISTERED') return text
+  if (text === 'ALREADY_REGISTERED') {
+    return 'Un compte existe déjà avec cet identifiant. Connectez-vous ou utilisez un autre numéro ou e-mail.'
+  }
 
   const lower = text.toLowerCase()
   if (

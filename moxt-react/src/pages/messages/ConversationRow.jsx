@@ -1,5 +1,6 @@
 import { FiBellOff, FiCpu, FiStar } from 'react-icons/fi'
 import { RELATED_CONTENT_META } from '../../config/communications'
+import { VerifiedDisplayName } from '../../components/ui/Badge'
 import { getConversationPeer } from '../../features/communications/conversationDisplay'
 import { conversationPreview } from './messageUtils'
 import { shortTime } from './format'
@@ -58,7 +59,13 @@ export function ConversationRow({ active, assistant = false, conversation, onCli
             }`}
           >
             {pinned ? <FiStar className="size-3 shrink-0 text-amber-500" /> : null}
-            <span className="truncate">{assistant ? 'Assistant MOXT' : peer?.name}</span>
+            <VerifiedDisplayName
+              name={assistant ? 'Assistant MOXT' : peer?.name}
+              verified={!assistant && Boolean(peer?.verified)}
+              iconSize="sm"
+              className="min-w-0 flex-1"
+              nameClassName="truncate"
+            />
             {muted ? <FiBellOff className="size-3 shrink-0 text-[var(--app-text-faint)]" /> : null}
           </strong>
           <time className="shrink-0 text-[10px] font-semibold text-[var(--app-text-faint)] sm:rounded-full sm:bg-[var(--app-surface-muted)] sm:px-1.5 sm:py-0.5">

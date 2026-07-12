@@ -13,14 +13,6 @@ export function createAuthSlice(authService) {
     }
   })
 
-  const loginWithGoogle = createAsyncThunk('auth/loginWithGoogle', async (_, { rejectWithValue }) => {
-    try {
-      return await authService.loginWithGoogle()
-    } catch (error) {
-      return rejectWithValue(error.message)
-    }
-  })
-
   const requestPhoneLoginOtp = createAsyncThunk(
     'auth/requestPhoneLoginOtp',
     async (phone, { rejectWithValue }) => {
@@ -100,6 +92,28 @@ export function createAuthSlice(authService) {
     async (email, { rejectWithValue }) => {
       try {
         return await authService.resendEmailRegistrationOtp(email)
+      } catch (error) {
+        return rejectWithValue(error.message)
+      }
+    },
+  )
+
+  const requestPhoneVerificationOtp = createAsyncThunk(
+    'auth/requestPhoneVerificationOtp',
+    async (phone, { getState, rejectWithValue }) => {
+      try {
+        return await authService.requestPhoneVerificationOtp(getState().auth.user, phone)
+      } catch (error) {
+        return rejectWithValue(error.message)
+      }
+    },
+  )
+
+  const confirmPhoneVerification = createAsyncThunk(
+    'auth/confirmPhoneVerification',
+    async (details, { getState, rejectWithValue }) => {
+      try {
+        return await authService.confirmPhoneVerification(getState().auth.user, details)
       } catch (error) {
         return rejectWithValue(error.message)
       }
@@ -186,11 +200,6 @@ export function createAuthSlice(authService) {
         .addCase(verifyPhoneLogin.pending, setLoading)
         .addCase(verifyPhoneLogin.fulfilled, setSession)
         .addCase(verifyPhoneLogin.rejected, setFailure)
-        .addCase(loginWithGoogle.pending, setLoading)
-        .addCase(loginWithGoogle.fulfilled, (state, action) => {
-          if (action.payload) setSession(state, action)
-        })
-        .addCase(loginWithGoogle.rejected, setFailure)
         .addCase(completeOAuthProfile.pending, setLoading)
         .addCase(completeOAuthProfile.fulfilled, setSession)
         .addCase(completeOAuthProfile.rejected, setFailure)
@@ -229,6 +238,22 @@ export function createAuthSlice(authService) {
           state.error = null
         })
         .addCase(resendEmailRegistrationOtp.rejected, setFailure)
+        .addCase(requestPhoneVerificationOtp.pending, setLoading)
+        .addCase(requestPhoneVerificationOtp.fulfilled, (state, action) => {
+          state.status = 'authenticated'
+          state.error = null
+          if (action.payload?.user) {
+            state.user = action.payload.user
+          }
+        })
+        .addCase(requestPhoneVerificationOtp.rejected, setFailure)
+        .addCase(confirmPhoneVerification.pending, setLoading)
+        .addCase(confirmPhoneVerification.fulfilled, (state, action) => {
+          state.user = action.payload
+          state.status = 'authenticated'
+          state.error = null
+        })
+        .addCase(confirmPhoneVerification.rejected, setFailure)
         .addCase(updateProfile.pending, setLoading)
         .addCase(updateProfile.fulfilled, (state, action) => {
           state.user = action.payload
@@ -248,7 +273,6 @@ export function createAuthSlice(authService) {
     reducer: authSlice.reducer,
     actions: authSlice.actions,
     login,
-    loginWithGoogle,
     completeOAuthProfile,
     requestPhoneLoginOtp,
     verifyPhoneLogin,
@@ -257,6 +281,8 @@ export function createAuthSlice(authService) {
     verifyPhoneRegistration,
     resendPhoneRegistrationOtp,
     resendEmailRegistrationOtp,
+    requestPhoneVerificationOtp,
+    confirmPhoneVerification,
     updateProfile,
     restoreSession,
     logout,

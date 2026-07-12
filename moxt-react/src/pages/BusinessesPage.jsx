@@ -17,6 +17,7 @@ import { BUSINESS_ACTIVITIES, activityByValue } from '../config/businessActiviti
 import { Alert } from '../components/ui/Alert'
 import { statusMeta } from '../config/statuses'
 import { isBusinessDirectoryVisible } from '../features/businesses/businessPublishUtils'
+import { BusinessVerificationProgress } from '../features/businesses/BusinessVerificationProgress'
 import { filterDirectoryBusinesses, selectActiveBusinessForOwner } from '../features/businesses/businessVisibility'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 
@@ -27,6 +28,11 @@ export function BusinessesPage() {
   const user = useSelector((state) => state.auth.user)
   const businesses = useSelector((state) => state.businesses.items)
   const ownBusiness = selectActiveBusinessForOwner(businesses, user?.id)
+  const ownBusinessDocuments = useSelector((state) =>
+    ownBusiness
+      ? state.businesses.documents.filter((item) => item.businessId === ownBusiness.id)
+      : [],
+  )
   const ownBusinessInDirectory = ownBusiness && isBusinessDirectoryVisible(ownBusiness)
 
   const visibleBusinesses = useMemo(
@@ -94,6 +100,11 @@ export function BusinessesPage() {
               {statusMeta(ownBusiness.status).label}
             </Badge>
           </div>
+          <BusinessVerificationProgress
+            business={ownBusiness}
+            documents={ownBusinessDocuments}
+            compact={ownBusinessInDirectory}
+          />
           <div className="flex flex-wrap gap-2">
             <Link to="/professional">
               <Button variant="secondary">Espace professionnel</Button>

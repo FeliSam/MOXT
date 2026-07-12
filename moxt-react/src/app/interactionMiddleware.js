@@ -11,6 +11,7 @@ import {
 import { createNotificationDispatcher } from './notificationTriggers'
 import { hasReviewEligibility } from '@moxt/shared/utils/reviewEligibility.js'
 import { setUser } from '../features/auth/authSlice'
+import { sanitizeAuthMessage } from '../features/auth/authErrorMessages'
 
 function notify(store, payload) {
   if (payload.userId) store.dispatch(addNotification(payload))
@@ -133,6 +134,13 @@ export const interactionMiddleware = (store) => {
   }
   if (action.type === 'account/updateVerificationStatus') {
     triggers.handleVerificationStatus(before, after, action, actorId)
+    if (action.payload.status === 'verified') {
+      const request = after.account.verificationRequests.find((item) => item.id === action.payload.id)
+      const currentUser = store.getState().auth.user
+      if (request?.userId && currentUser?.id === request.userId) {
+        store.dispatch(setUser({ ...currentUser, verified: true, status: 'verified' }))
+      }
+    }
   }
   if (action.type === 'disputes/openDispute') {
     triggers.handleDisputeOpened(before, after, action, actorId)
@@ -551,7 +559,13 @@ export const interactionMiddleware = (store) => {
       typeof action.payload === 'string'
         ? action.payload
         : action.error?.message || "L'action n'a pas pu être terminée."
-    store.dispatch(addToast({ title: 'Une erreur est survenue', message, tone: 'error' }))
+    store.dispatch(
+      addToast({
+        title: 'Une erreur est survenue',
+        message: sanitizeAuthMessage(message),
+        tone: 'error',
+      }),
+    )
   }
 
   return result

@@ -38,6 +38,8 @@ import {
 } from '../features/businesses/businessPublishUtils'
 import { addToast } from '../features/ui/uiSlice'
 import { createId } from '../services/createId'
+import { SecurityGatePanel } from '../features/security/SecurityGatePanel'
+import { useSecurityGate } from '../features/security/useSecurityGate'
 
 const STEPS = [
   { key: 'route', label: 'Trajet', icon: FiMapPin },
@@ -106,6 +108,7 @@ function SectionTitle({ icon: Icon, label }) {
 export function PublishParcelPage() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const { requirePublish } = useSecurityGate()
   const user = useSelector((state) => state.auth.user)
   const business = useSelector((state) =>
     state.businesses.items.find((item) => item.ownerId === user.id),
@@ -257,6 +260,7 @@ export function PublishParcelPage() {
   }
 
   function publish() {
+    if (!requirePublish()) return
     if (!validate(3)) return
     const publishContext = resolveBusinessPublishContext({
       business,
@@ -299,6 +303,7 @@ export function PublishParcelPage() {
   }
 
   return (
+    <SecurityGatePanel kind="publish" backTo="/parcels">
     <>
     {burstNode}
     {shareModal && (
@@ -661,5 +666,6 @@ export function PublishParcelPage() {
       </div>
     </div>
     </>
+    </SecurityGatePanel>
   )
 }

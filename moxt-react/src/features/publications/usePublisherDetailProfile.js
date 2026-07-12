@@ -14,6 +14,7 @@ import {
   isActiveJob,
   isActiveParcel,
 } from './publicationCatalogUtils'
+import { usePublicationProfile } from './usePublicationProfile'
 
 const PROFILE_META = {
   listing: {
@@ -89,7 +90,9 @@ export function usePublisherDetailProfile(entity, kind) {
     ),
   )
   const allReviews = useSelector((state) => state.reviews.items)
+  const currentUser = useSelector((state) => state.auth.user)
   const appState = useSelector((state) => state)
+  const { profile: ownerProfile } = usePublicationProfile(ownerId, currentUser)
 
   const publications = useMemo(
     () => (ownerId ? collectUserPublications(appState, ownerId) : collectUserPublications(appState, '')),
@@ -134,5 +137,8 @@ export function usePublisherDetailProfile(entity, kind) {
         ? `/users/${ownerId}/publications`
         : `/users/${ownerId}/publications?type=${kind}`
       : null,
+    verified: businessId
+      ? ['verified', 'approved', 'active'].includes(business?.status)
+      : Boolean(ownerProfile?.verified),
   }
 }

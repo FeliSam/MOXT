@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   FiArrowLeft,
   FiArrowRight,
@@ -7,21 +7,24 @@ import {
   FiCheckCircle,
   FiHome,
   FiShield,
-  FiSmartphone,
   FiUpload,
 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
+import {
+  isPhoneVerified,
+  verificationRequestIsStale,
+} from '@moxt/shared/auth/userSecurity.js'
+import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
-import { Input } from '../components/ui/Input'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Select } from '../components/ui/Select'
 import { statusMeta } from '../config/statuses'
 import { addPersonalDocument, submitVerificationRequest } from '../features/account/accountSlice'
+import { PhoneVerificationCard } from '../features/security/PhoneVerificationCard'
 import { VerificationGuidePanel } from '../features/verification/VerificationGuidePanel'
-import { supabase } from '../services/supabaseClient'
 import { storageService } from '../services/storageService'
 import { addToast } from '../features/ui/uiSlice'
 
@@ -29,7 +32,7 @@ const levels = [
   {
     value: 'identity',
     title: 'Identité',
-    description: 'Pièce d’identité et selfie. Débloque les transferts standards.',
+    description: 'Pièce d’identité et selfie. Débloque la création d’entreprise et les transferts.',
   },
   {
     value: 'enhanced',
@@ -51,6 +54,8 @@ export function VerificationPage() {
   const request = useSelector((state) =>
     state.account.verificationRequests.find((item) => item.userId === user.id),
   )
+  const phoneConfirmed = isPhoneVerified(user)
+  const requestStale = verificationRequestIsStale(request)
 
   const [level, setLevel] = useState(request?.level || 'identity')
   const [step, setStep] = useState(1)
@@ -58,27 +63,29 @@ export function VerificationPage() {
   const [idDoc, setIdDoc] = useState(null)
   const [selfieDoc, setSelfieDoc] = useState(null)
   const [addressDoc, setAddressDoc] = useState(null)
-  const [otpSent, setOtpSent] = useState(false)
-  const [otpInput, setOtpInput] = useState('')
-  const [otpLoading, setOtpLoading] = useState(false)
-  const [phoneVerified, setPhoneVerified] = useState(false)
 
-  const steps = [
-    { key: 'level', label: 'Niveau' },
-    { key: 'identity', label: 'Identité' },
-    { key: 'selfie', label: 'Selfie' },
-    { key: 'phone', label: 'Téléphone' },
-    ...(level === 'enhanced' ? [{ key: 'address', label: 'Domicile' }] : []),
-    { key: 'review', label: 'Confirmation' },
-  ]
+  const steps = useMemo(() => {
+    const base = [
+      { key: 'level', label: 'Niveau' },
+      ...(phoneConfirmed ? [] : [{ key: 'phone', label: 'Téléphone' }]),
+      { key: 'identity', label: 'Identité' },
+      { key: 'selfie', label: 'Selfie' },
+      ...(level === 'enhanced' ? [{ key: 'address', label: 'Domicile' }] : []),
+      { key: 'review', label: 'Confirmation' },
+    ]
+    return base
+  }, [level, phoneConfirmed])
+
   const current = steps[Math.min(step, steps.length) - 1]
-  const ready = Boolean(idDoc && selfieDoc && phoneVerified && (level !== 'enhanced' || addressDoc))
+  const ready = Boolean(
+    idDoc && selfieDoc && phoneConfirmed && (level !== 'enhanced' || addressDoc),
+  )
 
   const canContinue = {
     level: true,
+    phone: phoneConfirmed,
     identity: Boolean(idType && idDoc),
     selfie: Boolean(selfieDoc),
-    phone: phoneVerified,
     address: Boolean(addressDoc),
     review: ready,
   }[current.key]
@@ -88,48 +95,6 @@ export function VerificationPage() {
   }
   function back() {
     setStep((value) => Math.max(value - 1, 1))
-  }
-
-  async function sendOtp() {
-    if (!user.phone) return
-    setOtpLoading(true)
-    const { error } = await supabase.auth.signInWithOtp({ phone: user.phone })
-    setOtpLoading(false)
-    if (error) {
-      dispatch(addToast({ title: 'Erreur', message: error.message, tone: 'error' }))
-    } else {
-      setOtpSent(true)
-      dispatch(
-        addToast({
-          title: 'Code envoyé',
-          message: `Un SMS a été envoyé au ${user.phone}.`,
-          tone: 'info',
-        }),
-      )
-    }
-  }
-
-  async function verifyOtp() {
-    if (!/^\d{6}$/.test(otpInput.trim())) return
-    setOtpLoading(true)
-    const { error } = await supabase.auth.verifyOtp({
-      phone: user.phone,
-      token: otpInput.trim(),
-      type: 'sms',
-    })
-    setOtpLoading(false)
-    if (error) {
-      dispatch(addToast({ title: 'Code incorrect', message: error.message, tone: 'error' }))
-    } else {
-      setPhoneVerified(true)
-      dispatch(
-        addToast({
-          title: 'Numéro vérifié',
-          message: 'Votre téléphone russe est confirmé.',
-          tone: 'success',
-        }),
-      )
-    }
   }
 
   async function submit() {
@@ -173,7 +138,7 @@ export function VerificationPage() {
       <PageHeader
         eyebrow="Compte"
         title="Vérification"
-        description="Complétez votre dossier en quelques étapes pour sécuriser vos opérations."
+        description="Trois niveaux : numéro russe (publication), identité MOXT (entreprise/transferts), renforcée (plafonds élevés)."
         actions={
           <Link
             to="/profile"
@@ -183,6 +148,18 @@ export function VerificationPage() {
           </Link>
         }
       />
+
+      {!phoneConfirmed ? <PhoneVerificationCard /> : null}
+
+      {requestStale ? (
+        <Alert variant="warning" title="Délai de traitement dépassé">
+          Votre dossier est en attente depuis plus de 24 h. Contactez l’administrateur via{' '}
+          <Link className="font-bold text-brand-700 hover:underline" to="/support">
+            le support MOXT
+          </Link>
+          .
+        </Alert>
+      ) : null}
 
       {request ? (
         <Card className="flex items-center gap-4">
@@ -237,7 +214,8 @@ export function VerificationPage() {
             <div>
               <h2 className="font-black">Choisissez votre niveau</h2>
               <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-                Le niveau renforcé débloque des plafonds plus élevés.
+                Le numéro russe doit déjà être confirmé. Le niveau renforcé débloque des plafonds plus
+                élevés.
               </p>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 {levels.map((item) => (
@@ -259,6 +237,8 @@ export function VerificationPage() {
               </div>
             </div>
           ) : null}
+
+          {current.key === 'phone' ? <PhoneVerificationCard /> : null}
 
           {current.key === 'identity' ? (
             <div className="grid gap-4">
@@ -310,48 +290,6 @@ export function VerificationPage() {
             </div>
           ) : null}
 
-          {current.key === 'phone' ? (
-            <div className="grid gap-4">
-              <div>
-                <h2 className="font-black">Téléphone russe</h2>
-                <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-                  Nous confirmons votre numéro <strong>{user.phone}</strong> par code SMS.
-                </p>
-              </div>
-              {phoneVerified ? (
-                <p className="flex items-center gap-2 rounded-2xl bg-emerald-50 p-4 text-sm font-bold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
-                  <FiCheckCircle /> Numéro vérifié.
-                </p>
-              ) : otpSent ? (
-                <div className="grid gap-3 sm:max-w-xs">
-                  <Input
-                    id="otp"
-                    label="Code reçu par SMS"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    maxLength={6}
-                    placeholder="000000"
-                    value={otpInput}
-                    onChange={(event) =>
-                      setOtpInput(event.target.value.replace(/\D/g, '').slice(0, 6))
-                    }
-                  />
-                  <Button
-                    loading={otpLoading}
-                    disabled={otpInput.length !== 6}
-                    onClick={verifyOtp}
-                  >
-                    Valider le code
-                  </Button>
-                </div>
-              ) : (
-                <Button icon={FiSmartphone} loading={otpLoading} onClick={sendOtp}>
-                  Envoyer le code SMS
-                </Button>
-              )}
-            </div>
-          ) : null}
-
           {current.key === 'address' ? (
             <div className="grid gap-4">
               <div>
@@ -382,14 +320,14 @@ export function VerificationPage() {
                   ok={Boolean(idDoc)}
                 />
                 <Row label="Selfie de vérification" value="Fourni" ok={Boolean(selfieDoc)} />
-                <Row label="Téléphone russe" value="Vérifié" ok={phoneVerified} />
+                <Row label="Téléphone russe" value="Vérifié" ok={phoneConfirmed} />
                 {level === 'enhanced' ? (
                   <Row label="Justificatif de domicile" value="Fourni" ok={Boolean(addressDoc)} />
                 ) : null}
               </div>
               <p className="rounded-2xl bg-[var(--app-surface-muted)] p-4 text-xs text-[var(--app-text-muted)]">
                 Vérifiez que vos documents respectent les exemples acceptés. Le traitement prend
-                généralement 24 à 48 h ouvrées.
+                généralement 24 à 48 h ouvrées. Au-delà de 24 h en attente, contactez l’administrateur.
               </p>
             </div>
           ) : null}

@@ -26,7 +26,7 @@ import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { flagColor, flagEmoji } from '../config/flags'
 import { ensurePhoneCountry, phonePlaceholder, phonePrefix } from '../config/phone'
 import { isBusinessPublishReady } from '../features/businesses/businessPublishUtils'
-import { selectActiveBusinessForOwner } from '../features/businesses/businessVisibility'
+import { isBusinessOwnedBy, selectActiveBusinessForOwner } from '../features/businesses/businessVisibility'
 import {
   DIRECTIONS,
   FALLBACK_EXCHANGERS,
@@ -52,6 +52,8 @@ import {
 
 import { TransferWizardSectionTitle as SectionTitle } from '../features/transfers/wizard/TransferWizardSectionTitle'
 import { TransferWizardStepper as Stepper } from '../features/transfers/wizard/TransferWizardStepper'
+import { SecurityGatePanel } from '../features/security/SecurityGatePanel'
+import { useSecurityGate } from '../features/security/useSecurityGate'
 import {
   clearTransferDraft,
   readTransferDraft,
@@ -59,6 +61,7 @@ import {
 } from '../features/transfers/wizard/transferWizardConfig'
 export function NewTransferPage() {
   useScrollToSecondSection()
+  const { requireTransfer } = useSecurityGate()
   const [step, setStep] = useState(1)
   const [calculatorOpen, setCalculatorOpen] = useState(false)
   const dispatch = useDispatch()
@@ -85,7 +88,7 @@ export function NewTransferPage() {
         (business) =>
           ['approved', 'active', 'verified'].includes(business.status) &&
           business.services?.includes('Transfert') &&
-          business.ownerId !== user.id,
+          !isBusinessOwnedBy(business, user.id),
       )
       .map((business) => ({
           id: business.id,
@@ -118,13 +121,14 @@ export function NewTransferPage() {
     },
     validationSchema: transferSchema,
     onSubmit: (values) => {
+      if (!requireTransfer()) return
       const exchanger = exchangers.find((item) => item.id === values.exchangerId)
       const business = businesses.find((item) => item.id === values.exchangerId)
       if (!exchanger || !business) {
         formik.setFieldError('exchangerId', 'Choisissez une entreprise disponible.')
         return
       }
-      if (exchanger?.ownerId === user.id) {
+      if (exchanger && isBusinessOwnedBy(business, user.id)) {
         formik.setFieldError('exchangerId', 'Vous ne pouvez pas utiliser votre propre entreprise.')
         return
       }
@@ -189,6 +193,14 @@ export function NewTransferPage() {
     return () => window.clearTimeout(timeout)
   }, [formik.values, step, user.id])
 
+  useEffect(() => {
+    if (!formik.values.exchangerId) return
+    const selectedBusiness = businesses.find((item) => item.id === formik.values.exchangerId)
+    if (selectedBusiness && isBusinessOwnedBy(selectedBusiness, user.id)) {
+      formik.setFieldValue('exchangerId', '')
+    }
+  }, [businesses, formik.values.exchangerId, user.id])
+
   const selectedExchanger = exchangers.find((item) => item.id === formik.values.exchangerId)
   const selectedExchangerBusiness = businesses.find((item) => item.id === formik.values.exchangerId)
   const selectedReceivingAccount = useMemo(() => {
@@ -235,6 +247,12 @@ export function NewTransferPage() {
       )
       if (amountError) errors.amount = amountError
       formik.setFieldError('amount', amountError || undefined)
+
+      const selectedBusiness = businesses.find((item) => item.id === formik.values.exchangerId)
+      if (selectedBusiness && isBusinessOwnedBy(selectedBusiness, user.id)) {
+        errors.exchangerId = 'Votre entreprise reçoit les transferts des autres membres. Choisissez un autre partenaire.'
+        formik.setFieldError('exchangerId', errors.exchangerId)
+      }
     }
     formik.setTouched(
       fields.reduce((touched, field) => ({ ...touched, [field]: true }), formik.touched),
@@ -251,6 +269,7 @@ export function NewTransferPage() {
   }
 
   return (
+    <SecurityGatePanel kind="transfer" backTo="/transfers">
     <div className="grid gap-7">
       <PageHeader
         eyebrow="Transfert"
@@ -410,6 +429,27 @@ export function NewTransferPage() {
               ) : null}
               <div className="w-full min-w-0 max-w-full overflow-x-auto xl:overflow-visible">
                 <div className="flex w-max gap-3 xl:grid xl:w-full xl:grid-cols-4 xl:gap-3">
+                  {ownTransferBusiness && isBusinessPublishReady(ownTransferBusiness) ? (
+                    <div
+                      aria-disabled="true"
+                      title="Votre entreprise reçoit les transferts des autres membres."
+                      className="flex w-[9.25rem] shrink-0 cursor-not-allowed flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-brand-300 bg-[var(--app-surface-muted)] p-4 text-center opacity-80 sm:w-[10.5rem] xl:w-auto xl:shrink"
+                    >
+                      <div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-brand-100 text-base font-black text-brand-800 dark:bg-brand-950/50 dark:text-brand-200">
+                        {ownTransferBusiness.name[0]}
+                      </div>
+                      <p className="line-clamp-2 text-xs font-black leading-tight">{ownTransferBusiness.name}</p>
+                      <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-bold text-brand-800 dark:bg-brand-950/50 dark:text-brand-200">
+                        Votre entreprise
+                      </span>
+                      <p className="text-[10px] leading-4 text-[var(--app-text-muted)]">
+                        Réception uniquement ·{' '}
+                        <Link to="/professional" className="font-bold text-brand-700 underline">
+                          Espace pro
+                        </Link>
+                      </p>
+                    </div>
+                  ) : null}
                   {exchangers.map((exchanger) => {
                     const active = formik.values.exchangerId === exchanger.id
                     return (
@@ -623,11 +663,9 @@ export function NewTransferPage() {
         <TransferCalculator verified={user.verified} />
       </Modal>
     </div>
+    </SecurityGatePanel>
   )
 }
-
-
-function PartyCard({ errorFor, formik, methods, onProfile, prefix, profiles, title }) {
   const country =
     prefix === 'sender' ? formik.values.sourceCountry : formik.values.destinationCountry
   const isRecipient = prefix === 'recipient'

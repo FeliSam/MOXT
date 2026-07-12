@@ -87,7 +87,7 @@ export function ShareToFeedModal({ sourceType = 'free', sourceId = null, sourceD
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-[var(--z-modal)] flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center"
       role="presentation"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >

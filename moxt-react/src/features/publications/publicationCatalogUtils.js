@@ -129,6 +129,22 @@ export function buildUserPublicationProfile(userId, publications, options = {}) 
   }
 }
 
+export function buildBusinessPublicationProfile(business, publications) {
+  const archiveCounts = publicationArchiveCounts(publications)
+
+  return {
+    businessId: business?.id || '',
+    name: business?.name || 'Entreprise',
+    city: business?.city || '',
+    country: business?.country || '',
+    memberSince: business?.createdAt || null,
+    activeCount: archiveCounts.active,
+    archivedCount: archiveCounts.archived,
+    totalViews: publicationTotalViews(publications),
+    totalCount: publicationTotalCount(publications),
+  }
+}
+
 function filterByArchive(items, isActiveFn, isArchivedFn, archiveTab) {
   return items.filter((item) =>
     archiveTab === 'active' ? isActiveFn(item) : isArchivedFn(item),

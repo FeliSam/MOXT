@@ -89,9 +89,8 @@ export function JobDetailPage() {
               title={job.title}
               path={`/jobs/${job.id}`}
               entity={job}
-              variant="overlay"
               showLabel={false}
-              className="size-11 bg-[var(--app-surface)] shadow-[var(--shadow-card)]"
+              className="size-11 shrink-0"
             />
             <ReshareButton sourceType="job" sourceId={job.id} sourceData={job} />
             {job.ownerId === user.id ? (

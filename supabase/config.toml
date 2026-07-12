@@ -51,17 +51,23 @@ content_path = "./supabase/templates/email_change.html"
 subject = "{{ .Token }} — код подтверждения MOXT"
 content_path = "./supabase/templates/reauthentication.html"
 
-# Auth téléphone / SMS — OTP via hook send-sms → Yandex Cloud Notification Service
+# Auth téléphone / SMS — OTP via hook send-sms → SMSC.ru (ou SMS.ru / Yandex CNS)
+# Twilio ci-dessous : identifiants factices pour activer Phone Auth côté Supabase ;
+# l'envoi réel passe par [auth.hook.send_sms] (send-sms Edge Function).
 [auth.sms]
 enable_signup = true
 enable_confirmations = false
 
+[auth.sms.twilio]
+enabled = true
+account_sid = "AC00000000000000000000000000000001"
+auth_token = "placeholder_not_used_sms_hook_handles_send"
+message_service_sid = "MG00000000000000000000000000000001"
+
 [auth.hook.send_sms]
 enabled = true
 uri = "https://rbvqfkccbkwjxkvpnwqn.supabase.co/functions/v1/send-sms"
-# Placeholder valide pour Supabase Preview / CI sans secret.
-# sync-production remplace cette valeur par SEND_SMS_HOOK_SECRET avant config push.
-secrets = "v1,whsec_MOXTDbPreviewHookPlaceholderSecret000"
+secrets = "env(SEND_SMS_HOOK_SECRET)"
 
 [api]
 enabled = true
@@ -84,8 +90,8 @@ verify_jwt = false
 [functions.send-sms]
 verify_jwt = false
 
+[functions.smsc-webhook]
+verify_jwt = false
+
 [auth.external.google]
-enabled = true
-client_id = "env(GOOGLE_OAUTH_CLIENT_ID)"
-secret = "env(GOOGLE_OAUTH_CLIENT_SECRET)"
-skip_nonce_check = false
+enabled = false

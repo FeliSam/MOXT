@@ -25,7 +25,15 @@ function PublicationCardShell({
   meta,
   path,
   actions,
+  guestMode = false,
+  onGuestInteract,
 }) {
+  function handleGuestClick(event) {
+    if (!guestMode) return
+    event.preventDefault()
+    onGuestInteract?.()
+  }
+
   return (
     <Card className={`overflow-hidden p-0 ${archived ? archivedPublicationCardClass : ''}`}>
       <div className="flex flex-col gap-0 lg:flex-row">
@@ -52,7 +60,7 @@ function PublicationCardShell({
             ) : null}
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link to={path}>
+            <Link to={path} onClick={handleGuestClick}>
               <Button variant="secondary" icon={FiExternalLink} size="sm">
                 Ouvrir
               </Button>
@@ -65,7 +73,14 @@ function PublicationCardShell({
   )
 }
 
-export function MyParcelPublicationCard({ parcel, readOnly = false, onArchive, onReactivate }) {
+export function MyParcelPublicationCard({
+  parcel,
+  readOnly = false,
+  guestMode = false,
+  onGuestInteract,
+  onArchive,
+  onReactivate,
+}) {
   const status = statusMeta(parcel.status)
   const active = isActiveParcel(parcel)
   return (
@@ -85,6 +100,8 @@ export function MyParcelPublicationCard({ parcel, readOnly = false, onArchive, o
         parcel.remainingKg != null ? `${parcel.remainingKg} kg restants` : null,
       ].filter(Boolean)}
       path={`/parcels/${parcel.id}`}
+      guestMode={guestMode}
+      onGuestInteract={onGuestInteract}
       actions={
         readOnly ? null : (
           <>
@@ -112,6 +129,8 @@ export function MyParcelPublicationCard({ parcel, readOnly = false, onArchive, o
 export function MyJobPublicationCard({
   job,
   readOnly = false,
+  guestMode = false,
+  onGuestInteract,
   ownerDisplayName,
   onArchive,
   onReactivate,
@@ -128,6 +147,8 @@ export function MyJobPublicationCard({
       subtitle={job.salary}
       meta={[ownerDisplayName || job.publisherName, job.location, job.contractType].filter(Boolean)}
       path={`/jobs/${job.id}`}
+      guestMode={guestMode}
+      onGuestInteract={onGuestInteract}
       actions={
         readOnly ? null : (
           <>
@@ -152,7 +173,14 @@ export function MyJobPublicationCard({
   )
 }
 
-export function MyEventPublicationCard({ event, readOnly = false, onArchive, onReactivate }) {
+export function MyEventPublicationCard({
+  event,
+  readOnly = false,
+  guestMode = false,
+  onGuestInteract,
+  onArchive,
+  onReactivate,
+}) {
   const status = statusMeta(event.status)
   const active = isActiveEvent(event)
   return (
@@ -165,6 +193,8 @@ export function MyEventPublicationCard({ event, readOnly = false, onArchive, onR
       subtitle={event.price > 0 ? formatMoney(event.price, event.currency) : 'Gratuit'}
       meta={[event.city, event.startAt || event.date].filter(Boolean)}
       path={`/events/${event.id}`}
+      guestMode={guestMode}
+      onGuestInteract={onGuestInteract}
       actions={
         readOnly ? null : (
           <>
@@ -189,7 +219,13 @@ export function MyEventPublicationCard({ event, readOnly = false, onArchive, onR
   )
 }
 
-export function MyPostPublicationCard({ post, readOnly = false, onDelete }) {
+export function MyPostPublicationCard({
+  post,
+  readOnly = false,
+  guestMode = false,
+  onGuestInteract,
+  onDelete,
+}) {
   const active = isActivePost(post)
   return (
     <PublicationCardShell
@@ -201,6 +237,8 @@ export function MyPostPublicationCard({ post, readOnly = false, onDelete }) {
       subtitle={post.sourceType !== 'free' ? post.sourceType : null}
       meta={[`${post.likes?.length || 0} j'aime`, `${post.comments?.length || 0} commentaires`]}
       path="/news"
+      guestMode={guestMode}
+      onGuestInteract={onGuestInteract}
       actions={
         readOnly ? null : (
           <>

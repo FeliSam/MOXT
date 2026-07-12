@@ -3,6 +3,10 @@ export function matchUserId(left, right) {
   return String(left) === String(right)
 }
 
+export function isBusinessOwnedBy(business, userId) {
+  return matchUserId(business?.ownerId, userId)
+}
+
 export function isBusinessDeletedByUser(business) {
   return Boolean(business?.deletedByUserAt)
 }

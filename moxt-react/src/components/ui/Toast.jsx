@@ -172,7 +172,7 @@ export function ToastViewport() {
   return (
     <div
       aria-label="Notifications"
-      className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-4 z-[60] grid w-[calc(100vw-2rem)] max-w-sm justify-items-end gap-2.5 lg:bottom-6"
+      className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-4 z-[var(--z-toast)] grid w-[calc(100vw-2rem)] max-w-sm justify-items-end gap-2.5 lg:bottom-6"
     >
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} />

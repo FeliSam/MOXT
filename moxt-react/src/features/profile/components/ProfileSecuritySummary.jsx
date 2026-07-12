@@ -39,7 +39,7 @@ export function ProfileSecuritySummary({ verified }) {
           <span className="text-[var(--app-text-muted)]">
             {verified
               ? 'Identité vérifiée — badge de confiance actif sur votre profil'
-              : 'Identité non vérifiée — complétez la vérification pour débloquer le badge'}
+              : 'Identité non vérifiée — requise pour entreprise et transferts'}
           </span>
         </div>
       </div>

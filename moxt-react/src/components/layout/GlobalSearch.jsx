@@ -82,7 +82,7 @@ export function GlobalSearch() {
       {showPanel && panelRect
         ? createPortal(
             <div
-              className="global-search-panel fixed z-[60] overflow-y-auto overflow-x-hidden rounded-[1.35rem] border border-[var(--app-border)]/60 bg-[var(--app-surface)] p-2 shadow-[0_24px_70px_rgb(15_23_42/0.18)]"
+              className="global-search-panel fixed z-[var(--z-nav-menu)] overflow-y-auto overflow-x-hidden rounded-[1.35rem] border border-[var(--app-border)]/60 bg-[var(--app-surface)] p-2 shadow-[0_24px_70px_rgb(15_23_42/0.18)]"
               style={{
                 top: panelRect.top,
                 left: panelRect.left,

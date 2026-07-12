@@ -162,7 +162,7 @@ export function DashboardDiscoverySection({
                 <Link
                   key={label}
                   to={to}
-                  className="rounded-2xl bg-white/8 p-3 transition hover:bg-white/15"
+                  className="rounded-2xl bg-white/8 p-3 transition-all duration-[var(--transition-base)] hover:-translate-y-0.5 hover:bg-white/15 hover:shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
                 >
                   <strong className="block text-2xl">{value}</strong>
                   <span className="text-[10px] text-white/55">{label}</span>

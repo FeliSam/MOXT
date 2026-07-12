@@ -1,5 +1,6 @@
 import { SNSClient, PublishCommand } from 'npm:@aws-sdk/client-sns@3'
 import { Webhook } from 'https://esm.sh/standardwebhooks@1.0.0'
+import { phoneToSmsc } from '../_shared/smscPhone.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -39,12 +40,16 @@ function buildSmsText(otp: string) {
   return template.replaceAll('{otp}', otp).replaceAll('{code}', otp)
 }
 
-type SmsProvider = 'smsru' | 'yandex'
+type SmsProvider = 'smsru' | 'yandex' | 'smsc'
 
 function resolveProvider(): SmsProvider {
   const explicit = (Deno.env.get('SMS_PROVIDER') || 'auto').toLowerCase()
   if (explicit === 'smsru') return 'smsru'
   if (explicit === 'yandex') return 'yandex'
+  if (explicit === 'smsc') return 'smsc'
+  if (Deno.env.get('SMSC_LOGIN') && (Deno.env.get('SMSC_PASSWORD') || Deno.env.get('SMSC_API_KEY'))) {
+    return 'smsc'
+  }
   if (Deno.env.get('SMS_RU_API_ID')) return 'smsru'
   return 'yandex'
 }
@@ -110,6 +115,73 @@ async function sendViaSmsRu(phone: string, otp: string) {
   return entry.sms_id || 'ok'
 }
 
+async function sendViaSmsc(phone: string, otp: string) {
+  const login = Deno.env.get('SMSC_LOGIN')
+  const password = Deno.env.get('SMSC_PASSWORD')
+  const apikey = Deno.env.get('SMSC_API_KEY')
+  if (!login || (!password && !apikey)) {
+    throw new Error('SMSC non configuré (SMSC_LOGIN + SMSC_PASSWORD ou SMSC_API_KEY).')
+  }
+
+  const phones = phoneToSmsc(phone)
+  const message = buildSmsText(otp)
+  const body = new URLSearchParams({
+    login,
+    phones,
+    mes: message,
+    fmt: '3',
+    charset: 'utf-8',
+    cost: '3',
+  })
+  if (apikey) body.set('apikey', apikey)
+  else if (password) body.set('psw', password)
+
+  const sender = Deno.env.get('SMSC_SENDER')
+  if (sender) body.set('sender', sender)
+
+  const res = await fetch('https://smsc.ru/sys/send.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+    body,
+  })
+
+  const text = await res.text()
+  let data: Record<string, unknown> | null = null
+  try {
+    data = text ? JSON.parse(text) : null
+  } catch {
+    data = null
+  }
+
+  if (!res.ok) {
+    throw new Error(`SMSC HTTP ${res.status}${text ? ` — ${text}` : ''}`)
+  }
+
+  if (!data || data.error) {
+    const code = data?.error_code ?? 'inconnu'
+    const detail = String(data?.error || text || 'réponse invalide')
+    const lower = detail.toLowerCase()
+    if (Number(code) === 3) {
+      throw new Error('SMSC : solde insuffisant. Rechargez votre compte sur smsc.ru.')
+    }
+    if (
+      Number(code) === 6 ||
+      Number(code) === 8 ||
+      lower.includes('test') ||
+      lower.includes('тест') ||
+      lower.includes('запрещ')
+    ) {
+      throw new Error(
+        'SMSC : envoi refusé pour ce numéro. Désactivez le mode test sur smsc.ru (Paramètres → Mode test) ou ajoutez le numéro aux numéros autorisés.',
+      )
+    }
+    throw new Error(`SMSC ${code} — ${detail}`)
+  }
+
+  const id = data.id
+  return id ? String(id) : 'ok'
+}
+
 async function sendViaYandexCns(phone: string, otp: string) {
   const accessKeyId = Deno.env.get('YC_SNS_ACCESS_KEY_ID')
   const secretAccessKey = Deno.env.get('YC_SNS_SECRET_ACCESS_KEY')
@@ -155,6 +227,9 @@ async function sendOtpSms(phone: string, otp: string) {
   const provider = resolveProvider()
   if (provider === 'smsru') {
     return sendViaSmsRu(phone, otp)
+  }
+  if (provider === 'smsc') {
+    return sendViaSmsc(phone, otp)
   }
   return sendViaYandexCns(phone, otp)
 }

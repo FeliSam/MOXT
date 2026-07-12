@@ -131,6 +131,20 @@ describe('authService', () => {
       error: null,
     })
     auth.updateUser.mockResolvedValue({ error: null })
+    profileQuery.maybeSingle.mockResolvedValue({
+      data: {
+        id: 'user-sms',
+        first_name: 'Nouvelle',
+        last_name: 'Personne',
+        email: 'personne@example.com',
+        phone: '+79000000010',
+        origin_country: 'BJ',
+        city: 'Moscou',
+        role: 'user',
+        status: 'active',
+      },
+      error: null,
+    })
 
     const result = await authService.verifyPhoneRegistration({
       phone: '+79000000010',
@@ -165,7 +179,12 @@ describe('authService', () => {
     profileQuery.maybeSingle.mockResolvedValue({
       data: {
         id: 'user-sms',
-        email: '',
+        first_name: 'Nouvelle',
+        last_name: 'Personne',
+        email: 'personne@example.com',
+        phone: '+79000000010',
+        origin_country: 'BJ',
+        city: 'Moscou',
         role: 'user',
         status: 'active',
       },
@@ -178,8 +197,58 @@ describe('authService', () => {
       email: 'personne@example.com',
     })
 
+    expect(profileQuery.upsert).toHaveBeenCalled()
     expect(result.token).toBe('sms-session')
     expect(result.emailLinkDeferred).toBe(true)
+  })
+
+  it('enregistre le profil complet après vérification SMS', async () => {
+    auth.verifyOtp.mockResolvedValue({
+      data: {
+        user: {
+          id: 'user-sms',
+          email: null,
+          phone: '+79000000010',
+          user_metadata: {
+            first_name: 'Nouvelle',
+            last_name: 'Personne',
+            email: 'personne@example.com',
+            origin_country: 'BJ',
+            city: 'Moscou',
+            phone: '+79000000010',
+          },
+        },
+        session: { access_token: 'sms-session' },
+      },
+      error: null,
+    })
+    auth.updateUser.mockResolvedValue({
+      error: { message: 'User already registered', code: 'email_exists' },
+    })
+    profileQuery.maybeSingle.mockResolvedValue({
+      data: {
+        id: 'user-sms',
+        first_name: 'Nouvelle',
+        last_name: 'Personne',
+        email: 'personne@example.com',
+        phone: '+79000000010',
+        origin_country: 'BJ',
+        city: 'Moscou',
+        role: 'user',
+        status: 'active',
+      },
+      error: null,
+    })
+
+    const result = await authService.verifyPhoneRegistration({
+      phone: '+79000000010',
+      token: '123456',
+      email: 'personne@example.com',
+    })
+
+    expect(profileQuery.upsert).toHaveBeenCalled()
+    expect(result.user.email).toBe('personne@example.com')
+    expect(result.user.city).toBe('Moscou')
   })
 
   it('exige la confirmation e-mail avant de créer le profil même avec une session', async () => {

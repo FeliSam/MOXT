@@ -17,7 +17,7 @@ describe('belongsToBusiness', () => {
   })
 
   it('calcule la complétion et la note publiée', () => {
-    expect(calculateBusinessCompletion({ name: 'MOXT' })).toBe(10)
+    expect(calculateBusinessCompletion({ name: 'MOXT' })).toBe(11)
     expect(
       calculateBusinessRating([
         { rating: 5, status: 'published' },

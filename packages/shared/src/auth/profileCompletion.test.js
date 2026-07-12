@@ -30,3 +30,31 @@ describe('isProfileComplete', () => {
     ).toBe(true)
   })
 })
+
+describe('needsOAuthProfileCompletion', () => {
+  it('cible les connexions sociales sans numéro russe', async () => {
+    const { needsOAuthProfileCompletion } = await import('./profileCompletion.js')
+    expect(
+      needsOAuthProfileCompletion({
+        id: '1',
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        email: 'ada@example.com',
+        phone: '+7',
+        originCountry: 'BJ',
+        city: '',
+      }),
+    ).toBe(true)
+    expect(
+      needsOAuthProfileCompletion({
+        id: '2',
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        email: 'ada@example.com',
+        phone: '+79001234567',
+        originCountry: 'BJ',
+        city: 'Moscou',
+      }),
+    ).toBe(false)
+  })
+})

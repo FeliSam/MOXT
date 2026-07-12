@@ -32,7 +32,23 @@ describe('conversationDisplay', () => {
       id: 'peer',
       name: 'Alice Kouassi',
       avatarUrl: 'https://example.com/a.jpg',
+      verified: false,
     })
+  })
+
+  it('marque un co-participant vérifié', () => {
+    const conversation = {
+      participantIds: ['me', 'peer'],
+      participantProfiles: {
+        peer: {
+          firstName: 'Alice',
+          lastName: 'Kouassi',
+          avatarUrl: null,
+          status: 'verified',
+        },
+      },
+    }
+    expect(getConversationPeer(conversation, 'me').verified).toBe(true)
   })
 
   it('construit les profils participants avec repli local', () => {

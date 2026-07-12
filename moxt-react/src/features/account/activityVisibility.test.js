@@ -58,4 +58,23 @@ describe('activityVisibility', () => {
       }),
     ).toBe(true)
   })
+
+  it('autorise les visiteurs sans compte sur un profil public', () => {
+    expect(
+      canViewUserActivity({
+        viewerId: null,
+        ownerId: 'alice',
+        visibility: 'public',
+        conversations,
+      }),
+    ).toBe(true)
+    expect(
+      canViewUserActivity({
+        viewerId: null,
+        ownerId: 'alice',
+        visibility: 'private',
+        conversations,
+      }),
+    ).toBe(false)
+  })
 })

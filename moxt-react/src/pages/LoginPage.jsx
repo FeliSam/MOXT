@@ -2,9 +2,8 @@ import { useFormik } from 'formik'
 import { useEffect, useState } from 'react'
 import { FiLock, FiMail, FiMessageSquare } from 'react-icons/fi'
 import { useDispatch, useSelector, useStore } from 'react-redux'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { AuthCard } from '../components/auth/AuthCard'
-import { GoogleButton } from '../components/auth/GoogleButton'
 import { Alert } from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
@@ -23,6 +22,7 @@ import {
 import { loginEmailSchema, loginPhonePasswordSchema } from '../features/auth/authSchemas'
 import { addToast } from '../features/ui/uiSlice'
 import { startRealtimeSubscription } from '../services/realtimeService'
+import { resolveReturnTo, clearReturnTo } from '../features/guest/guestNavigation'
 
 const LOGIN_MODES = [
   { id: 'email', label: 'E-mail', icon: FiMail },
@@ -30,10 +30,12 @@ const LOGIN_MODES = [
   { id: 'phone-otp', label: 'Code SMS', icon: FiMessageSquare },
 ]
 
-function finishLogin(dispatch, store, navigate, location) {
+function finishLogin(dispatch, store, navigate, location, searchParams) {
   dispatch(loadAllData())
   startRealtimeSubscription(store.getState().auth.user.id, dispatch, store.getState)
-  navigate(location.state?.from || '/dashboard', { replace: true })
+  const destination = resolveReturnTo(searchParams, location.state)
+  clearReturnTo()
+  navigate(destination, { replace: true })
 }
 
 export function LoginPage() {
@@ -41,6 +43,7 @@ export function LoginPage() {
   const store = useStore()
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
   const { t } = useLanguage()
   const { error, status } = useSelector((state) => state.auth)
 
@@ -79,7 +82,7 @@ export function LoginPage() {
     onSubmit: async (values) => {
       const result = await dispatch(login({ identifier: values.email.trim(), password: values.password }))
       if (login.fulfilled.match(result)) {
-        finishLogin(dispatch, store, navigate, location)
+        finishLogin(dispatch, store, navigate, location, searchParams)
       }
     },
   })
@@ -90,7 +93,7 @@ export function LoginPage() {
     onSubmit: async (values) => {
       const result = await dispatch(login({ identifier: values.phone, password: values.password }))
       if (login.fulfilled.match(result)) {
-        finishLogin(dispatch, store, navigate, location)
+        finishLogin(dispatch, store, navigate, location, searchParams)
       }
     },
   })
@@ -123,7 +126,7 @@ export function LoginPage() {
     if (!/^\d{6}$/.test(otpCode)) return
     const result = await dispatch(verifyPhoneLogin({ phone: otpPhone, token: otpCode }))
     if (verifyPhoneLogin.fulfilled.match(result)) {
-      finishLogin(dispatch, store, navigate, location)
+      finishLogin(dispatch, store, navigate, location, searchParams)
     }
   }
 
@@ -137,12 +140,6 @@ export function LoginPage() {
       titleClassName="max-sm:hidden"
       description="Accédez à votre espace par e-mail, numéro russe (+7) ou code SMS."
     >
-      <div className="auth-flow-panel mt-5">
-        <GoogleButton label="Continuer avec Google" />
-      </div>
-
-      <p className="auth-flow-divider">ou avec vos identifiants</p>
-
       <div className="grid gap-2 sm:grid-cols-3">
         {LOGIN_MODES.map((item) => {
           const Icon = item.icon
@@ -222,7 +219,9 @@ export function LoginPage() {
             error={phoneError('password')}
           />
           <p className="auth-flow-hint text-xs text-[var(--app-text-muted)]">
-            Mot de passe oublié ? Utilisez la connexion par e-mail si votre compte en possède un.
+            Utilisez le numéro +7 et le mot de passe définis à l’inscription, après confirmation du
+            code SMS. Si l’inscription n’est pas terminée, reprenez l’inscription ou connectez-vous
+            par code SMS.
           </p>
           <Button className="w-full" type="submit" loading={status === 'loading'}>
             {status === 'loading' ? t('auth.login.submitting') : 'Se connecter'}

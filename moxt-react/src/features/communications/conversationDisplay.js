@@ -1,4 +1,5 @@
 import { supabase } from '../../services/supabaseClient'
+import { isProfileVerified } from '../profile/userProfileUtils'
 
 export function formatProfileName(profile) {
   if (!profile) return ''
@@ -19,6 +20,7 @@ export function getConversationPeer(conversation, currentUserId) {
     id: otherId,
     name,
     avatarUrl: profile?.avatarUrl || null,
+    verified: isProfileVerified(profile),
   }
 }
 
@@ -45,6 +47,8 @@ export function profileFromRemoteRow(row) {
     firstName: row.first_name || '',
     lastName: row.last_name || '',
     avatarUrl: row.avatar_url || null,
+    status: row.status || '',
+    verified: row.status === 'verified',
   }
 }
 
@@ -54,7 +58,7 @@ export async function fetchParticipantProfilesFromRemote(participantIds) {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, first_name, last_name, avatar_url')
+    .select('id, first_name, last_name, avatar_url, status')
     .in('id', unique)
   if (error) throw error
 
@@ -81,6 +85,8 @@ export function buildParticipantProfilesMap({
         firstName: currentUser.firstName || '',
         lastName: currentUser.lastName || '',
         avatarUrl: currentUser.avatarUrl || null,
+        verified: Boolean(currentUser.verified),
+        status: currentUser.verified ? 'verified' : '',
       }
       continue
     }

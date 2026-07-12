@@ -37,6 +37,8 @@ import { useScrollToTopOnStep } from '../hooks/useScrollToTopOnStep'
 import { BusinessPublishNotice } from '../features/businesses/BusinessPublishNotice'
 import { isBusinessPublishReady } from '../features/businesses/businessPublishUtils'
 import { addToast } from '../features/ui/uiSlice'
+import { SecurityGatePanel } from '../features/security/SecurityGatePanel'
+import { useSecurityGate } from '../features/security/useSecurityGate'
 
 /* ─── Steps ─────────────────────────────────────────────────────────────── */
 const STEPS = [
@@ -127,6 +129,7 @@ function Stepper({ step, onGoTo }) {
 export function PublishJobPage() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const { requirePublish } = useSecurityGate()
   const user = useSelector((state) => state.auth.user)
   const business = useSelector((state) =>
     state.businesses.items.find((item) => item.ownerId === user.id),
@@ -205,6 +208,7 @@ export function PublishJobPage() {
   }
 
   async function publish() {
+    if (!requirePublish()) return
     if (!validate(3)) return
     if (form.publisherType === 'business' && !eligibleBusiness) {
       dispatch(
@@ -254,6 +258,7 @@ export function PublishJobPage() {
   const selectedSector = SECTORS.find((s) => s.value === form.sector)
 
   return (
+    <SecurityGatePanel kind="publish" backTo="/jobs">
     <>
     {burstNode}
     {shareModal && (
@@ -588,5 +593,6 @@ export function PublishJobPage() {
       </div>
     </div>
     </>
+    </SecurityGatePanel>
   )
 }

@@ -100,6 +100,15 @@ export function ParcelDetailPage() {
         description={`Départ le ${parcel.departureDate} · dépôt avant ${depositDeadline}`}
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <FavoriteButton
+              relatedId={parcel.id}
+              relatedType="parcel"
+              title={`${parcel.origin} vers ${parcel.destination}`}
+              path={`/parcels/${parcel.id}`}
+              entity={parcel}
+              showLabel={false}
+              className="size-11 shrink-0"
+            />
             <ReshareButton sourceType="parcel" sourceId={parcel.id} sourceData={parcel} />
             {user.id === parcel.ownerId ? (
               <Link to={`/parcels/${parcelId}/edit`}>
@@ -178,15 +187,6 @@ export function ParcelDetailPage() {
               relatedPath={`/parcels/${parcel.id}`}
               relatedTitle={`${parcel.origin} vers ${parcel.destination}`}
               relatedType="parcel"
-            />
-          </div>
-          <div className="mt-3">
-            <FavoriteButton
-              relatedId={parcel.id}
-              relatedType="parcel"
-              title={`${parcel.origin} vers ${parcel.destination}`}
-              path={`/parcels/${parcel.id}`}
-              entity={parcel}
             />
           </div>
         </Card>

@@ -56,7 +56,7 @@ export function Modal({ children, open, onClose, size = 'default', title }) {
 
   const modal = (
     <div
-      className="fixed inset-0 z-[70] grid place-items-center p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4"
+      className="fixed inset-0 z-[var(--z-modal)] grid place-items-center p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4"
       role="presentation"
     >
       <button

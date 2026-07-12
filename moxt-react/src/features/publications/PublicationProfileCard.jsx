@@ -1,6 +1,7 @@
 import { FiBriefcase, FiCalendar, FiEye, FiMapPin, FiStar, FiUser } from 'react-icons/fi'
-import { Badge, VerifiedIcon } from '../../components/ui/Badge'
+import { Badge, VerifiedDisplayName } from '../../components/ui/Badge'
 import { Card } from '../../components/ui/Card'
+import { activityByValue } from '../../config/businessActivities'
 import {
   buildBusinessShareText,
   buildBusinessShareUrl,
@@ -36,6 +37,9 @@ export function PublicationProfileCard({
   const businessVerified = isBusinessScope && isBusinessVerified(ownBusiness)
   const headlineName = isBusinessScope ? ownBusiness.name : displayName
   const showVerifiedIcon = isBusinessScope ? businessVerified : verified
+  const sectorLabel = isBusinessScope
+    ? activityByValue(ownBusiness.primaryActivity)?.label || ownBusiness.sector
+    : ''
   const qrTargetPath = isBusinessScope
     ? `/businesses/${ownBusiness.id}/publications/listings`
     : shareUserId
@@ -59,8 +63,13 @@ export function PublicationProfileCard({
         )}
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            {showVerifiedIcon ? <VerifiedIcon size="md" /> : null}
-            <h2 className="text-xl font-black">{headlineName}</h2>
+            <VerifiedDisplayName
+              as="h2"
+              name={headlineName}
+              verified={showVerifiedIcon}
+              iconSize="md"
+              className="text-xl font-black"
+            />
             <Badge tone="success">
               {isBusinessScope ? (
                 <FiBriefcase className="mr-1 inline" />
@@ -69,14 +78,14 @@ export function PublicationProfileCard({
               )}
               {isBusinessScope ? 'Entreprise' : 'Membre'}
             </Badge>
-            {isBusinessScope ? (
+            {isBusinessScope && displayName && displayName !== headlineName ? (
               <Badge tone="info">
                 <FiUser className="mr-1 inline" />
                 {displayName}
               </Badge>
             ) : null}
-            {isBusinessScope && ownBusiness.sector ? (
-              <Badge tone="neutral">{ownBusiness.sector}</Badge>
+            {isBusinessScope && sectorLabel ? (
+              <Badge tone="neutral">{sectorLabel}</Badge>
             ) : null}
           </div>
           {memberSinceLabel ? (
@@ -102,7 +111,7 @@ export function PublicationProfileCard({
                 {aggregateRating.average}/5 · {aggregateRating.count} avis
               </Badge>
             ) : null}
-            {isOwner ? (
+            {totalViews > 0 || isOwner ? (
               <Badge tone="warning">
                 <FiEye className="mr-1 inline" />
                 {totalViews} vues annonces
@@ -119,10 +128,10 @@ export function PublicationProfileCard({
             shareUrl={isBusinessScope ? buildBusinessShareUrl(ownBusiness) : undefined}
             shareText={isBusinessScope ? buildBusinessShareText(ownBusiness) : undefined}
             title={headlineName}
-            subtitle={isBusinessScope ? ownBusiness.sector : displayName}
+            subtitle={isBusinessScope ? sectorLabel || ownBusiness.sector : displayName}
             verified={showVerifiedIcon}
             city={isBusinessScope ? businessCityLabel(ownBusiness) : city}
-            sector={isBusinessScope ? ownBusiness.sector : undefined}
+            sector={isBusinessScope ? sectorLabel || ownBusiness.sector : undefined}
             logoUrl={isBusinessScope ? ownBusiness.logoUrl : avatarUrl}
           />
         ) : null}

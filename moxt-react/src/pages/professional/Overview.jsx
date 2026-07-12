@@ -2,11 +2,11 @@ import { Link } from 'react-router-dom'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import { BusinessVerificationProgress } from '../../features/businesses/BusinessVerificationProgress'
 
 export function Overview({
   activity,
   business,
-  completion,
   documents,
   members,
   publications,
@@ -17,15 +17,11 @@ export function Overview({
   const cards = buildOverviewCards({ business, documents, members, publications, requests, transfers })
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
+    <div className="grid gap-5">
+      <BusinessVerificationProgress business={business} documents={documents} />
+      <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
       <Card>
         <h2 className="font-black">État de l’activité</h2>
-        <div className="mt-5 h-3 overflow-hidden rounded-full bg-[var(--app-surface-muted)]">
-          <div className="h-full rounded-full bg-brand-600" style={{ width: `${completion}%` }} />
-        </div>
-        <p className="mt-2 text-sm text-[var(--app-text-muted)]">
-          Complétion du profil : {completion}%
-        </p>
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
           {cards.map(([label, value]) => (
             <div key={label} className="rounded-xl bg-[var(--app-surface-muted)] p-4">
@@ -51,6 +47,7 @@ export function Overview({
           <Button variant="secondary">Modifier le profil et les modules</Button>
         </Link>
       </Card>
+    </div>
     </div>
   )
 }

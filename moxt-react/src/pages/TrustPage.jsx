@@ -1,4 +1,5 @@
-import { FiAlertTriangle, FiCheckCircle, FiLock, FiShield } from 'react-icons/fi'
+import { FiAlertTriangle, FiCheckCircle, FiLock, FiShield, FiSmartphone } from 'react-icons/fi'
+import { Link } from 'react-router-dom'
 import { Card } from '../components/ui/Card'
 import { TRUST_PRINCIPLES } from '../config/publicContent'
 
@@ -11,12 +12,13 @@ export function TrustPage() {
         </span>
         <h1 className="mt-2 text-4xl font-black">Utiliser MOXT avec les bons réflexes</h1>
         <p className="mt-4 text-lg leading-8 text-[var(--app-text-muted)]">
-          La version actuelle prépare les parcours et la modération. Elle ne remplace pas une
-          validation bancaire, juridique ou administrative.
+          MOXT applique trois niveaux de vérification : numéro russe pour publier, identité pour les
+          opérations sensibles, niveau renforcé pour les plafonds élevés. La messagerie reste ouverte
+          à tous les membres connectés.
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {TRUST_PRINCIPLES.map(({ description, icon: Icon, title }) => (
           <Card key={title}>
             <Icon className="text-2xl text-brand-600" />
@@ -26,14 +28,30 @@ export function TrustPage() {
         ))}
       </div>
 
+      <Card className="border-brand-200 bg-brand-50/60 dark:border-brand-900 dark:bg-brand-950/20">
+        <div className="flex gap-4">
+          <FiSmartphone className="mt-1 shrink-0 text-2xl text-brand-600" />
+          <div>
+            <h2 className="font-black">Publication protégée</h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--app-text-muted)]">
+              Annonces, colis, jobs et événements nécessitent un numéro russe unique confirmé par OTP.
+              Les comptes créés par e-mail doivent aussi confirmer leur téléphone avant de publier.
+            </p>
+          </div>
+        </div>
+      </Card>
+
       <Card className="border-amber-300 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30">
         <div className="flex gap-4">
           <FiAlertTriangle className="mt-1 shrink-0 text-2xl text-amber-600" />
           <div>
-            <h2 className="font-black">Ce que la démonstration ne garantit pas</h2>
+            <h2 className="font-black">Délai de vérification identité</h2>
             <p className="mt-2 text-sm leading-6 text-[var(--app-text-muted)]">
-              Aucun solde, paiement, reçu, badge de présence ou statut local ne constitue une preuve
-              réelle. Le futur backend devra contrôler chaque opération sensible.
+              Si votre dossier d’identité reste en attente plus de 24 h, contactez l’administrateur via{' '}
+              <Link className="font-bold text-brand-700 hover:underline" to="/support">
+                le support
+              </Link>
+              .
             </p>
           </div>
         </div>
@@ -41,21 +59,21 @@ export function TrustPage() {
 
       <div className="grid gap-4 md:grid-cols-2">
         {[
-          [FiLock, 'Données locales', 'Vos données restent dans ce navigateur jusqu’au backend.'],
+          [FiLock, 'Données personnelles', 'Vos documents sont traités pour la vérification et la sécurité du compte.'],
           [
             FiShield,
-            'Permissions',
-            'Les contrôles visuels seront reproduits et renforcés côté serveur.',
+            'Entreprises et transferts',
+            'Création d’entreprise et comptes de transfert réservés aux profils identité vérifiés.',
           ],
           [
             FiCheckCircle,
-            'Profils vérifiés',
-            'Le statut vérifié reste démonstratif tant qu’aucun contrôle externe n’existe.',
+            'Badge vérifié',
+            'Le badge vert indique une identité validée par l’équipe MOXT.',
           ],
           [
             FiAlertTriangle,
             'Signalements',
-            'Les signalements locaux préparent la future file de modération.',
+            'Signalez tout contenu suspect depuis les fiches concernées.',
           ],
         ].map(([Icon, title, description]) => (
           <Card key={title} className="flex gap-4">

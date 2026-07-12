@@ -188,7 +188,8 @@ const responses = {
       "Quels avantages après vérification ?",
     ],
     texts: [
-      `La vérification d'identité sur MOXT se fait depuis la rubrique **Vérification** en quelques étapes.\n\n**Niveau standard :**\n- Pièce d'identité valide (passeport, carte de séjour russe, carte consulaire)\n- Selfie de confirmation avec le document\n- Validation de votre numéro de téléphone par SMS\n\n**Niveau renforcé :**\n- Tout ce qui précède, plus un justificatif de domicile récent (enregistrement migratoire, bail)\n\nUne fois le dossier soumis, notre équipe le traite sous 24 à 48 heures. La vérification débloque des plafonds de transfert plus élevés.`,
+      `MOXT applique **trois niveaux de vérification** :\n\n**1. Téléphone russe (+7)** — obligatoire pour publier une annonce, un colis, un job ou un événement. Un numéro unique par compte, confirmé par SMS. Si vous vous êtes inscrit par e-mail, confirmez votre numéro depuis **Profil** ou **Vérification**.\n\n**2. Identité MOXT** — pièce d'identité + selfie. Requis pour créer une entreprise et utiliser les comptes de transfert.\n\n**3. Renforcée** — identité + justificatif de domicile pour des plafonds de transfert plus élevés.\n\nLa **messagerie** et les interactions sociales restent accessibles sans vérification renforcée.\n\nSi un dossier est en attente plus de 24 h, contactez l'administrateur via **Support**.`,
+      `La vérification d'identité sur MOXT se fait depuis la rubrique **Vérification**.\n\n**Avant de publier** : confirmez votre numéro russe par OTP (niveau 1).\n\n**Niveau identité** : passeport, carte de séjour russe ou carte consulaire + selfie.\n\n**Niveau renforcé** : + justificatif de domicile récent en Russie.\n\nChangement de numéro : une nouvelle confirmation SMS est demandée.`,
     ],
   },
 

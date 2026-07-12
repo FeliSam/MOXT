@@ -79,9 +79,8 @@ export function EventDetailPage() {
               title={event.title}
               path={`/events/${event.id}`}
               entity={event}
-              variant="overlay"
               showLabel={false}
-              className="size-11 bg-[var(--app-surface)] shadow-[var(--shadow-card)]"
+              className="size-11 shrink-0"
             />
             <ReshareButton sourceType="event" sourceId={event.id} sourceData={event} />
             {event.ownerId === user.id ? (

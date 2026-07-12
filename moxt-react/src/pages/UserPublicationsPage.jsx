@@ -10,7 +10,7 @@ import {
   FiShoppingBag,
 } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
-import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom'
 import { PillBadge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { CatalogArchiveTabs } from '../components/ui/CatalogArchiveTabs'
@@ -40,6 +40,8 @@ import { PublicationProfileCard } from '../features/publications/PublicationProf
 import { PublicationScopeButton } from '../features/publications/PublicationScopeButton'
 import { usePublicationProfile } from '../features/publications/usePublicationProfile'
 import { SubscribeButton } from '../features/account/SubscribeButton'
+import { useGuestAction } from '../features/guest/useGuestAction'
+import { useGuestUserPreview } from '../features/guest/useGuestPreview'
 import {
   REVIEW_TARGET_TYPES,
   ReviewsSection,
@@ -63,40 +65,64 @@ const EMPTY_ICONS = {
 export function UserPublicationsPage() {
   const { userId } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
+  const { guestMode = false } = useOutletContext() || {}
+  const { requireAccount } = useGuestAction()
   const currentUser = useSelector((state) => state.auth.user)
   const appState = useSelector((state) => state)
+  const guestPreview = useGuestUserPreview(guestMode ? userId : null)
 
   const mainTab = searchParams.get('view') === 'avis' ? 'avis' : 'publications'
   const archiveTab = searchParams.get('status') === 'archived' ? 'archived' : 'active'
   const typeTab = PUBLICATION_TYPE_TABS.some((tab) => tab.id === searchParams.get('type'))
     ? searchParams.get('type')
     : 'listing'
+  const scope = searchParams.get('scope') === 'business' ? 'business' : 'personal'
 
-  const isOwner = currentUser?.id === userId
+  const isOwner = !guestMode && currentUser?.id === userId
   const conversations = useSelector((state) => state.communications.conversations)
-  const { visibility, loading: visibilityLoading } = useProfileActivityVisibility(
-    userId,
-    currentUser?.id,
-  )
-  const canView = canViewUserActivity({
-    viewerId: currentUser?.id,
-    ownerId: userId,
-    visibility,
-    conversations,
-  })
-  const ownBusiness = useSelector((state) =>
+  const reduxOwnBusiness = useSelector((state) =>
     state.businesses.items.find((item) => item.ownerId === userId),
   )
-  const scope = searchParams.get('scope') === 'business' ? 'business' : 'personal'
-  const publications = useMemo(
-    () => filterPublicationsByScope(collectUserPublications(appState, userId), scope),
-    [appState, scope, userId],
+  const { visibility, loading: visibilityLoading } = useProfileActivityVisibility(
+    guestMode ? null : userId,
+    currentUser?.id,
   )
-  const { profile: memberProfile } = usePublicationProfile(userId, currentUser)
+  const canView = guestMode
+    ? !guestPreview.loading && !guestPreview.error && guestPreview.profile
+    : canViewUserActivity({
+        viewerId: currentUser?.id,
+        ownerId: userId,
+        visibility,
+        conversations,
+      })
+  const ownBusiness = guestMode ? guestPreview.business : reduxOwnBusiness
+  const guestPublications = guestPreview.publications
+  const publications = useMemo(() => {
+    if (guestMode) {
+      return filterPublicationsByScope(
+        guestPublications || {
+          listings: [],
+          parcels: [],
+          jobs: [],
+          events: [],
+          posts: [],
+          others: [],
+        },
+        scope,
+      )
+    }
+    return filterPublicationsByScope(collectUserPublications(appState, userId), scope)
+  }, [appState, guestMode, guestPublications, scope, userId])
+  const { profile: memberProfile } = usePublicationProfile(guestMode ? null : userId, currentUser)
+  const guestProfile = guestPreview.profile
   const displayName = useMemo(() => {
+    if (guestMode) {
+      const remoteName = `${guestProfile?.firstName || ''} ${guestProfile?.lastName || ''}`.trim()
+      return remoteName || 'Membre MOXT'
+    }
     const remoteName = `${memberProfile?.firstName || ''} ${memberProfile?.lastName || ''}`.trim()
     return remoteName || 'Membre MOXT'
-  }, [memberProfile])
+  }, [guestMode, guestProfile, memberProfile])
   const profile = useMemo(
     () => buildUserPublicationProfile(userId, publications, { displayName }),
     [displayName, publications, userId],
@@ -113,15 +139,14 @@ export function UserPublicationsPage() {
   const hasContent = visiblePublicationCount(visible) > 0
   const hasAnyPublication = publicationTotalCount(publications) > 0
   const EmptyIcon = EMPTY_ICONS[typeTab] || FiShoppingBag
-  const aggregateReviews = useMemo(
-    () =>
-      filterAggregateReviews(appState.reviews?.items || [], {
-        profileTargetType: REVIEW_TARGET_TYPES.USER_PROFILE,
-        profileTargetId: userId,
-        publicationIds: collectPublicationTargetIds(publications),
-      }),
-    [appState.reviews?.items, publications, userId],
-  )
+  const aggregateReviews = useMemo(() => {
+    const source = guestMode ? guestPreview.reviews : appState.reviews?.items || []
+    return filterAggregateReviews(source, {
+      profileTargetType: REVIEW_TARGET_TYPES.USER_PROFILE,
+      profileTargetId: userId,
+      publicationIds: collectPublicationTargetIds(publications),
+    })
+  }, [appState.reviews?.items, guestMode, guestPreview.reviews, publications, userId])
   const aggregateRating = useMemo(
     () => calculateAggregateRating(aggregateReviews),
     [aggregateReviews],
@@ -155,7 +180,32 @@ export function UserPublicationsPage() {
     setSearchParams(params, { replace: true })
   }
 
-  if (!isOwner && !visibilityLoading && !canView) {
+  if (guestMode && guestPreview.loading) {
+    return (
+      <EmptyState
+        title="Chargement de l'aperçu"
+        description="Récupération des publications publiques de ce membre..."
+      />
+    )
+  }
+
+  if (guestMode && guestPreview.error === 'not_found') {
+    return (
+      <EmptyState
+        title="Profil introuvable"
+        description="Ce membre MOXT n'existe pas ou n'est plus disponible."
+        action={
+          <Link to="/">
+            <Button variant="secondary" icon={FiArrowLeft}>
+              Retour à l'accueil
+            </Button>
+          </Link>
+        }
+      />
+    )
+  }
+
+  if (!isOwner && !guestMode && !visibilityLoading && !canView) {
     return (
       <div className="grid gap-7">
         <PageHeader
@@ -179,6 +229,30 @@ export function UserPublicationsPage() {
     )
   }
 
+  if (guestMode && (guestPreview.error === 'private' || guestPreview.error === 'contacts')) {
+    return (
+      <div className="grid gap-7">
+        <PageHeader
+          eyebrow="Communauté"
+          title="Publications du membre"
+          description="Ce membre a restreint la visibilité de son activité."
+        />
+        <EmptyState
+          icon={FiLock}
+          title="Profil non accessible"
+          description="Créez un compte MOXT pour demander l'accès ou découvrir d'autres membres."
+          action={
+            <Link to="/register">
+              <Button>Créer un compte</Button>
+            </Link>
+          }
+        />
+      </div>
+    )
+  }
+
+  const handleGuestInteract = () => requireAccount('consulter ce contenu')
+
   const pageDescription = isOwner
     ? scope === 'business' && ownBusiness
       ? `Vue publique des publications de ${ownBusiness.name}.`
@@ -197,7 +271,7 @@ export function UserPublicationsPage() {
         description={pageDescription}
         actions={
           <div className="relative z-30 flex min-w-0 flex-wrap items-center justify-end gap-2">
-            {!isOwner ? (
+            {!isOwner && !guestMode ? (
               <SubscribeButton
                 className="relative z-30"
                 publisherType="user"
@@ -206,7 +280,7 @@ export function UserPublicationsPage() {
                 publisherPath={`/users/${userId}/publications`}
               />
             ) : null}
-            {ownBusiness ? (
+            {ownBusiness && !guestMode ? (
               <PublicationScopeButton
                 business={ownBusiness}
                 isOwner={isOwner}
@@ -224,6 +298,12 @@ export function UserPublicationsPage() {
                   Gérer mes publications
                 </Button>
               </Link>
+            ) : guestMode ? (
+              <Link to="/discover">
+                <Button variant="secondary" icon={FiArrowLeft}>
+                  Découvrir MOXT
+                </Button>
+              </Link>
             ) : (
               <Link to="/dashboard">
                 <Button variant="secondary" icon={FiArrowLeft}>
@@ -237,10 +317,10 @@ export function UserPublicationsPage() {
 
       <PublicationProfileCard
         displayName={displayName}
-        verified={Boolean(memberProfile?.verified)}
-        memberSince={memberProfile?.memberSince}
-        city={memberProfile?.city || profile.city}
-        country={memberProfile?.country || profile.country}
+        verified={Boolean(guestMode ? guestProfile?.verified : memberProfile?.verified)}
+        memberSince={guestMode ? guestProfile?.memberSince : memberProfile?.memberSince}
+        city={(guestMode ? guestProfile?.city : memberProfile?.city) || profile.city}
+        country={(guestMode ? guestProfile?.country : memberProfile?.country) || profile.country}
         activeCount={profile.activeCount}
         archivedCount={profile.archivedCount}
         totalCount={profile.totalCount}
@@ -249,8 +329,8 @@ export function UserPublicationsPage() {
         isOwner={isOwner}
         scope={scope}
         ownBusiness={ownBusiness}
-        shareUserId={userId}
-        avatarUrl={memberProfile?.avatarUrl}
+        shareUserId={guestMode ? null : userId}
+        avatarUrl={guestMode ? guestProfile?.avatarUrl : memberProfile?.avatarUrl}
       />
 
       <CatalogArchiveTabs
@@ -302,10 +382,18 @@ export function UserPublicationsPage() {
                   listing={listing}
                   ownerMode={false}
                   showViews={isOwner}
+                  guestMode={guestMode}
+                  onGuestInteract={handleGuestInteract}
                 />
               ))}
               {visible.parcel.map((parcel) => (
-                <MyParcelPublicationCard key={parcel.id} parcel={parcel} readOnly />
+                <MyParcelPublicationCard
+                  key={parcel.id}
+                  parcel={parcel}
+                  readOnly
+                  guestMode={guestMode}
+                  onGuestInteract={handleGuestInteract}
+                />
               ))}
               {visible.job.map((job) => (
                 <MyJobPublicationCard
@@ -313,13 +401,27 @@ export function UserPublicationsPage() {
                   job={job}
                   readOnly
                   ownerDisplayName={displayName}
+                  guestMode={guestMode}
+                  onGuestInteract={handleGuestInteract}
                 />
               ))}
               {visible.event.map((event) => (
-                <MyEventPublicationCard key={event.id} event={event} readOnly />
+                <MyEventPublicationCard
+                  key={event.id}
+                  event={event}
+                  readOnly
+                  guestMode={guestMode}
+                  onGuestInteract={handleGuestInteract}
+                />
               ))}
               {visible.post.map((post) => (
-                <MyPostPublicationCard key={post.id} post={post} readOnly />
+                <MyPostPublicationCard
+                  key={post.id}
+                  post={post}
+                  readOnly
+                  guestMode={guestMode}
+                  onGuestInteract={handleGuestInteract}
+                />
               ))}
             </div>
           ) : (

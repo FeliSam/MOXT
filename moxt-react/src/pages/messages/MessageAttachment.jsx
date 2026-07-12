@@ -25,7 +25,7 @@ function MessageImageLightbox({ alt, onClose, src }) {
 
   return (
     <div
-      className="message-image-lightbox fixed inset-0 z-[200] grid place-items-center bg-slate-950/85 p-4 backdrop-blur-sm"
+      className="message-image-lightbox fixed inset-0 z-[var(--z-lightbox)] grid place-items-center bg-slate-950/85 p-4 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-label="Aperçu de l’image"

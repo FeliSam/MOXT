@@ -1,0 +1,80 @@
+# Déploie SMSC : migrations, secrets Edge Functions, send-sms, phone-login, smsc-webhook
+#
+# Secrets GitHub requis :
+#   SUPABASE_ACCESS_TOKEN
+#   SUPABASE_DB_PASSWORD
+#   SEND_SMS_HOOK_SECRET
+#   SMSC_LOGIN, SMSC_PASSWORD (ou SMSC_API_KEY)
+#   SMSC_SENDER, SMSC_WEBHOOK_SECRET (optionnel)
+
+name: Deploy — Supabase SMSC
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-supabase-smsc
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Link Supabase
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: npx supabase link --project-ref rbvqfkccbkwjxkvpnwqn --yes
+
+      - name: Push auth config (hook SMS)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SEND_SMS_HOOK_SECRET: ${{ secrets.SEND_SMS_HOOK_SECRET }}
+          MOXT_POSTBOX_SMTP_USER: ${{ secrets.MOXT_POSTBOX_SMTP_USER }}
+          MOXT_POSTBOX_SMTP_PASS: ${{ secrets.MOXT_POSTBOX_SMTP_PASS }}
+          MOXT_POSTBOX_FROM: ${{ secrets.MOXT_POSTBOX_FROM }}
+        run: |
+          if [ -n "$MOXT_POSTBOX_SMTP_USER" ] && [ -n "$MOXT_POSTBOX_SMTP_PASS" ] && [ -n "$MOXT_POSTBOX_FROM" ]; then
+            npx supabase config push --yes
+          elif [ -n "$SEND_SMS_HOOK_SECRET" ]; then
+            npx supabase config push --yes
+          else
+            echo "Postbox absent — config push ignoré (hook secret requis)"
+          fi
+
+      - name: Apply database migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: npm run db:push
+
+      - name: Set Edge Function secrets
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          cat > /tmp/supabase-secrets.env <<EOF
+          SMS_PROVIDER=smsc
+          SMSC_LOGIN=${{ secrets.SMSC_LOGIN }}
+          SMSC_PASSWORD=${{ secrets.SMSC_PASSWORD }}
+          SMSC_SENDER=${{ secrets.SMSC_SENDER }}
+          SMSC_WEBHOOK_SECRET=${{ secrets.SMSC_WEBHOOK_SECRET }}
+          SEND_SMS_HOOK_SECRET=${{ secrets.SEND_SMS_HOOK_SECRET }}
+          SMS_MESSAGE_TEMPLATE=Код MOXT: {otp}. Никому не сообщайте.
+          EOF
+          npx supabase secrets set --env-file /tmp/supabase-secrets.env
+
+      - name: Deploy Edge Functions
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          npx supabase functions deploy send-sms --no-verify-jwt
+          npx supabase functions deploy phone-login --no-verify-jwt
+          npx supabase functions deploy smsc-webhook --no-verify-jwt

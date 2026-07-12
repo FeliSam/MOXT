@@ -14,6 +14,8 @@ import {
   FiUsers,
 } from 'react-icons/fi'
 import { REVIEW_DISPUTE_STATUS } from '@moxt/shared/utils/reviewUtils.js'
+import { adminDetailLink, normalizeAdminKind } from './adminLinkUtils'
+import { formatDate, formatMoney } from '../transfers/transferUtils'
 
 export function buildQueues(state) {
   return {
@@ -117,16 +119,7 @@ export function badgeForView(view, metrics, queues) {
 }
 
 export function detailLinkFor(kind, item) {
-  if (!item) return null
-  const map = {
-    transfer: `/transfers/${item.id}`,
-    businesses: `/businesses/${item.id}`,
-    listings: `/marketplace/${item.id}`,
-    jobs: `/jobs/${item.id}`,
-    events: `/events/${item.id}`,
-    parcels: `/parcels/${item.id}`,
-  }
-  return map[kind] || null
+  return adminDetailLink(kind, item)
 }
 
 const DETAIL_ICONS = {
@@ -146,7 +139,7 @@ const DETAIL_ICONS = {
 }
 
 export function detailIconFor(kind) {
-  return DETAIL_ICONS[kind] || FiEye
+  return DETAIL_ICONS[normalizeAdminKind(kind)] || FiEye
 }
 
 export function detailLabelFor(kind) {
@@ -164,7 +157,7 @@ export function detailLabelFor(kind) {
     events: 'Evenement',
     parcels: 'Colis',
     audit: 'Log audit',
-  }[kind] || 'Detail'
+  }[normalizeAdminKind(kind)] || 'Detail'
 }
 
 export function detailDescriptionFor(kind, item) {
@@ -183,7 +176,7 @@ export function detailDescriptionFor(kind, item) {
 }
 
 export function buildDetailFacts(kind, item) {
-  switch (kind) {
+  switch (normalizeAdminKind(kind)) {
     case 'transfer':
       return [['Statut', item.status], ['Envoye', formatMoney(item.amountSent, item.currencyFrom)], ['Recu', formatMoney(item.amountReceived, item.currencyTo)], ['Partenaire', item.exchanger?.name || '—'], ['Date', formatDate(item.createdAt)]]
     case 'support':

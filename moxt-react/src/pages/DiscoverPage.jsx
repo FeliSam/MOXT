@@ -40,9 +40,19 @@ export function DiscoverPage() {
         </span>
         <h1 className="mt-2 text-3xl font-black sm:text-4xl">Rechercher sur MOXT</h1>
         <p className="mt-3 text-[var(--app-text-muted)]">
-          Entreprises, annonces, colis, jobs et événements publiés.
+          Entreprises, annonces, colis, jobs et événements publiés. Les publications sont réservées
+          aux membres avec numéro russe vérifié.
         </p>
       </div>
+
+      <Card className="grid gap-3 border-brand-200 bg-brand-50/50 dark:border-brand-900 dark:bg-brand-950/20">
+        <h2 className="font-black">Sécurité MOXT en bref</h2>
+        <ul className="grid gap-2 text-sm text-[var(--app-text-muted)] sm:grid-cols-3">
+          <li>Numéro +7 vérifié pour publier</li>
+          <li>Identité MOXT pour entreprise et transferts</li>
+          <li>Messagerie ouverte sans vérification renforcée</li>
+        </ul>
+      </Card>
 
       <Card className="grid gap-4 md:grid-cols-[1fr_15rem]">
         <label className="relative">

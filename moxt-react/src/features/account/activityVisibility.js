@@ -9,7 +9,10 @@ export function canViewUserActivity({
   conversations = [],
 }) {
   if (!ownerId) return false
-  if (!viewerId || viewerId === ownerId) return true
+  if (!viewerId) {
+    return visibility === 'public'
+  }
+  if (viewerId === ownerId) return true
   if (visibility === 'public') return true
   if (visibility === 'private') return false
   if (visibility === 'contacts') {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  buildBusinessPublicationProfile,
   collectUserPublications,
   filterPublicationsByScope,
 } from './publicationCatalogUtils'
@@ -42,5 +43,31 @@ describe('publicationCatalogUtils', () => {
     expect(personalOnly.listings[0].id).toBe('L1')
     expect(personalOnly.parcels).toHaveLength(0)
     expect(personalOnly.posts).toHaveLength(1)
+  })
+
+  it('construit le profil entreprise depuis les données actuelles', () => {
+    const business = {
+      id: 'BIZ-1',
+      name: 'MOXT Pro',
+      city: 'Moscou',
+      country: 'RU',
+      createdAt: '2026-01-15T10:00:00.000Z',
+    }
+    const publications = {
+      listings: [{ id: 'L1', views: 12 }],
+      parcels: [],
+      jobs: [],
+      events: [],
+      posts: [],
+      others: [],
+    }
+
+    const profile = buildBusinessPublicationProfile(business, publications)
+    expect(profile.name).toBe('MOXT Pro')
+    expect(profile.city).toBe('Moscou')
+    expect(profile.country).toBe('RU')
+    expect(profile.memberSince).toBe('2026-01-15T10:00:00.000Z')
+    expect(profile.totalCount).toBe(1)
+    expect(profile.totalViews).toBe(12)
   })
 })

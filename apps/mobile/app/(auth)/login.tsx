@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
 import { cn } from '@/lib/cn';
-import { clearAuthError, login, loginWithGoogle } from '@/store/auth';
+import { clearAuthError, login } from '@/store/auth';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 
 export default function LoginScreen() {
@@ -60,23 +60,6 @@ export default function LoginScreen() {
               {error}
             </Text>
           ) : null}
-
-          <Pressable
-            className="flex-row items-center justify-center border border-app-border dark:border-zinc-700 rounded-2xl py-3.5 gap-3"
-            onPress={() => dispatch(loginWithGoogle())}>
-            <Text className="text-xl font-bold text-[#4285F4]">G</Text>
-            <Text className="font-semibold text-[15px] text-app-text dark:text-zinc-50">
-              Continuar avec Google
-            </Text>
-          </Pressable>
-
-          <View className="flex-row items-center my-5">
-            <View className="flex-1 h-px bg-app-border dark:bg-zinc-700" />
-            <Text className="mx-3 text-[11px] font-semibold tracking-wide text-app-text-faint dark:text-zinc-500">
-              OU AVEC VOTRE EMAIL
-            </Text>
-            <View className="flex-1 h-px bg-app-border dark:bg-zinc-700" />
-          </View>
 
           <Text className="text-[11px] font-bold tracking-wide uppercase text-app-text-secondary dark:text-zinc-300 mb-2 mt-3">
             E-MAIL OU NUMÉRO RUSSE

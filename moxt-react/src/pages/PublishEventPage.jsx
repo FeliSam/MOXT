@@ -29,6 +29,8 @@ import { createEvent } from '../features/events/eventSlice'
 import { useScrollToTopOnStep } from '../hooks/useScrollToTopOnStep'
 import { isBusinessPublishReady } from '../features/businesses/businessPublishUtils'
 import { addToast } from '../features/ui/uiSlice'
+import { SecurityGatePanel } from '../features/security/SecurityGatePanel'
+import { useSecurityGate } from '../features/security/useSecurityGate'
 
 /* ─── Steps ─────────────────────────────────────────────────────────────── */
 const STEPS = [
@@ -141,6 +143,7 @@ function SectionTitle({ icon: Icon, label }) {
 export function PublishEventPage() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const { requirePublish } = useSecurityGate()
   const user = useSelector((state) => state.auth.user)
   const business = useSelector((state) =>
     state.businesses.items.find((item) => item.ownerId === user.id),
@@ -223,6 +226,7 @@ export function PublishEventPage() {
   }
 
   async function publish() {
+    if (!requirePublish()) return
     if (!validate(3)) return
     setPublishing(true)
     let images = []
@@ -261,6 +265,7 @@ export function PublishEventPage() {
   const selectedCategory = EVENT_CATEGORIES.find((c) => c.value === form.category)
 
   return (
+    <SecurityGatePanel kind="publish" backTo="/events">
     <>
     {burstNode}
     {shareModal && (
@@ -595,5 +600,6 @@ export function PublishEventPage() {
       </div>
     </div>
     </>
+    </SecurityGatePanel>
   )
 }

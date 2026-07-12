@@ -11,10 +11,9 @@ import {
   FiUser,
 } from 'react-icons/fi'
 import { useDispatch, useSelector, useStore } from 'react-redux'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { isProfileComplete } from '@moxt/shared/auth/profileCompletion.js'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { needsOAuthProfileCompletion } from '@moxt/shared/auth/profileCompletion.js'
 import { AuthCard } from '../components/auth/AuthCard'
-import { GoogleButton } from '../components/auth/GoogleButton'
 import { Alert } from '../components/ui/Alert'
 import { useActionBurst } from '../components/ui/ActionBurst'
 import { Button } from '../components/ui/Button'
@@ -32,7 +31,6 @@ import {
   registerSchema,
   registerStepFields,
 } from '../features/auth/authSchemas'
-import { authService } from '../features/auth/authService'
 import {
   clearAuthError,
   completeOAuthProfile,
@@ -48,6 +46,7 @@ import { loadAllData } from '../app/loadAllData'
 import { startRealtimeSubscription } from '../services/realtimeService'
 import { useGeographyOptions } from '../hooks/useGeographyOptions'
 import { markWelcomePending } from '../features/onboarding/welcomeStorage'
+import { storePendingInviteCode, resolveReturnTo, clearReturnTo } from '../features/guest/guestNavigation'
 
 const STEPS = [
   { key: 'identity', label: 'Identité', icon: FiUser },
@@ -105,12 +104,12 @@ function Stepper({ step, oauthCompletion = false }) {
 export function RegisterPage() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams] = useSearchParams()
   const store = useStore()
   const authUser = useSelector((state) => state.auth.user)
   const { language, setLanguage, t } = useLanguage()
   const { error, status } = useSelector((state) => state.auth)
-  const fromGoogle = searchParams.get('from') === 'google'
   const [oauthCompletion, setOauthCompletion] = useState(false)
   const [step, setStep] = useState(1)
   const [pendingVerification, setPendingVerification] = useState(null) // { method, phone?, email }
@@ -123,6 +122,13 @@ export function RegisterPage() {
   useEffect(() => {
     return () => dispatch(clearAuthError())
   }, [dispatch])
+
+  useEffect(() => {
+    const inviteCode = searchParams.get('invite')
+    if (inviteCode) {
+      storePendingInviteCode(inviteCode)
+    }
+  }, [searchParams])
 
   // Les erreurs d'inscription passent uniquement par des toasts (aucun message
   // inline en double sur la page).
@@ -186,11 +192,13 @@ export function RegisterPage() {
         dispatch(
           addToast({
             title: 'Profil complété',
-            message: 'Votre compte Google est prêt. Bienvenue sur MOXT.',
+            message: 'Votre profil est complet. Bienvenue sur MOXT.',
             tone: 'success',
           }),
         )
-        navigate('/dashboard', { replace: true })
+        const destination = resolveReturnTo(searchParams, location.state)
+        clearReturnTo()
+        navigate(destination, { replace: true })
         return
       }
 
@@ -210,18 +218,6 @@ export function RegisterPage() {
           )
           return
         }
-        if (values.verificationMethod === 'phone' && payload.includes('sms')) {
-          formik.setFieldValue('verificationMethod', 'email')
-          dispatch(clearAuthError())
-          dispatch(
-            addToast({
-              title: 'SMS indisponible',
-              message:
-                "L'envoi SMS est momentanément indisponible. Essayez la confirmation par e-mail si vous en avez renseigné une.",
-              tone: 'warning',
-            }),
-          )
-        }
         return
       }
       dispatch(clearAuthError())
@@ -238,76 +234,28 @@ export function RegisterPage() {
       await dispatch(loadAllData())
       startRealtimeSubscription(store.getState().auth.user.id, dispatch, store.getState)
       markWelcomePending()
-      navigate('/dashboard', { replace: true })
+      const destination = resolveReturnTo(searchParams, location.state)
+      clearReturnTo()
+      navigate(destination, { replace: true })
     },
   })
 
   useEffect(() => {
-    let cancelled = false
-
-    async function hydrateFromGoogle() {
-      if (!fromGoogle) return
-
-      try {
-        const profile = await authService.fetchGoogleProfile()
-        if (cancelled) return
-        formik.setValues((current) => ({
-          ...current,
-          ...profile,
-          acceptTerms: false,
-        }))
-
-        const sessionUser = store.getState().auth.user
-        if (sessionUser && isProfileComplete(sessionUser)) {
-          navigate('/dashboard', { replace: true })
-          return
-        }
-
-        setOauthCompletion(true)
-        setStep(2)
-      } catch {
-        if (!cancelled) {
-          dispatch(
-            addToast({
-              title: 'Connexion Google',
-              message:
-                'Impossible de récupérer votre profil Google. Réessayez ou inscrivez-vous par e-mail.',
-              tone: 'error',
-            }),
-          )
-        }
-      } finally {
-        if (!cancelled) {
-          const nextParams = new URLSearchParams(window.location.search)
-          nextParams.delete('from')
-          const query = nextParams.toString()
-          window.history.replaceState({}, '', query ? `/register?${query}` : '/register')
-        }
-      }
-    }
-
-    if (fromGoogle) {
-      hydrateFromGoogle()
-    } else if (authUser && !isProfileComplete(authUser)) {
-      setOauthCompletion(true)
-      setStep(2)
-      formik.setValues((current) => ({
-        ...current,
-        firstName: authUser.firstName || current.firstName,
-        lastName: authUser.lastName || current.lastName,
-        email: authUser.email || current.email,
-        avatarUrl: authUser.avatarUrl || current.avatarUrl,
-        originCountry: authUser.originCountry || current.originCountry,
-        residenceCity: authUser.city || current.residenceCity,
-        russianPhone: authUser.phone || current.russianPhone,
-        originPhone: authUser.secondaryPhone || current.originPhone,
-      }))
-    }
-
-    return () => {
-      cancelled = true
-    }
-  }, [authUser, dispatch, formik.setValues, fromGoogle, navigate, store])
+    if (!authUser || pendingVerification || !needsOAuthProfileCompletion(authUser)) return
+    setOauthCompletion(true)
+    setStep(2)
+    formik.setValues((current) => ({
+      ...current,
+      firstName: authUser.firstName || current.firstName,
+      lastName: authUser.lastName || current.lastName,
+      email: authUser.email || current.email,
+      avatarUrl: authUser.avatarUrl || current.avatarUrl,
+      originCountry: authUser.originCountry || current.originCountry,
+      residenceCity: authUser.city || current.residenceCity,
+      russianPhone: authUser.phone || current.russianPhone,
+      originPhone: authUser.secondaryPhone || current.originPhone,
+    }))
+  }, [authUser, formik.setValues, pendingVerification])
 
   async function resendVerificationCode() {
     if (!pendingVerification || resendCooldown > 0) return
@@ -346,6 +294,8 @@ export function RegisterPage() {
     const result = await dispatch(thunk(payload))
     if (thunk.fulfilled.match(result)) {
       dispatch(clearAuthError())
+      setPendingVerification(null)
+      setVerificationCode('')
       await dispatch(loadAllData())
       startRealtimeSubscription(store.getState().auth.user.id, dispatch, store.getState)
       triggerBurst()
@@ -368,7 +318,9 @@ export function RegisterPage() {
         )
       }
       markWelcomePending()
-      window.setTimeout(() => navigate('/dashboard', { replace: true }), 550)
+      const destination = resolveReturnTo(searchParams, location.state)
+      clearReturnTo()
+      window.setTimeout(() => navigate(destination, { replace: true }), 550)
     }
   }
 
@@ -391,11 +343,11 @@ export function RegisterPage() {
   return (
     <AuthCard
       compact
-      eyebrow={oauthCompletion ? 'MOXT · Profil Google' : 'MOXT · Inscription'}
+      eyebrow={oauthCompletion ? 'MOXT · Profil' : 'MOXT · Inscription'}
       title={oauthCompletion ? 'Complétez votre profil' : 'Créer votre compte MOXT'}
       description={
         oauthCompletion
-          ? 'Votre compte Google est connecté. Ajoutez votre pays, ville et numéro russe pour utiliser MOXT.'
+          ? 'Ajoutez votre pays, ville et numéro russe pour utiliser MOXT.'
           : 'Inscription avec e-mail, numéro russe (+7) et confirmation par SMS.'
       }
     >
@@ -408,9 +360,6 @@ export function RegisterPage() {
       <form className="@container mt-4 grid gap-3" onSubmit={formik.handleSubmit} noValidate>
         {step === 1 && !oauthCompletion ? (
           <>
-            <GoogleButton label="S'inscrire avec Google" />
-            <p className="auth-flow-divider">ou avec vos informations</p>
-
             <div className="grid min-w-0 gap-3 @md:grid-cols-2">
               <Input
                 id="firstName"
@@ -623,11 +572,11 @@ export function RegisterPage() {
               />
               <span className="text-xs leading-5 text-[var(--app-text-2)] sm:text-sm">
                 J'accepte les{' '}
-                <Link className="auth-flow-link" to="/trust" target="_blank" rel="noreferrer">
+                <Link className="auth-flow-link" to="/legal/cgu" target="_blank" rel="noreferrer">
                   conditions d'utilisation
                 </Link>{' '}
                 et la{' '}
-                <Link className="auth-flow-link" to="/faq" target="_blank" rel="noreferrer">
+                <Link className="auth-flow-link" to="/legal/privacy" target="_blank" rel="noreferrer">
                   politique de confidentialité
                 </Link>
                 .
@@ -796,7 +745,18 @@ export function RegisterPage() {
       </form>
       <p className="mt-3 text-center text-sm text-[var(--app-text-muted)]">
         Vous avez déjà un compte ?{' '}
-        <Link className="font-bold text-brand-700 dark:text-brand-300" to="/login">
+        <Link
+          className="font-bold text-brand-700 dark:text-brand-300"
+          to="/login"
+          state={
+            pendingVerification?.method === 'phone'
+              ? {
+                  notice:
+                    'Si l’inscription est terminée, connectez-vous avec votre numéro +7 et le mot de passe choisi. Sinon, saisissez d’abord le code SMS reçu ci-dessus.',
+                }
+              : undefined
+          }
+        >
           Se connecter
         </Link>
       </p>

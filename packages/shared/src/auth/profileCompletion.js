@@ -25,3 +25,9 @@ export function isProfileComplete(user) {
     isValidRussianPhone(phone)
   )
 }
+
+/** Complétion « OAuth » : utilisateur connecté sans inscription téléphone classique. */
+export function needsOAuthProfileCompletion(user) {
+  if (!user?.id || isProfileComplete(user)) return false
+  return !isValidRussianPhone(user.phone)
+}

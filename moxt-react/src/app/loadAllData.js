@@ -102,15 +102,30 @@ export const loadAllData = createAsyncThunk(
 
     const profileRes = await supabase
       .from('profiles')
-      .select('activity_visibility, role, preferences')
+      .select('activity_visibility, role, preferences, status, phone, phone_verified, phone_verified_at')
       .eq('id', uid)
       .maybeSingle()
 
     const resolvedRole = profileRes.data?.role || user.role || 'user'
     const isAdmin = ['admin', 'superadmin'].includes(resolvedRole)
 
-    if (profileRes.data?.role && profileRes.data.role !== user.role) {
-      dispatch(setUser({ ...user, role: profileRes.data.role }))
+    if (profileRes.data) {
+      const profilePatch = {}
+      if (profileRes.data.role && profileRes.data.role !== user.role) {
+        profilePatch.role = profileRes.data.role
+      }
+      const verified = profileRes.data.status === 'verified'
+      if (verified !== Boolean(user.verified)) {
+        profilePatch.verified = verified
+        profilePatch.status = profileRes.data.status || user.status
+      }
+      if (profileRes.data.phone_verified === true && !user.phoneVerified) {
+        profilePatch.phoneVerified = true
+        profilePatch.phoneVerifiedAt = profileRes.data.phone_verified_at || null
+      }
+      if (Object.keys(profilePatch).length) {
+        dispatch(setUser({ ...user, ...profilePatch }))
+      }
     }
 
     const [

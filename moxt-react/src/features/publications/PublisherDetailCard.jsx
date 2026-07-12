@@ -7,7 +7,7 @@ import {
   FiUser,
 } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
-import { VerifiedBadge } from '../../components/ui/Badge'
+import { VerifiedBadge, VerifiedDisplayName } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { formatShortDate } from '../../utils/formatters'
@@ -28,7 +28,11 @@ export function PublisherDetailCard({
   updatedAt,
   ctaLabel = 'Voir toutes les publications',
   publicationsPath,
+  verified = false,
 }) {
+  const publisherVerified = business
+    ? ['verified', 'approved', 'active'].includes(business.status)
+    : verified
   const profilePath =
     publicationsPath || (ownerId ? `/users/${ownerId}/publications` : null)
 
@@ -39,13 +43,17 @@ export function PublisherDetailCard({
           {publisherName?.slice(0, 2).toUpperCase()}
         </span>
         <div>
-          <h2 className="font-black">{publisherName}</h2>
+          <VerifiedDisplayName
+            as="h2"
+            name={publisherName}
+            verified={publisherVerified}
+            className="font-black"
+            iconSize="md"
+          />
           <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-[var(--app-text-muted)]">
             <FiCheckCircle className="text-emerald-500" />
             {business ? 'Entreprise MOXT' : 'Particulier'}
-            {business && ['verified', 'approved', 'active'].includes(business.status) ? (
-              <VerifiedBadge size="sm" />
-            ) : null}
+            {publisherVerified ? <VerifiedBadge size="sm" /> : null}
           </p>
         </div>
       </div>

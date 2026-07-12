@@ -13,7 +13,7 @@ export function CatalogFavoriteButton({
   title,
   path,
   entity,
-  className = '!absolute !right-2.5 !top-2.5 z-30',
+  className = '!absolute !right-2.5 !top-2.5 z-30 shadow-sm',
   variant = 'solid',
   size = 'sm',
 }) {

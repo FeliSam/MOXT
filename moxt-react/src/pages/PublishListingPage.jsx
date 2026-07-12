@@ -46,6 +46,8 @@ import {
 import { publishListing } from '../features/marketplace/marketplaceSlice'
 import { useActionBurst } from '../components/ui/ActionBurst'
 import { addToast } from '../features/ui/uiSlice'
+import { SecurityGatePanel } from '../features/security/SecurityGatePanel'
+import { useSecurityGate } from '../features/security/useSecurityGate'
 
 const STEPS = [
   { key: 'type', label: 'Type', icon: FiTag },
@@ -57,6 +59,7 @@ const STEPS = [
 export function PublishListingPage() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const { requirePublish } = useSecurityGate()
   const user = useSelector((state) => state.auth.user)
   const business = useSelector((state) =>
     state.businesses.items.find((item) => item.ownerId === user.id),
@@ -209,6 +212,7 @@ export function PublishListingPage() {
 
   // ── Publication ───────────────────────────────────────────────────────────
   async function publish() {
+    if (!requirePublish()) return
     if (!validate(4)) return
     const publishContext = resolveBusinessPublishContext({
       business,
@@ -314,6 +318,7 @@ export function PublishListingPage() {
   }
 
   return (
+    <SecurityGatePanel kind="publish" backTo="/marketplace">
     <>
     {burstNode}
     {shareModal && (
@@ -933,6 +938,7 @@ export function PublishListingPage() {
       </div>
     </div>
     </>
+    </SecurityGatePanel>
   )
 }
 

@@ -14,7 +14,7 @@ const publicLinks = [
   { label: 'FAQ', path: '/faq' },
 ]
 
-export function PublicSiteLayout() {
+export function PublicSiteLayout({ children }) {
   const { theme, toggleTheme } = useTheme()
   const { language, setLanguage, translateLabel } = useLanguage()
   const visible = useSmartNavbar()
@@ -22,7 +22,7 @@ export function PublicSiteLayout() {
   return (
     <div className="min-h-screen overflow-x-clip">
       <header
-        className={`sticky top-0 z-30 border-b border-[var(--app-border)] bg-[color:var(--app-bg)]/90 px-4 py-3 backdrop-blur-xl transition-transform duration-300 sm:px-6 ${
+        className={`sticky top-0 z-[var(--z-nav)] border-b border-[var(--app-border)] bg-[color:var(--app-bg)]/90 px-4 py-3 backdrop-blur-xl transition-transform duration-300 sm:px-6 ${
           visible ? 'translate-y-0' : '-translate-y-full'
         }`}
       >
@@ -84,16 +84,26 @@ export function PublicSiteLayout() {
       </header>
 
       <main className="page-enter">
-        <Outlet />
+        {children ? (
+          <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">{children}</div>
+        ) : (
+          <Outlet />
+        )}
       </main>
 
       <footer className="border-t border-[var(--app-border)] px-4 py-8 sm:px-6">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 text-sm text-[var(--app-text-muted)] sm:flex-row sm:items-center sm:justify-between">
-          <Brand />
+          <div>
+            <Brand />
+            <p className="mt-2 text-xs">© {new Date().getFullYear()} MOXT. Tous droits réservés.</p>
+          </div>
           <p>Plateforme de services pour la diaspora. Échangez en toute vigilance.</p>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-4">
             <Link to="/trust">Sécurité</Link>
             <Link to="/faq">Aide</Link>
+            <Link to="/legal/mentions">Mentions légales</Link>
+            <Link to="/legal/cgu">CGU</Link>
+            <Link to="/legal/privacy">Confidentialité</Link>
           </div>
         </div>
       </footer>

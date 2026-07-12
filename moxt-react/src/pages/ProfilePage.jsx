@@ -5,6 +5,8 @@ import { ProfileHeroCard } from '../features/profile/components/ProfileHeroCard'
 import { ProfileLinkGrid } from '../features/profile/components/ProfileLinkGrid'
 import { ProfileQuickStats } from '../features/profile/components/ProfileQuickStats'
 import { ProfileSecuritySummary } from '../features/profile/components/ProfileSecuritySummary'
+import { PhoneVerificationCard } from '../features/security/PhoneVerificationCard'
+import { isPhoneVerified } from '@moxt/shared/auth/userSecurity.js'
 import {
   accountSections,
   profileCompletionPercent,
@@ -46,6 +48,7 @@ export function ProfilePage() {
   return (
     <div className="grid gap-6">
       <ProfileHeroCard profileCompletion={profileCompletion} user={user} />
+      {!isPhoneVerified(user) ? <PhoneVerificationCard /> : null}
       <ProfileQuickStats stats={quickStats} />
       <ProfileLinkGrid sections={accountSections} translateLabel={translateLabel} />
       <ProfileSecuritySummary verified={user.verified} />

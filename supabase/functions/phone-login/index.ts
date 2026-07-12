@@ -41,6 +41,21 @@ function phoneVariants(phone: string) {
   return [...variants].filter(Boolean)
 }
 
+function sessionPayload(session: {
+  access_token: string
+  refresh_token: string
+  expires_in?: number
+  token_type?: string
+}) {
+  return {
+    ok: true,
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
+    expires_in: session.expires_in,
+    token_type: session.token_type,
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -61,12 +76,14 @@ Deno.serve(async (req) => {
       return json({ error: 'Numéro et mot de passe obligatoires.' }, 400)
     }
 
-    const admin = createClient(supabaseUrl, serviceRoleKey)
+    const admin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
     const variants = phoneVariants(phone)
 
     const { data: profiles, error: profileError } = await admin
       .from('profiles')
-      .select('id, email, phone')
+      .select('id, email, phone, phone_verified')
       .in('phone', variants)
       .limit(5)
 
@@ -76,12 +93,11 @@ Deno.serve(async (req) => {
 
     let profile = profiles?.[0] || null
     if (!profile) {
-      // Recherche souple sur les 10 derniers chiffres (numéros RU)
       const tail = digitsOnly(phone).slice(-10)
       if (tail.length === 10) {
         const { data: loose } = await admin
           .from('profiles')
-          .select('id, email, phone')
+          .select('id, email, phone, phone_verified')
           .ilike('phone', `%${tail}`)
           .limit(5)
         profile = loose?.find((row) => digitsOnly(row.phone).endsWith(tail)) || null
@@ -89,7 +105,13 @@ Deno.serve(async (req) => {
     }
 
     if (!profile?.id) {
-      return json({ error: 'Identifiants incorrects. Vérifiez votre numéro et mot de passe.' }, 401)
+      return json(
+        {
+          error:
+            'Aucun compte MOXT associé à ce numéro. Créez un compte ou terminez la confirmation SMS.',
+        },
+        401,
+      )
     }
 
     const { data: userData, error: userError } = await admin.auth.admin.getUserById(profile.id)
@@ -97,23 +119,53 @@ Deno.serve(async (req) => {
       return json({ error: 'Compte introuvable.' }, 404)
     }
 
-    const email = (userData.user.email || profile.email || '').trim().toLowerCase()
+    const authUser = userData.user
+    const authPhone = normalizeE164(authUser.phone || profile.phone || phone)
+    const phoneConfirmed = Boolean(authUser.phone_confirmed_at || profile.phone_verified)
+
+    if (authPhone && !phoneConfirmed) {
+      return json(
+        {
+          error:
+            'Votre numéro n’est pas encore confirmé. Terminez l’inscription avec le code SMS reçu lors de la création du compte.',
+        },
+        403,
+      )
+    }
+
+    // 1) Connexion native par téléphone (comptes inscrits par SMS)
+    if (authPhone) {
+      const phoneSignIn = await admin.auth.signInWithPassword({
+        phone: authPhone,
+        password,
+      })
+      if (phoneSignIn.data?.session && phoneSignIn.data.user) {
+        return json({
+          ...sessionPayload(phoneSignIn.data.session),
+          user: phoneSignIn.data.user,
+        })
+      }
+    }
+
+    // 2) Repli par e-mail lié au profil
+    const email = (authUser.email || profile.email || '').trim().toLowerCase()
     if (!email) {
       return json(
         {
           error:
-            'Ce compte n’a pas d’e-mail associé. Activez Phone dans Supabase Auth, ou connectez-vous avec votre e-mail.',
+            'Connexion par numéro impossible : terminez d’abord la confirmation SMS de votre inscription.',
         },
         400,
       )
     }
 
-    // Connexion via e-mail (fonctionne même si le provider Phone est désactivé).
-    const authClient = createClient(supabaseUrl, anonKey)
+    const authClient = createClient(supabaseUrl, anonKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
     const { data, error } = await authClient.auth.signInWithPassword({ email, password })
     if (error) {
       return json(
-        { error: 'Identifiants incorrects. Vérifiez votre numéro et mot de passe.' },
+        { error: 'Identifiants incorrects. Vérifiez votre numéro russe et mot de passe.' },
         401,
       )
     }
@@ -122,11 +174,7 @@ Deno.serve(async (req) => {
     }
 
     return json({
-      ok: true,
-      access_token: data.session.access_token,
-      refresh_token: data.session.refresh_token,
-      expires_in: data.session.expires_in,
-      token_type: data.session.token_type,
+      ...sessionPayload(data.session),
       user: data.user,
     })
   } catch (error) {

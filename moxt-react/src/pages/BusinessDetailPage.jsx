@@ -36,6 +36,7 @@ import {
   businessShareVersion,
 } from '../features/share/businessShareUtils'
 import { selectBusinessContent } from '../features/businesses/businessSelectors'
+import { BusinessVerificationProgress } from '../features/businesses/BusinessVerificationProgress'
 import { isBusinessVisibleToViewer } from '../features/businesses/businessVisibility'
 import { moderateBusiness } from '../features/businesses/businessSlice'
 import { ContactButton } from '../features/communications/ContactButton'
@@ -58,6 +59,9 @@ export function BusinessDetailPage() {
     state.businesses.items.find((item) => item.id === businessId),
   )
   const content = useSelector((state) => selectBusinessContent(state, business))
+  const documents = useSelector((state) =>
+    state.businesses.documents.filter((item) => item.businessId === businessId),
+  )
   const { reviews, rating } = useSelector((state) =>
     selectBusinessReviewsBundle(state, business),
   )
@@ -129,6 +133,9 @@ export function BusinessDetailPage() {
           </div>
         }
       />
+      {isOwner ? (
+        <BusinessVerificationProgress business={business} documents={documents} />
+      ) : null}
       <DetailMetrics items={metricItems} />
       <Card className="grid gap-6">
         <div className="relative">

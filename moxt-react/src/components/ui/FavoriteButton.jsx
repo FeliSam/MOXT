@@ -28,6 +28,13 @@ export function FavoriteButton({
 
   const sizeClass = size === 'sm' ? 'size-8' : size === 'lg' ? 'size-11' : 'size-9'
   const iconClass = size === 'sm' ? 'text-sm' : size === 'lg' ? 'text-xl' : 'text-base'
+  const shapeClass =
+    variant === 'overlay' ? 'rounded-full' : 'rounded-xl'
+
+  const catalogIdleClass =
+    'border-2 border-[var(--app-border)] bg-white text-[var(--app-text-muted)] hover:border-brand-300 dark:bg-[var(--app-surface)]'
+  const catalogActiveClass =
+    'border-2 border-red-400 bg-red-50 text-red-600 shadow-sm hover:bg-red-100 dark:border-red-600 dark:bg-red-950/40 dark:text-red-400'
 
   const variantClass =
     variant === 'overlay'
@@ -35,10 +42,10 @@ export function FavoriteButton({
         ? 'bg-rose-600 text-white shadow-lg ring-2 ring-white/40 hover:bg-rose-500'
         : 'bg-black/35 text-white shadow-md ring-1 ring-white/25 backdrop-blur-sm hover:scale-105 hover:bg-black/45'
       : active
-        ? 'border border-red-400 bg-red-50 text-red-600 hover:bg-red-100 dark:border-red-600 dark:bg-red-950 dark:text-red-400'
+        ? catalogActiveClass
         : label
-          ? 'border border-[var(--app-border-md)] bg-[var(--app-surface)] text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]'
-          : 'border border-[var(--app-border-md)] bg-[var(--app-surface)] text-[var(--app-text-muted)] hover:bg-[var(--app-surface-muted)]'
+          ? `${catalogIdleClass} hover:bg-white dark:hover:bg-[var(--app-surface)]`
+          : catalogIdleClass
 
   function runPulse(nextActive) {
     if (nextActive) {
@@ -108,7 +115,7 @@ export function FavoriteButton({
       onClick={handleClick}
       aria-label={ariaLabel || (active ? 'Retirer des favoris' : 'Ajouter aux favoris')}
       aria-pressed={active}
-      className={`favorite-btn pointer-events-auto grid place-items-center overflow-visible rounded-full transition-all duration-200 active:scale-90 ${sizeClass} ${variantClass} ${
+      className={`favorite-btn pointer-events-auto grid place-items-center overflow-visible ${shapeClass} transition-all duration-200 active:scale-90 ${sizeClass} ${variantClass} ${
         pulse === 'in' ? 'favorite-btn--pop' : ''
       } ${pulse === 'out' ? 'favorite-btn--shrink' : ''} ${className}`}
     >

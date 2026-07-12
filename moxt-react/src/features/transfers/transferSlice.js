@@ -1,4 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit'
+import { matchUserId } from '../businesses/businessVisibility'
 import { TRANSFER_CONFIG, TRANSFER_STATUS, TRANSFER_TRANSITIONS } from './transferConfig'
 import { transferStorage } from './transferStorage'
 import { calculateTransfer } from './transferUtils'
@@ -31,7 +32,7 @@ const transferSlice = createSlice({
         sender,
         user,
       }) {
-        if (!exchanger || exchanger.ownerId === user.id) {
+        if (!exchanger || matchUserId(exchanger.ownerId, user.id)) {
           return { payload: { blocked: true, reason: 'self_business_transfer' } }
         }
         const calculation = calculateTransfer(

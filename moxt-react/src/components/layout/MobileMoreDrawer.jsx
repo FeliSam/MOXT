@@ -64,7 +64,7 @@ export function MobileMoreDrawer({ open, onClose }) {
   if (!open && !closing) return null
 
   return (
-    <div className="fixed inset-0 z-[55] lg:hidden">
+    <div className="fixed inset-0 z-[var(--z-nav-menu)] lg:hidden">
       <button
         type="button"
         aria-label="Fermer les services"

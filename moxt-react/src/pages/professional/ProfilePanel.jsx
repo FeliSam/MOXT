@@ -1,4 +1,5 @@
 import { activityByValue } from '../../config/businessActivities'
+import { BusinessVerificationProgress } from '../../features/businesses/BusinessVerificationProgress'
 import {
   buildBusinessShareText,
   buildBusinessShareUrl,
@@ -10,13 +11,15 @@ import { Badge } from '../../components/ui/Badge'
 import { Card } from '../../components/ui/Card'
 import { statusMeta } from '../../config/statuses'
 
-export function ProfilePanel({ activity, business, secondaryActivity }) {
+export function ProfilePanel({ activity, business, documents = [], secondaryActivity }) {
   const businessShareUrl = buildBusinessShareUrl(business)
   const shareText = buildBusinessShareText(business)
   const sectorLabel = activity?.label || business.sector
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+    <div className="grid gap-5">
+      <BusinessVerificationProgress business={business} documents={documents} />
+      <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
       <Card>
         {business.bannerUrl ? (
           <div className="relative mb-10">
@@ -81,6 +84,7 @@ export function ProfilePanel({ activity, business, secondaryActivity }) {
         shareTitle={`${business.name} sur MOXT`}
         shareText={shareText}
       />
+    </div>
     </div>
   )
 }

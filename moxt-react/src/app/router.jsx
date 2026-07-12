@@ -132,8 +132,13 @@ const TransferDetailPage = lazyPage(
 )
 const TransfersPage = lazyPage(() => import('../pages/TransfersPage'), 'TransfersPage')
 const ReferralPage = lazyPage(() => import('../pages/ReferralPage'), 'ReferralPage')
+const PublicationShell = lazyPage(
+  () => import('../components/routing/PublicationShell'),
+  'PublicationShell',
+)
 const InviteRedirect = lazyPage(() => import('../pages/InviteRedirect'), 'InviteRedirect')
 const TrustPage = lazyPage(() => import('../pages/TrustPage'), 'TrustPage')
+const LegalPage = lazyPage(() => import('../pages/LegalPage'), 'LegalPage')
 const VerificationPage = lazyPage(() => import('../pages/VerificationPage'), 'VerificationPage')
 const WalletPage = lazyPage(() => import('../pages/WalletPage'), 'WalletPage')
 
@@ -148,11 +153,22 @@ export function AppRouter() {
     >
       <Routes>
         <Route path="/index.html" element={<Navigate to="/" replace />} />
+        <Route element={<PublicationShell />}>
+          <Route path="/users/:userId/publications" element={<UserPublicationsPage />} />
+          <Route path="/users/:userId/annonces" element={<UserListingsRedirect />} />
+          <Route
+            path="/businesses/:businessId/publications/:contentType"
+            element={<BusinessPublicationsPage />}
+          />
+        </Route>
+
         <Route element={<PublicSiteLayout />}>
           <Route path="/" element={<PublicHomePage />} />
           <Route path="/discover" element={<DiscoverPage />} />
           <Route path="/trust" element={<TrustPage />} />
           <Route path="/faq" element={<FaqPage />} />
+          <Route path="/legal" element={<Navigate to="/legal/mentions" replace />} />
+          <Route path="/legal/:sectionId" element={<LegalPage />} />
           <Route path="/invite/:code" element={<InviteRedirect />} />
         </Route>
 
@@ -215,10 +231,6 @@ export function AppRouter() {
             <Route path="/businesses" element={<BusinessesPage />} />
             <Route path="/businesses/setup" element={<BusinessSetupPage />} />
             <Route path="/businesses/:businessId" element={<BusinessDetailPage />} />
-            <Route
-              path="/businesses/:businessId/publications/:contentType"
-              element={<BusinessPublicationsPage />}
-            />
             <Route path="/professional" element={<ProfessionalPage />} />
             <Route
               path="/business-detail"
@@ -243,8 +255,6 @@ export function AppRouter() {
             <Route path="/marketplace/publish" element={<PublishListingPage />} />
             <Route path="/publications/mine" element={<MyPublicationsPage />} />
             <Route path="/marketplace/mine" element={<MyListingsPage />} />
-            <Route path="/users/:userId/publications" element={<UserPublicationsPage />} />
-            <Route path="/users/:userId/annonces" element={<UserListingsRedirect />} />
             <Route path="/marketplace/:listingId/edit" element={<EditListingPage />} />
             <Route path="/marketplace/:listingId" element={<ListingDetailPage />} />
             {MARKETPLACE_LEGACY_PATHS.map((path) => (

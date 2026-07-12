@@ -81,7 +81,7 @@ export function DashboardSearch() {
         ? createPortal(
             <div
               data-navbar-ignore
-              className="scrollbar-hidden fixed z-[60] overflow-y-auto rounded-[1.35rem] border border-[var(--app-border)]/60 bg-[var(--app-surface)] p-3 shadow-[0_30px_80px_rgb(16_24_40/0.22)]"
+              className="scrollbar-hidden fixed z-[var(--z-nav-menu)] overflow-y-auto rounded-[1.35rem] border border-[var(--app-border)]/60 bg-[var(--app-surface)] p-3 shadow-[0_30px_80px_rgb(16_24_40/0.22)]"
               style={{
                 top: panelRect.top,
                 left: panelRect.left,

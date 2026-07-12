@@ -875,6 +875,13 @@ const handlers = {
         reviewedAt: request.reviewedAt,
         reviewedBy: request.reviewedBy,
       })
+      if (request.status === 'verified' && request.userId) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ status: 'verified', updated_at: new Date().toISOString() })
+          .eq('id', request.userId)
+        if (error) throw error
+      }
     }
   },
   'account/updateAccountPreferences': async (payload, state) => {

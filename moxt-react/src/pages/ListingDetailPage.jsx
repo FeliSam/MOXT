@@ -458,7 +458,7 @@ export function ListingDetailPage() {
         </section>
       ) : null}
 
-      <div className="fixed inset-x-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-20 md:hidden">
+      <div className="fixed inset-x-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-[var(--z-page-float)] md:hidden">
         <ListingActionButtons
           dispatch={dispatch}
           favorite={favorite}
@@ -748,7 +748,7 @@ function ListingFloatingActions({
   }
 
   return (
-    <div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-20 hidden flex-col items-end gap-2 md:flex xl:hidden">
+    <div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-[var(--z-page-float)] hidden flex-col items-end gap-2 md:flex xl:hidden">
       {open ? (
         <div className="flex flex-col items-end gap-2">
           <ContactButton

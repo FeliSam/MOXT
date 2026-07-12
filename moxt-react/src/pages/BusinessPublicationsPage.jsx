@@ -1,7 +1,7 @@
 import { FiArrowLeft, FiBriefcase } from 'react-icons/fi'
 import { useMemo } from 'react'
 import { useSelector } from 'react-redux'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useOutletContext, useParams, useSearchParams } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { CatalogArchiveTabs } from '../components/ui/CatalogArchiveTabs'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -16,7 +16,7 @@ import {
   MyParcelPublicationCard,
 } from '../features/publications/MyPublicationCards'
 import {
-  buildUserPublicationProfile,
+  buildBusinessPublicationProfile,
   collectBusinessPublications,
   filterPublicationsByTabs,
   PUBLICATION_TYPE_TABS,
@@ -25,6 +25,12 @@ import {
   visiblePublicationCount,
 } from '../features/publications/publicationCatalogUtils'
 import { PublicationProfileCard } from '../features/publications/PublicationProfileCard'
+import { useRefreshPublicationsData } from '../features/publications/useRefreshPublicationsData'
+import { selectBusinessReviewsBundle } from '../features/reviews/reviewSelectors'
+import { businessCityLabel } from '../features/share/businessShareUtils'
+import { useGuestAction } from '../features/guest/useGuestAction'
+import { useGuestBusinessPreview } from '../features/guest/useGuestPreview'
+import { calculateAggregateRating } from '@moxt/shared/utils/reviewUtils.js'
 
 const CONTENT_TYPE_MAP = {
   listings: 'listing',
@@ -38,8 +44,19 @@ const BUSINESS_TYPE_TABS = PUBLICATION_TYPE_TABS.filter((tab) => tab.id !== 'pos
 export function BusinessPublicationsPage() {
   const { businessId, contentType } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
-  const appState = useSelector((state) => state)
-  const business = useSelector((state) => selectBusinessById(state, businessId))
+  const { guestMode = false } = useOutletContext() || {}
+  const { requireAccount } = useGuestAction()
+  const user = useSelector((state) => state.auth.user)
+  const reduxBusiness = useSelector((state) => selectBusinessById(state, businessId))
+  const guestPreview = useGuestBusinessPreview(guestMode ? businessId : null)
+  const business = guestMode ? guestPreview.business : reduxBusiness
+  const marketplaceItems = useSelector((state) => state.marketplace.items)
+  const parcelItems = useSelector((state) => state.parcels.items)
+  const jobItems = useSelector((state) => state.jobs.items)
+  const eventItems = useSelector((state) => state.events.items)
+  const offerItems = useSelector((state) => state.p2p.offers)
+
+  useRefreshPublicationsData(guestMode ? null : businessId)
 
   const archiveTab = searchParams.get('status') === 'archived' ? 'archived' : 'active'
   const defaultType = CONTENT_TYPE_MAP[contentType] || 'listing'
@@ -49,17 +66,47 @@ export function BusinessPublicationsPage() {
       ? defaultType
       : 'listing'
 
-  const publications = useMemo(
-    () => collectBusinessPublications(appState, businessId),
-    [appState, businessId],
-  )
+  const publications = useMemo(() => {
+    if (guestMode) {
+      return (
+        guestPreview.publications || {
+          listings: [],
+          parcels: [],
+          jobs: [],
+          events: [],
+          posts: [],
+          others: [],
+        }
+      )
+    }
+    return collectBusinessPublications(
+      {
+        marketplace: { items: marketplaceItems },
+        parcels: { items: parcelItems },
+        jobs: { items: jobItems },
+        events: { items: eventItems },
+        p2p: { offers: offerItems },
+      },
+      businessId,
+    )
+  }, [
+    businessId,
+    eventItems,
+    guestMode,
+    guestPreview.publications,
+    jobItems,
+    marketplaceItems,
+    offerItems,
+    parcelItems,
+  ])
   const profile = useMemo(
-    () =>
-      buildUserPublicationProfile(businessId, publications, {
-        displayName: business?.name || 'Entreprise',
-      }),
-    [business?.name, businessId, publications],
+    () => buildBusinessPublicationProfile(business, publications),
+    [business, publications],
   )
+  const reduxRating = useSelector((state) => selectBusinessReviewsBundle(state, business))
+  const rating = guestMode
+    ? calculateAggregateRating(guestPreview.reviews || [])
+    : reduxRating.rating
   const archiveCounts = useMemo(() => publicationArchiveCounts(publications), [publications])
   const typeCounts = useMemo(
     () => publicationTypeCounts(publications, archiveTab),
@@ -71,6 +118,34 @@ export function BusinessPublicationsPage() {
   )
   const hasContent = visiblePublicationCount(visible) > 0
   const activity = activityByValue(business?.primaryActivity)
+  const sectorLabel = activity?.label || business?.sector || ''
+  const isOwner = !guestMode && Boolean(business && user?.id && business.ownerId === user.id)
+  const locationLabel = business ? businessCityLabel(business) : ''
+  const handleGuestInteract = () => requireAccount('consulter cette publication')
+
+  if (guestMode && guestPreview.loading) {
+    return <EmptyState title="Chargement de l'aperçu" description="Récupération des publications de l'entreprise..." />
+  }
+
+  if (guestMode && guestPreview.error === 'not_found') {
+    return (
+      <EmptyState
+        title="Entreprise introuvable"
+        description="Cette entreprise n'existe pas ou n'est pas encore validée sur MOXT."
+        action={
+          <Link to="/discover">
+            <Button variant="secondary" icon={FiArrowLeft}>
+              Découvrir MOXT
+            </Button>
+          </Link>
+        }
+      />
+    )
+  }
+
+  if (!business) {
+    return <EmptyState title="Entreprise introuvable" />
+  }
 
   function setArchiveTab(next) {
     const params = new URLSearchParams(searchParams)
@@ -86,28 +161,34 @@ export function BusinessPublicationsPage() {
     setSearchParams(params, { replace: true })
   }
 
-  if (!business) {
-    return <EmptyState title="Entreprise introuvable" />
-  }
-
   return (
     <div className="grid gap-7">
       <PageHeader
         eyebrow="Publications entreprise"
         title={business.name}
-        description={`${activity?.label || business.sector} · ${business.city} — contenus publiés au nom de l’entreprise uniquement.`}
+        description={`${sectorLabel}${locationLabel ? ` · ${locationLabel}` : ''} — contenus publiés au nom de l’entreprise uniquement.`}
         actions={
           <div className="flex flex-wrap gap-3">
-            <Link to={`/businesses/${business.id}`}>
-              <Button variant="secondary" icon={FiArrowLeft}>
-                Fiche entreprise
-              </Button>
-            </Link>
-            <Link to="/businesses">
-              <Button variant="secondary" icon={FiBriefcase}>
-                Annuaire
-              </Button>
-            </Link>
+            {guestMode ? (
+              <Link to="/discover">
+                <Button variant="secondary" icon={FiArrowLeft}>
+                  Découvrir MOXT
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link to={`/businesses/${business.id}`}>
+                  <Button variant="secondary" icon={FiArrowLeft}>
+                    Fiche entreprise
+                  </Button>
+                </Link>
+                <Link to="/businesses">
+                  <Button variant="secondary" icon={FiBriefcase}>
+                    Annuaire
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         }
       />
@@ -115,12 +196,15 @@ export function BusinessPublicationsPage() {
       <PublicationProfileCard
         displayName={business.name}
         verified={['verified', 'approved', 'active'].includes(business.status)}
-        city={business.city}
-        country={business.country}
+        memberSince={profile.memberSince}
+        city={profile.city}
+        country={profile.country}
         activeCount={profile.activeCount}
         archivedCount={profile.archivedCount}
         totalCount={profile.totalCount}
         totalViews={profile.totalViews}
+        aggregateRating={rating}
+        isOwner={isOwner}
         scope="business"
         ownBusiness={business}
         avatarUrl={business.logoUrl}
@@ -154,16 +238,41 @@ export function BusinessPublicationsPage() {
       {hasContent ? (
         <div className="grid gap-4">
           {visible.listing.map((listing) => (
-            <MyListingCard key={listing.id} listing={listing} ownerMode={false} showViews />
+            <MyListingCard
+              key={listing.id}
+              listing={listing}
+              ownerMode={isOwner}
+              showViews={isOwner}
+              guestMode={guestMode}
+              onGuestInteract={handleGuestInteract}
+            />
           ))}
           {visible.parcel.map((parcel) => (
-            <MyParcelPublicationCard key={parcel.id} parcel={parcel} readOnly />
+            <MyParcelPublicationCard
+              key={parcel.id}
+              parcel={parcel}
+              readOnly={!isOwner}
+              guestMode={guestMode}
+              onGuestInteract={handleGuestInteract}
+            />
           ))}
           {visible.job.map((job) => (
-            <MyJobPublicationCard key={job.id} job={job} readOnly />
+            <MyJobPublicationCard
+              key={job.id}
+              job={job}
+              readOnly={!isOwner}
+              guestMode={guestMode}
+              onGuestInteract={handleGuestInteract}
+            />
           ))}
           {visible.event.map((event) => (
-            <MyEventPublicationCard key={event.id} event={event} readOnly />
+            <MyEventPublicationCard
+              key={event.id}
+              event={event}
+              readOnly={!isOwner}
+              guestMode={guestMode}
+              onGuestInteract={handleGuestInteract}
+            />
           ))}
         </div>
       ) : (

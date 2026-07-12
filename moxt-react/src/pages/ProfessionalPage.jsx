@@ -9,9 +9,9 @@ import {
   FiStar,
   FiUsers,
 } from 'react-icons/fi'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -33,6 +33,7 @@ import {
 } from '../features/businesses/businessSelectors'
 import { selectActiveBusinessForOwner } from '../features/businesses/businessVisibility'
 import { selectTransfersVisibleToUser } from '../features/transfers/transferSelectors'
+import { isBusinessDocumentType } from '../features/businesses/businessDocumentTypes'
 import { ActionsPanel } from './professional/ActionsPanel'
 import { DocumentsPanel } from './professional/DocumentsPanel'
 import { MembersPanel } from './professional/MembersPanel'
@@ -66,6 +67,7 @@ const serviceContentMap = {
 
 export function ProfessionalPage() {
   const dispatch = useDispatch()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [active, setActive] = useState('profile')
   const user = useSelector((state) => state.auth.user)
   const business = useSelector((state) =>
@@ -110,6 +112,22 @@ export function ProfessionalPage() {
     [hasTransfers],
   )
   const safeActive = tabs.some((item) => item.value === active) ? active : 'profile'
+  const documentCategory = searchParams.get('docType')
+
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    if (tab && tabs.some((item) => item.value === tab)) {
+      setActive(tab)
+    }
+  }, [searchParams, tabs])
+
+  function handleTabChange(nextTab) {
+    setActive(nextTab)
+    const params = new URLSearchParams(searchParams)
+    if (nextTab === 'profile') params.delete('tab')
+    else params.set('tab', nextTab)
+    setSearchParams(params, { replace: true })
+  }
 
   const metrics = useMemo(
     () =>
@@ -175,12 +193,13 @@ export function ProfessionalPage() {
         ))}
       </div>
 
-      <Tabs items={tabs} active={safeActive} onChange={setActive} />
+      <Tabs items={tabs} active={safeActive} onChange={handleTabChange} />
 
       {safeActive === 'profile' ? (
         <ProfilePanel
           activity={activity}
           business={business}
+          documents={documents}
           secondaryActivity={secondaryActivity}
         />
       ) : null}
@@ -188,7 +207,6 @@ export function ProfessionalPage() {
         <Overview
           activity={activity}
           business={business}
-          completion={completion}
           documents={documents}
           members={members}
           publications={publications}
@@ -206,7 +224,12 @@ export function ProfessionalPage() {
         <PublicationsPanel publications={publications} dispatch={dispatch} />
       ) : null}
       {safeActive === 'documents' ? (
-        <DocumentsPanel business={business} documents={documents} dispatch={dispatch} />
+        <DocumentsPanel
+          business={business}
+          documents={documents}
+          dispatch={dispatch}
+          initialCategory={isBusinessDocumentType(documentCategory) ? documentCategory : 'registration'}
+        />
       ) : null}
       {safeActive === 'members' ? (
         <MembersPanel business={business} members={members} dispatch={dispatch} />

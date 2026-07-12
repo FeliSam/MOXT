@@ -7,7 +7,6 @@ import type { AuthState } from './types';
 const authRedirectBase = process.env.EXPO_PUBLIC_AUTH_REDIRECT_BASE || 'moxt://';
 
 export const authService = createAuthService(supabase, {
-  getOAuthRedirectUrl: () => `${authRedirectBase}dashboard`,
   getEmailRedirectUrl: () => `${authRedirectBase}login`,
   getPasswordResetRedirectUrl: () => `${authRedirectBase}reset-password`,
 });
@@ -18,7 +17,6 @@ export const authReducer = authModule.reducer as unknown as import('@reduxjs/too
 
 export const {
   login,
-  loginWithGoogle,
   register,
   verifyEmailRegistration,
   verifyPhoneRegistration,

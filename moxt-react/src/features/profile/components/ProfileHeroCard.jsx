@@ -1,6 +1,6 @@
 import { FiChevronRight, FiEdit3 } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
-import { Badge, VerifiedBadge } from '../../../components/ui/Badge'
+import { Badge, VerifiedBadge, VerifiedDisplayName } from '../../../components/ui/Badge'
 import { Card } from '../../../components/ui/Card'
 import { ReferralShareButton } from '../../referral/ReferralShareButton'
 import { profileInitials, roleLabels } from '../profilePageConfig'
@@ -35,7 +35,11 @@ export function ProfileHeroCard({ profileCompletion, user }) {
             Profil MOXT
           </p>
           <h1 className="font-display mt-1 text-2xl font-extrabold tracking-[-0.02em] text-[var(--app-text)]">
-            {user.firstName} {user.lastName}
+            <VerifiedDisplayName
+              name={displayName}
+              verified={Boolean(user.verified)}
+              iconSize="md"
+            />
           </h1>
           <p className="mt-1 truncate text-sm text-[var(--app-text-muted)]">{user.email}</p>
           <div className="mt-3 flex flex-wrap items-center gap-2">

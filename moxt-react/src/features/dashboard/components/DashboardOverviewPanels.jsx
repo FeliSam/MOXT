@@ -72,13 +72,13 @@ export function DashboardOverviewPanels({
                 <Link
                   key={item.label}
                   to={item.to}
-                  className="flex items-center gap-3 rounded-2xl bg-[var(--app-surface-muted)] p-3 transition hover:bg-[var(--app-accent-soft)]"
+                  className="group/row flex items-center gap-3 rounded-2xl bg-[var(--app-surface-muted)] p-3 transition-all duration-[var(--transition-base)] hover:translate-x-1 hover:bg-[var(--app-accent-soft)]"
                 >
-                  <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[var(--app-surface)] text-[var(--app-accent)]">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[var(--app-surface)] text-[var(--app-accent)] transition-transform duration-[var(--transition-base)] group-hover/row:scale-110">
                     <item.icon />
                   </span>
                   <span className="min-w-0 flex-1 text-sm font-bold">{item.label}</span>
-                  <FiChevronRight className="shrink-0 text-[var(--app-text-muted)]" />
+                  <FiChevronRight className="shrink-0 text-[var(--app-text-muted)] transition-transform duration-[var(--transition-base)] group-hover/row:translate-x-0.5 group-hover/row:text-[var(--app-accent)]" />
                 </Link>
               ))
             ) : (
@@ -102,10 +102,10 @@ export function DashboardOverviewPanels({
             </div>
             <Link
               to="/transfers/history"
-              className="grid size-10 shrink-0 place-items-center rounded-2xl border border-[var(--app-border)]"
+              className="group/arrow grid size-10 shrink-0 place-items-center rounded-2xl border border-[var(--app-border)] transition-all duration-[var(--transition-base)] hover:-translate-y-0.5 hover:border-[var(--app-accent)] hover:text-[var(--app-accent)] hover:shadow-[var(--shadow-card-hover)]"
               aria-label="Voir l’historique des transferts"
             >
-              <FiArrowUpRight />
+              <FiArrowUpRight className="transition-transform duration-[var(--transition-base)] group-hover/arrow:translate-x-0.5 group-hover/arrow:-translate-y-0.5" />
             </Link>
           </div>
           <div className="mt-5 grid gap-2">
@@ -118,7 +118,7 @@ export function DashboardOverviewPanels({
                     key={transfer.id}
                     to={`/transfers/${transfer.id}`}
                     state={{ transferView: 'client' }}
-                    className="relative rounded-2xl bg-[var(--app-surface-muted)] p-3 transition hover:bg-[var(--app-accent-soft)]"
+                    className="relative rounded-2xl bg-[var(--app-surface-muted)] p-3 transition-all duration-[var(--transition-base)] hover:translate-x-1 hover:bg-[var(--app-accent-soft)] hover:shadow-[var(--shadow-card)]"
                   >
                     <span className="absolute top-0 right-2">
                       <TransferStatusBadge status={transfer.status} />
@@ -241,10 +241,10 @@ export function DashboardOverviewPanels({
                 <Link
                   key={step.label}
                   to={step.to}
-                  className={`flex items-center gap-3 rounded-2xl p-3 transition ${
+                  className={`flex items-center gap-3 rounded-2xl p-3 transition-all duration-[var(--transition-base)] ${
                     step.done
                       ? 'bg-[var(--app-surface-muted)] opacity-70'
-                      : 'bg-[var(--app-surface-muted)] hover:bg-[var(--app-accent-soft)]'
+                      : 'bg-[var(--app-surface-muted)] hover:-translate-y-0.5 hover:bg-[var(--app-accent-soft)] hover:shadow-[var(--shadow-card)]'
                   }`}
                 >
                   <span

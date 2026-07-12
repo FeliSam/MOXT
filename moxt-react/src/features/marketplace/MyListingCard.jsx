@@ -28,6 +28,8 @@ export function MyListingCard({
   listing,
   ownerMode = true,
   showViews = true,
+  guestMode = false,
+  onGuestInteract,
   onDuplicate,
   onRepublish,
   onMarkSold,
@@ -47,6 +49,13 @@ export function MyListingCard({
   const typeLabel = listingTypeLabel(listing.type)
   const categoryLabel = listingCategoryLabel(listing.type, listing.category)
   const detailPath = `/marketplace/${listing.id}`
+
+  function handleGuestClick(event) {
+    if (!guestMode) return
+    event.preventDefault()
+    event.stopPropagation()
+    onGuestInteract?.()
+  }
 
   function handleToggleLike(event) {
     event.preventDefault()
@@ -72,7 +81,7 @@ export function MyListingCard({
             active ? '' : 'opacity-75 saturate-[0.85]'
           }`}
         >
-          <Link className="absolute inset-0 block" to={detailPath}>
+          <Link className="absolute inset-0 block" to={detailPath} onClick={handleGuestClick}>
             {listing.images?.[0] ? (
               <img
                 src={listing.images[0]}
@@ -91,7 +100,7 @@ export function MyListingCard({
             </div>
           </Link>
 
-          {!ownerMode && active ? (
+          {!ownerMode && active && !guestMode ? (
             <FavoriteButton
               active={liked}
               onToggle={handleToggleLike}
@@ -107,6 +116,7 @@ export function MyListingCard({
                 <Link
                   className="line-clamp-2 text-lg font-black hover:text-brand-700"
                   to={detailPath}
+                  onClick={handleGuestClick}
                 >
                   {listing.title}
                 </Link>

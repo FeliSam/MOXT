@@ -72,6 +72,16 @@
   --shadow-float:      0 20px 56px rgba(0,0,0,0.12);
   --shadow-finance:    0 4px 24px rgba(8,112,95,0.08);
 
+  /* Empilement — la navigation reste au-dessus du contenu page */
+  --z-page: 1;
+  --z-page-float: 20;
+  --z-nav-scrim: 98;
+  --z-nav: 100;
+  --z-nav-menu: 110;
+  --z-toast: 115;
+  --z-modal: 130;
+  --z-lightbox: 140;
+
   /* Rayons */
   --radius-card:    1rem;
   --radius-card-sm: 0.75rem;
@@ -1277,7 +1287,7 @@ html.capacitor-native .capacitor-safe-bottom {
 /* ─── Action burst (contact / partage) ───────────────────────────────────── */
 .action-burst {
   position: fixed;
-  z-index: 80;
+  z-index: var(--z-page-float);
   width: 0;
   height: 0;
   pointer-events: none;
@@ -2021,7 +2031,7 @@ html.theme-animating *::after {
   position: absolute;
   top: 50%;
   left: calc(100% + 0.75rem);
-  z-index: 50;
+  z-index: var(--z-nav-menu);
   max-width: 12rem;
   border-radius: 0.85rem;
   border: 1px solid var(--app-border);
@@ -2076,7 +2086,7 @@ html.theme-animating *::after {
   position: absolute;
   bottom: 0;
   left: 100%;
-  z-index: 60;
+  z-index: var(--z-nav-menu);
   display: flex;
   width: max-content;
   min-width: 10.5rem;

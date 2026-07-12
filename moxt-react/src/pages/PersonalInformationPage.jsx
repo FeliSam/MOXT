@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom'
 import { Alert } from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
+import { VerifiedDisplayName } from '../components/ui/Badge'
 import { Input } from '../components/ui/Input'
 import { PageHeader } from '../components/ui/PageHeader'
 import { CitySelector } from '../components/ui/CitySelector'
@@ -154,9 +155,12 @@ export function PersonalInformationPage() {
                 onChange={handleAvatarFile}
               />
               <div>
-                <p className="font-black">
-                  {user.firstName} {user.lastName}
-                </p>
+                <VerifiedDisplayName
+                  name={`${user.firstName} ${user.lastName}`.trim()}
+                  verified={Boolean(user.verified)}
+                  className="font-black"
+                  iconSize="sm"
+                />
                 <p className="mt-0.5 text-xs text-[var(--app-text-muted)]">{user.email}</p>
               </div>
               <Button

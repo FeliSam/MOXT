@@ -8,7 +8,7 @@ import { Header } from './Header'
 import { Sidebar } from './Sidebar'
 import { WelcomeGate } from '../onboarding/WelcomeGate'
 
-export function AppLayout() {
+export function AppLayout({ children }) {
   const dispatch = useDispatch()
   const location = useLocation()
   const sidebarOpen = useSelector((state) => state.ui.sidebarOpen)
@@ -35,7 +35,7 @@ export function AppLayout() {
       {sidebarOpen ? (
         <button
           type="button"
-          className="fixed inset-0 z-30 bg-slate-950/50 lg:hidden"
+          className="fixed inset-0 z-[var(--z-nav-scrim)] bg-slate-950/50 lg:hidden"
           aria-label="Fermer la navigation"
           onClick={() => dispatch(closeSidebar())}
         />
@@ -62,7 +62,7 @@ export function AppLayout() {
         >
           <div key={location.pathname} className={isMessagesRoute ? 'page-enter h-full min-h-0 min-w-0' : 'page-enter min-w-0'}>
             <AppThemeScope className={isMessagesRoute ? 'h-full min-h-0' : ''}>
-              <Outlet />
+              {children ?? <Outlet />}
             </AppThemeScope>
           </div>
         </main>

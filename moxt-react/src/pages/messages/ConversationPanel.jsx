@@ -26,6 +26,7 @@ import {
 } from '../../features/communications/conversationTimeline'
 import { resolveRelatedSnapshot } from '../../features/communications/relatedSnapshot'
 import { PopoverMenu } from '../../components/ui/PopoverMenu'
+import { VerifiedDisplayName } from '../../components/ui/Badge'
 import { peerActivityLabel, truncateWords } from './format'
 import {
   MessageAvatar,
@@ -195,9 +196,13 @@ export function ConversationPanel({
         />
         <div className="min-w-0 flex-1 pr-1">
           <div className="flex min-w-0 items-center gap-1.5">
-            <h2 className="truncate text-sm font-black tracking-tight sm:text-[0.9375rem]">
-              {peer.name}
-            </h2>
+            <VerifiedDisplayName
+              as="h2"
+              name={peer.name}
+              verified={Boolean(peer.verified)}
+              iconSize="sm"
+              className="truncate text-sm font-black tracking-tight sm:text-[0.9375rem]"
+            />
             {pinned ? <FiStar className="size-3.5 shrink-0 text-amber-500" aria-label="Épinglée" /> : null}
             {muted ? <FiBellOff className="size-3.5 shrink-0 text-[var(--app-text-faint)]" aria-label="En sourdine" /> : null}
           </div>

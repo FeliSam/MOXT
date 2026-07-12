@@ -1,4 +1,5 @@
 import { normalizePhone, normalizeRussianAuthPhone } from '../utils/phone.js'
+import { isProfileComplete } from './profileCompletion.js'
 import { translateAuthError } from './translateAuthError.js'
 
 function profileToUser(profile) {
@@ -16,6 +17,8 @@ function profileToUser(profile) {
     role: profile.role || 'user',
     verified: profile.status === 'verified',
     status: profile.status || 'active',
+    phoneVerified: profile.phone_verified === true,
+    phoneVerifiedAt: profile.phone_verified_at || null,
     createdAt: profile.created_at || profile.updated_at || null,
   }
 }
@@ -34,13 +37,11 @@ function isPhoneLoginDisabledError(error) {
 /**
  * @param {import('@supabase/supabase-js').SupabaseClient | null} supabase
  * @param {{
- *   getOAuthRedirectUrl?: () => string,
  *   getEmailRedirectUrl?: () => string,
  *   getPasswordResetRedirectUrl?: () => string,
  * }} redirects
  */
 export function createAuthService(supabase, redirects = {}) {
-  const getOAuthRedirectUrl = redirects.getOAuthRedirectUrl ?? (() => '')
   const getEmailRedirectUrl = redirects.getEmailRedirectUrl ?? (() => '')
   const getPasswordResetRedirectUrl = redirects.getPasswordResetRedirectUrl ?? (() => '')
 
@@ -135,6 +136,36 @@ export function createAuthService(supabase, redirects = {}) {
     }
   }
 
+  async function getAuthenticatedAuthUser() {
+    const { data, error } = await supabase.auth.getUser()
+    if (error) throw new Error(translateAuthError(error, { channel: 'phone' }))
+    if (!data?.user) throw new Error('Session expirée.')
+    return data.user
+  }
+
+  async function syncPhoneVerifiedFromAuth(authUser, userId) {
+    if (!authUser?.phone_confirmed_at) return null
+    const authPhone = normalizeRussianAuthPhone(authUser.phone || '')
+    if (!/^\+7\d{10}$/.test(authPhone)) return null
+
+    const existing = await fetchProfile(userId)
+    if (
+      existing?.phoneVerified &&
+      normalizeRussianAuthPhone(existing.phone || '') === authPhone
+    ) {
+      return existing
+    }
+
+    const now = new Date().toISOString()
+    await upsertProfile(userId, {
+      phone: authPhone,
+      phone_verified: true,
+      phone_verified_at: existing?.phoneVerifiedAt || now,
+      updated_at: now,
+    })
+    return fetchProfile(userId)
+  }
+
   function profileFieldsFromAuthUser(authUser) {
     const metadata = authUser.user_metadata || {}
     const fullName = metadata.full_name || metadata.name || ''
@@ -155,12 +186,35 @@ export function createAuthService(supabase, redirects = {}) {
   }
 
   async function fetchOrCreateProfile(authUser) {
-    const existingProfile = await fetchProfile(authUser.id)
-    if (existingProfile) return existingProfile
-
     const profileFields = profileFieldsFromAuthUser(authUser)
+    const existingProfile = await fetchProfile(authUser.id)
+
+    if (existingProfile) {
+      if (!isProfileComplete(existingProfile)) {
+        await upsertProfile(authUser.id, {
+          first_name: profileFields.first_name || existingProfile.firstName,
+          last_name: profileFields.last_name || existingProfile.lastName,
+          email: profileFields.email || existingProfile.email,
+          phone: profileFields.phone || existingProfile.phone,
+          origin_phone: profileFields.origin_phone || existingProfile.secondaryPhone,
+          origin_country: profileFields.origin_country || existingProfile.originCountry,
+          city: profileFields.city || existingProfile.city,
+          avatar_url: profileFields.avatar_url || existingProfile.avatarUrl,
+          country: profileFields.country || existingProfile.country,
+          role: profileFields.role || existingProfile.role,
+          status: existingProfile.status || profileFields.status,
+        })
+        const refreshed = await fetchProfile(authUser.id)
+        if (refreshed) {
+          return (await syncPhoneVerifiedFromAuth(authUser, authUser.id)) || refreshed
+        }
+      }
+      return (await syncPhoneVerifiedFromAuth(authUser, authUser.id)) || existingProfile
+    }
+
     await upsertProfile(authUser.id, profileFields)
-    return profileToUser({ id: authUser.id, ...profileFields })
+    const created = profileToUser({ id: authUser.id, ...profileFields })
+    return (await syncPhoneVerifiedFromAuth(authUser, authUser.id)) || created
   }
 
   return {
@@ -174,7 +228,7 @@ export function createAuthService(supabase, redirects = {}) {
             password,
           })
         : await signInWithPhoneFallback(normalizeRussianAuthPhone(loginIdentifier), password)
-      if (error) throw new Error(translateAuthError(error))
+      if (error) throw new Error(translateAuthError(error, { channel: isEmail ? 'email' : 'phone' }))
       if (!data?.session || !data?.user) {
         throw new Error('Connexion impossible. Vérifiez vos identifiants.')
       }
@@ -189,7 +243,7 @@ export function createAuthService(supabase, redirects = {}) {
         phone: normalizedPhone,
         options: { shouldCreateUser: false },
       })
-      if (error) throw new Error(translateAuthError(error))
+      if (error) throw new Error(translateAuthError(error, { channel: 'phone' }))
       return { phone: normalizedPhone }
     },
 
@@ -200,7 +254,7 @@ export function createAuthService(supabase, redirects = {}) {
         token: String(token || '').trim(),
         type: 'sms',
       })
-      if (error) throw new Error(translateAuthError(error))
+      if (error) throw new Error(translateAuthError(error, { channel: 'phone' }))
       if (!data?.session || !data?.user) {
         throw new Error('Le code est invalide ou a expiré.')
       }
@@ -208,38 +262,11 @@ export function createAuthService(supabase, redirects = {}) {
       return { user, token: data.session.access_token }
     },
 
-    async loginWithGoogle() {
-      if (!supabase) throw new Error('Supabase non configuré.')
-      const redirectTo = getOAuthRedirectUrl()
-      if (!redirectTo) throw new Error('Redirection OAuth non configurée.')
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo },
-      })
-      if (error) throw new Error(error.message)
-      return null
-    },
-
-    async fetchGoogleProfile() {
-      if (!supabase) throw new Error('Supabase non configuré.')
-      const { data } = await supabase.auth.getUser()
-      if (!data?.user) throw new Error('Aucune session Google active.')
-      const metadata = data.user.user_metadata || {}
-      const fullName = metadata.full_name || metadata.name || ''
-      const nameParts = String(fullName).trim().split(/\s+/).filter(Boolean)
-      return {
-        firstName: metadata.first_name || nameParts[0] || 'Utilisateur',
-        lastName: metadata.last_name || nameParts.slice(1).join(' ') || '',
-        email: data.user.email || '',
-        avatarUrl: metadata.avatar_url || metadata.picture || '',
-      }
-    },
-
     async completeOAuthProfile(details) {
       if (!supabase) throw new Error('Supabase non configuré.')
       const { data: sessionData } = await supabase.auth.getSession()
       const authUser = sessionData.session?.user
-      if (!authUser) throw new Error('Session expirée. Reconnectez-vous avec Google.')
+      if (!authUser) throw new Error('Session expirée. Reconnectez-vous pour compléter votre profil.')
 
       const profileFields = {
         first_name: details.firstName.trim(),
@@ -272,7 +299,7 @@ export function createAuthService(supabase, redirects = {}) {
         },
       })
       if (metadataError) {
-        console.warn('[MOXT] Métadonnées Google non mises à jour:', metadataError.message)
+        console.warn('[MOXT] Métadonnées profil non mises à jour:', metadataError.message)
       }
 
       const user = await fetchProfile(authUser.id)
@@ -321,22 +348,10 @@ export function createAuthService(supabase, redirects = {}) {
               },
             }
 
+      const authChannel = verificationMethod === 'phone' ? 'phone' : 'email'
       const { data, error } = await supabase.auth.signUp(credentials)
       if (error) {
-        if (error.status === 500 || error.status >= 500) {
-          const hookFailure =
-            error.code === 'unexpected_failure' &&
-            String(error.message || '').toLowerCase().includes('hook')
-          if (hookFailure) {
-            throw new Error(translateAuthError(error))
-          }
-          throw new Error(
-            verificationMethod === 'email'
-              ? "L'envoi d'e-mail de confirmation est indisponible. Choisissez la vérification par téléphone ou réessayez plus tard."
-              : "Le service d'inscription est temporairement indisponible. Réessayez plus tard.",
-          )
-        }
-        throw new Error(translateAuthError(error))
+        throw new Error(translateAuthError(error, { channel: authChannel }))
       }
 
       if (data.user && !data.session) {
@@ -371,7 +386,7 @@ export function createAuthService(supabase, redirects = {}) {
         token: token.trim(),
         type: 'signup',
       })
-      if (error) throw new Error(translateAuthError(error))
+      if (error) throw new Error(translateAuthError(error, { channel: 'email' }))
       if (!data.session || !data.user) {
         throw new Error("Le code est invalide ou a expiré. Recommencez l'inscription.")
       }
@@ -386,7 +401,7 @@ export function createAuthService(supabase, redirects = {}) {
         token: token.trim(),
         type: 'sms',
       })
-      if (error) throw new Error(translateAuthError(error))
+      if (error) throw new Error(translateAuthError(error, { channel: 'phone' }))
       if (!data.session || !data.user) {
         throw new Error('Le code de vérification est invalide.')
       }
@@ -401,7 +416,20 @@ export function createAuthService(supabase, redirects = {}) {
         }
       }
 
-      const user = await fetchOrCreateProfile(data.user)
+      const profileFields = profileFieldsFromAuthUser(data.user)
+      if (linkedEmail) {
+        profileFields.email = linkedEmail
+      }
+      const now = new Date().toISOString()
+      await upsertProfile(data.user.id, {
+        ...profileFields,
+        phone_verified: true,
+        phone_verified_at: now,
+      })
+      const user = await fetchProfile(data.user.id)
+      if (!user) {
+        throw new Error('Impossible de charger le profil après vérification SMS.')
+      }
       return {
         user,
         token: data.session.access_token,
@@ -416,7 +444,7 @@ export function createAuthService(supabase, redirects = {}) {
         type: 'sms',
         phone: normalizedPhone,
       })
-      if (error) throw new Error(translateAuthError(error))
+      if (error) throw new Error(translateAuthError(error, { channel: 'phone' }))
       return true
     },
 
@@ -430,8 +458,84 @@ export function createAuthService(supabase, redirects = {}) {
         type: 'signup',
         email: normalizedEmail,
       })
-      if (error) throw new Error(translateAuthError(error))
+      if (error) throw new Error(translateAuthError(error, { channel: 'email' }))
       return true
+    },
+
+    async requestPhoneVerificationOtp(currentUser, phone) {
+      if (!supabase || !currentUser) throw new Error('Session expirée.')
+      const normalizedPhone = normalizeRussianAuthPhone(phone)
+      if (!/^\+7\d{10}$/.test(normalizedPhone)) {
+        throw new Error('Numéro de téléphone invalide. Vérifiez le format (+7XXXXXXXXXX).')
+      }
+
+      const authUser = await getAuthenticatedAuthUser()
+      const phoneContext = { channel: 'phone', intent: 'phone_verification' }
+      const syncedUser = await syncPhoneVerifiedFromAuth(authUser, currentUser.id)
+      if (syncedUser && normalizeRussianAuthPhone(syncedUser.phone || '') === normalizedPhone) {
+        return { phone: normalizedPhone, user: syncedUser }
+      }
+
+      const authPhone = normalizeRussianAuthPhone(authUser.phone || '')
+      if (authPhone === normalizedPhone) {
+        const { error } = await supabase.auth.resend({
+          type: 'phone_change',
+          phone: normalizedPhone,
+        })
+        if (error) {
+          const fallback = await supabase.auth.resend({
+            type: 'sms',
+            phone: normalizedPhone,
+          })
+          if (fallback.error) {
+            throw new Error(translateAuthError(fallback.error, phoneContext))
+          }
+        }
+        return { phone: normalizedPhone }
+      }
+
+      const { error } = await supabase.auth.updateUser({ phone: normalizedPhone })
+      if (error) throw new Error(translateAuthError(error, phoneContext))
+      return { phone: normalizedPhone }
+    },
+
+    async confirmPhoneVerification(currentUser, { phone, token }) {
+      if (!supabase || !currentUser) throw new Error('Session expirée.')
+      const normalizedPhone = normalizeRussianAuthPhone(phone)
+      const phoneContext = { channel: 'phone', intent: 'phone_verification' }
+
+      const authUser = await getAuthenticatedAuthUser()
+      const syncedUser = await syncPhoneVerifiedFromAuth(authUser, currentUser.id)
+      if (syncedUser && normalizeRussianAuthPhone(syncedUser.phone || '') === normalizedPhone) {
+        return syncedUser
+      }
+
+      let verifyResult = await supabase.auth.verifyOtp({
+        phone: normalizedPhone,
+        token: String(token || '').trim(),
+        type: 'phone_change',
+      })
+      if (verifyResult.error) {
+        verifyResult = await supabase.auth.verifyOtp({
+          phone: normalizedPhone,
+          token: String(token || '').trim(),
+          type: 'sms',
+        })
+      }
+      if (verifyResult.error) {
+        throw new Error(translateAuthError(verifyResult.error, phoneContext))
+      }
+
+      const now = new Date().toISOString()
+      await upsertProfile(currentUser.id, {
+        phone: normalizedPhone,
+        phone_verified: true,
+        phone_verified_at: now,
+        updated_at: now,
+      })
+      const user = await fetchProfile(currentUser.id)
+      if (!user) throw new Error('Impossible de charger le profil après vérification.')
+      return user
     },
 
     async restoreSession() {
@@ -525,7 +629,7 @@ export function createAuthService(supabase, redirects = {}) {
         throw new Error('Le mot de passe doit contenir au moins 8 caractères.')
       }
       const { error } = await supabase.auth.updateUser({ password })
-      if (error) throw new Error(translateAuthError(error))
+      if (error) throw new Error(translateAuthError(error, { channel: 'email' }))
       return true
     },
 
@@ -535,7 +639,7 @@ export function createAuthService(supabase, redirects = {}) {
       const { error } = await supabase.auth.resetPasswordForEmail(String(email || '').trim().toLowerCase(), {
         redirectTo: redirectTo || undefined,
       })
-      if (error) throw new Error(translateAuthError(error))
+      if (error) throw new Error(translateAuthError(error, { channel: 'email' }))
       return true
     },
 
@@ -629,19 +733,27 @@ export function createAuthService(supabase, redirects = {}) {
 
     async updateProfile(currentUser, details) {
       if (!supabase || !currentUser) throw new Error('Session expirée.')
+      const nextPhone = details.phone?.trim() || ''
+      const phoneChanged =
+        normalizeRussianAuthPhone(nextPhone) !== normalizeRussianAuthPhone(currentUser.phone || '')
       const profileFields = {
         first_name: details.firstName.trim(),
         last_name: details.lastName.trim(),
-        phone: details.phone?.trim() || '',
+        phone: nextPhone,
         origin_phone: details.secondaryPhone?.trim() || '',
         city: details.city?.trim() || '',
         origin_country: details.originCountry,
         avatar_url: details.avatarUrl?.trim() || '',
         updated_at: new Date().toISOString(),
       }
+      if (phoneChanged) {
+        profileFields.phone_verified = false
+        profileFields.phone_verified_at = null
+      }
       const { error } = await supabase.from('profiles').update(profileFields).eq('id', currentUser.id)
       if (error) throw new Error(error.message)
-      return {
+      const refreshed = await fetchProfile(currentUser.id)
+      return refreshed || {
         ...currentUser,
         ...profileToUser({
           id: currentUser.id,

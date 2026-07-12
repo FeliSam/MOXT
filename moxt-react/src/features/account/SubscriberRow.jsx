@@ -12,7 +12,7 @@ import {
 import { Link } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { Button } from '../../components/ui/Button'
-import { PillBadge } from '../../components/ui/Badge'
+import { PillBadge, VerifiedDisplayName } from '../../components/ui/Badge'
 import { Modal } from '../../components/ui/Modal'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { SUBSCRIPTION_NOTIFY_LABELS } from '@moxt/shared/utils/subscriptionUtils.js'
@@ -305,7 +305,13 @@ export function SubscriberRow({
             {displayName.charAt(0).toUpperCase()}
           </span>
           <div className="min-w-0">
-            <strong className="block truncate text-[15px] leading-5">{displayName}</strong>
+            <VerifiedDisplayName
+              as="strong"
+              name={displayName}
+              verified={Boolean(profile?.verified)}
+              iconSize="sm"
+              className="block truncate text-[15px] leading-5"
+            />
             <span className="mt-0.5 block text-xs leading-4 text-[var(--app-text-faint)]">
               Depuis {new Date(subscriber.createdAt).toLocaleDateString('fr-FR')}
             </span>

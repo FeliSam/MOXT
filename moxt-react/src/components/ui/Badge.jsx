@@ -48,6 +48,26 @@ export function VerifiedIcon({ size = 'md', className = '', title = 'Profil vér
   )
 }
 
+/* ─── Nom + check vérifié ─────────────────────────────────────────────────── */
+export function VerifiedDisplayName({
+  name,
+  verified = false,
+  className = '',
+  iconSize = 'md',
+  iconClassName = '',
+  nameClassName = '',
+  as: Component = 'span',
+}) {
+  if (!name) return null
+
+  return (
+    <Component className={`inline-flex min-w-0 max-w-full items-center gap-2 ${className}`}>
+      {verified ? <VerifiedIcon size={iconSize} className={iconClassName} /> : null}
+      <span className={`min-w-0 truncate ${nameClassName}`}>{name}</span>
+    </Component>
+  )
+}
+
 /* ─── Badge Verifie ──────────────────────────────────────────────────────── */
 /*
   Utilisation : <VerifiedBadge /> ou <VerifiedBadge label="Partenaire MOXT" />

@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
 import { useLanguage } from '@/providers/LanguageProvider';
-import { clearAuthError, loginWithGoogle, register } from '@/store/auth';
+import { clearAuthError, register } from '@/store/auth';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, radii, shadows, spacing } from '@/theme/colors';
@@ -167,25 +167,6 @@ export default function RegisterScreen() {
 
   const renderStep1 = () => (
     <>
-      {/* Google button */}
-      <Pressable
-        style={[styles.googleBtn, { borderColor: colors.border }]}
-        onPress={() => dispatch(loginWithGoogle())}>
-        <Text style={styles.googleIcon}>G</Text>
-        <Text style={[styles.googleBtnText, { color: colors.text }]}>
-          S'inscrire avec Google
-        </Text>
-      </Pressable>
-
-      {/* Divider */}
-      <View style={styles.divider}>
-        <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-        <Text style={[styles.dividerText, { color: colors.textFaint }]}>
-          OU AVEC VOTRE EMAIL
-        </Text>
-        <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-      </View>
-
       {/* Prénom */}
       <Text style={[styles.label, { color: colors.textSecondary }]}>PRÉNOM</Text>
       <View style={[styles.inputContainer, { borderColor: colors.inputBorder, backgroundColor: colors.inputBg }]}>

@@ -19,7 +19,8 @@ import { stopRealtimeSubscription } from '../../services/realtimeService'
 import { closeSidebar } from '../../features/ui/uiSlice'
 import { useLanguage } from '../../contexts/useLanguage'
 import { CountBounce } from '../ui/CountBounce'
-import { VerifiedBadge } from '../ui/Badge'
+import { VerifiedDisplayName } from '../ui/Badge'
+import { ProfileQrShareButton } from '../../features/share/ProfileQrShareButton'
 import { MoreServicesContent } from './MoreServicesContent'
 import { filterNavigationGroups, useNavigationBadges } from './moreServicesUtils'
 
@@ -105,7 +106,7 @@ export function Sidebar({ open }) {
             setHoveredRailKey(null)
           }
         }}
-        className={`group/sidebar fixed inset-y-0 left-0 z-40 flex max-h-dvh w-[18rem] flex-col bg-[var(--app-surface)] shadow-2xl transition-transform duration-300 ease-out ${
+        className={`group/sidebar fixed inset-y-0 left-0 z-[var(--z-nav)] flex max-h-dvh w-[18rem] flex-col bg-[var(--app-surface)] shadow-2xl transition-transform duration-300 ease-out ${
           open ? 'translate-x-0' : '-translate-x-full'
         } lg:inset-y-3 lg:left-3 lg:flex lg:max-h-[calc(100dvh-1.5rem)] lg:w-[4.75rem] lg:translate-x-0 lg:overflow-visible lg:rounded-[1.75rem] lg:border lg:border-[var(--app-border)] lg:bg-[var(--app-surface)]/95 lg:shadow-[var(--shadow-float)] lg:backdrop-blur-xl`}
       >
@@ -203,20 +204,30 @@ export function Sidebar({ open }) {
           </NavLink>
 
           <div className="sidebar-footer-flyout" role="group" aria-label="Compte et session">
-            <NavLink
-              to="/profile"
-              onClick={() => dispatch(closeSidebar())}
-              className="sidebar-rail-label sidebar-rail-label--stack sidebar-rail-label--interactive"
-            >
-              <strong className="sidebar-rail-label-title truncate">
-                {fullName || 'Mon profil'}
-              </strong>
-              {user?.verified ? (
-                <VerifiedBadge size="sm" className="mt-0.5" />
-              ) : (
+            <div className="flex items-center gap-2">
+              <NavLink
+                to="/profile"
+                onClick={() => dispatch(closeSidebar())}
+                className="sidebar-rail-label sidebar-rail-label--stack sidebar-rail-label--interactive min-w-0 flex-[3]"
+              >
+                <VerifiedDisplayName
+                  as="strong"
+                  name={fullName || 'Mon profil'}
+                  verified={Boolean(user?.verified)}
+                  iconSize="sm"
+                  className="sidebar-rail-label-title truncate"
+                />
                 <span className="text-[10px] text-[var(--app-text-faint)]">{role || 'Membre'}</span>
-              )}
-            </NavLink>
+              </NavLink>
+              <ProfileQrShareButton
+                className="size-10 flex-[1] min-w-0"
+                title={fullName || 'Mon profil'}
+                subtitle={user?.city || 'MOXT'}
+                verified={Boolean(user?.verified)}
+                city={user?.city}
+                targetPath={`/users/${user?.id}/publications`}
+              />
+            </div>
             <div className="sidebar-footer-flyout-actions">
               <NavLink
                 to="/settings"
@@ -251,7 +262,7 @@ export function Sidebar({ open }) {
 
       {/* ── Panel "Services supplémentaires" desktop ── */}
       {moreOpen ? (
-        <div className="fixed inset-0 z-50 hidden lg:block">
+        <div className="fixed inset-0 z-[var(--z-nav-menu)] hidden lg:block">
           <button
             type="button"
             className="absolute inset-0 bg-slate-950/20 backdrop-blur-[2px]"

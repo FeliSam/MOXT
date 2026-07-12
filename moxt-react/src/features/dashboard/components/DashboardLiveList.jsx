@@ -121,10 +121,13 @@ export function DashboardLiveList({
           </div>
           <Link
             to={path}
-            className="grid size-10 shrink-0 place-items-center rounded-2xl border border-[var(--app-border)] bg-white transition-colors hover:border-brand-200 hover:bg-[var(--app-surface-muted)] dark:bg-[var(--app-surface)] dark:hover:border-brand-800"
+            className="group/arrow grid size-10 shrink-0 place-items-center rounded-2xl border border-[var(--app-border)] bg-white transition-all duration-[var(--transition-base)] hover:-translate-y-0.5 hover:border-brand-200 hover:bg-[var(--app-surface-muted)] hover:shadow-[var(--shadow-card-hover)] dark:bg-[var(--app-surface)] dark:hover:border-brand-800"
             aria-label={`Voir ${title}`}
           >
-            <FiArrowUpRight aria-hidden="true" />
+            <FiArrowUpRight
+              className="transition-transform duration-[var(--transition-base)] group-hover/arrow:translate-x-0.5 group-hover/arrow:-translate-y-0.5"
+              aria-hidden="true"
+            />
           </Link>
         </div>
       </div>

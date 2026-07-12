@@ -60,16 +60,6 @@ function requirePostboxVars(vars) {
   }
 }
 
-function warnGoogleVars(vars) {
-  const keys = ['GOOGLE_OAUTH_CLIENT_ID', 'GOOGLE_OAUTH_CLIENT_SECRET']
-  const missing = keys.filter((key) => !vars[key])
-  if (missing.length) {
-    console.warn('\n⚠ Google OAuth non configuré (connexion Google désactivée côté Supabase) :')
-    for (const key of missing) console.warn(`  - ${key}`)
-    console.warn('  Ajoutez-les dans scripts/phase2.env puis : npm run setup:google-auth')
-  }
-}
-
 function buildPushEnv(vars) {
   return {
     ...process.env,
@@ -77,9 +67,6 @@ function buildPushEnv(vars) {
     MOXT_POSTBOX_SMTP_PASS: vars.MOXT_POSTBOX_SMTP_PASS,
     MOXT_POSTBOX_FROM: vars.MOXT_POSTBOX_FROM,
     SEND_SMS_HOOK_SECRET: vars.SEND_SMS_HOOK_SECRET || process.env.SEND_SMS_HOOK_SECRET || '',
-    GOOGLE_OAUTH_CLIENT_ID: vars.GOOGLE_OAUTH_CLIENT_ID || process.env.GOOGLE_OAUTH_CLIENT_ID || '',
-    GOOGLE_OAUTH_CLIENT_SECRET:
-      vars.GOOGLE_OAUTH_CLIENT_SECRET || process.env.GOOGLE_OAUTH_CLIENT_SECRET || '',
     SUPABASE_DB_PASSWORD:
       vars.SUPABASE_DB_PASSWORD ||
       vars.MOXT_SUPABASE_DB_PASSWORD ||
@@ -115,7 +102,6 @@ async function main() {
 
   const vars = parseEnvFile(envPath)
   requirePostboxVars(vars)
-  warnGoogleVars(vars)
   const pushEnv = buildPushEnv(vars)
 
   log('Supabase — liaison projet')
