@@ -23,16 +23,21 @@ async function probeSmscSend(env, phone) {
   })
   if (apikey) body.set('apikey', apikey)
   else body.set('psw', password)
-  const res = await fetch('https://smsc.ru/sys/send.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-    body,
-  })
-  const text = await res.text()
   try {
-    return JSON.parse(text)
-  } catch {
-    return { error: text.slice(0, 120) }
+    const res = await fetch('https://smsc.ru/sys/send.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+      body,
+    })
+    const text = await res.text()
+    try {
+      return JSON.parse(text)
+    } catch {
+      return { error: text.slice(0, 120) }
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return { error: `Réseau indisponible (${message})` }
   }
 }
 
@@ -46,22 +51,30 @@ async function fetchSmscBalance(env) {
   const body = new URLSearchParams({ login, fmt: '3' })
   if (apikey) body.set('apikey', apikey)
   else body.set('psw', password)
-  const res = await fetch('https://smsc.ru/sys/balance.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body,
-  })
-  const text = await res.text()
-  let data
   try {
-    data = JSON.parse(text)
-  } catch {
-    return { ok: false, detail: `Réponse invalide (${res.status})` }
+    const res = await fetch('https://smsc.ru/sys/balance.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    })
+    const text = await res.text()
+    let data
+    try {
+      data = JSON.parse(text)
+    } catch {
+      return { ok: false, detail: `Réponse invalide (${res.status})` }
+    }
+    if (data.error) return { ok: false, detail: String(data.error) }
+    const balance = Number(data.balance)
+    if (Number.isNaN(balance)) return { ok: false, detail: 'Solde illisible' }
+    return { ok: balance > 1, detail: `${balance.toFixed(2)} ₽` }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return {
+      ok: false,
+      detail: `Réseau indisponible (${message}). Vérifiez la connexion Internet ou un éventuel pare-feu vers smsc.ru.`,
+    }
   }
-  if (data.error) return { ok: false, detail: String(data.error) }
-  const balance = Number(data.balance)
-  if (Number.isNaN(balance)) return { ok: false, detail: 'Solde illisible' }
-  return { ok: balance > 1, detail: `${balance.toFixed(2)} ₽` }
 }
 
 async function main() {

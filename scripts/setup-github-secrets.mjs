@@ -222,6 +222,8 @@ async function main() {
   const smscPassword = process.env.SMSC_PASSWORD || phase2.SMSC_PASSWORD
   const smscSender = process.env.SMSC_SENDER || phase2.SMSC_SENDER
   const smscWebhookSecret = process.env.SMSC_WEBHOOK_SECRET || phase2.SMSC_WEBHOOK_SECRET
+  const adminPromotePassword =
+    process.env.MOXT_ADMIN_PROMOTE_PASSWORD || phase2.MOXT_ADMIN_PROMOTE_PASSWORD
   const postboxUser = process.env.MOXT_POSTBOX_SMTP_USER || phase2.MOXT_POSTBOX_SMTP_USER
   const postboxPass = process.env.MOXT_POSTBOX_SMTP_PASS || phase2.MOXT_POSTBOX_SMTP_PASS
   const postboxFrom = process.env.MOXT_POSTBOX_FROM || phase2.MOXT_POSTBOX_FROM
@@ -283,6 +285,12 @@ async function main() {
   if (smscWebhookSecret) await setSecret('SMSC_WEBHOOK_SECRET', smscWebhookSecret)
   if (!smscLogin || !smscPassword) {
     console.log('  ⚠ secrets SMSC partiels (SMSC_LOGIN / SMSC_PASSWORD dans scripts/phase2.env)')
+  }
+
+  if (adminPromotePassword) {
+    await setSecret('MOXT_ADMIN_PROMOTE_PASSWORD', adminPromotePassword)
+  } else {
+    console.log('  ⚠ MOXT_ADMIN_PROMOTE_PASSWORD ignoré (scripts/phase2.env)')
   }
 
   if (postboxUser && postboxPass && postboxFrom) {

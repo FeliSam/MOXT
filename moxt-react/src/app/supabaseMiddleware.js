@@ -928,7 +928,41 @@ const handlers = {
     await authService.cancelAccountDeletion(payload)
     return payload
   },
-  'administration/updateUserRole': async (payload) => {
+  'administration/updateUserRole': async (payload, state) => {
+    const privileged = payload.role === 'admin' || payload.role === 'superadmin'
+    if (privileged) {
+      const actor = state.auth.user
+      if (actor?.role !== 'superadmin') {
+        throw new Error('Seul un superadmin peut promouvoir un administrateur.')
+      }
+      if (!payload.promotePassword) {
+        throw new Error('Mot de passe de promotion administrateur requis.')
+      }
+
+      const { data, error } = await supabase.functions.invoke('admin-promote-role', {
+        body: {
+          userId: payload.id,
+          role: payload.role,
+          promotePassword: payload.promotePassword,
+        },
+      })
+
+      if (error) {
+        let detail = error.message
+        if (error.context && typeof error.context.json === 'function') {
+          try {
+            const body = await error.context.json()
+            if (body?.error) detail = String(body.error)
+          } catch {
+            // ignore
+          }
+        }
+        throw new Error(detail)
+      }
+      if (data?.error) throw new Error(String(data.error))
+      return
+    }
+
     const { error } = await supabase
       .from('profiles')
       .update({ role: payload.role, updated_at: new Date().toISOString() })

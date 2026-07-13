@@ -31,6 +31,7 @@
     "setup:phase2": "node scripts/setup-phase2-postbox-sms.mjs",
     "setup:sms-ru": "node scripts/setup-sms-ru.mjs",
     "setup:smsc": "node scripts/setup-smsc.mjs",
+    "setup:admin-promote": "node scripts/setup-admin-promote.mjs",
     "setup:google-auth": "node scripts/setup-google-auth.mjs",
     "setup:postbox": "node scripts/setup-postbox-domain.mjs",
     "setup:smtp": "node scripts/setup-smtp.mjs",

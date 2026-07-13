@@ -59,7 +59,9 @@ export function AdminDetailPanel({ admin, dispatch, onSuspendUser, selected, sup
 
       <div>
         <p className="mb-2 text-[10px] font-black uppercase tracking-wider text-[var(--app-text-muted)]">Actions</p>
-        <div className="flex flex-wrap gap-2">{renderDetailActions({ dispatch, item, kind, onSuspendUser })}</div>
+        <div className="flex flex-wrap gap-2">
+          {renderDetailActions({ actorRole: admin?.role, dispatch, item, kind, onSuspendUser })}
+        </div>
       </div>
 
       {kind === 'support' && (

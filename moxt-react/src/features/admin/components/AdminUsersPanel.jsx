@@ -1,11 +1,11 @@
 import { FiUsers } from 'react-icons/fi'
 import { Button } from '../../../components/ui/Button'
-import { updateUserRole } from '../../administration/administrationSlice'
+import { dispatchUserRole } from '../promoteAdminUtils'
 import { CARD, ITEM, ROLE_COLORS } from '../adminConfig'
 import { avatarColor, initials } from '../adminUtils'
 import { Empty, SectionTitle } from './AdminShared'
 
-export function AdminUsersPanel({ dispatch, onSuspendUser, setSelected, users }) {
+export function AdminUsersPanel({ actorRole, dispatch, onSuspendUser, setSelected, users }) {
   return (
     <div className={`${CARD} p-5 grid gap-4`}>
       <SectionTitle icon={FiUsers} label="Utilisateurs et roles" count={users.length} />
@@ -46,8 +46,9 @@ export function AdminUsersPanel({ dispatch, onSuspendUser, setSelected, users })
                   <button
                     key={role}
                     type="button"
-                    onClick={() => dispatch(updateUserRole({ id: user.id, role }))}
-                    className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all hover:shadow-sm ${
+                    disabled={role === 'admin' && actorRole !== 'superadmin'}
+                    onClick={() => dispatchUserRole(dispatch, { actorRole, id: user.id, role })}
+                    className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-40 ${
                       user.role === role
                         ? 'bg-brand-700 text-white'
                         : 'bg-[var(--app-surface)] text-[var(--app-text-muted)] hover:bg-brand-50 hover:text-brand-700'

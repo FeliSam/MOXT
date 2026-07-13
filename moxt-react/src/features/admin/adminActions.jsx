@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
+import { dispatchUserRole } from './promoteAdminUtils'
 import { updateVerificationStatus, updateSubscriberReportStatus } from '../account/accountSlice'
-import { updateUserRole } from '../administration/administrationSlice'
 import { moderateBusiness } from '../businesses/businessSlice'
 import { updateDisputeStatus } from '../disputes/disputeSlice'
 import { moderateEvent, updateEventReportStatus } from '../events/eventSlice'
@@ -126,7 +126,7 @@ export function contentActions(contentView, dispatch, item) {
   }
 }
 
-export function renderDetailActions({ dispatch, item, kind, onSuspendUser }) {
+export function renderDetailActions({ actorRole, dispatch, item, kind, onSuspendUser }) {
   switch (normalizeAdminKind(kind)) {
     case 'transfer': {
       const next = TRANSFER_TRANSITIONS[item.status]
@@ -180,7 +180,13 @@ export function renderDetailActions({ dispatch, item, kind, onSuspendUser }) {
     case 'user':
       return (
         <>
-          <Button variant="secondary" onClick={() => dispatch(updateUserRole({ id: item.id, role: 'admin' }))}>Passer admin</Button>
+          <Button
+            variant="secondary"
+            disabled={actorRole !== 'superadmin'}
+            onClick={() => dispatchUserRole(dispatch, { actorRole, id: item.id, role: 'admin' })}
+          >
+            Passer admin
+          </Button>
           <Button
             variant={item.status === 'suspended' ? 'secondary' : 'danger'}
             onClick={() => onSuspendUser(item)}

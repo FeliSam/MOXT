@@ -131,6 +131,7 @@ export function AdminPage() {
           )}
           {view === 'users' && (
             <AdminUsersPanel
+              actorRole={admin?.role}
               dispatch={dispatch}
               onSuspendUser={setConfirmUser}
               setSelected={setSelected}

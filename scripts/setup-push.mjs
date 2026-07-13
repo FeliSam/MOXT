@@ -6,7 +6,7 @@
  *   npm run push:generate-vapid
  *   npm run setup:push
  */
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
@@ -105,20 +105,21 @@ async function main() {
     process.exit(1)
   }
 
-  const secretsPath = path.join(root, 'scripts', 'phase2.push-secrets.env')
-  writeFileSync(
-    secretsPath,
-    [
-      `VAPID_PUBLIC_KEY=${vars.VAPID_PUBLIC_KEY || vars.VITE_VAPID_PUBLIC_KEY}`,
-      `VAPID_PRIVATE_KEY=${vars.VAPID_PRIVATE_KEY}`,
-      `PUSH_DISPATCH_SECRET=${vars.PUSH_DISPATCH_SECRET}`,
-      'VAPID_SUBJECT=mailto:support@moxtapp.ru',
-    ].join('\n') + '\n',
-    'utf8',
-  )
-
   log('Secrets Edge Function', 'send-push')
-  if (runSupabase(['secrets', 'set', '--env-file', secretsPath], supabaseEnv) !== 0) {
+  const vapidPublicKey = vars.VAPID_PUBLIC_KEY || vars.VITE_VAPID_PUBLIC_KEY
+  if (
+    runSupabase(
+      [
+        'secrets',
+        'set',
+        `VAPID_PUBLIC_KEY=${vapidPublicKey}`,
+        `VAPID_PRIVATE_KEY=${vars.VAPID_PRIVATE_KEY}`,
+        `PUSH_DISPATCH_SECRET=${vars.PUSH_DISPATCH_SECRET}`,
+        'VAPID_SUBJECT=mailto:support@moxtapp.ru',
+      ],
+      supabaseEnv,
+    ) !== 0
+  ) {
     process.exit(1)
   }
 
