@@ -1,81 +1,159 @@
 #!/usr/bin/env node
 /**
- * Configure Web Push MOXT : VAPID, secrets Supabase, URL dispatch DB.
+ * Configure Web Push MOXT : VAPID, secrets Supabase, déploiement send-push, migration.
  *
  * Usage :
- *   node scripts/generate-vapid-keys.mjs
- *   node scripts/setup-push.mjs
+ *   npm run push:generate-vapid
+ *   npm run setup:push
  */
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
 import { parseEnvFile, phase2EnvPath, upsertPhase2Env } from './lib/env.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+const projectRef = 'rbvqfkccbkwjxkvpnwqn'
+const defaultSupabaseUrl = `https://${projectRef}.supabase.co`
 
-function readPhase2() {
-  return parseEnvFile(phase2EnvPath)
+function log(title, detail = '') {
+  console.log(`\n▸ ${title}${detail ? `\n  ${detail}` : ''}`)
 }
 
 function requireEnv(env, keys) {
   const missing = keys.filter((key) => !env[key])
   if (missing.length) {
     console.error(`\n✗ Variables manquantes dans ${phase2EnvPath} : ${missing.join(', ')}`)
-    console.error('  Lancez d’abord : node scripts/generate-vapid-keys.mjs')
+    console.error('  Lancez d’abord : npm run push:generate-vapid')
     process.exit(1)
   }
 }
 
-function run(command, args) {
-  const result = spawnSync(command, args, { cwd: root, stdio: 'inherit', shell: process.platform === 'win32' })
-  return result.status ?? 1
+function buildSupabaseEnv(vars) {
+  return {
+    ...process.env,
+    SUPABASE_ACCESS_TOKEN:
+      process.env.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN || '',
+    SUPABASE_DB_PASSWORD:
+      process.env.SUPABASE_DB_PASSWORD ||
+      vars.SUPABASE_DB_PASSWORD ||
+      vars.MOXT_SUPABASE_DB_PASSWORD ||
+      '',
+    SEND_SMS_HOOK_SECRET: vars.SEND_SMS_HOOK_SECRET || process.env.SEND_SMS_HOOK_SECRET || '',
+    MOXT_POSTBOX_SMTP_USER: vars.MOXT_POSTBOX_SMTP_USER || process.env.MOXT_POSTBOX_SMTP_USER,
+    MOXT_POSTBOX_SMTP_PASS: vars.MOXT_POSTBOX_SMTP_PASS || process.env.MOXT_POSTBOX_SMTP_PASS,
+    MOXT_POSTBOX_FROM: vars.MOXT_POSTBOX_FROM || process.env.MOXT_POSTBOX_FROM,
+  }
+}
+
+function runSupabase(args, env) {
+  const supabaseJs = path.join(root, 'node_modules', 'supabase', 'dist', 'supabase.js')
+  if (existsSync(supabaseJs)) {
+    return (
+      spawnSync(process.execPath, [supabaseJs, ...args], {
+        cwd: root,
+        stdio: 'inherit',
+        env,
+      }).status ?? 1
+    )
+  }
+  return (
+    spawnSync('npx', ['supabase', ...args], {
+      cwd: root,
+      stdio: 'inherit',
+      shell: process.platform === 'win32',
+      env,
+    }).status ?? 1
+  )
+}
+
+function resolveSupabaseUrl(vars) {
+  return (
+    vars.VITE_SUPABASE_URL ||
+    vars.SUPABASE_URL ||
+    process.env.VITE_SUPABASE_URL ||
+    process.env.SUPABASE_URL ||
+    defaultSupabaseUrl
+  )
 }
 
 async function main() {
-  const env = readPhase2()
-  requireEnv(env, ['VITE_VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'PUSH_DISPATCH_SECRET'])
+  console.log('\n══════════════════════════════════════')
+  console.log('  MOXT — Web Push (VAPID + send-push)')
+  console.log('══════════════════════════════════════')
 
-  const supabaseUrl = env.VITE_SUPABASE_URL || env.SUPABASE_URL
-  if (!supabaseUrl) {
-    console.error('\n✗ VITE_SUPABASE_URL manquant dans phase2.env')
-    process.exit(1)
-  }
+  const vars = parseEnvFile(phase2EnvPath)
+  requireEnv(vars, ['VITE_VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'PUSH_DISPATCH_SECRET'])
 
+  const supabaseUrl = resolveSupabaseUrl(vars)
   const dispatchUrl = `${supabaseUrl.replace(/\/$/, '')}/functions/v1/send-push`
+
   upsertPhase2Env({
+    VITE_SUPABASE_URL: supabaseUrl,
     MOXT_SEND_PUSH_URL: dispatchUrl,
   })
 
-  console.log('\n▸ Secrets Edge Function send-push')
-  console.log('  Définissez dans Supabase (Project Settings → Edge Functions → Secrets) :')
-  console.log(`  VAPID_PUBLIC_KEY=${env.VITE_VAPID_PUBLIC_KEY}`)
-  console.log(`  VAPID_PRIVATE_KEY=${env.VAPID_PRIVATE_KEY}`)
-  console.log(`  PUSH_DISPATCH_SECRET=${env.PUSH_DISPATCH_SECRET}`)
-  console.log('  VAPID_SUBJECT=mailto:support@moxtapp.ru')
-
-  console.log('\n▸ Paramètres base de données (optionnel, pour trigger pg_net)')
-  console.log(`  ALTER DATABASE postgres SET moxt.send_push_url = '${dispatchUrl}';`)
-  console.log(`  ALTER DATABASE postgres SET moxt.push_dispatch_secret = '${env.PUSH_DISPATCH_SECRET}';`)
-
-  console.log('\n▸ Déploiement')
-  const pushFn = path.join(root, 'supabase', 'functions', 'send-push', 'index.ts')
-  if (!existsSync(pushFn)) {
-    console.error('✗ Fonction send-push introuvable')
+  const supabaseEnv = buildSupabaseEnv(vars)
+  if (!supabaseEnv.SUPABASE_ACCESS_TOKEN) {
+    console.error('\n✗ SUPABASE_ACCESS_TOKEN manquant dans scripts/phase2.env')
     process.exit(1)
   }
 
-  if (run('npx', ['supabase', 'functions', 'deploy', 'send-push', '--no-verify-jwt']) !== 0) {
-    console.warn('\n⚠ Déploiement send-push manuel requis : npx supabase functions deploy send-push --no-verify-jwt')
+  log('Supabase', `projet ${projectRef}`)
+  if (runSupabase(['link', '--project-ref', projectRef, '--yes'], supabaseEnv) !== 0) {
+    console.error('\n✗ Liaison Supabase échouée')
+    process.exit(1)
   }
 
-  if (run('npm', ['run', 'db:push']) !== 0) {
-    console.warn('\n⚠ Migration device_subscriptions : npm run db:push')
+  const secretsPath = path.join(root, 'scripts', 'phase2.push-secrets.env')
+  writeFileSync(
+    secretsPath,
+    [
+      `VAPID_PUBLIC_KEY=${vars.VAPID_PUBLIC_KEY || vars.VITE_VAPID_PUBLIC_KEY}`,
+      `VAPID_PRIVATE_KEY=${vars.VAPID_PRIVATE_KEY}`,
+      `PUSH_DISPATCH_SECRET=${vars.PUSH_DISPATCH_SECRET}`,
+      'VAPID_SUBJECT=mailto:support@moxtapp.ru',
+    ].join('\n') + '\n',
+    'utf8',
+  )
+
+  log('Secrets Edge Function', 'send-push')
+  if (runSupabase(['secrets', 'set', '--env-file', secretsPath], supabaseEnv) !== 0) {
+    process.exit(1)
   }
 
-  console.log('\n✓ Configuration push documentée')
+  log('Déploiement', 'send-push')
+  if (runSupabase(['functions', 'deploy', 'send-push', '--no-verify-jwt'], supabaseEnv) !== 0) {
+    process.exit(1)
+  }
+
+  log('Migration', 'device_subscriptions + push_dispatch_log')
+  const supabaseJs = path.join(root, 'node_modules', 'supabase', 'dist', 'supabase.js')
+  const dbArgs = ['db', 'push', '--linked', '--yes', '--include-all']
+  const dbCode = existsSync(supabaseJs)
+    ? spawnSync(process.execPath, [supabaseJs, ...dbArgs], { cwd: root, stdio: 'inherit', env: supabaseEnv }).status ?? 1
+    : spawnSync('npx', ['supabase', ...dbArgs], {
+        cwd: root,
+        stdio: 'inherit',
+        shell: process.platform === 'win32',
+        env: supabaseEnv,
+      }).status ?? 1
+
+  if (dbCode !== 0) {
+    console.warn('\n⚠ db:push échoué — appliquez manuellement :')
+    console.warn('  supabase/migrations/20260713100000_device_subscriptions_push.sql')
+  }
+
+  console.log('\n▸ Trigger pg_net (optionnel, SQL Editor Supabase) :')
+  console.log(`  ALTER DATABASE postgres SET moxt.send_push_url = '${dispatchUrl}';`)
+  console.log(`  ALTER DATABASE postgres SET moxt.push_dispatch_secret = '${vars.PUSH_DISPATCH_SECRET}';`)
+
+  console.log('\n══════════════════════════════════════')
+  console.log('  Web Push configuré')
+  console.log('══════════════════════════════════════')
   console.log(`  URL dispatch : ${dispatchUrl}`)
-  console.log('  Test local : node scripts/simulate-push-pipeline.mjs')
+  console.log('  Test pipeline : npm run push:simulate')
+  console.log('  iPhone : Safari → écran d’accueil → Paramètres → notifications push ON')
 }
 
 main().catch((error) => {
