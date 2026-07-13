@@ -98,6 +98,7 @@ export const pt = {
       unknownTitle: 'QR não reconhecido',
       unknownDescription: 'Este código não corresponde a um perfil, empresa ou convite MOXT.',
       scanAgain: 'Digitalizar novamente',
+      sessionLoading: 'A verificar sessão…',
       targets: {
         user: 'Perfil de membro',
         business: 'Empresa',

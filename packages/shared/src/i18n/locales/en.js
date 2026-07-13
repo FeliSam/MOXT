@@ -97,6 +97,7 @@ export const en = {
       unknownTitle: 'Unrecognized QR code',
       unknownDescription: 'This code does not match a MOXT profile, business or invite.',
       scanAgain: 'Scan again',
+      sessionLoading: 'Checking session…',
       targets: {
         user: 'Member profile',
         business: 'Business',

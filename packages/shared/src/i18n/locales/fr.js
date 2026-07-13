@@ -101,6 +101,7 @@ export const fr = {
       unknownTitle: 'QR code non reconnu',
       unknownDescription: 'Ce code ne correspond pas à un profil, une entreprise ou une invitation MOXT.',
       scanAgain: 'Scanner à nouveau',
+      sessionLoading: 'Vérification de la session…',
       targets: {
         user: 'Profil membre',
         business: 'Entreprise',

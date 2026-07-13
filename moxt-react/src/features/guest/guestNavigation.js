@@ -99,12 +99,6 @@ export function resolveMoxtScanDestination(target, user) {
   return target.path
 }
 
-function loginPathForReturnTo(path) {
-  const normalized = String(path || '').trim()
-  if (!normalized.startsWith('/')) return '/login'
-  return `/login?returnTo=${encodeURIComponent(normalized)}`
-}
-
 /**
  * Destination après scan QR selon la session navigateur :
  * session active → profil cible (ou /profile pour son QR / invitation) ;

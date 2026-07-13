@@ -98,6 +98,7 @@ export const ru = {
       unknownTitle: 'QR не распознан',
       unknownDescription: 'Этот код не соответствует профилю, компании или приглашению MOXT.',
       scanAgain: 'Сканировать снова',
+      sessionLoading: 'Проверка сессии…',
       targets: {
         user: 'Профиль участника',
         business: 'Компания',
