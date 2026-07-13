@@ -213,12 +213,48 @@ textarea:focus-visible {
 }
 
 /* ─── Capacitor (shell natif) ───────────────────────────────────────────── */
-html.capacitor-native header {
+html.capacitor-native header,
+html.capacitor-native .app-top-header {
   padding-top: max(0.75rem, env(safe-area-inset-top));
 }
 
 html.capacitor-native .capacitor-safe-bottom {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+/* ─── Safari PWA standalone : une seule safe-area, pas d’étirement ───────── */
+@media (display-mode: standalone) {
+  html,
+  body {
+    height: 100%;
+    overscroll-behavior: none;
+  }
+
+  body {
+    min-height: 100dvh;
+  }
+
+  #root {
+    min-height: 100dvh;
+  }
+
+  /* Contenu sous la barre de statut iOS (black-translucent) — padding unique */
+  .app-top-header {
+    padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+  }
+
+  /* Nav bas : collée au home indicator sans double marge qui « étire » la barre */
+  .bottom-nav-shell {
+    bottom: max(0.5rem, env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: 0.35rem !important;
+  }
+
+  /* Contenu mobile : éviter un grand vide au-dessus de la nav flottante */
+  @media (max-width: 1023px) {
+    main {
+      padding-bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px)) !important;
+    }
+  }
 }
 
 /* ─── Messagerie — bulles alignées design system MOXT ───────────────────── */

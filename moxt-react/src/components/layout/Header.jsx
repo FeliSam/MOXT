@@ -24,7 +24,7 @@ export function Header({ hideOnMobile = false }) {
 
   return (
     <header
-      className={`sticky top-0 z-[var(--z-nav)] shrink-0 px-3 pt-3 transition-transform duration-300 ease-out sm:px-5 lg:px-5 lg:pt-4 ${
+      className={`app-top-header sticky top-0 z-[var(--z-nav)] shrink-0 px-3 pt-3 transition-transform duration-300 ease-out sm:px-5 lg:px-5 lg:pt-4 ${
         visible ? 'translate-y-0' : '-translate-y-[calc(100%+1rem)]'
       } ${hideOnMobile ? 'hidden lg:block' : ''}`}
     >

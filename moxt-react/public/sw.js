@@ -1,7 +1,7 @@
 const CACHE_NAME = '__MOXT_CACHE_NAME__';
 const STATIC_ASSETS = [
   '/manifest.webmanifest',
-  '/favicon.svg',
+  '/favicon-32.png',
   '/icon-192.png',
   '/icon-512.png',
   '/icon-512-maskable.png',
@@ -127,8 +127,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title || 'MOXT', {
       body: data.body || '',
-      icon: '/icon-192.png?v=20260713',
-      badge: '/icon-192.png?v=20260713',
+      icon: '/icon-192.png?v=20260714',
+      badge: '/icon-192.png?v=20260714',
       data: {
         ...payload,
         url: targetPath,

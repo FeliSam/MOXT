@@ -111,7 +111,7 @@ export function BottomNavigation() {
     <>
       <nav
         ref={navRef}
-        className="fixed inset-x-3 bottom-3 z-[var(--z-nav)] grid grid-cols-5 gap-0.5 rounded-[1rem] border border-[var(--app-border)] bg-[var(--app-surface)]/94 p-1 pb-[max(0.35rem,env(safe-area-inset-bottom))] shadow-[var(--shadow-float)] backdrop-blur-xl lg:hidden"
+        className="bottom-nav-shell fixed inset-x-3 bottom-3 z-[var(--z-nav)] grid grid-cols-5 gap-0.5 rounded-[1rem] border border-[var(--app-border)] bg-[var(--app-surface)]/94 p-1 pb-[max(0.35rem,env(safe-area-inset-bottom))] shadow-[var(--shadow-float)] backdrop-blur-xl lg:hidden"
         aria-label="Navigation mobile rapide"
       >
         <span
