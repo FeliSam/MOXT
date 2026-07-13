@@ -1,4 +1,4 @@
-# Déploie SMSC : migrations, secrets Edge Functions, send-sms, phone-login, smsc-webhook
+# Déploie SMSC : migrations, secrets Edge Functions, send-sms, phone-login, smsc-webhook, admin-promote-role
 #
 # Secrets GitHub requis :
 #   SUPABASE_ACCESS_TOKEN
@@ -6,6 +6,7 @@
 #   SEND_SMS_HOOK_SECRET
 #   SMSC_LOGIN, SMSC_PASSWORD (ou SMSC_API_KEY)
 #   SMSC_SENDER, SMSC_WEBHOOK_SECRET (optionnel)
+#   MOXT_ADMIN_PROMOTE_PASSWORD (optionnel — promotion admin verrouillée)
 
 name: Deploy — Supabase SMSC
 
@@ -78,6 +79,7 @@ jobs:
           SEND_SMS_HOOK_SECRET=${{ secrets.SEND_SMS_HOOK_SECRET }}
           SMS_MESSAGE_TEMPLATE=Код MOXT: {otp}. Никому не сообщайте.
           SMS_INFRA_LOCKED=true
+          MOXT_ADMIN_PROMOTE_PASSWORD=${{ secrets.MOXT_ADMIN_PROMOTE_PASSWORD }}
           EOF
           npx supabase secrets set --env-file /tmp/supabase-secrets.env
 
@@ -88,3 +90,4 @@ jobs:
           npx supabase functions deploy send-sms --no-verify-jwt
           npx supabase functions deploy phone-login --no-verify-jwt
           npx supabase functions deploy smsc-webhook --no-verify-jwt
+          npx supabase functions deploy admin-promote-role
