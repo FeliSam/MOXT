@@ -1,9 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { FiGrid } from 'react-icons/fi'
 import { NavLink, useLocation } from 'react-router-dom'
+import { useSelector } from 'react-redux'
 import { bottomNavigationItems } from '../../config/bottomNavigation'
 import { preloadRoute } from '../../config/navigation'
 import { useLanguage } from '../../contexts/useLanguage'
+import { selectMoreMenuBadgeCount } from './moreServicesUtils'
 import { MobileMoreDrawer } from './MobileMoreDrawer'
 
 const BOTTOM_NAV_SLOT =
@@ -60,6 +62,8 @@ function BottomNavItem({ icon, label, path, translateLabel, itemRef }) {
 export function BottomNavigation() {
   const { translateLabel } = useLanguage()
   const location = useLocation()
+  const userId = useSelector((state) => state.auth.user?.id)
+  const moreBadge = useSelector((state) => selectMoreMenuBadgeCount(state, userId))
   const [moreOpen, setMoreOpen] = useState(false)
   const navRef = useRef(null)
   const itemRefs = useRef([])
@@ -134,11 +138,20 @@ export function BottomNavigation() {
         <button
           type="button"
           onClick={() => setMoreOpen(true)}
-          aria-label="Plus de services"
+          aria-label={
+            moreBadge > 0
+              ? `Plus de services (${moreBadge > 9 ? '9+' : moreBadge} non lus)`
+              : 'Plus de services'
+          }
           aria-haspopup="dialog"
-          className={`${BOTTOM_NAV_SLOT} text-[var(--app-text-muted)]`}
+          className={`${BOTTOM_NAV_SLOT} relative text-[var(--app-text-muted)]`}
         >
           <BottomNavIcon active={false} icon={FiGrid} />
+          {moreBadge > 0 ? (
+            <span className="absolute right-2 top-1 min-w-[1.1rem] rounded-full bg-red-500 px-1 py-0.5 text-center text-[9px] font-bold leading-none text-white">
+              {moreBadge > 9 ? '9+' : moreBadge}
+            </span>
+          ) : null}
           <BottomNavLabel>{translateLabel('Plus')}</BottomNavLabel>
         </button>
       </nav>

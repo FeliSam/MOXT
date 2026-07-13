@@ -83,8 +83,8 @@ async function syncSessionToStore(
       const { initNativePushNotifications } = await import('../platform/pushNotifications')
       void initNativePushNotifications()
     } else {
-      const { refreshWebPushSubscription } = await import('../platform/webPush')
-      void refreshWebPushSubscription(payload.user.id)
+      const { ensureWebPushSubscription } = await import('../platform/webPush')
+      void ensureWebPushSubscription(payload.user.id)
     }
   }
 }

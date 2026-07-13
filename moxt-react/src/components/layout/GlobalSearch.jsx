@@ -4,7 +4,7 @@ import { FiSearch, FiX } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { searchTypeMeta } from '../../config/searchTypes'
-import { filterSearchIndex, selectSearchIndex } from '../../features/searchSelectors'
+import { filterSearchIndex, searchGlobalResults, selectSearchIndex, selectSubscriptionNetworkProfiles } from '../../features/searchSelectors'
 import { Badge } from '../ui/Badge'
 
 export function GlobalSearch() {
@@ -13,9 +13,10 @@ export function GlobalSearch() {
   const anchorRef = useRef(null)
   const [panelRect, setPanelRect] = useState(null)
   const index = useSelector(selectSearchIndex)
+  const networkProfiles = useSelector(selectSubscriptionNetworkProfiles)
   const results = useMemo(
-    () => (query.trim().length < 2 ? [] : filterSearchIndex(index, query).slice(0, 10)),
-    [index, query],
+    () => searchGlobalResults(index, networkProfiles, query),
+    [index, networkProfiles, query],
   )
   const showPanel = query.trim().length >= 2
 

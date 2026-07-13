@@ -22,6 +22,7 @@ import { addToast } from '../features/ui/uiSlice'
 import { isNative } from '../platform/capacitor'
 import { syncNativePushPreference, setNativePushUserId } from '../platform/pushNotifications'
 import {
+  ensureWebPushSubscription,
   getWebPushInstallHint,
   isWebPushContextReady,
   syncWebPushPreference,
@@ -64,6 +65,7 @@ export function SettingsPage() {
         })
       } else {
         void syncWebPushPreference(user.id, Boolean(value)).then((result) => {
+          if (value && result.enabled) return
           if (value && result.reason === 'ios_install_required') {
             dispatch(
               addToast({

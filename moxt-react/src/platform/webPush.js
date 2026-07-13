@@ -156,3 +156,29 @@ export async function refreshWebPushSubscription(userId) {
   storeWebPushEndpoint(subscription.endpoint)
   return { ok: true }
 }
+
+/** Réactive ou crée l’abonnement Web Push après connexion (Safari PWA inclus). */
+export async function ensureWebPushSubscription(userId, { prompt = false } = {}) {
+  if (!userId) return { enabled: false, reason: 'auth_required' }
+  if (!isWebPushContextReady()) return { enabled: false, reason: 'not_ready' }
+
+  const existing = await getExistingWebPushSubscription()
+  if (existing) {
+    await refreshWebPushSubscription(userId)
+    return { enabled: true, endpoint: existing.endpoint, refreshed: true }
+  }
+
+  if (Notification.permission === 'granted') {
+    return subscribeWebPush(userId)
+  }
+
+  if (Notification.permission === 'denied') {
+    return { enabled: false, reason: 'denied' }
+  }
+
+  if (prompt) {
+    return subscribeWebPush(userId)
+  }
+
+  return { enabled: false, reason: 'permission_required' }
+}

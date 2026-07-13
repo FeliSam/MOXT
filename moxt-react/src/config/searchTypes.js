@@ -5,6 +5,7 @@ export const SEARCH_TYPE_META = {
   job: { label: 'Job', tone: 'info' },
   event: { label: 'Événement', tone: 'rose' },
   page: { label: 'Page', tone: 'slate' },
+  profile: { label: 'Profil', tone: 'brand' },
 }
 
 export function searchTypeMeta(type, fallbackLabel = type) {

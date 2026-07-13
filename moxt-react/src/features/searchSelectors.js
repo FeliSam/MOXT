@@ -1,5 +1,10 @@
 import { createSelector } from '@reduxjs/toolkit'
 import { searchablePages } from '../config/searchablePages'
+import {
+  buildSubscriptionNetworkProfiles,
+  filterSubscriptionNetworkProfiles,
+  subscriptionProfilesToSearchResults,
+} from './subscriptionProfileSearch'
 
 export const selectSearchIndex = createSelector(
   [
@@ -81,6 +86,11 @@ export const selectSearchIndex = createSelector(
   ],
 )
 
+export const selectSubscriptionNetworkProfiles = createSelector(
+  [(state) => state, (state) => state.auth.user?.id],
+  (state, userId) => buildSubscriptionNetworkProfiles(state, userId),
+)
+
 export function filterSearchIndex(index, query, type = 'all') {
   const normalized = query.trim().toLocaleLowerCase('fr')
   return index.filter((item) => {
@@ -92,4 +102,19 @@ export function filterSearchIndex(index, query, type = 'all') {
         .includes(normalized)
     return matchesType && matchesQuery
   })
+}
+
+export function searchGlobalResults(contentIndex, networkProfiles, query) {
+  const trimmed = query.trim()
+  if (trimmed.length < 2) return []
+
+  const content = filterSearchIndex(contentIndex, trimmed)
+  const profileResults =
+    trimmed.length >= 3
+      ? subscriptionProfilesToSearchResults(
+          filterSubscriptionNetworkProfiles(networkProfiles, trimmed),
+        )
+      : []
+
+  return [...profileResults, ...content].slice(0, 10)
 }

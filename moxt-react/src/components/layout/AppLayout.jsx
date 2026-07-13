@@ -9,10 +9,13 @@ import { Header } from './Header'
 import { Sidebar } from './Sidebar'
 import { WelcomeGate } from '../onboarding/WelcomeGate'
 import { PwaInstallBanner } from '../pwa/PwaInstallBanner'
+import { PushPermissionBanner } from '../pwa/PushPermissionBanner'
+import { useAppBadgeSync } from '../../hooks/useAppBadgeSync'
 
 export function AppLayout({ children }) {
   const dispatch = useDispatch()
   const location = useLocation()
+  const user = useSelector((state) => state.auth.user)
   const sidebarOpen = useSelector((state) => state.ui.sidebarOpen)
   const messageParams = new URLSearchParams(location.search)
   const isMessagesRoute = location.pathname === '/messages'
@@ -21,6 +24,7 @@ export function AppLayout({ children }) {
     (messageParams.has('conversation') ||
       (messageParams.has('relatedType') && messageParams.has('relatedId')))
   useContentLifecycle()
+  useAppBadgeSync(user?.id)
 
   useLayoutEffect(() => {
     dispatch(closeSidebar())
@@ -86,6 +90,7 @@ export function AppLayout({ children }) {
       </div>
       <WelcomeGate />
       <PwaInstallBanner />
+      <PushPermissionBanner />
     </div>
   )
 }
