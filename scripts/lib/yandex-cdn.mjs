@@ -150,7 +150,38 @@ export function attachCertificate(resourceId, certId) {
 }
 
 export function purgeCdnCache(resourceId) {
-  const paths = ['/', '/index.html', '/version.json', '/deploy-manifest.json', '/sw.js', '/theme-init.js', '/manifest.webmanifest']
+  // Inclure logos / icônes : le shell seul ne suffit pas (CDN garde les PNG/SVG 1h).
+  const paths = [
+    '/',
+    '/index.html',
+    '/version.json',
+    '/deploy-manifest.json',
+    '/sw.js',
+    '/theme-init.js',
+    '/manifest.webmanifest',
+    '/favicon.svg',
+    '/app-icon.svg',
+    '/favicon-32.png',
+    '/apple-touch-icon.png',
+    '/icon-192.png',
+    '/icon-512.png',
+    '/icon-512-maskable.png',
+    '/mx-32.png',
+    '/mx-180.png',
+    '/mx-192.png',
+    '/mx-512.png',
+    '/mx-512-maskable.png',
+    '/moxt-x-32.png',
+    '/moxt-x-180.png',
+    '/moxt-x-192.png',
+    '/moxt-x-512.png',
+    '/moxt-x-512-maskable.png',
+    '/assets/brand/moxt-x.png',
+    '/assets/brand/mark.png',
+    '/assets/logos/X.png',
+    '/assets/logos/X.svg',
+    '/assets/logos/MOXTlogo.svg',
+  ]
   const selective = ycRun([
     'cdn',
     'cache',

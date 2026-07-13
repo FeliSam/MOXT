@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 
 const publicDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public')
 const sourcePng = path.join(publicDir, 'assets', 'brand', 'moxt-x.png')
+const brandPublic = path.join(publicDir, 'assets', 'brand', 'mark.png')
 
 if (!fs.existsSync(sourcePng)) {
   throw new Error(`Logo introuvable: ${sourcePng}`)
@@ -35,14 +36,25 @@ async function writeIcon(size, filename, { pad = 0 } = {}) {
   fs.writeFileSync(path.join(publicDir, filename), buffer)
 }
 
-// Noms actuels
+// Copie publique (nouveau chemin = miss CDN ; source reste moxt-x.png)
+fs.copyFileSync(sourcePng, brandPublic)
+fs.copyFileSync(sourcePng, path.join(publicDir, 'assets', 'logos', 'X.png'))
+
+// Noms publics actuels (chemins neufs pour contourner cache CDN)
+await writeIcon(32, 'mx-32.png')
+await writeIcon(180, 'mx-180.png')
+await writeIcon(192, 'mx-192.png')
+await writeIcon(512, 'mx-512.png')
+await writeIcon(512, 'mx-512-maskable.png', { pad: 0.1 })
+
+// Compat anciens noms moxt-x-* (réécrits aussi)
 await writeIcon(32, 'moxt-x-32.png')
 await writeIcon(180, 'moxt-x-180.png')
 await writeIcon(192, 'moxt-x-192.png')
 await writeIcon(512, 'moxt-x-512.png')
 await writeIcon(512, 'moxt-x-512-maskable.png', { pad: 0.1 })
 
-// Chemins legacy (Safari / caches / CDN) → toujours la nouvelle image
+// Chemins legacy Safari / caches hérités
 await writeIcon(32, 'favicon-32.png')
 await writeIcon(180, 'apple-touch-icon.png')
 await writeIcon(192, 'icon-192.png')
@@ -63,6 +75,4 @@ for (const stale of [
   }
 }
 
-fs.copyFileSync(sourcePng, path.join(publicDir, 'assets', 'logos', 'X.png'))
-
-console.log('PWA icons aligned from assets/brand/moxt-x.png (+ legacy names overwritten)')
+console.log('PWA icons aligned (mx-* + mark.png + legacy overwrites)')

@@ -65,7 +65,7 @@ export function VersionPage() {
       <Card>
         <div className="flex items-center gap-4">
           <img
-            src="/assets/brand/moxt-x.png?v=20260714d"
+            src="/assets/brand/mark.png?v=20260714e"
             alt="MOXT"
             className="size-14 shrink-0 rounded-3xl shadow-lg"
           />

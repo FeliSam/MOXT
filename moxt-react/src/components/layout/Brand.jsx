@@ -2,7 +2,7 @@ export function Brand({ compact = false, iconOnly = false }) {
   return (
     <div className="flex min-w-0 items-center gap-2.5">
       <img
-        src="/assets/brand/moxt-x.png?v=20260714d"
+        src="/assets/brand/mark.png?v=20260714e"
         alt="MOXT"
         className="h-9 w-9 shrink-0 rounded-xl object-cover sm:h-10 sm:w-10"
         width={40}
