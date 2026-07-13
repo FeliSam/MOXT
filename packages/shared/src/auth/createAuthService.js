@@ -732,8 +732,12 @@ export function createAuthService(supabase, redirects = {}) {
       }
 
       const verifiedAuthUser = data?.user || authUser
+      const confirmedEmail = String(verifiedAuthUser?.email || normalizedEmail)
+        .trim()
+        .toLowerCase()
+
       await upsertProfile(currentUser.id, {
-        email: normalizedEmail,
+        email: confirmedEmail,
         updated_at: new Date().toISOString(),
       })
       const user = await fetchProfile(currentUser.id)

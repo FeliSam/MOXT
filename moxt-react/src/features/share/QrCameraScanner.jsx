@@ -13,7 +13,7 @@ import { useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { useLanguage } from '../../contexts/useLanguage'
-import { resolveMoxtScanDestination, storePendingInviteCode } from '../guest/guestNavigation'
+import { resolveScanNavigation, storePendingInviteCode } from '../guest/guestNavigation'
 import { applyPendingReferral } from '../referral/referralService'
 import { queryCameraPermission, requestCameraAccess } from './cameraPermission'
 import { parseMoxtScanTarget } from './parseMoxtScanTarget'
@@ -93,7 +93,7 @@ export function QrCameraScanner({ active = true }) {
   function openTarget() {
     if (capture?.kind !== 'known') return
 
-    const destination = resolveMoxtScanDestination(capture.target, user)
+    const destination = resolveScanNavigation(capture.target, user)
     if (capture.target.type === 'invite' && capture.target.code) {
       storePendingInviteCode(capture.target.code)
     }

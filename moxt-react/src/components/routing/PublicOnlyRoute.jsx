@@ -1,7 +1,17 @@
 import { useSelector } from 'react-redux'
-import { Navigate, Outlet } from 'react-router-dom'
+import { Navigate, Outlet, useSearchParams } from 'react-router-dom'
 
 export function PublicOnlyRoute() {
   const user = useSelector((state) => state.auth.user)
-  return user ? <Navigate to="/dashboard" replace /> : <Outlet />
+  const [searchParams] = useSearchParams()
+  const returnTo = searchParams.get('returnTo')
+
+  if (user) {
+    if (returnTo && returnTo.startsWith('/')) {
+      return <Navigate to={decodeURIComponent(returnTo)} replace />
+    }
+    return <Navigate to="/dashboard" replace />
+  }
+
+  return <Outlet />
 }

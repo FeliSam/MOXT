@@ -16,6 +16,7 @@ import { constrainPhone, phonePrefixForCallingCode } from '../config/phone'
 import { useLanguage } from '../contexts/useLanguage'
 import { profileSchema } from '../features/auth/authSchemas'
 import { updateProfile } from '../features/auth/authSlice'
+import { EmailVerificationCard } from '../features/security/EmailVerificationCard'
 import { addToast } from '../features/ui/uiSlice'
 import { useGeographyOptions } from '../hooks/useGeographyOptions'
 import { storageService } from '../services/storageService'
@@ -183,10 +184,10 @@ export function PersonalInformationPage() {
               <p className="mt-3 text-sm text-[var(--app-text-muted)]">
                 <span className="font-bold text-[var(--app-text)]">E-mail</span>
                 <br />
-                {user.email}
+                {user.email || 'Non renseigné'}
               </p>
               <p className="mt-3 text-xs text-[var(--app-text-muted)]">
-                L'adresse e-mail ne peut pas être modifiée ici. Contactez le support.
+                Modifiable dans le formulaire avec validation par code OTP.
               </p>
             </Card>
           </div>
@@ -210,13 +211,7 @@ export function PersonalInformationPage() {
                   error={errorFor('lastName')}
                 />
               </div>
-              <Input
-                id="profile-email"
-                label="Adresse e-mail"
-                value={user.email}
-                disabled
-                hint="Non modifiable — contactez le support."
-              />
+              <EmailVerificationCard variant="embedded" idPrefix="profile" />
             </Card>
 
             {/* Résidence en Russie */}

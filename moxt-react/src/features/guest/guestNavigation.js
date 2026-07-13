@@ -99,6 +99,31 @@ export function resolveMoxtScanDestination(target, user) {
   return target.path
 }
 
+function loginPathForReturnTo(path) {
+  const normalized = String(path || '').trim()
+  if (!normalized.startsWith('/')) return '/login'
+  return `/login?returnTo=${encodeURIComponent(normalized)}`
+}
+
+/**
+ * Destination après scan QR selon la session navigateur :
+ * session active → profil cible (ou /profile pour son QR / invitation) ;
+ * pas de session → connexion avec retour vers la cible (sauf invitation → register).
+ */
+export function resolveScanNavigation(target, user) {
+  if (!target?.path) return '/dashboard'
+
+  if (!user?.id) {
+    if (target.type === 'invite') return target.path
+    if (target.type === 'user' || target.type === 'business') {
+      return loginPathForReturnTo(target.path)
+    }
+    return target.path
+  }
+
+  return resolveMoxtScanDestination(target, user)
+}
+
 /** Normalise un lien profond MOXT selon la session navigateur. */
 export function resolveDeepLinkDestination(path, user) {
   const trimmed = String(path || '').trim()
@@ -109,7 +134,7 @@ export function resolveDeepLinkDestination(path, user) {
   }
 
   const target = parseMoxtScanTarget(trimmed)
-  if (target) return resolveMoxtScanDestination(target, user)
+  if (target) return resolveScanNavigation(target, user)
 
   const ownProfileMatch = trimmed.match(/^\/users\/([^/]+)\/(?:publications|annonces)/i)
   if (user?.id && ownProfileMatch?.[1] && matchUserId(ownProfileMatch[1], user.id)) {

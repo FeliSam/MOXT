@@ -71,9 +71,18 @@ describe('exchangerListUtils', () => {
     expect(resolveExchangerCountry(bjBusiness, 'BJ', 'BJ')).toBe('BJ')
   })
 
-  it('filtre les échangeurs du pays utilisateur uniquement', () => {
+  it('filtre par pays d origine meme pour Russie vers Afrique', () => {
+    const dualBusiness = {
+      ...bjBusiness,
+      id: 'BIZ-DUAL',
+      transferAccounts: [
+        { slot: 'ru', country: 'RU', active: true },
+        { slot: 'origin', country: 'BJ', active: true, isDefault: true },
+      ],
+    }
+
     const rows = listExchangersForTransfer({
-      businesses: [ruBusiness, bjBusiness, tgBusiness],
+      businesses: [ruBusiness, bjBusiness, dualBusiness],
       user: { id: 'u1', country: 'RU', originCountry: 'BJ' },
       originCountry: 'BJ',
       direction: DIRECTIONS.RU_TO_BJ,
@@ -81,8 +90,8 @@ describe('exchangerListUtils', () => {
     })
 
     expect(rows).toHaveLength(1)
-    expect(rows[0].id).toBe('BIZ-RU')
-    expect(rows[0].country).toBe('RU')
+    expect(rows[0].id).toBe('BIZ-DUAL')
+    expect(rows[0].country).toBe('BJ')
   })
 
   it('un membre béninois ne voit pas les échangeurs togolais', () => {

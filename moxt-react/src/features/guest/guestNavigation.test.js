@@ -1,8 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, beforeEach } from 'vitest'
 import {
+  clearReturnTo,
   resolveAuthenticatedLanding,
   resolveDeepLinkDestination,
   resolveMoxtScanDestination,
+  resolveScanNavigation,
 } from './guestNavigation'
 
 const userId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
@@ -16,6 +18,9 @@ const completeUser = {
 }
 
 describe('guestNavigation session QR', () => {
+  beforeEach(() => {
+    clearReturnTo()
+  })
   it('envoie vers le profil quand la session est active sur une invitation', () => {
     const target = {
       type: 'invite',
@@ -50,6 +55,23 @@ describe('guestNavigation session QR', () => {
 
     expect(resolveMoxtScanDestination(target, completeUser)).toBe(
       `/users/${otherId}/publications`,
+    )
+    expect(resolveScanNavigation(target, completeUser)).toBe(`/users/${otherId}/publications`)
+  })
+
+  it('demande la connexion pour le profil d un autre membre sans session', () => {
+    const otherId = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
+    const target = {
+      type: 'user',
+      path: `/users/${otherId}/publications`,
+      userId: otherId,
+    }
+
+    expect(resolveScanNavigation(target, null)).toBe(
+      `/login?returnTo=${encodeURIComponent(`/users/${otherId}/publications`)}`,
+    )
+    expect(resolveDeepLinkDestination(`/users/${otherId}/publications`, null)).toBe(
+      `/login?returnTo=${encodeURIComponent(`/users/${otherId}/publications`)}`,
     )
   })
 

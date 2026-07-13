@@ -2,27 +2,21 @@ import {
   inferTransferAccountSlot,
   receivingCountryForDirection,
 } from './transferAccountUtils'
-import { DIRECTIONS } from './transferConfig'
 
 export function resolveUserTransferCountry(user, originCountry = 'BJ') {
   if (user?.country === 'RU') return 'RU'
   return user?.originCountry || user?.country || originCountry
 }
 
-/** Pays d'origine pour lister les partenaires (Bénin, Togo, Ghana…), pas la résidence en Russie. */
+/** Pays d'origine pour lister les partenaires (Bénin, Togo, Cameroun…), jamais la résidence en Russie. */
 export function resolveUserPartnerCountry(user, originCountry = 'BJ') {
   if (user?.originCountry) return user.originCountry
-  if (user?.country === 'RU') return 'RU'
-  return user?.country || originCountry
+  if (user?.country && user.country !== 'RU') return user.country
+  return originCountry
 }
 
-/**
- * Pays partenaire à filtrer selon le sens du transfert.
- * Afrique → Russie : échangeurs du pays d'origine du membre (CM, BJ, TG…).
- * Russie → Afrique : échangeurs avec compte Russie.
- */
-export function resolvePartnerCountryForTransfer(user, originCountry = 'BJ', direction) {
-  if (direction === DIRECTIONS.RU_TO_BJ) return 'RU'
+/** Pays partenaire à filtrer — toujours le pays d'origine du membre, quel que soit le sens. */
+export function resolvePartnerCountryForTransfer(user, originCountry = 'BJ') {
   return resolveUserPartnerCountry(user, originCountry)
 }
 
