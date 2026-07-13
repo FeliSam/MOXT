@@ -26,6 +26,16 @@ export function LanguageProvider({ children }) {
   }, [language])
 
   useEffect(() => {
+    document.documentElement.lang = language
+    localStorage.setItem(STORAGE_KEY, language)
+    document.documentElement.classList.add('locale-animating')
+    const timer = window.setTimeout(() => {
+      document.documentElement.classList.remove('locale-animating')
+    }, 240)
+    return () => window.clearTimeout(timer)
+  }, [language])
+
+  useEffect(() => {
     if (language === SOURCE_LANGUAGE) return
 
     const originals = textOriginalsRef.current

@@ -7,7 +7,7 @@ import { isSubscriberBanned } from '@moxt/shared/utils/subscriptionUtils.js'
 const storage = createLocalStorage('moxt-account-v1')
 
 const defaultPreferences = {
-  language: 'fr',
+  language: 'ru',
   emailNotifications: true,
   pushNotifications: true,
   activityVisibility: 'public',

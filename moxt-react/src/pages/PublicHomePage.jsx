@@ -35,6 +35,11 @@ export function PublicHomePage() {
               <Link to="/register">
                 <Button icon={FiArrowRight}>Commencer</Button>
               </Link>
+              <Link to="/presentation">
+                <Button variant="secondary" icon={FiArrowRight}>
+                  Découvrir la solution
+                </Button>
+              </Link>
               <Link to="/discover">
                 <Button variant="secondary" icon={FiSearch}>
                   Explorer les services

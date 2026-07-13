@@ -7,6 +7,7 @@ import { useLanguage } from '../../contexts/useLanguage'
 import { selectUnreadMessageCount, selectUnreadNotificationCount } from '../../features/selectors'
 import { useSmartNavbar } from '../../hooks/useSmartNavbar'
 import { CountBounce } from '../ui/CountBounce'
+import { LanguageSwitcher } from '../ui/LanguageSwitcher'
 import { Brand } from './Brand'
 import { GlobalSearch } from './GlobalSearch'
 
@@ -38,7 +39,7 @@ export function Header({ hideOnMobile = false }) {
         </Link>
 
         <div className="hidden w-[8rem] shrink-0 lg:flex xl:hidden">
-          <Brand compact />
+          <Brand compact iconOnly />
         </div>
 
         {/* Recherche globale — desktop uniquement */}
@@ -97,6 +98,8 @@ export function Header({ hideOnMobile = false }) {
           >
             <FiHeart className="text-lg" />
           </Link>
+
+          <LanguageSwitcher className="shrink-0" compact />
 
           <button
             type="button"

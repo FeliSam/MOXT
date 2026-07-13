@@ -3,6 +3,15 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from
 import path from 'node:path'
 import { buildDeployManifest } from '../scripts/lib/deploy-manifest.mjs'
 
+function readPackageVersion(rootDir) {
+  try {
+    const pkg = JSON.parse(readFileSync(path.join(rootDir, 'package.json'), 'utf8'))
+    return pkg.version || '0.0.0'
+  } catch {
+    return '0.0.0'
+  }
+}
+
 function resolveBuildId() {
   if (process.env.GITHUB_SHA) return process.env.GITHUB_SHA.slice(0, 12)
   try {
@@ -16,6 +25,7 @@ function resolveBuildId() {
 export function moxtBuildVersion({ rootDir }) {
   const buildId = resolveBuildId()
   const swCacheId = `moxt-${buildId}`
+  const appVersion = readPackageVersion(rootDir)
 
   return {
     name: 'moxt-build-version',
@@ -24,6 +34,7 @@ export function moxtBuildVersion({ rootDir }) {
         define: {
           __MOXT_BUILD_ID__: JSON.stringify(buildId),
           __MOXT_SW_CACHE_ID__: JSON.stringify(swCacheId),
+          __MOXT_APP_VERSION__: JSON.stringify(appVersion),
         },
       }
     },
@@ -32,6 +43,7 @@ export function moxtBuildVersion({ rootDir }) {
       mkdirSync(distDir, { recursive: true })
 
       const release = {
+        version: appVersion,
         buildId,
         builtAt: new Date().toISOString(),
         swCacheId,

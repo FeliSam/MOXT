@@ -2,13 +2,14 @@ import { FiMoon, FiSearch, FiSun } from 'react-icons/fi'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useTheme } from '../../contexts/useTheme'
 import { useLanguage } from '../../contexts/useLanguage'
-import { cycleLanguage } from '../../config/uiTranslations'
 import { useSmartNavbar } from '../../hooks/useSmartNavbar'
 import { Button } from '../ui/Button'
+import { LanguageSwitcher } from '../ui/LanguageSwitcher'
 import { Brand } from './Brand'
 
 const publicLinks = [
   { label: 'Accueil', path: '/' },
+  { label: 'La solution', path: '/presentation' },
   { label: 'Découvrir', path: '/discover' },
   { label: 'Confiance', path: '/trust' },
   { label: 'FAQ', path: '/faq' },
@@ -16,7 +17,7 @@ const publicLinks = [
 
 export function PublicSiteLayout({ children }) {
   const { theme, toggleTheme } = useTheme()
-  const { language, setLanguage, translateLabel } = useLanguage()
+  const { translateLabel } = useLanguage()
   const visible = useSmartNavbar()
 
   return (
@@ -58,14 +59,7 @@ export function PublicSiteLayout({ children }) {
           >
             <FiSearch />
           </Link>
-          <button
-            type="button"
-            className="grid size-10 place-items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-xs font-black"
-            onClick={() => setLanguage(cycleLanguage(language))}
-            aria-label="Changer la langue"
-          >
-            {language.toUpperCase()}
-          </button>
+          <LanguageSwitcher className="shrink-0" />
           <button
             type="button"
             className="grid size-10 place-items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]"

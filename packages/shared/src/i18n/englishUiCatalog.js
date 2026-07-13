@@ -15,6 +15,8 @@ export const ENGLISH_UI_CATALOG = {
   Aide: 'Help',
   Confiance: 'Trust',
   Découvrir: 'Discover',
+  'La solution': 'The solution',
+  'Découvrir la solution': 'Discover the solution',
   FAQ: 'FAQ',
 
   // Routes (titres)

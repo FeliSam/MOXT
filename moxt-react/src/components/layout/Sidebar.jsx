@@ -145,13 +145,8 @@ export function Sidebar({ open }) {
           <Link to="/dashboard" aria-label="MOXT" className="flex min-w-0 items-center justify-center">
             <img
               src="/assets/logos/X.svg"
-              alt=""
-              className="hidden h-9 w-9 shrink-0 object-contain lg:block"
-            />
-            <img
-              src="/assets/logos/MOXTlogo.svg"
               alt="MOXT"
-              className="block h-9 max-w-[9rem] object-contain object-left lg:hidden"
+              className="h-9 w-9 shrink-0 object-contain"
             />
           </Link>
           <button

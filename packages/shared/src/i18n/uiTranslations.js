@@ -8,6 +8,7 @@ import { SHARE_REFERRAL_CATALOGS } from './shareReferralCatalog'
 import { STATUS_META } from '../config/statuses.js'
 
 export const SOURCE_LANGUAGE = 'fr'
+export const DEFAULT_APP_LANGUAGE = 'ru'
 export const SUPPORTED_LANGUAGES = ['fr', 'en', 'ru', 'pt']
 
 export const LANGUAGE_LABELS = {
@@ -169,6 +170,8 @@ const RUSSIAN_PHRASES = {
   Aide: 'Помощь',
   Confiance: 'Доверие',
   Découvrir: 'Узнать',
+  'La solution': 'Решение',
+  'Découvrir la solution': 'Открыть решение',
   FAQ: 'FAQ',
 
   // Routes (titres)
@@ -748,6 +751,8 @@ const PORTUGUESE_PHRASES = {
   Aide: 'Ajuda',
   Confiance: 'Confiança',
   Découvrir: 'Descobrir',
+  'La solution': 'A solução',
+  'Découvrir la solution': 'Descobrir a solução',
   FAQ: 'FAQ',
 
   // Routes (titres)
@@ -1442,24 +1447,21 @@ export function cycleLanguage(current) {
 }
 
 export function normalizeStoredLanguage(stored) {
-  return SUPPORTED_LANGUAGES.includes(stored) ? stored : SOURCE_LANGUAGE
+  return SUPPORTED_LANGUAGES.includes(stored) ? stored : DEFAULT_APP_LANGUAGE
 }
 
 /** Mappe navigator.language (ex. ru-RU, pt-BR) vers une langue MOXT supportée. */
 export function detectBrowserLanguage(navigatorLanguage = '') {
   const tag = String(navigatorLanguage || '').trim().toLowerCase()
-  if (!tag) return SOURCE_LANGUAGE
+  if (!tag) return DEFAULT_APP_LANGUAGE
   const primary = tag.split('-')[0]
-  return SUPPORTED_LANGUAGES.includes(primary) ? primary : SOURCE_LANGUAGE
+  return SUPPORTED_LANGUAGES.includes(primary) ? primary : DEFAULT_APP_LANGUAGE
 }
 
-/** Préférence sauvegardée, sinon langue du navigateur, sinon français. */
+/** Préférence sauvegardée, sinon russe par défaut (langue officielle MOXT). */
 export function resolveInitialLanguage(stored) {
   if (stored && SUPPORTED_LANGUAGES.includes(stored)) return stored
-  if (typeof globalThis.navigator !== 'undefined' && globalThis.navigator.language) {
-    return detectBrowserLanguage(globalThis.navigator.language)
-  }
-  return SOURCE_LANGUAGE
+  return DEFAULT_APP_LANGUAGE
 }
 
 export { PHRASES, ENGLISH_PHRASES }

@@ -1461,6 +1461,11 @@ html.theme-animating *::after {
     box-shadow 380ms ease !important;
 }
 
+html.locale-animating #root {
+  transition: opacity 180ms ease;
+  opacity: 0.94;
+}
+
 /* ─── Spinner ────────────────────────────────────────────────────────────── */
 .ds-spinner {
   display: inline-block;

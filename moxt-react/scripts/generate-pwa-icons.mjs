@@ -30,6 +30,7 @@ async function writePng(size, filename) {
 }
 
 fs.writeFileSync(path.join(publicDir, 'app-icon.svg'), appIconSvg)
+fs.writeFileSync(path.join(publicDir, 'favicon.svg'), appIconSvg)
 await writePng(192, 'icon-192.png')
 await writePng(512, 'icon-512.png')
 await writePng(180, 'apple-touch-icon.png')
