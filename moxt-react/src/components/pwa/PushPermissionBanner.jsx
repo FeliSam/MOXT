@@ -7,6 +7,7 @@ import {
   canPromptForPushPermission,
   ensureWebPushSubscription,
   getVapidPublicKey,
+  getWebPushErrorMessage,
 } from '../../platform/webPush'
 import { Button } from '../ui/Button'
 
@@ -69,12 +70,13 @@ export function PushPermissionBanner() {
         localStorage.setItem(DISMISS_KEY, String(Date.now()))
         return
       }
-      if (result.reason === 'denied') {
+      if (result.reason) {
         dispatch(
           addToast({
-            tone: 'warning',
-            title: 'Notifications refusées',
-            message: 'Autorisez MOXT dans Réglages → Notifications de Safari.',
+            tone: result.reason === 'denied' ? 'warning' : 'info',
+            title:
+              result.reason === 'denied' ? 'Notifications refusées' : 'Activation incomplète',
+            message: getWebPushErrorMessage(result.reason),
           }),
         )
       }

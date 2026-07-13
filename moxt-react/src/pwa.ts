@@ -14,6 +14,40 @@ function activateWaitingWorker(registration: ServiceWorkerRegistration) {
   waiting.postMessage({ type: 'SKIP_WAITING' })
 }
 
+function registerServiceWorkerNow() {
+  navigator.serviceWorker
+    .register('/sw.js', { updateViaCache: 'none' })
+    .then((registration) => {
+      console.log('[PWA] Service Worker registered:', registration.scope)
+
+      if (registration.waiting) {
+        activateWaitingWorker(registration)
+      }
+
+      registration.addEventListener('updatefound', () => {
+        const installing = registration.installing
+        if (!installing) return
+
+        installing.addEventListener('statechange', () => {
+          if (installing.state === 'installed' && navigator.serviceWorker.controller) {
+            activateWaitingWorker(registration)
+          }
+        })
+      })
+
+      const checkSwUpdate = () => {
+        void registration.update().catch(() => {})
+      }
+
+      checkSwUpdate()
+      window.setInterval(checkSwUpdate, SW_UPDATE_MS)
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') checkSwUpdate()
+      })
+    })
+    .catch((err) => console.error('[PWA] SW registration failed:', err))
+}
+
 export function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return
 
@@ -28,39 +62,13 @@ export function registerServiceWorker() {
       scheduleAppReload({ reason: 'service-worker', delayMs: 500 })
     })
 
-    window.addEventListener('load', () => {
-      navigator.serviceWorker
-        .register('/sw.js', { updateViaCache: 'none' })
-        .then((registration) => {
-          console.log('[PWA] Service Worker registered:', registration.scope)
+    // L’app bootstrappe en async : l’événement load peut déjà être passé.
+    if (document.readyState === 'complete') {
+      registerServiceWorkerNow()
+      return
+    }
 
-          if (registration.waiting) {
-            activateWaitingWorker(registration)
-          }
-
-          registration.addEventListener('updatefound', () => {
-            const installing = registration.installing
-            if (!installing) return
-
-            installing.addEventListener('statechange', () => {
-              if (installing.state === 'installed' && navigator.serviceWorker.controller) {
-                activateWaitingWorker(registration)
-              }
-            })
-          })
-
-          const checkSwUpdate = () => {
-            void registration.update().catch(() => {})
-          }
-
-          checkSwUpdate()
-          window.setInterval(checkSwUpdate, SW_UPDATE_MS)
-          document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') checkSwUpdate()
-          })
-        })
-        .catch((err) => console.error('[PWA] SW registration failed:', err))
-    })
+    window.addEventListener('load', registerServiceWorkerNow, { once: true })
   })
 }
 

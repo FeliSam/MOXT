@@ -58,15 +58,15 @@ async function bootstrap() {
 bootstrap()
 
 if (import.meta.env.PROD) {
-  import('./platform/capacitor').then(({ isNative }) => {
+  void import('./platform/capacitor').then(({ isNative }) => {
     if (isNative) return
-    import('./pwa').then(({ registerServiceWorker, listenForInstallPrompt, listenForServiceWorkerMessages }) => {
+    void import('./pwa').then(({ registerServiceWorker, listenForInstallPrompt, listenForServiceWorkerMessages }) => {
       registerServiceWorker()
       listenForInstallPrompt()
       listenForServiceWorkerMessages()
     })
-    import('./services/releaseWatcher').then(({ startReleaseWatcher }) => {
-      import('./app/store').then(({ store }) => {
+    void import('./services/releaseWatcher').then(({ startReleaseWatcher }) => {
+      void import('./app/store').then(({ store }) => {
         startReleaseWatcher(store)
       })
     })

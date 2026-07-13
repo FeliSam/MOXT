@@ -25,6 +25,7 @@ import {
   canPromptForPushPermission,
   ensureWebPushSubscription,
   getVapidPublicKey,
+  getWebPushErrorMessage,
   getWebPushInstallHint,
   isWebPushContextReady,
   syncWebPushPreference,
@@ -77,20 +78,23 @@ export function SettingsPage() {
         )
         return
       }
-      if (result.reason === 'denied') {
+      if (result.reason) {
         dispatch(
           addToast({
-            tone: 'warning',
-            title: 'Notifications refusées',
-            message: 'Autorisez MOXT dans Réglages → Notifications de Safari.',
+            tone: result.reason === 'denied' ? 'warning' : 'info',
+            title:
+              result.reason === 'denied' ? 'Notifications refusées' : 'Activation incomplète',
+            message: getWebPushErrorMessage(result.reason),
           }),
         )
-        dispatch(
-          updateAccountPreferences({
-            userId: user.id,
-            preferences: { pushNotifications: false },
-          }),
-        )
+        if (result.reason === 'denied') {
+          dispatch(
+            updateAccountPreferences({
+              userId: user.id,
+              preferences: { pushNotifications: false },
+            }),
+          )
+        }
       }
     } finally {
       setPushPromptLoading(false)
@@ -143,7 +147,7 @@ export function SettingsPage() {
               addToast({
                 tone: 'warning',
                 title: 'Notifications refusées',
-                message: 'Autorisez les notifications MOXT dans les réglages du navigateur ou de l’app.',
+                message: getWebPushErrorMessage('denied'),
               }),
             )
             dispatch(
@@ -154,20 +158,26 @@ export function SettingsPage() {
             )
             return
           }
-          if (value && result.reason === 'missing_vapid') {
+          if (value && result.reason) {
             dispatch(
               addToast({
-                tone: 'warning',
-                title: 'Notifications indisponibles',
-                message: 'La configuration push du site est incomplète. Réessayez après la prochaine mise à jour.',
+                tone: 'info',
+                title: 'Activation incomplète',
+                message: getWebPushErrorMessage(result.reason),
               }),
             )
-            dispatch(
-              updateAccountPreferences({
-                userId: user.id,
-                preferences: { pushNotifications: false },
-              }),
-            )
+            if (
+              result.reason === 'missing_vapid' ||
+              result.reason === 'service_worker_timeout' ||
+              result.reason === 'no_service_worker'
+            ) {
+              dispatch(
+                updateAccountPreferences({
+                  userId: user.id,
+                  preferences: { pushNotifications: false },
+                }),
+              )
+            }
           }
         })
       }

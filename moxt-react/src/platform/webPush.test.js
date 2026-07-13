@@ -25,6 +25,11 @@ describe('webPush', () => {
     expect(Array.from(bytes)).toEqual([1, 2, 3])
   })
 
+  it('formate les erreurs push', async () => {
+    const { getWebPushErrorMessage } = await import('./webPush')
+    expect(getWebPushErrorMessage('service_worker_timeout')).toContain('service')
+  })
+
   it('exige l installation PWA sur iPhone', async () => {
     vi.stubEnv('VITE_VAPID_PUBLIC_KEY', 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrA_VzRaKK0R2VHpj2ukAQM2vXdtXCIADAx9hd4WBw')
     vi.stubGlobal('Notification', {})
