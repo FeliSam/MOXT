@@ -34,6 +34,13 @@ export function isWebPushContextReady() {
   return true
 }
 
+/** Affiche la bannière d’autorisation (permission système, sans exiger VAPID). */
+export function canPromptForPushPermission() {
+  if (!canUseWebPushApi()) return false
+  if (isIosDevice() && !isStandalone()) return false
+  return true
+}
+
 export function getWebPushInstallHint() {
   if (!isIosDevice()) return null
   if (isStandalone()) return null

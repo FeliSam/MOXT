@@ -4,30 +4,43 @@ import sharp from 'sharp'
 import { fileURLToPath } from 'node:url'
 
 const publicDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public')
-const xLogoPath = path.join(publicDir, 'assets', 'logos', 'X.svg')
-const xLogoSvg = fs.readFileSync(xLogoPath, 'utf8')
+const logoPath = path.join(publicDir, 'assets', 'logos', 'X.svg')
+const logoSvg = fs.readFileSync(logoPath, 'utf8')
 
-async function writePng(size, filename, { padding = 0.12 } = {}) {
-  const inner = Math.round(size * (1 - padding * 2))
-  const buffer = await sharp(Buffer.from(xLogoSvg))
-    .resize(inner, inner, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
-    .extend({
-      top: Math.round(size * padding),
-      bottom: Math.round(size * padding),
-      left: Math.round(size * padding),
-      right: Math.round(size * padding),
-      background: { r: 7, g: 89, b: 77, alpha: 1 },
-    })
+/** Rendu plein cadre : le SVG inclut déjà le fond dégradé et les coins arrondis. */
+async function writeAppIcon(size, filename) {
+  const buffer = await sharp(Buffer.from(logoSvg))
+    .resize(size, size, { fit: 'fill' })
     .png()
     .toBuffer()
   fs.writeFileSync(path.join(publicDir, filename), buffer)
 }
 
-fs.writeFileSync(path.join(publicDir, 'favicon.svg'), xLogoSvg)
-fs.copyFileSync(xLogoPath, path.join(publicDir, 'app-icon.svg'))
+/** Icône maskable Android : logo réduit dans la zone sûre (~80 %). */
+async function writeMaskableIcon(size, filename) {
+  const inner = Math.round(size * 0.8)
+  const offset = Math.round((size - inner) / 2)
+  const logo = await sharp(Buffer.from(logoSvg)).resize(inner, inner, { fit: 'fill' }).png().toBuffer()
+  const buffer = await sharp({
+    create: {
+      width: size,
+      height: size,
+      channels: 4,
+      background: { r: 7, g: 89, b: 77, alpha: 1 },
+    },
+  })
+    .composite([{ input: logo, left: offset, top: offset }])
+    .png()
+    .toBuffer()
+  fs.writeFileSync(path.join(publicDir, filename), buffer)
+}
 
-await writePng(192, 'icon-192.png')
-await writePng(512, 'icon-512.png')
-await writePng(180, 'apple-touch-icon.png', { padding: 0.1 })
+fs.writeFileSync(path.join(publicDir, 'favicon.svg'), logoSvg)
+fs.copyFileSync(logoPath, path.join(publicDir, 'app-icon.svg'))
+
+await writeAppIcon(192, 'icon-192.png')
+await writeAppIcon(512, 'icon-512.png')
+await writeAppIcon(180, 'apple-touch-icon.png')
+await writeMaskableIcon(512, 'icon-512-maskable.png')
 
 console.log('PWA icons generated from assets/logos/X.svg')

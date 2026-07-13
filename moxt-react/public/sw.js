@@ -4,6 +4,8 @@ const STATIC_ASSETS = [
   '/favicon.svg',
   '/icon-192.png',
   '/icon-512.png',
+  '/icon-512-maskable.png',
+  '/apple-touch-icon.png',
 ];
 
 function canCacheRequest(request) {

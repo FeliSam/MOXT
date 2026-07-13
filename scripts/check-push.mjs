@@ -3,6 +3,7 @@
  * Vérifie la config push web (VAPID) + Capacitor (Android/iOS) + FCM serveur.
  */
 import { existsSync, readFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -68,6 +69,17 @@ function main() {
   }
   if (phase2.VITE_VAPID_PUBLIC_KEY || phase2.VAPID_PUBLIC_KEY) {
     ok('Clé publique VAPID disponible pour le build')
+    const prep = spawnSync('node', ['scripts/prepare-netlify-env.mjs'], {
+      cwd: path.join(root, 'moxt-react'),
+      encoding: 'utf8',
+    })
+    const envProd = path.join(root, 'moxt-react', '.env.production')
+    if (existsSync(envProd) && readFileSync(envProd, 'utf8').includes('VITE_VAPID_PUBLIC_KEY=')) {
+      ok('prepare-netlify-env.mjs injecte VITE_VAPID_PUBLIC_KEY')
+    } else {
+      fail('prepare-netlify-env.mjs n’injecte pas VITE_VAPID_PUBLIC_KEY — build PWA sans push')
+      issues += 1
+    }
   } else {
     warn('VITE_VAPID_PUBLIC_KEY absent — ajoutez-la au build prod Yandex')
   }

@@ -3,12 +3,31 @@ import { FiBell } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { selectAccountPreferences } from '../../features/account/accountSlice'
 import { addToast } from '../../features/ui/uiSlice'
-import { ensureWebPushSubscription, isWebPushContextReady } from '../../platform/webPush'
+import {
+  canPromptForPushPermission,
+  ensureWebPushSubscription,
+  getVapidPublicKey,
+} from '../../platform/webPush'
 import { Button } from '../ui/Button'
+
+const DISMISS_KEY = 'moxt.push-banner-dismissed'
+const DISMISS_TTL_MS = 3 * 24 * 60 * 60 * 1000
+
+function isBannerDismissed() {
+  try {
+    const raw = localStorage.getItem(DISMISS_KEY)
+    if (!raw) return false
+    const dismissedAt = Number(raw)
+    if (!Number.isFinite(dismissedAt)) return raw === '1'
+    return Date.now() - dismissedAt < DISMISS_TTL_MS
+  } catch {
+    return false
+  }
+}
 
 /**
  * Invite à activer les notifications push sur PWA (surtout Safari installé).
- * S’affiche uniquement si l’API est prête mais la permission n’a pas encore été accordée.
+ * S’affiche si l’API est prête mais la permission n’a pas encore été accordée.
  */
 export function PushPermissionBanner() {
   const dispatch = useDispatch()
@@ -16,16 +35,25 @@ export function PushPermissionBanner() {
   const preferences = useSelector((state) =>
     user?.id ? selectAccountPreferences(state, user.id) : null,
   )
-  const [dismissed, setDismissed] = useState(
-    () => sessionStorage.getItem('moxt.push-banner-dismissed') === '1',
-  )
+  const [dismissed, setDismissed] = useState(isBannerDismissed)
   const [loading, setLoading] = useState(false)
 
   if (!user?.id || dismissed || preferences?.pushNotifications === false) return null
-  if (!isWebPushContextReady()) return null
+  if (!canPromptForPushPermission()) return null
   if (typeof Notification === 'undefined' || Notification.permission !== 'default') return null
 
   async function enablePush() {
+    if (!getVapidPublicKey()) {
+      dispatch(
+        addToast({
+          tone: 'warning',
+          title: 'Notifications indisponibles',
+          message: 'La configuration push du site est incomplète. Réessayez après la prochaine mise à jour.',
+        }),
+      )
+      return
+    }
+
     setLoading(true)
     try {
       const result = await ensureWebPushSubscription(user.id, { prompt: true })
@@ -38,7 +66,7 @@ export function PushPermissionBanner() {
           }),
         )
         setDismissed(true)
-        sessionStorage.setItem('moxt.push-banner-dismissed', '1')
+        localStorage.setItem(DISMISS_KEY, String(Date.now()))
         return
       }
       if (result.reason === 'denied') {
@@ -57,11 +85,11 @@ export function PushPermissionBanner() {
 
   function dismiss() {
     setDismissed(true)
-    sessionStorage.setItem('moxt.push-banner-dismissed', '1')
+    localStorage.setItem(DISMISS_KEY, String(Date.now()))
   }
 
   return (
-    <div className="fixed inset-x-3 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-[calc(var(--z-nav)+1)] rounded-2xl border border-brand-200 bg-brand-50 p-4 shadow-lg dark:border-brand-900/50 dark:bg-brand-950/80 lg:inset-x-auto lg:right-6 lg:bottom-6 lg:max-w-sm">
+    <div className="fixed inset-x-3 top-[calc(4.5rem+env(safe-area-inset-top))] z-[var(--z-nav-menu)] rounded-2xl border border-brand-200 bg-brand-50 p-4 shadow-lg dark:border-brand-900/50 dark:bg-brand-950/90 lg:inset-x-auto lg:right-6 lg:top-auto lg:bottom-6 lg:max-w-sm">
       <div className="flex items-start gap-3">
         <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700 dark:bg-brand-900/60 dark:text-brand-200">
           <FiBell />

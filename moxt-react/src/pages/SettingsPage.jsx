@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FiDownload, FiInfo, FiMoon, FiSun, FiTrash2 } from 'react-icons/fi'
+import { FiBell, FiDownload, FiInfo, FiMoon, FiSun, FiTrash2 } from 'react-icons/fi'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { BackButton } from '../components/ui/BackButton'
@@ -22,7 +22,9 @@ import { addToast } from '../features/ui/uiSlice'
 import { isNative } from '../platform/capacitor'
 import { syncNativePushPreference, setNativePushUserId } from '../platform/pushNotifications'
 import {
+  canPromptForPushPermission,
   ensureWebPushSubscription,
+  getVapidPublicKey,
   getWebPushInstallHint,
   isWebPushContextReady,
   syncWebPushPreference,
@@ -41,6 +43,59 @@ export function SettingsPage() {
   const { theme, toggleTheme } = useTheme()
   const { language, setLanguage } = useLanguage()
   const [confirmDeletion, setConfirmDeletion] = useState(false)
+  const [pushPromptLoading, setPushPromptLoading] = useState(false)
+  const pushPermission =
+    typeof Notification !== 'undefined' ? Notification.permission : 'unsupported'
+  const showWebPushPrompt =
+    !isNative &&
+    canPromptForPushPermission() &&
+    preferences.pushNotifications !== false &&
+    pushPermission === 'default'
+
+  async function requestWebPushPermission() {
+    if (!getVapidPublicKey()) {
+      dispatch(
+        addToast({
+          tone: 'warning',
+          title: 'Notifications indisponibles',
+          message: 'La configuration push du site est incomplète. Réessayez après la prochaine mise à jour.',
+        }),
+      )
+      return
+    }
+
+    setPushPromptLoading(true)
+    try {
+      const result = await ensureWebPushSubscription(user.id, { prompt: true })
+      if (result.enabled) {
+        dispatch(
+          addToast({
+            tone: 'success',
+            title: 'Notifications activées',
+            message: 'Vous recevrez les alertes MOXT sur cet appareil.',
+          }),
+        )
+        return
+      }
+      if (result.reason === 'denied') {
+        dispatch(
+          addToast({
+            tone: 'warning',
+            title: 'Notifications refusées',
+            message: 'Autorisez MOXT dans Réglages → Notifications de Safari.',
+          }),
+        )
+        dispatch(
+          updateAccountPreferences({
+            userId: user.id,
+            preferences: { pushNotifications: false },
+          }),
+        )
+      }
+    } finally {
+      setPushPromptLoading(false)
+    }
+  }
 
   function updatePreference(name, value) {
     dispatch(
@@ -89,6 +144,22 @@ export function SettingsPage() {
                 tone: 'warning',
                 title: 'Notifications refusées',
                 message: 'Autorisez les notifications MOXT dans les réglages du navigateur ou de l’app.',
+              }),
+            )
+            dispatch(
+              updateAccountPreferences({
+                userId: user.id,
+                preferences: { pushNotifications: false },
+              }),
+            )
+            return
+          }
+          if (value && result.reason === 'missing_vapid') {
+            dispatch(
+              addToast({
+                tone: 'warning',
+                title: 'Notifications indisponibles',
+                message: 'La configuration push du site est incomplète. Réessayez après la prochaine mise à jour.',
               }),
             )
             dispatch(
@@ -201,6 +272,22 @@ export function SettingsPage() {
               checked={preferences.pushNotifications}
               onChange={(v) => updatePreference('pushNotifications', v)}
             />
+            {showWebPushPrompt ? (
+              <div className="sm:col-span-2 rounded-2xl border border-brand-200 bg-brand-50/80 p-4 dark:border-brand-900/50 dark:bg-brand-950/40">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold">Autorisation requise</p>
+                    <p className="mt-1 text-xs leading-5 text-[var(--app-text-muted)]">
+                      Appuyez pour afficher la demande iOS/Safari et recevoir les alertes sur cet appareil.
+                    </p>
+                  </div>
+                  <Button onClick={requestWebPushPermission} loading={pushPromptLoading} disabled={pushPromptLoading}>
+                    <FiBell className="mr-2 inline" aria-hidden />
+                    Autoriser les notifications
+                  </Button>
+                </div>
+              </div>
+            ) : null}
             <NotifToggle
               label="Nouveaux abonnés"
               description="Quand un membre s'abonne à vos publications"
