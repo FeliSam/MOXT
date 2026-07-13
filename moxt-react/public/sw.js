@@ -127,8 +127,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title || 'MOXT', {
       body: data.body || '',
-      icon: '/icon-192.png',
-      badge: '/icon-192.png',
+      icon: '/icon-192.png?v=20260713',
+      badge: '/icon-192.png?v=20260713',
       data: {
         ...payload,
         url: targetPath,
