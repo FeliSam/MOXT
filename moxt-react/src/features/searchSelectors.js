@@ -4,7 +4,7 @@ import {
   buildSubscriptionNetworkProfiles,
   filterSubscriptionNetworkProfiles,
   subscriptionProfilesToSearchResults,
-} from './subscriptionProfileSearch'
+} from './search/subscriptionProfileSearch'
 
 export const selectSearchIndex = createSelector(
   [
