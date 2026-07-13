@@ -1,7 +1,7 @@
 import { createReadStream, existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { PutObjectCommand, S3Client, ListObjectsV2Command } from '@aws-sdk/client-s3'
+import { PutObjectCommand, S3Client, ListObjectsV2Command, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { Upload } from '@aws-sdk/lib-storage'
 import { loadPhase2Env } from './env.mjs'
 import { ycJson } from './yandex.mjs'
@@ -105,6 +105,56 @@ export function ensureS3Credentials({ allowEphemeral = true } = {}) {
   return { ...created, source: 'ephemeral' }
 }
 
+const PROBE_KEY = '.moxt-deploy-write-probe'
+
+export async function validateS3WriteAccess(client, bucketName) {
+  try {
+    await client.send(
+      new PutObjectCommand({
+        Bucket: bucketName,
+        Key: PROBE_KEY,
+        Body: 'ok',
+        ContentType: 'text/plain',
+      }),
+    )
+    await client.send(new DeleteObjectCommand({ Bucket: bucketName, Key: PROBE_KEY }))
+    return true
+  } catch {
+    return false
+  }
+}
+
+export async function resolveWritableS3Client(bucketName, { forceYc = false } = {}) {
+  if (forceYc) return { client: null, source: null, reason: 'forced-yc' }
+
+  const envCreds = resolveS3Credentials()
+  if (envCreds) {
+    const client = createStorageS3Client(envCreds)
+    if (await validateS3WriteAccess(client, bucketName)) {
+      return { client, source: 'env', reason: null }
+    }
+  }
+
+  const serviceAccountId = readDeployServiceAccountId()
+  if (serviceAccountId) {
+    try {
+      const created = createEphemeralS3Credentials(serviceAccountId)
+      const client = createStorageS3Client(created)
+      if (await validateS3WriteAccess(client, bucketName)) {
+        return { client, source: 'ephemeral', reason: envCreds ? 'env-readonly' : null }
+      }
+    } catch {
+      // ignore — fallback yc CLI
+    }
+  }
+
+  return {
+    client: null,
+    source: null,
+    reason: envCreds ? 'env-readonly' : 'no-s3-credentials',
+  }
+}
+
 export function createStorageS3Client(credentials) {
   return new S3Client({
     region: S3_REGION,
@@ -127,7 +177,6 @@ export async function uploadObjectS3(client, bucketName, { file, key }, { cacheC
       Bucket: bucketName,
       Key: key,
       Body: createReadStream(file),
-      ACL: 'public-read',
       CacheControl: cacheControl,
       ContentType: contentTypeForKey(key),
     },
@@ -147,6 +196,7 @@ export async function runUploadBatchS3(
   let uploaded = 0
   let failed = 0
   let index = 0
+  let loggedErrors = 0
 
   async function worker() {
     while (index < items.length) {
@@ -158,8 +208,13 @@ export async function runUploadBatchS3(
           cacheControl: cacheControlFn(item.key),
         })
         uploaded += 1
-      } catch {
+      } catch (error) {
         failed += 1
+        if (loggedErrors < 3) {
+          loggedErrors += 1
+          const message = error instanceof Error ? error.message : String(error)
+          console.error(`  ✗ ${item.key} : ${message}`)
+        }
       }
       onProgress?.({ uploaded, failed, total: items.length, key: item.key })
     }

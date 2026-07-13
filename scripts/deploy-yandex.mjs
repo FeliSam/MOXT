@@ -25,7 +25,7 @@ import { parseEnvFile } from './lib/env.mjs'
 import { purgeCdnCache, findCdnResource } from './lib/yandex-cdn.mjs'
 import { writeDeployManifest } from './lib/deploy-manifest.mjs'
 import { syncDist } from './lib/yandex-upload.mjs'
-import { createStorageS3Client, ensureS3Credentials } from './lib/yandex-s3.mjs'
+import { resolveWritableS3Client } from './lib/yandex-s3.mjs'
 import { ycJson } from './lib/yandex.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -177,9 +177,28 @@ async function main() {
 
   const mode = fullUpload ? 'upload complet' : 'sync manifest (diff md5)'
   const forceYc = forceTransport === 'yc'
-  const s3Creds = forceYc ? null : ensureS3Credentials({ allowEphemeral: true })
-  const s3Client = s3Creds ? createStorageS3Client(s3Creds) : null
-  const uploadTransport = forceYc ? 'yc' : s3Client ? 's3' : 'yc'
+  const writableS3 = forceYc
+    ? { client: null, source: null, reason: 'forced-yc' }
+    : await resolveWritableS3Client(bucket)
+  const s3Client = writableS3.client
+  const uploadTransport = forceYc || !s3Client ? 'yc' : 's3'
+
+  if (writableS3.reason === 'env-readonly') {
+    console.warn(
+      '\n  ⚠ Clés S3 (phase2.env) : lecture OK mais écriture refusée',
+    )
+    if (writableS3.source === 'ephemeral') {
+      console.warn('    → clés S3 éphémères utilisées pour l’upload')
+    } else {
+      console.warn('    → bascule sur yc CLI')
+      console.warn('    Mettez à jour MOXT_YC_S3_* avec un compte storage.editor ou utilisez --transport=yc')
+    }
+  } else if (writableS3.reason === 'no-s3-credentials' && !forceYc) {
+    console.warn('\n  ℹ Pas de clés S3 inscriptibles — upload via yc CLI')
+  } else if (writableS3.source === 'ephemeral') {
+    console.log(`\n  ℹ Clés S3 éphémères (${writableS3.source})`)
+  }
+
   const uploadConcurrency = concurrencyArg
     ? Number(concurrencyArg.split('=')[1]) || 12
     : uploadTransport === 's3'
@@ -196,7 +215,7 @@ async function main() {
     dryRun,
     concurrency: uploadConcurrency,
     deployStatePath,
-    transport: forceYc ? 'yc' : 'auto',
+    transport: uploadTransport,
     s3Client,
   })
   console.log(`  mode ${plan.mode} — ${plan.total} fichiers — ${plan.skipped} inchangés — ${plan.toUpload.length} à envoyer`)
@@ -211,7 +230,12 @@ async function main() {
   } else {
     const { uploaded, failed } = await plan.runUpload()
     console.log(`  ✓ ${uploaded} envoyés${failed ? ` — ✗ ${failed} échecs` : ''}`)
-    if (failed > 0) process.exit(1)
+    if (failed > 0) {
+      if (uploadTransport === 's3') {
+        console.error('\n  ✗ Échec upload S3 — relancez avec : npm run deploy:yandex -- --transport=yc')
+      }
+      process.exit(1)
+    }
 
     if (plan.currentManifest) {
       writeDeployManifest(deployStatePath, plan.currentManifest)

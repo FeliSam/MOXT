@@ -79,8 +79,8 @@ describe('normalizeStoredLanguage', () => {
     expect(normalizeStoredLanguage('pt')).toBe('pt')
   })
 
-  it('reinitialise une langue inconnue vers le francais', () => {
-    expect(normalizeStoredLanguage('es')).toBe('fr')
+  it('reinitialise une langue inconnue vers la langue par defaut', () => {
+    expect(normalizeStoredLanguage('es')).toBe('ru')
   })
 })
 
@@ -92,9 +92,9 @@ describe('detectBrowserLanguage', () => {
     expect(detectBrowserLanguage('fr-FR')).toBe('fr')
   })
 
-  it('retombe sur le francais pour une locale non supportee', () => {
-    expect(detectBrowserLanguage('es-ES')).toBe('fr')
-    expect(detectBrowserLanguage('')).toBe('fr')
+  it('retombe sur la langue par defaut pour une locale non supportee', () => {
+    expect(detectBrowserLanguage('es-ES')).toBe('ru')
+    expect(detectBrowserLanguage('')).toBe('ru')
   })
 })
 

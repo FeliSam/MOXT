@@ -219,9 +219,7 @@ export function LoginPage() {
             error={phoneError('password')}
           />
           <p className="auth-flow-hint text-xs text-[var(--app-text-muted)]">
-            Utilisez le numéro +7 et le mot de passe définis à l’inscription, après confirmation du
-            code SMS. Si l’inscription n’est pas terminée, reprenez l’inscription ou connectez-vous
-            par code SMS.
+            Utilisez le numéro +7 et votre mot de passe.
           </p>
           <Button className="w-full" type="submit" loading={status === 'loading'}>
             {status === 'loading' ? t('auth.login.submitting') : 'Se connecter'}

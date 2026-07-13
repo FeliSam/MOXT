@@ -7,9 +7,7 @@ import {
   readDeployManifest,
 } from './deploy-manifest.mjs'
 import {
-  createStorageS3Client,
   listRemoteObjectsS3,
-  resolveS3Credentials,
   runUploadBatchS3,
 } from './yandex-s3.mjs'
 import { ycRun } from './yandex.mjs'
@@ -162,12 +160,13 @@ export async function runUploadBatch(
 ) {
   if (!items.length) return { uploaded: 0, failed: 0 }
 
-  const useS3 =
-    transport === 's3' || (transport === 'auto' && s3Client) || (transport === 'auto' && resolveS3Credentials())
+  const useS3 = transport === 's3' || (transport === 'auto' && s3Client)
 
   if (useS3) {
-    const client = s3Client || createStorageS3Client(resolveS3Credentials())
-    return runUploadBatchS3(client, bucketName, items, {
+    if (!s3Client) {
+      throw new Error('Transport S3 demandé mais aucun client S3 inscriptible n’est disponible.')
+    }
+    return runUploadBatchS3(s3Client, bucketName, items, {
       concurrency: Math.max(concurrency, 16),
       cacheControlFn: uploadCacheControl,
       onProgress,
@@ -203,8 +202,6 @@ export function uploadObjectYc(bin, bucketName, { file, key }, { quiet = false }
       'cp',
       file,
       `s3://${bucketName}/${key}`,
-      '--acl',
-      'public-read',
       '--cache-control',
       uploadCacheControl(key),
     ],
@@ -224,9 +221,10 @@ export async function runUploadBatchYc(bin, bucketName, items, { concurrency = 1
   })
 }
 
-export function resolveUploadTransport({ forceYc = false } = {}) {
+export function resolveUploadTransport({ forceYc = false, s3Client = null } = {}) {
   if (forceYc) return 'yc'
-  return resolveS3Credentials() ? 's3' : 'yc'
+  if (s3Client) return 's3'
+  return 'yc'
 }
 
 export async function syncDist(
@@ -265,7 +263,7 @@ export async function syncDist(
   }
 
   const uploadTransport =
-    transport === 'yc' ? 'yc' : s3Client || resolveS3Credentials() ? 's3' : 'yc'
+    transport === 'yc' ? 'yc' : transport === 's3' ? 's3' : s3Client ? 's3' : 'yc'
 
   return {
     total: plan.files,
