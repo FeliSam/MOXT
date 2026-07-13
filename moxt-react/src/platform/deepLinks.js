@@ -1,8 +1,16 @@
+import { resolveDeepLinkDestination } from '../features/guest/guestNavigation'
+
 /** @type {import('react-router-dom').NavigateFunction | null} */
 let navigateRef = null
+/** @type {(() => { id?: string } | null) | null} */
+let readAuthUserRef = null
 
 export function setDeepLinkNavigator(navigate) {
   navigateRef = navigate
+}
+
+export function setDeepLinkAuthReader(readAuthUser) {
+  readAuthUserRef = readAuthUser
 }
 
 /**
@@ -43,6 +51,9 @@ export function parseDeepLinkPath(url) {
 export function navigateDeepLink(url) {
   const path = parseDeepLinkPath(url)
   if (!path || !navigateRef) return false
-  navigateRef(path)
+
+  const user = readAuthUserRef?.() ?? null
+  const destination = resolveDeepLinkDestination(path, user)
+  navigateRef(destination)
   return true
 }

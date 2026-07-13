@@ -18,6 +18,7 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { canViewUserActivity } from '../features/account/activityVisibility'
 import { useProfileActivityVisibility } from '../features/account/useProfileActivityVisibility'
+import { matchUserId } from '../features/businesses/businessVisibility'
 import { MyListingCard } from '../features/marketplace/MyListingCard'
 import {
   MyEventPublicationCard,
@@ -78,6 +79,10 @@ export function UserPublicationsPage() {
     ? searchParams.get('type')
     : 'listing'
   const scope = searchParams.get('scope') === 'business' ? 'business' : 'personal'
+
+  if (currentUser && matchUserId(userId, currentUser.id)) {
+    return <Navigate to="/profile" replace />
+  }
 
   const isOwner = !guestMode && currentUser?.id === userId
   const conversations = useSelector((state) => state.communications.conversations)

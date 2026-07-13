@@ -41,6 +41,7 @@ export const SIMPLE_LEGACY_REDIRECTS = [
   ['/actualites', ROUTES.news],
   ['/actualite', ROUTES.news],
   ['/transfer', ROUTES.transfers],
+  ['/transferts', ROUTES.transfers],
   ['/business', ROUTES.businesses],
   ['/business-dashboard', ROUTES.professional],
   ['/dashboard-entreprise', ROUTES.professional],

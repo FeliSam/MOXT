@@ -156,7 +156,9 @@ export function ExchangersPage() {
 
                 <Link
                   className="mt-5 inline-flex items-center justify-center gap-1.5 rounded-2xl border border-[var(--app-border-md)] py-2.5 text-sm font-bold text-brand-700 transition hover:bg-[var(--app-surface-muted)] dark:text-brand-300"
-                  to={`/exchangers/${exchanger.id}`}
+                  to={`/exchangers/${exchanger.id}${
+                    countryScope === COUNTRY_SCOPE_ALL ? '?scope=all' : ''
+                  }`}
                 >
                   Voir la fiche
                 </Link>

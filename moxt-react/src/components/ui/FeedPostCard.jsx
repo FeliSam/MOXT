@@ -71,9 +71,9 @@ export function FeedPostCard({ post }) {
   }
 
   return (
-    <div className="rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] overflow-hidden">
+    <article className="h-auto w-full overflow-hidden rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)]">
       {/* Header */}
-      <div className="flex items-start justify-between gap-3 p-4">
+      <div className="flex items-start justify-between gap-3 p-4 sm:p-5">
         <div className="flex items-center gap-3">
           {post.authorAvatarUrl ? (
             <img src={post.authorAvatarUrl} alt="" className="size-10 rounded-full object-cover shrink-0" />
@@ -126,11 +126,11 @@ export function FeedPostCard({ post }) {
       </div>
 
       {/* Message */}
-      <div className="px-4 pb-3">
+      <div className="px-4 pb-3 sm:px-5 sm:pb-4">
         {editing ? (
           <div className="grid gap-2">
             <textarea
-              className="min-h-20 w-full resize-none rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 text-sm"
+              className="min-h-24 w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 text-sm sm:min-h-28"
               value={editMessage}
               onChange={(e) => setEditMessage(e.target.value)}
               maxLength={500}
@@ -153,25 +153,31 @@ export function FeedPostCard({ post }) {
             </div>
           </div>
         ) : (
-          <p className="whitespace-pre-line text-sm leading-relaxed">{post.message}</p>
+          <p className="whitespace-pre-line text-sm leading-relaxed sm:text-[0.9375rem] sm:leading-7">
+            {post.message}
+          </p>
         )}
       </div>
 
-      {/* Image */}
+      {/* Image — hauteur naturelle selon le contenu */}
       {post.imageUrl && !editing && (
-        <img
-          src={post.imageUrl}
-          alt={post.message?.slice(0, 120) || 'Image du post'}
-          className="w-full max-h-72 object-cover"
-          loading="lazy"
-          decoding="async"
-          onError={(e) => { e.currentTarget.style.display = 'none' }}
-        />
+        <div className="border-y border-[var(--app-border)]/60 bg-[var(--app-surface-muted)]/40">
+          <img
+            src={post.imageUrl}
+            alt={post.message?.slice(0, 120) || 'Image du post'}
+            className="mx-auto block h-auto w-full max-h-[min(36rem,78vh)] object-contain"
+            loading="lazy"
+            decoding="async"
+            onError={(e) => {
+              e.currentTarget.closest('div')?.remove()
+            }}
+          />
+        </div>
       )}
 
       {/* CTA */}
       {ctaLabel && post.directLink && (
-        <div className="px-4 py-3">
+        <div className="px-4 py-3 sm:px-5 sm:py-4">
           <Link
             to={post.directLink}
             className="flex items-center justify-center gap-2 rounded-2xl bg-[var(--app-surface-muted)] px-4 py-2.5 text-sm font-bold transition hover:bg-[var(--app-accent-soft)] hover:text-[var(--app-accent)]"
@@ -182,7 +188,7 @@ export function FeedPostCard({ post }) {
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-4 border-t border-[var(--app-border)] px-4 py-3">
+      <div className="flex items-center gap-4 border-t border-[var(--app-border)] px-4 py-3 sm:px-5">
         <div className="flex items-center gap-1.5">
           <FavoriteButton
             active={liked}
@@ -214,7 +220,7 @@ export function FeedPostCard({ post }) {
 
       {/* Commentaires */}
       {showComments && (
-        <div className="border-t border-[var(--app-border)] px-4 py-3 grid gap-3">
+        <div className="grid gap-3 border-t border-[var(--app-border)] px-4 py-3 sm:px-5 sm:py-4">
           {post.comments?.map((comment) => (
             <div key={comment.id} className="flex items-start gap-2.5">
               {comment.authorAvatarUrl ? (
@@ -269,7 +275,7 @@ export function FeedPostCard({ post }) {
           )}
         </div>
       )}
-    </div>
+    </article>
   )
 }
 

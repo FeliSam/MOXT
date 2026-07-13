@@ -219,7 +219,7 @@ export function Sidebar({ open }) {
           </nav>
         </div>
 
-        {/* Profil bas de sidebar — flyout accessible (pont de survol vers le rail) */}
+        {/* Réglages bas de sidebar — flyout : Profil en haut, Réglages + Déconnexion en bas */}
         <div
           className="sidebar-footer-zone group/footer relative z-10 hidden shrink-0 overflow-visible border-t border-[var(--app-border)]/70 bg-[var(--app-surface)] p-3 lg:block"
           onMouseEnter={() => setRailHover('settings')}
@@ -228,41 +228,45 @@ export function Sidebar({ open }) {
             to="/settings"
             onClick={() => dispatch(closeSidebar())}
             onMouseEnter={() => setRailHover('settings')}
-            className={`sidebar-rail-item group/settings relative flex min-h-11 items-center justify-center rounded-2xl p-2 transition hover:bg-[var(--app-surface-muted)] ${proximityClass(railProximity(railKeys, hoveredRailKey, 'settings'))}`}
+            className={({ isActive }) =>
+              `sidebar-rail-item group/settings relative flex min-h-11 items-center justify-center rounded-2xl p-2 transition hover:bg-[var(--app-surface-muted)] ${proximityClass(railProximity(railKeys, hoveredRailKey, 'settings'))} ${
+                isActive ? 'bg-[var(--app-surface-muted)]' : ''
+              }`
+            }
           >
             <span className="sidebar-nav-icon grid size-9 shrink-0 place-items-center rounded-full bg-[var(--app-surface-muted)] text-lg text-[var(--app-accent)]">
               <FiSettings />
             </span>
           </NavLink>
 
-          <div className="sidebar-footer-flyout" role="group" aria-label="Compte et session">
+          <div className="sidebar-footer-flyout" role="menu" aria-label="Compte et session">
             <NavLink
-              to="/settings"
+              to="/profile"
+              role="menuitem"
               onClick={() => dispatch(closeSidebar())}
-              className="sidebar-rail-label sidebar-rail-label--stack sidebar-rail-label--interactive"
+              className="sidebar-rail-label sidebar-rail-label--action sidebar-rail-label--profile sidebar-rail-label--interactive"
             >
-              <span className="flex items-center gap-2">
-                <FiSettings className="text-sm text-[var(--app-accent)]" />
-                <strong className="sidebar-rail-label-title truncate">Réglages</strong>
-              </span>
-              <span className="text-[10px] text-[var(--app-text-faint)]">Préférences et confidentialité</span>
+              <FiUser className="text-sm shrink-0" />
+              <span>Profil</span>
             </NavLink>
             <div className="sidebar-footer-flyout-actions">
               <NavLink
-                to="/profile"
+                to="/settings"
+                role="menuitem"
                 onClick={() => dispatch(closeSidebar())}
                 className="sidebar-rail-label sidebar-rail-label--action sidebar-rail-label--interactive"
               >
-                <FiUser className="text-sm" />
-                Mon profil
+                <FiSettings className="text-sm shrink-0" />
+                <span>Réglages</span>
               </NavLink>
               <button
                 type="button"
+                role="menuitem"
                 onClick={handleLogout}
                 className="sidebar-rail-label sidebar-rail-label--action sidebar-rail-label--danger sidebar-rail-label--interactive"
               >
-                <FiLogOut className="text-sm" />
-                Quitter
+                <FiLogOut className="text-sm shrink-0" />
+                <span>Déconnexion</span>
               </button>
             </div>
           </div>

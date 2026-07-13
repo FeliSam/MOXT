@@ -9,9 +9,12 @@ import {
   FiShield,
   FiUser,
 } from 'react-icons/fi'
+import { useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { useLanguage } from '../../contexts/useLanguage'
+import { resolveMoxtScanDestination, storePendingInviteCode } from '../guest/guestNavigation'
+import { applyPendingReferral } from '../referral/referralService'
 import { queryCameraPermission, requestCameraAccess } from './cameraPermission'
 import { parseMoxtScanTarget } from './parseMoxtScanTarget'
 import { useQrCameraScanner } from './useQrCameraScanner'
@@ -25,6 +28,7 @@ const TARGET_ICONS = {
 export function QrCameraScanner({ active = true }) {
   const { t } = useLanguage()
   const navigate = useNavigate()
+  const user = useSelector((state) => state.auth.user)
   const videoRef = useRef(null)
   const [capture, setCapture] = useState(null)
   const [permission, setPermission] = useState('checking')
@@ -88,7 +92,20 @@ export function QrCameraScanner({ active = true }) {
 
   function openTarget() {
     if (capture?.kind !== 'known') return
-    navigate(capture.target.path)
+
+    const destination = resolveMoxtScanDestination(capture.target, user)
+    if (capture.target.type === 'invite' && capture.target.code) {
+      storePendingInviteCode(capture.target.code)
+    }
+
+    if (user && capture.target.type === 'invite') {
+      void applyPendingReferral().then(() => {
+        navigate(destination, { replace: true })
+      })
+      return
+    }
+
+    navigate(destination)
   }
 
   const TargetIcon = capture?.kind === 'known' ? TARGET_ICONS[capture.target.type] : FiAlertCircle

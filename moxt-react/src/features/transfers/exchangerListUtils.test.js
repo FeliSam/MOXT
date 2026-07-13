@@ -6,6 +6,7 @@ import {
   listExchangersForTransfer,
   resolveExchangerCountry,
   resolveExchangerDisplayCountry,
+  resolveExchangerForDetail,
   resolveExchangerOriginCountry,
   resolveUserTransferCountry,
 } from './exchangerListUtils'
@@ -44,6 +45,17 @@ const tgBusiness = {
   country: 'RU',
   rating: 4.2,
   transferAccounts: [{ slot: 'origin', country: 'TG', active: true, isDefault: true }],
+}
+
+const cmBusiness = {
+  id: 'BIZ-CM',
+  ownerId: 'owner-cm',
+  name: 'Change Douala',
+  status: 'active',
+  services: ['Transfert'],
+  country: 'RU',
+  rating: 4.4,
+  transferAccounts: [{ slot: 'origin', country: 'CM', active: true, isDefault: true }],
 }
 
 describe('exchangerListUtils', () => {
@@ -88,6 +100,35 @@ describe('exchangerListUtils', () => {
     expect(businessToExchangerOption(bjBusiness, 'BJ', 'BJ').country).toBe('BJ')
   })
 
+  it('un membre camerounais ne voit pas les échangeurs béninois sur la page transfert', () => {
+    const rows = listExchangersForTransfer({
+      businesses: [bjBusiness, cmBusiness, tgBusiness],
+      user: { id: 'u-cm', country: 'RU', originCountry: 'CM' },
+      originCountry: 'CM',
+      direction: DIRECTIONS.BJ_TO_RU,
+      excludeOwnerId: 'u-cm',
+    })
+
+    expect(rows.map((row) => row.id)).toEqual(['BIZ-CM'])
+  })
+
+  it('exclut les échangeurs sans compte de transfert configuré', () => {
+    const rows = listExchangersForTransfer({
+      businesses: [
+        {
+          ...bjBusiness,
+          id: 'BIZ-EMPTY',
+          transferAccounts: [],
+        },
+      ],
+      user: { id: 'u2', country: 'RU', originCountry: 'BJ' },
+      originCountry: 'BJ',
+      direction: DIRECTIONS.BJ_TO_RU,
+    })
+
+    expect(rows).toHaveLength(0)
+  })
+
   it('affiche le drapeau du pays d origine quand les comptes RU et origine coexistent', () => {
     const dualBusiness = {
       ...bjBusiness,
@@ -111,5 +152,28 @@ describe('exchangerListUtils', () => {
     })
 
     expect(rows.map((row) => row.id).sort()).toEqual(['BIZ-BJ', 'BIZ-TG'])
+  })
+
+  it('ouvre la fiche détail d un échangeur hors pays quand scope=all', () => {
+    const resolved = resolveExchangerForDetail({
+      businesses: [bjBusiness, tgBusiness],
+      exchangerId: 'BIZ-TG',
+      user: { id: 'u2', country: 'RU', originCountry: 'BJ' },
+      originCountry: 'BJ',
+      allowAllCountries: true,
+    })
+
+    expect(resolved?.exchanger?.id).toBe('BIZ-TG')
+  })
+
+  it('refuse la fiche détail hors pays sans scope=all', () => {
+    const resolved = resolveExchangerForDetail({
+      businesses: [bjBusiness, tgBusiness],
+      exchangerId: 'BIZ-TG',
+      user: { id: 'u2', country: 'RU', originCountry: 'BJ' },
+      originCountry: 'BJ',
+    })
+
+    expect(resolved).toBeNull()
   })
 })

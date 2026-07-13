@@ -62,53 +62,54 @@ export function NewsPage() {
         }
       />
 
-      {/* Filtres par type */}
-      <div className="flex items-center gap-6 overflow-x-auto border-b border-[var(--app-border)] scrollbar-hidden">
-        {FILTER_TABS.map(({ key, label }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setActiveFilter(key)}
-            className={`relative shrink-0 pb-3 text-sm font-bold transition-colors ${
-              activeFilter === key
-                ? 'text-[var(--app-text)]'
-                : 'text-[var(--app-text-muted)] hover:text-[var(--app-text)]'
-            }`}
-          >
-            {label}
-            {activeFilter === key && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-brand-600" />
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* Liste de posts */}
-      {filtered.length > 0 ? (
-        <div className="grid gap-4 lg:grid-cols-2">
-          {filtered.map((post) => (
-            <FeedPostCard key={post.id} post={post} />
+      {/* Filtres + fil centré, une publication par ligne */}
+      <div className="mx-auto grid w-full max-w-3xl gap-5">
+        <div className="flex items-center gap-6 overflow-x-auto border-b border-[var(--app-border)] scrollbar-hidden">
+          {FILTER_TABS.map(({ key, label }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setActiveFilter(key)}
+              className={`relative shrink-0 pb-3 text-sm font-bold transition-colors ${
+                activeFilter === key
+                  ? 'text-[var(--app-text)]'
+                  : 'text-[var(--app-text-muted)] hover:text-[var(--app-text)]'
+              }`}
+            >
+              {label}
+              {activeFilter === key && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-brand-600" />
+              )}
+            </button>
           ))}
         </div>
-      ) : (
-        <EmptyState
-          icon={FiRss}
-          tone="search"
-          title="Aucun post pour l'instant"
-          description={
-            activeFilter === 'all'
-              ? 'Soyez le premier à partager quelque chose avec la communauté !'
-              : `Aucun post de type "${SOURCE_TYPE_LABELS[activeFilter]}" pour l'instant.`
-          }
-          action={
-            user && (
-              <Button icon={FiEdit3} onClick={() => setShowShareModal(true)}>
-                Écrire un post
-              </Button>
-            )
-          }
-        />
-      )}
+
+        {filtered.length > 0 ? (
+          <div className="flex flex-col gap-5 sm:gap-6">
+            {filtered.map((post) => (
+              <FeedPostCard key={post.id} post={post} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            icon={FiRss}
+            tone="search"
+            title="Aucun post pour l'instant"
+            description={
+              activeFilter === 'all'
+                ? 'Soyez le premier à partager quelque chose avec la communauté !'
+                : `Aucun post de type "${SOURCE_TYPE_LABELS[activeFilter]}" pour l'instant.`
+            }
+            action={
+              user && (
+                <Button icon={FiEdit3} onClick={() => setShowShareModal(true)}>
+                  Écrire un post
+                </Button>
+              )
+            }
+          />
+        )}
+      </div>
 
       {/* Modal post libre */}
       {showShareModal && (

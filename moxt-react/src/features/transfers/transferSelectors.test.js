@@ -27,4 +27,15 @@ describe('transferSelectors', () => {
     expect(canUserAccessTransfer(transfer, { id: 'owner-1' }, ['BIZ-1'])).toBe(true)
     expect(canUserAccessTransfer(transfer, { id: 'stranger' }, [])).toBe(false)
   })
+
+  it('accepte les identifiants numeriques et texte', () => {
+    const transfer = { id: 'MXT-3', userId: 42, businessId: 'BIZ-9', businessOwnerId: 99 }
+    const mixedState = {
+      businesses: { items: [{ id: 'BIZ-9', ownerId: '99' }] },
+      transfers: { items: [transfer] },
+    }
+
+    expect(selectTransfersVisibleToUser(mixedState, '42').map((item) => item.id)).toEqual(['MXT-3'])
+    expect(canUserAccessTransfer(transfer, { id: 42 }, ['BIZ-9'])).toBe(true)
+  })
 })

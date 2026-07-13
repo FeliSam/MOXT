@@ -1,14 +1,20 @@
 import { useEffect } from 'react'
+import { useStore } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
-import { setDeepLinkNavigator } from '../../platform/deepLinks'
+import { setDeepLinkAuthReader, setDeepLinkNavigator } from '../../platform/deepLinks'
 
 export function DeepLinkListener() {
   const navigate = useNavigate()
+  const store = useStore()
 
   useEffect(() => {
     setDeepLinkNavigator(navigate)
-    return () => setDeepLinkNavigator(null)
-  }, [navigate])
+    setDeepLinkAuthReader(() => store.getState().auth.user)
+    return () => {
+      setDeepLinkNavigator(null)
+      setDeepLinkAuthReader(null)
+    }
+  }, [navigate, store])
 
   return null
 }

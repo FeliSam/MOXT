@@ -2,6 +2,7 @@ import {
   inferTransferAccountSlot,
   receivingCountryForDirection,
 } from './transferAccountUtils'
+import { DIRECTIONS } from './transferConfig'
 
 export function resolveUserTransferCountry(user, originCountry = 'BJ') {
   if (user?.country === 'RU') return 'RU'
@@ -13,6 +14,16 @@ export function resolveUserPartnerCountry(user, originCountry = 'BJ') {
   if (user?.originCountry) return user.originCountry
   if (user?.country === 'RU') return 'RU'
   return user?.country || originCountry
+}
+
+/**
+ * Pays partenaire à filtrer selon le sens du transfert.
+ * Afrique → Russie : échangeurs du pays d'origine du membre (CM, BJ, TG…).
+ * Russie → Afrique : échangeurs avec compte Russie.
+ */
+export function resolvePartnerCountryForTransfer(user, originCountry = 'BJ', direction) {
+  if (direction === DIRECTIONS.RU_TO_BJ) return 'RU'
+  return resolveUserPartnerCountry(user, originCountry)
 }
 
 function activeTransferAccounts(business) {
@@ -70,6 +81,7 @@ export function exchangerMatchesUserCountry(business, userCountry, fallbackOrigi
   }
 
   const targetOrigin = userCountry
+  const businessOrigin = resolveExchangerOriginCountry(business, fallbackOriginCountry)
   if (!accounts.length) {
     const declared = business.ownerOriginCountry || business.originCountry
     return declared === targetOrigin
@@ -78,7 +90,7 @@ export function exchangerMatchesUserCountry(business, userCountry, fallbackOrigi
   return accounts.some((account) => {
     const slot = account.slot || inferTransferAccountSlot(account.country, fallbackOriginCountry)
     if (slot !== 'origin') return false
-    const accountCountry = account.country || fallbackOriginCountry
+    const accountCountry = account.country || businessOrigin
     return accountCountry === targetOrigin
   })
 }
@@ -93,11 +105,14 @@ export function isApprovedTransferBusiness(business) {
 export function exchangerSupportsDirection(business, direction, originCountry = 'BJ') {
   const paymentCountry = receivingCountryForDirection(direction, originCountry)
   const accounts = activeTransferAccounts(business)
-  if (!accounts.length) return true
+  if (!accounts.length) return false
+
+  const businessOrigin = resolveExchangerOriginCountry(business, originCountry)
 
   return accounts.some((account) => {
     const slot = account.slot || inferTransferAccountSlot(account.country, originCountry)
-    const accountCountry = account.country || (slot === 'ru' ? 'RU' : originCountry)
+    const accountCountry =
+      account.country || (slot === 'ru' ? 'RU' : businessOrigin)
     return accountCountry === paymentCountry
   })
 }
@@ -152,21 +167,68 @@ export function listExchangersForTransfer({
   excludeOwnerId,
   includeAllCountries = false,
 }) {
-  const partnerCountry = resolveUserPartnerCountry(user, originCountry)
+  const partnerCountry = resolvePartnerCountryForTransfer(user, originCountry, direction)
 
   return businesses
     .filter(isApprovedTransferBusiness)
     .filter((business) => !excludeOwnerId || String(business.ownerId) !== String(excludeOwnerId))
     .filter((business) => {
+      const matchesCountry =
+        includeAllCountries ||
+        exchangerMatchesUserCountry(business, partnerCountry, originCountry)
+      if (!matchesCountry) return false
       if (direction) {
         return exchangerSupportsDirection(business, direction, originCountry)
       }
-      if (includeAllCountries) return true
-      return exchangerMatchesUserCountry(business, partnerCountry, originCountry)
+      return true
     })
     .map((business) => businessToExchangerOption(business, partnerCountry, originCountry))
     .sort((left, right) => {
       if (right.rating !== left.rating) return right.rating - left.rating
       return left.name.localeCompare(right.name, 'fr')
     })
+}
+
+/**
+ * Résout un échangeur pour la fiche détail.
+ * Quand allowAllCountries est vrai (liste « Tous les échangeurs »), on n'applique pas le filtre pays.
+ */
+export function resolveExchangerForDetail({
+  businesses = [],
+  exchangerId,
+  user,
+  originCountry = 'BJ',
+  allowAllCountries = false,
+  fallbackExchangers = [],
+}) {
+  const partnerCountry = resolveUserPartnerCountry(user, originCountry)
+  const business = businesses.find(
+    (item) => item.id === exchangerId && item.services?.includes('Transfert'),
+  )
+
+  if (business && isApprovedTransferBusiness(business)) {
+    if (
+      !allowAllCountries &&
+      !exchangerMatchesUserCountry(business, partnerCountry, originCountry)
+    ) {
+      return null
+    }
+    return {
+      business,
+      exchanger: businessToExchangerOption(business, partnerCountry, originCountry),
+    }
+  }
+
+  const fallback = fallbackExchangers.find((item) => item.id === exchangerId) || null
+  if (!fallback) return null
+  if (
+    !allowAllCountries &&
+    partnerCountry !== 'RU' &&
+    fallback.country &&
+    fallback.country !== partnerCountry
+  ) {
+    return null
+  }
+
+  return { business: null, exchanger: fallback }
 }

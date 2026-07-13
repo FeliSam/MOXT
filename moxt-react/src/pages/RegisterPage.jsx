@@ -10,7 +10,7 @@ import {
 } from 'react-icons/fi'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { needsOAuthProfileCompletion, needsRegisterProfileCompletion } from '@moxt/shared/auth/profileCompletion.js'
+import { needsOAuthProfileCompletion, needsRegisterProfileCompletion, isProfileComplete } from '@moxt/shared/auth/profileCompletion.js'
 import { AuthCard } from '../components/auth/AuthCard'
 import { Alert } from '../components/ui/Alert'
 import { useActionBurst } from '../components/ui/ActionBurst'
@@ -44,7 +44,7 @@ import { loadAllData } from '../app/loadAllData'
 import { startRealtimeSubscription } from '../services/realtimeService'
 import { useGeographyOptions } from '../hooks/useGeographyOptions'
 import { markWelcomePending } from '../features/onboarding/welcomeStorage'
-import { storePendingInviteCode, resolveReturnTo, clearReturnTo } from '../features/guest/guestNavigation'
+import { storePendingInviteCode, resolveReturnTo, clearReturnTo, resolveAuthenticatedLanding } from '../features/guest/guestNavigation'
 import { applyPendingReferral } from '../features/referral/referralService'
 
 const STEPS = [
@@ -129,6 +129,16 @@ export function RegisterPage() {
       storePendingInviteCode(inviteCode)
     }
   }, [searchParams])
+
+  useEffect(() => {
+    if (status === 'loading' || !authUser || !isProfileComplete(authUser)) return
+    if (oauthCompletion || pendingVerification) return
+
+    void (async () => {
+      await applyPendingReferral()
+      navigate(resolveAuthenticatedLanding(searchParams, location.state), { replace: true })
+    })()
+  }, [authUser, location.state, navigate, oauthCompletion, pendingVerification, searchParams, status])
 
   // Les erreurs d'inscription passent uniquement par des toasts (aucun message
   // inline en double sur la page).

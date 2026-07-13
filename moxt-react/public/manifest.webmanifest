@@ -23,7 +23,7 @@
     {
       "name": "Nouveau transfert",
       "short_name": "Transfert",
-      "url": "/transferts?action=new",
+      "url": "/transfers",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     },
     {

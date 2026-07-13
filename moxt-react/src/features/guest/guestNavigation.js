@@ -1,3 +1,7 @@
+import { isProfileComplete } from '@moxt/shared/auth/profileCompletion.js'
+import { matchUserId } from '../businesses/businessVisibility'
+import { parseMoxtScanTarget } from '../share/parseMoxtScanTarget'
+
 const INVITE_STORAGE_KEY = 'moxt.pendingInviteCode'
 const RETURN_TO_STORAGE_KEY = 'moxt.returnTo'
 
@@ -64,4 +68,53 @@ export function resolveReturnTo(searchParams, locationState) {
   const stored = readReturnTo()
   if (stored) return stored
   return '/dashboard'
+}
+
+/** Session MOXT déjà active dans ce navigateur (un compte par navigateur). */
+export function hasActiveBrowserAccount(user, status = 'authenticated') {
+  return Boolean(user?.id) && status !== 'loading' && isProfileComplete(user)
+}
+
+/** Destination par défaut quand l'utilisateur est déjà connecté (QR, invitation, register). */
+export function resolveAuthenticatedLanding(searchParams, locationState) {
+  const returnTo = resolveReturnTo(searchParams, locationState)
+  if (returnTo && returnTo !== '/dashboard') return returnTo
+  return '/profile'
+}
+
+/**
+ * Résout la route après scan QR quand une session est active.
+ * Évite login/register et ouvre le profil pour son propre QR ou une invitation.
+ */
+export function resolveMoxtScanDestination(target, user) {
+  if (!target?.path) return '/dashboard'
+  if (!user?.id) return target.path
+
+  if (target.type === 'invite') return '/profile'
+
+  if (target.type === 'user' && target.userId && matchUserId(target.userId, user.id)) {
+    return '/profile'
+  }
+
+  return target.path
+}
+
+/** Normalise un lien profond MOXT selon la session navigateur. */
+export function resolveDeepLinkDestination(path, user) {
+  const trimmed = String(path || '').trim()
+  if (!trimmed) return null
+
+  if (user?.id && /^\/invite\/[^/?#]+/i.test(trimmed)) {
+    return '/profile'
+  }
+
+  const target = parseMoxtScanTarget(trimmed)
+  if (target) return resolveMoxtScanDestination(target, user)
+
+  const ownProfileMatch = trimmed.match(/^\/users\/([^/]+)\/(?:publications|annonces)/i)
+  if (user?.id && ownProfileMatch?.[1] && matchUserId(ownProfileMatch[1], user.id)) {
+    return '/profile'
+  }
+
+  return trimmed
 }

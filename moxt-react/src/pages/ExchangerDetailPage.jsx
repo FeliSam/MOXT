@@ -1,7 +1,7 @@
 import { FiClock, FiMapPin, FiRepeat, FiShield, FiStar } from 'react-icons/fi'
 import { useMemo } from 'react'
 import { useSelector } from 'react-redux'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { Badge, VerifiedDisplayName } from '../components/ui/Badge'
 import { BackButton } from '../components/ui/BackButton'
 import { Button } from '../components/ui/Button'
@@ -18,34 +18,32 @@ import { flagEmoji } from '../config/flags'
 import { ContactButton } from '../features/communications/ContactButton'
 import { ExchangerPickerAvatar } from '../features/transfers/ExchangerPickerAvatar'
 import {
-  businessToExchangerOption,
-  exchangerMatchesUserCountry,
-  resolveUserPartnerCountry,
+  resolveExchangerForDetail,
 } from '../features/transfers/exchangerListUtils'
 import { FALLBACK_EXCHANGERS } from '../features/transfers/transferConfig'
 
 export function ExchangerDetailPage() {
   const { exchangerId } = useParams()
+  const [searchParams] = useSearchParams()
+  const allowAllCountries = searchParams.get('scope') === 'all'
   const user = useSelector((state) => state.auth.user)
   const businesses = useSelector((state) => state.businesses.items)
   const originCountry = user?.originCountry || (user?.country !== 'RU' ? user?.country : 'BJ')
-  const partnerCountry = resolveUserPartnerCountry(user, originCountry)
 
-  const business = useMemo(
+  const resolved = useMemo(
     () =>
-      businesses.find(
-        (item) => item.id === exchangerId && item.services?.includes('Transfert'),
-      ),
-    [businesses, exchangerId],
+      resolveExchangerForDetail({
+        businesses,
+        exchangerId,
+        user,
+        originCountry,
+        allowAllCountries,
+        fallbackExchangers: FALLBACK_EXCHANGERS,
+      }),
+    [allowAllCountries, businesses, exchangerId, originCountry, user],
   )
-
-  const exchanger = useMemo(() => {
-    if (business) {
-      if (!exchangerMatchesUserCountry(business, partnerCountry, originCountry)) return null
-      return businessToExchangerOption(business, partnerCountry, originCountry)
-    }
-    return FALLBACK_EXCHANGERS.find((item) => item.id === exchangerId) || null
-  }, [business, exchangerId, originCountry, partnerCountry, user])
+  const business = resolved?.business || null
+  const exchanger = resolved?.exchanger || null
 
   if (!exchanger) {
     return (

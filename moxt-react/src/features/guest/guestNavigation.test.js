@@ -1,0 +1,72 @@
+import { describe, expect, it } from 'vitest'
+import {
+  resolveAuthenticatedLanding,
+  resolveDeepLinkDestination,
+  resolveMoxtScanDestination,
+} from './guestNavigation'
+
+const userId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+const completeUser = {
+  id: userId,
+  firstName: 'Ada',
+  lastName: 'Lovelace',
+  city: 'Moscou',
+  originCountry: 'BJ',
+  phone: '+79001234567',
+}
+
+describe('guestNavigation session QR', () => {
+  it('envoie vers le profil quand la session est active sur une invitation', () => {
+    const target = {
+      type: 'invite',
+      path: '/invite/MOXT-1A2B3C',
+      code: 'MOXT-1A2B3C',
+    }
+
+    expect(resolveMoxtScanDestination(target, completeUser)).toBe('/profile')
+    expect(resolveDeepLinkDestination('/invite/MOXT-1A2B3C', completeUser)).toBe('/profile')
+  })
+
+  it('envoie vers le profil pour son propre QR membre', () => {
+    const target = {
+      type: 'user',
+      path: `/users/${userId}/publications`,
+      userId,
+    }
+
+    expect(resolveMoxtScanDestination(target, completeUser)).toBe('/profile')
+    expect(
+      resolveDeepLinkDestination(`/users/${userId}/publications`, completeUser),
+    ).toBe('/profile')
+  })
+
+  it('conserve la fiche d un autre membre quand on est connecte', () => {
+    const otherId = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
+    const target = {
+      type: 'user',
+      path: `/users/${otherId}/publications`,
+      userId: otherId,
+    }
+
+    expect(resolveMoxtScanDestination(target, completeUser)).toBe(
+      `/users/${otherId}/publications`,
+    )
+  })
+
+  it('laisse les liens invités sans session inchangés', () => {
+    expect(resolveMoxtScanDestination({ type: 'invite', path: '/invite/MOXT-ABC' }, null)).toBe(
+      '/invite/MOXT-ABC',
+    )
+    expect(resolveDeepLinkDestination('/invite/MOXT-ABC', null)).toBe('/invite/MOXT-ABC')
+  })
+
+  it('privilégie le profil pour une arrivée authentifiée sans retour explicite', () => {
+    const params = new URLSearchParams()
+    expect(resolveAuthenticatedLanding(params, null)).toBe('/profile')
+  })
+
+  it('respecte un returnTo explicite pour une session active', () => {
+    const params = new URLSearchParams({ returnTo: '/messages' })
+    expect(resolveAuthenticatedLanding(params, null)).toBe('/messages')
+  })
+})
