@@ -36,6 +36,9 @@
     "setup:smtp": "node scripts/setup-smtp.mjs",
     "setup:cns": "node scripts/setup-cns-sms.mjs",
     "setup:supabase": "node scripts/setup-supabase.mjs",
+    "push:generate-vapid": "node scripts/generate-vapid-keys.mjs",
+    "setup:push": "node scripts/setup-push.mjs",
+    "push:simulate": "node scripts/simulate-push-pipeline.mjs",
     "db:push": "node scripts/db-push.mjs",
     "setup:production": "node scripts/setup-production.mjs",
     "web:cap:doctor": "npm run cap:doctor -w moxt",
@@ -76,7 +79,8 @@
     "tweetsodium": "^0.0.4",
     "typescript": "~6.0.3",
     "vite": "^8.1.2",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.8",
+    "web-push": "^3.6.7"
   },
   "overrides": {
     "vite": "^8.1.2",

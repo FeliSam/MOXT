@@ -112,14 +112,26 @@ self.addEventListener('fetch', (event) => {
 });
 
 self.addEventListener('push', (event) => {
-  if (!event.data) return;
-  const data = event.data.json();
+  let data = { title: 'MOXT', body: '', data: {} }
+  try {
+    data = event.data ? event.data.json() : data
+  } catch {
+    data.body = event.data?.text?.() || ''
+  }
+
+  const payload = data.data || {}
+  const targetPath = payload.url || payload.path || '/notifications'
+
   event.waitUntil(
     self.registration.showNotification(data.title || 'MOXT', {
       body: data.body || '',
       icon: '/icon-192.png',
       badge: '/icon-192.png',
-      data: data.data || {},
+      data: {
+        ...payload,
+        url: targetPath,
+        path: targetPath,
+      },
       vibrate: [200, 100, 200],
     })
   );
@@ -127,13 +139,21 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const url = event.notification.data?.url || '/';
+  const rawPath = event.notification.data?.url || event.notification.data?.path || '/notifications';
+  const targetUrl = new URL(rawPath, self.location.origin).href;
+
   event.waitUntil(
-    self.clients.matchAll({ type: 'window' }).then((clients) => {
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
       for (const client of clients) {
-        if (client.url === url && 'focus' in client) return client.focus();
+        if (client.url.startsWith(self.location.origin) && 'focus' in client) {
+          client.postMessage({ type: 'MOXT_NOTIFICATION_NAVIGATE', path: rawPath });
+          return client.focus();
+        }
       }
-      return self.clients.openWindow(url);
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
+      return undefined;
     })
   );
 });

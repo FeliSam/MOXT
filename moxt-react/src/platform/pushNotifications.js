@@ -1,9 +1,11 @@
 import { Capacitor } from '@capacitor/core'
 import { navigateDeepLink } from './deepLinks'
 import { isNative } from './capacitor'
+import { disableDeviceSubscription, syncNativeTokenToSupabase } from '../services/deviceSubscriptions'
 
 const PUSH_TOKEN_KEY = 'moxt-native-push-token'
 let listenersBound = false
+let activeUserId = null
 
 function storePushToken(token) {
   if (!token) return
@@ -14,12 +16,29 @@ export function getStoredPushToken() {
   return localStorage.getItem(PUSH_TOKEN_KEY)
 }
 
+export function setNativePushUserId(userId) {
+  activeUserId = userId || null
+  const token = getStoredPushToken()
+  if (activeUserId && token) {
+    void syncNativeTokenToSupabase(activeUserId, {
+      token,
+      platform: Capacitor.getPlatform(),
+    }).catch((error) => console.warn('[MOXT] Native push token sync failed', error))
+  }
+}
+
 async function bindPushListeners(PushNotifications) {
   if (listenersBound) return
   listenersBound = true
 
   await PushNotifications.addListener('registration', (token) => {
     storePushToken(token.value)
+    if (activeUserId) {
+      void syncNativeTokenToSupabase(activeUserId, {
+        token: token.value,
+        platform: Capacitor.getPlatform(),
+      }).catch((error) => console.warn('[MOXT] Native push token sync failed', error))
+    }
   })
 
   await PushNotifications.addListener('registrationError', (error) => {
@@ -77,6 +96,10 @@ export async function syncNativePushPreference(enabled) {
   try {
     const { PushNotifications } = await import('@capacitor/push-notifications')
     await PushNotifications.removeAllDeliveredNotifications()
+    const token = getStoredPushToken()
+    if (activeUserId && token) {
+      await disableDeviceSubscription(activeUserId, token)
+    }
     localStorage.removeItem(PUSH_TOKEN_KEY)
     return { enabled: false, reason: 'disabled' }
   } catch {

@@ -39,5 +39,21 @@ if (!key && isDeploy) {
 
 if (!key) process.exit(0)
 
-writeFileSync(outPath, `VITE_SUPABASE_URL=${url}\nVITE_SUPABASE_ANON_KEY=${key}\n`, 'utf8')
+const vapidPublic =
+  process.env.VITE_VAPID_PUBLIC_KEY ||
+  (() => {
+    const phase2 = path.join(root, '..', 'scripts', 'phase2.env')
+    if (!existsSync(phase2)) return ''
+    for (const line of readFileSync(phase2, 'utf8').split(/\r?\n/)) {
+      const trimmed = line.trim()
+      if (trimmed.startsWith('VITE_VAPID_PUBLIC_KEY=')) {
+        return trimmed.slice('VITE_VAPID_PUBLIC_KEY='.length).trim()
+      }
+    }
+    return ''
+  })()
+
+const lines = [`VITE_SUPABASE_URL=${url}`, `VITE_SUPABASE_ANON_KEY=${key}`]
+if (vapidPublic) lines.push(`VITE_VAPID_PUBLIC_KEY=${vapidPublic}`)
+writeFileSync(outPath, `${lines.join('\n')}\n`, 'utf8')
 console.log(`[MOXT] .env.production prêt (${url})`)

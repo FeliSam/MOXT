@@ -685,6 +685,9 @@ const handlers = {
       created_at: payload.createdAt,
     })
     if (error) throw error
+
+    const { dispatchPushNotification } = await import('../services/pushDispatch')
+    void dispatchPushNotification(payload.id)
   },
   'communications/markNotificationRead': async (payload) => {
     const { error } = await supabase

@@ -95,3 +95,14 @@ export function isStandalone(): boolean {
     (window.navigator as Navigator & { standalone?: boolean }).standalone === true
   )
 }
+
+export function listenForServiceWorkerMessages() {
+  if (!('serviceWorker' in navigator)) return
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data?.type !== 'MOXT_NOTIFICATION_NAVIGATE') return
+    const path = event.data.path
+    if (typeof path === 'string' && path.startsWith('/')) {
+      window.location.assign(path)
+    }
+  })
+}

@@ -20,7 +20,12 @@ import {
 } from '../features/account/accountSlice'
 import { addToast } from '../features/ui/uiSlice'
 import { isNative } from '../platform/capacitor'
-import { syncNativePushPreference } from '../platform/pushNotifications'
+import { syncNativePushPreference, setNativePushUserId } from '../platform/pushNotifications'
+import {
+  getWebPushInstallHint,
+  isWebPushContextReady,
+  syncWebPushPreference,
+} from '../platform/webPush'
 
 export function SettingsPage() {
   const dispatch = useDispatch()
@@ -44,18 +49,55 @@ export function SettingsPage() {
       }),
     )
 
-    if (name === 'pushNotifications' && isNative) {
-      void syncNativePushPreference(Boolean(value)).then((result) => {
-        if (value && result.reason === 'denied') {
-          dispatch(
-            addToast({
-              tone: 'warning',
-              title: 'Notifications refusées',
-              message: 'Autorisez les notifications MOXT dans les réglages de votre téléphone.',
-            }),
-          )
-        }
-      })
+    if (name === 'pushNotifications') {
+      if (isNative) {
+        void syncNativePushPreference(Boolean(value)).then((result) => {
+          if (value && result.reason === 'denied') {
+            dispatch(
+              addToast({
+                tone: 'warning',
+                title: 'Notifications refusées',
+                message: 'Autorisez les notifications MOXT dans les réglages de votre téléphone.',
+              }),
+            )
+          }
+        })
+      } else {
+        void syncWebPushPreference(user.id, Boolean(value)).then((result) => {
+          if (value && result.reason === 'ios_install_required') {
+            dispatch(
+              addToast({
+                tone: 'info',
+                title: 'Installation requise',
+                message:
+                  'Sur iPhone, ajoutez MOXT à l’écran d’accueil via Safari, puis réactivez les notifications push.',
+              }),
+            )
+            dispatch(
+              updateAccountPreferences({
+                userId: user.id,
+                preferences: { pushNotifications: false },
+              }),
+            )
+            return
+          }
+          if (value && result.reason === 'denied') {
+            dispatch(
+              addToast({
+                tone: 'warning',
+                title: 'Notifications refusées',
+                message: 'Autorisez les notifications MOXT dans les réglages du navigateur ou de l’app.',
+              }),
+            )
+            dispatch(
+              updateAccountPreferences({
+                userId: user.id,
+                preferences: { pushNotifications: false },
+              }),
+            )
+          }
+        })
+      }
     }
   }
 
@@ -145,7 +187,15 @@ export function SettingsPage() {
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <NotifToggle
               label="Notifications push"
-              description="Alertes en temps réel sur l'appareil"
+              description={
+                isNative
+                  ? "Alertes en temps réel sur l'appareil"
+                  : isWebPushContextReady()
+                    ? 'Alertes hors ligne via l’application web installée'
+                    : getWebPushInstallHint()
+                      ? 'Installez MOXT depuis Safari (écran d’accueil) pour activer les alertes iPhone'
+                      : 'Alertes en temps réel sur cet appareil'
+              }
               checked={preferences.pushNotifications}
               onChange={(v) => updatePreference('pushNotifications', v)}
             />

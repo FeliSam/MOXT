@@ -17,6 +17,13 @@ export const ENGLISH_UI_CATALOG = {
   Découvrir: 'Discover',
   'La solution': 'The solution',
   'Découvrir la solution': 'Discover the solution',
+  'Installez MOXT pour les notifications': 'Install MOXT for notifications',
+  'Installation requise': 'Installation required',
+  "Sur iPhone, ajoutez MOXT à l’écran d’accueil via Safari, puis réactivez les notifications push.":
+    'On iPhone, add MOXT to your Home Screen from Safari, then enable push notifications again.',
+  "Installez MOXT depuis Safari (écran d’accueil) pour activer les alertes iPhone":
+    'Install MOXT from Safari (Home Screen) to enable iPhone alerts',
+  'Alertes hors ligne via l’application web installée': 'Offline alerts via the installed web app',
   FAQ: 'FAQ',
 
   // Routes (titres)

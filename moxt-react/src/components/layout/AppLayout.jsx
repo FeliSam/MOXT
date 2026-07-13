@@ -8,6 +8,7 @@ import { BottomNavigation } from './BottomNavigation'
 import { Header } from './Header'
 import { Sidebar } from './Sidebar'
 import { WelcomeGate } from '../onboarding/WelcomeGate'
+import { PwaInstallBanner } from '../pwa/PwaInstallBanner'
 
 export function AppLayout({ children }) {
   const dispatch = useDispatch()
@@ -84,6 +85,7 @@ export function AppLayout({ children }) {
         <BottomNavigation />
       </div>
       <WelcomeGate />
+      <PwaInstallBanner />
     </div>
   )
 }

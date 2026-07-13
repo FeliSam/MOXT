@@ -172,6 +172,13 @@ const RUSSIAN_PHRASES = {
   Découvrir: 'Узнать',
   'La solution': 'Решение',
   'Découvrir la solution': 'Открыть решение',
+  'Installez MOXT pour les notifications': 'Установите MOXT для уведомлений',
+  'Installation requise': 'Требуется установка',
+  "Sur iPhone, ajoutez MOXT à l’écran d’accueil via Safari, puis réactivez les notifications push.":
+    'На iPhone добавьте MOXT на экран «Домой» через Safari, затем снова включите push-уведомления.',
+  "Installez MOXT depuis Safari (écran d’accueil) pour activer les alertes iPhone":
+    'Установите MOXT из Safari (на экран «Домой»), чтобы получать уведомления на iPhone',
+  'Alertes hors ligne via l’application web installée': 'Оповещения вне сайта через установленное веб-приложение',
   FAQ: 'FAQ',
 
   // Routes (titres)
@@ -753,6 +760,13 @@ const PORTUGUESE_PHRASES = {
   Découvrir: 'Descobrir',
   'La solution': 'A solução',
   'Découvrir la solution': 'Descobrir a solução',
+  'Installez MOXT pour les notifications': 'Instale o MOXT para notificações',
+  'Installation requise': 'Instalação necessária',
+  "Sur iPhone, ajoutez MOXT à l’écran d’accueil via Safari, puis réactivez les notifications push.":
+    'No iPhone, adicione o MOXT ao ecrã inicial pelo Safari e volte a ativar as notificações push.',
+  "Installez MOXT depuis Safari (écran d’accueil) pour activer les alertes iPhone":
+    'Instale o MOXT pelo Safari (ecrã inicial) para alertas no iPhone',
+  'Alertes hors ligne via l’application web installée': 'Alertas offline via a aplicação web instalada',
   FAQ: 'FAQ',
 
   // Routes (titres)

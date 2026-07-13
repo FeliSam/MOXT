@@ -55,9 +55,10 @@ bootstrap()
 if (import.meta.env.PROD) {
   import('./platform/capacitor').then(({ isNative }) => {
     if (isNative) return
-    import('./pwa').then(({ registerServiceWorker, listenForInstallPrompt }) => {
+    import('./pwa').then(({ registerServiceWorker, listenForInstallPrompt, listenForServiceWorkerMessages }) => {
       registerServiceWorker()
       listenForInstallPrompt()
+      listenForServiceWorkerMessages()
     })
     import('./services/releaseWatcher').then(({ startReleaseWatcher }) => {
       import('./app/store').then(({ store }) => {

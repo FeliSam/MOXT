@@ -67,6 +67,21 @@ async function syncSessionToStore(session, dispatch, getState, { forceRealtime =
     const { loadAllData } = await import('../app/loadAllData')
     dispatch(loadAllData())
   }
+
+  const { setNativePushUserId } = await import('../platform/pushNotifications')
+  setNativePushUserId(payload.user.id)
+
+  const preferences = getState().account.preferences?.[payload.user.id]
+  if (preferences?.pushNotifications !== false) {
+    const { isNative } = await import('../platform/capacitor')
+    if (isNative) {
+      const { initNativePushNotifications } = await import('../platform/pushNotifications')
+      void initNativePushNotifications()
+    } else {
+      const { refreshWebPushSubscription } = await import('../platform/webPush')
+      void refreshWebPushSubscription(payload.user.id)
+    }
+  }
 }
 
 /** Garde Redux aligné avec Supabase (refresh token, déconnexion, retour d'onglet). */
