@@ -718,6 +718,8 @@ const handlers = {
   },
 
   // ── Notifications ─────────────────────────────────────────────────────────────
+  // Les messages sont notifiés côté serveur (trigger messages_notify_recipients)
+  // pour contourner le RLS et garantir le push même hors ligne.
   'communications/addNotification': async (payload, state) => {
     const currentUser = state.auth.user
     if (!currentUser || payload.userId === currentUser.id || payload.type === 'message') return
