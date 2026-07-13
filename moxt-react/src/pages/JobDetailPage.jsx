@@ -134,16 +134,18 @@ export function JobDetailPage() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {job.images.map((src, index) => (
             <a
-              key={src}
+              key={`${src}-${index}`}
               href={src}
               target="_blank"
               rel="noreferrer"
-              className={`overflow-hidden rounded-2xl border border-[var(--app-border)] ${index === 0 ? 'col-span-2 row-span-2' : ''}`}
+              className={`relative block overflow-hidden rounded-2xl border border-[var(--app-border)] ${
+                index === 0 ? 'col-span-2 sm:col-span-2' : ''
+              }`}
             >
               <img
                 src={src}
                 alt={`${job.title} — affiche ${index + 1}`}
-                className="h-full w-full object-cover"
+                className={`w-full object-cover ${index === 0 ? 'aspect-[16/10] max-h-96' : 'aspect-square'}`}
                 loading="lazy"
               />
             </a>

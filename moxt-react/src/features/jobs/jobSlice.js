@@ -17,7 +17,16 @@ const jobSlice = createSlice({
   reducers: {
     setAll(state, action) {
       const { items, applications, reports } = action.payload
-      if (items) state.items = mergeRemoteById(state.items, items)
+      if (items) {
+        const localById = new Map(state.items.map((item) => [item.id, item]))
+        state.items = mergeRemoteById(state.items, items).map((job) => {
+          const local = localById.get(job.id)
+          if (local?.images?.length && !job.images?.length) {
+            return { ...job, images: local.images }
+          }
+          return job
+        })
+      }
       if (applications) {
         state.applications = mergeRemoteById(
           state.applications,
@@ -34,7 +43,7 @@ const jobSlice = createSlice({
         return {
           payload: {
             ...values,
-            id: `JOB-${Date.now().toString(36).toUpperCase()}`,
+            id: values.id || `JOB-${Date.now().toString(36).toUpperCase()}`,
             status: 'active',
             createdAt: new Date().toISOString(),
             expiresAt:

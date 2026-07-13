@@ -59,7 +59,7 @@ describe('guestNavigation session QR', () => {
     expect(resolveScanNavigation(target, completeUser)).toBe(`/users/${otherId}/publications`)
   })
 
-  it('demande la connexion pour le profil d un autre membre sans session', () => {
+  it('ouvre la page publique pour le profil d un autre membre sans session', () => {
     const otherId = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
     const target = {
       type: 'user',
@@ -67,11 +67,9 @@ describe('guestNavigation session QR', () => {
       userId: otherId,
     }
 
-    expect(resolveScanNavigation(target, null)).toBe(
-      `/login?returnTo=${encodeURIComponent(`/users/${otherId}/publications`)}`,
-    )
+    expect(resolveScanNavigation(target, null)).toBe(`/users/${otherId}/publications`)
     expect(resolveDeepLinkDestination(`/users/${otherId}/publications`, null)).toBe(
-      `/login?returnTo=${encodeURIComponent(`/users/${otherId}/publications`)}`,
+      `/users/${otherId}/publications`,
     )
   })
 

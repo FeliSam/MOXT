@@ -29,6 +29,7 @@ export function QrCameraScanner({ active = true }) {
   const { t } = useLanguage()
   const navigate = useNavigate()
   const user = useSelector((state) => state.auth.user)
+  const authStatus = useSelector((state) => state.auth.status)
   const videoRef = useRef(null)
   const [capture, setCapture] = useState(null)
   const [permission, setPermission] = useState('checking')
@@ -92,6 +93,7 @@ export function QrCameraScanner({ active = true }) {
 
   function openTarget() {
     if (capture?.kind !== 'known') return
+    if (authStatus === 'loading') return
 
     const destination = resolveScanNavigation(capture.target, user)
     if (capture.target.type === 'invite' && capture.target.code) {
@@ -274,8 +276,11 @@ export function QrCameraScanner({ active = true }) {
                     className="!border-transparent !bg-white !text-slate-950 hover:!bg-slate-100"
                     icon={FiArrowRight}
                     onClick={openTarget}
+                    disabled={authStatus === 'loading'}
                   >
-                    {t(`share.scanner.actions.${capture.target.type}`)}
+                    {authStatus === 'loading'
+                      ? t('share.scanner.sessionLoading')
+                      : t(`share.scanner.actions.${capture.target.type}`)}
                   </Button>
                 ) : null}
                 <Button

@@ -17,12 +17,13 @@ const COLUMN_MAP = {
   experienceLevel: 'experience_level',
   salaryPeriod: 'salary_period',
   publisherType: 'publisher_type',
-  startDate: 'start_date',
-  applicationDeadline: 'application_deadline',
   createdAt: 'created_at',
   updatedAt: 'updated_at',
   expiresAt: 'expires_at',
 }
+
+/** Champs optionnels conservés uniquement dans payload (évite les erreurs si colonne absente). */
+const PAYLOAD_ONLY_FIELDS = ['startDate', 'applicationDeadline', 'images']
 
 export function jobToRemoteRow(job) {
   if (!job?.id) throw new Error('Job invalide.')
@@ -46,6 +47,10 @@ export function jobToRemoteRow(job) {
     row[snake] = job[camel] ?? null
   }
 
+  for (const field of PAYLOAD_ONLY_FIELDS) {
+    if (job[field] !== undefined) row.payload[field] = job[field]
+  }
+
   return row
 }
 
@@ -59,7 +64,7 @@ export function jobFromRemoteRow(row) {
     ...payload,
     ...mapped,
     id: mapped.id || row.id,
-    images: payload.images || [],
+    images: Array.isArray(payload.images) && payload.images.length ? payload.images : [],
     ownerId: mapped.ownerId ?? payload.ownerId ?? null,
     businessId: mapped.businessId ?? payload.businessId ?? null,
     publisherName: pickField(mapped.publisherName, payload.publisherName),

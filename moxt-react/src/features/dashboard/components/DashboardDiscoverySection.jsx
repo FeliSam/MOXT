@@ -1,4 +1,5 @@
 import { FiBriefcase, FiCalendar, FiClock, FiHeart, FiMessageCircle, FiMessageSquare, FiPackage } from 'react-icons/fi'
+import { useMemo } from 'react'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { Button } from '../../../components/ui/Button'
@@ -9,6 +10,7 @@ import { SkeletonCard } from '../../../components/ui/Skeleton'
 import { MarketplaceListingCard } from '../../marketplace/MarketplaceListingCard'
 import { formatParcelDepartureLabel } from '../../parcels/parcelUtils'
 import { formatDate } from '../../transfers/transferUtils'
+import { sortPostsByPublishedAt } from '../../posts/postSortUtils'
 import {
   dashboardCarouselTrackClass,
   dashboardListingItemClass,
@@ -31,7 +33,8 @@ export function DashboardDiscoverySection({
   parcels,
   parcelsLoading,
 }) {
-  const posts = useSelector((s) => (s.posts?.items ?? []).slice(0, 3))
+  const allPosts = useSelector((s) => s.posts?.items ?? [])
+  const posts = useMemo(() => sortPostsByPublishedAt(allPosts).slice(0, 3), [allPosts])
 
   return (
     <>

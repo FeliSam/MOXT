@@ -170,7 +170,7 @@ export const loadAllData = createAsyncThunk(
       supabase.from('wallet_entries').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(USER_LIMIT),
       supabase.from('receipts').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(USER_LIMIT),
       supabase.from('notifications').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(50),
-      supabase.from('posts').select('*').eq('status', 'published').order('created_at', { ascending: false }).limit(100),
+      supabase.from('posts').select('*').eq('status', 'published').order('last_shared_at', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }).limit(100),
       supabase.from('support_tickets').select('*').eq('user_id', uid).order('updated_at', { ascending: false }).limit(50),
       supabase.from('recipient_addresses').select('*').eq('user_id', uid).order('updated_at', { ascending: false }).limit(USER_LIMIT),
     ])

@@ -147,7 +147,12 @@ export function PublishJobPage() {
   function addPhotos(files) {
     const added = Array.from(files)
       .slice(0, 5 - photos.length)
-      .filter((file) => file.type.startsWith('image/'))
+      .filter(
+        (file) =>
+          !file.type ||
+          file.type.startsWith('image/') ||
+          /\.(jpe?g|png|gif|webp|heic|heif|avif)$/i.test(file.name),
+      )
       .map((file) => ({ file, url: URL.createObjectURL(file), name: file.name }))
     setPhotos((current) => [...current, ...added])
   }
@@ -222,13 +227,14 @@ export function PublishJobPage() {
       return
     }
     const publishAsBusiness = form.publisherType === 'business' && eligibleBusiness
+    const jobId = `JOB-${Date.now().toString(36).toUpperCase()}`
     setPublishing(true)
     let images = []
     try {
       if (photos.length) {
         images = await storageService.uploadJobImages(
           user.id,
-          Date.now().toString(36),
+          jobId,
           photos.map((photo) => photo.file),
         )
       }
@@ -242,6 +248,7 @@ export function PublishJobPage() {
     const action = dispatch(
       createJob({
         ...form,
+        id: jobId,
         images,
         salary: form.salary.toUpperCase().includes('RUB') ? form.salary : `${form.salary} RUB`,
         ownerId: user.id,

@@ -1,6 +1,5 @@
 import { useSelector } from 'react-redux'
-import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { storeReturnTo } from '../../features/guest/guestNavigation'
+import { Outlet } from 'react-router-dom'
 import { AppLayout } from '../layout/AppLayout'
 import { PublicSiteLayout } from '../layout/PublicSiteLayout'
 import { GuestPreviewBanner } from '../../features/guest/GuestPreviewBanner'
@@ -16,18 +15,10 @@ function RouteLoadingScreen() {
 export function PublicationShell() {
   const user = useSelector((state) => state.auth.user)
   const status = useSelector((state) => state.auth.status)
-  const location = useLocation()
   const guestMode = !user
 
   if (status === 'loading') {
     return <RouteLoadingScreen />
-  }
-
-  const userProfileMatch = location.pathname.match(/^\/users\/([^/]+)\/publications\/?$/i)
-  if (status === 'anonymous' && userProfileMatch) {
-    const returnTo = `${location.pathname}${location.search}`
-    storeReturnTo(returnTo)
-    return <Navigate to={`/login?returnTo=${encodeURIComponent(returnTo)}`} replace />
   }
 
   const page = (

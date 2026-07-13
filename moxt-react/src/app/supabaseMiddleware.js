@@ -169,6 +169,65 @@ async function upsert(table, data) {
   if (error) throw error
 }
 
+async function insertRow(table, data) {
+  const { error } = await supabase.from(table).insert(data)
+  if (error) {
+    if (error.code === '23505') return
+    throw error
+  }
+}
+
+async function syncActiveContentReport(state, slice, payload, foreignKey, table) {
+  const reports = state?.[slice]?.reports || []
+  const report = reports.find(
+    (item) =>
+      item[foreignKey] === payload[foreignKey] &&
+      item.reporterId === payload.reporterId &&
+      item.status === 'new',
+  )
+  if (!report) return
+  const snakeKey =
+    foreignKey === 'listingId' ? 'listing_id' : foreignKey === 'jobId' ? 'job_id' : 'event_id'
+  await insertRow(table, reportToRemoteRow(report, snakeKey))
+}
+
+async function syncActiveSubscriberReport(state, payload) {
+  const reports = state?.account?.subscriberReports || []
+  const report = reports.find(
+    (item) =>
+      item.publisherType === payload.publisherType &&
+      item.publisherId === payload.publisherId &&
+      item.subscriberId === payload.subscriberId &&
+      item.reporterId === payload.reporterId &&
+      item.status === 'new',
+  )
+  if (!report) return
+  await insertRow('subscriber_reports', subscriberReportToRemoteRow(report))
+}
+
+async function syncActiveDispute(state, payload) {
+  const dispute = state?.disputes?.items?.find(
+    (item) =>
+      item.id === payload.id ||
+      (item.reporterId === payload.reporterId &&
+        item.relatedType === payload.relatedType &&
+        item.relatedId === payload.relatedId &&
+        !['resolved', 'closed'].includes(item.status)),
+  )
+  if (!dispute) return
+  await insertRow('disputes', {
+    id: dispute.id,
+    reporter_id: dispute.reporterId || dispute.openedBy,
+    business_id: dispute.businessId || null,
+    related_type: dispute.relatedType,
+    related_id: dispute.relatedId,
+    reason: dispute.reason,
+    evidence: dispute.evidence || [],
+    status: dispute.status,
+    created_at: dispute.createdAt,
+  })
+}
+
 async function update(table, id, fields) {
   const { error } = await supabase
     .from(table)
@@ -254,8 +313,8 @@ const handlers = {
       answeredAt: payload.answeredAt,
     })
   },
-  'marketplace/reportListing': async (payload) => {
-    await upsert('listing_reports', reportToRemoteRow(payload, 'listing_id'))
+  'marketplace/reportListing': async (payload, state) => {
+    await syncActiveContentReport(state, 'marketplace', payload, 'listingId', 'listing_reports')
   },
   'marketplace/updateListingReportStatus': async (payload) => {
     await update('listing_reports', payload.id, { status: payload.status })
@@ -312,18 +371,8 @@ const handlers = {
   },
 
   // ── Litiges ───────────────────────────────────────────────────────────────────
-  'disputes/openDispute': async (payload) => {
-    await upsert('disputes', {
-      id: payload.id,
-      reporterId: payload.reporterId || payload.openedBy,
-      businessId: payload.businessId,
-      relatedType: payload.relatedType,
-      relatedId: payload.relatedId,
-      reason: payload.reason,
-      evidence: payload.evidence,
-      status: payload.status,
-      createdAt: payload.createdAt,
-    })
+  'disputes/openDispute': async (payload, state) => {
+    await syncActiveDispute(state, payload)
   },
   'disputes/updateDisputeStatus': async (payload, state) => {
     const dispute = state.disputes.items.find((item) => item.id === payload.id)
@@ -356,8 +405,8 @@ const handlers = {
   'jobs/moderateJob': async (payload) => {
     await update('jobs', payload.id, { status: payload.status })
   },
-  'jobs/reportJob': async (payload) => {
-    await upsert('job_reports', reportToRemoteRow(payload, 'job_id'))
+  'jobs/reportJob': async (payload, state) => {
+    await syncActiveContentReport(state, 'jobs', payload, 'jobId', 'job_reports')
   },
   'jobs/updateJobReportStatus': async (payload) => {
     await update('job_reports', payload.id, { status: payload.status })
@@ -384,8 +433,8 @@ const handlers = {
   'events/moderateEvent': async (payload) => {
     await update('events', payload.id, { status: payload.status })
   },
-  'events/reportEvent': async (payload) => {
-    await upsert('event_reports', reportToRemoteRow(payload, 'event_id'))
+  'events/reportEvent': async (payload, state) => {
+    await syncActiveContentReport(state, 'events', payload, 'eventId', 'event_reports')
   },
   'events/updateEventReportStatus': async (payload) => {
     await update('event_reports', payload.id, { status: payload.status })
@@ -835,8 +884,8 @@ const handlers = {
       .eq('id', payload.id)
     if (error) throw error
   },
-  'account/reportPublisherSubscriber': async (payload) => {
-    await upsert('subscriber_reports', subscriberReportToRemoteRow(payload))
+  'account/reportPublisherSubscriber': async (payload, state) => {
+    await syncActiveSubscriberReport(state, payload)
   },
   'account/updateSubscriberReportStatus': async (payload) => {
     await update('subscriber_reports', payload.id, { status: payload.status })

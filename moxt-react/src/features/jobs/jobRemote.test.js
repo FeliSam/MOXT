@@ -32,7 +32,10 @@ describe('jobRemote', () => {
     const remote = jobToRemoteRow(job)
     expect(remote.experience_level).toBe('mid')
     expect(remote.salary_period).toBe('month')
-    expect(remote.start_date).toBe('2026-08-01')
+    expect(remote.application_deadline).toBeUndefined()
+    expect(remote.start_date).toBeUndefined()
+    expect(remote.payload.applicationDeadline).toBe('2026-07-31')
+    expect(remote.payload.startDate).toBe('2026-08-01')
     expect(remote.payload.images).toEqual(['https://cdn.example/job.jpg'])
 
     const restored = jobFromRemoteRow(remote)

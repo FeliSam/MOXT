@@ -16,7 +16,14 @@ export function PosterUploader({
   const inputRef = useRef(null)
 
   function handleFiles(event) {
-    if (event.target.files?.length) onAdd(event.target.files)
+    if (!event.target.files?.length) return
+    const accepted = Array.from(event.target.files).filter(
+      (file) =>
+        !file.type ||
+        file.type.startsWith('image/') ||
+        /\.(jpe?g|png|gif|webp|heic|heif|avif)$/i.test(file.name),
+    )
+    if (accepted.length) onAdd(accepted)
     event.target.value = ''
   }
 

@@ -12,6 +12,7 @@ import transfersReducer, {
 } from '../features/transfers/transferSlice'
 import { DIRECTIONS, TRANSFER_STATUS } from '../features/transfers/transferConfig'
 import uiReducer from '../features/ui/uiSlice'
+import marketplaceReducer, { reportListing } from '../features/marketplace/marketplaceSlice'
 import { interactionMiddleware } from './interactionMiddleware'
 
 describe('interactionMiddleware', () => {
@@ -277,5 +278,53 @@ describe('interactionMiddleware', () => {
     store.dispatch(moderateBusiness({ id: 'biz-1', status: 'active' }))
 
     expect(store.getState().communications.notifications).toHaveLength(0)
+  })
+
+  it('affiche un toast et notifie les admins apres un signalement annonce', () => {
+    const store = configureStore({
+      reducer: {
+        auth: () => ({ user: { id: 'reporter' } }),
+        communications: communicationsReducer,
+        ui: uiReducer,
+        jobs: () => ({ applications: [], items: [], reports: [] }),
+        events: () => ({ registrations: [], items: [], reports: [] }),
+        parcels: () => ({ items: [], requests: [] }),
+        businesses: () => ({ items: [] }),
+        marketplace: marketplaceReducer,
+        account: () => ({ subscriberReports: [] }),
+        administration: () => ({
+          users: [{ id: 'admin-1', role: 'admin' }],
+        }),
+        finance: () => ({ payments: [], receipts: [], walletEntries: [] }),
+      },
+      preloadedState: {
+        marketplace: {
+          items: [{ id: 'ANN-1', ownerId: 'owner-1', title: 'Test' }],
+          reports: [],
+          filters: {},
+          draft: null,
+        },
+        communications: { conversations: [], notifications: [], support: [] },
+      },
+      middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(interactionMiddleware),
+    })
+
+    store.dispatch(
+      reportListing({
+        listingId: 'ANN-1',
+        reporterId: 'reporter',
+        reason: 'Contenu suspect',
+      }),
+    )
+
+    expect(store.getState().ui.toasts[0]).toMatchObject({
+      title: 'Signalement envoyé',
+      tone: 'success',
+    })
+    expect(store.getState().communications.notifications[0]).toMatchObject({
+      userId: 'admin-1',
+      type: 'moderation',
+      link: '/marketplace/ANN-1',
+    })
   })
 })

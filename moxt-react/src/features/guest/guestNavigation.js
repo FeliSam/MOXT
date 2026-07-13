@@ -108,16 +108,12 @@ function loginPathForReturnTo(path) {
 /**
  * Destination après scan QR selon la session navigateur :
  * session active → profil cible (ou /profile pour son QR / invitation) ;
- * pas de session → connexion avec retour vers la cible (sauf invitation → register).
+ * pas de session → page publique avec bannière invitant à se connecter.
  */
 export function resolveScanNavigation(target, user) {
   if (!target?.path) return '/dashboard'
 
   if (!user?.id) {
-    if (target.type === 'invite') return target.path
-    if (target.type === 'user' || target.type === 'business') {
-      return loginPathForReturnTo(target.path)
-    }
     return target.path
   }
 

@@ -7,10 +7,10 @@ export function GuestPreviewBanner() {
   const returnTo = encodeURIComponent(`${location.pathname}${location.search}`)
 
   return (
-    <Alert variant="info" title="Aperçu public MOXT" className="mb-6">
+    <Alert variant="info" title="Connectez-vous pour interagir" className="mb-6">
       <p className="text-sm">
-        Vous consultez un profil ou une entreprise sans être connecté. Créez un compte pour
-        contacter, favoriser, s&apos;abonner ou publier.
+        Vous consultez ce profil en mode public. Connectez-vous pour contacter, suivre, favoriser
+        ou publier.
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
         <Link to={`/register?returnTo=${returnTo}`}>

@@ -7,6 +7,11 @@ import {
   notifyPublisherSubscribers,
   resolvePublisherFromContent,
 } from '../features/account/publisherSubscriptionNotify'
+import {
+  reportForeignKeyForAction,
+  wasActiveReportAdded,
+  wasActiveReportDuplicate,
+} from '../features/moderation/reportUtils'
 
 import { createNotificationDispatcher } from './notificationTriggers'
 import { hasReviewEligibility } from '@moxt/shared/utils/reviewEligibility.js'
@@ -102,9 +107,6 @@ export const interactionMiddleware = (store) => {
   }
   if (action.type === 'account/banPublisherSubscriber') {
     triggers.handleSubscriberBanned(before, after, action)
-  }
-  if (action.type === 'account/reportPublisherSubscriber') {
-    triggers.handleSubscriberReported(before, after, action)
   }
   if (action.type === 'administration/updateUserRole' && action.payload.id === actorId) {
     const user = after.auth.user
@@ -432,6 +434,97 @@ export const interactionMiddleware = (store) => {
     }
   }
 
+  const contentReportConfig = {
+    'marketplace/reportListing': {
+      slice: 'marketplace',
+      label: 'Annonce',
+      link: (payload) => `/marketplace/${payload.listingId}`,
+    },
+    'jobs/reportJob': {
+      slice: 'jobs',
+      label: "Offre d'emploi",
+      link: (payload) => `/jobs/${payload.jobId}`,
+    },
+    'events/reportEvent': {
+      slice: 'events',
+      label: 'Événement',
+      link: (payload) => `/events/${payload.eventId}`,
+    },
+  }
+  const reportConfig = contentReportConfig[action.type]
+  if (reportConfig) {
+    const foreignKey = reportForeignKeyForAction(action.type)
+    const beforeReports = before[reportConfig.slice].reports || []
+    const afterReports = after[reportConfig.slice].reports || []
+    if (wasActiveReportAdded(beforeReports, afterReports, action.payload, foreignKey)) {
+      store.dispatch(
+        addToast({
+          title: 'Signalement envoyé',
+          message: 'La modération MOXT examinera ce contenu.',
+          tone: 'success',
+        }),
+      )
+      triggers.handleContentReported(
+        reportConfig.label,
+        action.payload.reason,
+        reportConfig.link(action.payload),
+      )
+    } else if (wasActiveReportDuplicate(beforeReports, afterReports, action.payload, foreignKey)) {
+      store.dispatch(
+        addToast({
+          title: 'Déjà signalé',
+          message: 'Votre signalement est déjà enregistré pour ce contenu.',
+          tone: 'info',
+        }),
+      )
+    }
+  }
+
+  if (action.type === 'account/reportPublisherSubscriber') {
+    const beforeReports = before.account.subscriberReports || []
+    const afterReports = after.account.subscriberReports || []
+    if (afterReports.length > beforeReports.length) {
+      store.dispatch(
+        addToast({
+          title: 'Signalement envoyé',
+          message: 'La modération MOXT examinera ce dossier.',
+          tone: 'success',
+        }),
+      )
+      triggers.handleSubscriberReported(before, after, action)
+    } else {
+      store.dispatch(
+        addToast({
+          title: 'Déjà signalé',
+          message: 'Ce signalement est déjà enregistré.',
+          tone: 'info',
+        }),
+      )
+    }
+  }
+
+  if (action.type === 'disputes/openDispute') {
+    const beforeCount = before.disputes.items.length
+    const afterCount = after.disputes.items.length
+    if (afterCount > beforeCount) {
+      store.dispatch(
+        addToast({
+          title: 'Réclamation enregistrée',
+          message: 'Votre demande sera examinée.',
+          tone: 'success',
+        }),
+      )
+    } else {
+      store.dispatch(
+        addToast({
+          title: 'Réclamation déjà ouverte',
+          message: 'Une réclamation est déjà en cours pour ce dossier.',
+          tone: 'info',
+        }),
+      )
+    }
+  }
+
   const successActions = {
     'businesses/saveBusiness': {
       title: 'Entreprise enregistrée',
@@ -469,10 +562,6 @@ export const interactionMiddleware = (store) => {
       title: 'Reçu enregistré',
       message: 'Le reçu est disponible dans votre profil.',
     },
-    'account/reportPublisherSubscriber': {
-      title: 'Signalement envoyé',
-      message: 'La modération MOXT examinera ce dossier.',
-    },
     'account/banPublisherSubscriber': {
       title: 'Abonné banni',
       message: "L'abonné ne pourra plus suivre vos publications.",
@@ -480,10 +569,6 @@ export const interactionMiddleware = (store) => {
     'account/removeSubscriberByPublisher': {
       title: 'Abonné retiré',
       message: "L'abonnement a été supprimé.",
-    },
-    'disputes/openDispute': {
-      title: 'Réclamation enregistrée',
-      message: 'Votre demande sera examinée.',
     },
     'transfers/createTransfer': {
       title: 'Transfert créé',

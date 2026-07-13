@@ -4,6 +4,8 @@ import { resolveDeepLinkDestination } from '../features/guest/guestNavigation'
 let navigateRef = null
 /** @type {(() => { id?: string } | null) | null} */
 let readAuthUserRef = null
+/** @type {import('@reduxjs/toolkit').Store | null} */
+let storeRef = null
 
 export function setDeepLinkNavigator(navigate) {
   navigateRef = navigate
@@ -11,6 +13,37 @@ export function setDeepLinkNavigator(navigate) {
 
 export function setDeepLinkAuthReader(readAuthUser) {
   readAuthUserRef = readAuthUser
+}
+
+export function setDeepLinkStore(store) {
+  storeRef = store
+}
+
+function waitForAuthUser(timeoutMs = 5000) {
+  if (!storeRef) {
+    return Promise.resolve(readAuthUserRef?.() ?? null)
+  }
+
+  const readUser = () => storeRef.getState().auth.user
+  const readStatus = () => storeRef.getState().auth.status
+
+  if (readStatus() !== 'loading') {
+    return Promise.resolve(readUser())
+  }
+
+  return new Promise((resolve) => {
+    const started = Date.now()
+    const unsubscribe = storeRef.subscribe(() => {
+      if (readStatus() !== 'loading' || Date.now() - started > timeoutMs) {
+        unsubscribe()
+        resolve(readUser())
+      }
+    })
+    setTimeout(() => {
+      unsubscribe()
+      resolve(readUser())
+    }, timeoutMs)
+  })
 }
 
 /**
@@ -48,11 +81,11 @@ export function parseDeepLinkPath(url) {
   }
 }
 
-export function navigateDeepLink(url) {
+export async function navigateDeepLink(url) {
   const path = parseDeepLinkPath(url)
   if (!path || !navigateRef) return false
 
-  const user = readAuthUserRef?.() ?? null
+  const user = await waitForAuthUser()
   const destination = resolveDeepLinkDestination(path, user)
   navigateRef(destination)
   return true

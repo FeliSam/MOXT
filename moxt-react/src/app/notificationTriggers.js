@@ -205,6 +205,15 @@ export function createNotificationDispatcher(store) {
         priority: 'high',
       })
     },
+    handleContentReported(label, reason, link) {
+      notifyAdmins({
+        title: `Signalement ${label}`,
+        message: String(reason || 'Contenu signalé').slice(0, 120),
+        type: 'moderation',
+        link: link || '/admin',
+        priority: 'high',
+      })
+    },
     handlePostLike(before, after, action) {
       const { postId, userId } = action.payload
       const previous = before.posts.items.find((item) => item.id === postId)
