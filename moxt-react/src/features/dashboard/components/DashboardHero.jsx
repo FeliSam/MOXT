@@ -38,7 +38,7 @@ export function DashboardHero({ user, onOpenCalculator }) {
             </Link>
             <Link
               to="/marketplace"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-btn)] border border-sky-200/80 bg-sky-500/90 px-5 text-sm font-black text-white shadow-lg shadow-sky-950/25 transition hover:-translate-y-0.5 hover:bg-sky-400/95"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-btn)] bg-cyan-300 px-5 text-sm font-black text-slate-950 shadow-lg shadow-cyan-950/20 transition hover:-translate-y-0.5 hover:bg-cyan-200"
             >
               Marketplace <FiArrowRight />
             </Link>

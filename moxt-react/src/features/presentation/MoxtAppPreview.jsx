@@ -24,7 +24,7 @@ function AppScreen({ mobile = false }) {
       }`}
     >
       <header className="flex items-center gap-2 border-b border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2.5">
-        <img src="/assets/logos/X.png" alt="" className="size-6 shrink-0 rounded-lg object-cover" />
+        <img src="/assets/brand/moxt-x.png" alt="" className="size-6 shrink-0 rounded-lg object-cover" />
         <div className="min-w-0 flex-1">
           <p className="truncate font-black">MOXT</p>
           <p className="truncate text-[9px] text-[var(--app-text-muted)]">Transferts · Colis · Services</p>

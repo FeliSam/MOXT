@@ -71,8 +71,7 @@ function pair(name) {
 }
 
 const files = {
-  'logos/X.svg': shell({ ...pair('brand'), inner: icons.logoMark }),
-  'logos/MOXTlogo.svg': shell({ ...pair('brand'), inner: icons.logoMark }),
+  // Ne pas régénérer logos/X.svg — la marque vive est assets/brand/moxt-x.png
   'services/quick-marketplace.svg': shell({ ...pair('blue'), inner: icons.marketplace }),
   'services/quick-parcel.svg': shell({ ...pair('amber'), inner: icons.parcel }),
   'services/quick-job.svg': shell({ ...pair('violet'), inner: icons.job }),

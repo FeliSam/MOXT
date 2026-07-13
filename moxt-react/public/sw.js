@@ -1,11 +1,11 @@
 const CACHE_NAME = '__MOXT_CACHE_NAME__';
 const STATIC_ASSETS = [
   '/manifest.webmanifest',
-  '/favicon-32.png',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/icon-512-maskable.png',
-  '/apple-touch-icon.png',
+  '/moxt-x-32.png',
+  '/moxt-x-180.png',
+  '/moxt-x-192.png',
+  '/moxt-x-512.png',
+  '/moxt-x-512-maskable.png',
 ];
 
 function canCacheRequest(request) {
@@ -127,8 +127,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title || 'MOXT', {
       body: data.body || '',
-      icon: '/icon-192.png?v=20260714',
-      badge: '/icon-192.png?v=20260714',
+      icon: '/moxt-x-192.png',
+      badge: '/moxt-x-192.png',
       data: {
         ...payload,
         url: targetPath,
