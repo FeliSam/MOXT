@@ -35,11 +35,34 @@ async function writeIcon(size, filename, { pad = 0 } = {}) {
   fs.writeFileSync(path.join(publicDir, filename), buffer)
 }
 
-// Nouveaux noms uniquement — évite le cache Safari/CDN des anciens icon-*.png
+// Noms actuels
 await writeIcon(32, 'moxt-x-32.png')
 await writeIcon(180, 'moxt-x-180.png')
 await writeIcon(192, 'moxt-x-192.png')
 await writeIcon(512, 'moxt-x-512.png')
 await writeIcon(512, 'moxt-x-512-maskable.png', { pad: 0.1 })
 
-console.log('PWA icons generated from assets/brand/moxt-x.png (nouveaux noms)')
+// Chemins legacy (Safari / caches / CDN) → toujours la nouvelle image
+await writeIcon(32, 'favicon-32.png')
+await writeIcon(180, 'apple-touch-icon.png')
+await writeIcon(192, 'icon-192.png')
+await writeIcon(512, 'icon-512.png')
+await writeIcon(512, 'icon-512-maskable.png', { pad: 0.1 })
+
+// Supprimer les vieux SVG placeholders teal
+for (const stale of [
+  'favicon.svg',
+  'app-icon.svg',
+  path.join('assets', 'logos', 'X.svg'),
+  path.join('assets', 'logos', 'MOXTlogo.svg'),
+]) {
+  const full = path.join(publicDir, stale)
+  if (fs.existsSync(full)) {
+    fs.unlinkSync(full)
+    console.log('deleted', stale)
+  }
+}
+
+fs.copyFileSync(sourcePng, path.join(publicDir, 'assets', 'logos', 'X.png'))
+
+console.log('PWA icons aligned from assets/brand/moxt-x.png (+ legacy names overwritten)')

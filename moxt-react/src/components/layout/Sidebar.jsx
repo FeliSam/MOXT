@@ -144,7 +144,7 @@ export function Sidebar({ open }) {
         <div className="flex h-[4.5rem] shrink-0 items-center justify-between px-5 lg:justify-center lg:border-b lg:border-[var(--app-border)]/70 lg:px-0">
           <Link to="/dashboard" aria-label="MOXT" className="flex min-w-0 items-center justify-center">
             <img
-              src="/assets/brand/moxt-x.png"
+              src="/assets/brand/moxt-x.png?v=20260714d"
               alt="MOXT"
               className="h-9 w-9 shrink-0 rounded-xl object-cover"
             />

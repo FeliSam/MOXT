@@ -6,6 +6,10 @@ const STATIC_ASSETS = [
   '/moxt-x-192.png',
   '/moxt-x-512.png',
   '/moxt-x-512-maskable.png',
+  '/favicon-32.png',
+  '/apple-touch-icon.png',
+  '/icon-192.png',
+  '/icon-512.png',
 ];
 
 function canCacheRequest(request) {
