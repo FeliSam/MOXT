@@ -43,6 +43,13 @@ function buildSmsText(otp: string) {
 type SmsProvider = 'smsru' | 'yandex' | 'smsc'
 
 function resolveProvider(): SmsProvider {
+  const lockedProvider = (Deno.env.get('SMS_INFRA_LOCKED') || '').toLowerCase()
+  if (lockedProvider === 'true' || lockedProvider === '1') {
+    if (Deno.env.get('SMSC_LOGIN') && (Deno.env.get('SMSC_PASSWORD') || Deno.env.get('SMSC_API_KEY'))) {
+      return 'smsc'
+    }
+  }
+
   const explicit = (Deno.env.get('SMS_PROVIDER') || 'auto').toLowerCase()
   if (explicit === 'smsru') return 'smsru'
   if (explicit === 'yandex') return 'yandex'
@@ -259,15 +266,62 @@ async function sendViaYandexCns(phone: string, otp: string) {
   return result.MessageId
 }
 
-async function sendOtpSms(phone: string, otp: string) {
-  const provider = resolveProvider()
-  if (provider === 'smsru') {
-    return sendViaSmsRu(phone, otp)
-  }
+function providerAvailable(provider: SmsProvider) {
+  if (provider === 'smsru') return Boolean(Deno.env.get('SMS_RU_API_ID'))
   if (provider === 'smsc') {
-    return sendViaSmsc(phone, otp)
+    return Boolean(
+      Deno.env.get('SMSC_LOGIN') &&
+        (Deno.env.get('SMSC_PASSWORD') || Deno.env.get('SMSC_API_KEY')),
+    )
   }
-  return sendViaYandexCns(phone, otp)
+  if (provider === 'yandex') {
+    return Boolean(
+      Deno.env.get('YC_SNS_ACCESS_KEY_ID') && Deno.env.get('YC_SNS_SECRET_ACCESS_KEY'),
+    )
+  }
+  return false
+}
+
+function providerOrder(): SmsProvider[] {
+  const primary = resolveProvider()
+  const chain: SmsProvider[] = []
+  if (providerAvailable(primary)) chain.push(primary)
+  for (const provider of ['yandex', 'smsru', 'smsc'] as SmsProvider[]) {
+    if (!chain.includes(provider) && providerAvailable(provider)) {
+      chain.push(provider)
+    }
+  }
+  return chain
+}
+
+async function sendWithProvider(provider: SmsProvider, phone: string, otp: string) {
+  if (provider === 'smsru') return sendViaSmsRu(phone, otp)
+  if (provider === 'yandex') return sendViaYandexCns(phone, otp)
+  return sendViaSmsc(phone, otp)
+}
+
+async function sendOtpSms(phone: string, otp: string) {
+  const failures: string[] = []
+  const order = providerOrder()
+  if (!order.length) {
+    throw new Error('Aucun fournisseur SMS configuré (SMSC, SMS.ru ou Yandex CNS).')
+  }
+
+  for (const provider of order) {
+    try {
+      const id = await sendWithProvider(provider, phone, otp)
+      if (failures.length) {
+        console.warn(`[send-sms] succès via ${provider} après échecs:`, failures.join(' | '))
+      }
+      return id
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'échec inconnu'
+      failures.push(`${provider}: ${message}`)
+      console.warn(`[send-sms] ${provider} échoué:`, message)
+    }
+  }
+
+  throw new Error(failures.join(' | '))
 }
 
 Deno.serve(async (req) => {

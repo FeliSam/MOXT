@@ -6,15 +6,13 @@
  *      SMS_RU_API_ID=votre_cle_api
  *      SMS_PROVIDER=smsru
  * 2. Lancez : npm run setup:sms-ru
- *
- * Ou en une ligne :
- *   $env:SMS_RU_API_ID="..."; npm run setup:sms-ru
  */
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { randomBytes } from 'node:crypto'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
+import { assertSmsInfraChangeAllowed, warnSmsInfraLocked } from './lib/smsInfraLock.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const envPath = path.join(root, 'scripts', 'phase2.env')
@@ -52,14 +50,38 @@ function upsertEnvVar(key, value) {
   writeFileSync(envPath, `${next.join('\n').trimEnd()}\n`, 'utf8')
 }
 
-function run(cmd, args, { env = process.env } = {}) {
-  return spawnSync(cmd, args, {
-    cwd: root,
-    stdio: 'inherit',
-    shell: process.platform === 'win32',
-    encoding: 'utf8',
-    env,
-  }).status ?? 1
+function buildSupabaseEnv(vars) {
+  return {
+    ...process.env,
+    SUPABASE_ACCESS_TOKEN:
+      process.env.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN || '',
+    SEND_SMS_HOOK_SECRET: vars.SEND_SMS_HOOK_SECRET || process.env.SEND_SMS_HOOK_SECRET || '',
+    MOXT_POSTBOX_SMTP_USER: vars.MOXT_POSTBOX_SMTP_USER || process.env.MOXT_POSTBOX_SMTP_USER,
+    MOXT_POSTBOX_SMTP_PASS: vars.MOXT_POSTBOX_SMTP_PASS || process.env.MOXT_POSTBOX_SMTP_PASS,
+    MOXT_POSTBOX_FROM: vars.MOXT_POSTBOX_FROM || process.env.MOXT_POSTBOX_FROM,
+  }
+}
+
+function runSupabase(args, env) {
+  const supabaseJs = path.join(root, 'node_modules', 'supabase', 'dist', 'supabase.js')
+  if (existsSync(supabaseJs)) {
+    return (
+      spawnSync(process.execPath, [supabaseJs, ...args], {
+        cwd: root,
+        stdio: 'inherit',
+        env,
+      }).status ?? 1
+    )
+  }
+  return (
+    spawnSync('npx', ['supabase', ...args], {
+      cwd: root,
+      stdio: 'inherit',
+      shell: process.platform === 'win32',
+      encoding: 'utf8',
+      env,
+    }).status ?? 1
+  )
 }
 
 function ensureHookSecret(vars) {
@@ -73,6 +95,8 @@ function ensureHookSecret(vars) {
 }
 
 async function main() {
+  assertSmsInfraChangeAllowed('setup:sms-ru')
+
   console.log('\n══════════════════════════════════════')
   console.log('  MOXT — SMS.ru (OTP téléphone)')
   console.log('══════════════════════════════════════')
@@ -86,53 +110,54 @@ async function main() {
   const apiId = (process.env.SMS_RU_API_ID || vars.SMS_RU_API_ID || '').trim()
   if (!apiId || apiId.includes('REMPLACER')) {
     console.error('\n✗ SMS_RU_API_ID manquant ou vide.')
-    console.error('  Éditez scripts/phase2.env (pas .example) :')
-    console.error('    SMS_RU_API_ID=votre_cle_api')
-    console.error('    SMS_PROVIDER=smsru')
-    console.error('\n  La clé doit être SANS # au début de la ligne.')
-    console.error('  Ou : $env:SMS_RU_API_ID="..."; npm run setup:sms-ru')
+    console.error('  Éditez scripts/phase2.env : SMS_RU_API_ID=votre_cle_api')
     process.exit(1)
   }
 
-  if (!vars.SMS_PROVIDER || vars.SMS_PROVIDER === 'auto') {
-    upsertEnvVar('SMS_PROVIDER', 'smsru')
-    vars.SMS_PROVIDER = 'smsru'
-  }
-
+  upsertEnvVar('SMS_PROVIDER', 'smsru')
+  vars.SMS_PROVIDER = 'smsru'
   vars.SEND_SMS_HOOK_SECRET = ensureHookSecret(vars)
 
-  log('Provider', vars.SMS_PROVIDER || 'smsru')
+  const supabaseEnv = buildSupabaseEnv(vars)
+  if (!supabaseEnv.SUPABASE_ACCESS_TOKEN) {
+    console.error('\n✗ SUPABASE_ACCESS_TOKEN manquant dans scripts/phase2.env')
+    process.exit(1)
+  }
+
+  log('Provider', 'smsru')
   log('Supabase', `projet ${projectRef}`)
-  if (run('npx', ['supabase', 'link', '--project-ref', projectRef, '--yes']) !== 0) {
+  if (runSupabase(['link', '--project-ref', projectRef, '--yes'], supabaseEnv) !== 0) {
     process.exit(1)
   }
 
   const secretsPath = path.join(root, 'scripts', 'phase2.supabase-secrets.env')
   const secretLines = [
-    `SMS_PROVIDER=${vars.SMS_PROVIDER || 'smsru'}`,
+    'SMS_PROVIDER=smsru',
     `SMS_RU_API_ID=${apiId}`,
     `SMS_MESSAGE_TEMPLATE=${vars.SMS_MESSAGE_TEMPLATE || vars.YC_SNS_MESSAGE_TEMPLATE || 'Код MOXT: {otp}. Никому не сообщайте.'}`,
-    `SEND_SMS_HOOK_SECRET=${vars.SEND_SMS_HOOK_SECRET || process.env.SEND_SMS_HOOK_SECRET || ''}`,
+    `SEND_SMS_HOOK_SECRET=${vars.SEND_SMS_HOOK_SECRET || ''}`,
   ]
 
   if (vars.SMS_RU_FROM) secretLines.push(`SMS_RU_FROM=${vars.SMS_RU_FROM}`)
+  if (vars.SMSC_LOGIN) secretLines.push(`SMSC_LOGIN=${vars.SMSC_LOGIN}`)
+  if (vars.SMSC_PASSWORD) secretLines.push(`SMSC_PASSWORD=${vars.SMSC_PASSWORD}`)
+  if (vars.SMSC_API_KEY) secretLines.push(`SMSC_API_KEY=${vars.SMSC_API_KEY}`)
+  if (vars.SMSC_SENDER) secretLines.push(`SMSC_SENDER=${vars.SMSC_SENDER}`)
+  if (vars.SMSC_WEBHOOK_SECRET) secretLines.push(`SMSC_WEBHOOK_SECRET=${vars.SMSC_WEBHOOK_SECRET}`)
   if (vars.YC_SNS_ACCESS_KEY_ID) secretLines.push(`YC_SNS_ACCESS_KEY_ID=${vars.YC_SNS_ACCESS_KEY_ID}`)
   if (vars.YC_SNS_SECRET_ACCESS_KEY) {
     secretLines.push(`YC_SNS_SECRET_ACCESS_KEY=${vars.YC_SNS_SECRET_ACCESS_KEY}`)
   }
   if (vars.YC_SNS_SENDER_ID) secretLines.push(`YC_SNS_SENDER_ID=${vars.YC_SNS_SENDER_ID}`)
-  if (vars.YC_SNS_MESSAGE_TEMPLATE) {
-    secretLines.push(`YC_SNS_MESSAGE_TEMPLATE=${vars.YC_SNS_MESSAGE_TEMPLATE}`)
-  }
 
   writeFileSync(secretsPath, `${secretLines.join('\n')}\n`, 'utf8')
-  log('Secrets Edge Function', 'send-sms')
-  if (run('npx', ['supabase', 'secrets', 'set', '--env-file', secretsPath]) !== 0) {
+  log('Secrets Edge Function', 'send-sms (SMS.ru principal + repli SMSC)')
+  if (runSupabase(['secrets', 'set', '--env-file', secretsPath], supabaseEnv) !== 0) {
     process.exit(1)
   }
 
   log('Déploiement', 'send-sms')
-  if (run('npx', ['supabase', 'functions', 'deploy', 'send-sms', '--no-verify-jwt']) !== 0) {
+  if (runSupabase(['functions', 'deploy', 'send-sms', '--no-verify-jwt'], supabaseEnv) !== 0) {
     process.exit(1)
   }
 
@@ -145,21 +170,14 @@ async function main() {
 
   if (hasPostbox) {
     log('Config Auth', 'hook send_sms (SMS.ru)')
-    const pushEnv = {
-      ...process.env,
-      SEND_SMS_HOOK_SECRET: vars.SEND_SMS_HOOK_SECRET,
-      MOXT_POSTBOX_SMTP_USER: vars.MOXT_POSTBOX_SMTP_USER,
-      MOXT_POSTBOX_SMTP_PASS: vars.MOXT_POSTBOX_SMTP_PASS,
-      MOXT_POSTBOX_FROM: vars.MOXT_POSTBOX_FROM,
-    }
-    if (run('npx', ['supabase', 'config', 'push', '--yes'], { env: pushEnv }) !== 0) {
+    if (
+      runSupabase(['config', 'push', '--yes'], {
+        ...supabaseEnv,
+        SEND_SMS_HOOK_SECRET: vars.SEND_SMS_HOOK_SECRET,
+      }) !== 0
+    ) {
       console.log('\n  ⚠ config push échoué — relancez : npm run setup:supabase')
     }
-  } else {
-    console.log('\n  ⚠ Hook Auth non synchronisé (Postbox absent de phase2.env).')
-    console.log('  Edge Function déployée ; pour activer les OTP :')
-    console.log('    npm run setup:yandex-provision')
-    console.log('    npm run setup:supabase')
   }
 
   console.log('\n══════════════════════════════════════')
@@ -167,11 +185,8 @@ async function main() {
   console.log('══════════════════════════════════════')
   console.log('\n  Test : inscription ou connexion avec un numéro +7')
   console.log('  Vérifiez le solde sur https://sms.ru')
-  console.log('\n  SMS.ru — expéditeur obligatoire (erreur 221 sans cela) :')
-  console.log('    https://sms.ru/?panel=senders → ajoutez MOXT ou moxtapp.ru')
-  console.log('    Puis dans phase2.env : SMS_RU_FROM=MOXT')
-  console.log('    Et : npm run setup:sms-ru')
-  console.log('\n  Revenir à Yandex CNS plus tard : SMS_PROVIDER=yandex dans phase2.env puis npm run setup:sms-ru')
+  console.log('\n  Si erreur 221 : créez l’expéditeur MOXT sur https://sms.ru/?panel=senders')
+  console.log('  puis SMS_RU_FROM=MOXT dans phase2.env et relancez npm run setup:sms-ru')
 }
 
 main().catch((err) => {

@@ -1,6 +1,6 @@
 import { useFormik } from 'formik'
 import { useEffect, useState } from 'react'
-import { FiLock, FiMail, FiMessageSquare } from 'react-icons/fi'
+import { FiLock, FiMail } from 'react-icons/fi'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { AuthCard } from '../components/auth/AuthCard'
@@ -13,12 +13,7 @@ import { constrainPhone } from '../config/phone'
 import { useLanguage } from '../contexts/useLanguage'
 import { loadAllData } from '../app/loadAllData'
 import { authErrorToast } from '../features/auth/authErrorMessages'
-import {
-  clearAuthError,
-  login,
-  requestPhoneLoginOtp,
-  verifyPhoneLogin,
-} from '../features/auth/authSlice'
+import { clearAuthError, login } from '../features/auth/authSlice'
 import { loginEmailSchema, loginPhonePasswordSchema } from '../features/auth/authSchemas'
 import { addToast } from '../features/ui/uiSlice'
 import { startRealtimeSubscription } from '../services/realtimeService'
@@ -27,7 +22,6 @@ import { resolveReturnTo, clearReturnTo } from '../features/guest/guestNavigatio
 const LOGIN_MODES = [
   { id: 'email', label: 'E-mail', icon: FiMail },
   { id: 'phone-password', label: 'Tél. + mot de passe', icon: FiLock },
-  { id: 'phone-otp', label: 'Code SMS', icon: FiMessageSquare },
 ]
 
 function finishLogin(dispatch, store, navigate, location, searchParams) {
@@ -48,10 +42,6 @@ export function LoginPage() {
   const { error, status } = useSelector((state) => state.auth)
 
   const [mode, setMode] = useState('email')
-  const [otpSent, setOtpSent] = useState(false)
-  const [otpPhone, setOtpPhone] = useState('+7')
-  const [otpCode, setOtpCode] = useState('')
-  const [resendCooldown, setResendCooldown] = useState(0)
 
   useEffect(() => () => dispatch(clearAuthError()), [dispatch])
 
@@ -61,18 +51,8 @@ export function LoginPage() {
     dispatch(clearAuthError())
   }, [dispatch, error])
 
-  useEffect(() => {
-    if (resendCooldown <= 0) return undefined
-    const timer = window.setInterval(() => {
-      setResendCooldown((value) => Math.max(0, value - 1))
-    }, 1000)
-    return () => window.clearInterval(timer)
-  }, [resendCooldown])
-
   function switchMode(nextMode) {
     setMode(nextMode)
-    setOtpSent(false)
-    setOtpCode('')
     dispatch(clearAuthError())
   }
 
@@ -98,38 +78,6 @@ export function LoginPage() {
     },
   })
 
-  async function sendLoginOtp() {
-    const errors = await phoneFormik.validateForm()
-    if (errors.phone) {
-      phoneFormik.setFieldTouched('phone', true, false)
-      return
-    }
-    const phone = phoneFormik.values.phone
-    const result = await dispatch(requestPhoneLoginOtp(phone))
-    if (requestPhoneLoginOtp.fulfilled.match(result)) {
-      setOtpPhone(result.payload.phone)
-      setOtpSent(true)
-      setOtpCode('')
-      setResendCooldown(60)
-      dispatch(clearAuthError())
-      dispatch(
-        addToast({
-          title: 'Code envoyé',
-          message: `Vérifiez les SMS reçus au ${result.payload.phone}.`,
-          tone: 'info',
-        }),
-      )
-    }
-  }
-
-  async function confirmLoginOtp() {
-    if (!/^\d{6}$/.test(otpCode)) return
-    const result = await dispatch(verifyPhoneLogin({ phone: otpPhone, token: otpCode }))
-    if (verifyPhoneLogin.fulfilled.match(result)) {
-      finishLogin(dispatch, store, navigate, location, searchParams)
-    }
-  }
-
   const emailError = (field) => (emailFormik.touched[field] ? emailFormik.errors[field] : undefined)
   const phoneError = (field) => (phoneFormik.touched[field] ? phoneFormik.errors[field] : undefined)
 
@@ -138,9 +86,9 @@ export function LoginPage() {
       eyebrow="MOXT · Connexion"
       title={t('auth.login.title')}
       titleClassName="max-sm:hidden"
-      description="Accédez à votre espace par e-mail, numéro russe (+7) ou code SMS."
+      description="Accédez à votre espace par e-mail ou par numéro russe (+7) et mot de passe."
     >
-      <div className="grid gap-2 sm:grid-cols-3">
+      <div className="grid gap-2 sm:grid-cols-2">
         {LOGIN_MODES.map((item) => {
           const Icon = item.icon
           const active = mode === item.id
@@ -225,78 +173,6 @@ export function LoginPage() {
             {status === 'loading' ? t('auth.login.submitting') : 'Se connecter'}
           </Button>
         </form>
-      ) : null}
-
-      {mode === 'phone-otp' ? (
-        <div className="auth-flow-panel mt-4 grid gap-4">
-          {!otpSent ? (
-            <>
-              <Input
-                id="login-phone-otp"
-                label="Numéro russe"
-                type="tel"
-                autoComplete="tel"
-                placeholder="+7XXXXXXXXXX"
-                iconLeft={<span className="text-base leading-none">{flagEmoji('RU')}</span>}
-                {...phoneFormik.getFieldProps('phone')}
-                onChange={(event) =>
-                  phoneFormik.setFieldValue('phone', constrainPhone(event.target.value, '+7', 10))
-                }
-                error={phoneError('phone')}
-              />
-              <Button className="w-full" type="button" loading={status === 'loading'} onClick={sendLoginOtp}>
-                Envoyer le code SMS
-              </Button>
-            </>
-          ) : (
-            <>
-              <Alert variant="info">
-                Un code à 6 chiffres a été envoyé au <strong>{otpPhone}</strong>.
-              </Alert>
-              <Input
-                id="login-otp-code"
-                label="Code reçu par SMS"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                maxLength={6}
-                placeholder="000000"
-                value={otpCode}
-                onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-              />
-              <Button
-                className="w-full"
-                type="button"
-                loading={status === 'loading'}
-                disabled={otpCode.length !== 6}
-                onClick={confirmLoginOtp}
-              >
-                Valider et se connecter
-              </Button>
-              <div className="text-center text-sm text-[var(--app-text-muted)]">
-                <span>Vous n'avez pas reçu le SMS ? </span>
-                <button
-                  type="button"
-                  className="font-bold text-brand-700 disabled:cursor-not-allowed disabled:opacity-50 dark:text-brand-300"
-                  disabled={resendCooldown > 0 || status === 'loading'}
-                  onClick={sendLoginOtp}
-                >
-                  {resendCooldown > 0 ? `Renvoyer dans ${resendCooldown}s` : 'Renvoyer le code'}
-                </button>
-              </div>
-              <button
-                type="button"
-                className="auth-flow-link-muted"
-                onClick={() => {
-                  setOtpSent(false)
-                  setOtpCode('')
-                  dispatch(clearAuthError())
-                }}
-              >
-                Modifier le numéro
-              </button>
-            </>
-          )}
-        </div>
       ) : null}
 
       <p className="mt-5 text-center text-sm text-[var(--app-text-muted)]">

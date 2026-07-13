@@ -1,0 +1,6 @@
+{
+  "locked": true,
+  "provider": "smsc",
+  "reason": "OTP inscription MOXT validé en production — ne pas changer de fournisseur ni les secrets sans accord explicite.",
+  "lockedAt": "2026-07-13"
+}

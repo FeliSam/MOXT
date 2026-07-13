@@ -519,10 +519,10 @@ export function RegisterPage() {
               onChange={(city) => formik.setFieldValue('residenceCity', city)}
               error={errorFor('residenceCity')}
             />
-            <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-3">
+            <div className="grid min-w-0 gap-3">
               <Input
                 id="russianPhone"
-                label="N° russe"
+                label="Numéro russe (+7)"
                 type="tel"
                 autoComplete="tel"
                 placeholder="+7XXXXXXXXXX"
@@ -535,7 +535,7 @@ export function RegisterPage() {
               />
               <Input
                 id="originPhone"
-                label="N° local"
+                label="Numéro local (pays d'origine)"
                 type="tel"
                 placeholder={`${selectedCountry?.callingCode || ''}...`}
                 iconLeft={

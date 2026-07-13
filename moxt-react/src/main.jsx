@@ -19,23 +19,6 @@ async function bootstrap() {
     import('./app/store'),
   ])
 
-  // Restaure la session Supabase avant le premier rendu pour éviter
-  // un flash "non connecté" si l'utilisateur avait une session active.
-  const { restoreSession } = await import('./features/auth/authSlice')
-  await store.dispatch(restoreSession())
-
-  const { startAuthSessionSync } = await import('./services/authSessionSync')
-  startAuthSessionSync(store)
-
-  // Si une session existe, charger toutes les données depuis Supabase
-  if (store.getState().auth.user) {
-    const { loadAllData } = await import('./app/loadAllData')
-    store.dispatch(loadAllData())
-
-    const { startRealtimeSubscription } = await import('./services/realtimeService')
-    void startRealtimeSubscription(store.getState().auth.user.id, store.dispatch, store.getState)
-  }
-
   createRoot(document.getElementById('root')).render(
     <StrictMode>
       <AppErrorBoundary>
@@ -46,6 +29,28 @@ async function bootstrap() {
       </AppErrorBoundary>
     </StrictMode>,
   )
+
+  const { startAuthSessionSync } = await import('./services/authSessionSync')
+  startAuthSessionSync(store)
+
+  const { restoreSession } = await import('./features/auth/authSlice')
+  void store.dispatch(restoreSession()).then(async () => {
+    const user = store.getState().auth.user
+    if (!user) return
+
+    const { loadAllData } = await import('./app/loadAllData')
+    store.dispatch(loadAllData())
+
+    const scheduleRealtime = async () => {
+      const { startRealtimeSubscription } = await import('./services/realtimeService')
+      void startRealtimeSubscription(user.id, store.dispatch, store.getState)
+    }
+    if (typeof requestIdleCallback === 'function') {
+      requestIdleCallback(() => void scheduleRealtime(), { timeout: 2500 })
+    } else {
+      setTimeout(() => void scheduleRealtime(), 400)
+    }
+  })
 
   await initCapacitor()
 }

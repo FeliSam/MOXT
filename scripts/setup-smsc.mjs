@@ -18,6 +18,7 @@ import { randomBytes } from 'node:crypto'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
+import { warnSmsInfraLocked } from './lib/smsInfraLock.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const envPath = path.join(root, 'scripts', 'phase2.env')
@@ -118,6 +119,8 @@ function ensureWebhookSecret(vars) {
 }
 
 async function main() {
+  warnSmsInfraLocked('setup:smsc')
+
   console.log('\n══════════════════════════════════════')
   console.log('  MOXT — SMSC.ru (envoi OTP + réception SMS)')
   console.log('══════════════════════════════════════')
@@ -186,6 +189,7 @@ async function main() {
   if (apikey) secretLines.push(`SMSC_API_KEY=${apikey}`)
   if (vars.SMSC_SENDER) secretLines.push(`SMSC_SENDER=${vars.SMSC_SENDER}`)
   if (vars.SMS_RU_API_ID) secretLines.push(`SMS_RU_API_ID=${vars.SMS_RU_API_ID}`)
+  secretLines.push('SMS_INFRA_LOCKED=true')
   if (vars.YC_SNS_ACCESS_KEY_ID) secretLines.push(`YC_SNS_ACCESS_KEY_ID=${vars.YC_SNS_ACCESS_KEY_ID}`)
   if (vars.YC_SNS_SECRET_ACCESS_KEY) {
     secretLines.push(`YC_SNS_SECRET_ACCESS_KEY=${vars.YC_SNS_SECRET_ACCESS_KEY}`)

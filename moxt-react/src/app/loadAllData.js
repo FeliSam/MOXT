@@ -130,7 +130,7 @@ export const loadAllData = createAsyncThunk(
     }
 
     const [
-      listingsRes, listingQuestionsRes, parcelsRes, parcelRequestsRes,
+      listingsRes, parcelsRes, parcelRequestsRes,
       jobsRes, jobApplicationsRes,
       eventsRes, eventRegistrationsRes,
       businessesRes,
@@ -147,11 +147,6 @@ export const loadAllData = createAsyncThunk(
       recipientAddressesRes,
     ] = await Promise.all([
       supabase.from('listings').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
-      supabase
-        .from('listing_questions')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(500),
       supabase.from('parcels').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
       supabase.from('parcel_requests').select('*').eq('user_id', uid).limit(USER_LIMIT),
       supabase.from('jobs').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
@@ -192,9 +187,6 @@ export const loadAllData = createAsyncThunk(
     const ownedBusinessesFailed = Boolean(ownedBusinessesRes.error)
     const publicBusinessesFailed = Boolean(businessesRes.error)
 
-    if (listingQuestionsRes.error) {
-      console.warn('[MOXT] Chargement des questions annonces:', listingQuestionsRes.error.message)
-    }
     if (businessesRes.error) {
       console.warn('[MOXT] Chargement des entreprises:', businessesRes.error.message)
     }
@@ -205,7 +197,24 @@ export const loadAllData = createAsyncThunk(
       console.warn('[MOXT] Chargement admin des entreprises:', adminBusinessesRes.error.message)
     }
 
-    await syncLocalBusinessesToRemote(getState().businesses.items, uid)
+    void syncLocalBusinessesToRemote(getState().businesses.items, uid)
+
+    const listingIds = (listingsRes.data || []).map((listing) => listing.id).filter(Boolean)
+    let listingQuestionRows = []
+    if (listingIds.length) {
+      const questionsRes = await supabase
+        .from('listing_questions')
+        .select('*')
+        .in('listing_id', listingIds)
+        .order('created_at', { ascending: false })
+        .limit(500)
+
+      if (questionsRes.error) {
+        console.warn('[MOXT] Chargement des questions annonces:', questionsRes.error.message)
+      } else {
+        listingQuestionRows = safeRows(questionsRes, 'des questions annonces')
+      }
+    }
 
     const remoteBusinessRows = mergeRemoteRowsById(
       businessesRes.error ? [] : safeRows(businessesRes, 'des entreprises'),
@@ -312,7 +321,7 @@ export const loadAllData = createAsyncThunk(
       ? getState().marketplace.items
       : mergeListingQuestions(
           (listingsRes.data || []).map(listingFromRemoteRow),
-          safeRows(listingQuestionsRes, 'des questions annonces'),
+          listingQuestionRows,
         )
 
     const ownedParcelIds = (parcelsRes.data || [])

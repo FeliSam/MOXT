@@ -561,7 +561,6 @@ export const interactionMiddleware = (store) => {
         : action.error?.message || "L'action n'a pas pu être terminée."
     const rejectedTitles = {
       'auth/requestPhoneVerificationOtp/rejected': 'Envoi SMS impossible',
-      'auth/requestPhoneLoginOtp/rejected': 'Envoi SMS impossible',
       'auth/confirmPhoneVerification/rejected': 'Vérification impossible',
     }
     store.dispatch(

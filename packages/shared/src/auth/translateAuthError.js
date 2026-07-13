@@ -98,7 +98,7 @@ function isSmsRelated(message = '', meta = {}) {
 function translateSmsHookFailure(message = '') {
   const lower = message.toLowerCase()
   if (lower.includes('unexpected status code returned from hook')) {
-    return "L'envoi SMS est bloqué par le fournisseur (souvent le mode test SMSC). Sur smsc.ru : Paramètres → désactivez le mode test, ou ajoutez votre numéro +7 aux numéros autorisés."
+    return "L'envoi SMS est temporairement bloqué. Réessayez dans quelques minutes ou connectez-vous par e-mail."
   }
   if (lower.includes('solde insuffisant') || lower.includes('insufficient balance')) {
     return "L'envoi du code SMS est temporairement indisponible. Réessayez plus tard ou contactez le support."
@@ -106,11 +106,12 @@ function translateSmsHookFailure(message = '') {
   if (
     lower.includes('envoi refusé') ||
     lower.includes('message is denied') ||
-    lower.includes('mode test') ||
-    lower.includes('запрещ') ||
-    lower.includes('тест')
+    lower.includes('temporairement bloqué')
   ) {
-    return "L'envoi SMS est bloqué : désactivez le mode test sur smsc.ru (Paramètres) ou ajoutez votre numéro +7 aux numéros autorisés."
+    return "L'envoi SMS est temporairement bloqué. Réessayez dans quelques minutes ou connectez-vous par e-mail."
+  }
+  if (lower.includes('mode test') || lower.includes('запрещ') || lower.includes('тест')) {
+    return "L'envoi SMS est temporairement bloqué. Réessayez dans quelques minutes ou connectez-vous par e-mail."
   }
   if (lower.includes('expéditeur') || lower.includes('sender') || lower.includes('smsc_sender_invalid')) {
     return "L'envoi du code SMS est temporairement indisponible. Réessayez dans quelques minutes."
@@ -121,8 +122,8 @@ function translateSmsHookFailure(message = '') {
   if (lower.includes('rate limit') || lower.includes('trop de tentatives')) {
     return 'Trop de tentatives. Patientez quelques minutes avant de réessayer.'
   }
-  if (lower.includes('sms.ru') && lower.includes('221')) {
-    return "L'envoi du code SMS est temporairement indisponible. Réessayez plus tard ou contactez le support."
+  if (lower.includes('sms.ru') && (lower.includes('221') || lower.includes('204'))) {
+    return "L'envoi SMS est temporairement bloqué. Réessayez dans quelques minutes ou connectez-vous par e-mail."
   }
   return "L'envoi du code SMS a échoué. Réessayez plus tard ou contactez le support."
 }

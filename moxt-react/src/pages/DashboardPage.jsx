@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useSelector } from 'react-redux'
+import { shallowEqual, useSelector } from 'react-redux'
 import { DashboardSearch } from '../components/ui/DashboardSearch'
 import { Modal } from '../components/ui/Modal'
 import { RevealOnScroll } from '../components/ui/RevealOnScroll'
@@ -12,12 +12,6 @@ import { useDashboardStats } from '../features/dashboard/hooks/useDashboardStats
 import { TransferCalculator } from '../features/transfers/TransferCalculator'
 import { useExchangeRate } from '../features/transfers/useExchangeRate'
 import { useHorizontalScroll } from '../hooks/useHorizontalScroll'
-import {
-  useGetEventsQuery,
-  useGetJobsQuery,
-  useGetListingsQuery,
-  useGetParcelsQuery,
-} from '../services/baseApi'
 
 export function DashboardPage() {
   const [calculatorOpen, setCalculatorOpen] = useState(false)
@@ -26,10 +20,11 @@ export function DashboardPage() {
   const coreServicesRef = useHorizontalScroll()
   const listingsScrollRef = useHorizontalScroll()
   const user = useSelector((state) => state.auth.user)
-  const { data: listingsData, isLoading: listingsLoading } = useGetListingsQuery({ limit: 4 })
-  const { data: parcelsData, isLoading: parcelsLoading } = useGetParcelsQuery({ limit: 5 })
-  const { data: jobsData, isLoading: jobsLoading } = useGetJobsQuery({ limit: 5 })
-  const { data: eventsData, isLoading: eventsLoading } = useGetEventsQuery({ limit: 5 })
+  const authLoading = useSelector((state) => state.auth.status === 'loading')
+  const listings = useSelector((state) => state.marketplace.items.slice(0, 4), shallowEqual)
+  const parcels = useSelector((state) => state.parcels.items.slice(0, 5), shallowEqual)
+  const jobs = useSelector((state) => state.jobs.items.slice(0, 5), shallowEqual)
+  const events = useSelector((state) => state.events.items.slice(0, 5), shallowEqual)
 
   const stats = useDashboardStats(user)
   const rate = useExchangeRate()
@@ -57,16 +52,16 @@ export function DashboardPage() {
 
       <DashboardDiscoverySection
         conversations={stats.conversations}
-        events={eventsData?.items ?? []}
-        eventsLoading={eventsLoading}
-        jobs={jobsData?.items ?? []}
-        jobsLoading={jobsLoading}
-        listings={listingsData?.items ?? []}
-        listingsLoading={listingsLoading}
+        events={events}
+        eventsLoading={authLoading}
+        jobs={jobs}
+        jobsLoading={authLoading}
+        listings={listings}
+        listingsLoading={authLoading}
         listingsScrollRef={listingsScrollRef}
         myTransfers={stats.myTransfers}
-        parcels={parcelsData?.items ?? []}
-        parcelsLoading={parcelsLoading}
+        parcels={parcels}
+        parcelsLoading={authLoading}
       />
 
       <Modal

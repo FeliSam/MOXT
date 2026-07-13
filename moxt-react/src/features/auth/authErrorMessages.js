@@ -34,7 +34,7 @@ export function sanitizeAuthMessage(message = '') {
   if (!isTechnicalAuthMessage(lower)) return text
 
   if (lower.includes('sms') || lower.includes('hook') || lower.includes('téléphone') || lower.includes('telephone')) {
-    return "L'envoi du code SMS est temporairement indisponible. Réessayez plus tard ou choisissez la vérification par e-mail."
+    return "L'envoi du code SMS a échoué. Réessayez plus tard ou contactez le support."
   }
   if (lower.includes('e-mail') || lower.includes('email') || lower.includes('smtp')) {
     return "L'envoi d'e-mail est temporairement indisponible. Choisissez la vérification par SMS ou réessayez plus tard."

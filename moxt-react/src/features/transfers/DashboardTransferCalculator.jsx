@@ -35,7 +35,7 @@ export function DashboardTransferCalculator({ onOpen }) {
   }
 
   return (
-    <div className="rounded-[2rem] bg-white/12 p-4 shadow-2xl backdrop-blur-xl sm:p-5">
+    <div className="rounded-[var(--radius-card-lg)] bg-white/12 p-4 shadow-2xl backdrop-blur-xl sm:p-5">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-xs font-bold text-white/65">Transfert rapide</p>
@@ -44,7 +44,7 @@ export function DashboardTransferCalculator({ onOpen }) {
         <button
           type="button"
           onClick={invert}
-          className="grid size-11 place-items-center rounded-2xl bg-white text-brand-800"
+          className="grid size-11 place-items-center rounded-[var(--radius-btn)] bg-white text-brand-800"
           aria-label="Inverser le sens du transfert"
         >
           <FiRepeat />
@@ -78,7 +78,7 @@ export function DashboardTransferCalculator({ onOpen }) {
       <button
         type="button"
         onClick={onOpen}
-        className="mt-4 flex items-center justify-between rounded-2xl bg-cyan-300 px-4 py-3 text-sm font-black text-slate-950"
+        className="mt-4 flex items-center justify-between rounded-[var(--radius-btn)] bg-cyan-300 px-4 py-3 text-sm font-black text-slate-950"
       >
         Ouvrir la calculatrice <FiArrowUpRight />
       </button>
@@ -88,7 +88,7 @@ export function DashboardTransferCalculator({ onOpen }) {
 
 function CurrencyField({ currency, dark = false, label, onChange, value }) {
   return (
-    <label className={`rounded-2xl p-4 ${dark ? 'bg-slate-950/25' : 'bg-white text-slate-950'}`}>
+    <label className={`rounded-[var(--radius-input)] p-4 ${dark ? 'bg-slate-950/25' : 'bg-white text-slate-950'}`}>
       <span
         className={`text-[10px] font-black uppercase tracking-wider ${
           dark ? 'text-white/55' : 'text-slate-400'

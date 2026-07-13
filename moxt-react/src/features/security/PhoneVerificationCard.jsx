@@ -1,24 +1,48 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FiCheckCircle, FiSmartphone } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Alert } from '../../components/ui/Alert'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
+import { flagEmoji } from '../../config/flags'
+import { constrainPhone } from '../../config/phone'
 import { isPhoneVerified, isValidRussianPhone } from '@moxt/shared/auth/userSecurity.js'
 import {
+  clearAuthError,
   confirmPhoneVerification,
   requestPhoneVerificationOtp,
 } from '../auth/authSlice'
+import { authErrorToast } from '../auth/authErrorMessages'
 import { addToast } from '../ui/uiSlice'
+
+const RESEND_COOLDOWN_SECONDS = 60
 
 export function PhoneVerificationCard({ className = '' }) {
   const dispatch = useDispatch()
   const user = useSelector((state) => state.auth.user)
+  const authError = useSelector((state) => state.auth.error)
+  const authStatus = useSelector((state) => state.auth.status)
   const [busy, setBusy] = useState(false)
   const [otpSent, setOtpSent] = useState(false)
   const [otp, setOtp] = useState('')
+  const [otpType, setOtpType] = useState('phone_change')
   const [phone, setPhone] = useState(user?.phone || '+7')
+  const [resendCooldown, setResendCooldown] = useState(0)
+
+  useEffect(() => {
+    if (!authError) return
+    dispatch(addToast(authErrorToast('Envoi SMS impossible', authError)))
+    dispatch(clearAuthError())
+  }, [authError, dispatch])
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return undefined
+    const timer = window.setInterval(() => {
+      setResendCooldown((value) => Math.max(0, value - 1))
+    }, 1000)
+    return () => window.clearInterval(timer)
+  }, [resendCooldown])
 
   if (!user) return null
 
@@ -56,10 +80,14 @@ export function PhoneVerificationCard({ className = '' }) {
         return
       }
       setOtpSent(true)
+      setOtp('')
+      setOtpType(result.payload.otpType || 'phone_change')
+      setResendCooldown(RESEND_COOLDOWN_SECONDS)
+      dispatch(clearAuthError())
       dispatch(
         addToast({
           title: 'Code envoyé',
-          message: `Un SMS a été envoyé au ${result.payload.phone}.`,
+          message: `Un code à 6 chiffres a été envoyé au ${result.payload.phone} par SMS.`,
           tone: 'info',
         }),
       )
@@ -72,7 +100,7 @@ export function PhoneVerificationCard({ className = '' }) {
     if (!/^\d{6}$/.test(otp)) return
     setBusy(true)
     try {
-      const result = await dispatch(confirmPhoneVerification({ phone, token: otp }))
+      const result = await dispatch(confirmPhoneVerification({ phone, token: otp, otpType }))
       if (!confirmPhoneVerification.fulfilled.match(result)) return
       setOtp('')
       setOtpSent(false)
@@ -88,6 +116,8 @@ export function PhoneVerificationCard({ className = '' }) {
     }
   }
 
+  const loading = busy || authStatus === 'loading'
+
   return (
     <Card className={`grid gap-4 ${className}`}>
       <div className="flex items-start gap-3">
@@ -97,45 +127,75 @@ export function PhoneVerificationCard({ className = '' }) {
         <div>
           <h2 className="font-black">Confirmer votre numéro russe</h2>
           <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-            Obligatoire pour publier une annonce, un colis, un job ou un événement. Un numéro unique
-            par compte.
+            Même confirmation par SMS que lors de l&apos;inscription. Obligatoire pour publier une
+            annonce, un colis, un job ou un événement.
           </p>
         </div>
       </div>
-      <Input
-        id="phone-verify-number"
-        label="Numéro russe (+7)"
-        value={phone}
-        onChange={(event) => setPhone(event.target.value)}
-      />
+
       {!otpSent ? (
-        <Button type="button" icon={FiSmartphone} loading={busy} onClick={sendCode}>
-          Envoyer le code SMS
-        </Button>
+        <>
+          <Input
+            id="phone-verify-number"
+            label="Numéro russe (+7)"
+            type="tel"
+            autoComplete="tel"
+            placeholder="+7XXXXXXXXXX"
+            iconLeft={<span className="text-base leading-none">{flagEmoji('RU')}</span>}
+            value={phone}
+            onChange={(event) => setPhone(constrainPhone(event.target.value, '+7', 10))}
+          />
+          <Button type="button" icon={FiSmartphone} loading={loading} onClick={sendCode}>
+            Envoyer le code SMS
+          </Button>
+        </>
       ) : (
         <>
+          <Alert variant="info">
+            Un code à 6 chiffres a été envoyé au <strong>{phone}</strong> par SMS.
+          </Alert>
           <Input
             id="phone-verify-otp"
             label="Code reçu par SMS"
             inputMode="numeric"
+            autoComplete="one-time-code"
             maxLength={6}
+            placeholder="000000"
             value={otp}
             onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
           />
-          <div className="flex flex-wrap gap-2">
-            <Button
+          <Button
+            type="button"
+            icon={FiCheckCircle}
+            loading={loading}
+            disabled={otp.length !== 6}
+            onClick={confirmCode}
+          >
+            Confirmer le numéro
+          </Button>
+          <div className="text-center text-sm text-[var(--app-text-muted)]">
+            <span>Vous n&apos;avez pas reçu le SMS ? </span>
+            <button
               type="button"
-              icon={FiCheckCircle}
-              loading={busy}
-              disabled={otp.length !== 6}
-              onClick={confirmCode}
+              className="font-bold text-brand-700 disabled:cursor-not-allowed disabled:opacity-50 dark:text-brand-300"
+              disabled={resendCooldown > 0 || loading}
+              onClick={sendCode}
             >
-              Confirmer le numéro
-            </Button>
-            <Button type="button" variant="secondary" onClick={sendCode}>
-              Renvoyer le code
-            </Button>
+              {resendCooldown > 0 ? `Renvoyer dans ${resendCooldown}s` : 'Renvoyer le code'}
+            </button>
           </div>
+          <button
+            type="button"
+            className="text-sm font-bold text-[var(--app-text-muted)] underline-offset-2 hover:underline"
+            onClick={() => {
+              setOtpSent(false)
+              setOtp('')
+              setOtpType('phone_change')
+              dispatch(clearAuthError())
+            }}
+          >
+            Modifier le numéro
+          </button>
         </>
       )}
     </Card>

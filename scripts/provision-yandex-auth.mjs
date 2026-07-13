@@ -6,6 +6,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { isSmsInfraLocked, readSmsInfraLock } from './lib/smsInfraLock.mjs'
 import { folderId, ycJson, ycRun } from './lib/yandex.mjs'
 import {
   dkimTokensFromAddress,
@@ -239,7 +240,11 @@ async function main() {
     YC_SNS_MESSAGE_TEMPLATE: smsTemplate,
     SEND_SMS_HOOK_SECRET: existing.SEND_SMS_HOOK_SECRET || '',
     SMS_RU_API_ID: existing.SMS_RU_API_ID || '',
-    SMS_PROVIDER: existing.SMS_RU_API_ID ? existing.SMS_PROVIDER || 'smsru' : existing.SMS_PROVIDER || 'auto',
+    SMS_PROVIDER: isSmsInfraLocked()
+      ? readSmsInfraLock()?.provider || 'smsc'
+      : existing.SMS_RU_API_ID
+        ? existing.SMS_PROVIDER || 'smsru'
+        : existing.SMS_PROVIDER || 'auto',
     SMS_RU_FROM: existing.SMS_RU_FROM || '',
     SMS_MESSAGE_TEMPLATE:
       existing.SMS_MESSAGE_TEMPLATE || existing.YC_SNS_MESSAGE_TEMPLATE || smsTemplate,

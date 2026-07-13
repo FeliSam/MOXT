@@ -6,8 +6,6 @@ const authModule = createAuthSlice(authService)
 export const {
   login,
   completeOAuthProfile,
-  requestPhoneLoginOtp,
-  verifyPhoneLogin,
   register,
   verifyEmailRegistration,
   verifyPhoneRegistration,

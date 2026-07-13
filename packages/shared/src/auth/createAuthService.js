@@ -169,6 +169,59 @@ export function createAuthService(supabase, redirects = {}) {
     return data.user
   }
 
+  function isValidAuthPhone(value = '') {
+    return /^\+7\d{10}$/.test(normalizeRussianAuthPhone(value))
+  }
+
+  function authUserHasPhoneSignup(authUser) {
+    return Boolean(
+      authUser?.identities?.some(
+        (identity) => identity.provider === 'phone' || identity.provider === 'sms',
+      ),
+    )
+  }
+
+  function resolvePhoneVerificationOtpType(authUser, normalizedPhone) {
+    const authPhone = isValidAuthPhone(authUser?.phone)
+      ? normalizeRussianAuthPhone(authUser.phone)
+      : ''
+
+    if (authUser?.phone_confirmed_at && authPhone === normalizedPhone) {
+      return null
+    }
+
+    if (!authPhone || authPhone !== normalizedPhone) {
+      return 'phone_change'
+    }
+
+    if (authUserHasPhoneSignup(authUser)) {
+      return 'sms'
+    }
+
+    return 'phone_change'
+  }
+
+  async function syncAuthProfileMetadata(authUser, currentUser, normalizedPhone) {
+    const metadata = authUser?.user_metadata || {}
+    const { error } = await supabase.auth.updateUser({
+      data: {
+        first_name: currentUser.firstName || metadata.first_name || '',
+        last_name: currentUser.lastName || metadata.last_name || '',
+        phone: normalizedPhone,
+        origin_phone: currentUser.secondaryPhone || metadata.origin_phone || '',
+        origin_country: currentUser.originCountry || metadata.origin_country || 'BJ',
+        city: currentUser.city || metadata.city || '',
+        avatar_url: currentUser.avatarUrl || metadata.avatar_url || '',
+      },
+    })
+    if (error) {
+      console.warn(
+        '[MOXT] Métadonnées Auth non synchronisées après vérif. téléphone:',
+        error.message,
+      )
+    }
+  }
+
   async function syncPhoneVerifiedFromAuth(authUser, userId) {
     if (!authUser?.phone_confirmed_at) return null
     const authPhone = normalizeRussianAuthPhone(authUser.phone || '')
@@ -262,32 +315,6 @@ export function createAuthService(supabase, redirects = {}) {
       return { user, token: data.session.access_token }
     },
 
-    async requestPhoneLoginOtp(phone) {
-      if (!supabase) throw new Error('Supabase non configuré.')
-      const normalizedPhone = normalizeRussianAuthPhone(phone)
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: normalizedPhone,
-        options: { shouldCreateUser: false },
-      })
-      if (error) throw new Error(translateAuthError(error, { channel: 'phone' }))
-      return { phone: normalizedPhone }
-    },
-
-    async verifyPhoneLogin({ phone, token }) {
-      if (!supabase) throw new Error('Supabase non configuré.')
-      const { data, error } = await supabase.auth.verifyOtp({
-        phone: normalizeRussianAuthPhone(phone),
-        token: String(token || '').trim(),
-        type: 'sms',
-      })
-      if (error) throw new Error(translateAuthError(error, { channel: 'phone' }))
-      if (!data?.session || !data?.user) {
-        throw new Error('Le code est invalide ou a expiré.')
-      }
-      const user = await fetchOrCreateProfile(data.user)
-      return { user, token: data.session.access_token }
-    },
-
     async completeOAuthProfile(details) {
       if (!supabase) throw new Error('Supabase non configuré.')
       const { data: sessionData } = await supabase.auth.getSession()
@@ -314,15 +341,13 @@ export function createAuthService(supabase, redirects = {}) {
       )
         .trim()
         .toLowerCase()
-      const phoneVerified = /^\+7\d{10}$/.test(normalizedPhone)
-      const now = new Date().toISOString()
 
       await upsertProfile(authUser.id, {
         ...profileFields,
         email: resolvedEmail,
         phone: normalizedPhone,
-        phone_verified: phoneVerified,
-        phone_verified_at: phoneVerified ? now : null,
+        phone_verified: false,
+        phone_verified_at: null,
       })
 
       const { error: metadataError } = await supabase.auth.updateUser({
@@ -540,32 +565,45 @@ export function createAuthService(supabase, redirects = {}) {
         return { phone: normalizedPhone, user: syncedUser }
       }
 
-      const authPhone = normalizeRussianAuthPhone(authUser.phone || '')
+      const authPhone = isValidAuthPhone(authUser.phone)
+        ? normalizeRussianAuthPhone(authUser.phone)
+        : ''
+      const otpType = resolvePhoneVerificationOtpType(authUser, normalizedPhone)
+      if (!otpType) {
+        return { phone: normalizedPhone, user: syncedUser }
+      }
+
       if (authPhone === normalizedPhone) {
-        const { error } = await supabase.auth.resend({
-          type: 'phone_change',
+        const primaryResend = await supabase.auth.resend({
+          type: otpType,
           phone: normalizedPhone,
         })
-        if (error) {
-          const fallback = await supabase.auth.resend({
-            type: 'sms',
-            phone: normalizedPhone,
-          })
-          if (fallback.error) {
-            throw new Error(translateAuthError(fallback.error, phoneContext))
-          }
+        if (!primaryResend.error) {
+          return { phone: normalizedPhone, otpType }
         }
-        return { phone: normalizedPhone }
+
+        const fallbackType = otpType === 'sms' ? 'phone_change' : 'sms'
+        const fallbackResend = await supabase.auth.resend({
+          type: fallbackType,
+          phone: normalizedPhone,
+        })
+        if (!fallbackResend.error) {
+          return { phone: normalizedPhone, otpType: fallbackType }
+        }
+
+        throw new Error(
+          translateAuthError(primaryResend.error || fallbackResend.error, phoneContext),
+        )
       }
 
       await assertIdentityAvailable('phone', normalizedPhone, currentUser.id, phoneContext)
 
       const { error } = await supabase.auth.updateUser({ phone: normalizedPhone })
       if (error) throw new Error(translateAuthError(error, phoneContext))
-      return { phone: normalizedPhone }
+      return { phone: normalizedPhone, otpType: 'phone_change' }
     },
 
-    async confirmPhoneVerification(currentUser, { phone, token }) {
+    async confirmPhoneVerification(currentUser, { phone, token, otpType }) {
       if (!supabase || !currentUser) throw new Error('Session expirée.')
       const normalizedPhone = normalizeRussianAuthPhone(phone)
       const phoneContext = { channel: 'phone', intent: 'phone_verification' }
@@ -576,21 +614,31 @@ export function createAuthService(supabase, redirects = {}) {
         return syncedUser
       }
 
+      const primaryType =
+        otpType === 'sms' || otpType === 'phone_change'
+          ? otpType
+          : resolvePhoneVerificationOtpType(authUser, normalizedPhone) || 'phone_change'
+      const fallbackType = primaryType === 'sms' ? 'phone_change' : 'sms'
+      const trimmedToken = String(token || '').trim()
+
       let verifyResult = await supabase.auth.verifyOtp({
         phone: normalizedPhone,
-        token: String(token || '').trim(),
-        type: 'phone_change',
+        token: trimmedToken,
+        type: primaryType,
       })
       if (verifyResult.error) {
         verifyResult = await supabase.auth.verifyOtp({
           phone: normalizedPhone,
-          token: String(token || '').trim(),
-          type: 'sms',
+          token: trimmedToken,
+          type: fallbackType,
         })
       }
       if (verifyResult.error) {
         throw new Error(translateAuthError(verifyResult.error, phoneContext))
       }
+
+      const verifiedAuthUser = verifyResult.data?.user || authUser
+      await syncAuthProfileMetadata(verifiedAuthUser, currentUser, normalizedPhone)
 
       const now = new Date().toISOString()
       await upsertProfile(currentUser.id, {

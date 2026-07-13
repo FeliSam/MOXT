@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const auth = {
+  getUser: vi.fn(),
+  getSession: vi.fn(),
   signInWithPassword: vi.fn(),
   signInWithOtp: vi.fn(),
   signUp: vi.fn(),
@@ -32,6 +34,14 @@ const { authService, translateAuthError } = await import('./authService')
 describe('authService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    auth.getUser.mockResolvedValue({
+      data: { user: null },
+      error: null,
+    })
+    auth.getSession.mockResolvedValue({
+      data: { session: null },
+      error: null,
+    })
     profileQuery.select.mockReturnValue(profileQuery)
     profileQuery.eq.mockReturnValue(profileQuery)
     profileQuery.maybeSingle.mockResolvedValue({ data: null, error: null })
@@ -298,46 +308,6 @@ describe('authService', () => {
     })
   })
 
-  it('envoie un code SMS pour la connexion', async () => {
-    auth.signInWithOtp.mockResolvedValue({ error: null })
-
-    const result = await authService.requestPhoneLoginOtp('8 900 000 00 10')
-
-    expect(auth.signInWithOtp).toHaveBeenCalledWith({
-      phone: '+79000000010',
-      options: { shouldCreateUser: false },
-    })
-    expect(result.phone).toBe('+79000000010')
-  })
-
-  it('valide un code SMS de connexion', async () => {
-    auth.verifyOtp.mockResolvedValue({
-      data: {
-        user: { id: 'user-sms', email: 'personne@example.com', user_metadata: {} },
-        session: { access_token: 'login-sms-session' },
-      },
-      error: null,
-    })
-    profileQuery.maybeSingle.mockResolvedValue({
-      data: {
-        id: 'user-sms',
-        email: 'personne@example.com',
-        role: 'user',
-        status: 'active',
-      },
-      error: null,
-    })
-
-    const result = await authService.verifyPhoneLogin({ phone: '+79000000010', token: '123456' })
-
-    expect(auth.verifyOtp).toHaveBeenCalledWith({
-      phone: '+79000000010',
-      token: '123456',
-      type: 'sms',
-    })
-    expect(result.token).toBe('login-sms-session')
-  })
-
   it('bloque l inscription si le numéro est encore lié à un compte actif', async () => {
     rpc.mockResolvedValueOnce({ data: { available: false, reason: 'active' }, error: null })
 
@@ -348,6 +318,162 @@ describe('authService', () => {
       p_value: '+79000000010',
       p_user_id: null,
     })
+  })
+
+  it('envoie un OTP phone_change pour un compte e-mail sans téléphone Auth', async () => {
+    auth.getUser.mockResolvedValue({
+      data: {
+        user: {
+          id: 'user-email',
+          email: 'personne@example.com',
+          phone: null,
+          identities: [{ provider: 'email' }],
+        },
+      },
+      error: null,
+    })
+    auth.updateUser.mockResolvedValue({ data: { user: {} }, error: null })
+
+    const result = await authService.requestPhoneVerificationOtp(
+      {
+        id: 'user-email',
+        firstName: 'Nouvelle',
+        lastName: 'Personne',
+        email: 'personne@example.com',
+        phone: '+79000000010',
+      },
+      '+79000000010',
+    )
+
+    expect(auth.updateUser).toHaveBeenCalledWith({ phone: '+79000000010' })
+    expect(auth.resend).not.toHaveBeenCalled()
+    expect(result).toEqual({ phone: '+79000000010', otpType: 'phone_change' })
+  })
+
+  it('confirme la vérification avec le type OTP reçu à l envoi', async () => {
+    auth.getUser.mockResolvedValue({
+      data: {
+        user: {
+          id: 'user-email',
+          email: 'personne@example.com',
+          phone: '+79000000010',
+          identities: [{ provider: 'email' }],
+          user_metadata: { first_name: 'Nouvelle' },
+        },
+      },
+      error: null,
+    })
+    auth.verifyOtp.mockResolvedValue({
+      data: {
+        user: {
+          id: 'user-email',
+          email: 'personne@example.com',
+          phone: '+79000000010',
+          phone_confirmed_at: '2026-01-01T00:00:00.000Z',
+          user_metadata: { first_name: 'Nouvelle' },
+        },
+      },
+      error: null,
+    })
+    auth.updateUser.mockResolvedValue({ data: { user: {} }, error: null })
+    profileQuery.maybeSingle.mockResolvedValue({
+      data: {
+        id: 'user-email',
+        first_name: 'Nouvelle',
+        last_name: 'Personne',
+        email: 'personne@example.com',
+        phone: '+79000000010',
+        phone_verified: true,
+        origin_country: 'BJ',
+        city: 'Moscou',
+        role: 'user',
+        status: 'active',
+      },
+      error: null,
+    })
+
+    await authService.confirmPhoneVerification(
+      {
+        id: 'user-email',
+        firstName: 'Nouvelle',
+        lastName: 'Personne',
+        email: 'personne@example.com',
+        originCountry: 'BJ',
+        city: 'Moscou',
+      },
+      { phone: '+79000000010', token: '123456', otpType: 'phone_change' },
+    )
+
+    expect(auth.verifyOtp).toHaveBeenCalledWith({
+      phone: '+79000000010',
+      token: '123456',
+      type: 'phone_change',
+    })
+    expect(auth.updateUser).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        phone: '+79000000010',
+        first_name: 'Nouvelle',
+      }),
+    })
+    expect(profileQuery.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        phone: '+79000000010',
+        phone_verified: true,
+      }),
+      { onConflict: 'id' },
+    )
+  })
+
+  it('ne marque pas le téléphone vérifié lors de la complétion OAuth', async () => {
+    auth.getSession.mockResolvedValue({
+      data: {
+        session: {
+          access_token: 'oauth-session',
+          user: {
+            id: 'user-oauth',
+            email: 'personne@example.com',
+            user_metadata: { picture: 'https://example.com/avatar.png' },
+          },
+        },
+      },
+      error: null,
+    })
+    auth.updateUser.mockResolvedValue({ data: { user: {} }, error: null })
+    profileQuery.maybeSingle.mockResolvedValue({
+      data: {
+        id: 'user-oauth',
+        first_name: 'Nouvelle',
+        last_name: 'Personne',
+        email: 'personne@example.com',
+        phone: '+79000000010',
+        phone_verified: false,
+        origin_country: 'BJ',
+        city: 'Moscou',
+        role: 'user',
+        status: 'active',
+      },
+      error: null,
+    })
+
+    await authService.completeOAuthProfile({
+      firstName: 'Nouvelle',
+      lastName: 'Personne',
+      email: 'personne@example.com',
+      russianPhone: '+79000000010',
+      originPhone: '+2290190000010',
+      originCountry: 'BJ',
+      residenceCity: 'Moscou',
+      acceptTerms: true,
+    })
+
+    expect(profileQuery.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        phone: '+79000000010',
+        phone_verified: false,
+        phone_verified_at: null,
+      }),
+      { onConflict: 'id' },
+    )
   })
 })
 

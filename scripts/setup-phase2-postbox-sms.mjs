@@ -10,6 +10,7 @@ import { randomBytes } from 'node:crypto'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
+import { assertSmsInfraChangeAllowed } from './lib/smsInfraLock.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const envPath = path.join(root, 'scripts', 'phase2.env')
@@ -118,6 +119,7 @@ async function main() {
   }
 
   log('Secrets Edge Function send-sms')
+  assertSmsInfraChangeAllowed('setup:phase2')
   const secretsPath = path.join(root, 'scripts', 'phase2.supabase-secrets.env')
   const secretLines = [
     `SMS_PROVIDER=${vars.SMS_PROVIDER || (smsRuReady ? 'smsru' : 'yandex')}`,

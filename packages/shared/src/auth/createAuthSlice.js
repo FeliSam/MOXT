@@ -13,28 +13,6 @@ export function createAuthSlice(authService) {
     }
   })
 
-  const requestPhoneLoginOtp = createAsyncThunk(
-    'auth/requestPhoneLoginOtp',
-    async (phone, { rejectWithValue }) => {
-      try {
-        return await authService.requestPhoneLoginOtp(phone)
-      } catch (error) {
-        return rejectWithValue(error.message)
-      }
-    },
-  )
-
-  const verifyPhoneLogin = createAsyncThunk(
-    'auth/verifyPhoneLogin',
-    async (details, { rejectWithValue }) => {
-      try {
-        return await authService.verifyPhoneLogin(details)
-      } catch (error) {
-        return rejectWithValue(error.message)
-      }
-    },
-  )
-
   const completeOAuthProfile = createAsyncThunk(
     'auth/completeOAuthProfile',
     async (details, { rejectWithValue }) => {
@@ -191,15 +169,6 @@ export function createAuthSlice(authService) {
         .addCase(login.pending, setLoading)
         .addCase(login.fulfilled, setSession)
         .addCase(login.rejected, setFailure)
-        .addCase(requestPhoneLoginOtp.pending, setLoading)
-        .addCase(requestPhoneLoginOtp.fulfilled, (state) => {
-          state.status = 'anonymous'
-          state.error = null
-        })
-        .addCase(requestPhoneLoginOtp.rejected, setFailure)
-        .addCase(verifyPhoneLogin.pending, setLoading)
-        .addCase(verifyPhoneLogin.fulfilled, setSession)
-        .addCase(verifyPhoneLogin.rejected, setFailure)
         .addCase(completeOAuthProfile.pending, setLoading)
         .addCase(completeOAuthProfile.fulfilled, setSession)
         .addCase(completeOAuthProfile.rejected, setFailure)
@@ -274,8 +243,6 @@ export function createAuthSlice(authService) {
     actions: authSlice.actions,
     login,
     completeOAuthProfile,
-    requestPhoneLoginOtp,
-    verifyPhoneLogin,
     register,
     verifyEmailRegistration,
     verifyPhoneRegistration,

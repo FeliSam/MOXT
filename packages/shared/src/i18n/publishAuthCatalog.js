@@ -290,6 +290,8 @@ const RU = {
     'Вход по номеру временно недоступен. Попробуйте позже или обратитесь в поддержку.',
   "L'envoi du code SMS a échoué. Réessayez dans quelques instants ou choisissez la connexion par e-mail.":
     'Не удалось отправить SMS-код. Попробуйте через несколько секунд или войдите по электронной почте.',
+  "L'envoi SMS est temporairement bloqué. Réessayez dans quelques minutes ou connectez-vous par e-mail.":
+    'Отправка SMS временно заблокирована. Попробуйте через несколько минут или войдите по электронной почте.',
   "L'envoi du code SMS est temporairement indisponible. Réessayez plus tard.":
     'Отправка SMS временно недоступна. Попробуйте позже.',
   "L'envoi SMS vers ce numéro est temporairement indisponible. Vérifiez votre numéro (+7) ou réessayez plus tard.":

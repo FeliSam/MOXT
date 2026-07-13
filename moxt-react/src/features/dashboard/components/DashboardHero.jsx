@@ -8,7 +8,7 @@ export function DashboardHero({ user, onOpenCalculator }) {
   return (
     <RevealOnScroll
       as="section"
-      className="relative overflow-hidden rounded-[2.25rem] bg-[linear-gradient(125deg,#07594d_0%,#08705f_42%,#245de8_100%)] px-6 py-8 text-white shadow-[0_35px_90px_rgb(7_89_77/0.22)] sm:px-10 sm:py-12 lg:min-h-[31rem] lg:px-14"
+      className="relative overflow-hidden rounded-[var(--radius-card-lg)] bg-[linear-gradient(125deg,#07594d_0%,#08705f_42%,#245de8_100%)] px-6 py-8 text-white shadow-[var(--shadow-card-lg)] sm:px-10 sm:py-12 lg:min-h-[31rem] lg:px-14"
     >
       <div className="absolute -right-24 -top-32 size-96 rounded-full bg-cyan-300/20 blur-3xl" />
       <div className="absolute -bottom-40 left-1/3 size-96 rounded-full bg-blue-400/25 blur-3xl" />
@@ -32,13 +32,13 @@ export function DashboardHero({ user, onOpenCalculator }) {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               to="/transfers"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-white px-5 text-sm font-black text-emerald-950 shadow-xl transition hover:-translate-y-0.5 hover:bg-emerald-50"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-btn)] bg-white px-5 text-sm font-black text-emerald-950 shadow-xl transition hover:-translate-y-0.5 hover:bg-emerald-50"
             >
               Créer un transfert <FiArrowRight />
             </Link>
             <Link
               to="/marketplace"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-sky-200/80 bg-sky-500/90 px-5 text-sm font-black text-white shadow-lg shadow-sky-950/25 transition hover:-translate-y-0.5 hover:bg-sky-400/95"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-btn)] border border-sky-200/80 bg-sky-500/90 px-5 text-sm font-black text-white shadow-lg shadow-sky-950/25 transition hover:-translate-y-0.5 hover:bg-sky-400/95"
             >
               Marketplace <FiArrowRight />
             </Link>

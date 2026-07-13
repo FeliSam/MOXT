@@ -59,7 +59,7 @@ export function PublicSiteLayout({ children }) {
           >
             <FiSearch />
           </Link>
-          <LanguageSwitcher className="shrink-0" />
+          <LanguageSwitcher className="hidden shrink-0 xl:block" />
           <button
             type="button"
             className="grid size-10 place-items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]"

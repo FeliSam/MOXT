@@ -2,17 +2,17 @@ import { applySession, clearSession } from '../features/auth/authSlice'
 import { authService } from '../features/auth/authService'
 import { supabase } from './supabaseClient'
 import {
-  reconnectRealtimeSubscription,
   startRealtimeSubscription,
   stopRealtimeSubscription,
+  syncRealtimeAuthToken,
 } from './realtimeService'
 
 let authSubscription = null
 let visibilityHandler = null
 let lastConversationRefresh = 0
 let lastDataRefresh = 0
-const CONVERSATION_REFRESH_MS = 15000
-const DATA_REFRESH_MS = 30000
+const CONVERSATION_REFRESH_MS = 60000
+const DATA_REFRESH_MS = 120000
 
 async function refreshConversationsIfNeeded(dispatch, getState) {
   if (!getState().auth.user) return
@@ -40,7 +40,12 @@ async function resolveSupabaseSession() {
   return refreshed.session ?? null
 }
 
-async function syncSessionToStore(session, dispatch, getState, { forceRealtime = false } = {}) {
+async function syncSessionToStore(
+  session,
+  dispatch,
+  getState,
+  { forceRealtime = false, skipDataLoad = false } = {},
+) {
   if (!session) {
     stopRealtimeSubscription()
     dispatch(clearSession())
@@ -63,7 +68,7 @@ async function syncSessionToStore(session, dispatch, getState, { forceRealtime =
     void startRealtimeSubscription(payload.user.id, dispatch, getState)
   }
 
-  if (payload.user.id !== previousUserId) {
+  if (!skipDataLoad && payload.user.id !== previousUserId) {
     const { loadAllData } = await import('../app/loadAllData')
     dispatch(loadAllData())
   }
@@ -111,13 +116,15 @@ export function startAuthSessionSync(store) {
 
     if (event === 'TOKEN_REFRESHED' && session) {
       if (window.location.pathname.startsWith('/reset-password')) return
-      await syncSessionToStore(session, dispatch, getState, { forceRealtime: true })
+      await syncRealtimeAuthToken()
       return
     }
 
     if (session && ['INITIAL_SESSION', 'SIGNED_IN', 'USER_UPDATED'].includes(event)) {
       if (window.location.pathname.startsWith('/reset-password')) return
-      await syncSessionToStore(session, dispatch, getState)
+      await syncSessionToStore(session, dispatch, getState, {
+        skipDataLoad: event === 'INITIAL_SESSION',
+      })
     }
   })
   authSubscription = data.subscription
@@ -129,7 +136,7 @@ export function startAuthSessionSync(store) {
       try {
         const session = await resolveSupabaseSession()
         if (session) {
-          await syncSessionToStore(session, dispatch, getState, { forceRealtime: true })
+          await syncRealtimeAuthToken()
           await refreshDataIfNeeded(dispatch, getState)
           await refreshConversationsIfNeeded(dispatch, getState)
           return

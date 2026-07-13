@@ -74,6 +74,20 @@ export default defineConfig(({ mode }) => {
     host: '127.0.0.1',
     port: 5173,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return
+          if (id.includes('@supabase')) return 'supabase'
+          if (id.includes('@reduxjs') || id.includes('react-redux') || id.includes('redux')) {
+            return 'redux'
+          }
+          if (id.includes('react-dom') || id.includes('/react/')) return 'react-vendor'
+        },
+      },
+    },
+  },
   test: {
     environment: 'jsdom',
     exclude: ['e2e/**', 'node_modules/**', 'dist/**'],

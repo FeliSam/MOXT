@@ -77,6 +77,7 @@ jobs:
           SMSC_WEBHOOK_SECRET=${{ secrets.SMSC_WEBHOOK_SECRET }}
           SEND_SMS_HOOK_SECRET=${{ secrets.SEND_SMS_HOOK_SECRET }}
           SMS_MESSAGE_TEMPLATE=Код MOXT: {otp}. Никому не сообщайте.
+          SMS_INFRA_LOCKED=true
           EOF
           npx supabase secrets set --env-file /tmp/supabase-secrets.env
 

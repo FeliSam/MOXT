@@ -39,14 +39,6 @@ export const loginPhonePasswordSchema = Yup.object({
   password: Yup.string().required('Le mot de passe est obligatoire.'),
 })
 
-export const loginPhoneOtpRequestSchema = Yup.object({
-  phone: Yup.string()
-    .test('russian-phone', 'Utilisez le format russe +7 suivi de 10 chiffres.', (value) =>
-      validatePhone(value, 'RU'),
-    )
-    .required('Le numéro russe est obligatoire.'),
-})
-
 export const oauthProfileCompletionSchema = Yup.object({
   firstName: Yup.string()
     .trim()

@@ -1,7 +1,7 @@
 let deferredPrompt: BeforeInstallPromptEvent | null = null
 let installCallback: (() => void) | null = null
 
-const SW_UPDATE_MS = 60 * 1000
+const SW_UPDATE_MS = 5 * 60 * 1000
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>

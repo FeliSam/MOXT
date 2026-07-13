@@ -99,7 +99,7 @@ export function Header({ hideOnMobile = false }) {
             <FiHeart className="text-lg" />
           </Link>
 
-          <LanguageSwitcher className="shrink-0" compact />
+          <LanguageSwitcher className="hidden shrink-0 xl:block" />
 
           <button
             type="button"
