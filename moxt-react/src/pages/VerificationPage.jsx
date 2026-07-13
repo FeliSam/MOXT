@@ -12,6 +12,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import {
+  isEmailVerified,
   isPhoneVerified,
   verificationRequestIsStale,
 } from '@moxt/shared/auth/userSecurity.js'
@@ -24,6 +25,7 @@ import { Select } from '../components/ui/Select'
 import { statusMeta } from '../config/statuses'
 import { addPersonalDocument, submitVerificationRequest } from '../features/account/accountSlice'
 import { PhoneVerificationCard } from '../features/security/PhoneVerificationCard'
+import { EmailVerificationCard } from '../features/security/EmailVerificationCard'
 import { VerificationGuidePanel } from '../features/verification/VerificationGuidePanel'
 import { storageService } from '../services/storageService'
 import { addToast } from '../features/ui/uiSlice'
@@ -55,6 +57,7 @@ export function VerificationPage() {
     state.account.verificationRequests.find((item) => item.userId === user.id),
   )
   const phoneConfirmed = isPhoneVerified(user)
+  const emailConfirmed = isEmailVerified(user)
   const requestStale = verificationRequestIsStale(request)
 
   const [level, setLevel] = useState(request?.level || 'identity')
@@ -68,22 +71,24 @@ export function VerificationPage() {
     const base = [
       { key: 'level', label: 'Niveau' },
       ...(phoneConfirmed ? [] : [{ key: 'phone', label: 'Téléphone' }]),
+      ...(emailConfirmed ? [] : [{ key: 'email', label: 'E-mail' }]),
       { key: 'identity', label: 'Identité' },
       { key: 'selfie', label: 'Selfie' },
       ...(level === 'enhanced' ? [{ key: 'address', label: 'Domicile' }] : []),
       { key: 'review', label: 'Confirmation' },
     ]
     return base
-  }, [level, phoneConfirmed])
+  }, [level, phoneConfirmed, emailConfirmed])
 
   const current = steps[Math.min(step, steps.length) - 1]
   const ready = Boolean(
-    idDoc && selfieDoc && phoneConfirmed && (level !== 'enhanced' || addressDoc),
+    idDoc && selfieDoc && phoneConfirmed && emailConfirmed && (level !== 'enhanced' || addressDoc),
   )
 
   const canContinue = {
     level: true,
     phone: phoneConfirmed,
+    email: emailConfirmed,
     identity: Boolean(idType && idDoc),
     selfie: Boolean(selfieDoc),
     address: Boolean(addressDoc),
@@ -143,6 +148,7 @@ export function VerificationPage() {
       />
 
       {!phoneConfirmed ? <PhoneVerificationCard /> : null}
+      {!emailConfirmed ? <EmailVerificationCard /> : null}
 
       {requestStale ? (
         <Alert variant="warning" title="Délai de traitement dépassé">
@@ -232,6 +238,7 @@ export function VerificationPage() {
           ) : null}
 
           {current.key === 'phone' ? <PhoneVerificationCard /> : null}
+          {current.key === 'email' ? <EmailVerificationCard /> : null}
 
           {current.key === 'identity' ? (
             <div className="grid gap-4">
@@ -314,6 +321,7 @@ export function VerificationPage() {
                 />
                 <Row label="Selfie de vérification" value="Fourni" ok={Boolean(selfieDoc)} />
                 <Row label="Téléphone russe" value="Vérifié" ok={phoneConfirmed} />
+                <Row label="E-mail" value={user.email || 'À confirmer'} ok={emailConfirmed} />
                 {level === 'enhanced' ? (
                   <Row label="Justificatif de domicile" value="Fourni" ok={Boolean(addressDoc)} />
                 ) : null}

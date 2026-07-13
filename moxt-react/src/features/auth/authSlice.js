@@ -13,6 +13,8 @@ export const {
   resendEmailRegistrationOtp,
   requestPhoneVerificationOtp,
   confirmPhoneVerification,
+  requestEmailVerificationOtp,
+  confirmEmailVerification,
   updateProfile,
   restoreSession,
   logout,

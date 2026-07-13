@@ -5,8 +5,6 @@ import {
   FiArrowRight,
   FiCheck,
   FiGlobe,
-  FiMail,
-  FiMessageSquare,
   FiShield,
   FiUser,
 } from 'react-icons/fi'
@@ -240,6 +238,7 @@ export function RegisterPage() {
       if (result.payload.requiresPhoneConfirmation) {
         setResendCooldown(RESEND_COOLDOWN_SECONDS)
         setPendingVerification({ method: 'phone', phone: result.payload.phone, email: result.payload.email })
+        setStep(4)
         return
       }
       if (result.payload.requiresEmailConfirmation) {
@@ -258,8 +257,7 @@ export function RegisterPage() {
     const missingPhone = needsOAuthProfileCompletion(authUser)
     const missingIdentity =
       String(authUser.firstName || '').trim().length < 2 ||
-      String(authUser.lastName || '').trim().length < 2 ||
-      !String(authUser.email || '').includes('@')
+      String(authUser.lastName || '').trim().length < 2
     setStep(missingIdentity || missingPhone ? 2 : 3)
     formik.setValues((current) => ({
       ...current,
@@ -362,7 +360,7 @@ export function RegisterPage() {
       description={
         oauthCompletion
           ? 'Ajoutez votre pays, ville et numéro russe pour utiliser MOXT.'
-          : 'Inscription avec e-mail, numéro russe (+7) et confirmation par SMS.'
+          : 'E-mail obligatoire, confirmation du compte par SMS sur votre numéro +7.'
       }
     >
       {burstNode}
@@ -618,143 +616,56 @@ export function RegisterPage() {
                   {status === 'loading' ? 'Enregistrement...' : 'Terminer mon profil'}
                 </Button>
               ) : (
-                <Button type="button" icon={FiArrowRight} onClick={nextStep}>
-                  Continuer
+                <Button type="submit" icon={FiCheck} loading={status === 'loading'}>
+                  {status === 'loading' ? 'Envoi du SMS...' : 'Créer mon compte'}
                 </Button>
               )}
             </div>
           </>
         ) : null}
 
-        {step === 4 && !oauthCompletion ? (
+        {step === 4 && !oauthCompletion && pendingVerification ? (
           <>
-            {pendingVerification ? (
-              <>
-                <Alert
-                  title={
-                    pendingVerification.method === 'email'
-                      ? 'Confirmez votre e-mail'
-                      : 'Confirmez votre numéro'
-                  }
-                  variant="info"
-                >
-                  {pendingVerification.method === 'email' ? (
-                    <>
-                      Un code à 6 chiffres a été envoyé à {pendingVerification.email}. Vérifiez que
-                      l’adresse e-mail est correctement saisie. Consultez aussi vos courriers
-                      indésirables (spam) si vous ne le recevez pas.
-                    </>
-                  ) : (
-                    `Un code à 6 chiffres a été envoyé au ${pendingVerification.phone} par SMS.`
-                  )}
-                </Alert>
-                <Input
-                  id="verification-code"
-                  label={
-                    pendingVerification.method === 'email'
-                      ? 'Code reçu par e-mail'
-                      : 'Code reçu par SMS'
-                  }
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  maxLength={6}
-                  placeholder="000000"
-                  value={verificationCode}
-                  onChange={(event) =>
-                    setVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 6))
-                  }
-                />
-                <Button
-                  type="button"
-                  icon={FiCheck}
-                  loading={status === 'loading'}
-                  disabled={verificationCode.length !== 6}
-                  onClick={confirmCode}
-                >
-                  Confirmer et accéder à MOXT
-                </Button>
-                <div className="grid gap-2 text-center">
-                  <p className="text-sm text-[var(--app-text-muted)]">
-                    {pendingVerification.method === 'email'
-                      ? t('auth.register.codeNotReceivedEmail')
-                      : t('auth.register.codeNotReceivedSms')}
-                  </p>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="w-full"
-                    disabled={resendCooldown > 0 || status === 'loading'}
-                    onClick={resendVerificationCode}
-                  >
-                    {resendCooldown > 0
-                      ? t('auth.register.resendCooldown', { seconds: resendCooldown })
-                      : pendingVerification.method === 'email'
-                        ? t('auth.register.resendEmail')
-                        : t('auth.register.resendSms')}
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <>
-                <p className="text-sm font-black text-[var(--app-text)]">
-                  Comment souhaitez-vous confirmer votre compte ?
-                </p>
-                <div className="grid gap-3 @md:grid-cols-2">
-                  {[
-                    {
-                      value: 'phone',
-                      icon: FiMessageSquare,
-                      title: 'Par SMS (recommandé)',
-                      detail: formik.values.russianPhone,
-                    },
-                    {
-                      value: 'email',
-                      icon: FiMail,
-                      title: 'Par e-mail',
-                      detail: formik.values.email,
-                    },
-                  ].map((method) => {
-                    const Icon = method.icon
-                    const selected = formik.values.verificationMethod === method.value
-                    return (
-                      <button
-                        key={method.value}
-                        type="button"
-                        className={`rounded-2xl p-4 text-left shadow-sm transition ${
-                          selected
-                            ? 'bg-brand-700 text-white shadow-lg shadow-brand-900/15'
-                            : 'bg-[var(--app-surface)] text-[var(--app-text)] hover:bg-[var(--app-surface-muted)]'
-                        }`}
-                        onClick={() => {
-                          formik.setFieldValue('verificationMethod', method.value)
-                        }}
-                      >
-                        <Icon className="text-xl" />
-                        <strong className="mt-3 block">{method.title}</strong>
-                        <span
-                          className={`mt-1 block truncate text-xs ${selected ? 'text-white/75' : 'text-[var(--app-text-muted)]'}`}
-                        >
-                          {method.detail}
-                        </span>
-                      </button>
-                    )
-                  })}
-                </div>
-                <div className="grid min-w-0 gap-3 @md:grid-cols-2">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    icon={FiArrowLeft}
-                    onClick={() => setStep(3)}
-                  >
-                    Retour
-                  </Button>
-                  <Button type="submit" icon={FiCheck} loading={status === 'loading'}>
-                    {status === 'loading' ? 'Envoi...' : 'Créer et confirmer'}
-                  </Button>
-                </div>
-              </>
-            )}
+            <Alert title="Confirmez votre numéro" variant="info">
+              Un code à 6 chiffres a été envoyé au {pendingVerification.phone} par SMS.
+            </Alert>
+            <Input
+              id="verification-code"
+              label="Code reçu par SMS"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              placeholder="000000"
+              value={verificationCode}
+              onChange={(event) =>
+                setVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 6))
+              }
+            />
+            <Button
+              type="button"
+              icon={FiCheck}
+              loading={status === 'loading'}
+              disabled={verificationCode.length !== 6}
+              onClick={confirmCode}
+            >
+              Confirmer et accéder à MOXT
+            </Button>
+            <div className="grid gap-2 text-center">
+              <p className="text-sm text-[var(--app-text-muted)]">
+                {t('auth.register.codeNotReceivedSms')}
+              </p>
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full"
+                disabled={resendCooldown > 0 || status === 'loading'}
+                onClick={resendVerificationCode}
+              >
+                {resendCooldown > 0
+                  ? t('auth.register.resendCooldown', { seconds: resendCooldown })
+                  : t('auth.register.resendSms')}
+              </Button>
+            </div>
           </>
         ) : null}
       </form>

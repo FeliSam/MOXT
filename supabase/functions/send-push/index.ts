@@ -7,6 +7,7 @@ import {
   parseJsonField,
   shouldDispatchWebPush,
 } from '../_shared/pushDispatch.ts'
+import { isStaleFcmError, sendFcmToDevice } from '../_shared/fcmPush.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -44,7 +45,12 @@ async function claimDispatch(supabase: ReturnType<typeof createServiceClient>, n
 async function finalizeDispatch(
   supabase: ReturnType<typeof createServiceClient>,
   notificationId: string,
-  { deliveredCount, error }: { deliveredCount: number; error?: string },
+  {
+    deliveredCount,
+    error,
+    webDelivered = 0,
+    nativeDelivered = 0,
+  }: { deliveredCount: number; error?: string; webDelivered?: number; nativeDelivered?: number },
 ) {
   await supabase
     .from('push_dispatch_log')
@@ -55,6 +61,90 @@ async function finalizeDispatch(
       dispatched_at: new Date().toISOString(),
     })
     .eq('notification_id', notificationId)
+
+  if (webDelivered || nativeDelivered) {
+    console.log('[send-push]', { notificationId, webDelivered, nativeDelivered })
+  }
+}
+
+async function dispatchWebPush(
+  subscriptions: Array<{
+    id: string
+    endpoint: string
+    p256dh?: string | null
+    auth_key?: string | null
+    subscription_json?: unknown
+  }>,
+  payload: ReturnType<typeof buildWebPushPayload>,
+) {
+  const vapidPublic = Deno.env.get('VAPID_PUBLIC_KEY') || Deno.env.get('VITE_VAPID_PUBLIC_KEY')
+  const vapidPrivate = Deno.env.get('VAPID_PRIVATE_KEY')
+  const vapidSubject = Deno.env.get('VAPID_SUBJECT') || 'mailto:support@moxtapp.ru'
+
+  if (!vapidPublic || !vapidPrivate || !subscriptions.length) {
+    return { delivered: 0, staleIds: [] as string[] }
+  }
+
+  webpush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate)
+  const body = JSON.stringify(payload)
+  let delivered = 0
+  const staleIds: string[] = []
+
+  for (const subscription of subscriptions) {
+    const pushSubscription =
+      subscription.subscription_json ||
+      ({
+        endpoint: subscription.endpoint,
+        keys: {
+          p256dh: subscription.p256dh,
+          auth: subscription.auth_key,
+        },
+      } as webpush.PushSubscription)
+
+    try {
+      await webpush.sendNotification(pushSubscription as webpush.PushSubscription, body)
+      delivered += 1
+    } catch (error) {
+      const statusCode = (error as { statusCode?: number })?.statusCode
+      if (statusCode === 404 || statusCode === 410) {
+        staleIds.push(subscription.id)
+      }
+      console.error('[send-push/web]', subscription.endpoint, error)
+    }
+  }
+
+  return { delivered, staleIds }
+}
+
+async function dispatchNativePush(
+  subscriptions: Array<{ id: string; endpoint: string; platform?: string | null }>,
+  payload: ReturnType<typeof buildWebPushPayload>,
+) {
+  const fcmJson = Deno.env.get('FCM_SERVICE_ACCOUNT_JSON') || ''
+  if (!fcmJson.trim() || !subscriptions.length) {
+    return { delivered: 0, staleIds: [] as string[] }
+  }
+
+  let delivered = 0
+  const staleIds: string[] = []
+
+  for (const subscription of subscriptions) {
+    try {
+      await sendFcmToDevice(fcmJson, subscription.endpoint, {
+        title: payload.title,
+        body: payload.body,
+        data: payload.data,
+      })
+      delivered += 1
+    } catch (error) {
+      if (isStaleFcmError(error)) {
+        staleIds.push(subscription.id)
+      }
+      console.error('[send-push/fcm]', subscription.platform, subscription.endpoint, error)
+    }
+  }
+
+  return { delivered, staleIds }
 }
 
 Deno.serve(async (req) => {
@@ -97,15 +187,6 @@ Deno.serve(async (req) => {
     return json({ ok: true, skipped: 'already_dispatched' })
   }
 
-  const vapidPublic = Deno.env.get('VAPID_PUBLIC_KEY') || Deno.env.get('VITE_VAPID_PUBLIC_KEY')
-  const vapidPrivate = Deno.env.get('VAPID_PRIVATE_KEY')
-  const vapidSubject = Deno.env.get('VAPID_SUBJECT') || 'mailto:support@moxtapp.ru'
-
-  if (!vapidPublic || !vapidPrivate) {
-    await finalizeDispatch(supabase, notificationId, { deliveredCount: 0, error: 'vapid_not_configured' })
-    return json({ error: 'VAPID non configuré.' }, 503)
-  }
-
   const { data: notification, error: notificationError } = await supabase
     .from('notifications')
     .select('id, user_id, title, message, type, link, priority')
@@ -139,7 +220,6 @@ Deno.serve(async (req) => {
     .select('id, endpoint, p256dh, auth_key, subscription_json, platform')
     .eq('user_id', notification.user_id)
     .eq('enabled', true)
-    .eq('platform', 'web')
 
   if (subscriptionsError) {
     await finalizeDispatch(supabase, notificationId, { deliveredCount: 0, error: subscriptionsError.message })
@@ -151,41 +231,32 @@ Deno.serve(async (req) => {
     return json({ ok: true, delivered: 0, skipped: 'no_subscriptions' })
   }
 
-  webpush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate)
-  const payload = JSON.stringify(buildWebPushPayload(notification))
-  let deliveredCount = 0
-  const staleIds: string[] = []
+  const payload = buildWebPushPayload(notification)
+  const webSubs = subscriptions.filter((s) => s.platform === 'web')
+  const nativeSubs = subscriptions.filter((s) => s.platform === 'android' || s.platform === 'ios')
 
-  for (const subscription of subscriptions) {
-    const pushSubscription =
-      subscription.subscription_json ||
-      ({
-        endpoint: subscription.endpoint,
-        keys: {
-          p256dh: subscription.p256dh,
-          auth: subscription.auth_key,
-        },
-      } as webpush.PushSubscription)
+  const [webResult, nativeResult] = await Promise.all([
+    dispatchWebPush(webSubs, payload),
+    dispatchNativePush(nativeSubs, payload),
+  ])
 
-    try {
-      await webpush.sendNotification(
-        pushSubscription as webpush.PushSubscription,
-        payload,
-      )
-      deliveredCount += 1
-    } catch (error) {
-      const statusCode = (error as { statusCode?: number })?.statusCode
-      if (statusCode === 404 || statusCode === 410) {
-        staleIds.push(subscription.id)
-      }
-      console.error('[send-push]', subscription.endpoint, error)
-    }
-  }
-
+  const staleIds = [...webResult.staleIds, ...nativeResult.staleIds]
   if (staleIds.length) {
     await supabase.from('device_subscriptions').delete().in('id', staleIds)
   }
 
-  await finalizeDispatch(supabase, notificationId, { deliveredCount })
-  return json({ ok: true, delivered: deliveredCount, staleRemoved: staleIds.length })
+  const deliveredCount = webResult.delivered + nativeResult.delivered
+  await finalizeDispatch(supabase, notificationId, {
+    deliveredCount,
+    webDelivered: webResult.delivered,
+    nativeDelivered: nativeResult.delivered,
+  })
+
+  return json({
+    ok: true,
+    delivered: deliveredCount,
+    web: webResult.delivered,
+    native: nativeResult.delivered,
+    staleRemoved: staleIds.length,
+  })
 })

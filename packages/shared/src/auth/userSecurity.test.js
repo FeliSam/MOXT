@@ -22,6 +22,8 @@ const identityUser = {
   ...phoneUser,
   verified: true,
   status: 'verified',
+  emailVerified: true,
+  emailVerifiedAt: '2026-01-01',
 }
 
 describe('userSecurity', () => {

@@ -34,9 +34,25 @@ export function canPublishContent(user) {
   return isPhoneVerified(user) && isValidRussianPhone(user.phone)
 }
 
+/** E-mail confirmé (Supabase Auth). */
+export function isEmailVerified(user) {
+  if (!user) return false
+  if (user.emailVerified === true) return true
+  return Boolean(user.emailVerifiedAt)
+}
+
+export function hasAccountEmail(user) {
+  return String(user?.email || '').trim().includes('@')
+}
+
 export function canCreateBusiness(user) {
   if (!user?.id) return false
-  return isIdentityVerified(user) && isPersonallyRegistered(user)
+  return isIdentityVerified(user) && isPersonallyRegistered(user) && isEmailVerified(user)
+}
+
+export function canSubmitIdentityVerification(user) {
+  if (!user?.id) return false
+  return isPhoneVerified(user) && isEmailVerified(user) && hasAccountEmail(user)
 }
 
 /** Transfert : profil complet + numéro russe vérifié. */
@@ -66,6 +82,9 @@ export function securityGateMessage(kind, user) {
     case 'business':
       if (!isPersonallyRegistered(user)) {
         return 'Complétez vos informations personnelles avant de créer une entreprise.'
+      }
+      if (!isEmailVerified(user)) {
+        return 'Confirmez votre adresse e-mail dans Sécurité avant de créer une entreprise.'
       }
       return 'Votre identité doit être vérifiée par MOXT avant de créer une entreprise.'
     case 'transfer':

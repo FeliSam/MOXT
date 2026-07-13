@@ -124,9 +124,6 @@ export const registerSchema = Yup.object({
     .oneOf([Yup.ref('password')], 'Les mots de passe ne correspondent pas.')
     .required('Confirmez le mot de passe.'),
   acceptTerms: Yup.boolean().oneOf([true], 'Vous devez accepter les conditions.'),
-  verificationMethod: Yup.string()
-    .oneOf(['phone', 'email'])
-    .required('Choisissez une méthode de vérification.'),
 })
 
 export const registerStepFields = {
@@ -141,7 +138,6 @@ export const registerStepFields = {
     'confirmPassword',
     'acceptTerms',
   ],
-  4: ['verificationMethod', 'email'],
 }
 
 export const forgotPasswordSchema = Yup.object({

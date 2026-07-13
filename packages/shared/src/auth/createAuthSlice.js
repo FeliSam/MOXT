@@ -98,6 +98,28 @@ export function createAuthSlice(authService) {
     },
   )
 
+  const requestEmailVerificationOtp = createAsyncThunk(
+    'auth/requestEmailVerificationOtp',
+    async (email, { getState, rejectWithValue }) => {
+      try {
+        return await authService.requestEmailVerificationOtp(getState().auth.user, email)
+      } catch (error) {
+        return rejectWithValue(error.message)
+      }
+    },
+  )
+
+  const confirmEmailVerification = createAsyncThunk(
+    'auth/confirmEmailVerification',
+    async (details, { getState, rejectWithValue }) => {
+      try {
+        return await authService.confirmEmailVerification(getState().auth.user, details)
+      } catch (error) {
+        return rejectWithValue(error.message)
+      }
+    },
+  )
+
   const updateProfile = createAsyncThunk('auth/updateProfile', async (details, { getState, rejectWithValue }) => {
     try {
       return await authService.updateProfile(getState().auth.user, details)
@@ -223,6 +245,22 @@ export function createAuthSlice(authService) {
           state.error = null
         })
         .addCase(confirmPhoneVerification.rejected, setFailure)
+        .addCase(requestEmailVerificationOtp.pending, clearAuthErrorOnly)
+        .addCase(requestEmailVerificationOtp.fulfilled, (state, action) => {
+          state.status = 'authenticated'
+          state.error = null
+          if (action.payload?.user) {
+            state.user = action.payload.user
+          }
+        })
+        .addCase(requestEmailVerificationOtp.rejected, setFailure)
+        .addCase(confirmEmailVerification.pending, clearAuthErrorOnly)
+        .addCase(confirmEmailVerification.fulfilled, (state, action) => {
+          state.user = action.payload
+          state.status = 'authenticated'
+          state.error = null
+        })
+        .addCase(confirmEmailVerification.rejected, setFailure)
         .addCase(updateProfile.pending, setLoading)
         .addCase(updateProfile.fulfilled, (state, action) => {
           state.user = action.payload
@@ -250,6 +288,8 @@ export function createAuthSlice(authService) {
     resendEmailRegistrationOtp,
     requestPhoneVerificationOtp,
     confirmPhoneVerification,
+    requestEmailVerificationOtp,
+    confirmEmailVerification,
     updateProfile,
     restoreSession,
     logout,

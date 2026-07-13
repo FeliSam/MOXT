@@ -173,8 +173,12 @@ async function main() {
   }
 
   log('Migration', 'smsc_events')
-  if (run('npm', ['run', 'db:push'], { env: supabaseEnv }) !== 0) {
-    console.log('\n  ⚠ db:push échoué — vérifiez SUPABASE_DB_PASSWORD dans phase2.env')
+  if (process.env.MOXT_SKIP_DB_PUSH !== '1') {
+    if (run('npm', ['run', 'db:push'], { env: supabaseEnv }) !== 0) {
+      console.log('\n  ⚠ db:push échoué — vérifiez SUPABASE_DB_PASSWORD dans phase2.env')
+    }
+  } else {
+    log('Migration', 'ignorée (MOXT_SKIP_DB_PUSH=1)')
   }
 
   const secretsPath = path.join(root, 'scripts', 'phase2.supabase-secrets.env')

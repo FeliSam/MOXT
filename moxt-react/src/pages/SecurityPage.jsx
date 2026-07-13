@@ -7,6 +7,7 @@ import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { Modal } from '../components/ui/Modal'
 import { PageHeader } from '../components/ui/PageHeader'
+import { EmailVerificationCard } from '../features/security/EmailVerificationCard'
 import {
   selectAccountPreferences,
   updateAccountPreferences,
@@ -155,6 +156,7 @@ export function SecurityPage() {
         description="Mot de passe, double authentification et sessions actives."
         actions={<BackButton appearance="link" />}
       />
+      <EmailVerificationCard />
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <FiLock className="text-2xl text-brand-600" />

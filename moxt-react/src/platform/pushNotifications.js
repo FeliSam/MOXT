@@ -45,6 +45,10 @@ async function bindPushListeners(PushNotifications) {
     console.warn('[MOXT] Push registration failed', error)
   })
 
+  await PushNotifications.addListener('pushNotificationReceived', (event) => {
+    console.info('[MOXT] Push reçu (foreground)', event.notification?.title)
+  })
+
   await PushNotifications.addListener('pushNotificationActionPerformed', (event) => {
     const path = event.notification?.data?.path
     if (typeof path === 'string' && path.trim()) {

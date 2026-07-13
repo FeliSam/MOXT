@@ -19,6 +19,9 @@ scripts/.deploy-state.json
 scripts/moxt-auth-yc.json
 scripts/github-deploy-sa.json
 scripts/github-deploy-s3-keys.json
+scripts/firebase-service-account.json
+moxt-react/android/app/google-services.json
+moxt-react/ios/App/App/GoogleService-Info.plist
 
 # Logs & caches
 logs/

@@ -1,27 +1,25 @@
 #!/usr/bin/env node
 /**
- * Pipeline production MOXT — git push, migrations, Supabase, site Yandex.
+ * Pipeline production MOXT — git push, migrations, Supabase (parallèle), site Yandex.
  *
  *   npm run deploy:all
+ *   npm run moxt -- deploy --parallel --purge-cdn
  *
  * Options :
  *   --push           git push origin HEAD (si commits en avance)
  *   --no-push        ignorer git push
+ *   --parallel       déploie smsc / admin / push en parallèle (défaut)
+ *   --sequential     déploiement Supabase séquentiel
  *   --skip-migrate   sauter db:push
  *   --skip-supabase  sauter smsc, admin-promote, push
  *   --skip-web       sauter web:deploy:yandex
  *   --purge-cdn      invalider le cache CDN après upload
- *
- * Variables :
- *   MOXT_DEPLOY_PUSH=1
- *   MOXT_SKIP_MIGRATE=1
- *   MOXT_SKIP_SUPABASE=1
- *   MOXT_SKIP_DEPLOY=1
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { TaskQueue } from './lib/taskQueue.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const envPath = path.join(root, 'scripts', 'phase2.env')
@@ -30,6 +28,7 @@ const argv = process.argv.slice(2)
 const wantPush =
   process.env.MOXT_DEPLOY_PUSH === '1' ||
   (argv.includes('--push') && !argv.includes('--no-push'))
+const parallel = !argv.includes('--sequential')
 const skipMigrate =
   process.env.MOXT_SKIP_MIGRATE === '1' || argv.includes('--skip-migrate')
 const skipSupabase =
@@ -86,23 +85,94 @@ function gitAheadCount() {
 
 function maybeGitPush() {
   if (!wantPush) {
-    log('0/6', 'Git push — ignoré', 'ajoutez --push ou MOXT_DEPLOY_PUSH=1')
+    log('0/5', 'Git push — ignoré', 'ajoutez --push ou MOXT_DEPLOY_PUSH=1')
     return true
   }
 
   const ahead = gitAheadCount()
   if (ahead === 0) {
-    log('0/6', 'Git push — rien à pousser')
+    log('0/5', 'Git push — rien à pousser (ou déjà poussé)')
     return true
   }
 
-  log('0/6', 'Git push', `${ahead} commit(s) en avance sur origin`)
+  log('0/5', 'Git push', `${ahead} commit(s) en avance`)
   return run('git', ['push', 'origin', 'HEAD']) === 0
+}
+
+async function deploySupabaseParallel(phase2) {
+  const tasks = [
+    {
+      id: 'smsc',
+      label: 'SMSC + send-sms',
+      run: () => {
+        if (runNpm('setup:smsc') !== 0) throw new Error('setup:smsc')
+      },
+    },
+    {
+      id: 'admin',
+      label: 'admin-promote-role',
+      run: () => {
+        if (runNpm('setup:admin-promote') !== 0) throw new Error('setup:admin-promote')
+      },
+    },
+  ]
+
+  const hasVapid =
+    (phase2.VAPID_PUBLIC_KEY && phase2.VAPID_PRIVATE_KEY) ||
+    (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY)
+  if (hasVapid) {
+    tasks.push({
+      id: 'push',
+      label: 'send-push + VAPID',
+      run: () => {
+        if (runNpm('setup:push') !== 0) throw new Error('setup:push')
+      },
+    })
+  }
+
+  const hasFcm =
+    phase2.FCM_SERVICE_ACCOUNT_PATH ||
+    phase2.FCM_SERVICE_ACCOUNT_JSON ||
+    process.env.FCM_SERVICE_ACCOUNT_PATH
+  if (hasFcm) {
+    tasks.push({
+      id: 'push-native',
+      label: 'FCM Android/iOS',
+      run: () => {
+        if (runNpm('setup:push:native') !== 0) throw new Error('setup:push:native')
+      },
+    })
+  }
+
+  log('2/5', `Supabase (${tasks.length} tâches en parallèle)`)
+  const queue = new TaskQueue({ concurrency: tasks.length, stopOnError: true })
+  const { ok, errors } = await queue.runAll(tasks)
+  if (!ok) {
+    for (const err of errors) console.error(`  ✗ ${err.label}: ${err.message}`)
+    return false
+  }
+  return true
+}
+
+async function deploySupabaseSequential(phase2) {
+  log('2/5', 'SMSC', 'npm run setup:smsc')
+  if (runNpm('setup:smsc') !== 0) return false
+  log('3/5', 'Admin', 'npm run setup:admin-promote')
+  if (runNpm('setup:admin-promote') !== 0) return false
+  const hasVapid =
+    (phase2.VAPID_PUBLIC_KEY && phase2.VAPID_PRIVATE_KEY) ||
+    (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY)
+  if (hasVapid) {
+    log('4/5', 'Push', 'npm run setup:push')
+    if (runNpm('setup:push') !== 0) return false
+  }
+  return true
 }
 
 async function main() {
   console.log('\n══════════════════════════════════════')
   console.log('  MOXT — déploiement complet')
+  console.log(`  mode : ${parallel ? 'parallèle' : 'séquentiel'}`)
   console.log('══════════════════════════════════════')
 
   const phase2 = parseEnvFile(envPath)
@@ -110,44 +180,33 @@ async function main() {
   if (!maybeGitPush()) process.exit(1)
 
   if (!skipMigrate) {
-    log('1/6', 'Migrations Supabase', 'npm run db:push')
+    log('1/5', 'Migrations Supabase', 'npm run db:push')
     if (runNpm('db:push') !== 0) process.exit(1)
   } else {
-    log('1/6', 'Migrations — ignorées')
+    log('1/5', 'Migrations — ignorées')
   }
 
   if (!skipSupabase) {
-    log('2/6', 'SMSC + Edge Functions', 'npm run setup:smsc')
-    if (runNpm('setup:smsc') !== 0) process.exit(1)
-
-    log('3/6', 'Promotion admin', 'npm run setup:admin-promote')
-    if (runNpm('setup:admin-promote') !== 0) process.exit(1)
-
-    const hasVapid =
-      (phase2.VAPID_PUBLIC_KEY && phase2.VAPID_PRIVATE_KEY) ||
-      (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY)
-    if (hasVapid) {
-      log('4/6', 'Notifications push', 'npm run setup:push')
-      if (runNpm('setup:push') !== 0) process.exit(1)
-    } else {
-      log('4/6', 'Notifications push — ignorées', 'VAPID_* absent de phase2.env')
-    }
+    process.env.MOXT_SKIP_DB_PUSH = '1'
+    const ok = parallel
+      ? await deploySupabaseParallel(phase2)
+      : await deploySupabaseSequential(phase2)
+    delete process.env.MOXT_SKIP_DB_PUSH
+    if (!ok) process.exit(1)
   } else {
-    log('2/6', 'Supabase — ignoré')
-    log('3/6', 'Supabase — ignoré')
-    log('4/6', 'Supabase — ignoré')
+    log('2/5', 'Supabase — ignoré')
   }
 
   if (!skipWeb) {
     const deployArgs = []
     if (purgeCdn || phase2.MOXT_CDN_RESOURCE_ID) deployArgs.push('--purge-cdn')
-    log('5/6', 'Site Yandex', `npm run web:deploy:yandex${deployArgs.length ? ` -- ${deployArgs.join(' ')}` : ''}`)
+    log('5/5', 'Site Yandex', 'build + upload')
     if (runScript('deploy-yandex.mjs', deployArgs) !== 0) process.exit(1)
   } else {
-    log('5/6', 'Site Yandex — ignoré', 'MOXT_SKIP_DEPLOY=1 ou --skip-web')
+    log('5/5', 'Site Yandex — ignoré')
   }
 
-  log('6/6', 'Terminé', 'https://moxtapp.ru')
+  log('✓', 'Terminé', 'https://moxtapp.ru')
   console.log('\n══════════════════════════════════════')
   console.log('  Déploiement complet terminé')
   console.log('══════════════════════════════════════\n')

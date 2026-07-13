@@ -30,7 +30,7 @@ export const businessSchema = Yup.object({
     })
     .required('Téléphone russe obligatoire.'),
   originPhone: Yup.string().trim().max(32),
-  email: Yup.string().trim().email('Email professionnel invalide.'),
+  email: Yup.string().trim().email('Email professionnel invalide.').required('Email professionnel obligatoire.'),
   telegram: Yup.string().trim().max(80),
   description: Yup.string().trim().min(20, 'Ajoutez au moins 20 caracteres.').required(),
   website: Yup.string().trim().url('Adresse du site invalide.'),

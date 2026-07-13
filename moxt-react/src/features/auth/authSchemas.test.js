@@ -22,7 +22,6 @@ describe('schemas d authentification', () => {
         password: '12345678',
         confirmPassword: '12345678',
         acceptTerms: true,
-        verificationMethod: 'phone',
       }),
     ).rejects.toThrow()
   })
@@ -41,7 +40,6 @@ describe('schemas d authentification', () => {
         password: 'Motdepasse1',
         confirmPassword: 'Motdepasse1',
         acceptTerms: true,
-        verificationMethod: 'phone',
       }),
     ).rejects.toThrow("L'e-mail est obligatoire.")
   })

@@ -222,6 +222,35 @@ export function createAuthService(supabase, redirects = {}) {
     }
   }
 
+  async function syncEmailVerifiedFromAuth(authUser, userId) {
+    if (!authUser?.email_confirmed_at) return null
+    const email = String(authUser.email || '').trim().toLowerCase()
+    if (!email.includes('@')) return null
+
+    const existing = await fetchProfile(userId)
+    if (existing && String(existing.email || '').toLowerCase() === email) {
+      return enrichUserFromAuth(existing, authUser)
+    }
+
+    await upsertProfile(userId, {
+      email,
+      updated_at: new Date().toISOString(),
+    })
+    const refreshed = await fetchProfile(userId)
+    return refreshed ? enrichUserFromAuth(refreshed, authUser) : null
+  }
+
+  async function enrichUserFromAuth(user, authUser) {
+    if (!user || !authUser) return user
+    const email = String(authUser.email || user.email || '').trim()
+    return {
+      ...user,
+      email,
+      emailVerified: Boolean(authUser.email_confirmed_at) || user.emailVerified === true,
+      emailVerifiedAt: authUser.email_confirmed_at || user.emailVerifiedAt || null,
+    }
+  }
+
   async function syncPhoneVerifiedFromAuth(authUser, userId) {
     if (!authUser?.phone_confirmed_at) return null
     const authPhone = normalizeRussianAuthPhone(authUser.phone || '')
@@ -285,15 +314,27 @@ export function createAuthService(supabase, redirects = {}) {
         })
         const refreshed = await fetchProfile(authUser.id)
         if (refreshed) {
-          return (await syncPhoneVerifiedFromAuth(authUser, authUser.id)) || refreshed
+          const synced =
+            (await syncPhoneVerifiedFromAuth(authUser, authUser.id)) ||
+            (await syncEmailVerifiedFromAuth(authUser, authUser.id)) ||
+            refreshed
+          return enrichUserFromAuth(synced, authUser)
         }
       }
-      return (await syncPhoneVerifiedFromAuth(authUser, authUser.id)) || existingProfile
+      const profile =
+        (await syncPhoneVerifiedFromAuth(authUser, authUser.id)) ||
+        (await syncEmailVerifiedFromAuth(authUser, authUser.id)) ||
+        existingProfile
+      return enrichUserFromAuth(profile, authUser)
     }
 
     await upsertProfile(authUser.id, profileFields)
     const created = profileToUser({ id: authUser.id, ...profileFields })
-    return (await syncPhoneVerifiedFromAuth(authUser, authUser.id)) || created
+    const profile =
+      (await syncPhoneVerifiedFromAuth(authUser, authUser.id)) ||
+      (await syncEmailVerifiedFromAuth(authUser, authUser.id)) ||
+      created
+    return enrichUserFromAuth(profile, authUser)
   }
 
   return {
@@ -388,44 +429,29 @@ export function createAuthService(supabase, redirects = {}) {
         status: 'active',
       }
 
-      const verificationMethod =
-        details.verificationMethod === 'email' ? 'email' : 'phone'
+      const verificationMethod = 'phone'
 
-      if (verificationMethod === 'email' && !email) {
-        throw new Error("L'e-mail est obligatoire pour confirmer votre compte par e-mail.")
+      const credentials = {
+        phone: normalizeRussianAuthPhone(details.russianPhone),
+        password: details.password,
+        options: { channel: 'sms', data: profileFields },
       }
 
-      const credentials =
-        verificationMethod === 'phone'
-          ? {
-              phone: normalizeRussianAuthPhone(details.russianPhone),
-              password: details.password,
-              options: { channel: 'sms', data: profileFields },
-            }
-          : {
-              email,
-              password: details.password,
-              options: {
-                emailRedirectTo: getEmailRedirectUrl(),
-                data: profileFields,
-              },
-            }
-
-      const authChannel = verificationMethod === 'phone' ? 'phone' : 'email'
-      if (verificationMethod === 'phone') {
-        await assertIdentityAvailable(
-          'phone',
-          normalizeRussianAuthPhone(details.russianPhone),
-          null,
-          { channel: 'phone' },
-        )
-      } else {
-        await assertIdentityAvailable('email', email, null, { channel: 'email' })
+      if (!email) {
+        throw new Error("L'e-mail est obligatoire.")
       }
+
+      await assertIdentityAvailable(
+        'phone',
+        normalizeRussianAuthPhone(details.russianPhone),
+        null,
+        { channel: 'phone' },
+      )
+      await assertIdentityAvailable('email', email, null, { channel: 'email' })
 
       const { data, error } = await supabase.auth.signUp(credentials)
       if (error) {
-        throw new Error(translateAuthError(error, { channel: authChannel }))
+        throw new Error(translateAuthError(error, { channel: 'phone' }))
       }
 
       if (data.user && !data.session) {
@@ -444,10 +470,10 @@ export function createAuthService(supabase, redirects = {}) {
       return {
         user,
         token: '',
-        requiresEmailConfirmation: verificationMethod === 'email',
-        requiresPhoneConfirmation: verificationMethod === 'phone',
+        requiresEmailConfirmation: false,
+        requiresPhoneConfirmation: true,
         pendingUserId: data.user.id,
-        verificationMethod,
+        verificationMethod: 'phone',
         email,
         phone: normalizeRussianAuthPhone(details.russianPhone),
       }
@@ -650,6 +676,69 @@ export function createAuthService(supabase, redirects = {}) {
       const user = await fetchProfile(currentUser.id)
       if (!user) throw new Error('Impossible de charger le profil après vérification.')
       return user
+    },
+
+    async requestEmailVerificationOtp(currentUser, email) {
+      if (!supabase || !currentUser) throw new Error('Session expirée.')
+      const normalizedEmail = String(email || '').trim().toLowerCase()
+      if (!normalizedEmail.includes('@')) {
+        throw new Error('Adresse e-mail invalide.')
+      }
+
+      const authUser = await getAuthenticatedAuthUser()
+      const syncedUser = await syncEmailVerifiedFromAuth(authUser, currentUser.id)
+      if (
+        syncedUser?.emailVerified &&
+        String(syncedUser.email || '').toLowerCase() === normalizedEmail
+      ) {
+        return { email: normalizedEmail, user: syncedUser }
+      }
+
+      await assertIdentityAvailable('email', normalizedEmail, currentUser.id, {
+        channel: 'email',
+        intent: 'email_verification',
+      })
+
+      const { error } = await supabase.auth.updateUser({ email: normalizedEmail })
+      if (error) {
+        throw new Error(translateAuthError(error, { channel: 'email', intent: 'email_verification' }))
+      }
+
+      return { email: normalizedEmail, otpType: 'email_change' }
+    },
+
+    async confirmEmailVerification(currentUser, { email, token, otpType }) {
+      if (!supabase || !currentUser) throw new Error('Session expirée.')
+      const normalizedEmail = String(email || '').trim().toLowerCase()
+      const emailContext = { channel: 'email', intent: 'email_verification' }
+
+      const authUser = await getAuthenticatedAuthUser()
+      const syncedUser = await syncEmailVerifiedFromAuth(authUser, currentUser.id)
+      if (
+        syncedUser?.emailVerified &&
+        String(syncedUser.email || '').toLowerCase() === normalizedEmail
+      ) {
+        return syncedUser
+      }
+
+      const type = otpType === 'signup' || otpType === 'email_change' ? otpType : 'email_change'
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: normalizedEmail,
+        token: String(token || '').trim(),
+        type,
+      })
+      if (error) {
+        throw new Error(translateAuthError(error, emailContext))
+      }
+
+      const verifiedAuthUser = data?.user || authUser
+      await upsertProfile(currentUser.id, {
+        email: normalizedEmail,
+        updated_at: new Date().toISOString(),
+      })
+      const user = await fetchProfile(currentUser.id)
+      if (!user) throw new Error('Impossible de charger le profil après vérification e-mail.')
+      return enrichUserFromAuth(user, verifiedAuthUser)
     },
 
     async restoreSession() {
