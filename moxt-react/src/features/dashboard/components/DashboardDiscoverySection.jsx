@@ -157,7 +157,7 @@ export function DashboardDiscoverySection({
               {[
                 [myTransfers.length, 'Transferts', '/transfers/history'],
                 [conversations, 'Discussions', '/messages'],
-                [jobs.length + events.length, 'Opportunités', '/activities'],
+                [jobs.length + events.length, 'Activité', '/activities'],
               ].map(([value, label, to]) => (
                 <Link
                   key={label}

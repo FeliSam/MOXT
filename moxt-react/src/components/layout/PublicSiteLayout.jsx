@@ -29,7 +29,7 @@ export function PublicSiteLayout({ children }) {
       >
         <div className="mx-auto flex max-w-7xl items-center gap-4">
           <Link to="/" aria-label="Accueil MOXT">
-            <Brand />
+            <Brand iconOnly />
           </Link>
           <nav
             className="ml-auto hidden items-center gap-1 md:flex"

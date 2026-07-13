@@ -40,7 +40,12 @@ function run(commandLine, args = [], options = {}) {
 }
 
 function runNode(script, args = []) {
-  return run(process.execPath, [path.join(root, 'scripts', script), ...args])
+  return spawnSync(process.execPath, [path.join(root, 'scripts', script), ...args], {
+    cwd: root,
+    stdio: 'inherit',
+    shell: false,
+    env: process.env,
+  }).status ?? 1
 }
 
 function gitStatusPorcelain() {

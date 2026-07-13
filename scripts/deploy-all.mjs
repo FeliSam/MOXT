@@ -69,7 +69,13 @@ function runNpm(script, extraArgs = []) {
 }
 
 function runScript(scriptName, extraArgs = []) {
-  return run(process.execPath, [path.join(root, 'scripts', scriptName), ...extraArgs])
+  const result = spawnSync(process.execPath, [path.join(root, 'scripts', scriptName), ...extraArgs], {
+    cwd: root,
+    stdio: 'inherit',
+    shell: false,
+    env: process.env,
+  })
+  return result.status ?? 1
 }
 
 function gitAheadCount() {

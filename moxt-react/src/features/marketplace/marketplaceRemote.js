@@ -1,4 +1,5 @@
 import { supabase } from '../../services/supabaseClient'
+import { normalizeListingImages } from './listingImageUtils'
 
 const BASE_COLUMNS = {
   ownerId: 'owner_id',
@@ -41,7 +42,9 @@ export function listingFromRemoteRow(row) {
       Object.entries(BASE_COLUMNS).find(([, databaseKey]) => databaseKey === key)?.[0] || key
     if (key !== 'payload') base[camelKey] = value
   }
-  return { ...(row.payload || {}), ...base }
+  const listing = { ...(row.payload || {}), ...base }
+  listing.images = normalizeListingImages(row.images, row.payload?.images, listing.images)
+  return listing
 }
 
 export function listingQuestionFromRemoteRow(row) {

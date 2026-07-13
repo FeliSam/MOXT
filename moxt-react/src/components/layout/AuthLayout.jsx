@@ -19,7 +19,7 @@ export function AuthLayout() {
         <div className="absolute -bottom-32 right-0 size-80 rounded-full bg-brand-400/20 blur-3xl" />
 
         <div className="relative">
-          <Brand />
+          <Brand iconOnly />
         </div>
 
         <div className="relative max-w-xl">

@@ -21,7 +21,6 @@ import {
   businessToExchangerOption,
   exchangerMatchesUserCountry,
   resolveUserPartnerCountry,
-  resolveUserTransferCountry,
 } from '../features/transfers/exchangerListUtils'
 import { FALLBACK_EXCHANGERS } from '../features/transfers/transferConfig'
 
@@ -43,7 +42,7 @@ export function ExchangerDetailPage() {
   const exchanger = useMemo(() => {
     if (business) {
       if (!exchangerMatchesUserCountry(business, partnerCountry, originCountry)) return null
-      return businessToExchangerOption(business, resolveUserTransferCountry(user, originCountry), originCountry)
+      return businessToExchangerOption(business, partnerCountry, originCountry)
     }
     return FALLBACK_EXCHANGERS.find((item) => item.id === exchangerId) || null
   }, [business, exchangerId, originCountry, partnerCountry, user])

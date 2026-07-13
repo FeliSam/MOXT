@@ -15,6 +15,9 @@
  *   --full           envoie tous les fichiers (ignore la comparaison distante)
  *   --dry-run        affiche ce qui serait envoyé sans upload
  *   --transport=yc   force l'upload via yc storage s3 cp (sinon S3 natif si clés dispo)
+ *
+ * Garde-fou prod : assets d'abord, shell (index.html) en dernier.
+ * En cas d'échec, la version shell précédente est restaurée — le site reste en ligne.
  */
 import { existsSync, writeFileSync, unlinkSync } from 'node:fs'
 import path from 'node:path'
@@ -25,6 +28,7 @@ import { parseEnvFile } from './lib/env.mjs'
 import { purgeCdnCache, findCdnResource } from './lib/yandex-cdn.mjs'
 import { writeDeployManifest } from './lib/deploy-manifest.mjs'
 import { syncDist } from './lib/yandex-upload.mjs'
+import { runSafeDistUpload } from './lib/safe-deploy.mjs'
 import { resolveWritableS3Client } from './lib/yandex-s3.mjs'
 import { ycJson } from './lib/yandex.mjs'
 
@@ -228,11 +232,18 @@ async function main() {
       console.log(`    … et ${plan.toUpload.length - 20} autres`)
     }
   } else {
-    const { uploaded, failed } = await plan.runUpload()
-    console.log(`  ✓ ${uploaded} envoyés${failed ? ` — ✗ ${failed} échecs` : ''}`)
-    if (failed > 0) {
+    const maxAttempts = Number(process.env.MOXT_DEPLOY_MAX_ATTEMPTS || 3)
+    const result = await runSafeDistUpload(ycPath(), bucket, plan.toUpload, {
+      concurrency: uploadConcurrency,
+      transport: uploadTransport,
+      s3Client,
+      maxAttempts,
+    })
+    console.log(`  ✓ ${result.uploaded} envoyés${result.failed ? ` — ✗ ${result.failed} échec(s)` : ''}`)
+    if (!result.ok) {
+      console.error('\n  ✗ Déploiement interrompu — version précédente conservée (shell non basculé ou restauré)')
       if (uploadTransport === 's3') {
-        console.error('\n  ✗ Échec upload S3 — relancez avec : npm run deploy:yandex -- --transport=yc')
+        console.error('  Astuce : npm run deploy:yandex -- --transport=yc --purge-cdn')
       }
       process.exit(1)
     }

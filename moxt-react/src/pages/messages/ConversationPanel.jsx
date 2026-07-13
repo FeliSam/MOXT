@@ -107,6 +107,7 @@ export function ConversationPanel({
   }, [active, relatedPreview, user.id])
   const messageListRef = useRef(null)
   const composerRef = useRef(null)
+  const stickToBottomRef = useRef(true)
   const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState(null)
   const replyTarget = active.messages.find((item) => item.id === replyToId)
   const replyContextEntry = findRelatedContextById(active, replyToContextId)
@@ -139,12 +140,23 @@ export function ConversationPanel({
     })
   }, [threadQuery, timeline])
 
-  useLayoutEffect(() => {
+  function stickToBottom(behavior = 'auto') {
     const messageList = messageListRef.current
-    if (messageList) {
-      messageList.scrollTop = messageList.scrollHeight
+    if (!messageList) return
+    const top = messageList.scrollHeight
+    if (behavior === 'smooth') {
+      messageList.scrollTo({ top, behavior: 'smooth' })
+      return
     }
-  }, [active.id, active.messages.length, active.relatedContexts?.length])
+    messageList.scrollTop = top
+  }
+
+  useLayoutEffect(() => {
+    if (!stickToBottomRef.current) return
+    stickToBottom('auto')
+    const frame = requestAnimationFrame(() => stickToBottom('auto'))
+    return () => cancelAnimationFrame(frame)
+  }, [active.id, active.messages.length, active.relatedContexts?.length, formik.values.text])
 
   useLayoutEffect(() => {
     const el = composerRef.current
@@ -154,11 +166,16 @@ export function ConversationPanel({
   }, [formik.values.text])
 
   useEffect(() => {
+    stickToBottomRef.current = true
+  }, [active.id])
+
+  useEffect(() => {
     const messageList = messageListRef.current
     if (!messageList) return
     function handleScroll() {
       const distanceFromBottom =
         messageList.scrollHeight - messageList.scrollTop - messageList.clientHeight
+      stickToBottomRef.current = distanceFromBottom < 120
       setShowScrollFab(distanceFromBottom > 120)
     }
     handleScroll()
@@ -178,19 +195,13 @@ export function ConversationPanel({
 
   useEffect(() => {
     if (!peerTyping) return
-    const messageList = messageListRef.current
-    if (!messageList) return
-    const distanceFromBottom =
-      messageList.scrollHeight - messageList.scrollTop - messageList.clientHeight
-    if (distanceFromBottom < 160) {
-      messageList.scrollTo({ top: messageList.scrollHeight, behavior: 'smooth' })
-    }
+    if (!stickToBottomRef.current) return
+    stickToBottom('smooth')
   }, [peerTyping])
 
   function scrollToBottom() {
-    const messageList = messageListRef.current
-    if (!messageList) return
-    messageList.scrollTo({ top: messageList.scrollHeight, behavior: 'smooth' })
+    stickToBottomRef.current = true
+    stickToBottom('smooth')
   }
 
   return (

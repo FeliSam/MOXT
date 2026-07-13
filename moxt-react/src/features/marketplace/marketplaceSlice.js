@@ -5,6 +5,7 @@ import { createLocalStorage } from '../../services/createLocalStorage'
 import { storageService } from '../../services/storageService'
 import { mergeRemoteById } from '@moxt/shared/utils/mergeRemoteById.js'
 import { saveListingRemote } from './marketplaceRemote'
+import { normalizeListingImages } from './listingImageUtils'
 
 const storage = createLocalStorage('moxt-listings-v1')
 const reportsStorage = createLocalStorage('moxt-listing-reports-v1')
@@ -66,12 +67,11 @@ export const normalizeListing = (listing) => {
     contactCount: Number(listing.contactCount || 0),
     shareCount: Number(listing.shareCount || 0),
     favorites: Array.isArray(listing.favorites) ? listing.favorites : [],
-    images:
-      Array.isArray(listing.images) && listing.images.length
-        ? listing.images
-        : demoListingImages[listing.id]
-          ? demoListingImages[listing.id]
-          : [],
+    images: (() => {
+      const resolved = normalizeListingImages(listing.images, listing.payload?.images)
+      if (resolved.length) return resolved
+      return demoListingImages[listing.id] ? demoListingImages[listing.id] : []
+    })(),
     deliveryOptions: Array.isArray(listing.deliveryOptions) ? listing.deliveryOptions : ['pickup'],
     paymentMethods: Array.isArray(listing.paymentMethods)
       ? listing.paymentMethods
@@ -94,7 +94,7 @@ const marketplaceSlice = createSlice({
   reducers: {
     setAll(state, action) {
       const { items, reports } = action.payload
-      if (items) state.items = mergeRemoteById(state.items, items)
+      if (items) state.items = mergeRemoteById(state.items, items).map(normalizeListing)
       if (reports) state.reports = mergeRemoteById(state.reports, reports)
     },
     createListing: {

@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FiEye, FiMapPin, FiShoppingBag } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
@@ -12,6 +12,7 @@ import { formatMoney } from '../transfers/transferUtils'
 function MarketplaceListingCardComponent({ listing, linked = true, showFavorite = true }) {
   const dispatch = useDispatch()
   const user = useSelector((state) => state.auth.user)
+  const [imageFailed, setImageFailed] = useState(false)
   const liked = useSelector((state) =>
     state.account.favorites.some(
       (item) =>
@@ -51,14 +52,17 @@ function MarketplaceListingCardComponent({ listing, linked = true, showFavorite 
     dispatch(markListingViewed({ userId: user.id, listingId: listing.id }))
   }
 
+  const coverImage = listing.images?.[0]
+
   const mediaBody = (
     <>
-      {listing.images?.[0] ? (
+      {coverImage && !imageFailed ? (
         <img
-          src={listing.images[0]}
+          src={coverImage}
           alt={listing.title}
           className="h-full w-full object-cover transition duration-500 ease-out group-hover:scale-[1.05]"
           loading="lazy"
+          onError={() => setImageFailed(true)}
         />
       ) : (
         <div className="grid h-full w-full place-items-center text-white">

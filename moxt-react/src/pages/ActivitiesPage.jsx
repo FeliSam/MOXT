@@ -1,4 +1,5 @@
 import { FiCalendar, FiHeart, FiMessageSquare, FiPackage, FiSend } from 'react-icons/fi'
+import { useMemo } from 'react'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { BackButton } from '../components/ui/BackButton'
@@ -7,70 +8,87 @@ import { Card } from '../components/ui/Card'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { applicationJobId, applicationUserId } from '../features/jobs/jobUtils'
+import { formatTime } from '../utils/formatters'
+
+function activityTitle(at, title) {
+  const time = formatTime(at)
+  return time ? `${time} · ${title}` : title
+}
 
 export function ActivitiesPage() {
   const user = useSelector((state) => state.auth.user)
   const state = useSelector((current) => current)
-  const activities = [
-    ...state.account.favorites
-      .filter((item) => item.userId === user.id)
-      .map((item) => ({
-        id: `account-favorite-${item.id}`,
-        title: item.title,
-        label: 'Favori',
-        path: item.path,
-        icon: FiHeart,
-      })),
-    ...state.marketplace.items
-      .filter((item) => item.favorites.includes(user.id))
-      .map((item) => ({
-        id: `favorite-${item.id}`,
-        title: item.title,
-        label: 'Favori',
-        path: `/marketplace/${item.id}`,
-        icon: FiHeart,
-      })),
-    ...state.jobs.applications
-      .filter((item) => applicationUserId(item) === user.id)
-      .map((item) => ({
-        id: `application-${item.id}`,
-        title:
-          state.jobs.items.find((job) => job.id === applicationJobId(item))?.title ||
-          applicationJobId(item),
-        label: 'Candidature',
-        path: `/jobs/${applicationJobId(item)}`,
-        icon: FiSend,
-      })),
-    ...state.events.registrations
-      .filter((item) => item.userId === user.id)
-      .map((item) => ({
-        id: `registration-${item.id}`,
-        title: state.events.items.find((event) => event.id === item.eventId)?.title || item.eventId,
-        label: 'Inscription',
-        path: `/events/${item.eventId}`,
-        icon: FiCalendar,
-      })),
-    ...state.parcels.items.flatMap((parcel) =>
-      (parcel.reservations || [])
-        .filter((reservation) => reservation.userId === user.id)
-        .map((reservation, index) => ({
-          id: `parcel-${parcel.id}-${index}`,
-          title: `${parcel.origin} vers ${parcel.destination}`,
-          label: `Réservation ${reservation.kg} kg`,
-          path: `/parcels/${parcel.id}`,
-          icon: FiPackage,
+  const activities = useMemo(
+    () => [
+      ...state.account.favorites
+        .filter((item) => item.userId === user.id)
+        .map((item) => ({
+          id: `account-favorite-${item.id}`,
+          title: activityTitle(item.createdAt, item.title),
+          label: 'Favori',
+          path: item.path,
+          icon: FiHeart,
         })),
-    ),
-    ...state.communications.conversations
-      .filter((item) => item.participantIds.includes(user.id))
-      .map((item) => ({
-        id: `conversation-${item.id}`,
-        title: item.title,
-        label: 'Conversation',
-        path: `/messages?relatedType=${item.relatedType}&relatedId=${item.relatedId}`,
-        icon: FiMessageSquare,
-      })),
-  ]
+      ...state.marketplace.items
+        .filter((item) => item.favorites.includes(user.id))
+        .map((item) => ({
+          id: `favorite-${item.id}`,
+          title: activityTitle(item.updatedAt || item.createdAt, item.title),
+          label: 'Favori',
+          path: `/marketplace/${item.id}`,
+          icon: FiHeart,
+        })),
+      ...state.jobs.applications
+        .filter((item) => applicationUserId(item) === user.id)
+        .map((item) => ({
+          id: `application-${item.id}`,
+          title: activityTitle(
+            item.createdAt,
+            state.jobs.items.find((job) => job.id === applicationJobId(item))?.title ||
+              applicationJobId(item),
+          ),
+          label: 'Candidature',
+          path: `/jobs/${applicationJobId(item)}`,
+          icon: FiSend,
+        })),
+      ...state.events.registrations
+        .filter((item) => item.userId === user.id)
+        .map((item) => ({
+          id: `registration-${item.id}`,
+          title: activityTitle(
+            item.createdAt,
+            state.events.items.find((event) => event.id === item.eventId)?.title || item.eventId,
+          ),
+          label: 'Inscription',
+          path: `/events/${item.eventId}`,
+          icon: FiCalendar,
+        })),
+      ...state.parcels.items.flatMap((parcel) =>
+        (parcel.reservations || [])
+          .filter((reservation) => reservation.userId === user.id)
+          .map((reservation, index) => ({
+            id: `parcel-${parcel.id}-${index}`,
+            title: activityTitle(
+              reservation.createdAt,
+              `${parcel.origin} vers ${parcel.destination}`,
+            ),
+            label: `Réservation ${reservation.kg} kg`,
+            path: `/parcels/${parcel.id}`,
+            icon: FiPackage,
+          })),
+      ),
+      ...state.communications.conversations
+        .filter((item) => item.participantIds.includes(user.id))
+        .map((item) => ({
+          id: `conversation-${item.id}`,
+          title: activityTitle(item.updatedAt || item.lastMessageAt || item.createdAt, item.title),
+          label: 'Conversation',
+          path: `/messages?relatedType=${item.relatedType}&relatedId=${item.relatedId}`,
+          icon: FiMessageSquare,
+        })),
+    ],
+    [state, user.id],
+  )
 
   return (
     <div className="grid min-w-0 max-w-full gap-6 sm:gap-7">

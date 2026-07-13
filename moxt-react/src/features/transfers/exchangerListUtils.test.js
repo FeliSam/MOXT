@@ -5,6 +5,7 @@ import {
   exchangerMatchesUserCountry,
   listExchangersForTransfer,
   resolveExchangerCountry,
+  resolveExchangerDisplayCountry,
   resolveExchangerOriginCountry,
   resolveUserTransferCountry,
 } from './exchangerListUtils'
@@ -85,5 +86,30 @@ describe('exchangerListUtils', () => {
 
     expect(rows.map((row) => row.id)).toEqual(['BIZ-BJ'])
     expect(businessToExchangerOption(bjBusiness, 'BJ', 'BJ').country).toBe('BJ')
+  })
+
+  it('affiche le drapeau du pays d origine quand les comptes RU et origine coexistent', () => {
+    const dualBusiness = {
+      ...bjBusiness,
+      id: 'BIZ-DUAL',
+      transferAccounts: [
+        { slot: 'ru', country: 'RU', active: true },
+        { slot: 'origin', country: 'BJ', active: true, isDefault: true },
+      ],
+    }
+
+    expect(resolveExchangerDisplayCountry(dualBusiness, 'BJ')).toBe('BJ')
+    expect(resolveExchangerCountry(dualBusiness, 'RU', 'BJ')).toBe('RU')
+  })
+
+  it('peut lister tous les échangeurs sans filtre pays', () => {
+    const rows = listExchangersForTransfer({
+      businesses: [bjBusiness, tgBusiness],
+      user: { id: 'u2', country: 'RU', originCountry: 'BJ' },
+      originCountry: 'BJ',
+      includeAllCountries: true,
+    })
+
+    expect(rows.map((row) => row.id).sort()).toEqual(['BIZ-BJ', 'BIZ-TG'])
   })
 })

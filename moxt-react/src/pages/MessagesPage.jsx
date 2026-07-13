@@ -6,7 +6,7 @@ import {
   FiStar,
   FiX,
 } from 'react-icons/fi'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { useSearchParams } from 'react-router-dom'
 import { messageSuggestionsForConversation } from '../features/communications/messageSuggestions'
@@ -71,6 +71,7 @@ export function MessagesPage() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [filter, setFilter] = useState('all')
   const listRef = useRef(null)
+  const conversationListRef = useRef(null)
   const desktop = useMediaQuery('(min-width: 1024px)')
   const isFiltering = Boolean(query.trim())
   const relatedConversation = conversations.find(
@@ -129,12 +130,16 @@ export function MessagesPage() {
           .includes(normalized)
       })
       .sort((left, right) => {
+        if (desktop && activeId && !showArchived) {
+          if (left.id === activeId) return -1
+          if (right.id === activeId) return 1
+        }
         const pinDelta =
           Number(Boolean(right.pinnedBy?.includes(user.id))) -
           Number(Boolean(left.pinnedBy?.includes(user.id)))
         return pinDelta || new Date(right.updatedAt) - new Date(left.updatedAt)
       })
-  }, [conversations, filter, query, showArchived, user.id])
+  }, [activeId, conversations, desktop, filter, query, showArchived, user.id])
 
   const active = conversations.find((item) => item.id === activeId)
   const assistantActive = activeId === ASSISTANT_ID
@@ -271,6 +276,11 @@ export function MessagesPage() {
     params.delete('replyContext')
     setSearchParams(params, { replace: true })
   }, [active?.id, requestedConversation, searchParams, setSearchParams])
+
+  useLayoutEffect(() => {
+    if (!desktop || !activeId || !conversationListRef.current) return
+    conversationListRef.current.scrollTop = 0
+  }, [activeId, desktop, active?.messages?.length, active?.updatedAt])
 
   useEffect(() => {
     if (!user?.id) return
@@ -545,7 +555,10 @@ export function MessagesPage() {
             </div>
           </div>
 
-          <div className="scrollbar-hidden min-h-0 flex-1 overscroll-contain overflow-y-auto bg-[var(--app-surface-muted)]/45 p-2 sm:p-3">
+          <div
+            ref={conversationListRef}
+            className="scrollbar-hidden min-h-0 flex-1 overscroll-contain overflow-y-auto bg-[var(--app-surface-muted)]/45 p-2 sm:p-3"
+          >
             <ConversationRow
               active={assistantActive}
               assistant

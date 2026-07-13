@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { listingQuestionFromRemoteRow, mergeListingQuestions } from './marketplaceRemote'
+import { listingFromRemoteRow, listingQuestionFromRemoteRow, mergeListingQuestions } from './marketplaceRemote'
 
 describe('marketplaceRemote questions', () => {
   it('fusionne les questions distantes dans les annonces', () => {
@@ -18,5 +18,19 @@ describe('marketplaceRemote questions', () => {
 
     expect(merged[0].questions).toHaveLength(1)
     expect(listingQuestionFromRemoteRow(merged[0].questions[0]).text).toBe('Disponible ?')
+  })
+
+  it('conserve les images du payload quand la colonne images est vide', () => {
+    const listing = listingFromRemoteRow({
+      id: 'ANN-IMG',
+      owner_id: 'owner',
+      title: 'Photo test',
+      images: [],
+      payload: {
+        images: ['https://example.test/photo.webp'],
+      },
+    })
+
+    expect(listing.images).toEqual(['https://example.test/photo.webp'])
   })
 })

@@ -191,10 +191,11 @@ export async function runUploadBatchS3(
   items,
   { concurrency = 32, cacheControlFn, onProgress } = {},
 ) {
-  if (!items.length) return { uploaded: 0, failed: 0 }
+  if (!items.length) return { uploaded: 0, failed: 0, failedKeys: [] }
 
   let uploaded = 0
   let failed = 0
+  const failedKeys = []
   let index = 0
   let loggedErrors = 0
 
@@ -210,6 +211,7 @@ export async function runUploadBatchS3(
         uploaded += 1
       } catch (error) {
         failed += 1
+        failedKeys.push(item.key)
         if (loggedErrors < 3) {
           loggedErrors += 1
           const message = error instanceof Error ? error.message : String(error)
@@ -222,7 +224,7 @@ export async function runUploadBatchS3(
 
   const workers = Array.from({ length: Math.min(concurrency, items.length) }, () => worker())
   await Promise.all(workers)
-  return { uploaded, failed }
+  return { uploaded, failed, failedKeys }
 }
 
 export async function listRemoteObjectsS3(client, bucketName) {

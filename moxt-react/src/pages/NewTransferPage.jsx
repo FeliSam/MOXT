@@ -41,7 +41,7 @@ import {
   resolveBusinessReceivingAccount,
 } from '../features/transfers/transferAccountUtils'
 import { ExchangerPickerAvatar } from '../features/transfers/ExchangerPickerAvatar'
-import { listExchangersForTransfer, resolveUserTransferCountry } from '../features/transfers/exchangerListUtils'
+import { listExchangersForTransfer, resolveUserPartnerCountry } from '../features/transfers/exchangerListUtils'
 import { useExchangeRate } from '../features/transfers/useExchangeRate'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 import {
@@ -427,8 +427,8 @@ export function NewTransferPage() {
               ) : null}
               {!exchangers.length ? (
                 <Alert variant="warning" title="Aucun partenaire dans votre pays">
-                  Seuls les échangeurs de {flagEmoji(resolveUserTransferCountry(user, originCountry))}{' '}
-                  votre pays sont affichés pour garantir les bonnes devises.
+                  Seuls les échangeurs de {flagEmoji(resolveUserPartnerCountry(user, originCountry))}{' '}
+                  votre pays d&apos;origine sont affichés pour garantir les bonnes devises.
                 </Alert>
               ) : null}
               <div className="w-full min-w-0 max-w-full overflow-x-auto xl:overflow-visible">

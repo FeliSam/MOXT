@@ -3,10 +3,10 @@ import { useEffect, useRef } from 'react'
 const AXIS_LOCK_PX = 8
 
 /**
- * Ref pour carrousels horizontaux : verrouillage d'axe tactile + molette Shift.
- * Le défilement natif (inertie) est conservé — pas de détournement du scroll vertical.
+ * Ref pour carrousels horizontaux : verrouillage d'axe tactile + molette.
+ * `wheelToHorizontal` convertit la molette verticale en défilement horizontal.
  */
-export function useHorizontalScroll() {
+export function useHorizontalScroll({ wheelToHorizontal = false } = {}) {
   const ref = useRef(null)
 
   useEffect(() => {
@@ -57,16 +57,22 @@ export function useHorizontalScroll() {
     }
 
     function onWheel(event) {
-      if (!event.shiftKey || !canScrollX()) return
+      if (!canScrollX()) return
 
       const maxScroll = el.scrollWidth - el.clientWidth
       const atStart = el.scrollLeft <= 0
       const atEnd = el.scrollLeft >= maxScroll - 1
-      if (event.deltaY < 0 && atStart) return
-      if (event.deltaY > 0 && atEnd) return
+      const horizontalDelta =
+        Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : null
+      const verticalDelta = event.shiftKey || wheelToHorizontal ? event.deltaY : 0
+      const delta = horizontalDelta ?? verticalDelta
+
+      if (!delta) return
+      if (delta < 0 && atStart) return
+      if (delta > 0 && atEnd) return
 
       event.preventDefault()
-      el.scrollLeft += event.deltaY
+      el.scrollLeft += delta
     }
 
     el.addEventListener('touchstart', onTouchStart, { passive: true })
@@ -82,7 +88,7 @@ export function useHorizontalScroll() {
       el.removeEventListener('touchcancel', resetGesture)
       el.removeEventListener('wheel', onWheel)
     }
-  }, [])
+  }, [wheelToHorizontal])
 
   return ref
 }

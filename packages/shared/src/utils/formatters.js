@@ -29,6 +29,12 @@ export function formatShortDate(value, locale = DEFAULT_LOCALE) {
   return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(date)
 }
 
+export function formatTime(value, locale = DEFAULT_LOCALE) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return new Intl.DateTimeFormat(locale, { timeStyle: 'short' }).format(date)
+}
+
 export function formatFileSize(bytes, locale = DEFAULT_LOCALE) {
   const size = Number(bytes)
   if (!Number.isFinite(size) || size <= 0) return '0 o'

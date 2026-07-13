@@ -7,6 +7,8 @@ describe('navigation desktop labels', () => {
     const labels = account.children.map((item) => item.label)
 
     expect(labels).toContain('QR & invitation')
+    expect(labels).toContain('Profil')
+    expect(labels).toContain('Abonnements')
     expect(labels).not.toContain('Inviter un ami')
   })
 })

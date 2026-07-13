@@ -102,7 +102,32 @@ export function exchangerSupportsDirection(business, direction, originCountry = 
   })
 }
 
-export function businessToExchangerOption(business, userCountry, fallbackOriginCountry = 'BJ') {
+/**
+ * Drapeau affiché sur les cartes partenaire : pays d'origine prioritaire
+ * (Bénin, Togo, Ghana…) plutôt que la Russie quand les deux comptes existent.
+ */
+export function resolveExchangerDisplayCountry(business, fallbackOriginCountry = 'BJ') {
+  const accounts = activeTransferAccounts(business)
+  if (!accounts.length) {
+    return business.ownerOriginCountry || business.originCountry || fallbackOriginCountry
+  }
+
+  const slots = accounts.map(
+    (account) => account.slot || inferTransferAccountSlot(account.country, fallbackOriginCountry),
+  )
+
+  if (slots.includes('origin')) {
+    return resolveExchangerOriginCountry(business, fallbackOriginCountry)
+  }
+
+  if (slots.includes('ru')) {
+    return 'RU'
+  }
+
+  return resolveExchangerOriginCountry(business, fallbackOriginCountry)
+}
+
+export function businessToExchangerOption(business, partnerCountry, fallbackOriginCountry = 'BJ') {
   return {
     id: business.id,
     ownerId: business.ownerId,
@@ -113,7 +138,8 @@ export function businessToExchangerOption(business, userCountry, fallbackOriginC
     methods: business.exchangeMethods || business.paymentMethods || [],
     logoUrl: business.logoUrl || '',
     city: business.city || '',
-    country: resolveExchangerCountry(business, userCountry, fallbackOriginCountry),
+    country: resolveExchangerDisplayCountry(business, fallbackOriginCountry),
+    partnerCountry,
     status: business.status,
   }
 }
@@ -124,19 +150,21 @@ export function listExchangersForTransfer({
   originCountry = 'BJ',
   direction,
   excludeOwnerId,
+  includeAllCountries = false,
 }) {
-  const userCountry = resolveUserTransferCountry(user, originCountry)
   const partnerCountry = resolveUserPartnerCountry(user, originCountry)
 
   return businesses
     .filter(isApprovedTransferBusiness)
     .filter((business) => !excludeOwnerId || String(business.ownerId) !== String(excludeOwnerId))
-    .filter((business) =>
-      direction
-        ? exchangerSupportsDirection(business, direction, originCountry)
-        : exchangerMatchesUserCountry(business, partnerCountry, originCountry),
-    )
-    .map((business) => businessToExchangerOption(business, userCountry, originCountry))
+    .filter((business) => {
+      if (direction) {
+        return exchangerSupportsDirection(business, direction, originCountry)
+      }
+      if (includeAllCountries) return true
+      return exchangerMatchesUserCountry(business, partnerCountry, originCountry)
+    })
+    .map((business) => businessToExchangerOption(business, partnerCountry, originCountry))
     .sort((left, right) => {
       if (right.rating !== left.rating) return right.rating - left.rating
       return left.name.localeCompare(right.name, 'fr')

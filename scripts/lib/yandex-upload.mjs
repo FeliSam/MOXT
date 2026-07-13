@@ -11,16 +11,7 @@ import {
   runUploadBatchS3,
 } from './yandex-s3.mjs'
 import { ycRun } from './yandex.mjs'
-
-const SHELL_KEYS = new Set([
-  'index.html',
-  'sw.js',
-  'offline.html',
-  'version.json',
-  'deploy-manifest.json',
-  'theme-init.js',
-  'manifest.webmanifest',
-])
+import { isShellKey } from './deploy-shell-keys.mjs'
 
 export function walkFiles(dir) {
   const files = []
@@ -39,8 +30,9 @@ export function toObjectKey(sourceDir, file) {
   return path.relative(sourceDir, file).split(path.sep).join('/')
 }
 
+
 export function uploadCacheControl(key) {
-  if (SHELL_KEYS.has(key)) {
+  if (isShellKey(key)) {
     return 'no-cache, must-revalidate'
   }
   if (/^assets\/[^/]+-[A-Za-z0-9_-]+\.(js|css)$/.test(key)) {
@@ -158,7 +150,7 @@ export async function runUploadBatch(
   items,
   { concurrency = 12, onProgress, transport = 'auto', s3Client } = {},
 ) {
-  if (!items.length) return { uploaded: 0, failed: 0 }
+  if (!items.length) return { uploaded: 0, failed: 0, failedKeys: [] }
 
   const useS3 = transport === 's3' || (transport === 'auto' && s3Client)
 
@@ -175,6 +167,7 @@ export async function runUploadBatch(
 
   let uploaded = 0
   let failed = 0
+  const failedKeys = []
   let index = 0
 
   async function worker() {
@@ -184,14 +177,17 @@ export async function runUploadBatch(
       const item = items[current]
       const ok = uploadObjectYc(bin, bucketName, item, { quiet: true })
       if (ok) uploaded += 1
-      else failed += 1
+      else {
+        failed += 1
+        failedKeys.push(item.key)
+      }
       onProgress?.({ uploaded, failed, total: items.length, key: item.key })
     }
   }
 
   const workers = Array.from({ length: Math.min(concurrency, items.length) }, () => worker())
   await Promise.all(workers)
-  return { uploaded, failed }
+  return { uploaded, failed, failedKeys }
 }
 
 export function uploadObjectYc(bin, bucketName, { file, key }, { quiet = false } = {}) {

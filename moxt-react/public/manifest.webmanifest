@@ -39,7 +39,13 @@
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ],
-  "icons": [
+    "icons": [
+    {
+      "src": "/assets/logos/X.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
     {
       "src": "/favicon.svg",
       "sizes": "any",

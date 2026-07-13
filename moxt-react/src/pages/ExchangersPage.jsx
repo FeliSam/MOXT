@@ -12,15 +12,20 @@ import { Input } from '../components/ui/Input'
 import { PageHeader } from '../components/ui/PageHeader'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
+import { Select } from '../components/ui/Select'
 import { flagEmoji } from '../config/flags'
 import { ExchangerPickerAvatar } from '../features/transfers/ExchangerPickerAvatar'
 import { listExchangersForTransfer, resolveUserPartnerCountry } from '../features/transfers/exchangerListUtils'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 
+const COUNTRY_SCOPE_ALL = 'all'
+const COUNTRY_SCOPE_MINE = 'mine'
+
 export function ExchangersPage() {
   useScrollToSecondSection()
   const [query, setQuery] = useState('')
   const [city, setCity] = useState('')
+  const [countryScope, setCountryScope] = useState(COUNTRY_SCOPE_MINE)
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const user = useSelector((state) => state.auth.user)
   const businesses = useSelector((state) => state.businesses.items)
@@ -33,8 +38,9 @@ export function ExchangersPage() {
         businesses,
         user,
         originCountry,
+        includeAllCountries: countryScope === COUNTRY_SCOPE_ALL,
       }),
-    [businesses, originCountry, user],
+    [businesses, countryScope, originCountry, user],
   )
 
   const visibleExchangers = useMemo(
@@ -50,12 +56,18 @@ export function ExchangersPage() {
     [city, exchangers, query],
   )
 
+  const activeFilterCount = Number(countryScope === COUNTRY_SCOPE_ALL) + Number(Boolean(city))
+
   return (
     <div className="grid gap-7">
       <PageHeader
         eyebrow="Finances"
         title="Échangeurs"
-        description="Partenaires de votre pays d'origine uniquement — comparez avant de créer une opération."
+        description={
+          countryScope === COUNTRY_SCOPE_ALL
+            ? 'Tous les partenaires de transfert MOXT — comparez avant de créer une opération.'
+            : "Partenaires de votre pays d'origine uniquement — comparez avant de créer une opération."
+        }
         stats={[{ label: 'Partenaires', value: visibleExchangers.length }]}
         actions={
           <Link to="/transfers">
@@ -66,6 +78,7 @@ export function ExchangersPage() {
       <ScrollSectionAnchor className="scroll-mt-24 grid gap-5 lg:scroll-mt-28">
         <CatalogSearch
           advancedOpen={advancedOpen}
+          activeFilterCount={activeFilterCount}
           count={visibleExchangers.length}
           query={query}
           onQueryChange={setQuery}
@@ -73,10 +86,22 @@ export function ExchangersPage() {
           onClear={() => {
             setQuery('')
             setCity('')
+            setCountryScope(COUNTRY_SCOPE_MINE)
           }}
           placeholder="Échangeur, ville ou délai..."
         >
-          <div className="max-w-sm">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Select
+              id="exchanger-filter-scope"
+              label="Pays"
+              value={countryScope}
+              onChange={(event) => setCountryScope(event.target.value)}
+            >
+              <option value={COUNTRY_SCOPE_MINE}>
+                Mon pays ({flagEmoji(userCountry)} {userCountry})
+              </option>
+              <option value={COUNTRY_SCOPE_ALL}>Tous les échangeurs</option>
+            </Select>
             <Input
               id="exchanger-filter-city"
               label="Ville"
@@ -141,8 +166,16 @@ export function ExchangersPage() {
         </CatalogGrid>
         ) : (
           <EmptyState
-            title="Aucun échangeur dans votre pays"
-            description={`Seuls les partenaires ${flagEmoji(userCountry)} de votre pays d'origine sont listés ici.`}
+            title={
+              countryScope === COUNTRY_SCOPE_ALL
+                ? 'Aucun échangeur trouvé'
+                : 'Aucun échangeur dans votre pays'
+            }
+            description={
+              countryScope === COUNTRY_SCOPE_ALL
+                ? 'Aucun partenaire ne correspond à votre recherche.'
+                : `Seuls les partenaires ${flagEmoji(userCountry)} de votre pays d'origine sont listés ici. Essayez « Tous les échangeurs ».`
+            }
           />
         )}
       </ScrollSectionAnchor>

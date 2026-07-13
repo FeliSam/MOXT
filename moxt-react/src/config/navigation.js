@@ -133,6 +133,8 @@ export const navigationGroups = [
     icon: FiUser,
     color: 'from-slate-500 to-slate-700',
     children: [
+      { id: 'profile', label: 'Profil', path: '/profile', icon: FiUser },
+      { id: 'subscriptions', label: 'Abonnements', path: '/subscriptions', icon: FiBell },
       { id: 'favorites', label: 'Mes favoris', path: '/favorites', icon: FiHeart },
       { id: 'referral', label: 'QR & invitation', path: '/referral', icon: FiGift },
       { id: 'my-publications', label: 'Mes publications', path: '/publications/mine', icon: FiList },

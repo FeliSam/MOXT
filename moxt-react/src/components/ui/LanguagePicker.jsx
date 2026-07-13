@@ -1,10 +1,34 @@
 import { useEffect, useRef, useState } from 'react'
+import { FiChevronDown } from 'react-icons/fi'
+import { useDispatch, useSelector } from 'react-redux'
 import { LANGUAGE_LABELS, SUPPORTED_LANGUAGES } from '../../config/uiTranslations'
+import { useLanguage } from '../../contexts/useLanguage'
+import { updateAccountPreferences } from '../../features/account/accountSlice'
 
-export function LanguagePicker({ language, setLanguage, className = '' }) {
+export function LanguagePicker({ className = '' }) {
+  const dispatch = useDispatch()
+  const user = useSelector((state) => state.auth.user)
+  const { language, setLanguage } = useLanguage()
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
   const current = LANGUAGE_LABELS[language] || LANGUAGE_LABELS.fr
+
+  function selectLanguage(code) {
+    if (code === language) {
+      setOpen(false)
+      return
+    }
+    setLanguage(code)
+    if (user?.id) {
+      dispatch(
+        updateAccountPreferences({
+          userId: user.id,
+          preferences: { language: code },
+        }),
+      )
+    }
+    setOpen(false)
+  }
 
   useEffect(() => {
     if (!open) return undefined
@@ -23,48 +47,48 @@ export function LanguagePicker({ language, setLanguage, className = '' }) {
   }, [open])
 
   return (
-    <div className={`relative ${className}`} ref={ref}>
+    <div className={`relative shrink-0 ${className}`} ref={ref}>
       <button
         type="button"
-        className="flex min-h-10 items-center gap-1.5 rounded-2xl px-2.5 text-xs font-black text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)]"
-        onClick={() => setOpen((v) => !v)}
-        aria-label="Changer la langue"
+        className="flex h-10 min-w-10 items-center justify-center gap-1 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-2.5 text-base leading-none transition hover:bg-[var(--app-surface-muted)] focus:border-[var(--app-teal)] focus:shadow-[0_0_0_3px_rgba(18,191,163,0.14)]"
+        onClick={() => setOpen((value) => !value)}
+        aria-label={`Langue : ${current.label}`}
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        <span className="text-base leading-none">{current.flag}</span>
-        <span className="hidden sm:inline">{language.toUpperCase()}</span>
+        <span aria-hidden="true">{current.flag}</span>
+        <FiChevronDown className="text-sm text-[var(--app-text-muted)]" aria-hidden="true" />
       </button>
 
       {open ? (
         <div
           role="menu"
-          className="panel-pop absolute right-0 top-[calc(100%+0.4rem)] z-50 w-40 overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-1.5 shadow-[var(--shadow-card-lg)]"
+          className="panel-pop absolute right-0 top-[calc(100%+0.4rem)] z-50 w-[min(18rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-2 shadow-[var(--shadow-card-lg)]"
         >
-          {SUPPORTED_LANGUAGES.map((code) => {
-            const meta = LANGUAGE_LABELS[code] || { flag: '🏳️', label: code.toUpperCase() }
-            const active = code === language
-            return (
-              <button
-                key={code}
-                type="button"
-                role="menuitemradio"
-                aria-checked={active}
-                onClick={() => {
-                  setLanguage(code)
-                  setOpen(false)
-                }}
-                className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm font-bold transition ${
-                  active
-                    ? 'bg-[var(--app-accent-soft)] text-brand-800 dark:text-brand-200'
-                    : 'text-[var(--app-text-2)] hover:bg-[var(--app-surface-muted)]'
-                }`}
-              >
-                <span className="text-base leading-none">{meta.flag}</span>
-                {meta.label}
-              </button>
-            )
-          })}
+          <div className="horizontal-track flex max-w-full gap-1.5 overflow-x-auto overscroll-x-contain pb-0.5">
+            {SUPPORTED_LANGUAGES.map((code) => {
+              const meta = LANGUAGE_LABELS[code] || { flag: '🏳️', label: code.toUpperCase() }
+              const active = code === language
+              return (
+                <button
+                  key={code}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={active}
+                  aria-label={meta.label}
+                  title={meta.label}
+                  onClick={() => selectLanguage(code)}
+                  className={`grid size-10 shrink-0 place-items-center rounded-xl text-lg leading-none transition ${
+                    active
+                      ? 'bg-[var(--app-accent-soft)] ring-2 ring-[var(--app-teal)] ring-offset-1 ring-offset-[var(--app-surface)]'
+                      : 'hover:bg-[var(--app-surface-muted)]'
+                  }`}
+                >
+                  {meta.flag}
+                </button>
+              )
+            })}
+          </div>
         </div>
       ) : null}
     </div>
