@@ -538,6 +538,25 @@ const handlers = {
         last_message_at: msg.createdAt,
       })
       .eq('id', canonicalId)
+
+    // Le trigger DB crée les lignes notifications ; on pousse ensuite vers les appareils.
+    const senderId = String(msg.senderId || '')
+    const muted = new Set((conversation.mutedBy || []).map(String))
+    const blocked = new Set((conversation.blockedBy || []).map(String))
+    const recipients = (conversation.participantIds || [])
+      .map(String)
+      .filter((id) => id && id !== senderId && !muted.has(id) && !blocked.has(id))
+    if (recipients.length && msg.id) {
+      const { dispatchPushNotification } = await import('../services/pushDispatch')
+      for (const recipientId of recipients) {
+        const notificationId = `msg_${msg.id}_${recipientId}`
+        for (let attempt = 0; attempt < 4; attempt += 1) {
+          const result = await dispatchPushNotification(notificationId)
+          if (result.ok) break
+          await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)))
+        }
+      }
+    }
   },
   'communications/markConversationRead': async (payload, state, dispatch) => {
     const conversation = state.communications.conversations.find(
