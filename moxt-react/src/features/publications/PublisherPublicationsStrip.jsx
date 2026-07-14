@@ -15,6 +15,15 @@ const TYPE_META = {
   parcel: { icon: FiPackage, label: 'Colis', path: (id) => `/parcels/${id}` },
 }
 
+function publicationImage(item) {
+  const first = item.images?.[0]
+  if (typeof first === 'string' && first) return first
+  if (first?.url) return first.url
+  if (typeof item.image === 'string' && item.image) return item.image
+  if (typeof item.coverImage === 'string' && item.coverImage) return item.coverImage
+  return null
+}
+
 /**
  * Bandeau des autres publications actives du même auteur (événements, jobs, colis, annonces).
  */
@@ -23,7 +32,7 @@ export function PublisherPublicationsStrip({
   ownerId,
   publications,
   allPath,
-  limit = 6,
+  limit = 5,
 }) {
   if (!ownerId || !publications) return null
 
@@ -35,6 +44,7 @@ export function PublisherPublicationsStrip({
         kind: 'listing',
         title: item.title,
         meta: item.city || item.category || '',
+        image: publicationImage(item),
       })),
     ...(publications.jobs || [])
       .filter((item) => isActiveJob(item) && item.id !== currentId)
@@ -43,6 +53,7 @@ export function PublisherPublicationsStrip({
         kind: 'job',
         title: item.title,
         meta: item.location || item.sector || '',
+        image: publicationImage(item),
       })),
     ...(publications.events || [])
       .filter((item) => isActiveEvent(item) && item.id !== currentId)
@@ -51,6 +62,7 @@ export function PublisherPublicationsStrip({
         kind: 'event',
         title: item.title,
         meta: item.city || '',
+        image: publicationImage(item),
       })),
     ...(publications.parcels || [])
       .filter((item) => isActiveParcel(item) && item.id !== currentId)
@@ -59,6 +71,7 @@ export function PublisherPublicationsStrip({
         kind: 'parcel',
         title: `${item.origin} → ${item.destination}`,
         meta: item.departureDate || '',
+        image: publicationImage(item),
       })),
   ].slice(0, limit)
 
@@ -87,9 +100,20 @@ export function PublisherPublicationsStrip({
               to={meta.path(item.id)}
               className="flex min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 transition hover:border-brand-300 hover:bg-[var(--app-surface)]"
             >
-              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
-                <Icon />
-              </span>
+              {item.image ? (
+                <span className="size-10 shrink-0 overflow-hidden rounded-xl bg-[var(--app-surface)]">
+                  <img
+                    src={item.image}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                </span>
+              ) : (
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
+                  <Icon />
+                </span>
+              )}
               <span className="min-w-0">
                 <span className="block text-[10px] font-black uppercase tracking-wide text-[var(--app-text-faint)]">
                   {meta.label}

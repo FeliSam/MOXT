@@ -479,56 +479,6 @@ export function MessagesPage() {
 
   return (
     <div className="relative h-full min-h-0 overflow-hidden bg-transparent" data-testid="messages-viewport">
-      {searchOpen ? (
-        <div
-          className="absolute inset-0 z-50 flex flex-col bg-[var(--app-surface)]"
-          data-testid="messages-search-layer"
-        >
-          <div className="shrink-0 border-b border-[var(--app-border)]/60 bg-[var(--app-surface)] p-4 shadow-[0_10px_30px_rgb(15_23_42/0.06)] sm:p-5">
-            <div className="flex min-h-12 items-center gap-2 rounded-2xl bg-[var(--app-surface-muted)] px-3">
-              <FiSearch className="shrink-0 text-[var(--app-text-muted)]" />
-              <input
-                autoFocus
-                className="min-w-0 flex-1 bg-transparent text-sm outline-none"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Rechercher une conversation"
-                aria-label="Rechercher une conversation"
-              />
-              <button
-                type="button"
-                className="grid size-9 place-items-center rounded-xl bg-[var(--app-surface)]"
-                onClick={closeSearch}
-                aria-label="Fermer la recherche"
-              >
-                <FiX />
-              </button>
-            </div>
-          </div>
-          <div
-            ref={listRef}
-            className="scrollbar-hidden min-h-0 flex-1 overscroll-contain overflow-y-auto bg-[var(--app-surface-muted)]/45 p-2 sm:p-3"
-          >
-            <p className="px-2 pb-1 pt-1 text-[10px] font-bold uppercase tracking-wide text-[var(--app-text-faint)]">
-              {isFiltering ? `Résultats (${visible.length})` : 'Conversations'}
-            </p>
-            {visible.map((conversation) => (
-              <ConversationRow
-                key={conversation.id}
-                active={active?.id === conversation.id}
-                conversation={conversation}
-                userId={user.id}
-                onClick={() => selectConversation(conversation.id)}
-              />
-            ))}
-            {isFiltering && !visible.length ? (
-              <p className="p-6 text-center text-sm text-[var(--app-text-faint)]">
-                Aucune conversation trouvée.
-              </p>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
       <div
         className={
           integratedAssistant
@@ -546,6 +496,68 @@ export function MessagesPage() {
           }`}
           data-testid="messages-list"
         >
+          {searchOpen ? (
+            <div
+              className="absolute inset-0 z-50"
+              data-testid="messages-search-layer"
+            >
+              <button
+                type="button"
+                className="absolute inset-0 bg-slate-950/20 backdrop-blur-[1px]"
+                aria-label="Fermer la recherche"
+                onClick={closeSearch}
+              />
+              <div
+                className="panel-pop absolute inset-x-3 top-[max(0.75rem,calc(env(safe-area-inset-top)+0.75rem))] flex max-h-[min(72dvh,calc(100%-env(safe-area-inset-bottom)-1.5rem))] flex-col overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--shadow-float)] backdrop-blur-xl sm:inset-x-4 lg:top-3"
+                role="search"
+              >
+                <div className="shrink-0 border-b border-[var(--app-border)]/60 p-3 sm:p-3.5">
+                  <div className="flex min-h-12 items-center gap-2 rounded-2xl bg-[var(--app-surface-muted)] px-3">
+                    <FiSearch className="shrink-0 text-[var(--app-text-muted)]" />
+                    <input
+                      autoFocus
+                      className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                      placeholder="Rechercher une conversation"
+                      aria-label="Rechercher une conversation"
+                    />
+                    <button
+                      type="button"
+                      className="grid size-9 place-items-center rounded-xl bg-[var(--app-surface)] shadow-sm"
+                      onClick={closeSearch}
+                      aria-label="Fermer la recherche"
+                    >
+                      <FiX />
+                    </button>
+                  </div>
+                </div>
+                <div
+                  ref={listRef}
+                  className="scrollbar-hidden min-h-0 flex-1 overscroll-contain overflow-y-auto bg-[var(--app-surface-muted)]/45 p-2 sm:p-3"
+                  style={{ maxHeight: 'min(56dvh, 28rem)' }}
+                >
+                  <p className="px-2 pb-1 pt-1 text-[10px] font-bold uppercase tracking-wide text-[var(--app-text-faint)]">
+                    {isFiltering ? `Résultats (${visible.length})` : 'Conversations'}
+                  </p>
+                  {visible.map((conversation) => (
+                    <ConversationRow
+                      key={conversation.id}
+                      active={active?.id === conversation.id}
+                      conversation={conversation}
+                      userId={user.id}
+                      onClick={() => selectConversation(conversation.id)}
+                    />
+                  ))}
+                  {isFiltering && !visible.length ? (
+                    <p className="p-6 text-center text-sm text-[var(--app-text-faint)]">
+                      Aucune conversation trouvée.
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          ) : null}
           <div className="relative z-10 shrink-0 bg-[var(--app-surface)] p-4 pt-[max(1rem,env(safe-area-inset-top))] shadow-[0_10px_30px_rgb(15_23_42/0.06)] sm:p-5 sm:pt-[max(1.25rem,env(safe-area-inset-top))] lg:p-6 lg:pt-6">
             <div className="flex items-center gap-3">
               <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--app-accent-soft)] text-xl text-[var(--app-accent)]">
@@ -579,6 +591,7 @@ export function MessagesPage() {
                   onClick={() => setSearchOpen(true)}
                   className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--app-surface-muted)] text-[var(--app-accent)] shadow-sm"
                   aria-label="Rechercher une conversation"
+                  aria-expanded={searchOpen}
                 >
                   <FiSearch />
                 </button>

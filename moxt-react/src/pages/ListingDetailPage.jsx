@@ -120,6 +120,22 @@ export function ListingDetailPage() {
     listing.category
   const stock = rules.showStock ? Number(listing.stock ?? 1) : null
   const specificDetails = listingSpecificDetails(listing)
+  const characteristicItems = [
+    { label: 'Catégorie', value: listing.category },
+    { label: 'Type', value: listingTypeLabel },
+    { label: 'Marque', value: listing.brand },
+    { label: 'Modèle', value: listing.model },
+    { label: 'Couleur', value: listing.color },
+    rules.showCondition
+      ? {
+          label: 'État',
+          value: optionLabel(LISTING_CONDITIONS, listing.condition),
+        }
+      : null,
+    rules.showStock ? { label: 'Stock disponible', value: `${stock}` } : null,
+    { label: 'Quartier', value: listing.district },
+    ...specificDetails,
+  ].filter(Boolean)
   const activeImage = selectedImage || images[0]
   const activeImageIndex = Math.max(
     0,
@@ -227,6 +243,13 @@ export function ListingDetailPage() {
             />
           </Card>
 
+          <Card className="min-w-0 overflow-hidden p-4 sm:p-6 xl:hidden">
+            <h2 className="font-black">Caractéristiques</h2>
+            <div className="mt-4">
+              <DetailFacts items={characteristicItems} />
+            </div>
+          </Card>
+
           {publisherProfile ? (
             <div className="grid gap-5 xl:hidden">
               <PublisherDetailCard {...publisherProfile} />
@@ -235,6 +258,7 @@ export function ListingDetailPage() {
                 ownerId={publisherProfile.ownerId}
                 publications={publisherProfile.publications}
                 allPath={publisherProfile.publicationsPath}
+                limit={5}
               />
             </div>
           ) : null}
@@ -250,26 +274,7 @@ export function ListingDetailPage() {
                   </p>
                 </div>
               ) : null}
-              {activeTab === 'details' ? (
-                <DetailFacts
-                  items={[
-                    { label: 'Catégorie', value: listing.category },
-                    { label: 'Type', value: listingTypeLabel },
-                    { label: 'Marque', value: listing.brand },
-                    { label: 'Modèle', value: listing.model },
-                    { label: 'Couleur', value: listing.color },
-                    rules.showCondition
-                      ? {
-                          label: 'État',
-                          value: optionLabel(LISTING_CONDITIONS, listing.condition),
-                        }
-                      : null,
-                    rules.showStock ? { label: 'Stock disponible', value: `${stock}` } : null,
-                    { label: 'Quartier', value: listing.district },
-                    ...specificDetails,
-                  ].filter(Boolean)}
-                />
-              ) : null}
+              {activeTab === 'details' ? <DetailFacts items={characteristicItems} /> : null}
               {activeTab === 'delivery' ? (
                 <DetailFacts
                   items={[
@@ -387,6 +392,7 @@ export function ListingDetailPage() {
                   ownerId={publisherProfile.ownerId}
                   publications={publisherProfile.publications}
                   allPath={publisherProfile.publicationsPath}
+                  limit={5}
                 />
               </div>
             </>
@@ -748,7 +754,7 @@ function ListingActionButtons({
   }
 
   return (
-    <div className="grid min-w-0 gap-3">
+    <div className="grid min-w-0 gap-1">
       <ContactButton className="w-full" {...contactProps} />
       <FavoriteButton
         active={favorite}
@@ -781,9 +787,9 @@ function ListingFloatingActions({
   }
 
   return (
-    <div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-[var(--z-page-float)] hidden flex-col items-end gap-2 md:flex xl:hidden">
+    <div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-[var(--z-page-float)] hidden flex-col items-end gap-1 md:flex xl:hidden">
       {open ? (
-        <div className="flex flex-col items-end gap-2">
+        <div className="flex flex-col items-end gap-1">
           <ContactButton
             className="shadow-[var(--shadow-float)]"
             variant="secondary"
@@ -833,7 +839,7 @@ function ListingActionPanel({
         stock={stock}
         total={total}
       />
-      <div className="mt-3">
+      <div className="mt-2">
         <ListingActionButtons
           dispatch={dispatch}
           favorite={favorite}
