@@ -84,10 +84,12 @@ export function MessageBubble({
   const showActions = openActions
   const hasReactions =
     message.reactions && Object.entries(message.reactions).some(([, u]) => u?.length)
-  const hasImageAttachment =
-    Boolean(message.attachment) &&
-    isImageAttachment(message.attachment) &&
-    attachmentImageSrcs(message.attachment).length > 0
+  const imageSrcs =
+    message.attachment && isImageAttachment(message.attachment)
+      ? attachmentImageSrcs(message.attachment)
+      : []
+  const hasImageAttachment = imageSrcs.length > 0
+  const hasMultiImageAttachment = imageSrcs.length > 1
   const hasCaption = Boolean(message.text?.trim())
 
   // Bascule le menu au-dessus de la bulle s'il n'y a pas assez de place en bas
@@ -173,11 +175,15 @@ export function MessageBubble({
       ref={stackRef}
       className={`message-stack message-stack--enter message-stack--interactive ${
         mine ? 'message-stack--sent' : ''
-      } ${hasImageAttachment ? 'message-stack--media' : ''} ${
-        highlight ? 'message-stack--highlight' : ''
-      } ${showActions ? 'message-stack--actions' : ''} ${
-        hasReactions ? 'message-stack--reacted' : ''
-      }`}
+      } ${
+        hasMultiImageAttachment
+          ? 'message-stack--media-multi'
+          : hasImageAttachment
+            ? 'message-stack--media'
+            : ''
+      } ${highlight ? 'message-stack--highlight' : ''} ${
+        showActions ? 'message-stack--actions' : ''
+      } ${hasReactions ? 'message-stack--reacted' : ''}`}
     >
       {showSenderName && !mine ? (
         <span className="message-sender-name">{message.senderName}</span>

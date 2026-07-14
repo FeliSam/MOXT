@@ -368,7 +368,8 @@ html.messages-route-lock #root {
   align-items: flex-end;
 }
 
-.message-row:has(.message-stack--media) {
+.message-row:has(.message-stack--media),
+.message-row:has(.message-stack--media-multi) {
   max-width: min(92%, 36rem);
 }
 
@@ -603,10 +604,20 @@ html.messages-route-lock #root {
   background: var(--app-surface-muted);
 }
 
+/* Unique image: limited media box */
 .message-stack--media {
   width: var(--message-media-width, min(40%, 18rem));
   max-width: 100%;
   min-width: 0;
+}
+
+/* Multi-image pile: larger natural bounds — do not reuse the unique-image clamp */
+.message-stack--media-multi {
+  width: min(72cqw, 24rem);
+  max-width: 100%;
+  min-width: 0;
+  container-type: inline-size;
+  container-name: msg-media-stack;
 }
 
 .message-bubble--has-image {
@@ -660,29 +671,33 @@ html.messages-route-lock #root {
 
 /*
  * Multi-image fan: shared transform-origin bottom-left, constant angular step.
- * Height/padding sized to contain max fan (3 × 12° = 36°) without widening the page.
+ * Cards keep near-full width inside the multi stack (no unique-image / cardPct shrink).
+ * Fan may clip at the stack/bubble edge — prefer breathing cards over a cramped box.
  */
 .message-attachment-stack {
-  --stack-pad: 0.45rem;
-  --stack-card-width: 72%;
+  --stack-pad: 0.5rem;
+  --stack-card-width: calc(100% - var(--stack-pad) * 2);
+  /* Height tracks the multi stack's real width (cqw of msg-media-stack), not unique-image clamp */
+  --stack-card-height: calc(100cqw * 1.05);
   --stack-rise: calc(
-    (min(var(--stack-count, 2), 4) - 1) * 0.18 * var(--message-media-height, 13.2rem)
+    (min(var(--stack-count, 2), 4) - 1) * 0.26 * var(--stack-card-height)
   );
   position: relative;
   display: block;
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  height: calc(var(--message-media-height, 13.2rem) + var(--stack-rise) + var(--stack-pad) * 2);
+  height: calc(var(--stack-card-height) + var(--stack-rise) + var(--stack-pad) * 2);
   margin-top: 0;
   overflow: hidden;
   isolation: isolate;
   box-sizing: border-box;
   touch-action: manipulation;
+  border-radius: inherit;
 }
 
 .message-bubble--has-image:not(.message-bubble--grouped-prev) .message-attachment-stack {
-  margin-top: var(--message-media-top, min(10%, 4.5rem));
+  margin-top: 0.35rem;
 }
 
 .message-bubble--has-image.message-bubble--grouped-prev .message-attachment-stack {
@@ -722,7 +737,7 @@ html.messages-route-lock #root {
 .message-attachment-stack-layer img {
   display: block;
   width: 100%;
-  height: var(--message-media-height, 13.2rem);
+  height: var(--stack-card-height);
   object-fit: cover;
   border-radius: 0.875rem;
   box-shadow:
