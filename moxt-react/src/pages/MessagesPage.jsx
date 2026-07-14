@@ -461,9 +461,9 @@ export function MessagesPage() {
       <div
         className={
           integratedAssistant
-            ? 'mx-auto grid h-full min-h-0 w-full min-w-0 overflow-hidden rounded-t-[2rem] bg-[var(--app-surface)] lg:grid-cols-[25rem_minmax(0,1fr)]'
+            ? 'mx-auto grid h-full min-h-0 w-full min-w-0 overflow-hidden rounded-t-[2rem] bg-[var(--app-surface)] max-lg:rounded-none lg:grid-cols-[25rem_minmax(0,1fr)]'
             : activeId
-              ? 'grid h-full min-h-0 w-full min-w-0 overflow-hidden rounded-t-[2rem] bg-[var(--app-surface)] lg:grid-cols-[25rem_minmax(0,1fr)]'
+              ? 'grid h-full min-h-0 w-full min-w-0 overflow-hidden rounded-t-[2rem] bg-[var(--app-surface)] max-lg:rounded-none lg:grid-cols-[25rem_minmax(0,1fr)]'
               : 'mx-auto h-full min-h-0 w-full min-w-0 max-w-5xl overflow-hidden rounded-t-[2rem] bg-[var(--app-surface)]'
         }
       >

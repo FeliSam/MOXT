@@ -1,9 +1,7 @@
-import { useFormik } from 'formik'
 import { FiAlertTriangle, FiArrowRight, FiPlus, FiShield, FiUsers } from 'react-icons/fi'
 import { useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
-import { Alert } from '../components/ui/Alert'
 import { Badge, VerifiedBadge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
@@ -11,15 +9,12 @@ import { CatalogArchiveTabs } from '../components/ui/CatalogArchiveTabs'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { CatalogSearch } from '../components/ui/CatalogSearch'
 import { EmptyState } from '../components/ui/EmptyState'
-import { Input } from '../components/ui/Input'
 import { PageHeader } from '../components/ui/PageHeader'
-import { PublicationModal } from '../components/ui/PublicationModal'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { Select } from '../components/ui/Select'
-import { p2pOfferSchema } from '../features/p2p/p2pSchemas'
-import { acceptOffer, createOffer } from '../features/p2p/p2pSlice'
-import { calculateP2PFee, p2pLimit } from '../features/p2p/p2pUtils'
+import { acceptOffer } from '../features/p2p/p2pSlice'
+import { calculateP2PFee } from '../features/p2p/p2pUtils'
 import { transferCurrenciesForCountry } from '../features/transfers/transferConfig'
 import { formatMoney } from '../features/transfers/transferUtils'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
@@ -27,7 +22,6 @@ import { useSecurityGate } from '../features/security/useSecurityGate'
 
 export function P2PPage() {
   useScrollToSecondSection()
-  const [publishOpen, setPublishOpen] = useState(false)
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [tab, setTab] = useState('active')
   const [filters, setFilters] = useState({
@@ -41,9 +35,6 @@ export function P2PPage() {
   const user = useSelector((state) => state.auth.user)
   const offers = useSelector((state) => state.p2p.offers)
   const orders = useSelector((state) => state.p2p.orders)
-  const business = useSelector((state) =>
-    state.businesses.items.find((item) => item.ownerId === user.id),
-  )
   const originCountry = user.originCountry || (user.country !== 'RU' ? user.country : 'BJ')
   const availableCurrencies = transferCurrenciesForCountry(originCountry)
   const filteredOffers = useMemo(
@@ -73,49 +64,19 @@ export function P2PPage() {
   )
 
   const displayedOffers = tab === 'active' ? activeOffers : archivedOffers
+
   function clearFilters() {
     setFilters({ query: '', fromCurrency: '', toCurrency: '' })
   }
-  const formik = useFormik({
-    initialValues: {
-      fromCurrency: availableCurrencies[0],
-      toCurrency: availableCurrencies[1] || availableCurrencies[0],
-      amount: '',
-      rate: '',
-      method: '',
-      comment: '',
-    },
-    validationSchema: p2pOfferSchema,
-    validate: (values) => {
-      const errors = {}
-      if (values.fromCurrency === values.toCurrency)
-        errors.toCurrency = 'Choisissez une autre devise.'
-      if (Number(values.amount) > p2pLimit(user, values.fromCurrency)) {
-        errors.amount = `Votre plafond est ${formatMoney(p2pLimit(user, values.fromCurrency), values.fromCurrency)}.`
-      }
-      return errors
-    },
-    onSubmit: (values, helpers) => {
-      if (!requireP2PPublish()) return
-      dispatch(
-        createOffer({
-          ...values,
-          ownerId: user.id,
-          ownerName: business?.name || `${user.firstName} ${user.lastName}`,
-          businessId: business?.id || null,
-        }),
-      )
-      helpers.resetForm()
-      setPublishOpen(false)
-    },
-  })
+
+  function openPublish() {
+    if (requireP2PPublish()) navigate('/p2p/publish')
+  }
 
   function handleAccept(offer) {
     const action = dispatch(acceptOffer({ buyer: user, offer }))
     if (action.payload?.id) navigate(`/p2p/orders/${action.payload.id}`)
   }
-
-  const errorFor = (field) => (formik.touched[field] ? formik.errors[field] : undefined)
 
   return (
     <div className="grid gap-7">
@@ -125,12 +86,7 @@ export function P2PPage() {
         description="Publiez une offre après vérification de votre compte, ou acceptez une offre existante."
         stats={[{ label: 'Offres actives', value: activeOffers.length }]}
         actions={
-          <Button
-            icon={FiPlus}
-            onClick={() => {
-              if (requireP2PPublish()) setPublishOpen(true)
-            }}
-          >
+          <Button icon={FiPlus} onClick={openPublish}>
             Proposer une offre
           </Button>
         }
@@ -237,7 +193,6 @@ export function P2PPage() {
                     {offer.ownerName}
                   </p>
 
-                  {/* Bandeau devises, sur le modèle de la carte Colis */}
                   <div className="mt-4 flex items-center gap-2 rounded-2xl bg-[var(--app-surface-muted)] p-3">
                     <div className="min-w-0 flex-1 text-center">
                       <p className="truncate text-xs font-black uppercase tracking-wide text-[var(--app-text)]">
@@ -310,7 +265,7 @@ export function P2PPage() {
               }
               action={
                 tab === 'active' ? (
-                  <Button icon={FiPlus} onClick={() => setPublishOpen(true)}>
+                  <Button icon={FiPlus} onClick={openPublish}>
                     Proposer une offre
                   </Button>
                 ) : undefined
@@ -340,85 +295,6 @@ export function P2PPage() {
             </div>
           ) : null}
         </CatalogGrid>
-        <PublicationModal
-          open={publishOpen}
-          onClose={() => setPublishOpen(false)}
-          title="Proposer une offre P2P"
-          description="Précisez les devises, le montant, le taux et les modalités de votre échange."
-          icon={FiUsers}
-        >
-          <p className="mt-2 text-sm text-slate-500">
-            Plafond actuel :{' '}
-            {formatMoney(p2pLimit(user, formik.values.fromCurrency), formik.values.fromCurrency)}
-          </p>
-          <p className="mt-1 text-xs text-[var(--app-text-muted)]">
-            Vos échanges P2P sont limités aux devises disponibles pour votre profil :{' '}
-            {availableCurrencies.join(', ')}.
-          </p>
-          <form className="mt-5 grid gap-4" onSubmit={formik.handleSubmit} noValidate>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Select id="p2p-from" label="Je propose" {...formik.getFieldProps('fromCurrency')}>
-                {availableCurrencies.map((currency) => (
-                  <option key={currency} value={currency}>
-                    {currency}
-                  </option>
-                ))}
-              </Select>
-              <Select
-                id="p2p-to"
-                label="Je recherche"
-                {...formik.getFieldProps('toCurrency')}
-                error={errorFor('toCurrency')}
-              >
-                {availableCurrencies.map((currency) => (
-                  <option key={currency} value={currency}>
-                    {currency}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <Input
-              id="p2p-amount"
-              label="Montant"
-              type="number"
-              {...formik.getFieldProps('amount')}
-              error={errorFor('amount')}
-            />
-            <Input
-              id="p2p-rate"
-              label="Taux proposé"
-              type="number"
-              step="0.0001"
-              {...formik.getFieldProps('rate')}
-              error={errorFor('rate')}
-            />
-            <Input
-              id="p2p-method"
-              label="Méthode"
-              placeholder="Mobile Money, banque..."
-              {...formik.getFieldProps('method')}
-              error={errorFor('method')}
-            />
-            <Input
-              id="p2p-comment"
-              label="Conditions"
-              {...formik.getFieldProps('comment')}
-              error={errorFor('comment')}
-            />
-            {Number(formik.values.amount) > 0 ? (
-              <Alert variant="info">
-                Frais estimés :{' '}
-                {formatMoney(
-                  calculateP2PFee(formik.values.amount, formik.values.fromCurrency),
-                  formik.values.fromCurrency,
-                )}
-              </Alert>
-            ) : null}
-            <Button type="submit" icon={FiPlus} loading={formik.isSubmitting}>
-              Publier
-            </Button>
-          </form>
-        </PublicationModal>
       </div>
     </div>
   )

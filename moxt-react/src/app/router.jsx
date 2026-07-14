@@ -106,6 +106,7 @@ const ParcelsPage = lazyPage(() => import('../pages/ParcelsPage'), 'ParcelsPage'
 const P2POrderPage = lazyPage(() => import('../pages/P2POrderPage'), 'P2POrderPage')
 const P2PDetailPage = lazyPage(() => import('../pages/P2PDetailPage'), 'P2PDetailPage')
 const P2PPage = lazyPage(() => import('../pages/P2PPage'), 'P2PPage')
+const PublishP2PPage = lazyPage(() => import('../pages/PublishP2PPage'), 'PublishP2PPage')
 const PaymentsPage = lazyPage(() => import('../pages/PaymentsPage'), 'PaymentsPage')
 const ProfilePage = lazyPage(() => import('../pages/ProfilePage'), 'ProfilePage')
 const PersonalInformationPage = lazyPage(
@@ -253,6 +254,7 @@ export function AppRouter() {
               element={<LegacyDetailRedirect fallback="/parcels" target="/parcels" />}
             />
             <Route path="/p2p" element={<P2PPage />} />
+            <Route path="/p2p/publish" element={<PublishP2PPage />} />
             <Route path="/p2p/orders/:orderId" element={<P2POrderPage />} />
             <Route path="/p2p/:offerId" element={<P2PDetailPage />} />
             <Route

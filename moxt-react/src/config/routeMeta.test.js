@@ -10,6 +10,13 @@ describe('route metadata', () => {
     })
   })
 
+  it('resolves the P2P publish route before offer detail', () => {
+    expect(getRouteMetadata('/p2p/publish')).toMatchObject({
+      title: 'Proposer une offre P2P',
+      back: '/p2p',
+    })
+  })
+
   it('provides a safe fallback for future routes', () => {
     expect(getRouteMetadata('/future-module')).toMatchObject({
       title: 'MOXT',

@@ -42,6 +42,7 @@ export const routePreloaders = {
   '/messages': () => import('../pages/MessagesPage'),
   '/notifications': () => import('../pages/NotificationsPage'),
   '/p2p': () => import('../pages/P2PPage'),
+  '/p2p/publish': () => import('../pages/PublishP2PPage'),
   '/payments': () => import('../pages/PaymentsPage'),
   '/parcels': () => import('../pages/ParcelsPage'),
   '/profile': () => import('../pages/ProfilePage'),

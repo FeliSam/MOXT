@@ -11,18 +11,22 @@ import { WelcomeGate } from '../onboarding/WelcomeGate'
 import { PwaInstallBanner } from '../pwa/PwaInstallBanner'
 import { PushPermissionBanner } from '../pwa/PushPermissionBanner'
 import { useAppBadgeSync } from '../../hooks/useAppBadgeSync'
+import { useMediaQuery } from '../../hooks/useMediaQuery'
 
 export function AppLayout({ children }) {
   const dispatch = useDispatch()
   const location = useLocation()
   const user = useSelector((state) => state.auth.user)
   const sidebarOpen = useSelector((state) => state.ui.sidebarOpen)
+  const desktop = useMediaQuery('(min-width: 1024px)')
   const messageParams = new URLSearchParams(location.search)
   const isMessagesRoute = location.pathname === '/messages'
   const isMessageThread =
     isMessagesRoute &&
     (messageParams.has('conversation') ||
       (messageParams.has('relatedType') && messageParams.has('relatedId')))
+  /** Mobile immersive chat: hide app chrome so the thread fills the viewport */
+  const immersiveMobileThread = isMessageThread && !desktop
   useContentLifecycle()
   useAppBadgeSync(user?.id)
 
@@ -42,7 +46,7 @@ export function AppLayout({ children }) {
     <div
       className={`text-[var(--app-text)] ${
         isMessagesRoute ? 'h-dvh overflow-hidden' : 'min-h-screen'
-      }`}
+      } ${immersiveMobileThread ? 'messages-thread-immersive' : ''}`}
     >
       <a
         href="#main-content"
@@ -64,7 +68,7 @@ export function AppLayout({ children }) {
           isMessagesRoute ? 'flex h-full min-h-0 flex-col overflow-hidden' : ''
         }`}
       >
-        <Header hideOnMobile={isMessageThread} />
+        {immersiveMobileThread ? null : <Header hideOnMobile={isMessageThread} />}
         <main
           id="main-content"
           tabIndex={-1}
@@ -89,8 +93,12 @@ export function AppLayout({ children }) {
         <BottomNavigation />
       </div>
       <WelcomeGate />
-      <PwaInstallBanner />
-      <PushPermissionBanner />
+      {immersiveMobileThread ? null : (
+        <>
+          <PwaInstallBanner />
+          <PushPermissionBanner />
+        </>
+      )}
     </div>
   )
 }

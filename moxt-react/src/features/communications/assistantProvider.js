@@ -196,6 +196,7 @@ const responses = {
   p2p: {
     actions: [
       { label: 'Échange P2P', path: '/p2p' },
+      { label: 'Proposer une offre', path: '/p2p/publish' },
     ],
     suggestions: [
       "Quelles devises sont disponibles ?",

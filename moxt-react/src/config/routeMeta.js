@@ -76,6 +76,12 @@ export const routeMetadata = [
     back: '/p2p',
   },
   {
+    pattern: /^\/p2p\/publish$/,
+    title: 'Proposer une offre P2P',
+    eyebrow: 'Finances',
+    back: '/p2p',
+  },
+  {
     pattern: /^\/p2p\/[^/]+$/,
     title: 'Détail de l’offre P2P',
     eyebrow: 'Finances',

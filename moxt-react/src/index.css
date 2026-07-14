@@ -259,6 +259,14 @@ html.capacitor-native .capacitor-safe-bottom {
     main {
       padding-bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px)) !important;
     }
+
+    /* Conversation ouverte : plein viewport sans réserve pour la bottom nav */
+    .messages-thread-immersive main {
+      padding-bottom: 0 !important;
+      padding-top: 0 !important;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+    }
   }
 }
 
@@ -295,6 +303,10 @@ html.capacitor-native .capacitor-safe-bottom {
   color: var(--app-text-muted);
   box-shadow: var(--shadow-card);
   backdrop-filter: blur(8px);
+}
+
+.messages-thread-immersive .message-thread-header {
+  padding-top: max(0.625rem, env(safe-area-inset-top, 0px));
 }
 
 .message-row {

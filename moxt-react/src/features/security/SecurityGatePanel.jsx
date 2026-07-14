@@ -3,6 +3,7 @@ import { FiArrowLeft } from 'react-icons/fi'
 import {
   canCreateBusiness,
   canPublishContent,
+  canPublishP2POffer,
   canUseTransferAccount,
   securityGateMessage,
 } from '@moxt/shared/auth/userSecurity.js'
@@ -17,6 +18,10 @@ const gateCopy = {
     title: 'Numéro russe requis pour publier',
     backLabel: 'Retour',
   },
+  p2p: {
+    title: 'Identité vérifiée requise pour le P2P',
+    backLabel: 'Retour au P2P',
+  },
   business: {
     title: 'Identité vérifiée requise',
     backLabel: 'Retour aux entreprises',
@@ -29,6 +34,7 @@ const gateCopy = {
 
 function canAccess(kind, user) {
   if (kind === 'publish') return canPublishContent(user)
+  if (kind === 'p2p') return canPublishP2POffer(user)
   if (kind === 'business') return canCreateBusiness(user)
   if (kind === 'transfer') return canUseTransferAccount(user)
   return true
@@ -62,8 +68,8 @@ export function SecurityGatePanel({
         </div>
       </Alert>
 
-      {kind === 'publish' ? <PhoneVerificationCard /> : null}
-      {kind === 'business' || kind === 'transfer' ? (
+      {kind === 'publish' || kind === 'p2p' ? <PhoneVerificationCard /> : null}
+      {kind === 'p2p' || kind === 'business' || kind === 'transfer' ? (
         <Alert variant="info" title="Centre de vérification MOXT">
           Complétez vos informations personnelles puis soumettez votre dossier d’identité.{' '}
           <Link className="font-bold text-brand-700 hover:underline" to="/verification">
