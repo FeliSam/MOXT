@@ -25,6 +25,8 @@ test('garde la messagerie integree sur un ecran mobile bas', async ({ page }) =>
 
   await expect(page.getByTestId('message-thread')).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Navigation mobile rapide' })).toHaveCount(0)
+  await expect(page.locator('header.app-top-header')).toHaveCount(0)
+  await expect(page.locator('.message-thread-header')).toBeVisible()
   expect(
     await page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight),
   ).toBe(true)

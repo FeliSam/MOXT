@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from 'react-router-dom'
+import { Outlet, useLocation, useSearchParams } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { useEffect, useLayoutEffect } from 'react'
 import { closeSidebar } from '../../features/ui/uiSlice'
@@ -11,22 +11,28 @@ import { WelcomeGate } from '../onboarding/WelcomeGate'
 import { PwaInstallBanner } from '../pwa/PwaInstallBanner'
 import { PushPermissionBanner } from '../pwa/PushPermissionBanner'
 import { useAppBadgeSync } from '../../hooks/useAppBadgeSync'
-import { useMediaQuery } from '../../hooks/useMediaQuery'
+
+function isMessagesPath(pathname) {
+  return pathname === '/messages' || pathname === '/messages/'
+}
+
+function hasOpenMessageThread(searchParams) {
+  if (searchParams.get('conversation')) return true
+  return Boolean(searchParams.get('relatedType') && searchParams.get('relatedId'))
+}
 
 export function AppLayout({ children }) {
   const dispatch = useDispatch()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
   const user = useSelector((state) => state.auth.user)
   const sidebarOpen = useSelector((state) => state.ui.sidebarOpen)
-  const desktop = useMediaQuery('(min-width: 1024px)')
-  const messageParams = new URLSearchParams(location.search)
-  const isMessagesRoute = location.pathname === '/messages'
-  const isMessageThread =
-    isMessagesRoute &&
-    (messageParams.has('conversation') ||
-      (messageParams.has('relatedType') && messageParams.has('relatedId')))
-  /** Mobile immersive chat: hide app chrome so the thread fills the viewport */
-  const immersiveMobileThread = isMessageThread && !desktop
+  /** Set by MessagesPage when a thread is open on a small viewport */
+  const messageThreadImmersive = useSelector((state) => state.ui.messageThreadImmersive)
+  const isMessagesRoute = isMessagesPath(location.pathname)
+  const isMessageThread = isMessagesRoute && hasOpenMessageThread(searchParams)
+  /** Hide app chrome: URL thread (immediate) OR page-confirmed mobile immersion */
+  const hideAppChrome = isMessageThread || messageThreadImmersive
   useContentLifecycle()
   useAppBadgeSync(user?.id)
 
@@ -46,7 +52,7 @@ export function AppLayout({ children }) {
     <div
       className={`text-[var(--app-text)] ${
         isMessagesRoute ? 'h-dvh overflow-hidden' : 'min-h-screen'
-      } ${immersiveMobileThread ? 'messages-thread-immersive' : ''}`}
+      } ${hideAppChrome ? 'messages-thread-immersive' : ''}`}
     >
       <a
         href="#main-content"
@@ -68,14 +74,21 @@ export function AppLayout({ children }) {
           isMessagesRoute ? 'flex h-full min-h-0 flex-col overflow-hidden' : ''
         }`}
       >
-        {immersiveMobileThread ? null : <Header hideOnMobile={isMessageThread} />}
+        {messageThreadImmersive ? null : isMessageThread ? (
+          /* Desktop thread: keep header. Mobile: wrapper is display:none until Redux flag unmounts. */
+          <div className="hidden lg:block">
+            <Header />
+          </div>
+        ) : (
+          <Header />
+        )}
         <main
           id="main-content"
           tabIndex={-1}
           className={`mx-auto w-full min-w-0 max-w-[96rem] overflow-x-clip ${
             isMessagesRoute
               ? `min-h-0 flex-1 overflow-hidden ${
-                  isMessageThread
+                  hideAppChrome
                     ? 'max-lg:p-0 lg:px-8 lg:py-8'
                     : 'p-3 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:p-5 sm:pb-[calc(6rem+env(safe-area-inset-bottom))] lg:px-8 lg:py-8'
                 }`
@@ -89,11 +102,10 @@ export function AppLayout({ children }) {
           </div>
         </main>
       </div>
-      <div className={isMessageThread ? 'hidden lg:block' : ''}>
-        <BottomNavigation />
-      </div>
+      {/* Bottom nav is mobile-only; never keep it mounted over an open thread */}
+      {hideAppChrome ? null : <BottomNavigation />}
       <WelcomeGate />
-      {immersiveMobileThread ? null : (
+      {messageThreadImmersive ? null : (
         <>
           <PwaInstallBanner />
           <PushPermissionBanner />

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import reducer, { addToast } from './uiSlice'
+import reducer, { addToast, setMessageThreadImmersive } from './uiSlice'
 
 describe('uiSlice toasts', () => {
   it('utilise un ton informatif par défaut', () => {
@@ -18,5 +18,14 @@ describe('uiSlice toasts', () => {
     const secondState = reducer(firstState, addToast(action.payload))
 
     expect(secondState.toasts).toHaveLength(1)
+  })
+})
+
+describe('uiSlice messageThreadImmersive', () => {
+  it('active et désactive le mode conversation mobile plein écran', () => {
+    const open = reducer(undefined, setMessageThreadImmersive(true))
+    expect(open.messageThreadImmersive).toBe(true)
+    const closed = reducer(open, setMessageThreadImmersive(false))
+    expect(closed.messageThreadImmersive).toBe(false)
   })
 })

@@ -5,6 +5,8 @@ const uiSlice = createSlice({
   initialState: {
     sidebarOpen: false,
     sidebarCollapsed: false,
+    /** Mobile conversation ouverte : masque header + bottom nav (posé par MessagesPage) */
+    messageThreadImmersive: false,
     navigationGroups: {},
     toasts: [],
   },
@@ -18,9 +20,13 @@ const uiSlice = createSlice({
     toggleSidebarCollapsed(state) {
       state.sidebarCollapsed = !state.sidebarCollapsed
     },
+    setMessageThreadImmersive(state, action) {
+      state.messageThreadImmersive = Boolean(action.payload)
+    },
     toggleNavigationGroup(state, action) {
       state.navigationGroups[action.payload] = !state.navigationGroups[action.payload]
     },
+
     addToast: {
       reducer(state, action) {
         const duplicate = state.toasts.some(
@@ -63,6 +69,7 @@ export const {
   addToast,
   closeSidebar,
   removeToast,
+  setMessageThreadImmersive,
   toggleNavigationGroup,
   toggleSidebar,
   toggleSidebarCollapsed,

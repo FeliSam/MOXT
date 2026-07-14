@@ -34,7 +34,7 @@ import {
 } from '../features/communications/communicationSlice'
 import { selectUnreadMessageCount, selectUserConversations } from '../features/selectors'
 import { selectAccountPreferences, updateAccountPreferences } from '../features/account/accountSlice'
-import { addToast } from '../features/ui/uiSlice'
+import { addToast, setMessageThreadImmersive } from '../features/ui/uiSlice'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useMessagesRealtimeSync } from '../hooks/useMessagesRealtimeSync'
 import { useConversationTyping } from '../hooks/useConversationTyping'
@@ -111,6 +111,14 @@ export function MessagesPage() {
   useMessagesRealtimeSync(
     activeId && activeId !== ASSISTANT_ID ? activeId : null,
   )
+
+  useLayoutEffect(() => {
+    const immersive = Boolean(activeId) && !desktop
+    dispatch(setMessageThreadImmersive(immersive))
+    return () => {
+      dispatch(setMessageThreadImmersive(false))
+    }
+  }, [activeId, desktop, dispatch])
 
   const { peerTyping, notifyTyping, stopTyping } = useConversationTyping(
     activeId && activeId !== ASSISTANT_ID ? activeId : null,

@@ -226,6 +226,7 @@ try {
   await page.getByRole('button', { name: /Assistant MOXT/ }).click()
   await page.getByRole('heading', { name: 'Assistant MOXT' }).waitFor()
   assert.equal(await page.getByRole('navigation', { name: 'Navigation mobile rapide' }).count(), 0)
+  assert.equal(await page.locator('header.app-top-header').count(), 0)
   await page.screenshot({ path: 'test-results/messages-mobile.png', fullPage: true })
 
   await page.goto(`${baseURL}/marketplace/ANN-DEMO-1`)
