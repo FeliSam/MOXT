@@ -43,6 +43,7 @@
     "firebase:login": "firebase login",
     "firebase:projects": "firebase projects:list",
     "setup:firebase": "node scripts/setup-firebase.mjs",
+    "firebase:connect": "node scripts/setup-firebase.mjs",
     "push:simulate": "node scripts/simulate-push-pipeline.mjs",
     "db:push": "node scripts/db-push.mjs",
     "deploy:all": "node scripts/deploy-all.mjs --parallel",

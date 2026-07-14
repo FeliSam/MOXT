@@ -108,20 +108,39 @@ npm run tout -- --no-commit
 | **iOS** | APNs via Firebase ou Xcode | Capability Push + `GoogleService-Info.plist` + `npm run setup:push:native` |
 | **Serveur** | `send-push` web + FCM natif | `scripts/firebase-service-account.json` → `npm run setup:push:native` |
 
-### Firebase CLI (Android auto)
+### Firebase CLI (assistant guidé)
+
+Une seule commande guide tout le branchement FCM Android :
 
 ```bash
-npm install                         # installe firebase-tools
-npm run firebase:login              # une fois (navigateur Google)
-npm run firebase:projects           # trouve l’ID projet
-npm run setup:firebase -- --project=VOTRE_PROJECT_ID
-# → crée/relie l’app Android com.moxt.app + google-services.json
+npm run setup:firebase
+# alias : npm run firebase:connect
+```
 
-# Clé privée (Console Firebase → Comptes de service) :
-#   scripts/firebase-service-account.json
-npm run setup:push:native           # secrets Supabase + redeploy send-push
-npm run web:cap:prod:sync           # rebuild Capacitor avec FCM
+L’assistant :
+1. Ouvre la connexion Google si besoin  
+2. Liste vos projets → vous choisissez le numéro  
+3. Crée/relie l’app `com.moxt.app` + télécharge `google-services.json` (timeout + retries sur `sdkconfig`)  
+4. Compte de service : en mode interactif, attend le JSON ; en `--yes`, ouvre la console et **quitte sans bloquer**  
+5. Si le SA est présent → propose `setup:push:native` (secrets Supabase + redeploy `send-push`)
+
+Puis build natif :
+
+```bash
+npm run web:cap:prod:sync
 npm run check:push
 ```
+
+Sans interaction (projet déjà connu) :
+
+```bash
+npm run setup:firebase -- --project=blog-post-3bcea --yes
+```
+
+Si `google-services.json` est prêt mais le serveur FCM manque encore :
+
+1. Console → Paramètres projet → Comptes de service → **Générer une nouvelle clé privée**  
+2. Enregistrer comme `scripts/firebase-service-account.json`  
+3. `npm run setup:push:native` puis `npm run check:push`
 
 Voir `npm run check:push` pour le diagnostic à jour.
