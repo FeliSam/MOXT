@@ -1,4 +1,5 @@
-import { lazy, Suspense } from 'react'
+import { lazy } from 'react'
+import { AppSuspense } from '../components/layout/AppSuspense'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppLayout } from '../components/layout/AppLayout'
 import { AuthLayout } from '../components/layout/AuthLayout'
@@ -148,13 +149,7 @@ const isProd = import.meta.env.PROD
 
 export function AppRouter() {
   return (
-    <Suspense
-      fallback={
-        <div className="grid min-h-screen place-items-center bg-[var(--app-bg)] text-sm font-bold text-[var(--app-text-muted)]">
-          Chargement de MOXT...
-        </div>
-      }
-    >
+    <AppSuspense>
       <Routes>
         <Route path="/index.html" element={<Navigate to="/" replace />} />
         <Route element={<PublicationShell />}>
@@ -326,6 +321,6 @@ export function AppRouter() {
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
-    </Suspense>
+    </AppSuspense>
   )
 }

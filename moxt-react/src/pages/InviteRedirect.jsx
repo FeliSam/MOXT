@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useSelector } from 'react-redux'
 import { useNavigate, useParams } from 'react-router-dom'
 import { isProfileComplete } from '@moxt/shared/auth/profileCompletion.js'
+import { MoxtLoadingScreen } from '../components/layout/MoxtLoadingScreen'
 import { storePendingInviteCode } from '../features/guest/guestNavigation'
 import { applyPendingReferral } from '../features/referral/referralService'
 
@@ -29,9 +30,5 @@ export function InviteRedirect() {
     navigate(`/register${invite}`, { replace: true })
   }, [code, navigate, status, user])
 
-  return (
-    <div className="grid min-h-screen place-items-center bg-[var(--app-bg)] text-sm font-bold text-[var(--app-text-muted)]">
-      Chargement de MOXT...
-    </div>
-  )
+  return <MoxtLoadingScreen autoRetry={false} />
 }

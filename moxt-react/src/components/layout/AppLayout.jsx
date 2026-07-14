@@ -74,8 +74,8 @@ export function AppLayout({ children }) {
           isMessagesRoute ? 'flex h-full min-h-0 flex-col overflow-hidden' : ''
         }`}
       >
-        {messageThreadImmersive ? null : isMessageThread ? (
-          /* Desktop thread: keep header. Mobile: wrapper is display:none until Redux flag unmounts. */
+        {messageThreadImmersive ? null : isMessagesRoute ? (
+          /* /messages: hide app Header on small screens (list + thread). Desktop keeps it. */
           <div className="hidden lg:block">
             <Header />
           </div>
@@ -90,7 +90,7 @@ export function AppLayout({ children }) {
               ? `min-h-0 flex-1 overflow-hidden ${
                   hideAppChrome
                     ? 'max-lg:p-0 lg:px-8 lg:py-8'
-                    : 'p-3 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:p-5 sm:pb-[calc(6rem+env(safe-area-inset-bottom))] lg:px-8 lg:py-8'
+                    : 'px-0 pt-0 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:pb-[calc(6rem+env(safe-area-inset-bottom))] lg:px-8 lg:py-8'
                 }`
               : 'p-4 pb-[calc(7.5rem+env(safe-area-inset-bottom))] sm:p-6 sm:pb-[calc(7.5rem+env(safe-area-inset-bottom))] lg:px-8 lg:py-8'
           }`}

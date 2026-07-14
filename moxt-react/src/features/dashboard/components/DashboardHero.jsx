@@ -2,9 +2,12 @@ import { FiArrowRight, FiCheckCircle } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { VerifiedBadge } from '../../../components/ui/Badge'
 import { RevealOnScroll } from '../../../components/ui/RevealOnScroll'
+import { useLanguage } from '../../../contexts/useLanguage'
 import { DashboardTransferCalculator } from '../../transfers/DashboardTransferCalculator'
 
 export function DashboardHero({ user, onOpenCalculator }) {
+  const { t } = useLanguage()
+
   return (
     <RevealOnScroll
       as="section"
@@ -16,31 +19,30 @@ export function DashboardHero({ user, onOpenCalculator }) {
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/12 px-4 py-2 text-xs font-bold backdrop-blur">
-              <FiCheckCircle /> Bienvenue {user.firstName}
+              <FiCheckCircle /> {t('dashboard.hero.welcome', { name: user.firstName })}
             </div>
             {user.verified ? (
               <VerifiedBadge size="sm" className="border-white/25 bg-white/12 !text-white" />
             ) : null}
           </div>
           <h1 className="font-display mt-6 max-w-4xl text-4xl font-extrabold leading-[0.98] tracking-[-0.03em] sm:text-5xl lg:text-7xl">
-            Tous vos services essentiels, réunis.
+            {t('dashboard.hero.title')}
           </h1>
           <p className="mt-6 max-w-2xl text-sm leading-7 text-white/75 sm:text-base">
-            Transferts, colis, ventes, jobs et événements dans une expérience simple,
-            instantanée et pensée pour vos échanges entre l’Afrique et la Russie.
+            {t('dashboard.hero.subtitle')}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               to="/transfers"
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-btn)] bg-white px-5 text-sm font-black text-emerald-950 shadow-xl transition hover:-translate-y-0.5 hover:bg-emerald-50"
             >
-              Créer un transfert <FiArrowRight />
+              {t('dashboard.hero.createTransfer')} <FiArrowRight />
             </Link>
             <Link
               to="/marketplace"
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-btn)] bg-cyan-300 px-5 text-sm font-black text-slate-950 shadow-lg shadow-cyan-950/20 transition hover:-translate-y-0.5 hover:bg-cyan-200"
             >
-              Marketplace <FiArrowRight />
+              {t('dashboard.hero.marketplace')} <FiArrowRight />
             </Link>
           </div>
         </div>

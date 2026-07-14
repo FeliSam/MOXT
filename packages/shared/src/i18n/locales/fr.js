@@ -135,6 +135,184 @@ export const fr = {
     loadingOlder: 'Chargement…',
     typing: 'écrit',
     typingAria: '{name} est en train d’écrire',
+    closeConversation: 'Fermer la conversation',
+  },
+  public: {
+    nav: {
+      home: 'Accueil',
+      solution: 'La solution',
+      discover: 'Découvrir',
+      trust: 'Confiance',
+      faq: 'FAQ',
+      aria: 'Navigation publique',
+      homeAria: 'Accueil MOXT',
+      searchAria: 'Rechercher',
+    },
+    auth: {
+      login: 'Connexion',
+      register: 'Créer un compte',
+    },
+    footer: {
+      tagline: 'Plateforme de services pour la diaspora. Échangez en toute vigilance.',
+      security: 'Sécurité',
+      help: 'Aide',
+      copyright: '© {year} MOXT. Tous droits réservés.',
+    },
+    home: {
+      badge: 'Bénin · Russie · Communauté',
+      title: 'Vos échanges, services et opportunités dans une plateforme claire.',
+      subtitle:
+        'MOXT réunit transferts, colis, entreprises, marketplace, jobs et événements avec un suivi commun.',
+      ctaStart: 'Commencer',
+      ctaDiscover: 'Découvrir la solution',
+      ctaExplore: 'Explorer les services',
+      freeNote:
+        'Navigation gratuite. Les opérations financières sont suivies et sécurisées sur MOXT.',
+      estimatorEyebrow: 'Estimation rapide',
+      estimatorTitle: 'Calculateur de transfert',
+      direction: 'Direction',
+      bjToRu: 'Bénin vers Russie',
+      ruToBj: 'Russie vers Bénin',
+      amount: 'Montant',
+      receivedLabel: 'Montant estimé reçu',
+      feesLabel: 'Frais indicatifs : {fees}',
+      createToSend: 'Créer un compte pour envoyer',
+      servicesTitle: 'Tout MOXT, sans page géante',
+      servicesSubtitle: 'Chaque service conserve son parcours et ses règles.',
+      recentTitle: 'À découvrir',
+      recentSubtitle: 'Contenus publics actifs et vérifiés.',
+      showAll: 'Tout afficher',
+      signInToView: 'Se connecter pour consulter',
+      trustTitle: 'La confiance fait partie du parcours',
+    },
+    presentation: {
+      badge: 'Web · Mobile · PWA',
+      title: 'MOXT, la solution pour relier l’Afrique et la Russie.',
+      subtitle:
+        'Une plateforme unique pour les transferts, le transport de colis, la marketplace, les entreprises de la diaspora et la communication — sur ordinateur comme sur téléphone.',
+      ctaStart: 'Commencer gratuitement',
+      ctaExplore: 'Explorer les services',
+      bulletSame: 'Même expérience sur navigateur et application native',
+      bulletLang: 'Interface en russe par défaut, adaptable en un clic',
+      servicesTitle: 'Tous les services au même endroit',
+      servicesSubtitle:
+        'MOXT regroupe les usages quotidiens de la diaspora : envoyer de l’argent, trouver un transporteur, publier une annonce ou contacter un professionnel vérifié.',
+      whyTitle: 'Pourquoi choisir MOXT ?',
+      createAccount: 'Créer mon compte',
+      learnMore: 'En savoir plus',
+    },
+    pillars: {
+      transfers: {
+        title: 'Transferts suivis',
+        description: 'Estimation, partenaires vérifiés et historique dans une seule interface.',
+      },
+      community: {
+        title: 'Communauté diaspora',
+        description:
+          'Profils, entreprises, jobs, événements et messagerie pour échanger en confiance.',
+      },
+      trust: {
+        title: 'Confiance intégrée',
+        description:
+          'Vérification téléphone, identité et entreprise avant les opérations sensibles.',
+      },
+      i18n: {
+        title: 'Multilingue',
+        description:
+          'Russe, français, anglais et portugais — bascule instantanée dans l’application.',
+      },
+    },
+    services: {
+      transfers: {
+        label: 'Transferts',
+        description: 'Estimez et suivez vos opérations entre l’Afrique et la Russie.',
+      },
+      parcels: {
+        label: 'Colis',
+        description: 'Trouvez des capacités de transport et réservez des kilos.',
+      },
+      marketplace: {
+        label: 'Marketplace',
+        description: 'Découvrez des produits, services, locations et opportunités.',
+      },
+      businesses: {
+        label: 'Entreprises',
+        description: 'Consultez les profils professionnels et leurs services.',
+      },
+      community: {
+        label: 'Communauté',
+        description: 'Jobs, événements et échanges P2P dans un même espace.',
+      },
+      messages: {
+        label: 'Communication',
+        description: 'Contactez le bon interlocuteur depuis chaque fiche.',
+      },
+    },
+    trust: {
+      phone: {
+        title: 'Numéro russe vérifié pour publier',
+        description:
+          'Annonces, colis, jobs et événements exigent un numéro +7 confirmé par SMS. Un numéro unique par compte.',
+      },
+      identity: {
+        title: 'Identité MOXT pour les opérations sensibles',
+        description:
+          'Créer une entreprise ou utiliser les comptes de transfert nécessite une identité validée et un enregistrement valide.',
+      },
+      messaging: {
+        title: 'Échanges dans MOXT',
+        description:
+          'Messagerie, favoris et contact restent accessibles sans vérification renforcée.',
+      },
+      validation: {
+        title: 'Ne jamais anticiper une validation',
+        description:
+          'Une déclaration locale ne remplace pas la confirmation officielle d’un paiement ou d’un statut.',
+      },
+    },
+    trustPage: {
+      eyebrow: 'Confiance et sécurité',
+      title: 'Utiliser MOXT avec les bons réflexes',
+      subtitle:
+        'MOXT applique trois niveaux de vérification : numéro russe pour publier, identité pour les opérations sensibles, niveau renforcé pour les plafonds élevés. La messagerie reste ouverte à tous les membres connectés.',
+      publishTitle: 'Publication protégée',
+      publishBody:
+        'Annonces, colis, jobs et événements nécessitent un numéro russe unique confirmé par OTP. Les comptes créés par e-mail doivent aussi confirmer leur téléphone avant de publier.',
+      delayTitle: 'Délai de vérification identité',
+      delayBefore: 'Si votre dossier d’identité reste en attente plus de 24 h, contactez l’administrateur via',
+      supportLink: 'le support',
+      delayAfter: '.',
+      cards: {
+        data: {
+          title: 'Données personnelles',
+          description:
+            'Vos documents sont traités pour la vérification et la sécurité du compte.',
+        },
+        business: {
+          title: 'Entreprises et transferts',
+          description:
+            'Création d’entreprise et comptes de transfert réservés aux profils identité vérifiés.',
+        },
+        badge: {
+          title: 'Badge vérifié',
+          description: 'Le badge vert indique une identité validée par l’équipe MOXT.',
+        },
+        reports: {
+          title: 'Signalements',
+          description: 'Signalez tout contenu suspect depuis les fiches concernées.',
+        },
+      },
+    },
+  },
+  dashboard: {
+    hero: {
+      welcome: 'Bienvenue {name}',
+      title: 'Tous vos services essentiels, réunis.',
+      subtitle:
+        'Transferts, colis, ventes, jobs et événements dans une expérience simple, instantanée et pensée pour vos échanges entre l’Afrique et la Russie.',
+      createTransfer: 'Créer un transfert',
+      marketplace: 'Marketplace',
+    },
   },
   legal: {
     pageEyebrow: 'Informations légales',

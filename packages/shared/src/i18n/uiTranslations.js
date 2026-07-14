@@ -5,6 +5,7 @@ import { ENGLISH_UI_CATALOG } from './englishUiCatalog'
 import { PLACEHOLDER_CATALOGS } from './placeholderCatalog'
 import { PUBLISH_AUTH_CATALOGS } from './publishAuthCatalog'
 import { SHARE_REFERRAL_CATALOGS } from './shareReferralCatalog'
+import { PUBLIC_LANDING_CATALOGS } from './publicLandingCatalog'
 import { STATUS_META } from '../config/statuses.js'
 
 export const SOURCE_LANGUAGE = 'fr'
@@ -154,6 +155,7 @@ Object.values(STATUS_META).forEach(({ label }) => {
 Object.assign(ENGLISH_PHRASES, PLACEHOLDER_CATALOGS.en)
 Object.assign(ENGLISH_PHRASES, PUBLISH_AUTH_CATALOGS.en)
 Object.assign(ENGLISH_PHRASES, SHARE_REFERRAL_CATALOGS.en)
+Object.assign(ENGLISH_PHRASES, PUBLIC_LANDING_CATALOGS.en)
 
 const RUSSIAN_PHRASES = {
   // Navigation & groupes
@@ -1334,12 +1336,14 @@ const PHRASES = {
     PLACEHOLDER_CATALOGS.ru,
     PUBLISH_AUTH_CATALOGS.ru,
     SHARE_REFERRAL_CATALOGS.ru,
+    PUBLIC_LANDING_CATALOGS.ru,
   ),
   pt: Object.assign(
     PORTUGUESE_PHRASES,
     PLACEHOLDER_CATALOGS.pt,
     PUBLISH_AUTH_CATALOGS.pt,
     SHARE_REFERRAL_CATALOGS.pt,
+    PUBLIC_LANDING_CATALOGS.pt,
   ),
 }
 

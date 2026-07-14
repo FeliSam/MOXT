@@ -131,6 +131,184 @@ export const en = {
     loadingOlder: 'Loading…',
     typing: 'typing',
     typingAria: '{name} is typing',
+    closeConversation: 'Close conversation',
+  },
+  public: {
+    nav: {
+      home: 'Home',
+      solution: 'The solution',
+      discover: 'Discover',
+      trust: 'Trust',
+      faq: 'FAQ',
+      aria: 'Public navigation',
+      homeAria: 'MOXT home',
+      searchAria: 'Search',
+    },
+    auth: {
+      login: 'Sign in',
+      register: 'Create an account',
+    },
+    footer: {
+      tagline: 'Services platform for the diaspora. Exchange with care.',
+      security: 'Security',
+      help: 'Help',
+      copyright: '© {year} MOXT. All rights reserved.',
+    },
+    home: {
+      badge: 'Benin · Russia · Community',
+      title: 'Your exchanges, services and opportunities on one clear platform.',
+      subtitle:
+        'MOXT brings together transfers, parcels, businesses, marketplace, jobs and events with shared tracking.',
+      ctaStart: 'Get started',
+      ctaDiscover: 'Discover the solution',
+      ctaExplore: 'Explore services',
+      freeNote:
+        'Free to browse. Financial operations are tracked and secured on MOXT.',
+      estimatorEyebrow: 'Quick estimate',
+      estimatorTitle: 'Transfer calculator',
+      direction: 'Direction',
+      bjToRu: 'Benin to Russia',
+      ruToBj: 'Russia to Benin',
+      amount: 'Amount',
+      receivedLabel: 'Estimated amount received',
+      feesLabel: 'Indicative fees: {fees}',
+      createToSend: 'Create an account to send',
+      servicesTitle: 'All of MOXT, without a giant page',
+      servicesSubtitle: 'Each service keeps its own flow and rules.',
+      recentTitle: 'Discover',
+      recentSubtitle: 'Active, verified public content.',
+      showAll: 'Show all',
+      signInToView: 'Sign in to view',
+      trustTitle: 'Trust is part of the journey',
+    },
+    presentation: {
+      badge: 'Web · Mobile · PWA',
+      title: 'MOXT, the solution connecting Africa and Russia.',
+      subtitle:
+        'One platform for transfers, parcel shipping, marketplace, diaspora businesses and messaging — on desktop and mobile.',
+      ctaStart: 'Start for free',
+      ctaExplore: 'Explore services',
+      bulletSame: 'Same experience in the browser and native app',
+      bulletLang: 'Russian interface by default, switchable in one click',
+      servicesTitle: 'All services in one place',
+      servicesSubtitle:
+        'MOXT brings together everyday diaspora needs: send money, find a traveller, post a listing or contact a verified professional.',
+      whyTitle: 'Why choose MOXT?',
+      createAccount: 'Create my account',
+      learnMore: 'Learn more',
+    },
+    pillars: {
+      transfers: {
+        title: 'Tracked transfers',
+        description: 'Estimates, verified partners and history in one interface.',
+      },
+      community: {
+        title: 'Diaspora community',
+        description:
+          'Profiles, businesses, jobs, events and messaging to exchange with confidence.',
+      },
+      trust: {
+        title: 'Built-in trust',
+        description:
+          'Phone, identity and business verification before sensitive operations.',
+      },
+      i18n: {
+        title: 'Multilingual',
+        description:
+          'Russian, French, English and Portuguese — instant switch in the app.',
+      },
+    },
+    services: {
+      transfers: {
+        label: 'Transfers',
+        description: 'Estimate and track your operations between Africa and Russia.',
+      },
+      parcels: {
+        label: 'Parcels',
+        description: 'Find transport capacity and book kilos.',
+      },
+      marketplace: {
+        label: 'Marketplace',
+        description: 'Discover products, services, rentals and opportunities.',
+      },
+      businesses: {
+        label: 'Businesses',
+        description: 'Browse professional profiles and their services.',
+      },
+      community: {
+        label: 'Community',
+        description: 'Jobs, events and P2P exchanges in one space.',
+      },
+      messages: {
+        label: 'Messaging',
+        description: 'Reach the right person from every listing.',
+      },
+    },
+    trust: {
+      phone: {
+        title: 'Verified Russian number to publish',
+        description:
+          'Listings, parcels, jobs and events require a +7 number confirmed by SMS. One number per account.',
+      },
+      identity: {
+        title: 'MOXT identity for sensitive operations',
+        description:
+          'Creating a business or using transfer accounts requires a validated identity and valid registration.',
+      },
+      messaging: {
+        title: 'Exchanges inside MOXT',
+        description:
+          'Messaging, favorites and contact stay available without enhanced verification.',
+      },
+      validation: {
+        title: 'Never assume validation early',
+        description:
+          'A local declaration does not replace official payment or status confirmation.',
+      },
+    },
+    trustPage: {
+      eyebrow: 'Trust and security',
+      title: 'Use MOXT with the right habits',
+      subtitle:
+        'MOXT applies three verification levels: Russian number to publish, identity for sensitive operations, enhanced level for higher limits. Messaging stays open to all signed-in members.',
+      publishTitle: 'Protected publishing',
+      publishBody:
+        'Listings, parcels, jobs and events require a unique Russian number confirmed by OTP. Email-created accounts must also confirm their phone before publishing.',
+      delayTitle: 'Identity verification delay',
+      delayBefore:
+        'If your identity file stays pending for more than 24 hours, contact the administrator via',
+      supportLink: 'support',
+      delayAfter: '.',
+      cards: {
+        data: {
+          title: 'Personal data',
+          description: 'Your documents are processed for verification and account security.',
+        },
+        business: {
+          title: 'Businesses and transfers',
+          description:
+            'Business creation and transfer accounts are reserved for identity-verified profiles.',
+        },
+        badge: {
+          title: 'Verified badge',
+          description: 'The green badge indicates an identity validated by the MOXT team.',
+        },
+        reports: {
+          title: 'Reports',
+          description: 'Report any suspicious content from the relevant listings.',
+        },
+      },
+    },
+  },
+  dashboard: {
+    hero: {
+      welcome: 'Welcome {name}',
+      title: 'All your essential services, together.',
+      subtitle:
+        'Transfers, parcels, sales, jobs and events in a simple, instant experience built for your exchanges between Africa and Russia.',
+      createTransfer: 'Create a transfer',
+      marketplace: 'Marketplace',
+    },
   },
   legal: {
     pageEyebrow: 'Legal information',

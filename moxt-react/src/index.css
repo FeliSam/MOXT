@@ -609,6 +609,65 @@ html.capacitor-native .capacitor-safe-bottom {
   transition: transform var(--transition-fast), filter var(--transition-fast);
 }
 
+.message-attachment-stack {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: var(--message-media-height, 13.2rem);
+  margin-top: 0;
+  padding: 0.85rem 0.65rem 1.35rem;
+  isolation: isolate;
+}
+
+.message-bubble--has-image:not(.message-bubble--grouped-prev) .message-attachment-stack {
+  margin-top: var(--message-media-top, min(10%, 4.5rem));
+}
+
+.message-bubble--has-image.message-bubble--grouped-prev .message-attachment-stack {
+  margin-top: 0.2rem;
+}
+
+.message-attachment-stack-layer {
+  position: absolute;
+  inset: 0.85rem 0.65rem auto;
+  width: calc(100% - 1.3rem);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  line-height: 0;
+  cursor: zoom-in;
+  transform-origin: bottom center;
+  transition: filter var(--transition-fast);
+}
+
+.message-attachment-stack-layer img {
+  display: block;
+  width: 100%;
+  height: var(--message-media-height, 13.2rem);
+  object-fit: cover;
+  border-radius: 0.875rem;
+  box-shadow:
+    0 10px 28px rgb(15 23 42 / 22%),
+    0 2px 8px rgb(15 23 42 / 12%);
+}
+
+.message-bubble--has-image.message-bubble--sent .message-attachment-stack-layer img {
+  box-shadow:
+    0 10px 26px rgb(8 112 95 / 28%),
+    0 2px 8px rgb(8 112 95 / 16%);
+}
+
+.message-attachment-stack-layer:hover {
+  filter: brightness(1.02);
+}
+
+.message-attachment-stack-layer:focus-visible {
+  outline: 2px solid var(--app-accent);
+  outline-offset: 3px;
+  border-radius: 0.875rem;
+}
+
 .message-bubble--has-image:not(.message-bubble--grouped-prev) .message-attachment-image {
   margin-top: var(--message-media-top, min(10%, 4.5rem));
 }

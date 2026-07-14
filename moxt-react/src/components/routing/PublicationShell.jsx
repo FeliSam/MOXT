@@ -1,16 +1,9 @@
 import { useSelector } from 'react-redux'
 import { Outlet } from 'react-router-dom'
 import { AppLayout } from '../layout/AppLayout'
+import { AuthLoadingScreen } from '../layout/AuthLoadingScreen'
 import { PublicSiteLayout } from '../layout/PublicSiteLayout'
 import { GuestPreviewBanner } from '../../features/guest/GuestPreviewBanner'
-
-function RouteLoadingScreen() {
-  return (
-    <div className="grid min-h-screen place-items-center bg-[var(--app-bg)] text-sm font-bold text-[var(--app-text-muted)]">
-      Chargement de MOXT...
-    </div>
-  )
-}
 
 export function PublicationShell() {
   const user = useSelector((state) => state.auth.user)
@@ -18,7 +11,7 @@ export function PublicationShell() {
   const guestMode = !user
 
   if (status === 'loading') {
-    return <RouteLoadingScreen />
+    return <AuthLoadingScreen />
   }
 
   const page = (

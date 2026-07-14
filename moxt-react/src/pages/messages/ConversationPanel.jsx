@@ -2,7 +2,6 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   FiArchive,
   FiArrowDown,
-  FiArrowLeft,
   FiBellOff,
   FiExternalLink,
   FiMessageSquare,
@@ -50,7 +49,7 @@ function matchesThreadQuery(text, query) {
 
 export function ConversationPanel({
   active,
-  attachment,
+  attachments = [],
   blocked,
   formik,
   messagesLoading,
@@ -108,7 +107,7 @@ export function ConversationPanel({
   const messageListRef = useRef(null)
   const composerRef = useRef(null)
   const stickToBottomRef = useRef(true)
-  const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState(null)
+  const [attachmentPreviewUrls, setAttachmentPreviewUrls] = useState([])
   const replyTarget = active.messages.find((item) => item.id === replyToId)
   const replyContextEntry = findRelatedContextById(active, replyToContextId)
   const replyContextPreview = replyContextEntry
@@ -184,14 +183,16 @@ export function ConversationPanel({
   }, [active.id])
 
   useEffect(() => {
-    if (!attachment?.type?.startsWith('image/')) {
-      setAttachmentPreviewUrl(null)
-      return
+    const urls = (attachments || []).map((file) =>
+      file?.type?.startsWith('image/') ? URL.createObjectURL(file) : null,
+    )
+    setAttachmentPreviewUrls(urls)
+    return () => {
+      urls.forEach((url) => {
+        if (url) URL.revokeObjectURL(url)
+      })
     }
-    const url = URL.createObjectURL(attachment)
-    setAttachmentPreviewUrl(url)
-    return () => URL.revokeObjectURL(url)
-  }, [attachment])
+  }, [attachments])
 
   useEffect(() => {
     if (!peerTyping) return
@@ -211,9 +212,9 @@ export function ConversationPanel({
           type="button"
           className="message-touch-target grid size-9 shrink-0 place-items-center rounded-xl text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)] hover:text-[var(--app-text)] lg:hidden"
           onClick={onBack}
-          aria-label="Retour aux conversations"
+          aria-label={t('messages.closeConversation')}
         >
-          <FiArrowLeft />
+          <FiX />
         </button>
         <MessageAvatar
           avatarUrl={peer.avatarUrl}
@@ -594,25 +595,48 @@ export function ConversationPanel({
             ))}
           </div>
         ) : null}
-        {attachment ? (
-          <div className="mx-auto mb-2 flex max-w-3xl items-center gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2 text-xs">
-            {attachment.type?.startsWith('image/') && attachmentPreviewUrl ? (
-              <img
-                src={attachmentPreviewUrl}
-                alt=""
-                className="size-12 shrink-0 rounded-lg object-cover"
-              />
-            ) : (
-              <FiPaperclip className="shrink-0" />
-            )}
-            <span className="min-w-0 flex-1 truncate font-semibold">{attachment.name}</span>
+        {attachments?.length ? (
+          <div className="mx-auto mb-2 flex max-w-3xl flex-wrap items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2 text-xs">
+            {attachments.map((file, index) => {
+              const previewUrl = attachmentPreviewUrls[index]
+              return (
+                <div
+                  key={`${file.name}-${file.size}-${index}`}
+                  className="flex min-w-0 items-center gap-2 rounded-lg bg-[var(--app-surface)] px-2 py-1.5"
+                >
+                  {previewUrl ? (
+                    <img
+                      src={previewUrl}
+                      alt=""
+                      className="size-12 shrink-0 rounded-lg object-cover"
+                    />
+                  ) : (
+                    <FiPaperclip className="shrink-0" />
+                  )}
+                  <span className="max-w-[7rem] truncate font-semibold sm:max-w-[10rem]">
+                    {file.name}
+                  </span>
+                  <button
+                    type="button"
+                    className="message-touch-target shrink-0 rounded-lg px-2 py-1 font-bold text-[var(--app-accent)] hover:bg-[var(--app-surface-muted)]"
+                    onClick={() => {
+                      const next = attachments.filter((_, itemIndex) => itemIndex !== index)
+                      onFile(next.length ? next : null)
+                    }}
+                    aria-label={`Retirer ${file.name}`}
+                  >
+                    <FiX />
+                  </button>
+                </div>
+              )
+            })}
             <button
               type="button"
-              className="message-touch-target shrink-0 rounded-lg px-2 py-1 font-bold text-[var(--app-accent)] hover:bg-[var(--app-surface)]"
+              className="message-touch-target ml-auto shrink-0 rounded-lg px-2 py-1 font-bold text-[var(--app-accent)] hover:bg-[var(--app-surface)]"
               onClick={() => onFile(null)}
-              aria-label="Retirer la pièce jointe"
+              aria-label="Retirer toutes les pièces jointes"
             >
-              <FiX />
+              Tout retirer
             </button>
           </div>
         ) : null}
@@ -682,16 +706,21 @@ export function ConversationPanel({
           onSubmit={formik.handleSubmit}
         >
           <label
-            className="message-touch-target grid size-9 shrink-0 cursor-pointer place-items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-base text-[var(--app-accent)] shadow-sm transition hover:border-brand-200 hover:bg-[var(--app-accent-soft)]"
-            aria-label="Ajouter un document"
+            className="message-touch-target grid size-11 shrink-0 cursor-pointer place-items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-base text-[var(--app-accent)] shadow-sm transition hover:border-brand-200 hover:bg-[var(--app-accent-soft)]"
+            aria-label="Ajouter des images ou un document"
           >
             <FiPaperclip aria-hidden="true" />
             <input
               className="sr-only"
               type="file"
               accept="image/*,application/pdf,.doc,.docx"
+              multiple
               disabled={blocked}
-              onChange={(event) => onFile(event.target.files?.[0] || null)}
+              onChange={(event) => {
+                const files = event.target.files
+                onFile(files?.length ? Array.from(files) : null)
+                event.target.value = ''
+              }}
             />
           </label>
           <textarea
@@ -717,7 +746,7 @@ export function ConversationPanel({
                 event.preventDefault()
                 if (
                   !blocked &&
-                  (formik.values.text.trim() || attachment) &&
+                  (formik.values.text.trim() || attachments.length) &&
                   !formik.isSubmitting
                 ) {
                   formik.handleSubmit()
@@ -726,10 +755,14 @@ export function ConversationPanel({
             }}
           />
           <button
-            className="message-touch-target grid size-9 shrink-0 place-items-center rounded-xl bg-brand-700 text-base text-white shadow-[0_10px_24px_rgb(8_112_95/0.28)] transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-40"
+            className="message-touch-target grid size-11 shrink-0 place-items-center rounded-xl bg-brand-700 text-base text-white shadow-[0_10px_24px_rgb(8_112_95/0.28)] transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-40"
             type="submit"
             aria-label="Envoyer"
-            disabled={blocked || (!formik.values.text.trim() && !attachment) || formik.isSubmitting}
+            disabled={
+              blocked ||
+              (!formik.values.text.trim() && !attachments.length) ||
+              formik.isSubmitting
+            }
           >
             <FiSend aria-hidden="true" />
           </button>

@@ -8,16 +8,16 @@ import { LanguageSwitcher } from '../ui/LanguageSwitcher'
 import { Brand } from './Brand'
 
 const publicLinks = [
-  { label: 'Accueil', path: '/' },
-  { label: 'La solution', path: '/presentation' },
-  { label: 'Découvrir', path: '/discover' },
-  { label: 'Confiance', path: '/trust' },
-  { label: 'FAQ', path: '/faq' },
+  { key: 'home', path: '/' },
+  { key: 'solution', path: '/presentation' },
+  { key: 'discover', path: '/discover' },
+  { key: 'trust', path: '/trust' },
+  { key: 'faq', path: '/faq' },
 ]
 
 export function PublicSiteLayout({ children }) {
   const { theme, toggleTheme } = useTheme()
-  const { translateLabel } = useLanguage()
+  const { t } = useLanguage()
   const visible = useSmartNavbar()
 
   return (
@@ -28,12 +28,12 @@ export function PublicSiteLayout({ children }) {
         }`}
       >
         <div className="mx-auto flex max-w-7xl items-center gap-4">
-          <Link to="/" aria-label="Accueil MOXT">
+          <Link to="/" aria-label={t('public.nav.homeAria')}>
             <Brand iconOnly />
           </Link>
           <nav
             className="ml-auto hidden items-center gap-1 md:flex"
-            aria-label="Navigation publique"
+            aria-label={t('public.nav.aria')}
           >
             {publicLinks.map((item) => (
               <NavLink
@@ -48,14 +48,14 @@ export function PublicSiteLayout({ children }) {
                   }`
                 }
               >
-                {translateLabel(item.label)}
+                {t(`public.nav.${item.key}`)}
               </NavLink>
             ))}
           </nav>
           <Link
             to="/discover"
             className="grid size-10 place-items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] md:hidden"
-            aria-label="Rechercher"
+            aria-label={t('public.nav.searchAria')}
           >
             <FiSearch />
           </Link>
@@ -69,10 +69,10 @@ export function PublicSiteLayout({ children }) {
             {theme === 'dark' ? <FiSun /> : <FiMoon />}
           </button>
           <Link to="/login" className="hidden sm:block">
-            <Button variant="secondary">Connexion</Button>
+            <Button variant="secondary">{t('public.auth.login')}</Button>
           </Link>
           <Link to="/register">
-            <Button>Créer un compte</Button>
+            <Button>{t('public.auth.register')}</Button>
           </Link>
         </div>
       </header>
@@ -89,15 +89,17 @@ export function PublicSiteLayout({ children }) {
         <div className="mx-auto flex max-w-7xl flex-col gap-4 text-sm text-[var(--app-text-muted)] sm:flex-row sm:items-center sm:justify-between">
           <div>
             <Brand />
-            <p className="mt-2 text-xs">© {new Date().getFullYear()} MOXT. Tous droits réservés.</p>
+            <p className="mt-2 text-xs">
+              {t('public.footer.copyright', { year: new Date().getFullYear() })}
+            </p>
           </div>
-          <p>Plateforme de services pour la diaspora. Échangez en toute vigilance.</p>
+          <p>{t('public.footer.tagline')}</p>
           <div className="flex flex-wrap gap-4">
-            <Link to="/trust">Sécurité</Link>
-            <Link to="/faq">Aide</Link>
-            <Link to="/legal/mentions">Mentions légales</Link>
-            <Link to="/legal/cgu">CGU</Link>
-            <Link to="/legal/privacy">Confidentialité</Link>
+            <Link to="/trust">{t('public.footer.security')}</Link>
+            <Link to="/faq">{t('public.footer.help')}</Link>
+            <Link to="/legal/mentions">{t('legal.nav.mentions')}</Link>
+            <Link to="/legal/cgu">{t('legal.nav.cgu')}</Link>
+            <Link to="/legal/privacy">{t('legal.nav.privacy')}</Link>
           </div>
         </div>
       </footer>

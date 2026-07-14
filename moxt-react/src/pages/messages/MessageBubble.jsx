@@ -11,7 +11,7 @@ import {
 import { initials, shortTime, formatDateLabel } from './format'
 import { messageReadLabel } from './messageUtils'
 import {
-  attachmentImageSrc,
+  attachmentImageSrcs,
   isImageAttachment,
 } from '../../features/communications/attachmentUtils'
 import { MessageAttachment } from './MessageAttachment'
@@ -87,7 +87,7 @@ export function MessageBubble({
   const hasImageAttachment =
     Boolean(message.attachment) &&
     isImageAttachment(message.attachment) &&
-    Boolean(attachmentImageSrc(message.attachment))
+    attachmentImageSrcs(message.attachment).length > 0
   const hasCaption = Boolean(message.text?.trim())
 
   // Bascule le menu au-dessus de la bulle s'il n'y a pas assez de place en bas

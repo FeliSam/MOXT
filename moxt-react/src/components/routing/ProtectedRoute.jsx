@@ -1,6 +1,7 @@
 import { useSelector } from 'react-redux'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { isProfileComplete } from '@moxt/shared/auth/profileCompletion.js'
+import { AuthLoadingScreen } from '../layout/AuthLoadingScreen'
 
 export function ProtectedRoute({ allowedRoles }) {
   const user = useSelector((state) => state.auth.user)
@@ -8,11 +9,7 @@ export function ProtectedRoute({ allowedRoles }) {
   const location = useLocation()
 
   if (status === 'loading') {
-    return (
-      <div className="grid min-h-screen place-items-center bg-[var(--app-bg)] text-sm font-bold text-[var(--app-text-muted)]">
-        Chargement de MOXT...
-      </div>
-    )
+    return <AuthLoadingScreen />
   }
 
   if (!user) {

@@ -86,10 +86,15 @@ export const storageService = {
     return upload('listings', `${userId}/support/${Date.now()}.${extension}`, compressed)
   },
 
-  async uploadMessageImage(userId, conversationId, file) {
+  async uploadMessageImage(userId, conversationId, file, { index = 0 } = {}) {
     const compressed = await compressImage(file, { maxPx: 1600, quality: 0.82 })
     const extension = compressed.type === 'image/png' ? 'png' : 'jpg'
-    return upload('listings', `${userId}/messages/${conversationId}/${Date.now()}.${extension}`, compressed)
+    const stamp = `${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`
+    return upload(
+      'listings',
+      `${userId}/messages/${conversationId}/${stamp}.${extension}`,
+      compressed,
+    )
   },
 
   async uploadDocument(userId, category, file) {

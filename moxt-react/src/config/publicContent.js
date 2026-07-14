@@ -1,7 +1,7 @@
 import {
   FiBox,
   FiBriefcase,
-  FiCalendar,
+  FiGlobe,
   FiMessageSquare,
   FiRepeat,
   FiShield,
@@ -11,67 +11,26 @@ import {
 } from 'react-icons/fi'
 
 export const PUBLIC_SERVICES = [
-  {
-    id: 'transfers',
-    label: 'Transferts',
-    description: 'Estimez et suivez vos opérations entre l’Afrique et la Russie.',
-    icon: FiRepeat,
-  },
-  {
-    id: 'parcels',
-    label: 'Colis',
-    description: 'Trouvez des capacités de transport et réservez des kilos.',
-    icon: FiBox,
-  },
-  {
-    id: 'marketplace',
-    label: 'Marketplace',
-    description: 'Découvrez des produits, services, locations et opportunités.',
-    icon: FiShoppingBag,
-  },
-  {
-    id: 'businesses',
-    label: 'Entreprises',
-    description: 'Consultez les profils professionnels et leurs services.',
-    icon: FiBriefcase,
-  },
-  {
-    id: 'community',
-    label: 'Communauté',
-    description: 'Jobs, événements et échanges P2P dans un même espace.',
-    icon: FiUsers,
-  },
-  {
-    id: 'messages',
-    label: 'Communication',
-    description: 'Contactez le bon interlocuteur depuis chaque fiche.',
-    icon: FiMessageSquare,
-  },
+  { id: 'transfers', icon: FiRepeat },
+  { id: 'parcels', icon: FiBox },
+  { id: 'marketplace', icon: FiShoppingBag },
+  { id: 'businesses', icon: FiBriefcase },
+  { id: 'community', icon: FiUsers },
+  { id: 'messages', icon: FiMessageSquare },
 ]
 
 export const TRUST_PRINCIPLES = [
-  {
-    icon: FiSmartphone,
-    title: 'Numéro russe vérifié pour publier',
-    description:
-      'Annonces, colis, jobs et événements exigent un numéro +7 confirmé par SMS. Un numéro unique par compte.',
-  },
-  {
-    icon: FiShield,
-    title: 'Identité MOXT pour les opérations sensibles',
-    description:
-      'Créer une entreprise ou utiliser les comptes de transfert nécessite une identité validée et un enregistrement valide.',
-  },
-  {
-    icon: FiMessageSquare,
-    title: 'Échanges dans MOXT',
-    description: 'Messagerie, favoris et contact restent accessibles sans vérification renforcée.',
-  },
-  {
-    icon: FiRepeat,
-    title: 'Ne jamais anticiper une validation',
-    description: 'Une déclaration locale ne remplace pas la confirmation officielle d’un paiement ou d’un statut.',
-  },
+  { id: 'phone', icon: FiSmartphone },
+  { id: 'identity', icon: FiShield },
+  { id: 'messaging', icon: FiMessageSquare },
+  { id: 'validation', icon: FiRepeat },
+]
+
+export const PRESENTATION_PILLARS = [
+  { id: 'transfers', icon: FiRepeat },
+  { id: 'community', icon: FiUsers },
+  { id: 'trust', icon: FiShield },
+  { id: 'i18n', icon: FiGlobe },
 ]
 
 export const FAQ_ITEMS = [
@@ -117,5 +76,3 @@ export const DISCOVERY_TYPES = [
 ]
 
 export const PUBLIC_RECENT_LIMIT = 6
-
-export { FiCalendar }

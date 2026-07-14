@@ -45,6 +45,10 @@ import { ConversationRow } from './messages/ConversationRow'
 import { MessagesEmptyState } from './messages/MessagesEmptyState'
 import { countConversationsForFilter } from './messages/messageUtils'
 import { storageService } from '../services/storageService'
+import {
+  isImageFile,
+  MAX_MESSAGE_IMAGES,
+} from '../features/communications/attachmentUtils'
 
 const ASSISTANT_ID = 'moxt-assistant'
 
@@ -62,7 +66,7 @@ export function MessagesPage() {
   const unreadMessagesCount = useSelector(selectUnreadMessageCount)
   const [searchParams, setSearchParams] = useSearchParams()
   const [query, setQuery] = useState('')
-  const [attachment, setAttachment] = useState(null)
+  const [attachments, setAttachments] = useState([])
   const [replyToId, setReplyToId] = useState(null)
   const [replyToContextId, setReplyToContextId] = useState(null)
   const [editingId, setEditingId] = useState(null)
@@ -167,7 +171,7 @@ export function MessagesPage() {
     validate: (values) => {
       const errors = {}
       const text = values.text?.trim() || ''
-      if (!text && !attachment) {
+      if (!text && !attachments.length) {
         errors.text = 'Ajoutez un message ou une pièce jointe.'
       } else if (text.length > 2000) {
         errors.text = 'Message trop long.'
@@ -193,23 +197,41 @@ export function MessagesPage() {
       }
 
       const trimmedText = values.text.trim()
-      if (!trimmedText && !attachment) return
+      if (!trimmedText && !attachments.length) return
 
       helpers.setSubmitting(true)
       let attachmentPayload = null
       try {
-        if (attachment) {
-          attachmentPayload = {
-            name: attachment.name,
-            size: attachment.size,
-            type: attachment.type,
-          }
-          if (attachment.type?.startsWith('image/')) {
-            attachmentPayload.url = await storageService.uploadMessageImage(
-              user.id,
-              active.id,
-              attachment,
-            )
+        if (attachments.length) {
+          const imageFiles = attachments.filter(isImageFile)
+          const otherFile = attachments.find((file) => !isImageFile(file))
+
+          if (imageFiles.length) {
+            const urls = []
+            for (let index = 0; index < imageFiles.length; index += 1) {
+              const file = imageFiles[index]
+              urls.push(
+                await storageService.uploadMessageImage(user.id, active.id, file, {
+                  index,
+                }),
+              )
+            }
+            attachmentPayload = {
+              name:
+                imageFiles.length === 1
+                  ? imageFiles[0].name
+                  : `${imageFiles.length} photos`,
+              size: imageFiles.reduce((sum, file) => sum + (file.size || 0), 0),
+              type: imageFiles[0].type || 'image/jpeg',
+              url: urls[0],
+              ...(urls.length > 1 ? { urls } : {}),
+            }
+          } else if (otherFile) {
+            attachmentPayload = {
+              name: otherFile.name,
+              size: otherFile.size,
+              type: otherFile.type,
+            }
           }
         }
       } catch (error) {
@@ -250,7 +272,7 @@ export function MessagesPage() {
         helpers.setSubmitting(false)
         return
       }
-      setAttachment(null)
+      setAttachments([])
       setReplyToId(null)
       setReplyToContextId(null)
       dispatch(saveConversationDraft({ id: active.id, userId: user.id, text: '' }))
@@ -355,12 +377,53 @@ export function MessagesPage() {
 
   function selectConversation(id) {
     setSearchParams({ conversation: id })
-    setAttachment(null)
+    setAttachments([])
     setReplyToId(null)
     setReplyToContextId(null)
     composerConversationIdRef.current = null
     setQuery('')
     setSearchOpen(false)
+  }
+
+  function handleComposerFiles(files) {
+    if (!files?.length) {
+      setAttachments([])
+      return
+    }
+
+    const list = Array.from(files)
+    const imageFiles = list.filter(isImageFile)
+    const otherFiles = list.filter((file) => !isImageFile(file))
+
+    if (imageFiles.length && otherFiles.length) {
+      dispatch(
+        addToast({
+          title: 'Fichiers mixtes',
+          message: 'Choisissez soit des images, soit un document.',
+          tone: 'error',
+        }),
+      )
+      return
+    }
+
+    if (otherFiles.length) {
+      setAttachments([otherFiles[0]])
+      return
+    }
+
+    if (imageFiles.length > MAX_MESSAGE_IMAGES) {
+      dispatch(
+        addToast({
+          title: 'Trop d’images',
+          message: `Maximum ${MAX_MESSAGE_IMAGES} images par message.`,
+          tone: 'error',
+        }),
+      )
+      setAttachments(imageFiles.slice(0, MAX_MESSAGE_IMAGES))
+      return
+    }
+
+    setAttachments(imageFiles)
   }
 
   function closeSearch() {
@@ -472,7 +535,7 @@ export function MessagesPage() {
             ? 'mx-auto grid h-full min-h-0 w-full min-w-0 overflow-hidden rounded-t-[2rem] bg-[var(--app-surface)] max-lg:rounded-none lg:grid-cols-[25rem_minmax(0,1fr)]'
             : activeId
               ? 'grid h-full min-h-0 w-full min-w-0 overflow-hidden rounded-t-[2rem] bg-[var(--app-surface)] max-lg:rounded-none lg:grid-cols-[25rem_minmax(0,1fr)]'
-              : 'mx-auto h-full min-h-0 w-full min-w-0 max-w-5xl overflow-hidden rounded-t-[2rem] bg-[var(--app-surface)]'
+              : 'mx-auto h-full min-h-0 w-full min-w-0 max-w-5xl overflow-hidden rounded-t-[2rem] bg-[var(--app-surface)] max-lg:rounded-none'
         }
       >
         <aside
@@ -483,7 +546,7 @@ export function MessagesPage() {
           }`}
           data-testid="messages-list"
         >
-          <div className="relative z-10 shrink-0 bg-[var(--app-surface)] p-4 shadow-[0_10px_30px_rgb(15_23_42/0.06)] sm:p-5 lg:p-6">
+          <div className="relative z-10 shrink-0 bg-[var(--app-surface)] p-4 pt-[max(1rem,env(safe-area-inset-top))] shadow-[0_10px_30px_rgb(15_23_42/0.06)] sm:p-5 sm:pt-[max(1.25rem,env(safe-area-inset-top))] lg:p-6 lg:pt-6">
             <div className="flex items-center gap-3">
               <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--app-accent-soft)] text-xl text-[var(--app-accent)]">
                 <FiMessageSquare />
@@ -614,7 +677,7 @@ export function MessagesPage() {
                 messagesLoadingOlder={Boolean(active.messagesLoadingOlder)}
                 hasOlderMessages={Boolean(active.hasOlderMessages)}
                 onLoadOlder={() => dispatch(loadOlderConversationMessages(active.id))}
-                attachment={attachment}
+                attachments={attachments}
                 blocked={blocked}
                 formik={formik}
                 onArchive={() => {
@@ -645,7 +708,7 @@ export function MessagesPage() {
                 onDraft={(text) =>
                   dispatch(saveConversationDraft({ id: active.id, userId: user.id, text }))
                 }
-                onFile={setAttachment}
+                onFile={handleComposerFiles}
                 onDelete={(messageId) => setPendingDeleteId(messageId)}
                 onEdit={(message) => {
                   formik.setFieldValue('text', message.text)
