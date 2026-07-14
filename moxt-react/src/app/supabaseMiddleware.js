@@ -230,10 +230,19 @@ async function syncActiveDispute(state, payload) {
 }
 
 async function update(table, id, fields) {
-  const { error } = await supabase
-    .from(table)
-    .update({ ...toSnake(fields), updated_at: new Date().toISOString() })
-    .eq('id', id)
+  const TABLES_WITHOUT_UPDATED_AT = new Set([
+    'listing_reports',
+    'job_reports',
+    'event_reports',
+    'subscriber_reports',
+    'verification_requests',
+    'personal_documents',
+  ])
+  const payload = { ...toSnake(fields) }
+  if (!TABLES_WITHOUT_UPDATED_AT.has(table)) {
+    payload.updated_at = new Date().toISOString()
+  }
+  const { error } = await supabase.from(table).update(payload).eq('id', id)
   if (error) throw error
 }
 
@@ -948,12 +957,10 @@ const handlers = {
     await upsert('personal_documents', payload)
   },
   'account/removePersonalDocument': async (payload) => {
-    const { error } = await supabase
-      .from('personal_documents')
-      .delete()
-      .eq('id', payload.id)
-      .eq('user_id', payload.userId)
-    if (error) throw error
+    await update('personal_documents', payload.id, {
+      deletedAt: new Date().toISOString(),
+      deletedByUser: true,
+    })
   },
   'account/submitVerificationRequest': async (payload) => {
     await upsert('verification_requests', {

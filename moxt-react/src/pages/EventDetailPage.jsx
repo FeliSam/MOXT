@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   FiAlertTriangle,
   FiCalendar,
@@ -20,6 +21,7 @@ import {
   TrustPanel,
 } from '../components/ui/DetailBlocks'
 import { PageHeader } from '../components/ui/PageHeader'
+import { ReportDialog } from '../components/ui/ReportDialog'
 import { ReshareButton } from '../components/ui/ReshareButton'
 import { FavoriteButton } from '../features/account/FavoriteButton'
 import { ContactButton } from '../features/communications/ContactButton'
@@ -28,7 +30,9 @@ import { EventParticipantsSection } from '../features/events/EventParticipantsSe
 import { statusMeta } from '../config/statuses'
 import { formatDate, formatMoney } from '../features/transfers/transferUtils'
 import { PublisherDetailCard } from '../features/publications/PublisherDetailCard'
+import { PublisherPublicationsStrip } from '../features/publications/PublisherPublicationsStrip'
 import { usePublisherDetailProfile } from '../features/publications/usePublisherDetailProfile'
+import { addToast } from '../features/ui/uiSlice'
 
 const registrationNextSteps = {
   registered: {
@@ -55,6 +59,7 @@ export function EventDetailPage() {
     state.events.registrations.filter((item) => item.eventId === eventId),
   )
   const publisherProfile = usePublisherDetailProfile(event, 'event')
+  const [reportOpen, setReportOpen] = useState(false)
   if (!event) return <Card>Événement introuvable.</Card>
   const registration = registrations.find((item) => item.userId === user.id)
   const registered = registration && registration.status !== 'cancelled'
@@ -175,15 +180,7 @@ export function EventDetailPage() {
               className="mt-3"
               variant="danger"
               icon={FiAlertTriangle}
-              onClick={() =>
-                dispatch(
-                  reportEvent({
-                    eventId: event.id,
-                    reporterId: user.id,
-                    reason: 'Événement à vérifier',
-                  }),
-                )
-              }
+              onClick={() => setReportOpen(true)}
             >
               Signaler
             </Button>
@@ -254,7 +251,17 @@ export function EventDetailPage() {
           />
         </DetailSection>
         <div className="grid gap-5">
-          {publisherProfile ? <PublisherDetailCard {...publisherProfile} /> : null}
+          {publisherProfile ? (
+            <>
+              <PublisherDetailCard {...publisherProfile} />
+              <PublisherPublicationsStrip
+                currentId={event.id}
+                ownerId={publisherProfile.ownerId}
+                publications={publisherProfile.publications}
+                allPath={publisherProfile.publicationsPath}
+              />
+            </>
+          ) : null}
           <TrustPanel
             title="Avant de participer"
             items={[
@@ -268,6 +275,29 @@ export function EventDetailPage() {
       {event.ownerId === user.id ? (
         <EventParticipantsSection event={event} eventId={eventId} />
       ) : null}
+      <ReportDialog
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        title="Signaler cet événement"
+        userId={user.id}
+        onSubmit={async ({ reason, evidenceUrl }) => {
+          dispatch(
+            reportEvent({
+              eventId: event.id,
+              reporterId: user.id,
+              reason,
+              evidenceUrl,
+            }),
+          )
+          dispatch(
+            addToast({
+              title: 'Signalement envoyé',
+              message: 'Notre équipe va examiner cet événement.',
+              tone: 'success',
+            }),
+          )
+        }}
+      />
     </div>
   )
 }

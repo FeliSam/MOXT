@@ -31,7 +31,7 @@ const eventSlice = createSlice({
             id: `EVT-${Date.now().toString(36).toUpperCase()}`,
             capacity: Number(values.capacity),
             price: Number(values.price),
-            status: 'published',
+            status: values.status || 'published',
             createdAt: new Date().toISOString(),
             expiresAt: values.startAt || null,
           },

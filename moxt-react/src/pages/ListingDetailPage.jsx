@@ -53,7 +53,9 @@ import { addToast } from '../features/ui/uiSlice'
 import { formatMoney } from '../features/transfers/transferUtils'
 import { formatDateTime, formatShortDate } from '../utils/formatters'
 import { PublisherDetailCard } from '../features/publications/PublisherDetailCard'
+import { PublisherPublicationsStrip } from '../features/publications/PublisherPublicationsStrip'
 import { usePublisherDetailProfile } from '../features/publications/usePublisherDetailProfile'
+import { ReportDialog } from '../components/ui/ReportDialog'
 
 const tabs = [
   { value: 'description', label: 'Description' },
@@ -74,6 +76,7 @@ export function ListingDetailPage() {
   const [selectedImage, setSelectedImage] = useState(null)
   const [imageOpen, setImageOpen] = useState(false)
   const [soldOpen, setSoldOpen] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('description')
   const [quantity, setQuantity] = useState(1)
   const [question, setQuestion] = useState('')
@@ -225,7 +228,15 @@ export function ListingDetailPage() {
           </Card>
 
           {publisherProfile ? (
-            <PublisherDetailCard {...publisherProfile} className="xl:hidden" />
+            <div className="grid gap-5 xl:hidden">
+              <PublisherDetailCard {...publisherProfile} />
+              <PublisherPublicationsStrip
+                currentId={listing.id}
+                ownerId={publisherProfile.ownerId}
+                publications={publisherProfile.publications}
+                allPath={publisherProfile.publicationsPath}
+              />
+            </div>
           ) : null}
 
           <Card className="min-w-0 overflow-hidden p-4 sm:p-6">
@@ -368,7 +379,17 @@ export function ListingDetailPage() {
           </Card>
 
           {publisherProfile ? (
-            <PublisherDetailCard {...publisherProfile} className="hidden xl:block" />
+            <>
+              <PublisherDetailCard {...publisherProfile} className="hidden xl:block" />
+              <div className="hidden xl:block">
+                <PublisherPublicationsStrip
+                  currentId={listing.id}
+                  ownerId={publisherProfile.ownerId}
+                  publications={publisherProfile.publications}
+                  allPath={publisherProfile.publicationsPath}
+                />
+              </div>
+            </>
           ) : null}
 
           <Card>
@@ -397,15 +418,7 @@ export function ListingDetailPage() {
                 className="mt-5"
                 variant="danger"
                 icon={FiAlertTriangle}
-                onClick={() =>
-                  dispatch(
-                    reportListing({
-                      listingId: listing.id,
-                      reporterId: user.id,
-                      reason: 'Contenu suspect ou informations à vérifier',
-                    }),
-                  )
-                }
+                onClick={() => setReportOpen(true)}
               >
                 Signaler
               </Button>
@@ -532,6 +545,30 @@ export function ListingDetailPage() {
         onConfirm={() => {
           dispatch(updateListingStatus({ id: listing.id, status: 'sold', actorId: user.id }))
           setSoldOpen(false)
+        }}
+      />
+
+      <ReportDialog
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        title="Signaler cette annonce"
+        userId={user.id}
+        onSubmit={async ({ reason, evidenceUrl }) => {
+          dispatch(
+            reportListing({
+              listingId: listing.id,
+              reporterId: user.id,
+              reason,
+              evidenceUrl,
+            }),
+          )
+          dispatch(
+            addToast({
+              title: 'Signalement envoyé',
+              message: 'Notre équipe va examiner cette annonce.',
+              tone: 'success',
+            }),
+          )
         }}
       />
     </div>

@@ -1,4 +1,5 @@
 import { useFormik } from 'formik'
+import { useState } from 'react'
 import {
   FiAlertTriangle,
   FiBriefcase,
@@ -39,7 +40,10 @@ import {
   JOB_EMPTY_LABEL,
 } from '../features/jobs/jobDisplayUtils'
 import { PublisherDetailCard } from '../features/publications/PublisherDetailCard'
+import { PublisherPublicationsStrip } from '../features/publications/PublisherPublicationsStrip'
 import { usePublisherDetailProfile } from '../features/publications/usePublisherDetailProfile'
+import { ReportDialog } from '../components/ui/ReportDialog'
+import { addToast } from '../features/ui/uiSlice'
 import {
   JOB_CONTRACTS,
   optionLabel,
@@ -76,6 +80,7 @@ export function JobDetailPage() {
       item.status !== 'withdrawn',
   )
   const publisherProfile = usePublisherDetailProfile(job, 'job')
+  const [reportOpen, setReportOpen] = useState(false)
   const contractLabel = optionLabel(JOB_CONTRACTS, job.contractType)
   const experienceLabel = formatJobExperienceLabel(job.experienceLevel)
   const salaryLabel = formatJobSalaryLabel(job)
@@ -216,15 +221,7 @@ export function JobDetailPage() {
               className="mt-3"
               variant="danger"
               icon={FiAlertTriangle}
-              onClick={() =>
-                dispatch(
-                  reportJob({
-                    jobId: job.id,
-                    reporterId: user.id,
-                    reason: 'Offre à vérifier',
-                  }),
-                )
-              }
+              onClick={() => setReportOpen(true)}
             >
               Signaler
             </Button>
@@ -306,7 +303,17 @@ export function JobDetailPage() {
           />
         </DetailSection>
         <div className="grid gap-5">
-          {publisherProfile ? <PublisherDetailCard {...publisherProfile} /> : null}
+          {publisherProfile ? (
+            <>
+              <PublisherDetailCard {...publisherProfile} />
+              <PublisherPublicationsStrip
+                currentId={job.id}
+                ownerId={publisherProfile.ownerId}
+                publications={publisherProfile.publications}
+                allPath={publisherProfile.publicationsPath}
+              />
+            </>
+          ) : null}
           <TrustPanel
             title="Conseils aux candidats"
             items={[
@@ -317,6 +324,29 @@ export function JobDetailPage() {
           />
         </div>
       </div>
+      <ReportDialog
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        title="Signaler cette offre"
+        userId={user.id}
+        onSubmit={async ({ reason, evidenceUrl }) => {
+          dispatch(
+            reportJob({
+              jobId: job.id,
+              reporterId: user.id,
+              reason,
+              evidenceUrl,
+            }),
+          )
+          dispatch(
+            addToast({
+              title: 'Signalement envoyé',
+              message: 'Notre équipe va examiner cette offre.',
+              tone: 'success',
+            }),
+          )
+        }}
+      />
     </div>
   )
 }

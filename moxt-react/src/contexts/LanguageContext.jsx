@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSelector } from 'react-redux'
 import {
   SOURCE_LANGUAGE,
   SUPPORTED_LANGUAGES,
@@ -16,9 +17,24 @@ function initialLanguage() {
 }
 
 export function LanguageProvider({ children }) {
-  const [language, setLanguage] = useState(initialLanguage)
+  const [language, setLanguageState] = useState(initialLanguage)
   const textOriginalsRef = useRef(new WeakMap())
   const attributeOriginalsRef = useRef(new WeakMap())
+  const userId = useSelector((state) => state.auth.user?.id)
+  const accountLanguage = useSelector((state) =>
+    userId ? state.account.preferences?.[userId]?.language : null,
+  )
+
+  function setLanguage(next) {
+    setLanguageState(normalizeStoredLanguage(next))
+  }
+
+  // Langue du compte (profil Supabase) prime sur le localStorage appareil
+  useEffect(() => {
+    if (!userId || !accountLanguage) return
+    const normalized = normalizeStoredLanguage(accountLanguage)
+    setLanguageState((current) => (current === normalized ? current : normalized))
+  }, [userId, accountLanguage])
 
   useEffect(() => {
     document.documentElement.lang = language
@@ -126,7 +142,7 @@ export function LanguageProvider({ children }) {
   const value = useMemo(
     () => ({
       language,
-      setLanguage: (next) => setLanguage(normalizeStoredLanguage(next)),
+      setLanguage,
       t: (key, vars) => translate(language, key, vars),
       translateLabel: (label) =>
         language === SOURCE_LANGUAGE ? label : translateUiText(label, language),

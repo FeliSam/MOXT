@@ -213,7 +213,7 @@ export function buildDetailFacts(kind, item) {
     case 'events':
       return [['Date', formatDate(item.startAt)], ['Lieu', `${item.venue || ''} ${item.city || ''}`.trim()], ['Capacite', item.capacity || '—'], ['Prix', item.price ? formatMoney(item.price, item.currency) : 'Gratuit'], ['Statut', item.status]]
     case 'parcels':
-      return [['Trajet', `${item.origin} -> ${item.destination}`], ['Depart', item.departureDate || '—'], ['Capacite', `${item.capacityKg || 0} kg`], ['Prix/kg', formatMoney(item.pricePerKg, item.currency)], ['Statut', item.status]]
+      return [['Trajet', `${item.origin} -> ${item.destination}`], ['Depart', item.departureDate || '—'], ['Capacite', `${item.capacityKg || 0} kg`], ['Prix/kg', formatMoney(item.pricePerKg, item.currency)], ['Statut', item.effectiveStatus || item.status], ['Distribution', item.distributionDate || '—']]
     case 'verification':
       return [['Niveau', item.level], ['Statut', item.status], ['Utilisateur', item.userId], ['Documents', item.documentIds?.length || 0], ['Cree le', formatDate(item.createdAt)]]
     case 'dispute':
@@ -221,7 +221,7 @@ export function buildDetailFacts(kind, item) {
     case 'review':
       return [['Note', `${item.rating || '—'}/5`], ['Cible', `${item.targetType || '—'}`], ['Auteur', item.authorName || item.authorId || '—'], ['Statut', item.status], ['Cree le', formatDate(item.createdAt)]]
     case 'report':
-      return [['Type', item.reportType], ['Reference', item.relatedId], ['Statut', item.status], ['Reporter', item.reporterId || '—'], ['Cree le', formatDate(item.createdAt)]]
+      return [['Type', item.reportType], ['Reference', item.relatedId], ['Statut', item.status], ['Raison', item.reason || '—'], ['Preuve', item.evidenceUrl ? 'Oui' : 'Non'], ['Reporter', item.reporterId || '—'], ['Cree le', formatDate(item.createdAt)]]
     default:
       return [['ID', item.id], ['Statut', item.status || '—']]
   }
@@ -238,7 +238,7 @@ export function contentSubtitle(contentView, item) {
     case 'events':
       return `${item.city || 'Russie'} · ${formatDate(item.startAt)}`
     case 'parcels':
-      return `${item.origin} -> ${item.destination}`
+      return `${item.origin} -> ${item.destination} · ${item.effectiveStatus || item.status || '—'}`
     case 'reports':
       return `${item.reportType} · ${item.status}`
     default:

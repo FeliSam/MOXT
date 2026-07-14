@@ -104,8 +104,24 @@ npm run tout -- --no-commit
 | Canal | État | Action |
 |-------|------|--------|
 | **Web** (moxtapp.ru) | VAPID + service worker | `npm run setup:push` |
-| **Android** | FCM via `google-services.json` | Firebase → copier dans `moxt-react/android/app/` puis `npm run setup:push:native` |
-| **iOS** | APNs via Firebase ou Xcode | Capability Push + `npm run setup:push:native` |
-| **Serveur** | `send-push` web + FCM natif | `FCM_SERVICE_ACCOUNT_JSON` dans `scripts/phase2.env` |
+| **Android** | FCM via `google-services.json` | `npm run firebase:login` → `npm run setup:firebase -- --project=ID` → `npm run setup:push:native` |
+| **iOS** | APNs via Firebase ou Xcode | Capability Push + `GoogleService-Info.plist` + `npm run setup:push:native` |
+| **Serveur** | `send-push` web + FCM natif | `scripts/firebase-service-account.json` → `npm run setup:push:native` |
+
+### Firebase CLI (Android auto)
+
+```bash
+npm install                         # installe firebase-tools
+npm run firebase:login              # une fois (navigateur Google)
+npm run firebase:projects           # trouve l’ID projet
+npm run setup:firebase -- --project=VOTRE_PROJECT_ID
+# → crée/relie l’app Android com.moxt.app + google-services.json
+
+# Clé privée (Console Firebase → Comptes de service) :
+#   scripts/firebase-service-account.json
+npm run setup:push:native           # secrets Supabase + redeploy send-push
+npm run web:cap:prod:sync           # rebuild Capacitor avec FCM
+npm run check:push
+```
 
 Voir `npm run check:push` pour le diagnostic à jour.

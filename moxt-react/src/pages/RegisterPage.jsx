@@ -29,6 +29,7 @@ import {
   registerSchema,
   registerStepFields,
 } from '../features/auth/authSchemas'
+import { updateAccountPreferences } from '../features/account/accountSlice'
 import {
   clearAuthError,
   completeOAuthProfile,
@@ -184,6 +185,15 @@ export function RegisterPage() {
   async function completeRegistration(destination) {
     await applyPendingReferral()
     await dispatch(loadAllData())
+    const registeredUserId = store.getState().auth.user?.id
+    if (registeredUserId) {
+      dispatch(
+        updateAccountPreferences({
+          userId: registeredUserId,
+          preferences: { language },
+        }),
+      )
+    }
     startRealtimeSubscription(store.getState().auth.user.id, dispatch, store.getState)
     markWelcomePending()
     clearReturnTo()
@@ -457,7 +467,18 @@ export function RegisterPage() {
                     <button
                       key={code}
                       type="button"
-                      onClick={() => setLanguage(code)}
+                      onClick={() => {
+                        setLanguage(code)
+                        const uid = authUser?.id || store.getState().auth.user?.id
+                        if (uid) {
+                          dispatch(
+                            updateAccountPreferences({
+                              userId: uid,
+                              preferences: { language: code },
+                            }),
+                          )
+                        }
+                      }}
                       className={`flex flex-col items-center gap-1 rounded-2xl border-2 py-3 transition-all duration-200 ${
                         active
                           ? 'border-brand-500 bg-gradient-to-br from-brand-50 to-cyan-50 shadow-md dark:from-brand-950/40 dark:to-cyan-950/40'

@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { createPost } from '../../features/posts/postsSlice'
 import { generatePostMessage, getSourceImage, SOURCE_TYPE_LABELS, SOURCE_TYPE_LINKS } from '../../features/posts/postTemplates'
 import { addToast } from '../../features/ui/uiSlice'
+import { initialCatalogStatus } from '@moxt/shared/auth/userSecurity.js'
 
 /**
  * Modal de partage vers le fil d'actualité.
@@ -65,6 +66,7 @@ export function ShareToFeedModal({ sourceType = 'free', sourceId = null, sourceD
 
   function handlePublish() {
     if (!message.trim()) return
+    const status = initialCatalogStatus(user, { live: 'published', pending: 'pending_review' })
     dispatch(
       createPost({
         authorId: user.id,
@@ -76,9 +78,19 @@ export function ShareToFeedModal({ sourceType = 'free', sourceId = null, sourceD
         imageUrl: imagePreview || null,
         imageFile: imageFile || null,
         directLink,
+        status,
       }),
     )
-    dispatch(addToast({ title: 'Post publié !', message: 'Votre partage est visible dans le fil d\'actualité.', tone: 'success' }))
+    const live = status === 'published'
+    dispatch(
+      addToast({
+        title: live ? 'Post publié !' : 'Post envoyé',
+        message: live
+          ? 'Votre partage est visible dans le fil d\'actualité.'
+          : 'Compte non vérifié : le post sera visible après validation MOXT.',
+        tone: 'success',
+      }),
+    )
     onPublished?.()
     onClose()
   }

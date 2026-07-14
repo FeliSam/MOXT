@@ -321,9 +321,12 @@ const accountSlice = createSlice({
       },
     },
     removePersonalDocument(state, action) {
-      state.documents = state.documents.filter(
-        (item) => item.id !== action.payload.id || item.userId !== action.payload.userId,
+      const document = state.documents.find(
+        (item) => item.id === action.payload.id && item.userId === action.payload.userId,
       )
+      if (!document) return
+      document.deletedAt = new Date().toISOString()
+      document.deletedByUser = true
     },
     submitVerificationRequest: {
       reducer(state, action) {

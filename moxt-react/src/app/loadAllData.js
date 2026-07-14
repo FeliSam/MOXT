@@ -535,7 +535,11 @@ export const loadAllData = createAsyncThunk(
       dispatch(setRecipientAddresses(fromRows(safeRows(recipientAddressesRes, 'des adresses'))))
       dispatch(setIdentityProfiles(mergedIdentity))
       const profilePreferences = parseJsonField(profileRes.data?.preferences, {})
-      if (profileRes.data?.activity_visibility || Object.keys(profilePreferences).length) {
+      if (
+        profileRes.data?.activity_visibility ||
+        Object.keys(profilePreferences).length ||
+        profilePreferences.language
+      ) {
         dispatch(
           hydrateAccountPreferences({
             userId: uid,

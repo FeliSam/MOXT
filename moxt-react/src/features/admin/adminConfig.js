@@ -48,7 +48,7 @@ export const VIEW_FILTERS = {
   transfers: ['all', 'pending', 'completed', 'cancelled'],
   support: ['all', 'open', 'resolved', 'pending'],
   users: ['all', 'active', 'suspended', 'pending_deletion', 'user', 'professional', 'admin'],
-  content: [],
+  content: ['all', 'active', 'pending_review', 'archived', 'published', 'rejected', 'new', 'resolved'],
   overview: [],
   queues: [],
   audit: [],

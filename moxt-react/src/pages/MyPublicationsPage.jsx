@@ -104,13 +104,16 @@ export function MyPublicationsPage() {
     () => filterPublicationsByScope(collectUserPublications(appState, user.id), scope),
     [appState, scope, user.id],
   )
-  const archiveCounts = useMemo(() => publicationArchiveCounts(publications), [publications])
+  const archiveCounts = useMemo(
+    () => publicationArchiveCounts(publications, { includePending: true }),
+    [publications],
+  )
   const typeCounts = useMemo(
-    () => publicationTypeCounts(publications, archiveTab),
+    () => publicationTypeCounts(publications, archiveTab, { includePending: true }),
     [archiveTab, publications],
   )
   const visible = useMemo(
-    () => filterPublicationsByTabs(publications, { archiveTab, typeTab }),
+    () => filterPublicationsByTabs(publications, { archiveTab, typeTab, includePending: true }),
     [archiveTab, publications, typeTab],
   )
   const totalViews = publicationTotalViews(publications)

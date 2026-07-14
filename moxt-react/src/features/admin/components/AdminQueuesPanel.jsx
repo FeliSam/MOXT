@@ -13,7 +13,7 @@ import { updateVerificationStatus } from '../../account/accountSlice'
 import { updateDisputeStatus } from '../../disputes/disputeSlice'
 import { moderateReview } from '../../reviews/reviewSlice'
 import { REVIEW_DISPUTE_STATUS } from '@moxt/shared/utils/reviewUtils.js'
-import { handleReportApprove, handleReportReject } from '../adminActions'
+import { contentActions } from '../adminActions'
 import { CARD, ITEM } from '../adminConfig'
 import { Empty, SectionTitle } from './AdminShared'
 
@@ -159,12 +159,7 @@ export function AdminQueuesPanel({ dispatch, queues, setSelected }) {
         kind="report"
         setSelected={setSelected}
         renderMeta={(i) => `${i.reportType} · ${i.relatedId}`}
-        renderActions={(i) => (
-          <>
-            <Button onClick={() => handleReportApprove(dispatch, i)}>Traiter</Button>
-            <Button variant="danger" onClick={() => handleReportReject(dispatch, i)}>Ignorer</Button>
-          </>
-        )}
+        renderActions={(i) => contentActions('reports', dispatch, i)}
       />
     </div>
   )

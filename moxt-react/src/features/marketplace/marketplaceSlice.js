@@ -326,13 +326,14 @@ const marketplaceSlice = createSlice({
         )
         if (!duplicate) state.reports.unshift(action.payload)
       },
-      prepare({ listingId, reason, reporterId }) {
+      prepare({ listingId, reason, reporterId, evidenceUrl = null }) {
         return {
           payload: {
             id: `REP-${Date.now().toString(36).toUpperCase()}`,
             listingId,
             reporterId,
             reason,
+            evidenceUrl,
             status: 'new',
             createdAt: new Date().toISOString(),
           },

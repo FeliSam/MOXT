@@ -39,6 +39,7 @@ import { isBusinessPublishReady } from '../features/businesses/businessPublishUt
 import { addToast } from '../features/ui/uiSlice'
 import { SecurityGatePanel } from '../features/security/SecurityGatePanel'
 import { useSecurityGate } from '../features/security/useSecurityGate'
+import { initialCatalogStatus } from '@moxt/shared/auth/userSecurity.js'
 
 /* ─── Steps ─────────────────────────────────────────────────────────────── */
 const STEPS = [
@@ -254,11 +255,21 @@ export function PublishJobPage() {
         ownerId: user.id,
         publisherName: publishAsBusiness ? business.name : `${user.firstName} ${user.lastName}`,
         businessId: publishAsBusiness ? business.id : null,
+        status: initialCatalogStatus(user),
       }),
     )
     setPublishing(false)
     triggerBurst()
-    dispatch(addToast({ title: 'Offre publiée', message: 'Votre offre est en ligne.', tone: 'success' }))
+    const live = action.payload?.status === 'active'
+    dispatch(
+      addToast({
+        title: live ? 'Offre publiée' : 'Offre envoyée',
+        message: live
+          ? 'Votre offre est en ligne.'
+          : 'Compte non vérifié : l’offre sera visible après validation MOXT.',
+        tone: 'success',
+      }),
+    )
     setShareModal({ sourceId: action.payload.id, sourceData: action.payload })
   }
 

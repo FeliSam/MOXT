@@ -114,7 +114,9 @@ function main() {
   }
 
   console.log('\nCommandes')
-  console.log('  npm run setup:push          Web VAPID')
+  console.log('  npm run firebase:login       Connexion CLI Firebase')
+  console.log('  npm run setup:firebase       google-services.json (Android)')
+  console.log('  npm run setup:push           Web VAPID')
   console.log('  npm run setup:push:native   FCM Android/iOS')
   console.log('  npm run web:cap:prod:sync   Build natif production')
   console.log('  Voir scripts/RACCOURCIS.md')

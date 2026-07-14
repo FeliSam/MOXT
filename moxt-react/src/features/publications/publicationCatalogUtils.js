@@ -145,25 +145,52 @@ export function buildBusinessPublicationProfile(business, publications) {
   }
 }
 
-function filterByArchive(items, isActiveFn, isArchivedFn, archiveTab) {
-  return items.filter((item) =>
-    archiveTab === 'active' ? isActiveFn(item) : isArchivedFn(item),
-  )
+function isPendingReview(item) {
+  return item?.status === 'pending_review'
 }
 
-export function filterPublicationsByTabs(publications, { archiveTab, typeTab }) {
+function filterByArchive(items, isActiveFn, isArchivedFn, archiveTab, includePending = false) {
+  return items.filter((item) => {
+    if (archiveTab === 'active') {
+      return isActiveFn(item) || (includePending && isPendingReview(item))
+    }
+    if (includePending && isPendingReview(item)) return false
+    return isArchivedFn(item)
+  })
+}
+
+export function filterPublicationsByTabs(publications, { archiveTab, typeTab, includePending = false }) {
   const map = {
     listing: filterByArchive(
       publications.listings,
       isActiveListing,
       isArchivedListing,
       archiveTab,
+      includePending,
     ),
-    parcel: filterByArchive(publications.parcels, isActiveParcel, isArchivedParcel, archiveTab),
-    job: filterByArchive(publications.jobs, isActiveJob, isArchivedJob, archiveTab),
-    event: filterByArchive(publications.events, isActiveEvent, isArchivedEvent, archiveTab),
-    post: filterByArchive(publications.posts, isActivePost, isArchivedPost, archiveTab),
-    other: filterByArchive(publications.others, () => true, () => true, archiveTab),
+    parcel: filterByArchive(
+      publications.parcels,
+      isActiveParcel,
+      isArchivedParcel,
+      archiveTab,
+      includePending,
+    ),
+    job: filterByArchive(publications.jobs, isActiveJob, isArchivedJob, archiveTab, includePending),
+    event: filterByArchive(
+      publications.events,
+      isActiveEvent,
+      isArchivedEvent,
+      archiveTab,
+      includePending,
+    ),
+    post: filterByArchive(
+      publications.posts,
+      isActivePost,
+      isArchivedPost,
+      archiveTab,
+      includePending,
+    ),
+    other: filterByArchive(publications.others, () => true, () => true, archiveTab, includePending),
   }
 
   if (typeTab === 'all') {
@@ -180,8 +207,12 @@ export function filterPublicationsByTabs(publications, { archiveTab, typeTab }) 
   }
 }
 
-export function publicationTypeCounts(publications, archiveTab) {
-  const filtered = filterPublicationsByTabs(publications, { archiveTab, typeTab: 'all' })
+export function publicationTypeCounts(publications, archiveTab, { includePending = false } = {}) {
+  const filtered = filterPublicationsByTabs(publications, {
+    archiveTab,
+    typeTab: 'all',
+    includePending,
+  })
   return {
     listing: filtered.listing.length,
     parcel: filtered.parcel.length,
@@ -192,9 +223,17 @@ export function publicationTypeCounts(publications, archiveTab) {
   }
 }
 
-export function publicationArchiveCounts(publications) {
-  const active = filterPublicationsByTabs(publications, { archiveTab: 'active', typeTab: 'all' })
-  const archived = filterPublicationsByTabs(publications, { archiveTab: 'archived', typeTab: 'all' })
+export function publicationArchiveCounts(publications, { includePending = false } = {}) {
+  const active = filterPublicationsByTabs(publications, {
+    archiveTab: 'active',
+    typeTab: 'all',
+    includePending,
+  })
+  const archived = filterPublicationsByTabs(publications, {
+    archiveTab: 'archived',
+    typeTab: 'all',
+    includePending,
+  })
   const countAll = (bucket) =>
     bucket.listing.length +
     bucket.parcel.length +

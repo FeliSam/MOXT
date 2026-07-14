@@ -65,6 +65,7 @@ export function reportToRemoteRow(report, foreignKey) {
     reporter_id: report.reporterId,
     reason: report.reason || '',
     status: report.status || 'new',
+    evidence_url: report.evidenceUrl || null,
     created_at: report.createdAt || new Date().toISOString(),
   }
   if (foreignKey === 'listing_id') row.listing_id = report.listingId

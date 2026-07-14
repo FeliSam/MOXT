@@ -5,6 +5,48 @@ import {
   buildContentCollections,
   buildQueues,
 } from '../adminData'
+import { isActiveParcel, isArchivedParcel } from '../../publications/publicationCatalogUtils'
+import { isActiveListing, isArchivedListing } from '../../marketplace/listingCatalogUtils'
+import { isActiveEvent, isActiveJob, isArchivedEvent, isArchivedJob } from '../../publications/publicationCatalogUtils'
+
+function effectiveContentStatus(section, item) {
+  if (section === 'parcels') {
+    if (isActiveParcel(item)) return 'active'
+    if (item.status === 'archived' || isArchivedParcel(item)) return 'archived'
+    return item.status || 'archived'
+  }
+  if (section === 'listings') {
+    if (isActiveListing(item)) return 'active'
+    if (isArchivedListing(item) || item.status === 'archived') return 'archived'
+    return item.status || 'active'
+  }
+  if (section === 'jobs') {
+    if (isActiveJob(item)) return 'active'
+    if (isArchivedJob(item)) return 'archived'
+    return item.status || 'active'
+  }
+  if (section === 'events') {
+    if (isActiveEvent(item)) return 'published'
+    if (isArchivedEvent(item)) return 'archived'
+    return item.status || 'published'
+  }
+  return item.status || 'active'
+}
+
+function matchesContentFilter(section, item, statusFilter) {
+  if (!statusFilter || statusFilter === 'all') return true
+  const effective = effectiveContentStatus(section, item)
+  if (statusFilter === 'archived') {
+    return effective === 'archived' || ['archived', 'rejected', 'expired', 'completed', 'suspended'].includes(item.status)
+  }
+  if (statusFilter === 'active') {
+    return effective === 'active' || effective === 'published'
+  }
+  if (statusFilter === 'pending_review') {
+    return ['pending_review', 'pending', 'draft', 'new'].includes(item.status || effective)
+  }
+  return effective === statusFilter || item.status === statusFilter
+}
 
 export function useAdminPageData(query, statusFilter, contentView) {
   const state = useSelector((v) => v)
@@ -54,7 +96,22 @@ export function useAdminPageData(query, statusFilter, contentView) {
     return items
   }, [query, state.audit.items])
 
-  const activeContentItems = content[contentView] || []
+  const activeContentItems = useMemo(() => {
+    let items = content[contentView] || []
+    items = items.filter((item) => matchesContentFilter(contentView, item, statusFilter))
+    if (query) {
+      const q = query.toLowerCase()
+      items = items.filter((item) =>
+        `${item.id} ${item.name || ''} ${item.title || ''} ${item.origin || ''} ${item.destination || ''} ${item.reason || ''} ${item.status || ''}`
+          .toLowerCase()
+          .includes(q),
+      )
+    }
+    return items.map((item) => ({
+      ...item,
+      effectiveStatus: effectiveContentStatus(contentView, item),
+    }))
+  }, [content, contentView, query, statusFilter])
 
   return {
     state,

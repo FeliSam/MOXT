@@ -31,6 +31,7 @@ import { isBusinessPublishReady } from '../features/businesses/businessPublishUt
 import { addToast } from '../features/ui/uiSlice'
 import { SecurityGatePanel } from '../features/security/SecurityGatePanel'
 import { useSecurityGate } from '../features/security/useSecurityGate'
+import { initialCatalogStatus } from '@moxt/shared/auth/userSecurity.js'
 
 /* ─── Steps ─────────────────────────────────────────────────────────────── */
 const STEPS = [
@@ -253,11 +254,21 @@ export function PublishEventPage() {
         organizerName: canPublishAsBusiness ? business.name : form.organizerName,
         businessId: canPublishAsBusiness ? business.id : null,
         price: form.freeEntry ? 0 : Number(form.price),
+        status: initialCatalogStatus(user, { live: 'published', pending: 'pending_review' }),
       }),
     )
     setPublishing(false)
     triggerBurst()
-    dispatch(addToast({ title: 'Événement publié', message: 'Votre événement est en ligne.', tone: 'success' }))
+    const live = action.payload?.status === 'published'
+    dispatch(
+      addToast({
+        title: live ? 'Événement publié' : 'Événement envoyé',
+        message: live
+          ? 'Votre événement est en ligne.'
+          : 'Compte non vérifié : l’événement sera visible après validation MOXT.',
+        tone: 'success',
+      }),
+    )
     setShareModal({ sourceId: action.payload.id, sourceData: action.payload })
   }
 

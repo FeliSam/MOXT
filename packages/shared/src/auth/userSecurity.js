@@ -34,6 +34,14 @@ export function canPublishContent(user) {
   return isPhoneVerified(user) && isValidRussianPhone(user.phone)
 }
 
+/**
+ * Compte identité vérifié → publication immédiate.
+ * Sinon → pending_review (modération admin).
+ */
+export function initialCatalogStatus(user, { live = 'active', pending = 'pending_review' } = {}) {
+  return isIdentityVerified(user) ? live : pending
+}
+
 /** E-mail confirmé (Supabase Auth). */
 export function isEmailVerified(user) {
   if (!user) return false
@@ -61,8 +69,10 @@ export function canUseTransferAccount(user) {
   return isPersonallyRegistered(user) && isPhoneVerified(user) && isValidRussianPhone(user.phone)
 }
 
+/** Offre P2P : identité vérifiée obligatoire (+ téléphone). */
 export function canPublishP2POffer(user) {
-  return canPublishContent(user)
+  if (!user?.id) return false
+  return isIdentityVerified(user) && isPhoneVerified(user) && isValidRussianPhone(user.phone)
 }
 
 export function verificationRequestIsStale(request, now = Date.now()) {
@@ -78,7 +88,15 @@ export function securityGateMessage(kind, user) {
       if (!isValidRussianPhone(user?.phone)) {
         return 'Ajoutez un numéro russe (+7) valide dans votre profil.'
       }
-      return 'Confirmez votre numéro russe par SMS avant de publier une annonce, un colis, un job, un événement ou une offre P2P.'
+      return 'Confirmez votre numéro russe par SMS avant de publier une annonce, un colis, un job ou un événement.'
+    case 'p2p':
+      if (!isPhoneVerified(user) || !isValidRussianPhone(user?.phone)) {
+        return 'Confirmez votre numéro russe (+7) avant de publier une offre P2P.'
+      }
+      if (!isIdentityVerified(user)) {
+        return 'Votre identité doit être vérifiée (documents validés) avant de publier une offre P2P.'
+      }
+      return 'Vérifiez votre identité avant de publier une offre P2P.'
     case 'business':
       if (!isPersonallyRegistered(user)) {
         return 'Complétez vos informations personnelles avant de créer une entreprise.'

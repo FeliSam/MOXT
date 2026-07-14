@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   canCreateBusiness,
   canPublishContent,
+  canPublishP2POffer,
   canUseTransferAccount,
+  initialCatalogStatus,
   isPhoneVerified,
   verificationRequestIsStale,
 } from './userSecurity.js'
@@ -30,6 +32,17 @@ describe('userSecurity', () => {
   it('requires phone verification to publish', () => {
     expect(canPublishContent(phoneUser)).toBe(true)
     expect(canPublishContent({ ...phoneUser, phoneVerified: false })).toBe(false)
+  })
+
+  it('publishes live only when identity is verified', () => {
+    expect(initialCatalogStatus(phoneUser)).toBe('pending_review')
+    expect(initialCatalogStatus(identityUser)).toBe('active')
+    expect(initialCatalogStatus(identityUser, { live: 'published' })).toBe('published')
+  })
+
+  it('requires identity to publish P2P offers', () => {
+    expect(canPublishP2POffer(phoneUser)).toBe(false)
+    expect(canPublishP2POffer(identityUser)).toBe(true)
   })
 
   it('requires identity for business only', () => {

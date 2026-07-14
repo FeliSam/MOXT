@@ -15,7 +15,7 @@ import { moderateReview } from '../reviews/reviewSlice'
 import { TRANSFER_TRANSITIONS } from '../transfers/transferConfig'
 import { moderateTransfer } from '../transfers/transferSlice'
 import { REVIEW_DISPUTE_STATUS } from '@moxt/shared/utils/reviewUtils.js'
-import { FiEye } from 'react-icons/fi'
+import { FiCheck, FiEye } from 'react-icons/fi'
 import { adminDetailLink, normalizeAdminKind, normalizeReportType } from './adminLinkUtils'
 
 function detailViewButton(kind, item) {
@@ -26,6 +26,24 @@ function detailViewButton(kind, item) {
       <Button variant="secondary" icon={FiEye}>Voir</Button>
     </Link>
   )
+}
+
+function ActionButton({ done, doneLabel, children, ...props }) {
+  if (done) {
+    return (
+      <Button
+        type="button"
+        variant="secondary"
+        disabled
+        icon={FiCheck}
+        className="!border-emerald-300 !bg-emerald-50 !text-emerald-800 opacity-100 dark:!border-emerald-800 dark:!bg-emerald-950/40 dark:!text-emerald-200"
+        {...props}
+      >
+        {doneLabel || children}
+      </Button>
+    )
+  }
+  return <Button type="button" {...props}>{children}</Button>
 }
 
 export function handleReportApprove(dispatch, item) {
@@ -39,17 +57,17 @@ export function handleReportApprove(dispatch, item) {
 
   if (reportType === 'listing') {
     dispatch(updateListingReportStatus({ id: item.id, status: 'resolved' }))
-    dispatch(updateListingStatus({ id: relatedId, status: 'suspended' }))
+    if (relatedId) dispatch(updateListingStatus({ id: relatedId, status: 'suspended' }))
     return
   }
   if (reportType === 'job') {
     dispatch(updateJobReportStatus({ id: item.id, status: 'resolved' }))
-    dispatch(moderateJob({ id: relatedId, status: 'rejected' }))
+    if (relatedId) dispatch(moderateJob({ id: relatedId, status: 'rejected' }))
     return
   }
   if (reportType === 'event') {
     dispatch(updateEventReportStatus({ id: item.id, status: 'resolved' }))
-    dispatch(moderateEvent({ id: relatedId, status: 'rejected' }))
+    if (relatedId) dispatch(moderateEvent({ id: relatedId, status: 'rejected' }))
     return
   }
   if (reportType === 'subscriber') {
@@ -78,47 +96,127 @@ export function handleReportReject(dispatch, item) {
 }
 
 export function contentActions(contentView, dispatch, item) {
+  const status = item.effectiveStatus || item.status
+
   switch (contentView) {
     case 'businesses':
       return (
         <>
-          <Button onClick={() => dispatch(moderateBusiness({ id: item.id, status: 'verified' }))}>Valider</Button>
-          <Button variant="danger" onClick={() => dispatch(moderateBusiness({ id: item.id, status: 'rejected' }))}>Refuser</Button>
+          <ActionButton
+            done={status === 'verified'}
+            doneLabel="Validée"
+            onClick={() => dispatch(moderateBusiness({ id: item.id, status: 'verified' }))}
+          >
+            Valider
+          </ActionButton>
+          <ActionButton
+            done={status === 'rejected'}
+            doneLabel="Refusée"
+            variant="danger"
+            onClick={() => dispatch(moderateBusiness({ id: item.id, status: 'rejected' }))}
+          >
+            Refuser
+          </ActionButton>
         </>
       )
     case 'listings':
       return (
         <>
-          <Button onClick={() => dispatch(updateListingStatus({ id: item.id, status: 'active' }))}>Publier</Button>
-          <Button variant="danger" onClick={() => dispatch(updateListingStatus({ id: item.id, status: 'archived' }))}>Archiver</Button>
+          <ActionButton
+            done={status === 'active'}
+            doneLabel="Publiée"
+            onClick={() => dispatch(updateListingStatus({ id: item.id, status: 'active' }))}
+          >
+            Publier
+          </ActionButton>
+          <ActionButton
+            done={status === 'archived' || status === 'suspended'}
+            doneLabel="Archivée"
+            variant="danger"
+            onClick={() => dispatch(updateListingStatus({ id: item.id, status: 'archived' }))}
+          >
+            Archiver
+          </ActionButton>
         </>
       )
     case 'jobs':
       return (
         <>
-          <Button onClick={() => dispatch(moderateJob({ id: item.id, status: 'active' }))}>Activer</Button>
-          <Button variant="danger" onClick={() => dispatch(moderateJob({ id: item.id, status: 'rejected' }))}>Refuser</Button>
+          <ActionButton
+            done={status === 'active'}
+            doneLabel="Activée"
+            onClick={() => dispatch(moderateJob({ id: item.id, status: 'active' }))}
+          >
+            Activer
+          </ActionButton>
+          <ActionButton
+            done={status === 'rejected'}
+            doneLabel="Refusée"
+            variant="danger"
+            onClick={() => dispatch(moderateJob({ id: item.id, status: 'rejected' }))}
+          >
+            Refuser
+          </ActionButton>
         </>
       )
     case 'events':
       return (
         <>
-          <Button onClick={() => dispatch(moderateEvent({ id: item.id, status: 'published' }))}>Publier</Button>
-          <Button variant="danger" onClick={() => dispatch(moderateEvent({ id: item.id, status: 'rejected' }))}>Refuser</Button>
+          <ActionButton
+            done={status === 'published'}
+            doneLabel="Publié"
+            onClick={() => dispatch(moderateEvent({ id: item.id, status: 'published' }))}
+          >
+            Publier
+          </ActionButton>
+          <ActionButton
+            done={status === 'rejected' || status === 'archived'}
+            doneLabel="Refusé"
+            variant="danger"
+            onClick={() => dispatch(moderateEvent({ id: item.id, status: 'rejected' }))}
+          >
+            Refuser
+          </ActionButton>
         </>
       )
     case 'parcels':
       return (
         <>
-          <Button onClick={() => dispatch(updateParcelStatus({ id: item.id, status: 'active' }))}>Activer</Button>
-          <Button variant="danger" onClick={() => dispatch(updateParcelStatus({ id: item.id, status: 'archived' }))}>Archiver</Button>
+          <ActionButton
+            done={status === 'active'}
+            doneLabel="Actif"
+            onClick={() => dispatch(updateParcelStatus({ id: item.id, status: 'active' }))}
+          >
+            Activer
+          </ActionButton>
+          <ActionButton
+            done={status === 'archived'}
+            doneLabel="Archivé"
+            variant="danger"
+            onClick={() => dispatch(updateParcelStatus({ id: item.id, status: 'archived' }))}
+          >
+            Archiver
+          </ActionButton>
         </>
       )
     case 'reports':
       return (
         <>
-          <Button onClick={() => handleReportApprove(dispatch, item)}>Traiter</Button>
-          <Button variant="danger" onClick={() => handleReportReject(dispatch, item)}>Ignorer</Button>
+          <ActionButton
+            done={status === 'resolved'}
+            doneLabel="Traité"
+            onClick={() => handleReportApprove(dispatch, item)}
+          >
+            Traiter
+          </ActionButton>
+          <ActionButton
+            done={status === 'dismissed'}
+            doneLabel="Ignoré"
+            variant="danger"
+            onClick={() => handleReportReject(dispatch, item)}
+          >
+            Ignorer
+          </ActionButton>
         </>
       )
     default:
@@ -138,43 +236,15 @@ export function renderDetailActions({ actorRole, dispatch, item, kind, onSuspend
       )
     }
     case 'businesses':
-      return (
-        <>
-          <Button onClick={() => dispatch(moderateBusiness({ id: item.id, status: 'verified' }))}>Valider</Button>
-          <Button variant="danger" onClick={() => dispatch(moderateBusiness({ id: item.id, status: 'rejected' }))}>Refuser</Button>
-          {detailViewButton('businesses', item)}
-        </>
-      )
     case 'listings':
-      return (
-        <>
-          <Button onClick={() => dispatch(updateListingStatus({ id: item.id, status: 'active' }))}>Publier</Button>
-          <Button variant="danger" onClick={() => dispatch(updateListingStatus({ id: item.id, status: 'archived' }))}>Archiver</Button>
-          {detailViewButton('listings', item)}
-        </>
-      )
     case 'jobs':
-      return (
-        <>
-          <Button onClick={() => dispatch(moderateJob({ id: item.id, status: 'active' }))}>Activer</Button>
-          <Button variant="danger" onClick={() => dispatch(moderateJob({ id: item.id, status: 'rejected' }))}>Refuser</Button>
-          {detailViewButton('jobs', item)}
-        </>
-      )
     case 'events':
-      return (
-        <>
-          <Button onClick={() => dispatch(moderateEvent({ id: item.id, status: 'published' }))}>Publier</Button>
-          <Button variant="danger" onClick={() => dispatch(moderateEvent({ id: item.id, status: 'rejected' }))}>Refuser</Button>
-          {detailViewButton('events', item)}
-        </>
-      )
     case 'parcels':
+    case 'report':
       return (
         <>
-          <Button onClick={() => dispatch(updateParcelStatus({ id: item.id, status: 'active' }))}>Activer</Button>
-          <Button variant="danger" onClick={() => dispatch(updateParcelStatus({ id: item.id, status: 'archived' }))}>Archiver</Button>
-          {detailViewButton('parcels', item)}
+          {contentActions(normalizeAdminKind(kind) === 'report' ? 'reports' : normalizeAdminKind(kind), dispatch, item)}
+          {detailViewButton(kind, item)}
         </>
       )
     case 'user':
@@ -199,8 +269,21 @@ export function renderDetailActions({ actorRole, dispatch, item, kind, onSuspend
     case 'verification':
       return (
         <>
-          <Button onClick={() => dispatch(updateVerificationStatus({ id: item.id, status: 'verified', reviewedBy: 'admin' }))}>Valider</Button>
-          <Button variant="danger" onClick={() => dispatch(updateVerificationStatus({ id: item.id, status: 'rejected', reviewedBy: 'admin' }))}>Refuser</Button>
+          <ActionButton
+            done={item.status === 'verified'}
+            doneLabel="Validée"
+            onClick={() => dispatch(updateVerificationStatus({ id: item.id, status: 'verified', reviewedBy: 'admin' }))}
+          >
+            Valider
+          </ActionButton>
+          <ActionButton
+            done={item.status === 'rejected'}
+            doneLabel="Refusée"
+            variant="danger"
+            onClick={() => dispatch(updateVerificationStatus({ id: item.id, status: 'rejected', reviewedBy: 'admin' }))}
+          >
+            Refuser
+          </ActionButton>
           {detailViewButton('verification', item)}
         </>
       )
@@ -254,14 +337,6 @@ export function renderDetailActions({ actorRole, dispatch, item, kind, onSuspend
           <Button onClick={() => dispatch(moderateReview({ id: item.id, status: 'published', moderatedBy: 'admin' }))}>Publier</Button>
           <Button variant="danger" onClick={() => dispatch(moderateReview({ id: item.id, status: 'hidden', moderatedBy: 'admin' }))}>Masquer</Button>
           {detailViewButton('review', item)}
-        </>
-      )
-    case 'report':
-      return (
-        <>
-          <Button onClick={() => handleReportApprove(dispatch, item)}>Traiter</Button>
-          <Button variant="danger" onClick={() => handleReportReject(dispatch, item)}>Ignorer</Button>
-          {detailViewButton('report', item)}
         </>
       )
     default:

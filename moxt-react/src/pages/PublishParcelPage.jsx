@@ -40,6 +40,7 @@ import { addToast } from '../features/ui/uiSlice'
 import { createId } from '../services/createId'
 import { SecurityGatePanel } from '../features/security/SecurityGatePanel'
 import { useSecurityGate } from '../features/security/useSecurityGate'
+import { initialCatalogStatus } from '@moxt/shared/auth/userSecurity.js'
 
 const STEPS = [
   { key: 'route', label: 'Trajet', icon: FiMapPin },
@@ -304,10 +305,20 @@ export function PublishParcelPage() {
         travelProofType: travelProofFile.type,
         travelProofSize: travelProofFile.size,
         travelProofUrl: travelProofFile.url || null,
+        status: initialCatalogStatus(user),
       }),
     )
     triggerBurst()
-    dispatch(addToast({ title: 'Voyage publié', message: 'Votre voyage est en ligne.', tone: 'success' }))
+    const live = action.payload?.status === 'active'
+    dispatch(
+      addToast({
+        title: live ? 'Voyage publié' : 'Voyage envoyé',
+        message: live
+          ? 'Votre voyage est en ligne.'
+          : 'Compte non vérifié : le voyage sera visible après validation MOXT.',
+        tone: 'success',
+      }),
+    )
     setShareModal({ sourceId: action.payload.id, sourceData: action.payload })
   }
 
@@ -432,11 +443,13 @@ export function PublishParcelPage() {
               />
             </div>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid min-w-0 gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             <Input
               id="parcel-date"
               label="Date de départ"
               type="date"
+              wrapperClass="min-w-0 overflow-hidden"
+              className="max-w-full [color-scheme:light] dark:[color-scheme:dark]"
               value={form.departureDate}
               onChange={(e) => set('departureDate', e.target.value)}
               error={errors.departureDate}
@@ -445,6 +458,8 @@ export function PublishParcelPage() {
               id="parcel-deadline"
               label="Date limite de dépôt (optionnel)"
               type="date"
+              wrapperClass="min-w-0 overflow-hidden"
+              className="max-w-full [color-scheme:light] dark:[color-scheme:dark]"
               placeholder="jj/mm/aaaa"
               value={form.depositDeadline}
               onChange={(e) => set('depositDeadline', e.target.value)}
@@ -454,6 +469,8 @@ export function PublishParcelPage() {
               id="parcel-distribution"
               label="Date de distribution / récupération"
               type="date"
+              wrapperClass="min-w-0 overflow-hidden"
+              className="max-w-full [color-scheme:light] dark:[color-scheme:dark]"
               value={form.distributionDate}
               onChange={(e) => set('distributionDate', e.target.value)}
               error={errors.distributionDate}

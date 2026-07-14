@@ -44,7 +44,7 @@ const jobSlice = createSlice({
           payload: {
             ...values,
             id: values.id || `JOB-${Date.now().toString(36).toUpperCase()}`,
-            status: 'active',
+            status: values.status || 'active',
             createdAt: new Date().toISOString(),
             expiresAt:
               values.expiresAt || new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),

@@ -48,6 +48,7 @@ import { useActionBurst } from '../components/ui/ActionBurst'
 import { addToast } from '../features/ui/uiSlice'
 import { SecurityGatePanel } from '../features/security/SecurityGatePanel'
 import { useSecurityGate } from '../features/security/useSecurityGate'
+import { initialCatalogStatus } from '@moxt/shared/auth/userSecurity.js'
 
 const STEPS = [
   { key: 'type', label: 'Type', icon: FiTag },
@@ -247,13 +248,23 @@ export function PublishListingPage() {
           businessId: publishContext.businessId,
           currency: 'RUB',
           country: 'RU',
+          status: initialCatalogStatus(user),
         },
       }),
     )
     setPublishing(false)
     if (publishListing.fulfilled.match(result)) {
       triggerBurst()
-      dispatch(addToast({ title: 'Annonce publiée', message: 'Votre annonce est en ligne.', tone: 'success' }))
+      const live = result.payload?.status === 'active'
+      dispatch(
+        addToast({
+          title: live ? 'Annonce publiée' : 'Annonce envoyée',
+          message: live
+            ? 'Votre annonce est en ligne.'
+            : 'Compte non vérifié : l’annonce sera visible après validation MOXT.',
+          tone: 'success',
+        }),
+      )
       setShareModal({ sourceId: result.payload?.id, sourceData: result.payload ?? {} })
     }
   }

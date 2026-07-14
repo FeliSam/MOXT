@@ -28,8 +28,8 @@ export function DashboardSearch() {
       const rect = anchorRef.current.getBoundingClientRect()
       setPanelRect({
         top: rect.bottom + 8,
-        left: rect.left,
-        width: rect.width,
+        left: Math.max(12, rect.left),
+        width: Math.min(rect.width, window.innerWidth - 24),
       })
     }
     updateRect()
@@ -44,10 +44,10 @@ export function DashboardSearch() {
   return (
     <section
       ref={anchorRef}
-      className="relative rounded-[var(--radius-card-lg)] border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--shadow-card)] sm:p-5"
+      className="relative min-w-0 rounded-[var(--radius-card-lg)] border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--shadow-card)] sm:p-5"
     >
       <div className="mb-3 flex items-start justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <p className="text-xs font-black uppercase tracking-[0.12em] text-brand-700 dark:text-brand-300">
             Recherche rapide
           </p>
@@ -61,11 +61,11 @@ export function DashboardSearch() {
           </strong>
         ) : null}
       </div>
-      <label className="relative block">
+      <label className="relative block min-w-0">
         <FiSearch className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--app-text-faint)]" />
         <input
           aria-label="Recherche rapide"
-          className="min-h-13 w-full rounded-[var(--radius-input)] bg-[var(--app-surface-muted)] pl-11 pr-12 text-sm outline-none transition duration-[var(--transition-fast)] focus:bg-[var(--app-surface)] focus:shadow-[0_0_0_3px_rgba(18,191,163,0.14)]"
+          className="min-h-13 w-full min-w-0 rounded-[var(--radius-input)] bg-[var(--app-surface-muted)] pl-11 pr-12 text-sm outline-none transition duration-[var(--transition-fast)] focus:bg-[var(--app-surface)] focus:shadow-[0_0_0_3px_rgba(18,191,163,0.14)]"
           placeholder="Rechercher : Cotonou, colis, job, paramètres, sécurité, profil..."
           value={query}
           onChange={(event) => setQuery(event.target.value)}
@@ -90,7 +90,7 @@ export function DashboardSearch() {
         ? createPortal(
             <div
               data-navbar-ignore
-              className="scrollbar-hidden fixed z-[var(--z-nav-menu)] overflow-y-auto rounded-[var(--radius-card-lg)] border border-[var(--app-border)] bg-[var(--app-surface)] p-2 shadow-[var(--shadow-card-lg)]"
+              className="scrollbar-hidden fixed z-[var(--z-nav-menu)] overflow-x-hidden overflow-y-auto overscroll-contain rounded-[var(--radius-card-lg)] border border-[var(--app-border)] bg-[var(--app-surface)] p-2 shadow-[var(--shadow-card-lg)]"
               style={{
                 top: panelRect.top,
                 left: panelRect.left,
@@ -99,27 +99,34 @@ export function DashboardSearch() {
               }}
             >
               {results.length ? (
-                <div className="grid gap-1">
-                  {results.map((result) => {
+                <ul className="m-0 grid list-none gap-0 p-0 divide-y divide-[var(--app-border)]">
+                  {results.map((result, index) => {
                     const type = searchTypeMeta(result.type, result.typeLabel)
                     return (
-                      <Link
+                      <li
                         key={`${result.type}-${result.id}`}
-                        to={result.path}
-                        onClick={() => setQuery('')}
-                        className="flex items-center gap-3 rounded-xl p-3 transition hover:bg-[var(--app-surface-muted)]"
+                        className="animate-[global-search-item-in_220ms_ease-out_both] min-w-0"
+                        style={{ animationDelay: `${Math.min(index, 8) * 28}ms` }}
                       >
-                        <Badge tone={type.tone}>{type.label}</Badge>
-                        <span className="min-w-0">
-                          <strong className="block truncate text-sm">{result.title}</strong>
-                          <span className="mt-0.5 block truncate text-xs text-[var(--app-text-muted)]">
-                            {result.subtitle}
+                        <Link
+                          to={result.path}
+                          onClick={() => setQuery('')}
+                          className="flex min-w-0 items-center gap-3 rounded-xl p-3 transition hover:bg-[var(--app-surface-muted)]"
+                        >
+                          <Badge className="shrink-0" tone={type.tone}>
+                            {type.label}
+                          </Badge>
+                          <span className="min-w-0 flex-1 overflow-hidden">
+                            <strong className="block truncate text-sm leading-snug">{result.title}</strong>
+                            <span className="mt-0.5 block truncate text-xs text-[var(--app-text-muted)]">
+                              {result.subtitle}
+                            </span>
                           </span>
-                        </span>
-                      </Link>
+                        </Link>
+                      </li>
                     )
                   })}
-                </div>
+                </ul>
               ) : (
                 <p className="p-4 text-center text-sm text-[var(--app-text-muted)]">
                   Aucun résultat pour « {query} ».

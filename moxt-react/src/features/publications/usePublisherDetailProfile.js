@@ -129,6 +129,7 @@ export function usePublisherDetailProfile(entity, kind) {
     shareCount: Number(entity.shareCount || 0),
     updatedAt: entity.updatedAt,
     ownerId,
+    publications,
     countLabel: meta.countLabel,
     descriptionFallback: meta.descriptionFallback,
     ctaLabel: meta.ctaLabel,

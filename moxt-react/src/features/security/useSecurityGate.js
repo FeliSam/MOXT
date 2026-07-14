@@ -35,7 +35,7 @@ export function useSecurityGate() {
 
   const requireP2PPublish = useCallback(() => {
     if (canPublishP2POffer(user)) return true
-    notifyBlocked('publish')
+    notifyBlocked('p2p')
     return false
   }, [notifyBlocked, user])
 

@@ -24,7 +24,7 @@ const postsSlice = createSlice({
             id: createId('POST'),
             likes: [],
             comments: [],
-            status: 'published',
+            status: values.status || 'published',
             lastSharedAt: now,
             createdAt: now,
             updatedAt: now,

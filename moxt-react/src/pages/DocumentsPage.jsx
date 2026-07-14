@@ -17,7 +17,9 @@ export function DocumentsPage() {
   const dispatch = useDispatch()
   const user = useSelector((state) => state.auth.user)
   const documents = useSelector((state) =>
-    state.account.documents.filter((item) => item.userId === user.id),
+    state.account.documents.filter(
+      (item) => item.userId === user.id && !item.deletedAt && !item.deletedByUser,
+    ),
   )
   const [category, setCategory] = useState('identity')
 

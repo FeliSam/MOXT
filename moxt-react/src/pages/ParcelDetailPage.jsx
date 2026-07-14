@@ -27,6 +27,7 @@ import { addToast } from '../features/ui/uiSlice'
 import { statusMeta } from '../config/statuses'
 import { formatMoney } from '../features/transfers/transferUtils'
 import { PublisherDetailCard } from '../features/publications/PublisherDetailCard'
+import { PublisherPublicationsStrip } from '../features/publications/PublisherPublicationsStrip'
 import { usePublisherDetailProfile } from '../features/publications/usePublisherDetailProfile'
 
 export function ParcelDetailPage() {
@@ -393,7 +394,17 @@ export function ParcelDetailPage() {
           ) : null}
         </DetailSection>
         <div className="grid gap-5">
-          {publisherProfile ? <PublisherDetailCard {...publisherProfile} /> : null}
+          {publisherProfile ? (
+            <>
+              <PublisherDetailCard {...publisherProfile} />
+              <PublisherPublicationsStrip
+                currentId={parcel.id}
+                ownerId={publisherProfile.ownerId}
+                publications={publisherProfile.publications}
+                allPath={publisherProfile.publicationsPath}
+              />
+            </>
+          ) : null}
           <TrustPanel
             title="Transport sécurisé"
             items={[
