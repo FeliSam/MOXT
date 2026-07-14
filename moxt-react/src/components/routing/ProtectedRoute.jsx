@@ -3,7 +3,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { isProfileComplete } from '@moxt/shared/auth/profileCompletion.js'
 import { AuthLoadingScreen } from '../layout/AuthLoadingScreen'
 
-export function ProtectedRoute({ allowedRoles }) {
+export function ProtectedRoute({ allowedRoles, children }) {
   const user = useSelector((state) => state.auth.user)
   const status = useSelector((state) => state.auth.status)
   const location = useLocation()
@@ -24,5 +24,5 @@ export function ProtectedRoute({ allowedRoles }) {
     return <Navigate to="/dashboard" replace />
   }
 
-  return <Outlet />
+  return children ?? <Outlet />
 }

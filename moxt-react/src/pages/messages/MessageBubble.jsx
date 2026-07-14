@@ -15,6 +15,7 @@ import {
   isImageAttachment,
 } from '../../features/communications/attachmentUtils'
 import { MessageAttachment } from './MessageAttachment'
+import { useLanguage } from '../../contexts/useLanguage'
 
 function bubbleClassName(mine, groupedWithPrevious, groupedWithNext, failed) {
   const classes = ['message-bubble', mine ? 'message-bubble--sent' : 'message-bubble--received']
@@ -27,10 +28,15 @@ function bubbleClassName(mine, groupedWithPrevious, groupedWithNext, failed) {
 const LONG_PRESS_MS = 450
 
 function MessageReadStatus({ label }) {
+  const { t } = useLanguage()
   if (!label) return null
   const isRead = label.includes('Lu')
   const isDelivered = label.includes('Distribué')
-  const text = isRead ? 'Lu' : isDelivered ? 'Distribué' : 'Envoyé'
+  const text = isRead
+    ? t('messages.statusRead')
+    : isDelivered
+      ? t('messages.statusDelivered')
+      : t('messages.statusSent')
 
   return (
     <span
@@ -74,6 +80,7 @@ export function MessageBubble({
   showSenderName = false,
   user,
 }) {
+  const { t } = useLanguage()
   const stackRef = useRef(null)
   const menuRef = useRef(null)
   const longPressTimer = useRef(null)
@@ -89,7 +96,6 @@ export function MessageBubble({
       ? attachmentImageSrcs(message.attachment)
       : []
   const hasImageAttachment = imageSrcs.length > 0
-  const hasMultiImageAttachment = imageSrcs.length > 1
   const hasCaption = Boolean(message.text?.trim())
 
   // Bascule le menu au-dessus de la bulle s'il n'y a pas assez de place en bas
@@ -175,15 +181,11 @@ export function MessageBubble({
       ref={stackRef}
       className={`message-stack message-stack--enter message-stack--interactive ${
         mine ? 'message-stack--sent' : ''
-      } ${
-        hasMultiImageAttachment
-          ? 'message-stack--media-multi'
-          : hasImageAttachment
-            ? 'message-stack--media'
-            : ''
-      } ${highlight ? 'message-stack--highlight' : ''} ${
-        showActions ? 'message-stack--actions' : ''
-      } ${hasReactions ? 'message-stack--reacted' : ''}`}
+      } ${hasImageAttachment ? 'message-stack--media' : ''} ${
+        highlight ? 'message-stack--highlight' : ''
+      } ${showActions ? 'message-stack--actions' : ''} ${
+        hasReactions ? 'message-stack--reacted' : ''
+      }`}
     >
       {showSenderName && !mine ? (
         <span className="message-sender-name">{message.senderName}</span>
@@ -203,8 +205,8 @@ export function MessageBubble({
           <button
             type="button"
             className="message-failed-mark"
-            aria-label="Échec d’envoi — renvoyer"
-            title="Échec d’envoi — cliquer pour renvoyer"
+            aria-label={t("messages.retrySendAria")}
+            title={t("messages.retrySendTitle")}
             onClick={(event) => runAction(event, () => onRetry?.(message))}
           >
             <FiAlertCircle aria-hidden="true" />
@@ -254,7 +256,7 @@ export function MessageBubble({
                       event.stopPropagation()
                       onReact?.(message.id, emoji)
                     }}
-                    aria-label={`Réaction ${emoji}`}
+                    aria-label={t("messages.reactionAria", { emoji })}
                   >
                     {emoji}
                   </button>
@@ -289,7 +291,7 @@ export function MessageBubble({
           <button
             type="button"
             onClick={(event) => runAction(event, () => onRetry?.(message))}
-            aria-label="Renvoyer"
+            aria-label={t("messages.retry")}
             className="message-action-menu-btn"
           >
             <FiRefreshCw />
@@ -298,7 +300,7 @@ export function MessageBubble({
             <button
               type="button"
               onClick={(event) => runAction(event, () => onDelete(message.id))}
-              aria-label="Supprimer"
+              aria-label={t("messages.delete")}
               className="message-action-menu-btn message-action-menu-btn--danger"
             >
               <FiTrash2 />
@@ -324,7 +326,7 @@ export function MessageBubble({
                     onReact(message.id, emoji)
                     onCloseActions?.()
                   }}
-                  aria-label={`Réagir ${emoji}`}
+                  aria-label={t("messages.reactAria", { emoji })}
                   className="message-action-menu-btn message-action-menu-btn--emoji"
                 >
                   {emoji}
@@ -334,7 +336,7 @@ export function MessageBubble({
           <button
             type="button"
             onClick={(event) => runAction(event, () => onReply(message.id))}
-            aria-label="Répondre"
+            aria-label={t("messages.reply")}
             className="message-action-menu-btn"
           >
             <FiCornerUpLeft />
@@ -342,7 +344,7 @@ export function MessageBubble({
           <button
             type="button"
             onClick={(event) => runAction(event, onShare)}
-            aria-label="Copier"
+            aria-label={t("messages.copy")}
             className="message-action-menu-btn"
           >
             <FiCopy />
@@ -351,7 +353,7 @@ export function MessageBubble({
             <button
               type="button"
               onClick={(event) => runAction(event, onEdit)}
-              aria-label="Modifier"
+              aria-label={t("messages.edit")}
               className="message-action-menu-btn"
             >
               <FiEdit2 />
@@ -362,7 +364,7 @@ export function MessageBubble({
             <button
               type="button"
               onClick={(event) => runAction(event, () => onDelete(message.id))}
-              aria-label="Supprimer"
+              aria-label={t("messages.delete")}
               className="message-action-menu-btn message-action-menu-btn--danger"
             >
               <FiTrash2 />
@@ -430,6 +432,7 @@ export function MessageThreadStart() {
 }
 
 export function MessageSecurityNotice() {
+  const { t } = useLanguage()
   return (
     <div
       className="message-security-notice mx-auto my-4 max-w-md rounded-2xl border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-center shadow-sm dark:border-amber-900/40 dark:bg-amber-950/30"
@@ -439,9 +442,7 @@ export function MessageSecurityNotice() {
         Consignes de sécurité
       </p>
       <p className="mt-1.5 text-[11px] leading-[1.35] text-amber-900/90 dark:text-amber-100/90">
-        Vérifiez l'identité de votre interlocuteur et les détails de l'annonce avant tout engagement.
-        Ne payez jamais en dehors de MOXT sans garanties, évitez les actions risquées et privilégiez
-        les échanges dans des lieux sûrs. Signalez tout comportement suspect.
+        {t("messages.securityNotice")}
       </p>
     </div>
   )

@@ -15,12 +15,14 @@ import {
 } from '../features/account/accountSlice'
 import { authService } from '../features/auth/authService'
 import { addToast } from '../features/ui/uiSlice'
+import { useLanguage } from '../contexts/useLanguage'
 
 const MFA_AVAILABLE = false
 const RESEND_COOLDOWN_SECONDS = 60
 
 export function SecurityPage() {
   const dispatch = useDispatch()
+  const { t } = useLanguage()
   const user = useSelector((state) => state.auth.user)
   const preferences = useSelector((state) => selectAccountPreferences(state, user.id))
   const emailConfirmed = isEmailVerified(user)
@@ -211,20 +213,20 @@ export function SecurityPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Compte"
-        title="Sécurité"
-        description="Mot de passe, double authentification et sessions actives."
+        eyebrow={t('security.pageEyebrow')}
+        title={t('security.pageTitle')}
+        description={t('security.pageDescription')}
         actions={<BackButton appearance="link" />}
       />
       <EmailVerificationCard />
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <FiLock className="text-2xl text-brand-600" />
-          <h2 className="mt-4 font-black">Mot de passe</h2>
+          <h2 className="mt-4 font-black">{t("security.passwordTitle")}</h2>
           <p className="mt-2 text-sm text-[var(--app-text-muted)]">
             {emailConfirmed
-              ? 'Modification protégée par un code OTP envoyé à votre e-mail confirmé.'
-              : 'Confirmez d’abord votre e-mail pour pouvoir modifier le mot de passe.'}
+              ? t('security.passwordHintOtp')
+              : t('security.passwordHintConfirmEmail')}
           </p>
           <Button
             className="mt-5"
@@ -232,7 +234,7 @@ export function SecurityPage() {
             disabled={!emailConfirmed}
             onClick={openPasswordModal}
           >
-            Modifier le mot de passe
+            {t('security.changePassword')}
           </Button>
         </Card>
         <Card
@@ -302,20 +304,20 @@ export function SecurityPage() {
           setPasswordOpen(false)
           resetPasswordModal()
         }}
-        title="Modifier le mot de passe"
+        title={t("security.passwordModalTitle")}
       >
         <form className="grid gap-4" onSubmit={handlePasswordChange}>
           <p className="text-sm text-[var(--app-text-muted)]">
-            Un code OTP sera envoyé à <strong>{user.email}</strong>. Saisissez-le avec votre nouveau mot de passe.
+            {t('security.passwordModalIntro', { email: user.email })}
           </p>
           {!passwordOtpSent ? (
             <Button type="button" loading={passwordLoading} onClick={sendPasswordOtp}>
-              Envoyer le code par e-mail
+              {t('security.sendOtpEmail')}
             </Button>
           ) : (
             <>
               <Input
-                label="Code reçu par e-mail"
+                label={t("security.otpCodeLabel")}
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 maxLength={6}
@@ -325,7 +327,7 @@ export function SecurityPage() {
                 required
               />
               <Input
-                label="Nouveau mot de passe"
+                label={t("security.newPassword")}
                 type="password"
                 value={newPassword}
                 onChange={(event) => setNewPassword(event.target.value)}
@@ -333,7 +335,7 @@ export function SecurityPage() {
                 minLength={8}
               />
               <Input
-                label="Confirmer le mot de passe"
+                label={t("security.confirmPassword")}
                 type="password"
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}

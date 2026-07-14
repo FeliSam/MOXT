@@ -8,14 +8,14 @@ import {
 
 describe('messageImageStackRotation', () => {
   it('applique un pas angulaire constant', () => {
-    expect(MESSAGE_IMAGE_STACK_ANGLE_STEP).toBe(12)
+    expect(MESSAGE_IMAGE_STACK_ANGLE_STEP).toBe(6)
     expect(MAX_MESSAGE_IMAGES).toBe(4)
-    expect([0, 1, 2, 3].map((i) => messageImageStackRotation(i))).toEqual([0, 12, 24, 36])
+    expect([0, 1, 2, 3].map((i) => messageImageStackRotation(i))).toEqual([0, 6, 12, 18])
   })
 
   it('inverse le sens pour les messages envoyés', () => {
     expect([0, 1, 2, 3].map((i) => messageImageStackRotation(i, { sent: true }))).toEqual([
-      0, -12, -24, -36,
+      0, -6, -12, -18,
     ])
   })
 })

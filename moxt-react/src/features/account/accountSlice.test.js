@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import reducer, {
   addPersonalDocument,
+  hydrateAccountPreferences,
   removeTransferProfile,
   requestAccountDeletion,
   saveTransferProfile,
@@ -82,6 +83,30 @@ describe('account', () => {
     const first = reducer(preferred, requestAccountDeletion({ userId: 'u1' }))
     const second = reducer(first, requestAccountDeletion({ userId: 'u1' }))
     expect(second.deletionRequests).toHaveLength(1)
+  })
+
+  it('hydrate la langue distante et n’invente pas language si absente du profil', () => {
+    const withRemoteLanguage = reducer(
+      emptyState,
+      hydrateAccountPreferences({
+        userId: 'u1',
+        fromRemote: true,
+        preferences: { language: 'en', emailNotifications: false },
+      }),
+    )
+    expect(withRemoteLanguage.preferences.u1.language).toBe('en')
+    expect(withRemoteLanguage.preferences.u1.emailNotifications).toBe(false)
+
+    const withoutRemoteLanguage = reducer(
+      withRemoteLanguage,
+      hydrateAccountPreferences({
+        userId: 'u1',
+        fromRemote: true,
+        preferences: { pushNotifications: false },
+      }),
+    )
+    expect(withoutRemoteLanguage.preferences.u1.language).toBeUndefined()
+    expect(withoutRemoteLanguage.preferences.u1.pushNotifications).toBe(false)
   })
 
   it('remplace la demande de vérification en attente', () => {

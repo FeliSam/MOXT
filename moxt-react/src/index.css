@@ -368,8 +368,7 @@ html.messages-route-lock #root {
   align-items: flex-end;
 }
 
-.message-row:has(.message-stack--media),
-.message-row:has(.message-stack--media-multi) {
+.message-row:has(.message-stack--media) {
   max-width: min(92%, 36rem);
 }
 
@@ -398,6 +397,7 @@ html.messages-route-lock #root {
   font-size: 0.5625rem;
   font-weight: 800;
   color: #fff;
+  white-space: nowrap;
   box-shadow: var(--shadow-card), 0 0 0 2px color-mix(in srgb, var(--app-surface) 80%, transparent);
 }
 
@@ -604,20 +604,11 @@ html.messages-route-lock #root {
   background: var(--app-surface-muted);
 }
 
-/* Unique image: limited media box */
+/* Single + multi image: shared media box size */
 .message-stack--media {
   width: var(--message-media-width, min(40%, 18rem));
   max-width: 100%;
   min-width: 0;
-}
-
-/* Multi-image pile: larger natural bounds — do not reuse the unique-image clamp */
-.message-stack--media-multi {
-  width: min(72cqw, 24rem);
-  max-width: 100%;
-  min-width: 0;
-  container-type: inline-size;
-  container-name: msg-media-stack;
 }
 
 .message-bubble--has-image {
@@ -670,24 +661,22 @@ html.messages-route-lock #root {
 }
 
 /*
- * Multi-image fan: shared transform-origin bottom-left, constant angular step.
- * Cards keep near-full width inside the multi stack (no unique-image / cardPct shrink).
- * Fan may clip at the stack/bubble edge — prefer breathing cards over a cramped box.
+ * Multi-image fan inside the same box as a single image.
+ * Cards fill most of the media box; light insets + shared bottom pivot keep
+ * offsets visible without a large empty hole between the top/bottom layers.
+ * Sent: bottom-left pivot, fans up/left. Received: bottom-right pivot, fans up/right.
  */
 .message-attachment-stack {
-  --stack-pad: 0.5rem;
-  --stack-card-width: calc(100% - var(--stack-pad) * 2);
-  /* Height tracks the multi stack's real width (cqw of msg-media-stack), not unique-image clamp */
-  --stack-card-height: calc(100cqw * 1.05);
-  --stack-rise: calc(
-    (min(var(--stack-count, 2), 4) - 1) * 0.26 * var(--stack-card-height)
-  );
+  --stack-pad-x: 7%;
+  --stack-pad-y: 4%;
+  --stack-card-width: 70%;
+  --stack-card-height: calc(var(--message-media-height, 13.2rem) * 0.78);
   position: relative;
   display: block;
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  height: calc(var(--stack-card-height) + var(--stack-rise) + var(--stack-pad) * 2);
+  height: var(--message-media-height, 13.2rem);
   margin-top: 0;
   overflow: hidden;
   isolation: isolate;
@@ -697,7 +686,7 @@ html.messages-route-lock #root {
 }
 
 .message-bubble--has-image:not(.message-bubble--grouped-prev) .message-attachment-stack {
-  margin-top: 0.35rem;
+  margin-top: var(--message-media-top, min(10%, 4.5rem));
 }
 
 .message-bubble--has-image.message-bubble--grouped-prev .message-attachment-stack {
@@ -706,32 +695,32 @@ html.messages-route-lock #root {
 
 .message-attachment-stack-layer {
   position: absolute;
-  bottom: var(--stack-pad);
+  bottom: var(--stack-pad-y);
   width: var(--stack-card-width);
-  max-width: calc(100% - var(--stack-pad) * 2);
+  max-width: calc(100% - var(--stack-pad-x) * 2);
   margin: 0;
   padding: 0;
   border: 0;
   background: none;
   line-height: 0;
   cursor: zoom-in;
-  /* Shared pivot: bottom-left of every layer */
-  transform-origin: bottom left;
   transform: rotate(var(--stack-rot, 0deg)) scale(var(--stack-scale, 1));
   transition: filter var(--transition-fast);
   will-change: transform;
 }
 
-/* Received: pivot near left — positive step fans up/right into the bubble */
+/* Received: inset left+bottom — bottom-right pivot, positive step fans up/right */
 .message-attachment-stack--received .message-attachment-stack-layer {
-  left: var(--stack-pad);
+  left: var(--stack-pad-x);
   right: auto;
+  transform-origin: bottom right;
 }
 
-/* Sent: pivot inset from right — negative step fans up/left into the bubble */
+/* Sent: inset right+bottom — bottom-left pivot, negative step fans up/left */
 .message-attachment-stack--sent .message-attachment-stack-layer {
-  left: calc(100% - var(--stack-card-width) - var(--stack-pad));
+  left: calc(100% - var(--stack-card-width) - var(--stack-pad-x));
   right: auto;
+  transform-origin: bottom left;
 }
 
 .message-attachment-stack-layer img {

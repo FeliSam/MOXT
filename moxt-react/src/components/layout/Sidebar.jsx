@@ -167,15 +167,10 @@ export function Sidebar({ open }) {
             aria-label="Navigation principale"
           >
             <div className="sidebar-rail-stack grid gap-1 lg:gap-1.5">
-              {visiblePrimaryItems.map((item) => {
-                const itemPath =
-                  item.id === 'businesses' && ownBusiness
-                    ? `/businesses/${ownBusiness.id}`
-                    : item.path
-                return (
+              {visiblePrimaryItems.map((item) => (
                 <SidebarLink
                   key={item.id}
-                  item={{ ...item, path: itemPath }}
+                  item={item}
                   badge={item.badgeSelector ? badgeForItem(item, appState) : 0}
                   translateLabel={translateLabel}
                   hideOnMobile={mobileHiddenPaths.has(item.path) || item.desktopOnly}
@@ -183,8 +178,7 @@ export function Sidebar({ open }) {
                   onRailHover={() => setRailHover(item.path)}
                   onClick={() => dispatch(closeSidebar())}
                 />
-                )
-              })}
+              ))}
 
               <button
                 type="button"

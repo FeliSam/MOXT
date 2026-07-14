@@ -1,12 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { FiArchive, FiCheck, FiFilter, FiStar } from 'react-icons/fi'
+import { useLanguage } from '../../contexts/useLanguage'
 import { countConversationsForFilter } from './messageUtils'
 
 const FILTER_OPTIONS = [
-  { id: 'all', label: 'Toutes' },
-  { id: 'unread', label: 'Non lues' },
-  { id: 'pinned', label: 'Épinglées', icon: FiStar },
+  { id: 'all', labelKey: 'messages.filterAll' },
+  { id: 'unread', labelKey: 'messages.filterUnread' },
+  { id: 'pinned', labelKey: 'messages.filterPinned', icon: FiStar },
 ]
 
 const MENU_ESTIMATED_HEIGHT = 280
@@ -63,6 +64,7 @@ export function ConversationFilterMenu({
   userId,
   className = '',
 }) {
+  const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const anchorRef = useRef(null)
   const menuRef = useRef(null)
@@ -107,10 +109,10 @@ export function ConversationFilterMenu({
             style={floatingStyle}
             className="panel-pop max-h-[min(70dvh,22rem)] overflow-y-auto overscroll-contain rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-1.5 shadow-[var(--shadow-float)] backdrop-blur-xl"
             role="menu"
-            aria-label="Filtrer les conversations"
+            aria-label={t("messages.filterAria")}
           >
             <p className="px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--app-text-faint)]">
-              Afficher
+              {t('messages.filterShow')}
             </p>
             {FILTER_OPTIONS.map((item) => {
               const count = countConversationsForFilter(conversations, item.id, userId, false)
@@ -130,7 +132,7 @@ export function ConversationFilterMenu({
                   onClick={() => selectFilter(item.id)}
                 >
                   {Icon ? <Icon className="size-4 shrink-0" aria-hidden="true" /> : null}
-                  <span className="min-w-0 flex-1">{item.label}</span>
+                  <span className="min-w-0 flex-1">{t(item.labelKey)}</span>
                   {count ? (
                     <span className="message-filter-chip-count">{count}</span>
                   ) : null}
@@ -151,7 +153,7 @@ export function ConversationFilterMenu({
               onClick={toggleArchive}
             >
               <FiArchive className="size-4 shrink-0" aria-hidden="true" />
-              <span className="min-w-0 flex-1">{showArchived ? 'Actives' : 'Archives'}</span>
+              <span className="min-w-0 flex-1">{showArchived ? 'Actives' : t('messages.archives')}</span>
               {archivedCount ? (
                 <span className="message-filter-chip-count">{archivedCount}</span>
               ) : null}
@@ -173,7 +175,7 @@ export function ConversationFilterMenu({
               ? 'bg-[var(--app-accent-soft)] text-[var(--app-accent)] ring-1 ring-brand-200/80 dark:ring-brand-800/60'
               : 'bg-[var(--app-surface-muted)] text-[var(--app-accent)]'
           }`}
-          aria-label="Filtrer les conversations"
+          aria-label={t("messages.filterAria")}
           aria-expanded={open}
           aria-haspopup="menu"
         >

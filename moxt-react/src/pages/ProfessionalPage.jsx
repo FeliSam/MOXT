@@ -1,5 +1,4 @@
 import {
-  FiBriefcase,
   FiCalendar,
   FiFileText,
   FiInbox,
@@ -9,6 +8,7 @@ import {
   FiStar,
   FiUsers,
 } from 'react-icons/fi'
+import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 import { useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -189,7 +189,7 @@ export function ProfessionalPage() {
   if (!business) {
     return (
       <EmptyState
-        icon={FiBriefcase}
+        icon={HiOutlineBuildingOffice2}
         title="Créez votre entreprise"
         description="Un profil professionnel est nécessaire pour regrouper et piloter vos publications."
         action={
@@ -326,7 +326,7 @@ function buildBusinessMetrics({
   transfers,
 }) {
   const metrics = [
-    { icon: FiBriefcase, label: 'Profil complété', value: `${completion}%` },
+    { icon: HiOutlineBuildingOffice2, label: 'Profil complété', value: `${completion}%` },
     { icon: FiInbox, label: 'Demandes', value: requests.length },
     { icon: FiFileText, label: 'Publications', value: publications.length },
   ]

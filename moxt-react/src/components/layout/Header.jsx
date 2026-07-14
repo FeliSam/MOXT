@@ -158,13 +158,13 @@ function UserAvatar({ user, size = 40 }) {
       />
     )
   }
+  const initials = `${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`.toUpperCase()
   return (
     <span
       style={{ width: size, height: size }}
-      className={`grid shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-700 to-[var(--app-teal)] text-xs font-black text-white shadow-sm ${ring}`}
+      className={`grid shrink-0 place-items-center whitespace-nowrap rounded-full bg-gradient-to-br from-brand-700 to-[var(--app-teal)] text-xs font-black text-white shadow-sm ${ring}`}
     >
-      {user?.firstName?.[0]}
-      {user?.lastName?.[0]}
+      {initials}
     </span>
   )
 }

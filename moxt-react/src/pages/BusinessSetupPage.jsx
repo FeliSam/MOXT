@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   FiArrowLeft,
   FiArrowRight,
-  FiBriefcase,
   FiCamera,
   FiCheck,
   FiCheckCircle,
@@ -19,6 +18,7 @@ import {
   FiUser,
   FiZap,
 } from 'react-icons/fi'
+import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 import { useDispatch, useSelector } from 'react-redux'
 import { storageService } from '../services/storageService'
 import { Link, useNavigate } from 'react-router-dom'
@@ -1167,7 +1167,7 @@ function BusinessCreatedSuccess({
       <Card variant="featured" className="overflow-hidden p-0">
         <div className="business-created-hero bg-gradient-to-br from-brand-700 via-brand-600 to-[var(--app-teal)] px-6 py-8 text-white sm:px-8 sm:py-10">
           <div className="business-created-hero-icon grid size-16 place-items-center rounded-3xl bg-white/15 backdrop-blur">
-            <FiBriefcase className="text-3xl" aria-hidden="true" />
+            <HiOutlineBuildingOffice2 className="text-3xl" aria-hidden="true" />
           </div>
           <p className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-white/75">
             Félicitations
@@ -1235,7 +1235,7 @@ function BusinessCreatedSuccess({
           </Card>
 
           <div className="grid gap-2">
-            <Button className="w-full" icon={FiBriefcase} onClick={onGoProfessional}>
+            <Button className="w-full" icon={HiOutlineBuildingOffice2} onClick={onGoProfessional}>
               Accéder à mon espace entreprise
             </Button>
             <Button className="w-full" variant="secondary" icon={FiShare2} onClick={onShare}>

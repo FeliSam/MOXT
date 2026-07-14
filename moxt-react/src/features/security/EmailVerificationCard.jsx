@@ -13,6 +13,7 @@ import {
 } from '../auth/authSlice'
 import { authErrorToast } from '../auth/authErrorMessages'
 import { addToast } from '../ui/uiSlice'
+import { useLanguage } from '../../contexts/useLanguage'
 
 const RESEND_COOLDOWN_SECONDS = 60
 
@@ -23,6 +24,7 @@ export function EmailVerificationCard({
   allowChangeWhenVerified = true,
 }) {
   const dispatch = useDispatch()
+  const { t } = useLanguage()
   const user = useSelector((state) => state.auth.user)
   const authError = useSelector((state) => state.auth.error)
   const authStatus = useSelector((state) => state.auth.status)
@@ -204,19 +206,19 @@ export function EmailVerificationCard({
           </span>
           <div>
             <h2 className="font-black">
-              {verified ? 'Modifier votre e-mail' : 'Confirmer votre e-mail'}
+              {verified ? t("security.email.changeTitle") : t("security.email.confirmTitle")}
             </h2>
             <p className="text-sm text-[var(--app-text-muted)]">
               {verified
-                ? 'Saisissez la nouvelle adresse puis validez le code reçu par e-mail.'
-                : 'Saisissez le code à 6 chiffres reçu par e-mail (pas de lien magique).'}
+                ? t('security.email.changeSubtitle')
+                : t('security.email.confirmSubtitle')}
             </p>
           </div>
         </div>
       ) : null}
       <Input
         id={`${idPrefix}-email`}
-        label="Adresse e-mail"
+        label={t("security.email.addressLabel")}
         type="email"
         autoComplete="email"
         value={email}
@@ -225,8 +227,8 @@ export function EmailVerificationCard({
         hint={
           embedded
             ? verified
-              ? 'Modifiable uniquement après confirmation par code OTP envoyé à la nouvelle adresse.'
-              : 'Confirmez cette adresse avec le code reçu par e-mail.'
+              ? t('security.email.hintChange')
+              : t('security.email.hintConfirm')
             : undefined
         }
       />
@@ -234,14 +236,14 @@ export function EmailVerificationCard({
         <>
           <Input
             id={`${idPrefix}-email-otp`}
-            label="Code reçu par e-mail"
+            label={t("security.email.otpLabel")}
             inputMode="numeric"
             autoComplete="one-time-code"
             maxLength={6}
             placeholder="000000"
             value={otp}
             onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
-            hint="Le code valide l'adresse saisie ci-dessus et met à jour votre profil si elle diffère."
+            hint={t("security.email.otpHint")}
           />
           <div className="flex flex-wrap gap-2">
             <Button
@@ -251,7 +253,7 @@ export function EmailVerificationCard({
               disabled={otp.length !== 6}
               onClick={confirmCode}
             >
-              Confirmer l&apos;e-mail
+              {t("security.email.confirmButton")}
             </Button>
             <Button
               type="button"
@@ -259,11 +261,11 @@ export function EmailVerificationCard({
               disabled={resendCooldown > 0 || busy}
               onClick={sendCode}
             >
-              {resendCooldown > 0 ? `Renvoyer (${resendCooldown}s)` : 'Renvoyer le code'}
+              {resendCooldown > 0 ? t("security.email.resendCooldown", { seconds: resendCooldown }) : t("security.email.resend")}
             </Button>
             {verified ? (
               <Button type="button" variant="ghost" onClick={cancelChange}>
-                Annuler
+                {t('security.email.cancel')}
               </Button>
             ) : null}
           </div>
@@ -271,11 +273,11 @@ export function EmailVerificationCard({
       ) : (
         <div className="flex flex-wrap gap-2">
           <Button type="button" loading={busy || authStatus === 'loading'} onClick={sendCode}>
-            {verified ? 'Envoyer le code de validation' : 'Envoyer le code de confirmation'}
+            {verified ? t("security.email.sendValidation") : t("security.email.sendConfirmation")}
           </Button>
           {verified && changeMode ? (
             <Button type="button" variant="ghost" onClick={cancelChange}>
-              Annuler
+              {t('security.email.cancel')}
             </Button>
           ) : null}
         </div>

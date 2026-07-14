@@ -15,13 +15,14 @@ import { setAll as setDisputes } from '../features/disputes/disputeSlice'
 import { setAll as setFinance } from '../features/finance/financeSlice'
 import { setAll as setPosts } from '../features/posts/postsSlice'
 import { setRecipientAddresses } from '../features/addresses/recipientAddressesSlice'
-import { hydrateAccountPreferences, mergeRemoteAccount } from '../features/account/accountSlice'
+import { hydrateAccountPreferences, mergeRemoteAccount, updateAccountPreferences } from '../features/account/accountSlice'
 import { profileRowToAdminUser, setAdminUsers } from '../features/administration/administrationSlice'
 import { setUser } from '../features/auth/authSlice'
 import { setIdentityProfiles } from '../features/identity/identitySlice'
 import { listingFromRemoteRow, mergeListingQuestions } from '../features/marketplace/marketplaceRemote'
 import { fromRow, fromRows } from '../services/remoteRowMapper'
 import { fetchUserConversations } from '@moxt/shared/utils/fetchUserConversations.js'
+import { normalizeStoredLanguage } from '../config/uiTranslations'
 import {
   businessFromRemoteRow,
   businessDocumentFromRemoteRow,
@@ -50,10 +51,15 @@ function safeRows(result, label) {
 
 function parseJsonField(value, fallback) {
   if (Array.isArray(value)) return value
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return Array.isArray(fallback) ? fallback : value
+  }
   if (typeof value !== 'string') return fallback
   try {
     const parsed = JSON.parse(value)
-    return Array.isArray(parsed) ? parsed : fallback
+    if (Array.isArray(fallback)) return Array.isArray(parsed) ? parsed : fallback
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed
+    return fallback
   } catch {
     return fallback
   }
@@ -551,11 +557,7 @@ export const loadAllData = createAsyncThunk(
       dispatch(setRecipientAddresses(fromRows(safeRows(recipientAddressesRes, 'des adresses'))))
       dispatch(setIdentityProfiles(mergedIdentity))
       const profilePreferences = parseJsonField(profileRes.data?.preferences, {})
-      if (
-        profileRes.data?.activity_visibility ||
-        Object.keys(profilePreferences).length ||
-        profilePreferences.language
-      ) {
+      if (profileRes.data) {
         dispatch(
           hydrateAccountPreferences({
             userId: uid,
@@ -568,6 +570,18 @@ export const loadAllData = createAsyncThunk(
             },
           }),
         )
+        // Première connexion / profil sans langue → enregistrer la langue locale appareil
+        if (!profilePreferences.language) {
+          const localLanguage = normalizeStoredLanguage(
+            typeof localStorage !== 'undefined' ? localStorage.getItem('moxt-language') : null,
+          )
+          dispatch(
+            updateAccountPreferences({
+              userId: uid,
+              preferences: { language: localLanguage },
+            }),
+          )
+        }
       }
     })
     } catch (error) {

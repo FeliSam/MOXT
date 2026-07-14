@@ -1,4 +1,5 @@
-import { FiBriefcase, FiCalendar, FiEye, FiMapPin, FiStar, FiUser } from 'react-icons/fi'
+import { FiCalendar, FiEye, FiMapPin, FiStar, FiUser } from 'react-icons/fi'
+import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 import { Badge, VerifiedDisplayName } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
@@ -79,7 +80,7 @@ export function PublicationProfileCard({
             />
             <Badge tone="success">
               {isBusinessScope ? (
-                <FiBriefcase className="mr-1 inline" />
+                <HiOutlineBuildingOffice2 className="mr-1 inline" />
               ) : (
                 <FiUser className="mr-1 inline" />
               )}

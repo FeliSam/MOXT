@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
-import { FiBell, FiBriefcase, FiExternalLink, FiStar, FiUser, FiVolumeX } from 'react-icons/fi'
+import { FiBell, FiExternalLink, FiStar, FiUser, FiVolumeX } from 'react-icons/fi'
+import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
@@ -145,7 +146,7 @@ function FollowingPanel({ grouped, subscriptions, onPrefChange, onUnsubscribe })
 
       <SubscriptionGroup
         title="Entreprises"
-        icon={FiBriefcase}
+        icon={HiOutlineBuildingOffice2}
         items={grouped.businesses}
         onPrefChange={onPrefChange}
         onUnsubscribe={onUnsubscribe}

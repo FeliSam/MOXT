@@ -7,6 +7,7 @@ import {
   FiShoppingBag,
   FiStar,
 } from 'react-icons/fi'
+import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useParams } from 'react-router-dom'
@@ -119,7 +120,7 @@ export function BusinessDetailPage() {
     { icon: FiShield, label: 'Statut', value: statusMeta(business.status).label },
     { icon: FiMapPin, label: 'Localisation', value: business.city },
     {
-      icon: FiBriefcase,
+      icon: HiOutlineBuildingOffice2,
       label: 'Publications',
       value: `${Object.values(content).reduce((total, items) => total + items.length, 0)}`,
     },
@@ -127,7 +128,7 @@ export function BusinessDetailPage() {
 
   if (hasTransfer) {
     metricItems.splice(1, 0, {
-      icon: FiBriefcase,
+      icon: HiOutlineBuildingOffice2,
       label: 'Frais annoncés',
       value: `${business.feePercent}%`,
     })

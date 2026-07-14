@@ -1,4 +1,4 @@
-import { FiBriefcase } from 'react-icons/fi'
+import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 import { Link } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 
@@ -8,7 +8,7 @@ export function PublicationScopeButton({ business, scope, onScopeChange, isOwner
   if (!isOwner) {
     return (
       <Link to={`/businesses/${business.id}/publications/listings`}>
-        <Button icon={FiBriefcase} variant="secondary">
+        <Button icon={HiOutlineBuildingOffice2} variant="secondary">
           Entreprise
         </Button>
       </Link>
@@ -22,14 +22,14 @@ export function PublicationScopeButton({ business, scope, onScopeChange, isOwner
           Profil personnel
         </Button>
         <Link to={`/businesses/${business.id}`}>
-          <Button icon={FiBriefcase}>Fiche entreprise</Button>
+          <Button icon={HiOutlineBuildingOffice2}>Fiche entreprise</Button>
         </Link>
       </>
     )
   }
 
   return (
-    <Button icon={FiBriefcase} variant="secondary" onClick={() => onScopeChange('business')}>
+    <Button icon={HiOutlineBuildingOffice2} variant="secondary" onClick={() => onScopeChange('business')}>
       Entreprise
     </Button>
   )

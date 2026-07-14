@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { FiBell } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
+import { useLanguage } from '../../contexts/useLanguage'
 import { selectAccountPreferences } from '../../features/account/accountSlice'
 import { addToast } from '../../features/ui/uiSlice'
 import {
@@ -32,6 +33,7 @@ function isBannerDismissed() {
  */
 export function PushPermissionBanner() {
   const dispatch = useDispatch()
+  const { t, language } = useLanguage()
   const user = useSelector((state) => state.auth.user)
   const preferences = useSelector((state) =>
     user?.id ? selectAccountPreferences(state, user.id) : null,
@@ -48,8 +50,8 @@ export function PushPermissionBanner() {
       dispatch(
         addToast({
           tone: 'warning',
-          title: 'Notifications indisponibles',
-          message: 'La configuration push du site est incomplète. Réessayez après la prochaine mise à jour.',
+          title: t('settings.push.unavailableTitle'),
+          message: getWebPushErrorMessage('missing_vapid', language),
         }),
       )
       return
@@ -62,8 +64,8 @@ export function PushPermissionBanner() {
         dispatch(
           addToast({
             tone: 'success',
-            title: 'Notifications activées',
-            message: 'Vous recevrez les alertes MOXT sur cet appareil.',
+            title: t('settings.push.enabledTitle'),
+            message: t('settings.push.enabledMessage'),
           }),
         )
         setDismissed(true)
@@ -75,8 +77,10 @@ export function PushPermissionBanner() {
           addToast({
             tone: result.reason === 'denied' ? 'warning' : 'info',
             title:
-              result.reason === 'denied' ? 'Notifications refusées' : 'Activation incomplète',
-            message: getWebPushErrorMessage(result.reason),
+              result.reason === 'denied'
+                ? t('settings.push.deniedTitle')
+                : t('settings.push.incompleteTitle'),
+            message: getWebPushErrorMessage(result.reason, language),
           }),
         )
       }
@@ -97,16 +101,16 @@ export function PushPermissionBanner() {
           <FiBell />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold">Activer les notifications</p>
+          <p className="text-sm font-bold">{t('settings.push.bannerTitle')}</p>
           <p className="mt-1 text-xs leading-5 text-[var(--app-text-muted)]">
-            Messages, candidatures et alertes importantes sur votre écran d’accueil.
+            {t('settings.push.bannerBody')}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Button onClick={enablePush} loading={loading} disabled={loading}>
-              Autoriser
+              {t('settings.push.allow')}
             </Button>
             <Button variant="secondary" onClick={dismiss}>
-              Plus tard
+              {t('settings.push.later')}
             </Button>
           </div>
         </div>

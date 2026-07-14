@@ -1,6 +1,6 @@
 import { useFormik } from 'formik'
 import { useEffect, useState } from 'react'
-import { FiLock, FiMail } from 'react-icons/fi'
+import { FiLock, FiMail, FiPhone } from 'react-icons/fi'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { AuthCard } from '../components/auth/AuthCard'
@@ -20,8 +20,8 @@ import { startRealtimeSubscription } from '../services/realtimeService'
 import { resolveReturnTo, clearReturnTo } from '../features/guest/guestNavigation'
 
 const LOGIN_MODES = [
+  { id: 'phone-password', label: 'Tél. + mot de passe', icon: FiPhone },
   { id: 'email', label: 'E-mail', icon: FiMail },
-  { id: 'phone-password', label: 'Tél. + mot de passe', icon: FiLock },
 ]
 
 function finishLogin(dispatch, store, navigate, location, searchParams) {
@@ -41,7 +41,7 @@ export function LoginPage() {
   const { t } = useLanguage()
   const { error, status } = useSelector((state) => state.auth)
 
-  const [mode, setMode] = useState('email')
+  const [mode, setMode] = useState('phone-password')
 
   useEffect(() => () => dispatch(clearAuthError()), [dispatch])
 
@@ -86,7 +86,7 @@ export function LoginPage() {
       eyebrow="MOXT · Connexion"
       title={t('auth.login.title')}
       titleClassName="max-sm:hidden"
-      description="Accédez à votre espace par e-mail ou par numéro russe (+7) et mot de passe."
+      description="Accédez à votre espace par numéro russe (+7) et mot de passe, ou par e-mail."
     >
       <div className="grid gap-2 sm:grid-cols-2">
         {LOGIN_MODES.map((item) => {
@@ -110,37 +110,6 @@ export function LoginPage() {
         <Alert className="mt-4" variant="success">
           {location.state.notice}
         </Alert>
-      ) : null}
-
-      {mode === 'email' ? (
-        <form className="auth-flow-panel mt-4 grid gap-4" onSubmit={emailFormik.handleSubmit} noValidate>
-          <Input
-            id="login-email"
-            label="Adresse e-mail"
-            type="email"
-            autoComplete="username"
-            placeholder="nom@example.com"
-            iconLeft={<FiMail />}
-            {...emailFormik.getFieldProps('email')}
-            error={emailError('email')}
-          />
-          <PasswordInput
-            id="login-password"
-            label={t('auth.login.password')}
-            autoComplete="current-password"
-            iconLeft={<FiLock />}
-            {...emailFormik.getFieldProps('password')}
-            error={emailError('password')}
-          />
-          <div className="flex justify-end">
-            <Link className="auth-flow-link" to="/forgot-password">
-              {t('auth.login.forgot')}
-            </Link>
-          </div>
-          <Button className="w-full" type="submit" loading={status === 'loading'}>
-            {status === 'loading' ? t('auth.login.submitting') : t('auth.login.submit')}
-          </Button>
-        </form>
       ) : null}
 
       {mode === 'phone-password' ? (
@@ -171,6 +140,37 @@ export function LoginPage() {
           </p>
           <Button className="w-full" type="submit" loading={status === 'loading'}>
             {status === 'loading' ? t('auth.login.submitting') : 'Se connecter'}
+          </Button>
+        </form>
+      ) : null}
+
+      {mode === 'email' ? (
+        <form className="auth-flow-panel mt-4 grid gap-4" onSubmit={emailFormik.handleSubmit} noValidate>
+          <Input
+            id="login-email"
+            label="Adresse e-mail"
+            type="email"
+            autoComplete="username"
+            placeholder="nom@example.com"
+            iconLeft={<FiMail />}
+            {...emailFormik.getFieldProps('email')}
+            error={emailError('email')}
+          />
+          <PasswordInput
+            id="login-password"
+            label={t('auth.login.password')}
+            autoComplete="current-password"
+            iconLeft={<FiLock />}
+            {...emailFormik.getFieldProps('password')}
+            error={emailError('password')}
+          />
+          <div className="flex justify-end">
+            <Link className="auth-flow-link" to="/forgot-password">
+              {t('auth.login.forgot')}
+            </Link>
+          </div>
+          <Button className="w-full" type="submit" loading={status === 'loading'}>
+            {status === 'loading' ? t('auth.login.submitting') : t('auth.login.submit')}
           </Button>
         </form>
       ) : null}

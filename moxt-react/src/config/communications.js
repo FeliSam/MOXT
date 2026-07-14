@@ -1,7 +1,8 @@
 import { FiBox, FiBriefcase, FiCalendar, FiRepeat, FiShoppingBag, FiUsers } from 'react-icons/fi'
+import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 
 export const RELATED_CONTENT_META = {
-  business: { icon: FiBriefcase, label: 'Entreprise', tone: 'bg-violet-500' },
+  business: { icon: HiOutlineBuildingOffice2, label: 'Entreprise', tone: 'bg-violet-500' },
   event: { icon: FiCalendar, label: 'Événement', tone: 'bg-amber-500' },
   job: { icon: FiBriefcase, label: 'Emploi', tone: 'bg-blue-500' },
   listing: { icon: FiShoppingBag, label: 'Annonce', tone: 'bg-pink-500' },

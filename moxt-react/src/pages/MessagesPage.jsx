@@ -49,18 +49,20 @@ import {
   isImageFile,
   MAX_MESSAGE_IMAGES,
 } from '../features/communications/attachmentUtils'
+import { useLanguage } from '../contexts/useLanguage'
 
 const ASSISTANT_ID = 'moxt-assistant'
 
-const MESSAGE_FILTERS = [
-  { id: 'all', label: 'Toutes' },
-  { id: 'unread', label: 'Non lues' },
-  { id: 'pinned', label: 'Épinglées', icon: FiStar },
+const MESSAGE_FILTER_IDS = [
+  { id: 'all', labelKey: 'messages.filterAll' },
+  { id: 'unread', labelKey: 'messages.filterUnread' },
+  { id: 'pinned', labelKey: 'messages.filterPinned', icon: FiStar },
 ]
 
 export function MessagesPage() {
   const dispatch = useDispatch()
   const store = useStore()
+  const { t } = useLanguage()
   const user = useSelector((state) => state.auth.user)
   const conversations = useSelector(selectUserConversations)
   const unreadMessagesCount = useSelector(selectUnreadMessageCount)
@@ -170,9 +172,9 @@ export function MessagesPage() {
       const errors = {}
       const text = values.text?.trim() || ''
       if (!text && !attachments.length) {
-        errors.text = 'Ajoutez un message ou une pièce jointe.'
+        errors.text = t('messages.requireContent')
       } else if (text.length > 2000) {
-        errors.text = 'Message trop long.'
+        errors.text = t('messages.tooLong')
       }
       return errors
     },
@@ -235,8 +237,8 @@ export function MessagesPage() {
       } catch (error) {
         dispatch(
           addToast({
-            title: 'Image non envoyée',
-            message: error?.message || 'Impossible d’envoyer cette image pour le moment.',
+            title: t('messages.imageFailedTitle'),
+            message: error?.message || t('messages.imageFailed'),
             tone: 'error',
           }),
         )
@@ -262,8 +264,8 @@ export function MessagesPage() {
       if (!updated || updated.messages.length === previousCount) {
         dispatch(
           addToast({
-            title: 'Message non envoyé',
-            message: 'Impossible d’envoyer ce message pour le moment.',
+            title: t('messages.sendFailedTitle'),
+            message: t('messages.sendFailed'),
             tone: 'error',
           }),
         )
@@ -396,8 +398,8 @@ export function MessagesPage() {
     if (imageFiles.length && otherFiles.length) {
       dispatch(
         addToast({
-          title: 'Fichiers mixtes',
-          message: 'Choisissez soit des images, soit un document.',
+          title: t('messages.mixedFilesTitle'),
+          message: t('messages.mixedFiles'),
           tone: 'error',
         }),
       )
@@ -412,8 +414,8 @@ export function MessagesPage() {
     if (imageFiles.length > MAX_MESSAGE_IMAGES) {
       dispatch(
         addToast({
-          title: 'Trop d’images',
-          message: `Maximum ${MAX_MESSAGE_IMAGES} images par message.`,
+          title: t('messages.maxImagesTitle'),
+          message: t('messages.maxImages', { count: MAX_MESSAGE_IMAGES }),
           tone: 'error',
         }),
       )
@@ -467,8 +469,8 @@ export function MessagesPage() {
     if (!updated || updated.messages.length <= previousCount) {
       dispatch(
         addToast({
-          title: 'Message non envoyé',
-          message: 'Impossible de renvoyer ce message pour le moment.',
+          title: t('messages.sendFailedTitle'),
+          message: t('messages.retryFailed'),
           tone: 'error',
         }),
       )
@@ -503,7 +505,7 @@ export function MessagesPage() {
               <button
                 type="button"
                 className="absolute inset-0 bg-slate-950/20 backdrop-blur-[1px]"
-                aria-label="Fermer la recherche"
+                aria-label={t("messages.closeSearch")}
                 onClick={closeSearch}
               />
               <div
@@ -518,14 +520,14 @@ export function MessagesPage() {
                       className="min-w-0 flex-1 bg-transparent text-sm outline-none"
                       value={query}
                       onChange={(event) => setQuery(event.target.value)}
-                      placeholder="Rechercher conversations et messages"
-                      aria-label="Rechercher conversations et messages"
+                      placeholder={t("messages.searchPlaceholder")}
+                      aria-label={t("messages.searchPlaceholder")}
                     />
                     <button
                       type="button"
                       className="grid size-9 place-items-center rounded-xl bg-[var(--app-surface)] shadow-sm"
                       onClick={closeSearch}
-                      aria-label="Fermer la recherche"
+                      aria-label={t("messages.closeSearch")}
                     >
                       <FiX />
                     </button>
@@ -537,7 +539,7 @@ export function MessagesPage() {
                   style={{ maxHeight: 'min(56dvh, 28rem)' }}
                 >
                   <p className="px-2 pb-1 pt-1 text-[10px] font-bold uppercase tracking-wide text-[var(--app-text-faint)]">
-                    {isFiltering ? `Résultats (${visible.length})` : 'Conversations'}
+                    {isFiltering ? t("messages.resultsCount", { count: visible.length }) : t("messages.conversations")}
                   </p>
                   {visible.map((conversation) => (
                     <ConversationRow
@@ -550,7 +552,7 @@ export function MessagesPage() {
                   ))}
                   {isFiltering && !visible.length ? (
                     <p className="p-6 text-center text-sm text-[var(--app-text-faint)]">
-                      Aucune conversation trouvée.
+                      {t("messages.noMatch")}
                     </p>
                   ) : null}
                 </div>
@@ -563,10 +565,10 @@ export function MessagesPage() {
                 <FiMessageSquare />
               </span>
               <div className="min-w-0 flex-1">
-                <h1 className="font-black">Conversations</h1>
+                <h1 className="font-black">{t("messages.conversations")}</h1>
                 <p className="text-xs text-[var(--app-text-muted)]">
                   {activeHumanConversations.length + 1} échange(s){' '}
-                  {showArchived ? 'archivé(s)' : 'actif(s)'}
+                  {showArchived ? t("messages.archived") : t("messages.active")}
                   {!showArchived && unreadMessagesCount > 0
                     ? ` · ${unreadMessagesCount} non lu${unreadMessagesCount > 1 ? 's' : ''}`
                     : ''}
@@ -589,7 +591,7 @@ export function MessagesPage() {
                   type="button"
                   onClick={() => setSearchOpen(true)}
                   className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--app-surface-muted)] text-[var(--app-accent)] shadow-sm"
-                  aria-label="Rechercher une conversation"
+                  aria-label={t("messages.searchConversationAria")}
                   aria-expanded={searchOpen}
                 >
                   <FiSearch />
@@ -599,9 +601,9 @@ export function MessagesPage() {
             <div
               className="message-filter-chips scrollbar-hidden mt-3 hidden gap-2 overflow-x-auto pb-0.5 lg:flex"
               role="toolbar"
-              aria-label="Filtrer les conversations"
+              aria-label={t("messages.filterAria")}
             >
-              {MESSAGE_FILTERS.map((item) => {
+              {MESSAGE_FILTER_IDS.map((item) => {
                 const count = countConversationsForFilter(
                   conversations,
                   item.id,
@@ -621,7 +623,7 @@ export function MessagesPage() {
                     aria-pressed={activeFilter}
                   >
                     {item.icon ? <item.icon className="size-3" aria-hidden="true" /> : null}
-                    {item.label}
+                    {t(item.labelKey)}
                     {count ? <span className="message-filter-chip-count">{count}</span> : null}
                   </button>
                 )
@@ -633,7 +635,7 @@ export function MessagesPage() {
                 aria-pressed={showArchived}
               >
                 <FiArchive className="size-3" aria-hidden="true" />
-                {showArchived ? 'Actives' : 'Archives'}
+                {showArchived ? 'Actives' : t('messages.archives')}
               </button>
             </div>
           </div>
@@ -666,8 +668,8 @@ export function MessagesPage() {
             ) : !visible.length && filter !== 'all' ? (
               <p className="p-6 text-center text-sm text-[var(--app-text-faint)]">
                 {filter === 'pinned'
-                  ? 'Aucune conversation épinglée.'
-                  : 'Aucune conversation non lue.'}
+                  ? t("messages.noPinned")
+                  : t("messages.noUnread")}
               </p>
             ) : null}
           </div>
@@ -770,13 +772,13 @@ export function MessagesPage() {
                     addToast(
                       copied
                         ? {
-                            title: 'Message copié',
-                            message: 'Le contenu a été copié dans le presse-papiers.',
+                            title: t("messages.copiedTitle"),
+                            message: t("messages.copied"),
                             tone: 'success',
                           }
                         : {
-                            title: 'Copie impossible',
-                            message: 'Impossible de copier le message sur cet appareil.',
+                            title: t("messages.copyFailedTitle"),
+                            message: t("messages.copyFailed"),
                             tone: 'error',
                           },
                     ),
@@ -821,7 +823,7 @@ export function MessagesPage() {
 
       <ConfirmDialog
         open={Boolean(pendingDeleteId)}
-        title="Supprimer ce message ?"
+        title={t("messages.deleteConfirmTitle")}
         description="Le message sera retiré de votre conversation. Cette action est définitive."
         onCancel={() => setPendingDeleteId(null)}
         onConfirm={() => {

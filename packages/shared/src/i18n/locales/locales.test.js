@@ -31,6 +31,10 @@ describe('locales t()', () => {
       expect(locale.share.tabTypeLabel).toBeTruthy()
       expect(locale.share.steps.step1Title).toBeTruthy()
       expect(locale.messages.syncing).toBeTruthy()
+      expect(locale.messages.maxImages).toBeTruthy()
+      expect(locale.settings.push.errors.missingVapid).toBeTruthy()
+      expect(locale.common.pullToRefresh.pull).toBeTruthy()
+      expect(locale.security.email.otpLabel).toBeTruthy()
       expect(locale.auth.register.codeResentTitle).toBeTruthy()
       expect(locale.legal.sections.privacy.paragraphs.length).toBeGreaterThan(3)
     }

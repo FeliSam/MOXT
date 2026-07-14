@@ -1,6 +1,7 @@
-import { FiBell, FiBox, FiBriefcase, FiFileText, FiHome, FiMessageSquare, FiRepeat, FiShoppingBag } from 'react-icons/fi'
+import { FiBox, FiBriefcase, FiFileText, FiHome, FiMessageSquare, FiRepeat, FiShoppingBag } from 'react-icons/fi'
+import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 
-/** Sidebar — ordre complet (8 entrées desktop, messagerie + entreprise + actualité en fin) */
+/** Sidebar — ordre complet (messagerie + entreprise owner + actualité en fin desktop) */
 export const primaryNavigationItems = [
   { id: 'home', label: 'Accueil', path: '/dashboard', icon: FiHome },
   { id: 'transfers', label: 'Transfert', path: '/transfers', icon: FiRepeat },
@@ -9,18 +10,10 @@ export const primaryNavigationItems = [
   { id: 'jobs', label: 'Jobs', path: '/jobs', icon: FiBriefcase },
   { id: 'messages', label: 'Messagerie', path: '/messages', icon: FiMessageSquare, badgeSelector: 'messages' },
   {
-    id: 'notifications',
-    label: 'Notifications',
-    path: '/notifications',
-    icon: FiBell,
-    desktopOnly: true,
-    badgeSelector: 'notifications',
-  },
-  {
     id: 'businesses',
     label: 'Entreprise',
-    path: '/businesses',
-    icon: FiBriefcase,
+    path: '/professional',
+    icon: HiOutlineBuildingOffice2,
     desktopOnly: true,
     requiresOwnedBusiness: true,
   },

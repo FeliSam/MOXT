@@ -304,18 +304,31 @@ export function AppRouter() {
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/support" element={<SupportPage />} />
-            {!isProd ? (
-              <>
-                <Route path="/design-system" element={<DesignSystemPage />} />
-                <Route path="/feature-matrix" element={<FeatureMatrixPage />} />
-              </>
-            ) : null}
-            <Route element={<ProtectedRoute allowedRoles={['admin', 'superadmin']} />}>
-              <Route path="/admin" element={<AdminPage />} />
-            </Route>
-            <Route element={<ProtectedRoute allowedRoles={['superadmin']} />}>
-              <Route path="/superadmin" element={<SuperAdminPage />} />
-            </Route>
+            {!isProd ? <Route path="/design-system" element={<DesignSystemPage />} /> : null}
+            <Route
+              path="/feature-matrix"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+                  <FeatureMatrixPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+                  <AdminPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/superadmin"
+              element={
+                <ProtectedRoute allowedRoles={['superadmin']}>
+                  <SuperAdminPage />
+                </ProtectedRoute>
+              }
+            />
           </Route>
         </Route>
 

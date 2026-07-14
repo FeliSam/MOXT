@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { FiAlertTriangle, FiBriefcase, FiCalendar, FiMessageSquare, FiPackage, FiShield, FiShoppingBag } from 'react-icons/fi'
+import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 import { Link } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import { PillBadge } from '../../components/ui/Badge'
@@ -21,7 +22,7 @@ const PUBLICATION_ICONS = {
   job: FiBriefcase,
   event: FiCalendar,
   post: FiMessageSquare,
-  business: FiBriefcase,
+  business: HiOutlineBuildingOffice2,
 }
 
 export function ReviewCard({ review, ownerId, ownerName, isOwner }) {

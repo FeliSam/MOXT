@@ -1,4 +1,5 @@
-import { FiArrowLeft, FiBriefcase, FiLock } from 'react-icons/fi'
+import { FiArrowLeft, FiLock } from 'react-icons/fi'
+import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 import { useMemo } from 'react'
 import { useSelector } from 'react-redux'
 import { Link, useOutletContext, useParams, useSearchParams } from 'react-router-dom'
@@ -249,7 +250,7 @@ export function BusinessPublicationsPage() {
                   </>
                 ) : null}
                 <Link to="/businesses">
-                  <Button variant="secondary" icon={FiBriefcase}>
+                  <Button variant="secondary" icon={HiOutlineBuildingOffice2}>
                     Annuaire
                   </Button>
                 </Link>

@@ -371,10 +371,15 @@ const accountSlice = createSlice({
     },
     hydrateAccountPreferences(state, action) {
       const { userId, preferences, fromRemote = true } = action.payload
+      const previous = state.preferences[userId] || {}
       const merged = {
         ...defaultPreferences,
-        ...state.preferences[userId],
+        ...previous,
         ...preferences,
+      }
+      // Source de vérité distante : pas de language inventée ni de cache local si absente du profil
+      if (fromRemote && preferences.language === undefined) {
+        delete merged.language
       }
       if (fromRemote && preferences.activityVisibility !== undefined) {
         merged.activityVisibility = preferences.activityVisibility

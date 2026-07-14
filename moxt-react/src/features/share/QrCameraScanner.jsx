@@ -2,13 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   FiAlertCircle,
   FiArrowRight,
-  FiBriefcase,
   FiCamera,
   FiGift,
   FiRefreshCw,
   FiShield,
   FiUser,
 } from 'react-icons/fi'
+import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 import { useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
@@ -21,7 +21,7 @@ import { useQrCameraScanner } from './useQrCameraScanner'
 
 const TARGET_ICONS = {
   user: FiUser,
-  business: FiBriefcase,
+  business: HiOutlineBuildingOffice2,
   invite: FiGift,
 }
 

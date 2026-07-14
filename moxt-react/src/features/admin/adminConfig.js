@@ -1,7 +1,6 @@
 import {
   FiActivity,
   FiAlertCircle,
-  FiBriefcase,
   FiCalendar,
   FiHeadphones,
   FiInbox,
@@ -13,6 +12,7 @@ import {
   FiTrendingUp,
   FiUsers,
 } from 'react-icons/fi'
+import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 
 export const MAIN_VIEWS = [
   { id: 'overview', label: 'Vue generale', icon: FiShield },
@@ -25,7 +25,7 @@ export const MAIN_VIEWS = [
 ]
 
 export const CONTENT_SECTIONS = [
-  { id: 'businesses', label: 'Entreprises', icon: FiBriefcase, route: '/businesses', color: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300' },
+  { id: 'businesses', label: 'Entreprises', icon: HiOutlineBuildingOffice2, route: '/businesses', color: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300' },
   { id: 'listings', label: 'Annonces', icon: FiShoppingBag, route: '/marketplace', color: 'bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300' },
   { id: 'jobs', label: 'Jobs', icon: FiTrendingUp, route: '/jobs', color: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' },
   { id: 'events', label: 'Evenements', icon: FiCalendar, route: '/events', color: 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300' },

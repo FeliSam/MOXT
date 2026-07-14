@@ -310,12 +310,29 @@ function bindChannel(userId, dispatch, getState) {
       },
       (payload) => {
         const visibility = payload.new?.activity_visibility
-        if (!visibility) return
+        const remotePrefs = payload.new?.preferences
+        const preferences =
+          remotePrefs && typeof remotePrefs === 'object' && !Array.isArray(remotePrefs)
+            ? remotePrefs
+            : typeof remotePrefs === 'string'
+              ? (() => {
+                  try {
+                    const parsed = JSON.parse(remotePrefs)
+                    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}
+                  } catch {
+                    return {}
+                  }
+                })()
+              : {}
+        if (!visibility && !Object.keys(preferences).length) return
         dispatch(
           hydrateAccountPreferences({
             userId,
             fromRemote: true,
-            preferences: { activityVisibility: visibility },
+            preferences: {
+              ...preferences,
+              ...(visibility ? { activityVisibility: visibility } : {}),
+            },
           }),
         )
       },

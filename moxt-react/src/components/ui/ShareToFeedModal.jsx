@@ -138,8 +138,8 @@ export function ShareToFeedModal({ sourceType = 'free', sourceId = null, sourceD
             {user?.avatarUrl ? (
               <img src={user.avatarUrl} alt="" className="size-9 rounded-full object-cover" />
             ) : (
-              <span className="grid size-9 place-items-center rounded-full bg-brand-600 text-sm font-black text-white">
-                {user?.firstName?.[0]}{user?.lastName?.[0]}
+              <span className="grid size-9 place-items-center whitespace-nowrap rounded-full bg-brand-600 text-sm font-black text-white">
+                {`${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`.toUpperCase()}
               </span>
             )}
             <div>

@@ -1,6 +1,7 @@
 import { FiExternalLink } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { RELATED_CONTENT_META } from '../../config/communications'
+import { useLanguage } from '../../contexts/useLanguage'
 
 export function RelatedContentPreview({
   preview,
@@ -8,6 +9,7 @@ export function RelatedContentPreview({
   onReply,
   contextId,
 }) {
+  const { t } = useLanguage()
   if (!preview?.path) return null
 
   const meta = RELATED_CONTENT_META[preview.type] || RELATED_CONTENT_META.general
@@ -61,7 +63,7 @@ export function RelatedContentPreview({
           <Link
             to={preview.path}
             className="grid size-9 shrink-0 place-items-center self-center rounded-xl border border-[var(--app-border)] text-[var(--app-text-muted)] transition hover:border-brand-200 hover:bg-[var(--app-accent-soft)] hover:text-brand-700"
-            aria-label="Ouvrir la fiche"
+            aria-label={t('messages.openListing')}
             onClick={(event) => event.stopPropagation()}
           >
             <FiExternalLink />
@@ -74,10 +76,10 @@ export function RelatedContentPreview({
       </div>
       <div className="border-t border-[var(--app-border)] bg-[var(--app-surface-muted)]/60 px-3 py-2 text-center text-[11px] font-semibold text-[var(--app-text-muted)] sm:px-4">
         {interactive
-          ? 'Répondre à cette annonce — ouvrir la fiche via →'
+          ? t('messages.replyToListing')
           : inline
-            ? 'Annonce liée à la discussion — ouvrir la fiche'
-            : 'Sujet de cette conversation — ouvrir la fiche'}
+            ? t('messages.linkedListing')
+            : t('messages.openListing')}
       </div>
     </>
   )

@@ -251,8 +251,8 @@ export function FeedPostCard({ post }) {
               {user.avatarUrl ? (
                 <img src={user.avatarUrl} alt="" className="size-7 rounded-full object-cover shrink-0" />
               ) : (
-                <span className="grid size-7 place-items-center rounded-full bg-brand-600 text-xs font-black text-white shrink-0">
-                  {user.firstName?.[0]}
+                <span className="grid size-7 shrink-0 place-items-center whitespace-nowrap rounded-full bg-brand-600 text-xs font-black text-white">
+                  {`${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase()}
                 </span>
               )}
               <input

@@ -19,6 +19,7 @@ import {
   FiUser,
   FiUsers,
 } from 'react-icons/fi'
+import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 
 export const routePreloaders = {
   '/admin': () => import('../pages/AdminPage'),
@@ -89,7 +90,7 @@ export const navigationGroups = [
     icon: FiShoppingBag,
     color: 'from-violet-500 to-purple-500',
     children: [
-      { id: 'businesses', label: 'Entreprises', path: '/businesses', icon: FiBriefcase },
+      { id: 'businesses', label: 'Entreprises', path: '/businesses', icon: HiOutlineBuildingOffice2 },
       { id: 'professional', label: 'Espace professionnel', path: '/professional', icon: FiGrid },
       { id: 'parcels', label: 'Colis', path: '/parcels', icon: FiBox },
       { id: 'marketplace', label: 'Marketplace', path: '/marketplace', icon: FiShoppingBag },

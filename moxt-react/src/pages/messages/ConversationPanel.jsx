@@ -234,8 +234,8 @@ export function ConversationPanel({
               iconSize="sm"
               className="truncate text-sm font-black tracking-tight sm:text-[0.9375rem]"
             />
-            {pinned ? <FiStar className="size-3.5 shrink-0 text-amber-500" aria-label="Épinglée" /> : null}
-            {muted ? <FiBellOff className="size-3.5 shrink-0 text-[var(--app-text-faint)]" aria-label="En sourdine" /> : null}
+            {pinned ? <FiStar className="size-3.5 shrink-0 text-amber-500" aria-label={t("messages.pinnedAria")} /> : null}
+            {muted ? <FiBellOff className="size-3.5 shrink-0 text-[var(--app-text-faint)]" aria-label={t("messages.mutedAria")} /> : null}
           </div>
           <div className="mt-0.5 flex flex-wrap items-center gap-2">
             {peerTyping ? (
@@ -262,7 +262,7 @@ export function ConversationPanel({
             setThreadSearchOpen((value) => !value)
             if (threadSearchOpen) setThreadQuery('')
           }}
-          aria-label={threadSearchOpen ? 'Fermer la recherche dans le fil' : 'Rechercher dans le fil'}
+          aria-label={threadSearchOpen ? t("messages.closeSearchInThread") : t("messages.searchInThread")}
           aria-pressed={threadSearchOpen}
         >
           <FiSearch />
@@ -272,7 +272,7 @@ export function ConversationPanel({
             <Link
               className="message-touch-target grid size-9 shrink-0 place-items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-brand-700 transition hover:border-brand-200 hover:bg-[var(--app-accent-soft)] lg:hidden dark:text-brand-300"
               to={active.relatedPath || relatedPreview.path}
-              aria-label="Voir la fiche"
+              aria-label={t("messages.viewListing")}
             >
               <FiExternalLink />
             </Link>
@@ -298,7 +298,7 @@ export function ConversationPanel({
             className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-[var(--app-surface-muted)]"
             onClick={onPin}
           >
-            <FiStar /> {pinned ? 'Désépingler' : 'Épingler'}
+            <FiStar /> {pinned ? t("messages.unpin") : t("messages.pin")}
           </button>
           <button
             type="button"
@@ -306,7 +306,7 @@ export function ConversationPanel({
             className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-[var(--app-surface-muted)]"
             onClick={onMute}
           >
-            <FiBellOff /> {muted ? 'Réactiver les alertes' : 'Mettre en sourdine'}
+            <FiBellOff /> {muted ? t("messages.unmute") : t("messages.mute")}
           </button>
           <button
             type="button"
@@ -331,7 +331,7 @@ export function ConversationPanel({
             className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 dark:hover:bg-red-950/30"
             onClick={onBlock}
           >
-            <FiSlash /> {blocked ? 'Débloquer' : 'Bloquer'}
+            <FiSlash /> {blocked ? t("messages.unblock") : t("messages.block")}
           </button>
         </PopoverMenu>
       </header>
@@ -345,15 +345,15 @@ export function ConversationPanel({
               className="min-w-0 flex-1 bg-transparent text-sm outline-none"
               value={threadQuery}
               onChange={(event) => setThreadQuery(event.target.value)}
-              placeholder="Rechercher dans cette conversation"
-              aria-label="Rechercher dans cette conversation"
+              placeholder={t("messages.searchInConversation")}
+              aria-label={t("messages.searchInConversation")}
             />
             {threadQuery ? (
               <button
                 type="button"
                 className="grid size-8 place-items-center rounded-lg text-[var(--app-text-muted)] hover:bg-[var(--app-surface-muted)]"
                 onClick={() => setThreadQuery('')}
-                aria-label="Effacer la recherche"
+                aria-label={t("messages.clearSearch")}
               >
                 <FiX />
               </button>
@@ -570,7 +570,7 @@ export function ConversationPanel({
             type="button"
             className="message-scroll-fab"
             onClick={scrollToBottom}
-            aria-label="Revenir en bas de la conversation"
+            aria-label={t("messages.scrollToBottom")}
           >
             <FiArrowDown />
           </button>
@@ -627,7 +627,7 @@ export function ConversationPanel({
                       const next = attachments.filter((_, itemIndex) => itemIndex !== index)
                       onFile(next.length ? next : null)
                     }}
-                    aria-label={`Retirer ${file.name}`}
+                    aria-label={t("messages.removeAttachment", { name: file.name })}
                   >
                     <FiX />
                   </button>
@@ -638,7 +638,7 @@ export function ConversationPanel({
               type="button"
               className="message-touch-target ml-auto shrink-0 rounded-lg px-2 py-1 font-bold text-[var(--app-accent)] hover:bg-[var(--app-surface)]"
               onClick={() => onFile(null)}
-              aria-label="Retirer toutes les pièces jointes"
+              aria-label={t("messages.removeAllAttachments")}
             >
               Tout retirer
             </button>
@@ -659,7 +659,7 @@ export function ConversationPanel({
               type="button"
               className="grid size-7 shrink-0 place-items-center rounded-lg text-[var(--app-accent)] hover:bg-[var(--app-surface)]"
               onClick={() => onReplyToContext?.(null)}
-              aria-label="Annuler la réponse à l’annonce"
+              aria-label={t("messages.cancelReplyListing")}
             >
               <FiX />
             </button>
@@ -679,7 +679,7 @@ export function ConversationPanel({
               type="button"
               className="grid size-7 shrink-0 place-items-center rounded-lg text-[var(--app-accent)] hover:bg-[var(--app-surface)]"
               onClick={() => onReply(null)}
-              aria-label="Annuler la réponse"
+              aria-label={t("messages.cancelReply")}
             >
               <FiX />
             </button>
@@ -699,7 +699,7 @@ export function ConversationPanel({
               type="button"
               className="grid size-7 shrink-0 place-items-center rounded-lg text-amber-700 hover:bg-[var(--app-surface)] dark:text-amber-300"
               onClick={() => onCancelEdit?.()}
-              aria-label="Annuler la modification"
+              aria-label={t("messages.cancelEdit")}
             >
               <FiX />
             </button>
@@ -711,7 +711,7 @@ export function ConversationPanel({
         >
           <label
             className="message-touch-target grid size-11 shrink-0 cursor-pointer place-items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-base text-[var(--app-accent)] shadow-sm transition hover:border-brand-200 hover:bg-[var(--app-accent-soft)]"
-            aria-label="Ajouter des images ou un document"
+            aria-label={t("messages.addAttachments")}
           >
             <FiPaperclip aria-hidden="true" />
             <input
@@ -730,8 +730,8 @@ export function ConversationPanel({
           <textarea
             ref={composerRef}
             className="max-h-28 min-h-9 flex-1 resize-none overflow-y-auto bg-transparent px-1 py-2 text-xs leading-5 outline-none placeholder:text-[var(--app-text-faint)] sm:text-[13px] sm:leading-5"
-            placeholder={blocked ? 'Cette conversation est bloquée' : 'Écrire un message…'}
-            aria-label="Écrire un message"
+            placeholder={blocked ? t("messages.blockedPlaceholder") : t("messages.writePlaceholder")}
+            aria-label={t("messages.writeAria")}
             rows={1}
             disabled={blocked}
             {...formik.getFieldProps('text')}
@@ -761,7 +761,7 @@ export function ConversationPanel({
           <button
             className="message-touch-target grid size-11 shrink-0 place-items-center rounded-xl bg-brand-700 text-base text-white shadow-[0_10px_24px_rgb(8_112_95/0.28)] transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-40"
             type="submit"
-            aria-label="Envoyer"
+            aria-label={t("messages.send")}
             disabled={
               blocked ||
               (!formik.values.text.trim() && !attachments.length) ||

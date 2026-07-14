@@ -1,7 +1,6 @@
 import {
   FiActivity,
   FiAlertCircle,
-  FiBriefcase,
   FiCalendar,
   FiEye,
   FiHeadphones,
@@ -13,6 +12,7 @@ import {
   FiUserCheck,
   FiUsers,
 } from 'react-icons/fi'
+import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 import { REVIEW_DISPUTE_STATUS } from '@moxt/shared/utils/reviewUtils.js'
 import { adminDetailLink, normalizeAdminKind } from './adminLinkUtils'
 import { formatDate, formatMoney } from '../transfers/transferUtils'
@@ -151,7 +151,7 @@ const DETAIL_ICONS = {
   dispute: FiAlertCircle,
   review: FiStar,
   report: FiAlertCircle,
-  businesses: FiBriefcase,
+  businesses: HiOutlineBuildingOffice2,
   listings: FiShoppingBag,
   jobs: FiTrendingUp,
   events: FiCalendar,

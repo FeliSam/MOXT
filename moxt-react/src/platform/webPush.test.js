@@ -28,6 +28,7 @@ describe('webPush', () => {
   it('formate les erreurs push', async () => {
     const { getWebPushErrorMessage } = await import('./webPush')
     expect(getWebPushErrorMessage('service_worker_timeout')).toContain('service')
+    expect(getWebPushErrorMessage('missing_vapid')).toMatch(/push:generate-vapid|setup:push/)
   })
 
   it('exige l installation PWA sur iPhone', async () => {

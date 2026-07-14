@@ -44,7 +44,7 @@ export function SettingsPage() {
     ),
   )
   const { theme, toggleTheme } = useTheme()
-  const { language, setLanguage } = useLanguage()
+  const { language, setLanguage, t } = useLanguage()
   const [confirmDeletion, setConfirmDeletion] = useState(false)
   const [pushPromptLoading, setPushPromptLoading] = useState(false)
   const pushPermission =
@@ -60,8 +60,8 @@ export function SettingsPage() {
       dispatch(
         addToast({
           tone: 'warning',
-          title: 'Notifications indisponibles',
-          message: 'La configuration push du site est incomplète. Réessayez après la prochaine mise à jour.',
+          title: t('settings.push.unavailableTitle'),
+          message: getWebPushErrorMessage('missing_vapid', language),
         }),
       )
       return
@@ -74,8 +74,8 @@ export function SettingsPage() {
         dispatch(
           addToast({
             tone: 'success',
-            title: 'Notifications activées',
-            message: 'Vous recevrez les alertes MOXT sur cet appareil.',
+            title: t('settings.push.enabledTitle'),
+            message: t('settings.push.enabledMessage'),
           }),
         )
         return
@@ -85,8 +85,10 @@ export function SettingsPage() {
           addToast({
             tone: result.reason === 'denied' ? 'warning' : 'info',
             title:
-              result.reason === 'denied' ? 'Notifications refusées' : 'Activation incomplète',
-            message: getWebPushErrorMessage(result.reason),
+              result.reason === 'denied'
+                ? t('settings.push.deniedTitle')
+                : t('settings.push.incompleteTitle'),
+            message: getWebPushErrorMessage(result.reason, language),
           }),
         )
         if (result.reason === 'denied') {
@@ -118,8 +120,8 @@ export function SettingsPage() {
             dispatch(
               addToast({
                 tone: 'warning',
-                title: 'Notifications refusées',
-                message: 'Autorisez les notifications MOXT dans les réglages de votre téléphone.',
+                title: t('settings.push.deniedTitle'),
+                message: t('settings.push.nativeDenied'),
               }),
             )
           }
@@ -131,9 +133,8 @@ export function SettingsPage() {
             dispatch(
               addToast({
                 tone: 'info',
-                title: 'Installation requise',
-                message:
-                  'Sur iPhone, ajoutez MOXT à l’écran d’accueil via Safari, puis réactivez les notifications push.',
+                title: t('settings.push.installRequiredTitle'),
+                message: t('settings.push.installRequiredBody'),
               }),
             )
             dispatch(
@@ -148,8 +149,8 @@ export function SettingsPage() {
             dispatch(
               addToast({
                 tone: 'warning',
-                title: 'Notifications refusées',
-                message: getWebPushErrorMessage('denied'),
+                title: t('settings.push.deniedTitle'),
+                message: getWebPushErrorMessage('denied', language),
               }),
             )
             dispatch(
@@ -164,8 +165,8 @@ export function SettingsPage() {
             dispatch(
               addToast({
                 tone: 'info',
-                title: 'Activation incomplète',
-                message: getWebPushErrorMessage(result.reason),
+                title: t('settings.push.incompleteTitle'),
+                message: getWebPushErrorMessage(result.reason, language),
               }),
             )
             if (
@@ -271,15 +272,15 @@ export function SettingsPage() {
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <NotifToggle
-              label="Notifications push"
+              label={t('settings.push.label')}
               description={
                 isNative
-                  ? "Alertes en temps réel sur l'appareil"
+                  ? t('settings.push.descNative')
                   : isWebPushContextReady()
-                    ? 'Alertes hors ligne via l’application web installée'
+                    ? t('settings.push.descWebReady')
                     : getWebPushInstallHint()
-                      ? 'Installez MOXT depuis Safari (écran d’accueil) pour activer les alertes iPhone'
-                      : 'Alertes en temps réel sur cet appareil'
+                      ? t('settings.push.descIosInstall')
+                      : t('settings.push.descDefault')
               }
               checked={preferences.pushNotifications}
               onChange={(v) => updatePreference('pushNotifications', v)}
@@ -288,14 +289,14 @@ export function SettingsPage() {
               <div className="sm:col-span-2 rounded-2xl border border-brand-200 bg-brand-50/80 p-4 dark:border-brand-900/50 dark:bg-brand-950/40">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-sm font-bold">Autorisation requise</p>
+                    <p className="text-sm font-bold">{t('settings.push.permissionRequiredTitle')}</p>
                     <p className="mt-1 text-xs leading-5 text-[var(--app-text-muted)]">
-                      Appuyez pour afficher la demande iOS/Safari et recevoir les alertes sur cet appareil.
+                      {t('settings.push.permissionRequiredBody')}
                     </p>
                   </div>
                   <Button onClick={requestWebPushPermission} loading={pushPromptLoading} disabled={pushPromptLoading}>
                     <FiBell className="mr-2 inline" aria-hidden />
-                    Autoriser les notifications
+                    {t('settings.push.allowButton')}
                   </Button>
                 </div>
               </div>

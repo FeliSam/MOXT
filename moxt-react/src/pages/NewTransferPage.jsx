@@ -710,8 +710,8 @@ function PartyCard({ title, prefix, profiles, formik, methods, errorFor, onProfi
                 onClick={() => onProfile(profile)}
                 className="flex items-center gap-3 rounded-2xl border border-[var(--app-border)] p-3 text-left transition hover:border-brand-400 hover:shadow-sm"
               >
-                <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[var(--app-surface-muted)] text-sm font-black">
-                  {profile.firstName?.[0]}{profile.lastName?.[0]}
+                <span className="grid size-9 shrink-0 place-items-center whitespace-nowrap rounded-xl bg-[var(--app-surface-muted)] text-sm font-black">
+                  {`${profile.firstName?.[0] || ''}${profile.lastName?.[0] || ''}`.toUpperCase()}
                 </span>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-bold">{profile.firstName} {profile.lastName}</p>

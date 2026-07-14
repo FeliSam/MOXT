@@ -1,12 +1,12 @@
 export const MAX_MESSAGE_IMAGES = 4
 
 /** Constant angular step between stacked images (degrees). */
-export const MESSAGE_IMAGE_STACK_ANGLE_STEP = 12
+export const MESSAGE_IMAGE_STACK_ANGLE_STEP = 6
 
 /**
  * Rotation for layer `index` (0 = front / base).
- * Received: positive step fan (opens up-right from shared bottom-left).
- * Sent: negative step fan (opens up-left, stays bubble-aligned).
+ * Received: positive step fan (opens up-right from shared bottom-right).
+ * Sent: negative step fan (opens up-left from shared bottom-left).
  */
 export function messageImageStackRotation(index, { sent = false } = {}) {
   if (!index) return 0

@@ -73,11 +73,22 @@ function main() {
       cwd: path.join(root, 'moxt-react'),
       encoding: 'utf8',
     })
+    if (prep.status !== 0) {
+      fail(`prepare-netlify-env.mjs a échoué${prep.stderr ? ` : ${prep.stderr.trim()}` : ''}`)
+      issues += 1
+    }
     const envProd = path.join(root, 'moxt-react', '.env.production')
+    const envDev = path.join(root, 'moxt-react', '.env.development.local')
     if (existsSync(envProd) && readFileSync(envProd, 'utf8').includes('VITE_VAPID_PUBLIC_KEY=')) {
-      ok('prepare-netlify-env.mjs injecte VITE_VAPID_PUBLIC_KEY')
+      ok('prepare-netlify-env.mjs injecte VITE_VAPID_PUBLIC_KEY (.env.production)')
     } else {
       fail('prepare-netlify-env.mjs n’injecte pas VITE_VAPID_PUBLIC_KEY — build PWA sans push')
+      issues += 1
+    }
+    if (existsSync(envDev) && readFileSync(envDev, 'utf8').includes('VITE_VAPID_PUBLIC_KEY=')) {
+      ok('prepare-netlify-env.mjs injecte VITE_VAPID_PUBLIC_KEY (.env.development.local → npm run web)')
+    } else {
+      fail('VAPID non injecté pour le dev local — npm run web sans push')
       issues += 1
     }
   } else {

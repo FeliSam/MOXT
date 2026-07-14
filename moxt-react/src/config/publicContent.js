@@ -1,6 +1,5 @@
 import {
   FiBox,
-  FiBriefcase,
   FiGlobe,
   FiMessageSquare,
   FiRepeat,
@@ -9,12 +8,13 @@ import {
   FiSmartphone,
   FiUsers,
 } from 'react-icons/fi'
+import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 
 export const PUBLIC_SERVICES = [
   { id: 'transfers', icon: FiRepeat },
   { id: 'parcels', icon: FiBox },
   { id: 'marketplace', icon: FiShoppingBag },
-  { id: 'businesses', icon: FiBriefcase },
+  { id: 'businesses', icon: HiOutlineBuildingOffice2 },
   { id: 'community', icon: FiUsers },
   { id: 'messages', icon: FiMessageSquare },
 ]

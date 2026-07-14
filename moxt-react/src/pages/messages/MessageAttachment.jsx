@@ -6,8 +6,10 @@ import {
   isImageAttachment,
   messageImageStackRotation,
 } from '../../features/communications/attachmentUtils'
+import { useLanguage } from '../../contexts/useLanguage'
 
 function MessageImageLightbox({ images, initialIndex = 0, onClose }) {
+  const { t } = useLanguage()
   const safeImages = images.filter(Boolean)
   const [index, setIndex] = useState(() =>
     Math.min(Math.max(0, initialIndex), Math.max(0, safeImages.length - 1)),
@@ -53,14 +55,14 @@ function MessageImageLightbox({ images, initialIndex = 0, onClose }) {
       className="message-image-lightbox fixed inset-0 z-[var(--z-lightbox)] grid place-items-center bg-slate-950/85 p-4 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
-      aria-label="Aperçu de l’image"
+      aria-label={t("messages.imagePreview")}
       onClick={onClose}
     >
       <button
         type="button"
         className="absolute right-4 top-4 grid size-11 place-items-center rounded-full bg-black/40 text-white transition hover:bg-black/60"
         onClick={onClose}
-        aria-label="Fermer l’aperçu"
+        aria-label={t("messages.closePreview")}
       >
         <FiX className="text-lg" />
       </button>
@@ -73,7 +75,7 @@ function MessageImageLightbox({ images, initialIndex = 0, onClose }) {
               event.stopPropagation()
               setIndex((current) => (current - 1 + count) % count)
             }}
-            aria-label="Image précédente"
+            aria-label={t("messages.prevImage")}
           >
             <FiChevronLeft className="text-2xl" />
           </button>
@@ -84,7 +86,7 @@ function MessageImageLightbox({ images, initialIndex = 0, onClose }) {
               event.stopPropagation()
               setIndex((current) => (current + 1) % count)
             }}
-            aria-label="Image suivante"
+            aria-label={t("messages.nextImage")}
           >
             <FiChevronRight className="text-2xl" />
           </button>
@@ -104,6 +106,7 @@ function MessageImageLightbox({ images, initialIndex = 0, onClose }) {
 }
 
 function MessageImageStack({ images, name, mine, onOpen }) {
+  const { t } = useLanguage()
   const count = images.length
   if (count === 1) {
     return (
@@ -114,9 +117,9 @@ function MessageImageStack({ images, name, mine, onOpen }) {
           event.stopPropagation()
           onOpen(0)
         }}
-        aria-label={`Voir l’image ${name || ''}`.trim()}
+        aria-label={t("messages.viewImage", { name: name || "" }).trim()}
       >
-        <img src={images[0]} alt={name || 'Image envoyée'} loading="lazy" decoding="async" />
+        <img src={images[0]} alt={name || t("messages.imageAlt")} loading="lazy" decoding="async" />
       </button>
     )
   }
@@ -125,15 +128,12 @@ function MessageImageStack({ images, name, mine, onOpen }) {
     <div
       className={`message-attachment-stack ${mine ? 'message-attachment-stack--sent' : 'message-attachment-stack--received'}`}
       role="group"
-      aria-label={`${count} images`}
-      style={{
-        '--stack-count': count,
-      }}
+      aria-label={t("messages.imagesCount", { count })}
     >
       {images.map((src, index) => {
         const depth = count - 1 - index
         const rotation = messageImageStackRotation(index, { sent: mine })
-        const scale = 1 - index * 0.028
+        const scale = 1 - index * 0.02
         return (
           <button
             key={`${src}-${index}`}
@@ -148,7 +148,7 @@ function MessageImageStack({ images, name, mine, onOpen }) {
               event.stopPropagation()
               onOpen(index)
             }}
-            aria-label={`Voir l’image ${index + 1} sur ${count}`}
+            aria-label={t("messages.viewImageN", { index: index + 1, count })}
           >
             <img src={src} alt="" loading="lazy" decoding="async" />
           </button>

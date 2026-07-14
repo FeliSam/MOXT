@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { bottomNavigationItems } from './bottomNavigation'
+import { primaryNavigationItems } from './primaryNavigation'
 import { getRouteMetadata } from './routeMeta'
 
 describe('route metadata', () => {
@@ -34,5 +35,25 @@ describe('route metadata', () => {
     ])
     expect(new Set(bottomNavigationItems.map((item) => item.id)).size).toBe(4)
     expect(new Set(bottomNavigationItems.map((item) => item.path)).size).toBe(4)
+  })
+
+  it('wires owned-business rail entry to enterprise view, not public fiche', () => {
+    const enterprise = primaryNavigationItems.find((item) => item.id === 'businesses')
+    expect(enterprise).toMatchObject({
+      path: '/professional',
+      requiresOwnedBusiness: true,
+    })
+    expect(primaryNavigationItems.some((item) => item.id === 'notifications')).toBe(false)
+  })
+
+  it('resolves Centre de contrôle and espace professionnel metadata', () => {
+    expect(getRouteMetadata('/admin')).toMatchObject({
+      title: 'Centre de contrôle',
+      eyebrow: 'Administration',
+    })
+    expect(getRouteMetadata('/professional')).toMatchObject({
+      title: 'Espace professionnel',
+      eyebrow: 'Services',
+    })
   })
 })

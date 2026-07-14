@@ -1,3 +1,4 @@
+import { translate } from '../i18n/translate'
 import { isStandalone } from '../pwa'
 import { isNative } from './capacitor'
 import {
@@ -5,6 +6,18 @@ import {
   removeDeviceSubscription,
   upsertDeviceSubscription,
 } from '../services/deviceSubscriptions'
+
+const WEB_PUSH_ERROR_KEYS = {
+  permission_timeout: 'settings.push.errors.permissionTimeout',
+  service_worker_timeout: 'settings.push.errors.serviceWorker',
+  no_service_worker: 'settings.push.errors.serviceWorker',
+  push_subscribe_timeout: 'settings.push.errors.subscribeFailed',
+  subscribe_failed: 'settings.push.errors.subscribeFailed',
+  db_sync_timeout: 'settings.push.errors.dbSync',
+  db_sync_failed: 'settings.push.errors.dbSync',
+  denied: 'settings.push.errors.denied',
+  missing_vapid: 'settings.push.errors.missingVapid',
+}
 
 const WEB_PUSH_ENDPOINT_KEY = 'moxt-web-push-endpoint'
 const SW_READY_TIMEOUT_MS = 20_000
@@ -289,24 +302,7 @@ export async function ensureWebPushSubscription(userId, { prompt = false } = {})
   return { enabled: false, reason: 'permission_required' }
 }
 
-export function getWebPushErrorMessage(reason) {
-  switch (reason) {
-    case 'permission_timeout':
-      return 'La demande iOS a expiré. Réessayez ou autorisez MOXT dans Réglages → Notifications.'
-    case 'service_worker_timeout':
-    case 'no_service_worker':
-      return 'Le service de notifications n’a pas démarré. Fermez puis rouvrez l’app installée, puis réessayez.'
-    case 'push_subscribe_timeout':
-    case 'subscribe_failed':
-      return 'L’abonnement push a échoué. Vérifiez votre connexion et réessayez.'
-    case 'db_sync_timeout':
-    case 'db_sync_failed':
-      return 'Notifications autorisées sur l’appareil, mais la synchronisation serveur a échoué. Réessayez.'
-    case 'denied':
-      return 'Autorisez MOXT dans Réglages → Notifications de Safari.'
-    case 'missing_vapid':
-      return 'La configuration push du site est incomplète. Réessayez après la prochaine mise à jour.'
-    default:
-      return 'Impossible d’activer les notifications pour le moment. Réessayez plus tard.'
-  }
+export function getWebPushErrorMessage(reason, language = 'fr') {
+  const key = WEB_PUSH_ERROR_KEYS[reason] || 'settings.push.errors.generic'
+  return translate(language, key)
 }
