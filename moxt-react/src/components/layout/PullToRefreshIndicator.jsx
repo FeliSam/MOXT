@@ -1,10 +1,12 @@
 import { useCallback } from 'react'
+import { FiRefreshCw } from 'react-icons/fi'
 import { useStore } from 'react-redux'
 import { usePullToRefresh } from '../../hooks/usePullToRefresh'
 import { softRefreshSession } from '../../services/authSessionSync'
 
 /**
  * Indicateur pull-to-refresh (Safari / Capacitor). Monté dans le shell principal.
+ * Visual language: teal glass orb + FiRefreshCw + ✨ accent (pull rotate → refresh spin).
  */
 export function PullToRefreshIndicator({ disabled = false }) {
   const store = useStore()
@@ -20,29 +22,63 @@ export function PullToRefreshIndicator({ disabled = false }) {
 
   if (disabled || (pull <= 0 && !refreshing)) return null
 
-  const translate = refreshing ? 48 : Math.max(0, pull)
-  const opacity = refreshing ? 1 : Math.min(1, progress)
+  const translate = refreshing ? 52 : Math.max(0, pull)
+  const opacity = refreshing ? 1 : Math.min(1, 0.2 + progress * 0.8)
+  const pullRotate = progress * 300
+  const pullScale = 0.7 + progress * 0.35
+  const glow = 0.2 + progress * 0.8
+
+  const label = refreshing
+    ? 'Actualisation en cours'
+    : armed
+      ? 'Relâcher pour actualiser'
+      : 'Tirer pour actualiser'
 
   return (
     <div
-      className="pointer-events-none fixed inset-x-0 z-[var(--z-nav)] flex justify-center lg:hidden"
+      className="ptr-indicator pointer-events-none fixed inset-x-0 z-[var(--z-nav)] flex justify-center lg:hidden"
       style={{
-        top: 'max(0.5rem, env(safe-area-inset-top, 0px))',
-        transform: `translateY(${translate}px)`,
+        top: 'max(0.35rem, env(safe-area-inset-top, 0px))',
+        transform: `translate3d(0, ${translate}px, 0)`,
         opacity,
-        transition: refreshing || pull === 0 ? 'transform 0.2s ease, opacity 0.2s ease' : undefined,
+        transition:
+          refreshing || pull === 0
+            ? 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s ease'
+            : undefined,
       }}
-      aria-hidden="true"
+      role="status"
+      aria-live="polite"
+      aria-busy={refreshing}
+      aria-label={label}
     >
-      <div className="flex items-center gap-2 rounded-full border border-[var(--app-border)] bg-[var(--app-surface)]/95 px-3 py-1.5 text-xs font-semibold text-[var(--app-text-muted)] shadow-[var(--shadow-float)] backdrop-blur-md">
-        <span
-          className={`size-3.5 rounded-full border-2 border-[var(--app-accent)] border-t-transparent ${
-            refreshing || armed ? 'animate-spin' : ''
-          }`}
-          style={{ opacity: refreshing ? 1 : 0.55 + progress * 0.45 }}
+      <div
+        className={`ptr-orb ${armed && !refreshing ? 'ptr-orb--armed' : ''} ${
+          refreshing ? 'ptr-orb--refreshing' : ''
+        }`}
+        style={
+          refreshing
+            ? undefined
+            : {
+                '--ptr-glow': String(glow),
+                ...(armed ? null : { transform: `scale(${pullScale})` }),
+              }
+        }
+      >
+        <span className="ptr-orb__ring" aria-hidden="true" />
+        <FiRefreshCw
+          className="ptr-orb__icon"
+          aria-hidden="true"
+          style={
+            refreshing
+              ? undefined
+              : { transform: `rotate(${pullRotate}deg)` }
+          }
         />
-        {refreshing ? 'Actualisation…' : armed ? 'Relâcher' : 'Tirer pour actualiser'}
+        <span className="ptr-orb__spark" aria-hidden="true">
+          ✨
+        </span>
       </div>
+      <span className="sr-only">{label}</span>
     </div>
   )
 }

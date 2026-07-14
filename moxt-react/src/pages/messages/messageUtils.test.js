@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { conversationPreview, messageReadLabel } from './messageUtils.js'
+import { conversationMatchesQuery, conversationPreview, messageReadLabel } from './messageUtils.js'
 
 describe('messageReadLabel', () => {
   it('affiche Lu quand le correspondant a lu', () => {
@@ -45,5 +45,33 @@ describe('conversationPreview', () => {
       'u1',
     )
     expect(preview).toBe('Vous : Ma réponse')
+  })
+})
+
+describe('conversationMatchesQuery', () => {
+  it('trouve un match dans le texte des messages', () => {
+    const conversation = {
+      participantIds: ['u1', 'u2'],
+      participants: { u2: { name: 'Alex' } },
+      messages: [{ id: 'm1', text: 'Dispo pour la livraison demain', attachment: null }],
+      lastMessageText: '',
+    }
+    expect(conversationMatchesQuery(conversation, 'u1', 'livraison')).toBe(true)
+    expect(conversationMatchesQuery(conversation, 'u1', 'absent')).toBe(false)
+  })
+
+  it('trouve un match dans le nom de pièce jointe', () => {
+    const conversation = {
+      participantIds: ['u1', 'u2'],
+      participants: { u2: { name: 'Alex' } },
+      messages: [
+        {
+          id: 'm1',
+          text: '',
+          attachment: { name: 'facture-mars.pdf', type: 'application/pdf' },
+        },
+      ],
+    }
+    expect(conversationMatchesQuery(conversation, 'u1', 'facture')).toBe(true)
   })
 })

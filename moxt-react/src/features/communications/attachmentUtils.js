@@ -1,10 +1,18 @@
 export const MAX_MESSAGE_IMAGES = 4
 
-/** Mild per-layer twists for a leftward pile (paired with ~-15% translateX). */
-export const MESSAGE_IMAGE_STACK_ROTATIONS = [0, -3, 2.5, -4]
+/** Constant angular step between stacked images (degrees). */
+export const MESSAGE_IMAGE_STACK_ANGLE_STEP = 12
 
-/** Horizontal offset per stacked image, as a fraction of card width. */
-export const MESSAGE_IMAGE_STACK_OFFSET = 0.15
+/**
+ * Rotation for layer `index` (0 = front / base).
+ * Received: positive step fan (opens up-right from shared bottom-left).
+ * Sent: negative step fan (opens up-left, stays bubble-aligned).
+ */
+export function messageImageStackRotation(index, { sent = false } = {}) {
+  if (!index) return 0
+  const step = sent ? -MESSAGE_IMAGE_STACK_ANGLE_STEP : MESSAGE_IMAGE_STACK_ANGLE_STEP
+  return index * step
+}
 
 export function isImageAttachment(attachment) {
   if (!attachment) return false
@@ -40,6 +48,18 @@ export function attachmentPreviewLabel(attachment) {
     return '📷 Photo'
   }
   return `📎 ${attachment.name || 'Pièce jointe'}`
+}
+
+/** Plain searchable label (no emoji) for conversation / thread filters. */
+export function attachmentSearchText(attachment) {
+  if (!attachment) return ''
+  const name = attachment.name || ''
+  if (isImageAttachment(attachment)) {
+    const count = attachmentImageSrcs(attachment).length
+    if (count > 1) return `${name} ${count} photos photo images`.trim()
+    return `${name} photo image`.trim()
+  }
+  return name || 'pièce jointe'
 }
 
 export function isImageFile(file) {

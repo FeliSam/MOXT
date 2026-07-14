@@ -49,10 +49,24 @@ export function AppLayout({ children }) {
     return () => window.removeEventListener('pageshow', onPageShow)
   }, [dispatch])
 
+  useLayoutEffect(() => {
+    const root = document.documentElement
+    if (!isMessagesRoute) {
+      root.classList.remove('messages-route-lock')
+      return undefined
+    }
+    root.classList.add('messages-route-lock')
+    return () => {
+      root.classList.remove('messages-route-lock')
+    }
+  }, [isMessagesRoute])
+
   return (
     <div
       className={`text-[var(--app-text)] ${
-        isMessagesRoute ? 'h-dvh overflow-hidden' : 'min-h-screen'
+        isMessagesRoute
+          ? 'messages-shell h-dvh max-h-dvh overflow-hidden overscroll-none'
+          : 'min-h-screen'
       } ${hideAppChrome ? 'messages-thread-immersive' : ''}`}
     >
       <a
@@ -88,7 +102,7 @@ export function AppLayout({ children }) {
           tabIndex={-1}
           className={`mx-auto w-full min-w-0 max-w-[96rem] overflow-x-clip ${
             isMessagesRoute
-              ? `min-h-0 flex-1 overflow-hidden ${
+              ? `flex min-h-0 flex-1 flex-col overflow-hidden overscroll-none ${
                   hideAppChrome
                     ? 'max-lg:p-0 lg:px-8 lg:py-8'
                     : 'px-0 pt-0 pb-[var(--bottom-nav-clearance)] sm:pb-[calc(6rem+env(safe-area-inset-bottom,0px))] lg:px-8 lg:py-8'
@@ -96,8 +110,17 @@ export function AppLayout({ children }) {
               : 'p-4 pb-[var(--bottom-nav-clearance-loose)] sm:p-6 sm:pb-[var(--bottom-nav-clearance-loose)] lg:px-8 lg:py-8'
           }`}
         >
-          <div key={location.pathname} className={isMessagesRoute ? 'page-enter h-full min-h-0 min-w-0' : 'page-enter min-w-0'}>
-            <AppThemeScope className={isMessagesRoute ? 'h-full min-h-0' : ''}>
+          <div
+            key={location.pathname}
+            className={
+              isMessagesRoute
+                ? 'page-enter flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden'
+                : 'page-enter min-w-0'
+            }
+          >
+            <AppThemeScope
+              className={isMessagesRoute ? 'flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden' : ''}
+            >
               {children ?? <Outlet />}
             </AppThemeScope>
           </div>

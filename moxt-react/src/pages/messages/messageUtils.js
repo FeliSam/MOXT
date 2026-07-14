@@ -1,4 +1,31 @@
-import { attachmentPreviewLabel } from '../../features/communications/attachmentUtils'
+import { attachmentPreviewLabel, attachmentSearchText } from '../../features/communications/attachmentUtils'
+import { getConversationPeer } from '../../features/communications/conversationDisplay'
+
+export function messageSearchHaystack(message) {
+  if (!message) return ''
+  const parts = [message.text || '']
+  if (message.attachment) {
+    parts.push(attachmentSearchText(message.attachment))
+  }
+  return parts.join(' ').toLowerCase()
+}
+
+/** Client-side conversation filter: peer name, last preview, message text, attachment labels. */
+export function conversationMatchesQuery(conversation, userId, query) {
+  const normalized = query.trim().toLowerCase()
+  if (!normalized) return true
+
+  const peer = getConversationPeer(conversation, userId)
+  if (peer?.name?.toLowerCase().includes(normalized)) return true
+
+  const lastPreview =
+    conversation.lastMessageText ?? conversation.last_message_text ?? ''
+  if (String(lastPreview).toLowerCase().includes(normalized)) return true
+
+  return (conversation.messages || []).some((message) =>
+    messageSearchHaystack(message).includes(normalized),
+  )
+}
 
 export function messageReadLabel(message, userId) {
   if (!isMessageFromUser(message, userId)) return ''

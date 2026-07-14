@@ -38,13 +38,17 @@ import {
   firstUnreadMessageIndex,
   shouldGroupMessages,
 } from './MessageBubble'
-import { conversationMessageCount, isMessageFromUser, messageHasReactions } from './messageUtils'
+import { conversationMessageCount, isMessageFromUser, messageHasReactions, messageSearchHaystack } from './messageUtils'
 import { RelatedContentPreview } from './RelatedContentPreview'
 import { TypingDots, TypingIndicator } from './TypingIndicator'
 
-function matchesThreadQuery(text, query) {
+function matchesThreadQuery(messageOrText, query) {
   if (!query.trim()) return true
-  return text?.toLowerCase().includes(query.trim().toLowerCase())
+  const normalized = query.trim().toLowerCase()
+  if (typeof messageOrText === 'string') {
+    return messageOrText.toLowerCase().includes(normalized)
+  }
+  return messageSearchHaystack(messageOrText).includes(normalized)
 }
 
 export function ConversationPanel({
@@ -135,7 +139,7 @@ export function ConversationPanel({
           .toLowerCase()
           .includes(normalized.toLowerCase())
       }
-      return matchesThreadQuery(item.message?.text, normalized)
+      return matchesThreadQuery(item.message, normalized)
     })
   }, [threadQuery, timeline])
 
@@ -206,7 +210,7 @@ export function ConversationPanel({
   }
 
   return (
-    <>
+    <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden overscroll-none">
       <header className="message-thread-header relative z-30 flex min-h-[4.25rem] shrink-0 items-center gap-2.5 border-b border-[var(--app-border)]/60 bg-[var(--app-surface)]/95 px-3 py-2.5 backdrop-blur-xl sm:gap-3 sm:px-4 lg:px-5">
         <button
           type="button"
@@ -788,6 +792,6 @@ export function ConversationPanel({
           </div>
         ) : null}
       </div>
-    </>
+    </div>
   )
 }

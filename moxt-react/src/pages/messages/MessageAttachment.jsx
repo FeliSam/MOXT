@@ -4,8 +4,7 @@ import { FiChevronLeft, FiChevronRight, FiPaperclip, FiX } from 'react-icons/fi'
 import {
   attachmentImageSrcs,
   isImageAttachment,
-  MESSAGE_IMAGE_STACK_OFFSET,
-  MESSAGE_IMAGE_STACK_ROTATIONS,
+  messageImageStackRotation,
 } from '../../features/communications/attachmentUtils'
 
 function MessageImageLightbox({ images, initialIndex = 0, onClose }) {
@@ -104,7 +103,7 @@ function MessageImageLightbox({ images, initialIndex = 0, onClose }) {
   )
 }
 
-function MessageImageStack({ images, name, onOpen }) {
+function MessageImageStack({ images, name, mine, onOpen }) {
   const count = images.length
   if (count === 1) {
     return (
@@ -122,22 +121,19 @@ function MessageImageStack({ images, name, onOpen }) {
     )
   }
 
-  // Shrink cards so leftward (-15% × layer) offsets stay inside the stack width.
-  const cardPct = 100 / (1 + MESSAGE_IMAGE_STACK_OFFSET * (count - 1))
-  const offsetPct = MESSAGE_IMAGE_STACK_OFFSET * 100
-
   return (
     <div
-      className="message-attachment-stack"
+      className={`message-attachment-stack ${mine ? 'message-attachment-stack--sent' : 'message-attachment-stack--received'}`}
       role="group"
       aria-label={`${count} images`}
       style={{
-        '--message-stack-card-pct': `${cardPct}%`,
+        '--stack-count': count,
       }}
     >
       {images.map((src, index) => {
         const depth = count - 1 - index
-        const rotation = MESSAGE_IMAGE_STACK_ROTATIONS[index] ?? 0
+        const rotation = messageImageStackRotation(index, { sent: mine })
+        const scale = 1 - index * 0.028
         return (
           <button
             key={`${src}-${index}`}
@@ -145,7 +141,8 @@ function MessageImageStack({ images, name, onOpen }) {
             className="message-attachment-stack-layer"
             style={{
               zIndex: depth + 1,
-              transform: `translateX(calc(${index} * -${offsetPct}%)) translateY(${index * 0.12}rem) rotate(${rotation}deg)`,
+              '--stack-rot': `${rotation}deg`,
+              '--stack-scale': scale,
             }}
             onClick={(event) => {
               event.stopPropagation()
@@ -172,6 +169,7 @@ export function MessageAttachment({ attachment, mine }) {
         <MessageImageStack
           images={images}
           name={attachment.name}
+          mine={mine}
           onOpen={setLightboxIndex}
         />
         {lightboxOpen

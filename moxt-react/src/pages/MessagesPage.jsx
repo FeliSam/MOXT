@@ -6,7 +6,7 @@ import {
   FiStar,
   FiX,
 } from 'react-icons/fi'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useDeferredValue } from 'react'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { useSearchParams } from 'react-router-dom'
 import { messageSuggestionsForConversation } from '../features/communications/messageSuggestions'
@@ -43,7 +43,7 @@ import { ConversationNotFound } from './messages/ConversationNotFound'
 import { ConversationPanel } from './messages/ConversationPanel'
 import { ConversationRow } from './messages/ConversationRow'
 import { MessagesEmptyState } from './messages/MessagesEmptyState'
-import { countConversationsForFilter } from './messages/messageUtils'
+import { countConversationsForFilter, conversationMatchesQuery } from './messages/messageUtils'
 import { storageService } from '../services/storageService'
 import {
   isImageFile,
@@ -66,6 +66,7 @@ export function MessagesPage() {
   const unreadMessagesCount = useSelector(selectUnreadMessageCount)
   const [searchParams, setSearchParams] = useSearchParams()
   const [query, setQuery] = useState('')
+  const deferredQuery = useDeferredValue(query)
   const [attachments, setAttachments] = useState([])
   const [replyToId, setReplyToId] = useState(null)
   const [replyToContextId, setReplyToContextId] = useState(null)
@@ -77,7 +78,7 @@ export function MessagesPage() {
   const listRef = useRef(null)
   const conversationListRef = useRef(null)
   const desktop = useMediaQuery('(min-width: 1024px)')
-  const isFiltering = Boolean(query.trim())
+  const isFiltering = Boolean(deferredQuery.trim())
   const relatedConversation = conversations.find(
     (item) =>
       item.relatedType === searchParams.get('relatedType') &&
@@ -130,16 +131,13 @@ export function MessagesPage() {
   )
 
   const visible = useMemo(() => {
-    const normalized = query.trim().toLowerCase()
     return conversations
       .filter((item) => {
         const archived = item.archivedBy?.includes(user.id)
         if (showArchived !== Boolean(archived)) return false
         if (filter === 'unread' && !(item.unreadBy?.[user.id] > 0)) return false
         if (filter === 'pinned' && !item.pinnedBy?.includes(user.id)) return false
-        return `${getConversationPeer(item, user.id).name} ${item.messages.map((message) => message.text).join(' ')}`
-          .toLowerCase()
-          .includes(normalized)
+        return conversationMatchesQuery(item, user.id, deferredQuery)
       })
       .sort((left, right) => {
         if (desktop && activeId && !showArchived) {
@@ -151,7 +149,7 @@ export function MessagesPage() {
           Number(Boolean(left.pinnedBy?.includes(user.id)))
         return pinDelta || new Date(right.updatedAt) - new Date(left.updatedAt)
       })
-  }, [activeId, conversations, desktop, filter, query, showArchived, user.id])
+  }, [activeId, conversations, deferredQuery, desktop, filter, showArchived, user.id])
 
   const active = conversations.find((item) => item.id === activeId)
   const assistantActive = activeId === ASSISTANT_ID
@@ -478,7 +476,10 @@ export function MessagesPage() {
   }
 
   return (
-    <div className="relative h-full min-h-0 overflow-hidden bg-transparent" data-testid="messages-viewport">
+    <div
+      className="messages-shell relative flex h-full min-h-0 flex-col overflow-hidden overscroll-none bg-transparent"
+      data-testid="messages-viewport"
+    >
       <div
         className={
           integratedAssistant
@@ -489,16 +490,14 @@ export function MessagesPage() {
         }
       >
         <aside
-          className={`${activeId ? 'hidden lg:flex' : 'flex'} relative z-30 h-full min-h-0 min-w-0 flex-col bg-[var(--app-surface)] lg:w-[25rem] lg:max-w-[25rem] ${
-            activeId
-              ? 'lg:overflow-hidden lg:shadow-[12px_0_35px_rgb(15_23_42/0.06)]'
-              : 'overflow-hidden'
+          className={`${activeId ? 'hidden lg:flex' : 'flex'} relative z-30 h-full min-h-0 min-w-0 flex-col overflow-hidden bg-[var(--app-surface)] lg:w-[25rem] lg:max-w-[25rem] ${
+            activeId ? 'lg:shadow-[12px_0_35px_rgb(15_23_42/0.06)]' : ''
           }`}
           data-testid="messages-list"
         >
           {searchOpen ? (
             <div
-              className="absolute inset-0 z-50"
+              className="messages-floating-layer absolute inset-0 z-50 overflow-hidden"
               data-testid="messages-search-layer"
             >
               <button
@@ -508,7 +507,7 @@ export function MessagesPage() {
                 onClick={closeSearch}
               />
               <div
-                className="panel-pop absolute inset-x-3 top-[max(0.75rem,calc(env(safe-area-inset-top)+0.75rem))] flex max-h-[min(72dvh,calc(100%-env(safe-area-inset-bottom)-1.5rem))] flex-col overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--shadow-float)] backdrop-blur-xl sm:inset-x-4 lg:top-3"
+                className="messages-floating-panel panel-pop absolute inset-x-3 top-[max(0.75rem,calc(env(safe-area-inset-top)+0.75rem))] flex max-h-[min(72dvh,calc(100%-env(safe-area-inset-bottom)-1.5rem))] flex-col overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--shadow-float)] backdrop-blur-xl sm:inset-x-4 lg:top-3"
                 role="search"
               >
                 <div className="shrink-0 border-b border-[var(--app-border)]/60 p-3 sm:p-3.5">
@@ -519,8 +518,8 @@ export function MessagesPage() {
                       className="min-w-0 flex-1 bg-transparent text-sm outline-none"
                       value={query}
                       onChange={(event) => setQuery(event.target.value)}
-                      placeholder="Rechercher une conversation"
-                      aria-label="Rechercher une conversation"
+                      placeholder="Rechercher conversations et messages"
+                      aria-label="Rechercher conversations et messages"
                     />
                     <button
                       type="button"

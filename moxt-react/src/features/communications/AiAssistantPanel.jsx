@@ -78,7 +78,7 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
   }
 
   return (
-    <>
+    <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden overscroll-none">
       <header className="message-thread-header relative z-10 flex min-h-20 shrink-0 items-center gap-3 bg-[var(--app-surface)] px-4 py-3 shadow-[0_10px_30px_rgb(15_23_42/0.07)] sm:px-5">
         {showBack ? (
           <button
@@ -208,7 +208,7 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
           </button>
         </form>
       </div>
-    </>
+    </div>
   )
 }
 

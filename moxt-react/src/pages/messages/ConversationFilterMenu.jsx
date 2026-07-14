@@ -105,7 +105,7 @@ export function ConversationFilterMenu({
           <div
             ref={menuRef}
             style={floatingStyle}
-            className="panel-pop overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-1.5 shadow-[var(--shadow-float)] backdrop-blur-xl"
+            className="panel-pop max-h-[min(70dvh,22rem)] overflow-y-auto overscroll-contain rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-1.5 shadow-[var(--shadow-float)] backdrop-blur-xl"
             role="menu"
             aria-label="Filtrer les conversations"
           >
