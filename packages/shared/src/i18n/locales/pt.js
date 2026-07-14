@@ -372,7 +372,8 @@ export const pt = {
         },
         badge: {
           title: 'Distintivo verificado',
-          description: 'O distintivo verde indica uma identidade validada pela equipa MOXT.',
+          description:
+            'O distintivo verde = identidade validada pela MOXT (KYC). Não confundir com um perfil « completo » (apenas campos preenchidos).',
         },
         reports: {
           title: 'Denúncias',
@@ -464,6 +465,34 @@ export const pt = {
       cancel: 'Cancelar',
       sendValidation: 'Enviar código de validação',
       sendConfirmation: 'Enviar código de confirmação',
+    },
+  },
+  verification: {
+    consent: {
+      before: 'Aceito que os meus documentos de verificação sejam tratados de acordo com a',
+      privacyLink: 'política de privacidade',
+      and: 'e os',
+      termsLink: 'termos de utilização',
+      after: '.',
+    },
+    admin: {
+      navLabel: 'Verificações',
+      title: 'Verificações de identidade',
+      description: 'Analise os processos, visualize os anexos e depois aprove ou recuse.',
+      examine: 'Examinar',
+      approve: 'Aprovar',
+      reject: 'Recusar',
+      rejectConfirm: 'Confirmar recusa',
+      rejectReasonLabel: 'Motivo da recusa (opcional)',
+      rejectReasonPlaceholder: 'Ex. foto ilegível, documento expirado…',
+      documentsTitle: 'Documentos enviados',
+      empty: 'Nenhum pedido de verificação.',
+      softDeleted: 'removido (mantido para análise)',
+      openDocument: 'Abrir',
+      notifyTitle: 'Nova verificação de conta',
+      notifyMessage: '{name} enviou um processo ({level}).',
+      statusVerified: 'aprovada',
+      statusRejected: 'recusada',
     },
   },
   legal: {

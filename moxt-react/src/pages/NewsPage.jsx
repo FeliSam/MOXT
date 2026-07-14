@@ -27,11 +27,18 @@ export function NewsPage() {
   const [activeFilter, setActiveFilter] = useState('all')
   const [showShareModal, setShowShareModal] = useState(false)
 
+  const publishedPosts = useMemo(
+    () => posts.filter((p) => p.status === 'published'),
+    [posts],
+  )
+
   const filtered = useMemo(() => {
     const base =
-      activeFilter === 'all' ? posts : posts.filter((p) => p.sourceType === activeFilter)
+      activeFilter === 'all'
+        ? publishedPosts
+        : publishedPosts.filter((p) => p.sourceType === activeFilter)
     return sortPostsByPublishedAt(base)
-  }, [activeFilter, posts])
+  }, [activeFilter, publishedPosts])
 
   return (
     <div className="grid gap-7">
@@ -39,7 +46,7 @@ export function NewsPage() {
         eyebrow="Communauté"
         title="Fil d'actualité"
         description="Découvrez les dernières publications de la communauté MOXT."
-        stats={[{ label: 'Publications', value: posts.length }]}
+        stats={[{ label: 'Publications', value: publishedPosts.length }]}
         actions={
           user && (
             <Button icon={FiEdit3} onClick={() => setShowShareModal(true)}>

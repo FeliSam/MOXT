@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
-import { getRubXofRate, readCachedRate } from '../../services/exchangeRateService'
+import {
+  getExchangeRateSnapshot,
+  readCachedRate,
+  subscribeExchangeRate,
+} from '../../services/exchangeRateService'
 import { FALLBACK_RATES } from './transferConfig'
 
 const fallback = {
@@ -9,28 +13,19 @@ const fallback = {
   source: 'Taux local de secours',
 }
 
+function initialRate() {
+  return getExchangeRateSnapshot().rate || readCachedRate() || fallback
+}
+
 export function useExchangeRate() {
-  const [rate, setRate] = useState(() => readCachedRate() || fallback)
-  const [loading, setLoading] = useState(true)
+  const [rate, setRate] = useState(initialRate)
+  const [loading, setLoading] = useState(() => getExchangeRateSnapshot().loading)
 
   useEffect(() => {
-    let active = true
-    function refresh() {
-      getRubXofRate()
-        .then((result) => {
-          if (active) setRate(result)
-        })
-        .catch(() => {})
-        .finally(() => {
-          if (active) setLoading(false)
-        })
-    }
-    refresh()
-    const interval = window.setInterval(refresh, 15 * 60 * 1000)
-    return () => {
-      active = false
-      window.clearInterval(interval)
-    }
+    return subscribeExchangeRate(({ rate: next, loading: nextLoading }) => {
+      if (next) setRate(next)
+      setLoading(nextLoading)
+    })
   }, [])
 
   return { ...rate, loading }

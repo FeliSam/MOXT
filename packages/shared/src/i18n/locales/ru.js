@@ -372,7 +372,8 @@ export const ru = {
         },
         badge: {
           title: 'Значок проверки',
-          description: 'Зелёный значок означает личность, подтверждённую командой MOXT.',
+          description:
+            'Зелёный значок = личность, подтверждённая MOXT (KYC). Не путать с «полным» профилем (просто заполненные поля).',
         },
         reports: {
           title: 'Жалобы',
@@ -464,6 +465,34 @@ export const ru = {
       cancel: 'Отмена',
       sendValidation: 'Отправить код подтверждения',
       sendConfirmation: 'Отправить код подтверждения',
+    },
+  },
+  verification: {
+    consent: {
+      before: 'Я соглашаюсь на обработку моих документов для проверки в соответствии с',
+      privacyLink: 'политикой конфиденциальности',
+      and: 'и',
+      termsLink: 'условиями использования',
+      after: '.',
+    },
+    admin: {
+      navLabel: 'Проверки',
+      title: 'Проверка личности',
+      description: 'Просмотрите заявки, откройте документы, затем одобрите или отклоните.',
+      examine: 'Проверить',
+      approve: 'Одобрить',
+      reject: 'Отклонить',
+      rejectConfirm: 'Подтвердить отклонение',
+      rejectReasonLabel: 'Причина отказа (необязательно)',
+      rejectReasonPlaceholder: 'Напр. нечитаемое фото, просроченный документ…',
+      documentsTitle: 'Предоставленные документы',
+      empty: 'Нет заявок на проверку.',
+      softDeleted: 'удалён (сохранён для проверки)',
+      openDocument: 'Открыть',
+      notifyTitle: 'Новая проверка аккаунта',
+      notifyMessage: '{name} отправил(а) досье ({level}).',
+      statusVerified: 'одобрена',
+      statusRejected: 'отклонена',
     },
   },
   legal: {

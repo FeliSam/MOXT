@@ -10,6 +10,7 @@ import {
   FiShield,
   FiShoppingBag,
   FiTrendingUp,
+  FiUserCheck,
   FiUsers,
 } from 'react-icons/fi'
 import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
@@ -20,6 +21,7 @@ export const MAIN_VIEWS = [
   { id: 'content', label: 'Contenus', icon: FiLayers },
   { id: 'support', label: 'Support', icon: FiHeadphones },
   { id: 'users', label: 'Utilisateurs', icon: FiUsers },
+  { id: 'verifications', label: 'Verifications', icon: FiUserCheck },
   { id: 'queues', label: "Files d'action", icon: FiInbox },
   { id: 'audit', label: 'Audit', icon: FiActivity },
 ]
@@ -30,7 +32,7 @@ export const CONTENT_SECTIONS = [
   { id: 'jobs', label: 'Jobs', icon: FiTrendingUp, route: '/jobs', color: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' },
   { id: 'events', label: 'Evenements', icon: FiCalendar, route: '/events', color: 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300' },
   { id: 'parcels', label: 'Colis', icon: FiPackage, route: '/parcels', color: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300' },
-  { id: 'reports', label: 'Signalements', icon: FiAlertCircle, route: '/admin', color: 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300' },
+  { id: 'reports', label: 'Signalements', icon: FiAlertCircle, route: '/admin?view=queues', color: 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300' },
 ]
 
 export const ROLE_COLORS = {
@@ -49,7 +51,10 @@ export const VIEW_FILTERS = {
   support: ['all', 'open', 'resolved', 'pending'],
   users: ['all', 'active', 'suspended', 'pending_deletion', 'user', 'professional', 'admin'],
   content: ['all', 'active', 'pending_review', 'archived', 'published', 'rejected', 'new', 'resolved'],
+  verifications: ['all', 'pending', 'verified', 'rejected'],
   overview: [],
   queues: [],
   audit: [],
 }
+
+export const ADMIN_VIEW_IDS = MAIN_VIEWS.map((view) => view.id)

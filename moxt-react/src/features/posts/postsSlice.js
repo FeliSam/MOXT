@@ -43,6 +43,23 @@ const postsSlice = createSlice({
       state.items = state.items.filter((p) => p.id !== action.payload)
     },
 
+    /** Soft-archive feed posts linked to a catalog source (client mirror of DB cascade). */
+    archivePostsBySource(state, action) {
+      const { sourceType, sourceId } = action.payload || {}
+      if (!sourceType || !sourceId) return
+      const now = new Date().toISOString()
+      for (const post of state.items) {
+        if (
+          post.sourceType === sourceType &&
+          post.sourceId === sourceId &&
+          post.status !== 'archived'
+        ) {
+          post.status = 'archived'
+          post.updatedAt = now
+        }
+      }
+    },
+
     toggleLike(state, action) {
       const { postId, userId } = action.payload
       const post = state.items.find((p) => p.id === postId)
@@ -92,6 +109,7 @@ export const {
   createPost,
   updatePost,
   deletePost,
+  archivePostsBySource,
   toggleLike,
   addComment,
   deleteComment,

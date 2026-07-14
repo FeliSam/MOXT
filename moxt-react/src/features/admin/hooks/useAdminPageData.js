@@ -124,5 +124,16 @@ export function useAdminPageData(query, statusFilter, contentView) {
     auditItems,
     activeContentItems,
     allTransfers: state.transfers.items,
+    allVerifications: state.account.verificationRequests.map((item) => {
+      const user = state.administration.users.find((entry) => entry.id === item.userId)
+      const userName = user
+        ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email
+        : item.userId
+      return {
+        ...item,
+        userName,
+        userEmail: user?.email || '',
+      }
+    }),
   }
 }

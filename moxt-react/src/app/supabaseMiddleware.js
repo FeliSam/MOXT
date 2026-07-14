@@ -142,7 +142,10 @@ function toSnake(obj) {
     organizerName: 'organizer_name',
     reviewedAt: 'reviewed_at',
     reviewedBy: 'reviewed_by',
+    reviewNote: 'review_note',
     documentIds: 'document_ids',
+    deletedAt: 'deleted_at',
+    deletedByUser: 'deleted_by_user',
     receivedAmount: 'received_amount',
     receivedMethod: 'received_method',
     receivedProof: 'received_proof',
@@ -165,8 +168,27 @@ function toSnake(obj) {
   return result
 }
 
+/** Tables that have no updated_at column — never send it on write. */
+const TABLES_WITHOUT_UPDATED_AT = new Set([
+  'listing_reports',
+  'job_reports',
+  'event_reports',
+  'subscriber_reports',
+  'verification_requests',
+  'personal_documents',
+])
+
+function stripUnsupportedColumns(table, payload) {
+  const next = { ...payload }
+  if (TABLES_WITHOUT_UPDATED_AT.has(table)) {
+    delete next.updated_at
+  }
+  return next
+}
+
 async function upsert(table, data) {
-  const { error } = await supabase.from(table).upsert(toSnake(data), { onConflict: 'id' })
+  const payload = stripUnsupportedColumns(table, toSnake(data))
+  const { error } = await supabase.from(table).upsert(payload, { onConflict: 'id' })
   if (error) throw error
 }
 
@@ -230,20 +252,49 @@ async function syncActiveDispute(state, payload) {
 }
 
 async function update(table, id, fields) {
-  const TABLES_WITHOUT_UPDATED_AT = new Set([
-    'listing_reports',
-    'job_reports',
-    'event_reports',
-    'subscriber_reports',
-    'verification_requests',
-    'personal_documents',
-  ])
-  const payload = { ...toSnake(fields) }
+  const payload = stripUnsupportedColumns(table, { ...toSnake(fields) })
   if (!TABLES_WITHOUT_UPDATED_AT.has(table)) {
     payload.updated_at = new Date().toISOString()
   }
   const { error } = await supabase.from(table).update(payload).eq('id', id)
   if (error) throw error
+}
+
+/** Schema columns only — avoids PGRST204 from client-only / mismatched fields. */
+function verificationRequestToRemoteRow(request) {
+  return {
+    id: request.id,
+    user_id: request.userId,
+    level: request.level || 'identity',
+    document_ids: request.documentIds || [],
+    note: request.note || '',
+    status: request.status || 'pending_review',
+    created_at: request.createdAt || new Date().toISOString(),
+    ...(request.reviewedAt ? { reviewed_at: request.reviewedAt } : {}),
+    ...(request.reviewedBy && String(request.reviewedBy).length === 36
+      ? { reviewed_by: request.reviewedBy }
+      : {}),
+    ...(request.reviewNote !== undefined ? { review_note: request.reviewNote || '' } : {}),
+  }
+}
+
+/** Schema columns only — `url` is the storage link column (not file_url / public_url). */
+function personalDocumentToRemoteRow(doc) {
+  const storageUrl = doc.url || doc.fileUrl || doc.publicUrl || doc.storagePath || null
+  const row = {
+    id: doc.id,
+    user_id: doc.userId,
+    category: doc.category || 'identity',
+    name: doc.name || '',
+    size: Number(doc.size) || 0,
+    type: doc.type || 'application/octet-stream',
+    url: storageUrl,
+    status: doc.status || 'pending_review',
+    created_at: doc.createdAt || new Date().toISOString(),
+  }
+  if (doc.deletedAt) row.deleted_at = doc.deletedAt
+  if (doc.deletedByUser != null) row.deleted_by_user = Boolean(doc.deletedByUser)
+  return row
 }
 
 async function syncConversationRow(state, conversationId) {
@@ -954,7 +1005,10 @@ const handlers = {
     if (error) throw error
   },
   'account/addPersonalDocument': async (payload) => {
-    await upsert('personal_documents', payload)
+    const { error } = await supabase
+      .from('personal_documents')
+      .insert(personalDocumentToRemoteRow(payload))
+    if (error) throw error
   },
   'account/removePersonalDocument': async (payload) => {
     await update('personal_documents', payload.id, {
@@ -962,20 +1016,66 @@ const handlers = {
       deletedByUser: true,
     })
   },
-  'account/submitVerificationRequest': async (payload) => {
-    await upsert('verification_requests', {
+  'account/submitVerificationRequest': async (payload, state) => {
+    // Reducer reuses the pending row id locally; prefer that so re-submit updates the same row.
+    const request =
+      state.account.verificationRequests.find(
+        (item) => item.userId === payload.userId && item.status === 'pending_review',
+      ) || payload
+    const row = verificationRequestToRemoteRow({
       ...payload,
-      documentIds: payload.documentIds || [],
+      ...request,
+      documentIds: request.documentIds || payload.documentIds || [],
+      id: request.id || payload.id,
     })
+
+    // Prefer insert (matches insert-only RLS). Avoid blind upsert: PostgREST upsert
+    // requires an UPDATE policy even when the row is new.
+    const { error: insertError } = await supabase.from('verification_requests').insert(row)
+    if (!insertError) return
+
+    if (insertError.code === '23505') {
+      const { error: updateError } = await supabase
+        .from('verification_requests')
+        .update({
+          level: row.level,
+          document_ids: row.document_ids,
+          note: row.note,
+          status: row.status,
+        })
+        .eq('id', row.id)
+        .eq('user_id', row.user_id)
+      if (!updateError) return
+
+      // Without UPDATE RLS yet: fall back to inserting the prepare() id as a new row.
+      if (payload.id && payload.id !== row.id) {
+        const { error: fallbackError } = await supabase.from('verification_requests').insert({
+          ...row,
+          id: payload.id,
+          created_at: payload.createdAt || row.created_at,
+        })
+        if (!fallbackError) return
+        throw updateError
+      }
+      throw updateError
+    }
+
+    throw insertError
   },
   'account/updateVerificationStatus': async (payload, state) => {
     const request = state.account.verificationRequests.find((item) => item.id === payload.id)
     if (request) {
-      await update('verification_requests', request.id, {
+      const patch = {
         status: request.status,
         reviewedAt: request.reviewedAt,
-        reviewedBy: request.reviewedBy,
-      })
+      }
+      if (request.reviewedBy && String(request.reviewedBy).length === 36) {
+        patch.reviewedBy = request.reviewedBy
+      }
+      if (request.reviewNote !== undefined) {
+        patch.reviewNote = request.reviewNote || ''
+      }
+      await update('verification_requests', request.id, patch)
       if (request.status === 'verified' && request.userId) {
         const { error } = await supabase
           .from('profiles')

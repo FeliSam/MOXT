@@ -106,7 +106,7 @@ export function AdminOverviewPanel({ content, metrics, onOpenContent, onOpenView
           <div className="grid gap-2">
             {[
               { label: 'Suppressions de compte', count: queues.accountDeletions.length, view: 'queues' },
-              { label: 'Verifications', count: queues.verifications.length, view: 'queues' },
+              { label: 'Verifications', count: queues.verifications.length, view: 'verifications' },
               { label: 'Litiges ouverts', count: queues.disputes.length, view: 'queues' },
               { label: 'Avis en attente', count: queues.reviews.length, view: 'queues' },
               { label: 'Signalements', count: queues.reports.length, view: 'queues' },

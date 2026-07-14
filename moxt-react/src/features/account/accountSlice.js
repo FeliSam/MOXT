@@ -314,6 +314,7 @@ const accountSlice = createSlice({
             size: Number(values.size) || 0,
             type: values.type || 'application/octet-stream',
             url: values.url || null,
+            storagePath: values.storagePath || null,
             status: 'pending_review',
             createdAt: new Date().toISOString(),
           },
@@ -356,6 +357,9 @@ const accountSlice = createSlice({
       request.status = action.payload.status
       request.reviewedAt = new Date().toISOString()
       request.reviewedBy = action.payload.reviewedBy
+      if (action.payload.reviewNote !== undefined) {
+        request.reviewNote = String(action.payload.reviewNote || '').trim()
+      }
     },
     updateAccountPreferences(state, action) {
       const { userId, preferences, fromRemote = false } = action.payload

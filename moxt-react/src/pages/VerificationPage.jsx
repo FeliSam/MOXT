@@ -17,12 +17,14 @@ import {
   verificationRequestIsStale,
 } from '@moxt/shared/auth/userSecurity.js'
 import { BackButton } from '../components/ui/BackButton'
+import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Select } from '../components/ui/Select'
 import { statusMeta } from '../config/statuses'
+import { useLanguage } from '../contexts/useLanguage'
 import { addPersonalDocument, submitVerificationRequest } from '../features/account/accountSlice'
 import { PhoneVerificationCard } from '../features/security/PhoneVerificationCard'
 import { EmailVerificationCard } from '../features/security/EmailVerificationCard'
@@ -52,6 +54,7 @@ const ID_TYPES = [
 
 export function VerificationPage() {
   const dispatch = useDispatch()
+  const { t } = useLanguage()
   const user = useSelector((state) => state.auth.user)
   const request = useSelector((state) =>
     state.account.verificationRequests.find((item) => item.userId === user.id),
@@ -66,6 +69,7 @@ export function VerificationPage() {
   const [idDoc, setIdDoc] = useState(null)
   const [selfieDoc, setSelfieDoc] = useState(null)
   const [addressDoc, setAddressDoc] = useState(null)
+  const [privacyConsent, setPrivacyConsent] = useState(false)
 
   const steps = useMemo(() => {
     const base = [
@@ -92,7 +96,7 @@ export function VerificationPage() {
     identity: Boolean(idType && idDoc),
     selfie: Boolean(selfieDoc),
     address: Boolean(addressDoc),
-    review: ready,
+    review: ready && privacyConsent,
   }[current.key]
 
   function next() {
@@ -107,7 +111,7 @@ export function VerificationPage() {
     const persist = async (doc, category) => {
       if (!doc?.file) return
       try {
-        const url = await storageService.uploadDocument(user.id, category, doc.file)
+        const uploaded = await storageService.uploadDocument(user.id, category, doc.file)
         const action = dispatch(
           addPersonalDocument({
             userId: user.id,
@@ -115,7 +119,8 @@ export function VerificationPage() {
             name: doc.file.name,
             size: doc.file.size,
             type: doc.file.type,
-            url,
+            url: uploaded?.url || uploaded,
+            storagePath: uploaded?.path || null,
           }),
         )
         documentIds.push(action.payload.id)
@@ -123,6 +128,8 @@ export function VerificationPage() {
         console.warn('[Storage] doc upload failed:', err.message)
       }
     }
+    if (!privacyConsent) return
+
     await persist(idDoc, `identity:${idType}`)
     await persist(selfieDoc, 'selfie')
     if (level === 'enhanced') await persist(addressDoc, 'address')
@@ -135,6 +142,7 @@ export function VerificationPage() {
         tone: 'success',
       }),
     )
+    setPrivacyConsent(false)
     setStep(1)
   }
 
@@ -330,6 +338,41 @@ export function VerificationPage() {
                 Vérifiez que vos documents respectent les exemples acceptés. Le traitement prend
                 généralement 24 à 48 h ouvrées. Au-delà de 24 h en attente, contactez l’administrateur.
               </p>
+              <label
+                className={`flex cursor-pointer items-start gap-2.5 rounded-2xl border-2 p-3 transition ${
+                  privacyConsent
+                    ? 'border-brand-500 bg-[var(--app-accent-soft)]'
+                    : 'border-[var(--app-border)] hover:border-brand-300'
+                }`}
+              >
+                <input
+                  className="mt-0.5 size-4 shrink-0 accent-brand-700"
+                  type="checkbox"
+                  checked={privacyConsent}
+                  onChange={(event) => setPrivacyConsent(event.target.checked)}
+                />
+                <span className="text-xs leading-5 text-[var(--app-text-muted)] sm:text-sm">
+                  {t('verification.consent.before')}{' '}
+                  <Link
+                    className="font-bold text-brand-700 hover:underline"
+                    to="/legal/privacy"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t('verification.consent.privacyLink')}
+                  </Link>{' '}
+                  {t('verification.consent.and')}{' '}
+                  <Link
+                    className="font-bold text-brand-700 hover:underline"
+                    to="/legal/cgu"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t('verification.consent.termsLink')}
+                  </Link>
+                  {t('verification.consent.after')}
+                </span>
+              </label>
             </div>
           ) : null}
         </div>
@@ -343,7 +386,7 @@ export function VerificationPage() {
             <span />
           )}
           {current.key === 'review' ? (
-            <Button icon={FiCheckCircle} disabled={!ready} onClick={submit}>
+            <Button icon={FiCheckCircle} disabled={!ready || !privacyConsent} onClick={submit}>
               Envoyer le dossier
             </Button>
           ) : (

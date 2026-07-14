@@ -12,6 +12,8 @@ import {
   wasActiveReportAdded,
   wasActiveReportDuplicate,
 } from '../features/moderation/reportUtils'
+import { collectCascadeArchiveTargets } from '../features/posts/archiveLinkedPosts'
+import { archivePostsBySource } from '../features/posts/postsSlice'
 
 import { createNotificationDispatcher } from './notificationTriggers'
 import { hasReviewEligibility } from '@moxt/shared/utils/reviewEligibility.js'
@@ -75,6 +77,13 @@ export const interactionMiddleware = (store) => {
   const result = next(action)
   const after = store.getState()
   const actorId = after.auth.user?.id
+
+  // Cascade: archive feed posts linked to catalog items that left a live status
+  if (action.type !== 'posts/archivePostsBySource') {
+    for (const target of collectCascadeArchiveTargets(action, before, after)) {
+      store.dispatch(archivePostsBySource(target))
+    }
+  }
 
   if (action.type === 'reviews/createReview') {
     const existed = before.reviews.items.some(

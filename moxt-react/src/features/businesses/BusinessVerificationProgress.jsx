@@ -22,8 +22,8 @@ export function BusinessVerificationProgress({
 
   if (percent === 100) {
     return (
-      <Alert variant="success" title="Profil vérifié à 100 %" className={className}>
-        Votre entreprise est complète et validée par MOXT.
+      <Alert variant="success" title="Entreprise complète et vérifiée" className={className}>
+        Fiche renseignée à 100 % et identité entreprise validée par MOXT.
       </Alert>
     )
   }

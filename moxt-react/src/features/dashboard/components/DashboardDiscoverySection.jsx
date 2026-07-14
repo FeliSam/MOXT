@@ -34,7 +34,10 @@ export function DashboardDiscoverySection({
   parcelsLoading,
 }) {
   const allPosts = useSelector((s) => s.posts?.items ?? [])
-  const posts = useMemo(() => sortPostsByPublishedAt(allPosts).slice(0, 3), [allPosts])
+  const posts = useMemo(
+    () => sortPostsByPublishedAt(allPosts.filter((p) => p.status === 'published')).slice(0, 3),
+    [allPosts],
+  )
 
   return (
     <>

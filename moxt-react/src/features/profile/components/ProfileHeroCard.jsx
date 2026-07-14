@@ -44,7 +44,11 @@ export function ProfileHeroCard({ profileCompletion, user }) {
           <p className="mt-1 truncate text-sm text-[var(--app-text-muted)]">{user.email}</p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Badge>{roleLabels[user.role] || user.role}</Badge>
-            {user.verified ? <VerifiedBadge /> : <Badge tone="warning">À vérifier</Badge>}
+            {user.verified ? (
+              <VerifiedBadge label="Vérifié" />
+            ) : (
+              <Badge tone="warning">Identité à vérifier</Badge>
+            )}
           </div>
         </div>
 
@@ -65,14 +69,14 @@ export function ProfileHeroCard({ profileCompletion, user }) {
           to="/verification"
           className="relative z-10 mt-4 flex items-center justify-between gap-3 rounded-[var(--radius-card)] border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-sm font-semibold text-amber-900 transition-colors hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100 dark:hover:bg-amber-950/60"
         >
-          <span>Renforcez la confiance — complétez votre vérification</span>
+          <span>Faites vérifier votre identité par MOXT (badge vert)</span>
           <FiChevronRight className="shrink-0" aria-hidden="true" />
         </Link>
       ) : null}
 
       <div className="relative z-10 mt-5 border-t border-[var(--app-border)] pt-4">
         <div className="flex items-center justify-between gap-3 text-xs font-semibold text-[var(--app-text-muted)]">
-          <span>Profil complété</span>
+          <span>Profil renseigné</span>
           <span className="tabular-nums text-[var(--app-text)]">{profileCompletion}%</span>
         </div>
         <div

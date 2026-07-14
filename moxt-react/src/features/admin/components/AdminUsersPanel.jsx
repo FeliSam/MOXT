@@ -13,24 +13,24 @@ export function AdminUsersPanel({ actorRole, dispatch, onSuspendUser, setSelecte
         users.map((user) => {
           const name = `${user.firstName || ''} ${user.lastName || ''}`.trim()
           return (
-            <div key={user.id} className={`${ITEM} grid gap-3`}>
-              <div className="flex flex-wrap items-center gap-3">
+            <div key={user.id} className={`${ITEM} grid min-w-0 gap-3 overflow-hidden`}>
+              <div className="flex min-w-0 flex-wrap items-center gap-3">
                 <span className={`grid size-9 shrink-0 place-items-center rounded-xl text-xs font-black ${avatarColor(name)}`}>
                   {initials(name)}
                 </span>
                 <button
                   type="button"
                   onClick={() => setSelected({ kind: 'user', item: user })}
-                  className="min-w-0 text-left hover:text-brand-700"
+                  className="min-w-0 flex-1 text-left hover:text-brand-700"
                 >
-                  <strong className="block text-sm">{name || user.email}</strong>
+                  <strong className="block truncate text-sm">{name || user.email}</strong>
                   <p className="truncate text-xs text-[var(--app-text-muted)]">{user.email}</p>
                 </button>
-                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-black ${ROLE_COLORS[user.role] || ROLE_COLORS.user}`}>
+                <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-black ${ROLE_COLORS[user.role] || ROLE_COLORS.user}`}>
                   {user.role}
                 </span>
                 <span
-                  className={`rounded-full px-2.5 py-0.5 text-[10px] font-black ${
+                  className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-black ${
                     user.status === 'suspended'
                       ? 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300'
                       : user.status === 'pending_deletion'
@@ -41,7 +41,7 @@ export function AdminUsersPanel({ actorRole, dispatch, onSuspendUser, setSelecte
                   {user.status === 'pending_deletion' ? 'suppression demandée' : user.status}
                 </span>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex min-w-0 flex-wrap gap-2">
                 {['user', 'professional', 'admin'].map((role) => (
                   <button
                     key={role}

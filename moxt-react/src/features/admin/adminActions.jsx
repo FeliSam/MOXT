@@ -224,7 +224,8 @@ export function contentActions(contentView, dispatch, item) {
   }
 }
 
-export function renderDetailActions({ actorRole, dispatch, item, kind, onSuspendUser }) {
+export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, onSuspendUser }) {
+  const reviewerId = actorId || 'admin'
   switch (normalizeAdminKind(kind)) {
     case 'transfer': {
       const next = TRANSFER_TRANSITIONS[item.status]
@@ -272,7 +273,15 @@ export function renderDetailActions({ actorRole, dispatch, item, kind, onSuspend
           <ActionButton
             done={item.status === 'verified'}
             doneLabel="Validée"
-            onClick={() => dispatch(updateVerificationStatus({ id: item.id, status: 'verified', reviewedBy: 'admin' }))}
+            onClick={() =>
+              dispatch(
+                updateVerificationStatus({
+                  id: item.id,
+                  status: 'verified',
+                  reviewedBy: reviewerId,
+                }),
+              )
+            }
           >
             Valider
           </ActionButton>
@@ -280,7 +289,20 @@ export function renderDetailActions({ actorRole, dispatch, item, kind, onSuspend
             done={item.status === 'rejected'}
             doneLabel="Refusée"
             variant="danger"
-            onClick={() => dispatch(updateVerificationStatus({ id: item.id, status: 'rejected', reviewedBy: 'admin' }))}
+            onClick={() => {
+              const reviewNote =
+                typeof window !== 'undefined'
+                  ? window.prompt('Motif du refus (optionnel) :', item.reviewNote || '') || ''
+                  : ''
+              dispatch(
+                updateVerificationStatus({
+                  id: item.id,
+                  status: 'rejected',
+                  reviewedBy: reviewerId,
+                  reviewNote,
+                }),
+              )
+            }}
           >
             Refuser
           </ActionButton>

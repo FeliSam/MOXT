@@ -45,6 +45,11 @@ export const FAQ_ITEMS = [
       '1) Téléphone russe (OTP) pour publier. 2) Identité MOXT (pièce + selfie) pour entreprise et transferts. 3) Renforcée (+ justificatif de domicile) pour des plafonds plus élevés.',
   },
   {
+    question: 'Quelle différence entre profil vérifié et profil complet ?',
+    answer:
+      'Profil complet = vos champs sont renseignés (nom, contact, ville, pays…). Profil vérifié = l’équipe MOXT a validé votre identité via documents (KYC) : badge vert, plafonds plus élevés et opérations sensibles. Un profil peut être complet sans être vérifié.',
+  },
+  {
     question: 'J’ai créé mon compte avec un e-mail, dois-je vérifier mon téléphone ?',
     answer:
       'Oui, avant toute publication. Confirmez votre numéro +7 depuis Profil ou Vérification. Si vous changez de numéro, une nouvelle confirmation est demandée.',

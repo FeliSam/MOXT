@@ -74,9 +74,9 @@ export function useDashboardStats(user) {
     )
 
     const onboardingSteps = [
-      { label: 'Vérifier votre compte', done: Boolean(user.verified), to: '/verification' },
+      { label: 'Vérifier votre identité', done: Boolean(user.verified), to: '/verification' },
       {
-        label: 'Compléter votre profil',
+        label: 'Renseigner votre profil',
         done: profileCompletion === 100,
         to: '/profile/information',
       },

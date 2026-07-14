@@ -111,7 +111,7 @@ export function createNotificationDispatcher(store) {
         title: 'Contestation d avis',
         message: `${review.authorName || 'Un membre'} — avis contesté sur ${review.targetType}.`,
         type: 'moderation',
-        link: '/admin',
+        link: '/admin?view=queues',
         priority: 'high',
       })
     },
@@ -201,7 +201,7 @@ export function createNotificationDispatcher(store) {
         title: 'Signalement abonné',
         message: `${action.payload.publisherName || 'Un éditeur'} a signalé un abonné : ${String(action.payload.reason).slice(0, 120)}`,
         type: 'moderation',
-        link: '/admin',
+        link: '/admin?view=queues',
         priority: 'high',
       })
     },
@@ -210,7 +210,7 @@ export function createNotificationDispatcher(store) {
         title: `Signalement ${label}`,
         message: String(reason || 'Contenu signalé').slice(0, 120),
         type: 'moderation',
-        link: link || '/admin',
+        link: link || '/admin?view=queues',
         priority: 'high',
       })
     },
@@ -328,11 +328,15 @@ export function createNotificationDispatcher(store) {
         rejected: 'refusée',
         pending_review: 'en cours d examen',
       }
+      const reason =
+        request.status === 'rejected' && request.reviewNote
+          ? ` Motif : ${String(request.reviewNote).slice(0, 120)}`
+          : ''
       notifyUser(
         request.userId,
         {
           title: 'Vérification de compte',
-          message: `Votre demande de vérification est ${labels[request.status] || request.status}.`,
+          message: `Votre demande de vérification est ${labels[request.status] || request.status}.${reason}`,
           type: 'verification',
           link: '/verification',
           priority: 'high',

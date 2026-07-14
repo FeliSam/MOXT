@@ -2,7 +2,7 @@ export function getSiteUrl() {
   const configured = import.meta.env.VITE_SITE_URL
   if (configured) return String(configured).replace(/\/$/, '')
   if (typeof window !== 'undefined') return window.location.origin
-  return 'https://moxt.app'
+  return 'https://moxtapp.ru'
 }
 
 export function buildAbsoluteUrl(path = '/') {

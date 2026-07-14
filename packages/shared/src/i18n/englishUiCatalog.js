@@ -86,6 +86,13 @@ export const ENGLISH_UI_CATALOG = {
   'Mockup direction': 'Mockup direction',
   'Couverture fonctionnelle': 'Feature coverage',
   'Centre de contrôle': 'Control center',
+  'Verifications': 'Verifications',
+  "Verifications d'identite": 'Identity verifications',
+  'Documents fournis': 'Submitted documents',
+  'Examiner': 'Review',
+  'Motif du refus (optionnel)': 'Rejection reason (optional)',
+  'Confirmer le refus': 'Confirm rejection',
+  'Aucune demande de vérification.': 'No verification requests.',
   'Pilotage système': 'System control',
   'Espace personnel': 'Personal space',
   Superadmin: 'Superadmin',
@@ -396,8 +403,10 @@ export const ENGLISH_UI_CATALOG = {
   'Référentiel UI et couverture fonctionnelle du frontend MOXT.': 'UI reference and MOXT frontend feature coverage.',
 
   // Dashboard
-  'Vérifiez votre compte': 'Verify your account',
-  'Un compte vérifié inspire confiance et débloque des plafonds plus élevés pour vos transferts.': 'A verified account builds trust and unlocks higher transfer limits.',
+  'Vérifiez votre identité': 'Verify your identity',
+  'Le badge vert « Vérifié » confirme que MOXT a validé votre identité (documents KYC). Cela débloque plafonds élevés, entreprise et offres P2P — ce n’est pas le remplissage de votre fiche.':
+    'The green “Verified” badge confirms MOXT validated your identity (KYC documents). It unlocks higher limits, business accounts and P2P offers — it is not about filling in your profile fields.',
+  'Vérifier mon identité': 'Verify my identity',
   'Vérifier mon compte': 'Verify my account',
   'Actions à faire': 'To do',
   'Ce qui attend votre intervention.': 'What needs your attention.',
@@ -408,15 +417,28 @@ export const ENGLISH_UI_CATALOG = {
   'Créer un transfert': 'Create a transfer',
   'Taux du jour': 'Rate of the day',
   "Envoyer de l'argent": 'Send money',
-  'Profil complété': 'Profile completed',
-  'Un profil complet inspire confiance.': 'A complete profile builds trust.',
+  'Profil complété': 'Profile completion',
+  'Champs renseignés (nom, contact, ville…). Complet ≠ vérifié : cela n’atteste pas votre identité.':
+    'Filled fields (name, contact, city…). Complete ≠ verified: this does not prove your identity.',
   'Compléter mon profil': 'Complete my profile',
   'Votre profil est complet.': 'Your profile is complete.',
   'Premiers pas sur MOXT': 'Getting started with MOXT',
   'Activez tout le potentiel de votre compte.': 'Unlock the full potential of your account.',
   "Ouvrir l'espace pro": 'Open pro workspace',
   'Votre espace professionnel': 'Your professional workspace',
-
+  'Vérifier votre identité': 'Verify your identity',
+  'Renseigner votre profil': 'Fill in your profile',
+  'Identité à vérifier': 'Identity to verify',
+  'Faites vérifier votre identité par MOXT (badge vert)': 'Have MOXT verify your identity (green badge)',
+  'Profil renseigné': 'Profile filled in',
+  'Identité vérifiée par MOXT': 'Identity verified by MOXT',
+  'Entreprise complète et vérifiée': 'Business complete and verified',
+  'Fiche renseignée à 100 % et identité entreprise validée par MOXT.':
+    'Business profile 100% filled in and company identity validated by MOXT.',
+  'Quelle différence entre profil vérifié et profil complet ?':
+    'What is the difference between a verified profile and a complete profile?',
+  'Profil complet = vos champs sont renseignés (nom, contact, ville, pays…). Profil vérifié = l’équipe MOXT a validé votre identité via documents (KYC) : badge vert, plafonds plus élevés et opérations sensibles. Un profil peut être complet sans être vérifié.':
+    'Complete profile = required fields are filled in (name, contact, city, country…). Verified profile = the MOXT team validated your identity via documents (KYC): green badge, higher limits and sensitive operations. A profile can be complete without being verified.',
   // Divers
   'Thème actuel :': 'Current theme:',
   sombre: 'dark',

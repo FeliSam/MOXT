@@ -375,7 +375,8 @@ export const fr = {
         },
         badge: {
           title: 'Badge vérifié',
-          description: 'Le badge vert indique une identité validée par l’équipe MOXT.',
+          description:
+            'Le badge vert = identité validée par MOXT (KYC). À ne pas confondre avec un profil « complet » (simple remplissage des champs).',
         },
         reports: {
           title: 'Signalements',
@@ -467,6 +468,35 @@ export const fr = {
       cancel: 'Annuler',
       sendValidation: 'Envoyer le code de validation',
       sendConfirmation: 'Envoyer le code de confirmation',
+    },
+  },
+  verification: {
+    consent: {
+      before: 'J’accepte que mes documents de vérification soient traités conformément à la',
+      privacyLink: 'politique de confidentialité',
+      and: 'et aux',
+      termsLink: 'conditions d’utilisation',
+      after: '.',
+    },
+    admin: {
+      navLabel: 'Vérifications',
+      title: "Vérifications d'identité",
+      description:
+        'Examinez les dossiers, prévisualisez les pièces jointes, puis validez ou refusez.',
+      examine: 'Examiner',
+      approve: 'Valider',
+      reject: 'Refuser',
+      rejectConfirm: 'Confirmer le refus',
+      rejectReasonLabel: 'Motif du refus (optionnel)',
+      rejectReasonPlaceholder: 'Ex. photo illisible, document expiré…',
+      documentsTitle: 'Documents fournis',
+      empty: 'Aucune demande de vérification.',
+      softDeleted: 'retiré (conservé pour review)',
+      openDocument: 'Ouvrir',
+      notifyTitle: 'Nouvelle vérification de compte',
+      notifyMessage: '{name} a soumis un dossier ({level}).',
+      statusVerified: 'vérifiée',
+      statusRejected: 'refusée',
     },
   },
   legal: {

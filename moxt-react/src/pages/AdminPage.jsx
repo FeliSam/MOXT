@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FiDownload } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
+import { useSearchParams } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { PageHeader } from '../components/ui/PageHeader'
 import { updateUserStatus } from '../features/administration/administrationSlice'
-import { MAIN_VIEWS, CARD } from '../features/admin/adminConfig'
+import { ADMIN_VIEW_IDS, MAIN_VIEWS, CARD } from '../features/admin/adminConfig'
 import { AdminAuditPanel } from '../features/admin/components/AdminAuditPanel'
 import { AdminContentPanel } from '../features/admin/components/AdminContentPanel'
 import { AdminDetailPanel } from '../features/admin/components/AdminDetailPanel'
@@ -14,15 +15,22 @@ import { AdminQueuesPanel } from '../features/admin/components/AdminQueuesPanel'
 import { AdminSupportPanel } from '../features/admin/components/AdminSupportPanel'
 import { AdminTransfersPanel } from '../features/admin/components/AdminTransfersPanel'
 import { AdminUsersPanel } from '../features/admin/components/AdminUsersPanel'
+import { AdminVerificationsPanel } from '../features/admin/components/AdminVerificationsPanel'
 import { GlobalFilterBar, SystemStatusBar } from '../features/admin/components/AdminShared'
 import { AdminIdentityCard, HeroKpiRow, SidebarBtn } from '../features/admin/components/AdminShell'
 import { badgeForView, exportSnapshot } from '../features/admin/adminData'
 import { useAdminPageData } from '../features/admin/hooks/useAdminPageData'
 
+function resolveAdminView(value) {
+  if (ADMIN_VIEW_IDS.includes(value)) return value
+  return 'overview'
+}
+
 export function AdminPage() {
   const dispatch = useDispatch()
   const admin = useSelector((v) => v.auth.user)
-  const [view, setView] = useState('overview')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [view, setView] = useState(() => resolveAdminView(searchParams.get('view')))
   const [contentView, setContentView] = useState('businesses')
   const [selected, setSelected] = useState(null)
   const [supportReply, setSupportReply] = useState('')
@@ -41,13 +49,24 @@ export function AdminPage() {
     auditItems,
     activeContentItems,
     allTransfers,
+    allVerifications,
   } = useAdminPageData(query, statusFilter, contentView)
 
-  function switchView(next) {
+  useEffect(() => {
+    const next = resolveAdminView(searchParams.get('view'))
     setView(next)
+  }, [searchParams])
+
+  function switchView(next) {
+    const resolved = resolveAdminView(next)
+    setView(resolved)
     setSelected(null)
     setQuery('')
     setStatusFilter('all')
+    const params = new URLSearchParams(searchParams)
+    if (resolved === 'overview') params.delete('view')
+    else params.set('view', resolved)
+    setSearchParams(params, { replace: true })
   }
 
   return (
@@ -67,8 +86,8 @@ export function AdminPage() {
 
       <HeroKpiRow metrics={metrics} queues={queues} onSelect={switchView} />
 
-      <div className="grid gap-5 xl:grid-cols-[14rem_minmax(0,1fr)_22rem]">
-        <aside className="grid content-start gap-2">
+      <div className="grid gap-5 xl:grid-cols-[14rem_minmax(0,1fr)_minmax(0,22rem)]">
+        <aside className="grid min-w-0 content-start gap-2">
           <AdminIdentityCard admin={admin} />
           <nav className={`${CARD} grid content-start gap-1 p-2`}>
             {MAIN_VIEWS.map((item) => {
@@ -87,7 +106,7 @@ export function AdminPage() {
           </nav>
         </aside>
 
-        <div className="grid gap-5 content-start">
+        <div className="grid min-w-0 gap-5 content-start">
           <GlobalFilterBar
             query={query}
             setQuery={setQuery}
@@ -138,8 +157,23 @@ export function AdminPage() {
               users={users}
             />
           )}
+          {view === 'verifications' && (
+            <AdminVerificationsPanel
+              adminId={admin?.id}
+              dispatch={dispatch}
+              query={query}
+              setSelected={setSelected}
+              statusFilter={statusFilter}
+              verifications={allVerifications}
+            />
+          )}
           {view === 'queues' && (
-            <AdminQueuesPanel dispatch={dispatch} queues={queues} setSelected={setSelected} />
+            <AdminQueuesPanel
+              adminId={admin?.id}
+              dispatch={dispatch}
+              queues={queues}
+              setSelected={setSelected}
+            />
           )}
           {view === 'audit' && (
             <AdminAuditPanel auditItems={auditItems} setSelected={setSelected} />

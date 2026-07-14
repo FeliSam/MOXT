@@ -1,0 +1,46 @@
+# https://moxtapp.ru — crawl public marketing / legal pages only.
+User-agent: *
+Allow: /
+Allow: /presentation
+Allow: /discover
+Allow: /trust
+Allow: /faq
+Allow: /legal
+Allow: /assets/
+
+# Auth & account app screens (thin SPA shells — not for ranking)
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /invite/
+
+# Private app & admin
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /settings
+Disallow: /local-data
+Disallow: /activities
+Disallow: /favorites
+Disallow: /subscriptions
+Disallow: /documents
+Disallow: /addresses
+Disallow: /verification
+Disallow: /security
+Disallow: /messages
+Disallow: /notifications
+Disallow: /wallet
+Disallow: /payments
+Disallow: /receipts
+Disallow: /disputes
+Disallow: /referral
+Disallow: /admin
+Disallow: /superadmin
+Disallow: /design-system
+Disallow: /design-directions
+Disallow: /feature-matrix
+
+# Yandex preferred host (apex)
+Host: https://moxtapp.ru
+
+Sitemap: https://moxtapp.ru/sitemap.xml

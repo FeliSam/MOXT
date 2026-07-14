@@ -26,7 +26,7 @@ export function DocumentsPage() {
   async function addDocument(file) {
     if (!file) return
     try {
-      const url = await storageService.uploadDocument(user.id, category, file)
+      const uploaded = await storageService.uploadDocument(user.id, category, file)
       dispatch(
         addPersonalDocument({
           userId: user.id,
@@ -34,7 +34,8 @@ export function DocumentsPage() {
           name: file.name,
           size: file.size,
           type: file.type,
-          url,
+          url: uploaded?.url || uploaded,
+          storagePath: uploaded?.path || null,
         }),
       )
       dispatch(

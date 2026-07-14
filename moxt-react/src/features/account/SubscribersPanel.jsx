@@ -1,27 +1,33 @@
+import { useMemo } from 'react'
 import { FiBell, FiShield, FiUser } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
-import { Card } from '../../components/ui/Card'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { Button } from '../../components/ui/Button'
+import { RevealListItem } from '../../components/ui/RevealListItem'
 import { selectPublisherBans, selectPublisherSubscribers } from './subscriptionSelectors'
 import { SubscriberRow } from './SubscriberRow'
 import { unbanPublisherSubscriber } from './accountSlice'
 import { usePublicationProfile } from '../publications/usePublicationProfile'
+import { AvatarStack, EntityAvatar } from './EntityAvatar'
+import { useProfileAvatarMap } from './useProfileAvatarMap'
 
-function BannedSubscriberRow({ ban, publisherType, publisherId, onUnban }) {
+function BannedSubscriberRow({ ban, onUnban }) {
   const user = useSelector((state) => state.auth.user)
   const { profile } = usePublicationProfile(ban.subscriberId, user)
   const displayName =
     `${profile?.firstName || ''} ${profile?.lastName || ''}`.trim() || 'Membre MOXT'
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-red-200/60 bg-red-50/40 px-4 py-3 dark:border-red-900/40 dark:bg-red-950/20">
-      <div className="min-w-0">
-        <strong className="block truncate text-sm">{displayName}</strong>
-        <p className="text-xs text-[var(--app-text-muted)]">
-          Banni le {new Date(ban.createdAt).toLocaleDateString('fr-FR')}
-          {ban.reason ? ` — ${ban.reason}` : ''}
-        </p>
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-red-200/60 bg-red-50/40 px-4 py-3 dark:border-red-900/40 dark:bg-red-950/20">
+      <div className="flex min-w-0 items-center gap-3">
+        <EntityAvatar name={displayName} src={profile?.avatarUrl} size="sm" shape="user" ring={false} />
+        <div className="min-w-0">
+          <strong className="block truncate text-sm">{displayName}</strong>
+          <p className="text-xs text-[var(--app-text-muted)]">
+            Banni le {new Date(ban.createdAt).toLocaleDateString('fr-FR')}
+            {ban.reason ? ` — ${ban.reason}` : ''}
+          </p>
+        </div>
       </div>
       <Button size="sm" variant="secondary" onClick={() => onUnban(ban)}>
         Lever le ban
@@ -42,15 +48,36 @@ export function SubscribersPanel({
   )
   const bans = useSelector((state) => selectPublisherBans(state, publisherType, publisherId))
 
+  const subscriberIds = useMemo(
+    () => subscribers.map((item) => item.userId || item.subscriberId).filter(Boolean),
+    [subscribers],
+  )
+  const avatarMap = useProfileAvatarMap(subscriberIds)
+  const stackItems = useMemo(
+    () =>
+      subscribers.slice(0, 8).map((item) => {
+        const id = item.userId || item.subscriberId
+        const entry = avatarMap[id]
+        return {
+          id,
+          name: entry?.name || 'Membre',
+          src: entry?.avatarUrl || null,
+          shape: 'user',
+        }
+      }),
+    [avatarMap, subscribers],
+  )
+
   if (!subscribers.length && !bans.length) {
     return (
       <EmptyState
         icon={FiBell}
+        tone="warm"
         title="Aucun abonné"
         description={
           publisherName
-            ? `Les membres qui s'abonnent à ${publisherName} apparaîtront ici.`
-            : 'Les membres qui vous suivent apparaîtront ici.'
+            ? `Les membres qui s'abonnent à ${publisherName} apparaîtront ici avec leur photo de profil.`
+            : 'Les membres qui vous suivent apparaîtront ici avec leur photo de profil.'
         }
       />
     )
@@ -59,23 +86,37 @@ export function SubscribersPanel({
   return (
     <div className="grid gap-5">
       {subscribers.length ? (
-        <div className="grid gap-3">
-          <p className="text-sm text-[var(--app-text-muted)]">
-            {subscribers.length} abonné(s) — gérez les notifications, retraits, bannissements et
-            signalements.
-          </p>
-          {subscribers.map((subscriber) => (
-            <Card key={subscriber.id}>
-              <SubscriberRow
-                subscriber={subscriber}
-                publisherType={publisherType}
-                publisherId={publisherId}
-                publisherName={publisherName}
-                publisherPath={publisherPath}
-              />
-            </Card>
-          ))}
-        </div>
+        <section className="overflow-hidden rounded-[var(--radius-card-lg)] border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--shadow-card)]">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--app-border)] bg-gradient-to-r from-brand-50/50 to-transparent px-4 py-3 dark:from-brand-950/30 sm:px-5">
+            <div className="min-w-0">
+              <h2 className="text-sm font-black text-[var(--app-text)]">
+                {subscribers.length} abonné{subscribers.length > 1 ? 's' : ''}
+              </h2>
+              <p className="mt-0.5 text-xs text-[var(--app-text-muted)]">
+                Gérez notifications, retraits, bannissements et signalements.
+              </p>
+            </div>
+            <AvatarStack items={stackItems} max={5} size="sm" />
+          </div>
+
+          <ul className="divide-y divide-[var(--app-border)]">
+            {subscribers.map((subscriber, index) => (
+              <li key={subscriber.id}>
+                <RevealListItem index={index}>
+                  <div className="px-4 py-3.5 transition-colors hover:bg-[var(--app-surface-muted)]/60 sm:px-5">
+                    <SubscriberRow
+                      subscriber={subscriber}
+                      publisherType={publisherType}
+                      publisherId={publisherId}
+                      publisherName={publisherName}
+                      publisherPath={publisherPath}
+                    />
+                  </div>
+                </RevealListItem>
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
 
       {bans.length ? (
@@ -85,16 +126,15 @@ export function SubscribersPanel({
             <h3 className="text-sm font-semibold">Membres bannis ({bans.length})</h3>
           </div>
           <p className="text-xs text-[var(--app-text-muted)]">
-            Ces membres ne peuvent plus s'abonner à vos publications.
+            Ces membres ne peuvent plus s&apos;abonner à vos publications.
           </p>
-          {bans.map((ban) => (
-            <BannedSubscriberRow
-              key={ban.id}
-              ban={ban}
-              publisherType={publisherType}
-              publisherId={publisherId}
-              onUnban={(item) => dispatch(unbanPublisherSubscriber({ id: item.id }))}
-            />
+          {bans.map((ban, index) => (
+            <RevealListItem key={ban.id} index={index}>
+              <BannedSubscriberRow
+                ban={ban}
+                onUnban={(item) => dispatch(unbanPublisherSubscriber({ id: item.id }))}
+              />
+            </RevealListItem>
           ))}
         </section>
       ) : null}

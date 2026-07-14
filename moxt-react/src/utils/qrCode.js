@@ -4,5 +4,5 @@ export function makeQrCodeUrl(value, size = 220) {
 
 function getSiteUrlFallback() {
   if (typeof window !== 'undefined') return window.location.origin
-  return 'https://moxt.app'
+  return 'https://moxtapp.ru'
 }

@@ -23,19 +23,21 @@ function QueueSection({ icon, items, kind, label, renderActions, renderMeta, set
       <SectionTitle icon={icon} label={label} count={items.length} tone={items.length ? 'warning' : 'success'} />
       {items.length ? (
         items.map((item) => (
-          <div key={item.id} className={`${ITEM} grid gap-3`}>
-            <div className="flex flex-wrap items-center gap-3">
+          <div key={item.id} className={`${ITEM} grid min-w-0 gap-3 overflow-hidden`}>
+            <div className="flex min-w-0 flex-wrap items-center gap-3">
               <button
                 type="button"
                 onClick={() => setSelected({ kind, item })}
                 className="min-w-0 flex-1 text-left hover:text-brand-700"
               >
-                <strong className="block text-sm">{item.reason || item.comment || item.subject || item.id}</strong>
-                <p className="text-xs text-[var(--app-text-muted)]">{renderMeta(item)}</p>
+                <strong className="block truncate text-sm">
+                  {item.userName || item.reason || item.comment || item.subject || item.id}
+                </strong>
+                <p className="truncate text-xs text-[var(--app-text-muted)]">{renderMeta(item)}</p>
               </button>
-              <Badge>{item.status}</Badge>
+              <Badge className="shrink-0">{item.status}</Badge>
             </div>
-            <div className="flex flex-wrap gap-2">{renderActions(item)}</div>
+            <div className="flex min-w-0 flex-wrap gap-2">{renderActions(item)}</div>
           </div>
         ))
       ) : (
@@ -45,7 +47,7 @@ function QueueSection({ icon, items, kind, label, renderActions, renderMeta, set
   )
 }
 
-export function AdminQueuesPanel({ dispatch, queues, setSelected }) {
+export function AdminQueuesPanel({ adminId, dispatch, queues, setSelected }) {
   return (
     <div className="grid gap-5">
       <QueueSection
@@ -75,11 +77,41 @@ export function AdminQueuesPanel({ dispatch, queues, setSelected }) {
         label="Verifications d'identite"
         kind="verification"
         setSelected={setSelected}
-        renderMeta={(i) => `Niveau ${i.level} · ${i.userId}`}
+        renderMeta={(i) => `Niveau ${i.level} · ${i.userName || i.userId}`}
         renderActions={(i) => (
           <>
-            <Button icon={FiCheckCircle} onClick={() => dispatch(updateVerificationStatus({ id: i.id, status: 'verified', reviewedBy: 'admin' }))}>Valider</Button>
-            <Button variant="danger" icon={FiX} onClick={() => dispatch(updateVerificationStatus({ id: i.id, status: 'rejected', reviewedBy: 'admin' }))}>Refuser</Button>
+            <Button variant="secondary" onClick={() => setSelected({ kind: 'verification', item: i })}>
+              Examiner
+            </Button>
+            <Button
+              icon={FiCheckCircle}
+              onClick={() =>
+                dispatch(
+                  updateVerificationStatus({
+                    id: i.id,
+                    status: 'verified',
+                    reviewedBy: adminId,
+                  }),
+                )
+              }
+            >
+              Valider
+            </Button>
+            <Button
+              variant="danger"
+              icon={FiX}
+              onClick={() =>
+                dispatch(
+                  updateVerificationStatus({
+                    id: i.id,
+                    status: 'rejected',
+                    reviewedBy: adminId,
+                  }),
+                )
+              }
+            >
+              Refuser
+            </Button>
           </>
         )}
       />

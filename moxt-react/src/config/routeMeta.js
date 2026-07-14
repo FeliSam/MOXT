@@ -1,4 +1,61 @@
+/** Public marketing / legal URLs worth indexing (sitemap + robots Allow). */
+export const PUBLIC_INDEXABLE_PATHS = [
+  '/',
+  '/presentation',
+  '/discover',
+  '/trust',
+  '/faq',
+  '/legal/mentions',
+  '/legal/cgu',
+  '/legal/privacy',
+]
+
+export function isPublicIndexablePath(pathname) {
+  if (PUBLIC_INDEXABLE_PATHS.includes(pathname)) return true
+  if (pathname === '/legal') return true
+  return false
+}
+
 export const routeMetadata = [
+  {
+    pattern: /^\/$/,
+    title: 'MOXT — Services Bénin · Russie',
+    eyebrow: 'MOXT',
+    description:
+      'MOXT — transferts, colis, marketplace, jobs et entreprises entre le Bénin et la Russie.',
+  },
+  {
+    pattern: /^\/presentation$/,
+    title: 'Présentation',
+    eyebrow: 'MOXT',
+    description:
+      'Découvrez MOXT : services pour la diaspora africaine entre le Bénin et la Russie.',
+  },
+  {
+    pattern: /^\/discover$/,
+    title: 'Découvrir',
+    eyebrow: 'MOXT',
+    description: 'Explorez entreprises, annonces, colis, jobs et événements sur MOXT.',
+  },
+  {
+    pattern: /^\/trust$/,
+    title: 'Confiance',
+    eyebrow: 'MOXT',
+    description:
+      'Vérification, messagerie sécurisée et principes de confiance sur la plateforme MOXT.',
+  },
+  {
+    pattern: /^\/faq$/,
+    title: 'FAQ',
+    eyebrow: 'MOXT',
+    description: 'Questions fréquentes sur la vérification, la publication et l’usage de MOXT.',
+  },
+  {
+    pattern: /^\/legal(\/|$)/,
+    title: 'Informations légales',
+    eyebrow: 'MOXT',
+    description: 'Mentions légales, CGU et politique de confidentialité MOXT.',
+  },
   { pattern: /^\/dashboard$/, title: 'Accueil', eyebrow: 'MOXT' },
   { pattern: /^\/activities$/, title: 'Mes activités', eyebrow: 'Compte', back: '/profile' },
   { pattern: /^\/favorites$/, title: 'Mes favoris', eyebrow: 'Compte', back: '/profile' },

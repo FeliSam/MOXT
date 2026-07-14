@@ -99,7 +99,38 @@ export const storageService = {
 
   async uploadDocument(userId, category, file) {
     const path = `${userId}/${category}-${Date.now()}.${ext(file)}`
-    return uploadPrivate('documents', path, file)
+    const url = await uploadPrivate('documents', path, file)
+    return { url, path }
+  },
+
+  /** Extrait le chemin objet d'une URL signée / authentifiée Supabase Storage (bucket documents). */
+  extractDocumentsPath(urlOrPath) {
+    if (!urlOrPath || typeof urlOrPath !== 'string') return null
+    const raw = urlOrPath.trim()
+    if (!raw.includes('://') && !raw.startsWith('/')) return raw
+    try {
+      const pathname = decodeURIComponent(new URL(raw).pathname)
+      const markers = [
+        '/object/sign/documents/',
+        '/object/authenticated/documents/',
+        '/object/public/documents/',
+      ]
+      for (const marker of markers) {
+        const idx = pathname.indexOf(marker)
+        if (idx >= 0) return pathname.slice(idx + marker.length)
+      }
+    } catch {
+      return null
+    }
+    return null
+  },
+
+  async getDocumentSignedUrl(urlOrPath) {
+    const path = this.extractDocumentsPath(urlOrPath) || urlOrPath
+    if (!path) throw new Error('Chemin document introuvable')
+    const { data, error } = await supabase.storage.from('documents').createSignedUrl(path, 3600)
+    if (error) throw new Error(error.message)
+    return data.signedUrl
   },
 
   async uploadParcelProof(userId, parcelId, file) {

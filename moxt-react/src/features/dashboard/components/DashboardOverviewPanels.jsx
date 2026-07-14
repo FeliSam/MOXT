@@ -41,15 +41,16 @@ export function DashboardOverviewPanels({
                 <FiShield />
               </span>
               <div>
-                <h2 className="font-black">Vérifiez votre compte</h2>
+                <h2 className="font-black">Vérifiez votre identité</h2>
                 <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-                  Un compte vérifié inspire confiance et débloque des plafonds plus élevés pour vos
-                  transferts.
+                  Le badge vert « Vérifié » confirme que MOXT a validé votre identité (documents KYC).
+                  Cela débloque plafonds élevés, entreprise et offres P2P — ce n’est pas le
+                  remplissage de votre fiche.
                 </p>
               </div>
             </div>
             <Link to="/verification" className="shrink-0">
-              <Button>Vérifier mon compte</Button>
+              <Button>Vérifier mon identité</Button>
             </Link>
           </Card>
         </RevealOnScroll>
@@ -178,7 +179,10 @@ export function DashboardOverviewPanels({
             </span>
             <div className="min-w-0 flex-1">
               <h2 className="font-black">Profil complété</h2>
-              <p className="text-xs text-[var(--app-text-muted)]">Un profil complet inspire confiance.</p>
+              <p className="text-xs text-[var(--app-text-muted)]">
+                Champs renseignés (nom, contact, ville…). Complet ≠ vérifié : cela n’atteste pas
+                votre identité.
+              </p>
             </div>
             <span className="text-2xl font-black">{profileCompletion}%</span>
           </div>

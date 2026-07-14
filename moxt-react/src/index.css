@@ -621,6 +621,14 @@ html.messages-route-lock #root {
   box-shadow: none;
 }
 
+/* Multi-image fan: no clipped plate / border-radius frame — just the images */
+.message-bubble--has-image:has(.message-attachment-stack) {
+  overflow: visible;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
 .message-bubble--has-image.message-bubble--sent,
 .message-bubble--has-image.message-bubble--received {
   color: inherit;
@@ -661,9 +669,8 @@ html.messages-route-lock #root {
 }
 
 /*
- * Multi-image fan inside the same box as a single image.
- * Cards fill most of the media box; light insets + shared bottom pivot keep
- * offsets visible without a large empty hole between the top/bottom layers.
+ * Multi-image fan inside the same size as a single image.
+ * Transparent: no plate, border, or clipped wrapper — only the image cards.
  * Sent: bottom-left pivot, fans up/left. Received: bottom-right pivot, fans up/right.
  */
 .message-attachment-stack {
@@ -678,11 +685,22 @@ html.messages-route-lock #root {
   min-width: 0;
   height: var(--message-media-height, 13.2rem);
   margin-top: 0;
-  overflow: hidden;
+  padding: 0;
+  overflow: visible;
   isolation: isolate;
   box-sizing: border-box;
   touch-action: manipulation;
-  border-radius: inherit;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.message-attachment-stack--sent,
+.message-attachment-stack--received {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
 
 .message-bubble--has-image:not(.message-bubble--grouped-prev) .message-attachment-stack {
@@ -729,15 +747,7 @@ html.messages-route-lock #root {
   height: var(--stack-card-height);
   object-fit: cover;
   border-radius: 0.875rem;
-  box-shadow:
-    0 12px 30px rgb(15 23 42 / 24%),
-    0 3px 10px rgb(15 23 42 / 12%);
-}
-
-.message-bubble--has-image.message-bubble--sent .message-attachment-stack-layer img {
-  box-shadow:
-    0 12px 28px rgb(8 112 95 / 30%),
-    0 3px 10px rgb(8 112 95 / 16%);
+  box-shadow: none;
 }
 
 .message-attachment-stack-layer:hover {

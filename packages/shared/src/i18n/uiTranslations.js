@@ -238,6 +238,15 @@ const RUSSIAN_PHRASES = {
   'Mockup direction': 'Макет-направление',
   'Couverture fonctionnelle': 'Функциональный охват',
   'Centre de contrôle': 'Центр управления',
+  Verifications: 'Проверки',
+  "Verifications d'identite": 'Проверка личности',
+  'Documents fournis': 'Предоставленные документы',
+  Examiner: 'Проверить',
+  'Motif du refus (optionnel)': 'Причина отказа (необязательно)',
+  'Confirmer le refus': 'Подтвердить отклонение',
+  'Aucune demande de vérification.': 'Нет заявок на проверку.',
+  Valider: 'Одобрить',
+  Refuser: 'Отклонить',
   'Pilotage système': 'Управление системой',
   'Espace personnel': 'Личный кабинет',
   Superadmin: 'Суперадмин',
@@ -528,7 +537,10 @@ const RUSSIAN_PHRASES = {
   'Référentiel UI et couverture fonctionnelle du frontend MOXT.': 'UI-справочник и функциональный охват фронтенда MOXT.',
 
   // Dashboard
-  'Vérifiez votre compte': 'Подтвердите аккаунт',
+  'Vérifiez votre identité': 'Подтвердите личность',
+  'Le badge vert « Vérifié » confirme que MOXT a validé votre identité (documents KYC). Cela débloque plafonds élevés, entreprise et offres P2P — ce n’est pas le remplissage de votre fiche.':
+    'Зелёный значок «Проверен» подтверждает, что MOXT проверил вашу личность (документы KYC). Это открывает высокие лимиты, бизнес и P2P — это не заполнение анкеты.',
+  'Vérifier mon identité': 'Подтвердить личность',
   'Vérifier mon compte': 'Подтвердить аккаунт',
   'Actions à faire': 'Действия',
   'Ce qui attend votre intervention.': 'Что требует вашего внимания.',
@@ -539,13 +551,27 @@ const RUSSIAN_PHRASES = {
   'Créer un transfert': 'Создать перевод',
   'Taux du jour': 'Курс дня',
   "Envoyer de l'argent": 'Отправить деньги',
-  'Profil complété': 'Профиль заполнен',
-  'Un profil complet inspire confiance.': 'Полный профиль вызывает доверие.',
+  'Profil complété': 'Заполнение профиля',
+  'Champs renseignés (nom, contact, ville…). Complet ≠ vérifié : cela n’atteste pas votre identité.':
+    'Заполненные поля (имя, контакт, город…). Полный ≠ проверенный: это не подтверждает личность.',
   'Compléter mon profil': 'Заполнить профиль',
   'Votre profil est complet.': 'Ваш профиль заполнен.',
   'Premiers pas sur MOXT': 'Начало работы с MOXT',
   'Activez tout le potentiel de votre compte.': 'Раскройте весь потенциал вашего аккаунта.',
   "Ouvrir l'espace pro": 'Открыть бизнес-кабинет',
+  'Vérifier votre identité': 'Подтвердить личность',
+  'Renseigner votre profil': 'Заполнить профиль',
+  'Identité à vérifier': 'Личность не подтверждена',
+  'Faites vérifier votre identité par MOXT (badge vert)': 'Подтвердите личность через MOXT (зелёный значок)',
+  'Profil renseigné': 'Профиль заполнен',
+  'Identité vérifiée par MOXT': 'Личность подтверждена MOXT',
+  'Entreprise complète et vérifiée': 'Компания заполнена и проверена',
+  'Fiche renseignée à 100 % et identité entreprise validée par MOXT.':
+    'Анкета компании заполнена на 100 % и проверена MOXT.',
+  'Quelle différence entre profil vérifié et profil complet ?':
+    'В чём разница между проверенным и полным профилем?',
+  'Profil complet = vos champs sont renseignés (nom, contact, ville, pays…). Profil vérifié = l’équipe MOXT a validé votre identité via documents (KYC) : badge vert, plafonds plus élevés et opérations sensibles. Un profil peut être complet sans être vérifié.':
+    'Полный профиль = заполнены поля (имя, контакт, город, страна…). Проверенный профиль = команда MOXT подтвердила личность по документам (KYC): зелёный значок, более высокие лимиты и чувствительные операции. Профиль может быть полным, но не проверенным.',
 
   // Divers
   'Thème actuel :': 'Текущая тема:',
@@ -826,6 +852,15 @@ const PORTUGUESE_PHRASES = {
   'Mockup direction': 'Direção de mockup',
   'Couverture fonctionnelle': 'Cobertura funcional',
   'Centre de contrôle': 'Centro de controle',
+  Verifications: 'Verificações',
+  "Verifications d'identite": 'Verificações de identidade',
+  'Documents fournis': 'Documentos enviados',
+  Examiner: 'Examinar',
+  'Motif du refus (optionnel)': 'Motivo da recusa (opcional)',
+  'Confirmer le refus': 'Confirmar recusa',
+  'Aucune demande de vérification.': 'Nenhum pedido de verificação.',
+  Valider: 'Aprovar',
+  Refuser: 'Recusar',
   'Pilotage système': 'Controle do sistema',
   'Espace personnel': 'Espaço pessoal',
   Superadmin: 'Superadmin',
@@ -1115,7 +1150,10 @@ const PORTUGUESE_PHRASES = {
   'Référentiel UI et couverture fonctionnelle du frontend MOXT.': 'Referência UI e cobertura funcional do frontend MOXT.',
 
   // Dashboard
-  'Vérifiez votre compte': 'Verifique sua conta',
+  'Vérifiez votre identité': 'Verifique a sua identidade',
+  'Le badge vert « Vérifié » confirme que MOXT a validé votre identité (documents KYC). Cela débloque plafonds élevés, entreprise et offres P2P — ce n’est pas le remplissage de votre fiche.':
+    'O distintivo verde « Verificado » confirma que a MOXT validou a sua identidade (documentos KYC). Desbloqueia limites mais altos, empresa e ofertas P2P — não é o preenchimento da ficha.',
+  'Vérifier mon identité': 'Verificar a minha identidade',
   'Vérifier mon compte': 'Verificar minha conta',
   'Actions à faire': 'Tarefas pendentes',
   'Ce qui attend votre intervention.': 'O que precisa da sua atenção.',
@@ -1126,13 +1164,27 @@ const PORTUGUESE_PHRASES = {
   'Créer un transfert': 'Criar transferência',
   'Taux du jour': 'Taxa do dia',
   "Envoyer de l'argent": 'Enviar dinheiro',
-  'Profil complété': 'Perfil completo',
-  'Un profil complet inspire confiance.': 'Um perfil completo inspira confiança.',
+  'Profil complété': 'Preenchimento do perfil',
+  'Champs renseignés (nom, contact, ville…). Complet ≠ vérifié : cela n’atteste pas votre identité.':
+    'Campos preenchidos (nome, contacto, cidade…). Completo ≠ verificado: isso não prova a sua identidade.',
   'Compléter mon profil': 'Completar meu perfil',
   'Votre profil est complet.': 'Seu perfil está completo.',
   'Premiers pas sur MOXT': 'Primeiros passos no MOXT',
   'Activez tout le potentiel de votre compte.': 'Desbloqueie todo o potencial da sua conta.',
   "Ouvrir l'espace pro": 'Abrir espaço profissional',
+  'Vérifier votre identité': 'Verificar a sua identidade',
+  'Renseigner votre profil': 'Preencher o seu perfil',
+  'Identité à vérifier': 'Identidade a verificar',
+  'Faites vérifier votre identité par MOXT (badge vert)': 'Peça à MOXT para verificar a sua identidade (distintivo verde)',
+  'Profil renseigné': 'Perfil preenchido',
+  'Identité vérifiée par MOXT': 'Identidade verificada pela MOXT',
+  'Entreprise complète et vérifiée': 'Empresa completa e verificada',
+  'Fiche renseignée à 100 % et identité entreprise validée par MOXT.':
+    'Ficha preenchida a 100 % e identidade da empresa validada pela MOXT.',
+  'Quelle différence entre profil vérifié et profil complet ?':
+    'Qual é a diferença entre perfil verificado e perfil completo?',
+  'Profil complet = vos champs sont renseignés (nom, contact, ville, pays…). Profil vérifié = l’équipe MOXT a validé votre identité via documents (KYC) : badge vert, plafonds plus élevés et opérations sensibles. Un profil peut être complet sans être vérifié.':
+    'Perfil completo = os campos estão preenchidos (nome, contacto, cidade, país…). Perfil verificado = a equipa MOXT validou a sua identidade via documentos (KYC): distintivo verde, limites mais altos e operações sensíveis. Um perfil pode estar completo sem estar verificado.',
 
   // Divers
   'Thème actuel :': 'Tema atual:',

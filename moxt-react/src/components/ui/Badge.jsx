@@ -26,7 +26,11 @@ export function Badge({ children, className = '', tone = 'brand' }) {
 }
 
 /* ─── Icône vérifiée (rond vert + check) ─────────────────────────────────── */
-export function VerifiedIcon({ size = 'md', className = '', title = 'Profil vérifié' }) {
+export function VerifiedIcon({
+  size = 'md',
+  className = '',
+  title = 'Identité vérifiée par MOXT',
+}) {
   const box = {
     sm: 'size-5',
     md: 'size-6',

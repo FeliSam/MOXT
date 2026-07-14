@@ -25,6 +25,7 @@ import {
   reportPublisherSubscriber,
 } from './accountSlice'
 import { addToast } from '../ui/uiSlice'
+import { EntityAvatar } from './EntityAvatar'
 
 const MENU_WIDTH = 240
 const MENU_ESTIMATED_HEIGHT = 320
@@ -301,9 +302,13 @@ export function SubscriberRow({
     <>
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-sm font-bold text-[var(--app-accent)]">
-            {displayName.charAt(0).toUpperCase()}
-          </span>
+          <Link
+            to={`/users/${subscriberId}/publications`}
+            className="shrink-0 transition-transform duration-200 hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
+            aria-label={`Voir le profil de ${displayName}`}
+          >
+            <EntityAvatar name={displayName} src={profile?.avatarUrl} size="md" shape="user" />
+          </Link>
           <div className="min-w-0">
             <VerifiedDisplayName
               as="strong"

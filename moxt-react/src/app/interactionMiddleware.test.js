@@ -5,6 +5,7 @@ import communicationsReducer, { sendMessage } from '../features/communications/c
 import financeReducer from '../features/finance/financeSlice'
 import jobsReducer, { updateApplicationStatus } from '../features/jobs/jobSlice'
 import parcelsReducer, { updateParcelRequestStatus } from '../features/parcels/parcelSlice'
+import postsReducer from '../features/posts/postsSlice'
 import transfersReducer, {
   createTransfer,
   declarePayment,
@@ -12,7 +13,10 @@ import transfersReducer, {
 } from '../features/transfers/transferSlice'
 import { DIRECTIONS, TRANSFER_STATUS } from '../features/transfers/transferConfig'
 import uiReducer from '../features/ui/uiSlice'
-import marketplaceReducer, { reportListing } from '../features/marketplace/marketplaceSlice'
+import marketplaceReducer, {
+  reportListing,
+  updateListingStatus,
+} from '../features/marketplace/marketplaceSlice'
 import { interactionMiddleware } from './interactionMiddleware'
 
 describe('interactionMiddleware', () => {
@@ -326,5 +330,64 @@ describe('interactionMiddleware', () => {
       type: 'moderation',
       link: '/marketplace/ANN-1',
     })
+  })
+
+  it('archive en cascade les posts du fil lies a une annonce archivee', () => {
+    const store = configureStore({
+      reducer: {
+        auth: () => ({ user: { id: 'owner' } }),
+        communications: communicationsReducer,
+        ui: uiReducer,
+        jobs: () => ({ applications: [], items: [], reports: [] }),
+        events: () => ({ registrations: [], items: [], reports: [] }),
+        parcels: () => ({ items: [], requests: [] }),
+        businesses: () => ({ items: [] }),
+        marketplace: marketplaceReducer,
+        posts: postsReducer,
+        finance: () => ({ payments: [], receipts: [], walletEntries: [] }),
+      },
+      preloadedState: {
+        marketplace: {
+          items: [{ id: 'ANN-1', ownerId: 'owner', title: 'Test', status: 'active' }],
+          reports: [],
+          filters: {},
+          draft: null,
+        },
+        posts: {
+          items: [
+            {
+              id: 'POST-1',
+              sourceType: 'listing',
+              sourceId: 'ANN-1',
+              status: 'published',
+              message: 'share',
+            },
+            {
+              id: 'POST-2',
+              sourceType: 'listing',
+              sourceId: 'OTHER',
+              status: 'published',
+              message: 'other',
+            },
+            {
+              id: 'POST-3',
+              sourceType: 'free',
+              sourceId: null,
+              status: 'published',
+              message: 'free',
+            },
+          ],
+        },
+        communications: { conversations: [], notifications: [], support: [] },
+      },
+      middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(interactionMiddleware),
+    })
+
+    store.dispatch(updateListingStatus({ id: 'ANN-1', status: 'archived' }))
+
+    const posts = store.getState().posts.items
+    expect(posts.find((p) => p.id === 'POST-1').status).toBe('archived')
+    expect(posts.find((p) => p.id === 'POST-2').status).toBe('published')
+    expect(posts.find((p) => p.id === 'POST-3').status).toBe('published')
   })
 })

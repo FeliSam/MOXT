@@ -8,6 +8,7 @@ function mapRemoteProfile(row) {
     lastName: row.last_name || '',
     city: row.city || '',
     country: row.country || '',
+    avatarUrl: row.avatar_url || null,
     verified: row.status === 'verified',
     memberSince: row.created_at || row.updated_at || null,
   }
@@ -42,7 +43,7 @@ export function usePublicationProfile(userId, currentUser) {
 
     supabase
       .from('profiles')
-      .select('first_name, last_name, city, country, status, created_at, updated_at')
+      .select('first_name, last_name, city, country, avatar_url, status, created_at, updated_at')
       .eq('id', userId)
       .maybeSingle()
       .then(({ data, error }) => {
@@ -67,6 +68,7 @@ export function usePublicationProfile(userId, currentUser) {
         lastName: currentUser?.lastName || '',
         city: currentUser?.city || '',
         country: currentUser?.country || '',
+        avatarUrl: currentUser?.avatarUrl || null,
         verified: Boolean(currentUser?.verified),
         memberSince: currentUser?.createdAt || null,
       }

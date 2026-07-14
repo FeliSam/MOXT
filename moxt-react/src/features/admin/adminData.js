@@ -32,9 +32,23 @@ export function buildQueues(state) {
       }
     })
 
+  const verifications = state.account.verificationRequests
+    .filter((i) => ['pending_review', 'pending'].includes(i.status))
+    .map((item) => {
+      const user = state.administration.users.find((entry) => entry.id === item.userId)
+      const userName = user
+        ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email
+        : item.userId
+      return {
+        ...item,
+        userName,
+        userEmail: user?.email || '',
+      }
+    })
+
   return {
     accountDeletions,
-    verifications: state.account.verificationRequests.filter((i) => ['pending_review', 'pending'].includes(i.status)),
+    verifications,
     disputes: state.disputes.items.filter((i) => ['new', 'open'].includes(i.status)),
     reviews: state.reviews.items.filter((i) => i.status === 'pending'),
     contestedReviews: state.reviews.items.filter(
@@ -135,6 +149,7 @@ export function badgeForView(view, metrics, queues) {
   if (view === 'transfers') return metrics.transfers.pending
   if (view === 'content') return metrics.content.pending
   if (view === 'users') return metrics.users.suspended
+  if (view === 'verifications') return queues.verifications.length
   if (view === 'queues') return queues.urgent
   return 0
 }
@@ -189,6 +204,8 @@ export function detailDescriptionFor(kind, item) {
       return `${item.userName} · priorite ${item.priority} · ${item.status}`
     case 'user':
       return `${item.email} · ${item.role}`
+    case 'verification':
+      return `${item.userName || item.userId} · niveau ${item.level} · ${item.status}`
     case 'businesses':
       return `${item.city} · ${item.services?.join(', ') || 'Services a confirmer'}`
     default:
@@ -215,7 +232,17 @@ export function buildDetailFacts(kind, item) {
     case 'parcels':
       return [['Trajet', `${item.origin} -> ${item.destination}`], ['Depart', item.departureDate || '—'], ['Capacite', `${item.capacityKg || 0} kg`], ['Prix/kg', formatMoney(item.pricePerKg, item.currency)], ['Statut', item.effectiveStatus || item.status], ['Distribution', item.distributionDate || '—']]
     case 'verification':
-      return [['Niveau', item.level], ['Statut', item.status], ['Utilisateur', item.userId], ['Documents', item.documentIds?.length || 0], ['Cree le', formatDate(item.createdAt)]]
+      return [
+        ['Niveau', item.level],
+        ['Statut', item.status],
+        ['Utilisateur', item.userName || item.userId],
+        ['Email', item.userEmail || '—'],
+        ['Documents', item.documentIds?.length || 0],
+        ['Note', item.note || '—'],
+        ['Motif review', item.reviewNote || '—'],
+        ['Cree le', formatDate(item.createdAt)],
+        ['Revu le', item.reviewedAt ? formatDate(item.reviewedAt) : '—'],
+      ]
     case 'dispute':
       return [['Statut', item.status], ['Type', item.relatedType], ['Reference', item.relatedId], ['Preuves', item.evidence?.length || 0], ['Cree le', formatDate(item.createdAt)]]
     case 'review':
