@@ -22,6 +22,7 @@
     "cap:dev:sync": "node scripts/cap-dev.mjs --sync",
     "cap:prod:sync": "node scripts/cap-prod.mjs",
     "cap:prod:android": "node scripts/cap-prod.mjs && cap open android",
+    "android:keystore": "node scripts/android-keystore.mjs",
     "lint": "eslint .",
     "test": "node ../node_modules/vitest/vitest.mjs run",
     "test:watch": "node ../node_modules/vitest/vitest.mjs",

@@ -86,6 +86,8 @@ Safari : au retour d’onglet / bfcache, l’app re-sync `email_confirmed_at` vi
 |----------|-------------|
 | `npm run fix` | Tests + `check:site` + `check:smsc` **en parallèle** |
 | `npm run check:push` | État push web + Capacitor Android/iOS |
+| `npm run check:rustore` | Auth RuStore (keyId + PEM ou Base64 modal) |
+| `npm run rustore:wrap-key` | Enveloppe Base64 RuStore → `scripts/rustore-private-key.pem` |
 | `npm run check:site` | Smoke test moxtapp.ru |
 | `npm run check:smsc` | Solde et mode test SMSC |
 | `npm run verify:deploy` | Version déployée vs git |
@@ -170,3 +172,45 @@ Si `google-services.json` est prêt mais le serveur FCM manque encore :
 3. `npm run setup:push:native` puis `npm run check:push`
 
 Voir `npm run check:push` pour le diagnostic à jour.
+
+---
+
+## RuStore (store Android RU)
+
+Aucune pipeline d’upload AAB automatisée pour l’instant — seulement le branchement sûr de la clé API (comme Firebase).
+
+La console RuStore (UI FR) n’envoie **pas toujours** un fichier `.pem` : modal « Clé API » avec un long Base64 PKCS#8 (sous-titre *Signature requise pour la demande de jeton d'accès*). **Copier immédiatement** avant de fermer — affichage unique.
+
+| Élément | Emplacement |
+|---------|-------------|
+| **keyId** | `RUSTORE_KEY_ID` dans `scripts/phase2.env` (gitignoré) |
+| **Clé privée** | `scripts/rustore-private-key.pem` (gitignoré) — PEM **ou** Base64 seul |
+| **Package** | `com.moxt.app` (`RUSTORE_PACKAGE_NAME`, défaut OK) |
+
+```bash
+# 1) Copier le template si besoin
+#    copy scripts\phase2.env.example scripts\phase2.env   (Windows)
+# 2) Coller le Base64 (ou PEM) dans scripts/rustore-private-key.pem
+#    Optionnel : npm run rustore:wrap-key -- chemin\vers\base64.txt
+# 3) Ajouter RUSTORE_KEY_ID=... dans scripts/phase2.env
+npm run check:rustore
+```
+
+Puis build natif **signé** :
+
+```bash
+# Keystore release (une fois) — écrit android/keystore/*.jks + key.properties (gitignorés)
+npm run android:keystore
+
+npm run web:cap:prod:sync
+cd moxt-react/android
+.\gradlew.bat bundleRelease
+# → app/build/outputs/bundle/release/app-release.aab
+```
+
+Sans keytool / fallback Studio : **Build → Generate Signed Bundle / APK**.
+
+Fiche store (descriptions FR/RU, URL confidentialité, checklist captures, icônes) → [`docs/rustore-listing.md`](../docs/rustore-listing.md).
+
+Première publication : [Console RuStore](https://console.rustore.ru) (app + signature AAB + upload).  
+API auth / upload : [docs RuStore](https://www.rustore.ru/help/work-with-rustore-api/api-upload-publication-app).

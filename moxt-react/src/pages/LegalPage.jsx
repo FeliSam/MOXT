@@ -40,8 +40,8 @@ export function LegalPage() {
       </nav>
 
       <Card className="grid gap-5">
-        {paragraphs.map((paragraph) => (
-          <p key={paragraph.slice(0, 48)} className="text-sm leading-7 text-[var(--app-text-muted)]">
+        {paragraphs.map((paragraph, index) => (
+          <p key={`${activeId}-${index}`} className="text-sm leading-7 text-[var(--app-text-muted)]">
             {paragraph}
           </p>
         ))}

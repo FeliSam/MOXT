@@ -1,0 +1,7 @@
+# Copier vers key.properties (gitignoré) ou lancer : npm run android:keystore
+# storeFile est relatif au module app/ (moxt-react/android/app/)
+
+storePassword=CHANGE_ME
+keyPassword=CHANGE_ME
+keyAlias=moxt
+storeFile=../keystore/moxt-release.jks

@@ -20,6 +20,10 @@ scripts/moxt-auth-yc.json
 scripts/github-deploy-sa.json
 scripts/github-deploy-s3-keys.json
 scripts/firebase-service-account.json
+scripts/rustore-private-key.pem
+scripts/rustore-private-key.key
+scripts/rustore-private-key.txt
+scripts/rustore-private-key.b64
 moxt-react/android/app/google-services.json
 moxt-react/ios/App/App/GoogleService-Info.plist
 
@@ -65,6 +69,10 @@ expo-env.d.ts
 *.aab
 *.jks
 *.keystore
+**/android/key.properties
+!**/android/key.properties.example
+**/android/keystore/*
+!**/android/keystore/.gitkeep
 
 # iOS
 **/ios/App/Pods/

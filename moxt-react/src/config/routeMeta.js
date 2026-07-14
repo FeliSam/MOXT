@@ -12,7 +12,7 @@ export const PUBLIC_INDEXABLE_PATHS = [
 
 export function isPublicIndexablePath(pathname) {
   if (PUBLIC_INDEXABLE_PATHS.includes(pathname)) return true
-  if (pathname === '/legal') return true
+  if (pathname === '/legal' || pathname === '/privacy') return true
   return false
 }
 

@@ -36,7 +36,7 @@ describe('locales t()', () => {
       expect(locale.common.pullToRefresh.pull).toBeTruthy()
       expect(locale.security.email.otpLabel).toBeTruthy()
       expect(locale.auth.register.codeResentTitle).toBeTruthy()
-      expect(locale.legal.sections.privacy.paragraphs.length).toBeGreaterThan(3)
+      expect(locale.legal.sections.privacy.paragraphs.length).toBeGreaterThan(12)
       expect(locale.verification.consent.privacyLink).toBeTruthy()
       expect(locale.verification.consent.termsLink).toBeTruthy()
       expect(locale.verification.admin.navLabel).toBeTruthy()

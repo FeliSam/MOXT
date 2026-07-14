@@ -1,40 +1,19 @@
-MOXT - The money transfer & services platform for communities
+MOXT — the services platform connecting Africa and Russia.
 
-MOXT simplifies international money transfers, parcel management, and much more.
+Send and track transfers, publish or book traveler parcels, buy and sell on the marketplace, find jobs or trusted businesses — built for the Afro-Russian diaspora (Benin / West Africa ↔ Russia).
 
-🌍 INTERNATIONAL TRANSFERS
-• Send and receive money between France, West Africa, and Russia
-• Competitive rates with transparent fees
-• Real-time tracking for every transfer
+FEATURES
+• Transfers and tracking across communities
+• Traveler parcels with in-app messaging
+• Marketplace (listings, favorites, search)
+• Jobs and businesses
+• Identity verification and trust score
+• Push notifications (messages, transfers, subscriptions)
+• UI in FR / RU / EN / PT
 
-📦 PARCEL MANAGEMENT
-• Post or book traveler parcels
-• Full delivery status tracking
-• Direct communication with travelers
+SECURITY
+• Protected account, optional KYC verification
+• No SMS read access and no required GPS location
+• Privacy policy: https://moxtapp.ru/legal/privacy
 
-🏪 MARKETPLACE
-• Buy and sell products between communities
-• Verified and secure listings
-• Advanced search with filters
-
-💼 JOBS & SERVICES
-• Find jobs in your community
-• Post your job offers
-• Apply directly from the app
-
-🔒 SECURITY & TRUST
-• Identity verification (KYC)
-• Automatically calculated trust score
-• User ratings and reviews
-
-💰 MULTI-CURRENCY WALLET
-• Manage your balances in XOF, RUB, and EUR
-• Complete transaction history
-• Data export (CSV)
-
-🤝 REFERRAL PROGRAM
-• Invite friends and earn rewards
-• Unique referral code
-• Track your referrals
-
-Download MOXT now and join our growing community!
+Download MOXT and join the community.

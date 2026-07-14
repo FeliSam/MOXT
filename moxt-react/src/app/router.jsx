@@ -169,6 +169,7 @@ export function AppRouter() {
           <Route path="/faq" element={<FaqPage />} />
           <Route path="/legal" element={<Navigate to="/legal/mentions" replace />} />
           <Route path="/legal/:sectionId" element={<LegalPage />} />
+          <Route path="/privacy" element={<Navigate to="/legal/privacy" replace />} />
           <Route path="/invite/:code" element={<InviteRedirect />} />
         </Route>
 

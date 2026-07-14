@@ -1,40 +1,19 @@
-MOXT - La plateforme de transfert d'argent et de services entre communautés
+MOXT — la plateforme des services entre l’Afrique et la Russie.
 
-MOXT simplifie vos transferts d'argent internationaux, la gestion de colis, et bien plus encore.
+Envoyez et suivez des transferts, publiez ou réservez des colis voyageurs, achetez et vendez sur la marketplace, trouvez un emploi ou une entreprise de confiance — pensé pour la diaspora afro-russe (Bénin, Afrique de l’Ouest ↔ Russie).
 
-🌍 TRANSFERTS INTERNATIONAUX
-• Envoyez et recevez de l'argent entre la France, l'Afrique de l'Ouest et la Russie
-• Taux compétitifs et frais transparents
-• Suivi en temps réel de chaque transfert
+FONCTIONNALITÉS
+• Transferts et suivi entre communautés
+• Colis voyageurs avec messagerie
+• Marketplace (annonces, favoris, recherche)
+• Emplois et entreprises
+• Vérification d’identité et score de confiance
+• Notifications push (messages, transferts, abonnements)
+• Interface FR / RU / EN / PT
 
-📦 GESTION DE COLIS
-• Publiez ou réservez des colis voyageurs
-• Suivi complet du statut de livraison
-• Communication directe avec les voyageurs
+SÉCURITÉ
+• Compte protégé, vérification optionnelle (KYC)
+• Pas de lecture SMS ni de géolocalisation GPS requise
+• Politique de confidentialité : https://moxtapp.ru/legal/privacy
 
-🏪 MARKETPLACE
-• Achetez et vendez des produits entre communautés
-• Annonces vérifiées et sécurisées
-• Recherche avancée avec filtres
-
-💼 EMPLOIS & SERVICES
-• Trouvez des emplois dans votre communauté
-• Publiez vos offres d'emploi
-• Postulez directement depuis l'app
-
-🔒 SÉCURITÉ & CONFIANCE
-• Vérification d'identité (KYC)
-• Score de confiance calculé automatiquement
-• Avis et évaluations entre utilisateurs
-
-💰 PORTEFEUILLE MULTI-DEVISES
-• Gérez vos soldes en XOF, RUB et EUR
-• Historique complet des transactions
-• Export de données (CSV)
-
-🤝 PARRAINAGE
-• Invitez vos amis et gagnez des récompenses
-• Code de parrainage unique
-• Suivi de vos filleuls
-
-Téléchargez MOXT maintenant et rejoignez notre communauté grandissante !
+Téléchargez MOXT et rejoignez la communauté.
