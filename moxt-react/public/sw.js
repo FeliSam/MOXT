@@ -1,6 +1,7 @@
 const CACHE_NAME = '__MOXT_CACHE_NAME__';
 const STATIC_ASSETS = [
   '/manifest.webmanifest',
+  '/favicon.ico',
   '/mx-32.png',
   '/mx-180.png',
   '/mx-192.png',

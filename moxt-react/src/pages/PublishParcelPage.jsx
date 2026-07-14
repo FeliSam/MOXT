@@ -142,6 +142,7 @@ export function PublishParcelPage() {
     destinationAirportCode: '',
     departureDate: '',
     depositDeadline: '',
+    distributionDate: '',
     capacityKg: 20,
     pricePerKg: 900,
     currency: 'RUB',
@@ -235,6 +236,14 @@ export function PublishParcelPage() {
         } else if (form.depositDeadline > form.departureDate) {
           errs.depositDeadline = 'La date limite de dépôt ne peut pas dépasser la date de départ.'
         }
+      }
+      if (form.distributionDate) {
+        if (form.departureDate && form.distributionDate < form.departureDate) {
+          errs.distributionDate =
+            'La date de distribution doit être à partir de la date de départ.'
+        }
+      } else {
+        errs.distributionDate = 'Date de distribution / récupération obligatoire.'
       }
     }
     if (n === 2) {
@@ -423,7 +432,7 @@ export function PublishParcelPage() {
               />
             </div>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Input
               id="parcel-date"
               label="Date de départ"
@@ -439,8 +448,21 @@ export function PublishParcelPage() {
               placeholder="jj/mm/aaaa"
               value={form.depositDeadline}
               onChange={(e) => set('depositDeadline', e.target.value)}
+              error={errors.depositDeadline}
+            />
+            <Input
+              id="parcel-distribution"
+              label="Date de distribution / récupération"
+              type="date"
+              value={form.distributionDate}
+              onChange={(e) => set('distributionDate', e.target.value)}
+              error={errors.distributionDate}
             />
           </div>
+          <p className="text-xs text-[var(--app-text-muted)]">
+            La date de distribution indique quand les destinataires pourront commencer à récupérer
+            leur colis à l&apos;arrivée.
+          </p>
         </Card>
       ) : null}
 
@@ -625,6 +647,7 @@ export function PublishParcelPage() {
                 `${form.origin} (${form.originAirportCode}) → ${form.destination} (${form.destinationAirportCode})`,
               ],
               ['Départ', form.departureDate],
+              ['Distribution / récupération', form.distributionDate],
               ['Capacité totale', `${form.capacityKg} kg`],
               ['Prix / kg', `${form.pricePerKg} RUB`],
               ['Types acceptés', form.acceptedTypes.map((v) => ACCEPTED_TYPES.find((t) => t.value === v)?.label).join(', ')],

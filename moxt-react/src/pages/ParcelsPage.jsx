@@ -235,6 +235,11 @@ export function ParcelsPage() {
                           <span className="flex items-center gap-2">
                             <FiCalendar /> Dépôt avant {parcel.depositDeadline || parcel.departureDate}
                           </span>
+                          {parcel.distributionDate ? (
+                            <span className="flex items-center gap-2">
+                              <FiCalendar /> Récup. dès {parcel.distributionDate}
+                            </span>
+                          ) : null}
                         </div>
                         <span className="mt-4 flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-brand-700 px-2 text-center text-xs font-black text-white transition group-hover:bg-brand-800 sm:min-h-11 sm:text-sm dark:bg-brand-600">
                           Voir le détail <FiArrowRight className="text-xs" />

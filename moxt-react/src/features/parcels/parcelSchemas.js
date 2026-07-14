@@ -10,6 +10,10 @@ export const parcelSchemaFor = (country) =>
       .min(new Date(), 'Choisissez une date future.')
       .max(Yup.ref('departureDate'), 'La date limite doit précéder le départ.')
       .required('Date limite de dépôt obligatoire.'),
+    distributionDate: Yup.date()
+      .nullable()
+      .transform((value, original) => (original === '' || original == null ? null : value))
+      .min(Yup.ref('departureDate'), 'La distribution doit être à partir de la date de départ.'),
     capacityKg: Yup.number().positive().max(500).required(),
     pricePerKg: Yup.number().positive().required(),
     currency: Yup.string().oneOf(['RUB']).required(),

@@ -44,6 +44,7 @@ const camelMap = {
   to_currency: 'toCurrency',
   departure_date: 'departureDate',
   deposit_deadline: 'depositDeadline',
+  distribution_date: 'distributionDate',
   capacity_kg: 'capacityKg',
   remaining_kg: 'remainingKg',
   price_per_kg: 'pricePerKg',

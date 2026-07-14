@@ -46,6 +46,7 @@ export function ParcelDetailPage() {
   if (!parcel) return <Card>Voyage introuvable.</Card>
 
   const depositDeadline = parcel.depositDeadline || parcel.departureDate
+  const distributionDate = parcel.distributionDate || null
   const isAdmin = ['admin', 'superadmin'].includes(user.role)
   const canSeeProof = isAdmin || user.id === parcel.ownerId
   const proofMeta = statusMeta(parcel.proofStatus)
@@ -98,7 +99,11 @@ export function ParcelDetailPage() {
       <PageHeader
         eyebrow={parcel.id}
         title={`${parcel.origin} vers ${parcel.destination}`}
-        description={`Départ le ${parcel.departureDate} · dépôt avant ${depositDeadline}`}
+        description={
+          distributionDate
+            ? `Départ le ${parcel.departureDate} · dépôt avant ${depositDeadline} · récupération à partir du ${distributionDate}`
+            : `Départ le ${parcel.departureDate} · dépôt avant ${depositDeadline}`
+        }
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <FavoriteButton
@@ -157,6 +162,11 @@ export function ParcelDetailPage() {
           { icon: FiCalendar, label: 'Départ', value: parcel.departureDate },
           { icon: FiCalendar, label: 'Dépôt limite', value: depositDeadline },
           {
+            icon: FiDownload,
+            label: 'Distribution',
+            value: distributionDate || 'À confirmer',
+          },
+          {
             icon: FiMapPin,
             label: 'Trajet',
             value: `${parcel.origin} → ${parcel.destination}`,
@@ -173,6 +183,11 @@ export function ParcelDetailPage() {
           <p className="mt-4 rounded-2xl bg-[var(--app-surface-muted)] p-3 text-sm font-bold">
             Date limite de dépôt : {depositDeadline}
           </p>
+          {distributionDate ? (
+            <p className="mt-2 rounded-2xl bg-emerald-50 p-3 text-sm font-bold text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+              Récupération possible à partir du {distributionDate}
+            </p>
+          ) : null}
           <p className="mt-4 text-sm leading-6">{parcel.conditions}</p>
           <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-[var(--app-text-muted)]">
             <span>Transporteur : {parcel.ownerName} · {parcel.contact}</span>
@@ -305,6 +320,10 @@ export function ParcelDetailPage() {
               { label: 'Origine', value: parcel.origin },
               { label: 'Destination', value: parcel.destination },
               { label: 'Date limite de dépôt', value: depositDeadline },
+              {
+                label: 'Date de distribution / récupération',
+                value: distributionDate || 'À confirmer',
+              },
               { label: 'Capacité initiale', value: `${parcel.capacityKg} kg` },
               {
                 label: 'Tarif',

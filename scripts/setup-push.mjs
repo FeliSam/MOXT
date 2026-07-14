@@ -145,9 +145,18 @@ async function main() {
     console.warn('  supabase/migrations/20260713100000_device_subscriptions_push.sql')
   }
 
-  console.log('\n▸ Trigger pg_net (optionnel, SQL Editor Supabase) :')
-  console.log(`  ALTER DATABASE postgres SET moxt.send_push_url = '${dispatchUrl}';`)
-  console.log(`  ALTER DATABASE postgres SET moxt.push_dispatch_secret = '${vars.PUSH_DISPATCH_SECRET}';`)
+  console.log('\n▸ Trigger pg_net (URL + secret GUC)')
+  const alterSql = [
+    `ALTER DATABASE postgres SET moxt.send_push_url = '${dispatchUrl}';`,
+    `ALTER DATABASE postgres SET moxt.push_dispatch_secret = '${vars.PUSH_DISPATCH_SECRET}';`,
+  ].join('\n')
+  const sqlCode = runSupabase(['db', 'query', '--linked', alterSql], supabaseEnv)
+  if (sqlCode !== 0) {
+    console.warn('\n⚠ Impossible d’appliquer les GUC automatiquement — SQL Editor :')
+    console.warn(`  ${alterSql.split('\n').join('\n  ')}`)
+  } else {
+    console.log('  ✓ moxt.send_push_url + moxt.push_dispatch_secret')
+  }
 
   console.log('\n══════════════════════════════════════')
   console.log('  Web Push configuré')

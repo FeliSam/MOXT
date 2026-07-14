@@ -61,6 +61,36 @@ await writeIcon(192, 'icon-192.png')
 await writeIcon(512, 'icon-512.png')
 await writeIcon(512, 'icon-512-maskable.png', { pad: 0.1 })
 
+// favicon.ico — les navigateurs demandent toujours /favicon.ico (cache agressif)
+{
+  const png32 = await sharp(sourcePng)
+    .resize(32, 32, { fit: 'cover' })
+    .png()
+    .toBuffer()
+  const withBg = await sharp({
+    create: { width: 32, height: 32, channels: 3, background: BRAND_DARK },
+  })
+    .composite([{ input: png32, left: 0, top: 0 }])
+    .png()
+    .toBuffer()
+
+  // ICO minimal (1 image PNG embarquée) — supporté Chrome / Edge / Safari / Firefox
+  const header = Buffer.alloc(6)
+  header.writeUInt16LE(0, 0)
+  header.writeUInt16LE(1, 2)
+  header.writeUInt16LE(1, 4)
+  const entry = Buffer.alloc(16)
+  entry.writeUInt8(32, 0)
+  entry.writeUInt8(32, 1)
+  entry.writeUInt8(0, 2)
+  entry.writeUInt8(0, 3)
+  entry.writeUInt16LE(1, 4)
+  entry.writeUInt16LE(32, 6)
+  entry.writeUInt32LE(withBg.length, 8)
+  entry.writeUInt32LE(22, 12)
+  fs.writeFileSync(path.join(publicDir, 'favicon.ico'), Buffer.concat([header, entry, withBg]))
+}
+
 // Supprimer les vieux SVG placeholders teal
 for (const stale of [
   'favicon.svg',
@@ -75,4 +105,4 @@ for (const stale of [
   }
 }
 
-console.log('PWA icons aligned (mx-* + mark.png + legacy overwrites)')
+console.log('PWA icons aligned (mx-* + mark.png + favicon.ico + legacy overwrites)')

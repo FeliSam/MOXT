@@ -14,6 +14,7 @@ export type ParcelItem = {
   status?: string;
   departureDate?: string;
   depositDeadline?: string;
+  distributionDate?: string;
   capacityKg?: number;
   remainingKg?: number;
   pricePerKg?: number;

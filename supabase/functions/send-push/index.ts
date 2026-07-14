@@ -173,34 +173,29 @@ Deno.serve(async (req) => {
 
   const supabase = createServiceClient()
 
-  const { data: notificationPreview } = await supabase
-    .from('notifications')
-    .select('created_at')
-    .eq('id', notificationId)
-    .maybeSingle()
-
-  if (!hasSecretAuth && !isRecentNotification(notificationPreview?.created_at)) {
-    return json({ error: 'Unauthorized' }, 401)
-  }
-  const claimed = await claimDispatch(supabase, notificationId)
-  if (!claimed) {
-    return json({ ok: true, skipped: 'already_dispatched' })
-  }
-
   const { data: notification, error: notificationError } = await supabase
     .from('notifications')
-    .select('id, user_id, title, message, type, link, priority')
+    .select('id, user_id, title, message, type, link, priority, created_at')
     .eq('id', notificationId)
     .maybeSingle()
 
   if (notificationError) {
-    await finalizeDispatch(supabase, notificationId, { deliveredCount: 0, error: notificationError.message })
     return json({ error: notificationError.message }, 500)
   }
 
+  // Ne claim pas tant que la notif n'existe pas — sinon les retries client
+  // restent bloqués sur already_dispatched.
   if (!notification) {
-    await finalizeDispatch(supabase, notificationId, { deliveredCount: 0, error: 'notification_not_found' })
-    return json({ error: 'Notification introuvable.' }, 404)
+    return json({ error: 'Notification introuvable.', retryable: true }, 404)
+  }
+
+  if (!hasSecretAuth && !isRecentNotification(notification.created_at)) {
+    return json({ error: 'Unauthorized' }, 401)
+  }
+
+  const claimed = await claimDispatch(supabase, notificationId)
+  if (!claimed) {
+    return json({ ok: true, skipped: 'already_dispatched' })
   }
 
   const { data: profile } = await supabase

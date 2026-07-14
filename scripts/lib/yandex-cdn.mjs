@@ -161,6 +161,7 @@ export function purgeCdnCache(resourceId) {
     '/manifest.webmanifest',
     '/favicon.svg',
     '/app-icon.svg',
+    '/favicon.ico',
     '/favicon-32.png',
     '/apple-touch-icon.png',
     '/icon-192.png',

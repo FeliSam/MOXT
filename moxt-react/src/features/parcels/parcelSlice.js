@@ -26,6 +26,7 @@ const parcelSlice = createSlice({
             remainingKg: Number(values.capacityKg),
             pricePerKg: Number(values.pricePerKg),
             depositDeadline: values.depositDeadline || values.departureDate,
+            distributionDate: values.distributionDate || '',
             status: 'active',
             proofStatus: 'pending_review',
             createdAt: now,

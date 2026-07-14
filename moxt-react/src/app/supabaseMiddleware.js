@@ -67,6 +67,7 @@ function toSnake(obj) {
     toCurrency: 'to_currency',
     departureDate: 'departure_date',
     depositDeadline: 'deposit_deadline',
+    distributionDate: 'distribution_date',
     capacityKg: 'capacity_kg',
     remainingKg: 'remaining_kg',
     pricePerKg: 'price_per_kg',
@@ -550,10 +551,11 @@ const handlers = {
       const { dispatchPushNotification } = await import('../services/pushDispatch')
       for (const recipientId of recipients) {
         const notificationId = `msg_${msg.id}_${recipientId}`
-        for (let attempt = 0; attempt < 4; attempt += 1) {
+        for (let attempt = 0; attempt < 6; attempt += 1) {
           const result = await dispatchPushNotification(notificationId)
           if (result.ok) break
-          await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)))
+          // 404 / not_found = trigger pas encore prêt — retenter
+          await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)))
         }
       }
     }

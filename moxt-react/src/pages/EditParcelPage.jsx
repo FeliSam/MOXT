@@ -26,6 +26,7 @@ export function EditParcelPage() {
     destination: parcel.destination || '',
     departureDate: parcel.departureDate ? parcel.departureDate.slice(0, 10) : '',
     depositDeadline: parcel.depositDeadline ? parcel.depositDeadline.slice(0, 10) : '',
+    distributionDate: parcel.distributionDate ? parcel.distributionDate.slice(0, 10) : '',
     capacityKg: parcel.capacityKg ?? 20,
     pricePerKg: parcel.pricePerKg ?? 900,
     maxWeightPerItem: parcel.maxWeightPerItem || '',
@@ -76,7 +77,7 @@ export function EditParcelPage() {
               onChange={(e) => set('destination', e.target.value)}
             />
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Input
               label="Date de départ"
               type="date"
@@ -88,6 +89,12 @@ export function EditParcelPage() {
               type="date"
               value={values.depositDeadline}
               onChange={(e) => set('depositDeadline', e.target.value)}
+            />
+            <Input
+              label="Date de distribution / récupération"
+              type="date"
+              value={values.distributionDate}
+              onChange={(e) => set('distributionDate', e.target.value)}
             />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
