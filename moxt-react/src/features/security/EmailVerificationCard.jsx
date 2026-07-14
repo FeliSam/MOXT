@@ -52,6 +52,16 @@ export function EmailVerificationCard({
     }
   }, [user?.email, otpSent])
 
+  // Si Auth a déjà confirmé (Safari / autre onglet), quitter le flux OTP
+  useEffect(() => {
+    if (!verified) return
+    setOtpSent(false)
+    setOtp('')
+    if (!changeMode) {
+      setEmail(user?.email || '')
+    }
+  }, [verified, user?.email, changeMode])
+
   useEffect(() => {
     if (resendCooldown <= 0) return undefined
     const timer = window.setInterval(() => {
@@ -62,7 +72,7 @@ export function EmailVerificationCard({
 
   if (!user) return null
 
-  const showOtpFlow = embedded || changeMode || !verified
+  const showOtpFlow = changeMode || !verified
 
   async function sendCode() {
     const normalized = email.trim().toLowerCase()
@@ -76,6 +86,16 @@ export function EmailVerificationCard({
       )
       return
     }
+    if (verified && !emailDiffersFromProfile && !changeMode) {
+      dispatch(
+        addToast({
+          title: 'Déjà confirmé',
+          message: 'Cette adresse e-mail est déjà vérifiée.',
+          tone: 'success',
+        }),
+      )
+      return
+    }
     setBusy(true)
     try {
       const result = await dispatch(requestEmailVerificationOtp(normalized))
@@ -83,6 +103,8 @@ export function EmailVerificationCard({
       if (result.payload.user) {
         setChangeMode(false)
         setEmail(result.payload.user.email || normalized)
+        setOtpSent(false)
+        setOtp('')
         dispatch(
           addToast({
             title: 'E-mail confirmé',
@@ -141,7 +163,21 @@ export function EmailVerificationCard({
     setEmail(user?.email || '')
   }
 
-  if (verified && !showOtpFlow && !embedded) {
+  if (verified && !showOtpFlow) {
+    if (embedded) {
+      return (
+        <div className={`grid gap-2 ${className}`}>
+          <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+            E-mail vérifié : {user.email}
+          </p>
+          {allowChangeWhenVerified ? (
+            <Button type="button" variant="secondary" onClick={() => setChangeMode(true)}>
+              Changer d&apos;adresse e-mail
+            </Button>
+          ) : null}
+        </div>
+      )
+    }
     return (
       <Alert variant="success" title="E-mail confirmé" className={className}>
         <div className="grid gap-3">
@@ -160,7 +196,7 @@ export function EmailVerificationCard({
   }
 
   const body = (
-  <>
+    <>
       {!embedded ? (
         <div className="flex items-start gap-3">
           <span className="grid size-11 place-items-center rounded-2xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
@@ -173,7 +209,7 @@ export function EmailVerificationCard({
             <p className="text-sm text-[var(--app-text-muted)]">
               {verified
                 ? 'Saisissez la nouvelle adresse puis validez le code reçu par e-mail.'
-                : 'Confirmez votre adresse pour créer une entreprise et valider votre identité MOXT.'}
+                : 'Saisissez le code à 6 chiffres reçu par e-mail (pas de lien magique).'}
             </p>
           </div>
         </div>
@@ -194,11 +230,6 @@ export function EmailVerificationCard({
             : undefined
         }
       />
-      {verified && embedded ? (
-        <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-          E-mail actuel vérifié : {user.email}
-        </p>
-      ) : null}
       {otpSent ? (
         <>
           <Input
@@ -230,7 +261,7 @@ export function EmailVerificationCard({
             >
               {resendCooldown > 0 ? `Renvoyer (${resendCooldown}s)` : 'Renvoyer le code'}
             </Button>
-            {verified && !embedded ? (
+            {verified ? (
               <Button type="button" variant="ghost" onClick={cancelChange}>
                 Annuler
               </Button>
@@ -242,7 +273,7 @@ export function EmailVerificationCard({
           <Button type="button" loading={busy || authStatus === 'loading'} onClick={sendCode}>
             {verified ? 'Envoyer le code de validation' : 'Envoyer le code de confirmation'}
           </Button>
-          {verified && changeMode && !embedded ? (
+          {verified && changeMode ? (
             <Button type="button" variant="ghost" onClick={cancelChange}>
               Annuler
             </Button>

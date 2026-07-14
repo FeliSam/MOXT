@@ -101,28 +101,44 @@ export const loadAllData = createAsyncThunk(
 
     try {
 
-    const profileRes = await supabase
-      .from('profiles')
-      .select('activity_visibility, role, preferences, status, phone, phone_verified, phone_verified_at')
-      .eq('id', uid)
-      .maybeSingle()
+    const [profileRes, authUserRes] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('activity_visibility, role, preferences, status, phone, phone_verified, phone_verified_at')
+        .eq('id', uid)
+        .maybeSingle(),
+      supabase.auth.getUser().catch(() => ({ data: { user: null } })),
+    ])
 
     const resolvedRole = profileRes.data?.role || user.role || 'user'
     const isAdmin = ['admin', 'superadmin'].includes(resolvedRole)
+    const authUser = authUserRes?.data?.user || null
 
-    if (profileRes.data) {
+    if (profileRes.data || authUser) {
       const profilePatch = {}
-      if (profileRes.data.role && profileRes.data.role !== user.role) {
+      if (profileRes.data?.role && profileRes.data.role !== user.role) {
         profilePatch.role = profileRes.data.role
       }
-      const verified = profileRes.data.status === 'verified'
-      if (verified !== Boolean(user.verified)) {
-        profilePatch.verified = verified
-        profilePatch.status = profileRes.data.status || user.status
+      if (profileRes.data) {
+        const verified = profileRes.data.status === 'verified'
+        if (verified !== Boolean(user.verified)) {
+          profilePatch.verified = verified
+          profilePatch.status = profileRes.data.status || user.status
+        }
+        if (profileRes.data.phone_verified === true && !user.phoneVerified) {
+          profilePatch.phoneVerified = true
+          profilePatch.phoneVerifiedAt = profileRes.data.phone_verified_at || null
+        }
       }
-      if (profileRes.data.phone_verified === true && !user.phoneVerified) {
-        profilePatch.phoneVerified = true
-        profilePatch.phoneVerifiedAt = profileRes.data.phone_verified_at || null
+      if (authUser) {
+        const email = String(authUser.email || user.email || '').trim()
+        const emailVerified = Boolean(authUser.email_confirmed_at)
+        const emailVerifiedAt = authUser.email_confirmed_at || null
+        if (email && email !== user.email) profilePatch.email = email
+        if (emailVerified !== Boolean(user.emailVerified) || emailVerifiedAt !== user.emailVerifiedAt) {
+          profilePatch.emailVerified = emailVerified
+          profilePatch.emailVerifiedAt = emailVerifiedAt
+        }
       }
       if (Object.keys(profilePatch).length) {
         dispatch(setUser({ ...user, ...profilePatch }))

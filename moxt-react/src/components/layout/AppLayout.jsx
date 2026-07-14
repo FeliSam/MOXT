@@ -6,6 +6,7 @@ import { useContentLifecycle } from '../../features/content/useContentLifecycle'
 import { AppThemeScope } from './AppThemeScope'
 import { BottomNavigation } from './BottomNavigation'
 import { Header } from './Header'
+import { PullToRefreshIndicator } from './PullToRefreshIndicator'
 import { Sidebar } from './Sidebar'
 import { WelcomeGate } from '../onboarding/WelcomeGate'
 import { PwaInstallBanner } from '../pwa/PwaInstallBanner'
@@ -90,9 +91,9 @@ export function AppLayout({ children }) {
               ? `min-h-0 flex-1 overflow-hidden ${
                   hideAppChrome
                     ? 'max-lg:p-0 lg:px-8 lg:py-8'
-                    : 'px-0 pt-0 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:pb-[calc(6rem+env(safe-area-inset-bottom))] lg:px-8 lg:py-8'
+                    : 'px-0 pt-0 pb-[var(--bottom-nav-clearance)] sm:pb-[calc(6rem+env(safe-area-inset-bottom,0px))] lg:px-8 lg:py-8'
                 }`
-              : 'p-4 pb-[calc(7.5rem+env(safe-area-inset-bottom))] sm:p-6 sm:pb-[calc(7.5rem+env(safe-area-inset-bottom))] lg:px-8 lg:py-8'
+              : 'p-4 pb-[var(--bottom-nav-clearance-loose)] sm:p-6 sm:pb-[var(--bottom-nav-clearance-loose)] lg:px-8 lg:py-8'
           }`}
         >
           <div key={location.pathname} className={isMessagesRoute ? 'page-enter h-full min-h-0 min-w-0' : 'page-enter min-w-0'}>
@@ -104,6 +105,7 @@ export function AppLayout({ children }) {
       </div>
       {/* Bottom nav is mobile-only; never keep it mounted over an open thread */}
       {hideAppChrome ? null : <BottomNavigation />}
+      <PullToRefreshIndicator disabled={hideAppChrome || isMessagesRoute} />
       <WelcomeGate />
       {messageThreadImmersive ? null : (
         <>

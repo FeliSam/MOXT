@@ -104,19 +104,26 @@ export function BottomNavigation() {
     }
     update()
     window.addEventListener('resize', update)
-    return () => window.removeEventListener('resize', update)
+    const vv = window.visualViewport
+    vv?.addEventListener('resize', update)
+    vv?.addEventListener('scroll', update)
+    return () => {
+      window.removeEventListener('resize', update)
+      vv?.removeEventListener('resize', update)
+      vv?.removeEventListener('scroll', update)
+    }
   }, [activeIndex, location.pathname])
 
   return (
     <>
       <nav
         ref={navRef}
-        className="bottom-nav-shell fixed inset-x-3 bottom-3 z-[var(--z-nav)] grid grid-cols-5 gap-0.5 rounded-[1rem] border border-[var(--app-border)] bg-[var(--app-surface)]/94 p-1 pb-[max(0.35rem,env(safe-area-inset-bottom))] shadow-[var(--shadow-float)] backdrop-blur-xl lg:hidden"
+        className="bottom-nav-shell z-[var(--z-nav)] grid grid-cols-5 gap-0.5 rounded-[1rem] border border-[var(--app-border)] bg-[var(--app-surface)]/94 shadow-[var(--shadow-float)] backdrop-blur-xl lg:hidden"
         aria-label="Navigation mobile rapide"
       >
         <span
           aria-hidden="true"
-          className="bottom-nav-indicator pointer-events-none absolute top-1 bottom-[max(0.35rem,env(safe-area-inset-bottom))] rounded-xl bg-[var(--app-surface-muted)] transition-[transform,width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          className="bottom-nav-indicator pointer-events-none absolute rounded-xl bg-[var(--app-surface-muted)] transition-[transform,width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
           style={{
             width: indicator.width,
             transform: `translateX(${indicator.left}px)`,

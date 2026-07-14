@@ -699,6 +699,30 @@ export function createAuthService(supabase, redirects = {}) {
         intent: 'email_verification',
       })
 
+      const authEmail = String(authUser.email || '').trim().toLowerCase()
+      const sameUnconfirmedEmail =
+        authEmail === normalizedEmail && !authUser.email_confirmed_at
+
+      if (sameUnconfirmedEmail) {
+        let otpType = 'email_change'
+        let { error } = await supabase.auth.resend({
+          type: 'email_change',
+          email: normalizedEmail,
+        })
+        if (error) {
+          const second = await supabase.auth.resend({
+            type: 'signup',
+            email: normalizedEmail,
+          })
+          error = second.error
+          otpType = 'signup'
+        }
+        if (error) {
+          throw new Error(translateAuthError(error, { channel: 'email', intent: 'email_verification' }))
+        }
+        return { email: normalizedEmail, otpType }
+      }
+
       const { error } = await supabase.auth.updateUser({ email: normalizedEmail })
       if (error) {
         throw new Error(translateAuthError(error, { channel: 'email', intent: 'email_verification' }))
@@ -763,28 +787,38 @@ export function createAuthService(supabase, redirects = {}) {
 
       if (!session) return null
 
+      // getUser() (réseau) — pas session.user local — pour email_confirmed_at à jour (Safari / autres onglets)
+      let authUser = session.user
       try {
-        const user = await fetchOrCreateProfile(session.user)
+        authUser = await getAuthenticatedAuthUser()
+      } catch (error) {
+        console.warn('[MOXT] getUser indisponible, fallback session.user:', error?.message)
+      }
+
+      try {
+        const user = await fetchOrCreateProfile(authUser)
         return { user, token: session.access_token }
       } catch (profileError) {
         console.warn('[MOXT] Profil indisponible, session conservée:', profileError?.message)
-        const authUser = session.user
         const metadata = authUser.user_metadata || {}
         return {
-          user: profileToUser({
-            id: authUser.id,
-            first_name: metadata.first_name || 'Utilisateur',
-            last_name: metadata.last_name || '',
-            email: authUser.email || metadata.email || '',
-            phone: authUser.phone || metadata.phone || '',
-            origin_phone: metadata.origin_phone || '',
-            country: 'RU',
-            origin_country: metadata.origin_country || 'BJ',
-            city: metadata.city || '',
-            avatar_url: metadata.avatar_url || '',
-            role: 'user',
-            status: 'active',
-          }),
+          user: enrichUserFromAuth(
+            profileToUser({
+              id: authUser.id,
+              first_name: metadata.first_name || 'Utilisateur',
+              last_name: metadata.last_name || '',
+              email: authUser.email || metadata.email || '',
+              phone: authUser.phone || metadata.phone || '',
+              origin_phone: metadata.origin_phone || '',
+              country: 'RU',
+              origin_country: metadata.origin_country || 'BJ',
+              city: metadata.city || '',
+              avatar_url: metadata.avatar_url || '',
+              role: 'user',
+              status: 'active',
+            }),
+            authUser,
+          ),
           token: session.access_token,
         }
       }
@@ -792,30 +826,47 @@ export function createAuthService(supabase, redirects = {}) {
 
     async sessionFromSupabaseUser(session) {
       if (!session?.user) return null
+      let authUser = session.user
       try {
-        const user = await fetchOrCreateProfile(session.user)
+        authUser = await getAuthenticatedAuthUser()
+      } catch {
+        // Conservé session.user si getUser échoue (hors-ligne)
+      }
+      try {
+        const user = await fetchOrCreateProfile(authUser)
         return { user, token: session.access_token }
       } catch {
-        const authUser = session.user
         const metadata = authUser.user_metadata || {}
         return {
-          user: profileToUser({
-            id: authUser.id,
-            first_name: metadata.first_name || 'Utilisateur',
-            last_name: metadata.last_name || '',
-            email: authUser.email || metadata.email || '',
-            phone: authUser.phone || metadata.phone || '',
-            origin_phone: metadata.origin_phone || '',
-            country: 'RU',
-            origin_country: metadata.origin_country || 'BJ',
-            city: metadata.city || '',
-            avatar_url: metadata.avatar_url || '',
-            role: 'user',
-            status: 'active',
-          }),
+          user: enrichUserFromAuth(
+            profileToUser({
+              id: authUser.id,
+              first_name: metadata.first_name || 'Utilisateur',
+              last_name: metadata.last_name || '',
+              email: authUser.email || metadata.email || '',
+              phone: authUser.phone || metadata.phone || '',
+              origin_phone: metadata.origin_phone || '',
+              country: 'RU',
+              origin_country: metadata.origin_country || 'BJ',
+              city: metadata.city || '',
+              avatar_url: metadata.avatar_url || '',
+              role: 'user',
+              status: 'active',
+            }),
+            authUser,
+          ),
           token: session.access_token,
         }
       }
+    },
+
+    /** Recharge Auth (getUser) + profil — corrige emailVerified stale (Safari, magic link autre onglet). */
+    async refreshAuthSession() {
+      if (!supabase) return null
+      const { data } = await supabase.auth.getSession()
+      const session = data.session
+      if (!session) return null
+      return this.sessionFromSupabaseUser(session)
     },
 
     async logout() {
@@ -829,14 +880,34 @@ export function createAuthService(supabase, redirects = {}) {
       if (error) throw new Error(error.message)
     },
 
-    async updatePassword(newPassword) {
+    async requestPasswordChangeOtp(currentUser) {
+      if (!supabase) throw new Error('Supabase non configuré.')
+      const authUser = await getAuthenticatedAuthUser()
+      const email = String(authUser.email || currentUser?.email || '')
+        .trim()
+        .toLowerCase()
+      if (!authUser.email_confirmed_at || !email.includes('@')) {
+        throw new Error(
+          'Confirmez votre adresse e-mail avant de modifier le mot de passe. Un code OTP sera envoyé à cette adresse.',
+        )
+      }
+      const { error } = await supabase.auth.reauthenticate()
+      if (error) throw new Error(translateAuthError(error, { channel: 'email', intent: 'password_change' }))
+      return { email }
+    },
+
+    async updatePassword(newPassword, { nonce } = {}) {
       if (!supabase) throw new Error('Supabase non configuré.')
       const password = String(newPassword || '').trim()
       if (password.length < 8) {
         throw new Error('Le mot de passe doit contenir au moins 8 caractères.')
       }
-      const { error } = await supabase.auth.updateUser({ password })
-      if (error) throw new Error(translateAuthError(error, { channel: 'email' }))
+      const otp = String(nonce || '').trim()
+      if (!/^\d{6}$/.test(otp)) {
+        throw new Error('Saisissez le code à 6 chiffres reçu par e-mail.')
+      }
+      const { error } = await supabase.auth.updateUser({ password, nonce: otp })
+      if (error) throw new Error(translateAuthError(error, { channel: 'email', intent: 'password_change' }))
       return true
     },
 

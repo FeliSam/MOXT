@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { FiBell, FiDownload, FiInfo, FiMoon, FiSun, FiTrash2 } from 'react-icons/fi'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { Link } from 'react-router-dom'
+import { isEmailVerified } from '@moxt/shared/auth/userSecurity.js'
 import { BackButton } from '../components/ui/BackButton'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
@@ -35,6 +36,7 @@ export function SettingsPage() {
   const dispatch = useDispatch()
   const store = useStore()
   const user = useSelector((value) => value.auth.user)
+  const emailConfirmed = isEmailVerified(user)
   const preferences = useSelector((value) => selectAccountPreferences(value, user.id))
   const deletionRequest = useSelector((value) =>
     value.account.deletionRequests.find(
@@ -306,9 +308,25 @@ export function SettingsPage() {
             />
             <NotifToggle
               label="Notifications e-mail"
-              description="Résumés et alertes par e-mail"
-              checked={preferences.emailNotifications}
-              onChange={(v) => updatePreference('emailNotifications', v)}
+              description={
+                emailConfirmed
+                  ? 'Résumés et alertes par e-mail'
+                  : 'Confirmez votre e-mail (Sécurité) pour activer les alertes e-mail'
+              }
+              checked={emailConfirmed && preferences.emailNotifications}
+              onChange={(v) => {
+                if (!emailConfirmed) {
+                  dispatch(
+                    addToast({
+                      title: 'E-mail non confirmé',
+                      message: 'Confirmez votre adresse dans Sécurité avant d’activer les e-mails.',
+                      tone: 'error',
+                    }),
+                  )
+                  return
+                }
+                updatePreference('emailNotifications', v)
+              }}
             />
           </div>
 

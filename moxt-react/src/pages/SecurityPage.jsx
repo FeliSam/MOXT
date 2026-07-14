@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { FiKey, FiLock, FiMonitor, FiShield } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
+import { isEmailVerified } from '@moxt/shared/auth/userSecurity.js'
 import { BackButton } from '../components/ui/BackButton'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
@@ -16,13 +17,18 @@ import { authService } from '../features/auth/authService'
 import { addToast } from '../features/ui/uiSlice'
 
 const MFA_AVAILABLE = false
+const RESEND_COOLDOWN_SECONDS = 60
 
 export function SecurityPage() {
   const dispatch = useDispatch()
   const user = useSelector((state) => state.auth.user)
   const preferences = useSelector((state) => selectAccountPreferences(state, user.id))
+  const emailConfirmed = isEmailVerified(user)
 
   const [passwordOpen, setPasswordOpen] = useState(false)
+  const [passwordOtp, setPasswordOtp] = useState('')
+  const [passwordOtpSent, setPasswordOtpSent] = useState(false)
+  const [passwordResendCooldown, setPasswordResendCooldown] = useState(0)
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passwordLoading, setPasswordLoading] = useState(false)
@@ -53,19 +59,73 @@ export function SecurityPage() {
     }
   }, [preferences.twoFactorEnabled])
 
+  useEffect(() => {
+    if (passwordResendCooldown <= 0) return undefined
+    const timer = window.setInterval(() => {
+      setPasswordResendCooldown((value) => Math.max(0, value - 1))
+    }, 1000)
+    return () => window.clearInterval(timer)
+  }, [passwordResendCooldown])
+
+  function resetPasswordModal() {
+    setPasswordOtp('')
+    setPasswordOtpSent(false)
+    setPasswordResendCooldown(0)
+    setNewPassword('')
+    setConfirmPassword('')
+  }
+
+  function openPasswordModal() {
+    if (!emailConfirmed) {
+      dispatch(
+        addToast({
+          title: 'E-mail requis',
+          message: 'Confirmez votre adresse e-mail ci-dessus avant de modifier le mot de passe.',
+          tone: 'error',
+        }),
+      )
+      return
+    }
+    resetPasswordModal()
+    setPasswordOpen(true)
+  }
+
+  async function sendPasswordOtp() {
+    setPasswordLoading(true)
+    try {
+      const result = await authService.requestPasswordChangeOtp(user)
+      setPasswordOtpSent(true)
+      setPasswordResendCooldown(RESEND_COOLDOWN_SECONDS)
+      dispatch(
+        addToast({
+          title: 'Code envoyé',
+          message: `Un code a été envoyé à ${result.email}. Vérifiez vos spams.`,
+          tone: 'success',
+        }),
+      )
+    } catch (error) {
+      dispatch(addToast({ title: 'Échec', message: error.message, tone: 'error' }))
+    } finally {
+      setPasswordLoading(false)
+    }
+  }
+
   async function handlePasswordChange(event) {
     event.preventDefault()
+    if (!/^\d{6}$/.test(passwordOtp)) {
+      dispatch(addToast({ title: 'Code invalide', message: 'Saisissez le code à 6 chiffres.', tone: 'error' }))
+      return
+    }
     if (newPassword !== confirmPassword) {
       dispatch(addToast({ title: 'Erreur', message: 'Les mots de passe ne correspondent pas.', tone: 'error' }))
       return
     }
     setPasswordLoading(true)
     try {
-      await authService.updatePassword(newPassword)
+      await authService.updatePassword(newPassword, { nonce: passwordOtp })
       dispatch(addToast({ title: 'Mot de passe mis à jour', message: 'Votre mot de passe a été modifié.', tone: 'success' }))
       setPasswordOpen(false)
-      setNewPassword('')
-      setConfirmPassword('')
+      resetPasswordModal()
     } catch (error) {
       dispatch(addToast({ title: 'Échec', message: error.message, tone: 'error' }))
     } finally {
@@ -162,9 +222,16 @@ export function SecurityPage() {
           <FiLock className="text-2xl text-brand-600" />
           <h2 className="mt-4 font-black">Mot de passe</h2>
           <p className="mt-2 text-sm text-[var(--app-text-muted)]">
-            Modifiez votre mot de passe en toute sécurité. Il n’est jamais stocké sur cet appareil.
+            {emailConfirmed
+              ? 'Modification protégée par un code OTP envoyé à votre e-mail confirmé.'
+              : 'Confirmez d’abord votre e-mail pour pouvoir modifier le mot de passe.'}
           </p>
-          <Button className="mt-5" variant="secondary" onClick={() => setPasswordOpen(true)}>
+          <Button
+            className="mt-5"
+            variant="secondary"
+            disabled={!emailConfirmed}
+            onClick={openPasswordModal}
+          >
             Modifier le mot de passe
           </Button>
         </Card>
@@ -211,6 +278,11 @@ export function SecurityPage() {
             />
             Recevoir les alertes importantes
           </label>
+          {!emailConfirmed ? (
+            <p className="mt-2 text-xs text-[var(--app-text-muted)]">
+              Les alertes e-mail nécessitent une adresse confirmée.
+            </p>
+          ) : null}
         </Card>
         <Card>
           <FiMonitor className="text-2xl text-brand-600" />
@@ -224,32 +296,75 @@ export function SecurityPage() {
         </Card>
       </div>
 
-      <Modal open={passwordOpen} onClose={() => setPasswordOpen(false)} title="Modifier le mot de passe">
+      <Modal
+        open={passwordOpen}
+        onClose={() => {
+          setPasswordOpen(false)
+          resetPasswordModal()
+        }}
+        title="Modifier le mot de passe"
+      >
         <form className="grid gap-4" onSubmit={handlePasswordChange}>
-          <Input
-            label="Nouveau mot de passe"
-            type="password"
-            value={newPassword}
-            onChange={(event) => setNewPassword(event.target.value)}
-            required
-            minLength={8}
-          />
-          <Input
-            label="Confirmer le mot de passe"
-            type="password"
-            value={confirmPassword}
-            onChange={(event) => setConfirmPassword(event.target.value)}
-            required
-            minLength={8}
-          />
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="secondary" onClick={() => setPasswordOpen(false)}>
-              Annuler
+          <p className="text-sm text-[var(--app-text-muted)]">
+            Un code OTP sera envoyé à <strong>{user.email}</strong>. Saisissez-le avec votre nouveau mot de passe.
+          </p>
+          {!passwordOtpSent ? (
+            <Button type="button" loading={passwordLoading} onClick={sendPasswordOtp}>
+              Envoyer le code par e-mail
             </Button>
-            <Button type="submit" disabled={passwordLoading}>
-              Enregistrer
-            </Button>
-          </div>
+          ) : (
+            <>
+              <Input
+                label="Code reçu par e-mail"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                placeholder="000000"
+                value={passwordOtp}
+                onChange={(event) => setPasswordOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                required
+              />
+              <Input
+                label="Nouveau mot de passe"
+                type="password"
+                value={newPassword}
+                onChange={(event) => setNewPassword(event.target.value)}
+                required
+                minLength={8}
+              />
+              <Input
+                label="Confirmer le mot de passe"
+                type="password"
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                required
+                minLength={8}
+              />
+              <div className="flex flex-wrap justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={passwordResendCooldown > 0 || passwordLoading}
+                  onClick={sendPasswordOtp}
+                >
+                  {passwordResendCooldown > 0 ? `Renvoyer (${passwordResendCooldown}s)` : 'Renvoyer le code'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setPasswordOpen(false)
+                    resetPasswordModal()
+                  }}
+                >
+                  Annuler
+                </Button>
+                <Button type="submit" disabled={passwordLoading || passwordOtp.length !== 6}>
+                  Enregistrer
+                </Button>
+              </div>
+            </>
+          )}
         </form>
       </Modal>
 

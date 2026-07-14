@@ -47,10 +47,36 @@ npm run tout -- --no-commit
 | Commande | Description |
 |----------|-------------|
 | `npm run setup:smsc` | SMSC OTP + edge functions SMS |
+| `npm run setup:postbox` | Domaine / identité Postbox (DKIM) |
+| `npm run setup:smtp` | Push SMTP + **templates e-mail OTP** vers Supabase |
 | `npm run setup:admin-promote` | Verrouillage promotion admin |
 | `npm run setup:push` | Web Push VAPID + `send-push` |
 | `npm run setup:push:native` | FCM Android/iOS + secrets serveur |
 | `npm run setup:production` | Config prod Supabase (legacy Netlify) |
+
+### E-mail Auth (OTP, pas magic link)
+
+Après `setup:postbox` + remplissage de `scripts/phase2.env` :
+
+```bash
+npm run setup:smtp
+```
+
+Cela pousse `supabase/config.toml` + templates (`confirmation`, `email_change`, `magic_link`, `reauthentication`) où le **code `{{ .Token }}`** est mis en avant.
+
+**À cocher dans le Dashboard Supabase** (Auth → Providers → Email) :
+
+1. **Enable email confirmations** — ON  
+2. **Secure email change** / double confirm — OFF côté projet (`double_confirm_changes = false` dans config) pour un seul OTP sur le nouvel e-mail  
+3. **Secure password change** — ON (le changement de mot de passe exige le nonce OTP de `reauthenticate()`)  
+4. Templates Custom — alignés via `setup:smtp` (sinon coller le HTML depuis `supabase/templates/`)
+
+Flux app :
+
+- Confirmation e-mail → code 6 chiffres (`updateUser` + `verifyOtp` type `email_change`)  
+- Changement mot de passe → OTP e-mail (`reauthenticate` + `updateUser({ password, nonce })`)  
+
+Safari : au retour d’onglet / bfcache, l’app re-sync `email_confirmed_at` via `getUser()` pour ne plus afficher « valider e-mail » une fois confirmé.
 
 ---
 

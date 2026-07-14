@@ -9,10 +9,14 @@ import {
 
 let authSubscription = null
 let visibilityHandler = null
+let pageShowHandler = null
 let lastConversationRefresh = 0
 let lastDataRefresh = 0
+let lastAuthUserRefresh = 0
 const CONVERSATION_REFRESH_MS = 60000
 const DATA_REFRESH_MS = 120000
+/** Toujours assez court pour rattraper une confirmation e-mail faite hors onglet (Safari Mail). */
+const AUTH_USER_REFRESH_MS = 4000
 
 async function refreshConversationsIfNeeded(dispatch, getState) {
   if (!getState().auth.user) return
@@ -44,7 +48,7 @@ async function syncSessionToStore(
   session,
   dispatch,
   getState,
-  { forceRealtime = false, skipDataLoad = false } = {},
+  { skipDataLoad = false } = {},
 ) {
   if (!session) {
     stopRealtimeSubscription()
@@ -62,11 +66,7 @@ async function syncSessionToStore(
   const previousUserId = getState().auth.user?.id
   dispatch(applySession(payload))
 
-  if (forceRealtime) {
-    await reconnectRealtimeSubscription(payload.user.id, dispatch, getState)
-  } else {
-    void startRealtimeSubscription(payload.user.id, dispatch, getState)
-  }
+  void startRealtimeSubscription(payload.user.id, dispatch, getState)
 
   if (!skipDataLoad && payload.user.id !== previousUserId) {
     const { loadAllData } = await import('../app/loadAllData')
@@ -86,6 +86,42 @@ async function syncSessionToStore(
       const { ensureWebPushSubscription } = await import('../platform/webPush')
       void ensureWebPushSubscription(payload.user.id)
     }
+  }
+}
+
+/** Re-sync Auth user (email_confirmed_at) sans attendre le throttle loadAllData. */
+async function refreshAuthUserIfNeeded(dispatch, getState, { force = false } = {}) {
+  if (!getState().auth.user) return
+  const now = Date.now()
+  if (!force && now - lastAuthUserRefresh < AUTH_USER_REFRESH_MS) return
+  lastAuthUserRefresh = now
+
+  const payload = await authService.refreshAuthSession()
+  if (!payload) {
+    stopRealtimeSubscription()
+    dispatch(clearSession())
+    return
+  }
+  dispatch(applySession(payload))
+}
+
+async function onForeground(dispatch, getState, { forceAuth = false } = {}) {
+  try {
+    const session = await resolveSupabaseSession()
+    if (session) {
+      await syncRealtimeAuthToken()
+      await refreshAuthUserIfNeeded(dispatch, getState, { force: forceAuth })
+      await refreshDataIfNeeded(dispatch, getState)
+      await refreshConversationsIfNeeded(dispatch, getState)
+      return
+    }
+
+    if (getState().auth.user) {
+      stopRealtimeSubscription()
+      dispatch(clearSession())
+    }
+  } catch {
+    // Erreur réseau — conserver la session Redux en place.
   }
 }
 
@@ -131,27 +167,26 @@ export function startAuthSessionSync(store) {
 
   visibilityHandler = () => {
     if (document.visibilityState !== 'visible') return
-
-    void (async () => {
-      try {
-        const session = await resolveSupabaseSession()
-        if (session) {
-          await syncRealtimeAuthToken()
-          await refreshDataIfNeeded(dispatch, getState)
-          await refreshConversationsIfNeeded(dispatch, getState)
-          return
-        }
-
-        if (getState().auth.user) {
-          stopRealtimeSubscription()
-          dispatch(clearSession())
-        }
-      } catch {
-        // Erreur réseau — conserver la session Redux en place.
-      }
-    })()
+    void onForeground(dispatch, getState, { forceAuth: true })
   }
   document.addEventListener('visibilitychange', visibilityHandler)
+
+  pageShowHandler = (event) => {
+    // bfcache Safari : forcer un getUser frais au retour
+    if (event.persisted) {
+      void onForeground(dispatch, getState, { forceAuth: true })
+    }
+  }
+  window.addEventListener('pageshow', pageShowHandler)
+
+  void import('../platform/capacitor').then(({ isNative }) => {
+    if (!isNative) return
+    void import('@capacitor/app').then(({ App }) => {
+      App.addListener('appStateChange', ({ isActive }) => {
+        if (isActive) void onForeground(dispatch, getState, { forceAuth: true })
+      })
+    })
+  })
 }
 
 export function stopAuthSessionSync() {
@@ -161,4 +196,18 @@ export function stopAuthSessionSync() {
     document.removeEventListener('visibilitychange', visibilityHandler)
     visibilityHandler = null
   }
+  if (pageShowHandler) {
+    window.removeEventListener('pageshow', pageShowHandler)
+    pageShowHandler = null
+  }
+}
+
+/** Exposition pour pull-to-refresh / soft remount. */
+export async function softRefreshSession(store) {
+  const { dispatch, getState } = store
+  lastAuthUserRefresh = 0
+  lastDataRefresh = 0
+  await onForeground(dispatch, getState, { forceAuth: true })
+  const { loadAllData } = await import('../app/loadAllData')
+  await dispatch(loadAllData())
 }

@@ -1,7 +1,10 @@
 export const MAX_MESSAGE_IMAGES = 4
 
-/** Accumulated rotations: 0°, ~18°, ~48°, ~78° (origin bottom center). */
-export const MESSAGE_IMAGE_STACK_ROTATIONS = [0, 18, 48, 78]
+/** Mild per-layer twists for a leftward pile (paired with ~-15% translateX). */
+export const MESSAGE_IMAGE_STACK_ROTATIONS = [0, -3, 2.5, -4]
+
+/** Horizontal offset per stacked image, as a fraction of card width. */
+export const MESSAGE_IMAGE_STACK_OFFSET = 0.15
 
 export function isImageAttachment(attachment) {
   if (!attachment) return false

@@ -16,7 +16,8 @@ additional_redirect_urls = [
 
 [auth.email]
 enable_signup = true
-double_confirm_changes = true
+# Une seule confirmation sur le nouvel email (OTP dans l’app) — évite le double flux lien ancien+nouveau
+double_confirm_changes = false
 enable_confirmations = true
 
 # Yandex Cloud Postbox — variables lues au `config push` (voir scripts/phase2.env.example)

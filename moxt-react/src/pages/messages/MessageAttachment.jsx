@@ -4,6 +4,7 @@ import { FiChevronLeft, FiChevronRight, FiPaperclip, FiX } from 'react-icons/fi'
 import {
   attachmentImageSrcs,
   isImageAttachment,
+  MESSAGE_IMAGE_STACK_OFFSET,
   MESSAGE_IMAGE_STACK_ROTATIONS,
 } from '../../features/communications/attachmentUtils'
 
@@ -121,11 +122,18 @@ function MessageImageStack({ images, name, onOpen }) {
     )
   }
 
+  // Shrink cards so leftward (-15% × layer) offsets stay inside the stack width.
+  const cardPct = 100 / (1 + MESSAGE_IMAGE_STACK_OFFSET * (count - 1))
+  const offsetPct = MESSAGE_IMAGE_STACK_OFFSET * 100
+
   return (
     <div
       className="message-attachment-stack"
       role="group"
       aria-label={`${count} images`}
+      style={{
+        '--message-stack-card-pct': `${cardPct}%`,
+      }}
     >
       {images.map((src, index) => {
         const depth = count - 1 - index
@@ -137,7 +145,7 @@ function MessageImageStack({ images, name, onOpen }) {
             className="message-attachment-stack-layer"
             style={{
               zIndex: depth + 1,
-              transform: `translate(${index * 0.35}rem, ${index * 0.2}rem) rotate(${rotation}deg)`,
+              transform: `translateX(calc(${index} * -${offsetPct}%)) translateY(${index * 0.12}rem) rotate(${rotation}deg)`,
             }}
             onClick={(event) => {
               event.stopPropagation()

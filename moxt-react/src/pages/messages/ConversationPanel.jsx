@@ -401,7 +401,7 @@ export function ConversationPanel({
           className="message-thread-canvas scrollbar-hidden h-full overscroll-contain overflow-y-auto p-3 sm:p-4"
           data-testid="message-scroll-region"
         >
-          <div className="mx-auto flex max-w-3xl flex-col">
+          <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col">
             {messagesLoading && active.messages?.length > 0 ? (
               <p className="sticky top-0 z-10 mb-3 rounded-full border border-[var(--app-border)] bg-[var(--app-surface)]/95 px-3 py-1.5 text-center text-xs font-medium text-[var(--app-text-muted)] backdrop-blur-sm">
                 {t('messages.syncing')}
