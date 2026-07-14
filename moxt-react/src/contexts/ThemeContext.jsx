@@ -19,10 +19,8 @@ export function ThemeProvider({ children }) {
     isFirstThemeEffect.current = false
     if (shouldAnimate) root.classList.add('theme-animating')
     root.classList.toggle('dark', isDark)
-    // Pendant le splash, garder le fond noir (évite le flash blanc au reload mobile).
-    const splashActive = Boolean(document.querySelector('.moxt-loading-screen'))
-    root.style.backgroundColor = splashActive ? '#000000' : isDark ? '#0c0c0e' : '#f7f8fa'
-    if (!splashActive && document.body) document.body.style.backgroundColor = ''
+    // Garde en phase le fond pose par theme-init.js (anti-FOUC) lors d'un changement.
+    root.style.backgroundColor = isDark ? '#0c0c0e' : '#f7f8fa'
     localStorage.setItem(STORAGE_KEY, theme)
     import('../platform/capacitor').then(({ syncCapacitorStatusBar }) => syncCapacitorStatusBar(isDark))
     if (!shouldAnimate) return undefined
