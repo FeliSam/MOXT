@@ -10,9 +10,15 @@
     var theme = stored === 'light' || stored === 'dark' ? stored : prefersDark ? 'dark' : 'light'
     var isDark = theme === 'dark'
     document.documentElement.classList.toggle('dark', isDark)
-    // Fond pose directement pour couvrir l'instant avant le chargement du CSS.
-    document.documentElement.style.backgroundColor = isDark ? '#0c0c0e' : '#f7f8fa'
+    // Boot / reload : fond noir (splash Moxt). ThemeContext repasse au fond app apres hydratation.
+    document.documentElement.style.backgroundColor = '#000000'
+    if (document.body) document.body.style.backgroundColor = '#000000'
   } catch {
-    /* localStorage indisponible (mode prive) : on garde le theme clair par defaut. */
+    /* localStorage indisponible (mode prive) : splash noir par defaut. */
+    try {
+      document.documentElement.style.backgroundColor = '#000000'
+    } catch {
+      /* ignore */
+    }
   }
 })()

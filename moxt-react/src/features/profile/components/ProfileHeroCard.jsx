@@ -1,6 +1,6 @@
 import { FiChevronRight, FiEdit3 } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
-import { Badge, VerifiedBadge, VerifiedDisplayName } from '../../../components/ui/Badge'
+import { Badge, VerifiedDisplayName } from '../../../components/ui/Badge'
 import { Card } from '../../../components/ui/Card'
 import { ReferralShareButton } from '../../referral/ReferralShareButton'
 import { profileInitials, roleLabels } from '../profilePageConfig'
@@ -44,11 +44,7 @@ export function ProfileHeroCard({ profileCompletion, user }) {
           <p className="mt-1 truncate text-sm text-[var(--app-text-muted)]">{user.email}</p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Badge>{roleLabels[user.role] || user.role}</Badge>
-            {user.verified ? (
-              <VerifiedBadge label="Vérifié" />
-            ) : (
-              <Badge tone="warning">Identité à vérifier</Badge>
-            )}
+            {!user.verified ? <Badge tone="warning">Identité à vérifier</Badge> : null}
           </div>
         </div>
 

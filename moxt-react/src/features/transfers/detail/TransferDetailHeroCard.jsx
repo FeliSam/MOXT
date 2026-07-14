@@ -35,7 +35,7 @@ export function TransferDetailHeroCard({ transfer }) {
       {transfer.exchanger?.name ? (
         <div className="mt-5 flex items-center gap-2 border-t border-white/15 pt-4">
           <span className="text-sm text-white/75">Traité par {transfer.exchanger.name}</span>
-          <VerifiedBadge size="sm" className="border-white/25 bg-white/12 !text-white" />
+          <VerifiedBadge size="sm" className="!text-emerald-200" />
         </div>
       ) : null}
     </Card>

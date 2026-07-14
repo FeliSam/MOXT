@@ -1,4 +1,4 @@
-import { FiArrowRight, FiCheckCircle } from 'react-icons/fi'
+import { FiArrowRight } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { VerifiedBadge } from '../../../components/ui/Badge'
 import { RevealOnScroll } from '../../../components/ui/RevealOnScroll'
@@ -17,13 +17,9 @@ export function DashboardHero({ user, onOpenCalculator }) {
       <div className="absolute -bottom-40 left-1/3 size-96 rounded-full bg-blue-400/25 blur-3xl" />
       <div className="relative z-10 grid gap-10 lg:grid-cols-[1.3fr_0.7fr] lg:items-center">
         <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/12 px-4 py-2 text-xs font-bold backdrop-blur">
-              <FiCheckCircle /> {t('dashboard.hero.welcome', { name: user.firstName })}
-            </div>
-            {user.verified ? (
-              <VerifiedBadge size="sm" className="border-white/25 bg-white/12 !text-white" />
-            ) : null}
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-white/12 px-4 py-2 text-xs font-bold backdrop-blur">
+            <span>{t('dashboard.hero.welcome', { name: user.firstName })}</span>
+            {user.verified ? <VerifiedBadge size="sm" className="!text-emerald-200" /> : null}
           </div>
           <h1 className="font-display mt-6 max-w-4xl text-4xl font-extrabold leading-[0.98] tracking-[-0.03em] sm:text-5xl lg:text-7xl">
             {t('dashboard.hero.title')}

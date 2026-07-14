@@ -1,4 +1,5 @@
-import { FiCheck, FiCheckCircle, FiStar, FiZap } from 'react-icons/fi'
+import { FiStar, FiZap } from 'react-icons/fi'
+import { HiBadgeCheck } from 'react-icons/hi'
 
 /* ─── Tones (fond coloré, conserve l'API existante) ─────────────────────── */
 const tones = {
@@ -25,39 +26,34 @@ export function Badge({ children, className = '', tone = 'brand' }) {
   )
 }
 
-/* ─── Icône vérifiée (rond vert + check) ─────────────────────────────────── */
+/* ─── Icône vérifiée (cercle + check qui dépasse — HiBadgeCheck) ─────────── */
 export function VerifiedIcon({
-  size = 'md',
+  size = 'sm',
   className = '',
   title = 'Identité vérifiée par MOXT',
 }) {
-  const box = {
-    sm: 'size-5',
-    md: 'size-6',
-    lg: 'size-7',
-  }
   const icon = {
-    sm: 'text-[10px]',
-    md: 'text-xs',
-    lg: 'text-sm',
+    sm: 'text-[0.875rem]',
+    md: 'text-[1rem]',
+    lg: 'text-[1.125rem]',
   }
   return (
     <span
       title={title}
       aria-label={title}
-      className={`inline-grid shrink-0 place-items-center rounded-full bg-emerald-500 text-white shadow-[0_0_0_2px_rgba(16,185,129,0.18)] ${box[size] ?? box.md} ${className}`}
+      className={`inline-flex shrink-0 items-center justify-center leading-none text-emerald-500 ${icon[size] ?? icon.sm} ${className}`}
     >
-      <FiCheck className={icon[size] ?? icon.md} strokeWidth={3} aria-hidden="true" />
+      <HiBadgeCheck className="block" aria-hidden="true" />
     </span>
   )
 }
 
-/* ─── Nom + check vérifié ─────────────────────────────────────────────────── */
+/* ─── Nom + check vérifié (marque toujours juste après le nom) ───────────── */
 export function VerifiedDisplayName({
   name,
   verified = false,
   className = '',
-  iconSize = 'md',
+  iconSize = 'sm',
   iconClassName = '',
   nameClassName = '',
   as: Component = 'span',
@@ -65,26 +61,28 @@ export function VerifiedDisplayName({
   if (!name) return null
 
   return (
-    <Component className={`inline-flex min-w-0 max-w-full items-center gap-2 ${className}`}>
-      {verified ? <VerifiedIcon size={iconSize} className={iconClassName} /> : null}
+    <Component className={`inline-flex min-w-0 max-w-full items-center gap-1 ${className}`}>
       <span className={`min-w-0 truncate ${nameClassName}`}>{name}</span>
+      {verified ? <VerifiedIcon size={iconSize} className={iconClassName} /> : null}
     </Component>
   )
 }
 
 /* ─── Badge vérifié (icône seule par défaut) ─────────────────────────────── */
 export function VerifiedBadge({ label = null, size = 'md', className = '' }) {
+  const iconSize = size === 'sm' ? 'sm' : size === 'lg' ? 'lg' : 'md'
+
   if (!label) {
-    return <VerifiedIcon size={size === 'sm' ? 'sm' : 'md'} className={className} />
+    return <VerifiedIcon size={iconSize} className={className} />
   }
 
   const styles = {
     sm: 'gap-1 rounded-full border border-[rgba(8,112,95,0.2)] bg-[rgba(8,112,95,0.07)] px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.07em] text-brand-700 dark:text-brand-300',
-    md: 'gap-1.5 rounded-full border border-[rgba(8,112,95,0.2)] bg-[rgba(8,112,95,0.07)] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.07em] text-brand-700 dark:text-brand-300',
+    md: 'gap-1 rounded-full border border-[rgba(8,112,95,0.2)] bg-[rgba(8,112,95,0.07)] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.07em] text-brand-700 dark:text-brand-300',
   }
   return (
     <span className={`inline-flex items-center ${styles[size] ?? styles.md} ${className}`}>
-      <FiCheckCircle className={size === 'sm' ? 'text-[10px]' : 'text-xs'} aria-hidden="true" />
+      <VerifiedIcon size="sm" className="text-emerald-500" />
       {label}
     </span>
   )

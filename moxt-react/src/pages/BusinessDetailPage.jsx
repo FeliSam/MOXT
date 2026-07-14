@@ -11,7 +11,7 @@ import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useParams } from 'react-router-dom'
-import { Badge, VerifiedBadge } from '../components/ui/Badge'
+import { Badge, VerifiedDisplayName } from '../components/ui/Badge'
 import { BackButton } from '../components/ui/BackButton'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
@@ -138,7 +138,13 @@ export function BusinessDetailPage() {
     <div className="grid gap-7">
       <PageHeader
         eyebrow="Entreprise MOXT"
-        title={business.name}
+        title={
+          <VerifiedDisplayName
+            name={business.name}
+            verified={['verified', 'approved', 'active'].includes(business.status)}
+            iconSize="md"
+          />
+        }
         description={`${business.sector} · ${business.city}`}
         actions={
           <div className="flex flex-wrap items-center gap-2">
@@ -219,7 +225,6 @@ export function BusinessDetailPage() {
         <div className="grid gap-4 pt-8">
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone={statusMeta(business.status).tone}>{statusMeta(business.status).label}</Badge>
-            {['verified', 'approved', 'active'].includes(business.status) ? <VerifiedBadge /> : null}
           </div>
           <p className="max-w-3xl whitespace-pre-line leading-7 text-[var(--app-text-muted)]">
             {business.description}

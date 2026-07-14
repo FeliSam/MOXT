@@ -1,4 +1,4 @@
-import { FiBell, FiCheckCircle, FiChevronDown, FiClock, FiHeart, FiMessageSquare, FiMoon, FiSun } from 'react-icons/fi'
+import { FiBell, FiChevronDown, FiClock, FiHeart, FiMessageSquare, FiMoon, FiSun } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useLocation } from 'react-router-dom'
 import { getRouteMetadata } from '../../config/routeMeta'
@@ -8,6 +8,7 @@ import { selectUnreadMessageCount, selectUnreadNotificationCount } from '../../f
 import { useSmartNavbar } from '../../hooks/useSmartNavbar'
 import { CountBounce } from '../ui/CountBounce'
 import { LanguageSwitcher } from '../ui/LanguageSwitcher'
+import { VerifiedDisplayName } from '../ui/Badge'
 import { Brand } from './Brand'
 import { GlobalSearch } from './GlobalSearch'
 
@@ -116,19 +117,19 @@ export function Header({ hideOnMobile = false }) {
           >
             <UserAvatar user={user} />
             <span className="min-w-0">
-              <strong className="block max-w-[8rem] truncate text-xs font-black">
-                {user?.firstName || 'Mon compte'}
-              </strong>
-              {user?.verified ? (
-                <span className="mt-0.5 flex items-center gap-1 text-[10px] font-bold text-brand-700 dark:text-brand-300">
-                  <FiCheckCircle className="text-[10px]" />
-                  Verifie
-                </span>
-              ) : (
+              <VerifiedDisplayName
+                as="strong"
+                name={user?.firstName || 'Mon compte'}
+                verified={Boolean(user?.verified)}
+                iconSize="sm"
+                className="max-w-[8rem] text-xs font-black"
+                nameClassName="truncate"
+              />
+              {!user?.verified ? (
                 <small className="mt-0.5 block text-[10px] text-[var(--app-text-faint)]">
                   Bienvenue sur MOXT
                 </small>
-              )}
+              ) : null}
             </span>
             <FiChevronDown className="ml-1 shrink-0 text-sm text-[var(--app-text-faint)]" />
           </Link>

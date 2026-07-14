@@ -2,7 +2,7 @@ import { FiBriefcase, FiMapPin, FiPhone, FiPlus } from 'react-icons/fi'
 import { useMemo, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
-import { Badge, VerifiedBadge } from '../components/ui/Badge'
+import { Badge, VerifiedDisplayName } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
@@ -198,9 +198,13 @@ export function BusinessesPage() {
                         decoding="async"
                       />
                       <div className="min-w-0 flex-1">
-                        <h3 className="break-words text-sm font-black sm:text-base">
-                          {business.name}
-                        </h3>
+                        <VerifiedDisplayName
+                          as="h3"
+                          name={business.name}
+                          verified
+                          iconSize="sm"
+                          className="break-words text-sm font-black sm:text-base"
+                        />
                         <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-[var(--app-text-faint)]">
                           <Icon className="shrink-0 text-sm text-brand-700 dark:text-brand-300" />
                           {activity?.label || business.sector}
@@ -209,7 +213,6 @@ export function BusinessesPage() {
                     </div>
 
                     <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <VerifiedBadge size="sm" />
                       <Badge tone={statusMeta(business.status).tone}>
                         {statusMeta(business.status).label}
                       </Badge>

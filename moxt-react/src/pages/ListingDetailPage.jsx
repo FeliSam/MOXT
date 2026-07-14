@@ -17,7 +17,7 @@ import {
 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useParams } from 'react-router-dom'
-import { Badge, VerifiedBadge } from '../components/ui/Badge'
+import { Badge } from '../components/ui/Badge'
 import { BackButton } from '../components/ui/BackButton'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'

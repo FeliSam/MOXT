@@ -123,9 +123,9 @@ export function QrSharePanel({
           </span>
         )}
 
-        <div className="mt-4 flex max-w-full flex-wrap items-center justify-center gap-2">
-          {verified ? <VerifiedBadge size="sm" /> : null}
+        <div className="mt-4 flex max-w-full flex-wrap items-center justify-center gap-1.5">
           <h2 className="font-display text-2xl font-extrabold tracking-[-0.02em]">{title}</h2>
+          {verified ? <VerifiedBadge size="sm" className="text-emerald-300" /> : null}
         </div>
 
         {subtitle ? (
