@@ -42,15 +42,16 @@ function parseEnvFile(filePath) {
   return vars
 }
 
-function runNodeSupabase(args, env) {
+function runNodeSupabase(args, env, { input } = {}) {
   if (!existsSync(supabaseJs)) {
     console.error('\n✗ CLI Supabase introuvable. Lancez : npm install')
     return 1
   }
   const result = spawnSync(process.execPath, [supabaseJs, ...args], {
     cwd: root,
-    stdio: 'inherit',
+    stdio: input ? ['pipe', 'inherit', 'inherit'] : 'inherit',
     env,
+    input: input || undefined,
   })
   return result.status ?? 1
 }
@@ -106,7 +107,9 @@ async function main() {
   }
 
   log('Migrations', 'supabase/migrations → projet distant')
-  const code = runNodeSupabase(['db', 'push', '--linked', '--yes'], env)
+  const code = runNodeSupabase(['db', 'push', '--linked', '--yes', '--include-all'], env, {
+    input: 'y\n',
+  })
   if (code !== 0) {
     console.error('\n✗ db push échoué.')
     console.error('  Alternatives :')
