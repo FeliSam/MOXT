@@ -77,7 +77,7 @@ describe('authService', () => {
     expect(result.token).toBe('')
   })
 
-  it("n'écrit pas anonymement dans profiles si l'e-mail doit être confirmé", async () => {
+  it("n'écrit pas anonymement dans profiles tant que le SMS n'est pas confirmé", async () => {
     auth.signUp.mockResolvedValue({
       data: {
         user: { id: 'user-2', identities: [{ id: 'identity-2' }] },
@@ -86,13 +86,11 @@ describe('authService', () => {
       error: null,
     })
 
-    const result = await authService.register({
-      ...registrationDetails(),
-      verificationMethod: 'email',
-    })
+    const result = await authService.register(registrationDetails())
 
     expect(profileQuery.upsert).not.toHaveBeenCalled()
-    expect(result.requiresEmailConfirmation).toBe(true)
+    expect(result.requiresPhoneConfirmation).toBe(true)
+    expect(result.requiresEmailConfirmation).toBe(false)
     expect(result.email).toBe('personne@example.com')
   })
 
@@ -265,7 +263,7 @@ describe('authService', () => {
     expect(result.user.city).toBe('Moscou')
   })
 
-  it('exige la confirmation e-mail avant de créer le profil même avec une session', async () => {
+  it('exige la confirmation SMS avant de créer le profil même avec une session (signOut)', async () => {
     auth.signUp.mockResolvedValue({
       data: {
         user: { id: 'user-2', identities: [{ id: 'identity-2' }] },
@@ -275,14 +273,12 @@ describe('authService', () => {
     })
     auth.signOut.mockResolvedValue({ error: null })
 
-    const result = await authService.register({
-      ...registrationDetails(),
-      verificationMethod: 'email',
-    })
+    const result = await authService.register(registrationDetails())
 
     expect(auth.signOut).toHaveBeenCalledOnce()
     expect(profileQuery.upsert).not.toHaveBeenCalled()
-    expect(result.requiresEmailConfirmation).toBe(true)
+    expect(result.requiresPhoneConfirmation).toBe(true)
+    expect(result.requiresEmailConfirmation).toBe(false)
     expect(result.token).toBe('')
   })
 
@@ -318,6 +314,34 @@ describe('authService', () => {
       p_value: '+79000000010',
       p_user_id: null,
     })
+  })
+
+  it('accepte un signup téléphone sans champ identities (confirmation SMS en attente)', async () => {
+    auth.signUp.mockResolvedValue({
+      data: {
+        user: { id: 'user-pending-sms', email: null, phone: '+79000000010' },
+        session: null,
+      },
+      error: null,
+    })
+
+    const result = await authService.register(registrationDetails())
+
+    expect(result.requiresPhoneConfirmation).toBe(true)
+    expect(result.pendingUserId).toBe('user-pending-sms')
+    expect(result.token).toBe('')
+  })
+
+  it('rejette un doublon Supabase avec identities vide explicite', async () => {
+    auth.signUp.mockResolvedValue({
+      data: {
+        user: { id: 'user-dup', identities: [] },
+        session: null,
+      },
+      error: null,
+    })
+
+    await expect(authService.register(registrationDetails())).rejects.toThrow('ALREADY_REGISTERED')
   })
 
   it('envoie un OTP phone_change pour un compte e-mail sans téléphone Auth', async () => {

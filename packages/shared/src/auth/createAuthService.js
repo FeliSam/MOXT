@@ -454,11 +454,16 @@ export function createAuthService(supabase, redirects = {}) {
         throw new Error(translateAuthError(error, { channel: 'phone' }))
       }
 
-      if (data.user && !data.session) {
-        const identityCount = data.user.identities?.length ?? 0
-        if (identityCount === 0) {
-          throw new Error('ALREADY_REGISTERED')
-        }
+      // Supabase anti-enumeration: duplicate email/phone returns identities: [].
+      // Do not treat a missing/undefined identities field as a duplicate — phone
+      // signup responses often omit identities when confirmation is pending.
+      if (
+        data.user &&
+        !data.session &&
+        Array.isArray(data.user.identities) &&
+        data.user.identities.length === 0
+      ) {
+        throw new Error('ALREADY_REGISTERED')
       }
       if (!data.user) throw new Error('Échec de création du compte.')
 
