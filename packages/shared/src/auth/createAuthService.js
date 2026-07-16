@@ -369,13 +369,27 @@ export function createAuthService(supabase, redirects = {}) {
 
   async function resumePhoneSignup(phone, email = '', pendingUserId = null) {
     guardOtpSend('phone', phone)
-    const { error } = await supabase.auth.resend({
+
+    // 1) Classic resend for an unconfirmed phone signup.
+    const resendResult = await supabase.auth.resend({
       type: 'sms',
       phone,
     })
-    if (error) {
-      throw new Error(translateAuthError(error, { channel: 'phone' }))
+
+    // 2) Fallback: OTP sign-in without creating a user (still hits send_sms hook).
+    if (resendResult.error) {
+      const otpResult = await supabase.auth.signInWithOtp({
+        phone,
+        options: { channel: 'sms', shouldCreateUser: false },
+      })
+      if (otpResult.error) {
+        // Surface the real SMS / Auth error — never collapse to ALREADY_REGISTERED here.
+        throw new Error(
+          translateAuthError(otpResult.error || resendResult.error, { channel: 'phone' }),
+        )
+      }
     }
+
     trackOtpSend('phone', phone)
     return {
       user: profileToUser({
@@ -392,6 +406,17 @@ export function createAuthService(supabase, redirects = {}) {
       phone,
       resumedSignup: true,
     }
+  }
+
+  function isResumeBlockerMessage(message = '') {
+    // Only treat confirmed-account signals as terminal. Do NOT map "user not found"
+    // / "aucun compte" to ALREADY_REGISTERED — that traps unfinished SMS signups.
+    return (
+      message === 'ALREADY_REGISTERED' ||
+      /déjà enregistr|already registered|already exists|phone_exists|email_exists/i.test(
+        message,
+      )
+    )
   }
 
   function emailRedirectTo() {
@@ -897,25 +922,23 @@ export function createAuthService(supabase, redirects = {}) {
           // Authenticated / explicit active: confirmed account already owns this number.
           throw new Error('ALREADY_REGISTERED')
         }
-        await assertIdentityAvailable('email', email, null, { channel: 'email' })
 
-        // Anon "unavailable" may be a confirmed account (anti-enumeration) OR a stale
-        // unconfirmed signup. Prefer OTP resume; fall back to ALREADY_REGISTERED.
+        // Resume BEFORE e-mail assert: an unfinished SMS signup must get a new OTP even
+        // if the e-mail is already reserved on another confirmed account's profile check.
         if (!phoneAvailability.available && phoneAvailability.reason === 'unavailable') {
           try {
             return await resumePhoneSignup(normalizedPhone, email, null)
           } catch (resumeError) {
             const resumeMessage = String(resumeError?.message || resumeError || '')
-            if (
-              resumeMessage === 'ALREADY_REGISTERED' ||
-              /déjà|already registered|user not found|aucun compte/i.test(resumeMessage)
-            ) {
+            if (isResumeBlockerMessage(resumeMessage)) {
               throw new Error('ALREADY_REGISTERED')
             }
-            // Surface the real resume/SMS error instead of a generic toast.
             throw resumeError instanceof Error ? resumeError : new Error(resumeMessage)
           }
         }
+
+        // New signup path only — e-mail must not belong to another live account.
+        await assertIdentityAvailable('email', email, null, { channel: 'email' })
 
         // Guard before provider send — one code at a time, max 3 / 3h.
         guardOtpSend('phone', normalizedPhone)
@@ -927,13 +950,9 @@ export function createAuthService(supabase, redirects = {}) {
               return await resumePhoneSignup(normalizedPhone, email, null)
             } catch (resumeError) {
               const resumeMessage = String(resumeError?.message || resumeError || '')
-              if (
-                resumeMessage === 'ALREADY_REGISTERED' ||
-                /déjà|already registered|user not found|aucun compte/i.test(resumeMessage)
-              ) {
+              if (isResumeBlockerMessage(resumeMessage)) {
                 throw new Error('ALREADY_REGISTERED')
               }
-              // Keep the real SMS / réseau error — never hide it behind ALREADY_REGISTERED.
               throw resumeError instanceof Error ? resumeError : new Error(resumeMessage)
             }
           }
@@ -950,7 +969,15 @@ export function createAuthService(supabase, redirects = {}) {
           Array.isArray(data.user.identities) &&
           data.user.identities.length === 0
         ) {
-          return resumePhoneSignup(normalizedPhone, email, data.user.id || null)
+          try {
+            return await resumePhoneSignup(normalizedPhone, email, data.user.id || null)
+          } catch (resumeError) {
+            const resumeMessage = String(resumeError?.message || resumeError || '')
+            if (isResumeBlockerMessage(resumeMessage)) {
+              throw new Error('ALREADY_REGISTERED')
+            }
+            throw resumeError instanceof Error ? resumeError : new Error(resumeMessage)
+          }
         }
         if (!data.user) throw new Error('Échec de création du compte.')
 

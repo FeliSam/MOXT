@@ -168,7 +168,7 @@ export function RegisterPage() {
         addToast({
           title: 'Compte déjà existant',
           message:
-            'Un compte existe déjà avec cet e-mail ou ce numéro russe. Allez sur Connexion avec votre mot de passe, ou utilisez d’autres identifiants. Si l’inscription SMS était inachevée, réessayez : le code OTP peut reprendre.',
+            'Ce numéro ou e-mail est déjà lié à un compte confirmé. Connectez-vous avec votre mot de passe. Si vous n’avez jamais reçu le code SMS, réessayez l’inscription dans quelques minutes après nettoyage automatique des inscriptions inachevées.',
           tone: 'error',
         }),
       )
