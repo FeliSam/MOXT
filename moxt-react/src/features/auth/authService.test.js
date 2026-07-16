@@ -153,6 +153,103 @@ describe('authService', () => {
     })
   })
 
+  it('ne transmet jamais first_name null au profil lors de la connexion', async () => {
+    auth.signInWithPassword.mockResolvedValue({
+      data: {
+        user: {
+          id: 'user-phone-null',
+          email: 'personne@example.com',
+          phone: '+79000000010',
+          phone_confirmed_at: '2026-07-15T12:00:00.000Z',
+          user_metadata: { first_name: null, last_name: null },
+        },
+        session: { access_token: 'phone-session' },
+      },
+      error: null,
+    })
+    profileQuery.maybeSingle.mockResolvedValue({ data: null, error: null })
+
+    await authService.login({
+      identifier: '+79000000010',
+      password: 'mot-de-passe-solide',
+    })
+
+    expect(profileQuery.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        first_name: 'Utilisateur',
+      }),
+      { onConflict: 'id' },
+    )
+  })
+
+  it('déconnecte une session orpheline (profil absent après wipe DB)', async () => {
+    const user = {
+      id: 'user-wiped',
+      email: 'wiped@example.com',
+      phone_confirmed_at: '2026-07-15T12:00:00.000Z',
+      user_metadata: { first_name: 'Wiped' },
+    }
+    auth.getSession.mockResolvedValue({
+      data: { session: { access_token: 'stale', user } },
+      error: null,
+    })
+    auth.getUser.mockResolvedValue({ data: { user }, error: null })
+    auth.signOut.mockResolvedValue({ error: null })
+    profileQuery.maybeSingle.mockResolvedValue({ data: null, error: null })
+
+    const result = await authService.restoreSession()
+
+    expect(result).toBeNull()
+    expect(auth.signOut).toHaveBeenCalled()
+    expect(profileQuery.upsert).not.toHaveBeenCalled()
+  })
+
+  it('fusionne les champs pending registration lors de la vérification SMS', async () => {
+    mockSmsVerifySession({ user_metadata: {} })
+    profileQuery.maybeSingle.mockResolvedValue({
+      data: {
+        id: 'user-sms',
+        first_name: 'Nova',
+        last_name: 'Test',
+        email: 'nova@example.com',
+        phone: '+79000000010',
+        phone_verified: true,
+        origin_country: 'BJ',
+        city: 'Moscou',
+        role: 'user',
+        status: 'active',
+      },
+      error: null,
+    })
+
+    await authService.verifyPhoneRegistration({
+      phone: '+79000000010',
+      token: '123456',
+      email: 'nova@example.com',
+      profileDetails: {
+        firstName: 'Nova',
+        lastName: 'Test',
+        residenceCity: 'Moscou',
+        originCountry: 'BJ',
+      },
+    })
+
+    expect(profileQuery.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        first_name: 'Nova',
+        last_name: 'Test',
+        city: 'Moscou',
+      }),
+      { onConflict: 'id' },
+    )
+    expect(profileQuery.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        phone_verified: true,
+      }),
+      { onConflict: 'id' },
+    )
+  })
+
   it('valide le code SMS puis enregistre le profil sans lien magique e-mail', async () => {
     mockSmsVerifySession({
       user_metadata: {

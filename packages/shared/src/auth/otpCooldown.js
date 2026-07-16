@@ -121,6 +121,16 @@ function getDefaultStorage() {
   return null
 }
 
+/** Wipe durable OTP send log (logout, DB wipe recovery, cache version bump). */
+export function clearOtpSendLog(storage = getDefaultStorage()) {
+  if (!storage) return
+  try {
+    storage.removeItem(OTP_SEND_LOG_STORAGE_KEY)
+  } catch {
+    // ignore
+  }
+}
+
 /**
  * Throws if the identity is under cooldown or has hit the 3 / 3h cap.
  * Call before the provider send so a blocked attempt never triggers SMS/email.

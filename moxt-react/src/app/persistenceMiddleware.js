@@ -1,6 +1,7 @@
 import { setAll as resetBusinesses } from '../features/businesses/businessSlice'
 import { setAll as resetCommunications } from '../features/communications/communicationSlice'
 import { clearAppBadge } from '../platform/appBadge'
+import { clearClientCache } from '../services/clearClientCache'
 
 const persistenceMap = {
   account: [{ key: 'moxt-account-v1', select: (state) => state.account }],
@@ -108,8 +109,9 @@ function clearAllPersistedKeys() {
     })
 }
 
-function clearSessionData(store) {
+function clearSessionData(store, { scope = 'full' } = {}) {
   clearAllPersistedKeys()
+  clearClientCache({ scope })
   store.dispatch(
     resetBusinesses({
       items: [],
@@ -131,9 +133,14 @@ function clearSessionData(store) {
 export const persistenceMiddleware = (store) => (next) => (action) => {
   const result = next(action)
 
+  if (action.type === 'auth/login/rejected') {
+    clearClientCache({ scope: 'auth', reason: 'login-failed' })
+    return result
+  }
+
   // Vider le cache local et la mémoire Redux à la déconnexion.
   if (action.type === 'auth/logout/fulfilled' || action.type === 'auth/clearSession') {
-    clearSessionData(store)
+    clearSessionData(store, { scope: 'full' })
     return result
   }
 

@@ -8,6 +8,7 @@ import {
   recordOtpSend,
   getOtpSendState,
   loadOtpSendLog,
+  clearOtpSendLog,
   OTP_SEND_LOG_STORAGE_KEY,
 } from './otpCooldown.js'
 
@@ -79,6 +80,23 @@ describe('otpCooldown', () => {
     expect(() =>
       recordOtpSend(store, 'phone', '+79000000010', { enforce: true, persist: false }),
     ).not.toThrow()
+  })
+
+  it('clears persisted OTP log', () => {
+    const storage = {
+      data: { [OTP_SEND_LOG_STORAGE_KEY]: '{}' },
+      getItem(key) {
+        return this.data[key] ?? null
+      },
+      setItem(key, value) {
+        this.data[key] = String(value)
+      },
+      removeItem(key) {
+        delete this.data[key]
+      },
+    }
+    clearOtpSendLog(storage)
+    expect(storage.getItem(OTP_SEND_LOG_STORAGE_KEY)).toBeNull()
   })
 
   it('persists send timestamps in localStorage when available', () => {

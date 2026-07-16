@@ -1,6 +1,7 @@
 import { applySession, clearSession } from '../features/auth/authSlice'
 import { authService } from '../features/auth/authService'
 import { supabase } from './supabaseClient'
+import { clearClientCache } from './clearClientCache'
 import {
   startRealtimeSubscription,
   stopRealtimeSubscription,
@@ -53,6 +54,7 @@ async function syncSessionToStore(
   if (!session) {
     stopRealtimeSubscription()
     dispatch(clearSession())
+    clearClientCache({ scope: 'full', reason: 'session-missing' })
     return
   }
 
@@ -60,6 +62,7 @@ async function syncSessionToStore(
   if (!payload) {
     stopRealtimeSubscription()
     dispatch(clearSession())
+    clearClientCache({ scope: 'full', reason: 'orphan-session' })
     return
   }
 
@@ -104,6 +107,7 @@ async function refreshAuthUserIfNeeded(dispatch, getState, { force = false } = {
   if (!payload) {
     stopRealtimeSubscription()
     dispatch(clearSession())
+    clearClientCache({ scope: 'full', reason: 'session-invalid' })
     return
   }
   dispatch(applySession(payload))
@@ -123,6 +127,7 @@ async function onForeground(dispatch, getState, { forceAuth = false } = {}) {
     if (getState().auth.user) {
       stopRealtimeSubscription()
       dispatch(clearSession())
+      clearClientCache({ scope: 'full', reason: 'session-expired' })
     }
   } catch {
     // Erreur réseau — conserver la session Redux en place.
@@ -157,7 +162,7 @@ export function startAuthSessionSync(store) {
     if (event === 'SIGNED_OUT') {
       stopRealtimeSubscription()
       dispatch(clearSession())
-      void import('../platform/appBadge').then(({ clearAppBadge }) => clearAppBadge())
+      clearClientCache({ scope: 'full', reason: 'signed-out' })
       return
     }
 

@@ -9,6 +9,17 @@ import { loadPendingRegistration } from './pendingRegistration.js'
 import { isProfileComplete } from './profileCompletion.js'
 import { translateAuthError } from './translateAuthError.js'
 
+/** Thrown when Supabase Auth session exists but profiles row was wiped (ops / DB reset). */
+export const ORPHAN_SESSION_ERROR = 'MOXT_ORPHAN_SESSION'
+
+function isOrphanSessionError(error) {
+  return error?.code === ORPHAN_SESSION_ERROR || error?.message === ORPHAN_SESSION_ERROR
+}
+
+function isAuthUserConfirmed(authUser) {
+  return Boolean(authUser?.phone_confirmed_at || authUser?.email_confirmed_at)
+}
+
 /** In-memory + localStorage OTP send log (90s + 3/3h). No durable DB table. */
 const otpSendLog = loadOtpSendLog()
 
@@ -366,14 +377,17 @@ export function createAuthService(supabase, redirects = {}) {
   }
 
   function mergeRegistrationProfileFields(authUser, profileFields, overrides = {}) {
+    const pending = pendingRegistrationToProfileFields(
+      resolvePendingRegistrationForUser(authUser, loadPendingRegistration()),
+    )
     const merged = { ...profileFields }
-    const firstName = String(overrides.firstName || '').trim()
-    const lastName = String(overrides.lastName || '').trim()
-    const email = String(overrides.email || '').trim().toLowerCase()
-    const originPhone = String(overrides.originPhone || '').trim()
-    const originCountry = String(overrides.originCountry || '').trim()
-    const city = String(overrides.residenceCity || overrides.city || '').trim()
-    const avatarUrl = String(overrides.avatarUrl || '').trim()
+    const firstName = trimOrEmpty(overrides.firstName || pending?.first_name)
+    const lastName = trimOrEmpty(overrides.lastName || pending?.last_name)
+    const email = trimOrEmpty(overrides.email || pending?.email).toLowerCase()
+    const originPhone = trimOrEmpty(overrides.originPhone || pending?.origin_phone)
+    const originCountry = trimOrEmpty(overrides.originCountry || pending?.origin_country)
+    const city = trimOrEmpty(overrides.residenceCity || overrides.city || pending?.city)
+    const avatarUrl = trimOrEmpty(overrides.avatarUrl || pending?.avatar_url)
 
     if (firstName) merged.first_name = firstName
     if (lastName) merged.last_name = lastName
@@ -385,20 +399,27 @@ export function createAuthService(supabase, redirects = {}) {
 
     const metadata = authUser?.user_metadata || {}
     if (!merged.first_name) {
-      merged.first_name = metadata.first_name || merged.first_name || 'Utilisateur'
+      merged.first_name =
+        metadata.first_name || metadata.firstName || merged.first_name || 'Utilisateur'
     }
-    if (!merged.last_name) merged.last_name = metadata.last_name || merged.last_name || ''
+    if (!merged.last_name) {
+      merged.last_name = metadata.last_name || metadata.lastName || merged.last_name || ''
+    }
     if (!merged.email) {
-      merged.email = String(authUser?.email || metadata.email || merged.email || '')
-        .trim()
-        .toLowerCase()
+      merged.email = trimOrEmpty(authUser?.email || metadata.email || merged.email).toLowerCase()
     }
-    if (!merged.origin_phone) merged.origin_phone = metadata.origin_phone || merged.origin_phone || ''
-    if (!merged.origin_country) merged.origin_country = metadata.origin_country || merged.origin_country || 'BJ'
+    if (!merged.origin_phone) {
+      merged.origin_phone = metadata.origin_phone || merged.origin_phone || ''
+    }
+    if (!merged.origin_country) {
+      merged.origin_country = metadata.origin_country || merged.origin_country || 'BJ'
+    }
     if (!merged.city) merged.city = metadata.city || merged.city || ''
-    if (!merged.avatar_url) merged.avatar_url = metadata.avatar_url || metadata.picture || merged.avatar_url || ''
+    if (!merged.avatar_url) {
+      merged.avatar_url = metadata.avatar_url || metadata.picture || merged.avatar_url || ''
+    }
 
-    return merged
+    return sanitizeProfileWriteFields(merged)
   }
 
   function isValidAuthPhone(value = '') {
@@ -506,40 +527,77 @@ export function createAuthService(supabase, redirects = {}) {
     return fetchProfile(userId)
   }
 
-  function profileFieldsFromAuthUser(authUser) {
-    const metadata = authUser.user_metadata || {}
+  function profileFieldsFromAuthUser(authUser, extras = {}) {
+    const metadata = authUser?.user_metadata || {}
     const fullName = metadata.full_name || metadata.name || ''
     const nameParts = String(fullName).trim().split(/\s+/).filter(Boolean)
-    return {
-      first_name: metadata.first_name || nameParts[0] || 'Utilisateur',
-      last_name: metadata.last_name || nameParts.slice(1).join(' ') || '',
-      email: authUser.email || metadata.email || '',
-      phone: normalizeRussianAuthPhone(authUser.phone || metadata.phone || ''),
-      origin_phone: metadata.origin_phone || '',
+    const pending = pendingRegistrationToProfileFields(
+      resolvePendingRegistrationForUser(authUser, extras.pendingRegistration),
+    )
+    const overrides = extras.profileOverrides || {}
+
+    return sanitizeProfileWriteFields({
+      first_name:
+        overrides.first_name ||
+        overrides.firstName ||
+        pending?.first_name ||
+        metadata.first_name ||
+        metadata.firstName ||
+        nameParts[0] ||
+        'Utilisateur',
+      last_name:
+        overrides.last_name ??
+        overrides.lastName ??
+        pending?.last_name ??
+        metadata.last_name ??
+        metadata.lastName ??
+        nameParts.slice(1).join(' ') ??
+        '',
+      email:
+        trimOrEmpty(
+          overrides.email || pending?.email || authUser?.email || metadata.email || '',
+        ).toLowerCase() || '',
+      phone: normalizeRussianAuthPhone(
+        overrides.phone ||
+          pending?.phone ||
+          authUser?.phone ||
+          metadata.phone ||
+          '',
+      ),
+      origin_phone: trimOrEmpty(
+        overrides.origin_phone ?? overrides.originPhone ?? pending?.origin_phone ?? metadata.origin_phone,
+      ),
       country: 'RU',
-      origin_country: metadata.origin_country || 'BJ',
-      city: metadata.city || '',
-      avatar_url: metadata.avatar_url || metadata.picture || '',
+      origin_country:
+        overrides.origin_country ||
+        overrides.originCountry ||
+        pending?.origin_country ||
+        metadata.origin_country ||
+        'BJ',
+      city: trimOrEmpty(overrides.city ?? overrides.residenceCity ?? pending?.city ?? metadata.city),
+      avatar_url: trimOrEmpty(
+        overrides.avatar_url ?? overrides.avatarUrl ?? pending?.avatar_url ?? metadata.avatar_url ?? metadata.picture,
+      ),
       role: 'user',
       status: 'active',
-    }
+    })
   }
 
-  async function fetchOrCreateProfile(authUser) {
-    const profileFields = profileFieldsFromAuthUser(authUser)
+  async function fetchOrCreateProfile(authUser, extras = {}) {
+    const profileFields = profileFieldsFromAuthUser(authUser, extras)
     const existingProfile = await fetchProfile(authUser.id)
 
     if (existingProfile) {
       if (!isProfileComplete(existingProfile)) {
         await upsertProfile(authUser.id, {
-          first_name: profileFields.first_name || existingProfile.firstName,
-          last_name: profileFields.last_name || existingProfile.lastName,
-          email: profileFields.email || existingProfile.email,
+          first_name: requireFirstName(profileFields.first_name || existingProfile.firstName),
+          last_name: trimOrEmpty(profileFields.last_name || existingProfile.lastName),
+          email: trimOrEmpty(profileFields.email || existingProfile.email),
           phone: profileFields.phone || existingProfile.phone,
-          origin_phone: profileFields.origin_phone || existingProfile.secondaryPhone,
+          origin_phone: trimOrEmpty(profileFields.origin_phone || existingProfile.secondaryPhone),
           origin_country: profileFields.origin_country || existingProfile.originCountry,
-          city: profileFields.city || existingProfile.city,
-          avatar_url: profileFields.avatar_url || existingProfile.avatarUrl,
+          city: trimOrEmpty(profileFields.city || existingProfile.city),
+          avatar_url: trimOrEmpty(profileFields.avatar_url || existingProfile.avatarUrl),
           country: profileFields.country || existingProfile.country,
           role: profileFields.role || existingProfile.role,
           status: existingProfile.status || profileFields.status,
@@ -569,6 +627,34 @@ export function createAuthService(supabase, redirects = {}) {
     return enrichUserFromAuth(profile, authUser)
   }
 
+  /** Session restore: never auto-create profile for confirmed users (DB wipe orphan detection). */
+  async function resolveEstablishedSessionUser(authUser, extras = {}) {
+    const existingProfile = await fetchProfile(authUser.id)
+    if (existingProfile) {
+      const profile =
+        (await syncPhoneVerifiedFromAuth(authUser, authUser.id)) ||
+        (await syncEmailVerifiedFromAuth(authUser, authUser.id)) ||
+        existingProfile
+      return enrichUserFromAuth(profile, authUser)
+    }
+
+    if (isAuthUserConfirmed(authUser)) {
+      const error = new Error(ORPHAN_SESSION_ERROR)
+      error.code = ORPHAN_SESSION_ERROR
+      throw error
+    }
+
+    return fetchOrCreateProfile(authUser, extras)
+  }
+
+  async function invalidateOrphanSession() {
+    try {
+      await supabase.auth.signOut()
+    } catch {
+      // ignore
+    }
+  }
+
   return {
     async login({ identifier, email, password }) {
       if (!supabase) throw new Error('Supabase non configuré.')
@@ -584,7 +670,9 @@ export function createAuthService(supabase, redirects = {}) {
       if (!data?.session || !data?.user) {
         throw new Error('Connexion impossible. Vérifiez vos identifiants.')
       }
-      const user = await fetchOrCreateProfile(data.user)
+      const user = await fetchOrCreateProfile(data.user, {
+        pendingRegistration: loadPendingRegistration(),
+      })
       return { user, token: data.session.access_token }
     },
 
@@ -728,7 +816,9 @@ export function createAuthService(supabase, redirects = {}) {
         throw new Error("Le code est invalide ou a expiré. Recommencez l'inscription.")
       }
       const session = await establishAuthSession(data.session, { channel: 'email' })
-      const user = await fetchOrCreateProfile(session.user)
+      const user = await fetchOrCreateProfile(session.user, {
+        pendingRegistration: loadPendingRegistration(),
+      })
       return { user, token: session.access_token }
     },
 
@@ -753,7 +843,7 @@ export function createAuthService(supabase, redirects = {}) {
       const linkedEmail = String(email || profileDetails?.email || '').trim().toLowerCase()
       const profileFields = mergeRegistrationProfileFields(
         authUser,
-        profileFieldsFromAuthUser(authUser),
+        profileFieldsFromAuthUser(authUser, { pendingRegistration: loadPendingRegistration() }),
         { ...profileDetails, email: linkedEmail || profileDetails?.email },
       )
       const normalizedPhone = normalizeRussianAuthPhone(
@@ -1009,9 +1099,15 @@ export function createAuthService(supabase, redirects = {}) {
       }
 
       try {
-        const user = await fetchOrCreateProfile(authUser)
+        const user = await resolveEstablishedSessionUser(authUser, {
+          pendingRegistration: loadPendingRegistration(),
+        })
         return { user, token: session.access_token }
       } catch (profileError) {
+        if (isOrphanSessionError(profileError)) {
+          await invalidateOrphanSession()
+          return null
+        }
         console.warn('[MOXT] Profil indisponible, session conservée:', profileError?.message)
         const metadata = authUser.user_metadata || {}
         return {
@@ -1046,9 +1142,15 @@ export function createAuthService(supabase, redirects = {}) {
         // Conservé session.user si getUser échoue (hors-ligne)
       }
       try {
-        const user = await fetchOrCreateProfile(authUser)
+        const user = await resolveEstablishedSessionUser(authUser, {
+          pendingRegistration: loadPendingRegistration(),
+        })
         return { user, token: session.access_token }
-      } catch {
+      } catch (error) {
+        if (isOrphanSessionError(error)) {
+          await invalidateOrphanSession()
+          return null
+        }
         const metadata = authUser.user_metadata || {}
         return {
           user: enrichUserFromAuth(

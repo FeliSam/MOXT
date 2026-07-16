@@ -2,9 +2,11 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { cleanupLocalStorage, migrateLegacyStorage } from './services/legacyMigration'
 import { clearDemoContent } from './services/seedDemoContent'
+import { ensureClientCacheVersion } from './services/clearClientCache'
 import './index.css'
 
 async function bootstrap() {
+  ensureClientCacheVersion()
   migrateLegacyStorage()
   cleanupLocalStorage()
   clearDemoContent()
