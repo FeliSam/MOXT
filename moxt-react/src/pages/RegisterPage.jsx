@@ -247,6 +247,11 @@ export function RegisterPage() {
     validationSchema: oauthCompletion ? oauthProfileCompletionSchema : registerSchema,
     enableReinitialize: true,
     onSubmit: async (values) => {
+      // Step 4: Enter key / form submit must confirm OTP — never re-trigger SMS signup.
+      if (step === 4 && pendingVerification?.phone && !oauthCompletion) {
+        await confirmCode()
+        return
+      }
       if (registerSubmitLockRef.current) return
       registerSubmitLockRef.current = true
       try {
@@ -264,19 +269,6 @@ export function RegisterPage() {
           )
           const destination = resolveReturnTo(searchParams, location.state)
           await completeRegistration(destination)
-          return
-        }
-
-        // If OTP already pending, never re-signUp — keep form state and stay on step 4.
-        if (pendingVerification?.phone) {
-          setStep(4)
-          dispatch(
-            addToast({
-              title: 'Code déjà envoyé',
-              message: 'Saisissez le code SMS reçu, ou renvoyez-en un après le délai.',
-              tone: 'info',
-            }),
-          )
           return
         }
 

@@ -451,11 +451,30 @@ async function claimOtpSmsAttempt(phone: string): Promise<number> {
   }
   const routePhone = normalizeE164(phone)
   const { data, error } = await admin.rpc('claim_otp_sms_attempt', { p_phone: routePhone })
-  if (error) {
-    console.warn('[send-sms] claim_otp_sms_attempt:', error.message)
+  if (!error && data != null) {
+    return Number(data) || 1
+  }
+  console.warn('[send-sms] claim_otp_sms_attempt:', error?.message || 'empty')
+
+  // Table fallback when RPC is unavailable (still service-role only).
+  const { data: row } = await admin
+    .from('otp_sms_route')
+    .select('send_count, updated_at')
+    .eq('phone', routePhone)
+    .maybeSingle()
+  const updatedAt = row?.updated_at ? new Date(String(row.updated_at)).getTime() : 0
+  const stale = !updatedAt || Date.now() - updatedAt > 3 * 60 * 60 * 1000
+  const next = stale || !row ? 1 : Number(row.send_count || 0) + 1
+  const { error: upsertError } = await admin.from('otp_sms_route').upsert({
+    phone: routePhone,
+    send_count: next,
+    updated_at: new Date().toISOString(),
+  })
+  if (upsertError) {
+    console.warn('[send-sms] claim fallback upsert:', upsertError.message)
     return 1
   }
-  return Number(data) || 1
+  return next
 }
 
 async function markOtpSmsProvider(phone: string, provider: SmsProvider) {

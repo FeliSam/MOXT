@@ -269,9 +269,12 @@ export function createAuthService(supabase, redirects = {}) {
       message.toLowerCase().includes('connection') ||
       message.toLowerCase().includes('pgrst')
     ) {
-      return 'Connexion au serveur impossible. Vérifiez votre réseau et réessayez sans demander un nouveau code.'
+      return 'Connexion au serveur impossible. Réessayez « Confirmer » sans redemander de code.'
     }
-    return translateAuthError({ message }, { channel: 'phone' })
+    return translateAuthError(
+      { message },
+      { channel: 'phone', intent: 'otp_verify' },
+    )
   }
 
   async function persistVerifiedRegistrationProfile(userId, profileFields, normalizedPhone) {
@@ -369,6 +372,12 @@ export function createAuthService(supabase, redirects = {}) {
 
   async function resumePhoneSignup(phone, email = '', pendingUserId = null) {
     guardOtpSend('phone', phone)
+
+    try {
+      await supabase.rpc('moxt_mark_otp_resend', { p_phone: phone })
+    } catch (markError) {
+      console.warn('[MOXT] moxt_mark_otp_resend:', markError?.message || markError)
+    }
 
     // 1) Classic resend for an unconfirmed phone signup.
     const resendResult = await supabase.auth.resend({
@@ -1021,14 +1030,32 @@ export function createAuthService(supabase, redirects = {}) {
 
     async verifyPhoneRegistration({ phone, token, email, profileDetails }) {
       if (!supabase) throw new Error('Supabase non configuré.')
-      const { data, error } = await supabase.auth.verifyOtp({
-        phone: normalizeRussianAuthPhone(phone),
-        token: token.trim(),
+      const normalizedPhone = normalizeRussianAuthPhone(phone)
+      const otpToken = token.trim()
+      const verifyContext = { channel: 'phone', intent: 'otp_verify' }
+
+      let data = null
+      let error = null
+      ;({ data, error } = await supabase.auth.verifyOtp({
+        phone: normalizedPhone,
+        token: otpToken,
         type: 'sms',
-      })
-      if (error) throw new Error(translateAuthError(error, { channel: 'phone' }))
+      }))
+      // Some Auth paths issue phone signup OTPs under type "phone_change".
+      if (error) {
+        const retry = await supabase.auth.verifyOtp({
+          phone: normalizedPhone,
+          token: otpToken,
+          type: 'phone_change',
+        })
+        if (!retry.error && retry.data?.session) {
+          data = retry.data
+          error = null
+        }
+      }
+      if (error) throw new Error(translateAuthError(error, verifyContext))
       if (!data.session || !data.user) {
-        throw new Error('Le code de vérification est invalide.')
+        throw new Error('Le code est invalide ou a expiré. Vérifiez les 6 chiffres ou renvoyez un code.')
       }
 
       const session = await establishAuthSession(data.session, { channel: 'phone' })
@@ -1043,15 +1070,15 @@ export function createAuthService(supabase, redirects = {}) {
         profileFieldsFromAuthUser(authUser, { pendingRegistration: loadPendingRegistration() }),
         { ...profileDetails, email: linkedEmail || profileDetails?.email },
       )
-      const normalizedPhone = normalizeRussianAuthPhone(
+      const confirmedPhone = normalizeRussianAuthPhone(
         authUser.phone || profileFields.phone || phone || '',
       )
-      profileFields.phone = normalizedPhone
+      profileFields.phone = confirmedPhone
 
       const user = await persistVerifiedRegistrationProfile(
         authUser.id,
         profileFields,
-        normalizedPhone,
+        confirmedPhone,
       )
       return {
         user,
@@ -1067,11 +1094,25 @@ export function createAuthService(supabase, redirects = {}) {
       const normalizedPhone = normalizeRussianAuthPhone(phone)
       return withOtpInFlight('phone', normalizedPhone, async () => {
         guardOtpSend('phone', normalizedPhone)
+        // Mark resend so send-sms claims attempt >= 2 → P1SMS (not SMSC again).
+        try {
+          await supabase.rpc('moxt_mark_otp_resend', { p_phone: normalizedPhone })
+        } catch (markError) {
+          console.warn('[MOXT] moxt_mark_otp_resend:', markError?.message || markError)
+        }
         const { error } = await supabase.auth.resend({
           type: 'sms',
           phone: normalizedPhone,
         })
-        if (error) throw new Error(translateAuthError(error, { channel: 'phone' }))
+        if (error) {
+          const otpFallback = await supabase.auth.signInWithOtp({
+            phone: normalizedPhone,
+            options: { channel: 'sms', shouldCreateUser: false },
+          })
+          if (otpFallback.error) {
+            throw new Error(translateAuthError(otpFallback.error || error, { channel: 'phone' }))
+          }
+        }
         trackOtpSend('phone', normalizedPhone)
         return true
       })

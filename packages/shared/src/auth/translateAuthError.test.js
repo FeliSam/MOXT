@@ -87,4 +87,20 @@ describe('translateAuthError', () => {
       translateAuthError({ message: 'some obscure provider glitch xyz' }, { channel: 'phone' }),
     ).toMatch(/SMS/i)
   })
+
+  it('maps OTP verify failures to confirmation wording, not SMS send', () => {
+    expect(
+      translateAuthError(
+        { code: 'otp_expired', message: 'Token has expired or is invalid' },
+        { channel: 'phone', intent: 'otp_verify' },
+      ),
+    ).toMatch(/code est invalide|expiré/i)
+
+    expect(
+      translateAuthError(
+        { message: 'some obscure provider glitch xyz' },
+        { channel: 'phone', intent: 'otp_verify' },
+      ),
+    ).toMatch(/confirmer ce code/i)
+  })
 })

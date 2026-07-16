@@ -6,12 +6,39 @@ export function translateAuthError(error, context = {}) {
   const message = typeof error === 'string' ? error : error?.message || ''
   const status = typeof error === 'object' && error !== null ? error.status : undefined
   const channel = context.channel === 'phone' || context.channel === 'email' ? context.channel : inferChannel(message, context)
+  const verifyingOtp =
+    context.intent === 'otp_verify' ||
+    context.intent === 'phone_verify' ||
+    context.intent === 'email_verification'
 
   if (/^Patientez \d+ secondes avant de renvoyer un code\./.test(message)) {
     return message
   }
   if (/^Limite atteinte : maximum \d+ codes par période/.test(message)) {
     return message
+  }
+
+  // Confirming an OTP must never look like a fresh SMS send failure.
+  if (verifyingOtp) {
+    const lower = message.toLowerCase()
+    if (
+      code === 'otp_expired' ||
+      code === 'mfa_verification_failed' ||
+      lower.includes('invalid otp') ||
+      lower.includes('token has expired') ||
+      lower.includes('otp expired') ||
+      lower.includes('invalid token') ||
+      lower.includes('code is invalid')
+    ) {
+      return 'Le code est invalide ou a expiré. Vérifiez les 6 chiffres ou renvoyez un code après 90 secondes.'
+    }
+    if (isTransientNetworkFailure({ message, name, status })) {
+      return 'Connexion au serveur impossible. Réessayez de confirmer le code sans en redemander un nouveau.'
+    }
+    if (lower.includes('session') || lower.includes('profil') || lower.includes('profile')) {
+      return 'Le code est valide mais la finalisation du compte a échoué. Réessayez « Confirmer » sans renvoyer de SMS.'
+    }
+    return 'Impossible de confirmer ce code. Vérifiez les 6 chiffres, ou renvoyez un code après 90 secondes.'
   }
 
   if (message.includes('MOXT_IDENTITY_LIMIT_REACHED')) {
@@ -83,7 +110,7 @@ export function translateAuthError(error, context = {}) {
     return "Configuration du service d'authentification incorrecte. Réessayez plus tard ou contactez le support."
   }
 
-  return translateSupabaseError(message, { code, status, name }, { channel })
+  return translateSupabaseError(message, { code, status, name }, { channel, intent: context.intent })
 }
 
 function duplicateIdentityMessage(context = {}) {
@@ -262,6 +289,10 @@ function translateSupabaseError(message, meta = {}, context = {}) {
     return 'Configuration du service incorrecte. Utilisez la vérification par téléphone.'
   }
   // Phone signup must never end on an opaque generic toast.
+  // Keep send-path wording only when we are not verifying an OTP.
+  if (context.intent === 'otp_verify' || context.intent === 'phone_verify') {
+    return 'Impossible de confirmer ce code. Vérifiez les 6 chiffres, ou renvoyez un code après 90 secondes.'
+  }
   return phoneContext
     ? "L'envoi du code SMS a échoué. Réessayez dans quelques instants ou contactez le support."
     : 'Une erreur est survenue. Veuillez réessayer.'
