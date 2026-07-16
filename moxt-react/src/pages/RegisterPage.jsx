@@ -280,6 +280,10 @@ export function RegisterPage() {
         if (/Limite atteinte|Patientez \d+ secondes/i.test(payload)) {
           setOtpCapMessage(payload)
         }
+        // Ensure the toast always carries the real rejected payload (not a blank generic).
+        if (payload && payload !== 'ALREADY_REGISTERED' && payload !== 'IDENTITY_LIMIT_REACHED') {
+          console.warn('[MOXT] Inscription rejetée:', payload)
+        }
         return
       }
       dispatch(clearAuthError())

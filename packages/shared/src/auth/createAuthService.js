@@ -378,8 +378,8 @@ export function createAuthService(supabase, redirects = {}) {
     )
   }
 
-  async function assertIdentityAvailable(kind, value, userId = null, context = {}) {
-    if (!supabase || !value) return
+  async function checkIdentityAvailability(kind, value, userId = null) {
+    if (!supabase || !value) return { available: true, reason: null }
 
     let data = null
     let error = null
@@ -398,26 +398,51 @@ export function createAuthService(supabase, redirects = {}) {
     }
 
     if (error) {
-      throw new Error(
-        translateAuthError(
-          { message: 'IDENTITY_CHECK_UNAVAILABLE', code: error.code, status: error.status },
-          context,
-        ),
-      )
+      const wrapped = new Error('IDENTITY_CHECK_UNAVAILABLE')
+      wrapped.cause = error
+      wrapped.code = error.code
+      wrapped.status = error.status
+      throw wrapped
     }
 
-    if (data?.available === false) {
-      if (data.reason === 'limit') {
-        throw new Error('IDENTITY_LIMIT_REACHED')
-      }
-      // reason 'active' | 'unavailable' (anti-énumération anon) → compte déjà pris
-      throw new Error(
-        translateAuthError(
-          { message: 'MOXT_IDENTITY_ACTIVE' },
-          { ...context, channel: kind === 'phone' ? 'phone' : 'email' },
-        ),
-      )
+    return {
+      available: data?.available !== false,
+      reason: data?.reason || null,
     }
+  }
+
+  async function assertIdentityAvailable(kind, value, userId = null, context = {}) {
+    let availability
+    try {
+      availability = await checkIdentityAvailability(kind, value, userId)
+    } catch (error) {
+      if (error?.message === 'IDENTITY_CHECK_UNAVAILABLE') {
+        throw new Error(
+          translateAuthError(
+            {
+              message: 'IDENTITY_CHECK_UNAVAILABLE',
+              code: error.code,
+              status: error.status,
+            },
+            context,
+          ),
+        )
+      }
+      throw error
+    }
+
+    if (availability.available) return
+
+    if (availability.reason === 'limit') {
+      throw new Error('IDENTITY_LIMIT_REACHED')
+    }
+    // reason 'active' | 'unavailable' (anti-énumération anon) → compte déjà pris
+    throw new Error(
+      translateAuthError(
+        { message: 'MOXT_IDENTITY_ACTIVE' },
+        { ...context, channel: kind === 'phone' ? 'phone' : 'email' },
+      ),
+    )
   }
 
   async function getAuthenticatedAuthUser() {
@@ -830,15 +855,54 @@ export function createAuthService(supabase, redirects = {}) {
       }
 
       const normalizedPhone = normalizeRussianAuthPhone(details.russianPhone)
-      await assertIdentityAvailable('phone', normalizedPhone, null, { channel: 'phone' })
+      // Lifetime limit only — unconfirmed Auth phones must not block OTP resume.
+      const phoneAvailability = await checkIdentityAvailability('phone', normalizedPhone)
+      if (!phoneAvailability.available && phoneAvailability.reason === 'limit') {
+        throw new Error('IDENTITY_LIMIT_REACHED')
+      }
+      if (!phoneAvailability.available && phoneAvailability.reason === 'active') {
+        // Authenticated / explicit active: confirmed account already owns this number.
+        throw new Error('ALREADY_REGISTERED')
+      }
       await assertIdentityAvailable('email', email, null, { channel: 'email' })
+
+      // Anon "unavailable" may be a confirmed account (anti-enumeration) OR a stale
+      // unconfirmed signup. Prefer OTP resume; fall back to ALREADY_REGISTERED.
+      if (!phoneAvailability.available && phoneAvailability.reason === 'unavailable') {
+        try {
+          return await resumePhoneSignup(normalizedPhone, email, null)
+        } catch (resumeError) {
+          const resumeMessage = String(resumeError?.message || resumeError || '')
+          if (
+            resumeMessage === 'ALREADY_REGISTERED' ||
+            /déjà|already registered|user not found|aucun compte/i.test(resumeMessage)
+          ) {
+            throw new Error('ALREADY_REGISTERED')
+          }
+          // Surface the real resume/SMS error instead of a generic toast.
+          throw resumeError instanceof Error ? resumeError : new Error(resumeMessage)
+        }
+      }
+
       // Guard before provider send — one code at a time, max 3 / 3h.
       guardOtpSend('phone', normalizedPhone)
 
       const { data, error } = await supabase.auth.signUp(credentials)
       if (error) {
         if (isAuthAlreadyExistsError(error)) {
-          return resumePhoneSignup(normalizedPhone, email, null)
+          try {
+            return await resumePhoneSignup(normalizedPhone, email, null)
+          } catch (resumeError) {
+            const resumeMessage = String(resumeError?.message || resumeError || '')
+            if (
+              resumeMessage === 'ALREADY_REGISTERED' ||
+              /déjà|already registered|user not found|aucun compte/i.test(resumeMessage)
+            ) {
+              throw new Error('ALREADY_REGISTERED')
+            }
+            // Keep the real SMS / réseau error — never hide it behind ALREADY_REGISTERED.
+            throw resumeError instanceof Error ? resumeError : new Error(resumeMessage)
+          }
         }
         throw new Error(translateAuthError(error, { channel: 'phone' }))
       }

@@ -525,6 +525,23 @@ describe('authService', () => {
     })
   })
 
+  it('reprend l OTP si le numéro est masqué unavailable (inscription SMS inachevée)', async () => {
+    rpc
+      .mockResolvedValueOnce({ data: { available: false, reason: 'unavailable' }, error: null })
+      .mockResolvedValueOnce({ data: { available: true, reason: null }, error: null })
+    auth.resend.mockResolvedValue({ error: null })
+
+    const result = await authService.register(registrationDetails())
+
+    expect(auth.signUp).not.toHaveBeenCalled()
+    expect(auth.resend).toHaveBeenCalledWith({
+      type: 'sms',
+      phone: '+79000000010',
+    })
+    expect(result.requiresPhoneConfirmation).toBe(true)
+    expect(result.resumedSignup).toBe(true)
+  })
+
   it('accepte un signup téléphone sans champ identities (confirmation SMS en attente)', async () => {
     auth.signUp.mockResolvedValue({
       data: {
