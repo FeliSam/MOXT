@@ -110,6 +110,19 @@ function isPhoneLoginDisabledError(error) {
   )
 }
 
+function isAuthAlreadyExistsError(error) {
+  const code = String(error?.code || '').toLowerCase()
+  const message = String(error?.message || '').toLowerCase()
+  return (
+    code === 'user_already_exists' ||
+    code === 'email_exists' ||
+    code === 'phone_exists' ||
+    code === 'identity_already_exists' ||
+    message.includes('already registered') ||
+    message.includes('already exists')
+  )
+}
+
 /**
  * @param {import('@supabase/supabase-js').SupabaseClient | null} supabase
  * @param {{
@@ -320,6 +333,33 @@ export function createAuthService(supabase, redirects = {}) {
 
   function trackOtpSend(kind, value, { enforceCooldown = false } = {}) {
     recordOtpSend(otpSendLog, kind, value, { enforce: enforceCooldown })
+  }
+
+  async function resumePhoneSignup(phone, email = '', pendingUserId = null) {
+    guardOtpSend('phone', phone)
+    const { error } = await supabase.auth.resend({
+      type: 'sms',
+      phone,
+    })
+    if (error) {
+      throw new Error(translateAuthError(error, { channel: 'phone' }))
+    }
+    trackOtpSend('phone', phone)
+    return {
+      user: profileToUser({
+        id: pendingUserId || 'pending-phone-signup',
+        email,
+        phone,
+      }),
+      token: '',
+      requiresEmailConfirmation: false,
+      requiresPhoneConfirmation: true,
+      pendingUserId,
+      verificationMethod: 'phone',
+      email,
+      phone,
+      resumedSignup: true,
+    }
   }
 
   function emailRedirectTo() {
@@ -769,6 +809,9 @@ export function createAuthService(supabase, redirects = {}) {
 
       const { data, error } = await supabase.auth.signUp(credentials)
       if (error) {
+        if (isAuthAlreadyExistsError(error)) {
+          return resumePhoneSignup(normalizedPhone, email, null)
+        }
         throw new Error(translateAuthError(error, { channel: 'phone' }))
       }
 
@@ -781,7 +824,7 @@ export function createAuthService(supabase, redirects = {}) {
         Array.isArray(data.user.identities) &&
         data.user.identities.length === 0
       ) {
-        throw new Error('ALREADY_REGISTERED')
+        return resumePhoneSignup(normalizedPhone, email, data.user.id || null)
       }
       if (!data.user) throw new Error('Échec de création du compte.')
 

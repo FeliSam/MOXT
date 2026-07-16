@@ -46,6 +46,7 @@
     "firebase:connect": "node scripts/setup-firebase.mjs",
     "push:simulate": "node scripts/simulate-push-pipeline.mjs",
     "db:push": "node scripts/db-push.mjs",
+    "db:wipe-auth": "supabase db query --linked -f scripts/sql/wipe-auth-users.sql",
     "deploy:all": "node scripts/deploy-all.mjs --parallel",
     "moxt": "node scripts/moxt.mjs",
     "ship": "node scripts/moxt.mjs ship --purge-cdn",

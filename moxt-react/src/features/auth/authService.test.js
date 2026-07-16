@@ -549,8 +549,33 @@ describe('authService', () => {
       },
       error: null,
     })
+    auth.resend.mockResolvedValue({ error: null })
 
-    await expect(authService.register(registrationDetails())).rejects.toThrow('ALREADY_REGISTERED')
+    const result = await authService.register(registrationDetails())
+    expect(auth.resend).toHaveBeenCalledWith({
+      type: 'sms',
+      phone: '+79000000010',
+    })
+    expect(result.requiresPhoneConfirmation).toBe(true)
+    expect(result.pendingUserId).toBe('user-dup')
+    expect(result.resumedSignup).toBe(true)
+  })
+
+  it('reprend l inscription si Supabase renvoie user_already_exists', async () => {
+    auth.signUp.mockResolvedValue({
+      data: { user: null, session: null },
+      error: { code: 'user_already_exists', message: 'User already registered' },
+    })
+    auth.resend.mockResolvedValue({ error: null })
+
+    const result = await authService.register(registrationDetails())
+
+    expect(auth.resend).toHaveBeenCalledWith({
+      type: 'sms',
+      phone: '+79000000010',
+    })
+    expect(result.requiresPhoneConfirmation).toBe(true)
+    expect(result.resumedSignup).toBe(true)
   })
 
   it('envoie un OTP phone_change pour un compte e-mail sans téléphone Auth', async () => {
