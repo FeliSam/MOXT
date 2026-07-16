@@ -49,12 +49,42 @@ describe('translateAuthError', () => {
     ).toContain('trop de temps')
   })
 
-  it('maps AuthRetryableFetchError empty payload to SMS retry', () => {
+  it('maps AuthRetryableFetchError empty payload to network retry (phone)', () => {
     expect(
       translateAuthError(
         { name: 'AuthRetryableFetchError', message: '{}', status: 500 },
         { channel: 'phone' },
       ),
-    ).toContain('SMS')
+    ).toMatch(/Connexion au serveur|réseau/i)
+  })
+
+  it('maps TypeError fetch failed to a clear network message (not opaque generic)', () => {
+    const message = translateAuthError(
+      { name: 'AuthRetryableFetchError', message: 'TypeError: fetch failed' },
+      { channel: 'phone' },
+    )
+    expect(message).toMatch(/Connexion au serveur|réseau/i)
+    expect(message).not.toBe('Une erreur est survenue. Veuillez réessayer.')
+  })
+
+  it('maps bare fetch failed without AuthRetryable name on phone channel', () => {
+    expect(
+      translateAuthError({ message: 'TypeError: fetch failed' }, { channel: 'phone' }),
+    ).toMatch(/Connexion au serveur|réseau/i)
+  })
+
+  it('maps Supabase security cooldown to an explicit wait message', () => {
+    expect(
+      translateAuthError(
+        { message: 'For security purposes, you can only request this after 60 seconds.' },
+        { channel: 'phone' },
+      ),
+    ).toMatch(/Patientez au moins \d+ secondes/i)
+  })
+
+  it('never returns opaque generic for unrecognized phone-channel errors', () => {
+    expect(
+      translateAuthError({ message: 'some obscure provider glitch xyz' }, { channel: 'phone' }),
+    ).toMatch(/SMS/i)
   })
 })

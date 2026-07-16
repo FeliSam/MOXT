@@ -158,6 +158,8 @@ export function RegisterPage() {
   // inline en double sur la page).
   useEffect(() => {
     if (!error) return
+    const errorText = String(error || '')
+    const otpLimited = /Limite atteinte|Patientez \d+ secondes/i.test(errorText)
     if (alreadyRegistered) {
       dispatch(
         addToast({
@@ -174,6 +176,16 @@ export function RegisterPage() {
           message:
             'Cet e-mail ou ce numéro a déjà servi à deux comptes MOXT. Après suppression, une seule réinscription est possible avec les mêmes identifiants.',
           tone: 'error',
+        }),
+      )
+    } else if (otpLimited) {
+      // 90s / 3-par-3h : message explicite, jamais le toast opaque « Inscription impossible ».
+      setOtpCapMessage(errorText)
+      dispatch(
+        addToast({
+          title: 'Envoi limité',
+          message: errorText,
+          tone: 'warning',
         }),
       )
     } else if (pendingVerification) {

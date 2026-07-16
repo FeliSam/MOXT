@@ -366,14 +366,36 @@ export function createAuthService(supabase, redirects = {}) {
     return getEmailRedirectUrl() || undefined
   }
 
+  function isTransientRpcFailure(error) {
+    const message = String(error?.message || error || '').toLowerCase()
+    return (
+      message.includes('fetch failed') ||
+      message.includes('failed to fetch') ||
+      message.includes('network') ||
+      message.includes('timeout') ||
+      message.includes('econnreset') ||
+      message.includes('socket hang up')
+    )
+  }
+
   async function assertIdentityAvailable(kind, value, userId = null, context = {}) {
     if (!supabase || !value) return
 
-    const { data, error } = await supabase.rpc('moxt_check_identity_available', {
-      p_kind: kind,
-      p_value: value,
-      p_user_id: userId,
-    })
+    let data = null
+    let error = null
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      ;({ data, error } = await supabase.rpc('moxt_check_identity_available', {
+        p_kind: kind,
+        p_value: value,
+        p_user_id: userId,
+      }))
+      if (!error) break
+      if (attempt === 0 && isTransientRpcFailure(error)) {
+        await new Promise((resolve) => setTimeout(resolve, 400))
+        continue
+      }
+      break
+    }
 
     if (error) {
       throw new Error(
@@ -388,6 +410,7 @@ export function createAuthService(supabase, redirects = {}) {
       if (data.reason === 'limit') {
         throw new Error('IDENTITY_LIMIT_REACHED')
       }
+      // reason 'active' | 'unavailable' (anti-énumération anon) → compte déjà pris
       throw new Error(
         translateAuthError(
           { message: 'MOXT_IDENTITY_ACTIVE' },

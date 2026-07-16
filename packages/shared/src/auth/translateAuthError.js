@@ -52,12 +52,12 @@ export function translateAuthError(error, context = {}) {
   if (message === 'IDENTITY_CHECK_UNAVAILABLE' || message.includes('IDENTITY_CHECK_UNAVAILABLE')) {
     return 'Vérification des identifiants indisponible. Réessayez dans un instant.'
   }
-  // Supabase JS sometimes surfaces AuthRetryableFetchError as message "{}" on hook 500s.
-  if (
-    (message === '{}' || message.trim() === '' || name === 'AuthRetryableFetchError') &&
-    (channel === 'phone' || status >= 500)
-  ) {
-    return "L'envoi du code SMS a échoué. Réessayez dans quelques instants."
+  // Undici/Chrome/Supabase often surface transient network as "TypeError: fetch failed"
+  // or AuthRetryableFetchError with "{}" — never show the opaque generic toast.
+  if (isTransientNetworkFailure({ message, name, status })) {
+    return channel === 'phone'
+      ? 'Connexion au serveur impossible. Vérifiez votre réseau et réessayez sans demander un nouveau code.'
+      : 'Connexion au serveur impossible. Vérifiez votre réseau et réessayez.'
   }
   if (code === 'unexpected_failure' && message.toLowerCase().includes('hook')) {
     return translateSmsHookFailure(message)
@@ -83,7 +83,7 @@ export function translateAuthError(error, context = {}) {
     return "Configuration du service d'authentification incorrecte. Réessayez plus tard ou contactez le support."
   }
 
-  return translateSupabaseError(message, { code, status }, { channel })
+  return translateSupabaseError(message, { code, status, name }, { channel })
 }
 
 function duplicateIdentityMessage(context = {}) {
@@ -156,17 +156,40 @@ function translateSmsHookFailure(message = '') {
   return "L'envoi du code SMS a échoué. Réessayez plus tard ou contactez le support."
 }
 
+function isTransientNetworkFailure({ message = '', name, status } = {}) {
+  const m = String(message || '').toLowerCase()
+  if (name === 'AuthRetryableFetchError') return true
+  if (message === '{}' || String(message || '').trim() === '') {
+    return status >= 500 || status === undefined
+  }
+  return (
+    m.includes('failed to fetch') ||
+    m.includes('fetch failed') ||
+    m.includes('networkerror') ||
+    m.includes('network request failed') ||
+    m.includes('load failed') ||
+    m.includes('econnreset') ||
+    m.includes('enotfound') ||
+    m.includes('etimedout') ||
+    m.includes('socket hang up') ||
+    m.includes('typeerror: fetch')
+  )
+}
+
 function translateSupabaseError(message, meta = {}, context = {}) {
-  if (!message) return 'Une erreur est survenue. Veuillez réessayer.'
-  const m = message.toLowerCase()
-  const { code, status } = meta
+  const m = String(message || '').toLowerCase()
+  const { code, status, name } = meta
   const channel = context.channel
   const phoneContext = channel === 'phone' || isSmsRelated(message, meta)
 
+  if (!message) {
+    return phoneContext
+      ? "L'envoi du code SMS a échoué. Réessayez dans quelques instants."
+      : 'Une erreur est survenue. Veuillez réessayer.'
+  }
+
   if (
-    m.includes('failed to fetch') ||
-    m.includes('networkerror') ||
-    m.includes('load failed') ||
+    isTransientNetworkFailure({ message, name, status }) ||
     m.includes('connexion au serveur') ||
     m.includes('base de données') ||
     m.includes('database') ||
@@ -195,7 +218,13 @@ function translateSupabaseError(message, meta = {}, context = {}) {
       ? 'Identifiants incorrects. Vérifiez votre numéro russe (+7) et votre mot de passe, ou confirmez d’abord votre inscription par SMS.'
       : 'Identifiants incorrects. Vérifiez votre e-mail et mot de passe.'
   }
-  if (m.includes('email rate limit') || m.includes('rate limit') || code === 'over_request_rate_limit') {
+  if (
+    m.includes('for security purposes') ||
+    m.includes('only request this after') ||
+    m.includes('email rate limit') ||
+    m.includes('rate limit') ||
+    code === 'over_request_rate_limit'
+  ) {
     return `Trop de tentatives. Patientez au moins ${OTP_RESEND_COOLDOWN_SECONDS} secondes avant de réessayer.`
   }
   if (
@@ -204,7 +233,9 @@ function translateSupabaseError(message, meta = {}, context = {}) {
     m.includes('internal server') ||
     m.includes('unexpected_failure') ||
     m.includes('error sending confirmation') ||
-    m.includes('unable to send')
+    m.includes('unable to send') ||
+    m.includes('error creating user') ||
+    m.includes('database error saving')
   ) {
     if (phoneContext || m.includes('sms') || m.includes('hook') || m.includes('smsc')) {
       return translateSmsHookFailure(message)
@@ -230,5 +261,8 @@ function translateSupabaseError(message, meta = {}, context = {}) {
   if (m.includes('redirect') || m.includes('invalid redirect')) {
     return 'Configuration du service incorrecte. Utilisez la vérification par téléphone.'
   }
-  return 'Une erreur est survenue. Veuillez réessayer.'
+  // Phone signup must never end on an opaque generic toast.
+  return phoneContext
+    ? "L'envoi du code SMS a échoué. Réessayez dans quelques instants ou contactez le support."
+    : 'Une erreur est survenue. Veuillez réessayer.'
 }

@@ -32,6 +32,10 @@ export function sanitizeAuthMessage(message = '') {
   if (text === 'IDENTITY_CHECK_UNAVAILABLE') {
     return 'Vérification des identifiants indisponible. Réessayez dans un instant.'
   }
+  // Conserver les plafonds OTP locaux (90s / 3 par 3h) tels quels.
+  if (/^Limite atteinte :|^Patientez \d+ secondes/.test(text)) {
+    return text
+  }
 
   const lower = text.toLowerCase()
   if (!isTechnicalAuthMessage(lower)) return text
