@@ -9,8 +9,8 @@ export const OTP_MAX_SENDS_PER_WINDOW = 3
 /** Rolling abuse window (3 hours). */
 export const OTP_SEND_WINDOW_MS = 3 * 60 * 60 * 1000
 
-/** Set to false to bypass the 3 / 3h cap (90s cooldown still applies). */
-export const OTP_SEND_CAP_ENABLED = true
+/** Set to false to bypass the 3 / 3h cap (90s cooldown still applies). Re-enable before production. */
+export const OTP_SEND_CAP_ENABLED = false
 
 export const OTP_SEND_LOG_STORAGE_KEY = 'moxt.otpSendLog.v1'
 
