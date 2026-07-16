@@ -92,7 +92,7 @@ describe('guestNavigation session QR', () => {
   })
 
   it('après confirmation OTP téléphone, force Sécurité (pas returnTo/profile)', () => {
-    expect(POST_PHONE_OTP_LANDING).toBe('/security?verify=email')
+    expect(POST_PHONE_OTP_LANDING).toBe('/dashboard')
     const params = new URLSearchParams({ returnTo: '/messages' })
     // Auto-landing for already-authenticated visits must not be used post-OTP.
     expect(resolveAuthenticatedLanding(params, null)).not.toBe(POST_PHONE_OTP_LANDING)

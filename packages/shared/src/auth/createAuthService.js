@@ -2,6 +2,7 @@ import { normalizePhone, normalizeRussianAuthPhone } from '../utils/phone.js'
 import {
   assertOtpSendAllowed,
   loadOtpSendLog,
+  otpIdentityKey,
   persistOtpSendLog,
   recordOtpSend,
 } from './otpCooldown.js'
@@ -23,10 +24,41 @@ function isAuthUserConfirmed(authUser) {
 /** In-memory + localStorage OTP send log (90s + 3/3h). No durable DB table. */
 const otpSendLog = loadOtpSendLog()
 
+/**
+ * In-flight OTP sends keyed by identity — collapses double-click / double-dispatch
+ * into a single provider call (one SMS / e-mail).
+ * @type {Map<string, Promise<unknown>>}
+ */
+const otpInFlight = new Map()
+
 /** @internal Test helper — clears in-memory OTP resend cooldown / cap. */
 export function __resetOtpSendCooldownForTests() {
   otpSendLog.clear()
+  otpInFlight.clear()
   persistOtpSendLog(otpSendLog)
+}
+
+/**
+ * Run `fn` once per identity while a send is already in flight; concurrent callers
+ * await the same promise (no second SMS).
+ * @template T
+ * @param {'phone' | 'email'} kind
+ * @param {string} value
+ * @param {() => Promise<T>} fn
+ * @returns {Promise<T>}
+ */
+function withOtpInFlight(kind, value, fn) {
+  const key = otpIdentityKey(kind, value)
+  const existing = otpInFlight.get(key)
+  if (existing) return /** @type {Promise<T>} */ (existing)
+
+  const promise = Promise.resolve()
+    .then(fn)
+    .finally(() => {
+      if (otpInFlight.get(key) === promise) otpInFlight.delete(key)
+    })
+  otpInFlight.set(key, promise)
+  return promise
 }
 
 function profileToUser(profile) {
@@ -828,68 +860,48 @@ export function createAuthService(supabase, redirects = {}) {
       if (!supabase) throw new Error('Supabase non configuré.')
       const email = String(details.email || '').trim().toLowerCase()
 
-      const profileFields = {
-        first_name: details.firstName.trim(),
-        last_name: details.lastName.trim(),
-        email,
-        phone: normalizeRussianAuthPhone(details.russianPhone || ''),
-        origin_phone: details.originPhone?.trim() || '',
-        country: 'RU',
-        origin_country: details.originCountry,
-        city: details.residenceCity?.trim() || '',
-        avatar_url: details.avatarUrl?.trim() || '',
-        role: 'user',
-        status: 'active',
-      }
-
-      const verificationMethod = 'phone'
-
-      const credentials = {
-        phone: normalizeRussianAuthPhone(details.russianPhone),
-        password: details.password,
-        options: { channel: 'sms', data: profileFields },
-      }
-
       if (!email) {
         throw new Error("L'e-mail est obligatoire.")
       }
 
       const normalizedPhone = normalizeRussianAuthPhone(details.russianPhone)
-      // Lifetime limit only — unconfirmed Auth phones must not block OTP resume.
-      const phoneAvailability = await checkIdentityAvailability('phone', normalizedPhone)
-      if (!phoneAvailability.available && phoneAvailability.reason === 'limit') {
-        throw new Error('IDENTITY_LIMIT_REACHED')
-      }
-      if (!phoneAvailability.available && phoneAvailability.reason === 'active') {
-        // Authenticated / explicit active: confirmed account already owns this number.
-        throw new Error('ALREADY_REGISTERED')
-      }
-      await assertIdentityAvailable('email', email, null, { channel: 'email' })
 
-      // Anon "unavailable" may be a confirmed account (anti-enumeration) OR a stale
-      // unconfirmed signup. Prefer OTP resume; fall back to ALREADY_REGISTERED.
-      if (!phoneAvailability.available && phoneAvailability.reason === 'unavailable') {
-        try {
-          return await resumePhoneSignup(normalizedPhone, email, null)
-        } catch (resumeError) {
-          const resumeMessage = String(resumeError?.message || resumeError || '')
-          if (
-            resumeMessage === 'ALREADY_REGISTERED' ||
-            /déjà|already registered|user not found|aucun compte/i.test(resumeMessage)
-          ) {
-            throw new Error('ALREADY_REGISTERED')
-          }
-          // Surface the real resume/SMS error instead of a generic toast.
-          throw resumeError instanceof Error ? resumeError : new Error(resumeMessage)
+      // Collapse double-click / double-dispatch into one SMS send.
+      return withOtpInFlight('phone', normalizedPhone, async () => {
+        const profileFields = {
+          first_name: details.firstName.trim(),
+          last_name: details.lastName.trim(),
+          email,
+          phone: normalizedPhone,
+          origin_phone: details.originPhone?.trim() || '',
+          country: 'RU',
+          origin_country: details.originCountry,
+          city: details.residenceCity?.trim() || '',
+          avatar_url: details.avatarUrl?.trim() || '',
+          role: 'user',
+          status: 'active',
         }
-      }
 
-      // Guard before provider send — one code at a time, max 3 / 3h.
-      guardOtpSend('phone', normalizedPhone)
+        const credentials = {
+          phone: normalizedPhone,
+          password: details.password,
+          options: { channel: 'sms', data: profileFields },
+        }
 
-      const { data, error } = await supabase.auth.signUp(credentials)
-      if (error) {
-        if (isAuthAlreadyExistsError(error)) {
+        // Lifetime limit only — unconfirmed Auth phones must not block OTP resume.
+        const phoneAvailability = await checkIdentityAvailability('phone', normalizedPhone)
+        if (!phoneAvailability.available && phoneAvailability.reason === 'limit') {
+          throw new Error('IDENTITY_LIMIT_REACHED')
+        }
+        if (!phoneAvailability.available && phoneAvailability.reason === 'active') {
+          // Authenticated / explicit active: confirmed account already owns this number.
+          throw new Error('ALREADY_REGISTERED')
+        }
+        await assertIdentityAvailable('email', email, null, { channel: 'email' })
+
+        // Anon "unavailable" may be a confirmed account (anti-enumeration) OR a stale
+        // unconfirmed signup. Prefer OTP resume; fall back to ALREADY_REGISTERED.
+        if (!phoneAvailability.available && phoneAvailability.reason === 'unavailable') {
           try {
             return await resumePhoneSignup(normalizedPhone, email, null)
           } catch (resumeError) {
@@ -900,43 +912,66 @@ export function createAuthService(supabase, redirects = {}) {
             ) {
               throw new Error('ALREADY_REGISTERED')
             }
-            // Keep the real SMS / réseau error — never hide it behind ALREADY_REGISTERED.
+            // Surface the real resume/SMS error instead of a generic toast.
             throw resumeError instanceof Error ? resumeError : new Error(resumeMessage)
           }
         }
-        throw new Error(translateAuthError(error, { channel: 'phone' }))
-      }
 
-      // Supabase anti-enumeration: duplicate email/phone returns identities: [].
-      // Do not treat a missing/undefined identities field as a duplicate — phone
-      // signup responses often omit identities when confirmation is pending.
-      if (
-        data.user &&
-        !data.session &&
-        Array.isArray(data.user.identities) &&
-        data.user.identities.length === 0
-      ) {
-        return resumePhoneSignup(normalizedPhone, email, data.user.id || null)
-      }
-      if (!data.user) throw new Error('Échec de création du compte.')
+        // Guard before provider send — one code at a time, max 3 / 3h.
+        guardOtpSend('phone', normalizedPhone)
 
-      trackOtpSend('phone', normalizedPhone)
+        const { data, error } = await supabase.auth.signUp(credentials)
+        if (error) {
+          if (isAuthAlreadyExistsError(error)) {
+            try {
+              return await resumePhoneSignup(normalizedPhone, email, null)
+            } catch (resumeError) {
+              const resumeMessage = String(resumeError?.message || resumeError || '')
+              if (
+                resumeMessage === 'ALREADY_REGISTERED' ||
+                /déjà|already registered|user not found|aucun compte/i.test(resumeMessage)
+              ) {
+                throw new Error('ALREADY_REGISTERED')
+              }
+              // Keep the real SMS / réseau error — never hide it behind ALREADY_REGISTERED.
+              throw resumeError instanceof Error ? resumeError : new Error(resumeMessage)
+            }
+          }
+          throw new Error(translateAuthError(error, { channel: 'phone' }))
+        }
 
-      if (data.session) {
-        await supabase.auth.signOut()
-      }
+        // Supabase anti-enumeration: duplicate email/phone returns identities: [].
+        // Do not treat a missing/undefined identities field as a duplicate — phone
+        // signup responses often omit identities when confirmation is pending.
+        // Anti-enumeration responses do not send SMS; resumePhoneSignup sends the one OTP.
+        if (
+          data.user &&
+          !data.session &&
+          Array.isArray(data.user.identities) &&
+          data.user.identities.length === 0
+        ) {
+          return resumePhoneSignup(normalizedPhone, email, data.user.id || null)
+        }
+        if (!data.user) throw new Error('Échec de création du compte.')
 
-      const user = profileToUser({ id: data.user.id, ...profileFields })
-      return {
-        user,
-        token: '',
-        requiresEmailConfirmation: false,
-        requiresPhoneConfirmation: true,
-        pendingUserId: data.user.id,
-        verificationMethod: 'phone',
-        email,
-        phone: normalizeRussianAuthPhone(details.russianPhone),
-      }
+        trackOtpSend('phone', normalizedPhone)
+
+        if (data.session) {
+          await supabase.auth.signOut()
+        }
+
+        const user = profileToUser({ id: data.user.id, ...profileFields })
+        return {
+          user,
+          token: '',
+          requiresEmailConfirmation: false,
+          requiresPhoneConfirmation: true,
+          pendingUserId: data.user.id,
+          verificationMethod: 'phone',
+          email,
+          phone: normalizedPhone,
+        }
+      })
     },
 
     async verifyEmailRegistration({ email, token }) {
@@ -1003,14 +1038,16 @@ export function createAuthService(supabase, redirects = {}) {
     async resendPhoneRegistrationOtp(phone) {
       if (!supabase) throw new Error('Supabase non configuré.')
       const normalizedPhone = normalizeRussianAuthPhone(phone)
-      guardOtpSend('phone', normalizedPhone)
-      const { error } = await supabase.auth.resend({
-        type: 'sms',
-        phone: normalizedPhone,
+      return withOtpInFlight('phone', normalizedPhone, async () => {
+        guardOtpSend('phone', normalizedPhone)
+        const { error } = await supabase.auth.resend({
+          type: 'sms',
+          phone: normalizedPhone,
+        })
+        if (error) throw new Error(translateAuthError(error, { channel: 'phone' }))
+        trackOtpSend('phone', normalizedPhone)
+        return true
       })
-      if (error) throw new Error(translateAuthError(error, { channel: 'phone' }))
-      trackOtpSend('phone', normalizedPhone)
-      return true
     },
 
     async resendEmailRegistrationOtp(email) {

@@ -128,6 +128,9 @@ export function RegisterPage() {
   const [otpCapMessage, setOtpCapMessage] = useState('')
   // Blocks the "already logged-in" auto-landing effect while we navigate to Security after OTP.
   const completingPhoneOtpRef = useRef(false)
+  // Sync locks — Formik does not prevent a second submit before React re-renders loading.
+  const registerSubmitLockRef = useRef(false)
+  const otpActionLockRef = useRef(false)
   const { trigger: triggerBurst, node: burstNode } = useActionBurst()
   const { countries } = useGeographyOptions()
   const alreadyRegistered = error === 'ALREADY_REGISTERED'
@@ -244,79 +247,87 @@ export function RegisterPage() {
     validationSchema: oauthCompletion ? oauthProfileCompletionSchema : registerSchema,
     enableReinitialize: true,
     onSubmit: async (values) => {
-      if (oauthCompletion) {
-        const result = await dispatch(completeOAuthProfile(values))
-        if (!completeOAuthProfile.fulfilled.match(result)) return
+      if (registerSubmitLockRef.current) return
+      registerSubmitLockRef.current = true
+      try {
+        if (oauthCompletion) {
+          const result = await dispatch(completeOAuthProfile(values))
+          if (!completeOAuthProfile.fulfilled.match(result)) return
+          dispatch(clearAuthError())
+          triggerBurst()
+          dispatch(
+            addToast({
+              title: 'Profil complété',
+              message: 'Votre profil est complet. Bienvenue sur MOXT.',
+              tone: 'success',
+            }),
+          )
+          const destination = resolveReturnTo(searchParams, location.state)
+          await completeRegistration(destination)
+          return
+        }
+
+        // If OTP already pending, never re-signUp — keep form state and stay on step 4.
+        if (pendingVerification?.phone) {
+          setStep(4)
+          dispatch(
+            addToast({
+              title: 'Code déjà envoyé',
+              message: 'Saisissez le code SMS reçu, ou renvoyez-en un après le délai.',
+              tone: 'info',
+            }),
+          )
+          return
+        }
+
+        const result = await dispatch(register(values))
+        if (!register.fulfilled.match(result)) {
+          const payload = String(result.payload || '')
+          if (/Limite atteinte|Patientez \d+ secondes/i.test(payload)) {
+            setOtpCapMessage(payload)
+          }
+          // Ensure the toast always carries the real rejected payload (not a blank generic).
+          if (payload && payload !== 'ALREADY_REGISTERED' && payload !== 'IDENTITY_LIMIT_REACHED') {
+            console.warn('[MOXT] Inscription rejetée:', payload)
+          }
+          return
+        }
         dispatch(clearAuthError())
-        triggerBurst()
-        dispatch(
-          addToast({
-            title: 'Profil complété',
-            message: 'Votre profil est complet. Bienvenue sur MOXT.',
-            tone: 'success',
-          }),
-        )
+        setOtpCapMessage('')
+        if (result.payload.requiresPhoneConfirmation) {
+          const pending = {
+            method: 'phone',
+            phone: result.payload.phone,
+            email: result.payload.email,
+            pendingUserId: result.payload.pendingUserId,
+            firstName: values.firstName,
+            lastName: values.lastName,
+            originPhone: values.originPhone,
+            originCountry: values.originCountry,
+            residenceCity: values.residenceCity,
+            avatarUrl: values.avatarUrl,
+            step: 4,
+          }
+          savePendingRegistration(pending)
+          setResendCooldown(OTP_RESEND_COOLDOWN_SECONDS)
+          setPendingVerification({
+            method: 'phone',
+            phone: result.payload.phone,
+            email: result.payload.email,
+            pendingUserId: result.payload.pendingUserId,
+          })
+          setStep(4)
+          return
+        }
         const destination = resolveReturnTo(searchParams, location.state)
         await completeRegistration(destination)
-        return
+      } finally {
+        registerSubmitLockRef.current = false
       }
-
-      // If OTP already pending, never re-signUp — keep form state and stay on step 4.
-      if (pendingVerification?.phone) {
-        setStep(4)
-        dispatch(
-          addToast({
-            title: 'Code déjà envoyé',
-            message: 'Saisissez le code SMS reçu, ou renvoyez-en un après le délai.',
-            tone: 'info',
-          }),
-        )
-        return
-      }
-
-      const result = await dispatch(register(values))
-      if (!register.fulfilled.match(result)) {
-        const payload = String(result.payload || '')
-        if (/Limite atteinte|Patientez \d+ secondes/i.test(payload)) {
-          setOtpCapMessage(payload)
-        }
-        // Ensure the toast always carries the real rejected payload (not a blank generic).
-        if (payload && payload !== 'ALREADY_REGISTERED' && payload !== 'IDENTITY_LIMIT_REACHED') {
-          console.warn('[MOXT] Inscription rejetée:', payload)
-        }
-        return
-      }
-      dispatch(clearAuthError())
-      setOtpCapMessage('')
-      if (result.payload.requiresPhoneConfirmation) {
-        const pending = {
-          method: 'phone',
-          phone: result.payload.phone,
-          email: result.payload.email,
-          pendingUserId: result.payload.pendingUserId,
-          firstName: values.firstName,
-          lastName: values.lastName,
-          originPhone: values.originPhone,
-          originCountry: values.originCountry,
-          residenceCity: values.residenceCity,
-          avatarUrl: values.avatarUrl,
-          step: 4,
-        }
-        savePendingRegistration(pending)
-        setResendCooldown(OTP_RESEND_COOLDOWN_SECONDS)
-        setPendingVerification({
-          method: 'phone',
-          phone: result.payload.phone,
-          email: result.payload.email,
-          pendingUserId: result.payload.pendingUserId,
-        })
-        setStep(4)
-        return
-      }
-      const destination = resolveReturnTo(searchParams, location.state)
-      await completeRegistration(destination)
     },
   })
+
+  const authBusy = status === 'loading' || formik.isSubmitting
 
   // Restore pending OTP signup after failed code / refresh (sessionStorage, no password).
   useEffect(() => {
@@ -366,7 +377,8 @@ export function RegisterPage() {
   }, [authUser, formik.setValues, pendingVerification])
 
   async function resendVerificationCode() {
-    if (!pendingVerification || resendCooldown > 0) return
+    if (!pendingVerification || resendCooldown > 0 || authBusy || otpActionLockRef.current) return
+    otpActionLockRef.current = true
 
     // Preserve pending profile fields on every resend.
     savePendingRegistration({
@@ -380,64 +392,79 @@ export function RegisterPage() {
       step: 4,
     })
 
-    const result = await dispatch(resendPhoneRegistrationOtp(pendingVerification.phone))
-    if (resendPhoneRegistrationOtp.fulfilled.match(result)) {
-      dispatch(clearAuthError())
-      setOtpCapMessage('')
-      setResendCooldown(OTP_RESEND_COOLDOWN_SECONDS)
-      dispatch(
-        addToast({
-          title: t('auth.register.codeResentTitle'),
-          message: t('auth.register.codeResentSms', { phone: pendingVerification.phone }),
-          tone: 'success',
-        }),
-      )
-    } else {
-      const payload = String(result.payload || '')
-      if (/Limite atteinte|Patientez \d+ secondes/i.test(payload)) {
-        setOtpCapMessage(payload)
+    try {
+      const result = await dispatch(resendPhoneRegistrationOtp(pendingVerification.phone))
+      if (resendPhoneRegistrationOtp.fulfilled.match(result)) {
+        dispatch(clearAuthError())
+        setOtpCapMessage('')
+        setResendCooldown(OTP_RESEND_COOLDOWN_SECONDS)
+        dispatch(
+          addToast({
+            title: t('auth.register.codeResentTitle'),
+            message: t('auth.register.codeResentSms', { phone: pendingVerification.phone }),
+            tone: 'success',
+          }),
+        )
+      } else {
+        const payload = String(result.payload || '')
+        if (/Limite atteinte|Patientez \d+ secondes/i.test(payload)) {
+          setOtpCapMessage(payload)
+        }
       }
+    } finally {
+      otpActionLockRef.current = false
     }
   }
 
   async function confirmCode() {
-    if (!pendingVerification || !/^\d{6}$/.test(verificationCode)) return
+    if (
+      !pendingVerification ||
+      !/^\d{6}$/.test(verificationCode) ||
+      authBusy ||
+      otpActionLockRef.current
+    ) {
+      return
+    }
+    otpActionLockRef.current = true
 
-    const result = await dispatch(
-      verifyPhoneRegistration({
-        phone: pendingVerification.phone,
-        email: pendingVerification.email || formik.values.email,
-        token: verificationCode,
-        profileDetails: {
-          firstName: formik.values.firstName || pendingVerification.firstName,
-          lastName: formik.values.lastName || pendingVerification.lastName,
-          originPhone: formik.values.originPhone || pendingVerification.originPhone,
-          originCountry: formik.values.originCountry || pendingVerification.originCountry,
-          residenceCity: formik.values.residenceCity || pendingVerification.residenceCity,
-          avatarUrl: formik.values.avatarUrl || pendingVerification.avatarUrl,
-        },
-      }),
-    )
-    if (verifyPhoneRegistration.fulfilled.match(result)) {
-      // Set before clearing pendingVerification so the auto-landing effect cannot
-      // race to /profile or returnTo ahead of Security email verify.
-      completingPhoneOtpRef.current = true
-      dispatch(clearAuthError())
-      clearPendingRegistration()
-      setPendingVerification(null)
-      setVerificationCode('')
-      triggerBurst()
-      dispatch(
-        addToast({
-          title: 'Compte créé',
-          message:
-            'Numéro confirmé. Il ne reste plus qu’à confirmer votre e-mail dans Sécurité (pas de re-vérification téléphone).',
-          tone: 'success',
+    try {
+      const result = await dispatch(
+        verifyPhoneRegistration({
+          phone: pendingVerification.phone,
+          email: pendingVerification.email || formik.values.email,
+          token: verificationCode,
+          profileDetails: {
+            firstName: formik.values.firstName || pendingVerification.firstName,
+            lastName: formik.values.lastName || pendingVerification.lastName,
+            originPhone: formik.values.originPhone || pendingVerification.originPhone,
+            originCountry: formik.values.originCountry || pendingVerification.originCountry,
+            residenceCity: formik.values.residenceCity || pendingVerification.residenceCity,
+            avatarUrl: formik.values.avatarUrl || pendingVerification.avatarUrl,
+          },
         }),
       )
-      await completeRegistration(POST_PHONE_OTP_LANDING)
+      if (verifyPhoneRegistration.fulfilled.match(result)) {
+        // Set before clearing pendingVerification so the auto-landing effect cannot
+        // race to /profile or returnTo ahead of Security email verify.
+        completingPhoneOtpRef.current = true
+        dispatch(clearAuthError())
+        clearPendingRegistration()
+        setPendingVerification(null)
+        setVerificationCode('')
+        triggerBurst()
+        dispatch(
+          addToast({
+            title: 'Bienvenue sur MOXT',
+            message: 'Numéro confirmé. Votre compte est prêt — bienvenue !',
+            tone: 'success',
+          }),
+        )
+        await completeRegistration(POST_PHONE_OTP_LANDING)
+      }
+      // Failed OTP: keep pendingVerification + form values for the next code.
+    } finally {
+      otpActionLockRef.current = false
     }
-    // Failed OTP: keep pendingVerification + form values for the next code.
   }
 
   const selectedCountry = useMemo(
@@ -756,12 +783,12 @@ export function RegisterPage() {
                 Retour
               </Button>
               {oauthCompletion ? (
-                <Button type="submit" icon={FiCheck} loading={status === 'loading'}>
-                  {status === 'loading' ? 'Enregistrement...' : 'Terminer mon profil'}
+                <Button type="submit" icon={FiCheck} loading={authBusy} disabled={authBusy}>
+                  {authBusy ? 'Enregistrement...' : 'Terminer mon profil'}
                 </Button>
               ) : (
-                <Button type="submit" icon={FiCheck} loading={status === 'loading'}>
-                  {status === 'loading' ? 'Envoi du SMS...' : 'Créer mon compte'}
+                <Button type="submit" icon={FiCheck} loading={authBusy} disabled={authBusy}>
+                  {authBusy ? 'Envoi du SMS...' : 'Créer mon compte'}
                 </Button>
               )}
             </div>
@@ -771,8 +798,9 @@ export function RegisterPage() {
         {step === 4 && !oauthCompletion && pendingVerification ? (
           <>
             <Alert title="Confirmez votre numéro" variant="info">
-              Un code à 6 chiffres a été envoyé au {pendingVerification.phone} par SMS. Un seul code
-              à la fois — le compte est créé après confirmation.
+              Un code à 6 chiffres a été envoyé au {pendingVerification.phone} par SMS. L’arrivée
+              peut prendre 1–2 minutes. Un seul code à la fois — le compte est créé après
+              confirmation.
             </Alert>
             {otpCapMessage ? (
               <Alert title="Envoi limité" variant="warning">
@@ -794,8 +822,8 @@ export function RegisterPage() {
             <Button
               type="button"
               icon={FiCheck}
-              loading={status === 'loading'}
-              disabled={status === 'loading' || verificationCode.length !== 6}
+              loading={authBusy}
+              disabled={authBusy || verificationCode.length !== 6}
               onClick={confirmCode}
             >
               Confirmer et accéder à MOXT
@@ -808,7 +836,8 @@ export function RegisterPage() {
                 type="button"
                 variant="secondary"
                 className="w-full"
-                disabled={resendCooldown > 0 || status === 'loading'}
+                loading={authBusy && resendCooldown <= 0}
+                disabled={resendCooldown > 0 || authBusy}
                 onClick={resendVerificationCode}
               >
                 {resendCooldown > 0

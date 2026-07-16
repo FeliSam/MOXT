@@ -9,6 +9,9 @@ export const OTP_MAX_SENDS_PER_WINDOW = 3
 /** Rolling abuse window (3 hours). */
 export const OTP_SEND_WINDOW_MS = 3 * 60 * 60 * 1000
 
+/** Set to false to bypass the 3 / 3h cap (90s cooldown still applies). */
+export const OTP_SEND_CAP_ENABLED = true
+
 export const OTP_SEND_LOG_STORAGE_KEY = 'moxt.otpSendLog.v1'
 
 export function otpIdentityKey(kind, value) {
@@ -41,7 +44,7 @@ export function getOtpSendState(store, kind, value, now = Date.now()) {
   const last = recent.length ? recent[recent.length - 1] : 0
   const cooldownRemainingMs = last ? Math.max(0, OTP_RESEND_COOLDOWN_MS - (now - last)) : 0
   const sendsInWindow = recent.length
-  const capped = sendsInWindow >= OTP_MAX_SENDS_PER_WINDOW
+  const capped = OTP_SEND_CAP_ENABLED && sendsInWindow >= OTP_MAX_SENDS_PER_WINDOW
   const windowResetMs = recent.length
     ? Math.max(0, OTP_SEND_WINDOW_MS - (now - recent[0]))
     : 0
@@ -51,7 +54,9 @@ export function getOtpSendState(store, kind, value, now = Date.now()) {
     recent,
     last,
     sendsInWindow,
-    remainingSends: Math.max(0, OTP_MAX_SENDS_PER_WINDOW - sendsInWindow),
+    remainingSends: OTP_SEND_CAP_ENABLED
+      ? Math.max(0, OTP_MAX_SENDS_PER_WINDOW - sendsInWindow)
+      : OTP_MAX_SENDS_PER_WINDOW,
     capped,
     cooldownRemainingMs,
     cooldownRemainingSeconds: Math.ceil(cooldownRemainingMs / 1000),

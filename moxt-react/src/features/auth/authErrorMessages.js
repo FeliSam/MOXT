@@ -41,7 +41,19 @@ export function sanitizeAuthMessage(message = '') {
   if (!isTechnicalAuthMessage(lower)) return text
 
   if (lower.includes('sms') || lower.includes('hook') || lower.includes('téléphone') || lower.includes('telephone')) {
-    return "L'envoi du code SMS a échoué. Réessayez plus tard ou contactez le support."
+    if (lower.includes('signature') || lower.includes('secret')) {
+      return "L'envoi du code SMS est indisponible (configuration). Réessayez dans quelques minutes ou contactez le support."
+    }
+    if (lower.includes('solde') || lower.includes('insuffisant')) {
+      return "L'envoi SMS est temporairement indisponible. Réessayez plus tard ou contactez le support."
+    }
+    if (lower.includes('timeout') || lower.includes('délai') || lower.includes('delai')) {
+      return "L'opérateur SMS met trop longtemps à répondre. Attendez 1–2 minutes puis renvoyez le code (délai 90 s)."
+    }
+    if (lower.includes('refusé') || lower.includes('refuse') || lower.includes('mode test')) {
+      return "Ce numéro n'a pas pu recevoir le SMS. Vérifiez le format +7… et réessayez, ou contactez le support."
+    }
+    return "L'envoi du code SMS a échoué. Attendez 90 secondes puis renvoyez le code. Si rien n'arrive sous 2–3 minutes, contactez le support."
   }
   if (lower.includes('e-mail') || lower.includes('email') || lower.includes('smtp')) {
     return "L'envoi d'e-mail est temporairement indisponible. Choisissez la vérification par SMS ou réessayez plus tard."

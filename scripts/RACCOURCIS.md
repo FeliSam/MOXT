@@ -47,6 +47,7 @@ npm run tout -- --no-commit
 | Commande | Description |
 |----------|-------------|
 | `npm run setup:smsc` | SMSC OTP + edge functions SMS |
+| `npm run setup:p1sms` | P1SMS pour le renvoi OTP (1er SMS = SMSC) |
 | `npm run setup:postbox` | Domaine / identité Postbox (DKIM) |
 | `npm run setup:smtp` | Push SMTP + **templates e-mail OTP** vers Supabase |
 | `npm run setup:admin-promote` | Verrouillage promotion admin |

@@ -144,6 +144,10 @@ async function main() {
   if (vars.SMSC_API_KEY) secretLines.push(`SMSC_API_KEY=${vars.SMSC_API_KEY}`)
   if (vars.SMSC_SENDER) secretLines.push(`SMSC_SENDER=${vars.SMSC_SENDER}`)
   if (vars.SMSC_WEBHOOK_SECRET) secretLines.push(`SMSC_WEBHOOK_SECRET=${vars.SMSC_WEBHOOK_SECRET}`)
+  if (vars.P1SMS_API_KEY) secretLines.push(`P1SMS_API_KEY=${vars.P1SMS_API_KEY}`)
+  if (vars.P1SMS_CHANNEL) secretLines.push(`P1SMS_CHANNEL=${vars.P1SMS_CHANNEL}`)
+  if (vars.P1SMS_SENDER) secretLines.push(`P1SMS_SENDER=${vars.P1SMS_SENDER}`)
+  if (vars.P1SMS_WEBHOOK_URL) secretLines.push(`P1SMS_WEBHOOK_URL=${vars.P1SMS_WEBHOOK_URL}`)
   if (vars.YC_SNS_ACCESS_KEY_ID) secretLines.push(`YC_SNS_ACCESS_KEY_ID=${vars.YC_SNS_ACCESS_KEY_ID}`)
   if (vars.YC_SNS_SECRET_ACCESS_KEY) {
     secretLines.push(`YC_SNS_SECRET_ACCESS_KEY=${vars.YC_SNS_SECRET_ACCESS_KEY}`)

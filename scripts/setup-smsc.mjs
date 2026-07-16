@@ -86,21 +86,63 @@ function buildSupabaseEnv(vars) {
 
 function runSupabase(args, env) {
   const supabaseJs = path.join(root, 'node_modules', 'supabase', 'dist', 'supabase.js')
-  if (existsSync(supabaseJs)) {
-    return (
-      spawnSync(process.execPath, [supabaseJs, ...args], {
+  const result = existsSync(supabaseJs)
+    ? spawnSync(process.execPath, [supabaseJs, ...args], {
         cwd: root,
-        stdio: 'inherit',
+        encoding: 'utf8',
         env,
-      }).status ?? 1
+      })
+    : spawnSync('npx', ['supabase', ...args], {
+        cwd: root,
+        encoding: 'utf8',
+        shell: process.platform === 'win32',
+        env,
+      })
+
+  const stdout = result.stdout || ''
+  const stderr = result.stderr || ''
+  if (stdout) process.stdout.write(stdout)
+  if (stderr) process.stderr.write(stderr)
+
+  const combined = `${stdout}\n${stderr}`
+  // CLI often exits 1 solely because PostHog flush times out after a successful op.
+  if (
+    result.status !== 0 &&
+    /Timeout while shutting down PostHog/i.test(combined) &&
+    /Finished supabase secrets set|Deployed Functions|project_ref|Remote database is up to date|Finished supabase config/i.test(
+      combined,
     )
+  ) {
+    return 0
   }
-  return run('npx', ['supabase', ...args], { env })
+  return result.status ?? 1
+}
+
+function isValidSendSmsHookSecret(secret) {
+  if (!secret || secret.includes('REMPLACER')) return false
+  if (!secret.startsWith('v1,whsec_')) return false
+  const encoded = secret.slice('v1,whsec_'.length)
+  // Supabase requires ≥32 chars of base64; Node base64(24 bytes) is exactly 32.
+  // Reject truncated secrets (often a lost '+' from PowerShell/URL mangling → 31 chars).
+  if (encoded.length !== 32) return false
+  try {
+    const bytes = Buffer.from(encoded, 'base64')
+    // Lenient base64 decode can yield ~23 bytes from a truncated string — require full 24.
+    return bytes.length === 24
+  } catch {
+    return false
+  }
 }
 
 function ensureHookSecret(vars) {
-  if (vars.SEND_SMS_HOOK_SECRET && !vars.SEND_SMS_HOOK_SECRET.includes('REMPLACER')) {
+  if (isValidSendSmsHookSecret(vars.SEND_SMS_HOOK_SECRET)) {
     return vars.SEND_SMS_HOOK_SECRET
+  }
+  if (vars.SEND_SMS_HOOK_SECRET) {
+    log(
+      'Secret hook OTP invalide',
+      'format/longueur incorrects — régénération (Auth + Edge Function seront resynchronisés)',
+    )
   }
   const secret = `v1,whsec_${randomBytes(24).toString('base64')}`
   upsertEnvVar('SEND_SMS_HOOK_SECRET', secret)
@@ -193,6 +235,10 @@ async function main() {
   if (apikey) secretLines.push(`SMSC_API_KEY=${apikey}`)
   if (vars.SMSC_SENDER) secretLines.push(`SMSC_SENDER=${vars.SMSC_SENDER}`)
   if (vars.SMS_RU_API_ID) secretLines.push(`SMS_RU_API_ID=${vars.SMS_RU_API_ID}`)
+  if (vars.P1SMS_API_KEY) secretLines.push(`P1SMS_API_KEY=${vars.P1SMS_API_KEY}`)
+  if (vars.P1SMS_CHANNEL) secretLines.push(`P1SMS_CHANNEL=${vars.P1SMS_CHANNEL}`)
+  if (vars.P1SMS_SENDER) secretLines.push(`P1SMS_SENDER=${vars.P1SMS_SENDER}`)
+  if (vars.P1SMS_WEBHOOK_URL) secretLines.push(`P1SMS_WEBHOOK_URL=${vars.P1SMS_WEBHOOK_URL}`)
   secretLines.push('SMS_INFRA_LOCKED=true')
   if (vars.YC_SNS_ACCESS_KEY_ID) secretLines.push(`YC_SNS_ACCESS_KEY_ID=${vars.YC_SNS_ACCESS_KEY_ID}`)
   if (vars.YC_SNS_SECRET_ACCESS_KEY) {

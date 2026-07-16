@@ -3,6 +3,7 @@ import {
   OTP_RESEND_COOLDOWN_SECONDS,
   OTP_RESEND_COOLDOWN_MS,
   OTP_MAX_SENDS_PER_WINDOW,
+  OTP_SEND_CAP_ENABLED,
   OTP_SEND_WINDOW_MS,
   otpIdentityKey,
   recordOtpSend,
@@ -48,7 +49,7 @@ describe('otpCooldown', () => {
     ).not.toThrow()
   })
 
-  it('caps at 3 sends per 3 hours for the same identity', () => {
+  it.skipIf(!OTP_SEND_CAP_ENABLED)('caps at 3 sends per 3 hours for the same identity', () => {
     const store = new Map()
     for (let i = 0; i < OTP_MAX_SENDS_PER_WINDOW; i += 1) {
       recordOtpSend(store, 'email', 'a@example.com', { persist: false })

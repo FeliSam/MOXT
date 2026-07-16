@@ -1,3 +1,4 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { SNSClient, PublishCommand } from 'npm:@aws-sdk/client-sns@3'
 import { Webhook } from 'https://esm.sh/standardwebhooks@1.0.0'
 import { phoneToSmsc } from '../_shared/smscPhone.ts'
@@ -40,7 +41,7 @@ function buildSmsText(otp: string) {
   return template.replaceAll('{otp}', otp).replaceAll('{code}', otp)
 }
 
-type SmsProvider = 'smsru' | 'yandex' | 'smsc'
+type SmsProvider = 'smsru' | 'yandex' | 'smsc' | 'p1sms'
 
 /** Auth send_sms hook hard-timeout is 5s — stay under that including cold start. */
 const HOOK_BUDGET_MS = 4_200
@@ -62,9 +63,11 @@ function resolveProvider(): SmsProvider {
   if (explicit === 'smsru') return 'smsru'
   if (explicit === 'yandex') return 'yandex'
   if (explicit === 'smsc') return 'smsc'
+  if (explicit === 'p1sms') return 'p1sms'
   if (Deno.env.get('SMSC_LOGIN') && (Deno.env.get('SMSC_PASSWORD') || Deno.env.get('SMSC_API_KEY'))) {
     return 'smsc'
   }
+  if (Deno.env.get('P1SMS_API_KEY')) return 'p1sms'
   if (Deno.env.get('SMS_RU_API_ID')) return 'smsru'
   return 'yandex'
 }
@@ -273,6 +276,100 @@ async function sendViaSmsc(phone: string, otp: string) {
   }
 }
 
+function phoneToP1sms(phone: string) {
+  // P1SMS expects 11 digits without '+' (e.g. 79001234567).
+  const e164 = normalizeE164(phone)
+  if (!e164.startsWith('+7') || e164.length !== 12) {
+    throw new Error('P1SMS : seuls les numéros russes (+7) sont pris en charge pour l’instant.')
+  }
+  return e164.slice(1)
+}
+
+async function sendViaP1sms(phone: string, otp: string) {
+  const apiKey = (Deno.env.get('P1SMS_API_KEY') || '').trim()
+  if (!apiKey) {
+    throw new Error('P1SMS non configuré (P1SMS_API_KEY).')
+  }
+
+  const channel = ((Deno.env.get('P1SMS_CHANNEL') || 'digit').trim().toLowerCase() || 'digit')
+  const sender = (Deno.env.get('P1SMS_SENDER') || '').trim()
+  if ((channel === 'char' || channel === 'viber') && !sender) {
+    throw new Error(
+      'P1SMS : canal char/viber nécessite P1SMS_SENDER (nom d’expéditeur validé dans le cabinet P1SMS).',
+    )
+  }
+
+  const to = phoneToP1sms(phone)
+  const message = buildSmsText(otp)
+  const smsItem: Record<string, string> = {
+    channel,
+    text: message,
+    phone: to,
+  }
+  if (sender) smsItem.sender = sender
+
+  const payload: Record<string, unknown> = {
+    apiKey,
+    sms: [smsItem],
+  }
+  const webhookUrl = (Deno.env.get('P1SMS_WEBHOOK_URL') || '').trim()
+  if (webhookUrl) payload.webhookUrl = webhookUrl
+
+  const res = await fetchWithTimeout(
+    'https://admin.p1sms.ru/apiSms/create',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        accept: 'application/json',
+      },
+      body: JSON.stringify(payload),
+    },
+    PROVIDER_TIMEOUT_MS,
+    'P1SMS',
+  )
+
+  const text = await res.text()
+  let data: Record<string, unknown> | null = null
+  try {
+    data = text ? JSON.parse(text) : null
+  } catch {
+    data = null
+  }
+
+  if (!res.ok) {
+    throw new Error(`P1SMS HTTP ${res.status}${text ? ` — ${text}` : ''}`)
+  }
+
+  if (!data || data.status !== 'success') {
+    const detail =
+      (typeof data?.error === 'string' && data.error) ||
+      (typeof data?.message === 'string' && data.message) ||
+      (typeof data?.errorDescription === 'string' && data.errorDescription) ||
+      text ||
+      'réponse invalide'
+    throw new Error(`P1SMS — ${detail}`)
+  }
+
+  const rows = Array.isArray(data.data) ? data.data as Array<Record<string, unknown>> : []
+  const entry = rows[0]
+  if (!entry) {
+    throw new Error('P1SMS : envoi sans entrée dans data[].')
+  }
+
+  const entryStatus = String(entry.status || '').toLowerCase()
+  if (entryStatus === 'error' || entryStatus === 'low_balance' || entryStatus === 'not_delivered') {
+    const detail = String(entry.errorDescription || entry.message || entryStatus)
+    if (entryStatus === 'low_balance' || detail.toLowerCase().includes('balance')) {
+      throw new Error('P1SMS : solde insuffisant. Rechargez votre compte sur p1sms.ru.')
+    }
+    throw new Error(`P1SMS ${entryStatus} — ${detail}`)
+  }
+
+  const id = entry.id
+  return id != null ? String(id) : 'ok'
+}
+
 async function sendViaYandexCns(phone: string, otp: string) {
   const accessKeyId = Deno.env.get('YC_SNS_ACCESS_KEY_ID')
   const secretAccessKey = Deno.env.get('YC_SNS_SECRET_ACCESS_KEY')
@@ -320,6 +417,7 @@ async function sendViaYandexCns(phone: string, otp: string) {
 
 function providerAvailable(provider: SmsProvider) {
   if (provider === 'smsru') return Boolean(Deno.env.get('SMS_RU_API_ID'))
+  if (provider === 'p1sms') return Boolean((Deno.env.get('P1SMS_API_KEY') || '').trim())
   if (provider === 'smsc') {
     return Boolean(
       Deno.env.get('SMSC_LOGIN') &&
@@ -334,68 +432,96 @@ function providerAvailable(provider: SmsProvider) {
   return false
 }
 
-function providerOrder(): SmsProvider[] {
-  const primary = resolveProvider()
-  const chain: SmsProvider[] = []
-  if (providerAvailable(primary)) chain.push(primary)
+function getServiceClient() {
+  const url = Deno.env.get('SUPABASE_URL')
+  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  if (!url || !key) return null
+  return createClient(url, key, { auth: { persistSession: false } })
+}
 
-  // Auth hook ≤5s: primary + at most one fallback (even when infra-locked).
-  // Locked only prefers SMSC first — a hanging SMSC must not burn the whole budget alone.
-  const fallbacks =
-    primary === 'smsc'
-      ? (['smsru', 'yandex'] as SmsProvider[])
-      : (['smsc', 'smsru', 'yandex'] as SmsProvider[])
-
-  for (const provider of fallbacks) {
-    if (chain.length >= 2) break
-    if (!chain.includes(provider) && providerAvailable(provider)) {
-      chain.push(provider)
-    }
+/**
+ * Atomic attempt counter (3h window). Used to split providers without dual-send:
+ * attempt 1 → SMSC, attempt 2+ → P1SMS.
+ */
+async function claimOtpSmsAttempt(phone: string): Promise<number> {
+  const admin = getServiceClient()
+  if (!admin) {
+    console.warn('[send-sms] service role absent — routage par défaut (tentative 1 → SMSC)')
+    return 1
   }
-  return chain
+  const routePhone = normalizeE164(phone)
+  const { data, error } = await admin.rpc('claim_otp_sms_attempt', { p_phone: routePhone })
+  if (error) {
+    console.warn('[send-sms] claim_otp_sms_attempt:', error.message)
+    return 1
+  }
+  return Number(data) || 1
+}
+
+async function markOtpSmsProvider(phone: string, provider: SmsProvider) {
+  const admin = getServiceClient()
+  if (!admin) return
+  const routePhone = normalizeE164(phone)
+  const { error } = await admin.rpc('mark_otp_sms_provider', {
+    p_phone: routePhone,
+    p_provider: provider,
+  })
+  if (error) {
+    console.warn('[send-sms] mark_otp_sms_provider:', error.message)
+  }
+}
+
+/**
+ * Parallel providers without conflict:
+ * - 1st Auth SMS (signup) → SMSC only
+ * - 2nd+ (resend after cooldown) → P1SMS only
+ * Never send the same OTP via both providers.
+ */
+function selectProviderForAttempt(attempt: number): SmsProvider | null {
+  const preferP1 = attempt >= 2
+  if (preferP1) {
+    if (providerAvailable('p1sms')) return 'p1sms'
+    if (providerAvailable('smsc')) return 'smsc'
+  } else {
+    if (providerAvailable('smsc')) return 'smsc'
+    if (providerAvailable('p1sms')) return 'p1sms'
+  }
+  if (providerAvailable('smsru')) return 'smsru'
+  if (providerAvailable('yandex')) return 'yandex'
+  // Last resort: locked/explicit primary
+  const primary = resolveProvider()
+  return providerAvailable(primary) ? primary : null
 }
 
 async function sendWithProvider(provider: SmsProvider, phone: string, otp: string) {
   if (provider === 'smsru') return sendViaSmsRu(phone, otp)
   if (provider === 'yandex') return sendViaYandexCns(phone, otp)
+  if (provider === 'p1sms') return sendViaP1sms(phone, otp)
   return sendViaSmsc(phone, otp)
 }
 
 async function sendOtpSms(phone: string, otp: string) {
-  const failures: string[] = []
-  const order = providerOrder()
-  if (!order.length) {
-    throw new Error('Aucun fournisseur SMS configuré (SMSC, SMS.ru ou Yandex CNS).')
+  const attempt = await claimOtpSmsAttempt(phone)
+  const provider = selectProviderForAttempt(attempt)
+  if (!provider) {
+    throw new Error('Aucun fournisseur SMS configuré (SMSC, P1SMS, SMS.ru ou Yandex CNS).')
   }
+
+  console.log(`[send-sms] tentative ${attempt} → ${provider} (${normalizeE164(phone)})`)
 
   const started = Date.now()
-  for (let i = 0; i < order.length; i += 1) {
-    const provider = order[i]
-    const remaining = HOOK_BUDGET_MS - (Date.now() - started)
-    const minNeeded = i === 0 ? 900 : 1_000
-    if (remaining < minNeeded) {
-      failures.push(`${provider}: skipped (hook budget ${remaining}ms)`)
-      break
-    }
-    // Cap each attempt so a hung provider leaves room for one fallback.
-    const attemptMs = Math.min(
-      PROVIDER_TIMEOUT_MS,
-      Math.max(minNeeded, remaining - (i === 0 && order.length > 1 ? 1_200 : 0)),
-    )
-    try {
-      const id = await withTimeout(sendWithProvider(provider, phone, otp), attemptMs, provider)
-      if (failures.length) {
-        console.warn(`[send-sms] succès via ${provider} après échecs:`, failures.join(' | '))
-      }
-      return id
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'échec inconnu'
-      failures.push(`${provider}: ${message}`)
-      console.warn(`[send-sms] ${provider} échoué:`, message)
-    }
-  }
+  const remaining = HOOK_BUDGET_MS - (Date.now() - started)
+  const attemptMs = Math.min(PROVIDER_TIMEOUT_MS, Math.max(900, remaining))
 
-  throw new Error(failures.join(' | '))
+  try {
+    const id = await withTimeout(sendWithProvider(provider, phone, otp), attemptMs, provider)
+    await markOtpSmsProvider(phone, provider)
+    return id
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'échec inconnu'
+    console.warn(`[send-sms] ${provider} échoué (tentative ${attempt}):`, message)
+    throw new Error(`${provider}: ${message}`)
+  }
 }
 
 Deno.serve(async (req) => {

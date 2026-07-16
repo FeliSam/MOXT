@@ -87,7 +87,7 @@ export function PhoneVerificationCard({ className = '' }) {
       dispatch(
         addToast({
           title: 'Code envoyé',
-          message: `Un code à 6 chiffres a été envoyé au ${result.payload.phone} par SMS.`,
+          message: `Un code à 6 chiffres a été envoyé au ${result.payload.phone}. L’arrivée peut prendre 1–2 minutes ; sinon renvoyez après 90 s.`,
           tone: 'info',
         }),
       )

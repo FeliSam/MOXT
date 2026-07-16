@@ -76,10 +76,10 @@ export function hasActiveBrowserAccount(user, status = 'authenticated') {
 }
 
 /**
- * After phone OTP confirmation on /register — always Security email verify.
- * Do not use resolveAuthenticatedLanding here (that prefers returnTo/profile).
+ * After phone OTP confirmation on /register — home + welcome modal.
+ * Profile is created only after OTP verify; email verify stays available in Sécurité.
  */
-export const POST_PHONE_OTP_LANDING = '/security?verify=email'
+export const POST_PHONE_OTP_LANDING = '/dashboard'
 
 /** Destination par défaut quand l'utilisateur est déjà connecté (QR, invitation, register). */
 export function resolveAuthenticatedLanding(searchParams, locationState) {

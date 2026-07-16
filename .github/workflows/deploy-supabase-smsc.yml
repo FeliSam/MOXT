@@ -6,6 +6,8 @@
 #   SEND_SMS_HOOK_SECRET
 #   SMSC_LOGIN, SMSC_PASSWORD (ou SMSC_API_KEY)
 #   SMSC_SENDER, SMSC_WEBHOOK_SECRET (optionnel)
+#   P1SMS_API_KEY (optionnel — failover OTP parallèle)
+#   P1SMS_CHANNEL, P1SMS_SENDER (optionnel)
 #   MOXT_ADMIN_PROMOTE_PASSWORD (optionnel — promotion admin verrouillée)
 
 name: Deploy — Supabase SMSC
@@ -81,6 +83,14 @@ jobs:
           SMS_INFRA_LOCKED=true
           MOXT_ADMIN_PROMOTE_PASSWORD=${{ secrets.MOXT_ADMIN_PROMOTE_PASSWORD }}
           EOF
+          if [ -n "${{ secrets.P1SMS_API_KEY }}" ]; then
+            echo "P1SMS_API_KEY=${{ secrets.P1SMS_API_KEY }}" >> /tmp/supabase-secrets.env
+            P1SMS_CHANNEL="${{ secrets.P1SMS_CHANNEL }}"
+            echo "P1SMS_CHANNEL=${P1SMS_CHANNEL:-digit}" >> /tmp/supabase-secrets.env
+            if [ -n "${{ secrets.P1SMS_SENDER }}" ]; then
+              echo "P1SMS_SENDER=${{ secrets.P1SMS_SENDER }}" >> /tmp/supabase-secrets.env
+            fi
+          fi
           npx supabase secrets set --env-file /tmp/supabase-secrets.env
 
       - name: Deploy Edge Functions

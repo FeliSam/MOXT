@@ -32,6 +32,7 @@ vi.mock('../../services/supabaseClient', () => ({
 
 const { authService, translateAuthError } = await import('./authService')
 const { __resetOtpSendCooldownForTests } = await import('@moxt/shared/auth/createAuthService.js')
+const { OTP_SEND_CAP_ENABLED } = await import('@moxt/shared/auth/otpCooldown.js')
 
 function mockSmsVerifySession(userOverrides = {}) {
   const user = {
@@ -451,7 +452,62 @@ describe('authService', () => {
     expect(auth.resend).toHaveBeenCalledTimes(1)
   })
 
-  it('bloque un 4e envoi OTP dans la fenetre de 3 heures', async () => {
+  it('fusionne deux register() concurrents en un seul SMS (anti double-clic)', async () => {
+    let resolveSignUp
+    auth.signUp.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSignUp = resolve
+        }),
+    )
+
+    const details = registrationDetails()
+    const first = authService.register(details)
+    const second = authService.register(details)
+
+    await vi.waitFor(() => {
+      expect(auth.signUp).toHaveBeenCalledTimes(1)
+      expect(resolveSignUp).toEqual(expect.any(Function))
+    })
+
+    resolveSignUp({
+      data: {
+        user: { id: 'user-inflight', identities: [{ id: 'identity-1' }] },
+        session: null,
+      },
+      error: null,
+    })
+
+    const [a, b] = await Promise.all([first, second])
+    expect(auth.signUp).toHaveBeenCalledTimes(1)
+    expect(auth.resend).not.toHaveBeenCalled()
+    expect(a.pendingUserId).toBe('user-inflight')
+    expect(b.pendingUserId).toBe('user-inflight')
+  })
+
+  it('fusionne deux resendPhoneRegistrationOtp() concurrents en un seul SMS', async () => {
+    let resolveResend
+    auth.resend.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveResend = resolve
+        }),
+    )
+
+    const first = authService.resendPhoneRegistrationOtp('+79000000010')
+    const second = authService.resendPhoneRegistrationOtp('+79000000010')
+
+    await vi.waitFor(() => {
+      expect(auth.resend).toHaveBeenCalledTimes(1)
+      expect(resolveResend).toEqual(expect.any(Function))
+    })
+    resolveResend({ error: null })
+
+    await Promise.all([first, second])
+    expect(auth.resend).toHaveBeenCalledTimes(1)
+  })
+
+  it.skipIf(!OTP_SEND_CAP_ENABLED)('bloque un 4e envoi OTP dans la fenetre de 3 heures', async () => {
     auth.resend.mockResolvedValue({ error: null })
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-07-15T12:00:00.000Z'))
