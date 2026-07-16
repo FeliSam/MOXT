@@ -384,6 +384,14 @@ export function RegisterPage() {
         phone: pendingVerification.phone,
         email: pendingVerification.email || formik.values.email,
         token: verificationCode,
+        profileDetails: {
+          firstName: formik.values.firstName || pendingVerification.firstName,
+          lastName: formik.values.lastName || pendingVerification.lastName,
+          originPhone: formik.values.originPhone || pendingVerification.originPhone,
+          originCountry: formik.values.originCountry || pendingVerification.originCountry,
+          residenceCity: formik.values.residenceCity || pendingVerification.residenceCity,
+          avatarUrl: formik.values.avatarUrl || pendingVerification.avatarUrl,
+        },
       }),
     )
     if (verifyPhoneRegistration.fulfilled.match(result)) {

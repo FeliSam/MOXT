@@ -16,7 +16,12 @@ export function ProtectedRoute({ allowedRoles, children }) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />
   }
 
-  if (!isProfileComplete(user) && location.pathname !== '/register' && !location.pathname.startsWith('/auth/callback')) {
+  const allowIncompleteProfile =
+    location.pathname === '/register' ||
+    location.pathname.startsWith('/auth/callback') ||
+    location.pathname.startsWith('/security')
+
+  if (!isProfileComplete(user) && !allowIncompleteProfile) {
     return <Navigate to="/register" replace />
   }
 

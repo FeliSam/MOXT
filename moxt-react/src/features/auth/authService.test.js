@@ -7,6 +7,7 @@ const auth = {
   signInWithOtp: vi.fn(),
   signUp: vi.fn(),
   signOut: vi.fn(),
+  setSession: vi.fn(),
   updateUser: vi.fn(),
   verifyOtp: vi.fn(),
   resend: vi.fn(),
@@ -31,6 +32,29 @@ vi.mock('../../services/supabaseClient', () => ({
 
 const { authService, translateAuthError } = await import('./authService')
 const { __resetOtpSendCooldownForTests } = await import('@moxt/shared/auth/createAuthService.js')
+
+function mockSmsVerifySession(userOverrides = {}) {
+  const user = {
+    id: 'user-sms',
+    email: null,
+    phone: '+79000000010',
+    phone_confirmed_at: '2026-07-15T12:00:00.000Z',
+    user_metadata: {
+      first_name: 'Nouvelle',
+      phone: '+79000000010',
+    },
+    ...userOverrides,
+  }
+  const session = {
+    access_token: 'sms-session',
+    refresh_token: 'sms-refresh',
+    user,
+  }
+  auth.verifyOtp.mockResolvedValue({ data: { user, session }, error: null })
+  auth.setSession.mockResolvedValue({ data: { session, user }, error: null })
+  auth.getUser.mockResolvedValue({ data: { user }, error: null })
+  return { user, session }
+}
 
 describe('authService', () => {
   beforeEach(() => {
@@ -130,21 +154,11 @@ describe('authService', () => {
   })
 
   it('valide le code SMS puis enregistre le profil sans lien magique e-mail', async () => {
-    auth.verifyOtp.mockResolvedValue({
-      data: {
-        user: {
-          id: 'user-sms',
-          email: null,
-          phone: '+79000000010',
-          phone_confirmed_at: '2026-07-15T12:00:00.000Z',
-          user_metadata: {
-            first_name: 'Nouvelle',
-            phone: '+79000000010',
-          },
-        },
-        session: { access_token: 'sms-session' },
+    mockSmsVerifySession({
+      user_metadata: {
+        first_name: 'Nouvelle',
+        phone: '+79000000010',
       },
-      error: null,
     })
     profileQuery.maybeSingle.mockResolvedValue({
       data: {
@@ -174,6 +188,10 @@ describe('authService', () => {
       token: '123456',
       type: 'sms',
     })
+    expect(auth.setSession).toHaveBeenCalledWith({
+      access_token: 'sms-session',
+      refresh_token: 'sms-refresh',
+    })
     // No auto updateUser({ email }) — avoids magic-link → /register trap.
     expect(auth.updateUser).not.toHaveBeenCalled()
     expect(result.token).toBe('sms-session')
@@ -183,18 +201,8 @@ describe('authService', () => {
   })
 
   it('termine l inscription SMS meme sans liaison Auth e-mail immediate', async () => {
-    auth.verifyOtp.mockResolvedValue({
-      data: {
-        user: {
-          id: 'user-sms',
-          email: null,
-          phone: '+79000000010',
-          phone_confirmed_at: '2026-07-15T12:00:00.000Z',
-          user_metadata: { first_name: 'Nouvelle', phone: '+79000000010' },
-        },
-        session: { access_token: 'sms-session' },
-      },
-      error: null,
+    mockSmsVerifySession({
+      user_metadata: { first_name: 'Nouvelle', phone: '+79000000010' },
     })
     profileQuery.maybeSingle.mockResolvedValue({
       data: {
@@ -224,25 +232,15 @@ describe('authService', () => {
   })
 
   it('enregistre le profil complet après vérification SMS', async () => {
-    auth.verifyOtp.mockResolvedValue({
-      data: {
-        user: {
-          id: 'user-sms',
-          email: null,
-          phone: '+79000000010',
-          phone_confirmed_at: '2026-07-15T12:00:00.000Z',
-          user_metadata: {
-            first_name: 'Nouvelle',
-            last_name: 'Personne',
-            email: 'personne@example.com',
-            origin_country: 'BJ',
-            city: 'Moscou',
-            phone: '+79000000010',
-          },
-        },
-        session: { access_token: 'sms-session' },
+    mockSmsVerifySession({
+      user_metadata: {
+        first_name: 'Nouvelle',
+        last_name: 'Personne',
+        email: 'personne@example.com',
+        origin_country: 'BJ',
+        city: 'Moscou',
+        phone: '+79000000010',
       },
-      error: null,
     })
     profileQuery.maybeSingle.mockResolvedValue({
       data: {
@@ -270,6 +268,50 @@ describe('authService', () => {
     expect(result.user.email).toBe('personne@example.com')
     expect(result.user.city).toBe('Moscou')
     expect(result.user.phoneVerified).toBe(true)
+  })
+
+  it('fusionne les champs du formulaire d inscription lors de la verification SMS', async () => {
+    mockSmsVerifySession({
+      user_metadata: { phone: '+79000000010' },
+    })
+    profileQuery.maybeSingle.mockResolvedValue({
+      data: {
+        id: 'user-sms',
+        first_name: 'Nouvelle',
+        last_name: 'Personne',
+        email: 'personne@example.com',
+        phone: '+79000000010',
+        phone_verified: true,
+        origin_country: 'BJ',
+        city: 'Moscou',
+        role: 'user',
+        status: 'active',
+      },
+      error: null,
+    })
+
+    await authService.verifyPhoneRegistration({
+      phone: '+79000000010',
+      token: '123456',
+      email: 'personne@example.com',
+      profileDetails: {
+        firstName: 'Nouvelle',
+        lastName: 'Personne',
+        originCountry: 'BJ',
+        residenceCity: 'Moscou',
+      },
+    })
+
+    expect(profileQuery.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'user-sms',
+        first_name: 'Nouvelle',
+        last_name: 'Personne',
+        city: 'Moscou',
+        origin_country: 'BJ',
+      }),
+      expect.any(Object),
+    )
   })
 
   it('exige la confirmation SMS avant de créer le profil même avec une session (signOut)', async () => {

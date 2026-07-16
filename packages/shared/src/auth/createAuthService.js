@@ -5,6 +5,7 @@ import {
   persistOtpSendLog,
   recordOtpSend,
 } from './otpCooldown.js'
+import { loadPendingRegistration } from './pendingRegistration.js'
 import { isProfileComplete } from './profileCompletion.js'
 import { translateAuthError } from './translateAuthError.js'
 
@@ -36,6 +37,55 @@ function profileToUser(profile) {
     phoneVerifiedAt: profile.phone_verified_at || null,
     createdAt: profile.created_at || profile.updated_at || null,
   }
+}
+
+function trimOrEmpty(value) {
+  return String(value ?? '').trim()
+}
+
+function requireFirstName(value, fallback = 'Utilisateur') {
+  const trimmed = trimOrEmpty(value)
+  return trimmed || fallback
+}
+
+/** Never send null/empty first_name to profiles (NOT NULL constraint). */
+function sanitizeProfileWriteFields(fields = {}) {
+  const safe = { ...fields }
+  if ('first_name' in safe) {
+    safe.first_name = requireFirstName(safe.first_name)
+  }
+  if ('last_name' in safe) {
+    safe.last_name = trimOrEmpty(safe.last_name)
+  }
+  return safe
+}
+
+function pendingRegistrationToProfileFields(pending) {
+  if (!pending) return null
+  return sanitizeProfileWriteFields({
+    first_name: requireFirstName(pending.firstName),
+    last_name: trimOrEmpty(pending.lastName),
+    email: trimOrEmpty(pending.email).toLowerCase(),
+    phone: normalizeRussianAuthPhone(pending.phone || ''),
+    origin_phone: trimOrEmpty(pending.originPhone),
+    origin_country: pending.originCountry || 'BJ',
+    city: trimOrEmpty(pending.residenceCity),
+    avatar_url: trimOrEmpty(pending.avatarUrl),
+    country: 'RU',
+    role: 'user',
+    status: 'active',
+  })
+}
+
+function resolvePendingRegistrationForUser(authUser, pending = loadPendingRegistration()) {
+  if (!pending || !authUser?.id) return null
+  if (pending.pendingUserId && pending.pendingUserId !== authUser.id) return null
+
+  const authPhone = normalizeRussianAuthPhone(authUser.phone || authUser.user_metadata?.phone || '')
+  const pendingPhone = normalizeRussianAuthPhone(pending.phone || '')
+  if (pendingPhone && authPhone && pendingPhone !== authPhone) return null
+
+  return pending
 }
 
 function isPhoneLoginDisabledError(error) {
@@ -135,7 +185,11 @@ export function createAuthService(supabase, redirects = {}) {
 
   async function upsertProfile(userId, fields) {
     const { error } = await supabase.from('profiles').upsert(
-      { id: userId, ...fields, updated_at: new Date().toISOString() },
+      {
+        id: userId,
+        ...sanitizeProfileWriteFields(fields),
+        updated_at: new Date().toISOString(),
+      },
       { onConflict: 'id' },
     )
     if (error) throw new Error(error.message)
@@ -165,6 +219,14 @@ export function createAuthService(supabase, redirects = {}) {
   }
 
   async function persistVerifiedRegistrationProfile(userId, profileFields, normalizedPhone) {
+    const authUser = await getAuthenticatedAuthUser()
+    if (authUser.id !== userId) {
+      throw new Error('Session invalide après vérification.')
+    }
+    if (!authUser.phone_confirmed_at) {
+      throw new Error('Le numéro n’est pas confirmé côté Auth. Réessayez avec le dernier code reçu.')
+    }
+
     const now = new Date().toISOString()
     // INSERT privilege guard forces phone_verified=false; write profile first, then UPDATE verify.
     const baseFields = {
@@ -284,6 +346,59 @@ export function createAuthService(supabase, redirects = {}) {
     if (error) throw new Error(translateAuthError(error, { channel: 'phone' }))
     if (!data?.user) throw new Error('Session expirée.')
     return data.user
+  }
+
+  async function establishAuthSession(session, context = { channel: 'phone' }) {
+    if (!session?.access_token || !session?.refresh_token) {
+      throw new Error('Session invalide après vérification.')
+    }
+    const { data, error } = await supabase.auth.setSession({
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+    })
+    if (error) {
+      throw new Error(translateAuthError(error, context))
+    }
+    if (!data?.session?.user) {
+      throw new Error('Session non établie après vérification.')
+    }
+    return data.session
+  }
+
+  function mergeRegistrationProfileFields(authUser, profileFields, overrides = {}) {
+    const merged = { ...profileFields }
+    const firstName = String(overrides.firstName || '').trim()
+    const lastName = String(overrides.lastName || '').trim()
+    const email = String(overrides.email || '').trim().toLowerCase()
+    const originPhone = String(overrides.originPhone || '').trim()
+    const originCountry = String(overrides.originCountry || '').trim()
+    const city = String(overrides.residenceCity || overrides.city || '').trim()
+    const avatarUrl = String(overrides.avatarUrl || '').trim()
+
+    if (firstName) merged.first_name = firstName
+    if (lastName) merged.last_name = lastName
+    if (email) merged.email = email
+    if (originPhone) merged.origin_phone = originPhone
+    if (originCountry) merged.origin_country = originCountry
+    if (city) merged.city = city
+    if (avatarUrl) merged.avatar_url = avatarUrl
+
+    const metadata = authUser?.user_metadata || {}
+    if (!merged.first_name) {
+      merged.first_name = metadata.first_name || merged.first_name || 'Utilisateur'
+    }
+    if (!merged.last_name) merged.last_name = metadata.last_name || merged.last_name || ''
+    if (!merged.email) {
+      merged.email = String(authUser?.email || metadata.email || merged.email || '')
+        .trim()
+        .toLowerCase()
+    }
+    if (!merged.origin_phone) merged.origin_phone = metadata.origin_phone || merged.origin_phone || ''
+    if (!merged.origin_country) merged.origin_country = metadata.origin_country || merged.origin_country || 'BJ'
+    if (!merged.city) merged.city = metadata.city || merged.city || ''
+    if (!merged.avatar_url) merged.avatar_url = metadata.avatar_url || metadata.picture || merged.avatar_url || ''
+
+    return merged
   }
 
   function isValidAuthPhone(value = '') {
@@ -612,11 +727,12 @@ export function createAuthService(supabase, redirects = {}) {
       if (!data.session || !data.user) {
         throw new Error("Le code est invalide ou a expiré. Recommencez l'inscription.")
       }
-      const user = await fetchOrCreateProfile(data.user)
-      return { user, token: data.session.access_token }
+      const session = await establishAuthSession(data.session, { channel: 'email' })
+      const user = await fetchOrCreateProfile(session.user)
+      return { user, token: session.access_token }
     },
 
-    async verifyPhoneRegistration({ phone, token, email }) {
+    async verifyPhoneRegistration({ phone, token, email, profileDetails }) {
       if (!supabase) throw new Error('Supabase non configuré.')
       const { data, error } = await supabase.auth.verifyOtp({
         phone: normalizeRussianAuthPhone(phone),
@@ -628,28 +744,32 @@ export function createAuthService(supabase, redirects = {}) {
         throw new Error('Le code de vérification est invalide.')
       }
 
+      const session = await establishAuthSession(data.session, { channel: 'phone' })
+      const authUser = session.user || data.user
+
       // Do NOT call updateUser({ email }) here — that triggers a magic-link
       // confirmation email whose default redirect often lands on /register.
       // Profile stores the e-mail; in-app Security verifies it with OTP + redirectTo.
-      const linkedEmail = String(email || '').trim().toLowerCase()
-      const profileFields = profileFieldsFromAuthUser(data.user)
-      const normalizedPhone = normalizeRussianAuthPhone(
-        data.user.phone || profileFields.phone || phone || '',
+      const linkedEmail = String(email || profileDetails?.email || '').trim().toLowerCase()
+      const profileFields = mergeRegistrationProfileFields(
+        authUser,
+        profileFieldsFromAuthUser(authUser),
+        { ...profileDetails, email: linkedEmail || profileDetails?.email },
       )
-      if (linkedEmail) {
-        profileFields.email = linkedEmail
-      }
+      const normalizedPhone = normalizeRussianAuthPhone(
+        authUser.phone || profileFields.phone || phone || '',
+      )
       profileFields.phone = normalizedPhone
 
       const user = await persistVerifiedRegistrationProfile(
-        data.user.id,
+        authUser.id,
         profileFields,
         normalizedPhone,
       )
       return {
         user,
-        token: data.session.access_token,
-        emailLinkDeferred: Boolean(linkedEmail && !data.user.email_confirmed_at),
+        token: session.access_token,
+        emailLinkDeferred: Boolean(linkedEmail && !authUser.email_confirmed_at),
         phoneVerified: true,
         nextVerification: 'email',
       }
