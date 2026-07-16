@@ -33,6 +33,7 @@ import { updateAccountPreferences } from '../features/account/accountSlice'
 import {
   clearAuthError,
   completeOAuthProfile,
+  logout,
   register,
   resendPhoneRegistrationOtp,
   verifyPhoneRegistration,
@@ -421,6 +422,35 @@ export function RegisterPage() {
     }
   }
 
+  /** Leave signup for login — always allowed (OTP wait, cooldown, incomplete OAuth). */
+  async function goToLogin(event) {
+    const loginState =
+      pendingVerification?.method === 'phone'
+        ? {
+            notice:
+              'Si l’inscription est terminée, connectez-vous avec votre numéro +7 et le mot de passe choisi. Sinon, saisissez d’abord le code SMS reçu ci-dessus.',
+          }
+        : undefined
+    clearPendingRegistration()
+    setPendingVerification(null)
+    setVerificationCode('')
+    setOtpCapMessage('')
+    setResendCooldown(0)
+    dispatch(clearAuthError())
+
+    // Let the browser open a new tab (ctrl/meta/middle-click).
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+      return
+    }
+
+    event.preventDefault()
+    // Incomplete OAuth / stray signup session would bounce login → dashboard → register.
+    if (authUser) {
+      await dispatch(logout())
+    }
+    navigate('/login', { replace: true, state: loginState })
+  }
+
   return (
     <AuthCard
       compact
@@ -731,7 +761,7 @@ export function RegisterPage() {
               type="button"
               icon={FiCheck}
               loading={status === 'loading'}
-              disabled={verificationCode.length !== 6}
+              disabled={status === 'loading' || verificationCode.length !== 6}
               onClick={confirmCode}
             >
               Confirmer et accéder à MOXT
@@ -774,14 +804,7 @@ export function RegisterPage() {
         <Link
           className="font-bold text-brand-700 dark:text-brand-300"
           to="/login"
-          state={
-            pendingVerification?.method === 'phone'
-              ? {
-                  notice:
-                    'Si l’inscription est terminée, connectez-vous avec votre numéro +7 et le mot de passe choisi. Sinon, saisissez d’abord le code SMS reçu ci-dessus.',
-                }
-              : undefined
-          }
+          onClick={goToLogin}
         >
           Se connecter
         </Link>

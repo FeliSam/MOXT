@@ -1958,6 +1958,7 @@ html.locale-animating #root {
   height: 3px;
   background: linear-gradient(90deg, var(--app-accent), var(--app-teal), var(--app-accent));
   opacity: 0.9;
+  pointer-events: none;
 }
 
 .auth-stepper-track {
@@ -1967,6 +1968,7 @@ html.locale-animating #root {
   top: 1rem;
   height: 2px;
   background: var(--app-border);
+  pointer-events: none;
 }
 
 .auth-stepper-progress {
@@ -1976,6 +1978,7 @@ html.locale-animating #root {
   height: 2px;
   background: linear-gradient(90deg, var(--app-accent), var(--app-teal));
   transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
 }
 
 /* ─── Toast ──────────────────────────────────────────────────────────────── */

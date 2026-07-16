@@ -1,3 +1,4 @@
+import { clearPendingRegistration } from '@moxt/shared/auth/pendingRegistration.js'
 import { useFormik } from 'formik'
 import { useEffect, useState } from 'react'
 import { FiLock, FiMail, FiPhone } from 'react-icons/fi'
@@ -39,11 +40,16 @@ export function LoginPage() {
   const location = useLocation()
   const [searchParams] = useSearchParams()
   const { t } = useLanguage()
-  const { error, status } = useSelector((state) => state.auth)
+  const { error } = useSelector((state) => state.auth)
 
   const [mode, setMode] = useState('phone-password')
 
   useEffect(() => () => dispatch(clearAuthError()), [dispatch])
+
+  // Abandon in-progress signup OTP when arriving on login (register → Se connecter).
+  useEffect(() => {
+    clearPendingRegistration()
+  }, [])
 
   useEffect(() => {
     if (!error) return
@@ -138,8 +144,8 @@ export function LoginPage() {
           <p className="auth-flow-hint text-xs text-[var(--app-text-muted)]">
             Utilisez le numéro +7 et votre mot de passe.
           </p>
-          <Button className="w-full" type="submit" loading={status === 'loading'}>
-            {status === 'loading' ? t('auth.login.submitting') : 'Se connecter'}
+          <Button className="w-full" type="submit" loading={phoneFormik.isSubmitting}>
+            {phoneFormik.isSubmitting ? t('auth.login.submitting') : 'Se connecter'}
           </Button>
         </form>
       ) : null}
@@ -169,8 +175,8 @@ export function LoginPage() {
               {t('auth.login.forgot')}
             </Link>
           </div>
-          <Button className="w-full" type="submit" loading={status === 'loading'}>
-            {status === 'loading' ? t('auth.login.submitting') : t('auth.login.submit')}
+          <Button className="w-full" type="submit" loading={emailFormik.isSubmitting}>
+            {emailFormik.isSubmitting ? t('auth.login.submitting') : t('auth.login.submit')}
           </Button>
         </form>
       ) : null}
