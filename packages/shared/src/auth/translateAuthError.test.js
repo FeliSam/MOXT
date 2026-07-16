@@ -49,9 +49,12 @@ describe('translateAuthError', () => {
     ).toContain('trop de temps')
   })
 
-  it('maps IDENTITY_CHECK_UNAVAILABLE', () => {
-    expect(translateAuthError({ message: 'IDENTITY_CHECK_UNAVAILABLE' })).toContain(
-      'identifiants indisponible',
-    )
+  it('maps AuthRetryableFetchError empty payload to SMS retry', () => {
+    expect(
+      translateAuthError(
+        { name: 'AuthRetryableFetchError', message: '{}', status: 500 },
+        { channel: 'phone' },
+      ),
+    ).toContain('SMS')
   })
 })

@@ -2,6 +2,7 @@ import { OTP_RESEND_COOLDOWN_SECONDS } from './otpCooldown.js'
 
 export function translateAuthError(error, context = {}) {
   const code = typeof error === 'object' && error !== null ? error.code : undefined
+  const name = typeof error === 'object' && error !== null ? error.name : undefined
   const message = typeof error === 'string' ? error : error?.message || ''
   const status = typeof error === 'object' && error !== null ? error.status : undefined
   const channel = context.channel === 'phone' || context.channel === 'email' ? context.channel : inferChannel(message, context)
@@ -50,6 +51,13 @@ export function translateAuthError(error, context = {}) {
   }
   if (message === 'IDENTITY_CHECK_UNAVAILABLE' || message.includes('IDENTITY_CHECK_UNAVAILABLE')) {
     return 'Vérification des identifiants indisponible. Réessayez dans un instant.'
+  }
+  // Supabase JS sometimes surfaces AuthRetryableFetchError as message "{}" on hook 500s.
+  if (
+    (message === '{}' || message.trim() === '' || name === 'AuthRetryableFetchError') &&
+    (channel === 'phone' || status >= 500)
+  ) {
+    return "L'envoi du code SMS a échoué. Réessayez dans quelques instants."
   }
   if (code === 'unexpected_failure' && message.toLowerCase().includes('hook')) {
     return translateSmsHookFailure(message)

@@ -43,8 +43,8 @@ function buildSmsText(otp: string) {
 type SmsProvider = 'smsru' | 'yandex' | 'smsc'
 
 /** Auth send_sms hook hard-timeout is 5s — stay under that including cold start. */
-const HOOK_BUDGET_MS = 4_000
-const PROVIDER_TIMEOUT_MS = 2_200
+const HOOK_BUDGET_MS = 4_200
+const PROVIDER_TIMEOUT_MS = 2_800
 
 function isInfraLocked() {
   const locked = (Deno.env.get('SMS_INFRA_LOCKED') || '').toLowerCase()
@@ -339,10 +339,14 @@ function providerOrder(): SmsProvider[] {
   const chain: SmsProvider[] = []
   if (providerAvailable(primary)) chain.push(primary)
 
-  // Auth hook ≤5s: never waterfall all providers. Locked infra = primary only.
-  if (isInfraLocked()) return chain
+  // Auth hook ≤5s: primary + at most one fallback (even when infra-locked).
+  // Locked only prefers SMSC first — a hanging SMSC must not burn the whole budget alone.
+  const fallbacks =
+    primary === 'smsc'
+      ? (['smsru', 'yandex'] as SmsProvider[])
+      : (['smsc', 'smsru', 'yandex'] as SmsProvider[])
 
-  for (const provider of ['smsc', 'smsru', 'yandex'] as SmsProvider[]) {
+  for (const provider of fallbacks) {
     if (chain.length >= 2) break
     if (!chain.includes(provider) && providerAvailable(provider)) {
       chain.push(provider)
@@ -365,14 +369,21 @@ async function sendOtpSms(phone: string, otp: string) {
   }
 
   const started = Date.now()
-  for (const provider of order) {
+  for (let i = 0; i < order.length; i += 1) {
+    const provider = order[i]
     const remaining = HOOK_BUDGET_MS - (Date.now() - started)
-    if (remaining < 800) {
-      failures.push(`${provider}: skipped (hook budget)`)
+    const minNeeded = i === 0 ? 900 : 1_000
+    if (remaining < minNeeded) {
+      failures.push(`${provider}: skipped (hook budget ${remaining}ms)`)
       break
     }
+    // Cap each attempt so a hung provider leaves room for one fallback.
+    const attemptMs = Math.min(
+      PROVIDER_TIMEOUT_MS,
+      Math.max(minNeeded, remaining - (i === 0 && order.length > 1 ? 1_200 : 0)),
+    )
     try {
-      const id = await sendWithProvider(provider, phone, otp)
+      const id = await withTimeout(sendWithProvider(provider, phone, otp), attemptMs, provider)
       if (failures.length) {
         console.warn(`[send-sms] succès via ${provider} après échecs:`, failures.join(' | '))
       }
