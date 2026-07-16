@@ -8,7 +8,7 @@ export function isValidRussianPhone(value = '') {
   return /^\+7\d{10}$/.test(phone)
 }
 
-/** Niveau 1 — numéro russe confirmé par OTP (obligatoire pour publier). */
+/** Niveau 1 — numéro russe confirmé par OTP + e-mail confirmé (obligatoire pour publier). */
 export function isPhoneVerified(user) {
   if (!user) return false
   if (user.phoneVerified === true) return true
@@ -31,7 +31,11 @@ export function canInteractNormally(user) {
 
 export function canPublishContent(user) {
   if (!user?.id) return false
-  return isPhoneVerified(user) && isValidRussianPhone(user.phone)
+  return (
+    isPhoneVerified(user) &&
+    isValidRussianPhone(user.phone) &&
+    isEmailVerified(user)
+  )
 }
 
 /**
@@ -69,10 +73,15 @@ export function canUseTransferAccount(user) {
   return isPersonallyRegistered(user) && isPhoneVerified(user) && isValidRussianPhone(user.phone)
 }
 
-/** Offre P2P : identité vérifiée obligatoire (+ téléphone). */
+/** Offre P2P : identité vérifiée obligatoire (+ téléphone + e-mail confirmé). */
 export function canPublishP2POffer(user) {
   if (!user?.id) return false
-  return isIdentityVerified(user) && isPhoneVerified(user) && isValidRussianPhone(user.phone)
+  return (
+    isIdentityVerified(user) &&
+    isPhoneVerified(user) &&
+    isValidRussianPhone(user.phone) &&
+    isEmailVerified(user)
+  )
 }
 
 export function verificationRequestIsStale(request, now = Date.now()) {
@@ -88,10 +97,19 @@ export function securityGateMessage(kind, user) {
       if (!isValidRussianPhone(user?.phone)) {
         return 'Ajoutez un numéro russe (+7) valide dans votre profil.'
       }
-      return 'Confirmez votre numéro russe par SMS avant de publier une annonce, un colis, un job ou un événement.'
+      if (!isPhoneVerified(user)) {
+        return 'Confirmez votre numéro russe par SMS avant de publier une annonce, un colis, un job ou un événement.'
+      }
+      if (!isEmailVerified(user)) {
+        return 'Confirmez votre e-mail dans Sécurité avant de publier une annonce, un colis, un job, un événement ou un post.'
+      }
+      return 'Confirmez votre numéro russe et votre e-mail avant de publier.'
     case 'p2p':
       if (!isPhoneVerified(user) || !isValidRussianPhone(user?.phone)) {
         return 'Confirmez votre numéro russe (+7) avant de publier une offre P2P.'
+      }
+      if (!isEmailVerified(user)) {
+        return 'Confirmez votre e-mail dans Sécurité avant de publier une offre P2P.'
       }
       if (!isIdentityVerified(user)) {
         return 'Votre identité doit être vérifiée (documents validés) avant de publier une offre P2P.'

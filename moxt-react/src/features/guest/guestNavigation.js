@@ -75,6 +75,12 @@ export function hasActiveBrowserAccount(user, status = 'authenticated') {
   return Boolean(user?.id) && status !== 'loading' && isProfileComplete(user)
 }
 
+/**
+ * After phone OTP confirmation on /register — always Security email verify.
+ * Do not use resolveAuthenticatedLanding here (that prefers returnTo/profile).
+ */
+export const POST_PHONE_OTP_LANDING = '/security?verify=email'
+
 /** Destination par défaut quand l'utilisateur est déjà connecté (QR, invitation, register). */
 export function resolveAuthenticatedLanding(searchParams, locationState) {
   const returnTo = resolveReturnTo(searchParams, locationState)

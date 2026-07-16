@@ -20,18 +20,26 @@ const phoneUser = {
   originCountry: 'BJ',
 }
 
-const identityUser = {
+const publishReadyUser = {
   ...phoneUser,
-  verified: true,
-  status: 'verified',
   emailVerified: true,
   emailVerifiedAt: '2026-01-01',
 }
 
+const identityUser = {
+  ...publishReadyUser,
+  verified: true,
+  status: 'verified',
+}
+
 describe('userSecurity', () => {
-  it('requires phone verification to publish', () => {
-    expect(canPublishContent(phoneUser)).toBe(true)
-    expect(canPublishContent({ ...phoneUser, phoneVerified: false })).toBe(false)
+  it('requires phone and email verification to publish', () => {
+    expect(canPublishContent(publishReadyUser)).toBe(true)
+    expect(canPublishContent(phoneUser)).toBe(false)
+    expect(canPublishContent({ ...publishReadyUser, phoneVerified: false })).toBe(false)
+    expect(canPublishContent({ ...publishReadyUser, emailVerified: false, emailVerifiedAt: null })).toBe(
+      false,
+    )
   })
 
   it('publishes live only when identity is verified', () => {
@@ -40,8 +48,12 @@ describe('userSecurity', () => {
     expect(initialCatalogStatus(identityUser, { live: 'published' })).toBe('published')
   })
 
-  it('requires identity to publish P2P offers', () => {
+  it('requires identity and email to publish P2P offers', () => {
     expect(canPublishP2POffer(phoneUser)).toBe(false)
+    expect(canPublishP2POffer(publishReadyUser)).toBe(false)
+    expect(canPublishP2POffer({ ...identityUser, emailVerified: false, emailVerifiedAt: null })).toBe(
+      false,
+    )
     expect(canPublishP2POffer(identityUser)).toBe(true)
   })
 

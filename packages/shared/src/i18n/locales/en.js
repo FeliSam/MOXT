@@ -355,7 +355,7 @@ export const en = {
         'MOXT applies three verification levels: Russian number to publish, identity for sensitive operations, enhanced level for higher limits. Messaging stays open to all signed-in members.',
       publishTitle: 'Protected publishing',
       publishBody:
-        'Listings, parcels, jobs and events require a unique Russian number confirmed by OTP. Email-created accounts must also confirm their phone before publishing.',
+        'Listings, parcels, jobs, events and posts require a unique Russian number confirmed by OTP and a confirmed email. Without email confirmation, publishing stays blocked.',
       delayTitle: 'Identity verification delay',
       delayBefore:
         'If your identity file stays pending for more than 24 hours, contact the administrator via',
@@ -440,9 +440,10 @@ export const en = {
     pageEyebrow: 'Account',
     pageTitle: 'Security',
     pageDescription: 'Password, email confirmation and active sessions.',
-    postSignupEmailTitle: 'Last step: confirm your email',
+    postSignupEmailTitle: 'Confirm your email',
     postSignupEmailBody:
-      'Your Russian number is already verified. Only confirm the email below — no need to re-verify the phone. Identity verification (KYC) is separate.',
+      'You can do this now or later. Without confirmation, you won’t be able to publish on MOXT or perform other important actions (business account, identity verification…).',
+    postSignupEmailLater: 'Later',
     emailConfirmedToastTitle: 'Email confirmed',
     emailConfirmedToastBody: 'Your email address is verified. You can change your password and enable alerts.',
     passwordTitle: 'Password',
@@ -459,7 +460,8 @@ export const en = {
       changeTitle: 'Change your email',
       confirmTitle: 'Confirm your email',
       changeSubtitle: 'Enter the new address, then validate the code received by email.',
-      confirmSubtitle: 'Enter the 6-digit code received by email (no magic link).',
+      confirmSubtitle:
+        'You can confirm later. Without a verified email, publishing and other important actions stay limited. Enter the 6-digit code from your email.',
       addressLabel: 'Email address',
       hintChange: 'Editable only after confirming with an OTP sent to the new address.',
       hintConfirm: 'Confirm this address with the code received by email.',

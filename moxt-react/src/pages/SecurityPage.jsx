@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { FiKey, FiLock, FiMonitor, FiShield } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { isEmailVerified, isPhoneVerified } from '@moxt/shared/auth/userSecurity.js'
 import { BackButton } from '../components/ui/BackButton'
 import { Alert } from '../components/ui/Alert'
@@ -25,6 +25,7 @@ import { OTP_RESEND_COOLDOWN_SECONDS } from '@moxt/shared/auth/otpCooldown.js'
 export function SecurityPage() {
   const dispatch = useDispatch()
   const { t } = useLanguage()
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const user = useSelector((state) => state.auth.user)
   const preferences = useSelector((state) => selectAccountPreferences(state, user.id))
@@ -236,7 +237,14 @@ export function SecurityPage() {
       />
       {phoneConfirmed && !emailConfirmed ? (
         <Alert variant="info" title={t('security.postSignupEmailTitle')}>
-          {t('security.postSignupEmailBody')}
+          <div className="grid gap-3">
+            <p>{t('security.postSignupEmailBody')}</p>
+            <div>
+              <Button type="button" variant="secondary" onClick={() => navigate('/dashboard')}>
+                {t('security.postSignupEmailLater')}
+              </Button>
+            </div>
+          </div>
         </Alert>
       ) : null}
       {searchParams.get('email') === 'confirmed' && emailConfirmed ? (

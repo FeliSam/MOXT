@@ -1,11 +1,19 @@
 import { useMemo, useState } from 'react'
 import { FiEdit3, FiRss } from 'react-icons/fi'
-import { useDispatch, useSelector } from 'react-redux'
+import { useSelector } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
+import {
+  canPublishContent,
+  isEmailVerified,
+  isPhoneVerified,
+  isValidRussianPhone,
+} from '@moxt/shared/auth/userSecurity.js'
 import { Button } from '../components/ui/Button'
 import { EmptyState } from '../components/ui/EmptyState'
 import { FeedPostCard } from '../components/ui/FeedPostCard'
 import { PageHeader } from '../components/ui/PageHeader'
 import { ShareToFeedModal } from '../components/ui/ShareToFeedModal'
+import { useSecurityGate } from '../features/security/useSecurityGate'
 import { sortPostsByPublishedAt } from '../features/posts/postSortUtils'
 import { SOURCE_TYPE_LABELS } from '../features/posts/postTemplates'
 
@@ -20,12 +28,28 @@ const FILTER_TABS = [
 ]
 
 export function NewsPage() {
-  const dispatch = useDispatch()
+  const navigate = useNavigate()
   const user = useSelector((s) => s.auth.user)
   const posts = useSelector((s) => s.posts?.items ?? [])
+  const { requirePublish } = useSecurityGate()
 
   const [activeFilter, setActiveFilter] = useState('all')
   const [showShareModal, setShowShareModal] = useState(false)
+
+  function openComposer() {
+    if (canPublishContent(user)) {
+      setShowShareModal(true)
+      return
+    }
+    requirePublish()
+    if (
+      isPhoneVerified(user) &&
+      isValidRussianPhone(user?.phone) &&
+      !isEmailVerified(user)
+    ) {
+      navigate('/security?verify=email')
+    }
+  }
 
   const publishedPosts = useMemo(
     () => posts.filter((p) => p.status === 'published'),
@@ -49,7 +73,7 @@ export function NewsPage() {
         stats={[{ label: 'Publications', value: publishedPosts.length }]}
         actions={
           user && (
-            <Button icon={FiEdit3} onClick={() => setShowShareModal(true)}>
+            <Button icon={FiEdit3} onClick={openComposer}>
               Écrire un post
             </Button>
           )
@@ -96,7 +120,7 @@ export function NewsPage() {
             }
             action={
               user && (
-                <Button icon={FiEdit3} onClick={() => setShowShareModal(true)}>
+                <Button icon={FiEdit3} onClick={openComposer}>
                   Écrire un post
                 </Button>
               )

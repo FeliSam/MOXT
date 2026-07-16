@@ -4,6 +4,7 @@ import { FiImage, FiSend, FiShare2, FiTrash2, FiX } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { createPost } from '../../features/posts/postsSlice'
 import { generatePostMessage, getSourceImage, SOURCE_TYPE_LABELS, SOURCE_TYPE_LINKS } from '../../features/posts/postTemplates'
+import { useSecurityGate } from '../../features/security/useSecurityGate'
 import { addToast } from '../../features/ui/uiSlice'
 import { initialCatalogStatus } from '@moxt/shared/auth/userSecurity.js'
 
@@ -21,6 +22,7 @@ import { initialCatalogStatus } from '@moxt/shared/auth/userSecurity.js'
 export function ShareToFeedModal({ sourceType = 'free', sourceId = null, sourceData = {}, onClose, onPublished }) {
   const dispatch = useDispatch()
   const user = useSelector((s) => s.auth.user)
+  const { requirePublish } = useSecurityGate()
   const textareaRef = useRef(null)
   const dialogRef = useRef(null)
   const titleId = useId()
@@ -66,6 +68,7 @@ export function ShareToFeedModal({ sourceType = 'free', sourceId = null, sourceD
 
   function handlePublish() {
     if (!message.trim()) return
+    if (!requirePublish()) return
     const status = initialCatalogStatus(user, { live: 'published', pending: 'pending_review' })
     dispatch(
       createPost({

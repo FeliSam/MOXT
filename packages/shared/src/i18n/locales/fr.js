@@ -359,7 +359,7 @@ export const fr = {
         'MOXT applique trois niveaux de vérification : numéro russe pour publier, identité pour les opérations sensibles, niveau renforcé pour les plafonds élevés. La messagerie reste ouverte à tous les membres connectés.',
       publishTitle: 'Publication protégée',
       publishBody:
-        'Annonces, colis, jobs et événements nécessitent un numéro russe unique confirmé par OTP. Les comptes créés par e-mail doivent aussi confirmer leur téléphone avant de publier.',
+        'Annonces, colis, jobs, événements et posts nécessitent un numéro russe unique confirmé par OTP et un e-mail confirmé. Sans confirmation e-mail, la publication reste bloquée.',
       delayTitle: 'Délai de vérification identité',
       delayBefore: 'Si votre dossier d’identité reste en attente plus de 24 h, contactez l’administrateur via',
       supportLink: 'le support',
@@ -444,9 +444,10 @@ export const fr = {
     pageEyebrow: 'Compte',
     pageTitle: 'Sécurité',
     pageDescription: 'Mot de passe, confirmation e-mail et sessions actives.',
-    postSignupEmailTitle: 'Dernière étape : confirmer l’e-mail',
+    postSignupEmailTitle: 'Confirmez votre e-mail',
     postSignupEmailBody:
-      'Votre numéro russe est déjà vérifié. Confirmez uniquement l’e-mail ci-dessous — pas besoin de re-vérifier le téléphone. La vérification d’identité (KYC) est séparée.',
+      'Vous pouvez le faire maintenant ou plus tard. Sans confirmation, vous ne pourrez pas publier sur MOXT ni effectuer d’autres actions importantes (entreprise, vérification d’identité…).',
+    postSignupEmailLater: 'Plus tard',
     emailConfirmedToastTitle: 'E-mail confirmé',
     emailConfirmedToastBody: 'Votre adresse e-mail est vérifiée. Vous pouvez modifier le mot de passe et activer les alertes.',
     passwordTitle: 'Mot de passe',
@@ -463,7 +464,8 @@ export const fr = {
       changeTitle: 'Modifier votre e-mail',
       confirmTitle: 'Confirmer votre e-mail',
       changeSubtitle: 'Saisissez la nouvelle adresse puis validez le code reçu par e-mail.',
-      confirmSubtitle: 'Saisissez le code à 6 chiffres reçu par e-mail (pas de lien magique).',
+      confirmSubtitle:
+        'Vous pouvez confirmer plus tard. Sans e-mail vérifié, publication et actions importantes restent limitées. Saisissez le code à 6 chiffres reçu par e-mail.',
       addressLabel: 'Adresse e-mail',
       hintChange: 'Modifiable uniquement après confirmation par code OTP envoyé à la nouvelle adresse.',
       hintConfirm: 'Confirmez cette adresse avec le code reçu par e-mail.',

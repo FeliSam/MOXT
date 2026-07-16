@@ -1,5 +1,5 @@
 import { useFormik } from 'formik'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   FiArrowLeft,
   FiArrowRight,
@@ -44,7 +44,13 @@ import { loadAllData } from '../app/loadAllData'
 import { startRealtimeSubscription } from '../services/realtimeService'
 import { useGeographyOptions } from '../hooks/useGeographyOptions'
 import { markWelcomePending } from '../features/onboarding/welcomeStorage'
-import { storePendingInviteCode, resolveReturnTo, clearReturnTo, resolveAuthenticatedLanding } from '../features/guest/guestNavigation'
+import {
+  storePendingInviteCode,
+  resolveReturnTo,
+  clearReturnTo,
+  resolveAuthenticatedLanding,
+  POST_PHONE_OTP_LANDING,
+} from '../features/guest/guestNavigation'
 import { applyPendingReferral } from '../features/referral/referralService'
 
 const STEPS = [
@@ -120,6 +126,8 @@ export function RegisterPage() {
   const [verificationCode, setVerificationCode] = useState('')
   const [resendCooldown, setResendCooldown] = useState(0)
   const [otpCapMessage, setOtpCapMessage] = useState('')
+  // Blocks the "already logged-in" auto-landing effect while we navigate to Security after OTP.
+  const completingPhoneOtpRef = useRef(false)
   const { trigger: triggerBurst, node: burstNode } = useActionBurst()
   const { countries } = useGeographyOptions()
   const alreadyRegistered = error === 'ALREADY_REGISTERED'
@@ -138,7 +146,7 @@ export function RegisterPage() {
 
   useEffect(() => {
     if (status === 'loading' || !authUser || !isProfileComplete(authUser)) return
-    if (oauthCompletion || pendingVerification) return
+    if (oauthCompletion || pendingVerification || completingPhoneOtpRef.current) return
 
     void (async () => {
       await applyPendingReferral()
@@ -155,7 +163,7 @@ export function RegisterPage() {
         addToast({
           title: 'Compte déjà existant',
           message:
-            'Un compte existe déjà avec cet e-mail ou ce numéro russe. Connectez-vous ou utilisez d’autres identifiants.',
+            'Un compte existe déjà avec cet e-mail ou ce numéro russe. Allez sur Connexion avec votre mot de passe, ou utilisez d’autres identifiants. Si l’inscription SMS était inachevée, réessayez : le code OTP peut reprendre.',
           tone: 'error',
         }),
       )
@@ -395,6 +403,9 @@ export function RegisterPage() {
       }),
     )
     if (verifyPhoneRegistration.fulfilled.match(result)) {
+      // Set before clearing pendingVerification so the auto-landing effect cannot
+      // race to /profile or returnTo ahead of Security email verify.
+      completingPhoneOtpRef.current = true
       dispatch(clearAuthError())
       clearPendingRegistration()
       setPendingVerification(null)
@@ -408,8 +419,7 @@ export function RegisterPage() {
           tone: 'success',
         }),
       )
-      // Prefer Security email verify over a returnTo that could bounce to /register.
-      window.setTimeout(() => completeRegistration('/security?verify=email'), 550)
+      await completeRegistration(POST_PHONE_OTP_LANDING)
     }
     // Failed OTP: keep pendingVerification + form values for the next code.
   }

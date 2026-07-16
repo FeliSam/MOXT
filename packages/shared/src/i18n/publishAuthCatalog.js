@@ -51,8 +51,20 @@ const EN = {
   'Publication entreprise impossible': 'Business publishing unavailable',
   'Vérification requise': 'Verification required',
   'Numéro russe requis pour publier': 'Russian phone required to publish',
+  'E-mail confirmé requis pour publier': 'Confirmed email required to publish',
+  'Vérification requise pour publier': 'Verification required to publish',
+  'Numéro russe requis pour le P2P': 'Russian phone required for P2P',
+  'E-mail confirmé requis pour le P2P': 'Confirmed email required for P2P',
+  'Identité vérifiée requise pour le P2P': 'Verified identity required for P2P',
   'Identité vérifiée requise': 'Verified identity required',
   'Compte vérifié requis': 'Verified account required',
+  'Confirmer mon e-mail': 'Confirm my email',
+  'Confirmez votre e-mail dans Sécurité avant de publier une annonce, un colis, un job, un événement ou un post.':
+    'Confirm your email in Security before publishing a listing, parcel, job, event or post.',
+  'Confirmez votre e-mail dans Sécurité avant de publier une offre P2P.':
+    'Confirm your email in Security before publishing a P2P offer.',
+  'Confirmez votre numéro russe et votre e-mail avant de publier.':
+    'Confirm your Russian phone number and email before publishing.',
   'Confirmer votre numéro russe': 'Confirm your Russian phone number',
   'Numéro russe vérifié': 'Russian phone verified',
   'Votre entreprise doit être vérifiée par MOXT avant de publier au nom de l’entreprise.':
@@ -231,6 +243,22 @@ const RU = {
   'Réessayez dans quelques instants.': 'Попробуйте снова через несколько мгновений.',
 
   'Publication entreprise impossible': 'Публикация от имени компании недоступна',
+  'Vérification requise': 'Требуется проверка',
+  'Numéro russe requis pour publier': 'Для публикации нужен российский номер',
+  'E-mail confirmé requis pour publier': 'Для публикации нужен подтверждённый e-mail',
+  'Vérification requise pour publier': 'Для публикации требуется проверка',
+  'Numéro russe requis pour le P2P': 'Для P2P нужен российский номер',
+  'E-mail confirmé requis pour le P2P': 'Для P2P нужен подтверждённый e-mail',
+  'Identité vérifiée requise pour le P2P': 'Для P2P нужна подтверждённая личность',
+  'Identité vérifiée requise': 'Требуется подтверждённая личность',
+  'Compte vérifié requis': 'Требуется подтверждённый аккаунт',
+  'Confirmer mon e-mail': 'Подтвердить e-mail',
+  'Confirmez votre e-mail dans Sécurité avant de publier une annonce, un colis, un job, un événement ou un post.':
+    'Подтвердите e-mail в разделе «Безопасность» перед публикацией объявления, посылки, вакансии, события или поста.',
+  'Confirmez votre e-mail dans Sécurité avant de publier une offre P2P.':
+    'Подтвердите e-mail в разделе «Безопасность» перед публикацией предложения P2P.',
+  'Confirmez votre numéro russe et votre e-mail avant de publier.':
+    'Подтвердите российский номер и e-mail перед публикацией.',
   'Votre entreprise doit être vérifiée par MOXT avant de publier au nom de l’entreprise.':
     'Ваша компания должна быть проверена MOXT, прежде чем публиковать от её имени.',
   "Votre entreprise doit être vérifiée par MOXT avant de publier au nom de l'entreprise.":
@@ -405,6 +433,22 @@ const PT = {
   'Réessayez dans quelques instants.': 'Tente novamente dentro de momentos.',
 
   'Publication entreprise impossible': 'Publicação empresarial impossível',
+  'Vérification requise': 'Verificação necessária',
+  'Numéro russe requis pour publier': 'Número russo necessário para publicar',
+  'E-mail confirmé requis pour publier': 'E-mail confirmado necessário para publicar',
+  'Vérification requise pour publier': 'Verificação necessária para publicar',
+  'Numéro russe requis pour le P2P': 'Número russo necessário para P2P',
+  'E-mail confirmé requis pour le P2P': 'E-mail confirmado necessário para P2P',
+  'Identité vérifiée requise pour le P2P': 'Identidade verificada necessária para P2P',
+  'Identité vérifiée requise': 'Identidade verificada necessária',
+  'Compte vérifié requis': 'Conta verificada necessária',
+  'Confirmer mon e-mail': 'Confirmar o meu e-mail',
+  'Confirmez votre e-mail dans Sécurité avant de publier une annonce, un colis, un job, un événement ou un post.':
+    'Confirme o seu e-mail em Segurança antes de publicar um anúncio, encomenda, emprego, evento ou post.',
+  'Confirmez votre e-mail dans Sécurité avant de publier une offre P2P.':
+    'Confirme o seu e-mail em Segurança antes de publicar uma oferta P2P.',
+  'Confirmez votre numéro russe et votre e-mail avant de publier.':
+    'Confirme o seu número russo e o e-mail antes de publicar.',
   'Votre entreprise doit être vérifiée par MOXT avant de publier au nom de l’entreprise.':
     'A sua empresa deve ser verificada pelo MOXT antes de publicar em nome da empresa.',
   "Votre entreprise doit être vérifiée par MOXT avant de publier au nom de l'entreprise.":

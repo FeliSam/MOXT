@@ -52,7 +52,7 @@ export const FAQ_ITEMS = [
   {
     question: 'J’ai créé mon compte avec un e-mail, dois-je vérifier mon téléphone ?',
     answer:
-      'Oui, avant toute publication. Confirmez votre numéro +7 depuis Profil ou Vérification. Si vous changez de numéro, une nouvelle confirmation est demandée.',
+      'Oui, avant toute publication. Confirmez votre numéro +7 depuis Profil ou Vérification, et confirmez aussi votre e-mail dans Sécurité. Sans e-mail confirmé, la publication reste bloquée. Si vous changez de numéro, une nouvelle confirmation est demandée.',
   },
   {
     question: 'Comment contacter une entreprise ou un vendeur ?',

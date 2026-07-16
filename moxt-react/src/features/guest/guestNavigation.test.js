@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach } from 'vitest'
 import {
   clearReturnTo,
+  POST_PHONE_OTP_LANDING,
   resolveAuthenticatedLanding,
   resolveDeepLinkDestination,
   resolveMoxtScanDestination,
@@ -88,5 +89,12 @@ describe('guestNavigation session QR', () => {
   it('respecte un returnTo explicite pour une session active', () => {
     const params = new URLSearchParams({ returnTo: '/messages' })
     expect(resolveAuthenticatedLanding(params, null)).toBe('/messages')
+  })
+
+  it('après confirmation OTP téléphone, force Sécurité (pas returnTo/profile)', () => {
+    expect(POST_PHONE_OTP_LANDING).toBe('/security?verify=email')
+    const params = new URLSearchParams({ returnTo: '/messages' })
+    // Auto-landing for already-authenticated visits must not be used post-OTP.
+    expect(resolveAuthenticatedLanding(params, null)).not.toBe(POST_PHONE_OTP_LANDING)
   })
 })
