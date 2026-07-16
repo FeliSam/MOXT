@@ -1,8 +1,17 @@
+import { OTP_RESEND_COOLDOWN_SECONDS } from './otpCooldown.js'
+
 export function translateAuthError(error, context = {}) {
   const code = typeof error === 'object' && error !== null ? error.code : undefined
   const message = typeof error === 'string' ? error : error?.message || ''
   const status = typeof error === 'object' && error !== null ? error.status : undefined
   const channel = context.channel === 'phone' || context.channel === 'email' ? context.channel : inferChannel(message, context)
+
+  if (/^Patientez \d+ secondes avant de renvoyer un code\./.test(message)) {
+    return message
+  }
+  if (/^Limite atteinte : maximum \d+ codes par période/.test(message)) {
+    return message
+  }
 
   if (message.includes('MOXT_IDENTITY_LIMIT_REACHED')) {
     return 'IDENTITY_LIMIT_REACHED'
@@ -135,6 +144,21 @@ function translateSupabaseError(message, meta = {}, context = {}) {
   const channel = context.channel
   const phoneContext = channel === 'phone' || isSmsRelated(message, meta)
 
+  if (
+    m.includes('failed to fetch') ||
+    m.includes('networkerror') ||
+    m.includes('load failed') ||
+    m.includes('connexion au serveur') ||
+    m.includes('base de données') ||
+    m.includes('database') ||
+    m.includes('pgrst') ||
+    m.includes('connection')
+  ) {
+    return phoneContext
+      ? 'Connexion au serveur impossible. Vérifiez votre réseau et réessayez sans demander un nouveau code.'
+      : 'Connexion au serveur impossible. Vérifiez votre réseau et réessayez.'
+  }
+
   if (m.includes('user already registered') || m.includes('already been registered')) {
     return duplicateIdentityMessage(context)
   }
@@ -153,7 +177,7 @@ function translateSupabaseError(message, meta = {}, context = {}) {
       : 'Identifiants incorrects. Vérifiez votre e-mail et mot de passe.'
   }
   if (m.includes('email rate limit') || m.includes('rate limit') || code === 'over_request_rate_limit') {
-    return 'Trop de tentatives. Patientez quelques minutes avant de réessayer.'
+    return `Trop de tentatives. Patientez au moins ${OTP_RESEND_COOLDOWN_SECONDS} secondes avant de réessayer.`
   }
   if (
     status >= 500 ||

@@ -35,4 +35,13 @@ describe('translateAuthError', () => {
     )
     expect(message).toContain('autre compte MOXT')
   })
+
+  it('maps network and database errors to user-friendly verify messages', () => {
+    expect(
+      translateAuthError({ message: 'Failed to fetch' }, { channel: 'phone' }),
+    ).toContain('sans demander un nouveau code')
+    expect(translateAuthError({ message: 'Connexion à la base de données indisponible' })).toContain(
+      'Connexion au serveur impossible',
+    )
+  })
 })

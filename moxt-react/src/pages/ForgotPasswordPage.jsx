@@ -9,6 +9,7 @@ import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { authErrorToast } from '../features/auth/authErrorMessages'
 import { authService } from '../features/auth/authService'
+import { OTP_RESEND_COOLDOWN_SECONDS } from '@moxt/shared/auth/otpCooldown.js'
 import { forgotPasswordSchema } from '../features/auth/authSchemas'
 import { addToast } from '../features/ui/uiSlice'
 
@@ -30,7 +31,7 @@ export function ForgotPasswordPage() {
       try {
         await authService.requestPasswordReset(values.email)
         setSent(true)
-        setCooldown(60)
+        setCooldown(OTP_RESEND_COOLDOWN_SECONDS)
         dispatch(
           addToast({
             title: 'Demande enregistrée',
@@ -95,7 +96,8 @@ export function ForgotPasswordPage() {
             error={formik.touched.email ? formik.errors.email : undefined}
           />
           <p className="auth-flow-hint text-xs text-[var(--app-text-muted)]">
-            Compte créé uniquement par téléphone ? Connectez-vous par SMS ou contactez le support MOXT.
+            Compte créé par téléphone ? Connectez-vous avec votre numéro +7 confirmé et votre mot de
+            passe, ou confirmez d&apos;abord l&apos;e-mail dans Sécurité pour la récupération.
           </p>
           <Button className="w-full" type="submit" disabled={formik.isSubmitting}>
             {formik.isSubmitting ? 'Envoi en cours…' : 'Recevoir un lien sécurisé'}

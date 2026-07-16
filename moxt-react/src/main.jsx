@@ -36,7 +36,11 @@ async function bootstrap() {
   const { restoreSession } = await import('./features/auth/authSlice')
   void store.dispatch(restoreSession()).then(async () => {
     const user = store.getState().auth.user
-    if (!user) return
+    if (!user) {
+      const { clearAppBadge } = await import('./platform/appBadge')
+      clearAppBadge()
+      return
+    }
 
     const { loadAllData } = await import('./app/loadAllData')
     store.dispatch(loadAllData())

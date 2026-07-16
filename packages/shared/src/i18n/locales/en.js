@@ -24,6 +24,8 @@ export const en = {
       codeResentTitle: 'Code resent',
       codeResentEmail: 'A new email was sent to {email}.',
       codeResentSms: 'A new SMS was sent to {phone}.',
+      abandonOtp: 'Back to the form',
+      otpCapTitle: 'Send limit reached',
     },
   },
   nav: {
@@ -437,7 +439,12 @@ export const en = {
   security: {
     pageEyebrow: 'Account',
     pageTitle: 'Security',
-    pageDescription: 'Password, two-factor authentication and active sessions.',
+    pageDescription: 'Password, email confirmation and active sessions.',
+    postSignupEmailTitle: 'Last step: confirm your email',
+    postSignupEmailBody:
+      'Your Russian number is already verified. Only confirm the email below — no need to re-verify the phone. Identity verification (KYC) is separate.',
+    emailConfirmedToastTitle: 'Email confirmed',
+    emailConfirmedToastBody: 'Your email address is verified. You can change your password and enable alerts.',
     passwordTitle: 'Password',
     passwordHintOtp: 'Change protected by an OTP sent to your confirmed email.',
     passwordHintConfirmEmail: 'Confirm your email first to change your password.',

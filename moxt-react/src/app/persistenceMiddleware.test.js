@@ -26,7 +26,12 @@ describe('persistenceMiddleware', () => {
       reducer: {
         businesses: businesses.reducer,
         audit: () => ({ items: [] }),
-        communications: () => ({ conversations: [], notifications: [], support: [] }),
+        communications: (state = { conversations: [], notifications: [], support: [] }, action) => {
+          if (action.type === 'communications/setAll') {
+            return { ...state, ...action.payload }
+          }
+          return state
+        },
         events: () => ({ items: [], registrations: [], reports: [] }),
         jobs: () => ({ applications: [], items: [], reports: [] }),
         marketplace: () => ({ items: [], reports: [], filters: {}, draft: null }),

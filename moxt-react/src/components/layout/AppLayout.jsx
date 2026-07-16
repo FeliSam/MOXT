@@ -11,7 +11,6 @@ import { Sidebar } from './Sidebar'
 import { WelcomeGate } from '../onboarding/WelcomeGate'
 import { PwaInstallBanner } from '../pwa/PwaInstallBanner'
 import { PushPermissionBanner } from '../pwa/PushPermissionBanner'
-import { useAppBadgeSync } from '../../hooks/useAppBadgeSync'
 
 function isMessagesPath(pathname) {
   return pathname === '/messages' || pathname === '/messages/'
@@ -35,7 +34,6 @@ export function AppLayout({ children }) {
   /** Hide app chrome: URL thread (immediate) OR page-confirmed mobile immersion */
   const hideAppChrome = isMessageThread || messageThreadImmersive
   useContentLifecycle()
-  useAppBadgeSync(user?.id)
 
   useLayoutEffect(() => {
     dispatch(closeSidebar())

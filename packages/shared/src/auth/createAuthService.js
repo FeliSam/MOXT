@@ -1,6 +1,21 @@
 import { normalizePhone, normalizeRussianAuthPhone } from '../utils/phone.js'
+import {
+  assertOtpSendAllowed,
+  loadOtpSendLog,
+  persistOtpSendLog,
+  recordOtpSend,
+} from './otpCooldown.js'
 import { isProfileComplete } from './profileCompletion.js'
 import { translateAuthError } from './translateAuthError.js'
+
+/** In-memory + localStorage OTP send log (90s + 3/3h). No durable DB table. */
+const otpSendLog = loadOtpSendLog()
+
+/** @internal Test helper — clears in-memory OTP resend cooldown / cap. */
+export function __resetOtpSendCooldownForTests() {
+  otpSendLog.clear()
+  persistOtpSendLog(otpSendLog)
+}
 
 function profileToUser(profile) {
   return {
@@ -134,6 +149,108 @@ export function createAuthService(supabase, redirects = {}) {
       if (existing) return
       throw err
     }
+  }
+
+  function translateProfilePersistenceError(error) {
+    const message = String(error?.message || error || '')
+    if (
+      message.includes('Failed to fetch') ||
+      message.toLowerCase().includes('network') ||
+      message.toLowerCase().includes('connection') ||
+      message.toLowerCase().includes('pgrst')
+    ) {
+      return 'Connexion au serveur impossible. Vérifiez votre réseau et réessayez sans demander un nouveau code.'
+    }
+    return translateAuthError({ message }, { channel: 'phone' })
+  }
+
+  async function persistVerifiedRegistrationProfile(userId, profileFields, normalizedPhone) {
+    const now = new Date().toISOString()
+    // INSERT privilege guard forces phone_verified=false; write profile first, then UPDATE verify.
+    const baseFields = {
+      first_name: profileFields.first_name,
+      last_name: profileFields.last_name,
+      email: profileFields.email,
+      phone: normalizedPhone,
+      origin_phone: profileFields.origin_phone,
+      country: profileFields.country || 'RU',
+      origin_country: profileFields.origin_country || 'BJ',
+      city: profileFields.city,
+      avatar_url: profileFields.avatar_url,
+      role: profileFields.role || 'user',
+      status: profileFields.status || 'active',
+    }
+
+    try {
+      await upsertProfile(userId, baseFields)
+      await upsertProfile(userId, {
+        phone: normalizedPhone,
+        phone_verified: true,
+        phone_verified_at: now,
+        updated_at: now,
+      })
+    } catch (profileError) {
+      const existing = await fetchProfile(userId)
+      if (!existing) {
+        throw new Error(translateProfilePersistenceError(profileError))
+      }
+      try {
+        await upsertProfile(userId, {
+          phone: normalizedPhone,
+          phone_verified: true,
+          phone_verified_at: now,
+          updated_at: now,
+        })
+      } catch (retryError) {
+        throw new Error(translateProfilePersistenceError(retryError))
+      }
+    }
+
+    const user = await fetchProfile(userId)
+    if (!user) {
+      throw new Error(
+        'Votre compte est confirmé mais le profil est momentanément indisponible. Rechargez la page sans redemander de code.',
+      )
+    }
+    // INSERT guard may leave phone_verified false; second UPDATE should stick when Auth confirmed.
+    if (!user.phoneVerified) {
+      try {
+        await upsertProfile(userId, {
+          phone: normalizedPhone,
+          phone_verified: true,
+          phone_verified_at: now,
+          updated_at: now,
+        })
+        const refreshed = await fetchProfile(userId)
+        if (refreshed) {
+          return {
+            ...refreshed,
+            phoneVerified: refreshed.phoneVerified || true,
+            phoneVerifiedAt: refreshed.phoneVerifiedAt || now,
+          }
+        }
+      } catch {
+        // Fall through with client-side verified flag for this session.
+      }
+      return {
+        ...user,
+        phoneVerified: true,
+        phoneVerifiedAt: user.phoneVerifiedAt || now,
+      }
+    }
+    return user
+  }
+
+  function guardOtpSend(kind, value) {
+    assertOtpSendAllowed(otpSendLog, kind, value)
+  }
+
+  function trackOtpSend(kind, value, { enforceCooldown = false } = {}) {
+    recordOtpSend(otpSendLog, kind, value, { enforce: enforceCooldown })
+  }
+
+  function emailRedirectTo() {
+    return getEmailRedirectUrl() || undefined
   }
 
   async function assertIdentityAvailable(kind, value, userId = null, context = {}) {
@@ -441,13 +558,11 @@ export function createAuthService(supabase, redirects = {}) {
         throw new Error("L'e-mail est obligatoire.")
       }
 
-      await assertIdentityAvailable(
-        'phone',
-        normalizeRussianAuthPhone(details.russianPhone),
-        null,
-        { channel: 'phone' },
-      )
+      const normalizedPhone = normalizeRussianAuthPhone(details.russianPhone)
+      await assertIdentityAvailable('phone', normalizedPhone, null, { channel: 'phone' })
       await assertIdentityAvailable('email', email, null, { channel: 'email' })
+      // Guard before provider send — one code at a time, max 3 / 3h.
+      guardOtpSend('phone', normalizedPhone)
 
       const { data, error } = await supabase.auth.signUp(credentials)
       if (error) {
@@ -466,6 +581,8 @@ export function createAuthService(supabase, redirects = {}) {
         throw new Error('ALREADY_REGISTERED')
       }
       if (!data.user) throw new Error('Échec de création du compte.')
+
+      trackOtpSend('phone', normalizedPhone)
 
       if (data.session) {
         await supabase.auth.signOut()
@@ -511,16 +628,10 @@ export function createAuthService(supabase, redirects = {}) {
         throw new Error('Le code de vérification est invalide.')
       }
 
+      // Do NOT call updateUser({ email }) here — that triggers a magic-link
+      // confirmation email whose default redirect often lands on /register.
+      // Profile stores the e-mail; in-app Security verifies it with OTP + redirectTo.
       const linkedEmail = String(email || '').trim().toLowerCase()
-      if (linkedEmail && !data.user.email) {
-        const { error: emailError } = await supabase.auth.updateUser({
-          email: linkedEmail,
-        })
-        if (emailError) {
-          console.warn('[MOXT] Liaison e-mail différée après inscription SMS:', emailError.message)
-        }
-      }
-
       const profileFields = profileFieldsFromAuthUser(data.user)
       const normalizedPhone = normalizeRussianAuthPhone(
         data.user.phone || profileFields.phone || phone || '',
@@ -530,41 +641,30 @@ export function createAuthService(supabase, redirects = {}) {
       }
       profileFields.phone = normalizedPhone
 
-      const now = new Date().toISOString()
-      await upsertProfile(data.user.id, {
-        first_name: profileFields.first_name,
-        last_name: profileFields.last_name,
-        email: profileFields.email,
-        phone: normalizedPhone,
-        origin_phone: profileFields.origin_phone,
-        country: profileFields.country || 'RU',
-        origin_country: profileFields.origin_country || 'BJ',
-        city: profileFields.city,
-        avatar_url: profileFields.avatar_url,
-        role: profileFields.role || 'user',
-        status: profileFields.status || 'active',
-        phone_verified: true,
-        phone_verified_at: now,
-      })
-      const user = await fetchProfile(data.user.id)
-      if (!user) {
-        throw new Error('Impossible de charger le profil après vérification SMS.')
-      }
+      const user = await persistVerifiedRegistrationProfile(
+        data.user.id,
+        profileFields,
+        normalizedPhone,
+      )
       return {
         user,
         token: data.session.access_token,
-        emailLinkDeferred: Boolean(linkedEmail && !data.user.email),
+        emailLinkDeferred: Boolean(linkedEmail && !data.user.email_confirmed_at),
+        phoneVerified: true,
+        nextVerification: 'email',
       }
     },
 
     async resendPhoneRegistrationOtp(phone) {
       if (!supabase) throw new Error('Supabase non configuré.')
       const normalizedPhone = normalizeRussianAuthPhone(phone)
+      guardOtpSend('phone', normalizedPhone)
       const { error } = await supabase.auth.resend({
         type: 'sms',
         phone: normalizedPhone,
       })
       if (error) throw new Error(translateAuthError(error, { channel: 'phone' }))
+      trackOtpSend('phone', normalizedPhone)
       return true
     },
 
@@ -574,11 +674,15 @@ export function createAuthService(supabase, redirects = {}) {
       if (!normalizedEmail) {
         throw new Error("L'e-mail est obligatoire pour renvoyer le code.")
       }
+      guardOtpSend('email', normalizedEmail)
+      const redirectTo = emailRedirectTo()
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email: normalizedEmail,
+        options: redirectTo ? { emailRedirectTo: redirectTo } : undefined,
       })
       if (error) throw new Error(translateAuthError(error, { channel: 'email' }))
+      trackOtpSend('email', normalizedEmail)
       return true
     },
 
@@ -605,32 +709,24 @@ export function createAuthService(supabase, redirects = {}) {
       }
 
       if (authPhone === normalizedPhone) {
-        const primaryResend = await supabase.auth.resend({
+        guardOtpSend('phone', normalizedPhone)
+        const { error } = await supabase.auth.resend({
           type: otpType,
           phone: normalizedPhone,
         })
-        if (!primaryResend.error) {
-          return { phone: normalizedPhone, otpType }
+        if (error) {
+          throw new Error(translateAuthError(error, phoneContext))
         }
-
-        const fallbackType = otpType === 'sms' ? 'phone_change' : 'sms'
-        const fallbackResend = await supabase.auth.resend({
-          type: fallbackType,
-          phone: normalizedPhone,
-        })
-        if (!fallbackResend.error) {
-          return { phone: normalizedPhone, otpType: fallbackType }
-        }
-
-        throw new Error(
-          translateAuthError(primaryResend.error || fallbackResend.error, phoneContext),
-        )
+        trackOtpSend('phone', normalizedPhone)
+        return { phone: normalizedPhone, otpType }
       }
 
       await assertIdentityAvailable('phone', normalizedPhone, currentUser.id, phoneContext)
 
+      guardOtpSend('phone', normalizedPhone)
       const { error } = await supabase.auth.updateUser({ phone: normalizedPhone })
       if (error) throw new Error(translateAuthError(error, phoneContext))
+      trackOtpSend('phone', normalizedPhone)
       return { phone: normalizedPhone, otpType: 'phone_change' }
     },
 
@@ -645,25 +741,17 @@ export function createAuthService(supabase, redirects = {}) {
         return syncedUser
       }
 
-      const primaryType =
+      const verifyType =
         otpType === 'sms' || otpType === 'phone_change'
           ? otpType
           : resolvePhoneVerificationOtpType(authUser, normalizedPhone) || 'phone_change'
-      const fallbackType = primaryType === 'sms' ? 'phone_change' : 'sms'
       const trimmedToken = String(token || '').trim()
 
-      let verifyResult = await supabase.auth.verifyOtp({
+      const verifyResult = await supabase.auth.verifyOtp({
         phone: normalizedPhone,
         token: trimmedToken,
-        type: primaryType,
+        type: verifyType,
       })
-      if (verifyResult.error) {
-        verifyResult = await supabase.auth.verifyOtp({
-          phone: normalizedPhone,
-          token: trimmedToken,
-          type: fallbackType,
-        })
-      }
       if (verifyResult.error) {
         throw new Error(translateAuthError(verifyResult.error, phoneContext))
       }
@@ -707,31 +795,31 @@ export function createAuthService(supabase, redirects = {}) {
       const authEmail = String(authUser.email || '').trim().toLowerCase()
       const sameUnconfirmedEmail =
         authEmail === normalizedEmail && !authUser.email_confirmed_at
+      const redirectTo = emailRedirectTo()
 
       if (sameUnconfirmedEmail) {
-        let otpType = 'email_change'
-        let { error } = await supabase.auth.resend({
+        guardOtpSend('email', normalizedEmail)
+        const { error } = await supabase.auth.resend({
           type: 'email_change',
           email: normalizedEmail,
+          options: redirectTo ? { emailRedirectTo: redirectTo } : undefined,
         })
-        if (error) {
-          const second = await supabase.auth.resend({
-            type: 'signup',
-            email: normalizedEmail,
-          })
-          error = second.error
-          otpType = 'signup'
-        }
         if (error) {
           throw new Error(translateAuthError(error, { channel: 'email', intent: 'email_verification' }))
         }
-        return { email: normalizedEmail, otpType }
+        trackOtpSend('email', normalizedEmail)
+        return { email: normalizedEmail, otpType: 'email_change' }
       }
 
-      const { error } = await supabase.auth.updateUser({ email: normalizedEmail })
+      guardOtpSend('email', normalizedEmail)
+      const { error } = await supabase.auth.updateUser(
+        { email: normalizedEmail },
+        redirectTo ? { emailRedirectTo: redirectTo } : undefined,
+      )
       if (error) {
         throw new Error(translateAuthError(error, { channel: 'email', intent: 'email_verification' }))
       }
+      trackOtpSend('email', normalizedEmail)
 
       return { email: normalizedEmail, otpType: 'email_change' }
     },
@@ -896,8 +984,10 @@ export function createAuthService(supabase, redirects = {}) {
           'Confirmez votre adresse e-mail avant de modifier le mot de passe. Un code OTP sera envoyé à cette adresse.',
         )
       }
+      guardOtpSend('email', email)
       const { error } = await supabase.auth.reauthenticate()
       if (error) throw new Error(translateAuthError(error, { channel: 'email', intent: 'password_change' }))
+      trackOtpSend('email', email)
       return { email }
     },
 
@@ -918,11 +1008,18 @@ export function createAuthService(supabase, redirects = {}) {
 
     async requestPasswordReset(email) {
       if (!supabase) return true
+      const normalizedEmail = String(email || '').trim().toLowerCase()
+      if (normalizedEmail.includes('@')) {
+        guardOtpSend('email', normalizedEmail)
+      }
       const redirectTo = getPasswordResetRedirectUrl()
-      const { error } = await supabase.auth.resetPasswordForEmail(String(email || '').trim().toLowerCase(), {
+      const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
         redirectTo: redirectTo || undefined,
       })
       if (error) throw new Error(translateAuthError(error, { channel: 'email' }))
+      if (normalizedEmail.includes('@')) {
+        trackOtpSend('email', normalizedEmail)
+      }
       return true
     },
 

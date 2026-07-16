@@ -18,6 +18,7 @@ import reducer, {
   resolveHasOlderMessages,
   saveConversationDraft,
   sendMessage,
+  setAll,
   setConversationMessages,
   shouldSkipMessageReload,
   toggleConversationBlock,
@@ -422,6 +423,42 @@ describe('communications', () => {
 
     const merged = mergeConversations(local, remote)
     expect(merged[0].drafts.u1).toBe('Message en cours')
+  })
+
+  it('ne conserve pas une conversation locale absente du remote sans brouillon', () => {
+    const local = [
+      normalizeConversation({
+        id: 'CONV-GONE',
+        participantIds: ['u1', 'u2'],
+        unreadBy: { u1: 5 },
+        messages: [],
+        updatedAt: '2026-01-02T12:00:00.000Z',
+      }),
+    ]
+    const merged = mergeConversations(local, [])
+    expect(merged).toHaveLength(0)
+  })
+
+  it('setAll remplace les notifications par la liste remote (post-wipe = 0)', () => {
+    const withLocal = reducer(
+      emptyState,
+      setAll({
+        notifications: [
+          {
+            id: 'N-LOCAL',
+            userId: 'u1',
+            title: 'Stale',
+            message: 'Cache',
+            type: 'system',
+            read: false,
+          },
+        ],
+      }),
+    )
+    expect(withLocal.notifications).toHaveLength(1)
+
+    const afterRemote = reducer(withLocal, setAll({ notifications: [] }))
+    expect(afterRemote.notifications).toHaveLength(0)
   })
 
   it('fusionne mergeMessageBatch sans doublons et trie par date', () => {

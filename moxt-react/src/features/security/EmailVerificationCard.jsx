@@ -15,7 +15,7 @@ import { authErrorToast } from '../auth/authErrorMessages'
 import { addToast } from '../ui/uiSlice'
 import { useLanguage } from '../../contexts/useLanguage'
 
-const RESEND_COOLDOWN_SECONDS = 60
+import { OTP_RESEND_COOLDOWN_SECONDS } from '@moxt/shared/auth/otpCooldown.js'
 
 export function EmailVerificationCard({
   className = '',
@@ -118,7 +118,7 @@ export function EmailVerificationCard({
       }
       setOtpType(result.payload.otpType || 'email_change')
       setOtpSent(true)
-      setResendCooldown(RESEND_COOLDOWN_SECONDS)
+      setResendCooldown(OTP_RESEND_COOLDOWN_SECONDS)
       dispatch(
         addToast({
           title: 'Code envoyé',

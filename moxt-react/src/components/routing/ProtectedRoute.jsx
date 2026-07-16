@@ -16,7 +16,7 @@ export function ProtectedRoute({ allowedRoles, children }) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />
   }
 
-  if (!isProfileComplete(user) && location.pathname !== '/register') {
+  if (!isProfileComplete(user) && location.pathname !== '/register' && !location.pathname.startsWith('/auth/callback')) {
     return <Navigate to="/register" replace />
   }
 

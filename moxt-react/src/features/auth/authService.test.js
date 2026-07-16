@@ -30,10 +30,12 @@ vi.mock('../../services/supabaseClient', () => ({
 }))
 
 const { authService, translateAuthError } = await import('./authService')
+const { __resetOtpSendCooldownForTests } = await import('@moxt/shared/auth/createAuthService.js')
 
 describe('authService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    __resetOtpSendCooldownForTests()
     auth.getUser.mockResolvedValue({
       data: { user: null },
       error: null,
@@ -127,12 +129,14 @@ describe('authService', () => {
     })
   })
 
-  it('valide le code SMS puis lie l’adresse e-mail', async () => {
+  it('valide le code SMS puis enregistre le profil sans lien magique e-mail', async () => {
     auth.verifyOtp.mockResolvedValue({
       data: {
         user: {
           id: 'user-sms',
           email: null,
+          phone: '+79000000010',
+          phone_confirmed_at: '2026-07-15T12:00:00.000Z',
           user_metadata: {
             first_name: 'Nouvelle',
             phone: '+79000000010',
@@ -142,7 +146,6 @@ describe('authService', () => {
       },
       error: null,
     })
-    auth.updateUser.mockResolvedValue({ error: null })
     profileQuery.maybeSingle.mockResolvedValue({
       data: {
         id: 'user-sms',
@@ -150,6 +153,8 @@ describe('authService', () => {
         last_name: 'Personne',
         email: 'personne@example.com',
         phone: '+79000000010',
+        phone_verified: true,
+        phone_verified_at: '2026-07-15T12:00:00.000Z',
         origin_country: 'BJ',
         city: 'Moscou',
         role: 'user',
@@ -169,24 +174,27 @@ describe('authService', () => {
       token: '123456',
       type: 'sms',
     })
-    expect(auth.updateUser).toHaveBeenCalledWith({ email: 'personne@example.com' })
+    // No auto updateUser({ email }) — avoids magic-link → /register trap.
+    expect(auth.updateUser).not.toHaveBeenCalled()
     expect(result.token).toBe('sms-session')
+    expect(result.phoneVerified).toBe(true)
+    expect(result.nextVerification).toBe('email')
+    expect(result.emailLinkDeferred).toBe(true)
   })
 
-  it('termine l inscription SMS meme si la liaison e-mail echoue', async () => {
+  it('termine l inscription SMS meme sans liaison Auth e-mail immediate', async () => {
     auth.verifyOtp.mockResolvedValue({
       data: {
         user: {
           id: 'user-sms',
           email: null,
+          phone: '+79000000010',
+          phone_confirmed_at: '2026-07-15T12:00:00.000Z',
           user_metadata: { first_name: 'Nouvelle', phone: '+79000000010' },
         },
         session: { access_token: 'sms-session' },
       },
       error: null,
-    })
-    auth.updateUser.mockResolvedValue({
-      error: { message: 'User already registered', code: 'email_exists' },
     })
     profileQuery.maybeSingle.mockResolvedValue({
       data: {
@@ -195,6 +203,7 @@ describe('authService', () => {
         last_name: 'Personne',
         email: 'personne@example.com',
         phone: '+79000000010',
+        phone_verified: true,
         origin_country: 'BJ',
         city: 'Moscou',
         role: 'user',
@@ -221,6 +230,7 @@ describe('authService', () => {
           id: 'user-sms',
           email: null,
           phone: '+79000000010',
+          phone_confirmed_at: '2026-07-15T12:00:00.000Z',
           user_metadata: {
             first_name: 'Nouvelle',
             last_name: 'Personne',
@@ -234,9 +244,6 @@ describe('authService', () => {
       },
       error: null,
     })
-    auth.updateUser.mockResolvedValue({
-      error: { message: 'User already registered', code: 'email_exists' },
-    })
     profileQuery.maybeSingle.mockResolvedValue({
       data: {
         id: 'user-sms',
@@ -244,6 +251,7 @@ describe('authService', () => {
         last_name: 'Personne',
         email: 'personne@example.com',
         phone: '+79000000010',
+        phone_verified: true,
         origin_country: 'BJ',
         city: 'Moscou',
         role: 'user',
@@ -261,6 +269,7 @@ describe('authService', () => {
     expect(profileQuery.upsert).toHaveBeenCalled()
     expect(result.user.email).toBe('personne@example.com')
     expect(result.user.city).toBe('Moscou')
+    expect(result.user.phoneVerified).toBe(true)
   })
 
   it('exige la confirmation SMS avant de créer le profil même avec une session (signOut)', async () => {
@@ -293,6 +302,36 @@ describe('authService', () => {
     })
   })
 
+  it('impose 90 secondes entre deux renvois SMS', async () => {
+    auth.resend.mockResolvedValue({ error: null })
+
+    await authService.resendPhoneRegistrationOtp('+79000000010')
+    await expect(authService.resendPhoneRegistrationOtp('+79000000010')).rejects.toThrow(
+      /Patientez \d+ secondes/,
+    )
+    expect(auth.resend).toHaveBeenCalledTimes(1)
+  })
+
+  it('bloque un 4e envoi OTP dans la fenetre de 3 heures', async () => {
+    auth.resend.mockResolvedValue({ error: null })
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-07-15T12:00:00.000Z'))
+
+    await authService.resendPhoneRegistrationOtp('+79001110001')
+    vi.advanceTimersByTime(91_000)
+    await authService.resendPhoneRegistrationOtp('+79001110001')
+    vi.advanceTimersByTime(91_000)
+    await authService.resendPhoneRegistrationOtp('+79001110001')
+    vi.advanceTimersByTime(91_000)
+
+    await expect(authService.resendPhoneRegistrationOtp('+79001110001')).rejects.toThrow(
+      /Limite atteinte/,
+    )
+    expect(auth.resend).toHaveBeenCalledTimes(3)
+
+    vi.useRealTimers()
+  })
+
   it('renvoie un code e-mail pour finaliser l inscription', async () => {
     auth.resend.mockResolvedValue({ error: null })
 
@@ -301,6 +340,37 @@ describe('authService', () => {
     expect(auth.resend).toHaveBeenCalledWith({
       type: 'signup',
       email: 'personne@example.com',
+      options: {
+        emailRedirectTo: expect.stringContaining('/auth/callback'),
+      },
+    })
+  })
+
+  it('pointe la verification e-mail vers /auth/callback puis /security', async () => {
+    auth.getUser.mockResolvedValue({
+      data: {
+        user: {
+          id: 'user-email',
+          email: 'personne@example.com',
+          email_confirmed_at: null,
+          identities: [{ provider: 'email' }],
+        },
+      },
+      error: null,
+    })
+    auth.resend.mockResolvedValue({ error: null })
+
+    await authService.requestEmailVerificationOtp(
+      { id: 'user-email', email: 'personne@example.com' },
+      'personne@example.com',
+    )
+
+    expect(auth.resend).toHaveBeenCalledWith({
+      type: 'email_change',
+      email: 'personne@example.com',
+      options: {
+        emailRedirectTo: expect.stringMatching(/\/auth\/callback\?next=\/security/),
+      },
     })
   })
 
@@ -372,6 +442,44 @@ describe('authService', () => {
     expect(auth.updateUser).toHaveBeenCalledWith({ phone: '+79000000010' })
     expect(auth.resend).not.toHaveBeenCalled()
     expect(result).toEqual({ phone: '+79000000010', otpType: 'phone_change' })
+  })
+
+  it('ne retente pas un second verifyOtp avec un autre type', async () => {
+    auth.getUser.mockResolvedValue({
+      data: {
+        user: {
+          id: 'user-email',
+          email: 'personne@example.com',
+          phone: '+79000000010',
+          identities: [{ provider: 'email' }],
+          user_metadata: { first_name: 'Nouvelle' },
+        },
+      },
+      error: null,
+    })
+    auth.verifyOtp.mockResolvedValue({
+      data: { user: null, session: null },
+      error: { message: 'Invalid OTP', code: 'otp_expired' },
+    })
+
+    await expect(
+      authService.confirmPhoneVerification(
+        {
+          id: 'user-email',
+          firstName: 'Nouvelle',
+          lastName: 'Personne',
+          email: 'personne@example.com',
+        },
+        { phone: '+79000000010', token: '123456', otpType: 'phone_change' },
+      ),
+    ).rejects.toThrow(/invalide|expiré/i)
+
+    expect(auth.verifyOtp).toHaveBeenCalledTimes(1)
+    expect(auth.verifyOtp).toHaveBeenCalledWith({
+      phone: '+79000000010',
+      token: '123456',
+      type: 'phone_change',
+    })
   })
 
   it('confirme la vérification avec le type OTP reçu à l envoi', async () => {

@@ -25,6 +25,8 @@ export const ru = {
       codeResentTitle: 'Код отправлен повторно',
       codeResentEmail: 'Новое письмо отправлено на {email}.',
       codeResentSms: 'Новое SMS отправлено на {phone}.',
+      abandonOtp: 'Вернуться к форме',
+      otpCapTitle: 'Лимит отправки',
     },
   },
   nav: {
@@ -438,7 +440,12 @@ export const ru = {
   security: {
     pageEyebrow: 'Аккаунт',
     pageTitle: 'Безопасность',
-    pageDescription: 'Пароль, двухфакторная аутентификация и активные сеансы.',
+    pageDescription: 'Пароль, подтверждение e-mail и активные сеансы.',
+    postSignupEmailTitle: 'Последний шаг: подтвердите e-mail',
+    postSignupEmailBody:
+      'Ваш российский номер уже подтверждён. Подтвердите только e-mail ниже — телефон заново подтверждать не нужно. Проверка личности (KYC) отдельна.',
+    emailConfirmedToastTitle: 'E-mail подтверждён',
+    emailConfirmedToastBody: 'Адрес подтверждён. Можно сменить пароль и включить оповещения.',
     passwordTitle: 'Пароль',
     passwordHintOtp: 'Смена защищена OTP-кодом, отправленным на подтверждённый e-mail.',
     passwordHintConfirmEmail: 'Сначала подтвердите e-mail, чтобы сменить пароль.',

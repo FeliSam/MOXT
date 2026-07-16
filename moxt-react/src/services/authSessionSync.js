@@ -68,7 +68,11 @@ async function syncSessionToStore(
 
   void startRealtimeSubscription(payload.user.id, dispatch, getState)
 
-  if (!skipDataLoad && payload.user.id !== previousUserId) {
+  const onRegisterOtpStep =
+    typeof window !== 'undefined' && window.location.pathname.startsWith('/register')
+  const onAuthCallback =
+    typeof window !== 'undefined' && window.location.pathname.startsWith('/auth/callback')
+  if (!skipDataLoad && payload.user.id !== previousUserId && !onRegisterOtpStep && !onAuthCallback) {
     const { loadAllData } = await import('../app/loadAllData')
     dispatch(loadAllData())
   }
@@ -131,10 +135,29 @@ export function startAuthSessionSync(store) {
 
   const { dispatch, getState } = store
 
+  // Rescue: email confirm links that land on Site URL (/ or /register) with hash tokens.
+  if (typeof window !== 'undefined') {
+    const { pathname, hash, search } = window.location
+    const hashParams = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash)
+    const queryParams = new URLSearchParams(search)
+    const authType = hashParams.get('type') || queryParams.get('type') || ''
+    const hasAccessToken = hashParams.has('access_token') || queryParams.has('code')
+    const isEmailConfirmType = ['signup', 'email_change', 'email', 'magiclink'].includes(authType)
+    if (
+      hasAccessToken &&
+      isEmailConfirmType &&
+      !pathname.startsWith('/auth/callback') &&
+      !pathname.startsWith('/reset-password')
+    ) {
+      window.location.replace(`/auth/callback?next=/security${hash || ''}`)
+      return
+    }
+  }
   const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_OUT') {
       stopRealtimeSubscription()
       dispatch(clearSession())
+      void import('../platform/appBadge').then(({ clearAppBadge }) => clearAppBadge())
       return
     }
 
@@ -147,6 +170,17 @@ export function startAuthSessionSync(store) {
       if (session) {
         await syncSessionToStore(session, dispatch, getState)
       }
+      return
+    }
+
+    // Email confirmation / magic-link: keep tokens on /auth/callback (never bounce to /register).
+    if (
+      session &&
+      ['SIGNED_IN', 'USER_UPDATED'].includes(event) &&
+      typeof window !== 'undefined' &&
+      window.location.pathname.startsWith('/auth/callback')
+    ) {
+      await syncSessionToStore(session, dispatch, getState, { skipDataLoad: true })
       return
     }
 

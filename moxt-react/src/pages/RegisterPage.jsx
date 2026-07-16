@@ -34,9 +34,7 @@ import {
   clearAuthError,
   completeOAuthProfile,
   register,
-  resendEmailRegistrationOtp,
   resendPhoneRegistrationOtp,
-  verifyEmailRegistration,
   verifyPhoneRegistration,
 } from '../features/auth/authSlice'
 import { addToast } from '../features/ui/uiSlice'
@@ -56,7 +54,12 @@ const STEPS = [
 ]
 
 const LANGUAGE_TILES = LANGUAGE_LABELS
-const RESEND_COOLDOWN_SECONDS = 60
+import { OTP_RESEND_COOLDOWN_SECONDS } from '@moxt/shared/auth/otpCooldown.js'
+import {
+  clearPendingRegistration,
+  loadPendingRegistration,
+  savePendingRegistration,
+} from '@moxt/shared/auth/pendingRegistration.js'
 
 /* ─── Stepper visuel — meme pattern que Transfert / Job / Evenement ──────── */
 function Stepper({ step, oauthCompletion = false }) {
@@ -115,6 +118,7 @@ export function RegisterPage() {
   const [pendingVerification, setPendingVerification] = useState(null) // { method, phone?, email }
   const [verificationCode, setVerificationCode] = useState('')
   const [resendCooldown, setResendCooldown] = useState(0)
+  const [otpCapMessage, setOtpCapMessage] = useState('')
   const { trigger: triggerBurst, node: burstNode } = useActionBurst()
   const { countries } = useGeographyOptions()
   const alreadyRegistered = error === 'ALREADY_REGISTERED'
@@ -236,34 +240,52 @@ export function RegisterPage() {
         return
       }
 
+      // If OTP already pending, never re-signUp — keep form state and stay on step 4.
+      if (pendingVerification?.phone) {
+        setStep(4)
+        dispatch(
+          addToast({
+            title: 'Code déjà envoyé',
+            message: 'Saisissez le code SMS reçu, ou renvoyez-en un après le délai.',
+            tone: 'info',
+          }),
+        )
+        return
+      }
+
       const result = await dispatch(register(values))
       if (!register.fulfilled.match(result)) {
-        const payload = String(result.payload || '').toLowerCase()
-        if (values.verificationMethod === 'email' && payload.includes('e-mail')) {
-          formik.setFieldValue('verificationMethod', 'phone')
-          dispatch(clearAuthError())
-          dispatch(
-            addToast({
-              title: 'E-mail indisponible',
-              message:
-                "L'envoi d'e-mail est momentanément indisponible. Nous avons basculé vers la confirmation par SMS.",
-              tone: 'warning',
-            }),
-          )
-          return
+        const payload = String(result.payload || '')
+        if (/Limite atteinte|Patientez \d+ secondes/i.test(payload)) {
+          setOtpCapMessage(payload)
         }
         return
       }
       dispatch(clearAuthError())
+      setOtpCapMessage('')
       if (result.payload.requiresPhoneConfirmation) {
-        setResendCooldown(RESEND_COOLDOWN_SECONDS)
-        setPendingVerification({ method: 'phone', phone: result.payload.phone, email: result.payload.email })
+        const pending = {
+          method: 'phone',
+          phone: result.payload.phone,
+          email: result.payload.email,
+          pendingUserId: result.payload.pendingUserId,
+          firstName: values.firstName,
+          lastName: values.lastName,
+          originPhone: values.originPhone,
+          originCountry: values.originCountry,
+          residenceCity: values.residenceCity,
+          avatarUrl: values.avatarUrl,
+          step: 4,
+        }
+        savePendingRegistration(pending)
+        setResendCooldown(OTP_RESEND_COOLDOWN_SECONDS)
+        setPendingVerification({
+          method: 'phone',
+          phone: result.payload.phone,
+          email: result.payload.email,
+          pendingUserId: result.payload.pendingUserId,
+        })
         setStep(4)
-        return
-      }
-      if (result.payload.requiresEmailConfirmation) {
-        setResendCooldown(RESEND_COOLDOWN_SECONDS)
-        setPendingVerification({ method: 'email', email: result.payload.email })
         return
       }
       const destination = resolveReturnTo(searchParams, location.state)
@@ -271,6 +293,31 @@ export function RegisterPage() {
     },
   })
 
+  // Restore pending OTP signup after failed code / refresh (sessionStorage, no password).
+  useEffect(() => {
+    const pending = loadPendingRegistration()
+    if (!pending?.phone && !pending?.email) return
+    setPendingVerification({
+      method: pending.method || 'phone',
+      phone: pending.phone,
+      email: pending.email,
+      pendingUserId: pending.pendingUserId,
+    })
+    setStep(pending.step || 4)
+    formik.setValues((current) => ({
+      ...current,
+      firstName: pending.firstName || current.firstName,
+      lastName: pending.lastName || current.lastName,
+      email: pending.email || current.email,
+      russianPhone: pending.phone || current.russianPhone,
+      originPhone: pending.originPhone || current.originPhone,
+      originCountry: pending.originCountry || current.originCountry,
+      residenceCity: pending.residenceCity || current.residenceCity,
+      avatarUrl: pending.avatarUrl || current.avatarUrl,
+      verificationMethod: 'phone',
+    }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- restore once on mount
+  }, [])
   useEffect(() => {
     if (!authUser || pendingVerification || !needsRegisterProfileCompletion(authUser)) return
     setOauthCompletion(true)
@@ -296,64 +343,66 @@ export function RegisterPage() {
   async function resendVerificationCode() {
     if (!pendingVerification || resendCooldown > 0) return
 
-    const isEmail = pendingVerification.method === 'email'
-    const result = isEmail
-      ? await dispatch(resendEmailRegistrationOtp(pendingVerification.email))
-      : await dispatch(resendPhoneRegistrationOtp(pendingVerification.phone))
+    // Preserve pending profile fields on every resend.
+    savePendingRegistration({
+      ...pendingVerification,
+      firstName: formik.values.firstName,
+      lastName: formik.values.lastName,
+      originPhone: formik.values.originPhone,
+      originCountry: formik.values.originCountry,
+      residenceCity: formik.values.residenceCity,
+      avatarUrl: formik.values.avatarUrl,
+      step: 4,
+    })
 
-    const fulfilled = isEmail
-      ? resendEmailRegistrationOtp.fulfilled.match(result)
-      : resendPhoneRegistrationOtp.fulfilled.match(result)
-
-    if (fulfilled) {
+    const result = await dispatch(resendPhoneRegistrationOtp(pendingVerification.phone))
+    if (resendPhoneRegistrationOtp.fulfilled.match(result)) {
       dispatch(clearAuthError())
-      setResendCooldown(RESEND_COOLDOWN_SECONDS)
+      setOtpCapMessage('')
+      setResendCooldown(OTP_RESEND_COOLDOWN_SECONDS)
       dispatch(
         addToast({
           title: t('auth.register.codeResentTitle'),
-          message: isEmail
-            ? t('auth.register.codeResentEmail', { email: pendingVerification.email })
-            : t('auth.register.codeResentSms', { phone: pendingVerification.phone }),
+          message: t('auth.register.codeResentSms', { phone: pendingVerification.phone }),
           tone: 'success',
         }),
       )
+    } else {
+      const payload = String(result.payload || '')
+      if (/Limite atteinte|Patientez \d+ secondes/i.test(payload)) {
+        setOtpCapMessage(payload)
+      }
     }
   }
 
   async function confirmCode() {
     if (!pendingVerification || !/^\d{6}$/.test(verificationCode)) return
 
-    const thunk =
-      pendingVerification.method === 'email' ? verifyEmailRegistration : verifyPhoneRegistration
-    const payload = { ...pendingVerification, token: verificationCode }
-
-    const result = await dispatch(thunk(payload))
-    if (thunk.fulfilled.match(result)) {
+    const result = await dispatch(
+      verifyPhoneRegistration({
+        phone: pendingVerification.phone,
+        email: pendingVerification.email || formik.values.email,
+        token: verificationCode,
+      }),
+    )
+    if (verifyPhoneRegistration.fulfilled.match(result)) {
       dispatch(clearAuthError())
+      clearPendingRegistration()
       setPendingVerification(null)
       setVerificationCode('')
       triggerBurst()
-      if (result.payload.emailLinkDeferred) {
-        dispatch(
-          addToast({
-            title: 'Compte créé',
-            message:
-              'Votre compte est actif. Vous pourrez confirmer votre e-mail plus tard dans Sécurité.',
-            tone: 'success',
-          }),
-        )
-      } else {
-        dispatch(
-          addToast({
-            title: 'Vérification réussie',
-            message: 'Bienvenue sur MOXT.',
-            tone: 'success',
-          }),
-        )
-      }
-      const destination = resolveReturnTo(searchParams, location.state)
-      window.setTimeout(() => completeRegistration(destination), 550)
+      dispatch(
+        addToast({
+          title: 'Compte créé',
+          message:
+            'Numéro confirmé. Il ne reste plus qu’à confirmer votre e-mail dans Sécurité (pas de re-vérification téléphone).',
+          tone: 'success',
+        }),
+      )
+      // Prefer Security email verify over a returnTo that could bounce to /register.
+      window.setTimeout(() => completeRegistration('/security?verify=email'), 550)
     }
+    // Failed OTP: keep pendingVerification + form values for the next code.
   }
 
   const selectedCountry = useMemo(
@@ -658,8 +707,14 @@ export function RegisterPage() {
         {step === 4 && !oauthCompletion && pendingVerification ? (
           <>
             <Alert title="Confirmez votre numéro" variant="info">
-              Un code à 6 chiffres a été envoyé au {pendingVerification.phone} par SMS.
+              Un code à 6 chiffres a été envoyé au {pendingVerification.phone} par SMS. Un seul code
+              à la fois — le compte est créé après confirmation.
             </Alert>
+            {otpCapMessage ? (
+              <Alert title="Envoi limité" variant="warning">
+                {otpCapMessage}
+              </Alert>
+            ) : null}
             <Input
               id="verification-code"
               label="Code reçu par SMS"
@@ -696,6 +751,20 @@ export function RegisterPage() {
                   ? t('auth.register.resendCooldown', { seconds: resendCooldown })
                   : t('auth.register.resendSms')}
               </Button>
+              <button
+                type="button"
+                className="text-sm font-bold text-[var(--app-text-muted)] underline-offset-2 hover:underline"
+                onClick={() => {
+                  clearPendingRegistration()
+                  setPendingVerification(null)
+                  setVerificationCode('')
+                  setOtpCapMessage('')
+                  setStep(3)
+                  dispatch(clearAuthError())
+                }}
+              >
+                {t('auth.register.abandonOtp')}
+              </button>
             </div>
           </>
         ) : null}

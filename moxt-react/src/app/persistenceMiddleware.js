@@ -1,4 +1,6 @@
 import { setAll as resetBusinesses } from '../features/businesses/businessSlice'
+import { setAll as resetCommunications } from '../features/communications/communicationSlice'
+import { clearAppBadge } from '../platform/appBadge'
 
 const persistenceMap = {
   account: [{ key: 'moxt-account-v1', select: (state) => state.account }],
@@ -116,6 +118,14 @@ function clearSessionData(store) {
       requests: [],
     }),
   )
+  store.dispatch(
+    resetCommunications({
+      conversations: [],
+      notifications: [],
+      support: [],
+    }),
+  )
+  clearAppBadge()
 }
 
 export const persistenceMiddleware = (store) => (next) => (action) => {

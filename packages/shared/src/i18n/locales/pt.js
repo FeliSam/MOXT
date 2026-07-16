@@ -25,6 +25,8 @@ export const pt = {
       codeResentTitle: 'Código reenviado',
       codeResentEmail: 'Um novo e-mail foi enviado para {email}.',
       codeResentSms: 'Um novo SMS foi enviado para {phone}.',
+      abandonOtp: 'Voltar ao formulário',
+      otpCapTitle: 'Limite de envio',
     },
   },
   nav: {
@@ -438,7 +440,12 @@ export const pt = {
   security: {
     pageEyebrow: 'Conta',
     pageTitle: 'Segurança',
-    pageDescription: 'Palavra-passe, autenticação de dois fatores e sessões ativas.',
+    pageDescription: 'Palavra-passe, confirmação de e-mail e sessões ativas.',
+    postSignupEmailTitle: 'Último passo: confirmar o e-mail',
+    postSignupEmailBody:
+      'O seu número russo já está verificado. Confirme apenas o e-mail abaixo — não é preciso revalidar o telefone. A verificação de identidade (KYC) é separada.',
+    emailConfirmedToastTitle: 'E-mail confirmado',
+    emailConfirmedToastBody: 'O endereço está verificado. Pode alterar a palavra-passe e ativar alertas.',
     passwordTitle: 'Palavra-passe',
     passwordHintOtp: 'Alteração protegida por um código OTP enviado para o seu e-mail confirmado.',
     passwordHintConfirmEmail: 'Confirme primeiro o seu e-mail para alterar a palavra-passe.',

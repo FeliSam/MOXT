@@ -16,7 +16,7 @@ import {
 import { authErrorToast } from '../auth/authErrorMessages'
 import { addToast } from '../ui/uiSlice'
 
-const RESEND_COOLDOWN_SECONDS = 60
+import { OTP_RESEND_COOLDOWN_SECONDS } from '@moxt/shared/auth/otpCooldown.js'
 
 export function PhoneVerificationCard({ className = '' }) {
   const dispatch = useDispatch()
@@ -82,7 +82,7 @@ export function PhoneVerificationCard({ className = '' }) {
       setOtpSent(true)
       setOtp('')
       setOtpType(result.payload.otpType || 'phone_change')
-      setResendCooldown(RESEND_COOLDOWN_SECONDS)
+      setResendCooldown(OTP_RESEND_COOLDOWN_SECONDS)
       dispatch(clearAuthError())
       dispatch(
         addToast({
@@ -127,8 +127,9 @@ export function PhoneVerificationCard({ className = '' }) {
         <div>
           <h2 className="font-black">Confirmer votre numéro russe</h2>
           <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-            Même confirmation par SMS que lors de l&apos;inscription. Obligatoire pour publier une
-            annonce, un colis, un job ou un événement.
+            Requis uniquement si votre numéro n&apos;est pas encore confirmé. Après inscription par
+            SMS, le téléphone est déjà vérifié — passez à la confirmation e-mail dans Sécurité.
+            Distinct de la vérification d&apos;identité (KYC) sur la page Identité.
           </p>
         </div>
       </div>

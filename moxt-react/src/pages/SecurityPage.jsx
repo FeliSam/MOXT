@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { FiKey, FiLock, FiMonitor, FiShield } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
-import { isEmailVerified } from '@moxt/shared/auth/userSecurity.js'
+import { useSearchParams } from 'react-router-dom'
+import { isEmailVerified, isPhoneVerified } from '@moxt/shared/auth/userSecurity.js'
 import { BackButton } from '../components/ui/BackButton'
+import { Alert } from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
@@ -18,14 +20,17 @@ import { addToast } from '../features/ui/uiSlice'
 import { useLanguage } from '../contexts/useLanguage'
 
 const MFA_AVAILABLE = false
-const RESEND_COOLDOWN_SECONDS = 60
+import { OTP_RESEND_COOLDOWN_SECONDS } from '@moxt/shared/auth/otpCooldown.js'
 
 export function SecurityPage() {
   const dispatch = useDispatch()
   const { t } = useLanguage()
+  const [searchParams] = useSearchParams()
   const user = useSelector((state) => state.auth.user)
   const preferences = useSelector((state) => selectAccountPreferences(state, user.id))
   const emailConfirmed = isEmailVerified(user)
+  const phoneConfirmed = isPhoneVerified(user)
+  const highlightEmail = searchParams.get('verify') === 'email' || searchParams.get('email') === 'confirmed'
 
   const [passwordOpen, setPasswordOpen] = useState(false)
   const [passwordOtp, setPasswordOtp] = useState('')
@@ -42,6 +47,17 @@ export function SecurityPage() {
   const [mfaCode, setMfaCode] = useState('')
   const [mfaLoading, setMfaLoading] = useState(false)
   const [mfaEnabled, setMfaEnabled] = useState(false)
+
+  useEffect(() => {
+    if (!highlightEmail || emailConfirmed) return undefined
+    const timer = window.setTimeout(() => {
+      document.getElementById('security-email-verify')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    }, 200)
+    return () => window.clearTimeout(timer)
+  }, [highlightEmail, emailConfirmed])
 
   useEffect(() => {
     if (!MFA_AVAILABLE) return undefined
@@ -97,7 +113,7 @@ export function SecurityPage() {
     try {
       const result = await authService.requestPasswordChangeOtp(user)
       setPasswordOtpSent(true)
-      setPasswordResendCooldown(RESEND_COOLDOWN_SECONDS)
+      setPasswordResendCooldown(OTP_RESEND_COOLDOWN_SECONDS)
       dispatch(
         addToast({
           title: 'Code envoyé',
@@ -218,7 +234,26 @@ export function SecurityPage() {
         description={t('security.pageDescription')}
         actions={<BackButton appearance="link" />}
       />
-      <EmailVerificationCard />
+      {phoneConfirmed && !emailConfirmed ? (
+        <Alert variant="info" title={t('security.postSignupEmailTitle')}>
+          {t('security.postSignupEmailBody')}
+        </Alert>
+      ) : null}
+      {searchParams.get('email') === 'confirmed' && emailConfirmed ? (
+        <Alert variant="success" title={t('security.emailConfirmedToastTitle')}>
+          {t('security.emailConfirmedToastBody')}
+        </Alert>
+      ) : null}
+      <div
+        id="security-email-verify"
+        className={
+          highlightEmail && !emailConfirmed
+            ? 'rounded-3xl ring-2 ring-brand-500 ring-offset-2 ring-offset-[var(--app-bg)]'
+            : undefined
+        }
+      >
+        <EmailVerificationCard />
+      </div>
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <FiLock className="text-2xl text-brand-600" />

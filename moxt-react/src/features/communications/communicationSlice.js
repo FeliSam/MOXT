@@ -225,6 +225,16 @@ function mergeConversationRelatedFields(remoteConv, localConv) {
   }
 }
 
+function conversationHasLocalDraft(conversation) {
+  return Object.values(conversation?.drafts || {}).some((draft) => String(draft || '').trim())
+}
+
+function conversationHasUnsyncedMessages(conversation) {
+  return (conversation?.messages || []).some(
+    (message) => message?.syncFailed === true || message?.pending === true,
+  )
+}
+
 export function mergeConversations(localConversations, remoteConversations) {
   const byId = new Map(
     remoteConversations.map((conv) => [conv.id, normalizeConversation(conv)]),
@@ -248,8 +258,15 @@ export function mergeConversations(localConversations, remoteConversations) {
         mutedBy: localConv.mutedBy?.length ? localConv.mutedBy : remoteConv.mutedBy,
         blockedBy: localConv.blockedBy?.length ? localConv.blockedBy : remoteConv.blockedBy,
       }))
-    } else {
-      byId.set(localConv.id, localConv)
+    } else if (conversationHasLocalDraft(localConv) || conversationHasUnsyncedMessages(localConv)) {
+      // Hors remote (wipe / suppression) : conserver brouillons / envois locaux, sans badge sticky.
+      byId.set(
+        localConv.id,
+        normalizeConversation({
+          ...localConv,
+          unreadBy: {},
+        }),
+      )
     }
   }
 
@@ -310,8 +327,10 @@ const communicationSlice = createSlice({
         payload.conversations = payload.conversations.map(normalizeConversation)
       }
       if (payload.notifications) {
+        // Source of truth = remote (post-wipe = liste vide). On conserve seulement
+        // les flags locaux read/archived pour les IDs encore présents côté DB.
         const localById = Object.fromEntries(state.notifications.map((item) => [item.id, item]))
-        const merged = payload.notifications.map((remote) => {
+        payload.notifications = payload.notifications.map((remote) => {
           const local = localById[remote.id]
           const normalized = normalizeNotification(remote)
           if (!local) return normalized
@@ -321,18 +340,11 @@ const communicationSlice = createSlice({
             archived: normalized.archived || local.archived === true,
           })
         })
-        const remoteIds = new Set(merged.map((item) => item.id))
-        const localOnly = state.notifications
-          .filter((item) => !remoteIds.has(item.id))
-          .map(normalizeNotification)
-        payload.notifications = [...merged, ...localOnly]
       }
       if (payload.support) {
+        // Comme les notifications : la liste remote (ou vide au wipe/logout) fait foi.
         const localById = Object.fromEntries(state.support.map((item) => [item.id, item]))
-        const merged = payload.support.map((remote) => ({ ...localById[remote.id], ...remote }))
-        const remoteIds = new Set(merged.map((item) => item.id))
-        const localOnly = state.support.filter((item) => !remoteIds.has(item.id))
-        payload.support = [...merged, ...localOnly]
+        payload.support = payload.support.map((remote) => ({ ...localById[remote.id], ...remote }))
       }
       Object.assign(state, payload)
     },

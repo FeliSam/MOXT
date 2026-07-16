@@ -32,6 +32,8 @@ sender_name = "MOXT"
 
 [auth.rate_limit]
 email_sent = 30
+# Aligné sur le délai client (90 s) : plafond horaire conservateur pour les OTP SMS.
+sms_sent = 30
 
 [auth.email.template.confirmation]
 subject = "Подтвердите email — MOXT"
