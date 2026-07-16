@@ -36,12 +36,22 @@ describe('translateAuthError', () => {
     expect(message).toContain('autre compte MOXT')
   })
 
-  it('maps network and database errors to user-friendly verify messages', () => {
+  it('maps hook_timeout to a clear SMS retry message', () => {
     expect(
-      translateAuthError({ message: 'Failed to fetch' }, { channel: 'phone' }),
-    ).toContain('sans demander un nouveau code')
-    expect(translateAuthError({ message: 'Connexion à la base de données indisponible' })).toContain(
-      'Connexion au serveur impossible',
+      translateAuthError(
+        {
+          code: 'hook_timeout',
+          status: 422,
+          message: 'Failed to reach hook within maximum time of 5.000000 seconds',
+        },
+        { channel: 'phone' },
+      ),
+    ).toContain('trop de temps')
+  })
+
+  it('maps IDENTITY_CHECK_UNAVAILABLE', () => {
+    expect(translateAuthError({ message: 'IDENTITY_CHECK_UNAVAILABLE' })).toContain(
+      'identifiants indisponible',
     )
   })
 })

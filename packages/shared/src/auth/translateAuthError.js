@@ -40,6 +40,17 @@ export function translateAuthError(error, context = {}) {
   if (code === 'sms_send_failed' || code === 'over_sms_send_rate_limit') {
     return "L'envoi du code SMS a échoué. Réessayez dans quelques instants ou choisissez la connexion par e-mail."
   }
+  if (
+    code === 'hook_timeout' ||
+    code === 'hook_timeout_after_retries' ||
+    message.toLowerCase().includes('failed to reach hook') ||
+    message.toLowerCase().includes('hook_timeout')
+  ) {
+    return "L'envoi SMS a pris trop de temps. Réessayez dans quelques instants."
+  }
+  if (message === 'IDENTITY_CHECK_UNAVAILABLE' || message.includes('IDENTITY_CHECK_UNAVAILABLE')) {
+    return 'Vérification des identifiants indisponible. Réessayez dans un instant.'
+  }
   if (code === 'unexpected_failure' && message.toLowerCase().includes('hook')) {
     return translateSmsHookFailure(message)
   }

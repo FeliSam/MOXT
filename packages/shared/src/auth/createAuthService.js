@@ -376,7 +376,12 @@ export function createAuthService(supabase, redirects = {}) {
     })
 
     if (error) {
-      throw new Error('IDENTITY_CHECK_UNAVAILABLE')
+      throw new Error(
+        translateAuthError(
+          { message: 'IDENTITY_CHECK_UNAVAILABLE', code: error.code, status: error.status },
+          context,
+        ),
+      )
     }
 
     if (data?.available === false) {

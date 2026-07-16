@@ -29,6 +29,9 @@ export function sanitizeAuthMessage(message = '') {
   if (text === 'IDENTITY_LIMIT_REACHED') {
     return 'Cet e-mail ou ce numéro a déjà servi à deux comptes MOXT. Après suppression, une seule réinscription est possible avec les mêmes identifiants.'
   }
+  if (text === 'IDENTITY_CHECK_UNAVAILABLE') {
+    return 'Vérification des identifiants indisponible. Réessayez dans un instant.'
+  }
 
   const lower = text.toLowerCase()
   if (!isTechnicalAuthMessage(lower)) return text

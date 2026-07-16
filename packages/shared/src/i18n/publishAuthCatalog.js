@@ -127,6 +127,10 @@ const EN = {
     'Phone sign-in is temporarily unavailable. Try again later or contact support.',
   "L'envoi du code SMS a échoué. Réessayez dans quelques instants ou choisissez la connexion par e-mail.":
     'Could not send the SMS code. Try again in a moment or sign in with email.',
+  "L'envoi SMS a pris trop de temps. Réessayez dans quelques instants.":
+    'SMS sending took too long. Please try again in a moment.',
+  'Vérification des identifiants indisponible. Réessayez dans un instant.':
+    'Could not verify those credentials. Please try again in a moment.',
   "L'envoi du code SMS est temporairement indisponible. Réessayez plus tard.":
     'SMS sending is temporarily unavailable. Please try again later.',
   "L'envoi SMS vers ce numéro est temporairement indisponible. Vérifiez votre numéro (+7) ou réessayez plus tard.":
@@ -318,6 +322,10 @@ const RU = {
     'Вход по номеру временно недоступен. Попробуйте позже или обратитесь в поддержку.',
   "L'envoi du code SMS a échoué. Réessayez dans quelques instants ou choisissez la connexion par e-mail.":
     'Не удалось отправить SMS-код. Попробуйте через несколько секунд или войдите по электронной почте.',
+  "L'envoi SMS a pris trop de temps. Réessayez dans quelques instants.":
+    'Отправка SMS заняла слишком много времени. Попробуйте через несколько секунд.',
+  'Vérification des identifiants indisponible. Réessayez dans un instant.':
+    'Не удалось проверить идентификаторы. Попробуйте через мгновение.',
   "L'envoi SMS est temporairement bloqué. Réessayez dans quelques minutes ou connectez-vous par e-mail.":
     'Отправка SMS временно заблокирована. Попробуйте через несколько минут или войдите по электронной почте.',
   "L'envoi du code SMS est temporairement indisponible. Réessayez plus tard.":
@@ -508,6 +516,10 @@ const PT = {
     'O início de sessão por número está temporariamente indisponível. Tente mais tarde ou contacte o suporte.',
   "L'envoi du code SMS a échoué. Réessayez dans quelques instants ou choisissez la connexion par e-mail.":
     'Não foi possível enviar o código SMS. Tente novamente em instantes ou entre com e-mail.',
+  "L'envoi SMS a pris trop de temps. Réessayez dans quelques instants.":
+    'O envio de SMS demorou demasiado. Tente novamente em instantes.',
+  'Vérification des identifiants indisponible. Réessayez dans un instant.':
+    'Não foi possível verificar os identificadores. Tente novamente dentro de um instante.',
   "L'envoi du code SMS est temporairement indisponible. Réessayez plus tard.":
     'O envio de SMS está temporariamente indisponível. Tente mais tarde.',
   "L'envoi SMS vers ce numéro est temporairement indisponible. Vérifiez votre numéro (+7) ou réessayez plus tard.":

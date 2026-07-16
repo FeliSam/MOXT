@@ -42,9 +42,17 @@ function buildSmsText(otp: string) {
 
 type SmsProvider = 'smsru' | 'yandex' | 'smsc'
 
+/** Auth send_sms hook hard-timeout is 5s — stay under that including cold start. */
+const HOOK_BUDGET_MS = 4_000
+const PROVIDER_TIMEOUT_MS = 2_200
+
+function isInfraLocked() {
+  const locked = (Deno.env.get('SMS_INFRA_LOCKED') || '').toLowerCase()
+  return locked === 'true' || locked === '1'
+}
+
 function resolveProvider(): SmsProvider {
-  const lockedProvider = (Deno.env.get('SMS_INFRA_LOCKED') || '').toLowerCase()
-  if (lockedProvider === 'true' || lockedProvider === '1') {
+  if (isInfraLocked()) {
     if (Deno.env.get('SMSC_LOGIN') && (Deno.env.get('SMSC_PASSWORD') || Deno.env.get('SMSC_API_KEY'))) {
       return 'smsc'
     }
@@ -59,6 +67,36 @@ function resolveProvider(): SmsProvider {
   }
   if (Deno.env.get('SMS_RU_API_ID')) return 'smsru'
   return 'yandex'
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timeout after ${ms}ms`)), ms)
+  })
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timer) clearTimeout(timer)
+  })
+}
+
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  ms: number,
+  label: string,
+): Promise<Response> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), ms)
+  try {
+    return await fetch(url, { ...init, signal: controller.signal })
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(`${label} timeout after ${ms}ms`)
+    }
+    throw error
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 async function sendViaSmsRu(phone: string, otp: string) {
@@ -79,11 +117,16 @@ async function sendViaSmsRu(phone: string, otp: string) {
   const from = Deno.env.get('SMS_RU_FROM')
   if (from) body.set('from', from)
 
-  const res = await fetch('https://sms.ru/sms/send', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-    body,
-  })
+  const res = await fetchWithTimeout(
+    'https://sms.ru/sms/send',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+      body,
+    },
+    PROVIDER_TIMEOUT_MS,
+    'SMS.ru',
+  )
 
   const text = await res.text()
   let data: Record<string, unknown> | null = null
@@ -145,11 +188,16 @@ async function sendViaSmscOnce(phone: string, otp: string, sender?: string) {
 
   if (sender) body.set('sender', sender)
 
-  const res = await fetch('https://smsc.ru/sys/send.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-    body,
-  })
+  const res = await fetchWithTimeout(
+    'https://smsc.ru/sys/send.php',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+      body,
+    },
+    PROVIDER_TIMEOUT_MS,
+    'SMSC',
+  )
 
   const text = await res.text()
   let data: Record<string, unknown> | null = null
@@ -246,17 +294,21 @@ async function sendViaYandexCns(phone: string, otp: string) {
   })
 
   const message = buildSmsText(otp)
-  const result = await client.send(
-    new PublishCommand({
-      PhoneNumber: e164,
-      Message: message,
-      MessageAttributes: {
-        'AWS.SNS.SMS.SenderID': {
-          DataType: 'String',
-          StringValue: senderId,
+  const result = await withTimeout(
+    client.send(
+      new PublishCommand({
+        PhoneNumber: e164,
+        Message: message,
+        MessageAttributes: {
+          'AWS.SNS.SMS.SenderID': {
+            DataType: 'String',
+            StringValue: senderId,
+          },
         },
-      },
-    }),
+      }),
+    ),
+    PROVIDER_TIMEOUT_MS,
+    'Yandex CNS',
   )
 
   if (!result.MessageId) {
@@ -286,7 +338,12 @@ function providerOrder(): SmsProvider[] {
   const primary = resolveProvider()
   const chain: SmsProvider[] = []
   if (providerAvailable(primary)) chain.push(primary)
-  for (const provider of ['yandex', 'smsru', 'smsc'] as SmsProvider[]) {
+
+  // Auth hook ≤5s: never waterfall all providers. Locked infra = primary only.
+  if (isInfraLocked()) return chain
+
+  for (const provider of ['smsc', 'smsru', 'yandex'] as SmsProvider[]) {
+    if (chain.length >= 2) break
     if (!chain.includes(provider) && providerAvailable(provider)) {
       chain.push(provider)
     }
@@ -307,7 +364,13 @@ async function sendOtpSms(phone: string, otp: string) {
     throw new Error('Aucun fournisseur SMS configuré (SMSC, SMS.ru ou Yandex CNS).')
   }
 
+  const started = Date.now()
   for (const provider of order) {
+    const remaining = HOOK_BUDGET_MS - (Date.now() - started)
+    if (remaining < 800) {
+      failures.push(`${provider}: skipped (hook budget)`)
+      break
+    }
     try {
       const id = await sendWithProvider(provider, phone, otp)
       if (failures.length) {
