@@ -1,4 +1,4 @@
-import { FiActivity, FiDatabase, FiShield, FiUsers } from 'react-icons/fi'
+import { FiActivity, FiCheck, FiDatabase, FiShield, FiUsers, FiX } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
@@ -7,6 +7,23 @@ import { useLanguage } from '../contexts/useLanguage'
 import { PERMISSIONS, ROLE_PERMISSIONS, roleCan } from '../config/rolePermissions'
 import { adminOptionLabel, adminText } from '../features/admin/adminI18n'
 import { formatDateTime } from '../utils/formatters'
+
+const ROLES = Object.keys(ROLE_PERMISSIONS)
+
+function PermissionBadge({ allowed, t }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${
+        allowed
+          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
+          : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+      }`}
+    >
+      {allowed ? <FiCheck aria-hidden="true" /> : <FiX aria-hidden="true" />}
+      {allowed ? adminText(t, 'admin.super.yes') : adminText(t, 'admin.super.no')}
+    </span>
+  )
+}
 
 export function SuperAdminPage() {
   const { t } = useLanguage()
@@ -38,24 +55,26 @@ export function SuperAdminPage() {
   }
 
   return (
-    <div className="grid gap-7">
+    <div className="grid min-w-0 max-w-full gap-6 sm:gap-7">
       <PageHeader
         eyebrow={adminText(t, 'admin.super.eyebrow')}
         title={adminText(t, 'admin.super.title')}
         description={adminText(t, 'admin.super.description')}
       />
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid min-w-0 grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         {cards.map(([label, value, Icon]) => (
-          <Card key={label}>
-            <Icon className="text-2xl text-brand-600" />
-            <strong className="mt-4 block text-3xl">{value}</strong>
-            <span className="text-sm text-[var(--app-text-muted)]">{label}</span>
+          <Card key={label} className="min-w-0">
+            <Icon className="text-xl text-brand-600 sm:text-2xl" />
+            <strong className="mt-3 block text-2xl tabular-nums sm:mt-4 sm:text-3xl">{value}</strong>
+            <span className="mt-1 block text-xs leading-snug text-[var(--app-text-muted)] sm:text-sm">
+              {label}
+            </span>
           </Card>
         ))}
       </div>
-      <Card>
+      <Card className="min-w-0">
         <h2 className="font-black">{adminText(t, 'admin.super.migration.title')}</h2>
-        <p className="mt-3 text-sm text-[var(--app-text-muted)]">
+        <p className="mt-3 break-words text-sm leading-6 text-[var(--app-text-muted)]">
           {migration
             ? adminText(t, 'admin.super.migration.done', {
                 count: migration.migrated,
@@ -64,45 +83,74 @@ export function SuperAdminPage() {
             : adminText(t, 'admin.super.migration.empty')}
         </p>
       </Card>
-      <Card>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
+      <Card className="min-w-0 overflow-hidden">
+        <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
             <h2 className="font-black">{adminText(t, 'admin.super.roles.title')}</h2>
-            <p className="mt-1 text-sm text-[var(--app-text-muted)]">
+            <p className="mt-1 text-sm leading-6 text-[var(--app-text-muted)]">
               {adminText(t, 'admin.super.roles.description')}
             </p>
           </div>
-          <Button variant="secondary" onClick={exportAudit}>
+          <Button variant="secondary" className="w-full shrink-0 sm:w-auto" onClick={exportAudit}>
             {adminText(t, 'admin.super.roles.exportAudit')}
           </Button>
         </div>
-        <div className="mt-5 overflow-x-auto">
-          <table className="w-full min-w-[44rem] text-left text-sm">
-            <thead>
-              <tr className="text-[var(--app-text-muted)]">
-                <th className="p-3">{adminText(t, 'admin.super.roles.permission')}</th>
-                {Object.keys(ROLE_PERMISSIONS).map((role) => (
-                  <th className="p-3 text-center capitalize" key={role}>
-                    {role}
-                  </th>
+
+        <div className="mt-5 grid gap-3 lg:hidden">
+          {PERMISSIONS.map((permission) => (
+            <div
+              key={permission.id}
+              className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3"
+            >
+              <p className="text-sm font-semibold leading-snug [overflow-wrap:anywhere]">
+                {adminOptionLabel(t, permission)}
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {ROLES.map((role) => (
+                  <div
+                    key={role}
+                    className="flex min-w-0 items-center justify-between gap-2 rounded-xl bg-[var(--app-surface)] px-3 py-2"
+                  >
+                    <span className="truncate text-xs font-bold capitalize text-[var(--app-text-muted)]">
+                      {role}
+                    </span>
+                    <PermissionBadge allowed={roleCan(role, permission.id)} t={t} />
+                  </div>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
-              {PERMISSIONS.map((permission) => (
-                <tr className="border-t border-[var(--app-border)]" key={permission.id}>
-                  <td className="p-3 font-semibold">{adminOptionLabel(t, permission)}</td>
-                  {Object.keys(ROLE_PERMISSIONS).map((role) => (
-                    <td className="p-3 text-center" key={role}>
-                      {roleCan(role, permission.id)
-                        ? adminText(t, 'admin.super.yes')
-                        : adminText(t, 'admin.super.no')}
-                    </td>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-5 hidden min-w-0 lg:block">
+          <div className="overflow-x-auto rounded-2xl border border-[var(--app-border)]">
+            <table className="w-full min-w-[36rem] text-left text-sm">
+              <thead>
+                <tr className="bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]">
+                  <th className="p-3 font-bold">{adminText(t, 'admin.super.roles.permission')}</th>
+                  {ROLES.map((role) => (
+                    <th className="p-3 text-center font-bold capitalize" key={role}>
+                      {role}
+                    </th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {PERMISSIONS.map((permission) => (
+                  <tr className="border-t border-[var(--app-border)]" key={permission.id}>
+                    <td className="max-w-[16rem] p-3 font-semibold leading-snug [overflow-wrap:anywhere]">
+                      {adminOptionLabel(t, permission)}
+                    </td>
+                    {ROLES.map((role) => (
+                      <td className="p-3 text-center" key={role}>
+                        <PermissionBadge allowed={roleCan(role, permission.id)} t={t} />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </Card>
     </div>
