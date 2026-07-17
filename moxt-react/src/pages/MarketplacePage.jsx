@@ -21,14 +21,21 @@ import {
   resetMarketplaceFilters,
   setMarketplaceFilters,
 } from '../features/marketplace/marketplaceSlice'
+import {
+  listingOptionLabel,
+  marketplaceText,
+} from '../features/marketplace/marketplaceI18n'
 import { sortByCountryPriority, resolveUserCountryCode } from '@moxt/shared/utils/countryPriority.js'
 import { sortBySubscriptionPriority } from '@moxt/shared/utils/subscriptionUtils.js'
 import { resolveListingCountry } from '../features/marketplace/listingCatalogUtils'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
+import { useLanguage } from '../contexts/useLanguage'
 
 export function MarketplacePage() {
   useScrollToSecondSection()
+  const { t } = useLanguage()
+  const mt = (key, vars) => marketplaceText(t, key, vars)
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const dispatch = useDispatch()
   const navigate = useNavigate()
@@ -56,7 +63,7 @@ export function MarketplacePage() {
           item.brand,
           item.model,
           item.sellerName,
-          ...listingSpecificDetails(item).map((detail) => `${detail.label} ${detail.value}`),
+          ...listingSpecificDetails(item, t).map((detail) => `${detail.label} ${detail.value}`),
         ]
           .filter(Boolean)
           .join(' ')
@@ -81,28 +88,28 @@ export function MarketplacePage() {
         'listing',
       )
     },
-    [filters, listings, preferredCountry, subscriptions, user?.id],
+    [filters, listings, preferredCountry, subscriptions, t, user?.id],
   )
 
   return (
     <div className="community-warm-bg grid gap-7 rounded-[var(--radius-card-lg)]">
       <PageHeader
-        eyebrow="Marketplace"
-        title="Marketplace"
-        description="Produits, services, locations et offres publiés par la communauté."
+        eyebrow={mt('marketplace.common.name')}
+        title={mt('marketplace.common.name')}
+        description={mt('marketplace.page.description')}
         stats={[
-          { label: 'Annonces actives', value: visible.length },
-          { label: 'Categories', value: LISTING_TYPES_META.length },
+          { label: mt('marketplace.page.stats.activeListings'), value: visible.length },
+          { label: mt('marketplace.page.stats.categories'), value: LISTING_TYPES_META.length },
         ]}
         actions={
           <>
             <Link to="/publications/mine">
               <Button variant="secondary" icon={FiList}>
-                Mes publications
+                {mt('marketplace.page.myPublications')}
               </Button>
             </Link>
             <Button icon={FiPlus} onClick={() => navigate('/marketplace/publish')}>
-              Publier une annonce
+              {mt('marketplace.page.publishListing')}
             </Button>
           </>
         }
@@ -113,7 +120,7 @@ export function MarketplacePage() {
             active={!filters.type}
             onClick={() => dispatch(setMarketplaceFilters({ type: '', category: '' }))}
           >
-            Tout
+            {mt('marketplace.common.all')}
           </PillBadge>
           {LISTING_TYPES_META.map((option) => (
             <PillBadge
@@ -124,7 +131,7 @@ export function MarketplacePage() {
               }
               className="shrink-0"
             >
-              {option.label}
+              {listingOptionLabel(t, option)}
             </PillBadge>
           ))}
         </div>
@@ -137,56 +144,60 @@ export function MarketplacePage() {
           onQueryChange={(query) => dispatch(setMarketplaceFilters({ query }))}
           onToggleAdvanced={() => setAdvancedOpen((value) => !value)}
           onClear={() => dispatch(resetMarketplaceFilters())}
-          placeholder="Rechercher : iPhone, coiffure, appartement, électricien..."
+          placeholder={mt('marketplace.page.searchPlaceholder')}
         >
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Select
               id="market-type"
-              label="Type"
+              label={mt('marketplace.common.type')}
               value={filters.type}
               onChange={(event) =>
                 dispatch(setMarketplaceFilters({ type: event.target.value, category: '' }))
               }
             >
-              <option value="">Tous</option>
+              <option value="">{mt('marketplace.common.allPlural')}</option>
               {LISTING_TYPES_META.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  {listingOptionLabel(t, option)}
                 </option>
               ))}
             </Select>
             <Select
               id="market-category"
-              label="Categorie"
+              label={mt('marketplace.page.category')}
               value={filters.category || ''}
               disabled={!filters.type}
               onChange={(event) =>
                 dispatch(setMarketplaceFilters({ category: event.target.value }))
               }
             >
-              <option value="">{filters.type ? 'Toutes' : 'Choisissez un type d abord'}</option>
+              <option value="">
+                {filters.type
+                  ? mt('marketplace.common.allFeminine')
+                  : mt('marketplace.page.chooseTypeFirst')}
+              </option>
               {categoryOptions.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  {listingOptionLabel(t, option)}
                 </option>
               ))}
             </Select>
             <Input
               id="market-city"
-              label="Ville / quartier"
+              label={mt('marketplace.page.cityDistrict')}
               value={filters.city}
               onChange={(event) => dispatch(setMarketplaceFilters({ city: event.target.value }))}
             />
             <Input
               id="market-min"
-              label="Prix minimum"
+              label={mt('marketplace.page.minPrice')}
               type="number"
               value={filters.min}
               onChange={(event) => dispatch(setMarketplaceFilters({ min: event.target.value }))}
             />
             <Input
               id="market-max"
-              label="Prix maximum"
+              label={mt('marketplace.page.maxPrice')}
               type="number"
               value={filters.max}
               onChange={(event) => dispatch(setMarketplaceFilters({ max: event.target.value }))}
@@ -206,11 +217,11 @@ export function MarketplacePage() {
             <EmptyState
               icon={FiShoppingBag}
               tone="warm"
-              title="Aucune annonce trouvée"
-              description="Essayez d'élargir votre recherche ou publiez la vôtre des maintenant."
+              title={mt('marketplace.page.emptyTitle')}
+              description={mt('marketplace.page.emptyDescription')}
               action={
                 <Button icon={FiPlus} onClick={() => navigate('/marketplace/publish')}>
-                  Publier une annonce
+                  {mt('marketplace.page.publishListing')}
                 </Button>
               }
             />

@@ -49,17 +49,26 @@ import { addToast } from '../features/ui/uiSlice'
 import { SecurityGatePanel } from '../features/security/SecurityGatePanel'
 import { useSecurityGate } from '../features/security/useSecurityGate'
 import { initialCatalogStatus } from '@moxt/shared/auth/userSecurity.js'
+import { useLanguage } from '../contexts/useLanguage'
+import {
+  listingOptionHint,
+  listingOptionLabel,
+  marketplaceText,
+} from '../features/marketplace/marketplaceI18n'
 
-const STEPS = [
-  { key: 'type', label: 'Type', icon: FiTag },
-  { key: 'details', label: 'Détails', icon: FiPackage },
-  { key: 'photos', label: 'Photos', icon: FiImage },
-  { key: 'location', label: 'Localisation', icon: FiMapPin },
+const STEP_DEFS = [
+  { key: 'type', labelKey: 'publish.listing.steps.type', icon: FiTag },
+  { key: 'details', labelKey: 'publish.listing.steps.details', icon: FiPackage },
+  { key: 'photos', labelKey: 'publish.listing.steps.photos', icon: FiImage },
+  { key: 'location', labelKey: 'publish.listing.steps.location', icon: FiMapPin },
 ]
 
 export function PublishListingPage() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const { t } = useLanguage()
+  const mt = (key, vars) => marketplaceText(t, key, vars)
+  const STEPS = STEP_DEFS.map((step) => ({ ...step, label: mt(step.labelKey) }))
   const { requirePublish } = useSecurityGate()
   const user = useSelector((state) => state.auth.user)
   const business = useSelector((state) =>
@@ -152,26 +161,26 @@ export function PublishListingPage() {
   function validate(n) {
     const errs = {}
     if (n === 1) {
-      if (!listingType) errs.listingType = "Choisissez un type d'annonce."
-      if (!category) errs.category = 'Choisissez une catégorie.'
+      if (!listingType) errs.listingType = mt('marketplaceValidation.chooseListingType')
+      if (!category) errs.category = mt('marketplaceValidation.chooseCategory')
       if (!form.title || form.title.trim().length < 4)
-        errs.title = 'Titre trop court (4 caractères min).'
+        errs.title = mt('marketplaceValidation.titleTooShort')
     }
     if (n === 2) {
       if (!form.description || form.description.trim().length < 20)
-        errs.description = 'Description trop courte (20 caractères min).'
-      if (!form.price || Number(form.price) <= 0) errs.price = 'Prix obligatoire.'
-      Object.assign(errs, validateListingBusinessRules({ ...form, type: listingType, category }))
+        errs.description = mt('marketplaceValidation.descriptionTooShort')
+      if (!form.price || Number(form.price) <= 0) errs.price = mt('marketplaceValidation.priceRequired')
+      Object.assign(errs, validateListingBusinessRules({ ...form, type: listingType, category }, t))
     }
     if (n === 3) {
-      if (photos.length === 0) errs.photos = 'Ajoutez au moins une photo.'
+      if (photos.length === 0) errs.photos = mt('marketplaceValidation.photosRequired')
     }
     if (n === 4) {
-      if (!form.city.trim()) errs.city = 'Ville obligatoire.'
-      if (!form.district.trim()) errs.district = 'Quartier obligatoire.'
+      if (!form.city.trim()) errs.city = mt('marketplaceValidation.cityRequired')
+      if (!form.district.trim()) errs.district = mt('marketplaceValidation.districtRequired')
       if (!form.address.trim() || form.address.trim().length < 10)
-        errs.address = 'Adresse trop courte.'
-      if (!form.contact.trim()) errs.contact = 'Contact obligatoire.'
+        errs.address = mt('marketplaceValidation.addressTooShort')
+      if (!form.contact.trim()) errs.contact = mt('marketplaceValidation.contactRequired')
       else if (!validatePhone(form.contact, 'RU')) errs.contact = phoneError('RU')
       if (form.whatsapp && !validatePhone(form.whatsapp, 'RU')) {
         errs.whatsapp = phoneError('RU')
@@ -222,9 +231,8 @@ export function PublishListingPage() {
     if (publishContext.blocked) {
       dispatch(
         addToast({
-          title: 'Publication entreprise impossible',
-          message:
-            'Votre entreprise doit être vérifiée par MOXT avant de publier au nom de l’entreprise.',
+          title: mt('publish.listing.businessBlockedTitle'),
+          message: mt('publish.listing.businessBlockedBody'),
           tone: 'error',
         }),
       )
@@ -258,10 +266,10 @@ export function PublishListingPage() {
       const live = result.payload?.status === 'active'
       dispatch(
         addToast({
-          title: live ? 'Annonce publiée' : 'Annonce envoyée',
+          title: live ? mt('publish.listing.publishedTitle') : mt('publish.listing.sentTitle'),
           message: live
-            ? 'Votre annonce est en ligne.'
-            : 'Compte non vérifié : l’annonce sera visible après validation MOXT.',
+            ? mt('publish.listing.publishedBody')
+            : mt('publish.listing.pendingBody'),
           tone: 'success',
         }),
       )
@@ -275,7 +283,9 @@ export function PublishListingPage() {
     return (
       <div className="grid gap-4">
         <p className="text-sm font-black text-brand-700">
-          Informations spécifiques · {typeMeta?.label}
+          {mt('publish.listing.specificInfo', {
+            type: typeMeta ? listingOptionLabel(t, typeMeta) : '',
+          })}
         </p>
         {rules.extraFields.map((key) => {
           const meta = EXTRA_FIELD_META[key]
@@ -289,7 +299,7 @@ export function PublishListingPage() {
                   onChange={(e) => setField(key, e.target.checked)}
                   className="size-5 rounded"
                 />
-                {meta.label}
+                {meta.labelKey ? mt(meta.labelKey) : meta.label}
               </label>
             )
           }
@@ -298,14 +308,14 @@ export function PublishListingPage() {
               <Select
                 key={key}
                 id={`extra-${key}`}
-                label={meta.label}
+                label={meta.labelKey ? mt(meta.labelKey) : meta.label}
                 value={form[key] ?? ''}
                 onChange={(e) => setField(key, e.target.value)}
                 error={errors[key]}
               >
                 {meta.options.map((opt) => (
                   <option key={opt.value} value={opt.value}>
-                    {opt.label}
+                    {listingOptionLabel(t, opt)}
                   </option>
                 ))}
               </Select>
@@ -315,9 +325,9 @@ export function PublishListingPage() {
             <Input
               key={key}
               id={`extra-${key}`}
-              label={meta.label}
+              label={meta.labelKey ? mt(meta.labelKey) : meta.label}
               type={meta.type ?? 'text'}
-              placeholder={meta.placeholder ?? ''}
+              placeholder={(meta.placeholderKey ? mt(meta.placeholderKey) : meta.placeholder) ?? ''}
               value={form[key] ?? ''}
               onChange={(e) => setField(key, e.target.value)}
               error={errors[key]}
@@ -345,13 +355,16 @@ export function PublishListingPage() {
       {/* En-tête */}
       <div className="flex items-center gap-3">
         <Button variant="secondary" icon={FiArrowLeft} onClick={() => navigate('/marketplace')}>
-          Marketplace
+          {mt('marketplace.common.name')}
         </Button>
         <div className="min-w-0">
-          <h1 className="text-xl font-black">Publier une annonce</h1>
+          <h1 className="text-xl font-black">{mt('publish.listing.title')}</h1>
           {typeMeta ? (
             <p className="text-xs text-[var(--app-text-muted)]">
-              {typeMeta.label} · {categories.find((c) => c.value === category)?.label}
+              {listingOptionLabel(t, typeMeta)} · {listingOptionLabel(
+                t,
+                categories.find((c) => c.value === category),
+              )}
             </p>
           ) : null}
         </div>
@@ -391,7 +404,11 @@ export function PublishListingPage() {
           })}
         </div>
         <p className="mt-2 text-xs text-[var(--app-text-muted)]">
-          Étape {step}/{STEPS.length} · {STEPS[step - 1].label}
+          {mt('marketplace.common.stepProgress', {
+            step,
+            total: STEPS.length,
+            label: STEPS[step - 1].label,
+          })}
         </p>
       </Card>
 
@@ -399,17 +416,17 @@ export function PublishListingPage() {
       {step === 1 ? (
         <div className="grid gap-6">
           <Card className="grid gap-4">
-            <h2 className="font-black">Quel type d'annonce ?</h2>
+            <h2 className="font-black">{mt('publish.listing.chooseType')}</h2>
             {errors.listingType ? <Alert variant="error">{errors.listingType}</Alert> : null}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {LISTING_TYPES_META.map((t) => {
-                const Icon = t.icon
-                const selected = listingType === t.value
+              {LISTING_TYPES_META.map((typeOption) => {
+                const Icon = typeOption.icon
+                const selected = listingType === typeOption.value
                 return (
                   <button
-                    key={t.value}
+                    key={typeOption.value}
                     type="button"
-                    onClick={() => selectType(t.value)}
+                    onClick={() => selectType(typeOption.value)}
                     className={`flex flex-col items-center gap-2 rounded-2xl border-2 p-4 text-center transition ${
                       selected
                         ? `border-brand-500 bg-[var(--app-accent-soft)]`
@@ -417,13 +434,13 @@ export function PublishListingPage() {
                     }`}
                   >
                     <span
-                      className={`grid size-10 place-items-center rounded-xl bg-gradient-to-br text-white text-xl ${t.color}`}
+                      className={`grid size-10 place-items-center rounded-xl bg-gradient-to-br text-white text-xl ${typeOption.color}`}
                     >
                       <Icon />
                     </span>
-                    <span className="text-xs font-black">{t.label}</span>
+                    <span className="text-xs font-black">{listingOptionLabel(t, typeOption)}</span>
                     <span className="hidden text-[10px] text-[var(--app-text-muted)] sm:block">
-                      {t.hint}
+                      {listingOptionHint(t, typeOption)}
                     </span>
                   </button>
                 )
@@ -434,9 +451,9 @@ export function PublishListingPage() {
           {listingType ? (
             <Card className="grid gap-4">
               <h2 className="font-black">
-                Catégorie{' '}
+                {mt('publish.listing.categoryHeading')}{' '}
                 <span className="font-normal text-[var(--app-text-muted)]">
-                  · {typeMeta?.label}
+                  · {typeMeta ? listingOptionLabel(t, typeMeta) : ''}
                 </span>
               </h2>
               {errors.category ? <Alert variant="error">{errors.category}</Alert> : null}
@@ -452,7 +469,7 @@ export function PublishListingPage() {
                         : 'border-[var(--app-border)] hover:border-brand-400'
                     }`}
                   >
-                    {cat.label}
+                    {listingOptionLabel(t, cat)}
                   </button>
                 ))}
               </div>
@@ -460,17 +477,17 @@ export function PublishListingPage() {
               {category ? (
                 <Input
                   id="pub-title"
-                  label="Titre de l'annonce"
+                  label={mt('publish.listing.listingTitle')}
                   placeholder={
-                    listingType === `real_estate`
-                      ? 'Ex : Appartement 2 pièces meublé, Moscou Centre'
+                    listingType === 'real_estate'
+                      ? mt('publish.listing.titlePlaceholder.realEstate')
                       : listingType === 'vehicle'
-                        ? 'Ex : Toyota Camry 2020, 45 000 km, excellent état'
+                        ? mt('publish.listing.titlePlaceholder.vehicle')
                         : listingType === 'service'
-                          ? 'Ex : Cours de français pour russophone — 1h'
+                          ? mt('publish.listing.titlePlaceholder.service')
                           : listingType === 'food'
-                            ? 'Ex : Riz parfumé du Bénin — livraison Moscou'
-                            : 'Ex : iPhone 14 Pro 256 Go – Excellent état'
+                            ? mt('publish.listing.titlePlaceholder.food')
+                            : mt('publish.listing.titlePlaceholder.default')
                   }
                   value={form.title}
                   onChange={(e) => setField('title', e.target.value)}
@@ -486,28 +503,32 @@ export function PublishListingPage() {
       {step === 2 ? (
         <Card className="grid gap-5">
           <h2 className="font-black">
-            Détails de l'annonce{' '}
-            <span className="font-normal text-[var(--app-text-muted)]">· {typeMeta?.label}</span>
+            {mt('publish.listing.detailsHeading')}{' '}
+            <span className="font-normal text-[var(--app-text-muted)]">
+              · {typeMeta ? listingOptionLabel(t, typeMeta) : ''}
+            </span>
           </h2>
 
           {/* Description */}
           <label className="grid gap-1.5">
             <span className="text-sm font-bold">
-              Description{' '}
-              <span className="font-normal text-[var(--app-text-muted)]">(20 caractères min)</span>
+              {mt('publish.listing.descriptionMin')}{' '}
+              <span className="font-normal text-[var(--app-text-muted)]">
+                {mt('marketplace.common.requiredMinChars', { count: 20 })}
+              </span>
             </span>
             <textarea
               className="min-h-32 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3.5 text-sm outline-none focus:border-brand-400"
               placeholder={
                 listingType === 'real_estate'
-                  ? 'Surface, nombre de pièces, équipements, proximité des transports, charges…'
+                  ? mt('publish.listing.descriptionPlaceholder.realEstate')
                   : listingType === 'vehicle'
-                    ? "Historique d'entretien, équipements, points forts, raison de la vente…"
+                    ? mt('publish.listing.descriptionPlaceholder.vehicle')
                     : listingType === 'service'
-                      ? "Déroulement de la prestation, compétences, expérience, tarif à l'heure…"
+                      ? mt('publish.listing.descriptionPlaceholder.service')
                       : listingType === 'food'
-                        ? 'Composition, provenance, allergènes, mode de conservation…'
-                        : 'Décrivez votre annonce : état, accessoires inclus, raison de la vente…'
+                        ? mt('publish.listing.descriptionPlaceholder.food')
+                        : mt('publish.listing.descriptionPlaceholder.default')
               }
               value={form.description}
               onChange={(e) => setField('description', e.target.value)}
@@ -523,10 +544,10 @@ export function PublishListingPage() {
               id="pub-price"
               label={
                 listingType === 'real_estate'
-                  ? 'Prix / Loyer mensuel (RUB)'
+                  ? mt('publish.listing.priceMonthly')
                   : listingType === 'service'
-                    ? 'Tarif (RUB)'
-                    : 'Prix (RUB)'
+                    ? mt('publish.listing.priceService')
+                    : mt('publish.listing.priceDefault')
               }
               type="number"
               min="0"
@@ -534,7 +555,7 @@ export function PublishListingPage() {
               onChange={(e) => setField('price', e.target.value)}
               error={errors.price}
             />
-            <Input id="pub-currency" label="Devise" value="RUB — Marché Russie" disabled />
+            <Input id="pub-currency" label={mt('marketplace.common.currency')} value={mt('publish.listing.currencyRussia')} disabled />
           </div>
 
           {/* Réduction */}
@@ -545,9 +566,9 @@ export function PublishListingPage() {
                   <FiPercent />
                 </span>
                 <div>
-                  <span className="text-sm font-black">Appliquer une réduction</span>
+                  <span className="text-sm font-black">{mt('publish.listing.applyDiscount')}</span>
                   <p className="text-xs text-[var(--app-text-muted)]">
-                    Le prix réduit sera affiché avec le prix barré
+                    {mt('publish.listing.applyDiscountHint')}
                   </p>
                 </div>
               </div>
@@ -578,13 +599,13 @@ export function PublishListingPage() {
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <div className="grid gap-1.5">
                   <label className="text-sm font-bold" htmlFor="pub-original-price">
-                    Prix original (RUB)
+                    {mt('publish.listing.originalPrice')}
                   </label>
                   <input
                     id="pub-original-price"
                     type="number"
                     min="0"
-                    placeholder="Ex : 15 000"
+                    placeholder={mt('publish.listing.originalPricePlaceholder')}
                     className="min-h-12 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 text-sm outline-none focus:border-brand-400"
                     value={form.originalPrice}
                     onChange={(e) => {
@@ -599,14 +620,14 @@ export function PublishListingPage() {
                 </div>
                 <div className="grid gap-1.5">
                   <label className="text-sm font-bold" htmlFor="pub-discount-pct">
-                    Réduction (%)
+                    {mt('publish.listing.discountPercent')}
                   </label>
                   <input
                     id="pub-discount-pct"
                     type="number"
                     min="1"
                     max="99"
-                    placeholder="Ex : 20"
+                    placeholder={mt('publish.listing.discountPercentPlaceholder')}
                     className="min-h-12 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 text-sm outline-none focus:border-brand-400"
                     value={form.discountPercent}
                     onChange={(e) => {
@@ -642,14 +663,14 @@ export function PublishListingPage() {
           {rules?.showCondition ? (
             <Select
               id="pub-condition"
-              label="État du produit"
+              label={mt('publish.listing.productCondition')}
               value={form.condition}
               onChange={(e) => setField('condition', e.target.value)}
               error={errors.condition}
             >
               {LISTING_CONDITIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
-                  {opt.label}
+                  {listingOptionLabel(t, opt)}
                 </option>
               ))}
             </Select>
@@ -660,15 +681,15 @@ export function PublishListingPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <Input
                 id="pub-brand"
-                label="Marque"
-                placeholder="Optionnel"
+                label={mt('marketplace.common.brand')}
+                placeholder={mt('marketplace.common.optional')}
                 value={form.brand}
                 onChange={(e) => setField('brand', e.target.value)}
               />
               <Input
                 id="pub-model"
-                label="Modèle"
-                placeholder="Optionnel"
+                label={mt('marketplace.common.model')}
+                placeholder={mt('marketplace.common.optional')}
                 value={form.model}
                 onChange={(e) => setField('model', e.target.value)}
               />
@@ -679,7 +700,7 @@ export function PublishListingPage() {
           {rules?.showStock ? (
             <Input
               id="pub-stock"
-              label="Quantité disponible"
+              label={mt('publish.listing.availableQuantity')}
               type="number"
               min="1"
               value={form.stock}
@@ -697,9 +718,9 @@ export function PublishListingPage() {
       {step === 3 ? (
         <Card className="grid gap-5">
           <div>
-            <h2 className="font-black">Photos</h2>
+            <h2 className="font-black">{mt('marketplace.common.photos')}</h2>
             <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-              Maximum 6 photos · la première sera la photo principale · cliquez pour réordonner.
+              {mt('publish.listing.photosHint')}
             </p>
           </div>
           {errors.photos ? <Alert variant="error">{errors.photos}</Alert> : null}
@@ -714,7 +735,7 @@ export function PublishListingPage() {
                   />
                   {i === 0 ? (
                     <span className="absolute left-2 top-2 rounded-full bg-brand-700 px-2 py-0.5 text-[10px] font-black text-white">
-                      Principale
+                      {mt('publish.listing.mainPhoto')}
                     </span>
                   ) : null}
                   <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition group-hover:opacity-100">
@@ -753,7 +774,7 @@ export function PublishListingPage() {
                   className="flex aspect-square flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[var(--app-border)] text-[var(--app-text-muted)] transition hover:border-brand-400 hover:text-brand-700"
                 >
                   <FiImage className="text-2xl" />
-                  <span className="text-xs font-bold">Ajouter</span>
+                  <span className="text-xs font-bold">{mt('marketplace.common.add')}</span>
                 </button>
               ) : null}
             </div>
@@ -765,9 +786,9 @@ export function PublishListingPage() {
             >
               <FiImage className="text-4xl text-[var(--app-text-muted)]" />
               <div className="text-center">
-                <p className="font-bold">Cliquez ou glissez vos photos ici</p>
+                <p className="font-bold">{mt('publish.listing.dropPhotos')}</p>
                 <p className="mt-1 text-xs text-[var(--app-text-muted)]">
-                  JPG, PNG, WebP — max 6 photos
+                  {mt('publish.listing.dropPhotosHint')}
                 </p>
               </div>
             </button>
@@ -786,7 +807,7 @@ export function PublishListingPage() {
               icon={FiImage}
               onClick={() => fileInputRef.current?.click()}
             >
-              Ajouter d'autres photos
+              {mt('publish.listing.addMorePhotos')}
             </Button>
           ) : null}
         </Card>
@@ -795,20 +816,20 @@ export function PublishListingPage() {
       {/* ── Étape 4 : Localisation, livraison & récap ─────────────────────── */}
       {step === 4 ? (
         <Card className="grid gap-5">
-          <h2 className="font-black">Localisation & contact</h2>
+          <h2 className="font-black">{mt('publish.listing.locationContact')}</h2>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <CitySelector
               id="pub-city"
-              label="Ville en Russie"
+              label={mt('publish.listing.cityInRussia')}
               value={form.city}
               onChange={(city) => setField('city', city)}
               error={errors.city}
             />
             <Input
               id="pub-district"
-              label="Quartier / arrondissement en Russie"
-              placeholder="Ex : Tverski, Zamoskvorechye…"
+              label={mt('publish.listing.districtInRussia')}
+              placeholder={mt('publish.listing.districtPlaceholder')}
               value={form.district}
               onChange={(e) => setField('district', e.target.value)}
               error={errors.district}
@@ -816,8 +837,8 @@ export function PublishListingPage() {
           </div>
           <Input
             id="pub-address"
-            label="Adresse complète"
-            placeholder="Ex : Tverskaya 12, app. 45, Moscou"
+            label={mt('marketplace.common.address')}
+            placeholder={mt('publish.listing.addressPlaceholder')}
             value={form.address}
             onChange={(e) => setField('address', e.target.value)}
             error={errors.address}
@@ -825,7 +846,7 @@ export function PublishListingPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
               id="pub-contact"
-              label="Téléphone russe"
+              label={mt('publish.listing.russianPhone')}
               type="tel"
               placeholder={phonePlaceholder('RU')}
               value={form.contact}
@@ -834,7 +855,7 @@ export function PublishListingPage() {
             />
             <Input
               id="pub-whatsapp"
-              label="WhatsApp (optionnel)"
+              label={mt('publish.listing.whatsappOptional')}
               type="tel"
               placeholder={phonePlaceholder('RU')}
               value={form.whatsapp}
@@ -846,7 +867,7 @@ export function PublishListingPage() {
           {/* Options de livraison filtrées par type */}
           {deliveryOptions.length > 0 ? (
             <div>
-              <p className="mb-3 text-sm font-bold">Options de remise</p>
+              <p className="mb-3 text-sm font-bold">{mt('publish.listing.deliveryOptions')}</p>
               <div className="flex flex-wrap gap-2">
                 {deliveryOptions.map((opt) => {
                   const selected = form.deliveryOptions.includes(opt.value)
@@ -866,7 +887,7 @@ export function PublishListingPage() {
                           : 'border-[var(--app-border)] hover:border-brand-400'
                       }`}
                     >
-                      {opt.label}
+                      {listingOptionLabel(t, opt)}
                     </button>
                   )
                 })}
@@ -880,44 +901,44 @@ export function PublishListingPage() {
               <BusinessPublishNotice business={business} />
               <Select
                 id="pub-seller"
-                label="Publier en tant que"
+                label={mt('publish.listing.publishAs')}
                 value={form.sellerType}
                 onChange={(e) => setField('sellerType', e.target.value)}
               >
                 {canPublishAsBusiness ? (
-                  <option value="business">{business.name} (entreprise)</option>
+                  <option value="business">{mt('publish.listing.asBusiness', { name: business.name })}</option>
                 ) : null}
-                <option value="person">Particulier</option>
+                <option value="person">{mt('publish.listing.asIndividual')}</option>
               </Select>
             </>
           ) : null}
 
           {/* Récapitulatif */}
           <div className="rounded-2xl bg-[var(--app-surface-muted)] p-4">
-            <p className="mb-3 text-sm font-black">Récapitulatif</p>
+            <p className="mb-3 text-sm font-black">{mt('publish.listing.summary')}</p>
             <div className="grid gap-2 text-sm">
-              <RecapRow label="Type" value={typeMeta?.label} />
+              <RecapRow label={mt('marketplace.common.type')} value={typeMeta ? listingOptionLabel(t, typeMeta) : ''} />
               <RecapRow
-                label="Catégorie"
-                value={categories.find((c) => c.value === category)?.label}
+                label={mt('marketplace.common.category')}
+                value={listingOptionLabel(t, categories.find((c) => c.value === category))}
               />
-              <RecapRow label="Titre" value={form.title} />
+              <RecapRow label={mt('marketplace.common.title')} value={form.title} />
               {form.hasDiscount && form.originalPrice ? (
                 <>
                   <RecapRow
-                    label="Prix original"
+                    label={mt('marketplace.common.originalPrice')}
                     value={`${Number(form.originalPrice).toLocaleString('fr-FR')} RUB`}
                   />
                   <RecapRow
-                    label="Réduction"
+                    label={mt('marketplace.common.discount')}
                     value={`−${form.discountPercent}% → ${Number(form.price).toLocaleString('fr-FR')} RUB`}
                   />
                 </>
               ) : (
-                <RecapRow label="Prix" value={`${Number(form.price).toLocaleString('fr-FR')} RUB`} />
+                <RecapRow label={mt('marketplace.common.price')} value={`${Number(form.price).toLocaleString('fr-FR')} RUB`} />
               )}
-              <RecapRow label="Photos" value={`${photos.length}`} />
-              <RecapRow label="Ville" value={form.city} />
+              <RecapRow label={mt('marketplace.common.photos')} value={`${photos.length}`} />
+              <RecapRow label={mt('marketplace.common.city')} value={form.city} />
             </div>
           </div>
         </Card>
@@ -927,14 +948,14 @@ export function PublishListingPage() {
       <div className="flex items-center justify-between gap-3">
         {step > 1 ? (
           <Button variant="secondary" icon={FiArrowLeft} onClick={back}>
-            Précédent
+            {mt('marketplace.common.previous')}
           </Button>
         ) : (
           <span />
         )}
         {step < STEPS.length ? (
           <Button icon={FiArrowRight} onClick={next}>
-            Continuer
+            {mt('marketplace.common.continue')}
           </Button>
         ) : (
           <Button
@@ -943,7 +964,7 @@ export function PublishListingPage() {
             disabled={publishing}
             onClick={publish}
           >
-            {publishing ? 'Publication...' : "Publier l'annonce"}
+            {publishing ? mt('publish.listing.publishing') : mt('publish.listing.publishCta')}
           </Button>
         )}
       </div>

@@ -15,6 +15,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { Select } from '../components/ui/Select'
+import { useLanguage } from '../contexts/useLanguage'
 import { CatalogFavoriteButton } from '../features/account/CatalogFavoriteButton'
 import { formatMoney } from '../features/transfers/transferUtils'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
@@ -28,8 +29,8 @@ function sectorTone(sector) {
   return SECTOR_TONES[hash]
 }
 
-function normalizeJobSalary(value) {
-  if (!value) return 'Rémunération à confirmer'
+function normalizeJobSalary(value, t) {
+  if (!value) return t('jobs.card.salaryToConfirm')
   const text = String(value).trim()
   const digits = text.replace(/[^\d]/g, '')
   if (!digits) return text.includes('RUB') ? text : `${text} RUB`
@@ -38,6 +39,7 @@ function normalizeJobSalary(value) {
 
 export function JobsPage() {
   useScrollToSecondSection()
+  const { t } = useLanguage()
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [tab, setTab] = useState('active')
   const [showMine, setShowMine] = useState(false)
@@ -71,10 +73,10 @@ export function JobsPage() {
       sortBySubscriptionPriority(
         filteredJobs.filter((job) => job.status === 'active'),
         subscriptions,
-        user?.id,
+        user.id,
         'job',
       ),
-    [filteredJobs, subscriptions, user?.id],
+    [filteredJobs, subscriptions, user.id],
   )
 
   const archivedJobs = useMemo(
@@ -90,10 +92,10 @@ export function JobsPage() {
   return (
     <div className="community-warm-bg grid gap-7 rounded-[var(--radius-card-lg)]">
       <PageHeader
-        eyebrow="Opportunités"
-        title="Jobs et missions"
-        description="Offres publiées par les entreprises et membres de MOXT."
-        stats={[{ label: 'Offres actives', value: activeJobs.length }]}
+        eyebrow={t('jobs.browse.eyebrow')}
+        title={t('jobs.browse.title')}
+        description={t('jobs.browse.description')}
+        stats={[{ label: t('jobs.browse.activeOffers'), value: activeJobs.length }]}
         actions={
           <>
             {canPublish ? (
@@ -103,15 +105,15 @@ export function JobsPage() {
                   icon={FiUser}
                   onClick={() => setShowMine((v) => !v)}
                 >
-                  {showMine ? 'Tous les jobs' : 'Mes jobs'}
+                  {showMine ? t('jobs.browse.allJobs') : t('jobs.browse.myJobs')}
                 </Button>
                 <Button variant="secondary" icon={FiUsers} onClick={() => navigate('/jobs/applications')}>
-                  Demandes reçues
+                  {t('jobs.browse.receivedRequests')}
                 </Button>
               </>
             ) : null}
             <Button icon={FiPlus} onClick={() => navigate('/jobs/publish')}>
-              Publier un job
+              {t('jobs.browse.publish')}
             </Button>
           </>
         }
@@ -124,12 +126,12 @@ export function JobsPage() {
           onQueryChange={(query) => setFilters((current) => ({ ...current, query }))}
           onToggleAdvanced={() => setAdvancedOpen((value) => !value)}
           onClear={clearFilters}
-          placeholder="Métier, entreprise, secteur, compétence..."
+          placeholder={t('jobs.browse.searchPlaceholder')}
         >
           <div className="grid gap-4 sm:grid-cols-3">
             <Input
               id="job-filter-location"
-              label="Lieu"
+              label={t('jobs.browse.location')}
               value={filters.location}
               onChange={(event) =>
                 setFilters((current) => ({ ...current, location: event.target.value }))
@@ -137,7 +139,7 @@ export function JobsPage() {
             />
             <Input
               id="job-filter-sector"
-              label="Secteur"
+              label={t('jobs.browse.sector')}
               value={filters.sector}
               onChange={(event) =>
                 setFilters((current) => ({ ...current, sector: event.target.value }))
@@ -145,13 +147,13 @@ export function JobsPage() {
             />
             <Select
               id="job-filter-contract"
-              label="Contrat"
+              label={t('jobs.browse.contract')}
               value={filters.contractType}
               onChange={(event) =>
                 setFilters((current) => ({ ...current, contractType: event.target.value }))
               }
             >
-              <option value="">Tous les contrats</option>
+              <option value="">{t('jobs.browse.allContracts')}</option>
               {[...new Set(jobs.map((job) => job.contractType).filter(Boolean))].map((type) => (
                 <option key={type} value={type}>
                   {type}
@@ -164,8 +166,8 @@ export function JobsPage() {
           active={tab}
           onChange={setTab}
           tabs={[
-            { key: 'active', label: 'Jobs actifs', count: activeJobs.length },
-            { key: 'archived', label: 'Archives', count: archivedJobs.length },
+            { key: 'active', label: t('jobs.browse.activeTab'), count: activeJobs.length },
+            { key: 'archived', label: t('jobs.browse.archivesTab'), count: archivedJobs.length },
           ]}
         />
         <CatalogGrid lazy={false} columns="grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
@@ -180,7 +182,7 @@ export function JobsPage() {
                         className="group relative flex h-full flex-col overflow-hidden p-4 opacity-80 sm:p-5"
                       >
                         <span className="absolute right-2 top-2 z-10 rounded-full bg-[var(--app-surface-muted)] px-1.5 py-0.5 text-[9px] font-black text-[var(--app-text-faint)]">
-                          Archivé
+                          {t('jobs.card.archived')}
                         </span>
                         <div className="flex items-start gap-2">
                           <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]">
@@ -210,10 +212,10 @@ export function JobsPage() {
                     >
                       <span className="absolute left-2 top-2 z-10">
                         {job.businessId ? (
-                          <VerifiedBadge size="sm" label="Entreprise" />
+                          <VerifiedBadge size="sm" label={t('jobs.card.business')} />
                         ) : (
                           <span className="rounded-full bg-[var(--app-surface-muted)] px-1.5 py-0.5 text-[9px] font-black text-[var(--app-text-faint)]">
-                            Particulier
+                            {t('jobs.card.individual')}
                           </span>
                         )}
                       </span>
@@ -241,12 +243,12 @@ export function JobsPage() {
                       </div>
 
                       <div className="mt-4 grid flex-1 content-start gap-2 sm:grid-cols-2">
-                        <JobMetric value={normalizeJobSalary(job.salary)} label="Rémunération" />
-                        <JobMetric value={job.contractType || '—'} label="Type de contrat" icon={FiClock} />
+                        <JobMetric value={normalizeJobSalary(job.salary, t)} label={t('jobs.card.salary')} />
+                        <JobMetric value={job.contractType || '—'} label={t('jobs.card.contractType')} icon={FiClock} />
                       </div>
 
                       <span className="mt-4 flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-brand-700 px-2 text-center text-xs font-black text-white transition group-hover:bg-brand-800 sm:min-h-11 sm:text-sm dark:bg-brand-600">
-                        Voir l'offre <FiArrowRight className="text-xs" />
+                        {t('jobs.card.viewOffer')} <FiArrowRight className="text-xs" />
                       </span>
                     </Card>
                     )}
@@ -268,16 +270,16 @@ export function JobsPage() {
               className="col-span-full"
               icon={FiBriefcase}
               tone="warm"
-              title={tab === 'active' ? 'Aucun job publié' : 'Aucune archive'}
+              title={tab === 'active' ? t('jobs.browse.emptyActiveTitle') : t('jobs.browse.emptyArchiveTitle')}
               description={
                 tab === 'active'
-                  ? 'Revenez bientot ou publiez votre propre offre.'
-                  : 'Les offres expirées ou clôturées apparaîtront ici.'
+                  ? t('jobs.browse.emptyActiveDescription')
+                  : t('jobs.browse.emptyArchiveDescription')
               }
               action={
                 tab === 'active' && canPublish ? (
                   <Button icon={FiPlus} onClick={() => navigate('/jobs/publish')}>
-                    Publier un job
+                    {t('jobs.browse.publish')}
                   </Button>
                 ) : undefined
               }

@@ -6,14 +6,14 @@ import { APP_MESSAGES } from '../../config/messages'
 import { useLanguage } from '../../contexts/useLanguage'
 import { selectSearchIndex } from '../searchSelectors'
 import { localAssistantProvider } from './assistantProvider'
-import { ASSISTANT_SUGGESTIONS } from './assistantService'
+import { ASSISTANT_SUGGESTION_KEYS, messagesText } from './messagesI18n'
 import { llmAssistantProvider } from './llmAssistantProvider'
 
 export function AiAssistantPanel({ onBack, showBack = true, userId }) {
   const storageKey = `moxt-ai-assistant-${userId}`
   const messageListRef = useRef(null)
   const searchIndex = useSelector(selectSearchIndex)
-  const { language } = useLanguage()
+  const { language, t } = useLanguage()
   const [messages, setMessages] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(storageKey) || '[]')
@@ -57,7 +57,7 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
       try {
         response = await llmAssistantProvider.respond({ question: text, searchIndex, history: messages, language })
       } catch {
-        response = await localAssistantProvider.respond({ question: text, searchIndex, language })
+        response = await localAssistantProvider.respond({ question: text, searchIndex, language, t })
       }
       setMessages((current) => [
         ...current,
@@ -71,7 +71,9 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
         },
       ])
     } catch {
-      setError(`L’assistant local n’a pas pu répondre. ${APP_MESSAGES.genericError}`)
+      setError(
+        messagesText(t, 'messages.assistant.error', { detail: APP_MESSAGES.genericError }),
+      )
     } finally {
       setLoading(false)
     }
@@ -84,7 +86,7 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
           <button
             className="grid size-10 place-items-center rounded-xl hover:bg-[var(--app-surface-muted)]"
             onClick={onBack}
-            aria-label="Retour aux conversations"
+            aria-label={messagesText(t, 'messages.assistant.backAria')}
           >
             <FiArrowLeft />
           </button>
@@ -93,14 +95,16 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
           <FiCpu />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="font-black">Assistant MOXT</h2>
-          <p className="text-xs text-[var(--app-text-muted)]">Assistant local contextuel</p>
+          <h2 className="font-black">{messagesText(t, 'messages.assistant.name')}</h2>
+          <p className="text-xs text-[var(--app-text-muted)]">
+            {messagesText(t, 'messages.assistant.subtitle')}
+          </p>
         </div>
         <button
           type="button"
           onClick={() => setMessages([])}
           className="grid size-10 place-items-center rounded-xl hover:bg-[var(--app-surface-muted)]"
-          aria-label="Effacer l’historique"
+          aria-label={messagesText(t, 'messages.assistant.clearHistoryAria')}
         >
           <FiTrash2 />
         </button>
@@ -112,19 +116,22 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
         data-testid="message-scroll-region"
       >
         <div className="mx-auto flex max-w-3xl flex-col gap-4">
-          <AssistantMessage text="Bonjour, je peux rechercher dans vos données MOXT et vous guider vers la bonne action." />
+          <AssistantMessage text={messagesText(t, 'messages.assistant.greeting')} />
           {!messages.length ? (
             <div className="ml-10 grid gap-2 sm:grid-cols-2">
-              {ASSISTANT_SUGGESTIONS.map((suggestion) => (
-                <button
-                  key={suggestion}
-                  className="rounded-2xl bg-[var(--app-surface)] p-3 text-left text-sm font-bold shadow-[0_8px_24px_rgb(15_23_42/0.08)] hover:shadow-lg"
-                  onClick={() => ask(suggestion)}
-                >
-                  <FiZap className="mb-2 text-brand-500" />
-                  {suggestion}
-                </button>
-              ))}
+              {ASSISTANT_SUGGESTION_KEYS.map((key) => {
+                const suggestion = messagesText(t, key)
+                return (
+                  <button
+                    key={key}
+                    className="rounded-2xl bg-[var(--app-surface)] p-3 text-left text-sm font-bold shadow-[0_8px_24px_rgb(15_23_42/0.08)] hover:shadow-lg"
+                    onClick={() => ask(suggestion)}
+                  >
+                    <FiZap className="mb-2 text-brand-500" />
+                    {suggestion}
+                  </button>
+                )
+              })}
             </div>
           ) : null}
           {messages.map((message, index) =>
@@ -136,6 +143,9 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
                 sources={message.sources}
                 suggestions={index === messages.length - 1 ? message.suggestions : null}
                 onSuggestion={ask}
+                sourcesLabel={messagesText(t, 'messages.assistant.sources', {
+                  list: (message.sources || []).join(' · '),
+                })}
               />
             ) : (
               <div
@@ -167,7 +177,7 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
             <button
               type="button"
               onClick={() => setAttachment(null)}
-              aria-label="Retirer le document"
+              aria-label={messagesText(t, 'messages.assistant.removeDocAria')}
             >
               <FiX />
             </button>
@@ -182,7 +192,7 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
         >
           <label
             className="grid size-10 shrink-0 cursor-pointer place-items-center rounded-xl bg-[var(--app-surface)] text-lg text-[var(--app-accent)] shadow-sm hover:bg-[var(--app-accent-soft)]"
-            aria-label="Ajouter un document"
+            aria-label={messagesText(t, 'messages.assistant.addDocAria')}
           >
             <FiPaperclip aria-hidden="true" />
             <input
@@ -196,13 +206,13 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
             value={question}
             rows={1}
             onChange={(event) => setQuestion(event.target.value)}
-            placeholder="Demandez quelque chose à l’assistant…"
+            placeholder={messagesText(t, 'messages.assistant.placeholder')}
           />
           <button
             className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-700 text-lg text-white shadow-md transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-40"
             type="submit"
             disabled={!question.trim() || loading}
-            aria-label="Envoyer à l’assistant"
+            aria-label={messagesText(t, 'messages.assistant.sendAria')}
           >
             <FiSend aria-hidden="true" />
           </button>
@@ -242,7 +252,7 @@ function inlineBold(text) {
   )
 }
 
-function AssistantMessage({ actions, sources, suggestions, onSuggestion, text }) {
+function AssistantMessage({ actions, sources, sourcesLabel, suggestions, onSuggestion, text }) {
   return (
     <div className="flex max-w-[88%] gap-2">
       <span className="mt-auto grid size-8 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-brand-500 to-cyan-500 text-white">
@@ -265,7 +275,7 @@ function AssistantMessage({ actions, sources, suggestions, onSuggestion, text })
         ) : null}
         {sources?.length ? (
           <p className="mt-3 text-[10px] font-semibold uppercase tracking-wide text-[var(--app-text-muted)]">
-            Sources: {sources.join(' · ')}
+            {sourcesLabel || `Sources: ${sources.join(' · ')}`}
           </p>
         ) : null}
       </div>

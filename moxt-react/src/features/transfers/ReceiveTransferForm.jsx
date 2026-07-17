@@ -1,3 +1,4 @@
+import { useLanguage } from '../../contexts/useLanguage'
 import { RECEIVE_METHODS } from './transferReceiveValidation'
 
 export function ReceiveTransferForm({
@@ -6,8 +7,11 @@ export function ReceiveTransferForm({
   onChange,
   onSubmit,
   submitting = false,
-  submitLabel = 'Confirmer la réception',
+  submitLabel,
 }) {
+  const { t } = useLanguage()
+  const resolvedSubmitLabel = submitLabel || t('transfers.receive.confirm')
+
   return (
     <form
       className="grid gap-4"
@@ -18,14 +22,14 @@ export function ReceiveTransferForm({
       noValidate
     >
       <label className="grid gap-1 text-sm">
-        <span className="font-bold">Montant reçu</span>
+        <span className="font-bold">{t('transfers.receive.amountLabel')}</span>
         <input
           type="text"
           inputMode="decimal"
           className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-4 py-3"
           value={values.receivedAmount}
           onChange={(e) => onChange('receivedAmount', e.target.value)}
-          placeholder="Ex. 125000"
+          placeholder={t('transfers.receive.amountPlaceholder')}
           disabled={submitting}
         />
         {errors.receivedAmount ? (
@@ -34,7 +38,7 @@ export function ReceiveTransferForm({
       </label>
 
       <label className="grid gap-1 text-sm">
-        <span className="font-bold">Méthode de réception</span>
+        <span className="font-bold">{t('transfers.receive.methodLabel')}</span>
         <select
           className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-4 py-3"
           value={values.receivedMethod}
@@ -43,7 +47,7 @@ export function ReceiveTransferForm({
         >
           {RECEIVE_METHODS.map((m) => (
             <option key={m.value} value={m.value}>
-              {m.label}
+              {t(m.labelKey)}
             </option>
           ))}
         </select>
@@ -53,7 +57,7 @@ export function ReceiveTransferForm({
       </label>
 
       <label className="grid gap-1 text-sm">
-        <span className="font-bold">Preuve de réception (optionnel)</span>
+        <span className="font-bold">{t('transfers.receive.proofLabel')}</span>
         <input
           type="file"
           accept="image/*,.pdf"
@@ -72,7 +76,7 @@ export function ReceiveTransferForm({
         disabled={submitting}
         className="mt-2 rounded-xl bg-brand-700 px-5 py-3 text-sm font-bold text-white disabled:opacity-50"
       >
-        {submitting ? 'Enregistrement…' : submitLabel}
+        {submitting ? t('transfers.receive.saving') : resolvedSubmitLabel}
       </button>
     </form>
   )

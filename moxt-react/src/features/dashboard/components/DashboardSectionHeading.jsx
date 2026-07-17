@@ -1,12 +1,15 @@
 import { FiArrowRight } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
+import { useLanguage } from '../../../contexts/useLanguage'
 
 export function DashboardSectionHeading({ link, linkLabel, title }) {
+  const { t } = useLanguage()
+
   return (
     <div className="flex items-center justify-between gap-4">
       <div>
         <p className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-700 dark:text-brand-300">
-          Découvrir MOXT
+          {t('dashboard.discovery.eyebrow')}
         </p>
         <h2 className="mt-1 text-2xl font-black tracking-[-0.035em]">{title}</h2>
       </div>

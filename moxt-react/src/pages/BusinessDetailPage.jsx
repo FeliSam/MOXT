@@ -27,6 +27,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { ReshareButton } from '../components/ui/ReshareButton'
 import { activityByValue, businessExperienceForActivity } from '../config/businessActivities'
 import { statusMeta } from '../config/statuses'
+import { useLanguage } from '../contexts/useLanguage'
 import { FavoriteButton } from '../features/account/FavoriteButton'
 import { SubscribeButton } from '../features/account/SubscribeButton'
 import { ProfileQrShareButton } from '../features/share/ProfileQrShareButton'
@@ -43,19 +44,27 @@ import { isBusinessVisibleToViewer } from '../features/businesses/businessVisibi
 import { moderateBusiness } from '../features/businesses/businessSlice'
 import { ContactButton } from '../features/communications/ContactButton'
 import { BusinessActivityVisibilitySection } from '../features/businesses/BusinessActivityVisibilitySection'
+import {
+  businessesOptionLabel,
+  businessesServiceLabel,
+  businessesSpotlightLabel,
+  businessesText,
+} from '../features/businesses/businessesI18n'
 import { canViewBusinessActivity } from '../features/account/activityVisibility'
 import { selectBusinessReviewsBundle } from '../features/reviews/reviewSelectors'
 import { ReviewsSection, REVIEW_TARGET_TYPES } from '../features/reviews/ReviewsSection'
 
-const serviceSections = [
-  { key: 'listings', label: 'Annonces', icon: FiShoppingBag, service: 'Marketplace' },
-  { key: 'jobs', label: 'Jobs', icon: FiBriefcase, service: 'Jobs' },
-  { key: 'events', label: 'Événements', icon: FiCalendar, service: 'Events' },
-  { key: 'parcels', label: 'Colis', icon: FiPackage, service: 'Colis' },
+const SERVICE_SECTION_DEFS = [
+  { key: 'listings', labelKey: 'businesses.services.listings', icon: FiShoppingBag, service: 'Marketplace' },
+  { key: 'jobs', labelKey: 'businesses.services.jobs', icon: FiBriefcase, service: 'Jobs' },
+  { key: 'events', labelKey: 'businesses.services.eventsLabel', icon: FiCalendar, service: 'Events' },
+  { key: 'parcels', labelKey: 'businesses.services.colis', icon: FiPackage, service: 'Colis' },
 ]
 
 export function BusinessDetailPage() {
   const dispatch = useDispatch()
+  const { t } = useLanguage()
+  const bt = (key, vars) => businessesText(t, key, vars)
   const [detailTab, setDetailTab] = useState('informations')
   const { businessId } = useParams()
   const user = useSelector((state) => state.auth.user)
@@ -91,13 +100,11 @@ export function BusinessDetailPage() {
       <EmptyState
         title={
           business && !canView
-            ? 'Entreprise non accessible'
-            : 'Entreprise introuvable ou en attente de validation'
+            ? bt('businesses.detail.notAccessible')
+            : bt('businesses.detail.notFoundPending')
         }
         description={
-          business && !canView
-            ? 'Cette entreprise a restreint la visibilité de ses publications.'
-            : undefined
+          business && !canView ? bt('businesses.detail.restrictedVisibility') : undefined
         }
       />
     )
@@ -107,21 +114,28 @@ export function BusinessDetailPage() {
   const experience = businessExperienceForActivity(business.primaryActivity)
   const hasTransfer = business.services?.includes('Transfert')
   const ratingValue = rating.count ? rating.average : business.rating || 0
+  const serviceSections = SERVICE_SECTION_DEFS.map((section) => ({
+    ...section,
+    label: bt(section.labelKey),
+  }))
   const sections = serviceSections.filter(
     ({ key, service }) => business.services?.includes(service) || content[key]?.length,
   )
+  const activityLabel = businessesOptionLabel(t, activity) || business.sector
+  const spotlightKeys = experience.spotlightKeys || []
+  const onboardingKeys = experience.onboardingKeys || []
 
   const metricItems = [
     {
       icon: FiStar,
-      label: `${rating.count} avis`,
+      label: bt('businesses.detail.reviewsCount', { count: rating.count }),
       value: `${ratingValue}/5`,
     },
-    { icon: FiShield, label: 'Statut', value: statusMeta(business.status).label },
-    { icon: FiMapPin, label: 'Localisation', value: business.city },
+    { icon: FiShield, label: bt('businesses.common.status'), value: statusMeta(business.status).label },
+    { icon: FiMapPin, label: bt('businesses.common.location'), value: business.city },
     {
       icon: HiOutlineBuildingOffice2,
-      label: 'Publications',
+      label: bt('businesses.common.publications'),
       value: `${Object.values(content).reduce((total, items) => total + items.length, 0)}`,
     },
   ]
@@ -129,7 +143,7 @@ export function BusinessDetailPage() {
   if (hasTransfer) {
     metricItems.splice(1, 0, {
       icon: HiOutlineBuildingOffice2,
-      label: 'Frais annoncés',
+      label: bt('businesses.detail.feeAnnounced'),
       value: `${business.feePercent}%`,
     })
   }
@@ -137,7 +151,7 @@ export function BusinessDetailPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Entreprise MOXT"
+        eyebrow={bt('businesses.detail.eyebrow')}
         title={
           <VerifiedDisplayName
             name={business.name}
@@ -169,7 +183,7 @@ export function BusinessDetailPage() {
                 relatedType="business"
               />
             ) : null}
-            <BackButton fallback="/businesses" label="Annuaire" />
+            <BackButton fallback="/businesses" label={bt('businesses.common.directory')} />
           </div>
         }
       />
@@ -182,7 +196,7 @@ export function BusinessDetailPage() {
           {business.bannerUrl ? (
             <img
               src={business.bannerUrl}
-              alt={`Bannière ${business.name}`}
+              alt={bt('businesses.detail.bannerAlt', { name: business.name })}
               className="h-44 w-full rounded-[1.8rem] object-cover"
               loading="lazy"
               decoding="async"
@@ -194,7 +208,7 @@ export function BusinessDetailPage() {
             {business.logoUrl ? (
               <img
                 src={business.logoUrl}
-                alt={`${business.name} logo`}
+                alt={bt('businesses.detail.logoAlt', { name: business.name })}
                 className="size-16 rounded-3xl border-4 border-[var(--app-surface)] object-cover shadow-md"
                 loading="lazy"
                 decoding="async"
@@ -213,10 +227,10 @@ export function BusinessDetailPage() {
               shareUrl={buildBusinessShareUrl(business)}
               shareText={buildBusinessShareText(business)}
               title={business.name}
-              subtitle={activity?.label || business.sector}
+              subtitle={activityLabel}
               verified={['verified', 'approved', 'active'].includes(business.status)}
               city={businessCityLabel(business)}
-              sector={activity?.label || business.sector}
+              sector={activityLabel}
               logoUrl={business.logoUrl}
             />
           </div>
@@ -230,10 +244,12 @@ export function BusinessDetailPage() {
             {business.description}
           </p>
           <div className="rounded-[1.5rem] bg-[var(--app-surface-muted)] p-4 text-sm leading-6 text-[var(--app-text-muted)]">
-            <strong className="block text-[var(--app-text)]">
-              {activity?.label || business.sector}
-            </strong>
-            <span>{experience.promise}</span>
+            <strong className="block text-[var(--app-text)]">{activityLabel}</strong>
+            <span>
+              {experience.promiseKey
+                ? businessesText(t, experience.promiseKey)
+                : experience.promise}
+            </span>
           </div>
           <p className="flex items-center gap-2 text-sm">
             <FiMapPin className="text-brand-600" /> {business.city} · {business.country}
@@ -268,7 +284,7 @@ export function BusinessDetailPage() {
               className="mt-4 block text-sm font-bold text-brand-700 dark:text-brand-300"
               to={`/businesses/${business.id}/publications/${key}`}
             >
-              Consulter
+              {bt('businesses.common.consult')}
             </Link>
           </Card>
         ))}
@@ -279,44 +295,57 @@ export function BusinessDetailPage() {
         variant="section"
         className="!grid-cols-3 sm:!inline-flex"
         tabs={[
-          { key: 'informations', label: 'Informations' },
-          { key: 'abonnements', label: 'Abonnements' },
-          { key: 'avis', label: 'Avis', count: rating.count },
+          { key: 'informations', label: bt('businesses.detail.tabs.informations') },
+          { key: 'abonnements', label: bt('businesses.detail.tabs.subscriptions') },
+          { key: 'avis', label: bt('businesses.detail.tabs.reviews'), count: rating.count },
         ]}
       />
       {detailTab === 'informations' ? (
         <>
           {isOwner ? <BusinessActivityVisibilitySection business={business} /> : null}
           <div className="grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
-            <DetailSection title="Informations professionnelles">
+            <DetailSection title={bt('businesses.detail.professionalInfo')}>
               <DetailFacts
                 items={[
-                  { label: 'Secteur', value: activity?.label || business.sector },
-                  { label: 'Pays', value: business.country },
-                  { label: 'Ville', value: business.city },
-                  { label: 'Téléphone', value: business.phone },
+                  { label: bt('businesses.common.sector'), value: activityLabel },
+                  { label: bt('businesses.common.country'), value: business.country },
+                  { label: bt('businesses.common.city'), value: business.city },
+                  { label: bt('businesses.common.phone'), value: business.phone },
                   ...(hasTransfer
                     ? [
-                        { label: 'Frais annoncés', value: `${business.feePercent}%` },
-                        { label: 'Délai moyen', value: business.averageDelay },
+                        {
+                          label: bt('businesses.detail.feeAnnounced'),
+                          value: `${business.feePercent}%`,
+                        },
+                        {
+                          label: bt('businesses.detail.averageDelay'),
+                          value: business.averageDelay,
+                        },
                       ]
                     : []),
                   ...(!hasTransfer && business.averageDelay
-                    ? [{ label: 'Délai moyen', value: business.averageDelay }]
+                    ? [
+                        {
+                          label: bt('businesses.detail.averageDelay'),
+                          value: business.averageDelay,
+                        },
+                      ]
                     : []),
                 ]}
               />
               <div className="mt-5 flex flex-wrap gap-2">
                 {(business.services || []).map((service) => (
-                  <Badge key={service}>{service}</Badge>
+                  <Badge key={service}>{businessesServiceLabel(t, service)}</Badge>
                 ))}
               </div>
             </DetailSection>
             <TrustPanel
               items={[
-                `Profil ${statusMeta(business.status).label.toLowerCase()}.`,
-                `${rating.count} avis publié(s) par la communauté.`,
-                'Les coordonnées sensibles sont partagées dans les opérations confirmées.',
+                bt('businesses.detail.trust.status', {
+                  status: statusMeta(business.status).label.toLowerCase(),
+                }),
+                bt('businesses.detail.trust.reviews', { count: rating.count }),
+                bt('businesses.detail.trust.contacts'),
               ]}
             />
           </div>
@@ -326,45 +355,49 @@ export function BusinessDetailPage() {
                 <div>
                   <h2 className="flex items-center gap-2 font-black">
                     <FiShield className="text-brand-700" />
-                    Actions administrateur
+                    {bt('businesses.detail.adminTitle')}
                   </h2>
                   <p className="mt-2 text-sm text-[var(--app-text-muted)]">
-                    Validation et contrôle direct de l’entreprise depuis sa fiche publique.
+                    {bt('businesses.detail.adminDescription')}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button onClick={() => dispatch(moderateBusiness({ id: business.id, status: 'verified' }))}>
-                    Valider
+                    {bt('businesses.detail.validate')}
                   </Button>
                   <Button variant="secondary" onClick={() => dispatch(moderateBusiness({ id: business.id, status: 'active' }))}>
-                    Activer
+                    {bt('businesses.detail.activate')}
                   </Button>
                   <Button variant="danger" onClick={() => dispatch(moderateBusiness({ id: business.id, status: 'rejected' }))}>
-                    Rejeter
+                    {bt('businesses.detail.reject')}
                   </Button>
                 </div>
               </div>
             </Card>
           ) : null}
           <div className="grid gap-5 lg:grid-cols-[1fr_1fr]">
-            <DetailSection title="Points mis en avant">
+            <DetailSection title={bt('businesses.detail.spotlightTitle')}>
               <div className="grid gap-3 sm:grid-cols-2">
-                {experience.spotlight.map((item) => (
-                  <div key={item} className="rounded-2xl bg-[var(--app-surface-muted)] p-4 text-sm">
-                    <strong className="block">{item}</strong>
+                {spotlightKeys.map((itemKey) => (
+                  <div key={itemKey} className="rounded-2xl bg-[var(--app-surface-muted)] p-4 text-sm">
+                    <strong className="block">{businessesSpotlightLabel(t, itemKey)}</strong>
                     <span className="mt-1 block text-[var(--app-text-muted)]">
-                      {resolveBusinessSpotlightValue(business, item)}
+                      {resolveBusinessSpotlightValue(business, itemKey, bt)}
                     </span>
                   </div>
                 ))}
               </div>
             </DetailSection>
-            <DetailSection title="À propos de cette activité">
-              <p className="text-sm leading-7 text-[var(--app-text-muted)]">{experience.audience}</p>
+            <DetailSection title={bt('businesses.detail.aboutActivity')}>
+              <p className="text-sm leading-7 text-[var(--app-text-muted)]">
+                {experience.audienceKey
+                  ? businessesText(t, experience.audienceKey)
+                  : experience.audience}
+              </p>
               <div className="mt-4 grid gap-3">
-                {experience.onboarding.map((item) => (
-                  <div key={item} className="rounded-2xl bg-[var(--app-surface-muted)] p-4 text-sm">
-                    {item}
+                {onboardingKeys.map((itemKey, index) => (
+                  <div key={itemKey} className="rounded-2xl bg-[var(--app-surface-muted)] p-4 text-sm">
+                    {businessesText(t, itemKey) || experience.onboarding[index]}
                   </div>
                 ))}
               </div>
@@ -373,9 +406,9 @@ export function BusinessDetailPage() {
           {sections.length ? (
             <div className="grid gap-4">
               <div>
-                <h2 className="text-2xl font-black">Publications liées</h2>
+                <h2 className="text-2xl font-black">{bt('businesses.detail.linkedPublications')}</h2>
                 <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-                  Accédez aux contenus réellement publiés par cette entreprise selon son activité.
+                  {bt('businesses.detail.linkedPublicationsHint')}
                 </p>
               </div>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -385,7 +418,7 @@ export function BusinessDetailPage() {
                       <Icon className="text-2xl text-brand-600" />
                       <strong className="mt-4 block text-xl">{label}</strong>
                       <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-                        {content[key].length} élément(s) publiés
+                        {bt('businesses.detail.publishedItems', { count: content[key].length })}
                       </p>
                       <div className="mt-4">
                         {content[key][0]?.images?.[0] ? (
@@ -396,7 +429,7 @@ export function BusinessDetailPage() {
                           />
                         ) : (
                           <div className="grid h-36 place-items-center rounded-[1.25rem] bg-[var(--app-surface-muted)] text-sm text-[var(--app-text-muted)]">
-                            Voir la liste publiée
+                            {bt('businesses.detail.viewPublishedList')}
                           </div>
                         )}
                       </div>
@@ -428,37 +461,45 @@ export function BusinessDetailPage() {
   )
 }
 
-function resolveBusinessSpotlightValue(business, item) {
-  switch (item) {
-    case 'Frais annonces':
-      return business.feePercent ? `${business.feePercent}%` : 'À confirmer'
-    case 'Delai moyen':
-    case 'Delai de prise en charge':
-      return business.averageDelay || 'À confirmer'
-    case 'Reseaux actifs':
-      return business.exchangeMethods?.join(', ') || 'Selon l opération'
-    case 'Zone de service':
-    case 'Zones':
-    case 'Zone':
-    case 'Livraison':
-      return business.serviceZones || business.city || 'Russie'
-    case 'Capacite':
-      return 'Visible dans les annonces de colis'
-    case 'Catalogue':
-    case 'Biens actifs':
-    case 'Programmes':
-    case 'Ateliers':
-    case 'Services':
-    case 'Offres actives':
-    case 'Evenements a venir':
-      return 'Visible dans les publications liées'
-    case 'Disponibilite':
-    case 'Horaires':
-      return business.scheduleSummary || 'Selon contact direct'
-    case 'Contact':
-    case 'Contact RH':
-      return business.phone || business.email || 'À compléter'
+function resolveBusinessSpotlightValue(business, itemKey, bt) {
+  switch (itemKey) {
+    case 'feeAnnounced':
+      return business.feePercent
+        ? `${business.feePercent}%`
+        : bt('businesses.common.toConfirm')
+    case 'averageDelay':
+    case 'handlingDelay':
+    case 'responseDelay':
+      return business.averageDelay || bt('businesses.common.toConfirm')
+    case 'activeNetworks':
+      return (
+        business.exchangeMethods?.join(', ') ||
+        bt('businesses.spotlight.value.perOperation')
+      )
+    case 'serviceZone':
+    case 'zones':
+    case 'zone':
+    case 'delivery':
+      return business.serviceZones || business.city || bt('businesses.common.russia')
+    case 'capacity':
+      return bt('businesses.spotlight.value.parcelCapacity')
+    case 'catalog':
+    case 'activeProperties':
+    case 'programs':
+    case 'workshops':
+    case 'services':
+    case 'activeOffers':
+    case 'upcomingEvents':
+      return bt('businesses.spotlight.value.linkedPublications')
+    case 'availability':
+    case 'schedule':
+      return business.scheduleSummary || bt('businesses.spotlight.value.directContact')
+    case 'contact':
+    case 'hrContact':
+      return business.phone || business.email || bt('businesses.common.toComplete')
+    case 'city':
+      return business.city || bt('businesses.common.moxt')
     default:
-      return business.city || 'MOXT'
+      return business.city || bt('businesses.common.moxt')
   }
 }

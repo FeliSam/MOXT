@@ -5,11 +5,14 @@ import {
   FiUsers,
   FiZap,
 } from 'react-icons/fi'
+import { useLanguage } from '../../../contexts/useLanguage'
 import { CARD } from '../adminConfig'
+import { adminText } from '../adminI18n'
 import { avatarColor, initials } from '../adminUtils'
 import { TrendChip } from './AdminShared'
 
 export function AdminIdentityCard({ admin }) {
+  const { t } = useLanguage()
   if (!admin) return null
   const name = `${admin.firstName || ''} ${admin.lastName || ''}`.trim()
   return (
@@ -20,7 +23,9 @@ export function AdminIdentityCard({ admin }) {
         {initials(name)}
       </span>
       <div className="min-w-0">
-        <p className="truncate font-black text-sm">{name || 'Administrateur'}</p>
+        <p className="truncate font-black text-sm">
+          {name || adminText(t, 'admin.identity.fallbackName')}
+        </p>
         <p className="text-[10px] font-bold uppercase tracking-wider text-brand-700">
           {admin.role || 'admin'}
         </p>
@@ -67,48 +72,49 @@ export function SidebarBtn({ active, badge, icon: Icon, label, onClick }) {
 }
 
 export function HeroKpiRow({ metrics, queues, onSelect }) {
+  const { t } = useLanguage()
   const tiles = [
     {
       key: 'transfers',
-      label: 'Transferts',
+      label: adminText(t, 'admin.kpi.transfers.label'),
       value: metrics.transfers.total,
-      sub: `${metrics.transfers.pending} en cours`,
+      sub: adminText(t, 'admin.kpi.transfers.sub', { count: metrics.transfers.pending }),
       icon: FiRepeat,
       trend: metrics.transfers.pending > 0 ? 'up' : 'stable',
       gradient: 'from-teal-600 to-cyan-500',
     },
     {
       key: 'content',
-      label: 'Contenus',
+      label: adminText(t, 'admin.kpi.content.label'),
       value: metrics.content.total,
-      sub: `${metrics.content.pending} a moderer`,
+      sub: adminText(t, 'admin.kpi.content.sub', { count: metrics.content.pending }),
       icon: FiLayers,
       trend: metrics.content.pending > 5 ? 'up' : 'stable',
       gradient: 'from-violet-600 to-purple-500',
     },
     {
       key: 'users',
-      label: 'Utilisateurs',
+      label: adminText(t, 'admin.kpi.users.label'),
       value: metrics.users.total,
-      sub: `${metrics.users.suspended} suspendus`,
+      sub: adminText(t, 'admin.kpi.users.sub', { count: metrics.users.suspended }),
       icon: FiUsers,
       trend: 'stable',
       gradient: 'from-blue-600 to-indigo-500',
     },
     {
       key: 'queues',
-      label: 'Files urgentes',
+      label: adminText(t, 'admin.kpi.queues.label'),
       value: queues.urgent,
-      sub: `${metrics.queues.total} au total`,
+      sub: adminText(t, 'admin.kpi.queues.sub', { count: metrics.queues.total }),
       icon: FiZap,
       trend: queues.urgent > 0 ? 'up' : 'stable',
       gradient: 'from-amber-500 to-orange-500',
     },
     {
       key: 'audit',
-      label: 'Logs audit',
+      label: adminText(t, 'admin.kpi.audit.label'),
       value: metrics.audit.total,
-      sub: 'Journal complet',
+      sub: adminText(t, 'admin.kpi.audit.sub'),
       icon: FiActivity,
       trend: 'stable',
       gradient: 'from-slate-600 to-slate-500',

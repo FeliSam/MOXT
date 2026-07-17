@@ -1,15 +1,18 @@
 import { FiClock, FiDollarSign, FiEye, FiRepeat } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
+import { useLanguage } from '../../../contexts/useLanguage'
 import { Button } from '../../../components/ui/Button'
 import { TransferStatusBadge } from '../../transfers/TransferStatusBadge'
 import { TRANSFER_TRANSITIONS } from '../../transfers/transferConfig'
 import { moderateTransfer } from '../../transfers/transferSlice'
 import { formatMoney } from '../../transfers/transferUtils'
 import { CARD, ITEM } from '../adminConfig'
+import { adminText } from '../adminI18n'
 import { statusDotColor } from '../adminUtils'
 import { Empty, MetricCard, SectionTitle } from './AdminShared'
 
 export function AdminTransfersPanel({ dispatch, setSelected, transfers }) {
+  const { t } = useLanguage()
   const completedVolume = transfers
     .filter((i) => i.status === 'completed')
     .reduce((sum, i) => sum + Number(i.amountSent || 0), 0)
@@ -18,13 +21,13 @@ export function AdminTransfersPanel({ dispatch, setSelected, transfers }) {
   return (
     <div className="grid gap-5">
       <div className="grid gap-3 sm:grid-cols-3">
-        <MetricCard icon={FiRepeat} label="Total" value={transfers.length} gradient="from-teal-600 to-cyan-500" />
-        <MetricCard icon={FiClock} label="En cours" value={pending.length} gradient="from-amber-500 to-orange-500" />
-        <MetricCard icon={FiDollarSign} label="Volume traite" value={completedVolume ? formatMoney(completedVolume, 'XOF') : '0 XOF'} gradient="from-emerald-600 to-green-500" />
+        <MetricCard icon={FiRepeat} label={adminText(t, 'admin.transfers.metric.total')} value={transfers.length} gradient="from-teal-600 to-cyan-500" />
+        <MetricCard icon={FiClock} label={adminText(t, 'admin.transfers.metric.pending')} value={pending.length} gradient="from-amber-500 to-orange-500" />
+        <MetricCard icon={FiDollarSign} label={adminText(t, 'admin.transfers.metric.volume')} value={completedVolume ? formatMoney(completedVolume, 'XOF') : '0 XOF'} gradient="from-emerald-600 to-green-500" />
       </div>
 
       <div className={`${CARD} p-5 grid gap-3`}>
-        <SectionTitle icon={FiRepeat} label="Liste des transferts" count={transfers.length} />
+        <SectionTitle icon={FiRepeat} label={adminText(t, 'admin.transfers.listTitle')} count={transfers.length} />
         {transfers.length ? (
           transfers.map((transfer) => {
             const next = TRANSFER_TRANSITIONS[transfer.status]
@@ -47,17 +50,21 @@ export function AdminTransfersPanel({ dispatch, setSelected, transfers }) {
                   <div className="ml-auto text-right">
                     <p className="text-sm font-black">{formatMoney(transfer.amountSent, transfer.currencyFrom)}</p>
                     <p className="text-xs text-[var(--app-text-muted)]">
-                      {transfer.amountReceived ? `${formatMoney(transfer.amountReceived, transfer.currencyTo)} recu` : ''}
+                      {transfer.amountReceived
+                        ? adminText(t, 'admin.transfers.receivedSuffix', {
+                            amount: formatMoney(transfer.amountReceived, transfer.currencyTo),
+                          })
+                        : ''}
                     </p>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Link to={`/transfers/${transfer.id}`}>
-                    <Button variant="secondary" icon={FiEye}>Ouvrir</Button>
+                    <Button variant="secondary" icon={FiEye}>{adminText(t, 'admin.actions.open')}</Button>
                   </Link>
                   {next && (
                     <Button onClick={() => dispatch(moderateTransfer({ id: transfer.id, status: next }))}>
-                      Passer a {next}
+                      {adminText(t, 'admin.actions.advanceTo', { next })}
                     </Button>
                   )}
                 </div>
@@ -65,7 +72,11 @@ export function AdminTransfersPanel({ dispatch, setSelected, transfers }) {
             )
           })
         ) : (
-          <Empty label="Aucun transfert trouve." sub="Essayez de modifier les filtres." icon={FiRepeat} />
+          <Empty
+            label={adminText(t, 'admin.empty.noTransferFound')}
+            sub={adminText(t, 'admin.empty.tryFilters')}
+            icon={FiRepeat}
+          />
         )}
       </div>
     </div>

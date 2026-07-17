@@ -1,15 +1,16 @@
 import { useMemo, useState } from 'react'
 import { FiArrowUpRight, FiRepeat } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
+import { useLanguage } from '../../contexts/useLanguage'
 import { DIRECTIONS } from './transferConfig'
 import { calculateTransfer } from './transferUtils'
 import { useExchangeRate } from './useExchangeRate'
 
 export function DashboardTransferCalculator({ onOpen }) {
+  const { t } = useLanguage()
   const user = useSelector((state) => state.auth.user)
   const originCountry = user?.originCountry || (user?.country !== 'RU' ? user?.country : 'BJ')
 
-  // Si l'utilisateur est en Russie, le sens naturel est RUB → Afrique
   const initialDirection = user?.country === 'RU' ? DIRECTIONS.RU_TO_BJ : DIRECTIONS.BJ_TO_RU
 
   const [direction, setDirection] = useState(initialDirection)
@@ -38,28 +39,28 @@ export function DashboardTransferCalculator({ onOpen }) {
     <div className="rounded-[var(--radius-card-lg)] bg-white/12 p-4 shadow-2xl backdrop-blur-xl sm:p-5">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-bold text-white/65">Transfert rapide</p>
-          <h2 className="mt-1 text-xl font-black">Estimez votre envoi</h2>
+          <p className="text-xs font-bold text-white/65">{t('transfers.dashboardCalc.eyebrow')}</p>
+          <h2 className="mt-1 text-xl font-black">{t('transfers.dashboardCalc.title')}</h2>
         </div>
         <button
           type="button"
           onClick={invert}
           className="grid size-11 place-items-center rounded-[var(--radius-btn)] bg-white text-brand-800"
-          aria-label="Inverser le sens du transfert"
+          aria-label={t('transfers.calculator.invertAria')}
         >
           <FiRepeat />
         </button>
       </div>
       <div className="mt-6 grid gap-3">
         <CurrencyField
-          label="Vous envoyez"
+          label={t('transfers.dashboardCalc.youSend')}
           currency={calculation.currencyFrom}
           value={amount}
           onChange={setAmount}
         />
         <CurrencyField
           dark
-          label="Estimation reçue"
+          label={t('transfers.dashboardCalc.receivedEstimate')}
           currency={calculation.currencyTo}
           value={roundAmount(calculation.amountReceived)}
           onChange={updateReceived}
@@ -71,7 +72,7 @@ export function DashboardTransferCalculator({ onOpen }) {
         </span>
         <span>
           {liveRate.loading
-            ? 'Actualisation…'
+            ? t('transfers.calculator.refreshing')
             : `${liveRate.source}${liveRate.date ? ` · ${liveRate.date}` : ''}`}
         </span>
       </div>
@@ -80,7 +81,7 @@ export function DashboardTransferCalculator({ onOpen }) {
         onClick={onOpen}
         className="mt-4 flex items-center justify-between rounded-[var(--radius-btn)] bg-cyan-300 px-4 py-3 text-sm font-black text-slate-950"
       >
-        Ouvrir la calculatrice <FiArrowUpRight />
+        {t('transfers.dashboardCalc.openCalculator')} <FiArrowUpRight />
       </button>
     </div>
   )

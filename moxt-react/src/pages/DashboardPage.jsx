@@ -12,8 +12,10 @@ import { useDashboardStats } from '../features/dashboard/hooks/useDashboardStats
 import { TransferCalculator } from '../features/transfers/TransferCalculator'
 import { useExchangeRate } from '../features/transfers/useExchangeRate'
 import { useHorizontalScroll } from '../hooks/useHorizontalScroll'
+import { useLanguage } from '../contexts/useLanguage'
 
 export function DashboardPage() {
+  const { t } = useLanguage()
   const [calculatorOpen, setCalculatorOpen] = useState(false)
   const quickActionsRef = useHorizontalScroll()
   const trustHighlightsRef = useHorizontalScroll()
@@ -67,7 +69,7 @@ export function DashboardPage() {
       <Modal
         open={calculatorOpen}
         onClose={() => setCalculatorOpen(false)}
-        title="Calculatrice de transfert"
+        title={t('dashboard.calculatorTitle')}
         size="large"
       >
         <TransferCalculator verified={user.verified} />

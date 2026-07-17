@@ -3,6 +3,7 @@ import { FiImage, FiUpload } from 'react-icons/fi'
 import { Modal } from './Modal'
 import { Button } from './Button'
 import { storageService } from '../../services/storageService'
+import { useLanguage } from '../../contexts/useLanguage'
 
 /**
  * Dialogue de signalement : raison obligatoire + capture d’écran optionnelle.
@@ -11,10 +12,11 @@ export function ReportDialog({
   open,
   onClose,
   onSubmit,
-  title = 'Signaler',
+  title,
   userId,
   submitting = false,
 }) {
+  const { t } = useLanguage()
   const [reason, setReason] = useState('')
   const [file, setFile] = useState(null)
   const [preview, setPreview] = useState('')
@@ -41,11 +43,11 @@ export function ReportDialog({
     const next = event.target.files?.[0]
     if (!next) return
     if (!next.type.startsWith('image/')) {
-      setError('Seules les images (captures d’écran) sont acceptées.')
+      setError(t('report.errors.imagesOnly'))
       return
     }
     if (next.size > 5 * 1024 * 1024) {
-      setError('L’image ne doit pas dépasser 5 Mo.')
+      setError(t('report.errors.imageTooLarge'))
       return
     }
     setError('')
@@ -57,7 +59,7 @@ export function ReportDialog({
     event.preventDefault()
     const trimmed = reason.trim()
     if (trimmed.length < 8) {
-      setError('Expliquez la raison (au moins 8 caractères).')
+      setError(t('report.errors.reasonTooShort'))
       return
     }
     setUploading(true)
@@ -71,7 +73,7 @@ export function ReportDialog({
       reset()
       onClose?.()
     } catch (err) {
-      setError(err?.message || 'Impossible d’envoyer le signalement.')
+      setError(err?.message || t('report.errors.submitFailed'))
     } finally {
       setUploading(false)
     }
@@ -80,13 +82,13 @@ export function ReportDialog({
   const busy = submitting || uploading
 
   return (
-    <Modal open={open} onClose={handleClose} title={title} size="default">
+    <Modal open={open} onClose={handleClose} title={title ?? t('report.title')} size="default">
       <form className="grid gap-4" onSubmit={handleSubmit}>
         <label className="grid gap-1.5">
-          <span className="text-sm font-bold">Raison du signalement</span>
+          <span className="text-sm font-bold">{t('report.reasonLabel')}</span>
           <textarea
             className="min-h-28 w-full rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 text-sm outline-none focus:border-[var(--app-teal)]"
-            placeholder="Décrivez le problème (contenu trompeur, spam, harcèlement…)"
+            placeholder={t('report.reasonPlaceholder')}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             required
@@ -94,14 +96,14 @@ export function ReportDialog({
         </label>
 
         <div className="grid gap-2">
-          <span className="text-sm font-bold">Capture d’écran (optionnel)</span>
+          <span className="text-sm font-bold">{t('report.screenshotLabel')}</span>
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
             className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] px-4 py-6 text-sm font-semibold text-[var(--app-text-muted)] transition hover:border-[var(--app-teal)]"
           >
             <FiUpload />
-            {file ? file.name : 'Ajouter une image'}
+            {file ? file.name : t('report.addImage')}
           </button>
           <input
             ref={inputRef}
@@ -112,11 +114,11 @@ export function ReportDialog({
           />
           {preview ? (
             <div className="overflow-hidden rounded-2xl border border-[var(--app-border)]">
-              <img src={preview} alt="Aperçu du signalement" className="max-h-48 w-full object-contain" />
+              <img src={preview} alt={t('report.previewAlt')} className="max-h-48 w-full object-contain" />
             </div>
           ) : (
             <p className="flex items-center gap-2 text-xs text-[var(--app-text-faint)]">
-              <FiImage /> Une capture aide l’équipe à traiter plus vite.
+              <FiImage /> {t('report.screenshotHint')}
             </p>
           )}
         </div>
@@ -125,10 +127,10 @@ export function ReportDialog({
 
         <div className="flex flex-wrap justify-end gap-2">
           <Button type="button" variant="secondary" onClick={handleClose} disabled={busy}>
-            Annuler
+            {t('common.cancel')}
           </Button>
           <Button type="submit" loading={busy} disabled={busy}>
-            Envoyer le signalement
+            {t('report.submit')}
           </Button>
         </div>
       </form>

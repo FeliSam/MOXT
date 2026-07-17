@@ -9,7 +9,7 @@ import {
   FiUsers,
 } from 'react-icons/fi'
 import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
@@ -20,6 +20,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { ReshareButton } from '../components/ui/ReshareButton'
 import { selectPublisherSubscribers } from '../features/account/subscriptionSelectors'
 import { activityByValue } from '../config/businessActivities'
+import { useLanguage } from '../contexts/useLanguage'
 import {
   buildBusinessShareText,
   buildBusinessShareUrl,
@@ -33,6 +34,8 @@ import {
   selectBusinessContent,
 } from '../features/businesses/businessSelectors'
 import { selectActiveBusinessForOwner } from '../features/businesses/businessVisibility'
+import { businessesOptionLabel } from '../features/businesses/businessesI18n'
+import { professionalText } from '../features/businesses/professionalI18n'
 import { selectTransfersVisibleToUser } from '../features/transfers/transferSelectors'
 import { isBusinessDocumentType } from '../features/businesses/businessDocumentTypes'
 import { ActionsPanel } from './professional/ActionsPanel'
@@ -47,45 +50,55 @@ import { StatisticsPanel } from './professional/StatisticsPanel'
 import { SubscriptionsPanel } from './professional/SubscriptionsPanel'
 import { TransfersPanel } from './professional/TransfersPanel'
 
-function buildProfessionalTabGroups({ hasTransfers, subscriberCount, reviewCount }) {
+function buildProfessionalTabGroups({ hasTransfers, subscriberCount, reviewCount, pt }) {
   return [
     {
       id: 'identity',
-      label: 'Identité',
+      label: pt('professional.tabs.groups.identity'),
       tabs: [
-        { value: 'profile', label: 'Profil' },
-        { value: 'overview', label: 'Aperçu' },
+        { value: 'profile', label: pt('professional.tabs.profile') },
+        { value: 'overview', label: pt('professional.tabs.overview') },
       ],
     },
     {
       id: 'activity',
-      label: 'Activité',
+      label: pt('professional.tabs.groups.activity'),
       tabs: [
-        { value: 'publications', label: 'Publications' },
-        { value: 'requests', label: 'Demandes' },
-        ...(hasTransfers ? [{ value: 'transfers', label: 'Transferts' }] : []),
+        { value: 'publications', label: pt('professional.tabs.publications') },
+        { value: 'requests', label: pt('professional.tabs.requests') },
+        ...(hasTransfers
+          ? [{ value: 'transfers', label: pt('professional.tabs.transfers') }]
+          : []),
       ],
     },
     {
       id: 'community',
-      label: 'Communauté',
+      label: pt('professional.tabs.groups.community'),
       tabs: [
-        { value: 'subscriptions', label: 'Abonnements', count: subscriberCount },
-        { value: 'reviews', label: 'Avis', count: reviewCount || undefined },
-        { value: 'members', label: 'Membres' },
+        {
+          value: 'subscriptions',
+          label: pt('professional.tabs.subscriptions'),
+          count: subscriberCount,
+        },
+        {
+          value: 'reviews',
+          label: pt('professional.tabs.reviews'),
+          count: reviewCount || undefined,
+        },
+        { value: 'members', label: pt('professional.tabs.members') },
       ],
     },
     {
       id: 'compliance',
-      label: 'Conformité',
-      tabs: [{ value: 'documents', label: 'Documents' }],
+      label: pt('professional.tabs.groups.compliance'),
+      tabs: [{ value: 'documents', label: pt('professional.tabs.documents') }],
     },
     {
       id: 'insights',
-      label: 'Pilotage',
+      label: pt('professional.tabs.groups.insights'),
       tabs: [
-        { value: 'statistics', label: 'Statistiques' },
-        { value: 'actions', label: 'Actions' },
+        { value: 'statistics', label: pt('professional.tabs.statistics') },
+        { value: 'actions', label: pt('professional.tabs.actions') },
       ],
     },
   ]
@@ -101,6 +114,8 @@ const serviceContentMap = {
 
 export function ProfessionalPage() {
   const dispatch = useDispatch()
+  const { t } = useLanguage()
+  const pt = useCallback((key, vars) => professionalText(t, key, vars), [t])
   const [searchParams, setSearchParams] = useSearchParams()
   const [active, setActive] = useState('profile')
   const user = useSelector((state) => state.auth.user)
@@ -128,9 +143,7 @@ export function ProfessionalPage() {
     ),
   )
   const subscribers = useSelector((state) =>
-    business?.id
-      ? selectPublisherSubscribers(state, 'business', business.id)
-      : [],
+    business?.id ? selectPublisherSubscribers(state, 'business', business.id) : [],
   )
 
   const enabledServices = useMemo(() => business?.services || [], [business])
@@ -149,8 +162,9 @@ export function ProfessionalPage() {
         hasTransfers,
         subscriberCount: subscribers.length,
         reviewCount: reviews.length,
+        pt,
       }),
-    [hasTransfers, reviews.length, subscribers.length],
+    [hasTransfers, pt, reviews.length, subscribers.length],
   )
   const tabs = useMemo(() => flattenGroupedTabs(tabGroups), [tabGroups])
   const safeActive = tabs.some((item) => item.value === active) ? active : 'profile'
@@ -182,31 +196,35 @@ export function ProfessionalPage() {
         rating,
         requests,
         transfers,
+        pt,
+        t,
       }),
-    [activity, completion, content, enabledServices, publications, rating, requests, transfers],
+    [activity, completion, content, enabledServices, publications, pt, rating, requests, transfers, t],
   )
 
   if (!business) {
     return (
       <EmptyState
         icon={HiOutlineBuildingOffice2}
-        title="Créez votre entreprise"
-        description="Un profil professionnel est nécessaire pour regrouper et piloter vos publications."
+        title={pt('professional.page.emptyTitle')}
+        description={pt('professional.page.emptyDescription')}
         action={
           <Link to="/businesses/setup">
-            <Button>Créer mon entreprise</Button>
+            <Button>{pt('professional.page.createBusiness')}</Button>
           </Link>
         }
       />
     )
   }
 
+  const activityLabel = businessesOptionLabel(t, activity) || business.sector
+
   return (
     <div className="grid min-w-0 max-w-full gap-7">
       <PageHeader
-        eyebrow="Espace professionnel"
+        eyebrow={pt('professional.page.eyebrow')}
         title={business.name}
-        description="Demandes, équipe, documents, publications et performances dans un espace adapté à votre activité."
+        description={pt('professional.page.description')}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <ProfileQrShareButton
@@ -216,15 +234,15 @@ export function ProfessionalPage() {
               shareUrl={buildBusinessShareUrl(business)}
               shareText={buildBusinessShareText(business)}
               title={business.name}
-              subtitle={activity?.label || business.sector}
+              subtitle={activityLabel}
               verified={['verified', 'approved', 'active'].includes(business.status)}
               city={businessCityLabel(business)}
-              sector={activity?.label || business.sector}
+              sector={activityLabel}
               logoUrl={business.logoUrl}
             />
             <ReshareButton sourceType="business" sourceId={business.id} sourceData={business} />
             <Link to={`/businesses/${business.id}`}>
-              <Button variant="secondary">Voir la fiche publique</Button>
+              <Button variant="secondary">{pt('professional.page.viewPublic')}</Button>
             </Link>
           </div>
         }
@@ -240,7 +258,7 @@ export function ProfessionalPage() {
         groups={tabGroups}
         active={safeActive}
         onChange={handleTabChange}
-        label="Sections de l'espace professionnel"
+        label={pt('professional.page.tabsAria')}
       />
 
       {safeActive === 'profile' ? (
@@ -324,28 +342,65 @@ function buildBusinessMetrics({
   rating,
   requests,
   transfers,
+  pt,
+  t,
 }) {
   const metrics = [
-    { icon: HiOutlineBuildingOffice2, label: 'Profil complété', value: `${completion}%` },
-    { icon: FiInbox, label: 'Demandes', value: requests.length },
-    { icon: FiFileText, label: 'Publications', value: publications.length },
+    {
+      icon: HiOutlineBuildingOffice2,
+      label: pt('professional.page.metrics.profileComplete'),
+      value: `${completion}%`,
+    },
+    {
+      icon: FiInbox,
+      label: pt('professional.page.metrics.requests'),
+      value: requests.length,
+    },
+    {
+      icon: FiFileText,
+      label: pt('professional.page.metrics.publications'),
+      value: publications.length,
+    },
   ]
 
   if (enabledServices.includes('Transfert')) {
-    metrics.push({ icon: FiRepeat, label: 'Transferts reçus', value: transfers.length })
+    metrics.push({
+      icon: FiRepeat,
+      label: pt('professional.page.metrics.transfersReceived'),
+      value: transfers.length,
+    })
   } else if (enabledServices.includes('Events')) {
-    metrics.push({ icon: FiCalendar, label: 'Événements', value: content.events.length })
+    metrics.push({
+      icon: FiCalendar,
+      label: pt('professional.page.metrics.events'),
+      value: content.events.length,
+    })
   } else if (enabledServices.includes('Jobs')) {
-    metrics.push({ icon: FiUsers, label: 'Jobs', value: content.jobs.length })
+    metrics.push({
+      icon: FiUsers,
+      label: pt('professional.page.metrics.jobs'),
+      value: content.jobs.length,
+    })
   } else if (enabledServices.includes('Colis')) {
-    metrics.push({ icon: FiPackage, label: 'Colis', value: content.parcels.length })
+    metrics.push({
+      icon: FiPackage,
+      label: pt('professional.page.metrics.parcels'),
+      value: content.parcels.length,
+    })
   } else if (enabledServices.includes('Marketplace')) {
-    metrics.push({ icon: FiShoppingBag, label: 'Annonces', value: content.listings.length })
+    metrics.push({
+      icon: FiShoppingBag,
+      label: pt('professional.page.metrics.listings'),
+      value: content.listings.length,
+    })
   }
 
+  const activityLabel = businessesOptionLabel(t, activity)
   metrics.push({
     icon: FiStar,
-    label: activity?.label ? `Avis ${activity.label}` : 'Avis',
+    label: activityLabel
+      ? pt('professional.page.metrics.reviewsWithActivity', { activity: activityLabel })
+      : pt('professional.page.metrics.reviews'),
     value: rating.count ? `${rating.average}/5` : '—',
   })
 

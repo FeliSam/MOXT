@@ -53,16 +53,16 @@ export const LISTING_CATEGORIES = [
 ]
 
 export const LISTING_CONDITIONS = [
-  { value: 'new', label: 'Neuf' },
-  { value: 'like_new', label: 'Comme neuf' },
-  { value: 'used', label: 'Occasion' },
-  { value: 'refurbished', label: 'Reconditionné' },
+  { value: 'new', label: 'Neuf', labelKey: 'marketplace.conditions.new' },
+  { value: 'like_new', label: 'Comme neuf', labelKey: 'marketplace.conditions.likeNew' },
+  { value: 'used', label: 'Occasion', labelKey: 'marketplace.conditions.used' },
+  { value: 'refurbished', label: 'Reconditionné', labelKey: 'marketplace.conditions.refurbished' },
 ]
 
 export const DELIVERY_OPTIONS = [
-  { value: 'pickup', label: 'Retrait sur place' },
-  { value: 'local_delivery', label: 'Livraison locale' },
-  { value: 'shipping', label: 'Expédition' },
+  { value: 'pickup', label: 'Retrait sur place', labelKey: 'marketplace.delivery.pickup' },
+  { value: 'local_delivery', label: 'Livraison locale', labelKey: 'marketplace.delivery.local' },
+  { value: 'shipping', label: 'Expédition', labelKey: 'marketplace.delivery.shipping' },
 ]
 
 export const JOB_EXPERIENCE_LEVELS = [

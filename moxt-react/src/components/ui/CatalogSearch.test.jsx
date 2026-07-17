@@ -2,6 +2,26 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { CatalogSearch } from './CatalogSearch'
 
+vi.mock('../../contexts/useLanguage', () => ({
+  useLanguage: () => ({
+    t: (key, vars) => {
+      const map = {
+        'catalog.search.label': 'Rechercher',
+        'catalog.search.placeholder': 'Rechercher',
+        'catalog.search.clearSearch': 'Effacer la recherche',
+        'catalog.search.filters': 'Filtres',
+        'catalog.search.liveHint': 'Recherche dynamique, sans rechargement de la page.',
+        'catalog.search.results': `${vars?.count ?? 0} résultat`,
+        'catalog.search.resultsPlural': `${vars?.count ?? 0} résultats`,
+        'catalog.search.advancedTitle': 'Filtres avancés',
+        'catalog.search.advancedDescription': 'Affinez les résultats avec plusieurs critères.',
+        'catalog.search.clearAll': 'Tout effacer',
+      }
+      return map[key] || key
+    },
+  }),
+}))
+
 describe('CatalogSearch', () => {
   it('transmet la recherche et ouvre les filtres avances', () => {
     const onQueryChange = vi.fn()

@@ -7,18 +7,21 @@ import { AuthCard } from '../components/auth/AuthCard'
 import { Alert } from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
 import { PasswordInput } from '../components/ui/PasswordInput'
-import { resetPasswordSchema } from '../features/auth/authSchemas'
+import { createAuthSchemas } from '../features/auth/authSchemas'
 import { authService } from '../features/auth/authService'
 import { clearSession } from '../features/auth/authSlice'
 import { authErrorToast } from '../features/auth/authErrorMessages'
 import { addToast } from '../features/ui/uiSlice'
 import { supabase } from '../services/supabaseClient'
+import { useLanguage } from '../contexts/useLanguage'
 
 export function ResetPasswordPage() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [ready, setReady] = useState(false)
   const [invalidLink, setInvalidLink] = useState(false)
+  const { resetPasswordSchema } = createAuthSchemas(t)
 
   useEffect(() => {
     let cancelled = false
@@ -61,21 +64,23 @@ export function ResetPasswordPage() {
         dispatch(clearSession())
         dispatch(
           addToast({
-            title: 'Mot de passe mis à jour',
-            message: 'Connectez-vous avec votre nouveau mot de passe.',
+            title: t('auth.reset.toastSuccessTitle'),
+            message: t('auth.reset.toastSuccessBody'),
             tone: 'success',
           }),
         )
         navigate('/login', {
           replace: true,
-          state: { notice: 'Votre mot de passe a été réinitialisé. Vous pouvez vous connecter.' },
+          state: { notice: t('auth.reset.loginNotice') },
         })
       } catch (error) {
         dispatch(
           addToast(
             authErrorToast(
-              'Réinitialisation impossible',
-              error instanceof Error ? error.message : 'Réessayez plus tard.',
+              t('auth.reset.toastErrorTitle'),
+              error instanceof Error ? error.message : t('auth.reset.toastErrorFallback'),
+              'error',
+              t,
             ),
           ),
         )
@@ -90,19 +95,19 @@ export function ResetPasswordPage() {
   if (invalidLink) {
     return (
       <AuthCard
-        eyebrow="Sécurité"
-        title="Lien expiré ou invalide"
-        description="Demandez un nouveau lien de réinitialisation depuis la page de connexion."
+        eyebrow={t('auth.reset.eyebrow')}
+        title={t('auth.reset.invalidTitle')}
+        description={t('auth.reset.invalidDescription')}
       >
         <div className="auth-flow-panel mt-6 grid gap-4">
           <Alert variant="warning">
-            Ce lien n'est plus valide. Les liens de récupération expirent après un court délai.
+            {t('auth.reset.invalidAlert')}
           </Alert>
           <Link className="auth-flow-link text-center" to="/forgot-password">
-            Demander un nouveau lien
+            {t('auth.reset.requestNewLink')}
           </Link>
           <Link className="auth-flow-link-muted text-center" to="/login">
-            Retour à la connexion
+            {t('auth.reset.backToLogin')}
           </Link>
         </div>
       </AuthCard>
@@ -111,7 +116,11 @@ export function ResetPasswordPage() {
 
   if (!ready) {
     return (
-      <AuthCard eyebrow="Sécurité" title="Vérification du lien…" description="Un instant, nous sécurisons votre accès.">
+      <AuthCard
+        eyebrow={t('auth.reset.eyebrow')}
+        title={t('auth.reset.checkingTitle')}
+        description={t('auth.reset.checkingDescription')}
+      >
         <div className="auth-flow-panel mt-6 flex justify-center py-8">
           <span className="auth-flow-spinner" aria-hidden="true" />
         </div>
@@ -121,15 +130,15 @@ export function ResetPasswordPage() {
 
   return (
     <AuthCard
-      eyebrow="Sécurité"
-      title="Nouveau mot de passe"
-      description="Choisissez un mot de passe fort que vous n'utilisez nulle part ailleurs."
+      eyebrow={t('auth.reset.eyebrow')}
+      title={t('auth.reset.title')}
+      description={t('auth.reset.description')}
       corner={<FiShield className="text-xl text-brand-600 dark:text-brand-300" aria-hidden="true" />}
     >
       <form className="auth-flow-panel mt-6 grid gap-4" onSubmit={formik.handleSubmit} noValidate>
         <PasswordInput
           id="reset-password"
-          label="Nouveau mot de passe"
+          label={t('auth.reset.password')}
           autoComplete="new-password"
           iconLeft={<FiLock />}
           {...formik.getFieldProps('password')}
@@ -137,20 +146,20 @@ export function ResetPasswordPage() {
         />
         <PasswordInput
           id="reset-password-confirm"
-          label="Confirmer le mot de passe"
+          label={t('auth.reset.confirmPassword')}
           autoComplete="new-password"
           iconLeft={<FiLock />}
           {...formik.getFieldProps('confirmPassword')}
           error={errorFor('confirmPassword')}
         />
         <p className="auth-flow-hint text-xs leading-relaxed text-[var(--app-text-muted)]">
-          Au moins 8 caractères, avec une majuscule, une minuscule et un chiffre.
+          {t('auth.reset.passwordRules')}
         </p>
         <Button className="w-full" type="submit" loading={formik.isSubmitting}>
-          {formik.isSubmitting ? 'Enregistrement…' : 'Enregistrer le mot de passe'}
+          {formik.isSubmitting ? t('auth.reset.submitting') : t('auth.reset.submit')}
         </Button>
         <Link className="auth-flow-link-muted text-center" to="/login">
-          Retour à la connexion
+          {t('auth.reset.backToLogin')}
         </Link>
       </form>
     </AuthCard>

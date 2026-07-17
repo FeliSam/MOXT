@@ -16,45 +16,45 @@ import {
   FiUser,
 } from 'react-icons/fi'
 
-export const roleLabels = {
-  user: 'Utilisateur',
-  professional: 'Professionnel',
-  admin: 'Administrateur',
-  superadmin: 'Superadministrateur',
+export const roleLabelKeys = {
+  user: 'profile.roles.user',
+  professional: 'profile.roles.professional',
+  admin: 'profile.roles.admin',
+  superadmin: 'profile.roles.superadmin',
 }
 
 export const accountSections = [
   {
     id: 'account',
-    title: 'Mon compte',
+    titleKey: 'profile.sections.account',
     links: [
       {
-        label: 'Informations personnelles',
-        description: 'Identité et coordonnées',
+        labelKey: 'profile.links.personalInfo',
+        descriptionKey: 'profile.links.personalInfoDesc',
         icon: FiUser,
         path: '/profile/information',
       },
       {
-        label: 'Mes favoris',
-        description: 'Contenus et profils de transfert',
+        labelKey: 'profile.links.favorites',
+        descriptionKey: 'profile.links.favoritesDesc',
         icon: FiHeart,
         path: '/favorites',
       },
       {
-        label: 'Abonnements',
-        description: 'Membres et entreprises suivis, ainsi que vos abonnés',
+        labelKey: 'profile.links.subscriptions',
+        descriptionKey: 'profile.links.subscriptionsDesc',
         icon: FiBell,
         path: '/subscriptions',
       },
       {
-        label: 'Mes activités',
-        description: 'Candidatures, réservations et suivis',
+        labelKey: 'profile.links.activities',
+        descriptionKey: 'profile.links.activitiesDesc',
         icon: FiActivity,
         path: '/activities',
       },
       {
-        label: 'QR code & invitation',
-        description: 'Invitez vos proches ou partagez votre profil',
+        labelKey: 'profile.links.referral',
+        descriptionKey: 'profile.links.referralDesc',
         icon: FiGift,
         path: '/referral',
       },
@@ -62,23 +62,23 @@ export const accountSections = [
   },
   {
     id: 'trust',
-    title: 'Confiance & sécurité',
+    titleKey: 'profile.sections.trust',
     links: [
       {
-        label: 'Vérification',
-        description: 'Documents et niveau de confiance',
+        labelKey: 'profile.links.verification',
+        descriptionKey: 'profile.links.verificationDesc',
         icon: FiCheckCircle,
         path: '/verification',
       },
       {
-        label: 'Sécurité',
-        description: 'Protection de votre compte',
+        labelKey: 'profile.links.security',
+        descriptionKey: 'profile.links.securityDesc',
         icon: FiShield,
         path: '/security',
       },
       {
-        label: 'Paramètres',
-        description: 'Préférences et confidentialité',
+        labelKey: 'profile.links.settings',
+        descriptionKey: 'profile.links.settingsDesc',
         icon: FiSettings,
         path: '/settings',
       },
@@ -86,35 +86,35 @@ export const accountSections = [
   },
   {
     id: 'documents',
-    title: 'Documents & assistance',
+    titleKey: 'profile.sections.documents',
     links: [
       {
-        label: 'Documents',
-        description: 'Fichiers et justificatifs personnels',
+        labelKey: 'profile.links.documents',
+        descriptionKey: 'profile.links.documentsDesc',
         icon: FiFileText,
         path: '/documents',
       },
       {
-        label: 'Reçus',
-        description: 'Historique et justificatifs de transfert',
+        labelKey: 'profile.links.receipts',
+        descriptionKey: 'profile.links.receiptsDesc',
         icon: FiFileText,
         path: '/receipts',
       },
       {
-        label: 'Mes litiges',
-        description: 'Suivi des contestations et résolutions',
+        labelKey: 'profile.links.disputes',
+        descriptionKey: 'profile.links.disputesDesc',
         icon: FiAlertTriangle,
         path: '/disputes',
       },
       {
-        label: 'Support',
-        description: 'Aide et échanges avec l’équipe MOXT',
+        labelKey: 'profile.links.support',
+        descriptionKey: 'profile.links.supportDesc',
         icon: FiHelpCircle,
         path: '/support',
       },
       {
-        label: 'Données locales',
-        description: 'Diagnostic, sauvegarde et réinitialisation',
+        labelKey: 'profile.links.localData',
+        descriptionKey: 'profile.links.localDataDesc',
         icon: FiDatabase,
         path: '/local-data',
       },
@@ -123,10 +123,10 @@ export const accountSections = [
 ]
 
 export const quickStatsConfig = [
-  { label: 'Transferts', icon: FiRepeat, to: '/transfers/history', key: 'transfers' },
-  { label: 'Publications', icon: FiShoppingBag, to: '/publications/mine', key: 'listings' },
-  { label: 'Colis', icon: FiPackage, to: '/parcels', key: 'parcels' },
-  { label: 'Favoris', icon: FiHeart, to: '/favorites', key: 'favorites' },
+  { labelKey: 'profile.stats.transfers', icon: FiRepeat, to: '/transfers/history', key: 'transfers' },
+  { labelKey: 'profile.stats.publications', icon: FiShoppingBag, to: '/publications/mine', key: 'listings' },
+  { labelKey: 'profile.stats.parcels', icon: FiPackage, to: '/parcels', key: 'parcels' },
+  { labelKey: 'profile.stats.favorites', icon: FiHeart, to: '/favorites', key: 'favorites' },
 ]
 
 export function profileInitials(first = '', last = '') {

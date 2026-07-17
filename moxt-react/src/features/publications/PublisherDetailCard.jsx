@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom'
 import { VerifiedDisplayName } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import { useLanguage } from '../../contexts/useLanguage'
 import { formatShortDate } from '../../utils/formatters'
 
 export function PublisherDetailCard({
@@ -19,17 +20,22 @@ export function PublisherDetailCard({
   publisherName,
   rating,
   publicationCount,
-  countLabel = 'Annonces',
+  countLabel,
   contactCount = 0,
   description,
-  descriptionFallback = 'Membre actif sur MOXT.',
+  descriptionFallback,
   ownerId,
   shareCount = 0,
   updatedAt,
-  ctaLabel = 'Voir toutes les publications',
+  ctaLabel,
   publicationsPath,
   verified = false,
 }) {
+  const { t } = useLanguage()
+  const resolvedCountLabel = countLabel ?? t('publications.publisher.stats.publications')
+  const resolvedDescriptionFallback =
+    descriptionFallback ?? t('publications.publisher.descriptionFallback')
+  const resolvedCtaLabel = ctaLabel ?? t('publications.publisher.viewAllPublications')
   const publisherVerified = business
     ? ['verified', 'approved', 'active'].includes(business.status)
     : verified
@@ -52,7 +58,7 @@ export function PublisherDetailCard({
           />
           <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-[var(--app-text-muted)]">
             <FiCheckCircle className="text-emerald-500" />
-            {business ? 'Entreprise MOXT' : 'Particulier'}
+            {business ? t('publications.publisher.businessMoxt') : t('publications.publisher.individual')}
           </p>
         </div>
       </div>
@@ -60,37 +66,39 @@ export function PublisherDetailCard({
         <PublisherStat
           icon={FiStar}
           value={`${rating?.average || business?.rating || 0}/5`}
-          label="Note"
+          label={t('publications.publisher.stats.rating')}
         />
-        <PublisherStat icon={FiShoppingBag} value={publicationCount} label={countLabel} />
-        <PublisherStat icon={FiMessageSquare} value={contactCount} label="Contacts" />
+        <PublisherStat icon={FiShoppingBag} value={publicationCount} label={resolvedCountLabel} />
+        <PublisherStat icon={FiMessageSquare} value={contactCount} label={t('publications.publisher.stats.contacts')} />
       </div>
       <p className="mt-5 text-sm leading-6 text-[var(--app-text-muted)]">
-        {description || business?.description || descriptionFallback}
+        {description || business?.description || resolvedDescriptionFallback}
       </p>
       {business ? (
         <Link to={`/businesses/${business.id}`}>
           <Button className="mt-5 w-full" variant="secondary" icon={FiUser}>
-            Voir la fiche entreprise
+            {t('publications.publisher.viewBusinessProfile')}
           </Button>
         </Link>
       ) : profilePath ? (
         <Link to={profilePath}>
           <Button className="mt-5 w-full" variant="secondary" icon={FiUser}>
-            {ctaLabel}
+            {resolvedCtaLabel}
           </Button>
         </Link>
       ) : null}
       {!business && ownerBusiness ? (
         <Link to={`/businesses/${ownerBusiness.id}/publications/listings`}>
           <Button className="mt-3 w-full" variant="secondary" icon={FiBriefcase}>
-            Voir l&apos;entreprise
+            {t('publications.publisher.viewBusiness')}
           </Button>
         </Link>
       ) : null}
       <div className="mt-4 flex items-center justify-between text-xs text-[var(--app-text-muted)]">
-        <span>{shareCount} partage(s)</span>
-        {updatedAt ? <span>Mis à jour le {formatShortDate(updatedAt)}</span> : null}
+        <span>{t('publications.publisher.shares', { count: shareCount })}</span>
+        {updatedAt ? (
+          <span>{t('publications.publisher.updatedAt', { date: formatShortDate(updatedAt) })}</span>
+        ) : null}
       </div>
     </Card>
   )

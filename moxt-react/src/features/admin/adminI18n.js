@@ -1,0 +1,287 @@
+/** French source strings for admin.* until locale files are filled. */
+export const ADMIN_FR_SOURCES = {
+  // ── page ────────────────────────────────────────────────────────────────
+  'admin.page.eyebrow': 'Administration',
+  'admin.page.title': 'Centre de controle',
+  'admin.page.description':
+    'Superviser les transferts, contenus, comptes, validations et tickets.',
+  'admin.page.export': 'Exporter',
+  'admin.confirm.reactivateTitle': 'Reactiver cet utilisateur ?',
+  'admin.confirm.suspendTitle': 'Suspendre cet utilisateur ?',
+  'admin.confirm.reactivateBody': '{name} retrouvera un acces complet a la plateforme.',
+  'admin.confirm.suspendBody':
+    '{name} ne pourra plus se connecter ni utiliser MOXT tant que le compte est suspendu.',
+
+  // ── super ───────────────────────────────────────────────────────────────
+  'admin.super.eyebrow': 'Superadmin',
+  'admin.super.title': 'Pilotage système',
+  'admin.super.description':
+    'Santé locale, compatibilité des données et visibilité globale de la plateforme.',
+  'admin.super.cards.redux': 'Domaines Redux',
+  'admin.super.cards.businesses': 'Entreprises',
+  'admin.super.cards.reports': 'Signalements',
+  'admin.super.cards.audit': 'Journaux audit',
+  'admin.super.migration.title': 'Migration des données historiques',
+  'admin.super.migration.done':
+    '{count} enregistrement(s) récupéré(s), contrôle effectué le {date}.',
+  'admin.super.migration.empty': 'Aucun rapport de migration disponible.',
+  'admin.super.roles.title': 'Matrice des rôles',
+  'admin.super.roles.description': 'Référence locale des capacités visibles dans l’interface.',
+  'admin.super.roles.exportAudit': 'Exporter l’audit',
+  'admin.super.roles.permission': 'Permission',
+  'admin.super.yes': 'Oui',
+  'admin.super.no': 'Non',
+
+  // ── permissions ─────────────────────────────────────────────────────────
+  'admin.permissions.catalogRead': 'Consulter les catalogues',
+  'admin.permissions.contentPublish': 'Publier du contenu',
+  'admin.permissions.businessManage': 'Gérer une entreprise',
+  'admin.permissions.requestsManage': 'Traiter les demandes métier',
+  'admin.permissions.moderationManage': 'Modérer la plateforme',
+  'admin.permissions.usersManage': 'Gérer les utilisateurs',
+  'admin.permissions.systemAudit': 'Consulter et exporter l’audit',
+  'admin.permissions.rolesManage': 'Modifier les rôles sensibles',
+
+  // ── nav / content ───────────────────────────────────────────────────────
+  'admin.nav.overview': 'Vue generale',
+  'admin.nav.transfers': 'Transferts',
+  'admin.nav.content': 'Contenus',
+  'admin.nav.support': 'Support',
+  'admin.nav.users': 'Utilisateurs',
+  'admin.nav.verifications': 'Verifications',
+  'admin.nav.queues': "Files d'action",
+  'admin.nav.audit': 'Audit',
+  'admin.content.businesses': 'Entreprises',
+  'admin.content.listings': 'Annonces',
+  'admin.content.jobs': 'Jobs',
+  'admin.content.events': 'Evenements',
+  'admin.content.parcels': 'Colis',
+  'admin.content.reports': 'Signalements',
+
+  // ── filters / shell ─────────────────────────────────────────────────────
+  'admin.filters.searchPlaceholder': 'Rechercher...',
+  'admin.filters.all': 'Tout',
+  'admin.shell.alertsPending': 'Alertes en attente',
+  'admin.shell.systemOk': 'Systeme operationnel',
+  'admin.shell.kpi.transfersPending': 'Transferts en cours',
+  'admin.shell.kpi.contentPending': 'Contenus a moderer',
+  'admin.shell.kpi.urgentQueues': 'Files urgentes',
+  'admin.shell.kpi.auditLogs': 'Audit logs',
+
+  // ── identity / kpi row ──────────────────────────────────────────────────
+  'admin.identity.fallbackName': 'Administrateur',
+  'admin.kpi.transfers.label': 'Transferts',
+  'admin.kpi.transfers.sub': '{count} en cours',
+  'admin.kpi.content.label': 'Contenus',
+  'admin.kpi.content.sub': '{count} a moderer',
+  'admin.kpi.users.label': 'Utilisateurs',
+  'admin.kpi.users.sub': '{count} suspendus',
+  'admin.kpi.queues.label': 'Files urgentes',
+  'admin.kpi.queues.sub': '{count} au total',
+  'admin.kpi.audit.label': 'Logs audit',
+  'admin.kpi.audit.sub': 'Journal complet',
+
+  // ── overview panel ──────────────────────────────────────────────────────
+  'admin.overview.actions.transfers.label': 'Piloter les transferts',
+  'admin.overview.actions.transfers.value': '{count} en cours',
+  'admin.overview.actions.content.label': 'Moderer les contenus',
+  'admin.overview.actions.content.value': '{count} en attente',
+  'admin.overview.actions.queues.label': 'Traiter les files',
+  'admin.overview.actions.queues.value': '{count} urgentes',
+  'admin.overview.modulesTitle': 'Modules de contenu',
+  'admin.overview.elementCount': '{count} element(s)',
+  'admin.overview.recentTransfers': 'Transferts recents',
+  'admin.overview.viewAll': 'Tout voir',
+  'admin.overview.noTransfers': 'Aucun transfert.',
+  'admin.overview.priorities': 'Priorites du moment',
+  'admin.overview.queue.deletions': 'Suppressions de compte',
+  'admin.overview.queue.verifications': 'Verifications',
+  'admin.overview.queue.disputes': 'Litiges ouverts',
+  'admin.overview.queue.reviews': 'Avis en attente',
+  'admin.overview.queue.reports': 'Signalements',
+
+  // ── detail panel ────────────────────────────────────────────────────────
+  'admin.detail.title': 'Vue detaillee',
+  'admin.detail.emptyLabel': 'Selectionnez un element',
+  'admin.detail.emptySub': 'Cliquez sur un element dans la liste pour afficher sa fiche et ses actions.',
+  'admin.detail.actionsLabel': 'Actions',
+  'admin.detail.replyLabel': 'Reponse detaillee',
+  'admin.detail.replyPlaceholder': 'Reponse au ticket...',
+  'admin.detail.send': 'Envoyer',
+  'admin.detail.openFull': 'Ouvrir la fiche complete',
+  'admin.detail.kind.transfer': 'Transfert',
+  'admin.detail.kind.support': 'Ticket support',
+  'admin.detail.kind.user': 'Utilisateur',
+  'admin.detail.kind.verification': 'Verification',
+  'admin.detail.kind.dispute': 'Litige',
+  'admin.detail.kind.review': 'Avis',
+  'admin.detail.kind.report': 'Signalement',
+  'admin.detail.kind.businesses': 'Entreprise',
+  'admin.detail.kind.listings': 'Annonce',
+  'admin.detail.kind.jobs': 'Job',
+  'admin.detail.kind.events': 'Evenement',
+  'admin.detail.kind.parcels': 'Colis',
+  'admin.detail.kind.audit': 'Log audit',
+  'admin.detail.kind.default': 'Detail',
+  'admin.detail.desc.transfer': '{partner} · {status}',
+  'admin.detail.desc.support': '{name} · priorite {priority} · {status}',
+  'admin.detail.desc.user': '{email} · {role}',
+  'admin.detail.desc.verification': '{name} · niveau {level} · {status}',
+  'admin.detail.desc.businesses': '{city} · {services}',
+  'admin.common.partnerFallback': 'Partenaire',
+  'admin.common.servicesFallback': 'Services a confirmer',
+  'admin.common.russiaFallback': 'Russie',
+
+  // ── detail facts labels ─────────────────────────────────────────────────
+  'admin.facts.status': 'Statut',
+  'admin.facts.sent': 'Envoye',
+  'admin.facts.received': 'Recu',
+  'admin.facts.partner': 'Partenaire',
+  'admin.facts.date': 'Date',
+  'admin.facts.priority': 'Priorite',
+  'admin.facts.requester': 'Demandeur',
+  'admin.facts.messages': 'Messages',
+  'admin.facts.updatedAt': 'Mis a jour',
+  'admin.facts.role': 'Role',
+  'admin.facts.city': 'Ville',
+  'admin.facts.phone': 'Tel',
+  'admin.facts.createdAt': 'Cree le',
+  'admin.facts.services': 'Services',
+  'admin.facts.price': 'Prix',
+  'admin.facts.category': 'Categorie',
+  'admin.facts.condition': 'Etat',
+  'admin.facts.salary': 'Salaire',
+  'admin.facts.location': 'Lieu',
+  'admin.facts.sector': 'Secteur',
+  'admin.facts.contract': 'Contrat',
+  'admin.facts.capacity': 'Capacite',
+  'admin.facts.route': 'Trajet',
+  'admin.facts.departure': 'Depart',
+  'admin.facts.pricePerKg': 'Prix/kg',
+  'admin.facts.distribution': 'Distribution',
+  'admin.facts.level': 'Niveau',
+  'admin.facts.user': 'Utilisateur',
+  'admin.facts.email': 'Email',
+  'admin.facts.documents': 'Documents',
+  'admin.facts.note': 'Note',
+  'admin.facts.reviewReason': 'Motif review',
+  'admin.facts.reviewedAt': 'Revu le',
+  'admin.facts.type': 'Type',
+  'admin.facts.reference': 'Reference',
+  'admin.facts.evidence': 'Preuve',
+  'admin.facts.reporter': 'Reporter',
+  'admin.facts.target': 'Cible',
+  'admin.facts.author': 'Auteur',
+  'admin.facts.id': 'ID',
+  'admin.facts.free': 'Gratuit',
+  'admin.facts.yes': 'Oui',
+  'admin.facts.no': 'Non',
+
+  // ── content subtitle templates ─────────────────────────────────────────
+  'admin.contentSubtitle.businesses': '{city} · {status}',
+  'admin.contentSubtitle.listings': '{city} · {price}',
+  'admin.contentSubtitle.jobs': '{location} · {salary}',
+  'admin.contentSubtitle.events': '{city} · {date}',
+  'admin.contentSubtitle.parcels': '{origin} -> {destination} · {status}',
+  'admin.contentSubtitle.reports': '{type} · {status}',
+  'admin.contentSubtitle.default': '{status}',
+
+  // ── empty states ────────────────────────────────────────────────────────
+  'admin.empty.noElement': 'Aucun element.',
+  'admin.empty.noUsers': 'Aucun utilisateur trouve.',
+  'admin.empty.noAuditLog': "Aucun log d'audit.",
+  'admin.empty.noTicket': 'Aucun ticket.',
+  'admin.empty.allTicketsHandled': 'Tous les tickets ont ete traites.',
+  'admin.empty.noTransferFound': 'Aucun transfert trouve.',
+  'admin.empty.tryFilters': 'Essayez de modifier les filtres.',
+
+  // ── actions ─────────────────────────────────────────────────────────────
+  'admin.actions.view': 'Voir',
+  'admin.actions.open': 'Ouvrir',
+  'admin.actions.approve': 'Valider',
+  'admin.actions.approved': 'Validée',
+  'admin.actions.reject': 'Refuser',
+  'admin.actions.rejected': 'Refusée',
+  'admin.actions.rejectedMasc': 'Refusé',
+  'admin.actions.publish': 'Publier',
+  'admin.actions.published': 'Publiée',
+  'admin.actions.publishedMasc': 'Publié',
+  'admin.actions.archive': 'Archiver',
+  'admin.actions.archived': 'Archivée',
+  'admin.actions.archivedMasc': 'Archivé',
+  'admin.actions.activate': 'Activer',
+  'admin.actions.activated': 'Activée',
+  'admin.actions.active': 'Actif',
+  'admin.actions.resolveReport': 'Traiter',
+  'admin.actions.resolvedReport': 'Traité',
+  'admin.actions.dismiss': 'Ignorer',
+  'admin.actions.dismissed': 'Ignoré',
+  'admin.actions.advanceTo': 'Passer a {next}',
+  'admin.actions.promoteAdmin': 'Passer admin',
+  'admin.actions.reactivate': 'Reactiver',
+  'admin.actions.suspend': 'Suspendre',
+  'admin.actions.rejectPrompt': 'Motif du refus (optionnel) :',
+  'admin.actions.resolve': 'Resoudre',
+  'admin.actions.close': 'Cloturer',
+  'admin.actions.removeReview': "Retirer l'avis",
+  'admin.actions.rejectContest': 'Refuser la contestation',
+  'admin.actions.hide': 'Masquer',
+
+  // ── promote ─────────────────────────────────────────────────────────────
+  'admin.promote.passwordPrompt':
+    'Mot de passe de promotion administrateur\n(configuré dans scripts/phase2.env → MOXT_ADMIN_PROMOTE_PASSWORD)',
+  'admin.promote.superadminOnly': 'Seul un superadmin peut promouvoir un administrateur.',
+
+  // ── users panel ─────────────────────────────────────────────────────────
+  'admin.users.title': 'Utilisateurs et roles',
+  'admin.users.pendingDeletion': 'suppression demandée',
+
+  // ── verifications panel ─────────────────────────────────────────────────
+  'admin.verifications.meta': 'Niveau {level} · {count} document(s) · {date}',
+  'admin.verifications.noteLabel': 'Note : {note}',
+  'admin.verifications.rejectNoteLabel': 'Motif refus : {note}',
+
+  // ── documents ───────────────────────────────────────────────────────────
+  'admin.documents.none': 'Aucun document associé à cette demande.',
+  'admin.documents.notFound': 'Documents introuvables ({count}). Vérifiez le chargement admin.',
+  'admin.documents.previewUnavailable': 'Aperçu non disponible pour ce type — utilisez Ouvrir.',
+  'admin.documents.noSignedUrl': 'Impossible de générer un lien signé pour ce document.',
+
+  // ── support panel ───────────────────────────────────────────────────────
+  'admin.support.title': 'Tickets support',
+  'admin.support.meta': '{name} · {count} message(s)',
+  'admin.support.replyPlaceholder': 'Reponse rapide...',
+  'admin.support.reply': 'Repondre',
+
+  // ── transfers panel ─────────────────────────────────────────────────────
+  'admin.transfers.metric.total': 'Total',
+  'admin.transfers.metric.pending': 'En cours',
+  'admin.transfers.metric.volume': 'Volume traite',
+  'admin.transfers.listTitle': 'Liste des transferts',
+  'admin.transfers.receivedSuffix': '{amount} recu',
+
+  // ── queues panel ────────────────────────────────────────────────────────
+  'admin.queues.disputesLabel': 'Litiges',
+  'admin.queues.contestedReviewsLabel': 'Avis contestés',
+  'admin.queues.viewProfile': 'Voir le profil',
+  'admin.queues.levelMeta': 'Niveau {level} · {name}',
+
+  // ── audit panel ─────────────────────────────────────────────────────────
+  'admin.audit.title': "Journal d'audit",
+  'admin.audit.globalFallback': 'global',
+}
+
+export function adminText(t, key, vars = {}) {
+  const translated = typeof t === 'function' ? t(key, vars) : null
+  if (translated && translated !== key) return translated
+  const source = ADMIN_FR_SOURCES[key]
+  if (!source) return key
+  return source.replace(/\{(\w+)\}/g, (match, name) =>
+    Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : match,
+  )
+}
+
+export function adminOptionLabel(t, option) {
+  if (!option) return ''
+  return option.labelKey ? adminText(t, option.labelKey) : option.label || ''
+}

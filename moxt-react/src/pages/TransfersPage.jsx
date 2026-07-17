@@ -8,6 +8,7 @@ import { CatalogSearch } from '../components/ui/CatalogSearch'
 import { Select } from '../components/ui/Select'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Modal } from '../components/ui/Modal'
+import { useLanguage } from '../contexts/useLanguage'
 import { TransferCalculator } from '../features/transfers/TransferCalculator'
 import { TransferStatusBadge } from '../features/transfers/TransferStatusBadge'
 import { expireOverdueTransfers } from '../features/transfers/transferSlice'
@@ -20,6 +21,7 @@ import {
 } from '../features/transfers/transferUtils'
 
 export function TransfersPage() {
+  const { t } = useLanguage()
   const dispatch = useDispatch()
   const [query, setQuery] = useState('')
   const [advancedOpen, setAdvancedOpen] = useState(false)
@@ -48,16 +50,16 @@ export function TransfersPage() {
   return (
     <div className="finance-hero-glow grid gap-7 rounded-[var(--radius-card-lg)]">
       <PageHeader
-        eyebrow="Historique"
-        title="Transferts"
-        description="Estimez, creez et suivez vos transferts entre le Benin et la Russie."
+        eyebrow={t('transfers.history.eyebrow')}
+        title={t('transfers.history.title')}
+        description={t('transfers.history.description')}
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" icon={FiSliders} onClick={() => setCalculatorOpen(true)}>
-              Calculatrice
+              {t('transfers.history.calculator')}
             </Button>
             <Link to="/transfers">
-              <Button icon={FiPlus}>Nouveau transfert</Button>
+              <Button icon={FiPlus}>{t('transfers.history.newTransfer')}</Button>
             </Link>
           </div>
         }
@@ -65,8 +67,10 @@ export function TransfersPage() {
       <section>
         <div className="mb-4">
           <div>
-            <h2 className="text-lg font-black">Historique</h2>
-            <p className="mt-1 text-sm text-slate-500">{visibleTransfers.length} opération(s)</p>
+            <h2 className="text-lg font-black">{t('transfers.history.sectionTitle')}</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              {t('transfers.history.operationsCount', { count: visibleTransfers.length })}
+            </p>
           </div>
         </div>
         <div className="mb-5">
@@ -80,16 +84,16 @@ export function TransfersPage() {
               setQuery('')
               setStatus('')
             }}
-            placeholder="Référence, destinataire ou opération..."
+            placeholder={t('transfers.history.searchPlaceholder')}
           >
             <div className="max-w-sm">
               <Select
                 id="transfer-filter-status"
-                label="Statut"
+                label={t('transfers.history.statusLabel')}
                 value={status}
                 onChange={(event) => setStatus(event.target.value)}
               >
-                <option value="">Tous les statuts</option>
+                <option value="">{t('transfers.history.allStatuses')}</option>
                 {[...new Set(transfers.map((transfer) => transfer.status))].map((value) => (
                   <option key={value} value={value}>
                     {value}
@@ -123,7 +127,7 @@ export function TransfersPage() {
                           <strong>{transfer.id}</strong>
                         </div>
                         <p className="mt-2 text-sm text-slate-500">
-                          {directionLabel(transfer.direction)} - {transfer.recipient.firstName}{' '}
+                          {directionLabel(transfer.direction, t)} - {transfer.recipient.firstName}{' '}
                           {transfer.recipient.lastName}
                         </p>
                         <p className="mt-1 text-xs text-slate-400">
@@ -136,13 +140,14 @@ export function TransfersPage() {
                             {formatMoney(pricing.totalToPay, currFrom)}
                           </strong>
                           <span className="block text-xs text-slate-500">
-                            Envoye: {formatMoney(pricing.amountSent, currFrom)}
+                            {t('transfers.history.sent')}: {formatMoney(pricing.amountSent, currFrom)}
                           </span>
                           <span className="block text-xs text-slate-500">
-                            Frais: {formatMoney(pricing.fees, currFrom)}
+                            {t('transfers.history.fees')}: {formatMoney(pricing.fees, currFrom)}
                           </span>
                           <span className="block text-xs text-slate-500">
-                            Recu: {formatMoney(transfer.amountReceived, currTo)}
+                            {t('transfers.history.received')}:{' '}
+                            {formatMoney(transfer.amountReceived, currTo)}
                           </span>
                         </div>
                         <FiArrowRight className="text-brand-700" />
@@ -157,11 +162,11 @@ export function TransfersPage() {
           <Card className="grid min-h-56 place-items-center border-dashed text-center">
             <div>
               <FiSearch className="mx-auto text-3xl text-slate-300" />
-              <h3 className="mt-4 font-black">Aucun transfert</h3>
+              <h3 className="mt-4 font-black">{t('transfers.history.emptyTitle')}</h3>
               <p className="mt-2 text-sm text-slate-500">
                 {query
-                  ? 'Aucun resultat ne correspond a la recherche.'
-                  : 'Créez votre première opération.'}
+                  ? t('transfers.history.emptySearch')
+                  : t('transfers.history.emptyDefault')}
               </p>
             </div>
           </Card>
@@ -170,7 +175,7 @@ export function TransfersPage() {
       <Modal
         open={calculatorOpen}
         onClose={() => setCalculatorOpen(false)}
-        title="Calculatrice de transfert"
+        title={t('transfers.history.calculatorModalTitle')}
         size="large"
       >
         <TransferCalculator verified={user.verified} />

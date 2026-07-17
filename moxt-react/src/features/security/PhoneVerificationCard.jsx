@@ -15,11 +15,13 @@ import {
 } from '../auth/authSlice'
 import { authErrorToast } from '../auth/authErrorMessages'
 import { addToast } from '../ui/uiSlice'
+import { useLanguage } from '../../contexts/useLanguage'
 
 import { OTP_RESEND_COOLDOWN_SECONDS } from '@moxt/shared/auth/otpCooldown.js'
 
 export function PhoneVerificationCard({ className = '' }) {
   const dispatch = useDispatch()
+  const { t } = useLanguage()
   const user = useSelector((state) => state.auth.user)
   const authError = useSelector((state) => state.auth.error)
   const authStatus = useSelector((state) => state.auth.status)
@@ -32,9 +34,9 @@ export function PhoneVerificationCard({ className = '' }) {
 
   useEffect(() => {
     if (!authError) return
-    dispatch(addToast(authErrorToast('Envoi SMS impossible', authError)))
+    dispatch(addToast(authErrorToast(t('security.phone.errorTitle'), authError, 'error', t)))
     dispatch(clearAuthError())
-  }, [authError, dispatch])
+  }, [authError, dispatch, t])
 
   useEffect(() => {
     if (resendCooldown <= 0) return undefined
@@ -48,8 +50,8 @@ export function PhoneVerificationCard({ className = '' }) {
 
   if (isPhoneVerified(user)) {
     return (
-      <Alert variant="success" title="Numéro russe vérifié" className={className}>
-        {user.phone} est confirmé. Vous pouvez publier des annonces, colis, jobs et événements.
+      <Alert variant="success" title={t('security.phone.verifiedTitle')} className={className}>
+        {t('security.phone.verifiedBody', { phone: user.phone })}
       </Alert>
     )
   }
@@ -58,8 +60,8 @@ export function PhoneVerificationCard({ className = '' }) {
     if (!isValidRussianPhone(phone)) {
       dispatch(
         addToast({
-          title: 'Numéro invalide',
-          message: 'Utilisez un numéro russe au format +7XXXXXXXXXX.',
+          title: t('security.phone.invalidTitle'),
+          message: t('security.phone.invalidBody'),
           tone: 'error',
         }),
       )
@@ -72,8 +74,8 @@ export function PhoneVerificationCard({ className = '' }) {
       if (result.payload.user) {
         dispatch(
           addToast({
-            title: 'Numéro confirmé',
-            message: 'Votre numéro russe est déjà vérifié sur votre compte.',
+            title: t('security.phone.alreadyConfirmedTitle'),
+            message: t('security.phone.alreadyConfirmedBody'),
             tone: 'success',
           }),
         )
@@ -86,8 +88,8 @@ export function PhoneVerificationCard({ className = '' }) {
       dispatch(clearAuthError())
       dispatch(
         addToast({
-          title: 'Code envoyé',
-          message: `Un code à 6 chiffres a été envoyé au ${result.payload.phone}. L’arrivée peut prendre 1–2 minutes ; sinon renvoyez après 90 s.`,
+          title: t('security.phone.codeSentTitle'),
+          message: t('security.phone.codeSentBody', { phone: result.payload.phone }),
           tone: 'info',
         }),
       )
@@ -106,8 +108,8 @@ export function PhoneVerificationCard({ className = '' }) {
       setOtpSent(false)
       dispatch(
         addToast({
-          title: 'Numéro confirmé',
-          message: 'Votre numéro russe est vérifié. Vous pouvez publier sur MOXT.',
+          title: t('security.phone.confirmedTitle'),
+          message: t('security.phone.confirmedBody'),
           tone: 'success',
         }),
       )
@@ -117,6 +119,8 @@ export function PhoneVerificationCard({ className = '' }) {
   }
 
   const loading = busy || authStatus === 'loading'
+  const sentAlertText = t('security.phone.sentAlert', { phone })
+  const sentAlertPhoneIndex = sentAlertText.indexOf(phone)
 
   return (
     <Card className={`grid gap-4 ${className}`}>
@@ -125,12 +129,8 @@ export function PhoneVerificationCard({ className = '' }) {
           <FiSmartphone />
         </span>
         <div>
-          <h2 className="font-black">Confirmer votre numéro russe</h2>
-          <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-            Requis uniquement si votre numéro n&apos;est pas encore confirmé. Après inscription par
-            SMS, le téléphone est déjà vérifié — passez à la confirmation e-mail dans Sécurité.
-            Distinct de la vérification d&apos;identité (KYC) sur la page Identité.
-          </p>
+          <h2 className="font-black">{t('security.phone.title')}</h2>
+          <p className="mt-1 text-sm text-[var(--app-text-muted)]">{t('security.phone.description')}</p>
         </div>
       </div>
 
@@ -138,7 +138,7 @@ export function PhoneVerificationCard({ className = '' }) {
         <>
           <Input
             id="phone-verify-number"
-            label="Numéro russe (+7)"
+            label={t('security.phone.numberLabel')}
             type="tel"
             autoComplete="tel"
             placeholder="+7XXXXXXXXXX"
@@ -147,17 +147,25 @@ export function PhoneVerificationCard({ className = '' }) {
             onChange={(event) => setPhone(constrainPhone(event.target.value, '+7', 10))}
           />
           <Button type="button" icon={FiSmartphone} loading={loading} onClick={sendCode}>
-            Envoyer le code SMS
+            {t('security.phone.sendCode')}
           </Button>
         </>
       ) : (
         <>
           <Alert variant="info">
-            Un code à 6 chiffres a été envoyé au <strong>{phone}</strong> par SMS.
+            {sentAlertPhoneIndex >= 0 ? (
+              <>
+                {sentAlertText.slice(0, sentAlertPhoneIndex)}
+                <strong>{phone}</strong>
+                {sentAlertText.slice(sentAlertPhoneIndex + phone.length)}
+              </>
+            ) : (
+              sentAlertText
+            )}
           </Alert>
           <Input
             id="phone-verify-otp"
-            label="Code reçu par SMS"
+            label={t('security.phone.otpLabel')}
             inputMode="numeric"
             autoComplete="one-time-code"
             maxLength={6}
@@ -172,17 +180,19 @@ export function PhoneVerificationCard({ className = '' }) {
             disabled={otp.length !== 6}
             onClick={confirmCode}
           >
-            Confirmer le numéro
+            {t('security.phone.confirm')}
           </Button>
           <div className="text-center text-sm text-[var(--app-text-muted)]">
-            <span>Vous n&apos;avez pas reçu le SMS ? </span>
+            <span>{t('security.phone.notReceived')} </span>
             <button
               type="button"
               className="font-bold text-brand-700 disabled:cursor-not-allowed disabled:opacity-50 dark:text-brand-300"
               disabled={resendCooldown > 0 || loading}
               onClick={sendCode}
             >
-              {resendCooldown > 0 ? `Renvoyer dans ${resendCooldown}s` : 'Renvoyer le code'}
+              {resendCooldown > 0
+                ? t('security.phone.resendCooldown', { seconds: resendCooldown })
+                : t('security.phone.resend')}
             </button>
           </div>
           <button
@@ -195,7 +205,7 @@ export function PhoneVerificationCard({ className = '' }) {
               dispatch(clearAuthError())
             }}
           >
-            Modifier le numéro
+            {t('security.phone.changeNumber')}
           </button>
         </>
       )}

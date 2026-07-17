@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { loginSchema, registerSchema } from './authSchemas'
+import { createAuthSchemas, loginSchema, registerSchema } from './authSchemas'
 
 describe('schemas d authentification', () => {
   it('refuse un identifiant invalide a la connexion', async () => {
@@ -42,5 +42,15 @@ describe('schemas d authentification', () => {
         acceptTerms: true,
       }),
     ).rejects.toThrow("L'e-mail est obligatoire.")
+  })
+
+  it('utilise les messages traduits fournis par la langue active', async () => {
+    const t = (key) =>
+      key === 'validation.email.required' ? 'Укажите адрес электронной почты.' : key
+    const { forgotPasswordSchema } = createAuthSchemas(t)
+
+    await expect(forgotPasswordSchema.validate({ email: '' })).rejects.toThrow(
+      'Укажите адрес электронной почты.',
+    )
   })
 })

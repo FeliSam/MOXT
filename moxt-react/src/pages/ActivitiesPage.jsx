@@ -7,7 +7,9 @@ import { Badge } from '../components/ui/Badge'
 import { Card } from '../components/ui/Card'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { useLanguage } from '../contexts/useLanguage'
 import { applicationJobId, applicationUserId } from '../features/jobs/jobUtils'
+import { phase3Text } from '../i18n/phase3I18n'
 import { formatTime } from '../utils/formatters'
 
 function activityTitle(at, title) {
@@ -16,6 +18,8 @@ function activityTitle(at, title) {
 }
 
 export function ActivitiesPage() {
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const user = useSelector((state) => state.auth.user)
   const state = useSelector((current) => current)
   const activities = useMemo(
@@ -25,7 +29,7 @@ export function ActivitiesPage() {
         .map((item) => ({
           id: `account-favorite-${item.id}`,
           title: activityTitle(item.createdAt, item.title),
-          label: 'Favori',
+          label: phase3Text(t, 'activities.label.favorite'),
           path: item.path,
           icon: FiHeart,
         })),
@@ -34,7 +38,7 @@ export function ActivitiesPage() {
         .map((item) => ({
           id: `favorite-${item.id}`,
           title: activityTitle(item.updatedAt || item.createdAt, item.title),
-          label: 'Favori',
+          label: phase3Text(t, 'activities.label.favorite'),
           path: `/marketplace/${item.id}`,
           icon: FiHeart,
         })),
@@ -47,7 +51,7 @@ export function ActivitiesPage() {
             state.jobs.items.find((job) => job.id === applicationJobId(item))?.title ||
               applicationJobId(item),
           ),
-          label: 'Candidature',
+          label: phase3Text(t, 'activities.label.application'),
           path: `/jobs/${applicationJobId(item)}`,
           icon: FiSend,
         })),
@@ -59,7 +63,7 @@ export function ActivitiesPage() {
             item.createdAt,
             state.events.items.find((event) => event.id === item.eventId)?.title || item.eventId,
           ),
-          label: 'Inscription',
+          label: phase3Text(t, 'activities.label.registration'),
           path: `/events/${item.eventId}`,
           icon: FiCalendar,
         })),
@@ -70,9 +74,12 @@ export function ActivitiesPage() {
             id: `parcel-${parcel.id}-${index}`,
             title: activityTitle(
               reservation.createdAt,
-              `${parcel.origin} vers ${parcel.destination}`,
+              phase3Text(t, 'activities.parcelTitle', {
+                origin: parcel.origin,
+                destination: parcel.destination,
+              }),
             ),
-            label: `Réservation ${reservation.kg} kg`,
+            label: phase3Text(t, 'activities.label.reservation', { kg: reservation.kg }),
             path: `/parcels/${parcel.id}`,
             icon: FiPackage,
           })),
@@ -82,20 +89,20 @@ export function ActivitiesPage() {
         .map((item) => ({
           id: `conversation-${item.id}`,
           title: activityTitle(item.updatedAt || item.lastMessageAt || item.createdAt, item.title),
-          label: 'Conversation',
+          label: phase3Text(t, 'activities.label.conversation'),
           path: `/messages?relatedType=${item.relatedType}&relatedId=${item.relatedId}`,
           icon: FiMessageSquare,
         })),
     ],
-    [state, user.id],
+    [state, user.id, t],
   )
 
   return (
     <div className="grid min-w-0 max-w-full gap-6 sm:gap-7">
       <PageHeader
-        eyebrow="Compte"
-        title="Mes activités"
-        description="Favoris, candidatures, inscriptions, réservations et conversations."
+        eyebrow={p3('activities.eyebrow')}
+        title={p3('activities.title')}
+        description={p3('activities.description')}
         actions={<BackButton appearance="link" />}
       />
       {activities.length ? (
@@ -118,7 +125,10 @@ export function ActivitiesPage() {
           ))}
         </div>
       ) : (
-        <EmptyState title="Aucune activité" description="Vos interactions apparaîtront ici." />
+        <EmptyState
+          title={p3('activities.empty.title')}
+          description={p3('activities.empty.description')}
+        />
       )}
     </div>
   )

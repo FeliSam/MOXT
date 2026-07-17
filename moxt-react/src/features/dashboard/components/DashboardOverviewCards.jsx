@@ -10,10 +10,13 @@ import { Link } from 'react-router-dom'
 import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
 import { RevealOnScroll } from '../../../components/ui/RevealOnScroll'
+import { useLanguage } from '../../../contexts/useLanguage'
 import { TransferStatusBadge } from '../../transfers/TransferStatusBadge'
 import { formatMoney } from '../../transfers/transferUtils'
 
 export function DashboardOverviewCards({ activeTransfers, todoItems }) {
+  const { t } = useLanguage()
+
   return (
     <RevealOnScroll as="section" className="grid gap-5 lg:grid-cols-2">
       <Card>
@@ -22,28 +25,30 @@ export function DashboardOverviewCards({ activeTransfers, todoItems }) {
             <FiInbox />
           </span>
           <div>
-            <h2 className="font-black">Actions à faire</h2>
-            <p className="text-xs text-[var(--app-text-muted)]">Ce qui attend votre intervention.</p>
+            <h2 className="font-black">{t('dashboard.overview.todoTitle')}</h2>
+            <p className="text-xs text-[var(--app-text-muted)]">{t('dashboard.overview.todoDescription')}</p>
           </div>
         </div>
         <div className="mt-5 grid gap-2">
           {todoItems.length ? (
             todoItems.map((item) => (
               <Link
-                key={item.label}
+                key={item.labelKey}
                 to={item.to}
                 className="flex items-center gap-3 rounded-2xl bg-[var(--app-surface-muted)] p-3 transition hover:bg-[var(--app-accent-soft)]"
               >
                 <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[var(--app-surface)] text-[var(--app-accent)]">
                   <item.icon />
                 </span>
-                <span className="min-w-0 flex-1 text-sm font-bold">{item.label}</span>
+                <span className="min-w-0 flex-1 text-sm font-bold">
+                  {t(item.labelKey, { count: item.count })}
+                </span>
                 <FiChevronRight className="shrink-0 text-[var(--app-text-muted)]" />
               </Link>
             ))
           ) : (
             <p className="flex items-center gap-2 rounded-2xl bg-emerald-50 p-4 text-sm font-bold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
-              <FiCheckCircle /> Tout est à jour, aucune action en attente.
+              <FiCheckCircle /> {t('dashboard.overview.allUpToDate')}
             </p>
           )}
         </div>
@@ -56,14 +61,14 @@ export function DashboardOverviewCards({ activeTransfers, todoItems }) {
               <FiRepeat />
             </span>
             <div>
-              <h2 className="font-black">Mes transferts en cours</h2>
-              <p className="text-xs text-[var(--app-text-muted)]">Suivi de vos opérations actives.</p>
+              <h2 className="font-black">{t('dashboard.overview.transfersTitle')}</h2>
+              <p className="text-xs text-[var(--app-text-muted)]">{t('dashboard.overview.transfersDescription')}</p>
             </div>
           </div>
           <Link
             to="/transfers/history"
             className="grid size-10 shrink-0 place-items-center rounded-2xl border border-[var(--app-border)]"
-            aria-label="Voir l’historique des transferts"
+            aria-label={t('dashboard.overview.history')}
           >
             <FiArrowUpRight />
           </Link>
@@ -85,7 +90,7 @@ export function DashboardOverviewCards({ activeTransfers, todoItems }) {
                   </span>
                   <strong className="block truncate text-sm">
                     {formatMoney(amount, currency)} ·{' '}
-                    {transfer.exchanger?.name || 'Transfert'}
+                    {transfer.exchanger?.name || t('dashboard.overview.transfer')}
                   </strong>
                   <span className="text-xs text-[var(--app-text-muted)]">{transfer.id}</span>
                 </Link>
@@ -93,9 +98,9 @@ export function DashboardOverviewCards({ activeTransfers, todoItems }) {
             })
           ) : (
             <div className="grid place-items-center gap-3 rounded-2xl bg-[var(--app-surface-muted)] p-5 text-center text-sm text-[var(--app-text-muted)]">
-              Aucun transfert en cours.
+              {t('dashboard.overview.noTransfers')}
               <Link to="/transfers">
-                <Button icon={FiArrowRight}>Créer un transfert</Button>
+                <Button icon={FiArrowRight}>{t('dashboard.overview.createTransfer')}</Button>
               </Link>
             </div>
           )}

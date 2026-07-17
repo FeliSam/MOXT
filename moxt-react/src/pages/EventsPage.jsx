@@ -13,7 +13,12 @@ import { RevealListItem } from '../components/ui/RevealListItem'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { Select } from '../components/ui/Select'
 import { CatalogFavoriteButton } from '../features/account/CatalogFavoriteButton'
-import { EVENT_CATEGORIES } from '../config/options'
+import { useLanguage } from '../contexts/useLanguage'
+import {
+  EVENT_CATEGORY_OPTIONS,
+  EVENT_PRICE_FILTER_OPTIONS,
+  eventPublisherTypeKey,
+} from '../features/events/eventsConfig'
 import { resolveEventCountry } from '../features/marketplace/listingCatalogUtils'
 import { formatDate, formatMoney } from '../features/transfers/transferUtils'
 import { sortByCountryPriority, resolveUserCountryCode } from '@moxt/shared/utils/countryPriority.js'
@@ -22,6 +27,7 @@ import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 
 export function EventsPage() {
   useScrollToSecondSection()
+  const { t } = useLanguage()
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [showMine, setShowMine] = useState(false)
   const [filters, setFilters] = useState({ query: '', city: '', category: '', price: '' })
@@ -62,9 +68,9 @@ export function EventsPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Communauté"
-        title="Événements"
-        description="Rencontres, ateliers, formations et inscriptions."
+        eyebrow={t('events.browse.eyebrow')}
+        title={t('events.browse.title')}
+        description={t('events.browse.description')}
         actions={
           <>
             {canManage ? (
@@ -73,11 +79,11 @@ export function EventsPage() {
                 icon={FiUser}
                 onClick={() => setShowMine((v) => !v)}
               >
-                {showMine ? 'Tous les événements' : 'Mes événements'}
+                {showMine ? t('events.browse.showAll') : t('events.browse.showMine')}
               </Button>
             ) : null}
             <Button icon={FiPlus} onClick={() => navigate('/events/publish')}>
-              Créer un événement
+              {t('events.browse.create')}
             </Button>
           </>
         }
@@ -90,12 +96,13 @@ export function EventsPage() {
           onQueryChange={(query) => setFilters((current) => ({ ...current, query }))}
           onToggleAdvanced={() => setAdvancedOpen((value) => !value)}
           onClear={clearFilters}
-          placeholder="Événement, organisateur, lieu ou ville..."
+          label={t('events.browse.searchLabel')}
+          placeholder={t('events.browse.searchPlaceholder')}
         >
           <div className="grid gap-4 sm:grid-cols-3">
             <Input
               id="event-filter-city"
-              label="Ville"
+              label={t('events.browse.city')}
               value={filters.city}
               onChange={(event) =>
                 setFilters((current) => ({ ...current, city: event.target.value }))
@@ -103,30 +110,32 @@ export function EventsPage() {
             />
             <Select
               id="event-filter-category"
-              label="Catégorie"
+              label={t('events.browse.category')}
               value={filters.category}
               onChange={(event) =>
                 setFilters((current) => ({ ...current, category: event.target.value }))
               }
             >
-              <option value="">Toutes</option>
-              {EVENT_CATEGORIES.map((category) => (
+              <option value="">{t('events.browse.allCategories')}</option>
+              {EVENT_CATEGORY_OPTIONS.map((category) => (
                 <option key={category.value} value={category.value}>
-                  {category.label}
+                  {t(category.labelKey)}
                 </option>
               ))}
             </Select>
             <Select
               id="event-filter-price"
-              label="Accès"
+              label={t('events.browse.access')}
               value={filters.price}
               onChange={(event) =>
                 setFilters((current) => ({ ...current, price: event.target.value }))
               }
             >
-              <option value="">Tous</option>
-              <option value="free">Gratuits</option>
-              <option value="paid">Payants</option>
+              {EVENT_PRICE_FILTER_OPTIONS.map((option) => (
+                <option key={option.value || 'all'} value={option.value}>
+                  {t(option.labelKey)}
+                </option>
+              ))}
             </Select>
           </div>
         </CatalogSearch>
@@ -145,7 +154,7 @@ export function EventsPage() {
                       </div>
                       <h2 className="mt-4 font-black">{event.title}</h2>
                       <p className="mt-2 text-sm text-slate-500">
-                        {event.businessId ? 'Entreprise' : 'Particulier'} · {event.organizerName}
+                        {t(eventPublisherTypeKey(event.businessId))} · {event.organizerName}
                       </p>
                       <div className="mt-3 grid gap-2 text-sm">
                         <span>{formatDate(event.startAt)}</span>
@@ -154,7 +163,9 @@ export function EventsPage() {
                           {event.venue}, {event.city}
                         </span>
                         <strong className="text-brand-700">
-                          {event.price ? formatMoney(event.price, event.currency) : 'Gratuit'}
+                          {event.price
+                            ? formatMoney(event.price, event.currency)
+                            : t('events.browse.freePrice')}
                         </strong>
                       </div>
                     </Card>
@@ -171,9 +182,9 @@ export function EventsPage() {
             ))
           ) : (
             <Card className="grid place-items-center gap-4 border-dashed py-10 text-center text-sm text-slate-500">
-              Aucun événement publié.
+              {t('events.browse.empty')}
               <Button icon={FiPlus} onClick={() => navigate('/events/publish')}>
-                Créer un événement
+                {t('events.browse.create')}
               </Button>
             </Card>
           )}

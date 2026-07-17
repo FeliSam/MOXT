@@ -4,9 +4,11 @@ import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { EmptyState } from '../../components/ui/EmptyState'
+import { useLanguage } from '../../contexts/useLanguage'
 import { updateRegistrationStatus } from './eventSlice'
 
 export function EventRegistrationsPanel({ id = 'event-registrations' }) {
+  const { t } = useLanguage()
   const dispatch = useDispatch()
   const user = useSelector((state) => state.auth.user)
   const events = useSelector((state) => state.events.items)
@@ -21,9 +23,9 @@ export function EventRegistrationsPanel({ id = 'event-registrations' }) {
     <section id={id} className="scroll-mt-24 lg:scroll-mt-28">
       <Card className="grid gap-4 p-5 sm:p-6">
         <div>
-          <h2 className="text-lg font-black">Participants inscrits</h2>
+          <h2 className="text-lg font-black">{t('events.registrationsPanel.title')}</h2>
           <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-            Suivez les inscriptions à vos événements publiés.
+            {t('events.registrationsPanel.description')}
           </p>
         </div>
         {rows.length ? (
@@ -34,7 +36,9 @@ export function EventRegistrationsPanel({ id = 'event-registrations' }) {
                 <Card key={row.id} className="h-full bg-[var(--app-surface-muted)] p-4">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <strong>{row.participantName || 'Membre MOXT'}</strong>
+                      <strong>
+                        {row.participantName || t('events.participants.memberFallback')}
+                      </strong>
                       <p className="mt-1 text-sm text-[var(--app-text-muted)]">{event?.title}</p>
                       {row.message ? (
                         <p className="mt-2 text-sm text-[var(--app-text-muted)]">{row.message}</p>
@@ -50,7 +54,7 @@ export function EventRegistrationsPanel({ id = 'event-registrations' }) {
                           )
                         }
                       >
-                        Présent
+                        {t('events.participants.present')}
                       </Button>
                       <Button
                         icon={FiX}
@@ -61,7 +65,7 @@ export function EventRegistrationsPanel({ id = 'event-registrations' }) {
                           )
                         }
                       >
-                        Annuler
+                        {t('events.participants.cancel')}
                       </Button>
                     </div>
                   </div>
@@ -71,8 +75,8 @@ export function EventRegistrationsPanel({ id = 'event-registrations' }) {
           </div>
         ) : (
           <EmptyState
-            title="Aucune inscription"
-            description="Les nouvelles inscriptions à vos événements apparaîtront ici."
+            title={t('events.participants.emptyTitle')}
+            description={t('events.registrationsPanel.emptyDescription')}
           />
         )}
       </Card>

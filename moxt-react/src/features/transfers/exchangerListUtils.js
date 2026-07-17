@@ -3,6 +3,9 @@ import {
   receivingCountryForDirection,
 } from './transferAccountUtils'
 
+/** Default FR delay label when unknown; UI should prefer i18n via exchangers.toConfirm. */
+export const EXCHANGER_DELAY_TO_CONFIRM = 'À confirmer'
+
 export function resolveUserTransferCountry(user, originCountry = 'BJ') {
   if (user?.country === 'RU') return 'RU'
   return user?.originCountry || user?.country || originCountry
@@ -136,14 +139,19 @@ export function resolveExchangerDisplayCountry(business, fallbackOriginCountry =
   return resolveExchangerOriginCountry(business, fallbackOriginCountry)
 }
 
-export function businessToExchangerOption(business, partnerCountry, fallbackOriginCountry = 'BJ') {
+export function businessToExchangerOption(
+  business,
+  partnerCountry,
+  fallbackOriginCountry = 'BJ',
+  { toConfirmLabel = EXCHANGER_DELAY_TO_CONFIRM } = {},
+) {
   return {
     id: business.id,
     ownerId: business.ownerId,
     name: business.name,
     rating: Number(business.rating) || 0,
     feePercent: Number(business.feePercent || 0),
-    averageDelay: business.averageDelay || 'À confirmer',
+    averageDelay: business.averageDelay || toConfirmLabel,
     methods: business.exchangeMethods || business.paymentMethods || [],
     logoUrl: business.logoUrl || '',
     city: business.city || '',
@@ -160,6 +168,7 @@ export function listExchangersForTransfer({
   direction,
   excludeOwnerId,
   includeAllCountries = false,
+  toConfirmLabel = EXCHANGER_DELAY_TO_CONFIRM,
 }) {
   const partnerCountry = resolvePartnerCountryForTransfer(user, originCountry, direction)
 
@@ -176,7 +185,9 @@ export function listExchangersForTransfer({
       }
       return true
     })
-    .map((business) => businessToExchangerOption(business, partnerCountry, originCountry))
+    .map((business) =>
+      businessToExchangerOption(business, partnerCountry, originCountry, { toConfirmLabel }),
+    )
     .sort((left, right) => {
       if (right.rating !== left.rating) return right.rating - left.rating
       return left.name.localeCompare(right.name, 'fr')
@@ -194,6 +205,7 @@ export function resolveExchangerForDetail({
   originCountry = 'BJ',
   allowAllCountries = false,
   fallbackExchangers = [],
+  toConfirmLabel = EXCHANGER_DELAY_TO_CONFIRM,
 }) {
   const partnerCountry = resolveUserPartnerCountry(user, originCountry)
   const business = businesses.find(
@@ -209,7 +221,9 @@ export function resolveExchangerForDetail({
     }
     return {
       business,
-      exchanger: businessToExchangerOption(business, partnerCountry, originCountry),
+      exchanger: businessToExchangerOption(business, partnerCountry, originCountry, {
+        toConfirmLabel,
+      }),
     }
   }
 

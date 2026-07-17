@@ -1,10 +1,10 @@
 import { FiShield, FiSliders, FiUsers } from 'react-icons/fi'
 
 export const TRANSFER_WIZARD_STEPS = [
-  { key: 'amount', label: 'Montant', icon: FiSliders },
-  { key: 'sender', label: 'Expéditeur', icon: FiUsers },
-  { key: 'recipient', label: 'Destinataire', icon: FiUsers },
-  { key: 'confirm', label: 'Confirmer', icon: FiShield },
+  { key: 'amount', labelKey: 'transfers.wizard.steps.amount', icon: FiSliders },
+  { key: 'sender', labelKey: 'transfers.wizard.steps.sender', icon: FiUsers },
+  { key: 'recipient', labelKey: 'transfers.wizard.steps.recipient', icon: FiUsers },
+  { key: 'confirm', labelKey: 'transfers.wizard.steps.confirm', icon: FiShield },
 ]
 
 export const TRANSFER_DRAFT_KEY = 'moxt-transfer-draft-v1'

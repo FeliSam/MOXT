@@ -18,11 +18,13 @@ import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { FavoriteButton } from '../../components/ui/FavoriteButton'
 import { statusMeta } from '../../config/statuses'
+import { useLanguage } from '../../contexts/useLanguage'
 import { toggleAccountFavorite } from '../account/accountSlice'
 import { buildListingFavoriteSnapshot } from '../account/favoriteUtils'
 import { formatMoney } from '../transfers/transferUtils'
 import { isActiveListing, listingCategoryLabel, listingTypeLabel } from './listingCatalogUtils'
 import { archivedPublicationCardClass } from '../publications/publicationCatalogUtils'
+import { marketplaceText } from './marketplaceI18n'
 
 export function MyListingCard({
   listing,
@@ -37,6 +39,8 @@ export function MyListingCard({
   onDelete,
 }) {
   const dispatch = useDispatch()
+  const { t } = useLanguage()
+  const mt = (key, vars) => marketplaceText(t, key, vars)
   const user = useSelector((state) => state.auth.user)
   const liked = useSelector((state) =>
     state.account.favorites.some(
@@ -46,8 +50,8 @@ export function MyListingCard({
   )
   const status = statusMeta(listing.status)
   const active = isActiveListing(listing)
-  const typeLabel = listingTypeLabel(listing.type)
-  const categoryLabel = listingCategoryLabel(listing.type, listing.category)
+  const typeLabel = listingTypeLabel(listing.type, t)
+  const categoryLabel = listingCategoryLabel(listing.type, listing.category, t)
   const detailPath = `/marketplace/${listing.id}`
 
   function handleGuestClick(event) {
@@ -127,7 +131,9 @@ export function MyListingCard({
                 ) : null}
               </div>
               <strong className="shrink-0 text-lg font-black text-brand-700">
-                {listing.price ? formatMoney(listing.price, listing.currency) : 'Sur devis'}
+                {listing.price
+                  ? formatMoney(listing.price, listing.currency)
+                  : mt('marketplace.common.onQuote')}
               </strong>
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-[var(--app-text-muted)]">
@@ -140,12 +146,14 @@ export function MyListingCard({
               {showViews ? (
                 <span className="inline-flex items-center gap-1">
                   <FiEye className="shrink-0" />
-                  {listing.views || 0} vues
+                  {mt('marketplace.common.views', { count: listing.views || 0 })}
                 </span>
               ) : null}
               <span className="inline-flex items-center gap-1">
                 <FiHeart className="shrink-0" />
-                {listing.favorites?.length || 0} favoris
+                {mt('marketplace.common.favorites', {
+                  count: listing.favorites?.length || 0,
+                })}
               </span>
             </div>
             {listing.description ? (
@@ -158,33 +166,35 @@ export function MyListingCard({
           <div className="flex flex-wrap gap-2">
             <Link to={detailPath}>
               <Button variant="secondary" icon={FiExternalLink} size="sm">
-                {active ? 'Voir la fiche' : 'Consulter'}
+                {active
+                  ? mt('marketplace.common.viewDetails')
+                  : mt('marketplace.common.consult')}
               </Button>
             </Link>
             {ownerMode ? (
               <>
                 <Link to={`/marketplace/${listing.id}/edit`}>
                   <Button variant="secondary" icon={FiEdit2} size="sm">
-                    Modifier
+                    {mt('marketplace.common.edit')}
                   </Button>
                 </Link>
                 <Button variant="secondary" icon={FiCopy} size="sm" onClick={onDuplicate}>
-                  Dupliquer
+                  {mt('marketplace.common.duplicate')}
                 </Button>
                 {!active ? (
                   <Button icon={FiRotateCcw} size="sm" onClick={onRepublish}>
-                    Republier
+                    {mt('marketplace.common.republish')}
                   </Button>
                 ) : (
                   <Button variant="secondary" icon={FiCheckCircle} size="sm" onClick={onMarkSold}>
-                    Marquer vendu
+                    {mt('marketplace.common.markSold')}
                   </Button>
                 )}
                 <Button variant="danger" icon={FiArchive} size="sm" onClick={onArchive}>
-                  Archiver
+                  {mt('marketplace.common.archive')}
                 </Button>
                 <Button variant="danger" icon={FiTrash2} size="sm" onClick={onDelete}>
-                  Supprimer
+                  {mt('marketplace.common.delete')}
                 </Button>
               </>
             ) : null}

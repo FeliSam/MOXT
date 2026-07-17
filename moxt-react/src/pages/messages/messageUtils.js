@@ -1,4 +1,5 @@
 import { attachmentPreviewLabel, attachmentSearchText } from '../../features/communications/attachmentUtils'
+import { messagesText } from '../../features/communications/messagesI18n'
 import { getConversationPeer } from '../../features/communications/conversationDisplay'
 
 export function messageSearchHaystack(message) {
@@ -27,46 +28,56 @@ export function conversationMatchesQuery(conversation, userId, query) {
   )
 }
 
-export function messageReadLabel(message, userId) {
-  if (!isMessageFromUser(message, userId)) return ''
+export function messageReadStatus(message, userId) {
+  if (!isMessageFromUser(message, userId)) return null
   const selfId = String(userId)
   const readers = (message.readBy || []).map(String).filter((id) => id && id !== selfId)
-  if (readers.length > 0) return '· Lu'
+  if (readers.length > 0) return 'read'
   const delivered = (message.deliveredTo || []).map(String).filter((id) => id && id !== selfId)
-  if (delivered.length > 0) return '· Distribué'
-  return '· Envoyé'
+  if (delivered.length > 0) return 'delivered'
+  return 'sent'
 }
 
-export function messageHasReactions(message) {
-  return Boolean(
-    message?.reactions &&
-      Object.entries(message.reactions).some(([, users]) => users?.length),
-  )
+/** @deprecated Prefer messageReadStatus + messagesText for UI. Kept for tests/compat. */
+export function messageReadLabel(message, userId) {
+  const status = messageReadStatus(message, userId)
+  if (status === 'read') return '· Lu'
+  if (status === 'delivered') return '· Distribué'
+  if (status === 'sent') return '· Envoyé'
+  return ''
 }
 
-export function conversationPreview(conversation, userId) {
+export function conversationPreview(conversation, userId, t) {
   const last = conversation.messages.at(-1)
+  const youPrefix = messagesText(t, 'messages.youPrefix')
   if (last?.attachment) {
-    const prefix = isMessageFromUser(last, userId) ? 'Vous : ' : ''
-    const label = attachmentPreviewLabel(last.attachment)
+    const prefix = isMessageFromUser(last, userId) ? youPrefix : ''
+    const label = attachmentPreviewLabel(last.attachment, t)
     if (!last.text?.trim()) return `${prefix}${label}`
     const attachmentHint = `${label} · `
     return `${prefix}${attachmentHint}${last.text}`
   }
   if (last?.text) {
-    const prefix = isMessageFromUser(last, userId) ? 'Vous : ' : ''
+    const prefix = isMessageFromUser(last, userId) ? youPrefix : ''
     return `${prefix}${last.text}`
   }
 
   const previewText = conversation.lastMessageText ?? conversation.last_message_text
   if (previewText) {
     const senderId = conversation.lastMessageSenderId ?? conversation.last_message_sender_id
-    const prefix = isMessageFromUser({ senderId }, userId) ? 'Vous : ' : ''
+    const prefix = isMessageFromUser({ senderId }, userId) ? youPrefix : ''
     return `${prefix}${previewText}`
   }
 
   const total = conversationMessageCount(conversation, userId)
-  return total > 0 ? `${total} message${total > 1 ? 's' : ''}` : 'Démarrez la conversation'
+  if (total > 0) {
+    return messagesText(
+      t,
+      total > 1 ? 'messages.messageCountPlural' : 'messages.messageCount',
+      { count: total },
+    )
+  }
+  return messagesText(t, 'messages.startConversation')
 }
 
 export function conversationMessageCount(conversation, userId) {
@@ -128,4 +139,11 @@ export function isMessageNotification(notification) {
 export function isMessageFromUser(message, userId) {
   if (!message || !userId) return false
   return String(message.senderId ?? message.sender_id) === String(userId)
+}
+
+export function messageHasReactions(message) {
+  return Boolean(
+    message?.reactions &&
+      Object.entries(message.reactions).some(([, users]) => users?.length),
+  )
 }

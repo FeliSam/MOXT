@@ -53,6 +53,8 @@ import {
   collectPublicationTargetIds,
   filterAggregateReviews,
 } from '@moxt/shared/utils/reviewUtils.js'
+import { useLanguage } from '../contexts/useLanguage'
+import { phase3Text } from '../i18n/phase3I18n'
 
 const EMPTY_ICONS = {
   listing: FiShoppingBag,
@@ -65,6 +67,8 @@ const EMPTY_ICONS = {
 
 
 export function UserPublicationsPage() {
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const { userId } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
   const { guestMode = false } = useOutletContext() || {}
@@ -79,10 +83,6 @@ export function UserPublicationsPage() {
     ? searchParams.get('type')
     : 'listing'
   const scope = searchParams.get('scope') === 'business' ? 'business' : 'personal'
-
-  if (currentUser && matchUserId(userId, currentUser.id)) {
-    return <Navigate to="/profile" replace />
-  }
 
   const isOwner = !guestMode && currentUser?.id === userId
   const conversations = useSelector((state) => state.communications.conversations)
@@ -124,11 +124,11 @@ export function UserPublicationsPage() {
   const displayName = useMemo(() => {
     if (guestMode) {
       const remoteName = `${guestProfile?.firstName || ''} ${guestProfile?.lastName || ''}`.trim()
-      return remoteName || 'Membre MOXT'
+      return remoteName || phase3Text(t, 'publications.user.memberFallback')
     }
     const remoteName = `${memberProfile?.firstName || ''} ${memberProfile?.lastName || ''}`.trim()
-    return remoteName || 'Membre MOXT'
-  }, [guestMode, guestProfile, memberProfile])
+    return remoteName || phase3Text(t, 'publications.user.memberFallback')
+  }, [guestMode, guestProfile, memberProfile, t])
   const profile = useMemo(
     () => buildUserPublicationProfile(userId, publications, { displayName }),
     [displayName, publications, userId],
@@ -157,6 +157,10 @@ export function UserPublicationsPage() {
     () => calculateAggregateRating(aggregateReviews),
     [aggregateReviews],
   )
+
+  if (currentUser && matchUserId(userId, currentUser.id)) {
+    return <Navigate to="/profile" replace />
+  }
 
   function setMainTab(next) {
     const params = new URLSearchParams(searchParams)
@@ -189,8 +193,8 @@ export function UserPublicationsPage() {
   if (guestMode && guestPreview.loading) {
     return (
       <EmptyState
-        title="Chargement de l'aperçu"
-        description="Récupération des publications publiques de ce membre..."
+        title={p3('publications.user.preview.loading')}
+        description={p3('publications.user.preview.loadingDescription')}
       />
     )
   }
@@ -198,12 +202,12 @@ export function UserPublicationsPage() {
   if (guestMode && guestPreview.error === 'not_found') {
     return (
       <EmptyState
-        title="Profil introuvable"
-        description="Ce membre MOXT n'existe pas ou n'est plus disponible."
+        title={p3('publications.user.notFound.title')}
+        description={p3('publications.user.notFound.description')}
         action={
           <Link to="/">
             <Button variant="secondary" icon={FiArrowLeft}>
-              Retour à l'accueil
+              {p3('publications.user.backHome')}
             </Button>
           </Link>
         }
@@ -215,18 +219,18 @@ export function UserPublicationsPage() {
     return (
       <div className="grid gap-7">
         <PageHeader
-          eyebrow="Communauté"
-          title="Publications du membre"
-          description="Ce membre a restreint la visibilité de son activité."
+          eyebrow={p3('publications.user.eyebrow')}
+          title={p3('publications.user.title.default')}
+          description={p3('publications.user.restricted.description')}
         />
         <EmptyState
           icon={FiLock}
-          title="Profil non accessible"
-          description="Seuls les contacts autorisés ou le membre lui-même peuvent consulter ces publications."
+          title={p3('publications.user.restricted.title')}
+          description={p3('publications.user.restricted.memberDescription')}
           action={
             <Link to="/dashboard">
               <Button variant="secondary" icon={FiArrowLeft}>
-                Retour
+                {p3('publications.user.back')}
               </Button>
             </Link>
           }
@@ -239,17 +243,17 @@ export function UserPublicationsPage() {
     return (
       <div className="grid gap-7">
         <PageHeader
-          eyebrow="Communauté"
-          title="Publications du membre"
-          description="Ce membre a restreint la visibilité de son activité."
+          eyebrow={p3('publications.user.eyebrow')}
+          title={p3('publications.user.title.default')}
+          description={p3('publications.user.restricted.description')}
         />
         <EmptyState
           icon={FiLock}
-          title="Profil non accessible"
-          description="Créez un compte MOXT pour demander l'accès ou découvrir d'autres membres."
+          title={p3('publications.user.restricted.title')}
+          description={p3('publications.user.restricted.guestDescription')}
           action={
             <Link to="/register">
-              <Button>Créer un compte</Button>
+              <Button>{p3('publications.user.createAccount')}</Button>
             </Link>
           }
         />
@@ -257,23 +261,27 @@ export function UserPublicationsPage() {
     )
   }
 
-  const handleGuestInteract = () => requireAccount('consulter ce contenu')
+  const handleGuestInteract = () => requireAccount(p3('publications.user.guestAction'))
 
   const pageDescription = isOwner
     ? scope === 'business' && ownBusiness
-      ? `Vue publique des publications de ${ownBusiness.name}.`
-      : 'Vue publique de vos publications personnelles — partagez ce profil avec la communauté.'
+      ? p3('publications.user.description.ownerBusiness', { name: ownBusiness.name })
+      : p3('publications.user.description.ownerPersonal')
     : scope === 'business' && ownBusiness
-      ? `Publications publiées par ${ownBusiness.name}.`
+      ? p3('publications.user.description.business', { name: ownBusiness.name })
       : hasAnyPublication
-        ? 'Annonces, colis, jobs, événements et publications du profil personnel.'
-        : "Consultez les publications et les avis laissés sur ce membre."
+        ? p3('publications.user.description.personal')
+        : p3('publications.user.description.noPublications')
 
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Communauté"
-        title={isOwner ? 'Mes publications publiques' : `Publications de ${displayName}`}
+        eyebrow={p3('publications.user.eyebrow')}
+        title={
+          isOwner
+            ? p3('publications.user.title.owner')
+            : p3('publications.user.title.member', { name: displayName })
+        }
         description={pageDescription}
         actions={
           <div className="relative z-30 flex min-w-0 flex-wrap items-center justify-end gap-2">
@@ -315,19 +323,19 @@ export function UserPublicationsPage() {
                 }
               >
                 <Button variant="secondary" icon={FiArrowLeft}>
-                  Gérer mes publications
+                  {p3('publications.user.manage')}
                 </Button>
               </Link>
             ) : guestMode ? (
               <Link to="/discover">
                 <Button variant="secondary" icon={FiArrowLeft}>
-                  Découvrir MOXT
+                  {p3('publications.user.discover')}
                 </Button>
               </Link>
             ) : (
               <Link to="/dashboard">
                 <Button variant="secondary" icon={FiArrowLeft}>
-                  Retour
+                  {p3('publications.user.back')}
                 </Button>
               </Link>
             )}
@@ -367,8 +375,16 @@ export function UserPublicationsPage() {
         onChange={setMainTab}
         variant="section"
         tabs={[
-          { key: 'publications', label: 'Publications', count: profile.totalCount },
-          { key: 'avis', label: 'Avis', count: aggregateRating.count },
+          {
+            key: 'publications',
+            label: p3('publications.user.tabs.publications'),
+            count: profile.totalCount,
+          },
+          {
+            key: 'avis',
+            label: p3('publications.user.tabs.reviews'),
+            count: aggregateRating.count,
+          },
         ]}
       />
 
@@ -379,8 +395,16 @@ export function UserPublicationsPage() {
             onChange={setArchiveTab}
             variant="filter"
             tabs={[
-              { key: 'active', label: 'Actives', count: archiveCounts.active },
-              { key: 'archived', label: 'Archives', count: archiveCounts.archived },
+              {
+                key: 'active',
+                label: p3('publications.mine.stats.active'),
+                count: archiveCounts.active,
+              },
+              {
+                key: 'archived',
+                label: p3('publications.mine.stats.archived'),
+                count: archiveCounts.archived,
+              },
             ]}
           />
 
@@ -392,7 +416,7 @@ export function UserPublicationsPage() {
                 onClick={() => setTypeTab(tab.id)}
                 className="shrink-0 whitespace-nowrap"
               >
-                {tab.label} ({typeCounts[tab.id]})
+                {p3(`publications.mine.types.${tab.id}`)} ({typeCounts[tab.id]})
               </PillBadge>
             ))}
           </div>
@@ -400,8 +424,8 @@ export function UserPublicationsPage() {
           {!hasAnyPublication ? (
             <EmptyState
               icon={FiShoppingBag}
-              title="Aucune publication"
-              description="Les annonces, colis, jobs, événements et publications de ce membre apparaîtront ici."
+              title={p3('publications.user.empty.title')}
+              description={p3('publications.user.empty.description')}
             />
           ) : hasContent ? (
             <div className="grid gap-4">
@@ -456,8 +480,16 @@ export function UserPublicationsPage() {
           ) : (
             <EmptyState
               icon={archiveTab === 'archived' ? FiArchive : EmptyIcon}
-              title={archiveTab === 'active' ? 'Aucune publication active' : 'Aucune archive'}
-              description={`Aucun contenu dans ${PUBLICATION_TYPE_TABS.find((t) => t.id === typeTab)?.label || 'cette catégorie'}.`}
+              title={
+                archiveTab === 'active'
+                  ? p3('publications.mine.empty.active')
+                  : p3('publications.mine.empty.archived')
+              }
+              description={p3('publications.mine.empty.description', {
+                category: PUBLICATION_TYPE_TABS.some((tab) => tab.id === typeTab)
+                  ? p3(`publications.mine.types.${typeTab}`)
+                  : p3('publications.mine.empty.category'),
+              })}
             />
           )}
         </div>

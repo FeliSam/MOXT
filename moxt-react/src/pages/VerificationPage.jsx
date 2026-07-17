@@ -29,32 +29,23 @@ import { addPersonalDocument, submitVerificationRequest } from '../features/acco
 import { PhoneVerificationCard } from '../features/security/PhoneVerificationCard'
 import { EmailVerificationCard } from '../features/security/EmailVerificationCard'
 import { VerificationGuidePanel } from '../features/verification/VerificationGuidePanel'
+import { phase3Text } from '../i18n/phase3I18n'
 import { storageService } from '../services/storageService'
 import { addToast } from '../features/ui/uiSlice'
 
-const levels = [
-  {
-    value: 'identity',
-    title: 'Identité',
-    description: 'Pièce d’identité et selfie. Débloque la création d’entreprise et les transferts.',
-  },
-  {
-    value: 'enhanced',
-    title: 'Renforcée',
-    description: 'Identité + justificatif de domicile. Débloque les plafonds élevés.',
-  },
-]
+const LEVEL_VALUES = ['identity', 'enhanced']
 
-const ID_TYPES = [
-  { value: 'passport', label: 'Passeport' },
-  { value: 'residence', label: 'Carte de séjour russe (ВНЖ / РВП)' },
-  { value: 'migration', label: 'Carte de migration / patente' },
-  { value: 'consular', label: 'Carte consulaire' },
+const ID_TYPE_VALUES = [
+  { value: 'passport', labelKey: 'verification.idTypes.passport' },
+  { value: 'residence', labelKey: 'verification.idTypes.residence' },
+  { value: 'migration', labelKey: 'verification.idTypes.migration' },
+  { value: 'consular', labelKey: 'verification.idTypes.consular' },
 ]
 
 export function VerificationPage() {
   const dispatch = useDispatch()
   const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const user = useSelector((state) => state.auth.user)
   const request = useSelector((state) =>
     state.account.verificationRequests.find((item) => item.userId === user.id),
@@ -71,18 +62,30 @@ export function VerificationPage() {
   const [addressDoc, setAddressDoc] = useState(null)
   const [privacyConsent, setPrivacyConsent] = useState(false)
 
-  const steps = useMemo(() => {
-    const base = [
-      { key: 'level', label: 'Niveau' },
-      ...(phoneConfirmed ? [] : [{ key: 'phone', label: 'Téléphone' }]),
-      ...(emailConfirmed ? [] : [{ key: 'email', label: 'E-mail' }]),
-      { key: 'identity', label: 'Identité' },
-      { key: 'selfie', label: 'Selfie' },
-      ...(level === 'enhanced' ? [{ key: 'address', label: 'Domicile' }] : []),
-      { key: 'review', label: 'Confirmation' },
-    ]
-    return base
-  }, [level, phoneConfirmed, emailConfirmed])
+  const levels = LEVEL_VALUES.map((value) => ({
+    value,
+    title: p3(`verification.levels.${value}`),
+    description: p3(`verification.levels.${value}Desc`),
+  }))
+
+  const steps = useMemo(
+    () => [
+      { key: 'level', label: phase3Text(t, 'verification.steps.level') },
+      ...(phoneConfirmed
+        ? []
+        : [{ key: 'phone', label: phase3Text(t, 'verification.steps.phone') }]),
+      ...(emailConfirmed
+        ? []
+        : [{ key: 'email', label: phase3Text(t, 'verification.steps.email') }]),
+      { key: 'identity', label: phase3Text(t, 'verification.steps.identity') },
+      { key: 'selfie', label: phase3Text(t, 'verification.steps.selfie') },
+      ...(level === 'enhanced'
+        ? [{ key: 'address', label: phase3Text(t, 'verification.steps.address') }]
+        : []),
+      { key: 'review', label: phase3Text(t, 'verification.steps.review') },
+    ],
+    [level, phoneConfirmed, emailConfirmed, t],
+  )
 
   const current = steps[Math.min(step, steps.length) - 1]
   const ready = Boolean(
@@ -137,8 +140,8 @@ export function VerificationPage() {
     dispatch(submitVerificationRequest({ userId: user.id, level, documentIds }))
     dispatch(
       addToast({
-        title: 'Dossier envoyé',
-        message: 'Votre dossier a été transmis. Notre équipe le traite sous 24 à 48 h.',
+        title: p3('verification.toast.sentTitle'),
+        message: p3('verification.toast.sentMessage'),
         tone: 'success',
       }),
     )
@@ -149,9 +152,9 @@ export function VerificationPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Compte"
-        title="Vérification"
-        description="Trois niveaux : numéro russe (publication), identité MOXT (entreprise/transferts), renforcée (plafonds élevés)."
+        eyebrow={p3('verification.eyebrow')}
+        title={p3('verification.title')}
+        description={p3('verification.description')}
         actions={<BackButton appearance="link" />}
       />
 
@@ -159,10 +162,10 @@ export function VerificationPage() {
       {!emailConfirmed ? <EmailVerificationCard /> : null}
 
       {requestStale ? (
-        <Alert variant="warning" title="Délai de traitement dépassé">
-          Votre dossier est en attente depuis plus de 24 h. Contactez l’administrateur via{' '}
+        <Alert variant="warning" title={p3('verification.overdue.title')}>
+          {p3('verification.overdue.before')}{' '}
           <Link className="font-bold text-brand-700 hover:underline" to="/support">
-            le support MOXT
+            {p3('verification.overdue.link')}
           </Link>
           .
         </Alert>
@@ -172,9 +175,13 @@ export function VerificationPage() {
         <Card className="flex items-center gap-4">
           <FiCheckCircle className="text-2xl text-brand-600" />
           <div className="flex-1">
-            <strong>Demande {request.level}</strong>
+            <strong>
+              {p3('verification.request.heading', {
+                level: p3(`verification.levels.${request.level}`),
+              })}
+            </strong>
             <p className="text-sm text-[var(--app-text-muted)]">
-              {request.documentIds.length} document(s) associé(s)
+              {p3('verification.request.docs', { count: request.documentIds.length })}
             </p>
           </div>
           <Badge tone={statusMeta(request.status).tone}>{statusMeta(request.status).label}</Badge>
@@ -183,7 +190,11 @@ export function VerificationPage() {
 
       <Card>
         <div className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-brand-700">
-          Étape {step}/{steps.length} · {current.label}
+          {p3('verification.stepProgress', {
+            step,
+            total: steps.length,
+            label: current.label,
+          })}
         </div>
         <div className="flex items-center gap-2">
           {steps.map((item, index) => {
@@ -219,10 +230,9 @@ export function VerificationPage() {
         <div className="mt-6">
           {current.key === 'level' ? (
             <div>
-              <h2 className="font-black">Choisissez votre niveau</h2>
+              <h2 className="font-black">{p3('verification.chooseLevel')}</h2>
               <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-                Le numéro russe doit déjà être confirmé. Le niveau renforcé débloque des plafonds plus
-                élevés.
+                {p3('verification.chooseLevelHint')}
               </p>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 {levels.map((item) => (
@@ -251,20 +261,22 @@ export function VerificationPage() {
           {current.key === 'identity' ? (
             <div className="grid gap-4">
               <div>
-                <h2 className="font-black">Pièce d’identité</h2>
+                <h2 className="font-black">{p3('verification.identity.heading')}</h2>
                 <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-                  Au nom de <strong>{`${user.firstName} ${user.lastName}`}</strong>.
+                  {p3('verification.identity.hint', {
+                    name: `${user.firstName} ${user.lastName}`,
+                  })}
                 </p>
               </div>
               <Select
                 id="id-type"
-                label="Type de document"
+                label={p3('verification.identity.docType')}
                 value={idType}
                 onChange={(event) => setIdType(event.target.value)}
               >
-                {ID_TYPES.map((option) => (
+                {ID_TYPE_VALUES.map((option) => (
                   <option key={option.value} value={option.value}>
-                    {option.label}
+                    {p3(option.labelKey)}
                   </option>
                 ))}
               </Select>
@@ -272,8 +284,9 @@ export function VerificationPage() {
                 icon={FiUpload}
                 doc={idDoc}
                 onFile={setIdDoc}
-                label="Photo de la pièce d’identité"
-                hint="Image ou PDF, recto lisible."
+                label={p3('verification.identity.upload')}
+                hint={p3('verification.identity.uploadHint')}
+                kbLabel={p3('common.kb')}
               />
               <VerificationGuidePanel type="identity" />
             </div>
@@ -282,17 +295,18 @@ export function VerificationPage() {
           {current.key === 'selfie' ? (
             <div className="grid gap-4">
               <div>
-                <h2 className="font-black">Selfie de vérification</h2>
+                <h2 className="font-black">{p3('verification.selfie.heading')}</h2>
                 <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-                  Une photo de vous tenant votre pièce, pour confirmer qu’elle vous appartient.
+                  {p3('verification.selfie.hint')}
                 </p>
               </div>
               <UploadField
                 icon={FiCamera}
                 doc={selfieDoc}
                 onFile={setSelfieDoc}
-                label="Ajouter un selfie"
-                hint="Visage et document visibles."
+                label={p3('verification.selfie.upload')}
+                hint={p3('verification.selfie.uploadHint')}
+                kbLabel={p3('common.kb')}
               />
               <VerificationGuidePanel type="selfie" />
             </div>
@@ -301,17 +315,18 @@ export function VerificationPage() {
           {current.key === 'address' ? (
             <div className="grid gap-4">
               <div>
-                <h2 className="font-black">Justificatif de domicile</h2>
+                <h2 className="font-black">{p3('verification.address.heading')}</h2>
                 <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-                  Enregistrement migratoire, bail ou facture récente en Russie.
+                  {p3('verification.address.hint')}
                 </p>
               </div>
               <UploadField
                 icon={FiHome}
                 doc={addressDoc}
                 onFile={setAddressDoc}
-                label="Ajouter un justificatif"
-                hint="Document de moins de 3 mois."
+                label={p3('verification.address.upload')}
+                hint={p3('verification.address.uploadHint')}
+                kbLabel={p3('common.kb')}
               />
               <VerificationGuidePanel type="address" />
             </div>
@@ -319,24 +334,45 @@ export function VerificationPage() {
 
           {current.key === 'review' ? (
             <div className="grid gap-4">
-              <h2 className="font-black">Confirmation</h2>
+              <h2 className="font-black">{p3('verification.review.heading')}</h2>
               <div className="grid gap-2">
-                <Row label="Niveau demandé" value={levels.find((l) => l.value === level)?.title} />
                 <Row
-                  label="Pièce d’identité"
-                  value={ID_TYPES.find((t) => t.value === idType)?.label}
+                  label={p3('verification.review.level')}
+                  value={levels.find((item) => item.value === level)?.title}
+                />
+                <Row
+                  label={p3('verification.review.idDoc')}
+                  value={p3(
+                    ID_TYPE_VALUES.find((option) => option.value === idType)?.labelKey ||
+                      'verification.idTypes.passport',
+                  )}
                   ok={Boolean(idDoc)}
                 />
-                <Row label="Selfie de vérification" value="Fourni" ok={Boolean(selfieDoc)} />
-                <Row label="Téléphone russe" value="Vérifié" ok={phoneConfirmed} />
-                <Row label="E-mail" value={user.email || 'À confirmer'} ok={emailConfirmed} />
+                <Row
+                  label={p3('verification.review.selfie')}
+                  value={p3('verification.review.provided')}
+                  ok={Boolean(selfieDoc)}
+                />
+                <Row
+                  label={p3('verification.review.phone')}
+                  value={p3('verification.review.verified')}
+                  ok={phoneConfirmed}
+                />
+                <Row
+                  label={p3('verification.review.email')}
+                  value={user.email || p3('verification.review.toConfirm')}
+                  ok={emailConfirmed}
+                />
                 {level === 'enhanced' ? (
-                  <Row label="Justificatif de domicile" value="Fourni" ok={Boolean(addressDoc)} />
+                  <Row
+                    label={p3('verification.review.address')}
+                    value={p3('verification.review.provided')}
+                    ok={Boolean(addressDoc)}
+                  />
                 ) : null}
               </div>
               <p className="rounded-2xl bg-[var(--app-surface-muted)] p-4 text-xs text-[var(--app-text-muted)]">
-                Vérifiez que vos documents respectent les exemples acceptés. Le traitement prend
-                généralement 24 à 48 h ouvrées. Au-delà de 24 h en attente, contactez l’administrateur.
+                {p3('verification.review.notice')}
               </p>
               <label
                 className={`flex cursor-pointer items-start gap-2.5 rounded-2xl border-2 p-3 transition ${
@@ -380,18 +416,18 @@ export function VerificationPage() {
         <div className="mt-6 flex justify-between gap-3">
           {step > 1 ? (
             <Button variant="secondary" icon={FiArrowLeft} onClick={back}>
-              Précédent
+              {p3('common.previous')}
             </Button>
           ) : (
             <span />
           )}
           {current.key === 'review' ? (
             <Button icon={FiCheckCircle} disabled={!ready || !privacyConsent} onClick={submit}>
-              Envoyer le dossier
+              {p3('verification.submit')}
             </Button>
           ) : (
             <Button icon={FiArrowRight} disabled={!canContinue} onClick={next}>
-              Continuer
+              {p3('common.continue')}
             </Button>
           )}
         </div>
@@ -400,7 +436,7 @@ export function VerificationPage() {
   )
 }
 
-function UploadField({ doc, hint, icon: Icon, label, onFile }) {
+function UploadField({ doc, hint, icon: Icon, kbLabel, label, onFile }) {
   return (
     <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-[var(--app-border)] p-4 transition hover:border-brand-400">
       <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[var(--app-surface-muted)] text-[var(--app-accent)]">
@@ -409,7 +445,7 @@ function UploadField({ doc, hint, icon: Icon, label, onFile }) {
       <span className="min-w-0 flex-1">
         <strong className="block truncate text-sm">{doc ? doc.file.name : label}</strong>
         <span className="text-xs text-[var(--app-text-muted)]">
-          {doc ? `${Math.ceil(doc.file.size / 1024)} Ko` : hint}
+          {doc ? `${Math.ceil(doc.file.size / 1024)} ${kbLabel}` : hint}
         </span>
       </span>
       {doc ? <FiCheckCircle className="shrink-0 text-emerald-500" /> : null}

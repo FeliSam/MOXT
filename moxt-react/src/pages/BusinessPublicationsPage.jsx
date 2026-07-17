@@ -9,9 +9,14 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { PillBadge } from '../components/ui/Badge'
 import { activityByValue } from '../config/businessActivities'
+import { useLanguage } from '../contexts/useLanguage'
 import { selectBusinessById } from '../features/businesses/businessSelectors'
 import { canViewBusinessActivity } from '../features/account/activityVisibility'
 import { useBusinessActivityVisibility } from '../features/businesses/useBusinessActivityVisibility'
+import {
+  businessesOptionLabel,
+  businessesText,
+} from '../features/businesses/businessesI18n'
 import { ContactButton } from '../features/communications/ContactButton'
 import { SubscribeButton } from '../features/account/SubscribeButton'
 import { MyListingCard } from '../features/marketplace/MyListingCard'
@@ -44,11 +49,20 @@ const CONTENT_TYPE_MAP = {
   parcels: 'parcel',
 }
 
+const TYPE_LABEL_KEYS = {
+  listing: 'businesses.publications.types.listing',
+  parcel: 'businesses.publications.types.parcel',
+  job: 'businesses.publications.types.job',
+  event: 'businesses.publications.types.event',
+}
+
 const BUSINESS_TYPE_TABS = PUBLICATION_TYPE_TABS.filter((tab) => tab.id !== 'post')
 
 export function BusinessPublicationsPage() {
   const { businessId, contentType } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
+  const { t } = useLanguage()
+  const bt = (key, vars) => businessesText(t, key, vars)
   const { guestMode = false } = useOutletContext() || {}
   const { requireAccount } = useGuestAction()
   const user = useSelector((state) => state.auth.user)
@@ -124,7 +138,7 @@ export function BusinessPublicationsPage() {
   )
   const hasContent = visiblePublicationCount(visible) > 0
   const activity = activityByValue(business?.primaryActivity)
-  const sectorLabel = activity?.label || business?.sector || ''
+  const sectorLabel = businessesOptionLabel(t, activity) || business?.sector || ''
   const isOwner = !guestMode && Boolean(business && user?.id && business.ownerId === user.id)
   const { visibility, loading: visibilityLoading } = useBusinessActivityVisibility(
     business,
@@ -138,21 +152,26 @@ export function BusinessPublicationsPage() {
         conversations,
       })
   const locationLabel = business ? businessCityLabel(business) : ''
-  const handleGuestInteract = () => requireAccount('consulter cette publication')
+  const handleGuestInteract = () => requireAccount(bt('businesses.publications.guestInteract'))
 
   if (guestMode && guestPreview.loading) {
-    return <EmptyState title="Chargement de l'aperçu" description="Récupération des publications de l'entreprise..." />
+    return (
+      <EmptyState
+        title={bt('businesses.publications.loadingTitle')}
+        description={bt('businesses.publications.loadingDescription')}
+      />
+    )
   }
 
   if (guestMode && guestPreview.error === 'not_found') {
     return (
       <EmptyState
-        title="Entreprise introuvable"
-        description="Cette entreprise n'existe pas ou n'est pas encore validée sur MOXT."
+        title={bt('businesses.publications.notFound')}
+        description={bt('businesses.publications.notFoundDescription')}
         action={
           <Link to="/discover">
             <Button variant="secondary" icon={FiArrowLeft}>
-              Découvrir MOXT
+              {bt('businesses.publications.discoverMoxt')}
             </Button>
           </Link>
         }
@@ -164,11 +183,11 @@ export function BusinessPublicationsPage() {
     return (
       <EmptyState
         icon={FiLock}
-        title="Entreprise non accessible"
-        description="Créez un compte MOXT pour demander l'accès ou découvrir d'autres entreprises."
+        title={bt('businesses.detail.notAccessible')}
+        description={bt('businesses.publications.notAccessibleDescription')}
         action={
           <Link to="/register">
-            <Button>Créer un compte</Button>
+            <Button>{bt('businesses.publications.createAccount')}</Button>
           </Link>
         }
       />
@@ -179,12 +198,12 @@ export function BusinessPublicationsPage() {
     return (
       <EmptyState
         icon={FiLock}
-        title="Entreprise non accessible"
-        description="Cette entreprise a restreint la visibilité de ses publications."
+        title={bt('businesses.detail.notAccessible')}
+        description={bt('businesses.detail.restrictedVisibility')}
         action={
           <Link to="/businesses">
             <Button variant="secondary" icon={FiArrowLeft}>
-              Retour à l'annuaire
+              {bt('businesses.publications.backToDirectory')}
             </Button>
           </Link>
         }
@@ -193,7 +212,7 @@ export function BusinessPublicationsPage() {
   }
 
   if (!business) {
-    return <EmptyState title="Entreprise introuvable" />
+    return <EmptyState title={bt('businesses.publications.notFound')} />
   }
 
   function setArchiveTab(next) {
@@ -210,25 +229,32 @@ export function BusinessPublicationsPage() {
     setSearchParams(params, { replace: true })
   }
 
+  const descriptionLocation = locationLabel
+    ? bt('businesses.publications.locationSuffix', { location: locationLabel })
+    : ''
+
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Publications entreprise"
+        eyebrow={bt('businesses.publications.eyebrow')}
         title={business.name}
-        description={`${sectorLabel}${locationLabel ? ` · ${locationLabel}` : ''} — contenus publiés au nom de l’entreprise uniquement.`}
+        description={bt('businesses.publications.description', {
+          sector: sectorLabel,
+          location: descriptionLocation,
+        })}
         actions={
           <div className="flex flex-wrap gap-3">
             {guestMode ? (
               <Link to="/discover">
                 <Button variant="secondary" icon={FiArrowLeft}>
-                  Découvrir MOXT
+                  {bt('businesses.publications.discoverMoxt')}
                 </Button>
               </Link>
             ) : (
               <>
                 <Link to={`/businesses/${business.id}`}>
                   <Button variant="secondary" icon={FiArrowLeft}>
-                    Fiche entreprise
+                    {bt('businesses.publications.businessCard')}
                   </Button>
                 </Link>
                 {!isOwner ? (
@@ -251,7 +277,7 @@ export function BusinessPublicationsPage() {
                 ) : null}
                 <Link to="/businesses">
                   <Button variant="secondary" icon={HiOutlineBuildingOffice2}>
-                    Annuaire
+                    {bt('businesses.common.directory')}
                   </Button>
                 </Link>
               </>
@@ -288,8 +314,16 @@ export function BusinessPublicationsPage() {
           onChange={setArchiveTab}
           variant="filter"
           tabs={[
-            { key: 'active', label: 'Actives', count: archiveCounts.active },
-            { key: 'archived', label: 'Archives', count: archiveCounts.archived },
+            {
+              key: 'active',
+              label: bt('businesses.publications.tabs.active'),
+              count: archiveCounts.active,
+            },
+            {
+              key: 'archived',
+              label: bt('businesses.publications.tabs.archived'),
+              count: archiveCounts.archived,
+            },
           ]}
         />
 
@@ -301,7 +335,8 @@ export function BusinessPublicationsPage() {
               onClick={() => setTypeTab(tab.id)}
               className="shrink-0 whitespace-nowrap"
             >
-              {tab.label} ({typeCounts[tab.id]})
+              {TYPE_LABEL_KEYS[tab.id] ? bt(TYPE_LABEL_KEYS[tab.id]) : tab.label} (
+              {typeCounts[tab.id]})
             </PillBadge>
           ))}
         </div>
@@ -349,8 +384,8 @@ export function BusinessPublicationsPage() {
         </div>
       ) : (
         <EmptyState
-          title="Aucune publication entreprise"
-          description="Les annonces publiées au nom de cette entreprise apparaîtront ici."
+          title={bt('businesses.publications.emptyTitle')}
+          description={bt('businesses.publications.emptyDescription')}
         />
       )}
     </div>

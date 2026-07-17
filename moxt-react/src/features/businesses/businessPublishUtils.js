@@ -9,13 +9,26 @@ export function isBusinessDirectoryVisible(business) {
   return isBusinessPublishReady(business)
 }
 
-export function businessPublishBlockedMessage(business) {
+export function businessPublishBlockedMessageKey(business) {
   if (!business) return null
   if (isBusinessPublishReady(business)) return null
   if (business.status === 'pending_review') {
-    return 'Votre entreprise est en cours de vérification. Vous pourrez publier au nom de l’entreprise dès validation par MOXT.'
+    return 'publish.common.business.pendingReview'
   }
   if (business.status === 'rejected' || business.status === 'suspended') {
+    return 'publish.common.business.rejected'
+  }
+  return 'publish.common.business.needsVerification'
+}
+
+/** @deprecated Prefer businessPublishBlockedMessageKey + publishText */
+export function businessPublishBlockedMessage(business) {
+  const key = businessPublishBlockedMessageKey(business)
+  if (!key) return null
+  if (key === 'publish.common.business.pendingReview') {
+    return 'Votre entreprise est en cours de vérification. Vous pourrez publier au nom de l’entreprise dès validation par MOXT.'
+  }
+  if (key === 'publish.common.business.rejected') {
     return 'Votre entreprise n’est pas autorisée à publier pour le moment. Contactez le support MOXT.'
   }
   return 'Votre entreprise doit être vérifiée par MOXT avant toute publication au nom de l’entreprise.'

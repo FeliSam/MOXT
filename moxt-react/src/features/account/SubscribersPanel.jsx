@@ -4,6 +4,8 @@ import { useDispatch, useSelector } from 'react-redux'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { Button } from '../../components/ui/Button'
 import { RevealListItem } from '../../components/ui/RevealListItem'
+import { useLanguage } from '../../contexts/useLanguage'
+import { phase3Text } from '../../i18n/phase3I18n'
 import { selectPublisherBans, selectPublisherSubscribers } from './subscriptionSelectors'
 import { SubscriberRow } from './SubscriberRow'
 import { unbanPublisherSubscriber } from './accountSlice'
@@ -12,10 +14,12 @@ import { AvatarStack, EntityAvatar } from './EntityAvatar'
 import { useProfileAvatarMap } from './useProfileAvatarMap'
 
 function BannedSubscriberRow({ ban, onUnban }) {
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const user = useSelector((state) => state.auth.user)
   const { profile } = usePublicationProfile(ban.subscriberId, user)
   const displayName =
-    `${profile?.firstName || ''} ${profile?.lastName || ''}`.trim() || 'Membre MOXT'
+    `${profile?.firstName || ''} ${profile?.lastName || ''}`.trim() || p3('common.memberMoxt')
 
   return (
     <div className="flex items-center justify-between gap-3 rounded-2xl border border-red-200/60 bg-red-50/40 px-4 py-3 dark:border-red-900/40 dark:bg-red-950/20">
@@ -24,13 +28,15 @@ function BannedSubscriberRow({ ban, onUnban }) {
         <div className="min-w-0">
           <strong className="block truncate text-sm">{displayName}</strong>
           <p className="text-xs text-[var(--app-text-muted)]">
-            Banni le {new Date(ban.createdAt).toLocaleDateString('fr-FR')}
+            {p3('subscriptions.subscribers.bannedOn', {
+              date: new Date(ban.createdAt).toLocaleDateString('fr-FR'),
+            })}
             {ban.reason ? ` — ${ban.reason}` : ''}
           </p>
         </div>
       </div>
       <Button size="sm" variant="secondary" onClick={() => onUnban(ban)}>
-        Lever le ban
+        {p3('subscriptions.subscribers.unban')}
       </Button>
     </div>
   )
@@ -43,6 +49,8 @@ export function SubscribersPanel({
   publisherPath,
 }) {
   const dispatch = useDispatch()
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const subscribers = useSelector((state) =>
     selectPublisherSubscribers(state, publisherType, publisherId),
   )
@@ -60,12 +68,12 @@ export function SubscribersPanel({
         const entry = avatarMap[id]
         return {
           id,
-          name: entry?.name || 'Membre',
+          name: entry?.name || p3('common.member'),
           src: entry?.avatarUrl || null,
           shape: 'user',
         }
       }),
-    [avatarMap, subscribers],
+    [avatarMap, subscribers, t],
   )
 
   if (!subscribers.length && !bans.length) {
@@ -73,11 +81,11 @@ export function SubscribersPanel({
       <EmptyState
         icon={FiBell}
         tone="warm"
-        title="Aucun abonné"
+        title={p3('subscriptions.subscribers.empty')}
         description={
           publisherName
-            ? `Les membres qui s'abonnent à ${publisherName} apparaîtront ici avec leur photo de profil.`
-            : 'Les membres qui vous suivent apparaîtront ici avec leur photo de profil.'
+            ? p3('subscriptions.subscribers.emptyNamed', { name: publisherName })
+            : p3('subscriptions.subscribers.emptySelf')
         }
       />
     )
@@ -90,10 +98,12 @@ export function SubscribersPanel({
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--app-border)] bg-gradient-to-r from-brand-50/50 to-transparent px-4 py-3 dark:from-brand-950/30 sm:px-5">
             <div className="min-w-0">
               <h2 className="text-sm font-black text-[var(--app-text)]">
-                {subscribers.length} abonné{subscribers.length > 1 ? 's' : ''}
+                {subscribers.length > 1
+                  ? p3('subscriptions.subscribers.countPlural', { count: subscribers.length })
+                  : p3('subscriptions.subscribers.count', { count: subscribers.length })}
               </h2>
               <p className="mt-0.5 text-xs text-[var(--app-text-muted)]">
-                Gérez notifications, retraits, bannissements et signalements.
+                {p3('subscriptions.subscribers.manageHint')}
               </p>
             </div>
             <AvatarStack items={stackItems} max={5} size="sm" />
@@ -123,10 +133,12 @@ export function SubscribersPanel({
         <section className="grid gap-3">
           <div className="flex items-center gap-2">
             <FiShield className="text-red-600" />
-            <h3 className="text-sm font-semibold">Membres bannis ({bans.length})</h3>
+            <h3 className="text-sm font-semibold">
+              {p3('subscriptions.subscribers.bannedHeading', { count: bans.length })}
+            </h3>
           </div>
           <p className="text-xs text-[var(--app-text-muted)]">
-            Ces membres ne peuvent plus s&apos;abonner à vos publications.
+            {p3('subscriptions.subscribers.bannedHint')}
           </p>
           {bans.map((ban, index) => (
             <RevealListItem key={ban.id} index={index}>
@@ -142,8 +154,8 @@ export function SubscribersPanel({
       {!subscribers.length && bans.length ? (
         <EmptyState
           icon={FiUser}
-          title="Aucun abonné actif"
-          description="Tous vos abonnés actuels sont bannis ou ont été retirés."
+          title={p3('subscriptions.subscribers.emptyActive')}
+          description={p3('subscriptions.subscribers.emptyActiveDesc')}
         />
       ) : null}
     </div>

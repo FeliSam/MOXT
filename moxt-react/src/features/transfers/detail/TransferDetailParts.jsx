@@ -1,7 +1,9 @@
 import { FiCheck, FiUser } from 'react-icons/fi'
+import { useLanguage } from '../../../contexts/useLanguage'
 import { getTransferProgressState } from '../transferProgressUtils'
 
 export function TransferProgressStepper({ activeIndex, steps: stepsProp, transfer }) {
+  const { t } = useLanguage()
   const resolved = stepsProp
     ? { steps: stepsProp, activeIndex: activeIndex ?? 0 }
     : getTransferProgressState(transfer)
@@ -14,7 +16,6 @@ export function TransferProgressStepper({ activeIndex, steps: stepsProp, transfe
         {steps.map((step, index) => {
           const isDone = step.done
           const isCurrent = step.active || (index === active && !isDone)
-          const isUpcoming = !isDone && !isCurrent
 
           return (
             <div
@@ -42,7 +43,7 @@ export function TransferProgressStepper({ activeIndex, steps: stepsProp, transfe
                         : 'text-[var(--app-text-faint)]'
                   }`}
                 >
-                  {step.label}
+                  {step.labelKey ? t(step.labelKey) : step.label}
                 </span>
               </div>
               {index < steps.length - 1 ? (

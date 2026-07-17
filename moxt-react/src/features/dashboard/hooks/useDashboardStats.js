@@ -45,17 +45,20 @@ export function useDashboardStats(user) {
     const todoItems = [
       pendingTransfers.length && {
         icon: FiRepeat,
-        label: `${pendingTransfers.length} transfert(s) à déclarer`,
+        labelKey: 'dashboard.overview.todoPendingTransfers',
+        count: pendingTransfers.length,
         to: '/transfers/history',
       },
       parcelRequests.length && {
         icon: FiPackage,
-        label: `${parcelRequests.length} demande(s) de colis à traiter`,
+        labelKey: 'dashboard.overview.todoParcelRequests',
+        count: parcelRequests.length,
         to: `/parcels/${parcelRequests[0].parcelId}`,
       },
       receivedApplications.length && {
         icon: FiBriefcase,
-        label: `${receivedApplications.length} candidature(s) reçue(s)`,
+        labelKey: 'dashboard.overview.todoApplications',
+        count: receivedApplications.length,
         to: `/jobs/${receivedApplications[0].jobId}`,
       },
     ].filter(Boolean)
@@ -74,13 +77,21 @@ export function useDashboardStats(user) {
     )
 
     const onboardingSteps = [
-      { label: 'Vérifier votre identité', done: Boolean(user.verified), to: '/verification' },
       {
-        label: 'Renseigner votre profil',
+        labelKey: 'dashboard.overview.onboardingVerify',
+        done: Boolean(user.verified),
+        to: '/verification',
+      },
+      {
+        labelKey: 'dashboard.overview.onboardingProfile',
         done: profileCompletion === 100,
         to: '/profile/information',
       },
-      { label: 'Réaliser un premier transfert', done: myTransfers.length > 0, to: '/transfers' },
+      {
+        labelKey: 'dashboard.overview.onboardingTransfer',
+        done: myTransfers.length > 0,
+        to: '/transfers',
+      },
     ]
     const onboardingDone = onboardingSteps.filter((step) => step.done).length
 

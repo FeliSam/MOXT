@@ -13,6 +13,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { Select } from '../components/ui/Select'
+import { useLanguage } from '../contexts/useLanguage'
 import { acceptOffer } from '../features/p2p/p2pSlice'
 import { calculateP2PFee } from '../features/p2p/p2pUtils'
 import { transferCurrenciesForCountry } from '../features/transfers/transferConfig'
@@ -21,6 +22,7 @@ import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 import { useSecurityGate } from '../features/security/useSecurityGate'
 
 export function P2PPage() {
+  const { t } = useLanguage()
   useScrollToSecondSection()
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [tab, setTab] = useState('active')
@@ -81,30 +83,27 @@ export function P2PPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Échanges communautaires"
-        title="Échanges P2P"
-        description="Publiez une offre après vérification de votre compte, ou acceptez une offre existante."
-        stats={[{ label: 'Offres actives', value: activeOffers.length }]}
+        eyebrow={t('p2p.page.eyebrow')}
+        title={t('p2p.page.title')}
+        description={t('p2p.page.description')}
+        stats={[{ label: t('p2p.page.activeOffers'), value: activeOffers.length }]}
         actions={
           <Button icon={FiPlus} onClick={openPublish}>
-            Proposer une offre
+            {t('p2p.page.proposeOffer')}
           </Button>
         }
       />
 
-      <ScrollSectionAnchor
-        className="scroll-mt-24 flex flex-col gap-3 rounded-[var(--radius-card-lg)] border border-amber-200 bg-amber-50 p-4 sm:flex-row sm:items-start lg:scroll-mt-28 dark:border-amber-900/40 dark:bg-amber-950/20"
-      >
+      <ScrollSectionAnchor className="scroll-mt-24 flex flex-col gap-3 rounded-[var(--radius-card-lg)] border border-amber-200 bg-amber-50 p-4 sm:flex-row sm:items-start lg:scroll-mt-28 dark:border-amber-900/40 dark:bg-amber-950/20">
         <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
           <FiShield />
         </span>
         <div className="grid gap-1 text-sm text-amber-900 dark:text-amber-200">
           <strong className="flex items-center gap-1.5 font-black">
-            <FiAlertTriangle className="text-xs" /> Echangez en toute securite
+            <FiAlertTriangle className="text-xs" /> {t('p2p.page.safetyTitle')}
           </strong>
           <p className="text-xs leading-5 text-amber-800/90 dark:text-amber-300/80">
-            Ne payez jamais en dehors de MOXT, conservez toutes vos preuves de paiement et verifiez
-            l'identite de votre interlocuteur avant toute transaction.
+            {t('p2p.page.safetyBody')}
           </p>
         </div>
       </ScrollSectionAnchor>
@@ -117,18 +116,18 @@ export function P2PPage() {
           onQueryChange={(query) => setFilters((current) => ({ ...current, query }))}
           onToggleAdvanced={() => setAdvancedOpen((value) => !value)}
           onClear={clearFilters}
-          placeholder="Devise, méthode, utilisateur ou condition..."
+          placeholder={t('p2p.page.searchPlaceholder')}
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <Select
               id="p2p-filter-from"
-              label="Devise proposée"
+              label={t('p2p.page.fromCurrency')}
               value={filters.fromCurrency}
               onChange={(event) =>
                 setFilters((current) => ({ ...current, fromCurrency: event.target.value }))
               }
             >
-              <option value="">Toutes</option>
+              <option value="">{t('p2p.page.allCurrencies')}</option>
               {availableCurrencies.map((currency) => (
                 <option key={currency} value={currency}>
                   {currency}
@@ -137,13 +136,13 @@ export function P2PPage() {
             </Select>
             <Select
               id="p2p-filter-to"
-              label="Devise recherchée"
+              label={t('p2p.page.toCurrency')}
               value={filters.toCurrency}
               onChange={(event) =>
                 setFilters((current) => ({ ...current, toCurrency: event.target.value }))
               }
             >
-              <option value="">Toutes</option>
+              <option value="">{t('p2p.page.allCurrencies')}</option>
               {availableCurrencies.map((currency) => (
                 <option key={currency} value={currency}>
                   {currency}
@@ -156,8 +155,8 @@ export function P2PPage() {
           active={tab}
           onChange={setTab}
           tabs={[
-            { key: 'active', label: 'Offres actives', count: activeOffers.length },
-            { key: 'archived', label: 'Archives', count: archivedOffers.length },
+            { key: 'active', label: t('p2p.page.activeOffers'), count: activeOffers.length },
+            { key: 'archived', label: t('p2p.page.archives'), count: archivedOffers.length },
           ]}
         />
         <CatalogGrid lazy={false} columns="grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
@@ -174,20 +173,25 @@ export function P2PPage() {
                     </span>
                     <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
                       <Badge tone={offer.status === 'active' ? 'success' : 'warning'}>
-                        {offer.status === 'active' ? 'Active' : 'Archivée'}
+                        {offer.status === 'active'
+                          ? t('p2p.page.statusActive')
+                          : t('p2p.page.statusArchived')}
                       </Badge>
                       {offer.businessId ? (
-                        <VerifiedBadge size="sm" label="Entreprise" />
+                        <VerifiedBadge size="sm" label={t('p2p.page.business')} />
                       ) : (
                         <span className="rounded-full bg-[var(--app-surface-muted)] px-2 py-0.5 text-[10px] font-black text-[var(--app-text-faint)]">
-                          Particulier
+                          {t('p2p.page.individual')}
                         </span>
                       )}
                     </div>
                   </div>
 
                   <h2 className="mt-3.5 truncate text-sm font-black tabular-nums leading-snug sm:text-base">
-                    {formatMoney(offer.amount, offer.fromCurrency)} vers {offer.toCurrency}
+                    {t('p2p.page.amountTo', {
+                      amount: formatMoney(offer.amount, offer.fromCurrency),
+                      currency: offer.toCurrency,
+                    })}
                   </h2>
                   <p className="mt-1.5 truncate text-xs text-[var(--app-text-faint)]">
                     {offer.ownerName}
@@ -210,13 +214,16 @@ export function P2PPage() {
                   </div>
 
                   <div className="mt-4 grid flex-1 content-start gap-2 sm:grid-cols-2">
-                    <P2PMetric value={`Taux ${offer.rate}`} label={offer.method} />
+                    <P2PMetric
+                      value={t('p2p.page.rateValue', { rate: offer.rate })}
+                      label={offer.method}
+                    />
                     <P2PMetric
                       value={formatMoney(
                         calculateP2PFee(offer.amount, offer.fromCurrency),
                         offer.fromCurrency,
                       )}
-                      label="Frais estimés"
+                      label={t('p2p.page.estimatedFees')}
                     />
                   </div>
 
@@ -233,7 +240,7 @@ export function P2PPage() {
                         className="min-h-10 flex-1 sm:min-h-11"
                         onClick={() => handleAccept(offer)}
                       >
-                        Accepter
+                        {t('p2p.page.accept')}
                       </Button>
                     ) : null}
                     <Link
@@ -245,7 +252,7 @@ export function P2PPage() {
                       }
                     >
                       <span className="flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-brand-700 px-4 text-center text-xs font-black text-white transition group-hover:bg-brand-800 sm:min-h-11 sm:text-sm dark:bg-brand-600">
-                        Détail <FiArrowRight className="text-xs" />
+                        {t('p2p.page.detail')} <FiArrowRight className="text-xs" />
                       </span>
                     </Link>
                   </div>
@@ -257,16 +264,18 @@ export function P2PPage() {
               className="col-span-full"
               icon={FiUsers}
               tone="search"
-              title={tab === 'active' ? 'Aucune offre P2P active' : 'Aucune archive'}
+              title={
+                tab === 'active' ? t('p2p.page.emptyActiveTitle') : t('p2p.page.emptyArchiveTitle')
+              }
               description={
                 tab === 'active'
-                  ? 'Proposez la premiere offre ou ajustez vos filtres.'
-                  : 'Les offres acceptées ou clôturées apparaîtront ici.'
+                  ? t('p2p.page.emptyActiveDescription')
+                  : t('p2p.page.emptyArchiveDescription')
               }
               action={
                 tab === 'active' ? (
                   <Button icon={FiPlus} onClick={openPublish}>
-                    Proposer une offre
+                    {t('p2p.page.proposeOffer')}
                   </Button>
                 ) : undefined
               }
@@ -274,7 +283,7 @@ export function P2PPage() {
           )}
           {orders.length ? (
             <div className="mt-3">
-              <h2 className="mb-3 text-lg font-black">Mes transactions récentes</h2>
+              <h2 className="mb-3 text-lg font-black">{t('p2p.page.recentOrders')}</h2>
               <div className="grid gap-3">
                 {orders
                   .filter((order) => [order.buyerId, order.sellerId].includes(user.id))
@@ -284,7 +293,10 @@ export function P2PPage() {
                         <div>
                           <strong>{order.id}</strong>
                           <p className="mt-1 text-xs text-slate-500">
-                            {order.sellerName} vers {order.buyerName}
+                            {t('p2p.page.orderDirection', {
+                              seller: order.sellerName,
+                              buyer: order.buyerName,
+                            })}
                           </p>
                         </div>
                         <FiArrowRight className="text-brand-700" />

@@ -439,6 +439,25 @@ function getServiceClient() {
   return createClient(url, key, { auth: { persistSession: false } })
 }
 
+type OtpRoutePeek = { send_count: number; last_provider: string }
+
+/** Read prior routing row before claim (client may have set prefer_p1sms). */
+async function peekOtpSmsRoute(phone: string): Promise<OtpRoutePeek | null> {
+  const admin = getServiceClient()
+  if (!admin) return null
+  const routePhone = normalizeE164(phone)
+  const { data, error } = await admin
+    .from('otp_sms_route')
+    .select('send_count, last_provider')
+    .eq('phone', routePhone)
+    .maybeSingle()
+  if (error || !data) return null
+  return {
+    send_count: Number(data.send_count || 0),
+    last_provider: String(data.last_provider || ''),
+  }
+}
+
 /**
  * Atomic attempt counter (3h window). Used to split providers without dual-send:
  * attempt 1 → SMSC, attempt 2+ → P1SMS.
@@ -491,19 +510,35 @@ async function markOtpSmsProvider(phone: string, provider: SmsProvider) {
 }
 
 /**
- * Parallel providers without conflict:
- * - 1st Auth SMS (signup) → SMSC only
- * - 2nd+ (resend after cooldown) → P1SMS only
+ * Force every OTP through SMSC (1st + resend).
+ * P1SMS code stays intact as failover only when SMSC credentials are missing.
+ * Secrets: SMS_OTP_FORCE_SMSC=1 (default behaviour while P1SMS dual-route is paused).
+ */
+function isSmsForceSmsc() {
+  const v = (Deno.env.get('SMS_OTP_FORCE_SMSC') || Deno.env.get('MOXT_SMS_DEV') || '1').toLowerCase()
+  // Default ON unless explicitly disabled (0/false/no).
+  return !(v === 'false' || v === '0' || v === 'no' || v === 'off')
+}
+
+/**
+ * Provider selection:
+ * - While SMS_OTP_FORCE_SMSC (default): every attempt → SMSC
+ * - When force disabled: 1st → SMSC, 2nd+ → P1SMS (legacy dual path)
  * Never send the same OTP via both providers.
  */
 function selectProviderForAttempt(attempt: number): SmsProvider | null {
-  const preferP1 = attempt >= 2
-  if (preferP1) {
-    if (providerAvailable('p1sms')) return 'p1sms'
+  if (isSmsForceSmsc()) {
     if (providerAvailable('smsc')) return 'smsc'
+    if (providerAvailable('p1sms')) return 'p1sms'
   } else {
-    if (providerAvailable('smsc')) return 'smsc'
-    if (providerAvailable('p1sms')) return 'p1sms'
+    const preferP1 = attempt >= 2
+    if (preferP1) {
+      if (providerAvailable('p1sms')) return 'p1sms'
+      if (providerAvailable('smsc')) return 'smsc'
+    } else {
+      if (providerAvailable('smsc')) return 'smsc'
+      if (providerAvailable('p1sms')) return 'p1sms'
+    }
   }
   if (providerAvailable('smsru')) return 'smsru'
   if (providerAvailable('yandex')) return 'yandex'
@@ -520,13 +555,29 @@ async function sendWithProvider(provider: SmsProvider, phone: string, otp: strin
 }
 
 async function sendOtpSms(phone: string, otp: string) {
+  // Peek before claim (legacy prefer_p1sms). Ignored while SMSC is forced for all attempts.
+  const prior = await peekOtpSmsRoute(phone)
+  const forceSmsc = isSmsForceSmsc()
+  const forceP1 =
+    !forceSmsc &&
+    (prior?.last_provider === 'prefer_p1sms' ||
+      (Number(prior?.send_count || 0) >= 1 &&
+        Boolean(prior?.last_provider) &&
+        prior.last_provider !== 'prefer_p1sms'))
+
   const attempt = await claimOtpSmsAttempt(phone)
-  const provider = selectProviderForAttempt(attempt)
+  const routeAttempt = forceP1 ? Math.max(attempt, 2) : attempt
+  const provider = selectProviderForAttempt(routeAttempt)
+
   if (!provider) {
     throw new Error('Aucun fournisseur SMS configuré (SMSC, P1SMS, SMS.ru ou Yandex CNS).')
   }
 
-  console.log(`[send-sms] tentative ${attempt} → ${provider} (${normalizeE164(phone)})`)
+  console.log(
+    `[send-sms] tentative ${attempt} (route ${routeAttempt}) → ${provider} (${normalizeE164(phone)})` +
+      (forceSmsc ? ' [force SMSC]' : '') +
+      (prior?.last_provider ? ` prior=${prior.last_provider}` : ''),
+  )
 
   const started = Date.now()
   const remaining = HOOK_BUDGET_MS - (Date.now() - started)

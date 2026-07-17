@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- action helpers + local ActionButton */
 import { Link } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { dispatchUserRole } from './promoteAdminUtils'
@@ -17,13 +18,14 @@ import { moderateTransfer } from '../transfers/transferSlice'
 import { REVIEW_DISPUTE_STATUS } from '@moxt/shared/utils/reviewUtils.js'
 import { FiCheck, FiEye } from 'react-icons/fi'
 import { adminDetailLink, normalizeAdminKind, normalizeReportType } from './adminLinkUtils'
+import { adminText } from './adminI18n'
 
-function detailViewButton(kind, item) {
+function detailViewButton(kind, item, t) {
   const link = adminDetailLink(kind, item)
   if (!link) return null
   return (
     <Link to={link}>
-      <Button variant="secondary" icon={FiEye}>Voir</Button>
+      <Button variant="secondary" icon={FiEye}>{adminText(t, 'admin.actions.view')}</Button>
     </Link>
   )
 }
@@ -95,7 +97,7 @@ export function handleReportReject(dispatch, item) {
   }
 }
 
-export function contentActions(contentView, dispatch, item) {
+export function contentActions(contentView, dispatch, item, t) {
   const status = item.effectiveStatus || item.status
 
   switch (contentView) {
@@ -104,18 +106,18 @@ export function contentActions(contentView, dispatch, item) {
         <>
           <ActionButton
             done={status === 'verified'}
-            doneLabel="Validée"
+            doneLabel={adminText(t, 'admin.actions.approved')}
             onClick={() => dispatch(moderateBusiness({ id: item.id, status: 'verified' }))}
           >
-            Valider
+            {adminText(t, 'admin.actions.approve')}
           </ActionButton>
           <ActionButton
             done={status === 'rejected'}
-            doneLabel="Refusée"
+            doneLabel={adminText(t, 'admin.actions.rejected')}
             variant="danger"
             onClick={() => dispatch(moderateBusiness({ id: item.id, status: 'rejected' }))}
           >
-            Refuser
+            {adminText(t, 'admin.actions.reject')}
           </ActionButton>
         </>
       )
@@ -124,18 +126,18 @@ export function contentActions(contentView, dispatch, item) {
         <>
           <ActionButton
             done={status === 'active'}
-            doneLabel="Publiée"
+            doneLabel={adminText(t, 'admin.actions.published')}
             onClick={() => dispatch(updateListingStatus({ id: item.id, status: 'active' }))}
           >
-            Publier
+            {adminText(t, 'admin.actions.publish')}
           </ActionButton>
           <ActionButton
             done={status === 'archived' || status === 'suspended'}
-            doneLabel="Archivée"
+            doneLabel={adminText(t, 'admin.actions.archived')}
             variant="danger"
             onClick={() => dispatch(updateListingStatus({ id: item.id, status: 'archived' }))}
           >
-            Archiver
+            {adminText(t, 'admin.actions.archive')}
           </ActionButton>
         </>
       )
@@ -144,18 +146,18 @@ export function contentActions(contentView, dispatch, item) {
         <>
           <ActionButton
             done={status === 'active'}
-            doneLabel="Activée"
+            doneLabel={adminText(t, 'admin.actions.activated')}
             onClick={() => dispatch(moderateJob({ id: item.id, status: 'active' }))}
           >
-            Activer
+            {adminText(t, 'admin.actions.activate')}
           </ActionButton>
           <ActionButton
             done={status === 'rejected'}
-            doneLabel="Refusée"
+            doneLabel={adminText(t, 'admin.actions.rejected')}
             variant="danger"
             onClick={() => dispatch(moderateJob({ id: item.id, status: 'rejected' }))}
           >
-            Refuser
+            {adminText(t, 'admin.actions.reject')}
           </ActionButton>
         </>
       )
@@ -164,18 +166,18 @@ export function contentActions(contentView, dispatch, item) {
         <>
           <ActionButton
             done={status === 'published'}
-            doneLabel="Publié"
+            doneLabel={adminText(t, 'admin.actions.publishedMasc')}
             onClick={() => dispatch(moderateEvent({ id: item.id, status: 'published' }))}
           >
-            Publier
+            {adminText(t, 'admin.actions.publish')}
           </ActionButton>
           <ActionButton
             done={status === 'rejected' || status === 'archived'}
-            doneLabel="Refusé"
+            doneLabel={adminText(t, 'admin.actions.rejectedMasc')}
             variant="danger"
             onClick={() => dispatch(moderateEvent({ id: item.id, status: 'rejected' }))}
           >
-            Refuser
+            {adminText(t, 'admin.actions.reject')}
           </ActionButton>
         </>
       )
@@ -184,18 +186,18 @@ export function contentActions(contentView, dispatch, item) {
         <>
           <ActionButton
             done={status === 'active'}
-            doneLabel="Actif"
+            doneLabel={adminText(t, 'admin.actions.active')}
             onClick={() => dispatch(updateParcelStatus({ id: item.id, status: 'active' }))}
           >
-            Activer
+            {adminText(t, 'admin.actions.activate')}
           </ActionButton>
           <ActionButton
             done={status === 'archived'}
-            doneLabel="Archivé"
+            doneLabel={adminText(t, 'admin.actions.archivedMasc')}
             variant="danger"
             onClick={() => dispatch(updateParcelStatus({ id: item.id, status: 'archived' }))}
           >
-            Archiver
+            {adminText(t, 'admin.actions.archive')}
           </ActionButton>
         </>
       )
@@ -204,18 +206,18 @@ export function contentActions(contentView, dispatch, item) {
         <>
           <ActionButton
             done={status === 'resolved'}
-            doneLabel="Traité"
+            doneLabel={adminText(t, 'admin.actions.resolvedReport')}
             onClick={() => handleReportApprove(dispatch, item)}
           >
-            Traiter
+            {adminText(t, 'admin.actions.resolveReport')}
           </ActionButton>
           <ActionButton
             done={status === 'dismissed'}
-            doneLabel="Ignoré"
+            doneLabel={adminText(t, 'admin.actions.dismissed')}
             variant="danger"
             onClick={() => handleReportReject(dispatch, item)}
           >
-            Ignorer
+            {adminText(t, 'admin.actions.dismiss')}
           </ActionButton>
         </>
       )
@@ -224,15 +226,19 @@ export function contentActions(contentView, dispatch, item) {
   }
 }
 
-export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, onSuspendUser }) {
+export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, onSuspendUser, t }) {
   const reviewerId = actorId || 'admin'
   switch (normalizeAdminKind(kind)) {
     case 'transfer': {
       const next = TRANSFER_TRANSITIONS[item.status]
       return (
         <>
-          {next && <Button onClick={() => dispatch(moderateTransfer({ id: item.id, status: next }))}>Passer a {next}</Button>}
-          {detailViewButton('transfer', item)}
+          {next && (
+            <Button onClick={() => dispatch(moderateTransfer({ id: item.id, status: next }))}>
+              {adminText(t, 'admin.actions.advanceTo', { next })}
+            </Button>
+          )}
+          {detailViewButton('transfer', item, t)}
         </>
       )
     }
@@ -244,8 +250,8 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
     case 'report':
       return (
         <>
-          {contentActions(normalizeAdminKind(kind) === 'report' ? 'reports' : normalizeAdminKind(kind), dispatch, item)}
-          {detailViewButton(kind, item)}
+          {contentActions(normalizeAdminKind(kind) === 'report' ? 'reports' : normalizeAdminKind(kind), dispatch, item, t)}
+          {detailViewButton(kind, item, t)}
         </>
       )
     case 'user':
@@ -254,17 +260,19 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
           <Button
             variant="secondary"
             disabled={actorRole !== 'superadmin'}
-            onClick={() => dispatchUserRole(dispatch, { actorRole, id: item.id, role: 'admin' })}
+            onClick={() => dispatchUserRole(dispatch, { actorRole, id: item.id, role: 'admin', t })}
           >
-            Passer admin
+            {adminText(t, 'admin.actions.promoteAdmin')}
           </Button>
           <Button
             variant={item.status === 'suspended' ? 'secondary' : 'danger'}
             onClick={() => onSuspendUser(item)}
           >
-            {item.status === 'suspended' ? 'Reactiver' : 'Suspendre'}
+            {item.status === 'suspended'
+              ? adminText(t, 'admin.actions.reactivate')
+              : adminText(t, 'admin.actions.suspend')}
           </Button>
-          {detailViewButton('user', item)}
+          {detailViewButton('user', item, t)}
         </>
       )
     case 'verification':
@@ -272,7 +280,7 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
         <>
           <ActionButton
             done={item.status === 'verified'}
-            doneLabel="Validée"
+            doneLabel={adminText(t, 'admin.actions.approved')}
             onClick={() =>
               dispatch(
                 updateVerificationStatus({
@@ -283,16 +291,16 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
               )
             }
           >
-            Valider
+            {adminText(t, 'admin.actions.approve')}
           </ActionButton>
           <ActionButton
             done={item.status === 'rejected'}
-            doneLabel="Refusée"
+            doneLabel={adminText(t, 'admin.actions.rejected')}
             variant="danger"
             onClick={() => {
               const reviewNote =
                 typeof window !== 'undefined'
-                  ? window.prompt('Motif du refus (optionnel) :', item.reviewNote || '') || ''
+                  ? window.prompt(adminText(t, 'admin.actions.rejectPrompt'), item.reviewNote || '') || ''
                   : ''
               dispatch(
                 updateVerificationStatus({
@@ -304,17 +312,21 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
               )
             }}
           >
-            Refuser
+            {adminText(t, 'admin.actions.reject')}
           </ActionButton>
-          {detailViewButton('verification', item)}
+          {detailViewButton('verification', item, t)}
         </>
       )
     case 'dispute':
       return (
         <>
-          <Button onClick={() => dispatch(updateDisputeStatus({ id: item.id, status: 'resolved', updatedBy: 'admin' }))}>Resoudre</Button>
-          <Button variant="secondary" onClick={() => dispatch(updateDisputeStatus({ id: item.id, status: 'closed', updatedBy: 'admin' }))}>Cloturer</Button>
-          {detailViewButton('dispute', item)}
+          <Button onClick={() => dispatch(updateDisputeStatus({ id: item.id, status: 'resolved', updatedBy: 'admin' }))}>
+            {adminText(t, 'admin.actions.resolve')}
+          </Button>
+          <Button variant="secondary" onClick={() => dispatch(updateDisputeStatus({ id: item.id, status: 'closed', updatedBy: 'admin' }))}>
+            {adminText(t, 'admin.actions.close')}
+          </Button>
+          {detailViewButton('dispute', item, t)}
         </>
       )
     case 'review':
@@ -334,7 +346,7 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
                 )
               }
             >
-              Retirer l&apos;avis
+              {adminText(t, 'admin.actions.removeReview')}
             </Button>
             <Button
               onClick={() =>
@@ -348,17 +360,21 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
                 )
               }
             >
-              Refuser la contestation
+              {adminText(t, 'admin.actions.rejectContest')}
             </Button>
-            {detailViewButton('review', item)}
+            {detailViewButton('review', item, t)}
           </>
         )
       }
       return (
         <>
-          <Button onClick={() => dispatch(moderateReview({ id: item.id, status: 'published', moderatedBy: 'admin' }))}>Publier</Button>
-          <Button variant="danger" onClick={() => dispatch(moderateReview({ id: item.id, status: 'hidden', moderatedBy: 'admin' }))}>Masquer</Button>
-          {detailViewButton('review', item)}
+          <Button onClick={() => dispatch(moderateReview({ id: item.id, status: 'published', moderatedBy: 'admin' }))}>
+            {adminText(t, 'admin.actions.publish')}
+          </Button>
+          <Button variant="danger" onClick={() => dispatch(moderateReview({ id: item.id, status: 'hidden', moderatedBy: 'admin' }))}>
+            {adminText(t, 'admin.actions.hide')}
+          </Button>
+          {detailViewButton('review', item, t)}
         </>
       )
     default:

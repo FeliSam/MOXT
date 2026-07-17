@@ -18,6 +18,8 @@ const profileQuery = {
   eq: vi.fn(),
   maybeSingle: vi.fn(),
   upsert: vi.fn(),
+  insert: vi.fn(),
+  update: vi.fn(),
 }
 
 const rpc = vi.fn()
@@ -32,7 +34,9 @@ vi.mock('../../services/supabaseClient', () => ({
 
 const { authService, translateAuthError } = await import('./authService')
 const { __resetOtpSendCooldownForTests } = await import('@moxt/shared/auth/createAuthService.js')
-const { OTP_SEND_CAP_ENABLED } = await import('@moxt/shared/auth/otpCooldown.js')
+const { OTP_SEND_CAP_ENABLED, OTP_RESEND_COOLDOWN_SECONDS } = await import(
+  '@moxt/shared/auth/otpCooldown.js',
+)
 
 function mockSmsVerifySession(userOverrides = {}) {
   const user = {
@@ -53,8 +57,57 @@ function mockSmsVerifySession(userOverrides = {}) {
   }
   auth.verifyOtp.mockResolvedValue({ data: { user, session }, error: null })
   auth.setSession.mockResolvedValue({ data: { session, user }, error: null })
-  auth.getUser.mockResolvedValue({ data: { user }, error: null })
+  // Fresh confirm path: no prior session → verifyOtp; then getUser after setSession.
+  auth.getUser
+    .mockResolvedValueOnce({ data: { user: null }, error: null })
+    .mockResolvedValue({ data: { user }, error: null })
+  auth.getSession.mockResolvedValue({ data: { session: null }, error: null })
   return { user, session }
+}
+
+function mockAlreadyConfirmedPhoneSession(userOverrides = {}) {
+  const { user, session } = mockSmsVerifySession(userOverrides)
+  auth.getUser.mockReset()
+  auth.getUser.mockResolvedValue({ data: { user }, error: null })
+  auth.getSession.mockResolvedValue({ data: { session }, error: null })
+  return { user, session }
+}
+
+function mockFinalizePhoneProfile(overrides = {}) {
+  const profile = {
+    id: 'user-sms',
+    first_name: 'Nouvelle',
+    last_name: 'Personne',
+    email: 'personne@example.com',
+    phone: '+79000000010',
+    phone_verified: true,
+    phone_verified_at: '2026-07-15T12:00:00.000Z',
+    origin_country: 'BJ',
+    city: 'Moscou',
+    role: 'user',
+    status: 'active',
+    ...overrides,
+  }
+  rpc.mockImplementation((name, args) => {
+    if (name === 'moxt_finalize_phone_registration') {
+      return Promise.resolve({
+        data: {
+          ...profile,
+          first_name: args?.p_first_name || profile.first_name,
+          last_name: args?.p_last_name ?? profile.last_name,
+          email: args?.p_email || profile.email,
+          city: args?.p_city || profile.city,
+          origin_country: args?.p_origin_country || profile.origin_country,
+        },
+        error: null,
+      })
+    }
+    if (name === 'moxt_check_identity_available') {
+      return Promise.resolve({ data: { available: true, reason: null }, error: null })
+    }
+    return Promise.resolve({ data: { available: true, reason: null }, error: null })
+  })
+  return profile
 }
 
 describe('authService', () => {
@@ -73,6 +126,10 @@ describe('authService', () => {
     profileQuery.eq.mockReturnValue(profileQuery)
     profileQuery.maybeSingle.mockResolvedValue({ data: null, error: null })
     profileQuery.upsert.mockResolvedValue({ error: null })
+    profileQuery.insert.mockResolvedValue({ error: null })
+    profileQuery.update.mockReturnValue({
+      eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+    })
     rpc.mockResolvedValue({ data: { available: true, reason: null }, error: null })
   })
 
@@ -207,20 +264,12 @@ describe('authService', () => {
 
   it('fusionne les champs pending registration lors de la vérification SMS', async () => {
     mockSmsVerifySession({ user_metadata: {} })
-    profileQuery.maybeSingle.mockResolvedValue({
-      data: {
-        id: 'user-sms',
-        first_name: 'Nova',
-        last_name: 'Test',
-        email: 'nova@example.com',
-        phone: '+79000000010',
-        phone_verified: true,
-        origin_country: 'BJ',
-        city: 'Moscou',
-        role: 'user',
-        status: 'active',
-      },
-      error: null,
+    mockFinalizePhoneProfile({
+      first_name: 'Nova',
+      last_name: 'Test',
+      email: 'nova@example.com',
+      city: 'Moscou',
+      origin_country: 'BJ',
     })
 
     await authService.verifyPhoneRegistration({
@@ -235,20 +284,15 @@ describe('authService', () => {
       },
     })
 
-    expect(profileQuery.upsert).toHaveBeenCalledWith(
+    expect(rpc).toHaveBeenCalledWith(
+      'moxt_finalize_phone_registration',
       expect.objectContaining({
-        first_name: 'Nova',
-        last_name: 'Test',
-        city: 'Moscou',
+        p_first_name: 'Nova',
+        p_last_name: 'Test',
+        p_city: 'Moscou',
       }),
-      { onConflict: 'id' },
     )
-    expect(profileQuery.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        phone_verified: true,
-      }),
-      { onConflict: 'id' },
-    )
+    expect(profileQuery.upsert).not.toHaveBeenCalled()
   })
 
   it('valide le code SMS puis enregistre le profil sans lien magique e-mail', async () => {
@@ -258,22 +302,7 @@ describe('authService', () => {
         phone: '+79000000010',
       },
     })
-    profileQuery.maybeSingle.mockResolvedValue({
-      data: {
-        id: 'user-sms',
-        first_name: 'Nouvelle',
-        last_name: 'Personne',
-        email: 'personne@example.com',
-        phone: '+79000000010',
-        phone_verified: true,
-        phone_verified_at: '2026-07-15T12:00:00.000Z',
-        origin_country: 'BJ',
-        city: 'Moscou',
-        role: 'user',
-        status: 'active',
-      },
-      error: null,
-    })
+    mockFinalizePhoneProfile()
 
     const result = await authService.verifyPhoneRegistration({
       phone: '+79000000010',
@@ -302,21 +331,7 @@ describe('authService', () => {
     mockSmsVerifySession({
       user_metadata: { first_name: 'Nouvelle', phone: '+79000000010' },
     })
-    profileQuery.maybeSingle.mockResolvedValue({
-      data: {
-        id: 'user-sms',
-        first_name: 'Nouvelle',
-        last_name: 'Personne',
-        email: 'personne@example.com',
-        phone: '+79000000010',
-        phone_verified: true,
-        origin_country: 'BJ',
-        city: 'Moscou',
-        role: 'user',
-        status: 'active',
-      },
-      error: null,
-    })
+    mockFinalizePhoneProfile()
 
     const result = await authService.verifyPhoneRegistration({
       phone: '+79000000010',
@@ -324,7 +339,8 @@ describe('authService', () => {
       email: 'personne@example.com',
     })
 
-    expect(profileQuery.upsert).toHaveBeenCalled()
+    expect(rpc).toHaveBeenCalledWith('moxt_finalize_phone_registration', expect.any(Object))
+    expect(profileQuery.upsert).not.toHaveBeenCalled()
     expect(result.token).toBe('sms-session')
     expect(result.emailLinkDeferred).toBe(true)
   })
@@ -340,21 +356,7 @@ describe('authService', () => {
         phone: '+79000000010',
       },
     })
-    profileQuery.maybeSingle.mockResolvedValue({
-      data: {
-        id: 'user-sms',
-        first_name: 'Nouvelle',
-        last_name: 'Personne',
-        email: 'personne@example.com',
-        phone: '+79000000010',
-        phone_verified: true,
-        origin_country: 'BJ',
-        city: 'Moscou',
-        role: 'user',
-        status: 'active',
-      },
-      error: null,
-    })
+    mockFinalizePhoneProfile({ city: 'Moscou' })
 
     const result = await authService.verifyPhoneRegistration({
       phone: '+79000000010',
@@ -362,7 +364,7 @@ describe('authService', () => {
       email: 'personne@example.com',
     })
 
-    expect(profileQuery.upsert).toHaveBeenCalled()
+    expect(rpc).toHaveBeenCalledWith('moxt_finalize_phone_registration', expect.any(Object))
     expect(result.user.email).toBe('personne@example.com')
     expect(result.user.city).toBe('Moscou')
     expect(result.user.phoneVerified).toBe(true)
@@ -372,20 +374,11 @@ describe('authService', () => {
     mockSmsVerifySession({
       user_metadata: { phone: '+79000000010' },
     })
-    profileQuery.maybeSingle.mockResolvedValue({
-      data: {
-        id: 'user-sms',
-        first_name: 'Nouvelle',
-        last_name: 'Personne',
-        email: 'personne@example.com',
-        phone: '+79000000010',
-        phone_verified: true,
-        origin_country: 'BJ',
-        city: 'Moscou',
-        role: 'user',
-        status: 'active',
-      },
-      error: null,
+    mockFinalizePhoneProfile({
+      first_name: 'Nouvelle',
+      last_name: 'Personne',
+      city: 'Moscou',
+      origin_country: 'BJ',
     })
 
     await authService.verifyPhoneRegistration({
@@ -400,16 +393,57 @@ describe('authService', () => {
       },
     })
 
-    expect(profileQuery.upsert).toHaveBeenCalledWith(
+    expect(rpc).toHaveBeenCalledWith(
+      'moxt_finalize_phone_registration',
       expect.objectContaining({
-        id: 'user-sms',
-        first_name: 'Nouvelle',
-        last_name: 'Personne',
-        city: 'Moscou',
-        origin_country: 'BJ',
+        p_first_name: 'Nouvelle',
+        p_last_name: 'Personne',
+        p_city: 'Moscou',
+        p_origin_country: 'BJ',
       }),
-      expect.any(Object),
     )
+    expect(profileQuery.upsert).not.toHaveBeenCalled()
+  })
+
+  it('rejoue finalize sans verifyOtp si le téléphone est déjà confirmé en session', async () => {
+    const { user, session } = mockAlreadyConfirmedPhoneSession()
+    mockFinalizePhoneProfile()
+    auth.verifyOtp.mockClear()
+
+    const result = await authService.verifyPhoneRegistration({
+      phone: '+79000000010',
+      token: '000000',
+      email: 'personne@example.com',
+    })
+
+    expect(auth.verifyOtp).not.toHaveBeenCalled()
+    expect(auth.getUser).toHaveBeenCalled()
+    expect(auth.getSession).toHaveBeenCalled()
+    expect(rpc).toHaveBeenCalledWith('moxt_finalize_phone_registration', expect.any(Object))
+    expect(result.token).toBe(session.access_token)
+    expect(result.user.id).toBe(user.id)
+  })
+
+  it('surface une erreur claire si finalize RPC échoue', async () => {
+    mockSmsVerifySession()
+    rpc.mockImplementation((name) => {
+      if (name === 'moxt_finalize_phone_registration') {
+        return Promise.resolve({
+          data: null,
+          error: { message: 'MOXT_FINALIZE_FAILED' },
+        })
+      }
+      return Promise.resolve({ data: { available: true, reason: null }, error: null })
+    })
+
+    await expect(
+      authService.verifyPhoneRegistration({
+        phone: '+79000000010',
+        token: '123456',
+        email: 'personne@example.com',
+      }),
+    ).rejects.toThrow(/finalisation du profil/i)
+    expect(profileQuery.upsert).not.toHaveBeenCalled()
   })
 
   it('exige la confirmation SMS avant de créer le profil même avec une session (signOut)', async () => {
@@ -432,24 +466,26 @@ describe('authService', () => {
   })
 
   it('renvoie un code SMS pour finaliser l inscription', async () => {
-    auth.resend.mockResolvedValue({ error: null })
+    auth.signInWithOtp.mockResolvedValue({ error: null })
 
     await authService.resendPhoneRegistrationOtp('+79000000010')
 
-    expect(auth.resend).toHaveBeenCalledWith({
-      type: 'sms',
+    expect(auth.signInWithOtp).toHaveBeenCalledWith({
       phone: '+79000000010',
+      options: { channel: 'sms', shouldCreateUser: false },
     })
+    // Renvoi reste sur SMSC : pas de marquage prefer_p1sms.
+    expect(rpc).not.toHaveBeenCalledWith('moxt_mark_otp_resend', expect.anything())
   })
 
   it('impose 90 secondes entre deux renvois SMS', async () => {
-    auth.resend.mockResolvedValue({ error: null })
+    auth.signInWithOtp.mockResolvedValue({ error: null })
 
     await authService.resendPhoneRegistrationOtp('+79000000010')
     await expect(authService.resendPhoneRegistrationOtp('+79000000010')).rejects.toThrow(
       /Patientez \d+ secondes/,
     )
-    expect(auth.resend).toHaveBeenCalledTimes(1)
+    expect(auth.signInWithOtp).toHaveBeenCalledTimes(1)
   })
 
   it('fusionne deux register() concurrents en un seul SMS (anti double-clic)', async () => {
@@ -486,11 +522,11 @@ describe('authService', () => {
   })
 
   it('fusionne deux resendPhoneRegistrationOtp() concurrents en un seul SMS', async () => {
-    let resolveResend
-    auth.resend.mockImplementation(
+    let resolveOtp
+    auth.signInWithOtp.mockImplementation(
       () =>
         new Promise((resolve) => {
-          resolveResend = resolve
+          resolveOtp = resolve
         }),
     )
 
@@ -498,20 +534,22 @@ describe('authService', () => {
     const second = authService.resendPhoneRegistrationOtp('+79000000010')
 
     await vi.waitFor(() => {
-      expect(auth.resend).toHaveBeenCalledTimes(1)
-      expect(resolveResend).toEqual(expect.any(Function))
+      expect(auth.signInWithOtp).toHaveBeenCalledTimes(1)
+      expect(resolveOtp).toEqual(expect.any(Function))
     })
-    resolveResend({ error: null })
+    resolveOtp({ error: null })
 
     await Promise.all([first, second])
-    expect(auth.resend).toHaveBeenCalledTimes(1)
+    expect(auth.signInWithOtp).toHaveBeenCalledTimes(1)
   })
 
-  it.skipIf(!OTP_SEND_CAP_ENABLED)('bloque un 4e envoi OTP dans la fenetre de 3 heures', async () => {
-    auth.resend.mockResolvedValue({ error: null })
+  it.skipIf(!OTP_SEND_CAP_ENABLED)('bloque un 5e envoi OTP dans la fenetre de 3 heures', async () => {
+    auth.signInWithOtp.mockResolvedValue({ error: null })
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-07-15T12:00:00.000Z'))
 
+    await authService.resendPhoneRegistrationOtp('+79001110001')
+    vi.advanceTimersByTime(91_000)
     await authService.resendPhoneRegistrationOtp('+79001110001')
     vi.advanceTimersByTime(91_000)
     await authService.resendPhoneRegistrationOtp('+79001110001')
@@ -522,7 +560,7 @@ describe('authService', () => {
     await expect(authService.resendPhoneRegistrationOtp('+79001110001')).rejects.toThrow(
       /Limite atteinte/,
     )
-    expect(auth.resend).toHaveBeenCalledTimes(3)
+    expect(auth.signInWithOtp).toHaveBeenCalledTimes(4)
 
     vi.useRealTimers()
   })
@@ -569,6 +607,62 @@ describe('authService', () => {
     })
   })
 
+  it('confirme l e-mail sans violer NOT NULL sur first_name si le profil est absent', async () => {
+    const pendingAuth = {
+      id: 'user-email',
+      email: 'personne@example.com',
+      email_confirmed_at: null,
+      user_metadata: { first_name: 'Nova' },
+    }
+    const verifiedAuth = {
+      ...pendingAuth,
+      email_confirmed_at: '2026-07-17T08:00:00.000Z',
+    }
+    auth.getUser.mockResolvedValue({ data: { user: pendingAuth }, error: null })
+    auth.verifyOtp.mockResolvedValue({
+      data: { user: verifiedAuth, session: null },
+      error: null,
+    })
+    // syncEmailVerifiedFromAuth skips (email not confirmed yet).
+    // patchProfileFields: no row → insert; then fetchProfile.
+    profileQuery.maybeSingle
+      .mockResolvedValueOnce({ data: null, error: null })
+      .mockResolvedValueOnce({
+        data: {
+          id: 'user-email',
+          first_name: 'Nova',
+          last_name: '',
+          email: 'personne@example.com',
+          phone: '+79000000010',
+          phone_verified: true,
+          role: 'user',
+          status: 'active',
+        },
+        error: null,
+      })
+
+    const result = await authService.confirmEmailVerification(
+      {
+        id: 'user-email',
+        firstName: 'Nova',
+        email: 'personne@example.com',
+        phone: '+79000000010',
+      },
+      { email: 'personne@example.com', token: '123456', otpType: 'email_change' },
+    )
+
+    expect(profileQuery.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'user-email',
+        first_name: 'Nova',
+        email: 'personne@example.com',
+      }),
+    )
+    expect(profileQuery.upsert).not.toHaveBeenCalled()
+    expect(result.email).toBe('personne@example.com')
+    expect(result.emailVerified).toBe(true)
+  })
+
   it('bloque l inscription si le numéro est encore lié à un compte actif', async () => {
     rpc.mockResolvedValueOnce({ data: { available: false, reason: 'active' }, error: null })
 
@@ -585,14 +679,14 @@ describe('authService', () => {
     rpc
       .mockResolvedValueOnce({ data: { available: false, reason: 'unavailable' }, error: null })
       .mockResolvedValueOnce({ data: { available: true, reason: null }, error: null })
-    auth.resend.mockResolvedValue({ error: null })
+    auth.signInWithOtp.mockResolvedValue({ error: null })
 
     const result = await authService.register(registrationDetails())
 
     expect(auth.signUp).not.toHaveBeenCalled()
-    expect(auth.resend).toHaveBeenCalledWith({
-      type: 'sms',
+    expect(auth.signInWithOtp).toHaveBeenCalledWith({
       phone: '+79000000010',
+      options: { channel: 'sms', shouldCreateUser: false },
     })
     expect(result.requiresPhoneConfirmation).toBe(true)
     expect(result.resumedSignup).toBe(true)
@@ -622,12 +716,12 @@ describe('authService', () => {
       },
       error: null,
     })
-    auth.resend.mockResolvedValue({ error: null })
+    auth.signInWithOtp.mockResolvedValue({ error: null })
 
     const result = await authService.register(registrationDetails())
-    expect(auth.resend).toHaveBeenCalledWith({
-      type: 'sms',
+    expect(auth.signInWithOtp).toHaveBeenCalledWith({
       phone: '+79000000010',
+      options: { channel: 'sms', shouldCreateUser: false },
     })
     expect(result.requiresPhoneConfirmation).toBe(true)
     expect(result.pendingUserId).toBe('user-dup')
@@ -639,13 +733,13 @@ describe('authService', () => {
       data: { user: null, session: null },
       error: { code: 'user_already_exists', message: 'User already registered' },
     })
-    auth.resend.mockResolvedValue({ error: null })
+    auth.signInWithOtp.mockResolvedValue({ error: null })
 
     const result = await authService.register(registrationDetails())
 
-    expect(auth.resend).toHaveBeenCalledWith({
-      type: 'sms',
+    expect(auth.signInWithOtp).toHaveBeenCalledWith({
       phone: '+79000000010',
+      options: { channel: 'sms', shouldCreateUser: false },
     })
     expect(result.requiresPhoneConfirmation).toBe(true)
     expect(result.resumedSignup).toBe(true)
@@ -784,12 +878,11 @@ describe('authService', () => {
         first_name: 'Nouvelle',
       }),
     })
-    expect(profileQuery.upsert).toHaveBeenCalledWith(
+    expect(profileQuery.update).toHaveBeenCalledWith(
       expect.objectContaining({
         phone: '+79000000010',
         phone_verified: true,
       }),
-      { onConflict: 'id' },
     )
   })
 

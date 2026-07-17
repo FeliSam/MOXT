@@ -15,16 +15,22 @@ import {
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { flagEmoji } from '../config/flags'
+import { useLanguage } from '../contexts/useLanguage'
 import { ContactButton } from '../features/communications/ContactButton'
 import { ExchangerPickerAvatar } from '../features/transfers/ExchangerPickerAvatar'
 import {
+  EXCHANGER_DELAY_TO_CONFIRM,
   resolveExchangerForDetail,
 } from '../features/transfers/exchangerListUtils'
 import { FALLBACK_EXCHANGERS } from '../features/transfers/transferConfig'
+import { phase3Text } from '../i18n/phase3I18n'
 
 export function ExchangerDetailPage() {
   const { exchangerId } = useParams()
   const [searchParams] = useSearchParams()
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
+  const toConfirmLabel = p3('exchangers.toConfirm')
   const allowAllCountries = searchParams.get('scope') === 'all'
   const user = useSelector((state) => state.auth.user)
   const businesses = useSelector((state) => state.businesses.items)
@@ -39,17 +45,25 @@ export function ExchangerDetailPage() {
         originCountry,
         allowAllCountries,
         fallbackExchangers: FALLBACK_EXCHANGERS,
+        toConfirmLabel,
       }),
-    [allowAllCountries, businesses, exchangerId, originCountry, user],
+    [allowAllCountries, businesses, exchangerId, originCountry, toConfirmLabel, user],
   )
   const business = resolved?.business || null
   const exchanger = resolved?.exchanger || null
 
+  function delayLabel(value) {
+    if (!value || value === EXCHANGER_DELAY_TO_CONFIRM || value === 'A confirmer') {
+      return toConfirmLabel
+    }
+    return value
+  }
+
   if (!exchanger) {
     return (
       <EmptyState
-        title="Échangeur introuvable"
-        description="Ce partenaire n'est pas disponible pour votre pays d'origine."
+        title={p3('exchangers.detail.notFound')}
+        description={p3('exchangers.detail.notFoundDesc')}
       />
     )
   }
@@ -57,27 +71,27 @@ export function ExchangerDetailPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Partenaire de transfert"
+        eyebrow={p3('exchangers.detail.eyebrow')}
         title={exchanger.name}
-        description={exchanger.description || 'Partenaire de change MOXT.'}
+        description={exchanger.description || p3('exchangers.detail.fallbackDesc')}
         actions={<BackButton fallback="/exchangers" />}
       />
       <DetailMetrics
         items={[
-          { icon: FiStar, label: 'Évaluation', value: `${exchanger.rating || 0}/5` },
+          { icon: FiStar, label: p3('exchangers.detail.evaluation'), value: `${exchanger.rating || 0}/5` },
           {
             icon: FiClock,
-            label: 'Délai moyen',
-            value: exchanger.averageDelay || 'À confirmer',
+            label: p3('exchangers.detail.avgDelay'),
+            value: delayLabel(exchanger.averageDelay),
           },
           {
             icon: FiRepeat,
-            label: 'Frais',
+            label: p3('exchangers.detail.fees'),
             value: `${exchanger.feePercent ?? 2.5}%`,
           },
           {
             icon: FiMapPin,
-            label: 'Pays',
+            label: p3('exchangers.detail.country'),
             value: `${flagEmoji(exchanger.country)} ${exchanger.city || exchanger.country}`,
           },
         ]}
@@ -100,21 +114,21 @@ export function ExchangerDetailPage() {
             </div>
           </div>
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
-            <Metric icon={FiStar} value={`${exchanger.rating || 0}/5`} label="Évaluation" />
+            <Metric icon={FiStar} value={`${exchanger.rating || 0}/5`} label={p3('exchangers.detail.evaluation')} />
             <Metric
               icon={FiClock}
-              value={exchanger.averageDelay || 'À confirmer'}
-              label="Délai moyen"
+              value={delayLabel(exchanger.averageDelay)}
+              label={p3('exchangers.detail.avgDelay')}
             />
             <Metric
               icon={FiRepeat}
               value={`${exchanger.feePercent ?? 2.5}%`}
-              label="Frais annoncés"
+              label={p3('exchangers.detail.feesAnnounced')}
             />
           </div>
           {exchanger.methods?.length ? (
             <div className="mt-6">
-              <h2 className="font-black">Moyens pris en charge</h2>
+              <h2 className="font-black">{p3('exchangers.detail.methods')}</h2>
               <div className="mt-3 flex flex-wrap gap-2">
                 {exchanger.methods.map((method) => (
                   <Badge key={method}>{method}</Badge>
@@ -125,14 +139,14 @@ export function ExchangerDetailPage() {
         </Card>
         <Card>
           <FiShield className="text-3xl text-brand-600" />
-          <h2 className="mt-4 font-black">Démarrer une opération</h2>
+          <h2 className="mt-4 font-black">{p3('exchangers.detail.startTitle')}</h2>
           <p className="mt-2 text-sm leading-6 text-[var(--app-text-muted)]">
-            Les taux et coordonnées seront recalculés et contrôlés par le futur backend.
+            {p3('exchangers.detail.startBody')}
           </p>
           <div className="mt-5 grid gap-3">
             <Link to={`/transfers?exchangerId=${exchanger.id}`}>
               <Button className="w-full" icon={FiRepeat}>
-                Choisir cet échangeur
+                {p3('exchangers.detail.choose')}
               </Button>
             </Link>
             {business ? (
@@ -150,26 +164,36 @@ export function ExchangerDetailPage() {
         </Card>
       </div>
       <div className="grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
-        <DetailSection title="Informations du partenaire">
+        <DetailSection title={p3('exchangers.detail.infoTitle')}>
           <DetailFacts
             items={[
-              { label: 'Nom', value: exchanger.name },
-              { label: 'Type', value: business ? 'Entreprise MOXT' : 'Partenaire MOXT' },
-              { label: 'Disponibilité', value: 'Disponible' },
-              { label: 'Délai moyen', value: exchanger.averageDelay },
-              { label: 'Frais annoncés', value: `${exchanger.feePercent ?? 2.5}%` },
+              { label: p3('exchangers.detail.name'), value: exchanger.name },
               {
-                label: 'Méthodes',
-                value: exchanger.methods?.join(', ') || 'À confirmer',
+                label: p3('exchangers.detail.type'),
+                value: business
+                  ? p3('exchangers.detail.typeBusiness')
+                  : p3('exchangers.detail.typePartner'),
+              },
+              { label: p3('exchangers.detail.availability'), value: p3('exchangers.available') },
+              { label: p3('exchangers.detail.avgDelay'), value: delayLabel(exchanger.averageDelay) },
+              {
+                label: p3('exchangers.detail.feesAnnounced'),
+                value: `${exchanger.feePercent ?? 2.5}%`,
+              },
+              {
+                label: p3('exchangers.detail.methodsLabel'),
+                value: exchanger.methods?.join(', ') || toConfirmLabel,
               },
             ]}
           />
         </DetailSection>
         <TrustPanel
           items={[
-            business ? 'Profil entreprise présent dans MOXT.' : 'Profil partenaire vérifié sur MOXT.',
-            'Les taux définitifs seront contrôlés par le futur backend.',
-            'Aucun transfert réel n’est exécuté dans cette version.',
+            business
+              ? p3('exchangers.detail.trustBusiness')
+              : p3('exchangers.detail.trustPartner'),
+            p3('exchangers.detail.trustRates'),
+            p3('exchangers.detail.trustNoReal'),
           ]}
         />
       </div>

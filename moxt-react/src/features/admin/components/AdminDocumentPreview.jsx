@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { FiExternalLink, FiFileText, FiImage } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
+import { useLanguage } from '../../../contexts/useLanguage'
 import { storageService } from '../../../services/storageService'
+import { adminText } from '../adminI18n'
 
 function isImageType(doc) {
   if (doc?.type?.startsWith('image/')) return true
@@ -25,6 +27,7 @@ async function resolvePreviewUrl(doc) {
 }
 
 export function AdminDocumentPreview({ documentIds = [] }) {
+  const { t } = useLanguage()
   const documents = useSelector((state) => state.account.documents || [])
   const [previews, setPreviews] = useState([])
 
@@ -52,14 +55,14 @@ export function AdminDocumentPreview({ documentIds = [] }) {
 
   if (!documentIds?.length) {
     return (
-      <p className="text-xs text-[var(--app-text-muted)]">Aucun document associé à cette demande.</p>
+      <p className="text-xs text-[var(--app-text-muted)]">{adminText(t, 'admin.documents.none')}</p>
     )
   }
 
   if (!previews.length) {
     return (
       <p className="break-words text-xs text-[var(--app-text-muted)]">
-        Documents introuvables ({documentIds.length}). Vérifiez le chargement admin.
+        {adminText(t, 'admin.documents.notFound', { count: documentIds.length })}
       </p>
     )
   }
@@ -84,7 +87,7 @@ export function AdminDocumentPreview({ documentIds = [] }) {
                 <p className="truncate text-sm font-bold">{doc.name || doc.id}</p>
                 <p className="truncate text-[10px] uppercase tracking-wider text-[var(--app-text-muted)]">
                   {doc.category}
-                  {doc.deletedAt || doc.deletedByUser ? ' · retiré (conservé pour review)' : ''}
+                  {doc.deletedAt || doc.deletedByUser ? ` · ${t('verification.admin.softDeleted')}` : ''}
                 </p>
               </div>
               {url ? (
@@ -94,7 +97,7 @@ export function AdminDocumentPreview({ documentIds = [] }) {
                   rel="noopener noreferrer"
                   className="inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-brand-700 hover:bg-brand-50 dark:hover:bg-brand-950/40"
                 >
-                  Ouvrir <FiExternalLink />
+                  {t('verification.admin.openDocument')} <FiExternalLink />
                 </a>
               ) : null}
             </div>
@@ -116,12 +119,12 @@ export function AdminDocumentPreview({ documentIds = [] }) {
             ) : null}
             {url && !image && !pdf ? (
               <p className="break-words px-3 py-4 text-xs text-[var(--app-text-muted)]">
-                Aperçu non disponible pour ce type — utilisez Ouvrir.
+                {adminText(t, 'admin.documents.previewUnavailable')}
               </p>
             ) : null}
             {!url ? (
               <p className="break-words px-3 py-4 text-xs text-[var(--app-text-muted)]">
-                Impossible de générer un lien signé pour ce document.
+                {adminText(t, 'admin.documents.noSignedUrl')}
               </p>
             ) : null}
           </div>

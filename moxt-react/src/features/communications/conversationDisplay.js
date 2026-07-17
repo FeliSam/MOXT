@@ -1,5 +1,6 @@
 import { supabase } from '../../services/supabaseClient'
 import { isProfileVerified } from '../profile/userProfileUtils'
+import { messagesText } from './messagesI18n'
 
 export function formatProfileName(profile) {
   if (!profile) return ''
@@ -12,10 +13,13 @@ export function getOtherParticipantId(conversation, currentUserId) {
   return ids.find((id) => id && id !== currentUserId) || ids[0] || null
 }
 
-export function getConversationPeer(conversation, currentUserId) {
+export function getConversationPeer(conversation, currentUserId, t) {
   const otherId = getOtherParticipantId(conversation, currentUserId)
   const profile = otherId ? conversation?.participantProfiles?.[otherId] : null
-  const name = formatProfileName(profile) || conversation?.title || 'Utilisateur'
+  const name =
+    formatProfileName(profile) ||
+    conversation?.title ||
+    messagesText(t, 'messages.userFallback')
   return {
     id: otherId,
     name,
@@ -24,7 +28,7 @@ export function getConversationPeer(conversation, currentUserId) {
   }
 }
 
-export function resolveContactProfileFromEntity(entity) {
+export function resolveContactProfileFromEntity(entity, t) {
   if (!entity) return null
   const displayName =
     entity.sellerName ||
@@ -35,7 +39,7 @@ export function resolveContactProfileFromEntity(entity) {
   if (!displayName) return null
   const parts = String(displayName).trim().split(/\s+/)
   return {
-    firstName: parts[0] || 'Utilisateur',
+    firstName: parts[0] || messagesText(t, 'messages.userFallback'),
     lastName: parts.slice(1).join(' '),
     avatarUrl: entity.ownerAvatarUrl || entity.avatarUrl || entity.logoUrl || null,
   }

@@ -1,5 +1,12 @@
 import { OTP_RESEND_COOLDOWN_SECONDS } from './otpCooldown.js'
 
+function otpResendHint() {
+  if (OTP_RESEND_COOLDOWN_SECONDS > 0) {
+    return `ou renvoyez un code après ${OTP_RESEND_COOLDOWN_SECONDS} secondes`
+  }
+  return 'ou renvoyez un code'
+}
+
 export function translateAuthError(error, context = {}) {
   const code = typeof error === 'object' && error !== null ? error.code : undefined
   const name = typeof error === 'object' && error !== null ? error.name : undefined
@@ -18,6 +25,34 @@ export function translateAuthError(error, context = {}) {
     return message
   }
 
+  // Identity / finalize codes — handle before OTP heuristics.
+  if (message.includes('MOXT_IDENTITY_LIMIT_REACHED') || message === 'IDENTITY_LIMIT_REACHED') {
+    return 'IDENTITY_LIMIT_REACHED'
+  }
+  if (message.includes('MOXT_IDENTITY_ACTIVE')) {
+    return duplicateIdentityMessage(context)
+  }
+  if (message.includes('MOXT_FINALIZE_FAILED')) {
+    return verifyingOtp
+      ? 'La finalisation du profil a échoué. Réessayez « Confirmer » sans renvoyer de SMS.'
+      : 'La finalisation du compte a échoué. Réessayez dans un instant.'
+  }
+  if (
+    message.includes('MOXT_SESSION_REQUIRED') ||
+    /session invalide|session non établie|session expirée|session missing|auth session/i.test(
+      message,
+    )
+  ) {
+    return verifyingOtp
+      ? 'Session perdue après le code SMS. Réessayez « Confirmer » sans renvoyer de SMS.'
+      : 'Session expirée. Reconnectez-vous ou renvoyez un code.'
+  }
+  if (message.includes('MOXT_PHONE_NOT_CONFIRMED')) {
+    return verifyingOtp
+      ? `Le numéro n’est pas encore confirmé. Vérifiez les 6 chiffres ${otpResendHint()}.`
+      : 'Le numéro n’est pas confirmé. Renvoyez un code puis confirmez.'
+  }
+
   // Confirming an OTP must never look like a fresh SMS send failure.
   if (verifyingOtp) {
     const lower = message.toLowerCase()
@@ -30,22 +65,22 @@ export function translateAuthError(error, context = {}) {
       lower.includes('invalid token') ||
       lower.includes('code is invalid')
     ) {
-      return 'Le code est invalide ou a expiré. Vérifiez les 6 chiffres ou renvoyez un code après 90 secondes.'
+      return `Le code est invalide ou a expiré. Vérifiez les 6 chiffres ${otpResendHint()}.`
     }
     if (isTransientNetworkFailure({ message, name, status })) {
       return 'Connexion au serveur impossible. Réessayez de confirmer le code sans en redemander un nouveau.'
     }
-    if (lower.includes('session') || lower.includes('profil') || lower.includes('profile')) {
-      return 'Le code est valide mais la finalisation du compte a échoué. Réessayez « Confirmer » sans renvoyer de SMS.'
+    if (
+      lower.includes('duplicate key') ||
+      lower.includes('profiles_verified_phone') ||
+      lower.includes('unique constraint')
+    ) {
+      return 'Ce numéro est déjà lié à un autre compte. Connectez-vous ou contactez le support.'
     }
-    return 'Impossible de confirmer ce code. Vérifiez les 6 chiffres, ou renvoyez un code après 90 secondes.'
-  }
-
-  if (message.includes('MOXT_IDENTITY_LIMIT_REACHED')) {
-    return 'IDENTITY_LIMIT_REACHED'
-  }
-  if (message.includes('MOXT_IDENTITY_ACTIVE')) {
-    return duplicateIdentityMessage(context)
+    if (/profil est momentanément|profil indisponible/i.test(message)) {
+      return 'La finalisation du profil a échoué. Réessayez « Confirmer » sans renvoyer de SMS.'
+    }
+    return `Impossible de confirmer ce code. Vérifiez les 6 chiffres, ${otpResendHint()}.`
   }
   if (
     code === 'user_already_exists' ||
@@ -252,7 +287,9 @@ function translateSupabaseError(message, meta = {}, context = {}) {
     m.includes('rate limit') ||
     code === 'over_request_rate_limit'
   ) {
-    return `Trop de tentatives. Patientez au moins ${OTP_RESEND_COOLDOWN_SECONDS} secondes avant de réessayer.`
+    return OTP_RESEND_COOLDOWN_SECONDS > 0
+      ? `Trop de tentatives. Patientez au moins ${OTP_RESEND_COOLDOWN_SECONDS} secondes avant de réessayer.`
+      : 'Trop de tentatives. Réessayez dans un instant.'
   }
   if (
     status >= 500 ||
@@ -291,7 +328,7 @@ function translateSupabaseError(message, meta = {}, context = {}) {
   // Phone signup must never end on an opaque generic toast.
   // Keep send-path wording only when we are not verifying an OTP.
   if (context.intent === 'otp_verify' || context.intent === 'phone_verify') {
-    return 'Impossible de confirmer ce code. Vérifiez les 6 chiffres, ou renvoyez un code après 90 secondes.'
+    return `Impossible de confirmer ce code. Vérifiez les 6 chiffres, ${otpResendHint()}.`
   }
   return phoneContext
     ? "L'envoi du code SMS a échoué. Réessayez dans quelques instants ou contactez le support."

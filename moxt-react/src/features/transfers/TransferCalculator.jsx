@@ -4,11 +4,13 @@ import { Alert } from '../../components/ui/Alert'
 import { Card } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
 import { Select } from '../../components/ui/Select'
+import { useLanguage } from '../../contexts/useLanguage'
 import { DIRECTIONS } from './transferConfig'
 import { calculateTransfer, formatMoney, validateTransferAmount } from './transferUtils'
 import { useExchangeRate } from './useExchangeRate'
 
 export function TransferCalculator({ verified = false }) {
+  const { t } = useLanguage()
   const [direction, setDirection] = useState(DIRECTIONS.BJ_TO_RU)
   const [amount, setAmount] = useState('50000')
   const liveRate = useExchangeRate()
@@ -17,34 +19,32 @@ export function TransferCalculator({ verified = false }) {
     () => calculateTransfer(amount, direction, undefined, selectedRate),
     [amount, direction, selectedRate],
   )
-  const amountError = validateTransferAmount(amount, direction, verified)
+  const amountError = validateTransferAmount(amount, direction, verified, 0, 'BJ', t)
 
   return (
     <Card>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="font-black">Calculateur</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Estimation au taux de référence disponible, avant confirmation de l’entreprise.
-          </p>
+          <h2 className="font-black">{t('transfers.calculator.title')}</h2>
+          <p className="mt-1 text-sm text-slate-500">{t('transfers.calculator.description')}</p>
         </div>
         <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-bold text-brand-800 dark:bg-brand-900 dark:text-brand-100">
-          {liveRate.loading ? 'Actualisation…' : liveRate.source}
+          {liveRate.loading ? t('transfers.calculator.refreshing') : liveRate.source}
         </span>
       </div>
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <Select
           id="calculator-direction"
-          label="Direction"
+          label={t('transfers.calculator.direction')}
           value={direction}
           onChange={(event) => setDirection(event.target.value)}
         >
-          <option value={DIRECTIONS.BJ_TO_RU}>XOF vers RUB</option>
-          <option value={DIRECTIONS.RU_TO_BJ}>RUB vers XOF</option>
+          <option value={DIRECTIONS.BJ_TO_RU}>{t('transfers.calculator.xofToRub')}</option>
+          <option value={DIRECTIONS.RU_TO_BJ}>{t('transfers.calculator.rubToXof')}</option>
         </Select>
         <Input
           id="calculator-amount"
-          label={`Montant en ${calculation.currencyFrom}`}
+          label={t('transfers.calculator.amountIn', { currency: calculation.currencyFrom })}
           type="number"
           min="0"
           value={amount}
@@ -60,34 +60,38 @@ export function TransferCalculator({ verified = false }) {
             current === DIRECTIONS.BJ_TO_RU ? DIRECTIONS.RU_TO_BJ : DIRECTIONS.BJ_TO_RU,
           )
         }
-        aria-label="Inverser le sens du transfert"
+        aria-label={t('transfers.calculator.invertAria')}
       >
         <FiRepeat />
       </button>
       {!amountError ? (
         <div className="mt-5 grid gap-3 rounded-2xl bg-slate-50 p-4 sm:grid-cols-3 dark:bg-slate-950">
           <Metric
-            label="Le destinataire recoit"
+            label={t('transfers.calculator.recipientReceives')}
             value={formatMoney(calculation.amountReceived, calculation.currencyTo)}
           />
           <Metric
-            label={`Frais ${calculation.feePercent}%`}
+            label={t('transfers.calculator.feesPercent', { percent: calculation.feePercent })}
             value={formatMoney(calculation.fees, calculation.currencyFrom)}
           />
           <Metric
-            label="Total a payer"
+            label={t('transfers.calculator.totalToPay')}
             value={formatMoney(calculation.totalToPay, calculation.currencyFrom)}
           />
         </div>
       ) : (
         <div className="mt-5">
-          <Alert variant="info">Corrigez le montant pour obtenir une estimation.</Alert>
+          <Alert variant="info">{t('transfers.calculator.fixAmount')}</Alert>
         </div>
       )}
       <p className="mt-4 text-xs leading-5 text-slate-500">
-        1 {calculation.currencyFrom} = {calculation.rawRate.toFixed(6)} {calculation.currencyTo}.
-        Référence du {liveRate.date || 'jour non disponible'}, avec une marge plateforme de{' '}
-        {calculation.rateMarginPercent}%.
+        {t('transfers.calculator.rateNote', {
+          from: calculation.currencyFrom,
+          rate: calculation.rawRate.toFixed(6),
+          to: calculation.currencyTo,
+          date: liveRate.date || t('transfers.calculator.dateUnavailable'),
+          margin: calculation.rateMarginPercent,
+        })}
       </p>
     </Card>
   )

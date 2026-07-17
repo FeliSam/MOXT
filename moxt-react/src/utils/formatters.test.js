@@ -8,7 +8,8 @@ describe('formatters', () => {
   })
 
   it('gère les dates invalides sans faire échouer la page', () => {
-    expect(formatDateTime('invalid')).toBe('Date indisponible')
+    // Placeholder neutre (indépendant de la langue) depuis la migration i18n.
+    expect(formatDateTime('invalid')).toBe('—')
     expect(formatShortDate(null)).not.toBe('')
   })
 })

@@ -2,6 +2,7 @@ import { FiExternalLink } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { RELATED_CONTENT_META } from '../../config/communications'
 import { useLanguage } from '../../contexts/useLanguage'
+import { messagesText } from '../../features/communications/messagesI18n'
 
 export function RelatedContentPreview({
   preview,
@@ -15,6 +16,7 @@ export function RelatedContentPreview({
   const meta = RELATED_CONTENT_META[preview.type] || RELATED_CONTENT_META.general
   const Icon = meta.icon
   const interactive = Boolean(inline && onReply && contextId)
+  const typeLabel = meta.labelKey ? messagesText(t, meta.labelKey) : meta.label
 
   const body = (
     <>
@@ -37,7 +39,7 @@ export function RelatedContentPreview({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex rounded-full bg-[var(--app-accent-soft)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--app-accent)]">
-              {meta.label}
+              {typeLabel}
             </span>
             {preview.badge ? (
               <span className="text-[10px] font-semibold text-[var(--app-text-muted)]">

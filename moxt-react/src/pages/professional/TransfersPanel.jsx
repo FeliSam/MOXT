@@ -4,13 +4,14 @@ import { Link } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { EmptyState } from '../../components/ui/EmptyState'
+import { useLanguage } from '../../contexts/useLanguage'
+import { professionalText } from '../../features/businesses/professionalI18n'
 import { addToast } from '../../features/ui/uiSlice'
 import { moderateTransfer } from '../../features/transfers/transferSlice'
 import { TRANSFER_STATUS } from '../../features/transfers/transferConfig'
 import {
   canApplyModerateTransfer,
   isClaimOnlyPhase,
-  transferNeedsBusinessAction,
 } from '../../features/transfers/transferActionUtils'
 import { TransferStatusBadge } from '../../features/transfers/TransferStatusBadge'
 import {
@@ -21,6 +22,8 @@ import {
 import { TransferAccountsPanel } from './TransferAccountsPanel'
 
 export function TransfersPanel({ business, dispatch, transfers, user }) {
+  const { t } = useLanguage()
+  const pt = (key, vars) => professionalText(t, key, vars)
   const [proofs, setProofs] = useState({})
   if (!transfers.length) {
     return (
@@ -30,8 +33,8 @@ export function TransfersPanel({ business, dispatch, transfers, user }) {
         ) : null}
         <EmptyState
           icon={FiRepeat}
-          title="Aucun transfert reçu"
-          description="Les opérations créées avec votre entreprise apparaîtront ici."
+          title={pt('professional.transfers.emptyTitle')}
+          description={pt('professional.transfers.emptyDescription')}
         />
       </div>
     )
@@ -63,9 +66,13 @@ export function TransfersPanel({ business, dispatch, transfers, user }) {
                 <div className="min-w-0">
                   <strong className="block">{transfer.id}</strong>
                   <span className="text-sm text-[var(--app-text-muted)]">
-                    {formatMoney(pricing.totalToPay, currency)} ·{' '}
-                    {formatMoney(pricing.amountSent, currency)} envoyés ·{' '}
-                    {transfer.sender?.firstName || 'Client'} vers {transfer.recipient?.firstName || 'Destinataire'}
+                    {pt('professional.transfers.summary', {
+                      total: formatMoney(pricing.totalToPay, currency),
+                      sent: formatMoney(pricing.amountSent, currency),
+                      sender: transfer.sender?.firstName || pt('professional.transfers.client'),
+                      recipient:
+                        transfer.recipient?.firstName || pt('professional.transfers.recipient'),
+                    })}
                   </span>
                 </div>
               </div>
@@ -73,7 +80,11 @@ export function TransfersPanel({ business, dispatch, transfers, user }) {
                 <TransferStatusBadge status={transfer.status} />
                 <Link to={`/transfers/${transfer.id}`} state={{ transferView: 'business' }}>
                   <Button variant="secondary">
-                    {claimOnly ? 'Voir / réclamation' : needsBusinessAction ? 'Continuer' : 'Voir le suivi'}
+                    {claimOnly
+                      ? pt('professional.transfers.viewClaim')
+                      : needsBusinessAction
+                        ? pt('professional.transfers.continue')
+                        : pt('professional.transfers.viewTracking')}
                   </Button>
                 </Link>
               </div>
@@ -82,10 +93,10 @@ export function TransfersPanel({ business, dispatch, transfers, user }) {
             {!claimOnly && awaitingPaymentReception ? (
               <div className="rounded-2xl border border-brand-200 bg-brand-50/40 p-4 dark:border-brand-800 dark:bg-brand-950/20">
                 <p className="text-xs font-black uppercase tracking-wide text-brand-700 dark:text-brand-300">
-                  Étape 1 — Réception du paiement
+                  {pt('professional.transfers.step1Title')}
                 </p>
                 <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-                  Vérifiez votre compte puis confirmez la réception.
+                  {pt('professional.transfers.step1Body')}
                 </p>
                 <Button
                   className="mt-3"
@@ -93,9 +104,8 @@ export function TransfersPanel({ business, dispatch, transfers, user }) {
                     if (!canApplyModerateTransfer(transfer, TRANSFER_STATUS.RECEIVED)) {
                       dispatch(
                         addToast({
-                          title: 'Action impossible',
-                          message:
-                            'La réception a déjà été confirmée ou le transfert n’est plus à cette étape.',
+                          title: pt('professional.transfers.toast.impossibleTitle'),
+                          message: pt('professional.transfers.toast.receptionAlready'),
                           tone: 'error',
                         }),
                       )
@@ -110,14 +120,14 @@ export function TransfersPanel({ business, dispatch, transfers, user }) {
                     )
                     dispatch(
                       addToast({
-                        title: 'Réception confirmée',
-                        message: 'Ajoutez maintenant la preuve puis confirmez le transfert.',
+                        title: pt('professional.transfers.toast.receptionConfirmedTitle'),
+                        message: pt('professional.transfers.toast.receptionConfirmedBody'),
                         tone: 'success',
                       }),
                     )
                   }}
                 >
-                  Confirmer la réception du paiement
+                  {pt('professional.transfers.confirmReception')}
                 </Button>
               </div>
             ) : null}
@@ -125,14 +135,14 @@ export function TransfersPanel({ business, dispatch, transfers, user }) {
             {!claimOnly && awaitingPayout ? (
               <div className="rounded-2xl border border-brand-200 bg-brand-50/40 p-4 dark:border-brand-800 dark:bg-brand-950/20">
                 <p className="text-xs font-black uppercase tracking-wide text-brand-700 dark:text-brand-300">
-                  Étape 2 — Confirmer le transfert
+                  {pt('professional.transfers.step2Title')}
                 </p>
                 <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-                  Ajoutez la preuve du virement effectué, puis confirmez le transfert.
+                  {pt('professional.transfers.step2Body')}
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-[var(--app-surface)] px-4 text-sm font-bold shadow-sm">
-                    <FiUpload /> {proof ? proof.name : 'Preuve de transfert'}
+                    <FiUpload /> {proof ? proof.name : pt('professional.transfers.proofLabel')}
                     <input
                       className="sr-only"
                       type="file"
@@ -159,8 +169,8 @@ export function TransfersPanel({ business, dispatch, transfers, user }) {
                       if (!canApplyModerateTransfer(transfer, TRANSFER_STATUS.PAID_OUT, proofPayload)) {
                         dispatch(
                           addToast({
-                            title: 'Action impossible',
-                            message: 'Ajoutez une preuve de virement avant de confirmer le transfert.',
+                            title: pt('professional.transfers.toast.impossibleTitle'),
+                            message: pt('professional.transfers.toast.proofRequired'),
                             tone: 'error',
                           }),
                         )
@@ -176,14 +186,14 @@ export function TransfersPanel({ business, dispatch, transfers, user }) {
                       )
                       dispatch(
                         addToast({
-                          title: 'Transfert confirmé',
-                          message: 'Le client peut maintenant déclarer la réception des fonds.',
+                          title: pt('professional.transfers.toast.confirmedTitle'),
+                          message: pt('professional.transfers.toast.confirmedBody'),
                           tone: 'success',
                         }),
                       )
                     }}
                   >
-                    Confirmer le transfert
+                    {pt('professional.transfers.confirmTransfer')}
                   </Button>
                 </div>
               </div>

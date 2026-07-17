@@ -5,12 +5,16 @@ import { useDispatch, useSelector } from 'react-redux'
 import { Badge } from '../../components/ui/Badge'
 import { FavoriteButton } from '../../components/ui/FavoriteButton'
 import { categoriesForType, LISTING_TYPES_META } from '../../config/listingConfig'
+import { useLanguage } from '../../contexts/useLanguage'
 import { markListingViewed, toggleAccountFavorite } from '../account/accountSlice'
 import { buildListingFavoriteSnapshot } from '../account/favoriteUtils'
 import { formatMoney } from '../transfers/transferUtils'
+import { listingOptionLabel, marketplaceText } from './marketplaceI18n'
 
 function MarketplaceListingCardComponent({ listing, linked = true, showFavorite = true }) {
   const dispatch = useDispatch()
+  const { t } = useLanguage()
+  const mt = (key, vars) => marketplaceText(t, key, vars)
   const user = useSelector((state) => state.auth.user)
   const [imageFailed, setImageFailed] = useState(false)
   const liked = useSelector((state) =>
@@ -24,11 +28,14 @@ function MarketplaceListingCardComponent({ listing, linked = true, showFavorite 
       (item) => item.userId === user?.id && item.listingId === listing.id,
     ),
   )
-  const typeLabel =
-    LISTING_TYPES_META.find((option) => option.value === listing.type)?.label || listing.type
-  const categoryLabel =
-    categoriesForType(listing.type).find((option) => option.value === listing.category)?.label ||
-    listing.category
+  const typeOption = LISTING_TYPES_META.find((option) => option.value === listing.type)
+  const categoryOption = categoriesForType(listing.type).find(
+    (option) => option.value === listing.category,
+  )
+  const typeLabel = typeOption ? listingOptionLabel(t, typeOption) : listing.type
+  const categoryLabel = categoryOption
+    ? listingOptionLabel(t, categoryOption)
+    : listing.category
   const detailPath = `/marketplace/${listing.id}`
 
   function handleToggleLike(event) {
@@ -76,7 +83,7 @@ function MarketplaceListingCardComponent({ listing, linked = true, showFavorite 
         <span className="pointer-events-none absolute left-2.5 top-2.5 z-[1]">
           <Badge tone="slate" className="bg-black/40 text-white backdrop-blur-sm">
             <FiEye className="text-[10px]" aria-hidden="true" />
-            Vu
+            {mt('marketplace.common.viewed')}
           </Badge>
         </span>
       ) : null}
@@ -95,7 +102,9 @@ function MarketplaceListingCardComponent({ listing, linked = true, showFavorite 
         </h2>
         <div className="mt-1.5 flex items-end justify-between gap-2">
           <strong className="block break-words text-sm tabular-nums font-black text-white drop-shadow sm:text-base">
-            {listing.price ? formatMoney(listing.price, listing.currency) : 'Sur devis'}
+            {listing.price
+              ? formatMoney(listing.price, listing.currency)
+              : mt('marketplace.common.onQuote')}
           </strong>
           <p className="flex min-w-0 shrink-0 items-center gap-1 text-[11px] text-white/75">
             <FiMapPin className="shrink-0" />

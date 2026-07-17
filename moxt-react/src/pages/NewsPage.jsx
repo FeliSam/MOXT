@@ -13,22 +13,17 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { FeedPostCard } from '../components/ui/FeedPostCard'
 import { PageHeader } from '../components/ui/PageHeader'
 import { ShareToFeedModal } from '../components/ui/ShareToFeedModal'
+import { useLanguage } from '../contexts/useLanguage'
 import { useSecurityGate } from '../features/security/useSecurityGate'
 import { sortPostsByPublishedAt } from '../features/posts/postSortUtils'
-import { SOURCE_TYPE_LABELS } from '../features/posts/postTemplates'
+import { phase3Text } from '../i18n/phase3I18n'
 
-const FILTER_TABS = [
-  { key: 'all', label: 'Tous' },
-  { key: 'listing', label: 'Annonces' },
-  { key: 'job', label: 'Jobs' },
-  { key: 'parcel', label: 'Colis' },
-  { key: 'event', label: 'Événements' },
-  { key: 'business', label: 'Entreprises' },
-  { key: 'free', label: 'Posts libres' },
-]
+const FILTER_KEYS = ['all', 'listing', 'job', 'parcel', 'event', 'business', 'free']
 
 export function NewsPage() {
   const navigate = useNavigate()
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const user = useSelector((s) => s.auth.user)
   const posts = useSelector((s) => s.posts?.items ?? [])
   const { requirePublish } = useSecurityGate()
@@ -67,14 +62,14 @@ export function NewsPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Communauté"
-        title="Fil d'actualité"
-        description="Découvrez les dernières publications de la communauté MOXT."
-        stats={[{ label: 'Publications', value: publishedPosts.length }]}
+        eyebrow={p3('news.eyebrow')}
+        title={p3('news.title')}
+        description={p3('news.description')}
+        stats={[{ label: p3('news.stats.publications'), value: publishedPosts.length }]}
         actions={
           user && (
             <Button icon={FiEdit3} onClick={openComposer}>
-              Écrire un post
+              {p3('news.writePost')}
             </Button>
           )
         }
@@ -83,7 +78,7 @@ export function NewsPage() {
       {/* Filtres + fil centré, une publication par ligne */}
       <div className="mx-auto grid w-full max-w-3xl gap-5">
         <div className="flex items-center gap-6 overflow-x-auto border-b border-[var(--app-border)] scrollbar-hidden">
-          {FILTER_TABS.map(({ key, label }) => (
+          {FILTER_KEYS.map((key) => (
             <button
               key={key}
               type="button"
@@ -94,7 +89,7 @@ export function NewsPage() {
                   : 'text-[var(--app-text-muted)] hover:text-[var(--app-text)]'
               }`}
             >
-              {label}
+              {p3(`news.filters.${key}`)}
               {activeFilter === key && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-brand-600" />
               )}
@@ -112,16 +107,16 @@ export function NewsPage() {
           <EmptyState
             icon={FiRss}
             tone="search"
-            title="Aucun post pour l'instant"
+            title={p3('news.empty.title')}
             description={
               activeFilter === 'all'
-                ? 'Soyez le premier à partager quelque chose avec la communauté !'
-                : `Aucun post de type "${SOURCE_TYPE_LABELS[activeFilter]}" pour l'instant.`
+                ? p3('news.empty.description')
+                : p3('news.empty.type', { type: p3(`news.filters.${activeFilter}`) })
             }
             action={
               user && (
                 <Button icon={FiEdit3} onClick={openComposer}>
-                  Écrire un post
+                  {p3('news.writePost')}
                 </Button>
               )
             }

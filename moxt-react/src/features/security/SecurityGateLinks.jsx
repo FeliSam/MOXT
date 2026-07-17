@@ -4,10 +4,13 @@ import {
   isPhoneVerified,
   isValidRussianPhone,
 } from '@moxt/shared/auth/userSecurity.js'
+import { useLanguage } from '../../contexts/useLanguage'
+import { sharedText } from '../../i18n/sharedI18n'
 
 const EMAIL_VERIFY_PATH = '/security?verify=email'
 
 export function SecurityGateLinks({ kind = 'publish', user = null }) {
+  const { t } = useLanguage()
   const needsPhoneFirst = kind === 'publish' || kind === 'p2p'
   const phoneOk = isPhoneVerified(user) && isValidRussianPhone(user?.phone)
   const emailOk = isEmailVerified(user)
@@ -16,11 +19,11 @@ export function SecurityGateLinks({ kind = 'publish', user = null }) {
     return (
       <span className="text-sm">
         <Link className="font-bold text-brand-700 hover:underline" to="/profile">
-          Vérifier mon numéro
+          {sharedText(t, 'shared.securityGate.links.verifyPhone')}
         </Link>
         {' · '}
         <Link className="font-bold text-brand-700 hover:underline" to="/verification">
-          Centre de vérification
+          {sharedText(t, 'shared.securityGate.links.center')}
         </Link>
       </span>
     )
@@ -30,11 +33,11 @@ export function SecurityGateLinks({ kind = 'publish', user = null }) {
     return (
       <span className="text-sm">
         <Link className="font-bold text-brand-700 hover:underline" to={EMAIL_VERIFY_PATH}>
-          Confirmer mon e-mail
+          {sharedText(t, 'shared.securityGate.links.confirmEmail')}
         </Link>
         {' · '}
         <Link className="font-bold text-brand-700 hover:underline" to="/security">
-          Sécurité
+          {sharedText(t, 'shared.securityGate.links.security')}
         </Link>
       </span>
     )
@@ -46,11 +49,16 @@ export function SecurityGateLinks({ kind = 'publish', user = null }) {
         className="font-bold text-brand-700 hover:underline"
         to={needsPhoneFirst ? '/profile' : '/verification'}
       >
-        {needsPhoneFirst ? 'Vérifier mon numéro' : 'Vérification MOXT'}
+        {sharedText(
+          t,
+          needsPhoneFirst
+            ? 'shared.securityGate.links.verifyPhone'
+            : 'shared.securityGate.links.verificationMoxt',
+        )}
       </Link>
       {' · '}
       <Link className="font-bold text-brand-700 hover:underline" to="/verification">
-        Centre de vérification
+        {sharedText(t, 'shared.securityGate.links.center')}
       </Link>
     </span>
   )

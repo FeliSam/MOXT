@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { FiCheck, FiDownload, FiFileText } from 'react-icons/fi'
 import { useDispatch } from 'react-redux'
 import { Button } from '../../../components/ui/Button'
+import { useLanguage } from '../../../contexts/useLanguage'
 import { addToast } from '../../ui/uiSlice'
 import { formatDate } from '../transferUtils'
 import { downloadTransferProofFile } from '../transferProofDownload'
 import { getReceiptProofEntries, getTransferProofEntries } from '../transferProofUtils'
 
 export function TransferProofsSection({ className = '', compact = false, receipt, transfer }) {
+  const { t } = useLanguage()
   const entries = transfer
     ? getTransferProofEntries(transfer)
     : getReceiptProofEntries(receipt, transfer)
@@ -20,10 +22,10 @@ export function TransferProofsSection({ className = '', compact = false, receipt
       {!compact ? (
         <div className="border-b border-[var(--app-border)] px-4 py-3 sm:px-5">
           <p className="text-xs font-black uppercase tracking-wide text-brand-700 dark:text-brand-300">
-            Justificatifs
+            {t('transfers.proof.sectionTitle')}
           </p>
           <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-            Preuves conservées pour ce transfert — toujours téléchargeables.
+            {t('transfers.proof.sectionDescription')}
           </p>
         </div>
       ) : null}
@@ -33,6 +35,7 @@ export function TransferProofsSection({ className = '', compact = false, receipt
             key={entry.kind}
             compact={compact}
             entry={entry}
+            transfer={transfer}
             transferId={transfer?.id || receipt?.relatedId}
           />
         ))}
@@ -41,10 +44,13 @@ export function TransferProofsSection({ className = '', compact = false, receipt
   )
 }
 
-function ProofDownloadRow({ compact, entry, transferId }) {
+function ProofDownloadRow({ compact, entry, transfer, transferId }) {
+  const { t } = useLanguage()
   const dispatch = useDispatch()
   const [downloading, setDownloading] = useState(false)
   const { proof } = entry
+  const label = entry.labelKey ? t(entry.labelKey) : entry.label
+  const shortLabel = entry.shortLabelKey ? t(entry.shortLabelKey) : entry.shortLabel
 
   async function handleDownload() {
     setDownloading(true)
@@ -59,8 +65,8 @@ function ProofDownloadRow({ compact, entry, transferId }) {
     } catch {
       dispatch(
         addToast({
-          title: 'Téléchargement impossible',
-          message: 'Le fichier n’a pas pu être récupéré. Réessayez dans un instant.',
+          title: t('transfers.proof.downloadFailedTitle'),
+          message: t('transfers.proof.downloadFailedMessage'),
           tone: 'error',
         }),
       )
@@ -78,7 +84,7 @@ function ProofDownloadRow({ compact, entry, transferId }) {
         disabled={downloading}
       >
         <FiCheck className="shrink-0" />
-        <span className="truncate">{entry.shortLabel}</span>
+        <span className="truncate">{shortLabel}</span>
         <FiDownload className="shrink-0 opacity-70" />
       </button>
     )
@@ -91,22 +97,17 @@ function ProofDownloadRow({ compact, entry, transferId }) {
           <FiFileText />
         </span>
         <div className="min-w-0">
-          <p className="text-sm font-bold">{entry.label}</p>
+          <p className="text-sm font-bold">{label}</p>
           <p className="truncate text-xs text-[var(--app-text-muted)]">{proof.name}</p>
           {proof.uploadedAt ? (
             <p className="text-[11px] text-[var(--app-text-faint)]">
-              Ajouté le {formatDate(proof.uploadedAt)}
+              {t('transfers.proof.addedOn', { date: formatDate(proof.uploadedAt) })}
             </p>
           ) : null}
         </div>
       </div>
-      <Button
-        variant="secondary"
-        icon={FiDownload}
-        loading={downloading}
-        onClick={handleDownload}
-      >
-        Télécharger
+      <Button variant="secondary" icon={FiDownload} loading={downloading} onClick={handleDownload}>
+        {t('transfers.proof.download')}
       </Button>
     </div>
   )

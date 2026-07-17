@@ -1,6 +1,8 @@
 import { useMemo } from 'react'
 import { FiBarChart2, FiTrendingUp } from 'react-icons/fi'
 import { Card } from '../../components/ui/Card'
+import { useLanguage } from '../../contexts/useLanguage'
+import { professionalText } from '../../features/businesses/professionalI18n'
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -100,16 +102,18 @@ function HorizBar({ label, value, max, tone = 'brand' }) {
 
 // ── Main ───────────────────────────────────────────────────────────────────
 
-export function StatisticsPanel({ activity, business, content, rating, requests, transfers }) {
+export function StatisticsPanel({ business, content, rating, requests, transfers }) {
+  const { t } = useLanguage()
+  const pt = (key, vars) => professionalText(t, key, vars)
   const modules = business.services || []
 
   const allPublications = useMemo(
     () => [
-      ...content.listings.map((i) => ({ ...i, _type: 'Annonces' })),
-      ...content.jobs.map((i) => ({ ...i, _type: 'Jobs' })),
-      ...content.events.map((i) => ({ ...i, _type: 'Événements' })),
-      ...content.parcels.map((i) => ({ ...i, _type: 'Colis' })),
-      ...(content.offers || []).map((i) => ({ ...i, _type: 'P2P' })),
+      ...content.listings.map((i) => ({ ...i, _type: 'listings' })),
+      ...content.jobs.map((i) => ({ ...i, _type: 'jobs' })),
+      ...content.events.map((i) => ({ ...i, _type: 'events' })),
+      ...content.parcels.map((i) => ({ ...i, _type: 'parcels' })),
+      ...(content.offers || []).map((i) => ({ ...i, _type: 'p2p' })),
     ],
     [content],
   )
@@ -123,29 +127,37 @@ export function StatisticsPanel({ activity, business, content, rating, requests,
 
   const typeBreakdown = [
     modules.includes('Marketplace') && {
-      label: 'Annonces',
+      labelKey: 'professional.stats.types.listings',
       value: content.listings.length,
       tone: 'brand',
     },
-    modules.includes('Jobs') && { label: 'Jobs', value: content.jobs.length, tone: 'teal' },
+    modules.includes('Jobs') && {
+      labelKey: 'professional.stats.types.jobs',
+      value: content.jobs.length,
+      tone: 'teal',
+    },
     modules.includes('Events') && {
-      label: 'Événements',
+      labelKey: 'professional.stats.types.events',
       value: content.events.length,
       tone: 'violet',
     },
-    modules.includes('Colis') && { label: 'Colis', value: content.parcels.length, tone: 'amber' },
+    modules.includes('Colis') && {
+      labelKey: 'professional.stats.types.parcels',
+      value: content.parcels.length,
+      tone: 'amber',
+    },
     modules.includes('P2P') && {
-      label: 'Offres P2P',
+      labelKey: 'professional.stats.types.p2pOffers',
       value: content.offers?.length || 0,
       tone: 'rose',
     },
     modules.includes('Transfert') && {
-      label: 'Transferts',
+      labelKey: 'professional.stats.types.transfers',
       value: transfers.length,
       tone: 'emerald',
     },
   ].filter(Boolean)
-  const maxType = Math.max(...typeBreakdown.map((t) => t.value), 1)
+  const maxType = Math.max(...typeBreakdown.map((item) => item.value), 1)
 
   const completedRequests = requests.filter((r) => r.status === 'completed').length
 
@@ -156,26 +168,26 @@ export function StatisticsPanel({ activity, business, content, rating, requests,
         <div className="flex items-center gap-3">
           <FiBarChart2 className="text-2xl text-brand-600" />
           <div>
-            <h2 className="font-black">Performances locales</h2>
+            <h2 className="font-black">{pt('professional.stats.title')}</h2>
             <p className="text-sm text-[var(--app-text-muted)]">
-              Indicateurs calculés à partir des données de ce navigateur.
+              {pt('professional.stats.subtitle')}
             </p>
           </div>
         </div>
         <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <KpiCard label="Publications" value={allPublications.length} />
-          <KpiCard label="Note moyenne" value={rating.count ? rating.average : '—'} />
-          <KpiCard label="Services actifs" value={modules.length} />
-          <KpiCard label="Demandes terminées" value={completedRequests} />
+          <KpiCard label={pt('professional.stats.kpi.publications')} value={allPublications.length} />
+          <KpiCard label={pt('professional.stats.kpi.averageRating')} value={rating.count ? rating.average : '—'} />
+          <KpiCard label={pt('professional.stats.kpi.activeServices')} value={modules.length} />
+          <KpiCard label={pt('professional.stats.kpi.completedRequests')} value={completedRequests} />
           {modules.includes('Marketplace') ? (
             <>
-              <KpiCard label="Vues des annonces" value={totalViews} />
-              <KpiCard label="Contacts reçus" value={totalContacts} />
-              <KpiCard label="Mis en favoris" value={totalFavs} />
+              <KpiCard label={pt('professional.stats.kpi.listingViews')} value={totalViews} />
+              <KpiCard label={pt('professional.stats.kpi.contacts')} value={totalContacts} />
+              <KpiCard label={pt('professional.stats.kpi.favorites')} value={totalFavs} />
             </>
           ) : null}
           {modules.includes('Transfert') ? (
-            <KpiCard label="Transferts" value={transfers.length} />
+            <KpiCard label={pt('professional.stats.kpi.transfers')} value={transfers.length} />
           ) : null}
         </div>
       </Card>
@@ -184,7 +196,7 @@ export function StatisticsPanel({ activity, business, content, rating, requests,
       <Card>
         <div className="mb-4 flex items-center gap-3">
           <FiTrendingUp className="text-xl text-brand-600" />
-          <h2 className="font-black">Activité des publications · 6 derniers mois</h2>
+          <h2 className="font-black">{pt('professional.stats.activityTitle')}</h2>
         </div>
         <BarChart data={pubByMonth} color="var(--color-brand-500, #6366f1)" />
       </Card>
@@ -192,12 +204,12 @@ export function StatisticsPanel({ activity, business, content, rating, requests,
       {/* Répartition par type */}
       {typeBreakdown.length > 1 ? (
         <Card>
-          <h2 className="mb-4 font-black">Répartition par type</h2>
+          <h2 className="mb-4 font-black">{pt('professional.stats.breakdownTitle')}</h2>
           <div className="grid gap-3 sm:grid-cols-2">
             {typeBreakdown.map((item) => (
               <HorizBar
-                key={item.label}
-                label={item.label}
+                key={item.labelKey}
+                label={pt(item.labelKey)}
                 value={item.value}
                 max={maxType}
                 tone={item.tone}
@@ -212,7 +224,7 @@ export function StatisticsPanel({ activity, business, content, rating, requests,
         <Card>
           <div className="mb-4 flex items-center gap-3">
             <FiTrendingUp className="text-xl text-emerald-600" />
-            <h2 className="font-black">Transferts · 6 derniers mois</h2>
+            <h2 className="font-black">{pt('professional.stats.transfersTitle')}</h2>
           </div>
           <BarChart data={xferByMonth} color="#10b981" />
         </Card>

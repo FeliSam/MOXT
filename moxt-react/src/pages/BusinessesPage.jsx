@@ -16,13 +16,23 @@ import { Select } from '../components/ui/Select'
 import { BUSINESS_ACTIVITIES, activityByValue } from '../config/businessActivities'
 import { Alert } from '../components/ui/Alert'
 import { statusMeta } from '../config/statuses'
+import { useLanguage } from '../contexts/useLanguage'
 import { isBusinessDirectoryVisible } from '../features/businesses/businessPublishUtils'
+import {
+  businessesOptionLabel,
+  businessesServiceLabel,
+  businessesText,
+} from '../features/businesses/businessesI18n'
 import { BusinessVerificationProgress } from '../features/businesses/BusinessVerificationProgress'
 import { filterDirectoryBusinesses, selectActiveBusinessForOwner } from '../features/businesses/businessVisibility'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 
+const DIRECTORY_SERVICES = ['Transfert', 'Colis', 'Marketplace', 'Jobs', 'Events']
+
 export function BusinessesPage() {
   useScrollToSecondSection()
+  const { t } = useLanguage()
+  const bt = (key, vars) => businessesText(t, key, vars)
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [filters, setFilters] = useState({ query: '', city: '', sector: '', service: '' })
   const user = useSelector((state) => state.auth.user)
@@ -40,17 +50,18 @@ export function BusinessesPage() {
       filterDirectoryBusinesses(businesses).filter((business) => {
         if (!isBusinessDirectoryVisible(business)) return false
         if (ownBusiness && business.id === ownBusiness.id) return false
-        const activityLabel = activityByValue(business.primaryActivity)?.label || business.sector
+        const activity = activityByValue(business.primaryActivity)
+        const activityLabel = businessesOptionLabel(t, activity) || business.sector
         const haystack =
           `${business.name} ${activityLabel} ${business.city} ${business.description} ${business.services?.join(' ')}`.toLowerCase()
         return (
           (!filters.query || haystack.includes(filters.query.toLowerCase())) &&
           (!filters.city || business.city.toLowerCase().includes(filters.city.toLowerCase())) &&
-          (!filters.sector || activityLabel.toLowerCase().includes(filters.sector.toLowerCase())) &&
+          (!filters.sector || business.primaryActivity === filters.sector) &&
           (!filters.service || business.services?.includes(filters.service))
         )
       }),
-    [businesses, filters, ownBusiness],
+    [businesses, filters, ownBusiness, t],
   )
 
   function clearFilters() {
@@ -60,24 +71,24 @@ export function BusinessesPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Services professionnels"
-        title="Entreprises et echangeurs"
-        description="Profils professionnels validés par MOXT. Seules les entreprises vérifiées apparaissent ici, quel que soit le pays d’origine du membre."
-        stats={[{ label: 'Entreprises verifiees', value: visibleBusinesses.length }]}
+        eyebrow={bt('businesses.page.eyebrow')}
+        title={bt('businesses.page.title')}
+        description={bt('businesses.page.description')}
+        stats={[{ label: bt('businesses.page.stats.verified'), value: visibleBusinesses.length }]}
         actions={
           <Link to="/businesses/setup">
-            <Button icon={FiPlus}>{ownBusiness ? 'Modifier mon entreprise' : 'Creer une entreprise'}</Button>
+            <Button icon={FiPlus}>
+              {ownBusiness ? bt('businesses.page.editBusiness') : bt('businesses.page.createBusiness')}
+            </Button>
           </Link>
         }
       />
 
       {ownBusiness && !ownBusinessInDirectory ? (
-        <Alert variant="warning" title="Votre entreprise est en cours de validation">
-          <strong>{ownBusiness.name}</strong> n’apparaît pas encore dans l’annuaire pour les autres
-          membres. Une fois le statut « Vérifié », elle sera visible par toute la communauté MOXT.
-          Vous pouvez la consulter et la modifier depuis votre{' '}
+        <Alert variant="warning" title={bt('businesses.page.pendingAlertTitle')}>
+          <strong>{ownBusiness.name}</strong> {bt('businesses.page.pendingAlertBody')}{' '}
           <Link className="font-bold underline" to="/professional">
-            espace professionnel
+            {bt('businesses.page.professionalSpaceLink')}
           </Link>
           .
         </Alert>
@@ -88,12 +99,13 @@ export function BusinessesPage() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.14em] text-brand-700">
-                Votre entreprise
+                {bt('businesses.page.yourBusiness')}
               </p>
               <h2 className="mt-1 text-xl font-black">{ownBusiness.name}</h2>
               <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-                {activityByValue(ownBusiness.primaryActivity)?.label || ownBusiness.sector} ·{' '}
-                {ownBusiness.city}
+                {businessesOptionLabel(t, activityByValue(ownBusiness.primaryActivity)) ||
+                  ownBusiness.sector}{' '}
+                · {ownBusiness.city}
               </p>
             </div>
             <Badge tone={statusMeta(ownBusiness.status).tone}>
@@ -107,14 +119,14 @@ export function BusinessesPage() {
           />
           <div className="flex flex-wrap gap-2">
             <Link to="/professional">
-              <Button variant="secondary">Espace professionnel</Button>
+              <Button variant="secondary">{bt('businesses.page.professionalSpace')}</Button>
             </Link>
             <Link to="/businesses/setup">
-              <Button variant="secondary">Modifier</Button>
+              <Button variant="secondary">{bt('businesses.common.edit')}</Button>
             </Link>
             {ownBusinessInDirectory ? (
               <Link to={`/businesses/${ownBusiness.id}`}>
-                <Button>Voir la fiche publique</Button>
+                <Button>{bt('businesses.page.viewPublicProfile')}</Button>
               </Link>
             ) : null}
           </div>
@@ -129,12 +141,12 @@ export function BusinessesPage() {
           onQueryChange={(query) => setFilters((current) => ({ ...current, query }))}
           onToggleAdvanced={() => setAdvancedOpen((value) => !value)}
           onClear={clearFilters}
-          placeholder="Entreprise, service, domaine ou ville..."
+          placeholder={bt('businesses.page.searchPlaceholder')}
         >
           <div className="grid gap-4 sm:grid-cols-3">
             <Input
               id="business-filter-city"
-              label="Ville"
+              label={bt('businesses.common.city')}
               value={filters.city}
               onChange={(event) =>
                 setFilters((current) => ({ ...current, city: event.target.value }))
@@ -142,31 +154,31 @@ export function BusinessesPage() {
             />
             <Select
               id="business-filter-sector"
-              label="Domaine"
+              label={bt('businesses.page.filter.domain')}
               value={filters.sector}
               onChange={(event) =>
                 setFilters((current) => ({ ...current, sector: event.target.value }))
               }
             >
-              <option value="">Tous les domaines</option>
+              <option value="">{bt('businesses.page.filter.allDomains')}</option>
               {BUSINESS_ACTIVITIES.map((activity) => (
-                <option key={activity.value} value={activity.label}>
-                  {activity.label}
+                <option key={activity.value} value={activity.value}>
+                  {businessesOptionLabel(t, activity)}
                 </option>
               ))}
             </Select>
             <Select
               id="business-filter-service"
-              label="Service"
+              label={bt('businesses.common.service')}
               value={filters.service}
               onChange={(event) =>
                 setFilters((current) => ({ ...current, service: event.target.value }))
               }
             >
-              <option value="">Tous les services</option>
-              {['Transfert', 'Colis', 'Marketplace', 'Jobs', 'Events'].map((service) => (
+              <option value="">{bt('businesses.page.filter.allServices')}</option>
+              {DIRECTORY_SERVICES.map((service) => (
                 <option key={service} value={service}>
-                  {service}
+                  {businessesServiceLabel(t, service)}
                 </option>
               ))}
             </Select>
@@ -174,10 +186,9 @@ export function BusinessesPage() {
         </CatalogSearch>
 
         <div>
-          <h2 className="text-xl font-black">Annuaire professionnel</h2>
+          <h2 className="text-xl font-black">{bt('businesses.page.directoryTitle')}</h2>
           <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-            L’annuaire affiche uniquement les entreprises vérifiées. Le pays du compte membre n’influe
-            pas sur cette liste : seul le statut de validation compte.
+            {bt('businesses.page.directoryDescription')}
           </p>
         </div>
 
@@ -207,7 +218,7 @@ export function BusinessesPage() {
                         />
                         <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-[var(--app-text-faint)]">
                           <Icon className="shrink-0 text-sm text-brand-700 dark:text-brand-300" />
-                          {activity?.label || business.sector}
+                          {businessesOptionLabel(t, activity) || business.sector}
                         </p>
                       </div>
                     </div>
@@ -223,7 +234,9 @@ export function BusinessesPage() {
                     </p>
                     <div className="mt-4 flex flex-wrap gap-2">
                       {(business.services || []).slice(0, 3).map((service) => (
-                        <Badge key={service} tone="teal">{service}</Badge>
+                        <Badge key={service} tone="teal">
+                          {businessesServiceLabel(t, service)}
+                        </Badge>
                       ))}
                     </div>
                     <div className="mt-4 grid gap-2 border-t border-[var(--app-border)] pt-4 text-xs text-[var(--app-text-muted)] sm:grid-cols-2 sm:text-sm">
@@ -238,7 +251,7 @@ export function BusinessesPage() {
                       className="mt-auto inline-flex items-center gap-1.5 pt-5 text-xs font-black text-brand-700 transition hover:gap-2.5 sm:text-sm dark:text-brand-300"
                       to={`/businesses/${business.id}`}
                     >
-                      Voir la fiche entreprise →
+                      {bt('businesses.page.viewBusinessCard')}
                     </Link>
                   </Card>
                 </RevealListItem>
@@ -248,8 +261,8 @@ export function BusinessesPage() {
             <EmptyState
               className="col-span-full"
               icon={FiBriefcase}
-              title="Aucune entreprise validee"
-              description="Aucune entreprise vérifiée pour le moment. Les profils apparaissent ici après validation par l’équipe MOXT, même si le membre partage votre pays d’origine."
+              title={bt('businesses.page.emptyTitle')}
+              description={bt('businesses.page.emptyDescription')}
             />
           )}
         </CatalogGrid>

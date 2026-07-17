@@ -16,6 +16,7 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
+import { useLanguage } from '../contexts/useLanguage'
 import { createOffer } from '../features/p2p/p2pSlice'
 import { calculateP2PFee, p2pLimit } from '../features/p2p/p2pUtils'
 import { SecurityGatePanel } from '../features/security/SecurityGatePanel'
@@ -25,22 +26,22 @@ import { formatMoney } from '../features/transfers/transferUtils'
 import { addToast } from '../features/ui/uiSlice'
 import { useScrollToTopOnStep } from '../hooks/useScrollToTopOnStep'
 
-const STEPS = [
-  { key: 'pair', label: 'Devises', icon: FiRepeat },
-  { key: 'amount', label: 'Montant', icon: FiDollarSign },
-  { key: 'terms', label: 'Modalités', icon: FiCheckCircle },
+const STEP_DEFS = [
+  { key: 'pair', labelKey: 'p2p.publish.steps.currencies', icon: FiRepeat },
+  { key: 'amount', labelKey: 'p2p.publish.steps.amount', icon: FiDollarSign },
+  { key: 'terms', labelKey: 'p2p.publish.steps.terms', icon: FiCheckCircle },
 ]
 
-function Stepper({ step, onGoTo }) {
+function Stepper({ step, onGoTo, t }) {
   return (
     <div className="relative flex items-start justify-between">
       <div className="absolute left-0 right-0 top-5 h-px bg-[var(--app-border)]" aria-hidden />
       <div
         className="absolute left-0 top-5 h-px bg-brand-600 transition-all duration-500"
-        style={{ width: `${((step - 1) / (STEPS.length - 1)) * 100}%` }}
+        style={{ width: `${((step - 1) / (STEP_DEFS.length - 1)) * 100}%` }}
         aria-hidden
       />
-      {STEPS.map((s, i) => {
+      {STEP_DEFS.map((s, i) => {
         const n = i + 1
         const done = step > n
         const active = step === n
@@ -67,7 +68,7 @@ function Stepper({ step, onGoTo }) {
             <span
               className={`text-xs font-bold ${active ? 'text-brand-700 dark:text-brand-400' : 'text-[var(--app-text-muted)]'}`}
             >
-              {s.label}
+              {t(s.labelKey)}
             </span>
           </button>
         )
@@ -88,6 +89,7 @@ function SectionTitle({ icon: Icon, label }) {
 }
 
 export function PublishP2PPage() {
+  const { t } = useLanguage()
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const { requireP2PPublish } = useSecurityGate()
@@ -119,31 +121,33 @@ export function PublishP2PPage() {
   function validate(n) {
     const errs = {}
     if (n === 1) {
-      if (!form.fromCurrency) errs.fromCurrency = 'Devise proposée obligatoire.'
-      if (!form.toCurrency) errs.toCurrency = 'Devise recherchée obligatoire.'
+      if (!form.fromCurrency) errs.fromCurrency = t('validation.p2p.fromCurrencyRequired')
+      if (!form.toCurrency) errs.toCurrency = t('validation.p2p.toCurrencyRequired')
       if (form.fromCurrency === form.toCurrency) {
-        errs.toCurrency = 'Choisissez une autre devise.'
+        errs.toCurrency = t('validation.p2p.differentCurrency')
       }
     }
     if (n === 2) {
       const amount = Number(form.amount)
       const rate = Number(form.rate)
-      if (!form.amount || !(amount > 0)) errs.amount = 'Montant obligatoire.'
+      if (!form.amount || !(amount > 0)) errs.amount = t('validation.p2p.amountRequired')
       else if (amount > p2pLimit(user, form.fromCurrency)) {
-        errs.amount = `Votre plafond est ${formatMoney(p2pLimit(user, form.fromCurrency), form.fromCurrency)}.`
+        errs.amount = t('validation.p2p.amountCeiling', {
+          amount: formatMoney(p2pLimit(user, form.fromCurrency), form.fromCurrency),
+        })
       }
-      if (!form.rate || !(rate > 0)) errs.rate = 'Taux obligatoire.'
+      if (!form.rate || !(rate > 0)) errs.rate = t('validation.p2p.rateRequired')
     }
     if (n === 3) {
-      if (!form.method.trim()) errs.method = 'Méthode obligatoire.'
-      if (form.comment.trim().length > 300) errs.comment = '300 caractères maximum.'
+      if (!form.method.trim()) errs.method = t('validation.p2p.methodRequired')
+      if (form.comment.trim().length > 300) errs.comment = t('validation.p2p.commentMax')
     }
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
 
   function next() {
-    if (validate(step)) setStep((s) => Math.min(s + 1, STEPS.length))
+    if (validate(step)) setStep((s) => Math.min(s + 1, STEP_DEFS.length))
   }
 
   function back() {
@@ -176,8 +180,8 @@ export function PublishP2PPage() {
     setPublishing(false)
     dispatch(
       addToast({
-        title: 'Offre P2P publiée',
-        message: 'Votre offre est visible dans les échanges P2P.',
+        title: t('p2p.publish.toastTitle'),
+        message: t('p2p.publish.toastMessage'),
         tone: 'success',
       }),
     )
@@ -193,27 +197,26 @@ export function PublishP2PPage() {
       <div className="mx-auto grid max-w-2xl gap-7">
         <div className="flex items-center gap-3">
           <Button variant="secondary" icon={FiArrowLeft} onClick={() => navigate('/p2p')}>
-            P2P
+            {t('p2p.publish.backLabel')}
           </Button>
-          <h1 className="text-xl font-black">Proposer une offre P2P</h1>
+          <h1 className="text-xl font-black">{t('p2p.publish.title')}</h1>
         </div>
 
         <Card className="px-6 py-5">
-          <Stepper step={step} onGoTo={setStep} />
+          <Stepper step={step} onGoTo={setStep} t={t} />
         </Card>
 
         {step === 1 ? (
           <div className="grid gap-5">
             <Card className="grid gap-5">
-              <SectionTitle icon={FiRepeat} label="Paire de devises" />
+              <SectionTitle icon={FiRepeat} label={t('p2p.publish.currencyPair')} />
               <p className="text-sm text-[var(--app-text-muted)]">
-                Vos échanges P2P sont limités aux devises de votre profil :{' '}
-                {availableCurrencies.join(', ')}.
+                {t('p2p.publish.currencyLimit', { currencies: availableCurrencies.join(', ') })}
               </p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Select
                   id="p2p-publish-from"
-                  label="Je propose"
+                  label={t('p2p.publish.iOffer')}
                   value={form.fromCurrency}
                   onChange={(event) => set('fromCurrency', event.target.value)}
                   error={errors.fromCurrency}
@@ -226,7 +229,7 @@ export function PublishP2PPage() {
                 </Select>
                 <Select
                   id="p2p-publish-to"
-                  label="Je recherche"
+                  label={t('p2p.publish.iSeek')}
                   value={form.toCurrency}
                   onChange={(event) => set('toCurrency', event.target.value)}
                   error={errors.toCurrency}
@@ -257,8 +260,7 @@ export function PublishP2PPage() {
             <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
               <FiShield className="mt-0.5 shrink-0 text-amber-700 dark:text-amber-300" />
               <p className="text-sm text-amber-900 dark:text-amber-200">
-                Ne payez jamais en dehors de MOXT et vérifiez l’identité de votre interlocuteur
-                avant toute transaction.
+                {t('p2p.publish.safetyNote')}
               </p>
             </div>
           </div>
@@ -267,14 +269,15 @@ export function PublishP2PPage() {
         {step === 2 ? (
           <div className="grid gap-5">
             <Card className="grid gap-5">
-              <SectionTitle icon={FiDollarSign} label="Montant et taux" />
+              <SectionTitle icon={FiDollarSign} label={t('p2p.publish.amountAndRate')} />
               <p className="text-sm text-[var(--app-text-muted)]">
-                Plafond actuel :{' '}
-                {formatMoney(p2pLimit(user, form.fromCurrency), form.fromCurrency)}
+                {t('p2p.publish.currentCeiling', {
+                  amount: formatMoney(p2pLimit(user, form.fromCurrency), form.fromCurrency),
+                })}
               </p>
               <Input
                 id="p2p-publish-amount"
-                label={`Montant (${form.fromCurrency})`}
+                label={t('p2p.publish.amountLabel', { currency: form.fromCurrency })}
                 type="number"
                 inputMode="decimal"
                 value={form.amount}
@@ -283,7 +286,10 @@ export function PublishP2PPage() {
               />
               <Input
                 id="p2p-publish-rate"
-                label={`Taux proposé (${form.fromCurrency} → ${form.toCurrency})`}
+                label={t('p2p.publish.rateLabel', {
+                  from: form.fromCurrency,
+                  to: form.toCurrency,
+                })}
                 type="number"
                 step="0.0001"
                 inputMode="decimal"
@@ -293,7 +299,9 @@ export function PublishP2PPage() {
               />
               {amountNumber > 0 ? (
                 <Alert variant="info">
-                  Frais estimés : {formatMoney(estimatedFee, form.fromCurrency)}
+                  {t('p2p.publish.estimatedFees', {
+                    amount: formatMoney(estimatedFee, form.fromCurrency),
+                  })}
                 </Alert>
               ) : null}
             </Card>
@@ -303,33 +311,36 @@ export function PublishP2PPage() {
         {step === 3 ? (
           <div className="grid gap-5">
             <Card className="grid gap-5">
-              <SectionTitle icon={FiUsers} label="Modalités de l’échange" />
+              <SectionTitle icon={FiUsers} label={t('p2p.publish.exchangeTerms')} />
               <Input
                 id="p2p-publish-method"
-                label="Méthode"
-                placeholder="Mobile Money, banque…"
+                label={t('p2p.publish.method')}
+                placeholder={t('p2p.publish.methodPlaceholder')}
                 value={form.method}
                 onChange={(event) => set('method', event.target.value)}
                 error={errors.method}
               />
               <Input
                 id="p2p-publish-comment"
-                label="Conditions (optionnel)"
-                placeholder="Horaires, délais, précisions…"
+                label={t('p2p.publish.conditionsOptional')}
+                placeholder={t('p2p.publish.conditionsPlaceholder')}
                 value={form.comment}
                 onChange={(event) => set('comment', event.target.value)}
                 error={errors.comment}
               />
             </Card>
             <Card className="grid gap-4">
-              <SectionTitle icon={FiCheckCircle} label="Récapitulatif" />
+              <SectionTitle icon={FiCheckCircle} label={t('p2p.publish.recap')} />
               {[
-                ['Je propose', `${form.amount || '—'} ${form.fromCurrency}`],
-                ['Je recherche', form.toCurrency],
-                ['Taux', form.rate || '—'],
-                ['Méthode', form.method || '—'],
                 [
-                  'Frais estimés',
+                  t('p2p.publish.iOffer'),
+                  `${form.amount || '—'} ${form.fromCurrency}`,
+                ],
+                [t('p2p.publish.iSeek'), form.toCurrency],
+                [t('p2p.publish.rate'), form.rate || '—'],
+                [t('p2p.publish.method'), form.method || '—'],
+                [
+                  t('p2p.publish.estimatedFeesLabel'),
                   amountNumber > 0 ? formatMoney(estimatedFee, form.fromCurrency) : '—',
                 ],
               ].map(([label, value]) => (
@@ -351,14 +362,14 @@ export function PublishP2PPage() {
         <div className="flex items-center justify-between gap-3">
           {step > 1 ? (
             <Button variant="secondary" icon={FiArrowLeft} onClick={back}>
-              Précédent
+              {t('common.back')}
             </Button>
           ) : (
             <span />
           )}
-          {step < STEPS.length ? (
+          {step < STEP_DEFS.length ? (
             <Button icon={FiArrowRight} onClick={next}>
-              Continuer
+              {t('common.continue')}
             </Button>
           ) : (
             <Button
@@ -367,7 +378,7 @@ export function PublishP2PPage() {
               loading={publishing}
               disabled={publishing}
             >
-              Publier l’offre
+              {t('p2p.publish.publishOffer')}
             </Button>
           )}
         </div>

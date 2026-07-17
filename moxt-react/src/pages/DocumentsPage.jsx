@@ -9,12 +9,16 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Select } from '../components/ui/Select'
 import { statusMeta } from '../config/statuses'
+import { useLanguage } from '../contexts/useLanguage'
 import { addPersonalDocument, removePersonalDocument } from '../features/account/accountSlice'
 import { addToast } from '../features/ui/uiSlice'
+import { phase3Text } from '../i18n/phase3I18n'
 import { storageService } from '../services/storageService'
 
 export function DocumentsPage() {
   const dispatch = useDispatch()
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const user = useSelector((state) => state.auth.user)
   const documents = useSelector((state) =>
     state.account.documents.filter(
@@ -40,39 +44,39 @@ export function DocumentsPage() {
       )
       dispatch(
         addToast({
-          title: 'Document envoyé',
-          message: 'Fichier sauvegardé sur le serveur.',
+          title: p3('documents.toast.sentTitle'),
+          message: p3('documents.toast.sentMessage'),
           tone: 'success',
         }),
       )
     } catch (err) {
-      dispatch(addToast({ title: 'Erreur', message: err.message, tone: 'error' }))
+      dispatch(addToast({ title: p3('common.error'), message: err.message, tone: 'error' }))
     }
   }
 
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Compte"
-        title="Mes documents"
-        description="Préparez les justificatifs nécessaires à la vérification de votre compte."
+        eyebrow={p3('common.account')}
+        title={p3('documents.title')}
+        description={p3('documents.description')}
         actions={<BackButton appearance="link" />}
       />
       <Card>
         <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
           <Select
             id="document-category"
-            label="Type de document"
+            label={p3('documents.typeLabel')}
             value={category}
             onChange={(event) => setCategory(event.target.value)}
           >
-            <option value="identity">Identité</option>
-            <option value="address">Justificatif de domicile</option>
-            <option value="income">Justificatif de revenus</option>
-            <option value="other">Autre document</option>
+            <option value="identity">{p3('documents.types.identity')}</option>
+            <option value="address">{p3('documents.types.address')}</option>
+            <option value="income">{p3('documents.types.income')}</option>
+            <option value="other">{p3('documents.types.other')}</option>
           </Select>
           <label className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 text-sm font-bold text-white">
-            <FiUpload /> Ajouter un document
+            <FiUpload /> {p3('documents.upload')}
             <input
               className="sr-only"
               type="file"
@@ -81,9 +85,7 @@ export function DocumentsPage() {
             />
           </label>
         </div>
-        <p className="mt-3 text-xs text-[var(--app-text-muted)]">
-          Les fichiers sont stockés sur le serveur MOXT et synchronisés avec votre compte.
-        </p>
+        <p className="mt-3 text-xs text-[var(--app-text-muted)]">{p3('documents.hint')}</p>
       </Card>
 
       {documents.length ? (
@@ -96,7 +98,7 @@ export function DocumentsPage() {
                 <div className="min-w-0 flex-1">
                   <strong className="block truncate">{document.name}</strong>
                   <p className="text-xs text-[var(--app-text-muted)]">
-                    {document.category} · {Math.ceil(document.size / 1024)} Ko
+                    {document.category} · {Math.ceil(document.size / 1024)} {p3('common.kb')}
                   </p>
                 </div>
                 <Badge tone={meta.tone}>{meta.label}</Badge>
@@ -107,14 +109,14 @@ export function DocumentsPage() {
                     dispatch(removePersonalDocument({ id: document.id, userId: user.id }))
                   }
                 >
-                  Retirer
+                  {p3('documents.remove')}
                 </Button>
               </Card>
             )
           })}
         </div>
       ) : (
-        <EmptyState icon={FiFileText} title="Aucun document" />
+        <EmptyState icon={FiFileText} title={p3('documents.empty')} />
       )}
     </div>
   )

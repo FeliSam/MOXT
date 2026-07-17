@@ -6,7 +6,7 @@ export const TRANSFER_ACCOUNT_SLOTS = {
   ORIGIN: 'origin',
 }
 
-export function inferTransferAccountSlot(country, originCountry = 'BJ') {
+export function inferTransferAccountSlot(country) {
   return country === 'RU' ? TRANSFER_ACCOUNT_SLOTS.RU : TRANSFER_ACCOUNT_SLOTS.ORIGIN
 }
 

@@ -10,6 +10,52 @@ import {
   shouldSendNotification,
 } from '@moxt/shared/utils/notificationUtils.js'
 import { filterPublisherSubscribers } from '@moxt/shared/utils/subscriptionUtils.js'
+import { translate } from '../i18n/translate'
+import { sharedText } from '../i18n/sharedI18n'
+
+const P2P_STATUS_KEYS = {
+  created: 'shared.notifications.p2p.status.created',
+  waiting_payment: 'shared.notifications.p2p.status.waitingPayment',
+  completed: 'shared.notifications.p2p.status.completed',
+  cancelled: 'shared.notifications.p2p.status.cancelled',
+}
+
+function currentLanguage() {
+  try {
+    return (
+      (typeof localStorage !== 'undefined' && localStorage.getItem('moxt-language')) || 'fr'
+    )
+  } catch {
+    return 'fr'
+  }
+}
+
+function notifyT(key, vars) {
+  const language = currentLanguage()
+  return sharedText((k, v) => translate(language, k, v), key, vars)
+}
+
+function p2pStatusLabel(status) {
+  const key = P2P_STATUS_KEYS[status]
+  if (key) return notifyT(key)
+  return P2P_STATUS_LABELS[status] || status
+}
+
+function verificationStatusLabel(status) {
+  const language = currentLanguage()
+  if (status === 'verified') {
+    const value = translate(language, 'verification.admin.statusVerified')
+    return value !== 'verification.admin.statusVerified' ? value : 'vérifiée'
+  }
+  if (status === 'rejected') {
+    const value = translate(language, 'verification.admin.statusRejected')
+    return value !== 'verification.admin.statusRejected' ? value : 'refusée'
+  }
+  if (status === 'pending_review') {
+    return notifyT('shared.notifications.verification.pendingReview')
+  }
+  return status
+}
 
 function uniqueIds(ids = []) {
   return [...new Set(ids.filter(Boolean))]
@@ -63,8 +109,12 @@ export function createNotificationDispatcher(store) {
       notifyUser(
         ownerId,
         {
-          title: 'Nouvel avis reçu',
-          message: `${action.payload.authorName || 'Un membre'} a laissé ${action.payload.rating}/5 : « ${String(action.payload.comment).slice(0, 100)} »`,
+          title: notifyT('shared.notifications.review.createdTitle'),
+          message: notifyT('shared.notifications.review.createdBody', {
+            name: action.payload.authorName || notifyT('shared.notifications.someone'),
+            rating: action.payload.rating,
+            comment: String(action.payload.comment).slice(0, 100),
+          }),
           type: 'review',
           link,
           priority: 'high',
@@ -81,8 +131,10 @@ export function createNotificationDispatcher(store) {
       notifyUser(
         review.authorId,
         {
-          title: 'Réponse à votre avis',
-          message: `Le propriétaire a répondu à votre avis : « ${String(review.replyText).slice(0, 100)} »`,
+          title: notifyT('shared.notifications.review.replyTitle'),
+          message: notifyT('shared.notifications.review.replyBody', {
+            comment: String(review.replyText).slice(0, 100),
+          }),
           type: 'review',
           link,
         },
@@ -99,8 +151,8 @@ export function createNotificationDispatcher(store) {
       notifyUser(
         ownerId,
         {
-          title: 'Contestation enregistrée',
-          message: 'Votre contestation a été transmise à la modération MOXT.',
+          title: notifyT('shared.notifications.review.contestTitle'),
+          message: notifyT('shared.notifications.review.contestBody'),
           type: 'review',
           link,
           priority: 'high',
@@ -108,8 +160,11 @@ export function createNotificationDispatcher(store) {
         'notifSysteme',
       )
       notifyAdmins({
-        title: 'Contestation d avis',
-        message: `${review.authorName || 'Un membre'} — avis contesté sur ${review.targetType}.`,
+        title: notifyT('shared.notifications.review.contestAdminTitle'),
+        message: notifyT('shared.notifications.review.contestAdminBody', {
+          name: review.authorName || notifyT('shared.notifications.someone'),
+          type: review.targetType,
+        }),
         type: 'moderation',
         link: '/admin?view=queues',
         priority: 'high',
@@ -134,13 +189,15 @@ export function createNotificationDispatcher(store) {
       const subscriberName =
         after.auth.user?.id === action.payload.userId
           ? `${after.auth.user.firstName || ''} ${after.auth.user.lastName || ''}`.trim()
-          : 'Un membre'
+          : notifyT('shared.notifications.someone')
 
       notifyUser(
         publisherOwnerId,
         {
-          title: 'Nouvel abonné',
-          message: `${subscriberName || 'Un membre'} s'est abonné à vos publications.`,
+          title: notifyT('shared.notifications.subscription.newTitle'),
+          message: notifyT('shared.notifications.subscription.newBody', {
+            name: subscriberName || notifyT('shared.notifications.someone'),
+          }),
           type: 'subscription',
           link: action.payload.publisherPath || '/subscriptions',
         },
@@ -163,8 +220,10 @@ export function createNotificationDispatcher(store) {
       notifyUser(
         action.payload.subscriberId,
         {
-          title: 'Abonnement retiré',
-          message: `${action.payload.publisherName || 'Un éditeur'} a retiré votre abonnement à ses publications.`,
+          title: notifyT('shared.notifications.subscription.removedTitle'),
+          message: notifyT('shared.notifications.subscription.removedBody', {
+            name: action.payload.publisherName || notifyT('shared.notifications.publisher'),
+          }),
           type: 'subscription',
           link: '/subscriptions',
         },
@@ -183,8 +242,10 @@ export function createNotificationDispatcher(store) {
       notifyUser(
         action.payload.subscriberId,
         {
-          title: 'Accès abonnement restreint',
-          message: `${action.payload.publisherName || 'Un éditeur'} vous a interdit de vous abonner à ses publications.`,
+          title: notifyT('shared.notifications.subscription.bannedTitle'),
+          message: notifyT('shared.notifications.subscription.bannedBody', {
+            name: action.payload.publisherName || notifyT('shared.notifications.publisher'),
+          }),
           type: 'subscription',
           link: '/subscriptions',
           priority: 'high',
@@ -198,8 +259,11 @@ export function createNotificationDispatcher(store) {
       if (afterCount <= beforeCount) return
 
       notifyAdmins({
-        title: 'Signalement abonné',
-        message: `${action.payload.publisherName || 'Un éditeur'} a signalé un abonné : ${String(action.payload.reason).slice(0, 120)}`,
+        title: notifyT('shared.notifications.report.subscriberTitle'),
+        message: notifyT('shared.notifications.report.subscriberBody', {
+          name: action.payload.publisherName || notifyT('shared.notifications.publisher'),
+          reason: String(action.payload.reason).slice(0, 120),
+        }),
         type: 'moderation',
         link: '/admin?view=queues',
         priority: 'high',
@@ -207,8 +271,11 @@ export function createNotificationDispatcher(store) {
     },
     handleContentReported(label, reason, link) {
       notifyAdmins({
-        title: `Signalement ${label}`,
-        message: String(reason || 'Contenu signalé').slice(0, 120),
+        title: notifyT('shared.notifications.report.contentTitle', { label }),
+        message: String(reason || notifyT('shared.notifications.report.contentFallback')).slice(
+          0,
+          120,
+        ),
         type: 'moderation',
         link: link || '/admin?view=queues',
         priority: 'high',
@@ -224,12 +291,16 @@ export function createNotificationDispatcher(store) {
       if (likedBefore || !likedAfter) return
 
       const actor = after.auth.user
-      const actorName = actor ? `${actor.firstName || ''} ${actor.lastName || ''}`.trim() : 'Quelqu un'
+      const actorName = actor
+        ? `${actor.firstName || ''} ${actor.lastName || ''}`.trim()
+        : notifyT('shared.notifications.someoneAlt')
       notifyUser(
         post.authorId,
         {
-          title: 'Nouveau j aime',
-          message: `${actorName || 'Un membre'} a aimé votre publication.`,
+          title: notifyT('shared.notifications.post.likeTitle'),
+          message: notifyT('shared.notifications.post.likeBody', {
+            name: actorName || notifyT('shared.notifications.someone'),
+          }),
           type: 'post',
           link: '/news',
         },
@@ -247,8 +318,11 @@ export function createNotificationDispatcher(store) {
       notifyUser(
         post.authorId,
         {
-          title: 'Nouveau commentaire',
-          message: `${comment.authorName || 'Un membre'} : « ${String(comment.text).slice(0, 100)} »`,
+          title: notifyT('shared.notifications.post.commentTitle'),
+          message: notifyT('shared.notifications.post.commentBody', {
+            name: comment.authorName || notifyT('shared.notifications.someone'),
+            text: String(comment.text).slice(0, 100),
+          }),
           type: 'post',
           link: '/news',
         },
@@ -261,8 +335,11 @@ export function createNotificationDispatcher(store) {
       notifyUser(
         order.sellerId,
         {
-          title: 'Nouvelle commande P2P',
-          message: `${order.buyerName} a accepté votre offre ${order.offerId}.`,
+          title: notifyT('shared.notifications.p2p.newOrderTitle'),
+          message: notifyT('shared.notifications.p2p.newOrderBody', {
+            name: order.buyerName,
+            offerId: order.offerId,
+          }),
           type: 'p2p',
           link: `/p2p/orders/${order.id}`,
           priority: 'high',
@@ -275,13 +352,16 @@ export function createNotificationDispatcher(store) {
       const order = after.p2p.orders.find((item) => item.id === action.payload.id)
       if (!order || previous?.status === order.status) return
 
-      const label = P2P_STATUS_LABELS[order.status] || order.status
+      const label = p2pStatusLabel(order.status)
       const recipients = [order.buyerId, order.sellerId].filter((id) => id && id !== actorId)
       notifyUsers(
         recipients,
         {
-          title: 'Commande P2P mise à jour',
-          message: `La commande ${order.id} est maintenant : ${label}.`,
+          title: notifyT('shared.notifications.p2p.statusTitle'),
+          message: notifyT('shared.notifications.p2p.statusBody', {
+            id: order.id,
+            label,
+          }),
           type: 'p2p',
           link: `/p2p/orders/${order.id}`,
         },
@@ -295,8 +375,8 @@ export function createNotificationDispatcher(store) {
       notifyUser(
         recipient,
         {
-          title: 'Preuve P2P ajoutée',
-          message: `Une preuve a été ajoutée sur la commande ${order.id}.`,
+          title: notifyT('shared.notifications.p2p.proofTitle'),
+          message: notifyT('shared.notifications.p2p.proofBody', { id: order.id }),
           type: 'p2p',
           link: `/p2p/orders/${order.id}`,
         },
@@ -310,33 +390,41 @@ export function createNotificationDispatcher(store) {
       notifyUser(
         recipient,
         {
-          title: 'Évaluation P2P reçue',
-          message: `Votre transaction ${order.id} a reçu une note de ${action.payload.rating}/5.`,
+          title: notifyT('shared.notifications.p2p.ratingTitle'),
+          message: notifyT('shared.notifications.p2p.ratingBody', {
+            id: order.id,
+            rating: action.payload.rating,
+          }),
           type: 'p2p',
           link: `/p2p/orders/${order.id}`,
         },
         'notifTransfers',
       )
     },
-    handleVerificationStatus(before, after, action, actorId) {
-      const previous = before.account.verificationRequests.find((item) => item.id === action.payload.id)
-      const request = after.account.verificationRequests.find((item) => item.id === action.payload.id)
+    handleVerificationStatus(before, after, action) {
+      const previous = before.account.verificationRequests.find(
+        (item) => item.id === action.payload.id,
+      )
+      const request = after.account.verificationRequests.find(
+        (item) => item.id === action.payload.id,
+      )
       if (!request || previous?.status === request.status) return
 
-      const labels = {
-        verified: 'vérifiée',
-        rejected: 'refusée',
-        pending_review: 'en cours d examen',
-      }
+      const statusText = verificationStatusLabel(request.status)
       const reason =
         request.status === 'rejected' && request.reviewNote
-          ? ` Motif : ${String(request.reviewNote).slice(0, 120)}`
+          ? notifyT('shared.notifications.verification.reasonPrefix', {
+              note: String(request.reviewNote).slice(0, 120),
+            })
           : ''
       notifyUser(
         request.userId,
         {
-          title: 'Vérification de compte',
-          message: `Votre demande de vérification est ${labels[request.status] || request.status}.${reason}`,
+          title: notifyT('shared.notifications.verification.title'),
+          message: notifyT('shared.notifications.verification.body', {
+            status: statusText,
+            reason,
+          }),
           type: 'verification',
           link: '/verification',
           priority: 'high',
@@ -353,8 +441,11 @@ export function createNotificationDispatcher(store) {
       notifyUsers(
         parties,
         {
-          title: 'Litige ouvert',
-          message: `Un litige a été ouvert concernant ${dispute.relatedType} ${dispute.relatedId}.`,
+          title: notifyT('shared.notifications.dispute.openedTitle'),
+          message: notifyT('shared.notifications.dispute.openedBody', {
+            type: dispute.relatedType,
+            id: dispute.relatedId,
+          }),
           type: 'dispute',
           link: '/disputes',
           priority: 'high',
@@ -371,8 +462,11 @@ export function createNotificationDispatcher(store) {
       notifyUsers(
         parties,
         {
-          title: 'Litige mis à jour',
-          message: `Le litige ${dispute.id} est maintenant : ${dispute.status}.`,
+          title: notifyT('shared.notifications.dispute.updatedTitle'),
+          message: notifyT('shared.notifications.dispute.updatedBody', {
+            id: dispute.id,
+            status: dispute.status,
+          }),
           type: 'dispute',
           link: '/disputes',
           priority: 'high',

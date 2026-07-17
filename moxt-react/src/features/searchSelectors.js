@@ -1,10 +1,19 @@
 import { createSelector } from '@reduxjs/toolkit'
 import { searchablePages } from '../config/searchablePages'
+import { sharedText } from '../i18n/sharedI18n'
 import {
   buildSubscriptionNetworkProfiles,
   filterSubscriptionNetworkProfiles,
   subscriptionProfilesToSearchResults,
 } from './search/subscriptionProfileSearch'
+
+function resolvePageTitle(page) {
+  return page.titleKey ? sharedText(null, page.titleKey) : page.title
+}
+
+function resolvePageSubtitle(page) {
+  return page.subtitleKey ? sharedText(null, page.subtitleKey) : page.subtitle
+}
 
 export const selectSearchIndex = createSelector(
   [
@@ -76,9 +85,9 @@ export const selectSearchIndex = createSelector(
       .map((page) => ({
         id: page.id,
         type: 'page',
-        typeLabel: 'Page',
-        title: page.title,
-        subtitle: page.subtitle,
+        typeLabel: sharedText(null, 'shared.page'),
+        title: resolvePageTitle(page),
+        subtitle: resolvePageSubtitle(page),
         path: page.path,
         publicPath: page.path,
         keywords: page.keywords,

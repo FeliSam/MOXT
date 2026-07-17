@@ -2,7 +2,12 @@ import { FiAlertCircle, FiCheck, FiCopy, FiCreditCard } from 'react-icons/fi'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
-import { countryLabel, receivingSlotForDirection, transferAccountSlotMeta } from './transferAccountUtils'
+import { useLanguage } from '../../contexts/useLanguage'
+import {
+  countryLabel,
+  receivingSlotForDirection,
+  transferAccountSlotMeta,
+} from './transferAccountUtils'
 import { directionLabel } from './transferUtils'
 
 export function TransferReceivingAccountCard({
@@ -13,20 +18,26 @@ export function TransferReceivingAccountCard({
   className = '',
   compact = false,
 }) {
+  const { t } = useLanguage()
   const slotMeta = transferAccountSlotMeta(receivingSlotForDirection(direction), originCountry)
 
   if (!account) {
     return (
-      <Card className={`border border-amber-200 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-950/20 ${className}`}>
+      <Card
+        className={`border border-amber-200 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-950/20 ${className}`}
+      >
         <div className="flex items-start gap-3">
           <FiAlertCircle className="mt-0.5 shrink-0 text-amber-600" />
           <div>
             <p className="font-black text-amber-900 dark:text-amber-200">
-              Coordonnées de réception indisponibles
+              {t('transfers.receivingAccount.unavailableTitle')}
             </p>
             <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-              Cette entreprise n&apos;a pas encore configuré le compte actif pour{' '}
-              {direction ? directionLabel(direction).toLowerCase() : 'ce sens de transfert'}.
+              {t('transfers.receivingAccount.unavailableDescription', {
+                direction: direction
+                  ? directionLabel(direction, t).toLowerCase()
+                  : t('transfers.receivingAccount.thisDirection'),
+              })}
             </p>
           </div>
         </div>
@@ -35,6 +46,10 @@ export function TransferReceivingAccountCard({
   }
 
   const copyValue = account.phone || account.accountNumber
+  const directionHint =
+    slotMeta.activeForDirection === 'RU_TO_BJ'
+      ? t('transfers.direction.ruToAfrica')
+      : t('transfers.direction.africaToRu')
 
   return (
     <Card
@@ -47,28 +62,36 @@ export function TransferReceivingAccountCard({
           </span>
           <div>
             <p className="text-[11px] font-black uppercase tracking-[0.16em] text-brand-700 dark:text-brand-300">
-              Compte de réception actif
+              {t('transfers.receivingAccount.activeTitle')}
             </p>
             <h3 className="mt-1 font-black">
-              {account.label || account.method || 'Coordonnées entreprise'}
+              {account.label || account.method || t('transfers.receivingAccount.businessDetails')}
             </h3>
             <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-              {direction ? directionLabel(direction) : slotMeta.directionHint} ·{' '}
+              {direction ? directionLabel(direction, t) : directionHint} ·{' '}
               {countryLabel(account.country)}
             </p>
           </div>
         </div>
         <Badge tone="success">
           <FiCheck className="mr-1 inline text-xs" />
-          Actif
+          {t('transfers.receivingAccount.active')}
         </Badge>
       </div>
 
       <div className={`mt-4 grid gap-2 ${compact ? 'text-sm' : ''}`}>
-        <InfoRow label="Bénéficiaire" value={account.recipientName} />
-        <InfoRow label="Méthode" value={account.method || account.bankName} />
-        <InfoRow label="Numéro ou compte" value={account.phone || account.accountNumber} />
-        {account.bankName ? <InfoRow label="Banque" value={account.bankName} /> : null}
+        <InfoRow label={t('transfers.receivingAccount.beneficiary')} value={account.recipientName} />
+        <InfoRow
+          label={t('transfers.receivingAccount.method')}
+          value={account.method || account.bankName}
+        />
+        <InfoRow
+          label={t('transfers.receivingAccount.numberOrAccount')}
+          value={account.phone || account.accountNumber}
+        />
+        {account.bankName ? (
+          <InfoRow label={t('transfers.receivingAccount.bank')} value={account.bankName} />
+        ) : null}
         {account.instructions ? (
           <p className="rounded-2xl bg-[var(--app-surface-muted)] p-3 text-sm text-[var(--app-text-muted)]">
             {account.instructions}
@@ -77,13 +100,8 @@ export function TransferReceivingAccountCard({
       </div>
 
       {copyValue && onCopy ? (
-        <Button
-          variant="secondary"
-          icon={FiCopy}
-          className="mt-4"
-          onClick={() => onCopy(copyValue)}
-        >
-          Copier les coordonnées
+        <Button variant="secondary" icon={FiCopy} className="mt-4" onClick={() => onCopy(copyValue)}>
+          {t('transfers.receivingAccount.copyDetails')}
         </Button>
       ) : null}
     </Card>

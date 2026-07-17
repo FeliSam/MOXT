@@ -1,4 +1,5 @@
 import { buildContextPreview } from './conversationTimeline'
+import { messagesText } from './messagesI18n'
 import { resolveRelatedSnapshot } from './relatedSnapshot'
 
 function truncate(text, max = 48) {
@@ -67,144 +68,172 @@ export function getLatestRelatedPreview(conversation, state) {
   return resolveRelatedSnapshot(state, conversation)
 }
 
-function listingSuggestions({ role, title, subtitle, peerName }) {
-  const item = truncate(title) || 'cette annonce'
+function listingSuggestions({ role, title, subtitle, peerName, t }) {
+  const item = truncate(title) || messagesText(t, 'messages.suggestions.fallback.listing')
+  const peer = peerName || ''
   if (role === 'owner') {
     return uniqueSuggestions([
-      `Bonjour, merci pour votre intérêt pour « ${item} ».`,
-      `Bonjour ${peerName || ''}, l'article est toujours disponible.`,
-      subtitle ? `Le prix indiqué (${subtitle}) reste valable.` : `Je peux vous donner plus de détails sur l'article.`,
-      `N'hésitez pas si vous avez d'autres questions.`,
+      messagesText(t, 'messages.suggestions.listing.owner.thanks', { item }),
+      messagesText(t, 'messages.suggestions.listing.owner.available', { peer }),
+      subtitle
+        ? messagesText(t, 'messages.suggestions.listing.owner.price', { subtitle })
+        : messagesText(t, 'messages.suggestions.listing.owner.details'),
+      messagesText(t, 'messages.suggestions.listing.owner.questions'),
     ])
   }
   return uniqueSuggestions([
-    `Bonjour, « ${item} » est-il encore disponible ?`,
-    subtitle ? `Bonjour, le prix affiché (${subtitle}) est-il négociable ?` : `Bonjour, pouvez-vous me donner plus de détails ?`,
-    `Bonjour ${peerName || ''}, je suis intéressé(e) par cette annonce.`,
-    `Serait-il possible d'organiser une visite ou un essai ?`,
-    `Quelle est la localisation pour la remise ?`,
-    `Acceptez-vous un paiement sécurisé via MOXT ?`,
+    messagesText(t, 'messages.suggestions.listing.contact.available', { item }),
+    subtitle
+      ? messagesText(t, 'messages.suggestions.listing.contact.price', { subtitle })
+      : messagesText(t, 'messages.suggestions.listing.contact.details'),
+    messagesText(t, 'messages.suggestions.listing.contact.interest', { peer }),
+    messagesText(t, 'messages.suggestions.listing.contact.visit'),
+    messagesText(t, 'messages.suggestions.listing.contact.location'),
+    messagesText(t, 'messages.suggestions.listing.contact.payment'),
   ])
 }
 
-function jobSuggestions({ role, title, subtitle, peerName }) {
-  const item = truncate(title) || 'ce poste'
+function jobSuggestions({ role, title, subtitle, peerName, t }) {
+  const item = truncate(title) || messagesText(t, 'messages.suggestions.fallback.job')
+  const peer = peerName || ''
   if (role === 'owner') {
     return uniqueSuggestions([
-      `Bonjour, merci pour votre candidature concernant « ${item} ».`,
-      `Bonjour ${peerName || ''}, le poste est toujours ouvert.`,
-      `Pouvez-vous m'envoyer votre CV et une brève présentation ?`,
-      subtitle ? `Le secteur recherché : ${subtitle}.` : `Je reste disponible pour échanger sur le profil recherché.`,
+      messagesText(t, 'messages.suggestions.job.owner.thanks', { item }),
+      messagesText(t, 'messages.suggestions.job.owner.open', { peer }),
+      messagesText(t, 'messages.suggestions.job.owner.cv'),
+      subtitle
+        ? messagesText(t, 'messages.suggestions.job.owner.sector', { subtitle })
+        : messagesText(t, 'messages.suggestions.job.owner.profile'),
     ])
   }
   return uniqueSuggestions([
-    `Bonjour, le poste « ${item} » est-il toujours disponible ?`,
-    `Bonjour ${peerName || ''}, je souhaite postuler à cette offre.`,
-    `Pouvez-vous me préciser le processus de recrutement ?`,
-    subtitle ? `Le domaine « ${subtitle} » me correspond bien.` : `Je peux vous transmettre mon CV dès maintenant.`,
+    messagesText(t, 'messages.suggestions.job.contact.available', { item }),
+    messagesText(t, 'messages.suggestions.job.contact.apply', { peer }),
+    messagesText(t, 'messages.suggestions.job.contact.process'),
+    subtitle
+      ? messagesText(t, 'messages.suggestions.job.contact.sector', { subtitle })
+      : messagesText(t, 'messages.suggestions.job.contact.cv'),
   ])
 }
 
-function parcelSuggestions({ role, title, subtitle, peerName }) {
-  const item = truncate(title) || 'ce trajet'
+function parcelSuggestions({ role, title, subtitle, peerName, t }) {
+  const item = truncate(title) || messagesText(t, 'messages.suggestions.fallback.parcel')
+  const peer = peerName || ''
   if (role === 'owner') {
     return uniqueSuggestions([
-      `Bonjour, merci pour votre message concernant ${item}.`,
-      `Bonjour ${peerName || ''}, il reste de la place disponible.`,
-      subtitle ? `Tarif actuel : ${subtitle}.` : `Indiquez-moi le poids et le contenu de votre colis.`,
-      `Quels sont vos délais de dépôt et de retrait ?`,
+      messagesText(t, 'messages.suggestions.parcel.owner.thanks', { item }),
+      messagesText(t, 'messages.suggestions.parcel.owner.space', { peer }),
+      subtitle
+        ? messagesText(t, 'messages.suggestions.parcel.owner.rate', { subtitle })
+        : messagesText(t, 'messages.suggestions.parcel.owner.weight'),
+      messagesText(t, 'messages.suggestions.parcel.owner.deadlines'),
     ])
   }
   return uniqueSuggestions([
-    `Bonjour, avez-vous encore de la place pour ${item} ?`,
-    subtitle ? `Le tarif affiché (${subtitle}) me convient.` : `Bonjour ${peerName || ''}, je souhaite réserver un envoi.`,
-    `Quels types d'objets acceptez-vous ?`,
-    `Pouvez-vous confirmer les dates de départ et d'arrivée ?`,
+    messagesText(t, 'messages.suggestions.parcel.contact.space', { item }),
+    subtitle
+      ? messagesText(t, 'messages.suggestions.parcel.contact.rate', { subtitle })
+      : messagesText(t, 'messages.suggestions.parcel.contact.book', { peer }),
+    messagesText(t, 'messages.suggestions.parcel.contact.items'),
+    messagesText(t, 'messages.suggestions.parcel.contact.dates'),
   ])
 }
 
-function eventSuggestions({ role, title, subtitle, peerName }) {
-  const item = truncate(title) || 'cet événement'
+function eventSuggestions({ role, title, subtitle, peerName, t }) {
+  const item = truncate(title) || messagesText(t, 'messages.suggestions.fallback.event')
+  const peer = peerName || ''
   if (role === 'owner') {
     return uniqueSuggestions([
-      `Bonjour, merci pour votre intérêt pour « ${item} ».`,
-      `Bonjour ${peerName || ''}, des places sont encore disponibles.`,
-      subtitle ? `Tarif / accès : ${subtitle}.` : `Je peux vous expliquer le déroulement de l'événement.`,
-      `Souhaitez-vous que je vous envoie le programme ?`,
+      messagesText(t, 'messages.suggestions.event.owner.thanks', { item }),
+      messagesText(t, 'messages.suggestions.event.owner.seats', { peer }),
+      subtitle
+        ? messagesText(t, 'messages.suggestions.event.owner.access', { subtitle })
+        : messagesText(t, 'messages.suggestions.event.owner.explain'),
+      messagesText(t, 'messages.suggestions.event.owner.program'),
     ])
   }
   return uniqueSuggestions([
-    `Bonjour, reste-t-il des places pour « ${item} » ?`,
-    `Bonjour ${peerName || ''}, comment s'inscrire à l'événement ?`,
-    subtitle ? `Concernant l'accès : ${subtitle}.` : `Pouvez-vous préciser le lieu et l'horaire ?`,
-    `L'événement est-il accessible et ouvert au public ?`,
+    messagesText(t, 'messages.suggestions.event.contact.seats', { item }),
+    messagesText(t, 'messages.suggestions.event.contact.register', { peer }),
+    subtitle
+      ? messagesText(t, 'messages.suggestions.event.contact.access', { subtitle })
+      : messagesText(t, 'messages.suggestions.event.contact.place'),
+    messagesText(t, 'messages.suggestions.event.contact.public'),
   ])
 }
 
-function businessSuggestions({ role, title, peerName }) {
-  const item = truncate(title) || 'votre entreprise'
+function businessSuggestions({ role, title, peerName, t }) {
+  const item = truncate(title) || messagesText(t, 'messages.suggestions.fallback.business')
+  const peer = peerName || ''
   if (role === 'owner') {
     return uniqueSuggestions([
-      `Bonjour, merci pour votre message.`,
-      `Bonjour ${peerName || ''}, comment puis-je vous aider ?`,
-      `Nous serions ravis de répondre à vos questions sur ${item}.`,
-      `Souhaitez-vous un rendez-vous ou un devis personnalisé ?`,
+      messagesText(t, 'messages.suggestions.business.owner.thanks'),
+      messagesText(t, 'messages.suggestions.business.owner.help', { peer }),
+      messagesText(t, 'messages.suggestions.business.owner.about', { item }),
+      messagesText(t, 'messages.suggestions.business.owner.meeting'),
     ])
   }
   return uniqueSuggestions([
-    `Bonjour, quels services propose ${item} ?`,
-    `Bonjour ${peerName || ''}, pouvez-vous me communiquer vos horaires ?`,
-    `Je souhaite obtenir un devis, est-ce possible ?`,
-    `Proposez-vous une prestation adaptée à mon besoin ?`,
+    messagesText(t, 'messages.suggestions.business.contact.services', { item }),
+    messagesText(t, 'messages.suggestions.business.contact.hours', { peer }),
+    messagesText(t, 'messages.suggestions.business.contact.quote'),
+    messagesText(t, 'messages.suggestions.business.contact.custom'),
   ])
 }
 
-function transferSuggestions({ role, title, peerName }) {
+function transferSuggestions({ role, peerName, t }) {
+  const peer = peerName || ''
   if (role === 'owner') {
     return uniqueSuggestions([
-      `Bonjour ${peerName || ''}, je consulte le statut de votre transfert.`,
-      `Pouvez-vous confirmer la réception des fonds ?`,
-      `Avez-vous bien transmis la preuve de paiement ?`,
-      `Je reste disponible pour finaliser l'opération en toute sécurité.`,
+      messagesText(t, 'messages.suggestions.transfer.owner.status', { peer }),
+      messagesText(t, 'messages.suggestions.transfer.owner.received'),
+      messagesText(t, 'messages.suggestions.transfer.owner.proof'),
+      messagesText(t, 'messages.suggestions.transfer.owner.safe'),
     ])
   }
   return uniqueSuggestions([
-    `Bonjour, pouvez-vous confirmer le statut du transfert ?`,
-    `Bonjour ${peerName || ''}, la preuve de paiement est-elle suffisante ?`,
-    `Quel est le délai restant pour finaliser l'opération ?`,
-    `Merci de me tenir informé(e) de l'avancement.`,
+    messagesText(t, 'messages.suggestions.transfer.contact.status'),
+    messagesText(t, 'messages.suggestions.transfer.contact.proof', { peer }),
+    messagesText(t, 'messages.suggestions.transfer.contact.deadline'),
+    messagesText(t, 'messages.suggestions.transfer.contact.update'),
   ])
 }
 
-function p2pSuggestions({ role, subtitle, peerName }) {
+function p2pSuggestions({ role, subtitle, peerName, t }) {
+  const peer = peerName || ''
   if (role === 'owner') {
     return uniqueSuggestions([
-      `Bonjour ${peerName || ''}, mon offre est toujours active.`,
-      subtitle ? `Le taux proposé est ${subtitle}.` : `Je peux confirmer les conditions de l'échange.`,
-      `Quel mode de paiement préférez-vous ?`,
-      `Restons vigilants et échangeons uniquement via MOXT.`,
+      messagesText(t, 'messages.suggestions.p2p.owner.active', { peer }),
+      subtitle
+        ? messagesText(t, 'messages.suggestions.p2p.owner.rate', { subtitle })
+        : messagesText(t, 'messages.suggestions.p2p.owner.terms'),
+      messagesText(t, 'messages.suggestions.p2p.owner.payment'),
+      messagesText(t, 'messages.suggestions.p2p.owner.safe'),
     ])
   }
   return uniqueSuggestions([
-    `Bonjour, votre offre est-elle toujours disponible ?`,
-    subtitle ? `Le taux affiché (${subtitle}) me convient.` : `Bonjour ${peerName || ''}, je souhaite échanger avec vous.`,
-    `Quel mode de paiement acceptez-vous ?`,
-    `Pouvez-vous confirmer le montant et les conditions ?`,
+    messagesText(t, 'messages.suggestions.p2p.contact.available'),
+    subtitle
+      ? messagesText(t, 'messages.suggestions.p2p.contact.rate', { subtitle })
+      : messagesText(t, 'messages.suggestions.p2p.contact.exchange', { peer }),
+    messagesText(t, 'messages.suggestions.p2p.contact.payment'),
+    messagesText(t, 'messages.suggestions.p2p.contact.confirm'),
   ])
 }
 
-function generalSuggestions({ role, peerName }) {
+function generalSuggestions({ role, peerName, t }) {
+  const peer = peerName || ''
   if (role === 'owner') {
     return uniqueSuggestions([
-      `Bonjour ${peerName || ''}, merci pour votre message.`,
-      `Comment puis-je vous aider ?`,
-      `Je reste disponible pour répondre à vos questions.`,
+      messagesText(t, 'messages.suggestions.general.owner.thanks', { peer }),
+      messagesText(t, 'messages.suggestions.general.owner.help'),
+      messagesText(t, 'messages.suggestions.general.owner.available'),
     ])
   }
   return uniqueSuggestions([
-    `Bonjour ${peerName || ''}, je souhaite en savoir plus.`,
-    `Merci pour votre retour.`,
-    `Pouvez-vous préciser votre demande ?`,
+    messagesText(t, 'messages.suggestions.general.contact.more', { peer }),
+    messagesText(t, 'messages.suggestions.general.contact.thanks'),
+    messagesText(t, 'messages.suggestions.general.contact.clarify'),
   ])
 }
 
@@ -226,6 +255,7 @@ export function buildMessageSuggestions({
   peerName,
   sentTexts = [],
   limit = 3,
+  t,
 }) {
   const role = resolveConversationRole(conversation, userId)
   const type = relatedPreview?.type || conversation?.relatedType || 'general'
@@ -235,13 +265,14 @@ export function buildMessageSuggestions({
     title: relatedPreview?.title || conversation?.title,
     subtitle: relatedPreview?.subtitle,
     peerName: peerName?.split(' ')[0] || peerName,
+    t,
   })
 
   const available = filterAlreadySentSuggestions(pool, sentTexts)
   return available.slice(0, limit)
 }
 
-export function messageSuggestionsForConversation(state, conversation, userId, peerName) {
+export function messageSuggestionsForConversation(state, conversation, userId, peerName, t) {
   const relatedPreview = getLatestRelatedPreview(conversation, state)
   const sentTexts = sentTextsFromConversation(conversation, userId)
   return buildMessageSuggestions({
@@ -250,5 +281,6 @@ export function messageSuggestionsForConversation(state, conversation, userId, p
     relatedPreview,
     peerName,
     sentTexts,
+    t,
   })
 }

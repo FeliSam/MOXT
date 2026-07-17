@@ -4,15 +4,20 @@ import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { statusMeta } from '../../config/statuses'
+import { useLanguage } from '../../contexts/useLanguage'
 import { updateBusinessRequestStatus } from '../../features/businesses/businessSlice'
+import { professionalText } from '../../features/businesses/professionalI18n'
 
 export function RequestsPanel({ business, dispatch, requests }) {
+  const { t } = useLanguage()
+  const pt = (key, vars) => professionalText(t, key, vars)
+
   if (!requests.length) {
     return (
       <EmptyState
         icon={FiInbox}
-        title="Aucune demande"
-        description="Les demandes liées aux services de l’entreprise apparaîtront ici."
+        title={pt('professional.requests.emptyTitle')}
+        description={pt('professional.requests.emptyDescription')}
       />
     )
   }
@@ -34,7 +39,7 @@ export function RequestsPanel({ business, dispatch, requests }) {
               </Badge>
               <div className="min-w-0 rounded-2xl bg-[var(--app-surface-muted)] p-3 lg:max-w-xs lg:flex-1">
                 <p className="text-[10px] font-black uppercase tracking-wider text-[var(--app-text-muted)]">
-                  Chronologie
+                  {pt('professional.requests.timeline')}
                 </p>
                 <p className="mt-1 break-words text-xs">
                   {(request.timeline || [])
@@ -58,7 +63,7 @@ export function RequestsPanel({ business, dispatch, requests }) {
                       )
                     }
                   >
-                    Traiter
+                    {pt('professional.requests.process')}
                   </Button>
                 ) : null}
                 {request.status === 'in_progress' ? (
@@ -75,7 +80,7 @@ export function RequestsPanel({ business, dispatch, requests }) {
                       )
                     }
                   >
-                    Terminer
+                    {pt('professional.requests.complete')}
                   </Button>
                 ) : null}
               </div>

@@ -24,9 +24,8 @@ import { constrainPhone, phonePrefixForCallingCode } from '../config/phone'
 import { LANGUAGE_LABELS, SUPPORTED_LANGUAGES } from '../config/uiTranslations'
 import { useLanguage } from '../contexts/useLanguage'
 import {
-  oauthProfileCompletionSchema,
+  createAuthSchemas,
   oauthProfileStepFields,
-  registerSchema,
   registerStepFields,
 } from '../features/auth/authSchemas'
 import { updateAccountPreferences } from '../features/account/accountSlice'
@@ -39,7 +38,8 @@ import {
   verifyPhoneRegistration,
 } from '../features/auth/authSlice'
 import { addToast } from '../features/ui/uiSlice'
-import { authErrorToast } from '../features/auth/authErrorMessages'
+import { authErrorToast, sanitizeAuthMessage } from '../features/auth/authErrorMessages'
+import { MOXT_AUTH_DEV_MODE } from '@moxt/shared/auth/otpCooldown.js'
 import { loadAllData } from '../app/loadAllData'
 import { startRealtimeSubscription } from '../services/realtimeService'
 import { useGeographyOptions } from '../hooks/useGeographyOptions'
@@ -54,10 +54,10 @@ import {
 import { applyPendingReferral } from '../features/referral/referralService'
 
 const STEPS = [
-  { key: 'identity', label: 'Identité', icon: FiUser },
-  { key: 'language', label: 'Langue & pays', icon: FiGlobe },
-  { key: 'security', label: 'Résidence', icon: FiShield },
-  { key: 'verification', label: 'Vérification', icon: FiCheck },
+  { key: 'identity', labelKey: 'auth.register.steps.identity', icon: FiUser },
+  { key: 'language', labelKey: 'auth.register.steps.language', icon: FiGlobe },
+  { key: 'security', labelKey: 'auth.register.steps.security', icon: FiShield },
+  { key: 'verification', labelKey: 'auth.register.steps.verification', icon: FiCheck },
 ]
 
 const LANGUAGE_TILES = LANGUAGE_LABELS
@@ -70,6 +70,7 @@ import {
 
 /* ─── Stepper visuel — meme pattern que Transfert / Job / Evenement ──────── */
 function Stepper({ step, oauthCompletion = false }) {
+  const { t } = useLanguage()
   const steps = oauthCompletion ? STEPS.slice(0, 3) : STEPS
   return (
     <div className="relative mt-4 flex items-start justify-between">
@@ -102,7 +103,7 @@ function Stepper({ step, oauthCompletion = false }) {
                 active ? 'text-brand-700 dark:text-brand-400' : 'text-[var(--app-text-faint)]'
               }`}
             >
-              {s.label}
+              {t(s.labelKey)}
             </span>
           </div>
         )
@@ -119,6 +120,7 @@ export function RegisterPage() {
   const store = useStore()
   const authUser = useSelector((state) => state.auth.user)
   const { language, setLanguage, t } = useLanguage()
+  const { oauthProfileCompletionSchema, registerSchema } = createAuthSchemas(t)
   const { error, status } = useSelector((state) => state.auth)
   const [oauthCompletion, setOauthCompletion] = useState(false)
   const [step, setStep] = useState(1)
@@ -163,44 +165,66 @@ export function RegisterPage() {
     if (!error) return
     const errorText = String(error || '')
     const otpLimited = /Limite atteinte|Patientez \d+ secondes/i.test(errorText)
+    const localizedError = sanitizeAuthMessage(errorText, t)
     if (alreadyRegistered) {
       dispatch(
         addToast({
-          title: 'Compte déjà existant',
-          message:
-            'Ce numéro ou e-mail est déjà lié à un compte confirmé. Connectez-vous avec votre mot de passe. Si vous n’avez jamais reçu le code SMS, réessayez l’inscription dans quelques minutes après nettoyage automatique des inscriptions inachevées.',
+          title: t('auth.register.toasts.alreadyExistsTitle'),
+          message: t('auth.register.toasts.alreadyExistsBody'),
           tone: 'error',
         }),
       )
     } else if (identityLimitReached) {
       dispatch(
         addToast({
-          title: 'Réinscription impossible',
-          message:
-            'Cet e-mail ou ce numéro a déjà servi à deux comptes MOXT. Après suppression, une seule réinscription est possible avec les mêmes identifiants.',
+          title: t('auth.register.toasts.identityLimitTitle'),
+          message: t('auth.register.toasts.identityLimitBody'),
           tone: 'error',
         }),
       )
     } else if (otpLimited) {
-      // 90s / 3-par-3h : message explicite, jamais le toast opaque « Inscription impossible ».
-      setOtpCapMessage(errorText)
+      // 90s / 4-par-3h : message explicite, jamais le toast opaque « Inscription impossible ».
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- surface OTP cap beside toast
+      setOtpCapMessage(localizedError)
       dispatch(
         addToast({
-          title: 'Envoi limité',
-          message: errorText,
+          title: t('auth.register.toasts.otpLimitedTitle'),
+          message: localizedError,
           tone: 'warning',
         }),
       )
     } else if (pendingVerification) {
-      dispatch(addToast(authErrorToast('Vérification impossible', error)))
+      if (MOXT_AUTH_DEV_MODE) {
+        console.warn('[MOXT][dev] verify/register error raw:', error)
+      }
+      dispatch(
+        addToast(
+          authErrorToast(t('auth.register.toasts.verifyFailedTitle'), error, 'error', t),
+        ),
+      )
     } else if (oauthCompletion) {
-      dispatch(addToast(authErrorToast('Profil incomplet', error)))
+      dispatch(
+        addToast(
+          authErrorToast(t('auth.register.toasts.oauthFailedTitle'), error, 'error', t),
+        ),
+      )
     } else {
-      dispatch(addToast(authErrorToast('Inscription impossible', error)))
+      dispatch(
+        addToast(
+          authErrorToast(t('auth.register.toasts.registerFailedTitle'), error, 'error', t),
+        ),
+      )
     }
     dispatch(clearAuthError())
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [error, alreadyRegistered, pendingVerification])
+  }, [
+    alreadyRegistered,
+    dispatch,
+    error,
+    identityLimitReached,
+    oauthCompletion,
+    pendingVerification,
+    t,
+  ])
 
   useEffect(() => {
     if (resendCooldown <= 0) return undefined
@@ -262,8 +286,8 @@ export function RegisterPage() {
           triggerBurst()
           dispatch(
             addToast({
-              title: 'Profil complété',
-              message: 'Votre profil est complet. Bienvenue sur MOXT.',
+              title: t('auth.register.toasts.profileDoneTitle'),
+              message: t('auth.register.toasts.profileDoneBody'),
               tone: 'success',
             }),
           )
@@ -325,6 +349,7 @@ export function RegisterPage() {
   useEffect(() => {
     const pending = loadPendingRegistration()
     if (!pending?.phone && !pending?.email) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate from sessionStorage once
     setPendingVerification({
       method: pending.method || 'phone',
       phone: pending.phone,
@@ -348,6 +373,7 @@ export function RegisterPage() {
   }, [])
   useEffect(() => {
     if (!authUser || pendingVerification || !needsRegisterProfileCompletion(authUser)) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync OAuth profile completion UI
     setOauthCompletion(true)
     const missingPhone = needsOAuthProfileCompletion(authUser)
     const missingIdentity =
@@ -366,6 +392,7 @@ export function RegisterPage() {
         authUser.phone && authUser.phone !== '+7' ? authUser.phone : current.russianPhone,
       originPhone: authUser.secondaryPhone || current.originPhone,
     }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- formik identity changes every render
   }, [authUser, formik.setValues, pendingVerification])
 
   async function resendVerificationCode() {
@@ -398,10 +425,15 @@ export function RegisterPage() {
           }),
         )
       } else {
-        const payload = String(result.payload || '')
+        const payload = String(result.payload || t('auth.register.toasts.resendFailedFallback'))
         if (/Limite atteinte|Patientez \d+ secondes/i.test(payload)) {
-          setOtpCapMessage(payload)
+          setOtpCapMessage(sanitizeAuthMessage(payload, t))
         }
+        dispatch(
+          addToast(
+            authErrorToast(t('auth.register.toasts.resendFailedTitle'), payload, 'error', t),
+          ),
+        )
       }
     } finally {
       otpActionLockRef.current = false
@@ -446,11 +478,23 @@ export function RegisterPage() {
         triggerBurst()
         dispatch(
           addToast({
-            title: 'Bienvenue sur MOXT',
-            message: 'Numéro confirmé. Votre compte est prêt — bienvenue !',
+            title: t('auth.register.toasts.welcomeTitle'),
+            message: result.payload?.emailLinkDeferred
+              ? t('auth.register.toasts.welcomeDeferredBody')
+              : t('auth.register.toasts.welcomeReadyBody'),
             tone: 'success',
           }),
         )
+        if (result.payload?.emailLinkDeferred) {
+          dispatch(
+            addToast({
+              title: t('auth.register.toasts.emailPendingTitle'),
+              message: t('auth.register.toasts.emailPendingBody'),
+              tone: 'info',
+              link: '/security',
+            }),
+          )
+        }
         await completeRegistration(POST_PHONE_OTP_LANDING)
       }
       // Failed OTP: keep pendingVerification + form values for the next code.
@@ -480,8 +524,7 @@ export function RegisterPage() {
     const loginState =
       pendingVerification?.method === 'phone'
         ? {
-            notice:
-              'Si l’inscription est terminée, connectez-vous avec votre numéro +7 et le mot de passe choisi. Sinon, saisissez d’abord le code SMS reçu ci-dessus.',
+            notice: t('auth.register.loginNoticePendingOtp'),
           }
         : undefined
     clearPendingRegistration()
@@ -507,12 +550,10 @@ export function RegisterPage() {
   return (
     <AuthCard
       compact
-      eyebrow={oauthCompletion ? 'MOXT · Profil' : 'MOXT · Inscription'}
-      title={oauthCompletion ? 'Complétez votre profil' : 'Créer votre compte MOXT'}
+      eyebrow={oauthCompletion ? t('auth.register.oauthEyebrow') : t('auth.register.eyebrow')}
+      title={oauthCompletion ? t('auth.register.oauthTitle') : t('auth.register.title')}
       description={
-        oauthCompletion
-          ? 'Ajoutez votre pays, ville et numéro russe pour utiliser MOXT.'
-          : 'E-mail obligatoire, confirmation du compte par SMS sur votre numéro +7.'
+        oauthCompletion ? t('auth.register.oauthDescription') : t('auth.register.description')
       }
     >
       {burstNode}
@@ -527,14 +568,14 @@ export function RegisterPage() {
             <div className="grid min-w-0 gap-3 @md:grid-cols-2">
               <Input
                 id="firstName"
-                label="Prénom"
+                label={t('auth.register.firstName')}
                 autoComplete="given-name"
                 {...formik.getFieldProps('firstName')}
                 error={errorFor('firstName')}
               />
               <Input
                 id="lastName"
-                label="Nom"
+                label={t('auth.register.lastName')}
                 autoComplete="family-name"
                 {...formik.getFieldProps('lastName')}
                 error={errorFor('lastName')}
@@ -542,7 +583,7 @@ export function RegisterPage() {
             </div>
             <Input
               id="register-email"
-              label="Adresse e-mail"
+              label={t('auth.register.email')}
               type="email"
               autoComplete="email"
               required
@@ -550,7 +591,7 @@ export function RegisterPage() {
               error={errorFor('email')}
             />
             <Button type="button" icon={FiArrowRight} onClick={nextStep}>
-              Continuer
+              {t('auth.register.continue')}
             </Button>
           </>
         ) : null}
@@ -561,14 +602,14 @@ export function RegisterPage() {
               <div className="grid min-w-0 gap-3 @md:grid-cols-2">
                 <Input
                   id="oauth-firstName"
-                  label="Prénom"
+                  label={t('auth.register.firstName')}
                   autoComplete="given-name"
                   {...formik.getFieldProps('firstName')}
                   error={errorFor('firstName')}
                 />
                 <Input
                   id="oauth-lastName"
-                  label="Nom"
+                  label={t('auth.register.lastName')}
                   autoComplete="family-name"
                   {...formik.getFieldProps('lastName')}
                   error={errorFor('lastName')}
@@ -576,7 +617,7 @@ export function RegisterPage() {
                 <Input
                   id="oauth-email"
                   className="@md:col-span-2"
-                  label="Adresse e-mail"
+                  label={t('auth.register.email')}
                   type="email"
                   autoComplete="email"
                   required
@@ -589,7 +630,7 @@ export function RegisterPage() {
 
             <div>
               <p className="text-xs font-black uppercase tracking-[0.1em] text-[var(--app-text-muted)]">
-                Langue de l'interface
+                {t('auth.register.uiLanguage')}
               </p>
               <div className="mt-2.5 grid grid-cols-2 gap-2">
                 {SUPPORTED_LANGUAGES.map((code) => {
@@ -631,7 +672,7 @@ export function RegisterPage() {
 
             <Select
               id="originCountry"
-              label="Pays de provenance"
+              label={t('auth.register.originCountry')}
               {...formik.getFieldProps('originCountry')}
               onChange={(event) => {
                 const country = countries.find((item) => item.code === event.target.value)
@@ -653,13 +694,13 @@ export function RegisterPage() {
             <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-3">
               {!oauthCompletion ? (
                 <Button type="button" variant="secondary" icon={FiArrowLeft} onClick={() => setStep(1)}>
-                  Retour
+                  {t('auth.register.back')}
                 </Button>
               ) : (
                 <span />
               )}
               <Button type="button" icon={FiArrowRight} onClick={nextStep}>
-                Continuer
+                {t('auth.register.continue')}
               </Button>
             </div>
           </>
@@ -668,14 +709,11 @@ export function RegisterPage() {
         {step === 3 ? (
           <>
             {oauthCompletion ? (
-              <Alert variant="info">
-                Dernière étape : renseignez votre résidence en Russie et votre numéro +7 pour activer
-                votre compte.
-              </Alert>
+              <Alert variant="info">{t('auth.register.oauthLastStepAlert')}</Alert>
             ) : null}
             <CitySelector
               id="residenceCity"
-              label="Ville de résidence"
+              label={t('auth.register.residenceCity')}
               value={formik.values.residenceCity}
               onChange={(city) => formik.setFieldValue('residenceCity', city)}
               error={errorFor('residenceCity')}
@@ -683,7 +721,7 @@ export function RegisterPage() {
             <div className="grid min-w-0 gap-3">
               <Input
                 id="russianPhone"
-                label="Numéro russe (+7)"
+                label={t('auth.register.russianPhone')}
                 type="tel"
                 autoComplete="tel"
                 placeholder="+7XXXXXXXXXX"
@@ -696,7 +734,7 @@ export function RegisterPage() {
               />
               <Input
                 id="originPhone"
-                label="Numéro local (pays d'origine)"
+                label={t('auth.register.originPhone')}
                 type="tel"
                 placeholder={`${selectedCountry?.callingCode || ''}...`}
                 iconLeft={
@@ -718,14 +756,14 @@ export function RegisterPage() {
               <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-3">
                 <PasswordInput
                   id="register-password"
-                  label="Mot de passe"
+                  label={t('auth.register.password')}
                   autoComplete="new-password"
                   {...formik.getFieldProps('password')}
                   error={errorFor('password')}
                 />
                 <PasswordInput
                   id="confirmPassword"
-                  label="Confirmer"
+                  label={t('auth.register.confirmPassword')}
                   autoComplete="new-password"
                   {...formik.getFieldProps('confirmPassword')}
                   error={errorFor('confirmPassword')}
@@ -747,15 +785,14 @@ export function RegisterPage() {
                 checked={formik.values.acceptTerms}
               />
               <span className="text-xs leading-5 text-[var(--app-text-2)] sm:text-sm">
-                J'accepte les{' '}
+                {t('auth.register.acceptTermsPrefix')}{' '}
                 <Link className="auth-flow-link" to="/legal/cgu" target="_blank" rel="noreferrer">
-                  conditions d'utilisation
+                  {t('auth.register.termsOfUse')}
                 </Link>{' '}
-                et la{' '}
+                {t('auth.register.acceptTermsAnd')}{' '}
                 <Link className="auth-flow-link" to="/legal/privacy" target="_blank" rel="noreferrer">
-                  politique de confidentialité
+                  {t('auth.register.privacyPolicy')}
                 </Link>
-                .
               </span>
             </label>
             {errorFor('acceptTerms') ? (
@@ -764,23 +801,23 @@ export function RegisterPage() {
 
             <div className="hidden items-center gap-1.5 rounded-2xl bg-[var(--app-surface-muted)] px-4 py-2 text-sm font-bold sm:flex">
               <span className="text-base leading-none">{flagEmoji(formik.values.originCountry)}</span>
-              {selectedCountry?.name || 'Pays de provenance'}
+              {selectedCountry?.name || t('auth.register.fallbackCountry')}
               <FiArrowRight className="text-xs text-[var(--app-text-faint)]" />
               <span className="text-base leading-none">{flagEmoji('RU')}</span>
-              {formik.values.residenceCity || 'Russie'}
+              {formik.values.residenceCity || t('auth.register.fallbackRussia')}
             </div>
 
             <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-3">
               <Button type="button" variant="secondary" icon={FiArrowLeft} onClick={() => setStep(2)}>
-                Retour
+                {t('auth.register.back')}
               </Button>
               {oauthCompletion ? (
                 <Button type="submit" icon={FiCheck} loading={authBusy} disabled={authBusy}>
-                  {authBusy ? 'Enregistrement...' : 'Terminer mon profil'}
+                  {authBusy ? t('auth.register.oauthSubmitting') : t('auth.register.oauthSubmit')}
                 </Button>
               ) : (
                 <Button type="submit" icon={FiCheck} loading={authBusy} disabled={authBusy}>
-                  {authBusy ? 'Envoi du SMS...' : 'Créer mon compte'}
+                  {authBusy ? t('auth.register.submitting') : t('auth.register.submit')}
                 </Button>
               )}
             </div>
@@ -789,19 +826,17 @@ export function RegisterPage() {
 
         {step === 4 && !oauthCompletion && pendingVerification ? (
           <>
-            <Alert title="Confirmez votre numéro" variant="info">
-              Un code à 6 chiffres a été envoyé au {pendingVerification.phone} par SMS. L’arrivée
-              peut prendre 1–2 minutes. Un seul code à la fois — le compte est créé après
-              confirmation.
+            <Alert title={t('auth.register.verify.title')} variant="info">
+              {t('auth.register.verify.body', { phone: pendingVerification.phone })}
             </Alert>
             {otpCapMessage ? (
-              <Alert title="Envoi limité" variant="warning">
+              <Alert title={t('auth.register.otpCapTitle')} variant="warning">
                 {otpCapMessage}
               </Alert>
             ) : null}
             <Input
               id="verification-code"
-              label="Code reçu par SMS"
+              label={t('auth.register.verify.codeLabel')}
               inputMode="numeric"
               autoComplete="one-time-code"
               maxLength={6}
@@ -818,7 +853,7 @@ export function RegisterPage() {
               disabled={authBusy || verificationCode.length !== 6}
               onClick={confirmCode}
             >
-              Confirmer et accéder à MOXT
+              {t('auth.register.verify.confirm')}
             </Button>
             <div className="grid gap-2 text-center">
               <p className="text-sm text-[var(--app-text-muted)]">
@@ -855,13 +890,13 @@ export function RegisterPage() {
         ) : null}
       </form>
       <p className="mt-3 text-center text-sm text-[var(--app-text-muted)]">
-        Vous avez déjà un compte ?{' '}
+        {t('auth.register.haveAccount')}{' '}
         <Link
           className="font-bold text-brand-700 dark:text-brand-300"
           to="/login"
           onClick={goToLogin}
         >
-          Se connecter
+          {t('auth.register.loginLink')}
         </Link>
       </p>
     </AuthCard>

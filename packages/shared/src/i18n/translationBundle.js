@@ -1,6 +1,7 @@
 import { ENGLISH_UI_CATALOG } from './englishUiCatalog.js'
 import { PLACEHOLDER_CATALOGS } from './placeholderCatalog.js'
 import { PUBLISH_AUTH_CATALOGS } from './publishAuthCatalog.js'
+import { PUBLIC_LANDING_CATALOGS } from './publicLandingCatalog.js'
 import { SHARE_REFERRAL_CATALOGS } from './shareReferralCatalog.js'
 import { fr } from './locales/fr.js'
 import { en } from './locales/en.js'
@@ -40,6 +41,13 @@ const UI_CATALOGS = [
     sectionForLang: { en: 'en', ru: 'ru', pt: 'pt' },
     sectionStyle: 'lang',
     maps: SHARE_REFERRAL_CATALOGS,
+  },
+  {
+    id: 'publicLanding',
+    file: 'packages/shared/src/i18n/publicLandingCatalog.js',
+    sectionForLang: { en: 'en', ru: 'ru', pt: 'pt' },
+    sectionStyle: 'lang',
+    maps: PUBLIC_LANDING_CATALOGS,
   },
 ]
 

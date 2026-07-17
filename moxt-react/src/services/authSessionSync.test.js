@@ -22,6 +22,10 @@ vi.mock('../features/auth/authService', () => ({
       user: { id: session.user.id, firstName: 'Amina', lastName: 'Demo' },
       token: session.access_token,
     })),
+    refreshAuthSession: vi.fn(async () => ({
+      user: { id: 'u1', firstName: 'Amina', lastName: 'Demo' },
+      token: 'fresh-token',
+    })),
   },
 }))
 
@@ -29,6 +33,15 @@ vi.mock('./realtimeService', () => ({
   startRealtimeSubscription: vi.fn(),
   reconnectRealtimeSubscription: vi.fn(),
   stopRealtimeSubscription: vi.fn(),
+  syncRealtimeAuthToken: vi.fn(),
+}))
+
+vi.mock('../app/loadAllData', () => ({
+  loadAllData: () => () => Promise.resolve(),
+}))
+
+vi.mock('../features/communications/communicationSlice', () => ({
+  refreshConversations: () => () => Promise.resolve(),
 }))
 
 describe('authSessionSync visibility handler', () => {

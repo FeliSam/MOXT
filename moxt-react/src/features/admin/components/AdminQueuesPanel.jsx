@@ -7,6 +7,7 @@ import {
   FiUserCheck,
   FiX,
 } from 'react-icons/fi'
+import { useLanguage } from '../../../contexts/useLanguage'
 import { Button } from '../../../components/ui/Button'
 import { Badge } from '../../../components/ui/Badge'
 import { updateVerificationStatus } from '../../account/accountSlice'
@@ -15,9 +16,10 @@ import { moderateReview } from '../../reviews/reviewSlice'
 import { REVIEW_DISPUTE_STATUS } from '@moxt/shared/utils/reviewUtils.js'
 import { contentActions } from '../adminActions'
 import { CARD, ITEM } from '../adminConfig'
+import { adminText } from '../adminI18n'
 import { Empty, SectionTitle } from './AdminShared'
 
-function QueueSection({ icon, items, kind, label, renderActions, renderMeta, setSelected }) {
+function QueueSection({ icon, items, kind, label, renderActions, renderMeta, setSelected, t }) {
   return (
     <div className={`${CARD} p-5 grid gap-4`}>
       <SectionTitle icon={icon} label={label} count={items.length} tone={items.length ? 'warning' : 'success'} />
@@ -41,21 +43,24 @@ function QueueSection({ icon, items, kind, label, renderActions, renderMeta, set
           </div>
         ))
       ) : (
-        <Empty label="Aucun element." icon={icon} />
+        <Empty label={adminText(t, 'admin.empty.noElement')} icon={icon} />
       )}
     </div>
   )
 }
 
 export function AdminQueuesPanel({ adminId, dispatch, queues, setSelected }) {
+  const { t } = useLanguage()
+
   return (
     <div className="grid gap-5">
       <QueueSection
         icon={FiTrash2}
         items={queues.accountDeletions}
-        label="Suppressions de compte"
+        label={adminText(t, 'admin.overview.queue.deletions')}
         kind="accountDeletion"
         setSelected={setSelected}
+        t={t}
         renderMeta={(item) => `${item.userName || item.userId}${item.userEmail ? ` · ${item.userEmail}` : ''}`}
         renderActions={(item) => (
           <Button
@@ -67,21 +72,22 @@ export function AdminQueuesPanel({ adminId, dispatch, queues, setSelected }) {
               })
             }
           >
-            Voir le profil
+            {adminText(t, 'admin.queues.viewProfile')}
           </Button>
         )}
       />
       <QueueSection
         icon={FiUserCheck}
         items={queues.verifications}
-        label="Verifications d'identite"
+        label={t('verification.admin.title')}
         kind="verification"
         setSelected={setSelected}
-        renderMeta={(i) => `Niveau ${i.level} · ${i.userName || i.userId}`}
+        t={t}
+        renderMeta={(i) => adminText(t, 'admin.queues.levelMeta', { level: i.level, name: i.userName || i.userId })}
         renderActions={(i) => (
           <>
             <Button variant="secondary" onClick={() => setSelected({ kind: 'verification', item: i })}>
-              Examiner
+              {t('verification.admin.examine')}
             </Button>
             <Button
               icon={FiCheckCircle}
@@ -95,7 +101,7 @@ export function AdminQueuesPanel({ adminId, dispatch, queues, setSelected }) {
                 )
               }
             >
-              Valider
+              {t('verification.admin.approve')}
             </Button>
             <Button
               variant="danger"
@@ -110,7 +116,7 @@ export function AdminQueuesPanel({ adminId, dispatch, queues, setSelected }) {
                 )
               }
             >
-              Refuser
+              {t('verification.admin.reject')}
             </Button>
           </>
         )}
@@ -118,23 +124,29 @@ export function AdminQueuesPanel({ adminId, dispatch, queues, setSelected }) {
       <QueueSection
         icon={FiAlertCircle}
         items={queues.disputes}
-        label="Litiges"
+        label={adminText(t, 'admin.queues.disputesLabel')}
         kind="dispute"
         setSelected={setSelected}
+        t={t}
         renderMeta={(i) => `${i.relatedType} · ${i.relatedId}`}
         renderActions={(i) => (
           <>
-            <Button onClick={() => dispatch(updateDisputeStatus({ id: i.id, status: 'resolved', updatedBy: 'admin' }))}>Resoudre</Button>
-            <Button variant="secondary" onClick={() => dispatch(updateDisputeStatus({ id: i.id, status: 'closed', updatedBy: 'admin' }))}>Cloturer</Button>
+            <Button onClick={() => dispatch(updateDisputeStatus({ id: i.id, status: 'resolved', updatedBy: 'admin' }))}>
+              {adminText(t, 'admin.actions.resolve')}
+            </Button>
+            <Button variant="secondary" onClick={() => dispatch(updateDisputeStatus({ id: i.id, status: 'closed', updatedBy: 'admin' }))}>
+              {adminText(t, 'admin.actions.close')}
+            </Button>
           </>
         )}
       />
       <QueueSection
         icon={FiStar}
         items={queues.contestedReviews}
-        label="Avis contestés"
+        label={adminText(t, 'admin.queues.contestedReviewsLabel')}
         kind="contestedReview"
         setSelected={setSelected}
+        t={t}
         renderMeta={(i) => `${i.targetType} · ${i.authorName || i.authorId}`}
         renderActions={(i) => (
           <>
@@ -151,7 +163,7 @@ export function AdminQueuesPanel({ adminId, dispatch, queues, setSelected }) {
                 )
               }
             >
-              Retirer l&apos;avis
+              {adminText(t, 'admin.actions.removeReview')}
             </Button>
             <Button
               onClick={() =>
@@ -165,7 +177,7 @@ export function AdminQueuesPanel({ adminId, dispatch, queues, setSelected }) {
                 )
               }
             >
-              Refuser la contestation
+              {adminText(t, 'admin.actions.rejectContest')}
             </Button>
           </>
         )}
@@ -173,25 +185,31 @@ export function AdminQueuesPanel({ adminId, dispatch, queues, setSelected }) {
       <QueueSection
         icon={FiStar}
         items={queues.reviews}
-        label="Avis en attente"
+        label={adminText(t, 'admin.overview.queue.reviews')}
         kind="review"
         setSelected={setSelected}
+        t={t}
         renderMeta={(i) => `${i.targetType} · ${i.rating || 0}/5`}
         renderActions={(i) => (
           <>
-            <Button onClick={() => dispatch(moderateReview({ id: i.id, status: 'published', moderatedBy: 'admin' }))}>Publier</Button>
-            <Button variant="danger" onClick={() => dispatch(moderateReview({ id: i.id, status: 'hidden', moderatedBy: 'admin' }))}>Masquer</Button>
+            <Button onClick={() => dispatch(moderateReview({ id: i.id, status: 'published', moderatedBy: 'admin' }))}>
+              {adminText(t, 'admin.actions.publish')}
+            </Button>
+            <Button variant="danger" onClick={() => dispatch(moderateReview({ id: i.id, status: 'hidden', moderatedBy: 'admin' }))}>
+              {adminText(t, 'admin.actions.hide')}
+            </Button>
           </>
         )}
       />
       <QueueSection
         icon={FiAlertTriangle}
         items={queues.reports}
-        label="Signalements"
+        label={adminText(t, 'admin.overview.queue.reports')}
         kind="report"
         setSelected={setSelected}
+        t={t}
         renderMeta={(i) => `${i.reportType} · ${i.relatedId}`}
-        renderActions={(i) => contentActions('reports', dispatch, i)}
+        renderActions={(i) => contentActions('reports', dispatch, i, t)}
       />
     </div>
   )

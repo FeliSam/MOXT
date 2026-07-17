@@ -6,6 +6,7 @@ import { Card } from '../components/ui/Card'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { useLanguage } from '../contexts/useLanguage'
 import { formatDate, formatMoney } from '../features/transfers/transferUtils'
 import { TransferProofsSection } from '../features/transfers/detail/TransferProofsSection'
 import {
@@ -13,8 +14,11 @@ import {
   printReceipt,
   shareReceipt,
 } from '../features/transfers/receiptExport'
+import { phase3Text } from '../i18n/phase3I18n'
 
 export function ReceiptsPage() {
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const user = useSelector((state) => state.auth.user)
   const receipts = useSelector((state) =>
     state.finance.receipts.filter((item) => item.userId === user.id),
@@ -23,13 +27,15 @@ export function ReceiptsPage() {
 
   function download(receipt) {
     const content = [
-      'MOXT — REÇU',
-      `Référence: ${receipt.id}`,
-      `Objet: ${receipt.title}`,
-      `Montant: ${formatMoney(receipt.amount, receipt.currency)}`,
-      `Statut: ${receipt.status || 'non défini'}`,
-      `Créé le: ${formatDate(receipt.createdAt)}`,
-      'Conservez ce document comme justificatif de votre opération.',
+      p3('receipts.txt.header'),
+      p3('receipts.txt.reference', { id: receipt.id }),
+      p3('receipts.txt.subject', { title: receipt.title }),
+      p3('receipts.txt.amount', { amount: formatMoney(receipt.amount, receipt.currency) }),
+      p3('receipts.txt.status', {
+        status: receipt.status || p3('receipts.txt.statusFallback'),
+      }),
+      p3('receipts.txt.createdAt', { date: formatDate(receipt.createdAt) }),
+      p3('receipts.txt.footer'),
     ].join('\n')
     const url = URL.createObjectURL(new Blob([content], { type: 'text/plain;charset=utf-8' }))
     const link = document.createElement('a')
@@ -42,9 +48,9 @@ export function ReceiptsPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Finances"
-        title="Reçus"
-        description="Justificatifs de vos opérations enregistrées sur MOXT."
+        eyebrow={p3('receipts.eyebrow')}
+        title={p3('receipts.title')}
+        description={p3('receipts.description')}
       />
       {receipts.length ? (
         <CatalogGrid>
@@ -54,7 +60,7 @@ export function ReceiptsPage() {
               <Card key={receipt.id}>
                 <div className="flex items-start justify-between gap-3">
                   <FiFileText className="text-2xl text-brand-600" />
-                  <Badge tone="info">Reçu</Badge>
+                  <Badge tone="info">{p3('receipts.badge')}</Badge>
                 </div>
                 <h2 className="mt-4 font-black">{receipt.title}</h2>
                 <p className="mt-2 text-sm text-[var(--app-text-muted)]">
@@ -64,7 +70,7 @@ export function ReceiptsPage() {
                   <>
                     {transfer ? (
                       <div className="mt-5 rounded-2xl bg-[var(--app-surface-muted)] p-4">
-                        <h3 className="text-sm font-black">Traitement</h3>
+                        <h3 className="text-sm font-black">{p3('receipts.processing')}</h3>
                         <div className="mt-3 grid gap-2">
                           {(transfer.timeline || []).map((event) => (
                             <div
@@ -90,23 +96,23 @@ export function ReceiptsPage() {
                         <Button
                           variant="secondary"
                           icon={FiDownload}
-                          onClick={() => printReceipt(transfer)}
+                          onClick={() => printReceipt(transfer, t)}
                         >
-                          Reçu PDF
+                          {p3('receipts.pdf')}
                         </Button>
                         <Button
                           variant="secondary"
                           icon={FiDownload}
-                          onClick={() => downloadReceiptImage(transfer)}
+                          onClick={() => downloadReceiptImage(transfer, t)}
                         >
-                          Reçu image
+                          {p3('receipts.image')}
                         </Button>
                         <Button
                           variant="secondary"
                           icon={FiShare2}
-                          onClick={() => shareReceipt(transfer)}
+                          onClick={() => shareReceipt(transfer, t)}
                         >
-                          Partager
+                          {p3('receipts.share')}
                         </Button>
                       </div>
                     ) : null}
@@ -118,7 +124,7 @@ export function ReceiptsPage() {
                     icon={FiDownload}
                     onClick={() => download(receipt)}
                   >
-                    Télécharger
+                    {p3('receipts.download')}
                   </Button>
                 )}
               </Card>
@@ -126,7 +132,7 @@ export function ReceiptsPage() {
           })}
         </CatalogGrid>
       ) : (
-        <EmptyState icon={FiFileText} title="Aucun reçu enregistré" />
+        <EmptyState icon={FiFileText} title={p3('receipts.empty')} />
       )}
     </div>
   )

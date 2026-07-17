@@ -27,30 +27,27 @@ import { FavoriteButton } from '../features/account/FavoriteButton'
 import { ContactButton } from '../features/communications/ContactButton'
 import { cancelRegistration, registerForEvent, reportEvent } from '../features/events/eventSlice'
 import { EventParticipantsSection } from '../features/events/EventParticipantsSection'
+import {
+  eventPublisherTypeKey,
+  eventStatusLabelKey,
+  eventTrustItemKeys,
+  registrationNextStepKeys,
+} from '../features/events/eventsConfig'
 import { statusMeta } from '../config/statuses'
+import { useLanguage } from '../contexts/useLanguage'
 import { formatDate, formatMoney } from '../features/transfers/transferUtils'
 import { PublisherDetailCard } from '../features/publications/PublisherDetailCard'
 import { PublisherPublicationsStrip } from '../features/publications/PublisherPublicationsStrip'
 import { usePublisherDetailProfile } from '../features/publications/usePublisherDetailProfile'
 import { addToast } from '../features/ui/uiSlice'
 
-const registrationNextSteps = {
-  registered: {
-    title: 'Inscription confirmée',
-    description:
-      'Conservez votre confirmation et contactez l’organisateur si vous avez une question.',
-  },
-  checked_in: {
-    title: 'Présence confirmée',
-    description: 'Votre présence a été validée par l’organisateur.',
-  },
-  cancelled: {
-    title: 'Inscription annulée',
-    description: 'Vous pouvez vous réinscrire si des places sont encore disponibles.',
-  },
+function resolveStatusLabel(status, t) {
+  const key = eventStatusLabelKey(status)
+  return key ? t(key) : statusMeta(status).label
 }
 
 export function EventDetailPage() {
+  const { t } = useLanguage()
   const dispatch = useDispatch()
   const { eventId } = useParams()
   const user = useSelector((state) => state.auth.user)
@@ -60,14 +57,14 @@ export function EventDetailPage() {
   )
   const publisherProfile = usePublisherDetailProfile(event, 'event')
   const [reportOpen, setReportOpen] = useState(false)
-  if (!event) return <Card>Événement introuvable.</Card>
+  if (!event) return <Card>{t('events.detail.notFound')}</Card>
   const registration = registrations.find((item) => item.userId === user.id)
   const registered = registration && registration.status !== 'cancelled'
   const activeRegistrations = registrations.filter((item) => item.status !== 'cancelled')
   const full = activeRegistrations.length >= event.capacity
   const eventStatus = statusMeta(event.status)
   const registrationStatus = registration ? statusMeta(registration.status) : null
-  const nextStep = registration ? registrationNextSteps[registration.status] : null
+  const nextStepKeys = registration ? registrationNextStepKeys[registration.status] : null
 
   return (
     <div className="grid gap-7">
@@ -90,7 +87,9 @@ export function EventDetailPage() {
             <ReshareButton sourceType="event" sourceId={event.id} sourceData={event} />
             {event.ownerId === user.id ? (
               <Link to={`/events/${eventId}/edit`}>
-                <Button variant="secondary" icon={FiEdit2}>Modifier</Button>
+                <Button variant="secondary" icon={FiEdit2}>
+                  {t('events.detail.edit')}
+                </Button>
               </Link>
             ) : null}
             <BackButton fallback="/events" />
@@ -99,17 +98,19 @@ export function EventDetailPage() {
       />
       <DetailMetrics
         items={[
-          { icon: FiCalendar, label: 'Date', value: formatDate(event.startAt) },
-          { icon: FiMapPin, label: 'Lieu', value: event.city },
+          { icon: FiCalendar, label: t('events.detail.date'), value: formatDate(event.startAt) },
+          { icon: FiMapPin, label: t('events.detail.location'), value: event.city },
           {
             icon: FiUsers,
-            label: 'Places restantes',
+            label: t('events.detail.seatsRemaining'),
             value: `${Math.max(event.capacity - activeRegistrations.length, 0)}`,
           },
           {
             icon: FiCheckCircle,
-            label: 'Accès',
-            value: event.price ? formatMoney(event.price, event.currency) : 'Gratuit',
+            label: t('events.detail.access'),
+            value: event.price
+              ? formatMoney(event.price, event.currency)
+              : t('events.detail.free'),
           },
         ]}
       />
@@ -125,7 +126,7 @@ export function EventDetailPage() {
             >
               <img
                 src={src}
-                alt={`${event.title} — affiche ${index + 1}`}
+                alt={t('events.detail.imageAlt', { title: event.title, index: index + 1 })}
                 className="h-full w-full object-cover"
                 loading="lazy"
               />
@@ -136,26 +137,28 @@ export function EventDetailPage() {
       <div className="grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
         <Card>
           <div className="mb-5 flex flex-wrap gap-2">
-            <Badge tone={eventStatus.tone}>{eventStatus.label}</Badge>
+            <Badge tone={eventStatus.tone}>{resolveStatusLabel(event.status, t)}</Badge>
             <Badge tone={full ? 'warning' : 'success'}>
-              {full ? 'Complet' : 'Places disponibles'}
+              {full ? t('events.detail.full') : t('events.detail.seatsAvailable')}
             </Badge>
           </div>
-          <h2 className="font-black">À propos</h2>
+          <h2 className="font-black">{t('events.detail.about')}</h2>
           <p className="mt-4 leading-7 text-slate-600 dark:text-slate-300">{event.description}</p>
           <div className="mt-6 grid gap-3 text-sm sm:grid-cols-2">
             <span>
-              Organisateur :{' '}
+              {t('events.detail.organizerLabel')} :{' '}
               <strong>
-                {event.organizerName} ({event.businessId ? 'Entreprise' : 'Particulier'})
+                {event.organizerName} ({t(eventPublisherTypeKey(event.businessId))})
               </strong>
             </span>
             <span>
-              Prix :{' '}
-              <strong>{event.price ? formatMoney(event.price, event.currency) : 'Gratuit'}</strong>
+              {t('events.detail.priceLabel')} :{' '}
+              <strong>
+                {event.price ? formatMoney(event.price, event.currency) : t('events.detail.free')}
+              </strong>
             </span>
             <span>
-              Places :{' '}
+              {t('events.detail.seatsLabel')} :{' '}
               <strong>
                 {activeRegistrations.length}/{event.capacity}
               </strong>
@@ -163,7 +166,7 @@ export function EventDetailPage() {
           </div>
         </Card>
         <Card>
-          <h2 className="font-black">Inscription</h2>
+          <h2 className="font-black">{t('events.detail.registration')}</h2>
           <div className="mt-4">
             <ContactButton
               ownerId={event.ownerId}
@@ -182,25 +185,33 @@ export function EventDetailPage() {
               icon={FiAlertTriangle}
               onClick={() => setReportOpen(true)}
             >
-              Signaler
+              {t('events.detail.report')}
             </Button>
           ) : null}
           {event.ownerId === user.id ? (
             <p className="mt-3 text-sm text-[var(--app-text-muted)]">
-              Gérez les inscriptions dans la section « Participants inscrits » ci-dessous.
+              {t('events.detail.ownerHint')}
             </p>
           ) : registered ? (
             <div className="mt-4">
-              <Alert variant="success" title={registrationStatus.label}>
-                {nextStep?.description ||
-                  'Votre inscription est suivie et vous serez notifié à chaque changement.'}
+              <Alert
+                variant="success"
+                title={
+                  registrationStatus
+                    ? resolveStatusLabel(registration.status, t)
+                    : undefined
+                }
+              >
+                {nextStepKeys
+                  ? t(nextStepKeys.descriptionKey)
+                  : t('events.detail.registrationTracked')}
               </Alert>
-              {nextStep ? (
+              {nextStepKeys ? (
                 <Card className="mt-3 bg-[var(--app-surface-muted)] p-4 shadow-sm">
                   <span className="text-xs font-black uppercase tracking-[0.12em] text-brand-700">
-                    Prochaine étape
+                    {t('events.detail.nextStep')}
                   </span>
-                  <h3 className="mt-2 font-black">{nextStep.title}</h3>
+                  <h3 className="mt-2 font-black">{t(nextStepKeys.titleKey)}</h3>
                 </Card>
               ) : null}
               <Button
@@ -210,12 +221,12 @@ export function EventDetailPage() {
                   dispatch(cancelRegistration({ id: registration.id, userId: user.id }))
                 }
               >
-                Annuler mon inscription
+                {t('events.detail.cancelRegistration')}
               </Button>
             </div>
           ) : full ? (
             <div className="mt-4">
-              <Alert variant="error">Cet événement est complet.</Alert>
+              <Alert variant="error">{t('events.detail.eventFull')}</Alert>
             </div>
           ) : (
             <Button
@@ -231,22 +242,28 @@ export function EventDetailPage() {
                 )
               }
             >
-              S'inscrire
+              {t('events.detail.register')}
             </Button>
           )}
         </Card>
       </div>
       <div className="grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
-        <DetailSection title="Informations pratiques">
+        <DetailSection title={t('events.detail.practicalInfo')}>
           <DetailFacts
             items={[
-              { label: 'Organisateur', value: event.organizerName },
-              { label: 'Profil', value: event.businessId ? 'Entreprise' : 'Particulier' },
-              { label: 'Catégorie', value: event.category },
-              { label: 'Lieu', value: event.venue },
-              { label: 'Ville', value: event.city },
-              { label: 'Capacité', value: `${event.capacity} personnes` },
-              { label: 'Statut', value: event.status },
+              { label: t('events.detail.facts.organizer'), value: event.organizerName },
+              {
+                label: t('events.detail.facts.profile'),
+                value: t(eventPublisherTypeKey(event.businessId)),
+              },
+              { label: t('events.detail.facts.category'), value: event.category },
+              { label: t('events.detail.facts.venue'), value: event.venue },
+              { label: t('events.detail.facts.city'), value: event.city },
+              {
+                label: t('events.detail.facts.capacity'),
+                value: t('events.detail.capacityValue', { count: event.capacity }),
+              },
+              { label: t('events.detail.facts.status'), value: event.status },
             ]}
           />
         </DetailSection>
@@ -263,12 +280,8 @@ export function EventDetailPage() {
             </>
           ) : null}
           <TrustPanel
-            title="Avant de participer"
-            items={[
-              'Vérifiez le lieu et l’horaire avant le déplacement.',
-              'Conservez votre confirmation d’inscription.',
-              'Contactez l’organisateur depuis la messagerie MOXT.',
-            ]}
+            title={t('events.detail.trustTitle')}
+            items={eventTrustItemKeys.map((key) => t(key))}
           />
         </div>
       </div>
@@ -278,7 +291,7 @@ export function EventDetailPage() {
       <ReportDialog
         open={reportOpen}
         onClose={() => setReportOpen(false)}
-        title="Signaler cet événement"
+        title={t('events.detail.reportTitle')}
         userId={user.id}
         onSubmit={async ({ reason, evidenceUrl }) => {
           dispatch(
@@ -291,8 +304,8 @@ export function EventDetailPage() {
           )
           dispatch(
             addToast({
-              title: 'Signalement envoyé',
-              message: 'Notre équipe va examiner cet événement.',
+              title: t('events.detail.reportToastTitle'),
+              message: t('events.detail.reportToastMessage'),
               tone: 'success',
             }),
           )

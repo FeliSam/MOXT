@@ -1,13 +1,15 @@
 import { FiEye, FiLayers } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
+import { useLanguage } from '../../../contexts/useLanguage'
 import { Button } from '../../../components/ui/Button'
 import { contentActions } from '../adminActions'
 import { CARD, CONTENT_SECTIONS, ITEM } from '../adminConfig'
 import { contentSubtitle, detailLinkFor } from '../adminData'
+import { adminOptionLabel, adminText } from '../adminI18n'
 import { statusDotColor } from '../adminUtils'
 import { Empty, SectionTitle } from './AdminShared'
 
-function ContentRow({ contentView, dispatch, item, setSelected }) {
+function ContentRow({ contentView, dispatch, item, setSelected, t }) {
   const status = item.effectiveStatus || item.status || 'active'
   const isPending = ['pending', 'pending_review', 'draft', 'new'].includes(status)
   const isArchived = ['archived', 'rejected', 'expired', 'completed', 'suspended', 'dismissed'].includes(status)
@@ -23,7 +25,7 @@ function ContentRow({ contentView, dispatch, item, setSelected }) {
           <strong className="block text-sm">
             {item.name || item.title || `${item.origin || ''} ${item.destination || ''}`.trim() || item.id}
           </strong>
-          <p className="text-xs text-[var(--app-text-muted)]">{contentSubtitle(contentView, item)}</p>
+          <p className="text-xs text-[var(--app-text-muted)]">{contentSubtitle(contentView, item, t)}</p>
         </button>
         <span
           className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
@@ -38,10 +40,10 @@ function ContentRow({ contentView, dispatch, item, setSelected }) {
         </span>
       </div>
       <div className="flex flex-wrap gap-2">
-        {contentActions(contentView, dispatch, item)}
+        {contentActions(contentView, dispatch, item, t)}
         {detailLinkFor(contentView, item) && (
           <Link to={detailLinkFor(contentView, item)}>
-            <Button variant="secondary" icon={FiEye}>Voir</Button>
+            <Button variant="secondary" icon={FiEye}>{adminText(t, 'admin.actions.view')}</Button>
           </Link>
         )}
       </div>
@@ -50,6 +52,9 @@ function ContentRow({ contentView, dispatch, item, setSelected }) {
 }
 
 export function AdminContentPanel({ contentView, dispatch, items, setContentView, setSelected }) {
+  const { t } = useLanguage()
+  const activeSection = CONTENT_SECTIONS.find((s) => s.id === contentView)
+
   return (
     <div className="grid gap-5">
       <div className={`${CARD} flex flex-wrap gap-2 p-3`}>
@@ -65,15 +70,15 @@ export function AdminContentPanel({ contentView, dispatch, items, setContentView
             }`}
           >
             <section.icon className="text-sm" />
-            {section.label}
+            {adminOptionLabel(t, section)}
           </button>
         ))}
       </div>
 
       <div className={`${CARD} p-5 grid gap-4`}>
         <SectionTitle
-          icon={CONTENT_SECTIONS.find((s) => s.id === contentView)?.icon || FiLayers}
-          label={CONTENT_SECTIONS.find((s) => s.id === contentView)?.label || 'Contenus'}
+          icon={activeSection?.icon || FiLayers}
+          label={adminOptionLabel(t, activeSection) || adminText(t, 'admin.nav.content')}
           count={items.length}
         />
         {items.length ? (
@@ -84,10 +89,11 @@ export function AdminContentPanel({ contentView, dispatch, items, setContentView
               dispatch={dispatch}
               item={item}
               setSelected={setSelected}
+              t={t}
             />
           ))
         ) : (
-          <Empty label="Aucun element." icon={FiLayers} />
+          <Empty label={adminText(t, 'admin.empty.noElement')} icon={FiLayers} />
         )}
       </div>
     </div>

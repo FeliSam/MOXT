@@ -13,6 +13,7 @@ import { Modal } from '../components/ui/Modal'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Select } from '../components/ui/Select'
 import { phoneError, phonePlaceholder, phonePrefix, validatePhone } from '../config/phone'
+import { useLanguage } from '../contexts/useLanguage'
 import { PAYMENT_METHODS } from '../features/transfers/transferConfig'
 import { FavoriteCategorySection } from '../features/account/FavoriteContentCards'
 import {
@@ -25,23 +26,28 @@ import {
   saveTransferProfile,
   toggleAccountFavorite,
 } from '../features/account/accountSlice'
+import { phase3Text } from '../i18n/phase3I18n'
 
-const profileSchema = Yup.object({
-  firstName: Yup.string().trim().required('Prénom obligatoire.'),
-  lastName: Yup.string().trim().required('Nom obligatoire.'),
-  phone: Yup.string()
-    .trim()
-    .test('favorite-phone-country', function (value) {
-      const country = this.parent.country || 'BJ'
-      return validatePhone(value, country) || this.createError({ message: phoneError(country) })
-    })
-    .required('Numéro obligatoire.'),
-  country: Yup.string().oneOf(['BJ', 'RU']).required(),
-  method: Yup.string().required('Réseau ou banque obligatoire.'),
-})
+function createProfileSchema(p3) {
+  return Yup.object({
+    firstName: Yup.string().trim().required(p3('favorites.validation.firstName')),
+    lastName: Yup.string().trim().required(p3('favorites.validation.lastName')),
+    phone: Yup.string()
+      .trim()
+      .test('favorite-phone-country', function (value) {
+        const country = this.parent.country || 'BJ'
+        return validatePhone(value, country) || this.createError({ message: phoneError(country) })
+      })
+      .required(p3('favorites.validation.phone')),
+    country: Yup.string().oneOf(['BJ', 'RU']).required(),
+    method: Yup.string().required(p3('favorites.validation.method')),
+  })
+}
 
 export function FavoritesPage() {
   const dispatch = useDispatch()
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const [profileOpen, setProfileOpen] = useState(false)
   const [editingProfile, setEditingProfile] = useState(null)
   const [categoryTab, setCategoryTab] = useState('all')
@@ -58,6 +64,7 @@ export function FavoritesPage() {
     return match ? [match] : []
   }, [categoryTab, favoriteCategories])
 
+  const profileSchema = createProfileSchema(p3)
   const formik = useFormik({
     initialValues: {
       firstName: '',
@@ -91,10 +98,10 @@ export function FavoritesPage() {
   }
 
   const categoryTabs = [
-    { key: 'all', label: 'Tous', count: favorites.length },
+    { key: 'all', label: p3('favorites.tabs.all'), count: favorites.length },
     ...FAVORITE_CATEGORIES.map((category) => ({
       key: category.id,
-      label: category.label,
+      label: p3(category.labelKey),
       count: favoriteCategories.find((entry) => entry.id === category.id)?.items.length || 0,
     })),
   ]
@@ -102,10 +109,10 @@ export function FavoritesPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Compte"
-        title="Mes favoris"
-        description="Annonces, colis, jobs et autres contenus enregistrés — organisés par catégorie."
-        stats={[{ label: 'Éléments', value: favorites.length }]}
+        eyebrow={p3('favorites.eyebrow')}
+        title={p3('favorites.title')}
+        description={p3('favorites.description')}
+        stats={[{ label: p3('favorites.stats.items'), value: favorites.length }]}
         actions={
           <>
             <Link to="/marketplace">
@@ -122,7 +129,7 @@ export function FavoritesPage() {
                 setProfileOpen(true)
               }}
             >
-              Profil de transfert
+              {p3('favorites.actions.transferProfile')}
             </Button>
           </>
         }
@@ -153,11 +160,11 @@ export function FavoritesPage() {
         ) : (
           <EmptyState
             icon={FiHeart}
-            title="Aucun contenu favori"
-            description="Enregistrez des annonces, colis, jobs ou entreprises depuis leurs fiches."
+            title={p3('favorites.empty.title')}
+            description={p3('favorites.empty.description')}
             action={
               <Link to="/marketplace">
-                <Button icon={FiShoppingBag}>Explorer la marketplace</Button>
+                <Button icon={FiShoppingBag}>{p3('favorites.empty.cta')}</Button>
               </Link>
             }
           />
@@ -167,9 +174,9 @@ export function FavoritesPage() {
       <section className="grid gap-4 rounded-[var(--radius-card-lg)] border border-[var(--app-border)] bg-[var(--app-surface-muted)]/40 p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-black">Profils de transfert</h2>
+            <h2 className="text-lg font-black">{p3('favorites.profiles.title')}</h2>
             <p className="text-sm text-[var(--app-text-muted)]">
-              Contacts réutilisables pour remplir vos transferts plus rapidement.
+              {p3('favorites.profiles.description')}
             </p>
           </div>
           <Button
@@ -181,7 +188,7 @@ export function FavoritesPage() {
               setProfileOpen(true)
             }}
           >
-            Ajouter
+            {p3('favorites.profiles.add')}
           </Button>
         </div>
         {transferProfiles.length ? (
@@ -196,7 +203,7 @@ export function FavoritesPage() {
                     <FiRepeat />
                   </span>
                   <Badge tone={profile.country === 'BJ' ? 'success' : 'info'}>
-                    {profile.country === 'BJ' ? 'Bénin' : 'Russie'}
+                    {profile.country === 'BJ' ? p3('common.benin') : p3('common.russia')}
                   </Badge>
                 </div>
                 <h3 className="mt-4 font-black">
@@ -221,7 +228,7 @@ export function FavoritesPage() {
                       setProfileOpen(true)
                     }}
                   >
-                    Modifier
+                    {p3('common.edit')}
                   </Button>
                   <Button
                     className="min-w-0 px-2"
@@ -231,7 +238,7 @@ export function FavoritesPage() {
                       dispatch(removeTransferProfile({ id: profile.id, userId: user.id }))
                     }
                   >
-                    Supprimer
+                    {p3('common.delete')}
                   </Button>
                 </div>
               </Card>
@@ -240,8 +247,8 @@ export function FavoritesPage() {
         ) : (
           <EmptyState
             icon={FiRepeat}
-            title="Aucun profil de transfert"
-            description="Ajoutez vos contacts habituels pour gagner du temps."
+            title={p3('favorites.profiles.empty.title')}
+            description={p3('favorites.profiles.empty.description')}
           />
         )}
       </section>
@@ -252,26 +259,30 @@ export function FavoritesPage() {
           setProfileOpen(false)
           setEditingProfile(null)
         }}
-        title={editingProfile ? 'Modifier le profil' : 'Nouveau profil'}
+        title={
+          editingProfile
+            ? p3('favorites.profiles.modal.edit')
+            : p3('favorites.profiles.modal.create')
+        }
       >
         <form className="grid gap-4" onSubmit={formik.handleSubmit} noValidate>
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
               id="favorite-firstName"
-              label="Prénom"
+              label={p3('common.firstName')}
               {...formik.getFieldProps('firstName')}
               error={errorFor('firstName')}
             />
             <Input
               id="favorite-lastName"
-              label="Nom"
+              label={p3('common.lastName')}
               {...formik.getFieldProps('lastName')}
               error={errorFor('lastName')}
             />
           </div>
           <Input
             id="favorite-phone"
-            label="Numéro de téléphone"
+            label={p3('common.phone')}
             type="tel"
             placeholder={phonePlaceholder(formik.values.country)}
             {...formik.getFieldProps('phone')}
@@ -279,7 +290,7 @@ export function FavoritesPage() {
           />
           <Select
             id="favorite-country"
-            label="Pays"
+            label={p3('common.country')}
             {...formik.getFieldProps('country')}
             onChange={(event) => {
               formik.handleChange(event)
@@ -287,16 +298,20 @@ export function FavoritesPage() {
               formik.setFieldValue('phone', phonePrefix(event.target.value))
             }}
           >
-            <option value="BJ">Bénin</option>
-            <option value="RU">Russie</option>
+            <option value="BJ">{p3('common.benin')}</option>
+            <option value="RU">{p3('common.russia')}</option>
           </Select>
           <Select
             id="favorite-method"
-            label={formik.values.country === 'BJ' ? 'Réseau mobile' : 'Banque'}
+            label={
+              formik.values.country === 'BJ'
+                ? p3('favorites.profiles.method.network')
+                : p3('favorites.profiles.method.bank')
+            }
             {...formik.getFieldProps('method')}
             error={errorFor('method')}
           >
-            <option value="">Sélectionner</option>
+            <option value="">{p3('common.select')}</option>
             {methods.map((method) => (
               <option key={method} value={method}>
                 {method}
@@ -304,7 +319,9 @@ export function FavoritesPage() {
             ))}
           </Select>
           <Button type="submit">
-            {editingProfile ? 'Enregistrer les modifications' : 'Enregistrer le profil'}
+            {editingProfile
+              ? p3('favorites.profiles.submit.edit')
+              : p3('favorites.profiles.submit.create')}
           </Button>
         </form>
       </Modal>

@@ -15,7 +15,8 @@ import { Button } from '../../components/ui/Button'
 import { PillBadge, VerifiedDisplayName } from '../../components/ui/Badge'
 import { Modal } from '../../components/ui/Modal'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
-import { SUBSCRIPTION_NOTIFY_LABELS } from '@moxt/shared/utils/subscriptionUtils.js'
+import { useLanguage } from '../../contexts/useLanguage'
+import { phase3Text } from '../../i18n/phase3I18n'
 import { usePublicationProfile } from '../publications/usePublicationProfile'
 import { findConversationByParticipants } from '../communications/conversationUtils'
 import { toggleConversationBlock } from '../communications/communicationSlice'
@@ -31,7 +32,13 @@ const MENU_WIDTH = 240
 const MENU_ESTIMATED_HEIGHT = 320
 const VIEWPORT_GAP = 8
 
-function formatDisplayName(profile, fallback = 'Membre MOXT') {
+const NOTIFY_LABEL_KEYS = {
+  all: 'subscriptions.notify.all',
+  important: 'subscriptions.notify.important',
+  muted: 'subscriptions.notify.muted',
+}
+
+function formatDisplayName(profile, fallback) {
   const name = `${profile?.firstName || ''} ${profile?.lastName || ''}`.trim()
   return name || fallback
 }
@@ -116,11 +123,15 @@ export function SubscriberRow({
   publisherPath,
 }) {
   const dispatch = useDispatch()
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const user = useSelector((state) => state.auth.user)
   const conversations = useSelector((state) => state.communications.conversations)
   const subscriberId = subscriber.userId || subscriber.subscriberId
   const { profile } = usePublicationProfile(subscriberId, user)
-  const displayName = formatDisplayName(profile)
+  const displayName = formatDisplayName(profile, p3('common.memberMoxt'))
+  const prefLabelKey = NOTIFY_LABEL_KEYS[subscriber.notifyPref]
+  const prefLabel = prefLabelKey ? p3(prefLabelKey) : subscriber.notifyPref
 
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmRemove, setConfirmRemove] = useState(false)
@@ -204,8 +215,8 @@ export function SubscriberRow({
     if (!conversation) {
       dispatch(
         addToast({
-          title: 'Aucune conversation',
-          message: 'Aucun fil de messagerie existant avec ce membre.',
+          title: p3('subscriptions.row.noConversationTitle'),
+          message: p3('subscriptions.row.noConversationMessage'),
           tone: 'info',
         }),
       )
@@ -215,10 +226,12 @@ export function SubscriberRow({
     dispatch(toggleConversationBlock({ id: conversation.id, userId: user.id }))
     dispatch(
       addToast({
-        title: isBlocked ? 'Membre débloqué' : 'Membre bloqué',
+        title: isBlocked
+          ? p3('subscriptions.row.unblockedTitle')
+          : p3('subscriptions.row.blockedTitle'),
         message: isBlocked
-          ? 'Vous pouvez à nouveau recevoir ses messages.'
-          : 'Ses messages sont bloqués dans cette conversation.',
+          ? p3('subscriptions.row.unblockedMessage')
+          : p3('subscriptions.row.blockedMessage'),
         tone: 'success',
       }),
     )
@@ -233,10 +246,10 @@ export function SubscriberRow({
             style={floatingStyle}
             className="panel-pop overflow-y-auto rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-1.5 shadow-[var(--shadow-float)] backdrop-blur-xl"
             role="menu"
-            aria-label={`Actions pour ${displayName}`}
+            aria-label={p3('subscriptions.row.actionsAria', { name: displayName })}
           >
             <p className="px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--app-text-faint)]">
-              Actions
+              {p3('common.actions')}
             </p>
 
             <MenuItem
@@ -245,7 +258,7 @@ export function SubscriberRow({
               icon={FiExternalLink}
               onClick={() => setMenuOpen(false)}
             >
-              Voir le profil
+              {p3('subscriptions.row.viewProfile')}
             </MenuItem>
             <MenuItem
               as={Link}
@@ -253,13 +266,15 @@ export function SubscriberRow({
               icon={FiMessageSquare}
               onClick={() => setMenuOpen(false)}
             >
-              Envoyer un message
+              {p3('subscriptions.row.sendMessage')}
             </MenuItem>
 
             <MenuDivider />
 
             <MenuItem icon={FiSlash} onClick={handleBlockMessages}>
-              {isBlocked ? 'Débloquer les messages' : 'Bloquer les messages'}
+              {isBlocked
+                ? p3('subscriptions.row.unblockMessages')
+                : p3('subscriptions.row.blockMessages')}
             </MenuItem>
             <MenuItem
               icon={FiUserMinus}
@@ -268,7 +283,7 @@ export function SubscriberRow({
                 setMenuOpen(false)
               }}
             >
-              Retirer l&apos;abonné
+              {p3('subscriptions.row.removeSubscriber')}
             </MenuItem>
 
             <MenuDivider />
@@ -281,7 +296,7 @@ export function SubscriberRow({
                 setMenuOpen(false)
               }}
             >
-              Bannir
+              {p3('subscriptions.row.ban')}
             </MenuItem>
             <MenuItem
               icon={FiAlertTriangle}
@@ -291,7 +306,7 @@ export function SubscriberRow({
                 setMenuOpen(false)
               }}
             >
-              Signaler
+              {p3('subscriptions.row.report')}
             </MenuItem>
           </div>,
           document.body,
@@ -305,7 +320,7 @@ export function SubscriberRow({
           <Link
             to={`/users/${subscriberId}/publications`}
             className="shrink-0 transition-transform duration-200 hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
-            aria-label={`Voir le profil de ${displayName}`}
+            aria-label={p3('subscriptions.row.viewProfileAria', { name: displayName })}
           >
             <EntityAvatar name={displayName} src={profile?.avatarUrl} size="md" shape="user" />
           </Link>
@@ -318,19 +333,21 @@ export function SubscriberRow({
               className="block truncate text-[15px] leading-5"
             />
             <span className="mt-0.5 block text-xs leading-4 text-[var(--app-text-faint)]">
-              Depuis {new Date(subscriber.createdAt).toLocaleDateString('fr-FR')}
+              {p3('subscriptions.row.since', {
+                date: new Date(subscriber.createdAt).toLocaleDateString('fr-FR'),
+              })}
             </span>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <PillBadge tone={subscriber.notifyPref === 'muted' ? 'neutral' : 'success'}>
-            {SUBSCRIPTION_NOTIFY_LABELS[subscriber.notifyPref] || subscriber.notifyPref}
+            {prefLabel}
           </PillBadge>
           <div ref={anchorRef}>
             <button
               type="button"
               onClick={() => setMenuOpen((value) => !value)}
-              aria-label={`Actions pour ${displayName}`}
+              aria-label={p3('subscriptions.row.actionsAria', { name: displayName })}
               aria-expanded={menuOpen}
               aria-haspopup="menu"
               className="grid size-9 place-items-center rounded-xl border border-[var(--app-border)] text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)]"
@@ -344,63 +361,66 @@ export function SubscriberRow({
 
       <ConfirmDialog
         open={confirmRemove}
-        title="Retirer cet abonné ?"
-        description={`${displayName} ne verra plus vos publications en priorité et ne recevra plus de notifications. Il pourra se réabonner plus tard.`}
+        title={p3('subscriptions.row.removeConfirmTitle')}
+        description={p3('subscriptions.row.removeConfirmDesc', { name: displayName })}
         onCancel={() => setConfirmRemove(false)}
         onConfirm={handleRemove}
       />
 
-      <Modal open={banOpen} onClose={() => setBanOpen(false)} title="Bannir cet abonné">
+      <Modal open={banOpen} onClose={() => setBanOpen(false)} title={p3('subscriptions.row.banTitle')}>
         <p className="text-sm leading-6 text-[var(--app-text-muted)]">
-          {displayName} sera retiré et ne pourra plus s&apos;abonner à vos publications.
+          {p3('subscriptions.row.banDesc', { name: displayName })}
         </p>
         <form className="mt-4 grid gap-3" onSubmit={handleBan}>
           <label className="grid gap-1.5 text-sm">
-            <span className="font-semibold">Motif (obligatoire)</span>
+            <span className="font-semibold">{p3('subscriptions.row.banReason')}</span>
             <textarea
               value={banReason}
               onChange={(event) => setBanReason(event.target.value)}
               rows={3}
               className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2.5 text-sm leading-6"
-              placeholder="Comportement abusif, spam, harcèlement…"
+              placeholder={p3('subscriptions.row.banPlaceholder')}
               required
               minLength={5}
             />
           </label>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => setBanOpen(false)}>
-              Annuler
+              {p3('common.cancel')}
             </Button>
             <Button type="submit" variant="danger">
-              Bannir
+              {p3('subscriptions.row.ban')}
             </Button>
           </div>
         </form>
       </Modal>
 
-      <Modal open={reportOpen} onClose={() => setReportOpen(false)} title="Signaler cet abonné">
+      <Modal
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        title={p3('subscriptions.row.reportTitle')}
+      >
         <p className="text-sm leading-6 text-[var(--app-text-muted)]">
-          Ce signalement sera transmis à la modération MOXT. L&apos;abonnement reste actif sauf si
-          vous le retirez ou le bannissez.
+          {p3('subscriptions.row.reportDesc')}
         </p>
         <form className="mt-4 grid gap-3" onSubmit={handleReport}>
           <label className="grid gap-1.5 text-sm">
-            <span className="font-semibold">Description (obligatoire)</span>
+            <span className="font-semibold">{p3('subscriptions.row.reportReason')}</span>
             <textarea
               value={reportReason}
               onChange={(event) => setReportReason(event.target.value)}
               rows={4}
               className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2.5 text-sm leading-6"
-              placeholder="Décrivez le comportement problématique…"
+              placeholder={p3('subscriptions.row.reportPlaceholder')}
               required
               minLength={10}
             />
           </label>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => setReportOpen(false)}>
-              Annuler
+              {p3('common.cancel')}
             </Button>
-            <Button type="submit">Envoyer le signalement</Button>
+            <Button type="submit">{p3('support.sendBug')}</Button>
           </div>
         </form>
       </Modal>

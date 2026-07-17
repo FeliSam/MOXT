@@ -14,7 +14,7 @@ import { Select } from '../components/ui/Select'
 import { flagEmoji } from '../config/flags'
 import { constrainPhone, phonePrefixForCallingCode } from '../config/phone'
 import { useLanguage } from '../contexts/useLanguage'
-import { profileSchema } from '../features/auth/authSchemas'
+import { createAuthSchemas } from '../features/auth/authSchemas'
 import { updateProfile } from '../features/auth/authSlice'
 import { EmailVerificationCard } from '../features/security/EmailVerificationCard'
 import { addToast } from '../features/ui/uiSlice'
@@ -37,7 +37,8 @@ function SectionTitle({ icon: Icon, label }) {
 
 export function PersonalInformationPage() {
   const dispatch = useDispatch()
-  const { language } = useLanguage()
+  const { language, t } = useLanguage()
+  const { profileSchema } = createAuthSchemas(t)
   const { error, status, user } = useSelector((state) => state.auth)
   const { countries } = useGeographyOptions()
   const avatarInputRef = useRef(null)
@@ -62,8 +63,8 @@ export function PersonalInformationPage() {
         helpers.resetForm({ values })
         dispatch(
           addToast({
-            title: 'Profil mis à jour',
-            message: 'Vos informations personnelles ont été enregistrées.',
+            title: t('profile.personal.toastSavedTitle'),
+            message: t('profile.personal.toastSavedBody'),
             tone: 'success',
           }),
         )
@@ -74,6 +75,8 @@ export function PersonalInformationPage() {
   const origin = countries.find((item) => item.code === formik.values.originCountry)
   const errorFor = (field) => (formik.touched[field] ? formik.errors[field] : undefined)
   const canEditOrigin = ['admin', 'superadmin'].includes(user.role)
+  const originCountryName =
+    (language === 'en' ? origin?.englishName : origin?.name) || ''
 
   const initials = `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase()
 
@@ -87,16 +90,16 @@ export function PersonalInformationPage() {
       formik.setFieldValue('avatarUrl', url)
       dispatch(
         addToast({
-          title: 'Photo ajoutée',
-          message: 'Votre nouvelle photo de profil est prête à être enregistrée.',
+          title: t('profile.personal.toastAvatarTitle'),
+          message: t('profile.personal.toastAvatarBody'),
           tone: 'success',
         }),
       )
     } catch (err) {
       dispatch(
         addToast({
-          title: 'Échec de l’envoi',
-          message: err.message || "La photo n'a pas pu être envoyée.",
+          title: t('profile.personal.toastUploadFailTitle'),
+          message: err.message || t('profile.personal.toastUploadFailBody'),
           tone: 'error',
         }),
       )
@@ -108,9 +111,9 @@ export function PersonalInformationPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Mon profil"
-        title="Informations personnelles"
-        description="Gérez votre identité, votre résidence en Russie et vos coordonnées d'origine."
+        eyebrow={t('profile.personal.pageEyebrow')}
+        title={t('profile.personal.pageTitle')}
+        description={t('profile.personal.pageDescription')}
         actions={<BackButton appearance="link" />}
       />
 
@@ -124,7 +127,7 @@ export function PersonalInformationPage() {
                 {formik.values.avatarUrl ? (
                   <img
                     src={formik.values.avatarUrl}
-                    alt="Photo de profil"
+                    alt={t('profile.personal.avatarAlt')}
                     className="size-28 rounded-full object-cover shadow-lg ring-4 ring-[var(--app-accent-soft)]"
                   />
                 ) : (
@@ -136,7 +139,7 @@ export function PersonalInformationPage() {
                   type="button"
                   onClick={() => avatarInputRef.current?.click()}
                   className="absolute bottom-0 right-0 grid size-9 place-items-center rounded-full bg-brand-700 text-white shadow-md transition hover:bg-brand-800"
-                  aria-label="Changer la photo"
+                  aria-label={t('profile.personal.changePhotoAria')}
                 >
                   <FiCamera className="text-sm" />
                 </button>
@@ -164,7 +167,7 @@ export function PersonalInformationPage() {
                 loading={avatarUploading}
                 onClick={() => avatarInputRef.current?.click()}
               >
-                {avatarUploading ? 'Envoi...' : 'Choisir une photo'}
+                {avatarUploading ? t('profile.personal.uploading') : t('profile.personal.choosePhoto')}
               </Button>
               {formik.values.avatarUrl ? (
                 <button
@@ -172,22 +175,22 @@ export function PersonalInformationPage() {
                   className="text-xs text-red-600 hover:underline"
                   onClick={() => formik.setFieldValue('avatarUrl', '')}
                 >
-                  Supprimer la photo
+                  {t('profile.personal.removePhoto')}
                 </button>
               ) : null}
             </Card>
 
             <Card className="p-4">
               <p className="text-xs font-black uppercase tracking-wide text-[var(--app-text-muted)]">
-                Compte
+                {t('profile.personal.accountCard')}
               </p>
               <p className="mt-3 text-sm text-[var(--app-text-muted)]">
-                <span className="font-bold text-[var(--app-text)]">E-mail</span>
+                <span className="font-bold text-[var(--app-text)]">{t('profile.personal.emailLabel')}</span>
                 <br />
-                {user.email || 'Non renseigné'}
+                {user.email || t('common.notProvided')}
               </p>
               <p className="mt-3 text-xs text-[var(--app-text-muted)]">
-                Modifiable dans le formulaire avec validation par code OTP.
+                {t('profile.personal.emailHint')}
               </p>
             </Card>
           </div>
@@ -196,17 +199,17 @@ export function PersonalInformationPage() {
           <div className="grid content-start gap-6">
             {/* Identité */}
             <Card className="grid gap-5">
-              <SectionTitle icon={FiUser} label="Identité" />
+              <SectionTitle icon={FiUser} label={t('profile.personal.sectionIdentity')} />
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
                   id="profile-firstName"
-                  label="Prénom"
+                  label={t('profile.personal.firstName')}
                   {...formik.getFieldProps('firstName')}
                   error={errorFor('firstName')}
                 />
                 <Input
                   id="profile-lastName"
-                  label="Nom de famille"
+                  label={t('profile.personal.lastName')}
                   {...formik.getFieldProps('lastName')}
                   error={errorFor('lastName')}
                 />
@@ -216,18 +219,18 @@ export function PersonalInformationPage() {
 
             {/* Résidence en Russie */}
             <Card className="grid gap-5">
-              <SectionTitle icon={FiMapPin} label="Résidence en Russie" />
+              <SectionTitle icon={FiMapPin} label={t('profile.personal.sectionResidence')} />
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
                   id="profile-country"
-                  label="Pays de résidence"
-                  value="Russie"
+                  label={t('profile.personal.residenceCountry')}
+                  value={t('profile.personal.russia')}
                   disabled
-                  hint="Fixé lors de l'inscription."
+                  hint={t('profile.personal.fixedAtSignup')}
                 />
                 <CitySelector
                   id="profile-city"
-                  label="Ville en Russie"
+                  label={t('profile.personal.city')}
                   value={formik.values.city}
                   onChange={(city) => formik.setFieldValue('city', city)}
                   error={errorFor('city')}
@@ -235,10 +238,10 @@ export function PersonalInformationPage() {
               </div>
               <Input
                 id="profile-phone"
-                label="Numéro russe"
+                label={t('profile.personal.russianPhone')}
                 type="tel"
                 placeholder="+7XXXXXXXXXX"
-                hint="Format : +7 suivi de 10 chiffres. Requis pour les transferts."
+                hint={t('profile.personal.russianPhoneHint')}
                 {...formik.getFieldProps('phone')}
                 onChange={(event) =>
                   formik.setFieldValue('phone', constrainPhone(event.target.value, '+7', 10))
@@ -249,12 +252,12 @@ export function PersonalInformationPage() {
 
             {/* Pays d'origine */}
             <Card className="grid gap-5">
-              <SectionTitle icon={FiFlag} label="Pays d'origine" />
+              <SectionTitle icon={FiFlag} label={t('profile.personal.sectionOrigin')} />
               {canEditOrigin ? (
                 <>
                   <Select
                     id="profile-origin-country"
-                    label="Pays de provenance"
+                    label={t('profile.personal.originCountry')}
                     {...formik.getFieldProps('originCountry')}
                     onChange={(event) => {
                       const country = countries.find((item) => item.code === event.target.value)
@@ -272,26 +275,23 @@ export function PersonalInformationPage() {
                       </option>
                     ))}
                   </Select>
-                  <Alert variant="info">
-                    En tant qu'administrateur, vous pouvez modifier le pays de provenance de ce
-                    compte. Pour les autres membres, ce champ reste fixé après l'inscription.
-                  </Alert>
+                  <Alert variant="info">{t('profile.personal.adminOriginAlert')}</Alert>
                 </>
               ) : (
                 <Input
                   id="profile-origin-country"
-                  label="Pays de provenance"
+                  label={t('profile.personal.originCountry')}
                   value={`${flagEmoji(formik.values.originCountry)} ${origin?.name || ''}`.trim()}
                   disabled
-                  hint="Fixé à la création du compte. Contactez le support pour le modifier."
+                  hint={t('profile.personal.originFixedHint')}
                 />
               )}
               <Input
                 id="profile-secondary-phone"
-                label={`Téléphone ${origin?.name || "d'origine"} (optionnel)`}
+                label={t('profile.personal.secondaryPhone', { country: originCountryName })}
                 type="tel"
                 placeholder={`${origin?.callingCode || ''}...`}
-                hint={`Optionnel : ${origin?.callingCode || ''} suivi de 7 à 12 chiffres.`}
+                hint={t('profile.personal.secondaryPhoneHint', { code: origin?.callingCode || '' })}
                 {...formik.getFieldProps('secondaryPhone')}
                 onChange={(event) =>
                   formik.setFieldValue(
@@ -309,7 +309,7 @@ export function PersonalInformationPage() {
                 disabled={!formik.dirty || status === 'loading'}
                 icon={FiCheckCircle}
               >
-                {status === 'loading' ? 'Enregistrement...' : 'Enregistrer les modifications'}
+                {status === 'loading' ? t('profile.personal.saving') : t('profile.personal.save')}
               </Button>
             </div>
           </div>

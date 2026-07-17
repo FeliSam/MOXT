@@ -6,14 +6,9 @@ import {
   FiCheck,
   FiCheckCircle,
   FiFileText,
-  FiGift,
-  FiHeart,
   FiMapPin,
-  FiMonitor,
   FiPackage,
-  FiShoppingBag,
   FiUpload,
-  FiUsers,
   FiX,
 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
@@ -31,6 +26,10 @@ import { constrainRussianPhone, phonePlaceholder } from '../config/phone'
 import { useGeographyOptions } from '../hooks/useGeographyOptions'
 import { useScrollToTopOnStep } from '../hooks/useScrollToTopOnStep'
 import { createParcel } from '../features/parcels/parcelSlice'
+import {
+  PARCEL_ACCEPTED_TYPES,
+  PARCEL_PUBLISH_STEPS,
+} from '../features/parcels/parcelPublishConfig'
 import { BusinessPublishNotice } from '../features/businesses/BusinessPublishNotice'
 import {
   isBusinessPublishReady,
@@ -41,18 +40,17 @@ import { createId } from '../services/createId'
 import { SecurityGatePanel } from '../features/security/SecurityGatePanel'
 import { useSecurityGate } from '../features/security/useSecurityGate'
 import { initialCatalogStatus } from '@moxt/shared/auth/userSecurity.js'
+import { useLanguage } from '../contexts/useLanguage'
+import {
+  publishOptionLabel,
+  publishOptionSub,
+  publishText,
+} from '../features/publications/publishI18n'
 
-const STEPS = [
-  { key: 'route', label: 'Trajet', icon: FiMapPin },
-  { key: 'cargo', label: 'Colis', icon: FiPackage },
-  { key: 'terms', label: 'Conditions', icon: FiBox },
-  { key: 'review', label: 'Valider', icon: FiCheckCircle },
-]
-
-const RUSSIA = { code: 'RU', name: 'Russie' }
+const STEPS = PARCEL_PUBLISH_STEPS
 
 /* ─── Stepper ───────────────────────────────────────────────────────────── */
-function Stepper({ step, onGoTo }) {
+function Stepper({ step, onGoTo, t }) {
   return (
     <div className="relative flex items-start justify-between">
       <div className="absolute left-0 right-0 top-5 h-px bg-[var(--app-border)]" aria-hidden />
@@ -86,7 +84,7 @@ function Stepper({ step, onGoTo }) {
               {done ? <FiCheck className="text-sm" /> : <Icon className="text-sm" />}
             </span>
             <span className={`text-xs font-bold ${active ? 'text-brand-700 dark:text-brand-400' : 'text-[var(--app-text-muted)]'}`}>
-              {s.label}
+              {publishText(t, s.labelKey)}
             </span>
           </button>
         )
@@ -109,6 +107,7 @@ function SectionTitle({ icon: Icon, label }) {
 export function PublishParcelPage() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const { requirePublish } = useSecurityGate()
   const user = useSelector((state) => state.auth.user)
   const business = useSelector((state) =>
@@ -116,6 +115,10 @@ export function PublishParcelPage() {
   )
   const canPublishAsBusiness = isBusinessPublishReady(business)
   const { countries } = useGeographyOptions()
+
+  const russiaName = publishText(t, 'publish.parcel.countries.russia')
+  const beninName = publishText(t, 'publish.parcel.countries.benin')
+  const RUSSIA = { code: 'RU', name: russiaName }
 
   // Pays d'origine de l'utilisateur (hors Russie)
   const originCountry = countries.find(
@@ -132,9 +135,9 @@ export function PublishParcelPage() {
   const { trigger: triggerBurst, node: burstNode } = useActionBurst()
 
   const fromCountry =
-    direction === 'RU_TO_AFRICA' ? RUSSIA : originCountry || { code: 'BJ', name: 'Bénin' }
+    direction === 'RU_TO_AFRICA' ? RUSSIA : originCountry || { code: 'BJ', name: beninName }
   const toCountry =
-    direction === 'RU_TO_AFRICA' ? originCountry || { code: 'BJ', name: 'Bénin' } : RUSSIA
+    direction === 'RU_TO_AFRICA' ? originCountry || { code: 'BJ', name: beninName } : RUSSIA
 
   const [form, setForm] = useState({
     origin: '',
@@ -150,8 +153,7 @@ export function PublishParcelPage() {
     maxWeightPerItem: '',
     acceptedTypes: [],
     rejectedTypes: '',
-    conditions:
-      'Objets autorisés uniquement après vérification. Photos demandées avant acceptation.',
+    conditions: publishText(t, 'publish.parcel.defaults.conditions'),
     contact: user.phone || '',
     publishAs: canPublishAsBusiness && business ? 'business' : 'person',
     travelProofFile: null,
@@ -161,11 +163,11 @@ export function PublishParcelPage() {
   async function handleProofFile(file) {
     if (!file) return
     if (file.size > 5 * 1024 * 1024) {
-      setProofError('Le fichier ne doit pas dépasser 5 Mo.')
+      setProofError(publishText(t, 'publish.parcel.toasts.fileTooLarge.inline'))
       dispatch(
         addToast({
-          title: 'Fichier trop volumineux',
-          message: 'La preuve de voyage ne doit pas dépasser 5 Mo.',
+          title: publishText(t, 'publish.parcel.toasts.fileTooLarge.title'),
+          message: publishText(t, 'publish.parcel.toasts.fileTooLarge.message'),
           tone: 'warning',
         }),
       )
@@ -178,33 +180,23 @@ export function PublishParcelPage() {
       set('travelProofFile', { name: file.name, size: file.size, type: file.type, url })
       dispatch(
         addToast({
-          title: 'Preuve ajoutée',
-          message: 'Le document de voyage a été envoyé.',
+          title: publishText(t, 'publish.parcel.toasts.proofAdded.title'),
+          message: publishText(t, 'publish.parcel.toasts.proofAdded.message'),
           tone: 'success',
         }),
       )
     } catch {
-      setProofError('Échec de l\'envoi du fichier. Réessayez.')
+      setProofError(publishText(t, 'publish.parcel.toasts.uploadFailed.inline'))
       set('travelProofFile', null)
       dispatch(
         addToast({
-          title: 'Envoi impossible',
-          message: "La preuve de voyage n'a pas pu être envoyée.",
+          title: publishText(t, 'publish.parcel.toasts.uploadFailed.title'),
+          message: publishText(t, 'publish.parcel.toasts.uploadFailed.message'),
           tone: 'error',
         }),
       )
     }
   }
-
-  const ACCEPTED_TYPES = [
-    { value: 'clothes', label: 'Vêtements', sub: '& textile', icon: FiShoppingBag, color: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300' },
-    { value: 'food', label: 'Alimentaire', sub: 'Produits frais / secs', icon: FiBox, color: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' },
-    { value: 'electronics', label: 'Électronique', sub: 'Appareils & acc.', icon: FiMonitor, color: 'bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300' },
-    { value: 'documents', label: 'Documents', sub: 'Papiers & courrier', icon: FiFileText, color: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300' },
-    { value: 'cosmetics', label: 'Cosmétiques', sub: 'Beauté & soins', icon: FiHeart, color: 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300' },
-    { value: 'gifts', label: 'Cadeaux', sub: 'Divers & objets', icon: FiGift, color: 'bg-pink-50 text-pink-700 dark:bg-pink-950/40 dark:text-pink-300' },
-    { value: 'medicine', label: 'Médicaments', sub: 'Déclarés uniquement', icon: FiUsers, color: 'bg-teal-50 text-teal-700 dark:bg-teal-950/40 dark:text-teal-300' },
-  ]
 
   function set(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -215,7 +207,7 @@ export function PublishParcelPage() {
     set(
       'acceptedTypes',
       form.acceptedTypes.includes(value)
-        ? form.acceptedTypes.filter((t) => t !== value)
+        ? form.acceptedTypes.filter((item) => item !== value)
         : [...form.acceptedTypes, value],
     )
   }
@@ -223,40 +215,50 @@ export function PublishParcelPage() {
   function validate(n) {
     const errs = {}
     if (n === 1) {
-      if (!form.originAirportCode) errs.origin = 'Ville de départ (aéroport) obligatoire.'
-      if (!form.destinationAirportCode) errs.destination = 'Ville de destination (aéroport) obligatoire.'
+      if (!form.originAirportCode)
+        errs.origin = publishText(t, 'publish.parcel.validation.originRequired')
+      if (!form.destinationAirportCode)
+        errs.destination = publishText(t, 'publish.parcel.validation.destinationRequired')
       const today = new Date().toISOString().slice(0, 10)
       if (!form.departureDate) {
-        errs.departureDate = 'Date de départ obligatoire.'
+        errs.departureDate = publishText(t, 'publish.parcel.validation.departureDateRequired')
       } else if (form.departureDate < today) {
-        errs.departureDate = 'La date de départ ne peut pas être antérieure à aujourd\'hui.'
+        errs.departureDate = publishText(t, 'publish.parcel.validation.departureDatePast')
       }
       if (form.depositDeadline) {
         if (form.depositDeadline < today) {
-          errs.depositDeadline = 'La date limite de dépôt ne peut pas être dans le passé.'
+          errs.depositDeadline = publishText(t, 'publish.parcel.validation.depositDeadlinePast')
         } else if (form.depositDeadline > form.departureDate) {
-          errs.depositDeadline = 'La date limite de dépôt ne peut pas dépasser la date de départ.'
+          errs.depositDeadline = publishText(
+            t,
+            'publish.parcel.validation.depositDeadlineAfterDeparture',
+          )
         }
       }
       if (form.distributionDate) {
         if (form.departureDate && form.distributionDate < form.departureDate) {
-          errs.distributionDate =
-            'La date de distribution doit être à partir de la date de départ.'
+          errs.distributionDate = publishText(
+            t,
+            'publish.parcel.validation.distributionAfterDeparture',
+          )
         }
       } else {
-        errs.distributionDate = 'Date de distribution / récupération obligatoire.'
+        errs.distributionDate = publishText(t, 'publish.parcel.validation.distributionRequired')
       }
     }
     if (n === 2) {
-      if (form.acceptedTypes.length === 0) errs.acceptedTypes = 'Sélectionnez au moins un type.'
+      if (form.acceptedTypes.length === 0)
+        errs.acceptedTypes = publishText(t, 'publish.parcel.validation.acceptedTypesRequired')
       if (!form.capacityKg || Number(form.capacityKg) <= 0)
-        errs.capacityKg = 'Capacité obligatoire.'
-      if (!form.pricePerKg || Number(form.pricePerKg) <= 0) errs.pricePerKg = 'Prix obligatoire.'
+        errs.capacityKg = publishText(t, 'publish.parcel.validation.capacityRequired')
+      if (!form.pricePerKg || Number(form.pricePerKg) <= 0)
+        errs.pricePerKg = publishText(t, 'publish.parcel.validation.priceRequired')
     }
     if (n === 3) {
-      if (!form.contact.trim()) errs.contact = 'Contact obligatoire.'
+      if (!form.contact.trim())
+        errs.contact = publishText(t, 'publish.parcel.validation.contactRequired')
       if (!form.travelProofFile)
-        errs.travelProofFile = 'Une preuve de voyage est obligatoire (billet, réservation...).'
+        errs.travelProofFile = publishText(t, 'publish.parcel.validation.travelProofRequired')
     }
     setErrors(errs)
     return Object.keys(errs).length === 0
@@ -279,9 +281,8 @@ export function PublishParcelPage() {
     if (publishContext.blocked) {
       dispatch(
         addToast({
-          title: 'Publication entreprise impossible',
-          message:
-            'Votre entreprise doit être vérifiée par MOXT avant de publier au nom de l’entreprise.',
+          title: publishText(t, 'publish.common.toasts.businessBlockedTitle'),
+          message: publishText(t, 'publish.parcel.toasts.businessBlockedMessage'),
           tone: 'error',
         }),
       )
@@ -300,7 +301,10 @@ export function PublishParcelPage() {
         toCountry: toCountry.code,
         originCountry: fromCountry.code,
         destinationCountry: toCountry.code,
-        conditions: `Types acceptés : ${form.acceptedTypes.join(', ')}. ${form.conditions}`,
+        conditions: publishText(t, 'publish.parcel.conditionsAcceptedPrefix', {
+          types: form.acceptedTypes.join(', '),
+          conditions: form.conditions,
+        }),
         travelProofName: travelProofFile.name,
         travelProofType: travelProofFile.type,
         travelProofSize: travelProofFile.size,
@@ -312,15 +316,19 @@ export function PublishParcelPage() {
     const live = action.payload?.status === 'active'
     dispatch(
       addToast({
-        title: live ? 'Voyage publié' : 'Voyage envoyé',
+        title: live
+          ? publishText(t, 'publish.parcel.toasts.publishedTitle')
+          : publishText(t, 'publish.parcel.toasts.pendingTitle'),
         message: live
-          ? 'Votre voyage est en ligne.'
-          : 'Compte non vérifié : le voyage sera visible après validation MOXT.',
+          ? publishText(t, 'publish.parcel.toasts.publishedMessage')
+          : publishText(t, 'publish.parcel.toasts.pendingMessage'),
         tone: 'success',
       }),
     )
     setShareModal({ sourceId: action.payload.id, sourceData: action.payload })
   }
+
+  const africaFallback = publishText(t, 'publish.parcel.countries.africa')
 
   return (
     <SecurityGatePanel kind="publish" backTo="/parcels">
@@ -338,39 +346,41 @@ export function PublishParcelPage() {
     <div className="mx-auto grid max-w-2xl gap-7">
       <div className="flex items-center gap-3">
         <Button variant="secondary" icon={FiArrowLeft} onClick={() => navigate('/parcels')}>
-          Colis
+          {publishText(t, 'publish.parcel.back')}
         </Button>
-        <h1 className="text-xl font-black">Publier un voyage</h1>
+        <h1 className="text-xl font-black">{publishText(t, 'publish.parcel.title')}</h1>
       </div>
 
       <Card className="px-6 py-5">
-        <Stepper step={step} onGoTo={setStep} />
+        <Stepper step={step} onGoTo={setStep} t={t} />
       </Card>
 
       {/* Étape 1 — Trajet */}
       {step === 1 ? (
         <Card className="grid gap-5">
-          <SectionTitle icon={FiMapPin} label="Sens du voyage" />
+          <SectionTitle icon={FiMapPin} label={publishText(t, 'publish.parcel.direction.title')} />
           <p className="text-sm text-[var(--app-text-muted)]">
-            La Russie est toujours le point de départ ou d'arrivée. Votre pays d'origine :{' '}
-            <strong className="text-[var(--app-text)]">{originCountry?.name || 'non renseigné'}</strong>
+            {publishText(t, 'publish.parcel.direction.originPrefix')}{' '}
+            <strong className="text-[var(--app-text)]">
+              {originCountry?.name || publishText(t, 'publish.parcel.direction.notProvided')}
+            </strong>
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             {[
               {
                 value: 'RU_TO_AFRICA',
-                from: '🇷🇺 Russie',
-                to: originCountry?.name || 'Afrique',
-                hint: "Je voyage de Russie vers mon pays d'origine",
+                from: publishText(t, 'publish.parcel.direction.fromRussia'),
+                to: originCountry?.name || africaFallback,
+                hint: publishText(t, 'publish.parcel.direction.hintRuToOrigin'),
                 color: direction === 'RU_TO_AFRICA'
                   ? 'border-brand-500 bg-gradient-to-br from-brand-50 to-cyan-50 dark:from-brand-950/40 dark:to-cyan-950/40'
                   : 'border-[var(--app-border)] hover:border-brand-400',
               },
               {
                 value: 'AFRICA_TO_RU',
-                from: originCountry?.name || 'Afrique',
-                to: '🇷🇺 Russie',
-                hint: "Je voyage de mon pays d'origine vers la Russie",
+                from: originCountry?.name || africaFallback,
+                to: publishText(t, 'publish.parcel.direction.toRussia'),
+                hint: publishText(t, 'publish.parcel.direction.hintOriginToRu'),
                 color: direction === 'AFRICA_TO_RU'
                   ? 'border-brand-500 bg-gradient-to-br from-brand-50 to-cyan-50 dark:from-brand-950/40 dark:to-cyan-950/40'
                   : 'border-[var(--app-border)] hover:border-brand-400',
@@ -399,24 +409,25 @@ export function PublishParcelPage() {
                 <p className="mt-2 text-xs text-[var(--app-text-muted)]">{opt.hint}</p>
                 {direction === opt.value ? (
                   <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-brand-700 px-2.5 py-1 text-[10px] font-bold text-white">
-                    <FiCheck className="text-[10px]" /> Sélectionné
+                    <FiCheck className="text-[10px]" /> {publishText(t, 'publish.parcel.direction.selected')}
                   </span>
                 ) : null}
               </button>
             ))}
           </div>
           <Alert variant="info">
-            Seules les villes disposant d'un aéroport sont proposées : le transport se fait par
-            avion.
+            {publishText(t, 'publish.parcel.alert.airportOnly')}
           </Alert>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <p className="mb-1 text-xs font-black uppercase tracking-wide text-[var(--app-text-muted)]">
-                Départ · {fromCountry.name}
+                {publishText(t, 'publish.parcel.fields.departureHeading', {
+                  country: fromCountry.name,
+                })}
               </p>
               <AirportSelector
                 id="parcel-origin"
-                label="Ville de départ"
+                label={publishText(t, 'publish.parcel.fields.originCity')}
                 countryCode={fromCountry.code}
                 value={form.originAirportCode}
                 error={errors.origin}
@@ -428,11 +439,13 @@ export function PublishParcelPage() {
             </div>
             <div>
               <p className="mb-1 text-xs font-black uppercase tracking-wide text-[var(--app-text-muted)]">
-                Arrivée · {toCountry.name}
+                {publishText(t, 'publish.parcel.fields.arrivalHeading', {
+                  country: toCountry.name,
+                })}
               </p>
               <AirportSelector
                 id="parcel-destination"
-                label="Ville d'arrivée"
+                label={publishText(t, 'publish.parcel.fields.destinationCity')}
                 countryCode={toCountry.code}
                 value={form.destinationAirportCode}
                 error={errors.destination}
@@ -446,7 +459,7 @@ export function PublishParcelPage() {
           <div className="grid min-w-0 gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             <Input
               id="parcel-date"
-              label="Date de départ"
+              label={publishText(t, 'publish.parcel.fields.departureDate')}
               type="date"
               wrapperClass="min-w-0 overflow-hidden"
               className="max-w-full [color-scheme:light] dark:[color-scheme:dark]"
@@ -456,7 +469,7 @@ export function PublishParcelPage() {
             />
             <Input
               id="parcel-deadline"
-              label="Date limite de dépôt (optionnel)"
+              label={publishText(t, 'publish.parcel.fields.depositDeadline')}
               type="date"
               wrapperClass="min-w-0 overflow-hidden"
               className="max-w-full [color-scheme:light] dark:[color-scheme:dark]"
@@ -467,7 +480,7 @@ export function PublishParcelPage() {
             />
             <Input
               id="parcel-distribution"
-              label="Date de distribution / récupération"
+              label={publishText(t, 'publish.parcel.fields.distributionDate')}
               type="date"
               wrapperClass="min-w-0 overflow-hidden"
               className="max-w-full [color-scheme:light] dark:[color-scheme:dark]"
@@ -477,8 +490,7 @@ export function PublishParcelPage() {
             />
           </div>
           <p className="text-xs text-[var(--app-text-muted)]">
-            La date de distribution indique quand les destinataires pourront commencer à récupérer
-            leur colis à l&apos;arrivée.
+            {publishText(t, 'publish.parcel.fields.distributionHint')}
           </p>
         </Card>
       ) : null}
@@ -486,23 +498,26 @@ export function PublishParcelPage() {
       {/* Étape 2 — Colis acceptés */}
       {step === 2 ? (
         <Card className="grid gap-5">
-          <SectionTitle icon={FiPackage} label="Types de colis acceptés" />
+          <SectionTitle
+            icon={FiPackage}
+            label={publishText(t, 'publish.parcel.fields.acceptedTypesTitle')}
+          />
           <p className="text-sm text-[var(--app-text-muted)]">
-            Sélectionnez tout ce que vous acceptez de transporter. Plusieurs choix possibles.
+            {publishText(t, 'publish.parcel.fields.acceptedTypesHint')}
           </p>
           {errors.acceptedTypes ? <Alert variant="error">{errors.acceptedTypes}</Alert> : null}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {ACCEPTED_TYPES.map((t) => {
-              const sel = form.acceptedTypes.includes(t.value)
-              const Icon = t.icon
+            {PARCEL_ACCEPTED_TYPES.map((typeItem) => {
+              const sel = form.acceptedTypes.includes(typeItem.value)
+              const Icon = typeItem.icon
               return (
                 <button
-                  key={t.value}
+                  key={typeItem.value}
                   type="button"
-                  onClick={() => toggleType(t.value)}
+                  onClick={() => toggleType(typeItem.value)}
                   className={`flex flex-col items-center gap-2 rounded-2xl border-2 p-4 text-center transition-all duration-200 ${
                     sel
-                      ? `border-transparent ${t.color} ring-2 ring-current shadow-sm`
+                      ? `border-transparent ${typeItem.color} ring-2 ring-current shadow-sm`
                       : 'border-[var(--app-border)] hover:border-[var(--app-accent)] hover:shadow-sm'
                   }`}
                 >
@@ -510,8 +525,12 @@ export function PublishParcelPage() {
                     <Icon className={`text-base ${sel ? '' : 'text-[var(--app-text-muted)]'}`} />
                   </span>
                   <div>
-                    <p className={`text-xs font-black leading-tight ${sel ? '' : 'text-[var(--app-text)]'}`}>{t.label}</p>
-                    <p className={`mt-0.5 text-[10px] ${sel ? 'opacity-70' : 'text-[var(--app-text-muted)]'}`}>{t.sub}</p>
+                    <p className={`text-xs font-black leading-tight ${sel ? '' : 'text-[var(--app-text)]'}`}>
+                      {publishOptionLabel(t, typeItem)}
+                    </p>
+                    <p className={`mt-0.5 text-[10px] ${sel ? 'opacity-70' : 'text-[var(--app-text-muted)]'}`}>
+                      {publishOptionSub(t, typeItem)}
+                    </p>
                   </div>
                   {sel ? <FiCheck className="text-xs" /> : null}
                 </button>
@@ -521,7 +540,7 @@ export function PublishParcelPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
               id="parcel-capacity"
-              label="Capacité totale (kg)"
+              label={publishText(t, 'publish.parcel.fields.capacityKg')}
               type="number"
               min="1"
               value={form.capacityKg}
@@ -530,10 +549,10 @@ export function PublishParcelPage() {
             />
             <Input
               id="parcel-max-item"
-              label="Poids max par colis (kg, optionnel)"
+              label={publishText(t, 'publish.parcel.fields.maxWeightPerItem')}
               type="number"
               min="0"
-              placeholder="Ex : 5"
+              placeholder={publishText(t, 'publish.parcel.fields.maxWeightPlaceholder')}
               value={form.maxWeightPerItem}
               onChange={(e) => set('maxWeightPerItem', e.target.value)}
             />
@@ -541,19 +560,26 @@ export function PublishParcelPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
               id="parcel-price"
-              label="Prix par kg"
+              label={publishText(t, 'publish.parcel.fields.pricePerKg')}
               type="number"
               value={form.pricePerKg}
               onChange={(e) => set('pricePerKg', e.target.value)}
               error={errors.pricePerKg}
             />
-            <Input id="parcel-currency" label="Devise" value="RUB" disabled />
+            <Input
+              id="parcel-currency"
+              label={publishText(t, 'publish.parcel.fields.currency')}
+              value="RUB"
+              disabled
+            />
           </div>
           <label className="grid gap-1.5">
-            <span className="text-sm font-bold">Types refusés / restrictions (optionnel)</span>
+            <span className="text-sm font-bold">
+              {publishText(t, 'publish.parcel.fields.rejectedTypes')}
+            </span>
             <textarea
               className="min-h-20 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 text-sm"
-              placeholder="Ex : Pas de liquides, pas de matières dangereuses..."
+              placeholder={publishText(t, 'publish.parcel.fields.rejectedTypesPlaceholder')}
               value={form.rejectedTypes}
               onChange={(e) => set('rejectedTypes', e.target.value)}
             />
@@ -564,9 +590,14 @@ export function PublishParcelPage() {
       {/* Étape 3 — Conditions & contact */}
       {step === 3 ? (
         <Card className="grid gap-5">
-          <SectionTitle icon={FiBox} label="Conditions et contact" />
+          <SectionTitle
+            icon={FiBox}
+            label={publishText(t, 'publish.parcel.fields.conditionsTitle')}
+          />
           <label className="grid gap-1.5">
-            <span className="text-sm font-bold">Preuve de voyage (billet, réservation...)</span>
+            <span className="text-sm font-bold">
+              {publishText(t, 'publish.parcel.fields.travelProof')}
+            </span>
             {form.travelProofFile ? (
               <div className="flex items-center gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3">
                 <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-950/40">
@@ -583,14 +614,18 @@ export function PublishParcelPage() {
                     })()}
                   </p>
                   <p className="text-xs text-[var(--app-text-muted)]">
-                    {Math.ceil(form.travelProofFile.size / 1024)} Ko
-                    {form.travelProofFile.uploading ? ' · Envoi…' : ' · Prêt'}
+                    {publishText(t, 'publish.parcel.fields.travelProofKb', {
+                      size: Math.ceil(form.travelProofFile.size / 1024),
+                    })}
+                    {form.travelProofFile.uploading
+                      ? ` · ${publishText(t, 'publish.parcel.fields.travelProofUploading')}`
+                      : ` · ${publishText(t, 'publish.parcel.fields.travelProofReady')}`}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => set('travelProofFile', null)}
-                  aria-label="Retirer le fichier"
+                  aria-label={publishText(t, 'publish.parcel.fields.travelProofRemove')}
                   className="grid size-8 shrink-0 place-items-center rounded-xl text-[var(--app-text-muted)] transition hover:bg-[var(--app-border)]"
                 >
                   <FiX />
@@ -598,7 +633,7 @@ export function PublishParcelPage() {
               </div>
             ) : (
               <label className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[var(--app-border)] px-4 text-sm font-bold text-[var(--app-text-muted)] transition hover:border-brand-400 hover:text-brand-700">
-                <FiUpload /> Choisir un fichier (PDF ou image)
+                <FiUpload /> {publishText(t, 'publish.parcel.fields.travelProofChoose')}
                 <input
                   className="sr-only"
                   type="file"
@@ -611,23 +646,24 @@ export function PublishParcelPage() {
               <p className="text-xs font-bold text-red-600">{errors.travelProofFile || proofError}</p>
             ) : (
               <p className="text-xs text-[var(--app-text-muted)]">
-                Visible uniquement par l'équipe MOXT pour vérification, jamais publié publiquement.
-                5 Mo max.
+                {publishText(t, 'publish.parcel.fields.travelProofHint')}
               </p>
             )}
           </label>
           <label className="grid gap-1.5">
-            <span className="text-sm font-bold">Conditions de transport</span>
+            <span className="text-sm font-bold">
+              {publishText(t, 'publish.parcel.fields.conditions')}
+            </span>
             <textarea
               className="min-h-28 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 text-sm"
-              placeholder="Photos demandées, emballage requis, modalités de remise..."
+              placeholder={publishText(t, 'publish.parcel.fields.conditionsPlaceholder')}
               value={form.conditions}
               onChange={(e) => set('conditions', e.target.value)}
             />
           </label>
           <Input
             id="parcel-contact"
-            label="Téléphone de contact (russe)"
+            label={publishText(t, 'publish.parcel.fields.contact')}
             type="tel"
             placeholder={phonePlaceholder('RU')}
             value={form.contact}
@@ -639,14 +675,20 @@ export function PublishParcelPage() {
               <BusinessPublishNotice business={business} />
               <Select
                 id="parcel-publisher"
-                label="Publier en tant que"
+                label={publishText(t, 'publish.parcel.fields.publishAs')}
                 value={form.publishAs}
                 onChange={(e) => set('publishAs', e.target.value)}
               >
                 {canPublishAsBusiness ? (
-                  <option value="business">{business.name} (entreprise)</option>
+                  <option value="business">
+                    {publishText(t, 'publish.parcel.fields.publishAsBusiness', {
+                      name: business.name,
+                    })}
+                  </option>
                 ) : null}
-                <option value="person">Particulier</option>
+                <option value="person">
+                  {publishText(t, 'publish.parcel.fields.publishAsPerson')}
+                </option>
               </Select>
             </>
           ) : null}
@@ -657,30 +699,58 @@ export function PublishParcelPage() {
       {step === 4 ? (
         <div className="grid gap-5">
           <Card className="grid gap-4">
-            <SectionTitle icon={FiCheckCircle} label="Récapitulatif" />
+            <SectionTitle
+              icon={FiCheckCircle}
+              label={publishText(t, 'publish.parcel.review.title')}
+            />
             {[
               [
-                'Trajet',
+                publishText(t, 'publish.parcel.review.route'),
                 `${form.origin} (${form.originAirportCode}) → ${form.destination} (${form.destinationAirportCode})`,
               ],
-              ['Départ', form.departureDate],
-              ['Distribution / récupération', form.distributionDate],
-              ['Capacité totale', `${form.capacityKg} kg`],
-              ['Prix / kg', `${form.pricePerKg} RUB`],
-              ['Types acceptés', form.acceptedTypes.map((v) => ACCEPTED_TYPES.find((t) => t.value === v)?.label).join(', ')],
-              ['Contact', form.contact],
-              ['Preuve de voyage', form.travelProofFile ? `${form.travelProofFile.name} ✓` : '—'],
+              [publishText(t, 'publish.parcel.review.departure'), form.departureDate],
+              [publishText(t, 'publish.parcel.review.distribution'), form.distributionDate],
+              [
+                publishText(t, 'publish.parcel.review.capacity'),
+                publishText(t, 'publish.parcel.review.capacityValue', { kg: form.capacityKg }),
+              ],
+              [
+                publishText(t, 'publish.parcel.review.pricePerKg'),
+                publishText(t, 'publish.parcel.review.priceValue', { price: form.pricePerKg }),
+              ],
+              [
+                publishText(t, 'publish.parcel.review.acceptedTypes'),
+                form.acceptedTypes
+                  .map((v) =>
+                    publishOptionLabel(
+                      t,
+                      PARCEL_ACCEPTED_TYPES.find((item) => item.value === v),
+                    ),
+                  )
+                  .join(', '),
+              ],
+              [publishText(t, 'publish.parcel.review.contact'), form.contact],
+              [
+                publishText(t, 'publish.parcel.review.travelProof'),
+                form.travelProofFile
+                  ? publishText(t, 'publish.parcel.review.travelProofValue', {
+                      name: form.travelProofFile.name,
+                    })
+                  : publishText(t, 'publish.common.emDash'),
+              ],
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between gap-4 rounded-xl bg-[var(--app-surface-muted)] px-4 py-3">
                 <span className="text-sm text-[var(--app-text-muted)]">{label}</span>
-                <span className="text-right text-sm font-bold">{value || '—'}</span>
+                <span className="text-right text-sm font-bold">
+                  {value || publishText(t, 'publish.common.emDash')}
+                </span>
               </div>
             ))}
           </Card>
           <div className="flex items-start gap-3 rounded-2xl bg-emerald-50 p-4 dark:bg-emerald-950/30">
             <FiCheckCircle className="mt-0.5 shrink-0 text-emerald-600" />
             <p className="text-sm text-emerald-700 dark:text-emerald-400">
-              Votre voyage sera visible immédiatement dans la section Colis. Les expéditeurs pourront vous contacter directement.
+              {publishText(t, 'publish.parcel.review.successHint')}
             </p>
           </div>
         </div>
@@ -689,18 +759,18 @@ export function PublishParcelPage() {
       <div className="flex items-center justify-between gap-3">
         {step > 1 ? (
           <Button variant="secondary" icon={FiArrowLeft} onClick={back}>
-            Précédent
+            {publishText(t, 'publish.common.previous')}
           </Button>
         ) : (
           <span />
         )}
         {step < STEPS.length ? (
           <Button icon={FiArrowRight} onClick={next}>
-            Continuer
+            {publishText(t, 'publish.common.continue')}
           </Button>
         ) : (
           <Button icon={FiCheckCircle} onClick={publish}>
-            Publier le voyage
+            {publishText(t, 'publish.parcel.nav.publish')}
           </Button>
         )}
       </div>

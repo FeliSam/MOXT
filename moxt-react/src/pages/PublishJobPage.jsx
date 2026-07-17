@@ -5,21 +5,10 @@ import {
   FiArrowLeft,
   FiArrowRight,
   FiBriefcase,
-  FiBook,
   FiCheck,
   FiCheckCircle,
-  FiCode,
-  FiCoffee,
   FiDollarSign,
-  FiGlobe,
-  FiHeart,
-  FiHome,
   FiMapPin,
-  FiMic,
-  FiShoppingBag,
-  FiTrendingUp,
-  FiTruck,
-  FiTool,
   FiUsers,
 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
@@ -31,8 +20,15 @@ import { useActionBurst } from '../components/ui/ActionBurst'
 import { CitySelector } from '../components/ui/CitySelector'
 import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
-import { JOB_CONTRACTS } from '../config/options'
 import { createJob } from '../features/jobs/jobSlice'
+import {
+  JOB_CONTRACT_OPTIONS,
+  JOB_EXPERIENCE_OPTIONS,
+  JOB_LANGUAGE_OPTIONS,
+  JOB_PUBLISH_STEPS,
+  JOB_SALARY_PERIOD_OPTIONS,
+  JOB_SECTOR_OPTIONS,
+} from '../features/jobs/jobPublishConfig'
 import { useScrollToTopOnStep } from '../hooks/useScrollToTopOnStep'
 import { BusinessPublishNotice } from '../features/businesses/BusinessPublishNotice'
 import { isBusinessPublishReady } from '../features/businesses/businessPublishUtils'
@@ -40,48 +36,16 @@ import { addToast } from '../features/ui/uiSlice'
 import { SecurityGatePanel } from '../features/security/SecurityGatePanel'
 import { useSecurityGate } from '../features/security/useSecurityGate'
 import { initialCatalogStatus } from '@moxt/shared/auth/userSecurity.js'
+import { useLanguage } from '../contexts/useLanguage'
+import {
+  publishOptionLabel,
+  publishOptionSub,
+  publishText,
+} from '../features/publications/publishI18n'
 
-/* ─── Steps ─────────────────────────────────────────────────────────────── */
-const STEPS = [
-  { key: 'basics', label: "L'offre", icon: FiBriefcase },
-  { key: 'details', label: 'Détails', icon: FiDollarSign },
-  { key: 'location', label: 'Lieu', icon: FiMapPin },
-  { key: 'review', label: 'Valider', icon: FiCheckCircle },
-]
+const STEPS = JOB_PUBLISH_STEPS
 
-/* ─── Sectors with icons + colors ───────────────────────────────────────── */
-const SECTORS = [
-  { value: 'Technologie & informatique', label: 'Technologie', icon: FiCode, color: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300' },
-  { value: 'Commerce & vente', label: 'Commerce', icon: FiShoppingBag, color: 'bg-orange-50 text-orange-700 dark:bg-orange-950/40 dark:text-orange-300' },
-  { value: 'Transport & logistique', label: 'Transport', icon: FiTruck, color: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300' },
-  { value: 'Restauration & hôtellerie', label: 'Restauration', icon: FiCoffee, color: 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300' },
-  { value: 'Enseignement & formation', label: 'Enseignement', icon: FiBook, color: 'bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300' },
-  { value: 'Santé & bien-être', label: 'Santé', icon: FiHeart, color: 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300' },
-  { value: 'Bâtiment & travaux', label: 'Bâtiment', icon: FiTool, color: 'bg-stone-100 text-stone-700 dark:bg-stone-800/60 dark:text-stone-300' },
-  { value: 'Services à la personne', label: 'Services', icon: FiUsers, color: 'bg-teal-50 text-teal-700 dark:bg-teal-950/40 dark:text-teal-300' },
-  { value: 'Finance & comptabilité', label: 'Finance', icon: FiTrendingUp, color: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' },
-  { value: 'Arts & communication', label: 'Arts & Comm.', icon: FiMic, color: 'bg-pink-50 text-pink-700 dark:bg-pink-950/40 dark:text-pink-300' },
-  { value: 'Immobilier', label: 'Immobilier', icon: FiHome, color: 'bg-cyan-50 text-cyan-700 dark:bg-cyan-950/40 dark:text-cyan-300' },
-  { value: 'Autre', label: 'Autre', icon: FiGlobe, color: 'bg-slate-100 text-slate-700 dark:bg-slate-800/60 dark:text-slate-300' },
-]
-
-/* ─── Experience levels ──────────────────────────────────────────────────── */
-const EXPERIENCE_LEVELS = [
-  { value: 'none', label: 'Sans expérience', sub: 'Débutant bienvenu', dot: 'bg-emerald-500' },
-  { value: 'junior', label: '1–2 ans', sub: 'Junior', dot: 'bg-blue-500' },
-  { value: 'mid', label: '3–5 ans', sub: 'Confirmé', dot: 'bg-violet-500' },
-  { value: 'senior', label: '5+ ans', sub: 'Expert', dot: 'bg-amber-500' },
-]
-
-const LANGUAGES = [
-  { value: 'fr', label: 'Français' },
-  { value: 'ru', label: 'Russe' },
-  { value: 'en', label: 'Anglais' },
-  { value: 'fr_ru', label: 'Français + Russe' },
-]
-
-/* ─── Visual Stepper ────────────────────────────────────────────────────── */
-function Stepper({ step, onGoTo }) {
+function Stepper({ step, onGoTo, t }) {
   return (
     <div className="relative flex items-start justify-between">
       <div className="absolute left-0 right-0 top-5 h-px bg-[var(--app-border)]" aria-hidden />
@@ -117,7 +81,7 @@ function Stepper({ step, onGoTo }) {
             <span
               className={`text-xs font-bold ${active ? 'text-brand-700 dark:text-brand-400' : 'text-[var(--app-text-muted)]'}`}
             >
-              {s.label}
+              {publishText(t, s.labelKey)}
             </span>
           </button>
         )
@@ -126,10 +90,10 @@ function Stepper({ step, onGoTo }) {
   )
 }
 
-/* ─── Page ───────────────────────────────────────────────────────────────── */
 export function PublishJobPage() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const { requirePublish } = useSecurityGate()
   const user = useSelector((state) => state.auth.user)
   const business = useSelector((state) =>
@@ -191,16 +155,19 @@ export function PublishJobPage() {
   function validate(n) {
     const errs = {}
     if (n === 1) {
-      if (!form.title.trim()) errs.title = 'Intitulé du poste obligatoire.'
-      if (!form.sector) errs.sector = 'Secteur obligatoire.'
+      if (!form.title.trim())
+        errs.title = publishText(t, 'publish.job.validation.titleRequired')
+      if (!form.sector) errs.sector = publishText(t, 'publish.job.validation.sectorRequired')
     }
     if (n === 2) {
       if (!form.description.trim() || form.description.trim().length < 30)
-        errs.description = 'Description trop courte (30 caractères min).'
-      if (!form.salary.trim()) errs.salary = 'Rémunération obligatoire.'
+        errs.description = publishText(t, 'publish.job.validation.descriptionMin')
+      if (!form.salary.trim())
+        errs.salary = publishText(t, 'publish.job.validation.salaryRequired')
     }
     if (n === 3) {
-      if (!form.location.trim()) errs.location = 'Lieu obligatoire.'
+      if (!form.location.trim())
+        errs.location = publishText(t, 'publish.job.validation.locationRequired')
     }
     setErrors(errs)
     return Object.keys(errs).length === 0
@@ -219,9 +186,8 @@ export function PublishJobPage() {
     if (form.publisherType === 'business' && !eligibleBusiness) {
       dispatch(
         addToast({
-          title: 'Publication entreprise impossible',
-          message:
-            'Votre entreprise doit être vérifiée et disposer du module Jobs avant publication.',
+          title: publishText(t, 'publish.common.toasts.businessBlockedTitle'),
+          message: publishText(t, 'publish.job.toasts.businessBlockedMessage'),
           tone: 'error',
         }),
       )
@@ -242,7 +208,11 @@ export function PublishJobPage() {
     } catch (error) {
       setPublishing(false)
       dispatch(
-        addToast({ title: 'Images non envoyées', message: error.message || 'Réessayez.', tone: 'error' }),
+        addToast({
+          title: publishText(t, 'publish.common.toasts.imagesFailedTitle'),
+          message: error.message || publishText(t, 'publish.common.toasts.retry'),
+          tone: 'error',
+        }),
       )
       return
     }
@@ -263,17 +233,19 @@ export function PublishJobPage() {
     const live = action.payload?.status === 'active'
     dispatch(
       addToast({
-        title: live ? 'Offre publiée' : 'Offre envoyée',
+        title: live
+          ? publishText(t, 'publish.job.toasts.publishedTitle')
+          : publishText(t, 'publish.job.toasts.pendingTitle'),
         message: live
-          ? 'Votre offre est en ligne.'
-          : 'Compte non vérifié : l’offre sera visible après validation MOXT.',
+          ? publishText(t, 'publish.job.toasts.publishedMessage')
+          : publishText(t, 'publish.job.toasts.pendingMessage'),
         tone: 'success',
       }),
     )
     setShareModal({ sourceId: action.payload.id, sourceData: action.payload })
   }
 
-  const selectedSector = SECTORS.find((s) => s.value === form.sector)
+  const selectedSector = JOB_SECTOR_OPTIONS.find((s) => s.value === form.sector)
 
   return (
     <SecurityGatePanel kind="publish" backTo="/jobs">
@@ -291,16 +263,15 @@ export function PublishJobPage() {
     <div className="mx-auto grid max-w-2xl gap-7">
       <div className="flex items-center gap-3">
         <Button variant="secondary" icon={FiArrowLeft} onClick={() => navigate('/jobs')}>
-          Jobs
+          {publishText(t, 'publish.job.back')}
         </Button>
-        <h1 className="text-xl font-black">Publier une offre d'emploi</h1>
+        <h1 className="text-xl font-black">{publishText(t, 'publish.job.title')}</h1>
       </div>
 
       <Card className="px-6 py-5">
-        <Stepper step={step} onGoTo={setStep} />
+        <Stepper step={step} onGoTo={setStep} t={t} />
       </Card>
 
-      {/* ── Étape 1 ─────────────────────────────────────────────────────── */}
       {step === 1 ? (
         <div className="grid gap-5">
           <Card className="grid gap-5">
@@ -308,22 +279,21 @@ export function PublishJobPage() {
               <span className="grid size-9 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
                 <FiBriefcase />
               </span>
-              <h2 className="font-black">Poste et domaine</h2>
+              <h2 className="font-black">{publishText(t, 'publish.job.sections.role')}</h2>
             </div>
             <Input
               id="job-title"
-              label="Intitulé du poste"
-              placeholder="Ex : Développeur web, Professeur de français, Cuisinier…"
+              label={publishText(t, 'publish.job.fields.title')}
+              placeholder={publishText(t, 'publish.job.fields.titlePlaceholder')}
               value={form.title}
               onChange={(e) => set('title', e.target.value)}
               error={errors.title}
             />
 
-            {/* Sector visual grid */}
             <div>
-              <p className="mb-3 text-sm font-bold">Secteur d'activité</p>
+              <p className="mb-3 text-sm font-bold">{publishText(t, 'publish.job.fields.sector')}</p>
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                {SECTORS.map((sector) => {
+                {JOB_SECTOR_OPTIONS.map((sector) => {
                   const Icon = sector.icon
                   const active = form.sector === sector.value
                   return (
@@ -341,7 +311,7 @@ export function PublishJobPage() {
                         <Icon className={`text-base ${active ? '' : 'text-[var(--app-text-muted)]'}`} />
                       </span>
                       <span className={`text-[10px] font-black leading-tight ${active ? '' : 'text-[var(--app-text-muted)]'}`}>
-                        {sector.label}
+                        {publishOptionLabel(t, sector)}
                       </span>
                     </button>
                   )
@@ -350,24 +320,26 @@ export function PublishJobPage() {
               {errors.sector ? <p className="mt-2 text-xs text-red-600">{errors.sector}</p> : null}
               {selectedSector ? (
                 <p className="mt-2 text-xs text-[var(--app-text-muted)]">
-                  Secteur sélectionné : <strong>{selectedSector.value}</strong>
+                  {publishText(t, 'publish.job.fields.sectorSelected')}{' '}
+                  <strong>{selectedSector.value}</strong>
                 </p>
               ) : null}
             </div>
           </Card>
 
-          {/* Contract type pills */}
           <Card className="grid gap-5">
             <div className="flex items-center gap-3 border-b border-[var(--app-border)] pb-4">
               <span className="grid size-9 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
                 <FiUsers />
               </span>
-              <h2 className="font-black">Type de contrat et langue</h2>
+              <h2 className="font-black">{publishText(t, 'publish.job.sections.contract')}</h2>
             </div>
             <div>
-              <p className="mb-3 text-sm font-bold">Type de contrat</p>
+              <p className="mb-3 text-sm font-bold">
+                {publishText(t, 'publish.job.fields.contractType')}
+              </p>
               <div className="flex flex-wrap gap-2">
-                {JOB_CONTRACTS.map((c) => (
+                {JOB_CONTRACT_OPTIONS.map((c) => (
                   <button
                     key={c.value}
                     type="button"
@@ -378,17 +350,18 @@ export function PublishJobPage() {
                         : 'bg-[var(--app-surface-muted)] text-[var(--app-text)] hover:bg-[var(--app-accent-soft)] hover:text-[var(--app-accent)]'
                     }`}
                   >
-                    {c.label}
+                    {publishOptionLabel(t, c)}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Experience scale */}
             <div>
-              <p className="mb-3 text-sm font-bold">Expérience requise</p>
+              <p className="mb-3 text-sm font-bold">
+                {publishText(t, 'publish.job.fields.experience')}
+              </p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {EXPERIENCE_LEVELS.map((level) => (
+                {JOB_EXPERIENCE_OPTIONS.map((level) => (
                   <button
                     key={level.value}
                     type="button"
@@ -400,8 +373,10 @@ export function PublishJobPage() {
                     }`}
                   >
                     <span className={`size-3 rounded-full ${level.dot}`} />
-                    <span className="text-xs font-black">{level.label}</span>
-                    <span className="text-[10px] text-[var(--app-text-muted)]">{level.sub}</span>
+                    <span className="text-xs font-black">{publishOptionLabel(t, level)}</span>
+                    <span className="text-[10px] text-[var(--app-text-muted)]">
+                      {publishOptionSub(t, level)}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -409,53 +384,61 @@ export function PublishJobPage() {
 
             <Select
               id="job-lang"
-              label="Langue de travail"
+              label={publishText(t, 'publish.job.fields.language')}
               value={form.language}
               onChange={(e) => set('language', e.target.value)}
             >
-              {LANGUAGES.map((l) => (
-                <option key={l.value} value={l.value}>{l.label}</option>
+              {JOB_LANGUAGE_OPTIONS.map((l) => (
+                <option key={l.value} value={l.value}>
+                  {publishOptionLabel(t, l)}
+                </option>
               ))}
             </Select>
           </Card>
         </div>
       ) : null}
 
-      {/* ── Étape 2 ─────────────────────────────────────────────────────── */}
       {step === 2 ? (
         <Card className="grid gap-5">
           <div className="flex items-center gap-3 border-b border-[var(--app-border)] pb-4">
             <span className="grid size-9 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
               <FiDollarSign />
             </span>
-            <h2 className="font-black">Détails du poste</h2>
+            <h2 className="font-black">{publishText(t, 'publish.job.sections.details')}</h2>
           </div>
           <label className="grid gap-1.5">
             <span className="text-sm font-bold">
-              Description <span className="font-normal text-[var(--app-text-muted)]">(min. 30 car.)</span>
+              {publishText(t, 'publish.job.fields.description')}{' '}
+              <span className="font-normal text-[var(--app-text-muted)]">
+                {publishText(t, 'publish.job.fields.descriptionMin')}
+              </span>
             </span>
             <textarea
               className="min-h-32 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3.5 text-sm"
-              placeholder="Missions, responsabilités, contexte de l'équipe…"
+              placeholder={publishText(t, 'publish.job.fields.descriptionPlaceholder')}
               value={form.description}
               onChange={(e) => set('description', e.target.value)}
             />
             {errors.description ? <span className="text-xs text-red-600">{errors.description}</span> : null}
           </label>
           <label className="grid gap-1.5">
-            <span className="text-sm font-bold">Profil recherché</span>
+            <span className="text-sm font-bold">
+              {publishText(t, 'publish.job.fields.requirements')}
+            </span>
             <textarea
               className="min-h-24 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3.5 text-sm"
-              placeholder="Compétences, diplômes, qualités attendues…"
+              placeholder={publishText(t, 'publish.job.fields.requirementsPlaceholder')}
               value={form.requirements}
               onChange={(e) => set('requirements', e.target.value)}
             />
           </label>
           <label className="grid gap-1.5">
-            <span className="text-sm font-bold">Avantages (optionnel)</span>
+            <span className="text-sm font-bold">
+              {publishText(t, 'publish.job.fields.benefits')}
+            </span>
             <textarea
               className="min-h-20 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3.5 text-sm"
-              placeholder="Logement, repas, transport, prime…"
+              placeholder={publishText(t, 'publish.job.fields.benefitsPlaceholder')}
               value={form.benefits}
               onChange={(e) => set('benefits', e.target.value)}
             />
@@ -463,39 +446,39 @@ export function PublishJobPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
               id="job-salary"
-              label="Rémunération"
-              placeholder="Ex : 95 000 RUB"
+              label={publishText(t, 'publish.job.fields.salary')}
+              placeholder={publishText(t, 'publish.job.fields.salaryPlaceholder')}
               value={form.salary}
               onChange={(e) => set('salary', e.target.value)}
               error={errors.salary}
             />
             <Select
               id="job-salary-period"
-              label="Période"
+              label={publishText(t, 'publish.job.fields.salaryPeriod')}
               value={form.salaryPeriod}
               onChange={(e) => set('salaryPeriod', e.target.value)}
             >
-              <option value="hour">Par heure</option>
-              <option value="day">Par jour</option>
-              <option value="month">Par mois</option>
-              <option value="project">Par projet</option>
+              {JOB_SALARY_PERIOD_OPTIONS.map((period) => (
+                <option key={period.value} value={period.value}>
+                  {publishOptionLabel(t, period)}
+                </option>
+              ))}
             </Select>
           </div>
         </Card>
       ) : null}
 
-      {/* ── Étape 3 ─────────────────────────────────────────────────────── */}
       {step === 3 ? (
         <Card className="grid gap-5">
           <div className="flex items-center gap-3 border-b border-[var(--app-border)] pb-4">
             <span className="grid size-9 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
               <FiMapPin />
             </span>
-            <h2 className="font-black">Lieu et modalités</h2>
+            <h2 className="font-black">{publishText(t, 'publish.job.sections.location')}</h2>
           </div>
           <CitySelector
             id="job-location"
-            label="Ville / Lieu"
+            label={publishText(t, 'publish.job.fields.location')}
             value={form.location}
             onChange={(city) => set('location', city)}
             error={errors.location}
@@ -508,21 +491,23 @@ export function PublishJobPage() {
               className="size-5 accent-brand-700"
             />
             <div>
-              <p className="text-sm font-bold">Télétravail possible</p>
-              <p className="text-xs text-[var(--app-text-muted)]">Le poste peut être exercé à distance</p>
+              <p className="text-sm font-bold">{publishText(t, 'publish.job.fields.remote')}</p>
+              <p className="text-xs text-[var(--app-text-muted)]">
+                {publishText(t, 'publish.job.fields.remoteHint')}
+              </p>
             </div>
           </label>
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
               id="job-start"
-              label="Date de début (optionnel)"
+              label={publishText(t, 'publish.job.fields.startDate')}
               type="date"
               value={form.startDate}
               onChange={(e) => set('startDate', e.target.value)}
             />
             <Input
               id="job-deadline"
-              label="Date limite candidature"
+              label={publishText(t, 'publish.job.fields.deadline')}
               type="date"
               value={form.applicationDeadline}
               onChange={(e) => set('applicationDeadline', e.target.value)}
@@ -532,13 +517,13 @@ export function PublishJobPage() {
             photos={photos}
             onAdd={addPhotos}
             onRemove={removePhoto}
-            label="Affiches de l’offre (optionnel)"
-            hint="Ajoutez une ou plusieurs images (logo, affiche, visuel). La première sert d’image principale."
+            label={publishText(t, 'publish.job.fields.posters')}
+            hint={publishText(t, 'publish.job.fields.postersHint')}
           />
           {business ? <BusinessPublishNotice business={business} className="mb-1" /> : null}
           <Select
             id="job-publisher"
-            label="Profil de publication"
+            label={publishText(t, 'publish.job.fields.publisherProfile')}
             value={form.publisherType}
             onChange={(event) => {
               const publisherType = event.target.value
@@ -552,19 +537,24 @@ export function PublishJobPage() {
             }}
           >
             <option value="personal">
-              Profil personnel · {user.firstName} {user.lastName}
+              {publishText(t, 'publish.job.fields.publisherPersonal', {
+                name: `${user.firstName} ${user.lastName}`,
+              })}
             </option>
             {eligibleBusiness ? (
-              <option value="business">Entreprise · {business.name}</option>
+              <option value="business">
+                {publishText(t, 'publish.job.fields.publisherBusiness', {
+                  name: business.name,
+                })}
+              </option>
             ) : null}
           </Select>
           <p className="text-xs leading-5 text-[var(--app-text-muted)]">
-            Toute personne peut publier une offre. L’association à une entreprise est facultative.
+            {publishText(t, 'publish.job.fields.publisherHint')}
           </p>
         </Card>
       ) : null}
 
-      {/* ── Étape 4 — Récapitulatif ──────────────────────────────────────── */}
       {step === 4 ? (
         <div className="grid gap-5">
           <Card className="grid gap-4">
@@ -572,26 +562,47 @@ export function PublishJobPage() {
               <span className="grid size-9 place-items-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
                 <FiCheckCircle />
               </span>
-              <h2 className="font-black">Récapitulatif</h2>
+              <h2 className="font-black">{publishText(t, 'publish.job.sections.review')}</h2>
             </div>
             {[
-              ['Poste', form.title],
-              ['Secteur', form.sector],
-              ['Contrat', JOB_CONTRACTS.find((c) => c.value === form.contractType)?.label],
-              ['Rémunération', `${form.salary} / ${form.salaryPeriod}`],
-              ['Lieu', form.location + (form.remote ? ' · Télétravail possible' : '')],
-              ['Publié par', form.publisherName],
+              [publishText(t, 'publish.job.review.role'), form.title],
+              [publishText(t, 'publish.job.review.sector'), form.sector],
+              [
+                publishText(t, 'publish.job.review.contract'),
+                publishOptionLabel(
+                  t,
+                  JOB_CONTRACT_OPTIONS.find((c) => c.value === form.contractType),
+                ),
+              ],
+              [
+                publishText(t, 'publish.job.review.salary'),
+                publishText(t, 'publish.job.review.salaryValue', {
+                  salary: form.salary,
+                  period: form.salaryPeriod,
+                }),
+              ],
+              [
+                publishText(t, 'publish.job.review.location'),
+                form.remote
+                  ? publishText(t, 'publish.job.review.locationRemote', {
+                      location: form.location,
+                    })
+                  : form.location,
+              ],
+              [publishText(t, 'publish.job.review.publisher'), form.publisherName],
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between gap-4 rounded-xl bg-[var(--app-surface-muted)] px-4 py-3">
                 <span className="text-sm text-[var(--app-text-muted)]">{label}</span>
-                <span className="text-right text-sm font-bold">{value || '—'}</span>
+                <span className="text-right text-sm font-bold">
+                  {value || publishText(t, 'publish.common.emDash')}
+                </span>
               </div>
             ))}
           </Card>
           <div className="flex items-start gap-3 rounded-2xl bg-emerald-50 p-4 dark:bg-emerald-950/30">
             <FiCheckCircle className="mt-0.5 shrink-0 text-emerald-600" />
             <p className="text-sm text-emerald-700 dark:text-emerald-400">
-              Votre offre sera visible immédiatement dans la section Jobs. Vous pourrez la modifier depuis votre espace professionnel.
+              {publishText(t, 'publish.job.review.successHint')}
             </p>
           </div>
         </div>
@@ -599,14 +610,25 @@ export function PublishJobPage() {
 
       <div className="flex items-center justify-between gap-3">
         {step > 1 ? (
-          <Button variant="secondary" icon={FiArrowLeft} onClick={back}>Précédent</Button>
+          <Button variant="secondary" icon={FiArrowLeft} onClick={back}>
+            {publishText(t, 'publish.common.previous')}
+          </Button>
         ) : (
           <span />
         )}
         {step < STEPS.length ? (
-          <Button icon={FiArrowRight} onClick={next}>Continuer</Button>
+          <Button icon={FiArrowRight} onClick={next}>
+            {publishText(t, 'publish.common.continue')}
+          </Button>
         ) : (
-          <Button icon={FiCheckCircle} onClick={publish} loading={publishing} disabled={publishing}>Publier l'offre</Button>
+          <Button
+            icon={FiCheckCircle}
+            onClick={publish}
+            loading={publishing}
+            disabled={publishing}
+          >
+            {publishText(t, 'publish.job.nav.publish')}
+          </Button>
         )}
       </div>
     </div>

@@ -13,19 +13,21 @@ import {
 } from '../components/ui/DetailBlocks'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { useLanguage } from '../contexts/useLanguage'
 import { ContactButton } from '../features/communications/ContactButton'
 import { acceptOffer } from '../features/p2p/p2pSlice'
 import { calculateP2PFee } from '../features/p2p/p2pUtils'
 import { formatMoney } from '../features/transfers/transferUtils'
 
 export function P2PDetailPage() {
+  const { t } = useLanguage()
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const { offerId } = useParams()
   const user = useSelector((state) => state.auth.user)
   const offer = useSelector((state) => state.p2p.offers.find((item) => item.id === offerId))
 
-  if (!offer) return <EmptyState title="Offre P2P introuvable" />
+  if (!offer) return <EmptyState title={t('p2p.detail.notFound')} />
 
   function accept() {
     const action = dispatch(acceptOffer({ buyer: user, offer }))
@@ -36,35 +38,41 @@ export function P2PDetailPage() {
     <div className="grid gap-7">
       <PageHeader
         eyebrow={offer.id}
-        title={`${formatMoney(offer.amount, offer.fromCurrency)} vers ${offer.toCurrency}`}
-        description={`Offre publiée par ${offer.ownerName}`}
+        title={t('p2p.detail.title', {
+          amount: formatMoney(offer.amount, offer.fromCurrency),
+          currency: offer.toCurrency,
+        })}
+        description={t('p2p.detail.description', { name: offer.ownerName })}
         actions={<BackButton fallback="/p2p" />}
       />
       <DetailMetrics
         items={[
           {
             icon: FiRepeat,
-            label: 'Conversion',
+            label: t('p2p.detail.conversion'),
             value: `${offer.fromCurrency} → ${offer.toCurrency}`,
           },
-          { icon: FiCreditCard, label: 'Méthode', value: offer.method },
-          { icon: FiClock, label: 'Statut', value: offer.status },
-          { icon: FiUser, label: 'Proposé par', value: offer.ownerName },
+          { icon: FiCreditCard, label: t('p2p.detail.method'), value: offer.method },
+          { icon: FiClock, label: t('p2p.detail.status'), value: offer.status },
+          { icon: FiUser, label: t('p2p.detail.proposedBy'), value: offer.ownerName },
         ]}
       />
       <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
         <Card>
           <div className="flex justify-between gap-3">
-            <h2 className="font-black">Conditions de l’offre</h2>
+            <h2 className="font-black">{t('p2p.detail.conditions')}</h2>
             <Badge tone={offer.status === 'active' ? 'success' : 'warning'}>{offer.status}</Badge>
           </div>
           <div className="mt-5 grid gap-3 text-sm">
-            <Row label="Montant proposé" value={formatMoney(offer.amount, offer.fromCurrency)} />
-            <Row label="Devise recherchée" value={offer.toCurrency} />
-            <Row label="Taux" value={offer.rate} />
-            <Row label="Méthode" value={offer.method} />
             <Row
-              label="Frais estimés"
+              label={t('p2p.detail.proposedAmount')}
+              value={formatMoney(offer.amount, offer.fromCurrency)}
+            />
+            <Row label={t('p2p.detail.soughtCurrency')} value={offer.toCurrency} />
+            <Row label={t('p2p.detail.rate')} value={offer.rate} />
+            <Row label={t('p2p.detail.method')} value={offer.method} />
+            <Row
+              label={t('p2p.detail.estimatedFees')}
               value={formatMoney(
                 calculateP2PFee(offer.amount, offer.fromCurrency),
                 offer.fromCurrency,
@@ -78,54 +86,63 @@ export function P2PDetailPage() {
           ) : null}
         </Card>
         <Card>
-          <h2 className="font-black">Contacter ou accepter</h2>
+          <h2 className="font-black">{t('p2p.detail.contactOrAccept')}</h2>
           <div className="mt-5 grid gap-3">
             <ContactButton
               ownerId={offer.ownerId}
               relatedEntity={offer}
               relatedId={offer.id}
               relatedPath={`/p2p/${offer.id}`}
-              relatedTitle={`${offer.fromCurrency} vers ${offer.toCurrency}`}
+              relatedTitle={t('p2p.detail.relatedTitle', {
+                from: offer.fromCurrency,
+                to: offer.toCurrency,
+              })}
               relatedType="p2p"
               variant="secondary"
             />
             {offer.status === 'active' && offer.ownerId !== user.id ? (
               <Button icon={FiCheckCircle} onClick={accept}>
-                Accepter l’offre
+                {t('p2p.detail.acceptOffer')}
               </Button>
             ) : null}
           </div>
           <p className="mt-5 text-xs leading-5 text-[var(--app-text-muted)]">
-            L’acceptation crée une transaction locale. Aucun paiement réel n’est déclenché.
+            {t('p2p.detail.acceptNote')}
           </p>
         </Card>
       </div>
       <div className="grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
-        <DetailSection title="Détails de l’échange">
+        <DetailSection title={t('p2p.detail.exchangeDetails')}>
           <DetailFacts
             items={[
-              { label: 'Montant disponible', value: formatMoney(offer.amount, offer.fromCurrency) },
-              { label: 'Devise demandée', value: offer.toCurrency },
-              { label: 'Taux proposé', value: offer.rate },
               {
-                label: 'Frais',
+                label: t('p2p.detail.availableAmount'),
+                value: formatMoney(offer.amount, offer.fromCurrency),
+              },
+              { label: t('p2p.detail.requestedCurrency'), value: offer.toCurrency },
+              { label: t('p2p.detail.proposedRate'), value: offer.rate },
+              {
+                label: t('p2p.detail.fees'),
                 value: formatMoney(
                   calculateP2PFee(offer.amount, offer.fromCurrency),
                   offer.fromCurrency,
                 ),
               },
-              { label: 'Méthode', value: offer.method },
-              { label: 'Profil', value: offer.businessId ? 'Entreprise' : 'Particulier' },
-              { label: 'Référence', value: offer.id },
+              { label: t('p2p.detail.method'), value: offer.method },
+              {
+                label: t('p2p.detail.profile'),
+                value: offer.businessId ? t('p2p.page.business') : t('p2p.page.individual'),
+              },
+              { label: t('p2p.detail.reference'), value: offer.id },
             ]}
           />
         </DetailSection>
         <TrustPanel
-          title="Sécurité P2P"
+          title={t('p2p.detail.trustTitle')}
           items={[
-            'Cette opération est traitée via MOXT. Restez vigilant et conservez vos preuves.',
-            'Conservez les preuves dans la conversation.',
-            'Confirmez les montants avant toute remise réelle.',
+            t('p2p.detail.trustItem1'),
+            t('p2p.detail.trustItem2'),
+            t('p2p.detail.trustItem3'),
           ]}
         />
       </div>

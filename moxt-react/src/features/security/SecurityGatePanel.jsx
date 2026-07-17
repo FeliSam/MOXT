@@ -13,30 +13,32 @@ import {
 import { useSelector } from 'react-redux'
 import { Alert } from '../../components/ui/Alert'
 import { Button } from '../../components/ui/Button'
+import { useLanguage } from '../../contexts/useLanguage'
+import { sharedText } from '../../i18n/sharedI18n'
 import { EmailVerificationCard } from './EmailVerificationCard'
 import { PhoneVerificationCard } from './PhoneVerificationCard'
 import { SecurityGateLinks } from './SecurityGateLinks'
 
-const gateCopy = {
+const GATE_COPY_KEYS = {
   publish: {
-    titlePhone: 'Numéro russe requis pour publier',
-    titleEmail: 'E-mail confirmé requis pour publier',
-    title: 'Vérification requise pour publier',
-    backLabel: 'Retour',
+    titlePhone: 'shared.securityGate.publish.titlePhone',
+    titleEmail: 'shared.securityGate.publish.titleEmail',
+    title: 'shared.securityGate.publish.title',
+    backLabel: 'common.back',
   },
   p2p: {
-    titlePhone: 'Numéro russe requis pour le P2P',
-    titleEmail: 'E-mail confirmé requis pour le P2P',
-    title: 'Identité vérifiée requise pour le P2P',
-    backLabel: 'Retour au P2P',
+    titlePhone: 'shared.securityGate.p2p.titlePhone',
+    titleEmail: 'shared.securityGate.p2p.titleEmail',
+    title: 'shared.securityGate.p2p.title',
+    backLabel: 'shared.securityGate.p2p.back',
   },
   business: {
-    title: 'Identité vérifiée requise',
-    backLabel: 'Retour aux entreprises',
+    title: 'shared.securityGate.business.title',
+    backLabel: 'shared.securityGate.business.back',
   },
   transfer: {
-    title: 'Compte vérifié requis',
-    backLabel: 'Retour aux transferts',
+    title: 'shared.securityGate.transfer.title',
+    backLabel: 'shared.securityGate.transfer.back',
   },
 }
 
@@ -48,12 +50,17 @@ function canAccess(kind, user) {
   return true
 }
 
-function publishGateTitle(kind, user, copy) {
-  if (kind !== 'publish' && kind !== 'p2p') return copy.title
+function gateText(t, key) {
+  if (key === 'common.back') return t('common.back')
+  return sharedText(t, key)
+}
+
+function publishGateTitle(kind, user, keys, t) {
+  if (kind !== 'publish' && kind !== 'p2p') return gateText(t, keys.title)
   const phoneOk = isPhoneVerified(user) && isValidRussianPhone(user?.phone)
-  if (!phoneOk && copy.titlePhone) return copy.titlePhone
-  if (!isEmailVerified(user) && copy.titleEmail) return copy.titleEmail
-  return copy.title
+  if (!phoneOk && keys.titlePhone) return gateText(t, keys.titlePhone)
+  if (!isEmailVerified(user) && keys.titleEmail) return gateText(t, keys.titleEmail)
+  return gateText(t, keys.title)
 }
 
 export function SecurityGatePanel({
@@ -61,8 +68,9 @@ export function SecurityGatePanel({
   backTo = '/dashboard',
   children,
 }) {
+  const { t } = useLanguage()
   const user = useSelector((state) => state.auth.user)
-  const copy = gateCopy[kind] || gateCopy.publish
+  const keys = GATE_COPY_KEYS[kind] || GATE_COPY_KEYS.publish
   const phoneOk = isPhoneVerified(user) && isValidRussianPhone(user?.phone)
   const emailOk = isEmailVerified(user)
   const showPhoneCard = (kind === 'publish' || kind === 'p2p') && !phoneOk
@@ -77,13 +85,13 @@ export function SecurityGatePanel({
       <div className="flex items-center gap-3">
         <Link to={backTo}>
           <Button variant="secondary" icon={FiArrowLeft}>
-            {copy.backLabel}
+            {gateText(t, keys.backLabel)}
           </Button>
         </Link>
-        <h1 className="text-xl font-black">{publishGateTitle(kind, user, copy)}</h1>
+        <h1 className="text-xl font-black">{publishGateTitle(kind, user, keys, t)}</h1>
       </div>
 
-      <Alert variant="warning" title="Vérification requise">
+      <Alert variant="warning" title={sharedText(t, 'shared.securityGate.alertTitle')}>
         {securityGateMessage(kind, user)}
         <div className="mt-3">
           <SecurityGateLinks kind={kind} user={user} />
@@ -93,10 +101,10 @@ export function SecurityGatePanel({
       {showPhoneCard ? <PhoneVerificationCard /> : null}
       {showEmailCard ? <EmailVerificationCard /> : null}
       {kind === 'p2p' || kind === 'business' || kind === 'transfer' ? (
-        <Alert variant="info" title="Centre de vérification MOXT">
-          Complétez vos informations personnelles puis soumettez votre dossier d’identité.{' '}
+        <Alert variant="info" title={sharedText(t, 'shared.securityGate.centerTitle')}>
+          {sharedText(t, 'shared.securityGate.centerBody')}{' '}
           <Link className="font-bold text-brand-700 hover:underline" to="/verification">
-            Ouvrir la vérification
+            {sharedText(t, 'shared.securityGate.openVerification')}
           </Link>
         </Alert>
       ) : null}

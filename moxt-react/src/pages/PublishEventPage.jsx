@@ -4,17 +4,14 @@ import { storageService } from '../services/storageService'
 import {
   FiArrowLeft,
   FiArrowRight,
-  FiBriefcase,
   FiCalendar,
   FiCheck,
   FiCheckCircle,
   FiGlobe,
-  FiHeart,
   FiMapPin,
   FiMic,
   FiUsers,
   FiWifi,
-  FiBookOpen,
 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
@@ -24,67 +21,30 @@ import { ShareToFeedModal } from '../components/ui/ShareToFeedModal'
 import { useActionBurst } from '../components/ui/ActionBurst'
 import { CitySelector } from '../components/ui/CitySelector'
 import { Input } from '../components/ui/Input'
-import { EVENT_CATEGORIES } from '../config/options'
 import { createEvent } from '../features/events/eventSlice'
+import {
+  EVENT_CAT_COLORS,
+  EVENT_CAT_ICONS,
+  EVENT_FORMAT_OPTIONS,
+  EVENT_PUBLISH_CATEGORIES,
+  EVENT_PUBLISH_STEPS,
+} from '../features/events/eventPublishConfig'
 import { useScrollToTopOnStep } from '../hooks/useScrollToTopOnStep'
 import { isBusinessPublishReady } from '../features/businesses/businessPublishUtils'
 import { addToast } from '../features/ui/uiSlice'
 import { SecurityGatePanel } from '../features/security/SecurityGatePanel'
 import { useSecurityGate } from '../features/security/useSecurityGate'
 import { initialCatalogStatus } from '@moxt/shared/auth/userSecurity.js'
+import { useLanguage } from '../contexts/useLanguage'
+import {
+  publishOptionLabel,
+  publishOptionSub,
+  publishText,
+} from '../features/publications/publishI18n'
 
-/* ─── Steps ─────────────────────────────────────────────────────────────── */
-const STEPS = [
-  { key: 'basics', label: "L'événement", icon: FiCalendar },
-  { key: 'details', label: 'Programme', icon: FiMic },
-  { key: 'location', label: 'Lieu & accès', icon: FiMapPin },
-  { key: 'review', label: 'Valider', icon: FiCheckCircle },
-]
+const STEPS = EVENT_PUBLISH_STEPS
 
-/* ─── Format options ─────────────────────────────────────────────────────── */
-const FORMAT_OPTIONS = [
-  {
-    value: 'in_person',
-    label: 'Présentiel',
-    sub: 'Lieu physique requis',
-    icon: FiMapPin,
-    color: 'bg-emerald-50 text-emerald-700 ring-emerald-500 dark:bg-emerald-950/40 dark:text-emerald-300',
-  },
-  {
-    value: 'online',
-    label: 'En ligne',
-    sub: 'Lien de connexion requis',
-    icon: FiWifi,
-    color: 'bg-blue-50 text-blue-700 ring-blue-500 dark:bg-blue-950/40 dark:text-blue-300',
-  },
-  {
-    value: 'hybrid',
-    label: 'Hybride',
-    sub: 'Présentiel + streaming',
-    icon: FiGlobe,
-    color: 'bg-violet-50 text-violet-700 ring-violet-500 dark:bg-violet-950/40 dark:text-violet-300',
-  },
-]
-
-/* ─── Category icons ────────────────────────────────────────────────────── */
-const CAT_ICONS = {
-  networking: FiUsers,
-  training: FiBookOpen,
-  culture: FiMic,
-  business: FiBriefcase,
-  community: FiHeart,
-}
-
-const CAT_COLORS = {
-  networking: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300',
-  training: 'bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300',
-  culture: 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300',
-  business: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
-  community: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300',
-}
-
-/* ─── Stepper ───────────────────────────────────────────────────────────── */
-function Stepper({ step, onGoTo }) {
+function Stepper({ step, onGoTo, t }) {
   return (
     <div className="relative flex items-start justify-between">
       <div className="absolute left-0 right-0 top-5 h-px bg-[var(--app-border)]" aria-hidden />
@@ -120,7 +80,7 @@ function Stepper({ step, onGoTo }) {
             <span
               className={`text-xs font-bold ${active ? 'text-brand-700 dark:text-brand-400' : 'text-[var(--app-text-muted)]'}`}
             >
-              {s.label}
+              {publishText(t, s.labelKey)}
             </span>
           </button>
         )
@@ -140,10 +100,10 @@ function SectionTitle({ icon: Icon, label }) {
   )
 }
 
-/* ─── Page ───────────────────────────────────────────────────────────────── */
 export function PublishEventPage() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const { requirePublish } = useSecurityGate()
   const user = useSelector((state) => state.auth.user)
   const business = useSelector((state) =>
@@ -202,18 +162,24 @@ export function PublishEventPage() {
   function validate(n) {
     const errs = {}
     if (n === 1) {
-      if (!form.title.trim()) errs.title = "Titre de l'événement obligatoire."
-      if (!form.category) errs.category = 'Catégorie obligatoire.'
-      if (!form.startAt) errs.startAt = 'Date de début obligatoire.'
+      if (!form.title.trim())
+        errs.title = publishText(t, 'publish.event.validation.titleRequired')
+      if (!form.category)
+        errs.category = publishText(t, 'publish.event.validation.categoryRequired')
+      if (!form.startAt)
+        errs.startAt = publishText(t, 'publish.event.validation.startRequired')
     }
     if (n === 2) {
       if (!form.description.trim() || form.description.trim().length < 20)
-        errs.description = 'Description trop courte.'
+        errs.description = publishText(t, 'publish.event.validation.descriptionMin')
     }
     if (n === 3) {
-      if (form.format !== 'online' && !form.venue.trim()) errs.venue = 'Lieu obligatoire.'
-      if (form.format === 'online' && !form.onlineLink.trim()) errs.onlineLink = 'Lien obligatoire.'
-      if (!form.city.trim()) errs.city = 'Ville obligatoire.'
+      if (form.format !== 'online' && !form.venue.trim())
+        errs.venue = publishText(t, 'publish.event.validation.venueRequired')
+      if (form.format === 'online' && !form.onlineLink.trim())
+        errs.onlineLink = publishText(t, 'publish.event.validation.onlineLinkRequired')
+      if (!form.city.trim())
+        errs.city = publishText(t, 'publish.event.validation.cityRequired')
     }
     setErrors(errs)
     return Object.keys(errs).length === 0
@@ -242,7 +208,11 @@ export function PublishEventPage() {
     } catch (error) {
       setPublishing(false)
       dispatch(
-        addToast({ title: 'Images non envoyées', message: error.message || 'Réessayez.', tone: 'error' }),
+        addToast({
+          title: publishText(t, 'publish.common.toasts.imagesFailedTitle'),
+          message: error.message || publishText(t, 'publish.common.toasts.retry'),
+          tone: 'error',
+        }),
       )
       return
     }
@@ -262,18 +232,20 @@ export function PublishEventPage() {
     const live = action.payload?.status === 'published'
     dispatch(
       addToast({
-        title: live ? 'Événement publié' : 'Événement envoyé',
+        title: live
+          ? publishText(t, 'publish.event.toasts.publishedTitle')
+          : publishText(t, 'publish.event.toasts.pendingTitle'),
         message: live
-          ? 'Votre événement est en ligne.'
-          : 'Compte non vérifié : l’événement sera visible après validation MOXT.',
+          ? publishText(t, 'publish.event.toasts.publishedMessage')
+          : publishText(t, 'publish.event.toasts.pendingMessage'),
         tone: 'success',
       }),
     )
     setShareModal({ sourceId: action.payload.id, sourceData: action.payload })
   }
 
-  const selectedFormat = FORMAT_OPTIONS.find((f) => f.value === form.format)
-  const selectedCategory = EVENT_CATEGORIES.find((c) => c.value === form.category)
+  const selectedFormat = EVENT_FORMAT_OPTIONS.find((f) => f.value === form.format)
+  const selectedCategory = EVENT_PUBLISH_CATEGORIES.find((c) => c.value === form.category)
 
   return (
     <SecurityGatePanel kind="publish" backTo="/events">
@@ -291,36 +263,39 @@ export function PublishEventPage() {
     <div className="mx-auto grid max-w-2xl gap-7">
       <div className="flex items-center gap-3">
         <Button variant="secondary" icon={FiArrowLeft} onClick={() => navigate('/events')}>
-          Événements
+          {publishText(t, 'publish.event.back')}
         </Button>
-        <h1 className="text-xl font-black">Créer un événement</h1>
+        <h1 className="text-xl font-black">{publishText(t, 'publish.event.title')}</h1>
       </div>
 
       <Card className="px-6 py-5">
-        <Stepper step={step} onGoTo={setStep} />
+        <Stepper step={step} onGoTo={setStep} t={t} />
       </Card>
 
-      {/* ── Étape 1 ─────────────────────────────────────────────────────── */}
       {step === 1 ? (
         <div className="grid gap-5">
           <Card className="grid gap-5">
-            <SectionTitle icon={FiCalendar} label="L'événement" />
+            <SectionTitle
+              icon={FiCalendar}
+              label={publishText(t, 'publish.event.sections.basics')}
+            />
             <Input
               id="ev-title"
-              label="Titre de l'événement"
-              placeholder="Ex : Fête nationale du Bénin à Moscou, Cours de russe…"
+              label={publishText(t, 'publish.event.fields.title')}
+              placeholder={publishText(t, 'publish.event.fields.titlePlaceholder')}
               value={form.title}
               onChange={(e) => set('title', e.target.value)}
               error={errors.title}
             />
 
-            {/* Category grid */}
             <div>
-              <p className="mb-3 text-sm font-bold">Catégorie</p>
+              <p className="mb-3 text-sm font-bold">
+                {publishText(t, 'publish.event.fields.category')}
+              </p>
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-                {EVENT_CATEGORIES.map((cat) => {
-                  const Icon = CAT_ICONS[cat.value] || FiCalendar
-                  const color = CAT_COLORS[cat.value] || ''
+                {EVENT_PUBLISH_CATEGORIES.map((cat) => {
+                  const Icon = EVENT_CAT_ICONS[cat.value] || FiCalendar
+                  const color = EVENT_CAT_COLORS[cat.value] || ''
                   const active = form.category === cat.value
                   return (
                     <button
@@ -337,7 +312,7 @@ export function PublishEventPage() {
                         <Icon className={`text-base ${active ? '' : 'text-[var(--app-text-muted)]'}`} />
                       </span>
                       <span className={`text-[10px] font-black leading-tight ${active ? '' : 'text-[var(--app-text-muted)]'}`}>
-                        {cat.label}
+                        {publishOptionLabel(t, cat)}
                       </span>
                     </button>
                   )
@@ -349,7 +324,7 @@ export function PublishEventPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <Input
                 id="ev-start"
-                label="Début"
+                label={publishText(t, 'publish.event.fields.start')}
                 type="datetime-local"
                 value={form.startAt}
                 onChange={(e) => set('startAt', e.target.value)}
@@ -357,7 +332,7 @@ export function PublishEventPage() {
               />
               <Input
                 id="ev-end"
-                label="Fin (optionnel)"
+                label={publishText(t, 'publish.event.fields.end')}
                 type="datetime-local"
                 placeholder="jj/mm/aaaa hh:mm"
                 value={form.endAt}
@@ -367,7 +342,7 @@ export function PublishEventPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <Input
                 id="ev-deadline"
-                label="Date limite d'inscription"
+                label={publishText(t, 'publish.event.fields.registrationDeadline')}
                 type="date"
                 placeholder="jj/mm/aaaa"
                 value={form.registrationDeadline}
@@ -375,21 +350,23 @@ export function PublishEventPage() {
               />
               <Input
                 id="ev-capacity"
-                label="Capacité (personnes)"
+                label={publishText(t, 'publish.event.fields.capacity')}
                 type="number"
                 min="1"
-                placeholder="Ex : 100"
+                placeholder={publishText(t, 'publish.event.fields.capacityPlaceholder')}
                 value={form.capacity}
                 onChange={(e) => set('capacity', e.target.value)}
               />
             </div>
           </Card>
 
-          {/* Format visual cards */}
           <Card className="grid gap-4">
-            <SectionTitle icon={FiGlobe} label="Format de l'événement" />
+            <SectionTitle
+              icon={FiGlobe}
+              label={publishText(t, 'publish.event.sections.format')}
+            />
             <div className="grid grid-cols-3 gap-3">
-              {FORMAT_OPTIONS.map((fmt) => {
+              {EVENT_FORMAT_OPTIONS.map((fmt) => {
                 const Icon = fmt.icon
                 const active = form.format === fmt.value
                 return (
@@ -407,8 +384,12 @@ export function PublishEventPage() {
                       <Icon className={`text-lg ${active ? '' : 'text-[var(--app-text-muted)]'}`} />
                     </span>
                     <div>
-                      <p className={`text-xs font-black ${active ? '' : 'text-[var(--app-text-muted)]'}`}>{fmt.label}</p>
-                      <p className={`mt-0.5 text-[10px] leading-tight ${active ? 'opacity-70' : 'text-[var(--app-text-muted)]'}`}>{fmt.sub}</p>
+                      <p className={`text-xs font-black ${active ? '' : 'text-[var(--app-text-muted)]'}`}>
+                        {publishOptionLabel(t, fmt)}
+                      </p>
+                      <p className={`mt-0.5 text-[10px] leading-tight ${active ? 'opacity-70' : 'text-[var(--app-text-muted)]'}`}>
+                        {publishOptionSub(t, fmt)}
+                      </p>
                     </div>
                   </button>
                 )
@@ -416,84 +397,97 @@ export function PublishEventPage() {
             </div>
             {selectedFormat ? (
               <p className="text-xs text-[var(--app-text-muted)]">
-                Format choisi : <strong>{selectedFormat.label}</strong> — {selectedFormat.sub}
+                {publishText(t, 'publish.event.fields.formatChosen')}{' '}
+                <strong>{publishOptionLabel(t, selectedFormat)}</strong> —{' '}
+                {publishOptionSub(t, selectedFormat)}
               </p>
             ) : null}
           </Card>
         </div>
       ) : null}
 
-      {/* ── Étape 2 ─────────────────────────────────────────────────────── */}
       {step === 2 ? (
         <Card className="grid gap-5">
-          <SectionTitle icon={FiMic} label="Programme & description" />
+          <SectionTitle
+            icon={FiMic}
+            label={publishText(t, 'publish.event.sections.program')}
+          />
           <label className="grid gap-1.5">
             <span className="text-sm font-bold">
-              Description <span className="font-normal text-[var(--app-text-muted)]">(min. 20 car.)</span>
+              {publishText(t, 'publish.event.fields.description')}{' '}
+              <span className="font-normal text-[var(--app-text-muted)]">
+                {publishText(t, 'publish.event.fields.descriptionMin')}
+              </span>
             </span>
             <textarea
               className="min-h-32 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3.5 text-sm"
-              placeholder="Décrivez l'événement, son ambiance, ce que les participants vont vivre…"
+              placeholder={publishText(t, 'publish.event.fields.descriptionPlaceholder')}
               value={form.description}
               onChange={(e) => set('description', e.target.value)}
             />
             {errors.description ? <span className="text-xs text-red-600">{errors.description}</span> : null}
           </label>
           <label className="grid gap-1.5">
-            <span className="text-sm font-bold">Programme / déroulé (optionnel)</span>
+            <span className="text-sm font-bold">
+              {publishText(t, 'publish.event.fields.program')}
+            </span>
             <textarea
               className="min-h-24 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3.5 text-sm"
-              placeholder="18h00 - Accueil · 18h30 - Discours · 19h00 - Repas…"
+              placeholder={publishText(t, 'publish.event.fields.programPlaceholder')}
               value={form.program}
               onChange={(e) => set('program', e.target.value)}
             />
           </label>
           <Input
             id="ev-speakers"
-            label="Intervenants / Artistes (optionnel)"
-            placeholder="Ex : DJ Soulful, Conférencier M. Dupont…"
+            label={publishText(t, 'publish.event.fields.speakers')}
+            placeholder={publishText(t, 'publish.event.fields.speakersPlaceholder')}
             value={form.speakers}
             onChange={(e) => set('speakers', e.target.value)}
           />
         </Card>
       ) : null}
 
-      {/* ── Étape 3 ─────────────────────────────────────────────────────── */}
       {step === 3 ? (
         <div className="grid gap-5">
           <Card className="grid gap-4">
-            <SectionTitle icon={FiMapPin} label="Affiches de l’événement" />
+            <SectionTitle
+              icon={FiMapPin}
+              label={publishText(t, 'publish.event.sections.posters')}
+            />
             <PosterUploader
               photos={photos}
               onAdd={addPhotos}
               onRemove={removePhoto}
-              label="Affiches / visuels (optionnel)"
-              hint="Ajoutez une ou plusieurs affiches. La première sert d’image principale."
+              label={publishText(t, 'publish.event.fields.posters')}
+              hint={publishText(t, 'publish.event.fields.postersHint')}
             />
           </Card>
-          {/* Conditional location block */}
           {form.format !== 'online' ? (
             <Card className="grid gap-5">
-              <SectionTitle icon={FiMapPin} label="Lieu physique" />
+              <SectionTitle
+                icon={FiMapPin}
+                label={publishText(t, 'publish.event.sections.venue')}
+              />
               <CitySelector
                 id="ev-city"
-                label="Ville"
+                label={publishText(t, 'publish.event.fields.city')}
                 value={form.city}
                 onChange={(city) => set('city', city)}
                 error={errors.city}
               />
               <Input
                 id="ev-venue"
-                label="Nom du lieu"
-                placeholder="Ex : Maison de la culture africaine, Hôtel Cosmos…"
+                label={publishText(t, 'publish.event.fields.venue')}
+                placeholder={publishText(t, 'publish.event.fields.venuePlaceholder')}
                 value={form.venue}
                 onChange={(e) => set('venue', e.target.value)}
                 error={errors.venue}
               />
               <Input
                 id="ev-address"
-                label="Adresse complète"
-                placeholder="Ex : Prospekt Mira 150, Moscou"
+                label={publishText(t, 'publish.event.fields.address')}
+                placeholder={publishText(t, 'publish.event.fields.addressPlaceholder')}
                 value={form.address}
                 onChange={(e) => set('address', e.target.value)}
               />
@@ -502,26 +496,31 @@ export function PublishEventPage() {
 
           {form.format !== 'in_person' ? (
             <Card className="grid gap-5">
-              <SectionTitle icon={FiWifi} label="Accès en ligne" />
+              <SectionTitle
+                icon={FiWifi}
+                label={publishText(t, 'publish.event.sections.online')}
+              />
               <Input
                 id="ev-link"
-                label="Lien de connexion"
-                placeholder="https://zoom.us/j/… ou https://meet.google.com/…"
+                label={publishText(t, 'publish.event.fields.onlineLink')}
+                placeholder={publishText(t, 'publish.event.fields.onlineLinkPlaceholder')}
                 value={form.onlineLink}
                 onChange={(e) => set('onlineLink', e.target.value)}
                 error={errors.onlineLink}
               />
               {form.format === 'online' ? (
                 <p className="text-xs text-[var(--app-text-muted)]">
-                  Le lien sera partagé aux participants inscrits. Vérifiez qu'il reste valide.
+                  {publishText(t, 'publish.event.fields.onlineLinkHint')}
                 </p>
               ) : null}
             </Card>
           ) : null}
 
-          {/* Tarif + organisateur */}
           <Card className="grid gap-5">
-            <SectionTitle icon={FiUsers} label="Accès et organisateur" />
+            <SectionTitle
+              icon={FiUsers}
+              label={publishText(t, 'publish.event.sections.access')}
+            />
             <label className={`flex cursor-pointer items-center gap-3 rounded-2xl border-2 p-4 transition ${
               form.freeEntry ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30' : 'border-[var(--app-border)]'
             }`}>
@@ -532,34 +531,43 @@ export function PublishEventPage() {
                 className="size-5 accent-brand-700"
               />
               <div>
-                <p className="text-sm font-bold">Entrée gratuite</p>
-                <p className="text-xs text-[var(--app-text-muted)]">Décochez pour définir un tarif</p>
+                <p className="text-sm font-bold">
+                  {publishText(t, 'publish.event.fields.freeEntry')}
+                </p>
+                <p className="text-xs text-[var(--app-text-muted)]">
+                  {publishText(t, 'publish.event.fields.freeEntryHint')}
+                </p>
               </div>
             </label>
             {!form.freeEntry ? (
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
                   id="ev-price"
-                  label="Tarif d'entrée (RUB)"
+                  label={publishText(t, 'publish.event.fields.price')}
                   type="number"
                   min="0"
                   value={form.price}
                   onChange={(e) => set('price', e.target.value)}
                 />
-                <Input id="ev-currency" label="Devise" value="RUB" disabled />
+                <Input
+                  id="ev-currency"
+                  label={publishText(t, 'publish.event.fields.currency')}
+                  value="RUB"
+                  disabled
+                />
               </div>
             ) : null}
             <Input
               id="ev-organizer"
-              label="Organisateur (nom affiché)"
-              placeholder="Ex : Association MOXT, Club Africain…"
+              label={publishText(t, 'publish.event.fields.organizerName')}
+              placeholder={publishText(t, 'publish.event.fields.organizerNamePlaceholder')}
               value={form.organizerName}
               onChange={(e) => set('organizerName', e.target.value)}
             />
             <Input
               id="ev-contact"
-              label="Contact de l'organisateur"
-              placeholder="Téléphone ou email"
+              label={publishText(t, 'publish.event.fields.organizerContact')}
+              placeholder={publishText(t, 'publish.event.fields.organizerContactPlaceholder')}
               value={form.organizerContact}
               onChange={(e) => set('organizerContact', e.target.value)}
             />
@@ -567,31 +575,66 @@ export function PublishEventPage() {
         </div>
       ) : null}
 
-      {/* ── Étape 4 — Récapitulatif ──────────────────────────────────────── */}
       {step === 4 ? (
         <div className="grid gap-5">
           <Card className="grid gap-4">
-            <SectionTitle icon={FiCheckCircle} label="Récapitulatif" />
+            <SectionTitle
+              icon={FiCheckCircle}
+              label={publishText(t, 'publish.event.sections.review')}
+            />
             {[
-              ['Titre', form.title],
-              ['Catégorie', selectedCategory?.label],
-              ['Format', selectedFormat?.label],
-              ['Début', form.startAt ? new Date(form.startAt).toLocaleString('fr-FR') : '—'],
-              ['Lieu', form.format === 'online' ? 'En ligne' : `${form.venue}, ${form.city}`],
-              ['Capacité', `${form.capacity} personnes`],
-              ['Tarif', form.freeEntry ? 'Gratuit' : `${form.price} RUB`],
-              ['Organisateur', form.organizerName],
+              [publishText(t, 'publish.event.review.titleLabel'), form.title],
+              [
+                publishText(t, 'publish.event.review.category'),
+                publishOptionLabel(t, selectedCategory),
+              ],
+              [
+                publishText(t, 'publish.event.review.format'),
+                publishOptionLabel(t, selectedFormat),
+              ],
+              [
+                publishText(t, 'publish.event.review.start'),
+                form.startAt
+                  ? new Date(form.startAt).toLocaleString('fr-FR')
+                  : publishText(t, 'publish.common.emDash'),
+              ],
+              [
+                publishText(t, 'publish.event.review.location'),
+                form.format === 'online'
+                  ? publishText(t, 'publish.event.review.onlineLocation')
+                  : publishText(t, 'publish.event.review.venueCity', {
+                      venue: form.venue,
+                      city: form.city,
+                    }),
+              ],
+              [
+                publishText(t, 'publish.event.review.capacity'),
+                publishText(t, 'publish.event.review.capacityValue', {
+                  count: form.capacity,
+                }),
+              ],
+              [
+                publishText(t, 'publish.event.review.price'),
+                form.freeEntry
+                  ? publishText(t, 'publish.event.review.free')
+                  : publishText(t, 'publish.event.review.priceValue', {
+                      price: form.price,
+                    }),
+              ],
+              [publishText(t, 'publish.event.review.organizer'), form.organizerName],
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between gap-4 rounded-xl bg-[var(--app-surface-muted)] px-4 py-3">
                 <span className="text-sm text-[var(--app-text-muted)]">{label}</span>
-                <span className="text-right text-sm font-bold">{value || '—'}</span>
+                <span className="text-right text-sm font-bold">
+                  {value || publishText(t, 'publish.common.emDash')}
+                </span>
               </div>
             ))}
           </Card>
           <div className="flex items-start gap-3 rounded-2xl bg-emerald-50 p-4 dark:bg-emerald-950/30">
             <FiCheckCircle className="mt-0.5 shrink-0 text-emerald-600" />
             <p className="text-sm text-emerald-700 dark:text-emerald-400">
-              Votre événement sera publié immédiatement et visible dans la section Événements de MOXT.
+              {publishText(t, 'publish.event.review.successHint')}
             </p>
           </div>
         </div>
@@ -599,14 +642,25 @@ export function PublishEventPage() {
 
       <div className="flex items-center justify-between gap-3">
         {step > 1 ? (
-          <Button variant="secondary" icon={FiArrowLeft} onClick={back}>Précédent</Button>
+          <Button variant="secondary" icon={FiArrowLeft} onClick={back}>
+            {publishText(t, 'publish.common.previous')}
+          </Button>
         ) : (
           <span />
         )}
         {step < STEPS.length ? (
-          <Button icon={FiArrowRight} onClick={next}>Continuer</Button>
+          <Button icon={FiArrowRight} onClick={next}>
+            {publishText(t, 'publish.common.continue')}
+          </Button>
         ) : (
-          <Button icon={FiCheckCircle} onClick={publish} loading={publishing} disabled={publishing}>Créer l'événement</Button>
+          <Button
+            icon={FiCheckCircle}
+            onClick={publish}
+            loading={publishing}
+            disabled={publishing}
+          >
+            {publishText(t, 'publish.event.nav.publish')}
+          </Button>
         )}
       </div>
     </div>

@@ -15,14 +15,14 @@ import { useLanguage } from '../contexts/useLanguage'
 import { loadAllData } from '../app/loadAllData'
 import { authErrorToast } from '../features/auth/authErrorMessages'
 import { clearAuthError, login } from '../features/auth/authSlice'
-import { loginEmailSchema, loginPhonePasswordSchema } from '../features/auth/authSchemas'
+import { createAuthSchemas } from '../features/auth/authSchemas'
 import { addToast } from '../features/ui/uiSlice'
 import { startRealtimeSubscription } from '../services/realtimeService'
 import { resolveReturnTo, clearReturnTo } from '../features/guest/guestNavigation'
 
 const LOGIN_MODES = [
-  { id: 'phone-password', label: 'Tél. + mot de passe', icon: FiPhone },
-  { id: 'email', label: 'E-mail', icon: FiMail },
+  { id: 'phone-password', labelKey: 'auth.login.modePhonePassword', icon: FiPhone },
+  { id: 'email', labelKey: 'auth.login.modeEmail', icon: FiMail },
 ]
 
 function finishLogin(dispatch, store, navigate, location, searchParams) {
@@ -43,6 +43,7 @@ export function LoginPage() {
   const { error } = useSelector((state) => state.auth)
 
   const [mode, setMode] = useState('phone-password')
+  const { loginEmailSchema, loginPhonePasswordSchema } = createAuthSchemas(t)
 
   useEffect(() => () => dispatch(clearAuthError()), [dispatch])
 
@@ -53,9 +54,9 @@ export function LoginPage() {
 
   useEffect(() => {
     if (!error) return
-    dispatch(addToast(authErrorToast('Connexion impossible', error)))
+    dispatch(addToast(authErrorToast(t('auth.login.errorTitle'), error, 'error', t)))
     dispatch(clearAuthError())
-  }, [dispatch, error])
+  }, [dispatch, error, t])
 
   function switchMode(nextMode) {
     setMode(nextMode)
@@ -89,10 +90,10 @@ export function LoginPage() {
 
   return (
     <AuthCard
-      eyebrow="MOXT · Connexion"
+      eyebrow={t('auth.login.eyebrow')}
       title={t('auth.login.title')}
       titleClassName="max-sm:hidden"
-      description="Accédez à votre espace par numéro russe (+7) et mot de passe, ou par e-mail."
+      description={t('auth.login.description')}
     >
       <div className="grid gap-2 sm:grid-cols-2">
         {LOGIN_MODES.map((item) => {
@@ -106,7 +107,7 @@ export function LoginPage() {
               className={`auth-mode-tab ${active ? 'auth-mode-tab--active' : ''}`}
             >
               <Icon className="shrink-0 text-sm" aria-hidden="true" />
-              {item.label}
+              {t(item.labelKey)}
             </button>
           )
         })}
@@ -122,7 +123,7 @@ export function LoginPage() {
         <form className="auth-flow-panel mt-4 grid gap-4" onSubmit={phoneFormik.handleSubmit} noValidate>
           <Input
             id="login-phone-password"
-            label="Numéro russe"
+            label={t('auth.login.phoneLabel')}
             type="tel"
             autoComplete="tel"
             placeholder="+7XXXXXXXXXX"
@@ -142,10 +143,10 @@ export function LoginPage() {
             error={phoneError('password')}
           />
           <p className="auth-flow-hint text-xs text-[var(--app-text-muted)]">
-            Utilisez le numéro +7 et votre mot de passe.
+            {t('auth.login.phoneHint')}
           </p>
           <Button className="w-full" type="submit" loading={phoneFormik.isSubmitting}>
-            {phoneFormik.isSubmitting ? t('auth.login.submitting') : 'Se connecter'}
+            {phoneFormik.isSubmitting ? t('auth.login.submitting') : t('auth.login.submit')}
           </Button>
         </form>
       ) : null}
@@ -154,7 +155,7 @@ export function LoginPage() {
         <form className="auth-flow-panel mt-4 grid gap-4" onSubmit={emailFormik.handleSubmit} noValidate>
           <Input
             id="login-email"
-            label="Adresse e-mail"
+            label={t('auth.login.email')}
             type="email"
             autoComplete="username"
             placeholder="nom@example.com"

@@ -4,11 +4,13 @@ import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { EmptyState } from '../../components/ui/EmptyState'
+import { useLanguage } from '../../contexts/useLanguage'
 import { updateApplicationStatus } from './jobSlice'
 import { applicationJobId } from './jobUtils'
 
 export function JobApplicationsPanel({ embedded = false, id = 'job-applications' }) {
   const dispatch = useDispatch()
+  const { t } = useLanguage()
   const user = useSelector((state) => state.auth.user)
   const jobs = useSelector((state) => state.jobs.items)
   const applications = useSelector((state) => state.jobs.applications)
@@ -34,7 +36,7 @@ export function JobApplicationsPanel({ embedded = false, id = 'job-applications'
                 <Card key={row.id} className="h-full bg-[var(--app-surface-muted)] p-4">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <strong>{row.applicantName || 'Membre MOXT'}</strong>
+                      <strong>{row.applicantName || t('jobs.applications.defaultApplicant')}</strong>
                       <p className="mt-1 text-sm text-[var(--app-text-muted)]">{job?.title}</p>
                       {row.message ? (
                         <p className="mt-2 text-sm text-[var(--app-text-muted)]">{row.message}</p>
@@ -48,7 +50,7 @@ export function JobApplicationsPanel({ embedded = false, id = 'job-applications'
                           dispatch(updateApplicationStatus({ id: row.id, status: 'accepted' }))
                         }
                       >
-                        Accepter
+                        {t('jobs.applications.accept')}
                       </Button>
                       <Button
                         icon={FiX}
@@ -57,7 +59,7 @@ export function JobApplicationsPanel({ embedded = false, id = 'job-applications'
                           dispatch(updateApplicationStatus({ id: row.id, status: 'rejected' }))
                         }
                       >
-                        Refuser
+                        {t('jobs.applications.reject')}
                       </Button>
                     </div>
                   </div>
@@ -67,8 +69,8 @@ export function JobApplicationsPanel({ embedded = false, id = 'job-applications'
           </div>
   ) : (
     <EmptyState
-      title="Aucune candidature"
-      description="Les nouvelles demandes liées à vos offres apparaîtront ici."
+      title={t('jobs.applications.emptyTitle')}
+      description={t('jobs.applications.emptyDescription')}
     />
   )
 
@@ -80,9 +82,9 @@ export function JobApplicationsPanel({ embedded = false, id = 'job-applications'
     <section id={id} className="scroll-mt-24 lg:scroll-mt-28">
       <Card className="grid gap-4 p-5 sm:p-6">
         <div>
-          <h2 className="text-lg font-black">Candidatures reçues</h2>
+          <h2 className="text-lg font-black">{t('jobs.applications.panelTitle')}</h2>
           <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-            Traitez les demandes liées à vos offres publiées.
+            {t('jobs.applications.panelDescription')}
           </p>
         </div>
         {content}

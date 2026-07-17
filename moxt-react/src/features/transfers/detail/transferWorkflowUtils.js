@@ -2,19 +2,17 @@ import { TRANSFER_STATUS } from '../transferConfig'
 import { getTransferProgressState } from '../transferProgressUtils'
 import { isClaimOnlyPhase } from '../transferActionUtils'
 
-const CLIENT_WAITING = {
-  [TRANSFER_STATUS.DECLARED]: 'Votre déclaration est envoyée. L’entreprise vérifie la réception du paiement.',
-  [TRANSFER_STATUS.RECEIVED]:
-    'L’entreprise prépare le virement. Vous serez notifié dès qu’il sera confirmé.',
-  [TRANSFER_STATUS.PAID_OUT]:
-    'Le virement a été confirmé. Vous pourrez bientôt déclarer la réception des fonds.',
-  [TRANSFER_STATUS.COMPLETED]: 'Transfert terminé.',
+const CLIENT_WAITING_KEYS = {
+  [TRANSFER_STATUS.DECLARED]: 'transfers.workflow.clientWaiting.declared',
+  [TRANSFER_STATUS.RECEIVED]: 'transfers.workflow.clientWaiting.received',
+  [TRANSFER_STATUS.PAID_OUT]: 'transfers.workflow.clientWaiting.paidOut',
+  [TRANSFER_STATUS.COMPLETED]: 'transfers.workflow.clientWaiting.completed',
 }
 
-const BUSINESS_WAITING = {
-  [TRANSFER_STATUS.PENDING]: 'En attente de la déclaration de paiement du client.',
-  [TRANSFER_STATUS.PAID_OUT]: 'Virement confirmé. En attente de la déclaration de réception.',
-  [TRANSFER_STATUS.COMPLETED]: 'Transfert clôturé.',
+const BUSINESS_WAITING_KEYS = {
+  [TRANSFER_STATUS.PENDING]: 'transfers.workflow.businessWaiting.pending',
+  [TRANSFER_STATUS.PAID_OUT]: 'transfers.workflow.businessWaiting.paidOut',
+  [TRANSFER_STATUS.COMPLETED]: 'transfers.workflow.businessWaiting.completed',
 }
 
 export function getTransferWorkflowForView(transfer, actionView, access) {
@@ -28,7 +26,7 @@ export function getTransferWorkflowForView(transfer, actionView, access) {
       completedCount,
       activeStep,
       currentAction: { type: 'claim' },
-      waitingMessage: null,
+      waitingMessageKey: null,
     }
   }
 
@@ -41,10 +39,10 @@ export function getTransferWorkflowForView(transfer, actionView, access) {
         activeStep,
         currentAction: {
           type: 'confirm_payment_reception',
-          title: 'Confirmer la réception du paiement',
-          description: 'Vérifiez votre compte puis validez cette étape pour passer au virement.',
+          titleKey: 'transfers.workflow.actions.confirmPaymentReception.title',
+          descriptionKey: 'transfers.workflow.actions.confirmPaymentReception.description',
         },
-        waitingMessage: null,
+        waitingMessageKey: null,
       }
     }
     if (access.canConfirmPayout) {
@@ -55,10 +53,10 @@ export function getTransferWorkflowForView(transfer, actionView, access) {
         activeStep,
         currentAction: {
           type: 'confirm_payout',
-          title: 'Confirmer le transfert',
-          description: 'Ajoutez la preuve du virement vers le destinataire, puis validez.',
+          titleKey: 'transfers.workflow.actions.confirmPayout.title',
+          descriptionKey: 'transfers.workflow.actions.confirmPayout.description',
         },
-        waitingMessage: null,
+        waitingMessageKey: null,
       }
     }
     return {
@@ -67,7 +65,8 @@ export function getTransferWorkflowForView(transfer, actionView, access) {
       completedCount,
       activeStep,
       currentAction: null,
-      waitingMessage: BUSINESS_WAITING[transfer.status] || 'Aucune action requise pour le moment.',
+      waitingMessageKey:
+        BUSINESS_WAITING_KEYS[transfer.status] || 'transfers.workflow.waiting.none',
     }
   }
 
@@ -80,10 +79,10 @@ export function getTransferWorkflowForView(transfer, actionView, access) {
         activeStep,
         currentAction: {
           type: 'declare_payment',
-          title: 'Déclarer votre paiement',
-          description: 'Ajoutez une preuve puis confirmez votre déclaration.',
+          titleKey: 'transfers.workflow.actions.declarePayment.title',
+          descriptionKey: 'transfers.workflow.actions.declarePayment.description',
         },
-        waitingMessage: null,
+        waitingMessageKey: null,
       }
     }
     if (access.canDeclareReception) {
@@ -94,10 +93,10 @@ export function getTransferWorkflowForView(transfer, actionView, access) {
         activeStep,
         currentAction: {
           type: 'declare_reception',
-          title: 'Déclarer la réception des fonds',
-          description: 'Confirmez que le destinataire a bien reçu le montant.',
+          titleKey: 'transfers.workflow.actions.declareReception.title',
+          descriptionKey: 'transfers.workflow.actions.declareReception.description',
         },
-        waitingMessage: null,
+        waitingMessageKey: null,
       }
     }
     return {
@@ -106,7 +105,7 @@ export function getTransferWorkflowForView(transfer, actionView, access) {
       completedCount,
       activeStep,
       currentAction: null,
-      waitingMessage: CLIENT_WAITING[transfer.status] || 'Aucune action requise pour le moment.',
+      waitingMessageKey: CLIENT_WAITING_KEYS[transfer.status] || 'transfers.workflow.waiting.none',
     }
   }
 
@@ -116,6 +115,6 @@ export function getTransferWorkflowForView(transfer, actionView, access) {
     completedCount,
     activeStep,
     currentAction: null,
-    waitingMessage: null,
+    waitingMessageKey: null,
   }
 }

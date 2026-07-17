@@ -14,16 +14,23 @@ import { VerifiedBadge } from '../components/ui/Badge'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { Select } from '../components/ui/Select'
+import { useLanguage } from '../contexts/useLanguage'
 import { useGeographyOptions } from '../hooks/useGeographyOptions'
 import { sortByCountryPriority, resolveUserCountryCode } from '@moxt/shared/utils/countryPriority.js'
 import { sortBySubscriptionPriority } from '@moxt/shared/utils/subscriptionUtils.js'
 import { CatalogFavoriteButton } from '../features/account/CatalogFavoriteButton'
 import { resolveParcelCountry } from '../features/marketplace/listingCatalogUtils'
+import {
+  parcelBrowseTabs,
+  parcelCountryFilterOptions,
+  parcelStatusFilterOptions,
+} from '../features/parcels/parcelBrowseConfig'
 import { formatMoney } from '../features/transfers/transferUtils'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 
 export function ParcelsPage() {
   useScrollToSecondSection()
+  const { t } = useLanguage()
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [tab, setTab] = useState('active')
   const [showMine, setShowMine] = useState(false)
@@ -91,11 +98,11 @@ export function ParcelsPage() {
   return (
     <div className="community-warm-bg grid gap-7 rounded-[var(--radius-card-lg)]">
       <PageHeader
-        eyebrow="Transport"
-        title="Colis et voyages"
-        description="Publiez une capacité de transport ou réservez une place disponible."
+        eyebrow={t('parcels.browse.eyebrow')}
+        title={t('parcels.browse.title')}
+        description={t('parcels.browse.description')}
         stats={[
-          { label: 'Trajets disponibles', value: visibleParcels.length },
+          { label: t('parcels.browse.stats.availableTrips'), value: visibleParcels.length },
         ]}
         actions={
           <>
@@ -104,10 +111,10 @@ export function ParcelsPage() {
               icon={FiUser}
               onClick={() => setShowMine((v) => !v)}
             >
-              {showMine ? 'Tous les colis' : 'Mes colis'}
+              {showMine ? t('parcels.browse.actions.allParcels') : t('parcels.browse.actions.myParcels')}
             </Button>
             <Button icon={FiPlus} onClick={() => navigate('/parcels/publish')}>
-              Publier un voyage
+              {t('parcels.browse.actions.publish')}
             </Button>
           </>
         }
@@ -120,20 +127,22 @@ export function ParcelsPage() {
           onQueryChange={(query) => setFilters((current) => ({ ...current, query }))}
           onToggleAdvanced={() => setAdvancedOpen((value) => !value)}
           onClear={clearFilters}
-          placeholder="Pays, ville, voyageur, entreprise..."
+          placeholder={t('parcels.browse.search.placeholder')}
         >
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <Select
               id="parcel-filter-country"
-              label="Pays"
+              label={t('parcels.browse.filters.country')}
               value={filters.country}
               onChange={(event) =>
                 setFilters((current) => ({ ...current, country: event.target.value }))
               }
             >
-              <option value="">Mon pays par defaut</option>
-              <option value="ALL">Tous les pays</option>
-              <option value="RU">Russie</option>
+              {parcelCountryFilterOptions.map((option) => (
+                <option key={option.value || 'default'} value={option.value}>
+                  {t(option.labelKey)}
+                </option>
+              ))}
               {countries.map((country) => (
                 <option key={country.code} value={country.code}>
                   {country.name}
@@ -142,43 +151,46 @@ export function ParcelsPage() {
             </Select>
             <Input
               id="parcel-filter-origin"
-              label="Départ"
+              label={t('parcels.browse.filters.origin')}
               value={filters.origin}
               onChange={(event) =>
                 setFilters((current) => ({ ...current, origin: event.target.value }))
               }
-              placeholder="Ville ou pays"
+              placeholder={t('parcels.browse.filters.cityPlaceholder')}
             />
             <Input
               id="parcel-filter-destination"
-              label="Destination"
+              label={t('parcels.browse.filters.destination')}
               value={filters.destination}
               onChange={(event) =>
                 setFilters((current) => ({ ...current, destination: event.target.value }))
               }
-              placeholder="Ville ou pays"
+              placeholder={t('parcels.browse.filters.cityPlaceholder')}
             />
             <Select
               id="parcel-filter-status"
-              label="Statut"
+              label={t('parcels.browse.filters.status')}
               value={filters.status}
               onChange={(event) =>
                 setFilters((current) => ({ ...current, status: event.target.value }))
               }
             >
-              <option value="">Tous</option>
-              <option value="active">Disponibles</option>
-              <option value="full">Complets</option>
+              {parcelStatusFilterOptions.map((option) => (
+                <option key={option.value || 'all'} value={option.value}>
+                  {t(option.labelKey)}
+                </option>
+              ))}
             </Select>
           </div>
         </CatalogSearch>
         <CatalogArchiveTabs
           active={tab}
           onChange={setTab}
-          tabs={[
-            { key: 'active', label: 'Voyages actifs', count: visibleParcels.length },
-            { key: 'archived', label: 'Archives', count: archivedParcels.length },
-          ]}
+          tabs={parcelBrowseTabs.map((item) => ({
+            key: item.key,
+            label: t(item.labelKey),
+            count: item.key === 'active' ? visibleParcels.length : archivedParcels.length,
+          }))}
         />
 
         <CatalogGrid lazy={false} columns="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
@@ -191,13 +203,13 @@ export function ParcelsPage() {
                       <Card variant="interactive" className="group relative h-full overflow-hidden p-4 sm:p-5">
                         <span className="absolute left-2 top-2 z-10 flex items-center gap-1">
                           {parcel.proofStatus === 'verified' ? (
-                            <VerifiedBadge size="sm" label="Preuve vérifiée" />
+                            <VerifiedBadge size="sm" label={t('parcels.card.proofVerified')} />
                           ) : null}
                           {parcel.businessId ? (
-                            <VerifiedBadge size="sm" label="Entreprise" />
+                            <VerifiedBadge size="sm" label={t('parcels.card.business')} />
                           ) : (
                             <span className="rounded-full bg-[var(--app-surface-muted)] px-1.5 py-0.5 text-[9px] font-black text-[var(--app-text-faint)]">
-                              Particulier
+                              {t('parcels.card.individual')}
                             </span>
                           )}
                         </span>
@@ -222,27 +234,34 @@ export function ParcelsPage() {
                           </div>
                         </div>
                         <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                          <ParcelMetric value={`${parcel.remainingKg} kg`} label="Disponible" />
+                          <ParcelMetric
+                            value={`${parcel.remainingKg} kg`}
+                            label={t('parcels.card.available')}
+                          />
                           <ParcelMetric
                             value={formatMoney(parcel.pricePerKg, parcel.currency)}
-                            label="Par kg"
+                            label={t('parcels.card.perKg')}
                           />
                         </div>
                         <div className="mt-4 hidden gap-2 text-sm text-[var(--app-text-muted)] sm:grid">
                           <span className="flex items-center gap-2">
-                            <FiCalendar /> Départ {parcel.departureDate}
+                            <FiCalendar /> {t('parcels.card.departure', { date: parcel.departureDate })}
                           </span>
                           <span className="flex items-center gap-2">
-                            <FiCalendar /> Dépôt avant {parcel.depositDeadline || parcel.departureDate}
+                            <FiCalendar />{' '}
+                            {t('parcels.card.depositBefore', {
+                              date: parcel.depositDeadline || parcel.departureDate,
+                            })}
                           </span>
                           {parcel.distributionDate ? (
                             <span className="flex items-center gap-2">
-                              <FiCalendar /> Récup. dès {parcel.distributionDate}
+                              <FiCalendar />{' '}
+                              {t('parcels.card.pickupFrom', { date: parcel.distributionDate })}
                             </span>
                           ) : null}
                         </div>
                         <span className="mt-4 flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-brand-700 px-2 text-center text-xs font-black text-white transition group-hover:bg-brand-800 sm:min-h-11 sm:text-sm dark:bg-brand-600">
-                          Voir le détail <FiArrowRight className="text-xs" />
+                          {t('parcels.card.viewDetail')} <FiArrowRight className="text-xs" />
                         </span>
                       </Card>
                     </Link>
@@ -261,11 +280,11 @@ export function ParcelsPage() {
                 className="col-span-full"
                 icon={FiPackage}
                 tone="warm"
-                title="Aucun voyage publié"
-                description="Soyez le premier a proposer un trajet ou ajustez vos filtres."
+                title={t('parcels.empty.activeTitle')}
+                description={t('parcels.empty.activeDescription')}
                 action={
                   <Button icon={FiPlus} onClick={() => navigate('/parcels/publish')}>
-                    Publier un voyage
+                    {t('parcels.browse.actions.publish')}
                   </Button>
                 }
               />
@@ -277,7 +296,7 @@ export function ParcelsPage() {
                   <Link to={`/parcels/${parcel.id}`}>
                     <Card variant="interactive" className="group relative h-full overflow-hidden p-4 sm:p-5 opacity-80">
                       <span className="absolute right-2 top-2 z-10 rounded-full bg-[var(--app-surface-muted)] px-1.5 py-0.5 text-[9px] font-black text-[var(--app-text-faint)]">
-                        Archivé
+                        {t('parcels.card.archived')}
                       </span>
                       <div className="flex items-center gap-2">
                         <h2 className="truncate text-sm font-black sm:text-base">{parcel.ownerName}</h2>
@@ -288,7 +307,7 @@ export function ParcelsPage() {
                         <p className="min-w-0 flex-1 truncate text-center text-xs font-black uppercase tracking-wide">{parcel.destination}</p>
                       </div>
                       <p className="mt-3 flex items-center gap-2 text-xs text-[var(--app-text-muted)]">
-                        <FiCalendar /> Départ {parcel.departureDate}
+                        <FiCalendar /> {t('parcels.card.departure', { date: parcel.departureDate })}
                       </p>
                     </Card>
                   </Link>
@@ -299,8 +318,8 @@ export function ParcelsPage() {
                 className="col-span-full"
                 icon={FiPackage}
                 tone="warm"
-                title="Aucune archive"
-                description="Les voyages passés ou terminés apparaîtront ici."
+                title={t('parcels.empty.archivedTitle')}
+                description={t('parcels.empty.archivedDescription')}
               />
             )
           )}

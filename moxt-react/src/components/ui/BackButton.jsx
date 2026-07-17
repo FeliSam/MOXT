@@ -1,5 +1,6 @@
 import { FiArrowLeft } from 'react-icons/fi'
 import { Button } from './Button'
+import { useLanguage } from '../../contexts/useLanguage'
 import { useBackNavigation } from '../../hooks/useBackNavigation'
 
 const linkClassName =
@@ -7,18 +8,20 @@ const linkClassName =
 
 export function BackButton({
   fallback,
-  label = 'Retour',
+  label,
   appearance = 'button',
   variant = 'secondary',
   className,
   ...buttonProps
 }) {
+  const { t } = useLanguage()
   const { goBack } = useBackNavigation(fallback)
+  const resolvedLabel = label ?? t('common.back')
 
   if (appearance === 'link') {
     return (
       <button type="button" onClick={goBack} className={className || linkClassName}>
-        <FiArrowLeft /> {label}
+        <FiArrowLeft /> {resolvedLabel}
       </button>
     )
   }
@@ -31,7 +34,7 @@ export function BackButton({
       className={className}
       {...buttonProps}
     >
-      {label}
+      {resolvedLabel}
     </Button>
   )
 }

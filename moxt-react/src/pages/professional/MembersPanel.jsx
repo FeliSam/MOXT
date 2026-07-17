@@ -5,13 +5,23 @@ import { Card } from '../../components/ui/Card'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { Input } from '../../components/ui/Input'
 import { Select } from '../../components/ui/Select'
+import { useLanguage } from '../../contexts/useLanguage'
 import {
   addBusinessMember,
   removeBusinessMember,
   updateBusinessMember,
 } from '../../features/businesses/businessSlice'
+import { professionalText } from '../../features/businesses/professionalI18n'
+
+const ROLE_OPTIONS = [
+  { value: 'manager', labelKey: 'professional.members.roles.manager' },
+  { value: 'support', labelKey: 'professional.members.roles.support' },
+  { value: 'editor', labelKey: 'professional.members.roles.editor' },
+]
 
 export function MembersPanel({ business, dispatch, members }) {
+  const { t } = useLanguage()
+  const pt = (key, vars) => professionalText(t, key, vars)
   const [form, setForm] = useState({ name: '', email: '', role: 'editor' })
 
   function submit(event) {
@@ -24,32 +34,34 @@ export function MembersPanel({ business, dispatch, members }) {
   return (
     <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
       <Card>
-        <h2 className="font-black">Ajouter un membre</h2>
+        <h2 className="font-black">{pt('professional.members.addTitle')}</h2>
         <form className="mt-5 grid gap-4" onSubmit={submit}>
           <Input
             id="member-name"
-            label="Nom"
+            label={pt('professional.members.name')}
             value={form.name}
             onChange={(event) => setForm({ ...form, name: event.target.value })}
           />
           <Input
             id="member-email"
-            label="E-mail"
+            label={pt('professional.members.email')}
             type="email"
             value={form.email}
             onChange={(event) => setForm({ ...form, email: event.target.value })}
           />
           <Select
             id="member-role"
-            label="Rôle"
+            label={pt('professional.members.role')}
             value={form.role}
             onChange={(event) => setForm({ ...form, role: event.target.value })}
           >
-            <option value="manager">Gestionnaire</option>
-            <option value="support">Support</option>
-            <option value="editor">Éditeur</option>
+            {ROLE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {pt(option.labelKey)}
+              </option>
+            ))}
           </Select>
-          <Button type="submit">Ajouter</Button>
+          <Button type="submit">{pt('professional.members.add')}</Button>
         </form>
       </Card>
       <div className="grid content-start gap-3">
@@ -63,7 +75,7 @@ export function MembersPanel({ business, dispatch, members }) {
               </div>
               <Select
                 id={`member-role-${member.id}`}
-                label="Rôle"
+                label={pt('professional.members.role')}
                 value={member.role}
                 onChange={(event) =>
                   dispatch(
@@ -75,9 +87,11 @@ export function MembersPanel({ business, dispatch, members }) {
                   )
                 }
               >
-                <option value="manager">Gestionnaire</option>
-                <option value="support">Support</option>
-                <option value="editor">Éditeur</option>
+                {ROLE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {pt(option.labelKey)}
+                  </option>
+                ))}
               </Select>
               <Button
                 variant="danger"
@@ -85,12 +99,12 @@ export function MembersPanel({ business, dispatch, members }) {
                   dispatch(removeBusinessMember({ id: member.id, businessId: business.id }))
                 }
               >
-                Retirer
+                {pt('professional.members.remove')}
               </Button>
             </Card>
           ))
         ) : (
-          <EmptyState title="Aucun membre" />
+          <EmptyState title={pt('professional.members.empty')} />
         )}
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { FiX } from 'react-icons/fi'
+import { useLanguage } from '../../contexts/useLanguage'
 
 const sizes = {
   default: 'max-w-xl',
@@ -9,6 +10,7 @@ const sizes = {
 }
 
 export function Modal({ children, open, onClose, size = 'default', title }) {
+  const { t } = useLanguage()
   const titleId = useId()
   const dialogRef = useRef(null)
   const onCloseRef = useRef(onClose)
@@ -62,7 +64,7 @@ export function Modal({ children, open, onClose, size = 'default', title }) {
       <button
         type="button"
         className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
-        aria-label="Fermer la fenêtre"
+        aria-label={t('common.closeWindow')}
         onClick={onClose}
       />
       <section
@@ -80,7 +82,7 @@ export function Modal({ children, open, onClose, size = 'default', title }) {
           <button
             type="button"
             className="grid size-9 place-items-center rounded-xl hover:bg-[var(--app-surface-muted)]"
-            aria-label="Fermer"
+            aria-label={t('common.close')}
             onClick={onClose}
           >
             <FiX />

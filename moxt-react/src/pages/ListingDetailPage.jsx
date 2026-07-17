@@ -56,16 +56,24 @@ import { PublisherDetailCard } from '../features/publications/PublisherDetailCar
 import { PublisherPublicationsStrip } from '../features/publications/PublisherPublicationsStrip'
 import { usePublisherDetailProfile } from '../features/publications/usePublisherDetailProfile'
 import { ReportDialog } from '../components/ui/ReportDialog'
+import { useLanguage } from '../contexts/useLanguage'
+import {
+  listingOptionLabel,
+  marketplaceText,
+} from '../features/marketplace/marketplaceI18n'
 
-const tabs = [
-  { value: 'description', label: 'Description' },
-  { value: 'details', label: 'Caractéristiques' },
-  { value: 'delivery', label: 'Livraison et garantie' },
-  { value: 'questions', label: 'Questions' },
-  { value: 'history', label: 'Historique' },
+const TAB_DEFS = [
+  { value: 'description', labelKey: 'marketplace.detail.tabs.description' },
+  { value: 'details', labelKey: 'marketplace.detail.tabs.details' },
+  { value: 'delivery', labelKey: 'marketplace.detail.tabs.delivery' },
+  { value: 'questions', labelKey: 'marketplace.detail.tabs.questions' },
+  { value: 'history', labelKey: 'marketplace.detail.tabs.history' },
 ]
 
 export function ListingDetailPage() {
+  const { t } = useLanguage()
+  const mt = (key, vars) => marketplaceText(t, key, vars)
+  const tabs = TAB_DEFS.map((tab) => ({ ...tab, label: mt(tab.labelKey) }))
   const dispatch = useDispatch()
   const { listingId } = useParams()
   const user = useSelector((state) => state.auth.user)
@@ -109,31 +117,39 @@ export function ListingDetailPage() {
     [allListings, listing?.category, listing?.city, listingId],
   )
 
-  if (!listing) return <Card>Annonce introuvable.</Card>
+  if (!listing) return <Card>{mt('marketplace.detail.notFound')}</Card>
 
   const images = listing.images || []
   const rules = listingRulesFor(listing.type)
-  const listingTypeLabel =
-    LISTING_TYPES_META.find(({ value }) => value === listing.type)?.label || listing.type
-  const listingCategoryLabel =
-    categoriesForType(listing.type).find(({ value }) => value === listing.category)?.label ||
-    listing.category
+  const typeOption = LISTING_TYPES_META.find(({ value }) => value === listing.type)
+  const categoryOption = categoriesForType(listing.type).find(
+    ({ value }) => value === listing.category,
+  )
+  const listingTypeLabel = typeOption ? listingOptionLabel(t, typeOption) : listing.type
+  const listingCategoryLabel = categoryOption
+    ? listingOptionLabel(t, categoryOption)
+    : listing.category
   const stock = rules.showStock ? Number(listing.stock ?? 1) : null
-  const specificDetails = listingSpecificDetails(listing)
+  const specificDetails = listingSpecificDetails(listing, t)
+  const conditionOption = LISTING_CONDITIONS.find(({ value }) => value === listing.condition)
   const characteristicItems = [
-    { label: 'Catégorie', value: listing.category },
-    { label: 'Type', value: listingTypeLabel },
-    { label: 'Marque', value: listing.brand },
-    { label: 'Modèle', value: listing.model },
-    { label: 'Couleur', value: listing.color },
+    { label: mt('marketplace.common.category'), value: listingCategoryLabel },
+    { label: mt('marketplace.common.type'), value: listingTypeLabel },
+    { label: mt('marketplace.common.brand'), value: listing.brand },
+    { label: mt('marketplace.common.model'), value: listing.model },
+    { label: mt('marketplace.common.color'), value: listing.color },
     rules.showCondition
       ? {
-          label: 'État',
-          value: optionLabel(LISTING_CONDITIONS, listing.condition),
+          label: mt('marketplace.common.condition'),
+          value: conditionOption
+            ? listingOptionLabel(t, conditionOption)
+            : optionLabel(LISTING_CONDITIONS, listing.condition),
         }
       : null,
-    rules.showStock ? { label: 'Stock disponible', value: `${stock}` } : null,
-    { label: 'Quartier', value: listing.district },
+    rules.showStock
+      ? { label: mt('marketplace.detail.stockAvailable'), value: `${stock}` }
+      : null,
+    { label: mt('marketplace.common.district'), value: listing.district },
     ...specificDetails,
   ].filter(Boolean)
   const activeImage = selectedImage || images[0]
@@ -157,16 +173,16 @@ export function ListingDetailPage() {
       dispatch(incrementListingShare(listing.id))
       dispatch(
         addToast({
-          title: 'Annonce partagée',
-          message: 'Le lien a été partagé ou copié.',
+          title: mt('marketplace.detail.shareSuccessTitle'),
+          message: mt('marketplace.detail.shareSuccessBody'),
           tone: 'success',
         }),
       )
     } catch {
       dispatch(
         addToast({
-          title: 'Partage annulé',
-          message: "L'annonce n'a pas été partagée.",
+          title: mt('marketplace.detail.shareCancelledTitle'),
+          message: mt('marketplace.detail.shareCancelledBody'),
           tone: 'info',
         }),
       )
@@ -189,8 +205,8 @@ export function ListingDetailPage() {
 
   return (
     <div className="grid min-w-0 gap-5 overflow-hidden max-md:pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:gap-7 md:pb-28 xl:overflow-visible xl:pb-0">
-      <nav aria-label="Fil d'Ariane" className="flex min-w-0 items-center gap-2 overflow-hidden text-xs text-[var(--app-text-muted)]">
-        <Link to="/marketplace">Marketplace</Link>
+      <nav aria-label={mt('marketplace.detail.breadcrumb')} className="flex min-w-0 items-center gap-2 overflow-hidden text-xs text-[var(--app-text-muted)]">
+        <Link to="/marketplace">{mt('marketplace.common.name')}</Link>
         <span>/</span>
         <span>{listingCategoryLabel}</span>
         <span>/</span>
@@ -200,12 +216,16 @@ export function ListingDetailPage() {
       <PageHeader
         eyebrow={listingCategoryLabel}
         title={listing.title}
-        description={`${listing.city} · Publiée le ${formatShortDate(listing.createdAt)} · Réf. ${listing.id}`}
+        description={mt('marketplace.detail.meta', {
+          city: listing.city,
+          date: formatShortDate(listing.createdAt),
+          id: listing.id,
+        })}
         actions={
           <>
             <ReshareButton sourceType="listing" sourceId={listing.id} sourceData={listing} />
             <Button variant="secondary" icon={FiShare2} onClick={shareListing}>
-              Partager
+              {mt('marketplace.detail.share')}
             </Button>
             <BackButton fallback="/marketplace" />
           </>
@@ -230,7 +250,9 @@ export function ListingDetailPage() {
               <Badge tone="violet">{listingTypeLabel}</Badge>
               {rules.showStock ? (
                 <Badge tone={stock ? 'success' : 'danger'}>
-                  {stock ? `${stock} disponible(s)` : 'Rupture'}
+                  {stock
+                    ? mt('marketplace.common.availableCount', { count: stock })
+                    : mt('marketplace.common.outOfStock')}
                 </Badge>
               ) : null}
             </div>
@@ -244,7 +266,7 @@ export function ListingDetailPage() {
           </Card>
 
           <Card className="min-w-0 overflow-hidden p-4 sm:p-6 xl:hidden">
-            <h2 className="font-black">Caractéristiques</h2>
+            <h2 className="font-black">{mt('marketplace.detail.characteristics')}</h2>
             <div className="mt-4">
               <DetailFacts items={characteristicItems} />
             </div>
@@ -264,11 +286,11 @@ export function ListingDetailPage() {
           ) : null}
 
           <Card className="min-w-0 overflow-hidden p-4 sm:p-6">
-            <Tabs active={activeTab} items={tabs} onChange={setActiveTab} label="Détail annonce" />
+            <Tabs active={activeTab} items={tabs} onChange={setActiveTab} label={mt('marketplace.detail.tabsLabel')} />
             <div className="mt-6">
               {activeTab === 'description' ? (
                 <div>
-                  <h2 className="text-xl font-black">À propos de cette annonce</h2>
+                  <h2 className="text-xl font-black">{mt('marketplace.detail.about')}</h2>
                   <p className="mt-4 whitespace-pre-line leading-8 text-[var(--app-text-muted)]">
                     {listing.description}
                   </p>
@@ -279,23 +301,33 @@ export function ListingDetailPage() {
                 <DetailFacts
                   items={[
                     {
-                      label: 'Modes de remise',
+                      label: mt('marketplace.detail.deliveryModes'),
                       value: (listing.deliveryOptions || ['pickup'])
-                        .map((value) => optionLabel(DELIVERY_OPTIONS, value))
+                        .map((value) => {
+                          const option = DELIVERY_OPTIONS.find((item) => item.value === value)
+                          return option
+                            ? listingOptionLabel(t, option)
+                            : optionLabel(DELIVERY_OPTIONS, value)
+                        })
                         .join(', '),
                     },
                     {
-                      label: 'Frais de livraison',
+                      label: mt('marketplace.detail.deliveryFee'),
                       value: listing.deliveryFee
                         ? formatMoney(listing.deliveryFee, listing.currency)
-                        : 'Gratuit ou à convenir',
+                        : mt('marketplace.common.freeOrNegotiable'),
                     },
-                    { label: 'Délai', value: listing.deliveryDelay },
-                    { label: 'Garantie', value: listing.warranty },
-                    { label: 'Politique de retour', value: listing.returnPolicy },
+                    { label: mt('marketplace.detail.delay'), value: listing.deliveryDelay },
+                    { label: mt('marketplace.common.warranty'), value: listing.warranty },
                     {
-                      label: 'Paiements acceptés',
-                      value: (listing.paymentMethods || ['À convenir']).join(', '),
+                      label: mt('marketplace.common.returnPolicy'),
+                      value: listing.returnPolicy,
+                    },
+                    {
+                      label: mt('marketplace.detail.paymentsAccepted'),
+                      value: (listing.paymentMethods || [mt('marketplace.common.negotiable')]).join(
+                        ', ',
+                      ),
                     },
                   ]}
                 />
@@ -325,20 +357,32 @@ export function ListingDetailPage() {
               rules.showCondition
                 ? {
                     icon: FiPackage,
-                    label: 'État',
-                    value: optionLabel(LISTING_CONDITIONS, listing.condition),
+                    label: mt('marketplace.common.condition'),
+                    value: conditionOption
+                      ? listingOptionLabel(t, conditionOption)
+                      : optionLabel(LISTING_CONDITIONS, listing.condition),
                   }
                 : {
                     icon: FiPackage,
-                    label: 'Type',
+                    label: mt('marketplace.common.type'),
                     value: listingTypeLabel,
                   },
-              { icon: FiMapPin, label: 'Localisation', value: listing.city },
-              { icon: FiEye, label: 'Consultations', value: `${listing.views || 0} vues` },
+              {
+                icon: FiMapPin,
+                label: mt('marketplace.detail.location'),
+                value: listing.city,
+              },
+              {
+                icon: FiEye,
+                label: mt('marketplace.detail.consultations'),
+                value: mt('marketplace.common.views', { count: listing.views || 0 }),
+              },
               {
                 icon: FiHeart,
-                label: 'Intérêt',
-                value: `${listing.favorites?.length || 0} favoris`,
+                label: mt('marketplace.detail.interest'),
+                value: mt('marketplace.common.favorites', {
+                  count: listing.favorites?.length || 0,
+                }),
               },
             ]}
           />
@@ -351,7 +395,9 @@ export function ListingDetailPage() {
               <Badge tone="success">{listing.status}</Badge>
               {rules.showStock ? (
                 <Badge tone={stock ? 'info' : 'danger'}>
-                  {stock ? `${stock} disponible(s)` : 'Rupture'}
+                  {stock
+                    ? mt('marketplace.common.availableCount', { count: stock })
+                    : mt('marketplace.common.outOfStock')}
                 </Badge>
               ) : null}
             </div>
@@ -369,7 +415,7 @@ export function ListingDetailPage() {
               user={user}
             />
             <p className="mt-5 rounded-2xl bg-amber-50 p-3 text-xs leading-5 text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
-              Paiement via MOXT. Vérifiez le produit avant toute transaction.
+              {mt('marketplace.detail.paymentWarning')}
             </p>
           </Card>
 
@@ -377,8 +423,7 @@ export function ListingDetailPage() {
             <div className="flex gap-3">
               <FiAlertTriangle className="mt-1 shrink-0 text-xl" />
               <p>
-                Vérifiez le produit, son état, l’identité du vendeur et les conditions de remise
-                avant toute transaction réelle.
+                {mt('marketplace.detail.verifyWarning')}
               </p>
             </div>
           </Card>
@@ -400,22 +445,22 @@ export function ListingDetailPage() {
 
           <Card>
             <FiShield className="text-2xl text-brand-600" />
-            <h2 className="mt-3 font-black">Acheter avec prudence</h2>
+            <h2 className="mt-3 font-black">{mt('marketplace.detail.buyCarefully')}</h2>
             <ul className="mt-4 grid gap-3 text-sm text-[var(--app-text-muted)]">
-              <li>• Échangez uniquement dans la messagerie MOXT.</li>
-              <li>• Contrôlez l’état, le prix et l’identité du vendeur.</li>
-              <li>• Refusez toute demande de paiement anticipé douteuse.</li>
+              <li>{mt('marketplace.detail.buyTip1')}</li>
+              <li>{mt('marketplace.detail.buyTip2')}</li>
+              <li>{mt('marketplace.detail.buyTip3')}</li>
             </ul>
             {listing.ownerId === user.id ? (
               <div className="mt-5 grid gap-2">
                 <Link to={`/marketplace/${listing.id}/edit`}>
                   <Button className="w-full" variant="secondary" icon={FiEdit2}>
-                    Modifier l’annonce
+                    {mt('marketplace.detail.editListing')}
                   </Button>
                 </Link>
                 {listing.status === 'active' ? (
                   <Button variant="danger" onClick={() => setSoldOpen(true)}>
-                    Marquer vendu
+                    {mt('marketplace.common.markSold')}
                   </Button>
                 ) : null}
               </div>
@@ -426,7 +471,7 @@ export function ListingDetailPage() {
                 icon={FiAlertTriangle}
                 onClick={() => setReportOpen(true)}
               >
-                Signaler
+                {mt('marketplace.detail.report')}
               </Button>
             )}
           </Card>
@@ -434,20 +479,20 @@ export function ListingDetailPage() {
             <Card className="border border-brand-100 bg-brand-50/60 dark:border-brand-900/40 dark:bg-brand-950/20">
               <div className="flex items-center gap-2">
                 <FiShield className="text-xl text-brand-700" />
-                <h2 className="font-black">Actions administrateur</h2>
+                <h2 className="font-black">{mt('marketplace.detail.adminActions')}</h2>
               </div>
               <p className="mt-2 text-sm text-[var(--app-text-muted)]">
-                Modération directe de l’annonce depuis sa fiche détaillée.
+                {mt('marketplace.detail.adminDescription')}
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <Button onClick={() => dispatch(updateListingStatus({ id: listing.id, status: 'active' }))}>
-                  Publier
+                  {mt('marketplace.common.publish')}
                 </Button>
                 <Button variant="secondary" onClick={() => dispatch(updateListingStatus({ id: listing.id, status: 'sold' }))}>
-                  Marquer vendu
+                  {mt('marketplace.common.markSold')}
                 </Button>
                 <Button variant="danger" onClick={() => dispatch(updateListingStatus({ id: listing.id, status: 'archived' }))}>
-                  Archiver
+                  {mt('marketplace.common.archive')}
                 </Button>
               </div>
             </Card>
@@ -458,9 +503,9 @@ export function ListingDetailPage() {
       {similar.length ? (
         <section>
           <div className="mb-4">
-            <h2 className="text-2xl font-black">Annonces similaires</h2>
+            <h2 className="text-2xl font-black">{mt('marketplace.detail.similarTitle')}</h2>
             <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-              Même catégorie ou même zone géographique.
+              {mt('marketplace.detail.similarDescription')}
             </p>
           </div>
           <div className="grid gap-4 overflow-visible sm:grid-cols-2 xl:grid-cols-3">
@@ -492,7 +537,7 @@ export function ListingDetailPage() {
         user={user}
       />
 
-      <Modal open={imageOpen} onClose={() => setImageOpen(false)} title="Galerie" size="wide">
+      <Modal open={imageOpen} onClose={() => setImageOpen(false)} title={mt('marketplace.detail.gallery')} size="wide">
         {activeImage ? (
           <div className="grid gap-4">
             <div className="relative overflow-hidden rounded-[1.5rem] bg-[var(--app-surface-muted)]">
@@ -507,7 +552,7 @@ export function ListingDetailPage() {
                     type="button"
                     className="absolute left-3 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-white/95 text-slate-900 shadow-lg"
                     onClick={() => selectImageAt(activeImageIndex - 1)}
-                    aria-label="Image precedente"
+                    aria-label={mt('marketplace.detail.previousImage')}
                   >
                     <FiChevronLeft />
                   </button>
@@ -515,7 +560,7 @@ export function ListingDetailPage() {
                     type="button"
                     className="absolute right-3 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-white/95 text-slate-900 shadow-lg"
                     onClick={() => selectImageAt(activeImageIndex + 1)}
-                    aria-label="Image suivante"
+                    aria-label={mt('marketplace.detail.nextImage')}
                   >
                     <FiChevronRight />
                   </button>
@@ -525,14 +570,17 @@ export function ListingDetailPage() {
             {images.length > 1 ? (
               <div className="flex items-center justify-between text-sm text-[var(--app-text-muted)]">
                 <span>
-                  Image {activeImageIndex + 1} / {images.length}
+                  {mt('marketplace.detail.imageCount', {
+                    current: activeImageIndex + 1,
+                    total: images.length,
+                  })}
                 </span>
                 <div className="flex gap-2">
                   <Button variant="secondary" onClick={() => selectImageAt(activeImageIndex - 1)}>
-                    Precedente
+                    {mt('marketplace.detail.previous')}
                   </Button>
                   <Button variant="secondary" onClick={() => selectImageAt(activeImageIndex + 1)}>
-                    Suivante
+                    {mt('marketplace.detail.next')}
                   </Button>
                 </div>
               </div>
@@ -545,8 +593,8 @@ export function ListingDetailPage() {
 
       <ConfirmDialog
         open={soldOpen}
-        title="Marquer cette annonce comme vendue ?"
-        description="L’annonce ne sera plus visible dans les résultats actifs."
+        title={mt('marketplace.detail.soldConfirmTitle')}
+        description={mt('marketplace.detail.soldConfirmDescription')}
         onCancel={() => setSoldOpen(false)}
         onConfirm={() => {
           dispatch(updateListingStatus({ id: listing.id, status: 'sold', actorId: user.id }))
@@ -557,7 +605,7 @@ export function ListingDetailPage() {
       <ReportDialog
         open={reportOpen}
         onClose={() => setReportOpen(false)}
-        title="Signaler cette annonce"
+        title={mt('marketplace.detail.reportTitle')}
         userId={user.id}
         onSubmit={async ({ reason, evidenceUrl }) => {
           dispatch(
@@ -570,8 +618,8 @@ export function ListingDetailPage() {
           )
           dispatch(
             addToast({
-              title: 'Signalement envoyé',
-              message: 'Notre équipe va examiner cette annonce.',
+              title: mt('marketplace.detail.reportToastTitle'),
+              message: mt('marketplace.detail.reportToastBody'),
               tone: 'success',
             }),
           )
@@ -590,6 +638,8 @@ function Gallery({
   onSelect,
   onSelectIndex,
 }) {
+  const { t } = useLanguage()
+  const mt = (key, vars) => marketplaceText(t, key, vars)
   return (
     <Card className="overflow-hidden p-4 sm:p-4">
       <div className="group relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-cyan-700 to-blue-600 text-white">
@@ -597,7 +647,7 @@ function Gallery({
           type="button"
           className="grid h-[360px] w-full place-items-center lg:h-[432px]"
           onClick={onOpen}
-          aria-label="Ouvrir la galerie en plein écran"
+          aria-label={mt('marketplace.detail.openGallery')}
         >
           {activeImage ? (
             <img
@@ -620,7 +670,7 @@ function Gallery({
               type="button"
               className="absolute left-3 top-1/2 grid size-10 -translate-y-1/2 place-items-center rounded-full bg-white/95 text-slate-900 shadow-lg transition hover:scale-110"
               onClick={() => onSelectIndex(activeImageIndex - 1)}
-              aria-label="Image precedente"
+              aria-label={mt('marketplace.detail.previousImage')}
             >
               <FiChevronLeft />
             </button>
@@ -628,7 +678,7 @@ function Gallery({
               type="button"
               className="absolute right-3 top-1/2 grid size-10 -translate-y-1/2 place-items-center rounded-full bg-white/95 text-slate-900 shadow-lg transition hover:scale-110"
               onClick={() => onSelectIndex(activeImageIndex + 1)}
-              aria-label="Image suivante"
+              aria-label={mt('marketplace.detail.nextImage')}
             >
               <FiChevronRight />
             </button>
@@ -642,7 +692,10 @@ function Gallery({
               key={image}
               type="button"
               onClick={() => onSelect(image)}
-              aria-label={`Afficher la photo ${index + 1} de ${listing.title}`}
+              aria-label={mt('marketplace.detail.showPhoto', {
+                index: index + 1,
+                title: listing.title,
+              })}
               aria-pressed={image === activeImage}
               className={`h-[72px] w-full overflow-hidden rounded-2xl transition ${
                 image === activeImage
@@ -661,7 +714,7 @@ function Gallery({
         </div>
       ) : (
         <p className="mt-3 text-center text-xs text-[var(--app-text-muted)]">
-          Le vendeur n’a pas encore ajouté de photo réelle.
+          {mt('marketplace.detail.noPhotoYet')}
         </p>
       )}
     </Card>
@@ -669,21 +722,25 @@ function Gallery({
 }
 
 function Placeholder({ listing }) {
+  const { t } = useLanguage()
+  const mt = (key, vars) => marketplaceText(t, key, vars)
   return (
     <div className="text-center">
       <FiShoppingBag className="mx-auto text-6xl" />
       <strong className="mt-4 block text-xl">{listing.title}</strong>
-      <span className="mt-2 block text-sm text-white/70">MOXT Marketplace</span>
+      <span className="mt-2 block text-sm text-white/70">{mt('marketplace.detail.brandMarketplace')}</span>
     </div>
   )
 }
 
 function ListingPurchaseOptions({ listing, quantity, setQuantity, stock, total }) {
+  const { t } = useLanguage()
+  const mt = (key, vars) => marketplaceText(t, key, vars)
   return (
     <>
       {listing.type === 'product' && stock > 0 ? (
         <label className="grid gap-2 text-sm font-bold">
-          Quantité
+          {mt('marketplace.common.quantity')}
           <select
             className="min-h-12 w-full rounded-2xl bg-[var(--app-surface-muted)] px-4"
             value={quantity}
@@ -699,7 +756,8 @@ function ListingPurchaseOptions({ listing, quantity, setQuantity, stock, total }
       ) : null}
       {listing.price && quantity > 1 ? (
         <p className="text-sm text-[var(--app-text-muted)]">
-          Total estimé : <strong>{formatMoney(total, listing.currency)}</strong>
+          {mt('marketplace.detail.estimatedTotal')}{' '}
+          <strong>{formatMoney(total, listing.currency)}</strong>
         </p>
       ) : null}
     </>
@@ -727,6 +785,8 @@ function ListingActionButtons({
   user,
   layout = 'sidebar',
 }) {
+  const { t } = useLanguage()
+  const mt = (key, vars) => marketplaceText(t, key, vars)
   const toggleFavorite = toggleListingFavorite(dispatch, listing, user)
   const contactProps = {
     ownerId: listing.ownerId,
@@ -746,7 +806,7 @@ function ListingActionButtons({
           active={favorite}
           onToggle={toggleFavorite}
           variant="solid"
-          label={favorite ? 'Favori ✓' : 'Favori'}
+          label={favorite ? mt('marketplace.detail.favoriteActive') : mt('marketplace.detail.favorite')}
           className="min-w-0 flex-1 !min-h-9 !rounded-[0.7rem] !px-3.5 !text-xs !shadow-none"
         />
       </div>
@@ -775,6 +835,8 @@ function ListingFloatingActions({
   setOpen,
   user,
 }) {
+  const { t } = useLanguage()
+  const mt = (key, vars) => marketplaceText(t, key, vars)
   const toggleFavorite = toggleListingFavorite(dispatch, listing, user)
   const contactProps = {
     ownerId: listing.ownerId,
@@ -802,7 +864,11 @@ function ListingFloatingActions({
               setOpen(false)
             }}
             variant="solid"
-            label={favorite ? 'Favori ✓' : 'Favoris'}
+            label={
+              favorite
+                ? mt('marketplace.detail.favoriteActive')
+                : mt('marketplace.detail.favorites')
+            }
             className="shadow-[var(--shadow-float)]"
           />
         </div>
@@ -811,7 +877,11 @@ function ListingFloatingActions({
         type="button"
         className="btn-press grid size-14 place-items-center rounded-full bg-brand-700 text-2xl text-white shadow-[0_12px_28px_rgb(8_112_95/0.35)] transition hover:bg-brand-800"
         aria-expanded={open}
-        aria-label={open ? 'Fermer le menu actions' : 'Ouvrir le menu actions'}
+        aria-label={
+          open
+            ? mt('marketplace.detail.closeActionsMenu')
+            : mt('marketplace.detail.openActionsMenu')
+        }
         onClick={() => setOpen((current) => !current)}
       >
         <FiMoreHorizontal />
@@ -852,8 +922,11 @@ function ListingActionPanel({
 }
 
 function PriceBlock({ listing }) {
+  const { t } = useLanguage()
+  const mt = (key, vars) => marketplaceText(t, key, vars)
   const hasDiscount = listing.originalPrice && listing.discountPercent
-  if (!listing.price) return <strong className="text-3xl text-brand-700">Sur devis</strong>
+  if (!listing.price)
+    return <strong className="text-3xl text-brand-700">{mt('marketplace.common.onQuote')}</strong>
   if (hasDiscount) {
     return (
       <div className="grid gap-1.5">
@@ -870,7 +943,9 @@ function PriceBlock({ listing }) {
           {formatMoney(listing.originalPrice, listing.currency)}
         </span>
         <span className="text-xs text-rose-600 font-bold">
-          Économisez {formatMoney(listing.originalPrice - listing.price, listing.currency)}
+          {mt('marketplace.detail.saveAmount', {
+            amount: formatMoney(listing.originalPrice - listing.price, listing.currency),
+          })}
         </span>
       </div>
     )
@@ -879,6 +954,8 @@ function PriceBlock({ listing }) {
 }
 
 function Questions({ dispatch, listing, question, setQuestion, submitQuestion, user }) {
+  const { t } = useLanguage()
+  const mt = (key, vars) => marketplaceText(t, key, vars)
   const [answers, setAnswers] = useState({})
   const [replyingId, setReplyingId] = useState(null)
   const isOwner = listing.ownerId === user.id
@@ -904,21 +981,21 @@ function Questions({ dispatch, listing, question, setQuestion, submitQuestion, u
       {!isOwner ? (
         <form className="grid gap-3" onSubmit={submitQuestion}>
           <label className="grid gap-2 text-sm font-bold">
-            Poser une question publique
+            {mt('marketplace.detail.askQuestion')}
             <textarea
               className="min-h-24 rounded-2xl bg-[var(--app-surface-muted)] p-4"
-              placeholder="Demandez une précision sur l’état, la livraison ou la disponibilité..."
+              placeholder={mt('marketplace.detail.askPlaceholder')}
               value={question}
               onChange={(event) => setQuestion(event.target.value)}
             />
           </label>
           <Button type="submit" disabled={question.trim().length < 5}>
-            Publier la question
+            {mt('marketplace.detail.publishQuestion')}
           </Button>
         </form>
       ) : (
         <p className="rounded-2xl bg-[var(--app-surface-muted)] p-4 text-sm text-[var(--app-text-muted)]">
-          Répondez publiquement aux questions des acheteurs pour rassurer les futurs visiteurs.
+          {mt('marketplace.detail.ownerQuestionsHint')}
         </p>
       )}
       <div className="mt-6 grid gap-3">
@@ -935,7 +1012,7 @@ function Questions({ dispatch, listing, question, setQuestion, submitQuestion, u
               {item.answer ? (
                 <div className="mt-3 rounded-xl bg-[var(--app-surface)] p-3 text-sm">
                   <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--app-accent)]">
-                    Réponse du vendeur
+                    {mt('marketplace.detail.sellerAnswer')}
                   </p>
                   <p className="mt-1">{item.answer}</p>
                   {item.answeredAt ? (
@@ -948,10 +1025,10 @@ function Questions({ dispatch, listing, question, setQuestion, submitQuestion, u
                 replyingId === item.id ? (
                   <form className="mt-3 grid gap-3" onSubmit={(event) => submitAnswer(event, item.id)}>
                     <label className="grid gap-2 text-sm font-bold">
-                      Votre réponse publique
+                      {mt('marketplace.detail.yourPublicAnswer')}
                       <textarea
                         className="min-h-24 rounded-2xl bg-[var(--app-surface)] p-4"
-                        placeholder="Répondez clairement pour aider les autres acheteurs..."
+                        placeholder={mt('marketplace.detail.answerPlaceholder')}
                         value={answers[item.id] || ''}
                         onChange={(event) =>
                           setAnswers((current) => ({ ...current, [item.id]: event.target.value }))
@@ -960,10 +1037,10 @@ function Questions({ dispatch, listing, question, setQuestion, submitQuestion, u
                     </label>
                     <div className="flex flex-wrap gap-2">
                       <Button type="submit" disabled={(answers[item.id] || '').trim().length < 2}>
-                        Publier la réponse
+                        {mt('marketplace.detail.publishAnswer')}
                       </Button>
                       <Button type="button" variant="secondary" onClick={() => setReplyingId(null)}>
-                        Annuler
+                        {mt('marketplace.common.cancel')}
                       </Button>
                     </div>
                   </form>
@@ -974,18 +1051,18 @@ function Questions({ dispatch, listing, question, setQuestion, submitQuestion, u
                     variant="secondary"
                     onClick={() => setReplyingId(item.id)}
                   >
-                    Répondre
+                    {mt('marketplace.detail.reply')}
                   </Button>
                 )
               ) : (
                 <p className="mt-3 text-xs text-[var(--app-text-faint)]">
-                  En attente de réponse du vendeur.
+                  {mt('marketplace.detail.waitingSellerAnswer')}
                 </p>
               )}
             </div>
           ))
         ) : (
-          <p className="text-sm text-[var(--app-text-muted)]">Aucune question publique.</p>
+          <p className="text-sm text-[var(--app-text-muted)]">{mt('marketplace.detail.noPublicQuestions')}</p>
         )}
       </div>
     </div>

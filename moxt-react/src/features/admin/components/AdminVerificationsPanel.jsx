@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react'
 import { FiCheckCircle, FiUserCheck, FiX } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
+import { useLanguage } from '../../../contexts/useLanguage'
 import { Badge } from '../../../components/ui/Badge'
 import { Button } from '../../../components/ui/Button'
 import { updateVerificationStatus } from '../../account/accountSlice'
 import { CARD, ITEM } from '../adminConfig'
+import { adminText } from '../adminI18n'
 import { formatDate } from '../../transfers/transferUtils'
 import { Empty, SectionTitle } from './AdminShared'
 
@@ -28,6 +30,7 @@ export function AdminVerificationsPanel({
   statusFilter = 'all',
   verifications = [],
 }) {
+  const { t } = useLanguage()
   const users = useSelector((state) => state.administration.users || [])
   const [rejectId, setRejectId] = useState(null)
   const [rejectReason, setRejectReason] = useState('')
@@ -82,12 +85,12 @@ export function AdminVerificationsPanel({
     <div className={`${CARD} grid gap-4 p-5`}>
       <SectionTitle
         icon={FiUserCheck}
-        label="Verifications d'identite"
+        label={t('verification.admin.title')}
         count={items.length}
         tone={items.some((item) => ['pending_review', 'pending'].includes(item.status)) ? 'warning' : 'success'}
       />
       <p className="text-sm text-[var(--app-text-muted)]">
-        Examinez les dossiers, prévisualisez les pièces jointes, puis validez ou refusez.
+        {t('verification.admin.description')}
       </p>
 
       {items.length ? (
@@ -104,14 +107,20 @@ export function AdminVerificationsPanel({
                 >
                   <strong className="block truncate text-sm">{userLabel(user, item.userId)}</strong>
                   <p className="truncate text-xs text-[var(--app-text-muted)]">
-                    Niveau {item.level} · {item.documentIds?.length || 0} document(s) · {formatDate(item.createdAt)}
+                    {adminText(t, 'admin.verifications.meta', {
+                      level: item.level,
+                      count: item.documentIds?.length || 0,
+                      date: formatDate(item.createdAt),
+                    })}
                   </p>
                   {item.note ? (
-                    <p className="mt-1 line-clamp-2 break-words text-xs text-[var(--app-text-muted)]">Note : {item.note}</p>
+                    <p className="mt-1 line-clamp-2 break-words text-xs text-[var(--app-text-muted)]">
+                      {adminText(t, 'admin.verifications.noteLabel', { note: item.note })}
+                    </p>
                   ) : null}
                   {item.reviewNote ? (
                     <p className="mt-1 line-clamp-2 break-words text-xs text-rose-700 dark:text-rose-300">
-                      Motif refus : {item.reviewNote}
+                      {adminText(t, 'admin.verifications.rejectNoteLabel', { note: item.reviewNote })}
                     </p>
                   ) : null}
                 </button>
@@ -121,18 +130,18 @@ export function AdminVerificationsPanel({
               {rejectId === item.id ? (
                 <div className="grid gap-2 rounded-xl bg-[var(--app-surface)] p-3 ring-1 ring-[var(--app-border)]">
                   <label className="text-[10px] font-black uppercase tracking-wider text-[var(--app-text-muted)]">
-                    Motif du refus (optionnel)
+                    {t('verification.admin.rejectReasonLabel')}
                   </label>
                   <textarea
                     value={rejectReason}
                     onChange={(event) => setRejectReason(event.target.value)}
                     rows={3}
-                    placeholder="Ex. photo illisible, document expiré…"
+                    placeholder={t('verification.admin.rejectReasonPlaceholder')}
                     className="w-full rounded-xl bg-[var(--app-surface-muted)] p-3 text-sm outline-none ring-1 ring-[var(--app-border)] focus:ring-brand-500"
                   />
                   <div className="flex flex-wrap gap-2">
                     <Button variant="danger" icon={FiX} onClick={() => reject(item)}>
-                      Confirmer le refus
+                      {t('verification.admin.rejectConfirm')}
                     </Button>
                     <Button
                       variant="secondary"
@@ -141,19 +150,19 @@ export function AdminVerificationsPanel({
                         setRejectReason('')
                       }}
                     >
-                      Annuler
+                      {t('common.cancel')}
                     </Button>
                   </div>
                 </div>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   <Button variant="secondary" onClick={() => setSelected({ kind: 'verification', item })}>
-                    Examiner
+                    {t('verification.admin.examine')}
                   </Button>
                   {pending ? (
                     <>
                       <Button icon={FiCheckCircle} onClick={() => approve(item)}>
-                        Valider
+                        {t('verification.admin.approve')}
                       </Button>
                       <Button
                         variant="danger"
@@ -163,7 +172,7 @@ export function AdminVerificationsPanel({
                           setRejectReason('')
                         }}
                       >
-                        Refuser
+                        {t('verification.admin.reject')}
                       </Button>
                     </>
                   ) : null}
@@ -173,7 +182,7 @@ export function AdminVerificationsPanel({
           )
         })
       ) : (
-        <Empty label="Aucune demande de vérification." icon={FiUserCheck} />
+        <Empty label={t('verification.admin.empty')} icon={FiUserCheck} />
       )}
     </div>
   )

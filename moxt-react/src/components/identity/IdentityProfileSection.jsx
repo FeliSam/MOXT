@@ -5,29 +5,41 @@ import { Card } from '../ui/Card'
 import { Modal } from '../ui/Modal'
 import { Select } from '../ui/Select'
 import { Input } from '../ui/Input'
+import { useLanguage } from '../../contexts/useLanguage'
 import { useIdentityProfile } from '../../hooks/useIdentityProfile'
+import { phase3Text } from '../../i18n/phase3I18n'
 import {
-  IDENTITY_TYPE_LABELS,
   IDENTITY_TYPES,
-  OWNER_TYPE_LABELS,
   OWNER_TYPES,
 } from '../../types/identityEnums'
 
-function IdentityFormFields({ variant, values, onChange, errors }) {
+const DOC_LABEL_KEYS = {
+  PASSEPORT: 'addresses.doc.passport',
+  CNI: 'addresses.doc.idCard',
+  PERMIS: 'addresses.doc.license',
+  AUTRE: 'addresses.doc.other',
+}
+
+const HOLDER_LABEL_KEYS = {
+  PERSON: 'addresses.holder.person',
+  COMPANY: 'addresses.holder.company',
+}
+
+function IdentityFormFields({ variant, values, onChange, errors, p3 }) {
   return (
     <div className="grid gap-3">
       {variant === 'person' ? (
         <>
           <Input
             id="id-firstNames"
-            label="Prénoms"
+            label={p3('addresses.identity.firstNames')}
             value={values.firstNames}
             onChange={(e) => onChange({ firstNames: e.target.value })}
             error={errors.firstNames}
           />
           <Input
             id="id-lastName"
-            label="Nom"
+            label={p3('addresses.identity.lastName')}
             value={values.lastName}
             onChange={(e) => onChange({ lastName: e.target.value })}
             error={errors.lastName}
@@ -37,14 +49,14 @@ function IdentityFormFields({ variant, values, onChange, errors }) {
         <>
           <Input
             id="id-companyName"
-            label="Raison sociale"
+            label={p3('addresses.identity.companyName')}
             value={values.companyName}
             onChange={(e) => onChange({ companyName: e.target.value })}
             error={errors.companyName}
           />
           <Input
             id="id-contactName"
-            label="Contact"
+            label={p3('addresses.identity.contact')}
             value={values.contactName}
             onChange={(e) => onChange({ contactName: e.target.value })}
           />
@@ -52,27 +64,27 @@ function IdentityFormFields({ variant, values, onChange, errors }) {
       )}
       <Select
         id="id-type"
-        label="Type de pièce"
+        label={p3('addresses.identity.docType')}
         value={values.idType}
         onChange={(e) => onChange({ idType: e.target.value })}
         error={errors.idType}
       >
-        {IDENTITY_TYPES.map((t) => (
-          <option key={t} value={t}>
-            {IDENTITY_TYPE_LABELS[t]}
+        {IDENTITY_TYPES.map((type) => (
+          <option key={type} value={type}>
+            {p3(DOC_LABEL_KEYS[type])}
           </option>
         ))}
       </Select>
       <Input
         id="id-passport"
-        label="N° pièce / passeport"
+        label={p3('addresses.identity.docNumber')}
         value={values.passportNumber}
         onChange={(e) => onChange({ passportNumber: e.target.value.toUpperCase() })}
         error={errors.passportNumber}
       />
       <Input
         id="id-issuedBy"
-        label="Délivré par"
+        label={p3('addresses.identity.issuedBy')}
         value={values.issuedBy}
         onChange={(e) => onChange({ issuedBy: e.target.value })}
         error={errors.issuedBy}
@@ -80,7 +92,7 @@ function IdentityFormFields({ variant, values, onChange, errors }) {
       <div className="grid gap-3 sm:grid-cols-2">
         <Input
           id="id-issuedAt"
-          label="Date délivrance"
+          label={p3('addresses.identity.issuedAt')}
           type="date"
           value={values.issuedAt}
           onChange={(e) => onChange({ issuedAt: e.target.value })}
@@ -88,7 +100,7 @@ function IdentityFormFields({ variant, values, onChange, errors }) {
         />
         <Input
           id="id-expiresAt"
-          label="Date expiration"
+          label={p3('addresses.identity.expiresAt')}
           type="date"
           value={values.expiresAt}
           onChange={(e) => onChange({ expiresAt: e.target.value })}
@@ -96,7 +108,7 @@ function IdentityFormFields({ variant, values, onChange, errors }) {
         />
       </div>
       <label className="grid gap-1 text-sm">
-        <span className="font-bold">Scan (optionnel)</span>
+        <span className="font-bold">{p3('addresses.identity.scan')}</span>
         <input
           type="file"
           accept="image/*,.pdf"
@@ -117,6 +129,8 @@ function IdentityFormFields({ variant, values, onChange, errors }) {
 }
 
 export function IdentityProfileSection({ userId }) {
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const { profiles, emptyIdentity, saveProfile, deleteProfile } = useIdentityProfile(userId)
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState(null)
@@ -164,13 +178,13 @@ export function IdentityProfileSection({ userId }) {
     <Card className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-black">Profils d&apos;identité</h2>
+          <h2 className="font-black">{p3('addresses.identity.title')}</h2>
           <p className="text-sm text-[var(--app-text-muted)]">
-            Réutilisables pour vos adresses destinataires.
+            {p3('addresses.identity.description')}
           </p>
         </div>
         <Button type="button" icon={FiPlus} variant="secondary" onClick={openCreate}>
-          Nouveau profil
+          {p3('addresses.identity.new')}
         </Button>
       </div>
 
@@ -188,17 +202,17 @@ export function IdentityProfileSection({ userId }) {
                 <div className="min-w-0">
                   <p className="truncate font-bold">
                     {profile.ownerType === 'COMPANY'
-                      ? profile.identity.companyName || 'Société'
+                      ? profile.identity.companyName || p3('addresses.identity.company')
                       : `${profile.identity.firstNames} ${profile.identity.lastName}`.trim()}
                   </p>
                   <p className="text-xs text-[var(--app-text-muted)]">
-                    {OWNER_TYPE_LABELS[profile.ownerType]} · {profile.identity.passportNumber}
+                    {p3(HOLDER_LABEL_KEYS[profile.ownerType])} · {profile.identity.passportNumber}
                   </p>
                 </div>
               </div>
               <div className="flex gap-2">
                 <Button type="button" variant="secondary" size="sm" icon={FiEdit2} onClick={() => openEdit(profile)}>
-                  Modifier
+                  {p3('common.edit')}
                 </Button>
                 <Button
                   type="button"
@@ -206,30 +220,34 @@ export function IdentityProfileSection({ userId }) {
                   size="sm"
                   icon={FiTrash2}
                   onClick={() => {
-                    if (window.confirm('Supprimer ce profil ?')) deleteProfile(profile.id)
+                    if (window.confirm(p3('addresses.identity.deleteConfirm'))) deleteProfile(profile.id)
                   }}
                 >
-                  Supprimer
+                  {p3('common.delete')}
                 </Button>
               </div>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-[var(--app-text-muted)]">Aucun profil enregistré.</p>
+        <p className="text-sm text-[var(--app-text-muted)]">{p3('addresses.identity.empty')}</p>
       )}
 
-      <Modal open={open} onClose={() => setOpen(false)} title={editing ? 'Modifier le profil' : 'Nouveau profil'}>
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title={editing ? p3('addresses.identity.edit') : p3('addresses.identity.new')}
+      >
         <div className="grid gap-4">
           <Select
             id="profile-ownerType"
-            label="Type de titulaire"
+            label={p3('addresses.identity.holderType')}
             value={ownerType}
             onChange={(e) => setOwnerType(e.target.value)}
           >
-            {OWNER_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {OWNER_TYPE_LABELS[t]}
+            {OWNER_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {p3(HOLDER_LABEL_KEYS[type])}
               </option>
             ))}
           </Select>
@@ -238,13 +256,14 @@ export function IdentityProfileSection({ userId }) {
             values={identity}
             onChange={(patch) => setIdentity((prev) => ({ ...prev, ...patch }))}
             errors={formErrors}
+            p3={p3}
           />
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
-              Annuler
+              {p3('common.cancel')}
             </Button>
             <Button type="button" onClick={handleSave}>
-              Enregistrer
+              {p3('common.save')}
             </Button>
           </div>
         </div>

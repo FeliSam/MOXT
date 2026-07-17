@@ -38,7 +38,7 @@ import {
   servicesForActivities,
 } from '../config/businessActivities'
 import { ensurePhoneCountry, phonePlaceholder } from '../config/phone'
-import { businessSchema } from '../features/businesses/businessSchemas'
+import { businessSchemaFor } from '../features/businesses/businessSchemas'
 import { saveBusiness } from '../features/businesses/businessSlice'
 import { generateBusinessPresentation } from '../features/businesses/generateBusinessPresentation'
 import { selectActiveBusinessForOwner } from '../features/businesses/businessVisibility'
@@ -56,14 +56,23 @@ import {
 import { statusMeta } from '../config/statuses'
 import { buildBusinessShareUrlFromValues } from '../features/share/businessShareUtils'
 import { makeQrCodeUrl } from '../utils/qrCode'
+import { useLanguage } from '../contexts/useLanguage'
+import {
+  businessesOptionLabel,
+  businessesOptionDescription,
+  businessesServiceLabel,
+  businessesSpotlightLabel,
+  businessesText,
+} from '../features/businesses/businessesI18n'
 
 /* ─── Step definition ──────────────────────────────────────────────────── */
-const STEPS = [
-  { value: 1, key: 'identity', label: 'Identite', icon: FiUser, color: 'brand' },
-  { value: 2, key: 'contact', label: 'Contact', icon: FiMapPin, color: 'cyan' },
-  { value: 3, key: 'services', label: 'Services', icon: FiZap, color: 'violet' },
-  { value: 4, key: 'review', label: 'Valider', icon: FiCheckCircle, color: 'emerald' },
+const STEP_DEFS = [
+  { value: 1, key: 'identity', labelKey: 'businesses.setup.steps.identity', icon: FiUser, color: 'brand' },
+  { value: 2, key: 'contact', labelKey: 'businesses.setup.steps.contact', icon: FiMapPin, color: 'cyan' },
+  { value: 3, key: 'services', labelKey: 'businesses.setup.steps.services', icon: FiZap, color: 'violet' },
+  { value: 4, key: 'review', labelKey: 'businesses.setup.steps.review', icon: FiCheckCircle, color: 'emerald' },
 ]
+
 
 const stepFields = {
   1: ['name', 'logoUrl', 'bannerUrl', 'primaryActivity', 'secondaryActivity'],
@@ -112,17 +121,20 @@ function SectionTitle({ action, description, icon: Icon, label }) {
 
 /* ─── Visual Stepper ────────────────────────────────────────────────────── */
 function Stepper({ step, onGoTo }) {
+  const { t } = useLanguage()
+  const bt = (key, vars) => businessesText(t, key, vars)
+  const steps = STEP_DEFS.map((item) => ({ ...item, label: bt(item.labelKey) }))
   return (
     <div className="relative flex items-start justify-between gap-0">
       {/* connecting line */}
       <div className="absolute left-0 right-0 top-5 h-px bg-[var(--app-border)]" aria-hidden />
       <div
         className="absolute left-0 top-5 h-px bg-brand-600 transition-all duration-500"
-        style={{ width: `${((step - 1) / (STEPS.length - 1)) * 100}%` }}
+        style={{ width: `${((step - 1) / (steps.length - 1)) * 100}%` }}
         aria-hidden
       />
 
-      {STEPS.map((s) => {
+      {steps.map((s) => {
         const done = step > s.value
         const active = step === s.value
         const Icon = s.icon
@@ -159,9 +171,15 @@ function Stepper({ step, onGoTo }) {
 
 /* ─── Live preview card ─────────────────────────────────────────────────── */
 function BusinessPreview({ formik, hasTransfer, serviceOptions }) {
+  const { t } = useLanguage()
+  const bt = (key, vars) => businessesText(t, key, vars)
   const v = formik.values
   const activity = BUSINESS_ACTIVITIES.find((a) => a.value === v.primaryActivity)
+  const activityLabel = businessesOptionLabel(t, activity)
   const experience = businessExperienceForActivity(v.primaryActivity)
+  const experiencePromise = experience.promiseKey
+    ? businessesText(t, experience.promiseKey)
+    : experience.promise
   const colors = ACTIVITY_COLORS[v.primaryActivity] || ACTIVITY_COLORS.services
   const Icon = activity?.icon
   const status = statusMeta('pending_review')
@@ -175,13 +193,13 @@ function BusinessPreview({ formik, hasTransfer, serviceOptions }) {
   return (
     <div className="sticky top-24 grid gap-3">
       <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--app-text-muted)]">
-        Apercu de votre fiche
+        {bt('businesses.setup.preview.title')}
       </p>
       <div className="overflow-hidden rounded-[1.6rem] border border-[var(--app-border)] bg-[var(--app-surface)] shadow-xl">
         <div className="flex flex-wrap items-center justify-end gap-2 border-b border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2">
           <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[10px] font-bold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
             <FiRepeat className="text-xs" />
-            Republier annuaire
+            {bt('businesses.setup.preview.republish')}
           </span>
         </div>
 
@@ -195,11 +213,11 @@ function BusinessPreview({ formik, hasTransfer, serviceOptions }) {
               </span>
             )}
             <div className="min-w-0 text-xs text-[var(--app-text-muted)]">
-              <p className="font-bold text-[var(--app-text)]">{v.name || 'Nom de l entreprise'}</p>
-              {activity ? <p className="mt-0.5 font-semibold text-brand-700">{activity.label}</p> : null}
+              <p className="font-bold text-[var(--app-text)]">{v.name || bt('businesses.setup.preview.companyNamePlaceholder')}</p>
+              {activity ? <p className="mt-0.5 font-semibold text-brand-700">{activityLabel}</p> : null}
               {v.city ? (
                 <p className="mt-1 flex items-center gap-1">
-                  <FiMapPin className="shrink-0" /> {v.city}, Russie
+                  <FiMapPin className="shrink-0" /> {bt('businesses.setup.preview.cityRussia', { city: v.city })}
                 </p>
               ) : null}
               {v.phone ? (
@@ -217,7 +235,7 @@ function BusinessPreview({ formik, hasTransfer, serviceOptions }) {
           <img
             key={shareUrl}
             src={qrUrl}
-            alt="QR code apercu"
+            alt={bt('businesses.setup.preview.qrAlt')}
             className="size-20 rounded-xl border border-[var(--app-border)] bg-white p-1"
           />
         </div>
@@ -234,7 +252,7 @@ function BusinessPreview({ formik, hasTransfer, serviceOptions }) {
             {v.logoUrl ? (
               <img
                 src={v.logoUrl}
-                alt="Logo"
+                alt={bt('businesses.setup.preview.logoAlt')}
                 className="size-16 rounded-2xl border-4 border-[var(--app-surface)] object-cover shadow-lg"
               />
             ) : (
@@ -256,10 +274,10 @@ function BusinessPreview({ formik, hasTransfer, serviceOptions }) {
 
           <div>
             <p className="font-black leading-tight">
-              {v.name || <span className="italic text-[var(--app-text-muted)]">Nom de l entreprise</span>}
+              {v.name || <span className="italic text-[var(--app-text-muted)]">{bt('businesses.setup.preview.companyNamePlaceholder')}</span>}
             </p>
             {activity ? (
-              <p className={`mt-0.5 text-xs font-bold ${colors.text}`}>{activity.label}</p>
+              <p className={`mt-0.5 text-xs font-bold ${colors.text}`}>{activityLabel}</p>
             ) : null}
           </div>
 
@@ -267,20 +285,20 @@ function BusinessPreview({ formik, hasTransfer, serviceOptions }) {
             <p className="whitespace-pre-line text-xs leading-5 text-[var(--app-text-muted)]">{v.description}</p>
           ) : (
             <p className="text-xs italic text-[var(--app-text-faint)]">
-              Votre presentation apparaitra ici.
+              {bt('businesses.setup.preview.presentationPlaceholder')}
             </p>
           )}
 
           {activity ? (
             <div className={`rounded-2xl p-3 text-xs leading-5 ${colors.bg}`}>
-              <strong className={`block ${colors.text}`}>{activity.label}</strong>
-              <span className="text-[var(--app-text-muted)]">{experience.promise}</span>
+              <strong className={`block ${colors.text}`}>{activityLabel}</strong>
+              <span className="text-[var(--app-text-muted)]">{experiencePromise}</span>
             </div>
           ) : null}
 
           {v.city ? (
             <p className="flex items-center gap-1.5 text-xs text-[var(--app-text-muted)]">
-              <FiMapPin className="shrink-0 text-brand-600" /> {v.city} · Russie
+              <FiMapPin className="shrink-0 text-brand-600" /> {bt('businesses.setup.preview.cityDotRussia', { city: v.city })}
             </p>
           ) : null}
 
@@ -300,12 +318,12 @@ function BusinessPreview({ formik, hasTransfer, serviceOptions }) {
           <div className={`grid gap-2 ${hasTransfer ? 'grid-cols-2' : 'grid-cols-1'}`}>
             <div className="rounded-2xl bg-[var(--app-surface-muted)] p-3 text-center">
               <strong className="block text-base">0/5</strong>
-              <span className="text-[10px] text-[var(--app-text-muted)]">0 avis</span>
+              <span className="text-[10px] text-[var(--app-text-muted)]">{bt('businesses.setup.preview.reviewsZero')}</span>
             </div>
             {hasTransfer ? (
               <div className="rounded-2xl bg-[var(--app-surface-muted)] p-3 text-center">
                 <strong className="block text-base">{v.feePercent ?? 0}%</strong>
-                <span className="text-[10px] text-[var(--app-text-muted)]">Frais</span>
+                <span className="text-[10px] text-[var(--app-text-muted)]">{bt('businesses.setup.preview.fees')}</span>
               </div>
             ) : null}
           </div>
@@ -327,7 +345,7 @@ function BusinessPreview({ formik, hasTransfer, serviceOptions }) {
         </div>
       </div>
       <p className="text-center text-[10px] text-[var(--app-text-muted)]">
-        Votre fiche sera visible apres validation
+        {bt('businesses.setup.preview.visibleAfterValidation')}
       </p>
     </div>
   )
@@ -337,6 +355,8 @@ function BusinessPreview({ formik, hasTransfer, serviceOptions }) {
 export function BusinessSetupPage() {
   const [step, setStep] = useState(1)
   useScrollToTopOnStep(step)
+  const { t } = useLanguage()
+  const bt = (key, vars) => businessesText(t, key, vars)
   const { requireBusiness } = useSecurityGate()
   const [shareModal, setShareModal] = useState(null)
   const [createdBusiness, setCreatedBusiness] = useState(null)
@@ -389,7 +409,7 @@ export function BusinessSetupPage() {
         : exchangeMethodOptions,
       services: ownBusiness?.services || [],
     },
-    validationSchema: businessSchema,
+    validationSchema: businessSchemaFor(t),
     onSubmit: (values) => {
       const preset = schedulePreset(values.scheduleType)
       const isNew = !ownBusiness
@@ -496,18 +516,18 @@ export function BusinessSetupPage() {
     ) : null}
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Espace entreprise"
-        title={ownBusiness ? 'Modifier mon entreprise' : 'Creer mon entreprise'}
-        description="Parcours en plusieurs etapes pour configurer votre activite, vos contacts en Russie et vos services."
+        eyebrow={bt('businesses.setup.eyebrow')}
+        title={ownBusiness ? bt('businesses.setup.title.edit') : bt('businesses.setup.title.create')}
+        description={bt('businesses.setup.description')}
         actions={
           <Link to={ownBusiness ? '/professional' : '/businesses'}>
-            <Button variant="secondary" icon={FiArrowLeft}>Retour</Button>
+            <Button variant="secondary" icon={FiArrowLeft}>{bt('businesses.common.back')}</Button>
           </Link>
         }
       />
 
-      <Alert title="Validation requise">
-        Votre entreprise reste invisible dans l annuaire jusqu a confirmation par un administrateur.
+      <Alert title={bt('businesses.setup.validationAlertTitle')}>
+        {bt('businesses.setup.validationAlertBody')}
       </Alert>
 
       {/* Stepper */}
@@ -573,15 +593,17 @@ export function BusinessSetupPage() {
             disabled={step === 1}
             onClick={() => setStep((current) => Math.max(1, current - 1))}
           >
-            Retour
+            {bt('businesses.common.back')}
           </Button>
           {step < 4 ? (
             <Button type="button" icon={FiArrowRight} onClick={nextStep}>
-              Continuer
+              {bt('businesses.common.continue')}
             </Button>
           ) : (
             <Button type="submit" icon={FiCheckCircle} loading={formik.isSubmitting}>
-              {ownBusiness ? 'Enregistrer les modifications' : 'Envoyer pour validation'}
+              {ownBusiness
+                ? bt('businesses.setup.saveChanges')
+                : bt('businesses.setup.submitForValidation')}
             </Button>
           )}
         </div>
@@ -592,6 +614,8 @@ export function BusinessSetupPage() {
   )
 }
 function IdentityStep({ businessId, errorFor, formik, userId }) {
+  const { t } = useLanguage()
+  const bt = (key, vars) => businessesText(t, key, vars)
   const dispatch = useDispatch()
   const selectedActivity = BUSINESS_ACTIVITIES.find((a) => a.value === formik.values.primaryActivity)
   const logoInputRef = useRef(null)
@@ -606,16 +630,16 @@ function IdentityStep({ businessId, errorFor, formik, userId }) {
       formik.setFieldValue('logoUrl', url)
       dispatch(
         addToast({
-          title: 'Logo ajouté',
-          message: 'Le logo de l’entreprise a été envoyé.',
+          title: bt('businesses.setup.toast.logoAddedTitle'),
+          message: bt('businesses.setup.toast.logoAddedBody'),
           tone: 'success',
         }),
       )
     } catch (err) {
       dispatch(
         addToast({
-          title: 'Logo non envoyé',
-          message: err.message || "Le logo n'a pas pu être envoyé.",
+          title: bt('businesses.setup.toast.logoFailedTitle'),
+          message: err.message || bt('businesses.setup.toast.logoFailedBody'),
           tone: 'error',
         }),
       )
@@ -630,16 +654,16 @@ function IdentityStep({ businessId, errorFor, formik, userId }) {
       formik.setFieldValue('bannerUrl', url)
       dispatch(
         addToast({
-          title: 'Bannière ajoutée',
-          message: 'La bannière de l’entreprise a été envoyée.',
+          title: bt('businesses.setup.toast.bannerAddedTitle'),
+          message: bt('businesses.setup.toast.bannerAddedBody'),
           tone: 'success',
         }),
       )
     } catch (err) {
       dispatch(
         addToast({
-          title: 'Bannière non envoyée',
-          message: err.message || "La bannière n'a pas pu être envoyée.",
+          title: bt('businesses.setup.toast.bannerFailedTitle'),
+          message: err.message || bt('businesses.setup.toast.bannerFailedBody'),
           tone: 'error',
         }),
       )
@@ -650,11 +674,11 @@ function IdentityStep({ businessId, errorFor, formik, userId }) {
     <div className="grid gap-5">
       {/* Name */}
       <Card className="grid gap-5">
-        <SectionTitle icon={FiUser} label="Identite de l entreprise" description="Le nom public qui apparaitra dans l annuaire MOXT." />
+        <SectionTitle icon={FiUser} label={bt('businesses.setup.identity.section')} description={bt('businesses.setup.identity.sectionHint')} />
         <Input
           id="business-name"
-          label="Nom public de l'entreprise"
-          placeholder="Ex : Koudjo Transfer, Afrik Logistique..."
+          label={bt('businesses.setup.identity.name')}
+          placeholder={bt('businesses.setup.identity.namePlaceholder')}
           {...formik.getFieldProps('name')}
           error={errorFor('name')}
         />
@@ -662,7 +686,7 @@ function IdentityStep({ businessId, errorFor, formik, userId }) {
 
       {/* Activity grid */}
       <Card className="grid gap-5">
-        <SectionTitle icon={FiZap} label="Domaine principal" description="Choisissez le coeur de votre activite. Cela definit vos modules et votre positionnement." />
+        <SectionTitle icon={FiZap} label={bt('businesses.setup.identity.domainSection')} description={bt('businesses.setup.identity.domainHint')} />
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {BUSINESS_ACTIVITIES.map((activity) => {
             const Icon = activity.icon
@@ -690,7 +714,7 @@ function IdentityStep({ businessId, errorFor, formik, userId }) {
                   <Icon className={`text-lg ${selected ? colors.text : 'text-[var(--app-text-muted)]'}`} />
                 </span>
                 <span className={`text-xs font-black leading-tight ${selected ? colors.text : ''}`}>
-                  {activity.label}
+                  {businessesOptionLabel(t, activity)}
                 </span>
               </button>
             )
@@ -704,8 +728,8 @@ function IdentityStep({ businessId, errorFor, formik, userId }) {
           <div className={`flex items-start gap-3 rounded-2xl p-4 ${ACTIVITY_COLORS[selectedActivity.value]?.bg || ''}`}>
             <selectedActivity.icon className={`mt-0.5 shrink-0 text-lg ${ACTIVITY_COLORS[selectedActivity.value]?.text || ''}`} />
             <div>
-              <p className={`text-sm font-black ${ACTIVITY_COLORS[selectedActivity.value]?.text || ''}`}>{selectedActivity.label}</p>
-              <p className="mt-1 text-xs leading-5 text-[var(--app-text-muted)]">{selectedActivity.description}</p>
+              <p className={`text-sm font-black ${ACTIVITY_COLORS[selectedActivity.value]?.text || ''}`}>{businessesOptionLabel(t, selectedActivity)}</p>
+              <p className="mt-1 text-xs leading-5 text-[var(--app-text-muted)]">{businessesOptionDescription(t, selectedActivity)}</p>
             </div>
           </div>
         ) : null}
@@ -713,24 +737,24 @@ function IdentityStep({ businessId, errorFor, formik, userId }) {
         {/* Secondary activity */}
         <Select
           id="business-secondary-activity"
-          label="Activite secondaire (facultatif)"
+          label={bt('businesses.setup.identity.secondary')}
           {...formik.getFieldProps('secondaryActivity')}
           error={errorFor('secondaryActivity')}
         >
-          <option value="">Aucune activite secondaire</option>
+          <option value="">{bt('businesses.setup.identity.secondaryNone')}</option>
           {BUSINESS_ACTIVITIES.filter((a) => a.value !== formik.values.primaryActivity).map((a) => (
-            <option key={a.value} value={a.value}>{a.label}</option>
+            <option key={a.value} value={a.value}>{businessesOptionLabel(t, a)}</option>
           ))}
         </Select>
       </Card>
 
       {/* Visuals */}
       <Card className="grid gap-5">
-        <SectionTitle icon={FiCamera} label="Identite visuelle" description="Logo et banniere affiches sur votre fiche publique." />
+        <SectionTitle icon={FiCamera} label={bt('businesses.setup.identity.visualSection')} description={bt('businesses.setup.identity.visualHint')} />
 
         {/* Logo */}
         <div>
-          <p className="mb-3 text-sm font-bold">Logo</p>
+          <p className="mb-3 text-sm font-bold">{bt('businesses.setup.identity.logo')}</p>
           <div className="flex items-center gap-4">
             {formik.values.logoUrl ? (
               <img
@@ -745,11 +769,11 @@ function IdentityStep({ businessId, errorFor, formik, userId }) {
             )}
             <div className="grid gap-2">
               <Button type="button" variant="secondary" icon={FiCamera} onClick={() => logoInputRef.current?.click()}>
-                {formik.values.logoUrl ? 'Changer le logo' : 'Ajouter un logo'}
+                {formik.values.logoUrl ? bt('businesses.setup.identity.changeLogo') : bt('businesses.setup.identity.addLogo')}
               </Button>
               {formik.values.logoUrl ? (
                 <button type="button" className="text-xs text-red-600 hover:underline" onClick={() => formik.setFieldValue('logoUrl', '')}>
-                  Supprimer
+                  {bt('businesses.common.delete')}
                 </button>
               ) : null}
             </div>
@@ -760,21 +784,21 @@ function IdentityStep({ businessId, errorFor, formik, userId }) {
 
         {/* Banner */}
         <div>
-          <p className="mb-3 text-sm font-bold">Banniere de fond</p>
+          <p className="mb-3 text-sm font-bold">{bt('businesses.setup.identity.banner')}</p>
           {formik.values.bannerUrl ? (
             <div className="relative mb-3">
-              <img src={formik.values.bannerUrl} alt="Banniere" className="h-32 w-full rounded-[1.5rem] object-cover shadow-md" />
+              <img src={formik.values.bannerUrl} alt={bt('businesses.setup.identity.bannerAlt')} className="h-32 w-full rounded-[1.5rem] object-cover shadow-md" />
               <button
                 type="button"
                 onClick={() => formik.setFieldValue('bannerUrl', '')}
                 className="absolute right-3 top-3 rounded-full bg-red-600/90 px-2 py-0.5 text-[10px] font-bold text-white"
               >
-                Supprimer
+                {bt('businesses.common.delete')}
               </button>
             </div>
           ) : null}
           <Button type="button" variant="secondary" icon={FiImage} onClick={() => bannerInputRef.current?.click()}>
-            {formik.values.bannerUrl ? 'Changer la banniere' : 'Ajouter une banniere'}
+            {formik.values.bannerUrl ? bt('businesses.setup.identity.changeBanner') : bt('businesses.setup.identity.addBanner')}
           </Button>
           <input ref={bannerInputRef} type="file" accept="image/*" className="sr-only" onChange={handleBannerFile} />
           {errorFor('bannerUrl') ? <p className="mt-1 text-xs text-red-600">{errorFor('bannerUrl')}</p> : null}
@@ -786,16 +810,18 @@ function IdentityStep({ businessId, errorFor, formik, userId }) {
 
 /* ─── Step 2 — Contact ──────────────────────────────────────────────────── */
 function ContactStep({ errorFor, formik, onScheduleChange, onUseAccountPhone }) {
+  const { t } = useLanguage()
+  const bt = (key, vars) => businessesText(t, key, vars)
   return (
     <div className="grid gap-5">
       {/* Location */}
       <Card className="grid gap-5">
-        <SectionTitle icon={FiMapPin} label="Localisation" description="Ville et adresse de votre activite en Russie." />
+        <SectionTitle icon={FiMapPin} label={bt('businesses.setup.contact.locationSection')} description={bt('businesses.setup.contact.locationHint')} />
         <div className="grid gap-4 sm:grid-cols-2">
-          <Input id="business-country" label="Pays" value="Russie" disabled />
+          <Input id="business-country" label={bt('businesses.common.country')} value={bt('businesses.common.russia')} disabled />
           <CitySelector
             id="business-city"
-            label="Ville en Russie"
+            label={bt('businesses.setup.contact.cityInRussia')}
             value={formik.values.city}
             onChange={(city) => formik.setFieldValue('city', city)}
             error={errorFor('city')}
@@ -803,27 +829,29 @@ function ContactStep({ errorFor, formik, onScheduleChange, onUseAccountPhone }) 
         </div>
         <Input
           id="business-address"
-          label="Adresse complete"
-          placeholder="Rue, immeuble, metro ou repere"
+          label={bt('businesses.setup.contact.fullAddress')}
+          placeholder={bt('businesses.setup.contact.addressPlaceholder')}
           {...formik.getFieldProps('address')}
           error={errorFor('address')}
         />
         <div className="grid gap-4 sm:grid-cols-2">
           <Select
             id="business-schedule-type"
-            label="Horaires"
+            label={bt('businesses.common.hours')}
             value={formik.values.scheduleType}
             onChange={(event) => onScheduleChange(event.target.value)}
             error={errorFor('scheduleType')}
           >
             {BUSINESS_SCHEDULE_PRESETS.map((preset) => (
-              <option key={preset.value} value={preset.value}>{preset.label}</option>
+              <option key={preset.value} value={preset.value}>
+                {preset.labelKey ? businessesText(t, preset.labelKey) : preset.label}
+              </option>
             ))}
           </Select>
           <Input
             id="business-zones"
-            label="Zones desservies"
-            placeholder="Moscou, Saint-Petersbourg..."
+            label={bt('businesses.setup.contact.serviceZones')}
+            placeholder={bt('businesses.setup.contact.serviceZonesPlaceholder')}
             {...formik.getFieldProps('serviceZones')}
             error={errorFor('serviceZones')}
           />
@@ -832,24 +860,24 @@ function ContactStep({ errorFor, formik, onScheduleChange, onUseAccountPhone }) 
 
       {/* Phone & digital */}
       <Card className="grid gap-5">
-        <SectionTitle icon={FiPhone} label="Coordonnees" description="Moyens de contact visibles sur votre fiche publique." />
+        <SectionTitle icon={FiPhone} label={bt('businesses.setup.contact.coordsSection')} description={bt('businesses.setup.contact.coordsHint')} />
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="grid gap-2">
             <Input
               id="business-phone"
-              label="Numero russe"
+              label={bt('businesses.setup.contact.russianPhone')}
               type="tel"
               placeholder={phonePlaceholder('RU')}
               {...formik.getFieldProps('phone')}
               error={errorFor('phone')}
             />
             <Button type="button" variant="secondary" onClick={onUseAccountPhone}>
-              Utiliser mon numero du compte
+              {bt('businesses.setup.contact.useAccountPhone')}
             </Button>
           </div>
           <Input
             id="business-origin-phone"
-            label="Numero du pays d origine"
+            label={bt('businesses.setup.contact.originPhone')}
             type="tel"
             placeholder={phonePlaceholder('BJ')}
             {...formik.getFieldProps('originPhone')}
@@ -859,24 +887,24 @@ function ContactStep({ errorFor, formik, onScheduleChange, onUseAccountPhone }) 
         <div className="grid gap-4 sm:grid-cols-2">
           <Input
             id="business-email"
-            label="Email professionnel"
+            label={bt('businesses.setup.contact.professionalEmail')}
             type="email"
-            placeholder="contact@monentreprise.com"
+            placeholder={bt('businesses.setup.contact.emailPlaceholder')}
             {...formik.getFieldProps('email')}
             error={errorFor('email')}
           />
           <Input
             id="business-telegram"
-            label="Telegram"
-            placeholder="@username"
+            label={bt('businesses.setup.contact.telegram')}
+            placeholder={bt('businesses.setup.contact.telegramPlaceholder')}
             {...formik.getFieldProps('telegram')}
             error={errorFor('telegram')}
           />
         </div>
         <Input
           id="business-website"
-          label="Site web"
-          placeholder="https://..."
+          label={bt('businesses.setup.contact.website')}
+          placeholder={bt('businesses.setup.contact.websitePlaceholder')}
           {...formik.getFieldProps('website')}
           error={errorFor('website')}
         />
@@ -888,8 +916,8 @@ function ContactStep({ errorFor, formik, onScheduleChange, onUseAccountPhone }) 
           action={
             <button
               type="button"
-              title="Generer automatiquement la presentation"
-              aria-label="Generer automatiquement la presentation"
+              title={bt('businesses.setup.contact.generateAria')}
+              aria-label={bt('businesses.setup.contact.generateAria')}
               onClick={() => {
                 const generated = generateBusinessPresentation(formik.values)
                 formik.setFieldValue('description', generated)
@@ -901,14 +929,14 @@ function ContactStep({ errorFor, formik, onScheduleChange, onUseAccountPhone }) 
             </button>
           }
           icon={FiGlobe}
-          label="Presentation"
-          description="Decrivez votre entreprise, votre specialite et votre zone d intervention. Cliquez sur l'eclair pour generer un texte a partir de vos informations."
+          label={bt('businesses.setup.contact.presentationSection')}
+          description={bt('businesses.setup.contact.presentationHint')}
         />
         <Textarea
           id="business-description"
-          label="A propos de votre entreprise"
+          label={bt('businesses.setup.contact.about')}
           rows={5}
-          placeholder="Nous proposons... Notre specialite est... Nous intervenons sur..."
+          placeholder={bt('businesses.setup.contact.aboutPlaceholder')}
           {...formik.getFieldProps('description')}
           error={errorFor('description')}
         />
@@ -927,21 +955,23 @@ function ServicesStep({
   toggleArrayField,
   transferCurrencies,
 }) {
+  const { t } = useLanguage()
+  const bt = (key, vars) => businessesText(t, key, vars)
   return (
     <div className="grid gap-5">
       <Card className="grid gap-4">
-        <SectionTitle icon={FiZap} label="Modules actives" description="Definis automatiquement selon votre domaine principal." />
+        <SectionTitle icon={FiZap} label={bt('businesses.setup.services.modulesSection')} description={bt('businesses.setup.services.modulesHint')} />
         <div className="flex flex-wrap gap-2">
           {serviceOptions.length ? (
             serviceOptions.map((service) => (
               <Badge key={service} tone={service === 'Transfert' ? 'success' : 'info'}>
                 <FiCheckCircle className="mr-1 inline" />
-                {service}
+                {businessesServiceLabel(t, service)}
               </Badge>
             ))
           ) : (
             <p className="text-sm text-[var(--app-text-muted)]">
-              Selectionnez un domaine principal (etape 1) pour activer les modules.
+              {bt('businesses.setup.services.selectDomainFirst')}
             </p>
           )}
         </div>
@@ -952,12 +982,12 @@ function ServicesStep({
 
       {hasTransfer ? (
         <Card className="grid gap-6">
-          <SectionTitle icon={FiSettings} label="Configuration transfert" description="Les devises et reseaux suivent le pays d origine du createur de l entreprise." />
+          <SectionTitle icon={FiSettings} label={bt('businesses.setup.services.transferSection')} description={bt('businesses.setup.services.transferHint')} />
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
               id="business-fee"
-              label="Frais (%)"
+              label={bt('businesses.setup.services.feePercent')}
               type="number"
               step="0.1"
               {...formik.getFieldProps('feePercent')}
@@ -965,15 +995,15 @@ function ServicesStep({
             />
             <Input
               id="business-delay"
-              label="Delai moyen"
-              placeholder="Ex : 30-60 min"
+              label={bt('businesses.setup.services.averageDelay')}
+              placeholder={bt('businesses.setup.services.averageDelayPlaceholder')}
               {...formik.getFieldProps('averageDelay')}
               error={errorFor('averageDelay')}
             />
           </div>
 
           <ChoiceGroup
-            label="Devises echangees"
+            label={bt('businesses.setup.services.currencies')}
             values={formik.values.currencies}
             options={transferCurrencies}
             onToggle={(value) => toggleArrayField('currencies', value)}
@@ -981,12 +1011,12 @@ function ServicesStep({
           />
 
           <div>
-            <p className="mb-1 text-sm font-semibold">Reseaux africains et banques russes</p>
-            <p className="mb-3 text-xs text-[var(--app-text-muted)]">Cochez les modes de paiement que vous acceptez des deux cotes.</p>
+            <p className="mb-1 text-sm font-semibold">{bt('businesses.setup.services.networksTitle')}</p>
+            <p className="mb-3 text-xs text-[var(--app-text-muted)]">{bt('businesses.setup.services.networksHint')}</p>
             {/* Split African / Russian */}
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-[var(--app-text-muted)]">Reseaux africains</p>
+                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-[var(--app-text-muted)]">{bt('businesses.setup.services.africanNetworks')}</p>
                 <div className="flex flex-wrap gap-2">
                   {exchangeMethodOptions
                     .filter((o) => !['Sberbank', 'VTB', 'T-Bank', 'Alfa-Bank', 'Gazprombank', 'Raiffeisenbank', 'Ozon Bank'].includes(o))
@@ -1007,7 +1037,7 @@ function ServicesStep({
                 </div>
               </div>
               <div>
-                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-[var(--app-text-muted)]">Banques russes</p>
+                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-[var(--app-text-muted)]">{bt('businesses.setup.services.russianBanks')}</p>
                 <div className="flex flex-wrap gap-2">
                   {['Sberbank', 'VTB', 'T-Bank', 'Alfa-Bank', 'Gazprombank', 'Raiffeisenbank', 'Ozon Bank'].map((option) => (
                     <button
@@ -1038,16 +1068,22 @@ function ServicesStep({
 
 /* ─── Step 4 — Review ───────────────────────────────────────────────────── */
 function ReviewStep({ formik, hasTransfer, serviceOptions }) {
+  const { t } = useLanguage()
+  const bt = (key, vars) => businessesText(t, key, vars)
   const experience = businessExperienceForActivity(formik.values.primaryActivity)
+  const spotlight = (experience.spotlightKeys || [])
+    .map((key) => businessesSpotlightLabel(t, key))
+    .join(', ')
+    .toLowerCase()
   const v = formik.values
   return (
     <div className="grid gap-5">
       {/* Identity */}
       <Card className="grid gap-4">
-        <SectionTitle icon={FiUser} label="Identite" />
+        <SectionTitle icon={FiUser} label={bt('businesses.setup.review.identity')} />
         <div className="flex items-center gap-4">
           {v.logoUrl ? (
-            <img src={v.logoUrl} alt="Logo" className="size-16 rounded-2xl object-cover shadow ring-2 ring-[var(--app-border)]" />
+            <img src={v.logoUrl} alt={bt('businesses.setup.preview.logoAlt')} className="size-16 rounded-2xl object-cover shadow ring-2 ring-[var(--app-border)]" />
           ) : (
             <div className="grid size-16 place-items-center rounded-2xl bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]">
               <FiImage className="text-xl" />
@@ -1060,22 +1096,22 @@ function ReviewStep({ formik, hasTransfer, serviceOptions }) {
           </div>
         </div>
         {v.bannerUrl ? (
-          <img src={v.bannerUrl} alt="Banniere" className="h-20 w-full rounded-[1.4rem] object-cover shadow" />
+          <img src={v.bannerUrl} alt={bt('businesses.setup.identity.bannerAlt')} className="h-20 w-full rounded-[1.4rem] object-cover shadow" />
         ) : null}
       </Card>
 
       {/* Contact */}
       <Card className="grid gap-3">
-        <SectionTitle icon={FiMapPin} label="Contact" />
-        <ReviewRow label="Ville" value={v.city} />
-        <ReviewRow label="Adresse" value={v.address} />
-        <ReviewRow label="Telephone russe" value={v.phone} />
-        {v.originPhone ? <ReviewRow label="Telephone d origine" value={v.originPhone} /> : null}
-        {v.email ? <ReviewRow label="Email" value={v.email} /> : null}
-        {v.telegram ? <ReviewRow label="Telegram" value={v.telegram} /> : null}
-        {v.website ? <ReviewRow label="Site web" value={v.website} /> : null}
-        <ReviewRow label="Horaires" value={v.scheduleSummary || '—'} />
-        <ReviewRow label="Zones" value={v.serviceZones || '—'} />
+        <SectionTitle icon={FiMapPin} label={bt('businesses.setup.review.contact')} />
+        <ReviewRow label={bt('businesses.common.city')} value={v.city} />
+        <ReviewRow label={bt('businesses.common.address')} value={v.address} />
+        <ReviewRow label={bt('businesses.setup.review.russianPhone')} value={v.phone} />
+        {v.originPhone ? <ReviewRow label={bt('businesses.setup.review.originPhone')} value={v.originPhone} /> : null}
+        {v.email ? <ReviewRow label={bt('businesses.common.email')} value={v.email} /> : null}
+        {v.telegram ? <ReviewRow label={bt('businesses.setup.contact.telegram')} value={v.telegram} /> : null}
+        {v.website ? <ReviewRow label={bt('businesses.setup.contact.website')} value={v.website} /> : null}
+        <ReviewRow label={bt('businesses.common.hours')} value={v.scheduleSummary || bt('businesses.common.emDash')} />
+        <ReviewRow label={bt('businesses.common.zones')} value={v.serviceZones || bt('businesses.common.emDash')} />
         {v.description ? (
           <div className="rounded-xl bg-[var(--app-surface-muted)] p-3 text-sm text-[var(--app-text-muted)]">{v.description}</div>
         ) : null}
@@ -1083,14 +1119,20 @@ function ReviewStep({ formik, hasTransfer, serviceOptions }) {
 
       {/* Services */}
       <Card className="grid gap-3">
-        <SectionTitle icon={FiZap} label="Services" />
-        <ReviewRow label="Modules" value={serviceOptions.join(', ') || 'Aucun'} />
+        <SectionTitle icon={FiZap} label={bt('businesses.setup.review.services')} />
+        <ReviewRow
+          label={bt('businesses.setup.review.modules')}
+          value={
+            serviceOptions.map((service) => businessesServiceLabel(t, service)).join(', ') ||
+            bt('businesses.setup.review.none')
+          }
+        />
         {hasTransfer ? (
           <>
-            <ReviewRow label="Frais" value={`${v.feePercent}%`} />
-            <ReviewRow label="Delai moyen" value={v.averageDelay} />
-            <ReviewRow label="Devises" value={v.currencies.join(', ')} />
-            <ReviewRow label="Reseaux & banques" value={v.exchangeMethods.join(', ')} />
+            <ReviewRow label={bt('businesses.setup.review.fees')} value={`${v.feePercent}%`} />
+            <ReviewRow label={bt('businesses.setup.services.averageDelay')} value={v.averageDelay} />
+            <ReviewRow label={bt('businesses.setup.review.currencies')} value={v.currencies.join(', ')} />
+            <ReviewRow label={bt('businesses.setup.review.networksBanks')} value={v.exchangeMethods.join(', ')} />
           </>
         ) : null}
       </Card>
@@ -1099,11 +1141,10 @@ function ReviewStep({ formik, hasTransfer, serviceOptions }) {
         <FiSend className="mt-0.5 shrink-0 text-emerald-600" />
         <div>
           <p className="text-sm font-black text-emerald-700 dark:text-emerald-400">
-            Pret a envoyer pour validation
+            {bt('businesses.setup.review.readyTitle')}
           </p>
           <p className="mt-1 text-xs leading-5 text-[var(--app-text-muted)]">
-            Votre fiche sera examinee par un administrateur. Points forts mis en avant :{' '}
-            {experience.spotlight.join(', ').toLowerCase()}.
+            {bt('businesses.setup.review.readyBody', { spotlight })}
           </p>
         </div>
       </div>
@@ -1153,8 +1194,14 @@ function BusinessCreatedSuccess({
   onShare,
   serviceOptions,
 }) {
+  const { t } = useLanguage()
+  const bt = (key, vars) => businessesText(t, key, vars)
   const { trigger, node } = useActionBurst()
   const experience = businessExperienceForActivity(business.primaryActivity)
+  const spotlight = (experience.spotlightKeys || [])
+    .map((key) => businessesSpotlightLabel(t, key))
+    .join(', ')
+    .toLowerCase()
 
   useEffect(() => {
     const timer = window.setTimeout(() => trigger(), 180)
@@ -1170,21 +1217,20 @@ function BusinessCreatedSuccess({
             <HiOutlineBuildingOffice2 className="text-3xl" aria-hidden="true" />
           </div>
           <p className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-white/75">
-            Félicitations
+            {bt('businesses.setup.success.congrats')}
           </p>
           <h1 className="mt-2 font-display text-2xl font-black sm:text-3xl">
-            Votre entreprise est créée
+            {bt('businesses.setup.success.title')}
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/88">
-            <strong>{business.name}</strong> est enregistrée sur MOXT. Notre équipe va valider votre
-            fiche avant publication dans l&apos;annuaire — vous pouvez déjà préparer votre espace pro.
+            <strong>{business.name}</strong> {bt('businesses.setup.success.body')}
           </p>
         </div>
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <Card className="grid gap-4">
-          <SectionTitle icon={FiUser} label="Récapitulatif" />
+          <SectionTitle icon={FiUser} label={bt('businesses.setup.success.recap')} />
           <div className="flex items-center gap-4">
             {business.logoUrl ? (
               <img
@@ -1205,41 +1251,44 @@ function BusinessCreatedSuccess({
               ) : null}
             </div>
           </div>
-          <ReviewRow label="Ville" value={business.city} />
-          <ReviewRow label="Téléphone" value={business.phone} />
-          {business.email ? <ReviewRow label="E-mail" value={business.email} /> : null}
-          <ReviewRow label="Horaires" value={business.scheduleSummary} />
-          <ReviewRow label="Services" value={serviceOptions.join(', ')} />
+          <ReviewRow label={bt('businesses.common.city')} value={business.city} />
+          <ReviewRow label={bt('businesses.common.phone')} value={business.phone} />
+          {business.email ? <ReviewRow label={bt('businesses.common.email')} value={business.email} /> : null}
+          <ReviewRow label={bt('businesses.common.hours')} value={business.scheduleSummary} />
+          <ReviewRow
+            label={bt('businesses.setup.review.services')}
+            value={serviceOptions.map((service) => businessesServiceLabel(t, service)).join(', ')}
+          />
           {hasTransfer ? (
             <>
-              <ReviewRow label="Frais" value={`${business.feePercent}%`} />
-              <ReviewRow label="Devises" value={(business.currencies || []).join(', ')} />
+              <ReviewRow label={bt('businesses.setup.review.fees')} value={`${business.feePercent}%`} />
+              <ReviewRow label={bt('businesses.setup.review.currencies')} value={(business.currencies || []).join(', ')} />
             </>
           ) : null}
         </Card>
 
         <div className="grid gap-4">
           <Card className="grid gap-3">
-            <SectionTitle icon={FiCheckCircle} label="Prochaines étapes" />
+            <SectionTitle icon={FiCheckCircle} label={bt('businesses.setup.success.nextSteps')} />
             <ul className="grid gap-2 text-sm text-[var(--app-text-muted)]">
               <li className="rounded-xl bg-[var(--app-surface-muted)] px-3 py-2">
-                Validation administrateur (24–48 h en moyenne)
+                {bt('businesses.setup.success.stepValidation')}
               </li>
               <li className="rounded-xl bg-[var(--app-surface-muted)] px-3 py-2">
-                Points forts : {experience.spotlight.join(', ').toLowerCase()}
+                {bt('businesses.setup.success.stepSpotlight', { spotlight })}
               </li>
               <li className="rounded-xl bg-[var(--app-surface-muted)] px-3 py-2">
-                Complétez votre espace pro pour accueillir vos premiers clients
+                {bt('businesses.setup.success.stepComplete')}
               </li>
             </ul>
           </Card>
 
           <div className="grid gap-2">
             <Button className="w-full" icon={HiOutlineBuildingOffice2} onClick={onGoProfessional}>
-              Accéder à mon espace entreprise
+              {bt('businesses.setup.success.goProfessional')}
             </Button>
             <Button className="w-full" variant="secondary" icon={FiShare2} onClick={onShare}>
-              Republier dans l&apos;annuaire
+              {bt('businesses.setup.success.republish')}
             </Button>
           </div>
         </div>

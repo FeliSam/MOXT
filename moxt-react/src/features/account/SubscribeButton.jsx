@@ -1,7 +1,8 @@
 import { FiBell, FiStar, FiUserCheck, FiUserPlus, FiVolumeX } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Button } from '../../components/ui/Button'
-import { SUBSCRIPTION_NOTIFY_LABELS } from '@moxt/shared/utils/subscriptionUtils.js'
+import { useLanguage } from '../../contexts/useLanguage'
+import { phase3Text } from '../../i18n/phase3I18n'
 import {
   removePublisherSubscription,
   upsertPublisherSubscription,
@@ -27,6 +28,8 @@ export function SubscribeButton({
   className = '',
 }) {
   const dispatch = useDispatch()
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const user = useSelector((state) => state.auth.user)
   const subscription = useSelector((state) =>
     selectPublisherSubscription(state, user?.id, publisherType, publisherId),
@@ -42,8 +45,8 @@ export function SubscribeButton({
 
   if (isBanned) {
     return (
-      <Button className={className} size={size} variant="secondary" disabled title="Accès restreint">
-        Accès restreint
+      <Button className={className} size={size} variant="secondary" disabled title={p3('subscriptions.restricted')}>
+        {p3('subscriptions.restricted')}
       </Button>
     )
   }
@@ -52,8 +55,8 @@ export function SubscribeButton({
     if (isBanned) {
       dispatch(
         addToast({
-          title: 'Abonnement refusé',
-          message: 'Vous ne pouvez plus vous abonner à cet éditeur.',
+          title: p3('subscriptions.deniedTitle'),
+          message: p3('subscriptions.deniedMessage'),
           tone: 'error',
         }),
       )
@@ -96,7 +99,7 @@ export function SubscribeButton({
 
   const notifyPref = subscription?.notifyPref || 'all'
   const NotifyIcon = NOTIFY_ICONS[notifyPref] || FiBell
-  const notifyLabel = SUBSCRIPTION_NOTIFY_LABELS[notifyPref] || 'Notifications'
+  const notifyLabel = p3(`subscriptions.notify.${notifyPref}`)
 
   if (!isSubscribed) {
     return (
@@ -107,7 +110,7 @@ export function SubscribeButton({
         icon={FiUserPlus}
         onClick={() => subscribe('all')}
       >
-        S'abonner
+        {p3('subscriptions.subscribe')}
       </Button>
     )
   }
@@ -121,7 +124,7 @@ export function SubscribeButton({
         className="border-brand-200 bg-brand-50 text-brand-800 dark:border-brand-800 dark:bg-brand-950/40 dark:text-brand-200"
         aria-pressed="true"
       >
-        Abonné
+        {p3('subscriptions.subscribed')}
       </Button>
       <SubscriptionNotifyMenu
         activePref={notifyPref}
@@ -134,7 +137,7 @@ export function SubscribeButton({
             variant="ghost"
             iconOnly
             icon={NotifyIcon}
-            aria-label={`Notifications : ${notifyLabel}`}
+            aria-label={p3('subscriptions.notifyAria', { pref: notifyLabel })}
             title={notifyLabel}
             className="border border-[var(--app-border)] bg-[var(--app-surface)] hover:bg-[var(--app-surface-muted)]"
           />

@@ -1,12 +1,13 @@
 import { categoriesForType, LISTING_TYPES_META } from '../../config/listingConfig'
 import { activityByValue } from '../../config/businessActivities'
+import { phase3Text } from '../../i18n/phase3I18n'
 import { formatMoney } from '../transfers/transferUtils'
 
 export const FAVORITE_CATEGORIES = [
-  { id: 'listing', label: 'Annonces', types: ['listing'] },
-  { id: 'parcel', label: 'Colis', types: ['parcel'] },
-  { id: 'job', label: 'Jobs', types: ['job'] },
-  { id: 'other', label: 'Autres', types: ['business', 'event'] },
+  { id: 'listing', labelKey: 'favorites.categories.listing', types: ['listing'] },
+  { id: 'parcel', labelKey: 'favorites.categories.parcel', types: ['parcel'] },
+  { id: 'job', labelKey: 'favorites.categories.job', types: ['job'] },
+  { id: 'other', labelKey: 'favorites.categories.other', types: ['business', 'event'] },
 ]
 
 export function favoriteCategoryForType(relatedType) {
@@ -242,6 +243,6 @@ export function mergeUserFavorites(state, userId) {
   )
 }
 
-export function formatListingPrice(price, currency) {
-  return price ? formatMoney(price, currency) : 'Sur devis'
+export function formatListingPrice(price, currency, t) {
+  return price ? formatMoney(price, currency) : phase3Text(t, 'favorites.onQuote')
 }

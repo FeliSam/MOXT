@@ -4,9 +4,13 @@ import { Badge } from '../components/ui/Badge'
 import { Card } from '../components/ui/Card'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { useLanguage } from '../contexts/useLanguage'
 import { formatDate, formatMoney } from '../features/transfers/transferUtils'
+import { phase3Text } from '../i18n/phase3I18n'
 
 export function WalletPage() {
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const user = useSelector((state) => state.auth.user)
   const entries = useSelector((state) =>
     state.finance.walletEntries.filter((item) => item.userId === user.id),
@@ -20,16 +24,14 @@ export function WalletPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Finances"
-        title="Portefeuille"
-        description="Vue consolidée de vos soldes et mouvements sur MOXT."
+        eyebrow={p3('wallet.eyebrow')}
+        title={p3('wallet.title')}
+        description={p3('wallet.description')}
       />
       <Card className="border-amber-300 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30">
         <div className="flex gap-3">
           <FiAlertTriangle className="mt-1 text-xl text-amber-600" />
-          <p className="text-sm">
-            Vérifiez toujours vos opérations et conservez vos justificatifs. En cas de doute, contactez le support MOXT.
-          </p>
+          <p className="text-sm">{p3('wallet.warning')}</p>
         </div>
       </Card>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -65,7 +67,7 @@ export function WalletPage() {
           })}
         </div>
       ) : (
-        <EmptyState title="Aucune écriture enregistrée" />
+        <EmptyState title={p3('wallet.empty')} />
       )}
     </div>
   )

@@ -6,6 +6,8 @@ import { Card } from '../../components/ui/Card'
 import { DetailSection } from '../../components/ui/DetailBlocks'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { statusMeta } from '../../config/statuses'
+import { useLanguage } from '../../contexts/useLanguage'
+import { eventStatusLabelKey } from './eventsConfig'
 import { updateRegistrationStatus } from './eventSlice'
 
 const registrationStatusTone = {
@@ -14,7 +16,13 @@ const registrationStatusTone = {
   cancelled: 'neutral',
 }
 
+function resolveStatusLabel(status, t) {
+  const key = eventStatusLabelKey(status)
+  return key ? t(key) : statusMeta(status).label
+}
+
 export function EventParticipantsSection({ event, eventId }) {
+  const { t } = useLanguage()
   const dispatch = useDispatch()
   const user = useSelector((state) => state.auth.user)
   const registrations = useSelector((state) =>
@@ -28,16 +36,22 @@ export function EventParticipantsSection({ event, eventId }) {
   const cancelledRows = registrations.filter((item) => item.status === 'cancelled')
 
   return (
-    <DetailSection title="Participants inscrits">
+    <DetailSection title={t('events.participants.title')}>
       <Card className="grid gap-4 p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-sm text-[var(--app-text-muted)]">
-              {activeRows.length} inscription(s) active(s) sur {event.capacity} places.
+              {t('events.participants.activeSummary', {
+                active: activeRows.length,
+                capacity: event.capacity,
+              })}
             </p>
           </div>
           <Badge tone="info">
-            {activeRows.length}/{event.capacity} places
+            {t('events.participants.placesBadge', {
+              active: activeRows.length,
+              capacity: event.capacity,
+            })}
           </Badge>
         </div>
 
@@ -55,17 +69,18 @@ export function EventParticipantsSection({ event, eventId }) {
                         </span>
                         <div className="min-w-0">
                           <strong className="block truncate">
-                            {row.participantName || 'Membre MOXT'}
+                            {row.participantName || t('events.participants.memberFallback')}
                           </strong>
                           <p className="text-xs text-[var(--app-text-faint)]">
-                            Inscrit le{' '}
-                            {row.createdAt
-                              ? new Date(row.createdAt).toLocaleString('fr-FR')
-                              : '—'}
+                            {t('events.participants.registeredAt', {
+                              date: row.createdAt
+                                ? new Date(row.createdAt).toLocaleString('fr-FR')
+                                : '—',
+                            })}
                           </p>
                         </div>
                         <Badge tone={registrationStatusTone[row.status] || status.tone}>
-                          {status.label}
+                          {resolveStatusLabel(row.status, t)}
                         </Badge>
                       </div>
                       {row.message ? (
@@ -85,7 +100,7 @@ export function EventParticipantsSection({ event, eventId }) {
                             )
                           }
                         >
-                          Présent
+                          {t('events.participants.present')}
                         </Button>
                       ) : null}
                       <Button
@@ -98,7 +113,7 @@ export function EventParticipantsSection({ event, eventId }) {
                           )
                         }
                       >
-                        Annuler
+                        {t('events.participants.cancel')}
                       </Button>
                     </div>
                   </div>
@@ -108,20 +123,20 @@ export function EventParticipantsSection({ event, eventId }) {
           </div>
         ) : (
           <EmptyState
-            title="Aucune inscription"
-            description="Les personnes inscrites à cet événement apparaîtront ici."
+            title={t('events.participants.emptyTitle')}
+            description={t('events.participants.emptyDescription')}
           />
         )}
 
         {cancelledRows.length ? (
           <details className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-muted)]/60 px-4 py-3">
             <summary className="cursor-pointer text-sm font-bold text-[var(--app-text-muted)]">
-              Inscriptions annulées ({cancelledRows.length})
+              {t('events.participants.cancelledSummary', { count: cancelledRows.length })}
             </summary>
             <div className="mt-3 grid gap-2">
               {cancelledRows.map((row) => (
                 <p key={row.id} className="text-sm text-[var(--app-text-faint)]">
-                  {row.participantName || 'Membre MOXT'}
+                  {row.participantName || t('events.participants.memberFallback')}
                 </p>
               ))}
             </div>

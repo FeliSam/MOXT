@@ -16,23 +16,23 @@ import {
 import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 
 export const MAIN_VIEWS = [
-  { id: 'overview', label: 'Vue generale', icon: FiShield },
-  { id: 'transfers', label: 'Transferts', icon: FiRepeat },
-  { id: 'content', label: 'Contenus', icon: FiLayers },
-  { id: 'support', label: 'Support', icon: FiHeadphones },
-  { id: 'users', label: 'Utilisateurs', icon: FiUsers },
-  { id: 'verifications', label: 'Verifications', icon: FiUserCheck },
-  { id: 'queues', label: "Files d'action", icon: FiInbox },
-  { id: 'audit', label: 'Audit', icon: FiActivity },
+  { id: 'overview', label: 'Vue generale', labelKey: 'admin.nav.overview', icon: FiShield },
+  { id: 'transfers', label: 'Transferts', labelKey: 'admin.nav.transfers', icon: FiRepeat },
+  { id: 'content', label: 'Contenus', labelKey: 'admin.nav.content', icon: FiLayers },
+  { id: 'support', label: 'Support', labelKey: 'admin.nav.support', icon: FiHeadphones },
+  { id: 'users', label: 'Utilisateurs', labelKey: 'admin.nav.users', icon: FiUsers },
+  { id: 'verifications', label: 'Verifications', labelKey: 'admin.nav.verifications', icon: FiUserCheck },
+  { id: 'queues', label: "Files d'action", labelKey: 'admin.nav.queues', icon: FiInbox },
+  { id: 'audit', label: 'Audit', labelKey: 'admin.nav.audit', icon: FiActivity },
 ]
 
 export const CONTENT_SECTIONS = [
-  { id: 'businesses', label: 'Entreprises', icon: HiOutlineBuildingOffice2, route: '/businesses', color: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300' },
-  { id: 'listings', label: 'Annonces', icon: FiShoppingBag, route: '/marketplace', color: 'bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300' },
-  { id: 'jobs', label: 'Jobs', icon: FiTrendingUp, route: '/jobs', color: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' },
-  { id: 'events', label: 'Evenements', icon: FiCalendar, route: '/events', color: 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300' },
-  { id: 'parcels', label: 'Colis', icon: FiPackage, route: '/parcels', color: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300' },
-  { id: 'reports', label: 'Signalements', icon: FiAlertCircle, route: '/admin?view=queues', color: 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300' },
+  { id: 'businesses', label: 'Entreprises', labelKey: 'admin.content.businesses', icon: HiOutlineBuildingOffice2, route: '/businesses', color: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300' },
+  { id: 'listings', label: 'Annonces', labelKey: 'admin.content.listings', icon: FiShoppingBag, route: '/marketplace', color: 'bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300' },
+  { id: 'jobs', label: 'Jobs', labelKey: 'admin.content.jobs', icon: FiTrendingUp, route: '/jobs', color: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' },
+  { id: 'events', label: 'Evenements', labelKey: 'admin.content.events', icon: FiCalendar, route: '/events', color: 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300' },
+  { id: 'parcels', label: 'Colis', labelKey: 'admin.content.parcels', icon: FiPackage, route: '/parcels', color: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300' },
+  { id: 'reports', label: 'Signalements', labelKey: 'admin.content.reports', icon: FiAlertCircle, route: '/admin?view=queues', color: 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300' },
 ]
 
 export const ROLE_COLORS = {

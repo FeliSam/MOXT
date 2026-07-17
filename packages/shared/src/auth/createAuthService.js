@@ -21,7 +21,7 @@ function isAuthUserConfirmed(authUser) {
   return Boolean(authUser?.phone_confirmed_at || authUser?.email_confirmed_at)
 }
 
-/** In-memory + localStorage OTP send log (90s + 3/3h). No durable DB table. */
+/** In-memory + localStorage OTP send log (90s + 4/3h). No durable DB table. */
 const otpSendLog = loadOtpSendLog()
 
 /**
@@ -251,6 +251,54 @@ export function createAuthService(supabase, redirects = {}) {
     if (error) throw new Error(error.message)
   }
 
+  function profileSeedFromSources(authUser, currentUser) {
+    const metadata = authUser?.user_metadata || {}
+    return sanitizeProfileWriteFields({
+      first_name: requireFirstName(currentUser?.firstName || metadata.first_name),
+      last_name: trimOrEmpty(currentUser?.lastName || metadata.last_name),
+      email: trimOrEmpty(currentUser?.email || authUser?.email || metadata.email).toLowerCase(),
+      phone: normalizeRussianAuthPhone(
+        currentUser?.phone || authUser?.phone || metadata.phone || '',
+      ),
+      origin_phone: trimOrEmpty(currentUser?.secondaryPhone || metadata.origin_phone),
+      origin_country: currentUser?.originCountry || metadata.origin_country || 'BJ',
+      city: trimOrEmpty(currentUser?.city || metadata.city),
+      avatar_url: trimOrEmpty(currentUser?.avatarUrl || metadata.avatar_url || metadata.picture),
+      country: currentUser?.country || 'RU',
+      role: 'user',
+      status: 'active',
+    })
+  }
+
+  /** Partial profile write: UPDATE when row exists; INSERT with required fields otherwise. */
+  async function patchProfileFields(userId, fields, { authUser, currentUser } = {}) {
+    const sanitized = sanitizeProfileWriteFields(fields)
+    const { data: row, error: readError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', userId)
+      .maybeSingle()
+    if (readError) throw new Error(readError.message)
+
+    const updatedAt = new Date().toISOString()
+    if (row) {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ ...sanitized, updated_at: updatedAt })
+        .eq('id', userId)
+      if (error) throw new Error(error.message)
+      return
+    }
+
+    const base = profileSeedFromSources(authUser, currentUser)
+    const { error } = await supabase.from('profiles').insert({
+      id: userId,
+      ...sanitizeProfileWriteFields({ ...base, ...sanitized }),
+      updated_at: updatedAt,
+    })
+    if (error) throw new Error(error.message)
+  }
+
   async function upsertProfileSafely(userId, fields) {
     try {
       await upsertProfile(userId, fields)
@@ -277,89 +325,57 @@ export function createAuthService(supabase, redirects = {}) {
     )
   }
 
-  async function persistVerifiedRegistrationProfile(userId, profileFields, normalizedPhone) {
+  async function persistVerifiedRegistrationProfile(userId, profileFields) {
     const authUser = await getAuthenticatedAuthUser()
     if (authUser.id !== userId) {
-      throw new Error('Session invalide après vérification.')
-    }
-    if (!authUser.phone_confirmed_at) {
-      throw new Error('Le numéro n’est pas confirmé côté Auth. Réessayez avec le dernier code reçu.')
-    }
-
-    const now = new Date().toISOString()
-    // INSERT privilege guard forces phone_verified=false; write profile first, then UPDATE verify.
-    const baseFields = {
-      first_name: profileFields.first_name,
-      last_name: profileFields.last_name,
-      email: profileFields.email,
-      phone: normalizedPhone,
-      origin_phone: profileFields.origin_phone,
-      country: profileFields.country || 'RU',
-      origin_country: profileFields.origin_country || 'BJ',
-      city: profileFields.city,
-      avatar_url: profileFields.avatar_url,
-      role: profileFields.role || 'user',
-      status: profileFields.status || 'active',
-    }
-
-    try {
-      await upsertProfile(userId, baseFields)
-      await upsertProfile(userId, {
-        phone: normalizedPhone,
-        phone_verified: true,
-        phone_verified_at: now,
-        updated_at: now,
-      })
-    } catch (profileError) {
-      const existing = await fetchProfile(userId)
-      if (!existing) {
-        throw new Error(translateProfilePersistenceError(profileError))
-      }
-      try {
-        await upsertProfile(userId, {
-          phone: normalizedPhone,
-          phone_verified: true,
-          phone_verified_at: now,
-          updated_at: now,
-        })
-      } catch (retryError) {
-        throw new Error(translateProfilePersistenceError(retryError))
-      }
-    }
-
-    const user = await fetchProfile(userId)
-    if (!user) {
       throw new Error(
-        'Votre compte est confirmé mais le profil est momentanément indisponible. Rechargez la page sans redemander de code.',
+        translateAuthError(
+          { message: 'MOXT_SESSION_REQUIRED' },
+          { channel: 'phone', intent: 'otp_verify' },
+        ),
       )
     }
-    // INSERT guard may leave phone_verified false; second UPDATE should stick when Auth confirmed.
-    if (!user.phoneVerified) {
-      try {
-        await upsertProfile(userId, {
-          phone: normalizedPhone,
-          phone_verified: true,
-          phone_verified_at: now,
-          updated_at: now,
-        })
-        const refreshed = await fetchProfile(userId)
-        if (refreshed) {
-          return {
-            ...refreshed,
-            phoneVerified: refreshed.phoneVerified || true,
-            phoneVerifiedAt: refreshed.phoneVerifiedAt || now,
-          }
-        }
-      } catch {
-        // Fall through with client-side verified flag for this session.
-      }
-      return {
-        ...user,
-        phoneVerified: true,
-        phoneVerifiedAt: user.phoneVerifiedAt || now,
-      }
+    if (!authUser.phone_confirmed_at) {
+      throw new Error(
+        translateAuthError(
+          { message: 'MOXT_PHONE_NOT_CONFIRMED' },
+          { channel: 'phone', intent: 'otp_verify' },
+        ),
+      )
     }
-    return user
+
+    const finalizePayload = {
+      p_first_name: profileFields.first_name || null,
+      p_last_name: profileFields.last_name || null,
+      p_email: profileFields.email || null,
+      p_origin_phone: profileFields.origin_phone || null,
+      p_origin_country: profileFields.origin_country || null,
+      p_city: profileFields.city || null,
+      p_avatar_url: profileFields.avatar_url || null,
+    }
+
+    // Single path: server finalize only (no client upsert / fake phoneVerified).
+    const { data: finalized, error: finalizeError } = await supabase.rpc(
+      'moxt_finalize_phone_registration',
+      finalizePayload,
+    )
+    if (finalizeError || !finalized?.id) {
+      throw new Error(
+        translateAuthError(
+          { message: finalizeError?.message || 'MOXT_FINALIZE_FAILED' },
+          { channel: 'phone', intent: 'otp_verify' },
+        ),
+      )
+    }
+    if (finalized.phone_verified !== true) {
+      throw new Error(
+        translateAuthError(
+          { message: 'MOXT_FINALIZE_FAILED' },
+          { channel: 'phone', intent: 'otp_verify' },
+        ),
+      )
+    }
+    return profileToUser(finalized)
   }
 
   function guardOtpSend(kind, value) {
@@ -373,25 +389,18 @@ export function createAuthService(supabase, redirects = {}) {
   async function resumePhoneSignup(phone, email = '', pendingUserId = null) {
     guardOtpSend('phone', phone)
 
-    try {
-      await supabase.rpc('moxt_mark_otp_resend', { p_phone: phone })
-    } catch (markError) {
-      console.warn('[MOXT] moxt_mark_otp_resend:', markError?.message || markError)
-    }
-
-    // 1) Classic resend for an unconfirmed phone signup.
-    const resendResult = await supabase.auth.resend({
-      type: 'sms',
+    // Prefer signInWithOtp — more reliably triggers the Send SMS hook than auth.resend.
+    // Do not mark prefer_p1sms: resend stays on SMSC (P1SMS dual-route paused).
+    const otpResult = await supabase.auth.signInWithOtp({
       phone,
+      options: { channel: 'sms', shouldCreateUser: false },
     })
-
-    // 2) Fallback: OTP sign-in without creating a user (still hits send_sms hook).
-    if (resendResult.error) {
-      const otpResult = await supabase.auth.signInWithOtp({
+    if (otpResult.error) {
+      const resendResult = await supabase.auth.resend({
+        type: 'sms',
         phone,
-        options: { channel: 'sms', shouldCreateUser: false },
       })
-      if (otpResult.error) {
+      if (resendResult.error) {
         // Surface the real SMS / Auth error — never collapse to ALREADY_REGISTERED here.
         throw new Error(
           translateAuthError(otpResult.error || resendResult.error, { channel: 'phone' }),
@@ -511,26 +520,55 @@ export function createAuthService(supabase, redirects = {}) {
     )
   }
 
-  async function getAuthenticatedAuthUser() {
+  async function getAuthenticatedAuthUser(context = { channel: 'phone' }) {
     const { data, error } = await supabase.auth.getUser()
-    if (error) throw new Error(translateAuthError(error, { channel: 'phone' }))
-    if (!data?.user) throw new Error('Session expirée.')
+    if (error) {
+      throw new Error(
+        translateAuthError(error, {
+          ...context,
+          intent: context.intent || 'otp_verify',
+        }),
+      )
+    }
+    if (!data?.user) {
+      throw new Error(
+        translateAuthError(
+          { message: 'MOXT_SESSION_REQUIRED' },
+          { ...context, intent: context.intent || 'otp_verify' },
+        ),
+      )
+    }
     return data.user
   }
 
   async function establishAuthSession(session, context = { channel: 'phone' }) {
     if (!session?.access_token || !session?.refresh_token) {
-      throw new Error('Session invalide après vérification.')
+      throw new Error(
+        translateAuthError(
+          { message: 'MOXT_SESSION_REQUIRED' },
+          { ...context, intent: context.intent || 'otp_verify' },
+        ),
+      )
     }
     const { data, error } = await supabase.auth.setSession({
       access_token: session.access_token,
       refresh_token: session.refresh_token,
     })
     if (error) {
-      throw new Error(translateAuthError(error, context))
+      throw new Error(
+        translateAuthError(error, {
+          ...context,
+          intent: context.intent || 'otp_verify',
+        }),
+      )
     }
     if (!data?.session?.user) {
-      throw new Error('Session non établie après vérification.')
+      throw new Error(
+        translateAuthError(
+          { message: 'MOXT_SESSION_REQUIRED' },
+          { ...context, intent: context.intent || 'otp_verify' },
+        ),
+      )
     }
     return data.session
   }
@@ -644,10 +682,11 @@ export function createAuthService(supabase, redirects = {}) {
       return enrichUserFromAuth(existing, authUser)
     }
 
-    await upsertProfile(userId, {
-      email,
-      updated_at: new Date().toISOString(),
-    })
+    await patchProfileFields(
+      userId,
+      { email },
+      { authUser },
+    )
     const refreshed = await fetchProfile(userId)
     return refreshed ? enrichUserFromAuth(refreshed, authUser) : null
   }
@@ -677,12 +716,15 @@ export function createAuthService(supabase, redirects = {}) {
     }
 
     const now = new Date().toISOString()
-    await upsertProfile(userId, {
-      phone: authPhone,
-      phone_verified: true,
-      phone_verified_at: existing?.phoneVerifiedAt || now,
-      updated_at: now,
-    })
+    await patchProfileFields(
+      userId,
+      {
+        phone: authPhone,
+        phone_verified: true,
+        phone_verified_at: existing?.phoneVerifiedAt || now,
+      },
+      { authUser },
+    )
     return fetchProfile(userId)
   }
 
@@ -949,7 +991,7 @@ export function createAuthService(supabase, redirects = {}) {
         // New signup path only — e-mail must not belong to another live account.
         await assertIdentityAvailable('email', email, null, { channel: 'email' })
 
-        // Guard before provider send — one code at a time, max 3 / 3h.
+        // Guard before provider send — one code at a time, max 4 / 3h.
         guardOtpSend('phone', normalizedPhone)
 
         const { data, error } = await supabase.auth.signUp(credentials)
@@ -1034,6 +1076,42 @@ export function createAuthService(supabase, redirects = {}) {
       const otpToken = token.trim()
       const verifyContext = { channel: 'phone', intent: 'otp_verify' }
 
+      async function finishPhoneRegistration(authUser, accessToken) {
+        const linkedEmail = String(email || profileDetails?.email || '').trim().toLowerCase()
+        const profileFields = mergeRegistrationProfileFields(
+          authUser,
+          profileFieldsFromAuthUser(authUser, { pendingRegistration: loadPendingRegistration() }),
+          { ...profileDetails, email: linkedEmail || profileDetails?.email },
+        )
+        const confirmedPhone = normalizeRussianAuthPhone(
+          authUser.phone || profileFields.phone || phone || '',
+        )
+        profileFields.phone = confirmedPhone
+
+        const user = await persistVerifiedRegistrationProfile(authUser.id, profileFields)
+        return {
+          user,
+          token: accessToken,
+          emailLinkDeferred: Boolean(linkedEmail && !authUser.email_confirmed_at),
+          phoneVerified: true,
+          nextVerification: 'email',
+        }
+      }
+
+      // Retry after a prior OTP success + profile failure: phone already confirmed, OTP spent.
+      const { data: existingUserData } = await supabase.auth.getUser()
+      const existingUser = existingUserData?.user
+      if (
+        existingUser?.phone_confirmed_at &&
+        normalizeRussianAuthPhone(existingUser.phone || '') === normalizedPhone
+      ) {
+        const { data: existingSessionData } = await supabase.auth.getSession()
+        const accessToken = existingSessionData?.session?.access_token || ''
+        if (accessToken) {
+          return finishPhoneRegistration(existingUser, accessToken)
+        }
+      }
+
       let data = null
       let error = null
       ;({ data, error } = await supabase.auth.verifyOtp({
@@ -1058,35 +1136,28 @@ export function createAuthService(supabase, redirects = {}) {
         throw new Error('Le code est invalide ou a expiré. Vérifiez les 6 chiffres ou renvoyez un code.')
       }
 
-      const session = await establishAuthSession(data.session, { channel: 'phone' })
-      const authUser = session.user || data.user
+      const session = await establishAuthSession(data.session, {
+        channel: 'phone',
+        intent: 'otp_verify',
+      })
+      // Re-read Auth user after setSession so finalize sees a consistent JWT + phone_confirmed.
+      const authUser = await getAuthenticatedAuthUser()
+      if (
+        normalizeRussianAuthPhone(authUser.phone || '') !== normalizedPhone ||
+        !authUser.phone_confirmed_at
+      ) {
+        throw new Error(
+          translateAuthError(
+            { message: 'MOXT_PHONE_NOT_CONFIRMED' },
+            verifyContext,
+          ),
+        )
+      }
 
       // Do NOT call updateUser({ email }) here — that triggers a magic-link
       // confirmation email whose default redirect often lands on /register.
       // Profile stores the e-mail; in-app Security verifies it with OTP + redirectTo.
-      const linkedEmail = String(email || profileDetails?.email || '').trim().toLowerCase()
-      const profileFields = mergeRegistrationProfileFields(
-        authUser,
-        profileFieldsFromAuthUser(authUser, { pendingRegistration: loadPendingRegistration() }),
-        { ...profileDetails, email: linkedEmail || profileDetails?.email },
-      )
-      const confirmedPhone = normalizeRussianAuthPhone(
-        authUser.phone || profileFields.phone || phone || '',
-      )
-      profileFields.phone = confirmedPhone
-
-      const user = await persistVerifiedRegistrationProfile(
-        authUser.id,
-        profileFields,
-        confirmedPhone,
-      )
-      return {
-        user,
-        token: session.access_token,
-        emailLinkDeferred: Boolean(linkedEmail && !authUser.email_confirmed_at),
-        phoneVerified: true,
-        nextVerification: 'email',
-      }
+      return finishPhoneRegistration(authUser, session.access_token)
     },
 
     async resendPhoneRegistrationOtp(phone) {
@@ -1094,23 +1165,18 @@ export function createAuthService(supabase, redirects = {}) {
       const normalizedPhone = normalizeRussianAuthPhone(phone)
       return withOtpInFlight('phone', normalizedPhone, async () => {
         guardOtpSend('phone', normalizedPhone)
-        // Mark resend so send-sms claims attempt >= 2 → P1SMS (not SMSC again).
-        try {
-          await supabase.rpc('moxt_mark_otp_resend', { p_phone: normalizedPhone })
-        } catch (markError) {
-          console.warn('[MOXT] moxt_mark_otp_resend:', markError?.message || markError)
-        }
-        const { error } = await supabase.auth.resend({
-          type: 'sms',
+        // Do not mark prefer_p1sms: renvoi reste sur SMSC (P1SMS dual-route en pause).
+        const otpResult = await supabase.auth.signInWithOtp({
           phone: normalizedPhone,
+          options: { channel: 'sms', shouldCreateUser: false },
         })
-        if (error) {
-          const otpFallback = await supabase.auth.signInWithOtp({
+        if (otpResult.error) {
+          const { error } = await supabase.auth.resend({
+            type: 'sms',
             phone: normalizedPhone,
-            options: { channel: 'sms', shouldCreateUser: false },
           })
-          if (otpFallback.error) {
-            throw new Error(translateAuthError(otpFallback.error || error, { channel: 'phone' }))
+          if (error) {
+            throw new Error(translateAuthError(otpResult.error || error, { channel: 'phone' }))
           }
         }
         trackOtpSend('phone', normalizedPhone)
@@ -1210,12 +1276,15 @@ export function createAuthService(supabase, redirects = {}) {
       await syncAuthProfileMetadata(verifiedAuthUser, currentUser, normalizedPhone)
 
       const now = new Date().toISOString()
-      await upsertProfile(currentUser.id, {
-        phone: normalizedPhone,
-        phone_verified: true,
-        phone_verified_at: now,
-        updated_at: now,
-      })
+      await patchProfileFields(
+        currentUser.id,
+        {
+          phone: normalizedPhone,
+          phone_verified: true,
+          phone_verified_at: now,
+        },
+        { authUser: verifiedAuthUser, currentUser },
+      )
       const user = await fetchProfile(currentUser.id)
       if (!user) throw new Error('Impossible de charger le profil après vérification.')
       return user
@@ -1303,10 +1372,11 @@ export function createAuthService(supabase, redirects = {}) {
         .trim()
         .toLowerCase()
 
-      await upsertProfile(currentUser.id, {
-        email: confirmedEmail,
-        updated_at: new Date().toISOString(),
-      })
+      await patchProfileFields(
+        currentUser.id,
+        { email: confirmedEmail },
+        { authUser: verifiedAuthUser, currentUser },
+      )
       const user = await fetchProfile(currentUser.id)
       if (!user) throw new Error('Impossible de charger le profil après vérification e-mail.')
       return enrichUserFromAuth(user, verifiedAuthUser)

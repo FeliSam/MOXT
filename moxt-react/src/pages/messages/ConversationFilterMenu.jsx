@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { FiArchive, FiCheck, FiFilter, FiStar } from 'react-icons/fi'
 import { useLanguage } from '../../contexts/useLanguage'
+import { messagesText } from '../../features/communications/messagesI18n'
 import { countConversationsForFilter } from './messageUtils'
 
 const FILTER_OPTIONS = [
@@ -153,7 +154,9 @@ export function ConversationFilterMenu({
               onClick={toggleArchive}
             >
               <FiArchive className="size-4 shrink-0" aria-hidden="true" />
-              <span className="min-w-0 flex-1">{showArchived ? 'Actives' : t('messages.archives')}</span>
+              <span className="min-w-0 flex-1">
+                {showArchived ? messagesText(t, 'messages.actives') : t('messages.archives')}
+              </span>
               {archivedCount ? (
                 <span className="message-filter-chip-count">{archivedCount}</span>
               ) : null}

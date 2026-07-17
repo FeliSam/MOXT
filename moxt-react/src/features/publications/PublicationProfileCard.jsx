@@ -1,10 +1,10 @@
 import { FiCalendar, FiEye, FiMapPin, FiStar, FiUser } from 'react-icons/fi'
 import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 import { Badge, VerifiedDisplayName } from '../../components/ui/Badge'
-import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { ContactButton } from '../communications/ContactButton'
 import { activityByValue } from '../../config/businessActivities'
+import { useLanguage } from '../../contexts/useLanguage'
 import {
   buildBusinessShareText,
   buildBusinessShareUrl,
@@ -40,6 +40,7 @@ export function PublicationProfileCard({
   contactEntity,
   contactType = 'profile',
 }) {
+  const { t } = useLanguage()
   const memberSinceLabel = formatMemberSince(memberSince)
   const isBusinessScope = scope === 'business' && Boolean(ownBusiness)
   const businessVerified = isBusinessScope && isBusinessVerified(ownBusiness)
@@ -84,7 +85,7 @@ export function PublicationProfileCard({
               ) : (
                 <FiUser className="mr-1 inline" />
               )}
-              {isBusinessScope ? 'Entreprise' : 'Membre'}
+              {isBusinessScope ? t('publications.profile.businessBadge') : t('publications.profile.memberBadge')}
             </Badge>
             {isBusinessScope && displayName && displayName !== headlineName ? (
               <Badge tone="info">
@@ -99,7 +100,7 @@ export function PublicationProfileCard({
           {memberSinceLabel ? (
             <p className="mt-1 flex items-center gap-1.5 text-sm text-[var(--app-text-muted)]">
               <FiCalendar className="shrink-0 text-brand-600" />
-              Membre depuis : {memberSinceLabel}
+              {t('publications.profile.memberSince', { date: memberSinceLabel })}
             </p>
           ) : null}
           {city ? (
@@ -110,19 +111,22 @@ export function PublicationProfileCard({
             </p>
           ) : null}
           <div className="mt-4 flex flex-wrap gap-2">
-            <Badge tone="success">{activeCount} actives</Badge>
-            <Badge tone="info">{archivedCount} archivées</Badge>
-            <Badge tone="warning">{totalCount} au total</Badge>
+            <Badge tone="success">{t('publications.profile.activeCount', { count: activeCount })}</Badge>
+            <Badge tone="info">{t('publications.profile.archivedCount', { count: archivedCount })}</Badge>
+            <Badge tone="warning">{t('publications.profile.totalCount', { count: totalCount })}</Badge>
             {aggregateRating?.count ? (
               <Badge tone="warning">
                 <FiStar className="mr-1 inline" />
-                {aggregateRating.average}/5 · {aggregateRating.count} avis
+                {t('publications.profile.reviewCount', {
+                  average: aggregateRating.average,
+                  count: aggregateRating.count,
+                })}
               </Badge>
             ) : null}
             {totalViews > 0 || isOwner ? (
               <Badge tone="warning">
                 <FiEye className="mr-1 inline" />
-                {totalViews} vues annonces
+                {t('publications.profile.listingViews', { count: totalViews })}
               </Badge>
             ) : null}
           </div>

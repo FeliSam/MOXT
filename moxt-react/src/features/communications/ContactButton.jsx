@@ -4,6 +4,8 @@ import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { useActionBurst } from '../../components/ui/ActionBurst'
 import { Button } from '../../components/ui/Button'
+import { useLanguage } from '../../contexts/useLanguage'
+import { sharedText } from '../../i18n/sharedI18n'
 import { openConversationWithContact } from './communicationSlice'
 import { buildRelatedSnapshot } from './relatedSnapshot'
 import { resolveContactProfileFromEntity } from './conversationDisplay'
@@ -27,10 +29,14 @@ export function ContactButton({
 }) {
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const user = useSelector((state) => state.auth.user)
   const [loading, setLoading] = useState(false)
   const pendingRef = useRef(false)
   const { trigger: triggerBurst, node: burstNode } = useActionBurst()
+  const contactLabel = loading
+    ? sharedText(t, 'shared.opening')
+    : children || sharedText(t, 'shared.contact')
 
   if (!ownerId || ownerId === user.id) return null
 
@@ -91,7 +97,7 @@ export function ContactButton({
           disabled={loading}
           onClick={handleContact}
         >
-          {loading ? 'Ouverture…' : children || 'Contacter'}
+          {contactLabel}
         </button>
       </>
     )
@@ -107,7 +113,7 @@ export function ContactButton({
         variant={variant}
         onClick={handleContact}
       >
-        {loading ? 'Ouverture…' : children || 'Contacter'}
+        {contactLabel}
       </Button>
     </>
   )

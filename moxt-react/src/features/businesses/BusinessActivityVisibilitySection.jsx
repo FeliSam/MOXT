@@ -1,10 +1,14 @@
 import { useDispatch } from 'react-redux'
 import { Card } from '../../components/ui/Card'
+import { useLanguage } from '../../contexts/useLanguage'
 import { ActivityVisibilitySelect } from '../account/ActivityVisibilitySelect'
+import { businessesText } from './businessesI18n'
 import { updateBusinessActivityVisibility } from './businessSlice'
 
 export function BusinessActivityVisibilitySection({ business, className = '' }) {
   const dispatch = useDispatch()
+  const { t } = useLanguage()
+  const bt = (key, vars) => businessesText(t, key, vars)
 
   if (!business?.id) return null
 
@@ -20,17 +24,16 @@ export function BusinessActivityVisibilitySection({ business, className = '' }) 
 
   return (
     <Card className={className}>
-      <h2 className="font-black">Visibilité des publications</h2>
+      <h2 className="font-black">{bt('businesses.visibility.title')}</h2>
       <p className="mt-2 text-sm text-[var(--app-text-muted)]">
-        Contrôle qui peut consulter la fiche publique et les publications de votre entreprise.
-        Enregistré sur MOXT et synchronisé entre vos appareils.
+        {bt('businesses.visibility.description')}
       </p>
       <div className="mt-5">
         <ActivityVisibilitySelect
           id={`business-visibility-${business.id}`}
           value={business.activityVisibility || 'public'}
           onChange={handleChange}
-          hint="Les visiteurs non autorisés verront un message d’accès restreint."
+          hint={bt('businesses.visibility.hint')}
         />
       </div>
     </Card>

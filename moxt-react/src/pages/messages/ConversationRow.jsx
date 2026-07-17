@@ -1,16 +1,19 @@
 import { FiBellOff, FiCpu, FiStar } from 'react-icons/fi'
 import { RELATED_CONTENT_META } from '../../config/communications'
 import { VerifiedDisplayName } from '../../components/ui/Badge'
+import { useLanguage } from '../../contexts/useLanguage'
 import { getConversationPeer } from '../../features/communications/conversationDisplay'
+import { messagesText } from '../../features/communications/messagesI18n'
 import { conversationPreview } from './messageUtils'
 import { shortTime } from './format'
 import { MessageAvatar } from './MessageBubble'
 
 export function ConversationRow({ active, assistant = false, conversation, onClick, userId }) {
+  const { t } = useLanguage()
   const peer = assistant ? null : getConversationPeer(conversation, userId)
   const lastMessage = assistant
-    ? 'Comment puis-je vous aider aujourd’hui ?'
-    : conversationPreview(conversation, userId)
+    ? messagesText(t, 'messages.assistant.preview')
+    : conversationPreview(conversation, userId, t)
   const unread = assistant ? 0 : conversation.unreadBy?.[userId] || 0
   const pinned = !assistant && conversation.pinnedBy?.includes(userId)
   const muted = !assistant && conversation.mutedBy?.includes(userId)
@@ -60,7 +63,7 @@ export function ConversationRow({ active, assistant = false, conversation, onCli
           >
             {pinned ? <FiStar className="size-3 shrink-0 text-amber-500" /> : null}
             <VerifiedDisplayName
-              name={assistant ? 'Assistant MOXT' : peer?.name}
+              name={assistant ? messagesText(t, 'messages.assistant.name') : peer?.name}
               verified={!assistant && Boolean(peer?.verified)}
               iconSize="sm"
               className="min-w-0 flex-1"
@@ -69,7 +72,7 @@ export function ConversationRow({ active, assistant = false, conversation, onCli
             {muted ? <FiBellOff className="size-3 shrink-0 text-[var(--app-text-faint)]" /> : null}
           </strong>
           <time className="shrink-0 text-[10px] font-semibold text-[var(--app-text-faint)] sm:rounded-full sm:bg-[var(--app-surface-muted)] sm:px-1.5 sm:py-0.5">
-            {assistant ? 'Toujours là' : shortTime(conversation.updatedAt)}
+            {assistant ? messagesText(t, 'messages.assistant.alwaysThere') : shortTime(conversation.updatedAt)}
           </time>
         </span>
         <span className="mt-0.5 flex items-center gap-1.5">

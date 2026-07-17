@@ -9,7 +9,8 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { PillBadge, VerifiedDisplayName } from '../components/ui/Badge'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { Tabs } from '../components/ui/Tabs'
-import { SUBSCRIPTION_NOTIFY_LABELS } from '@moxt/shared/utils/subscriptionUtils.js'
+import { useLanguage } from '../contexts/useLanguage'
+import { phase3Text } from '../i18n/phase3I18n'
 import {
   removePublisherSubscription,
   updatePublisherSubscriptionPref,
@@ -25,13 +26,21 @@ import { useProfileAvatarMap } from '../features/account/useProfileAvatarMap'
 import { usePublicationProfile } from '../features/publications/usePublicationProfile'
 import { selectBusinessById } from '../features/businesses/businessSelectors'
 
-const TAB_ITEMS = [
-  { value: 'following', label: 'Mes abonnements' },
-  { value: 'subscribers', label: 'Mes abonnés' },
-]
+const NOTIFY_LABEL_KEYS = {
+  all: 'subscriptions.notify.all',
+  important: 'subscriptions.notify.important',
+  muted: 'subscriptions.notify.muted',
+}
+
+function notifyPrefLabel(p3, pref) {
+  const key = NOTIFY_LABEL_KEYS[pref]
+  return key ? p3(key) : pref
+}
 
 export function SubscriptionsPage() {
   const dispatch = useDispatch()
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const user = useSelector((state) => state.auth.user)
   const [searchParams, setSearchParams] = useSearchParams()
   const activeTab = searchParams.get('tab') === 'subscribers' ? 'subscribers' : 'following'
@@ -39,6 +48,11 @@ export function SubscriptionsPage() {
   const subscriptions = useSelector((state) => selectUserSubscriptions(state, user.id))
   const subscribers = useSelector((state) => selectPublisherSubscribers(state, 'user', user.id))
   const businesses = useSelector((state) => state.businesses.items || [])
+
+  const tabItems = [
+    { value: 'following', label: p3('subscriptions.tabs.subscriptions') },
+    { value: 'subscribers', label: p3('subscriptions.tabs.subscribers') },
+  ]
 
   const grouped = useMemo(() => {
     const users = subscriptions.filter((item) => item.publisherType === 'user')
@@ -58,7 +72,7 @@ export function SubscriptionsPage() {
       const entry = followingAvatarMap[item.publisherId]
       items.push({
         id: item.id,
-        name: entry?.name || item.publisherName || 'Membre',
+        name: entry?.name || item.publisherName || p3('common.member'),
         src: entry?.avatarUrl || null,
         shape: 'user',
       })
@@ -67,15 +81,16 @@ export function SubscriptionsPage() {
       const business = businesses.find((row) => row.id === item.publisherId)
       items.push({
         id: item.id,
-        name: item.publisherName || business?.name || 'Entreprise',
+        name: item.publisherName || business?.name || p3('common.business'),
         src: business?.logoUrl || null,
         shape: 'business',
       })
     }
     return items
-  }, [businesses, followingAvatarMap, grouped.businesses, grouped.users])
+  }, [businesses, followingAvatarMap, grouped.businesses, grouped.users, t])
 
-  const displayName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Mon profil'
+  const displayName =
+    `${user.firstName || ''} ${user.lastName || ''}`.trim() || p3('subscriptions.myProfile')
   const publisherPath = `/users/${user.id}/publications`
 
   function setActiveTab(tab) {
@@ -89,17 +104,17 @@ export function SubscriptionsPage() {
   const description =
     activeTab === 'subscribers'
       ? subscribers.length
-        ? `${subscribers.length} membre(s) suivent vos annonces et publications.`
-        : 'Les membres qui s’abonnent à votre profil apparaîtront ici.'
+        ? p3('subscriptions.desc.subscribersCount', { count: subscribers.length })
+        : p3('subscriptions.desc.subscribersEmpty')
       : subscriptions.length
-        ? `${subscriptions.length} abonnement(s) actif(s). Configurez les notifications pour chaque éditeur.`
-        : 'Suivez des membres ou des entreprises pour voir leurs annonces en priorité.'
+        ? p3('subscriptions.desc.subscriptionsCount', { count: subscriptions.length })
+        : p3('subscriptions.desc.subscriptionsEmpty')
 
   return (
     <div className="grid gap-7 page-enter">
       <PageHeader
-        eyebrow="Communauté"
-        title="Abonnements"
+        eyebrow={p3('subscriptions.eyebrow')}
+        title={p3('subscriptions.title')}
         description={description}
         actions={
           activeTab === 'following' && followingStack.length ? (
@@ -109,18 +124,18 @@ export function SubscriptionsPage() {
         stats={
           activeTab === 'following'
             ? [
-                { label: 'Membres', value: grouped.users.length },
-                { label: 'Entreprises', value: grouped.businesses.length },
+                { label: p3('subscriptions.stats.members'), value: grouped.users.length },
+                { label: p3('subscriptions.stats.businesses'), value: grouped.businesses.length },
               ]
-            : [{ label: 'Abonnés', value: subscribers.length }]
+            : [{ label: p3('subscriptions.stats.subscribers'), value: subscribers.length }]
         }
       />
 
       <Tabs
-        items={TAB_ITEMS}
+        items={tabItems}
         active={activeTab}
         onChange={setActiveTab}
-        label="Type d’abonnement"
+        label={p3('subscriptions.tabsTypeLabel')}
       />
 
       {activeTab === 'following' ? (
@@ -161,16 +176,19 @@ export function SubscriptionsPage() {
 }
 
 function FollowingPanel({ grouped, subscriptions, stackItems, onPrefChange, onUnsubscribe }) {
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
+
   if (!subscriptions.length) {
     return (
       <EmptyState
         icon={FiUsers}
         tone="warm"
-        title="Aucun abonnement"
-        description="Abonnez-vous depuis la page publications d'un membre ou la fiche d'une entreprise — leurs avatars apparaîtront ici."
+        title={p3('subscriptions.empty.title')}
+        description={p3('subscriptions.empty.description')}
         action={
           <Link to="/businesses">
-            <Button variant="secondary">Explorer l'annuaire</Button>
+            <Button variant="secondary">{p3('subscriptions.empty.cta')}</Button>
           </Link>
         }
       />
@@ -183,13 +201,13 @@ function FollowingPanel({ grouped, subscriptions, stackItems, onPrefChange, onUn
         <div className="flex items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]/80 px-4 py-3 sm:hidden">
           <AvatarStack items={stackItems} max={5} size="sm" />
           <p className="min-w-0 text-xs text-[var(--app-text-muted)]">
-            Votre cercle d&apos;abonnements
+            {p3('subscriptions.circleLabel')}
           </p>
         </div>
       ) : null}
 
       <SubscriptionGroup
-        title="Membres"
+        title={p3('subscriptions.group.members')}
         icon={FiUser}
         items={grouped.users}
         kind="user"
@@ -198,7 +216,7 @@ function FollowingPanel({ grouped, subscriptions, stackItems, onPrefChange, onUn
       />
 
       <SubscriptionGroup
-        title="Entreprises"
+        title={p3('subscriptions.group.businesses')}
         icon={HiOutlineBuildingOffice2}
         items={grouped.businesses}
         kind="business"
@@ -243,6 +261,8 @@ function SubscriptionGroup({ title, icon: Icon, items, kind, onPrefChange, onUns
 }
 
 function FollowingRow({ item, kind, onPrefChange, onUnsubscribe }) {
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const user = useSelector((state) => state.auth.user)
   const business = useSelector((state) =>
     kind === 'business' ? selectBusinessById(state, item.publisherId) : null,
@@ -253,13 +273,14 @@ function FollowingRow({ item, kind, onPrefChange, onUnsubscribe }) {
     kind === 'user'
       ? `${profile?.firstName || ''} ${profile?.lastName || ''}`.trim() ||
         item.publisherName ||
-        'Membre MOXT'
-      : item.publisherName || business?.name || 'Entreprise'
+        p3('common.memberMoxt')
+      : item.publisherName || business?.name || p3('common.business')
 
   const avatarSrc = kind === 'user' ? profile?.avatarUrl : business?.logoUrl
   const profilePath =
     item.publisherPath ||
     (kind === 'user' ? `/users/${item.publisherId}/publications` : `/businesses/${item.publisherId}`)
+  const prefLabel = notifyPrefLabel(p3, item.notifyPref)
 
   return (
     <div className="flex flex-col gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--app-surface-muted)]/55 sm:flex-row sm:items-center sm:justify-between sm:px-5">
@@ -267,7 +288,7 @@ function FollowingRow({ item, kind, onPrefChange, onUnsubscribe }) {
         <Link
           to={profilePath}
           className="shrink-0 transition-transform duration-200 hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
-          aria-label={`Voir ${displayName}`}
+          aria-label={p3('subscriptions.viewAria', { name: displayName })}
         >
           <EntityAvatar
             name={displayName}
@@ -289,14 +310,12 @@ function FollowingRow({ item, kind, onPrefChange, onUnsubscribe }) {
             ) : (
               <strong className="truncate text-[15px] leading-5">{displayName}</strong>
             )}
-            <PillBadge tone="info">
-              {SUBSCRIPTION_NOTIFY_LABELS[item.notifyPref] || item.notifyPref}
-            </PillBadge>
+            <PillBadge tone="info">{prefLabel || item.notifyPref}</PillBadge>
           </div>
           <p className="mt-0.5 text-xs leading-4 text-[var(--app-text-muted)] sm:text-sm sm:leading-5">
             {kind === 'business'
-              ? 'Annonces et publications priorisées dans vos listes.'
-              : 'Priorité marketplace, colis, jobs, événements et fil.'}
+              ? p3('subscriptions.row.businessBlurb')
+              : p3('subscriptions.row.userBlurb')}
           </p>
         </div>
       </div>
@@ -304,7 +323,7 @@ function FollowingRow({ item, kind, onPrefChange, onUnsubscribe }) {
       <div className="flex flex-wrap items-center gap-2 pl-14 sm:pl-0">
         <Link to={profilePath}>
           <Button size="sm" variant="secondary" icon={FiExternalLink}>
-            Voir
+            {p3('common.view')}
           </Button>
         </Link>
         <SubscriptionNotifyMenu
@@ -324,8 +343,8 @@ function FollowingRow({ item, kind, onPrefChange, onUnsubscribe }) {
                     ? FiStar
                     : FiBell
               }
-              aria-label={`Notifications : ${SUBSCRIPTION_NOTIFY_LABELS[item.notifyPref] || item.notifyPref}`}
-              title={SUBSCRIPTION_NOTIFY_LABELS[item.notifyPref] || 'Notifications'}
+              aria-label={p3('subscriptions.notifyAria', { pref: prefLabel || item.notifyPref })}
+              title={prefLabel || p3('common.notifications')}
               className="border border-[var(--app-border)] bg-[var(--app-surface)] hover:bg-[var(--app-surface-muted)]"
             />
           }

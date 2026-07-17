@@ -1,18 +1,18 @@
 export const TRANSFER_PROOF_META = {
   payment: {
     kind: 'payment',
-    label: 'Preuve de paiement (client)',
-    shortLabel: 'Paiement client',
+    labelKey: 'transfers.proof.payment.label',
+    shortLabelKey: 'transfers.proof.payment.short',
   },
   business: {
     kind: 'business',
-    label: 'Preuve de virement (entreprise)',
-    shortLabel: 'Virement entreprise',
+    labelKey: 'transfers.proof.business.label',
+    shortLabelKey: 'transfers.proof.business.short',
   },
   received: {
     kind: 'received',
-    label: 'Preuve de réception',
-    shortLabel: 'Réception',
+    labelKey: 'transfers.proof.received.label',
+    shortLabelKey: 'transfers.proof.received.short',
   },
 }
 
@@ -73,7 +73,7 @@ export function getTransferProofEntries(transfer) {
 export function buildReceiptProofsFromTransfer(transfer) {
   return getTransferProofEntries(transfer).map((entry) => ({
     kind: entry.kind,
-    label: entry.label,
+    labelKey: entry.labelKey,
     name: entry.proof.name,
     size: entry.proof.size,
     type: entry.proof.type,
@@ -90,6 +90,7 @@ export function buildTransferReceiptPayload(transfer) {
     userId: transfer.userId,
     relatedType: 'transfer',
     relatedId: transfer.id,
+    titleKey: 'transfers.receipt.storedTitle',
     title: `Reçu transfert ${transfer.id}`,
     amount: transfer.totalToPay || transfer.amountSent || transfer.amount,
     currency: transfer.currencyFrom || transfer.currency || 'XOF',
@@ -110,7 +111,7 @@ export function getReceiptProofEntries(receipt, transfer) {
     return stored.map((item) => ({
       ...TRANSFER_PROOF_META[item.kind],
       kind: item.kind,
-      label: item.label || TRANSFER_PROOF_META[item.kind]?.label || item.kind,
+      labelKey: item.labelKey || TRANSFER_PROOF_META[item.kind]?.labelKey,
       proof: item,
       path: item.path || (transfer ? inferProofStoragePath(transfer, item.kind, item) : null),
     }))

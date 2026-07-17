@@ -1,14 +1,18 @@
 import { FiUsers } from 'react-icons/fi'
+import { useLanguage } from '../../../contexts/useLanguage'
 import { Button } from '../../../components/ui/Button'
 import { dispatchUserRole } from '../promoteAdminUtils'
 import { CARD, ITEM, ROLE_COLORS } from '../adminConfig'
+import { adminText } from '../adminI18n'
 import { avatarColor, initials } from '../adminUtils'
 import { Empty, SectionTitle } from './AdminShared'
 
 export function AdminUsersPanel({ actorRole, dispatch, onSuspendUser, setSelected, users }) {
+  const { t } = useLanguage()
+
   return (
     <div className={`${CARD} p-5 grid gap-4`}>
-      <SectionTitle icon={FiUsers} label="Utilisateurs et roles" count={users.length} />
+      <SectionTitle icon={FiUsers} label={adminText(t, 'admin.users.title')} count={users.length} />
       {users.length ? (
         users.map((user) => {
           const name = `${user.firstName || ''} ${user.lastName || ''}`.trim()
@@ -38,7 +42,9 @@ export function AdminUsersPanel({ actorRole, dispatch, onSuspendUser, setSelecte
                         : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
                   }`}
                 >
-                  {user.status === 'pending_deletion' ? 'suppression demandée' : user.status}
+                  {user.status === 'pending_deletion'
+                    ? adminText(t, 'admin.users.pendingDeletion')
+                    : user.status}
                 </span>
               </div>
               <div className="flex min-w-0 flex-wrap gap-2">
@@ -47,7 +53,7 @@ export function AdminUsersPanel({ actorRole, dispatch, onSuspendUser, setSelecte
                     key={role}
                     type="button"
                     disabled={role === 'admin' && actorRole !== 'superadmin'}
-                    onClick={() => dispatchUserRole(dispatch, { actorRole, id: user.id, role })}
+                    onClick={() => dispatchUserRole(dispatch, { actorRole, id: user.id, role, t })}
                     className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-40 ${
                       user.role === role
                         ? 'bg-brand-700 text-white'
@@ -61,14 +67,16 @@ export function AdminUsersPanel({ actorRole, dispatch, onSuspendUser, setSelecte
                   variant={user.status === 'suspended' ? 'secondary' : 'danger'}
                   onClick={() => onSuspendUser(user)}
                 >
-                  {user.status === 'suspended' ? 'Reactiver' : 'Suspendre'}
+                  {user.status === 'suspended'
+                    ? adminText(t, 'admin.actions.reactivate')
+                    : adminText(t, 'admin.actions.suspend')}
                 </Button>
               </div>
             </div>
           )
         })
       ) : (
-        <Empty label="Aucun utilisateur trouve." icon={FiUsers} />
+        <Empty label={adminText(t, 'admin.empty.noUsers')} icon={FiUsers} />
       )}
     </div>
   )

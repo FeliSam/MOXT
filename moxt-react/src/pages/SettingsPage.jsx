@@ -1,5 +1,16 @@
 import { useState } from 'react'
-import { FiBell, FiDownload, FiInfo, FiMoon, FiSun, FiTrash2 } from 'react-icons/fi'
+import {
+  FiBell,
+  FiCheck,
+  FiDownload,
+  FiGlobe,
+  FiInfo,
+  FiLock,
+  FiMoon,
+  FiSun,
+  FiTrash2,
+  FiUsers,
+} from 'react-icons/fi'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { isEmailVerified } from '@moxt/shared/auth/userSecurity.js'
@@ -8,11 +19,9 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { PageHeader } from '../components/ui/PageHeader'
-import { Select } from '../components/ui/Select'
 import { useTheme } from '../contexts/useTheme'
 import { useLanguage } from '../contexts/useLanguage'
 import { LANGUAGE_LABELS, SUPPORTED_LANGUAGES } from '../config/uiTranslations'
-import { ActivityVisibilitySelect } from '../features/account/ActivityVisibilitySelect'
 import {
   cancelAccountDeletion,
   requestAccountDeletion,
@@ -21,7 +30,7 @@ import {
 } from '../features/account/accountSlice'
 import { addToast } from '../features/ui/uiSlice'
 import { isNative } from '../platform/capacitor'
-import { syncNativePushPreference, setNativePushUserId } from '../platform/pushNotifications'
+import { syncNativePushPreference } from '../platform/pushNotifications'
 import {
   canPromptForPushPermission,
   ensureWebPushSubscription,
@@ -43,7 +52,7 @@ export function SettingsPage() {
       (item) => item.userId === user.id && item.status === 'requested',
     ),
   )
-  const { theme, toggleTheme } = useTheme()
+  const { theme, setTheme } = useTheme()
   const { language, setLanguage, t } = useLanguage()
   const [confirmDeletion, setConfirmDeletion] = useState(false)
   const [pushPromptLoading, setPushPromptLoading] = useState(false)
@@ -217,57 +226,61 @@ export function SettingsPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Compte"
-        title="Paramètres"
-        description="Préférences simples et contrôle de vos données locales."
+        eyebrow={t('settings.pageEyebrow')}
+        title={t('settings.pageTitle')}
+        description={t('settings.pageDescription')}
         actions={<BackButton appearance="link" />}
       />
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
-          <h2 className="font-black">Apparence</h2>
-          <p className="mt-2 text-sm text-[var(--app-text-muted)]">
-            Thème actuel : {theme === 'dark' ? 'sombre' : 'clair'}.
-          </p>
-          <Button
-            className="mt-5"
-            variant="secondary"
-            icon={theme === 'dark' ? FiSun : FiMoon}
-            onClick={toggleTheme}
-          >
-            Changer le thème
-          </Button>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="font-black">{t('settings.appearance.title')}</h2>
+              <p className="mt-2 text-sm text-[var(--app-text-muted)]">
+                {t('settings.appearance.description')}
+              </p>
+            </div>
+            <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
+              {theme === 'dark' ? <FiMoon className="text-lg" /> : <FiSun className="text-lg" />}
+            </span>
+          </div>
+          <ThemeToggle theme={theme} onSelect={setTheme} t={t} />
         </Card>
         <Card>
-          <h2 className="font-black">Langue et confidentialité</h2>
-          <div className="mt-5 grid gap-4">
-            <Select
-              id="settings-language"
-              label="Langue préférée"
-              value={language}
-              onChange={(event) => {
-                setLanguage(event.target.value)
-                updatePreference('language', event.target.value)
-              }}
-            >
-              {SUPPORTED_LANGUAGES.map((code) => (
-                <option key={code} value={code}>
-                  {LANGUAGE_LABELS[code]?.label || code}
-                </option>
-              ))}
-            </Select>
-            <ActivityVisibilitySelect
-              id="settings-visibility"
-              label="Visibilité de l’activité"
-              value={preferences.activityVisibility}
-              onChange={(event) => updatePreference('activityVisibility', event.target.value)}
-              hint="Contrôle qui peut voir vos publications publiques sur votre page membre. Enregistré sur votre profil MOXT et synchronisé entre vos appareils."
-            />
+          <h2 className="font-black">{t('settings.languagePrivacy.title')}</h2>
+          <div className="mt-5 grid gap-5">
+            <div>
+              <p className="mb-2.5 text-xs font-black uppercase tracking-[0.08em] text-[var(--app-text-muted)]">
+                {t('settings.language.label')}
+              </p>
+              <LanguageGrid
+                t={t}
+                value={language}
+                onSelect={(code) => {
+                  setLanguage(code)
+                  updatePreference('language', code)
+                }}
+              />
+            </div>
+            <div>
+              <p className="mb-2.5 text-xs font-black uppercase tracking-[0.08em] text-[var(--app-text-muted)]">
+                {t('settings.visibility.label')}
+              </p>
+              <VisibilityPicker
+                t={t}
+                value={preferences.activityVisibility}
+                onSelect={(value) => updatePreference('activityVisibility', value)}
+              />
+              <p className="mt-2.5 text-xs leading-5 text-[var(--app-text-faint)]">
+                {t('settings.visibility.hint')}
+              </p>
+            </div>
           </div>
         </Card>
         <Card className="md:col-span-2">
-          <h2 className="font-black">Notifications</h2>
+          <h2 className="font-black">{t('settings.notifications.title')}</h2>
           <p className="mt-2 text-sm text-[var(--app-text-muted)]">
-            Contrôlez ce que vous recevez et à quelle priorité.
+            {t('settings.notifications.description')}
           </p>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -302,25 +315,25 @@ export function SettingsPage() {
               </div>
             ) : null}
             <NotifToggle
-              label="Nouveaux abonnés"
-              description="Quand un membre s'abonne à vos publications"
+              label={t('settings.notifications.newSubscribers')}
+              description={t('settings.notifications.newSubscribersDesc')}
               checked={preferences.notifNewSubscribers !== false}
               onChange={(v) => updatePreference('notifNewSubscribers', v)}
             />
             <NotifToggle
-              label="Notifications e-mail"
+              label={t('settings.notifications.email')}
               description={
                 emailConfirmed
-                  ? 'Résumés et alertes par e-mail'
-                  : 'Confirmez votre e-mail (Sécurité) pour activer les alertes e-mail'
+                  ? t('settings.notifications.emailDesc')
+                  : t('settings.notifications.emailNeedsConfirm')
               }
               checked={emailConfirmed && preferences.emailNotifications}
               onChange={(v) => {
                 if (!emailConfirmed) {
                   dispatch(
                     addToast({
-                      title: 'E-mail non confirmé',
-                      message: 'Confirmez votre adresse dans Sécurité avant d’activer les e-mails.',
+                      title: t('settings.notifications.emailUnconfirmedTitle'),
+                      message: t('settings.notifications.emailUnconfirmedBody'),
                       tone: 'error',
                     }),
                   )
@@ -332,13 +345,16 @@ export function SettingsPage() {
           </div>
 
           <div className="mt-6 border-t border-[var(--app-border)] pt-5">
-            <p className="mb-3 text-xs font-black uppercase tracking-[0.12em] text-[var(--app-text-faint)]">Priorité par catégorie</p>
+            <p className="mb-3 text-xs font-black uppercase tracking-[0.12em] text-[var(--app-text-faint)]">
+              {t('settings.notifications.priorityHeading')}
+            </p>
             <div className="grid gap-3 sm:grid-cols-2">
-              {NOTIF_CATEGORIES.map(({ key, label, description }) => (
+              {NOTIF_CATEGORIES.map(({ key, labelKey, descriptionKey }) => (
                 <NotifPriority
                   key={key}
-                  label={label}
-                  description={description}
+                  t={t}
+                  label={t(labelKey)}
+                  description={t(descriptionKey)}
                   value={preferences[key]}
                   onChange={(v) => updatePreference(key, v)}
                 />
@@ -347,28 +363,28 @@ export function SettingsPage() {
           </div>
 
           <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--app-text-muted)]">
-            <span><span className="mr-1.5 inline-block size-2 rounded-full bg-rose-500" />Haute — immédiate</span>
-            <span><span className="mr-1.5 inline-block size-2 rounded-full bg-brand-500" />Normale — regroupée</span>
-            <span><span className="mr-1.5 inline-block size-2 rounded-full bg-slate-400" />Faible — silencieuse</span>
-            <span><span className="mr-1.5 inline-block size-2 rounded-full bg-[var(--app-border)]" />Off — désactivée</span>
+            <span><span className="mr-1.5 inline-block size-2 rounded-full bg-rose-500" />{t('settings.notifications.legend.high')}</span>
+            <span><span className="mr-1.5 inline-block size-2 rounded-full bg-brand-500" />{t('settings.notifications.legend.normal')}</span>
+            <span><span className="mr-1.5 inline-block size-2 rounded-full bg-slate-400" />{t('settings.notifications.legend.low')}</span>
+            <span><span className="mr-1.5 inline-block size-2 rounded-full bg-[var(--app-border)]" />{t('settings.notifications.legend.off')}</span>
           </div>
         </Card>
         <Card>
-          <h2 className="font-black">Mes données</h2>
+          <h2 className="font-black">{t('settings.data.title')}</h2>
           <p className="mt-2 text-sm text-[var(--app-text-muted)]">
-            Exportez uniquement les informations rattachées à votre compte.
+            {t('settings.data.description')}
           </p>
           <Button className="mt-5" icon={FiDownload} onClick={exportOwnData}>
-            Exporter mes données
+            {t('settings.data.export')}
           </Button>
         </Card>
         <Card>
-          <h2 className="font-black">Profil et sécurité</h2>
+          <h2 className="font-black">{t('settings.profileSecurity.title')}</h2>
           <p className="mt-2 text-sm text-[var(--app-text-muted)]">
-            Gérez vos coordonnées et votre niveau de vérification.
+            {t('settings.profileSecurity.description')}
           </p>
           <Link className="mt-5 inline-block" to="/profile">
-            <Button variant="secondary">Ouvrir mon profil</Button>
+            <Button variant="secondary">{t('settings.profileSecurity.openProfile')}</Button>
           </Link>
         </Card>
         <Card>
@@ -377,18 +393,18 @@ export function SettingsPage() {
               <FiInfo className="text-lg" />
             </span>
             <div>
-              <h2 className="font-black">Version de l'application</h2>
-              <p className="text-sm text-[var(--app-text-muted)]">Historique des améliorations et mises à jour.</p>
+              <h2 className="font-black">{t('settings.version.title')}</h2>
+              <p className="text-sm text-[var(--app-text-muted)]">{t('settings.version.description')}</p>
             </div>
           </div>
           <Link className="mt-5 inline-block" to="/settings/version">
-            <Button variant="secondary" icon={FiInfo}>Voir la version actuelle</Button>
+            <Button variant="secondary" icon={FiInfo}>{t('settings.version.open')}</Button>
           </Link>
         </Card>
         <Card className="border-red-200 dark:border-red-900">
-          <h2 className="font-black text-red-700 dark:text-red-300">Zone sensible</h2>
+          <h2 className="font-black text-red-700 dark:text-red-300">{t('settings.danger.title')}</h2>
           <p className="mt-2 text-sm text-[var(--app-text-muted)]">
-            La demande est seulement enregistrée localement et reste réversible.
+            {t('settings.danger.description')}
           </p>
           {deletionRequest ? (
             <Button
@@ -396,7 +412,7 @@ export function SettingsPage() {
               variant="secondary"
               onClick={() => dispatch(cancelAccountDeletion(user.id))}
             >
-              Annuler la demande
+              {t('settings.danger.cancelRequest')}
             </Button>
           ) : (
             <Button
@@ -405,7 +421,7 @@ export function SettingsPage() {
               icon={FiTrash2}
               onClick={() => setConfirmDeletion(true)}
             >
-              Demander la suppression
+              {t('settings.danger.requestDeletion')}
             </Button>
           )}
         </Card>
@@ -413,15 +429,15 @@ export function SettingsPage() {
       <ConfirmDialog
 
         open={confirmDeletion}
-        title="Demander la suppression du compte"
-        description="Votre compte sera marqué pour suppression. La modération MOXT traitera la demande sous 30 jours."
+        title={t('settings.danger.confirmTitle')}
+        description={t('settings.danger.confirmBody')}
         onCancel={() => setConfirmDeletion(false)}
         onConfirm={() => {
           dispatch(requestAccountDeletion({ userId: user.id }))
           dispatch(
             addToast({
-              title: 'Demande enregistrée',
-              message: 'Votre demande de suppression a été transmise.',
+              title: t('settings.danger.toastTitle'),
+              message: t('settings.danger.toastBody'),
               tone: 'success',
             }),
           )
@@ -432,22 +448,157 @@ export function SettingsPage() {
   )
 }
 
+const THEME_OPTIONS = [
+  { value: 'light', labelKey: 'settings.appearance.light', icon: FiSun },
+  { value: 'dark', labelKey: 'settings.appearance.dark', icon: FiMoon },
+]
+
+function ThemeToggle({ theme, onSelect, t }) {
+  return (
+    <div
+      role="radiogroup"
+      aria-label={t('settings.appearance.ariaLabel')}
+      className="relative mt-5 grid grid-cols-2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-1"
+    >
+      <span
+        aria-hidden
+        className="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-xl bg-[var(--app-surface)] shadow-sm ring-1 ring-[var(--app-border)] transition-transform duration-300 ease-out"
+        style={{ transform: theme === 'dark' ? 'translateX(100%)' : 'translateX(0)' }}
+      />
+      {THEME_OPTIONS.map(({ value, labelKey, icon: Icon }) => {
+        const active = theme === value
+        return (
+          <button
+            key={value}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            onClick={() => onSelect(value)}
+            className={`relative z-10 flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold transition-colors ${
+              active
+                ? 'text-[var(--app-accent)]'
+                : 'text-[var(--app-text-muted)] hover:text-[var(--app-text)]'
+            }`}
+          >
+            <Icon className="text-base" aria-hidden />
+            {t(labelKey)}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function LanguageGrid({ value, onSelect, t }) {
+  return (
+    <div role="radiogroup" aria-label={t('settings.language.label')} className="grid grid-cols-2 gap-2">
+      {SUPPORTED_LANGUAGES.map((code) => {
+        const active = value === code
+        const meta = LANGUAGE_LABELS[code] || {}
+        return (
+          <button
+            key={code}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            onClick={() => onSelect(code)}
+            className={`flex items-center gap-3 rounded-2xl border p-3 text-left transition ${
+              active
+                ? 'border-[var(--app-accent)] bg-[var(--app-accent-soft)] shadow-sm'
+                : 'border-[var(--app-border)] bg-[var(--app-surface-muted)] hover:border-[var(--app-accent)]/40'
+            }`}
+          >
+            <span className="text-2xl leading-none" aria-hidden>
+              {meta.flag}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span
+                className={`block truncate text-sm font-bold ${active ? 'text-[var(--app-accent)]' : ''}`}
+              >
+                {meta.label || code}
+              </span>
+              <span className="block text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--app-text-faint)]">
+                {code}
+              </span>
+            </span>
+            {active ? <FiCheck className="shrink-0 text-[var(--app-accent)]" aria-hidden /> : null}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+const VISIBILITY_OPTIONS = [
+  { value: 'public', icon: FiGlobe, labelKey: 'settings.visibility.public', descriptionKey: 'settings.visibility.publicDesc' },
+  { value: 'contacts', icon: FiUsers, labelKey: 'settings.visibility.contacts', descriptionKey: 'settings.visibility.contactsDesc' },
+  { value: 'private', icon: FiLock, labelKey: 'settings.visibility.private', descriptionKey: 'settings.visibility.privateDesc' },
+]
+
+function VisibilityPicker({ value, onSelect, t }) {
+  const current = VISIBILITY_OPTIONS.some((option) => option.value === value) ? value : 'private'
+  return (
+    <div role="radiogroup" aria-label={t('settings.visibility.label')} className="grid gap-2">
+      {VISIBILITY_OPTIONS.map(({ value: optionValue, icon: Icon, labelKey, descriptionKey }) => {
+        const active = current === optionValue
+        return (
+          <button
+            key={optionValue}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            onClick={() => onSelect(optionValue)}
+            className={`flex items-center gap-3 rounded-2xl border p-3 text-left transition ${
+              active
+                ? 'border-[var(--app-accent)] bg-[var(--app-accent-soft)] shadow-sm'
+                : 'border-[var(--app-border)] bg-[var(--app-surface-muted)] hover:border-[var(--app-accent)]/40'
+            }`}
+          >
+            <span
+              className={`grid size-9 shrink-0 place-items-center rounded-xl ${
+                active
+                  ? 'bg-[var(--app-accent)] text-white'
+                  : 'bg-[var(--app-surface)] text-[var(--app-text-muted)]'
+              }`}
+            >
+              <Icon className="text-base" aria-hidden />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className={`block text-sm font-bold ${active ? 'text-[var(--app-accent)]' : ''}`}>
+                {t(labelKey)}
+              </span>
+              <span className="block text-xs text-[var(--app-text-muted)]">{t(descriptionKey)}</span>
+            </span>
+            <span
+              className={`grid size-5 shrink-0 place-items-center rounded-full border transition ${
+                active ? 'border-[var(--app-accent)] bg-[var(--app-accent)] text-white' : 'border-[var(--app-border)]'
+              }`}
+            >
+              {active ? <FiCheck className="text-[11px]" aria-hidden /> : null}
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 const NOTIF_CATEGORIES = [
-  { key: 'notifMessages',    label: 'Messages',      description: 'Nouveaux messages reçus' },
-  { key: 'notifTransfers',   label: 'Transferts',    description: 'Mises à jour de vos opérations' },
-  { key: 'notifParcels',     label: 'Colis',         description: 'Réservations et confirmations' },
-  { key: 'notifJobs',        label: 'Jobs',          description: 'Candidatures et offres' },
-  { key: 'notifEvents',      label: 'Événements',    description: 'Inscriptions et rappels' },
-  { key: 'notifMarketplace', label: 'Marketplace',   description: 'Intérêts sur vos annonces' },
-  { key: 'notifActualites',  label: 'Actualités',    description: 'Posts et nouveautés' },
-  { key: 'notifSysteme',     label: 'Système',       description: 'Sécurité et alertes compte' },
+  { key: 'notifMessages', labelKey: 'settings.notifications.cat.messages', descriptionKey: 'settings.notifications.cat.messagesDesc' },
+  { key: 'notifTransfers', labelKey: 'settings.notifications.cat.transfers', descriptionKey: 'settings.notifications.cat.transfersDesc' },
+  { key: 'notifParcels', labelKey: 'settings.notifications.cat.parcels', descriptionKey: 'settings.notifications.cat.parcelsDesc' },
+  { key: 'notifJobs', labelKey: 'settings.notifications.cat.jobs', descriptionKey: 'settings.notifications.cat.jobsDesc' },
+  { key: 'notifEvents', labelKey: 'settings.notifications.cat.events', descriptionKey: 'settings.notifications.cat.eventsDesc' },
+  { key: 'notifMarketplace', labelKey: 'settings.notifications.cat.marketplace', descriptionKey: 'settings.notifications.cat.marketplaceDesc' },
+  { key: 'notifActualites', labelKey: 'settings.notifications.cat.news', descriptionKey: 'settings.notifications.cat.newsDesc' },
+  { key: 'notifSysteme', labelKey: 'settings.notifications.cat.system', descriptionKey: 'settings.notifications.cat.systemDesc' },
 ]
 
 const PRIORITY_OPTIONS = [
-  { value: 'high',   label: 'Haute',   color: 'bg-rose-500' },
-  { value: 'normal', label: 'Normale', color: 'bg-brand-500' },
-  { value: 'low',    label: 'Faible',  color: 'bg-slate-400' },
-  { value: 'off',    label: 'Off',     color: 'bg-[var(--app-border)]' },
+  { value: 'high', labelKey: 'settings.notifications.priority.high', color: 'bg-rose-500' },
+  { value: 'normal', labelKey: 'settings.notifications.priority.normal', color: 'bg-brand-500' },
+  { value: 'low', labelKey: 'settings.notifications.priority.low', color: 'bg-slate-400' },
+  { value: 'off', labelKey: 'settings.notifications.priority.off', color: 'bg-[var(--app-border)]' },
 ]
 
 function NotifToggle({ label, description, checked, onChange }) {
@@ -482,7 +633,7 @@ function NotifToggle({ label, description, checked, onChange }) {
   )
 }
 
-function NotifPriority({ label, description, value, onChange }) {
+function NotifPriority({ label, description, value, onChange, t }) {
   const current = PRIORITY_OPTIONS.find((o) => o.value === value) ?? PRIORITY_OPTIONS[1]
   return (
     <div className="rounded-2xl border border-[var(--app-border)] p-3">
@@ -505,7 +656,7 @@ function NotifPriority({ label, description, value, onChange }) {
                 : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)] hover:bg-[var(--app-accent-soft)] hover:text-[var(--app-accent)]'
             }`}
           >
-            {opt.label}
+            {t(opt.labelKey)}
           </button>
         ))}
       </div>

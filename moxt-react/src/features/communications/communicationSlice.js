@@ -14,6 +14,7 @@ import {
 } from './conversationDisplay'
 import { appendRelatedContext, findRelatedContext, hasRelatedContext, mergeRelatedContextArrays, normalizeRelatedContexts } from './conversationTimeline'
 import { attachmentPreviewLabel } from './attachmentUtils'
+import { messagesText } from './messagesI18n'
 
 const PENDING_MESSAGE_MS = 15000
 const PERSISTED_MESSAGES_LIMIT = 200
@@ -1145,7 +1146,8 @@ export const openConversationWithContact = createAsyncThunk(
       ownerId,
       contactProfile,
     })
-    const peerTitle = formatProfileName(participantProfiles[ownerId]) || 'Utilisateur'
+    const peerTitle =
+      formatProfileName(participantProfiles[ownerId]) || messagesText(null, 'messages.userFallback')
 
     let conversation = findConversationByParticipants(
       getState().communications.conversations,

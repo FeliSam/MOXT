@@ -1,8 +1,9 @@
 import { FiChevronRight } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { preloadRoute } from '../../../config/navigation'
+import { useLanguage } from '../../../contexts/useLanguage'
 
-function ProfileLinkTile({ description, icon: Icon, label, path, translateLabel }) {
+function ProfileLinkTile({ descriptionKey, icon: Icon, labelKey, path, t }) {
   return (
     <Link
       to={path}
@@ -17,10 +18,10 @@ function ProfileLinkTile({ description, icon: Icon, label, path, translateLabel 
       </span>
       <span className="min-w-0 flex-1">
         <strong className="block text-xs font-semibold leading-snug text-[var(--app-text)] sm:text-sm">
-          {translateLabel(label)}
+          {t(labelKey)}
         </strong>
         <small className="mt-0.5 hidden text-[11px] leading-snug text-[var(--app-text-faint)] sm:block">
-          {description}
+          {t(descriptionKey)}
         </small>
       </span>
       <FiChevronRight
@@ -31,21 +32,26 @@ function ProfileLinkTile({ description, icon: Icon, label, path, translateLabel 
   )
 }
 
-export function ProfileLinkGrid({ sections, translateLabel }) {
+export function ProfileLinkGrid({ sections }) {
+  const { t } = useLanguage()
+
   return (
     <>
-      {sections.map((group) => (
-        <section key={group.id}>
-          <h2 className="mb-2.5 px-1 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--app-text-faint)]">
-            {group.title}
-          </h2>
-          <nav className="grid grid-cols-2 gap-2 lg:grid-cols-3" aria-label={group.title}>
-            {group.links.map((link) => (
-              <ProfileLinkTile key={link.path} {...link} translateLabel={translateLabel} />
-            ))}
-          </nav>
-        </section>
-      ))}
+      {sections.map((group) => {
+        const title = t(group.titleKey)
+        return (
+          <section key={group.id}>
+            <h2 className="mb-2.5 px-1 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--app-text-faint)]">
+              {title}
+            </h2>
+            <nav className="grid grid-cols-2 gap-2 lg:grid-cols-3" aria-label={title}>
+              {group.links.map((link) => (
+                <ProfileLinkTile key={link.path} {...link} t={t} />
+              ))}
+            </nav>
+          </section>
+        )
+      })}
     </>
   )
 }

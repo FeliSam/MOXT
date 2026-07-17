@@ -1,0 +1,742 @@
+[
+  {
+    "key": "messages.empty.title",
+    "fr": "Aucune conversation pour l’instant"
+  },
+  {
+    "key": "messages.empty.description",
+    "fr": "Contactez un vendeur, un voyageur ou un professionnel depuis une fiche MOXT pour démarrer un échange."
+  },
+  {
+    "key": "messages.empty.activities",
+    "fr": "Mes activités"
+  },
+  {
+    "key": "messages.notFound.title",
+    "fr": "Conversation indisponible"
+  },
+  {
+    "key": "messages.notFound.description",
+    "fr": "Ce fil de discussion n’existe pas ou n’est plus accessible depuis ce lien."
+  },
+  {
+    "key": "messages.notFound.back",
+    "fr": "Retour aux conversations"
+  },
+  {
+    "key": "messages.exchangeCount",
+    "fr": "{count} échange(s)"
+  },
+  {
+    "key": "messages.unreadCount",
+    "fr": " · {count} non lu"
+  },
+  {
+    "key": "messages.unreadCountPlural",
+    "fr": " · {count} non lus"
+  },
+  {
+    "key": "messages.restore",
+    "fr": "Restaurer"
+  },
+  {
+    "key": "messages.showSuggestions",
+    "fr": "Afficher les suggestions"
+  },
+  {
+    "key": "messages.hideSuggestions",
+    "fr": "Masquer les suggestions"
+  },
+  {
+    "key": "messages.conversationOptionsAria",
+    "fr": "Options de conversation"
+  },
+  {
+    "key": "messages.archivedBanner",
+    "fr": "Conversation archivée — vous pouvez la restaurer depuis le menu ⋯"
+  },
+  {
+    "key": "messages.blockedBanner",
+    "fr": "Cette conversation est bloquée. Vous ne pouvez plus envoyer de messages."
+  },
+  {
+    "key": "messages.removeAllVisible",
+    "fr": "Tout retirer"
+  },
+  {
+    "key": "messages.replyToListingLabel",
+    "fr": "Réponse à l’annonce"
+  },
+  {
+    "key": "messages.replyToMessage",
+    "fr": "Réponse à {name}"
+  },
+  {
+    "key": "messages.replyToMessageFallback",
+    "fr": "un message"
+  },
+  {
+    "key": "messages.editingTitle",
+    "fr": "Modification du message"
+  },
+  {
+    "key": "messages.editingHint",
+    "fr": "Modifiez le texte puis validez pour l’enregistrer."
+  },
+  {
+    "key": "messages.draftSaved",
+    "fr": "Brouillon enregistré"
+  },
+  {
+    "key": "messages.youPrefix",
+    "fr": "Vous : "
+  },
+  {
+    "key": "messages.startConversation",
+    "fr": "Démarrez la conversation"
+  },
+  {
+    "key": "messages.messageCount",
+    "fr": "{count} message"
+  },
+  {
+    "key": "messages.messageCountPlural",
+    "fr": "{count} messages"
+  },
+  {
+    "key": "messages.unreadSeparator",
+    "fr": "Message non lu"
+  },
+  {
+    "key": "messages.unreadSeparatorPlural",
+    "fr": "{count} messages non lus"
+  },
+  {
+    "key": "messages.threadStart",
+    "fr": "Début de la conversation"
+  },
+  {
+    "key": "messages.securityTitle",
+    "fr": "Consignes de sécurité"
+  },
+  {
+    "key": "messages.date.today",
+    "fr": "Aujourd'hui"
+  },
+  {
+    "key": "messages.date.yesterday",
+    "fr": "Hier"
+  },
+  {
+    "key": "messages.activity.new",
+    "fr": "Nouvelle conversation"
+  },
+  {
+    "key": "messages.activity.recent",
+    "fr": "Actif récemment"
+  },
+  {
+    "key": "messages.activity.seenMinutes",
+    "fr": "Vu il y a {minutes} min"
+  },
+  {
+    "key": "messages.activity.activeToday",
+    "fr": "Actif aujourd'hui · {time}"
+  },
+  {
+    "key": "messages.activity.activeYesterday",
+    "fr": "Actif hier"
+  },
+  {
+    "key": "messages.activity.last",
+    "fr": "Dernière activité · {time}"
+  },
+  {
+    "key": "messages.assistant.name",
+    "fr": "Assistant MOXT"
+  },
+  {
+    "key": "messages.assistant.alwaysThere",
+    "fr": "Toujours là"
+  },
+  {
+    "key": "messages.assistant.preview",
+    "fr": "Comment puis-je vous aider aujourd’hui ?"
+  },
+  {
+    "key": "messages.assistant.subtitle",
+    "fr": "Assistant local contextuel"
+  },
+  {
+    "key": "messages.assistant.greeting",
+    "fr": "Bonjour, je peux rechercher dans vos données MOXT et vous guider vers la bonne action."
+  },
+  {
+    "key": "messages.assistant.backAria",
+    "fr": "Retour aux conversations"
+  },
+  {
+    "key": "messages.assistant.clearHistoryAria",
+    "fr": "Effacer l’historique"
+  },
+  {
+    "key": "messages.assistant.removeDocAria",
+    "fr": "Retirer le document"
+  },
+  {
+    "key": "messages.assistant.addDocAria",
+    "fr": "Ajouter un document"
+  },
+  {
+    "key": "messages.assistant.placeholder",
+    "fr": "Demandez quelque chose à l’assistant…"
+  },
+  {
+    "key": "messages.assistant.sendAria",
+    "fr": "Envoyer à l’assistant"
+  },
+  {
+    "key": "messages.assistant.sources",
+    "fr": "Sources: {list}"
+  },
+  {
+    "key": "messages.assistant.error",
+    "fr": "L’assistant local n’a pas pu répondre. {detail}"
+  },
+  {
+    "key": "messages.assistant.suggestions.transfer",
+    "fr": "Comment effectuer un transfert d'argent ?"
+  },
+  {
+    "key": "messages.assistant.suggestions.publishListing",
+    "fr": "Comment publier une annonce sur le marketplace ?"
+  },
+  {
+    "key": "messages.assistant.suggestions.parcel",
+    "fr": "Comment envoyer un colis via un voyageur ?"
+  },
+  {
+    "key": "messages.assistant.suggestions.verify",
+    "fr": "Comment vérifier mon identité ?"
+  },
+  {
+    "key": "messages.assistant.suggestions.dispute",
+    "fr": "Comment contacter le support en cas de litige ?"
+  },
+  {
+    "key": "messages.assistant.suggestions.business",
+    "fr": "Comment créer un compte professionnel ?"
+  },
+  {
+    "key": "messages.attachment.photo",
+    "fr": "📷 Photo"
+  },
+  {
+    "key": "messages.attachment.photos",
+    "fr": "📷 {count} photos"
+  },
+  {
+    "key": "messages.attachment.file",
+    "fr": "📎 {name}"
+  },
+  {
+    "key": "messages.attachment.fileFallback",
+    "fr": "Pièce jointe"
+  },
+  {
+    "key": "messages.attachment.searchPhoto",
+    "fr": "photo image"
+  },
+  {
+    "key": "messages.attachment.searchPhotos",
+    "fr": "{count} photos photo images"
+  },
+  {
+    "key": "messages.attachment.searchFileFallback",
+    "fr": "pièce jointe"
+  },
+  {
+    "key": "messages.sendFailedBanner",
+    "fr": "Échec d’envoi"
+  },
+  {
+    "key": "messages.retryAction",
+    "fr": "Réessayer"
+  },
+  {
+    "key": "messages.notSynced",
+    "fr": "Non synchronisé"
+  },
+  {
+    "key": "messages.deleteConfirmDescription",
+    "fr": "Le message sera retiré de votre conversation. Cette action est définitive."
+  },
+  {
+    "key": "messages.threadEmptyTitle",
+    "fr": "Aucun message pour l’instant"
+  },
+  {
+    "key": "messages.threadEmptyDescription",
+    "fr": "Écrivez le premier message pour démarrer l’échange."
+  },
+  {
+    "key": "messages.searchNoMatch",
+    "fr": "Aucun message ne correspond à votre recherche."
+  },
+  {
+    "key": "messages.userFallback",
+    "fr": "Utilisateur"
+  },
+  {
+    "key": "communications.related.job",
+    "fr": "Emploi"
+  },
+  {
+    "key": "communications.related.p2p",
+    "fr": "Échange P2P"
+  },
+  {
+    "key": "communications.related.general",
+    "fr": "Discussion"
+  },
+  {
+    "key": "communications.contact",
+    "fr": "Contacter"
+  },
+  {
+    "key": "communications.contactOpening",
+    "fr": "Ouverture…"
+  },
+  {
+    "key": "communications.snapshot.recruiting",
+    "fr": "Recrutement"
+  },
+  {
+    "key": "communications.snapshot.freeEntry",
+    "fr": "Entrée gratuite"
+  },
+  {
+    "key": "communications.snapshot.transferTitle",
+    "fr": "Transfert {id}"
+  },
+  {
+    "key": "communications.snapshot.rate",
+    "fr": "Taux {rate}"
+  },
+  {
+    "key": "communications.snapshot.amount",
+    "fr": "Montant {amount}"
+  },
+  {
+    "key": "communications.chips.business.services",
+    "fr": "Bonjour, quels services proposez-vous ?"
+  },
+  {
+    "key": "communications.chips.business.hours",
+    "fr": "Quels sont vos horaires ?"
+  },
+  {
+    "key": "communications.chips.business.quote",
+    "fr": "Je souhaite obtenir un devis."
+  },
+  {
+    "key": "communications.chips.event.seats",
+    "fr": "Bonjour, reste-t-il des places ?"
+  },
+  {
+    "key": "communications.chips.event.register",
+    "fr": "Comment se déroule l’inscription ?"
+  },
+  {
+    "key": "communications.chips.event.access",
+    "fr": "Le lieu est-il accessible ?"
+  },
+  {
+    "key": "communications.chips.job.available",
+    "fr": "Bonjour, le poste est-il toujours disponible ?"
+  },
+  {
+    "key": "communications.chips.job.cv",
+    "fr": "Puis-je envoyer mon CV ?"
+  },
+  {
+    "key": "communications.chips.job.process",
+    "fr": "Quel est le processus de recrutement ?"
+  },
+  {
+    "key": "communications.chips.listing.available",
+    "fr": "Bonjour, cette annonce est-elle disponible ?"
+  },
+  {
+    "key": "communications.chips.listing.price",
+    "fr": "Le prix est-il négociable ?"
+  },
+  {
+    "key": "communications.chips.listing.details",
+    "fr": "Pouvez-vous partager plus de détails ?"
+  },
+  {
+    "key": "communications.chips.parcel.kg",
+    "fr": "Bonjour, combien de kilos restent disponibles ?"
+  },
+  {
+    "key": "communications.chips.parcel.delay",
+    "fr": "Quel est le délai prévu ?"
+  },
+  {
+    "key": "communications.chips.parcel.items",
+    "fr": "Quels objets acceptez-vous ?"
+  },
+  {
+    "key": "communications.chips.transfer.status",
+    "fr": "Bonjour, pouvez-vous confirmer le statut du paiement ?"
+  },
+  {
+    "key": "communications.chips.transfer.proof",
+    "fr": "La preuve de paiement est-elle suffisante ?"
+  },
+  {
+    "key": "communications.chips.transfer.deadline",
+    "fr": "Quel est le délai restant pour finaliser le transfert ?"
+  },
+  {
+    "key": "communications.chips.p2p.available",
+    "fr": "Bonjour, cette offre est-elle toujours disponible ?"
+  },
+  {
+    "key": "communications.chips.p2p.payment",
+    "fr": "Quel mode de paiement préférez-vous ?"
+  },
+  {
+    "key": "communications.chips.p2p.rate",
+    "fr": "Pouvez-vous confirmer le taux ?"
+  },
+  {
+    "key": "communications.chips.general.more",
+    "fr": "Bonjour, je souhaite en savoir plus."
+  },
+  {
+    "key": "communications.chips.general.thanks",
+    "fr": "Merci pour votre message."
+  },
+  {
+    "key": "communications.chips.general.clarify",
+    "fr": "Pouvez-vous préciser votre demande ?"
+  },
+  {
+    "key": "messages.suggestions.fallback.listing",
+    "fr": "cette annonce"
+  },
+  {
+    "key": "messages.suggestions.fallback.job",
+    "fr": "ce poste"
+  },
+  {
+    "key": "messages.suggestions.fallback.parcel",
+    "fr": "ce trajet"
+  },
+  {
+    "key": "messages.suggestions.fallback.event",
+    "fr": "cet événement"
+  },
+  {
+    "key": "messages.suggestions.fallback.business",
+    "fr": "votre entreprise"
+  },
+  {
+    "key": "messages.suggestions.listing.owner.thanks",
+    "fr": "Bonjour, merci pour votre intérêt pour « {item} »."
+  },
+  {
+    "key": "messages.suggestions.listing.owner.available",
+    "fr": "Bonjour {peer}, l'article est toujours disponible."
+  },
+  {
+    "key": "messages.suggestions.listing.owner.price",
+    "fr": "Le prix indiqué ({subtitle}) reste valable."
+  },
+  {
+    "key": "messages.suggestions.listing.owner.details",
+    "fr": "Je peux vous donner plus de détails sur l'article."
+  },
+  {
+    "key": "messages.suggestions.listing.owner.questions",
+    "fr": "N'hésitez pas si vous avez d'autres questions."
+  },
+  {
+    "key": "messages.suggestions.listing.contact.available",
+    "fr": "Bonjour, « {item} » est-il encore disponible ?"
+  },
+  {
+    "key": "messages.suggestions.listing.contact.price",
+    "fr": "Bonjour, le prix affiché ({subtitle}) est-il négociable ?"
+  },
+  {
+    "key": "messages.suggestions.listing.contact.details",
+    "fr": "Bonjour, pouvez-vous me donner plus de détails ?"
+  },
+  {
+    "key": "messages.suggestions.listing.contact.interest",
+    "fr": "Bonjour {peer}, je suis intéressé(e) par cette annonce."
+  },
+  {
+    "key": "messages.suggestions.listing.contact.visit",
+    "fr": "Serait-il possible d'organiser une visite ou un essai ?"
+  },
+  {
+    "key": "messages.suggestions.listing.contact.location",
+    "fr": "Quelle est la localisation pour la remise ?"
+  },
+  {
+    "key": "messages.suggestions.listing.contact.payment",
+    "fr": "Acceptez-vous un paiement sécurisé via MOXT ?"
+  },
+  {
+    "key": "messages.suggestions.job.owner.thanks",
+    "fr": "Bonjour, merci pour votre candidature concernant « {item} »."
+  },
+  {
+    "key": "messages.suggestions.job.owner.open",
+    "fr": "Bonjour {peer}, le poste est toujours ouvert."
+  },
+  {
+    "key": "messages.suggestions.job.owner.cv",
+    "fr": "Pouvez-vous m'envoyer votre CV et une brève présentation ?"
+  },
+  {
+    "key": "messages.suggestions.job.owner.sector",
+    "fr": "Le secteur recherché : {subtitle}."
+  },
+  {
+    "key": "messages.suggestions.job.owner.profile",
+    "fr": "Je reste disponible pour échanger sur le profil recherché."
+  },
+  {
+    "key": "messages.suggestions.job.contact.available",
+    "fr": "Bonjour, le poste « {item} » est-il toujours disponible ?"
+  },
+  {
+    "key": "messages.suggestions.job.contact.apply",
+    "fr": "Bonjour {peer}, je souhaite postuler à cette offre."
+  },
+  {
+    "key": "messages.suggestions.job.contact.process",
+    "fr": "Pouvez-vous me préciser le processus de recrutement ?"
+  },
+  {
+    "key": "messages.suggestions.job.contact.sector",
+    "fr": "Le domaine « {subtitle} » me correspond bien."
+  },
+  {
+    "key": "messages.suggestions.job.contact.cv",
+    "fr": "Je peux vous transmettre mon CV dès maintenant."
+  },
+  {
+    "key": "messages.suggestions.parcel.owner.thanks",
+    "fr": "Bonjour, merci pour votre message concernant {item}."
+  },
+  {
+    "key": "messages.suggestions.parcel.owner.space",
+    "fr": "Bonjour {peer}, il reste de la place disponible."
+  },
+  {
+    "key": "messages.suggestions.parcel.owner.rate",
+    "fr": "Tarif actuel : {subtitle}."
+  },
+  {
+    "key": "messages.suggestions.parcel.owner.weight",
+    "fr": "Indiquez-moi le poids et le contenu de votre colis."
+  },
+  {
+    "key": "messages.suggestions.parcel.owner.deadlines",
+    "fr": "Quels sont vos délais de dépôt et de retrait ?"
+  },
+  {
+    "key": "messages.suggestions.parcel.contact.space",
+    "fr": "Bonjour, avez-vous encore de la place pour {item} ?"
+  },
+  {
+    "key": "messages.suggestions.parcel.contact.rate",
+    "fr": "Le tarif affiché ({subtitle}) me convient."
+  },
+  {
+    "key": "messages.suggestions.parcel.contact.book",
+    "fr": "Bonjour {peer}, je souhaite réserver un envoi."
+  },
+  {
+    "key": "messages.suggestions.parcel.contact.items",
+    "fr": "Quels types d'objets acceptez-vous ?"
+  },
+  {
+    "key": "messages.suggestions.parcel.contact.dates",
+    "fr": "Pouvez-vous confirmer les dates de départ et d’arrivée ?"
+  },
+  {
+    "key": "messages.suggestions.event.owner.thanks",
+    "fr": "Bonjour, merci pour votre intérêt pour « {item} »."
+  },
+  {
+    "key": "messages.suggestions.event.owner.seats",
+    "fr": "Bonjour {peer}, des places sont encore disponibles."
+  },
+  {
+    "key": "messages.suggestions.event.owner.access",
+    "fr": "Tarif / accès : {subtitle}."
+  },
+  {
+    "key": "messages.suggestions.event.owner.explain",
+    "fr": "Je peux vous expliquer le déroulement de l'événement."
+  },
+  {
+    "key": "messages.suggestions.event.owner.program",
+    "fr": "Souhaitez-vous que je vous envoie le programme ?"
+  },
+  {
+    "key": "messages.suggestions.event.contact.seats",
+    "fr": "Bonjour, reste-t-il des places pour « {item} » ?"
+  },
+  {
+    "key": "messages.suggestions.event.contact.register",
+    "fr": "Bonjour {peer}, comment s'inscrire à l'événement ?"
+  },
+  {
+    "key": "messages.suggestions.event.contact.access",
+    "fr": "Concernant l'accès : {subtitle}."
+  },
+  {
+    "key": "messages.suggestions.event.contact.place",
+    "fr": "Pouvez-vous préciser le lieu et l'horaire ?"
+  },
+  {
+    "key": "messages.suggestions.event.contact.public",
+    "fr": "L'événement est-il accessible et ouvert au public ?"
+  },
+  {
+    "key": "messages.suggestions.business.owner.thanks",
+    "fr": "Bonjour, merci pour votre message."
+  },
+  {
+    "key": "messages.suggestions.business.owner.help",
+    "fr": "Bonjour {peer}, comment puis-je vous aider ?"
+  },
+  {
+    "key": "messages.suggestions.business.owner.about",
+    "fr": "Nous serions ravis de répondre à vos questions sur {item}."
+  },
+  {
+    "key": "messages.suggestions.business.owner.meeting",
+    "fr": "Souhaitez-vous un rendez-vous ou un devis personnalisé ?"
+  },
+  {
+    "key": "messages.suggestions.business.contact.services",
+    "fr": "Bonjour, quels services propose {item} ?"
+  },
+  {
+    "key": "messages.suggestions.business.contact.hours",
+    "fr": "Bonjour {peer}, pouvez-vous me communiquer vos horaires ?"
+  },
+  {
+    "key": "messages.suggestions.business.contact.quote",
+    "fr": "Je souhaite obtenir un devis, est-ce possible ?"
+  },
+  {
+    "key": "messages.suggestions.business.contact.custom",
+    "fr": "Proposez-vous une prestation adaptée à mon besoin ?"
+  },
+  {
+    "key": "messages.suggestions.transfer.owner.status",
+    "fr": "Bonjour {peer}, je consulte le statut de votre transfert."
+  },
+  {
+    "key": "messages.suggestions.transfer.owner.received",
+    "fr": "Pouvez-vous confirmer la réception des fonds ?"
+  },
+  {
+    "key": "messages.suggestions.transfer.owner.proof",
+    "fr": "Avez-vous bien transmis la preuve de paiement ?"
+  },
+  {
+    "key": "messages.suggestions.transfer.owner.safe",
+    "fr": "Je reste disponible pour finaliser l'opération en toute sécurité."
+  },
+  {
+    "key": "messages.suggestions.transfer.contact.status",
+    "fr": "Bonjour, pouvez-vous confirmer le statut du transfert ?"
+  },
+  {
+    "key": "messages.suggestions.transfer.contact.proof",
+    "fr": "Bonjour {peer}, la preuve de paiement est-elle suffisante ?"
+  },
+  {
+    "key": "messages.suggestions.transfer.contact.deadline",
+    "fr": "Quel est le délai restant pour finaliser l'opération ?"
+  },
+  {
+    "key": "messages.suggestions.transfer.contact.update",
+    "fr": "Merci de me tenir informé(e) de l'avancement."
+  },
+  {
+    "key": "messages.suggestions.p2p.owner.active",
+    "fr": "Bonjour {peer}, mon offre est toujours active."
+  },
+  {
+    "key": "messages.suggestions.p2p.owner.rate",
+    "fr": "Le taux proposé est {subtitle}."
+  },
+  {
+    "key": "messages.suggestions.p2p.owner.terms",
+    "fr": "Je peux confirmer les conditions de l'échange."
+  },
+  {
+    "key": "messages.suggestions.p2p.owner.payment",
+    "fr": "Quel mode de paiement préférez-vous ?"
+  },
+  {
+    "key": "messages.suggestions.p2p.owner.safe",
+    "fr": "Restons vigilants et échangeons uniquement via MOXT."
+  },
+  {
+    "key": "messages.suggestions.p2p.contact.available",
+    "fr": "Bonjour, votre offre est-elle toujours disponible ?"
+  },
+  {
+    "key": "messages.suggestions.p2p.contact.rate",
+    "fr": "Le taux affiché ({subtitle}) me convient."
+  },
+  {
+    "key": "messages.suggestions.p2p.contact.exchange",
+    "fr": "Bonjour {peer}, je souhaite échanger avec vous."
+  },
+  {
+    "key": "messages.suggestions.p2p.contact.payment",
+    "fr": "Quel mode de paiement acceptez-vous ?"
+  },
+  {
+    "key": "messages.suggestions.p2p.contact.confirm",
+    "fr": "Pouvez-vous confirmer le montant et les conditions ?"
+  },
+  {
+    "key": "messages.suggestions.general.owner.thanks",
+    "fr": "Bonjour {peer}, merci pour votre message."
+  },
+  {
+    "key": "messages.suggestions.general.owner.help",
+    "fr": "Comment puis-je vous aider ?"
+  },
+  {
+    "key": "messages.suggestions.general.owner.available",
+    "fr": "Je reste disponible pour répondre à vos questions."
+  },
+  {
+    "key": "messages.suggestions.general.contact.more",
+    "fr": "Bonjour {peer}, je souhaite en savoir plus."
+  },
+  {
+    "key": "messages.suggestions.general.contact.thanks",
+    "fr": "Merci pour votre retour."
+  },
+  {
+    "key": "messages.suggestions.general.contact.clarify",
+    "fr": "Pouvez-vous préciser votre demande ?"
+  }
+]

@@ -4,7 +4,6 @@ import {
   canApplyModerateTransfer,
   canClientDeclareReception,
   hasBusinessPayoutWithProof,
-  hasRecipientDeclaredReception,
   isClaimOnlyPhase,
 } from './transferActionUtils'
 

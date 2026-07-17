@@ -23,6 +23,7 @@ import {
   buildContextPreview,
   findRelatedContextById,
 } from '../../features/communications/conversationTimeline'
+import { messagesText, relatedOptionLabel } from '../../features/communications/messagesI18n'
 import { resolveRelatedSnapshot } from '../../features/communications/relatedSnapshot'
 import { PopoverMenu } from '../../components/ui/PopoverMenu'
 import { VerifiedDisplayName } from '../../components/ui/Badge'
@@ -245,12 +246,17 @@ export function ConversationPanel({
               </span>
             ) : (
               <span className="text-[11px] leading-tight text-[var(--app-text-muted)]">
-                {peerActivityLabel(active.updatedAt)}
+                {peerActivityLabel(active.updatedAt, t)}
               </span>
             )}
             {messageCount ? (
               <span className="text-[11px] leading-tight text-[var(--app-text-faint)]">
-                · {messageCount} message{messageCount > 1 ? 's' : ''}
+                ·{' '}
+                {messagesText(
+                  t,
+                  messageCount > 1 ? 'messages.messageCountPlural' : 'messages.messageCount',
+                  { count: messageCount },
+                )}
               </span>
             ) : null}
           </div>
@@ -285,7 +291,7 @@ export function ConversationPanel({
           </>
         ) : null}
         <PopoverMenu
-          ariaLabel="Options de conversation"
+          ariaLabel={messagesText(t, 'messages.conversationOptionsAria')}
           trigger={
             <span className="message-touch-target grid size-9 cursor-pointer place-items-center rounded-xl border border-transparent text-[var(--app-text-muted)] transition hover:border-[var(--app-border)] hover:bg-[var(--app-surface-muted)]">
               <FiMoreVertical />
@@ -315,7 +321,9 @@ export function ConversationPanel({
             onClick={() => onToggleSuggestions?.()}
           >
             <FiMessageSquare />{' '}
-            {suggestionsEnabled ? 'Masquer les suggestions' : 'Afficher les suggestions'}
+            {suggestionsEnabled
+              ? messagesText(t, 'messages.hideSuggestions')
+              : messagesText(t, 'messages.showSuggestions')}
           </button>
           <button
             type="button"
@@ -323,7 +331,8 @@ export function ConversationPanel({
             className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-[var(--app-surface-muted)]"
             onClick={onArchive}
           >
-            <FiArchive /> {archived ? 'Restaurer' : 'Archiver'}
+            <FiArchive />{' '}
+            {archived ? messagesText(t, 'messages.restore') : messagesText(t, 'messages.archive')}
           </button>
           <button
             type="button"
@@ -378,7 +387,7 @@ export function ConversationPanel({
                 {relatedPreview.title}
               </span>
               <span className="block truncate text-[10px] font-semibold text-[var(--app-text-muted)]">
-                {relatedMeta.label}
+                {relatedOptionLabel(t, relatedMeta)}
                 {relatedPreview.subtitle ? ` · ${relatedPreview.subtitle}` : ''}
               </span>
             </span>
@@ -389,13 +398,13 @@ export function ConversationPanel({
 
       {active.archivedBy?.includes(user.id) ? (
         <div className="shrink-0 border-b border-amber-200/80 bg-amber-50/90 px-4 py-2.5 text-center text-xs font-semibold text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
-          Conversation archivée — vous pouvez la restaurer depuis le menu ⋯
+          {messagesText(t, 'messages.archivedBanner')}
         </div>
       ) : null}
 
       {blocked ? (
         <div className="shrink-0 border-b border-red-200/80 bg-red-50/90 px-4 py-2.5 text-center text-xs font-semibold text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
-          Cette conversation est bloquée. Vous ne pouvez plus envoyer de messages.
+          {messagesText(t, 'messages.blockedBanner')}
         </div>
       ) : null}
 
@@ -441,7 +450,7 @@ export function ConversationPanel({
                 <MessageSecurityNotice />
                 {threadQuery.trim() && !filteredTimeline.length ? (
                   <p className="py-8 text-center text-sm text-[var(--app-text-faint)]">
-                    Aucun message ne correspond à votre recherche.
+                    {messagesText(t, 'messages.searchNoMatch')}
                   </p>
                 ) : null}
                 {filteredTimeline.map((item, index) => {
@@ -640,7 +649,7 @@ export function ConversationPanel({
               onClick={() => onFile(null)}
               aria-label={t("messages.removeAllAttachments")}
             >
-              Tout retirer
+              {messagesText(t, 'messages.removeAllVisible')}
             </button>
           </div>
         ) : null}
@@ -648,7 +657,7 @@ export function ConversationPanel({
           <div className="mx-auto mb-2 flex max-w-3xl items-center justify-between gap-3 rounded-xl border border-brand-200/70 border-l-[3px] border-l-brand-500 bg-[var(--app-accent-soft)]/50 px-3 py-2.5 text-xs">
             <span className="min-w-0">
               <span className="block font-bold text-[var(--app-accent)]">
-                Réponse à l’annonce
+                {messagesText(t, 'messages.replyToListingLabel')}
               </span>
               <span className="block truncate text-[var(--app-text-muted)]">
                 {replyContextPreview.title}
@@ -669,7 +678,11 @@ export function ConversationPanel({
           <div className="mx-auto mb-2 flex max-w-3xl items-center justify-between gap-3 rounded-xl border border-brand-200/70 border-l-[3px] border-l-brand-500 bg-[var(--app-accent-soft)]/50 px-3 py-2.5 text-xs">
             <span className="min-w-0">
               <span className="block font-bold text-[var(--app-accent)]">
-                Réponse à {replyTarget?.senderName || 'un message'}
+                {messagesText(t, 'messages.replyToMessage', {
+                  name:
+                    replyTarget?.senderName ||
+                    messagesText(t, 'messages.replyToMessageFallback'),
+                })}
               </span>
               <span className="block truncate text-[var(--app-text-muted)]">
                 {replyTarget?.text || ''}
@@ -689,10 +702,10 @@ export function ConversationPanel({
           <div className="mx-auto mb-2 flex max-w-3xl items-center justify-between gap-3 rounded-xl border border-amber-300/70 border-l-[3px] border-l-amber-500 bg-amber-50/70 px-3 py-2.5 text-xs dark:bg-amber-950/30">
             <span className="min-w-0">
               <span className="block font-bold text-amber-700 dark:text-amber-300">
-                Modification du message
+                {messagesText(t, 'messages.editingTitle')}
               </span>
               <span className="block truncate text-[var(--app-text-muted)]">
-                Modifiez le texte puis validez pour l’enregistrer.
+                {messagesText(t, 'messages.editingHint')}
               </span>
             </span>
             <button
@@ -774,7 +787,9 @@ export function ConversationPanel({
         {showDraftHint || formik.values.text.length >= 1800 ? (
           <div className="mx-auto mt-2 flex max-w-3xl items-start justify-between gap-3 px-1">
             {showDraftHint ? (
-              <span className="text-[10px] text-[var(--app-text-faint)]">Brouillon enregistré</span>
+              <span className="text-[10px] text-[var(--app-text-faint)]">
+                {messagesText(t, 'messages.draftSaved')}
+              </span>
             ) : (
               <span />
             )}

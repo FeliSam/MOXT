@@ -1,7 +1,14 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { useState } from 'react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { Modal } from './Modal'
+
+vi.mock('../../contexts/useLanguage', () => ({
+  useLanguage: () => ({
+    t: (key) =>
+      ({ 'common.close': 'Fermer', 'common.closeWindow': 'Fermer la fenêtre' })[key] || key,
+  }),
+}))
 
 function ModalForm() {
   const [value, setValue] = useState('')
@@ -23,7 +30,9 @@ describe('Modal', () => {
 
     expect(container.querySelector('[role="dialog"]')).toBeNull()
     expect(document.body.querySelector('[role="dialog"]')).not.toBeNull()
-    expect(document.body.querySelector('.z-\\[70\\]')).not.toBeNull()
+    const overlay = document.body.querySelector('[role="presentation"]')
+    expect(overlay).not.toBeNull()
+    expect(overlay.className).toContain('z-[var(--z-modal)]')
   })
 
   it('conserve le focus pendant la saisie quand le parent est rendu a nouveau', () => {

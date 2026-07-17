@@ -32,7 +32,7 @@ import {
   DIRECTIONS,
   paymentMethodsForCountry,
 } from '../features/transfers/transferConfig'
-import { transferSchema } from '../features/transfers/transferSchemas'
+import { createTransferSchemas } from '../features/transfers/transferSchemas'
 import { createTransfer } from '../features/transfers/transferSlice'
 import { TransferCalculator } from '../features/transfers/TransferCalculator'
 import { TransferReceivingAccountCard } from '../features/transfers/TransferReceivingAccountCard'
@@ -43,6 +43,7 @@ import {
 import { ExchangerPickerAvatar } from '../features/transfers/ExchangerPickerAvatar'
 import { listExchangersForTransfer, resolveUserPartnerCountry } from '../features/transfers/exchangerListUtils'
 import { useExchangeRate } from '../features/transfers/useExchangeRate'
+import { useLanguage } from '../contexts/useLanguage'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 import {
   calculateTransfer,
@@ -60,6 +61,7 @@ import {
   writeTransferDraft,
 } from '../features/transfers/wizard/transferWizardConfig'
 export function NewTransferPage() {
+  const { t } = useLanguage()
   useScrollToSecondSection()
   const [step, setStep] = useState(1)
   const [calculatorOpen, setCalculatorOpen] = useState(false)
@@ -99,23 +101,23 @@ export function NewTransferPage() {
       acceptTerms: false,
       ...(draft?.userId === user.id ? draft.values : {}),
     },
-    validationSchema: transferSchema,
+    validationSchema: createTransferSchemas(t).transferSchema,
     onSubmit: (values) => {
       const exchanger = exchangers.find((item) => item.id === values.exchangerId)
       const business = businesses.find((item) => item.id === values.exchangerId)
       if (!exchanger || !business) {
-        formik.setFieldError('exchangerId', 'Choisissez une entreprise disponible.')
+        formik.setFieldError('exchangerId', t('transfers.new.errors.chooseAvailableBusiness'))
         return
       }
       if (exchanger && isBusinessOwnedBy(business, user.id)) {
-        formik.setFieldError('exchangerId', 'Vous ne pouvez pas utiliser votre propre entreprise.')
+        formik.setFieldError('exchangerId', t('transfers.new.errors.cannotUseOwnBusiness'))
         return
       }
       const paymentView = buildExchangerPaymentView(business, values.direction, originCountry)
       if (!paymentView.paymentDetails) {
         formik.setFieldError(
           'exchangerId',
-          "Cette entreprise n'a pas encore configuré le compte de réception pour ce sens de transfert.",
+          t('transfers.new.errors.businessMissingReceivingAccount'),
         )
         return
       }
@@ -126,6 +128,7 @@ export function NewTransferPage() {
         user.verified,
         monthlyTransferTotal(transfers, user.id, transferInfo.from),
         originCountry,
+        t,
       )
       if (amountError) {
         formik.setFieldError('amount', amountError)
@@ -165,16 +168,18 @@ export function NewTransferPage() {
     },
   })
 
+  const transferDirection = formik.values.direction
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- direction extracted; list depends on businesses/user/country
   const exchangers = useMemo(
     () =>
       listExchangersForTransfer({
         businesses,
         user,
         originCountry,
-        direction: formik.values.direction,
+        direction: transferDirection,
         excludeOwnerId: user.id,
       }),
-    [businesses, user, originCountry, formik.values.direction],
+    [businesses, user, originCountry, transferDirection],
   )
 
   useEffect(() => {
@@ -243,13 +248,14 @@ export function NewTransferPage() {
         user.verified,
         usedThisMonth,
         originCountry,
+        t,
       )
       if (amountError) errors.amount = amountError
       formik.setFieldError('amount', amountError || undefined)
 
       const selectedBusiness = businesses.find((item) => item.id === formik.values.exchangerId)
       if (selectedBusiness && isBusinessOwnedBy(selectedBusiness, user.id)) {
-        errors.exchangerId = 'Votre entreprise reçoit les transferts des autres membres. Choisissez un autre partenaire.'
+        errors.exchangerId = t('transfers.new.errors.ownBusinessReceivesOnly')
         formik.setFieldError('exchangerId', errors.exchangerId)
       }
     }
@@ -270,22 +276,22 @@ export function NewTransferPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Transfert"
-        title="Créer un transfert"
-        description="Choisissez une entreprise validée. Elle recevra l'opération et suivra son traitement jusqu'à la validation."
+        eyebrow={t('transfers.new.eyebrow')}
+        title={t('transfers.new.title')}
+        description={t('transfers.new.description')}
         actions={
           <>
             <Button variant="secondary" icon={FiSliders} onClick={() => setCalculatorOpen(true)}>
-              Calculatrice
+              {t('transfers.new.calculator')}
             </Button>
             <Link to="/exchangers">
               <Button variant="secondary" icon={FiRefreshCw}>
-                Échangeurs
+                {t('transfers.new.exchangers')}
               </Button>
             </Link>
             <Link to="/transfers/history">
               <Button variant="secondary" icon={FiArrowLeft}>
-                Historique
+                {t('transfers.history.sectionTitle')}
               </Button>
             </Link>
           </>
@@ -296,22 +302,14 @@ export function NewTransferPage() {
           variant={isBusinessPublishReady(ownTransferBusiness) ? 'info' : 'warning'}
           title={
             isBusinessPublishReady(ownTransferBusiness)
-              ? 'Votre entreprise de transfert est active'
-              : 'Votre entreprise est en cours de validation'
+              ? t('transfers.new.ownBusinessActiveTitle')
+              : t('transfers.new.ownBusinessPendingTitle')
           }
         >
           {isBusinessPublishReady(ownTransferBusiness) ? (
-            <>
-              <strong>{ownTransferBusiness.name}</strong> est visible par les autres membres dans
-              cette liste. En tant que propriétaire, vous ne pouvez pas l&apos;utiliser pour créer
-              un transfert — c&apos;est votre activité de réception, pas un partenaire à sélectionner.
-            </>
+            t('transfers.new.ownBusinessActiveBody', { name: ownTransferBusiness.name })
           ) : (
-            <>
-              <strong>{ownTransferBusiness.name}</strong> n&apos;apparaît pas encore ici : MOXT doit
-              d&apos;abord valider votre fiche. Une fois le statut « Vérifié », les membres pourront
-              vous choisir comme partenaire de transfert.
-            </>
+            t('transfers.new.ownBusinessPendingBody', { name: ownTransferBusiness.name })
           )}
         </Alert>
       ) : null}
@@ -324,7 +322,7 @@ export function NewTransferPage() {
           <div className="grid gap-5">
             {/* Direction — 2 visual cards */}
             <Card className="grid gap-5">
-              <SectionTitle icon={FiZap} label="Sens du transfert" />
+              <SectionTitle icon={FiZap} label={t('transfers.new.directionTitle')} />
               <div className="grid gap-3 sm:grid-cols-2">
                 {[DIRECTIONS.BJ_TO_RU, DIRECTIONS.RU_TO_BJ].map((dir) => {
                   // Chaque carte calcule ses propres pays/devises a partir de
@@ -368,14 +366,14 @@ export function NewTransferPage() {
                         </span>
                       </div>
                       <p className={`mt-1 text-xs font-bold ${active ? 'text-brand-700 dark:text-brand-400' : 'text-[var(--app-text-muted)]'}`}>
-                        {dir === DIRECTIONS.BJ_TO_RU ? 'Afrique → Russie' : 'Russie → Afrique'}
+                        {dir === DIRECTIONS.BJ_TO_RU ? t('transfers.direction.africaToRu') : t('transfers.direction.ruToAfrica')}
                       </p>
                       {active ? (
                         <span
                           className="mt-3 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold text-white"
                           style={{ backgroundColor: accent }}
                         >
-                          <FiCheck className="text-[10px]" /> Sélectionné
+                          <FiCheck className="text-[10px]" /> {t('transfers.new.selected')}
                         </span>
                       ) : null}
                     </button>
@@ -386,23 +384,23 @@ export function NewTransferPage() {
 
             {/* Amount */}
             <Card className="grid gap-5">
-              <SectionTitle icon={FiSend} label={`Montant à envoyer en ${calculation.currencyFrom}`} />
+              <SectionTitle icon={FiSend} label={t('transfers.new.amountToSend', { currency: calculation.currencyFrom })} />
               <Input
                 id="amount"
-                label={`Montant en ${calculation.currencyFrom}`}
+                label={t('transfers.new.amountIn', { currency: calculation.currencyFrom })}
                 type="number"
                 min={calculation.minimumRequired}
-                placeholder={`Min. ${formatMoney(calculation.minimumRequired, calculation.currencyFrom)}`}
+                placeholder={t('transfers.new.amountMinPlaceholder', { amount: formatMoney(calculation.minimumRequired, calculation.currencyFrom) })}
                 {...formik.getFieldProps('amount')}
                 error={errorFor('amount')}
               />
               <div className="flex items-start gap-3 rounded-2xl bg-[var(--app-accent-soft)] p-4 text-sm">
                 <FiClock className="mt-0.5 shrink-0 text-[var(--app-accent)]" />
                 <p className="text-[var(--app-text-muted)]">
-                  Minimum : <strong>{formatMoney(calculation.minimumRequired, calculation.currencyFrom)}</strong>.
+                  {t('transfers.new.minimumLabel')}: <strong>{formatMoney(calculation.minimumRequired, calculation.currencyFrom)}</strong>.
                   {!user.verified
-                    ? ` Utilisé ce mois : ${formatMoney(usedThisMonth, calculation.currencyFrom)}.`
-                    : ' Compte vérifié — plafond augmenté.'}
+                    ? ` ${t('transfers.new.usedThisMonth', { amount: formatMoney(usedThisMonth, calculation.currencyFrom) })}`
+                    : ` ${t('transfers.new.verifiedCeiling')}`}
                 </p>
               </div>
             </Card>
@@ -414,11 +412,11 @@ export function NewTransferPage() {
                   <span className="grid size-9 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
                     <FiStar className="text-base" />
                   </span>
-                  <h2 className="font-black">Choisir un partenaire</h2>
+                  <h2 className="font-black">{t('transfers.new.choosePartner')}</h2>
                 </div>
                 <Link to="/exchangers" className="shrink-0">
                   <Button variant="ghost" size="sm" icon={FiExternalLink}>
-                    Tous les échangeurs
+                    {t('transfers.new.allExchangers')}
                   </Button>
                 </Link>
               </div>
@@ -426,9 +424,8 @@ export function NewTransferPage() {
                 <p className="text-xs text-red-600">{errorFor('exchangerId')}</p>
               ) : null}
               {!exchangers.length ? (
-                <Alert variant="warning" title="Aucun partenaire dans votre pays">
-                  Seuls les échangeurs de {flagEmoji(resolveUserPartnerCountry(user, originCountry))}{' '}
-                  votre pays d&apos;origine sont affichés pour garantir les bonnes devises.
+                <Alert variant="warning" title={t('transfers.new.noPartnerTitle')}>
+                  {t('transfers.new.noPartnerBody', { flag: flagEmoji(resolveUserPartnerCountry(user, originCountry)) })}
                 </Alert>
               ) : null}
               <div className="w-full min-w-0 max-w-full overflow-x-auto xl:overflow-visible">
@@ -436,7 +433,7 @@ export function NewTransferPage() {
                   {ownTransferBusiness && isBusinessPublishReady(ownTransferBusiness) ? (
                     <div
                       aria-disabled="true"
-                      title="Votre entreprise reçoit les transferts des autres membres."
+                      title={t('transfers.new.ownBusinessReceivesTooltip')}
                       className="flex w-[9.25rem] shrink-0 cursor-not-allowed flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-brand-300 bg-[var(--app-surface-muted)] p-4 text-center opacity-80 sm:w-[10.5rem] xl:w-auto xl:shrink"
                     >
                       <div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-brand-100 text-base font-black text-brand-800 dark:bg-brand-950/50 dark:text-brand-200">
@@ -453,12 +450,12 @@ export function NewTransferPage() {
                       </div>
                       <p className="line-clamp-2 text-xs font-black leading-tight">{ownTransferBusiness.name}</p>
                       <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-bold text-brand-800 dark:bg-brand-950/50 dark:text-brand-200">
-                        Votre entreprise
+                        {t('transfers.new.yourBusiness')}
                       </span>
                       <p className="text-[10px] leading-4 text-[var(--app-text-muted)]">
-                        Réception uniquement ·{' '}
+                        {t('transfers.new.receptionOnly')} ·{' '}
                         <Link to="/professional" className="font-bold text-brand-700 underline">
-                          Espace pro
+                          {t('transfers.new.proSpace')}
                         </Link>
                       </p>
                     </div>
@@ -495,7 +492,7 @@ export function NewTransferPage() {
                         ) : null}
                         <div className="flex w-full flex-col gap-1">
                           <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${active ? 'bg-brand-700 text-white' : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'}`}>
-                            {exchanger.feePercent}% frais
+                            {exchanger.feePercent}% {t('transfers.new.fees')}
                           </span>
                           <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${active ? 'bg-brand-600 text-white' : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'}`}>
                             <FiClock className="mr-0.5 inline text-[9px]" />{exchanger.averageDelay}
@@ -503,7 +500,7 @@ export function NewTransferPage() {
                         </div>
                         {active ? (
                           <span className="flex items-center gap-1 text-[10px] font-bold text-brand-600">
-                            <FiCheck className="text-[10px]" /> Sélectionné
+                            <FiCheck className="text-[10px]" /> {t('transfers.new.selected')}
                           </span>
                         ) : null}
                       </button>
@@ -529,12 +526,12 @@ export function NewTransferPage() {
                   <div className="mb-3 flex items-center gap-2">
                     <FiZap className="text-white/80" />
                     <span className="text-xs font-bold uppercase tracking-widest text-white/80">
-                      Estimation du transfert
+                      {t('transfers.new.estimation')}
                     </span>
                   </div>
                   <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="text-center sm:text-left">
-                      <p className="text-xs font-bold text-white/70">Vous payez</p>
+                      <p className="text-xs font-bold text-white/70">{t('transfers.new.youPay')}</p>
                       <p className="text-xl font-black text-white sm:text-2xl">
                         {formatMoney(calculation.totalToPay, calculation.currencyFrom)}
                       </p>
@@ -548,7 +545,7 @@ export function NewTransferPage() {
                       </div>
                     </div>
                     <div className="text-center sm:text-right">
-                      <p className="text-xs font-bold text-white/70">Le destinataire reçoit ~</p>
+                      <p className="text-xs font-bold text-white/70">{t('transfers.new.recipientReceivesApprox')}</p>
                       <p className="text-xl font-black text-white sm:text-2xl">
                         {formatMoney(calculation.amountReceived, calculation.currencyTo)}
                       </p>
@@ -559,9 +556,9 @@ export function NewTransferPage() {
                 {/* Details grid */}
                 <div className="grid grid-cols-1 divide-y divide-[var(--app-border)] border-b border-[var(--app-border)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
                   {[
-                    { label: 'Montant envoyé', value: formatMoney(calculation.amountSent, calculation.currencyFrom) },
-                    { label: `Frais ${calculation.feePercent}%`, value: formatMoney(calculation.fees, calculation.currencyFrom), highlight: true },
-                    { label: 'Délai estimé', value: selectedExchanger.averageDelay },
+                    { label: t('transfers.new.amountSent'), value: formatMoney(calculation.amountSent, calculation.currencyFrom) },
+                    { label: t('transfers.new.feesPercent', { percent: calculation.feePercent }), value: formatMoney(calculation.fees, calculation.currencyFrom), highlight: true },
+                    { label: t('transfers.new.estimatedDelay'), value: selectedExchanger.averageDelay },
                   ].map(({ label, value, highlight }) => (
                     <div key={label} className="grid gap-0.5 px-4 py-3 text-center">
                       <span className="text-[10px] font-bold uppercase tracking-wide text-[var(--app-text-faint)]">
@@ -577,19 +574,19 @@ export function NewTransferPage() {
                 {/* Payment details + rate note */}
                 <div className="grid gap-3 p-5">
                   <p className="text-[10px] leading-5 text-[var(--app-text-faint)]">
-                    Taux indicatif · source {liveRate.source} · {liveRate.date || 'date non disponible'} · marge {calculation.rateMarginPercent}%. Le montant reçu peut varier légèrement.
+                    {t('transfers.new.rateNote', { source: liveRate.source, date: liveRate.date || t('transfers.new.dateUnavailable'), margin: calculation.rateMarginPercent })}
                   </p>
                 </div>
               </Card>
             ) : !selectedExchanger ? null : (
-              <Alert variant="info">Saisissez un montant pour voir l'estimation.</Alert>
+              <Alert variant="info">{t('transfers.new.enterAmountForEstimate')}</Alert>
             )}
           </div>
         ) : null}
 
         {step === 2 ? (
           <PartyCard
-            title="2. Expéditeur"
+            title={t('transfers.new.stepSender')}
             prefix="sender"
             profiles={senderProfiles}
             formik={formik}
@@ -600,7 +597,7 @@ export function NewTransferPage() {
         ) : null}
         {step === 3 ? (
           <PartyCard
-            title="3. Destinataire"
+            title={t('transfers.new.stepRecipient')}
             prefix="recipient"
             profiles={recipientProfiles}
             formik={formik}
@@ -613,24 +610,24 @@ export function NewTransferPage() {
         {step === 4 ? (
           <div className="grid gap-5">
             <Card className="grid gap-4">
-              <SectionTitle icon={FiShield} label="Récapitulatif et confirmation" />
+              <SectionTitle icon={FiShield} label={t('transfers.new.recapTitle')} />
               {/* Amount highlight */}
               <div className="flex flex-col items-stretch gap-4 rounded-2xl bg-gradient-to-br from-brand-600 to-cyan-600 p-5 text-white sm:flex-row sm:items-center sm:justify-between">
                 <div className="text-center sm:text-left">
-                  <p className="text-xs font-bold opacity-80">Vous envoyez</p>
+                  <p className="text-xs font-bold opacity-80">{t('transfers.new.youSend')}</p>
                   <p className="text-xl font-black sm:text-2xl">{formatMoney(calculation.totalToPay, calculation.currencyFrom)}</p>
                 </div>
                 <FiArrowRight className="mx-auto shrink-0 text-2xl opacity-70 sm:text-3xl" />
                 <div className="text-center sm:text-right">
-                  <p className="text-xs font-bold opacity-80">Le destinataire reçoit ~</p>
+                  <p className="text-xs font-bold opacity-80">{t('transfers.new.recipientReceivesApprox')}</p>
                   <p className="text-xl font-black sm:text-2xl">{formatMoney(calculation.amountReceived, calculation.currencyTo)}</p>
                 </div>
               </div>
               {[
-                ['Entreprise partenaire', selectedExchanger?.name],
-                ['Frais', formatMoney(calculation.fees, calculation.currencyFrom)],
-                ['Expéditeur', `${formik.values.senderFirstName} ${formik.values.senderLastName}`],
-                ['Destinataire', `${formik.values.recipientFirstName} ${formik.values.recipientLastName}`],
+                [t('transfers.new.partnerBusiness'), selectedExchanger?.name],
+                [t('transfers.new.fees'), formatMoney(calculation.fees, calculation.currencyFrom)],
+                [t('transfers.new.sender'), `${formik.values.senderFirstName} ${formik.values.senderLastName}`],
+                [t('transfers.new.recipient'), `${formik.values.recipientFirstName} ${formik.values.recipientLastName}`],
               ].map(([label, value]) => (
                 <div key={label} className="flex justify-between gap-4 rounded-xl bg-[var(--app-surface-muted)] px-4 py-3">
                   <span className="text-sm text-[var(--app-text-muted)]">{label}</span>
@@ -645,15 +642,14 @@ export function NewTransferPage() {
                   checked={formik.values.acceptTerms}
                 />
                 <span className="text-sm leading-relaxed">
-                  Je confirme ces informations et autorise leur transmission à l'entreprise
-                  sélectionnée pour le traitement de cette opération.
+                  {t('transfers.new.acceptTerms')}
                 </span>
               </label>
               {errorFor('acceptTerms') ? (
                 <p className="text-xs text-red-600">{errorFor('acceptTerms')}</p>
               ) : null}
               <Button type="submit" icon={FiShield} className="w-full sm:w-auto">
-                Créer et transmettre le transfert
+                {t('transfers.new.createAndSubmit')}
               </Button>
             </Card>
           </div>
@@ -666,11 +662,11 @@ export function NewTransferPage() {
             disabled={step === 1}
             onClick={() => setStep((current) => Math.max(1, current - 1))}
           >
-            Précédent
+            {t('common.back')}
           </Button>
           {step < 4 ? (
             <Button icon={FiArrowRight} onClick={nextStep}>
-              Continuer
+              {t('common.continue')}
             </Button>
           ) : null}
         </div>
@@ -678,7 +674,7 @@ export function NewTransferPage() {
       <Modal
         open={calculatorOpen}
         onClose={() => setCalculatorOpen(false)}
-        title="Calculatrice de transfert"
+        title={t('transfers.history.calculatorModalTitle')}
         size="large"
       >
         <TransferCalculator verified={user.verified} />
@@ -688,6 +684,7 @@ export function NewTransferPage() {
 }
 
 function PartyCard({ title, prefix, profiles, formik, methods, errorFor, onProfile }) {
+  const { t } = useLanguage()
   const country =
     prefix === 'sender' ? formik.values.sourceCountry : formik.values.destinationCountry
   const isRecipient = prefix === 'recipient'
@@ -700,7 +697,7 @@ function PartyCard({ title, prefix, profiles, formik, methods, errorFor, onProfi
             <span className="grid size-9 place-items-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
               <FiStar className="text-base" />
             </span>
-            <h2 className="font-black">Profils favoris</h2>
+            <h2 className="font-black">{t('transfers.new.favoriteProfiles')}</h2>
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
             {profiles.map((profile) => (
@@ -735,13 +732,13 @@ function PartyCard({ title, prefix, profiles, formik, methods, errorFor, onProfi
         <div className="grid gap-4 sm:grid-cols-2">
           <Input
             id={`${prefix}FirstName`}
-            label="Prénom"
+            label={t('transfers.new.firstName')}
             {...formik.getFieldProps(`${prefix}FirstName`)}
             error={errorFor(`${prefix}FirstName`)}
           />
           <Input
             id={`${prefix}LastName`}
-            label="Nom"
+            label={t('transfers.new.lastName')}
             {...formik.getFieldProps(`${prefix}LastName`)}
             error={errorFor(`${prefix}LastName`)}
           />
@@ -749,7 +746,7 @@ function PartyCard({ title, prefix, profiles, formik, methods, errorFor, onProfi
         <div className="grid gap-4 sm:grid-cols-2">
           <Input
             id={`${prefix}Phone`}
-            label="Téléphone"
+            label={t('transfers.new.phone')}
             type="tel"
             inputMode="tel"
             placeholder={phonePlaceholder(country)}
@@ -757,7 +754,7 @@ function PartyCard({ title, prefix, profiles, formik, methods, errorFor, onProfi
             error={errorFor(`${prefix}Phone`)}
           />
           <div>
-            <p className="mb-1.5 text-sm font-bold">Réseau ou banque</p>
+            <p className="mb-1.5 text-sm font-bold">{t('transfers.new.networkOrBank')}</p>
             <div className="flex flex-wrap gap-2">
               {methods.map((method) => (
                 <button
@@ -781,7 +778,7 @@ function PartyCard({ title, prefix, profiles, formik, methods, errorFor, onProfi
         </div>
         {!profiles.length ? (
           <p className="text-xs text-[var(--app-text-muted)]">
-            Aucun profil favori pour ce pays. Renseignez manuellement.
+            {t('transfers.new.noFavoriteProfiles')}
           </p>
         ) : null}
       </Card>

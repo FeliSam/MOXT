@@ -8,6 +8,8 @@ import { authService } from '../features/auth/authService'
 import { applySession } from '../features/auth/authSlice'
 import { addToast } from '../features/ui/uiSlice'
 import { useDispatch } from 'react-redux'
+import { useLanguage } from '../contexts/useLanguage'
+import { sanitizeAuthMessage } from '../features/auth/authErrorMessages'
 
 /**
  * Consumes Supabase email confirmation / magic-link tokens from the URL,
@@ -16,8 +18,9 @@ import { useDispatch } from 'react-redux'
 export function AuthCallbackPage() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [searchParams] = useSearchParams()
-  const [message, setMessage] = useState('Confirmation en cours…')
+  const [message, setMessage] = useState(() => t('auth.callback.confirming'))
 
   useEffect(() => {
     let cancelled = false
@@ -42,13 +45,13 @@ export function AuthCallbackPage() {
           next.startsWith('/') && !next.startsWith('//') ? next : '/security'
 
         if (!payload?.user) {
-          setMessage('Session introuvable. Connectez-vous pour continuer.')
+          setMessage(t('auth.callback.sessionMissing'))
           window.setTimeout(() => navigate('/login', { replace: true }), 1200)
           return
         }
 
         if (!isProfileComplete(payload.user)) {
-          setMessage('Complétez votre profil pour continuer.')
+          setMessage(t('auth.callback.completeProfile'))
           window.setTimeout(() => navigate('/register', { replace: true }), 800)
           return
         }
@@ -56,10 +59,12 @@ export function AuthCallbackPage() {
         const emailJustConfirmed = isEmailVerified(payload.user)
         dispatch(
           addToast({
-            title: emailJustConfirmed ? 'E-mail confirmé' : 'Connexion réussie',
+            title: emailJustConfirmed
+              ? t('auth.callback.toastEmailTitle')
+              : t('auth.callback.toastLoginTitle'),
             message: emailJustConfirmed
-              ? 'Votre adresse e-mail est vérifiée. Vous pouvez gérer la sécurité du compte.'
-              : 'Votre session est active.',
+              ? t('auth.callback.toastEmailBody')
+              : t('auth.callback.toastLoginBody'),
             tone: 'success',
           }),
         )
@@ -74,7 +79,11 @@ export function AuthCallbackPage() {
         navigate(target, { replace: true })
       } catch (error) {
         if (cancelled) return
-        setMessage(error?.message || 'Confirmation impossible.')
+        setMessage(
+          error?.message
+            ? sanitizeAuthMessage(error.message, t)
+            : t('auth.callback.confirmFailed'),
+        )
         window.setTimeout(() => navigate('/security', { replace: true }), 1500)
       }
     }
@@ -83,11 +92,15 @@ export function AuthCallbackPage() {
     return () => {
       cancelled = true
     }
-  }, [dispatch, navigate, searchParams])
+  }, [dispatch, navigate, searchParams, t])
 
   return (
-    <AuthCard eyebrow="MOXT · Sécurité" title="Vérification du compte" description={message}>
-      <Alert variant="info">Patientez quelques instants — redirection automatique.</Alert>
+    <AuthCard
+      eyebrow={t('auth.callback.eyebrow')}
+      title={t('auth.callback.title')}
+      description={message}
+    >
+      <Alert variant="info">{t('auth.callback.redirectHint')}</Alert>
     </AuthCard>
   )
 }

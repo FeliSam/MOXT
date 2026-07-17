@@ -44,12 +44,13 @@ export function EmailVerificationCard({
 
   useEffect(() => {
     if (!authError) return
-    dispatch(addToast(authErrorToast('E-mail impossible', authError)))
+    dispatch(addToast(authErrorToast(t('security.email.errorTitle'), authError, 'error', t)))
     dispatch(clearAuthError())
-  }, [authError, dispatch])
+  }, [authError, dispatch, t])
 
   useEffect(() => {
     if (!otpSent) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync draft email from auth profile
       setEmail(user?.email || '')
     }
   }, [user?.email, otpSent])
@@ -57,6 +58,7 @@ export function EmailVerificationCard({
   // Si Auth a déjà confirmé (Safari / autre onglet), quitter le flux OTP
   useEffect(() => {
     if (!verified) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- exit OTP when Auth confirms elsewhere
     setOtpSent(false)
     setOtp('')
     if (!changeMode) {
@@ -81,8 +83,8 @@ export function EmailVerificationCard({
     if (!normalized.includes('@')) {
       dispatch(
         addToast({
-          title: 'E-mail invalide',
-          message: 'Saisissez une adresse e-mail valide.',
+          title: t('security.email.invalidTitle'),
+          message: t('security.email.invalidBody'),
           tone: 'error',
         }),
       )
@@ -91,8 +93,8 @@ export function EmailVerificationCard({
     if (verified && !emailDiffersFromProfile && !changeMode) {
       dispatch(
         addToast({
-          title: 'Déjà confirmé',
-          message: 'Cette adresse e-mail est déjà vérifiée.',
+          title: t('security.email.alreadyConfirmedTitle'),
+          message: t('security.email.alreadyConfirmedBody'),
           tone: 'success',
         }),
       )
@@ -109,8 +111,8 @@ export function EmailVerificationCard({
         setOtp('')
         dispatch(
           addToast({
-            title: 'E-mail confirmé',
-            message: 'Cette adresse e-mail est déjà vérifiée sur votre compte.',
+            title: t('security.email.confirmedTitle'),
+            message: t('security.email.alreadyVerifiedBody'),
             tone: 'success',
           }),
         )
@@ -121,8 +123,8 @@ export function EmailVerificationCard({
       setResendCooldown(OTP_RESEND_COOLDOWN_SECONDS)
       dispatch(
         addToast({
-          title: 'Code envoyé',
-          message: `Un code a été envoyé à ${normalized}. Vérifiez vos spams.`,
+          title: t('security.email.codeSentTitle'),
+          message: t('security.email.codeSentBody', { email: normalized }),
           tone: 'success',
         }),
       )
@@ -146,10 +148,10 @@ export function EmailVerificationCard({
       setChangeMode(false)
       dispatch(
         addToast({
-          title: 'E-mail confirmé',
+          title: t('security.email.confirmedTitle'),
           message: emailDiffersFromProfile
-            ? `Votre adresse a été mise à jour : ${confirmedEmail}.`
-            : 'Votre adresse e-mail est maintenant vérifiée.',
+            ? t('security.email.confirmedUpdatedBody', { email: confirmedEmail })
+            : t('security.email.confirmedBody'),
           tone: 'success',
         }),
       )
@@ -170,26 +172,23 @@ export function EmailVerificationCard({
       return (
         <div className={`grid gap-2 ${className}`}>
           <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-            E-mail vérifié : {user.email}
+            {t('security.email.verifiedInline', { email: user.email })}
           </p>
           {allowChangeWhenVerified ? (
             <Button type="button" variant="secondary" onClick={() => setChangeMode(true)}>
-              Changer d&apos;adresse e-mail
+              {t('security.email.changeButton')}
             </Button>
           ) : null}
         </div>
       )
     }
     return (
-      <Alert variant="success" title="E-mail confirmé" className={className}>
+      <Alert variant="success" title={t('security.email.verifiedTitle')} className={className}>
         <div className="grid gap-3">
-          <p>
-            {user.email} est vérifié. Vous pouvez créer une entreprise et soumettre votre dossier
-            d&apos;identité.
-          </p>
+          <p>{t('security.email.verifiedBody', { email: user.email })}</p>
           {allowChangeWhenVerified ? (
             <Button type="button" variant="secondary" onClick={() => setChangeMode(true)}>
-              Changer d&apos;adresse e-mail
+              {t('security.email.changeButton')}
             </Button>
           ) : null}
         </div>
@@ -206,7 +205,7 @@ export function EmailVerificationCard({
           </span>
           <div>
             <h2 className="font-black">
-              {verified ? t("security.email.changeTitle") : t("security.email.confirmTitle")}
+              {verified ? t('security.email.changeTitle') : t('security.email.confirmTitle')}
             </h2>
             <p className="text-sm text-[var(--app-text-muted)]">
               {verified
@@ -218,7 +217,7 @@ export function EmailVerificationCard({
       ) : null}
       <Input
         id={`${idPrefix}-email`}
-        label={t("security.email.addressLabel")}
+        label={t('security.email.addressLabel')}
         type="email"
         autoComplete="email"
         value={email}
@@ -236,14 +235,14 @@ export function EmailVerificationCard({
         <>
           <Input
             id={`${idPrefix}-email-otp`}
-            label={t("security.email.otpLabel")}
+            label={t('security.email.otpLabel')}
             inputMode="numeric"
             autoComplete="one-time-code"
             maxLength={6}
             placeholder="000000"
             value={otp}
             onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
-            hint={t("security.email.otpHint")}
+            hint={t('security.email.otpHint')}
           />
           <div className="flex flex-wrap gap-2">
             <Button
@@ -253,7 +252,7 @@ export function EmailVerificationCard({
               disabled={otp.length !== 6}
               onClick={confirmCode}
             >
-              {t("security.email.confirmButton")}
+              {t('security.email.confirmButton')}
             </Button>
             <Button
               type="button"
@@ -261,7 +260,9 @@ export function EmailVerificationCard({
               disabled={resendCooldown > 0 || busy}
               onClick={sendCode}
             >
-              {resendCooldown > 0 ? t("security.email.resendCooldown", { seconds: resendCooldown }) : t("security.email.resend")}
+              {resendCooldown > 0
+                ? t('security.email.resendCooldown', { seconds: resendCooldown })
+                : t('security.email.resend')}
             </Button>
             {verified ? (
               <Button type="button" variant="ghost" onClick={cancelChange}>
@@ -273,7 +274,7 @@ export function EmailVerificationCard({
       ) : (
         <div className="flex flex-wrap gap-2">
           <Button type="button" loading={busy || authStatus === 'loading'} onClick={sendCode}>
-            {verified ? t("security.email.sendValidation") : t("security.email.sendConfirmation")}
+            {verified ? t('security.email.sendValidation') : t('security.email.sendConfirmation')}
           </Button>
           {verified && changeMode ? (
             <Button type="button" variant="ghost" onClick={cancelChange}>

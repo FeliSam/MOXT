@@ -1,4 +1,5 @@
 import { FiCheckCircle, FiHeadphones, FiMessageSquare } from 'react-icons/fi'
+import { useLanguage } from '../../../contexts/useLanguage'
 import { Button } from '../../../components/ui/Button'
 import { Badge } from '../../../components/ui/Badge'
 import {
@@ -6,6 +7,7 @@ import {
   updateSupportStatus,
 } from '../../communications/communicationSlice'
 import { CARD, ITEM } from '../adminConfig'
+import { adminText } from '../adminI18n'
 import { Empty, SectionTitle } from './AdminShared'
 
 const PRIORITY_STYLES = {
@@ -21,11 +23,13 @@ const PRIORITY_BADGE = {
 }
 
 export function AdminSupportPanel({ admin, dispatch, reply, setReply, setSelected, tickets }) {
+  const { t } = useLanguage()
+
   return (
     <div className={`${CARD} p-5 grid gap-4`}>
       <SectionTitle
         icon={FiHeadphones}
-        label="Tickets support"
+        label={adminText(t, 'admin.support.title')}
         count={tickets.length}
         tone={tickets.length ? 'warning' : 'success'}
       />
@@ -44,7 +48,10 @@ export function AdminSupportPanel({ admin, dispatch, reply, setReply, setSelecte
                 >
                   <strong className="block text-sm">{ticket.subject}</strong>
                   <p className="mt-0.5 text-xs text-[var(--app-text-muted)]">
-                    {ticket.userName} · {ticket.messages?.length || 0} message(s)
+                    {adminText(t, 'admin.support.meta', {
+                      name: ticket.userName,
+                      count: ticket.messages?.length || 0,
+                    })}
                   </p>
                 </button>
               </div>
@@ -58,7 +65,7 @@ export function AdminSupportPanel({ admin, dispatch, reply, setReply, setSelecte
             <textarea
               value={reply}
               onChange={(e) => { setSelected({ kind: 'support', item: ticket }); setReply(e.target.value) }}
-              placeholder="Reponse rapide..."
+              placeholder={adminText(t, 'admin.support.replyPlaceholder')}
               rows={3}
               className="w-full rounded-xl bg-[var(--app-surface)] p-3 text-sm outline-none ring-1 ring-[var(--app-border)] focus:ring-brand-500"
             />
@@ -67,20 +74,30 @@ export function AdminSupportPanel({ admin, dispatch, reply, setReply, setSelecte
                 icon={FiMessageSquare}
                 onClick={() => {
                   if (!reply.trim()) return
-                  dispatch(replySupportTicket({ ticketId: ticket.id, senderId: admin.id, senderName: `${admin.firstName} ${admin.lastName} - Support`, role: 'agent', text: reply }))
+                  dispatch(replySupportTicket({
+                    ticketId: ticket.id,
+                    senderId: admin.id,
+                    senderName: `${admin.firstName} ${admin.lastName} - Support`,
+                    role: 'agent',
+                    text: reply,
+                  }))
                   setReply('')
                 }}
               >
-                Repondre
+                {adminText(t, 'admin.support.reply')}
               </Button>
               <Button variant="secondary" icon={FiCheckCircle} onClick={() => dispatch(updateSupportStatus({ id: ticket.id, status: 'resolved' }))}>
-                Resoudre
+                {adminText(t, 'admin.actions.resolve')}
               </Button>
             </div>
           </div>
         ))
       ) : (
-        <Empty label="Aucun ticket." sub="Tous les tickets ont ete traites." icon={FiHeadphones} />
+        <Empty
+          label={adminText(t, 'admin.empty.noTicket')}
+          sub={adminText(t, 'admin.empty.allTicketsHandled')}
+          icon={FiHeadphones}
+        />
       )}
     </div>
   )

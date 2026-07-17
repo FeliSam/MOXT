@@ -7,11 +7,14 @@ import { CatalogArchiveTabs } from '../../components/ui/CatalogArchiveTabs'
 import { Input } from '../../components/ui/Input'
 import { Modal } from '../../components/ui/Modal'
 import { Select } from '../../components/ui/Select'
+import { useLanguage } from '../../contexts/useLanguage'
 import { updateBusinessTransferAccounts } from '../../features/businesses/businessSlice'
+import { professionalText } from '../../features/businesses/professionalI18n'
 import { paymentMethodsForCountry } from '../../features/transfers/transferConfig'
 import {
   accountsForSlot,
   addTransferAccount,
+  countryLabel,
   setDefaultTransferAccount,
   TRANSFER_ACCOUNT_SLOTS,
   transferAccountSlotMeta,
@@ -34,6 +37,8 @@ const emptyForm = {
 }
 
 export function TransferAccountsPanel({ business, dispatch, user }) {
+  const { t } = useLanguage()
+  const pt = (key, vars) => professionalText(t, key, vars)
   const originCountry = user.originCountry || 'BJ'
   const accounts = business.transferAccounts || []
   const [panelTab, setPanelTab] = useState('defaults')
@@ -68,8 +73,8 @@ export function TransferAccountsPanel({ business, dispatch, user }) {
     )
     dispatch(
       addToast({
-        title: 'Coordonnées mises à jour',
-        message: message || 'Les clients verront le compte par défaut selon le sens du transfert.',
+        title: pt('professional.accounts.toast.updatedTitle'),
+        message: message || pt('professional.accounts.toast.updatedBody'),
         tone: 'success',
       }),
     )
@@ -129,12 +134,12 @@ export function TransferAccountsPanel({ business, dispatch, user }) {
                 }
               : account,
           ),
-          'Profil modifié.',
+          pt('professional.accounts.toast.profileEdited'),
         )
       } else {
         persistAccounts(
           addTransferAccount(accounts, { ...form, slot: modalMode.slot, isDefault: false }, originCountry),
-          'Profil ajouté à la liste.',
+          pt('professional.accounts.toast.profileAdded'),
         )
       }
     }
@@ -142,13 +147,16 @@ export function TransferAccountsPanel({ business, dispatch, user }) {
   }
 
   function removeAccount(accountId) {
-    persistAccounts(accounts.filter((account) => account.id !== accountId), 'Profil supprimé.')
+    persistAccounts(
+      accounts.filter((account) => account.id !== accountId),
+      pt('professional.accounts.toast.profileRemoved'),
+    )
   }
 
   function makeDefault(accountId) {
     persistAccounts(
       setDefaultTransferAccount(accounts, accountId, originCountry),
-      'Ce profil est maintenant utilisé par défaut pour ce sens.',
+      pt('professional.accounts.toast.setDefault'),
     )
   }
 
@@ -160,16 +168,17 @@ export function TransferAccountsPanel({ business, dispatch, user }) {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.16em] text-brand-700">
-            Paramètres de paiement client
+            {pt('professional.accounts.eyebrow')}
           </p>
-          <h2 className="mt-1 text-xl font-black">Coordonnées de réception</h2>
+          <h2 className="mt-1 text-xl font-black">{pt('professional.accounts.title')}</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--app-text-muted)]">
-            Deux comptes par défaut selon le sens du transfert, plus une liste de profils
-            supplémentaires avec sélection du compte actif.
+            {pt('professional.accounts.description')}
           </p>
         </div>
         <Badge tone={slots.every((slot) => defaultAccountForSlot(slot.slot)) ? 'success' : 'warning'}>
-          {slots.every((slot) => defaultAccountForSlot(slot.slot)) ? 'Prêt' : 'À compléter'}
+          {slots.every((slot) => defaultAccountForSlot(slot.slot))
+            ? pt('professional.accounts.ready')
+            : pt('professional.accounts.toComplete')}
         </Badge>
       </div>
 
@@ -179,8 +188,8 @@ export function TransferAccountsPanel({ business, dispatch, user }) {
           onChange={setPanelTab}
           variant="section"
           tabs={[
-            { key: 'defaults', label: 'Comptes par défaut' },
-            { key: 'extra', label: 'Autres profils', count: extraCount },
+            { key: 'defaults', label: pt('professional.accounts.tabs.defaults') },
+            { key: 'extra', label: pt('professional.accounts.tabs.extra'), count: extraCount },
           ]}
         />
       </div>
@@ -194,6 +203,7 @@ export function TransferAccountsPanel({ business, dispatch, user }) {
                 key={slot.slot}
                 slot={slot}
                 account={account}
+                pt={pt}
                 onConfigure={() => openSlotModal(slot.slot)}
               />
             )
@@ -207,13 +217,13 @@ export function TransferAccountsPanel({ business, dispatch, user }) {
               <div key={slot.slot} className="grid gap-3 rounded-[1.5rem] border border-[var(--app-border)] p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <h3 className="font-black">{slot.title}</h3>
+                    <h3 className="font-black">{slotTitle(slot, pt)}</h3>
                     <p className="text-xs text-[var(--app-text-muted)]">
                       {directionLabel(slot.activeForDirection)}
                     </p>
                   </div>
                   <Button variant="secondary" icon={FiPlus} onClick={() => openExtraModal(slot.slot)}>
-                    Ajouter un profil
+                    {pt('professional.accounts.addProfile')}
                   </Button>
                 </div>
                 {slotAccounts.length ? (
@@ -228,14 +238,16 @@ export function TransferAccountsPanel({ business, dispatch, user }) {
                     >
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <strong>{account.label || account.method || 'Profil'}</strong>
+                          <strong>{account.label || account.method || pt('professional.accounts.profile')}</strong>
                           {account.isDefault ? (
                             <Badge tone="success">
                               <FiStar className="mr-1 inline text-xs" />
-                              Par défaut
+                              {pt('professional.accounts.default')}
                             </Badge>
                           ) : null}
-                          {account.active === false ? <Badge tone="warning">Masqué</Badge> : null}
+                          {account.active === false ? (
+                            <Badge tone="warning">{pt('professional.accounts.hidden')}</Badge>
+                          ) : null}
                         </div>
                         <p className="mt-2 text-sm text-[var(--app-text-muted)]">
                           {account.recipientName} · {account.phone || account.accountNumber} ·{' '}
@@ -245,20 +257,22 @@ export function TransferAccountsPanel({ business, dispatch, user }) {
                       <div className="flex flex-wrap gap-2">
                         {!account.isDefault ? (
                           <Button variant="secondary" onClick={() => makeDefault(account.id)}>
-                            Définir par défaut
+                            {pt('professional.accounts.setAsDefault')}
                           </Button>
                         ) : null}
                         <Button variant="secondary" icon={FiEdit3} onClick={() => openExtraModal(slot.slot, account)}>
-                          Modifier
+                          {pt('professional.accounts.edit')}
                         </Button>
                         <Button variant="danger" icon={FiTrash2} onClick={() => removeAccount(account.id)}>
-                          Supprimer
+                          {pt('professional.accounts.delete')}
                         </Button>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-[var(--app-text-muted)]">Aucun profil pour ce sens.</p>
+                  <p className="text-sm text-[var(--app-text-muted)]">
+                    {pt('professional.accounts.noProfiles')}
+                  </p>
                 )}
               </div>
             )
@@ -271,26 +285,33 @@ export function TransferAccountsPanel({ business, dispatch, user }) {
         onClose={closeModal}
         title={
           modalMeta
-            ? `${modalMode?.accountId || defaultAccountForSlot(modalMode?.slot) ? 'Modifier' : 'Ajouter'} · ${modalMeta.title}`
-            : 'Profil de réception'
+            ? `${
+                modalMode?.accountId || defaultAccountForSlot(modalMode?.slot)
+                  ? pt('professional.accounts.modal.edit')
+                  : pt('professional.accounts.modal.add')
+              } · ${slotTitle(modalMeta, pt)}`
+            : pt('professional.accounts.modal.title')
         }
       >
         {modalMeta ? (
           <form className="grid gap-4" onSubmit={submit}>
             <p className="rounded-2xl bg-[var(--app-surface-muted)] p-4 text-sm text-[var(--app-text-muted)]">
-              Profil pour <strong>{directionLabel(modalMeta.activeForDirection)}</strong>.
-              {modalMode?.type === 'extra'
-                ? ' Vous pourrez le définir comme compte par défaut dans la liste.'
-                : ' Ce compte sera utilisé par défaut pour ce sens.'}
+              {pt(
+                modalMode?.type === 'extra'
+                  ? 'professional.accounts.modal.hintExtra'
+                  : 'professional.accounts.modal.hintDefault',
+                { direction: directionLabel(modalMeta.activeForDirection) },
+              )}
             </p>
             <AccountFormFields
               form={form}
               setForm={setForm}
               methodOptions={methodOptions}
               modalMeta={modalMeta}
+              pt={pt}
             />
             <Button type="submit" className="w-full">
-              Enregistrer
+              {pt('professional.accounts.modal.save')}
             </Button>
           </form>
         ) : null}
@@ -299,7 +320,7 @@ export function TransferAccountsPanel({ business, dispatch, user }) {
   )
 }
 
-function SlotCard({ account, onConfigure, slot }) {
+function SlotCard({ account, onConfigure, pt, slot }) {
   return (
     <div
       className={`grid gap-4 rounded-[1.5rem] border p-5 ${
@@ -310,36 +331,48 @@ function SlotCard({ account, onConfigure, slot }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[11px] font-black uppercase tracking-[0.14em] text-brand-700">{slot.title}</p>
+          <p className="text-[11px] font-black uppercase tracking-[0.14em] text-brand-700">
+            {slotTitle(slot, pt)}
+          </p>
           <h3 className="mt-1 font-black">{directionLabel(slot.activeForDirection)}</h3>
         </div>
-        <Badge tone={account ? 'success' : 'warning'}>{account ? 'Actif' : 'Manquant'}</Badge>
+        <Badge tone={account ? 'success' : 'warning'}>
+          {account ? pt('professional.accounts.slot.active') : pt('professional.accounts.slot.missing')}
+        </Badge>
       </div>
       {account ? (
         <div className="rounded-2xl bg-[var(--app-surface)] p-4 text-sm text-[var(--app-text-muted)]">
           <strong className="block text-[var(--app-text)]">
-            {account.label || account.method || 'Compte configuré'}
+            {account.label || account.method || pt('professional.accounts.slot.configured')}
           </strong>
           <p className="mt-2">
             {account.recipientName} · {account.phone || account.accountNumber}
           </p>
         </div>
       ) : (
-        <p className="text-sm text-[var(--app-text-muted)]">Configurez le compte par défaut pour ce sens.</p>
+        <p className="text-sm text-[var(--app-text-muted)]">
+          {pt('professional.accounts.slot.configureHint')}
+        </p>
       )}
       <Button variant="secondary" icon={account ? FiEdit3 : FiPlus} onClick={onConfigure}>
-        {account ? 'Modifier le défaut' : 'Configurer'}
+        {account
+          ? pt('professional.accounts.slot.editDefault')
+          : pt('professional.accounts.slot.configure')}
       </Button>
     </div>
   )
 }
 
-function AccountFormFields({ form, methodOptions, modalMeta, setForm }) {
+function AccountFormFields({ form, methodOptions, modalMeta, pt, setForm }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <Select
         id="transfer-account-method"
-        label={modalMeta.country === 'RU' ? 'Banque russe' : 'Réseau de transfert'}
+        label={
+          modalMeta.country === 'RU'
+            ? pt('professional.accounts.form.russianBank')
+            : pt('professional.accounts.form.transferNetwork')
+        }
         className={inputSurface}
         value={form.method}
         onChange={(event) => setForm((current) => ({ ...current, method: event.target.value }))}
@@ -352,21 +385,21 @@ function AccountFormFields({ form, methodOptions, modalMeta, setForm }) {
       </Select>
       <Input
         id="transfer-account-label"
-        label="Libellé"
+        label={pt('professional.accounts.form.label')}
         className={inputSurface}
         value={form.label}
         onChange={(event) => setForm((current) => ({ ...current, label: event.target.value }))}
       />
       <Input
         id="transfer-account-recipient"
-        label="Nom du bénéficiaire"
+        label={pt('professional.accounts.form.recipientName')}
         className={inputSurface}
         value={form.recipientName}
         onChange={(event) => setForm((current) => ({ ...current, recipientName: event.target.value }))}
       />
       <Input
         id="transfer-account-phone"
-        label="Numéro de réception"
+        label={pt('professional.accounts.form.phone')}
         className={inputSurface}
         type="tel"
         value={form.phone}
@@ -374,27 +407,32 @@ function AccountFormFields({ form, methodOptions, modalMeta, setForm }) {
       />
       <Input
         id="transfer-account-number"
-        label="Compte ou identifiant"
+        label={pt('professional.accounts.form.accountNumber')}
         className={inputSurface}
         value={form.accountNumber}
         onChange={(event) => setForm((current) => ({ ...current, accountNumber: event.target.value }))}
       />
       <Input
         id="transfer-account-bank"
-        label="Banque ou détail"
+        label={pt('professional.accounts.form.bankDetail')}
         className={inputSurface}
         value={form.bankName}
         onChange={(event) => setForm((current) => ({ ...current, bankName: event.target.value }))}
       />
       <Input
         id="transfer-account-instructions"
-        label="Instructions"
+        label={pt('professional.accounts.form.instructions')}
         className={inputSurface}
         value={form.instructions}
         onChange={(event) => setForm((current) => ({ ...current, instructions: event.target.value }))}
       />
     </div>
   )
+}
+
+function slotTitle(slot, pt) {
+  if (slot.slot === TRANSFER_ACCOUNT_SLOTS.RU) return pt('professional.accounts.slot.ruTitle')
+  return pt('professional.accounts.slot.originTitle', { country: countryLabel(slot.country) })
 }
 
 function pickForm(account) {

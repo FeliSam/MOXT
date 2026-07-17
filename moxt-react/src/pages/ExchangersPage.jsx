@@ -14,15 +14,24 @@ import { RevealListItem } from '../components/ui/RevealListItem'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { Select } from '../components/ui/Select'
 import { flagEmoji } from '../config/flags'
+import { useLanguage } from '../contexts/useLanguage'
 import { ExchangerPickerAvatar } from '../features/transfers/ExchangerPickerAvatar'
-import { listExchangersForTransfer, resolveUserPartnerCountry } from '../features/transfers/exchangerListUtils'
+import {
+  EXCHANGER_DELAY_TO_CONFIRM,
+  listExchangersForTransfer,
+  resolveUserPartnerCountry,
+} from '../features/transfers/exchangerListUtils'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
+import { phase3Text } from '../i18n/phase3I18n'
 
 const COUNTRY_SCOPE_ALL = 'all'
 const COUNTRY_SCOPE_MINE = 'mine'
 
 export function ExchangersPage() {
   useScrollToSecondSection()
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
+  const toConfirmLabel = p3('exchangers.toConfirm')
   const [query, setQuery] = useState('')
   const [city, setCity] = useState('')
   const [countryScope, setCountryScope] = useState(COUNTRY_SCOPE_MINE)
@@ -39,8 +48,9 @@ export function ExchangersPage() {
         user,
         originCountry,
         includeAllCountries: countryScope === COUNTRY_SCOPE_ALL,
+        toConfirmLabel,
       }),
-    [businesses, countryScope, originCountry, user],
+    [businesses, countryScope, originCountry, toConfirmLabel, user],
   )
 
   const visibleExchangers = useMemo(
@@ -58,20 +68,27 @@ export function ExchangersPage() {
 
   const activeFilterCount = Number(countryScope === COUNTRY_SCOPE_ALL) + Number(Boolean(city))
 
+  function delayLabel(value) {
+    if (!value || value === EXCHANGER_DELAY_TO_CONFIRM || value === 'A confirmer') {
+      return toConfirmLabel
+    }
+    return value
+  }
+
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Finances"
-        title="Échangeurs"
+        eyebrow={p3('exchangers.eyebrow')}
+        title={p3('exchangers.title')}
         description={
           countryScope === COUNTRY_SCOPE_ALL
-            ? 'Tous les partenaires de transfert MOXT — comparez avant de créer une opération.'
-            : "Partenaires de votre pays d'origine uniquement — comparez avant de créer une opération."
+            ? p3('exchangers.description.all')
+            : p3('exchangers.description.country')
         }
-        stats={[{ label: 'Partenaires', value: visibleExchangers.length }]}
+        stats={[{ label: p3('exchangers.stats.partners'), value: visibleExchangers.length }]}
         actions={
           <Link to="/transfers">
-            <Button icon={FiRepeat}>Nouveau transfert</Button>
+            <Button icon={FiRepeat}>{p3('exchangers.newTransfer')}</Button>
           </Link>
         }
       />
@@ -88,23 +105,26 @@ export function ExchangersPage() {
             setCity('')
             setCountryScope(COUNTRY_SCOPE_MINE)
           }}
-          placeholder="Échangeur, ville ou délai..."
+          placeholder={p3('exchangers.searchPlaceholder')}
         >
           <div className="grid gap-3 sm:grid-cols-2">
             <Select
               id="exchanger-filter-scope"
-              label="Pays"
+              label={p3('common.country')}
               value={countryScope}
               onChange={(event) => setCountryScope(event.target.value)}
             >
               <option value={COUNTRY_SCOPE_MINE}>
-                Mon pays ({flagEmoji(userCountry)} {userCountry})
+                {p3('exchangers.myCountry', {
+                  flag: flagEmoji(userCountry),
+                  code: userCountry,
+                })}
               </option>
-              <option value={COUNTRY_SCOPE_ALL}>Tous les échangeurs</option>
+              <option value={COUNTRY_SCOPE_ALL}>{p3('exchangers.allExchangers')}</option>
             </Select>
             <Input
               id="exchanger-filter-city"
-              label="Ville"
+              label={p3('common.city')}
               value={city}
               onChange={(event) => setCity(event.target.value)}
             />
@@ -130,7 +150,7 @@ export function ExchangersPage() {
                       {flagEmoji(exchanger.country)} {exchanger.city || exchanger.country}
                     </p>
                   </div>
-                  <Badge tone="success" className="shrink-0">Disponible</Badge>
+                  <Badge tone="success" className="shrink-0">{p3('exchangers.available')}</Badge>
                 </div>
 
                 <div className="mt-4 grid grid-cols-3 gap-2 rounded-2xl bg-[var(--app-surface-muted)] p-3">
@@ -138,18 +158,18 @@ export function ExchangersPage() {
                     <p className="flex items-center justify-center gap-1 text-sm font-black tabular-nums">
                       <FiStar className="text-amber-500" /> {exchanger.rating || 0}
                     </p>
-                    <span className="text-[10px] text-[var(--app-text-faint)]">Note</span>
+                    <span className="text-[10px] text-[var(--app-text-faint)]">{p3('exchangers.rating')}</span>
                   </div>
                   <div className="border-x border-[var(--app-border)] text-center">
                     <p className="text-sm font-black tabular-nums">{exchanger.feePercent ?? 2.5}%</p>
-                    <span className="text-[10px] text-[var(--app-text-faint)]">Frais</span>
+                    <span className="text-[10px] text-[var(--app-text-faint)]">{p3('exchangers.fees')}</span>
                   </div>
                   <div className="text-center">
                     <p className="flex items-center justify-center gap-1 text-sm font-black">
                       <FiClock className="text-[var(--app-text-faint)]" />
                     </p>
                     <span className="text-[10px] text-[var(--app-text-faint)]">
-                      {exchanger.averageDelay || 'A confirmer'}
+                      {delayLabel(exchanger.averageDelay)}
                     </span>
                   </div>
                 </div>
@@ -160,7 +180,7 @@ export function ExchangersPage() {
                     countryScope === COUNTRY_SCOPE_ALL ? '?scope=all' : ''
                   }`}
                 >
-                  Voir la fiche
+                  {p3('exchangers.viewProfile')}
                 </Link>
               </Card>
             </RevealListItem>
@@ -170,13 +190,13 @@ export function ExchangersPage() {
           <EmptyState
             title={
               countryScope === COUNTRY_SCOPE_ALL
-                ? 'Aucun échangeur trouvé'
-                : 'Aucun échangeur dans votre pays'
+                ? p3('exchangers.empty.search')
+                : p3('exchangers.empty.country')
             }
             description={
               countryScope === COUNTRY_SCOPE_ALL
-                ? 'Aucun partenaire ne correspond à votre recherche.'
-                : `Seuls les partenaires ${flagEmoji(userCountry)} de votre pays d'origine sont listés ici. Essayez « Tous les échangeurs ».`
+                ? p3('exchangers.empty.searchDesc')
+                : p3('exchangers.empty.countryDesc', { flag: flagEmoji(userCountry) })
             }
           />
         )}

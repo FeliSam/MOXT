@@ -2,12 +2,16 @@ import { FiChevronRight, FiEdit3 } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { Badge, VerifiedDisplayName } from '../../../components/ui/Badge'
 import { Card } from '../../../components/ui/Card'
+import { useLanguage } from '../../../contexts/useLanguage'
 import { ReferralShareButton } from '../../referral/ReferralShareButton'
-import { profileInitials, roleLabels } from '../profilePageConfig'
+import { profileInitials, roleLabelKeys } from '../profilePageConfig'
 
 export function ProfileHeroCard({ profileCompletion, user }) {
+  const { t } = useLanguage()
   const variant = user.verified ? 'verified' : 'featured'
   const displayName = `${user.firstName} ${user.lastName}`.trim()
+  const roleKey = roleLabelKeys[user.role]
+  const roleLabel = roleKey ? t(roleKey) : user.role
 
   return (
     <Card variant={variant} className="relative overflow-hidden">
@@ -32,7 +36,7 @@ export function ProfileHeroCard({ profileCompletion, user }) {
 
         <div className="min-w-0 flex-1">
           <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--app-text-faint)]">
-            Profil MOXT
+            {t('profile.hero.eyebrow')}
           </p>
           <h1 className="font-display mt-1 text-2xl font-extrabold tracking-[-0.02em] text-[var(--app-text)]">
             <VerifiedDisplayName
@@ -43,8 +47,8 @@ export function ProfileHeroCard({ profileCompletion, user }) {
           </h1>
           <p className="mt-1 truncate text-sm text-[var(--app-text-muted)]">{user.email}</p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Badge>{roleLabels[user.role] || user.role}</Badge>
-            {!user.verified ? <Badge tone="warning">Identité à vérifier</Badge> : null}
+            <Badge>{roleLabel}</Badge>
+            {!user.verified ? <Badge tone="warning">{t('profile.hero.unverifiedBadge')}</Badge> : null}
           </div>
         </div>
 
@@ -55,7 +59,7 @@ export function ProfileHeroCard({ profileCompletion, user }) {
             className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2 text-sm font-semibold text-[var(--app-text)] shadow-[var(--shadow-card)] transition-colors duration-[var(--transition-fast)] hover:border-brand-200 hover:bg-[var(--app-surface-muted)] dark:hover:border-brand-800"
           >
             <FiEdit3 aria-hidden="true" />
-            Modifier
+            {t('profile.hero.edit')}
           </Link>
         </div>
       </div>
@@ -65,20 +69,20 @@ export function ProfileHeroCard({ profileCompletion, user }) {
           to="/verification"
           className="relative z-10 mt-4 flex items-center justify-between gap-3 rounded-[var(--radius-card)] border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-sm font-semibold text-amber-900 transition-colors hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100 dark:hover:bg-amber-950/60"
         >
-          <span>Faites vérifier votre identité par MOXT (badge vert)</span>
+          <span>{t('profile.hero.verifyCta')}</span>
           <FiChevronRight className="shrink-0" aria-hidden="true" />
         </Link>
       ) : null}
 
       <div className="relative z-10 mt-5 border-t border-[var(--app-border)] pt-4">
         <div className="flex items-center justify-between gap-3 text-xs font-semibold text-[var(--app-text-muted)]">
-          <span>Profil renseigné</span>
+          <span>{t('profile.hero.completionLabel')}</span>
           <span className="tabular-nums text-[var(--app-text)]">{profileCompletion}%</span>
         </div>
         <div
           className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--app-surface-muted)]"
           role="progressbar"
-          aria-label="Complétion du profil"
+          aria-label={t('profile.hero.completionAria')}
           aria-valuemin="0"
           aria-valuemax="100"
           aria-valuenow={profileCompletion}
@@ -93,7 +97,7 @@ export function ProfileHeroCard({ profileCompletion, user }) {
             to="/profile/information"
             className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-brand-700 hover:underline dark:text-brand-300"
           >
-            Compléter mon profil
+            {t('profile.hero.completeLink')}
             <FiChevronRight className="text-sm" aria-hidden="true" />
           </Link>
         ) : null}

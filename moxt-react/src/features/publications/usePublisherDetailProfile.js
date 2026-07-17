@@ -6,6 +6,7 @@ import {
   filterAggregateReviews,
   REVIEW_TARGET_TYPES,
 } from '@moxt/shared/utils/reviewUtils.js'
+import { useLanguage } from '../../contexts/useLanguage'
 import { calculateBusinessRating } from '../businesses/businessSelectors'
 import { isActiveListing } from '../marketplace/listingCatalogUtils'
 import {
@@ -18,9 +19,9 @@ import { usePublicationProfile } from './usePublicationProfile'
 
 const PROFILE_META = {
   listing: {
-    countLabel: 'Annonces',
-    descriptionFallback: 'Vendeur actif sur la Marketplace MOXT.',
-    ctaLabel: 'Voir toutes les annonces',
+    countLabelKey: 'publications.publisher.stats.listings',
+    descriptionFallbackKey: 'publications.publisher.fallbacks.listing',
+    ctaLabelKey: 'publications.publisher.cta.listings',
     resolveName: (entity) => entity?.sellerName,
     countItems: (publications, entity) =>
       publications.listings.filter(
@@ -28,9 +29,9 @@ const PROFILE_META = {
       ).length,
   },
   parcel: {
-    countLabel: 'Voyages',
-    descriptionFallback: 'Transporteur actif sur MOXT.',
-    ctaLabel: 'Voir toutes les publications',
+    countLabelKey: 'publications.publisher.stats.trips',
+    descriptionFallbackKey: 'publications.publisher.fallbacks.parcel',
+    ctaLabelKey: 'publications.publisher.cta.publications',
     resolveName: (entity) => entity?.ownerName,
     countItems: (publications, entity) =>
       publications.parcels.filter(
@@ -41,9 +42,9 @@ const PROFILE_META = {
       ).length,
   },
   event: {
-    countLabel: 'Événements',
-    descriptionFallback: 'Organisateur actif sur MOXT.',
-    ctaLabel: 'Voir toutes les publications',
+    countLabelKey: 'publications.publisher.stats.events',
+    descriptionFallbackKey: 'publications.publisher.fallbacks.event',
+    ctaLabelKey: 'publications.publisher.cta.publications',
     resolveName: (entity) => entity?.organizerName,
     countItems: (publications, entity) =>
       publications.events.filter(
@@ -54,9 +55,9 @@ const PROFILE_META = {
       ).length,
   },
   job: {
-    countLabel: 'Offres',
-    descriptionFallback: 'Recruteur actif sur MOXT.',
-    ctaLabel: 'Voir toutes les publications',
+    countLabelKey: 'publications.publisher.stats.offers',
+    descriptionFallbackKey: 'publications.publisher.fallbacks.job',
+    ctaLabelKey: 'publications.publisher.cta.publications',
     resolveName: (entity) => entity?.publisherName,
     countItems: (publications, entity) =>
       publications.jobs.filter(
@@ -69,6 +70,7 @@ const PROFILE_META = {
 }
 
 export function usePublisherDetailProfile(entity, kind) {
+  const { t } = useLanguage()
   const meta = PROFILE_META[kind]
   const ownerId = entity?.ownerId
   const businessId = entity?.businessId
@@ -122,7 +124,7 @@ export function usePublisherDetailProfile(entity, kind) {
   return {
     business,
     ownerBusiness,
-    publisherName: meta.resolveName(entity) || 'Membre MOXT',
+    publisherName: meta.resolveName(entity) || t('publications.publisher.memberMoxt'),
     publicationCount,
     rating,
     contactCount: Number(entity.contactCount || 0),
@@ -130,9 +132,9 @@ export function usePublisherDetailProfile(entity, kind) {
     updatedAt: entity.updatedAt,
     ownerId,
     publications,
-    countLabel: meta.countLabel,
-    descriptionFallback: meta.descriptionFallback,
-    ctaLabel: meta.ctaLabel,
+    countLabel: t(meta.countLabelKey),
+    descriptionFallback: t(meta.descriptionFallbackKey),
+    ctaLabel: t(meta.ctaLabelKey),
     publicationsPath: ownerId
       ? kind === 'listing'
         ? `/users/${ownerId}/publications`

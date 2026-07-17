@@ -2,10 +2,16 @@ import { FiStar } from 'react-icons/fi'
 import { Badge } from '../../components/ui/Badge'
 import { Card } from '../../components/ui/Card'
 import { EmptyState } from '../../components/ui/EmptyState'
+import { useLanguage } from '../../contexts/useLanguage'
+import { professionalText } from '../../features/businesses/professionalI18n'
 
 export function ReviewsPanel({ reviews }) {
+  const { t } = useLanguage()
+  const pt = (key, vars) => professionalText(t, key, vars)
   const visible = reviews.filter((item) => item.status === 'published')
-  if (!visible.length) return <EmptyState icon={FiStar} title="Aucun avis publié" />
+  if (!visible.length) {
+    return <EmptyState icon={FiStar} title={pt('professional.reviews.empty')} />
+  }
   return (
     <div className="grid gap-3 md:grid-cols-2">
       {visible.map((review) => (

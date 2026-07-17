@@ -1,5 +1,6 @@
 import { FiAlertTriangle, FiShield } from 'react-icons/fi'
 import { Alert } from '../../../components/ui/Alert'
+import { useLanguage } from '../../../contexts/useLanguage'
 import { TRANSFER_STATUS } from '../transferConfig'
 import { isClaimOnlyPhase } from '../transferActionUtils'
 import { formatDate } from '../transferUtils'
@@ -10,6 +11,7 @@ export function TransferDetailStatusSection({
   countdown,
   transfer,
 }) {
+  const { t } = useLanguage()
   const claimOnly = isClaimOnlyPhase(transfer)
 
   return (
@@ -20,33 +22,32 @@ export function TransferDetailStatusSection({
         </span>
         <div className="grid gap-1 text-sm text-amber-900 dark:text-amber-200">
           <strong className="flex items-center gap-1.5 font-black">
-            <FiAlertTriangle className="text-xs" /> Payez en toute sécurité
+            <FiAlertTriangle className="text-xs" /> {t('transfers.detail.status.paySafely')}
           </strong>
           <p className="text-xs leading-5 text-amber-800/90 dark:text-amber-300/80">
-            Ne payez jamais en dehors de MOXT, conservez toutes vos preuves de paiement et vérifiez
-            les coordonnées du partenaire avant toute transaction.
+            {t('transfers.detail.status.paySafelyBody')}
           </p>
         </div>
       </div>
 
       {claimOnly ? (
-        <Alert variant="info" title="Réclamation uniquement">
-          La réception a été déclarée et l’entreprise a confirmé le virement avec preuve. Seule une
-          réclamation est possible désormais.
+        <Alert variant="info" title={t('transfers.detail.status.claimOnlyTitle')}>
+          {t('transfers.detail.status.claimOnlyBody')}
         </Alert>
       ) : null}
 
       {actionView === 'client' && canDeclare ? (
-        <Alert variant="info" title="Paiement attendu">
-          Effectuez le paiement avant le {formatDate(transfer.paymentDeadlineAt)}. Temps restant :{' '}
-          <strong>{countdown.label}</strong>.
+        <Alert variant="info" title={t('transfers.detail.status.paymentExpectedTitle')}>
+          {t('transfers.detail.status.paymentExpectedBody', {
+            date: formatDate(transfer.paymentDeadlineAt),
+            countdown: countdown.label,
+          })}
         </Alert>
       ) : null}
 
       {actionView === 'business' && transfer.status === TRANSFER_STATUS.DECLARED ? (
-        <Alert variant="info" title="Déclaration reçue">
-          Une déclaration de paiement a été enregistrée. Vérifiez votre compte puis validez la
-          réception.
+        <Alert variant="info" title={t('transfers.detail.status.declarationReceivedTitle')}>
+          {t('transfers.detail.status.declarationReceivedBody')}
         </Alert>
       ) : null}
     </>

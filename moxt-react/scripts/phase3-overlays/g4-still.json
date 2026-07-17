@@ -1,0 +1,1262 @@
+[
+  {
+    "key": "businesses.activities.transfer.description",
+    "fr": "Change, transfert et services financiers entre utilisateurs et entreprises."
+  },
+  {
+    "key": "businesses.activities.logistics.label",
+    "fr": "Colis et logistique"
+  },
+  {
+    "key": "businesses.activities.logistics.description",
+    "fr": "Transport, depot, livraison et coordination de colis."
+  },
+  {
+    "key": "businesses.activities.commerce.label",
+    "fr": "Commerce et marketplace"
+  },
+  {
+    "key": "businesses.activities.commerce.description",
+    "fr": "Vente de produits, boutiques, services commerciaux et annonces."
+  },
+  {
+    "key": "businesses.activities.recruitment.label",
+    "fr": "Jobs et recrutement"
+  },
+  {
+    "key": "businesses.activities.recruitment.description",
+    "fr": "Offres d emploi, missions, recrutement et gestion de candidatures."
+  },
+  {
+    "key": "businesses.activities.events.label",
+    "fr": "Evenementiel"
+  },
+  {
+    "key": "businesses.activities.events.description",
+    "fr": "Rencontres, formations, salons et evenements communautaires."
+  },
+  {
+    "key": "businesses.activities.education.label",
+    "fr": "Formation"
+  },
+  {
+    "key": "businesses.activities.education.description",
+    "fr": "Cours, accompagnement, coaching et ateliers."
+  },
+  {
+    "key": "businesses.activities.real_estate.label",
+    "fr": "Immobilier"
+  },
+  {
+    "key": "businesses.activities.real_estate.description",
+    "fr": "Location, logement, accompagnement et services immobiliers."
+  },
+  {
+    "key": "businesses.activities.services.label",
+    "fr": "Services administratifs"
+  },
+  {
+    "key": "businesses.activities.services.description",
+    "fr": "Aide aux documents, demarches, support local et services pratiques."
+  },
+  {
+    "key": "businesses.experience.transfer.audience",
+    "fr": "Entreprises de change, transfert et reception de paiements."
+  },
+  {
+    "key": "businesses.experience.transfer.promise",
+    "fr": "Mettez en avant vos delais, vos reseaux d echange, vos frais et votre disponibilite."
+  },
+  {
+    "key": "businesses.experience.transfer.onboarding.0",
+    "fr": "Renseignez un nom public clair et rassurant."
+  },
+  {
+    "key": "businesses.experience.transfer.onboarding.1",
+    "fr": "Ajoutez des contacts russes joignables rapidement."
+  },
+  {
+    "key": "businesses.experience.transfer.onboarding.2",
+    "fr": "Activez vos devises et reseaux reellement disponibles."
+  },
+  {
+    "key": "businesses.experience.logistics.audience",
+    "fr": "Voyageurs, transporteurs et services de logistique."
+  },
+  {
+    "key": "businesses.experience.logistics.promise",
+    "fr": "Montrez vos trajets, vos capacites et vos conditions de depot de colis."
+  },
+  {
+    "key": "businesses.experience.logistics.onboarding.0",
+    "fr": "Precisez vos villes de depot et de remise."
+  },
+  {
+    "key": "businesses.experience.logistics.onboarding.1",
+    "fr": "Expliquez les types de colis acceptes."
+  },
+  {
+    "key": "businesses.experience.logistics.onboarding.2",
+    "fr": "Mettez vos disponibilites et votre zone de collecte."
+  },
+  {
+    "key": "businesses.experience.commerce.audience",
+    "fr": "Boutiques, vendeurs pro et services commerciaux."
+  },
+  {
+    "key": "businesses.experience.commerce.promise",
+    "fr": "Valorisez votre vitrine, vos categories et votre reactivite commerciale."
+  },
+  {
+    "key": "businesses.experience.commerce.onboarding.0",
+    "fr": "Decrivez votre specialite principale."
+  },
+  {
+    "key": "businesses.experience.commerce.onboarding.1",
+    "fr": "Ajoutez votre zone de livraison ou de retrait."
+  },
+  {
+    "key": "businesses.experience.commerce.onboarding.2",
+    "fr": "Mettez en avant la confiance et la disponibilite."
+  },
+  {
+    "key": "businesses.experience.recruitment.audience",
+    "fr": "Cabinets, entreprises et recruteurs."
+  },
+  {
+    "key": "businesses.experience.recruitment.promise",
+    "fr": "Centralisez vos offres, vos candidatures et vos besoins terrain."
+  },
+  {
+    "key": "businesses.experience.recruitment.onboarding.0",
+    "fr": "Expliquez les profils recherches."
+  },
+  {
+    "key": "businesses.experience.recruitment.onboarding.1",
+    "fr": "Precisez votre ville d intervention."
+  },
+  {
+    "key": "businesses.experience.recruitment.onboarding.2",
+    "fr": "Indiquez vos horaires de traitement des candidatures."
+  },
+  {
+    "key": "businesses.experience.events.audience",
+    "fr": "Organisateurs, associations et promoteurs."
+  },
+  {
+    "key": "businesses.experience.events.promise",
+    "fr": "Presentez vos evenements, votre communaute et vos prochains rendez-vous."
+  },
+  {
+    "key": "businesses.experience.events.onboarding.0",
+    "fr": "Decrivez le type d evenements organises."
+  },
+  {
+    "key": "businesses.experience.events.onboarding.1",
+    "fr": "Ajoutez les villes et lieux frequents."
+  },
+  {
+    "key": "businesses.experience.events.onboarding.2",
+    "fr": "Montrez votre rythme de publication."
+  },
+  {
+    "key": "businesses.experience.education.audience",
+    "fr": "Formateurs, coaches et structures educatives."
+  },
+  {
+    "key": "businesses.experience.education.promise",
+    "fr": "Mettez en valeur vos cours, ateliers et accompagnements."
+  },
+  {
+    "key": "businesses.experience.education.onboarding.0",
+    "fr": "Expliquez les domaines enseignes."
+  },
+  {
+    "key": "businesses.experience.education.onboarding.1",
+    "fr": "Renseignez vos modalites presentiel ou en ligne."
+  },
+  {
+    "key": "businesses.experience.education.onboarding.2",
+    "fr": "Ajoutez vos disponibilites typiques."
+  },
+  {
+    "key": "businesses.experience.real_estate.audience",
+    "fr": "Agences, bailleurs et services immobiliers."
+  },
+  {
+    "key": "businesses.experience.real_estate.promise",
+    "fr": "Structurez vos annonces, zones et offres d accompagnement."
+  },
+  {
+    "key": "businesses.experience.real_estate.onboarding.0",
+    "fr": "Precisez vos zones de couverture."
+  },
+  {
+    "key": "businesses.experience.real_estate.onboarding.1",
+    "fr": "Indiquez le type de biens ou services proposes."
+  },
+  {
+    "key": "businesses.experience.real_estate.onboarding.2",
+    "fr": "Ajoutez un contact direct et rassurant."
+  },
+  {
+    "key": "businesses.experience.services.audience",
+    "fr": "Prestataires administratifs et services pratiques."
+  },
+  {
+    "key": "businesses.experience.services.promise",
+    "fr": "Rendez votre assistance concrete, visible et facile a contacter."
+  },
+  {
+    "key": "businesses.experience.services.onboarding.0",
+    "fr": "Listez clairement les demarches couvertes."
+  },
+  {
+    "key": "businesses.experience.services.onboarding.1",
+    "fr": "Ajoutez les horaires de prise en charge."
+  },
+  {
+    "key": "businesses.experience.services.onboarding.2",
+    "fr": "Precisez la zone ou la modalite de service."
+  },
+  {
+    "key": "businesses.experience.default.audience",
+    "fr": "Entreprises professionnelles sur MOXT."
+  },
+  {
+    "key": "businesses.experience.default.promise",
+    "fr": "Presentez clairement votre activite et vos services."
+  },
+  {
+    "key": "businesses.spotlight.feeAnnounced",
+    "fr": "Frais annonces"
+  },
+  {
+    "key": "businesses.spotlight.averageDelay",
+    "fr": "Delai moyen"
+  },
+  {
+    "key": "businesses.spotlight.activeNetworks",
+    "fr": "Reseaux actifs"
+  },
+  {
+    "key": "businesses.spotlight.serviceZone",
+    "fr": "Zone de service"
+  },
+  {
+    "key": "businesses.spotlight.capacity",
+    "fr": "Capacite"
+  },
+  {
+    "key": "businesses.spotlight.handlingDelay",
+    "fr": "Delai de prise en charge"
+  },
+  {
+    "key": "businesses.spotlight.catalog",
+    "fr": "Catalogue"
+  },
+  {
+    "key": "businesses.spotlight.delivery",
+    "fr": "Livraison"
+  },
+  {
+    "key": "businesses.spotlight.availability",
+    "fr": "Disponibilite"
+  },
+  {
+    "key": "businesses.spotlight.activeOffers",
+    "fr": "Offres actives"
+  },
+  {
+    "key": "businesses.spotlight.responseDelay",
+    "fr": "Delai de reponse"
+  },
+  {
+    "key": "businesses.spotlight.hrContact",
+    "fr": "Contact RH"
+  },
+  {
+    "key": "businesses.spotlight.upcomingEvents",
+    "fr": "Evenements a venir"
+  },
+  {
+    "key": "businesses.spotlight.programs",
+    "fr": "Programmes"
+  },
+  {
+    "key": "businesses.spotlight.workshops",
+    "fr": "Ateliers"
+  },
+  {
+    "key": "businesses.spotlight.activeProperties",
+    "fr": "Biens actifs"
+  },
+  {
+    "key": "businesses.spotlight.zone",
+    "fr": "Zone"
+  },
+  {
+    "key": "businesses.spotlight.services",
+    "fr": "Services"
+  },
+  {
+    "key": "businesses.spotlight.value.perOperation",
+    "fr": "Selon l opération"
+  },
+  {
+    "key": "businesses.spotlight.value.parcelCapacity",
+    "fr": "Visible dans les annonces de colis"
+  },
+  {
+    "key": "businesses.spotlight.value.linkedPublications",
+    "fr": "Visible dans les publications liées"
+  },
+  {
+    "key": "businesses.spotlight.value.directContact",
+    "fr": "Selon contact direct"
+  },
+  {
+    "key": "businesses.schedules.always_open.label",
+    "fr": "Toujours ouvert"
+  },
+  {
+    "key": "businesses.schedules.always_open.summary",
+    "fr": "Tous les jours, 24h/24"
+  },
+  {
+    "key": "businesses.schedules.weekdays.label",
+    "fr": "Lundi a vendredi"
+  },
+  {
+    "key": "businesses.schedules.weekdays.summary",
+    "fr": "Lun-Ven, 09:00-18:00"
+  },
+  {
+    "key": "businesses.schedules.weekdays_saturday.label",
+    "fr": "Lundi a samedi"
+  },
+  {
+    "key": "businesses.schedules.weekdays_saturday.summary",
+    "fr": "Lun-Sam, 10:00-20:00"
+  },
+  {
+    "key": "businesses.schedules.appointment.label",
+    "fr": "Sur rendez-vous"
+  },
+  {
+    "key": "businesses.schedules.appointment.summary",
+    "fr": "Disponible sur rendez-vous"
+  },
+  {
+    "key": "businesses.documents.registration",
+    "fr": "Enregistrement / statuts (ОГРН, ИНН)"
+  },
+  {
+    "key": "businesses.documents.license",
+    "fr": "Licence ou autorisation d’activité"
+  },
+  {
+    "key": "businesses.documents.tax",
+    "fr": "Attestation fiscale"
+  },
+  {
+    "key": "businesses.documents.address",
+    "fr": "Justificatif d’adresse professionnelle"
+  },
+  {
+    "key": "businesses.documents.bank",
+    "fr": "Coordonnées bancaires (RIB)"
+  },
+  {
+    "key": "businesses.documents.identity",
+    "fr": "Pièce d’identité du dirigeant"
+  },
+  {
+    "key": "businesses.documents.other",
+    "fr": "Autre justificatif"
+  },
+  {
+    "key": "businesses.completion.name.label",
+    "fr": "Nom de l’entreprise"
+  },
+  {
+    "key": "businesses.completion.name.hint",
+    "fr": "Indiquez le nom affiché sur votre fiche publique."
+  },
+  {
+    "key": "businesses.completion.sector.label",
+    "fr": "Secteur d’activité"
+  },
+  {
+    "key": "businesses.completion.sector.hint",
+    "fr": "Choisissez votre domaine principal."
+  },
+  {
+    "key": "businesses.completion.country.hint",
+    "fr": "Précisez le pays d’implantation."
+  },
+  {
+    "key": "businesses.completion.city.hint",
+    "fr": "Ajoutez la ville où vous opérez."
+  },
+  {
+    "key": "businesses.completion.phone.label",
+    "fr": "Téléphone de contact"
+  },
+  {
+    "key": "businesses.completion.phone.hint",
+    "fr": "Un numéro joignable pour les clients MOXT."
+  },
+  {
+    "key": "businesses.completion.description.label",
+    "fr": "Description de l’activité"
+  },
+  {
+    "key": "businesses.completion.description.hint",
+    "fr": "Présentez votre entreprise en quelques lignes."
+  },
+  {
+    "key": "businesses.completion.services.label",
+    "fr": "Modules activés"
+  },
+  {
+    "key": "businesses.completion.services.hint",
+    "fr": "Sélectionnez au moins un service (Marketplace, Jobs, Transfert…)."
+  },
+  {
+    "key": "businesses.completion.averageDelay.label",
+    "fr": "Délai moyen de traitement"
+  },
+  {
+    "key": "businesses.completion.averageDelay.hint",
+    "fr": "Obligatoire pour le module Transfert."
+  },
+  {
+    "key": "businesses.completion.documents.label",
+    "fr": "Justificatif déposé"
+  },
+  {
+    "key": "businesses.completion.documents.hint",
+    "fr": "Choisissez un type de document (enregistrement, licence, fiscal…) puis déposez le fichier dans l’onglet Documents de l’espace pro."
+  },
+  {
+    "key": "businesses.completion.verified.label",
+    "fr": "Validation MOXT"
+  },
+  {
+    "key": "businesses.completion.verified.hint",
+    "fr": "Une fois le dossier complet, l’équipe MOXT vérifie votre entreprise."
+  },
+  {
+    "key": "businessesValidation.nameTooShort",
+    "fr": "Nom trop court."
+  },
+  {
+    "key": "businessesValidation.activityInvalid",
+    "fr": "Selectionnez un domaine valide."
+  },
+  {
+    "key": "businessesValidation.activityRequired",
+    "fr": "Domaine principal obligatoire."
+  },
+  {
+    "key": "businessesValidation.secondaryDifferent",
+    "fr": "Choisissez une activite differente."
+  },
+  {
+    "key": "businessesValidation.countryRussiaOnly",
+    "fr": "Toutes les entreprises sont situees en Russie."
+  },
+  {
+    "key": "businessesValidation.cityRequired",
+    "fr": "Ville obligatoire."
+  },
+  {
+    "key": "businessesValidation.addressMin",
+    "fr": "Ajoutez une adresse complete."
+  },
+  {
+    "key": "businessesValidation.addressRequired",
+    "fr": "Adresse complete obligatoire."
+  },
+  {
+    "key": "businessesValidation.phoneRequired",
+    "fr": "Téléphone russe obligatoire."
+  },
+  {
+    "key": "businessesValidation.emailInvalid",
+    "fr": "Email professionnel invalide."
+  },
+  {
+    "key": "businessesValidation.emailRequired",
+    "fr": "Email professionnel obligatoire."
+  },
+  {
+    "key": "businessesValidation.descriptionMin",
+    "fr": "Ajoutez au moins 20 caracteres."
+  },
+  {
+    "key": "businessesValidation.websiteInvalid",
+    "fr": "Adresse du site invalide."
+  },
+  {
+    "key": "businessesValidation.scheduleRequired",
+    "fr": "Programme horaire obligatoire."
+  },
+  {
+    "key": "businessesValidation.zonesTooLong",
+    "fr": "Liste des zones trop longue."
+  },
+  {
+    "key": "businessesValidation.servicesMin",
+    "fr": "Selectionnez au moins un service."
+  },
+  {
+    "key": "businessesValidation.feeRequired",
+    "fr": "Frais obligatoires."
+  },
+  {
+    "key": "businessesValidation.delayRequired",
+    "fr": "Delai obligatoire."
+  },
+  {
+    "key": "businessesValidation.currenciesMin",
+    "fr": "Selectionnez les devises echangees."
+  },
+  {
+    "key": "businessesValidation.exchangeMethodsMin",
+    "fr": "Selectionnez au moins un reseau ou une banque."
+  },
+  {
+    "key": "businesses.page.eyebrow",
+    "fr": "Services professionnels"
+  },
+  {
+    "key": "businesses.page.title",
+    "fr": "Entreprises et echangeurs"
+  },
+  {
+    "key": "businesses.page.description",
+    "fr": "Profils professionnels validés par MOXT. Seules les entreprises vérifiées apparaissent ici, quel que soit le pays d’origine du membre."
+  },
+  {
+    "key": "businesses.page.stats.verified",
+    "fr": "Entreprises verifiees"
+  },
+  {
+    "key": "businesses.page.editBusiness",
+    "fr": "Modifier mon entreprise"
+  },
+  {
+    "key": "businesses.page.createBusiness",
+    "fr": "Creer une entreprise"
+  },
+  {
+    "key": "businesses.page.pendingAlertTitle",
+    "fr": "Votre entreprise est en cours de validation"
+  },
+  {
+    "key": "businesses.page.pendingAlertBody",
+    "fr": "n’apparaît pas encore dans l’annuaire pour les autres membres. Une fois le statut « Vérifié », elle sera visible par toute la communauté MOXT. Vous pouvez la consulter et la modifier depuis votre"
+  },
+  {
+    "key": "businesses.page.professionalSpaceLink",
+    "fr": "espace professionnel"
+  },
+  {
+    "key": "businesses.page.yourBusiness",
+    "fr": "Votre entreprise"
+  },
+  {
+    "key": "businesses.page.professionalSpace",
+    "fr": "Espace professionnel"
+  },
+  {
+    "key": "businesses.page.viewPublicProfile",
+    "fr": "Voir la fiche publique"
+  },
+  {
+    "key": "businesses.page.searchPlaceholder",
+    "fr": "Entreprise, service, domaine ou ville..."
+  },
+  {
+    "key": "businesses.page.filter.domain",
+    "fr": "Domaine"
+  },
+  {
+    "key": "businesses.page.filter.allDomains",
+    "fr": "Tous les domaines"
+  },
+  {
+    "key": "businesses.page.filter.allServices",
+    "fr": "Tous les services"
+  },
+  {
+    "key": "businesses.page.directoryTitle",
+    "fr": "Annuaire professionnel"
+  },
+  {
+    "key": "businesses.page.directoryDescription",
+    "fr": "L’annuaire affiche uniquement les entreprises vérifiées. Le pays du compte membre n’influe pas sur cette liste : seul le statut de validation compte."
+  },
+  {
+    "key": "businesses.page.viewBusinessCard",
+    "fr": "Voir la fiche entreprise →"
+  },
+  {
+    "key": "businesses.page.emptyTitle",
+    "fr": "Aucune entreprise validee"
+  },
+  {
+    "key": "businesses.page.emptyDescription",
+    "fr": "Aucune entreprise vérifiée pour le moment. Les profils apparaissent ici après validation par l’équipe MOXT, même si le membre partage votre pays d’origine."
+  },
+  {
+    "key": "businesses.detail.notAccessible",
+    "fr": "Entreprise non accessible"
+  },
+  {
+    "key": "businesses.detail.notFoundPending",
+    "fr": "Entreprise introuvable ou en attente de validation"
+  },
+  {
+    "key": "businesses.detail.restrictedVisibility",
+    "fr": "Cette entreprise a restreint la visibilité de ses publications."
+  },
+  {
+    "key": "businesses.detail.reviewsCount",
+    "fr": "{count} avis"
+  },
+  {
+    "key": "businesses.detail.bannerAlt",
+    "fr": "Bannière {name}"
+  },
+  {
+    "key": "businesses.detail.logoAlt",
+    "fr": "{name} logo"
+  },
+  {
+    "key": "businesses.detail.tabs.informations",
+    "fr": "Informations"
+  },
+  {
+    "key": "businesses.detail.professionalInfo",
+    "fr": "Informations professionnelles"
+  },
+  {
+    "key": "businesses.detail.trust.status",
+    "fr": "Profil {status}."
+  },
+  {
+    "key": "businesses.detail.trust.reviews",
+    "fr": "{count} avis publié(s) par la communauté."
+  },
+  {
+    "key": "businesses.detail.trust.contacts",
+    "fr": "Les coordonnées sensibles sont partagées dans les opérations confirmées."
+  },
+  {
+    "key": "businesses.detail.adminTitle",
+    "fr": "Actions administrateur"
+  },
+  {
+    "key": "businesses.detail.adminDescription",
+    "fr": "Validation et contrôle direct de l’entreprise depuis sa fiche publique."
+  },
+  {
+    "key": "businesses.detail.reject",
+    "fr": "Rejeter"
+  },
+  {
+    "key": "businesses.detail.spotlightTitle",
+    "fr": "Points mis en avant"
+  },
+  {
+    "key": "businesses.detail.aboutActivity",
+    "fr": "À propos de cette activité"
+  },
+  {
+    "key": "businesses.detail.linkedPublications",
+    "fr": "Publications liées"
+  },
+  {
+    "key": "businesses.detail.linkedPublicationsHint",
+    "fr": "Accédez aux contenus réellement publiés par cette entreprise selon son activité."
+  },
+  {
+    "key": "businesses.detail.publishedItems",
+    "fr": "{count} élément(s) publiés"
+  },
+  {
+    "key": "businesses.detail.viewPublishedList",
+    "fr": "Voir la liste publiée"
+  },
+  {
+    "key": "businesses.publications.loadingDescription",
+    "fr": "Récupération des publications de l'entreprise..."
+  },
+  {
+    "key": "businesses.publications.notFound",
+    "fr": "Entreprise introuvable"
+  },
+  {
+    "key": "businesses.publications.notFoundDescription",
+    "fr": "Cette entreprise n'existe pas ou n'est pas encore validée sur MOXT."
+  },
+  {
+    "key": "businesses.publications.notAccessibleDescription",
+    "fr": "Créez un compte MOXT pour demander l'accès ou découvrir d'autres entreprises."
+  },
+  {
+    "key": "businesses.publications.backToDirectory",
+    "fr": "Retour à l'annuaire"
+  },
+  {
+    "key": "businesses.publications.guestInteract",
+    "fr": "consulter cette publication"
+  },
+  {
+    "key": "businesses.publications.eyebrow",
+    "fr": "Publications entreprise"
+  },
+  {
+    "key": "businesses.publications.description",
+    "fr": "{sector}{location} — contenus publiés au nom de l’entreprise uniquement."
+  },
+  {
+    "key": "businesses.publications.locationSuffix",
+    "fr": " · {location}"
+  },
+  {
+    "key": "businesses.publications.businessCard",
+    "fr": "Fiche entreprise"
+  },
+  {
+    "key": "businesses.publications.emptyTitle",
+    "fr": "Aucune publication entreprise"
+  },
+  {
+    "key": "businesses.publications.emptyDescription",
+    "fr": "Les annonces publiées au nom de cette entreprise apparaîtront ici."
+  },
+  {
+    "key": "businesses.setup.steps.identity",
+    "fr": "Identite"
+  },
+  {
+    "key": "businesses.setup.steps.services",
+    "fr": "Services"
+  },
+  {
+    "key": "businesses.setup.preview.title",
+    "fr": "Apercu de votre fiche"
+  },
+  {
+    "key": "businesses.setup.preview.republish",
+    "fr": "Republier annuaire"
+  },
+  {
+    "key": "businesses.setup.preview.companyNamePlaceholder",
+    "fr": "Nom de l entreprise"
+  },
+  {
+    "key": "businesses.setup.preview.qrAlt",
+    "fr": "QR code apercu"
+  },
+  {
+    "key": "businesses.setup.preview.logoAlt",
+    "fr": "Logo"
+  },
+  {
+    "key": "businesses.setup.preview.presentationPlaceholder",
+    "fr": "Votre presentation apparaitra ici."
+  },
+  {
+    "key": "businesses.setup.preview.cityRussia",
+    "fr": "{city}, Russie"
+  },
+  {
+    "key": "businesses.setup.preview.cityDotRussia",
+    "fr": "{city} · Russie"
+  },
+  {
+    "key": "businesses.setup.preview.reviewsZero",
+    "fr": "0 avis"
+  },
+  {
+    "key": "businesses.setup.preview.visibleAfterValidation",
+    "fr": "Votre fiche sera visible apres validation"
+  },
+  {
+    "key": "businesses.setup.eyebrow",
+    "fr": "Espace entreprise"
+  },
+  {
+    "key": "businesses.setup.title.edit",
+    "fr": "Modifier mon entreprise"
+  },
+  {
+    "key": "businesses.setup.title.create",
+    "fr": "Creer mon entreprise"
+  },
+  {
+    "key": "businesses.setup.description",
+    "fr": "Parcours en plusieurs etapes pour configurer votre activite, vos contacts en Russie et vos services."
+  },
+  {
+    "key": "businesses.setup.validationAlertTitle",
+    "fr": "Validation requise"
+  },
+  {
+    "key": "businesses.setup.validationAlertBody",
+    "fr": "Votre entreprise reste invisible dans l annuaire jusqu a confirmation par un administrateur."
+  },
+  {
+    "key": "businesses.setup.submitForValidation",
+    "fr": "Envoyer pour validation"
+  },
+  {
+    "key": "businesses.setup.toast.logoAddedTitle",
+    "fr": "Logo ajouté"
+  },
+  {
+    "key": "businesses.setup.toast.logoAddedBody",
+    "fr": "Le logo de l’entreprise a été envoyé."
+  },
+  {
+    "key": "businesses.setup.toast.logoFailedTitle",
+    "fr": "Logo non envoyé"
+  },
+  {
+    "key": "businesses.setup.toast.logoFailedBody",
+    "fr": "Le logo n'a pas pu être envoyé."
+  },
+  {
+    "key": "businesses.setup.toast.bannerAddedTitle",
+    "fr": "Bannière ajoutée"
+  },
+  {
+    "key": "businesses.setup.toast.bannerAddedBody",
+    "fr": "La bannière de l’entreprise a été envoyée."
+  },
+  {
+    "key": "businesses.setup.toast.bannerFailedTitle",
+    "fr": "Bannière non envoyée"
+  },
+  {
+    "key": "businesses.setup.toast.bannerFailedBody",
+    "fr": "La bannière n'a pas pu être envoyée."
+  },
+  {
+    "key": "businesses.setup.identity.section",
+    "fr": "Identite de l entreprise"
+  },
+  {
+    "key": "businesses.setup.identity.sectionHint",
+    "fr": "Le nom public qui apparaitra dans l annuaire MOXT."
+  },
+  {
+    "key": "businesses.setup.identity.name",
+    "fr": "Nom public de l'entreprise"
+  },
+  {
+    "key": "businesses.setup.identity.namePlaceholder",
+    "fr": "Ex : Koudjo Transfer, Afrik Logistique..."
+  },
+  {
+    "key": "businesses.setup.identity.domainSection",
+    "fr": "Domaine principal"
+  },
+  {
+    "key": "businesses.setup.identity.domainHint",
+    "fr": "Choisissez le coeur de votre activite. Cela definit vos modules et votre positionnement."
+  },
+  {
+    "key": "businesses.setup.identity.secondary",
+    "fr": "Activite secondaire (facultatif)"
+  },
+  {
+    "key": "businesses.setup.identity.secondaryNone",
+    "fr": "Aucune activite secondaire"
+  },
+  {
+    "key": "businesses.setup.identity.visualSection",
+    "fr": "Identite visuelle"
+  },
+  {
+    "key": "businesses.setup.identity.visualHint",
+    "fr": "Logo et banniere affiches sur votre fiche publique."
+  },
+  {
+    "key": "businesses.setup.identity.logo",
+    "fr": "Logo"
+  },
+  {
+    "key": "businesses.setup.identity.changeLogo",
+    "fr": "Changer le logo"
+  },
+  {
+    "key": "businesses.setup.identity.addLogo",
+    "fr": "Ajouter un logo"
+  },
+  {
+    "key": "businesses.setup.identity.banner",
+    "fr": "Banniere de fond"
+  },
+  {
+    "key": "businesses.setup.identity.bannerAlt",
+    "fr": "Banniere"
+  },
+  {
+    "key": "businesses.setup.identity.changeBanner",
+    "fr": "Changer la banniere"
+  },
+  {
+    "key": "businesses.setup.identity.addBanner",
+    "fr": "Ajouter une banniere"
+  },
+  {
+    "key": "businesses.setup.contact.locationHint",
+    "fr": "Ville et adresse de votre activite en Russie."
+  },
+  {
+    "key": "businesses.setup.contact.cityInRussia",
+    "fr": "Ville en Russie"
+  },
+  {
+    "key": "businesses.setup.contact.fullAddress",
+    "fr": "Adresse complete"
+  },
+  {
+    "key": "businesses.setup.contact.addressPlaceholder",
+    "fr": "Rue, immeuble, metro ou repere"
+  },
+  {
+    "key": "businesses.setup.contact.serviceZones",
+    "fr": "Zones desservies"
+  },
+  {
+    "key": "businesses.setup.contact.serviceZonesPlaceholder",
+    "fr": "Moscou, Saint-Petersbourg..."
+  },
+  {
+    "key": "businesses.setup.contact.coordsSection",
+    "fr": "Coordonnees"
+  },
+  {
+    "key": "businesses.setup.contact.coordsHint",
+    "fr": "Moyens de contact visibles sur votre fiche publique."
+  },
+  {
+    "key": "businesses.setup.contact.russianPhone",
+    "fr": "Numero russe"
+  },
+  {
+    "key": "businesses.setup.contact.useAccountPhone",
+    "fr": "Utiliser mon numero du compte"
+  },
+  {
+    "key": "businesses.setup.contact.originPhone",
+    "fr": "Numero du pays d origine"
+  },
+  {
+    "key": "businesses.setup.contact.professionalEmail",
+    "fr": "Email professionnel"
+  },
+  {
+    "key": "businesses.setup.contact.emailPlaceholder",
+    "fr": "contact@monentreprise.com"
+  },
+  {
+    "key": "businesses.setup.contact.telegram",
+    "fr": "Telegram"
+  },
+  {
+    "key": "businesses.setup.contact.telegramPlaceholder",
+    "fr": "@username"
+  },
+  {
+    "key": "businesses.setup.contact.website",
+    "fr": "Site web"
+  },
+  {
+    "key": "businesses.setup.contact.websitePlaceholder",
+    "fr": "https://..."
+  },
+  {
+    "key": "businesses.setup.contact.presentationSection",
+    "fr": "Presentation"
+  },
+  {
+    "key": "businesses.setup.contact.presentationHint",
+    "fr": "Decrivez votre entreprise, votre specialite et votre zone d intervention. Cliquez sur l'eclair pour generer un texte a partir de vos informations."
+  },
+  {
+    "key": "businesses.setup.contact.generateAria",
+    "fr": "Generer automatiquement la presentation"
+  },
+  {
+    "key": "businesses.setup.contact.about",
+    "fr": "A propos de votre entreprise"
+  },
+  {
+    "key": "businesses.setup.contact.aboutPlaceholder",
+    "fr": "Nous proposons... Notre specialite est... Nous intervenons sur..."
+  },
+  {
+    "key": "businesses.setup.services.modulesSection",
+    "fr": "Modules actives"
+  },
+  {
+    "key": "businesses.setup.services.modulesHint",
+    "fr": "Definis automatiquement selon votre domaine principal."
+  },
+  {
+    "key": "businesses.setup.services.selectDomainFirst",
+    "fr": "Selectionnez un domaine principal (etape 1) pour activer les modules."
+  },
+  {
+    "key": "businesses.setup.services.transferSection",
+    "fr": "Configuration transfert"
+  },
+  {
+    "key": "businesses.setup.services.transferHint",
+    "fr": "Les devises et reseaux suivent le pays d origine du createur de l entreprise."
+  },
+  {
+    "key": "businesses.setup.services.feePercent",
+    "fr": "Frais (%)"
+  },
+  {
+    "key": "businesses.setup.services.averageDelay",
+    "fr": "Delai moyen"
+  },
+  {
+    "key": "businesses.setup.services.averageDelayPlaceholder",
+    "fr": "Ex : 30-60 min"
+  },
+  {
+    "key": "businesses.setup.services.currencies",
+    "fr": "Devises echangees"
+  },
+  {
+    "key": "businesses.setup.services.networksTitle",
+    "fr": "Reseaux africains et banques russes"
+  },
+  {
+    "key": "businesses.setup.services.networksHint",
+    "fr": "Cochez les modes de paiement que vous acceptez des deux cotes."
+  },
+  {
+    "key": "businesses.setup.services.africanNetworks",
+    "fr": "Reseaux africains"
+  },
+  {
+    "key": "businesses.setup.services.russianBanks",
+    "fr": "Banques russes"
+  },
+  {
+    "key": "businesses.setup.review.identity",
+    "fr": "Identite"
+  },
+  {
+    "key": "businesses.setup.review.russianPhone",
+    "fr": "Telephone russe"
+  },
+  {
+    "key": "businesses.setup.review.originPhone",
+    "fr": "Telephone d origine"
+  },
+  {
+    "key": "businesses.setup.review.services",
+    "fr": "Services"
+  },
+  {
+    "key": "businesses.setup.review.modules",
+    "fr": "Modules"
+  },
+  {
+    "key": "businesses.setup.review.none",
+    "fr": "Aucun"
+  },
+  {
+    "key": "businesses.setup.review.currencies",
+    "fr": "Devises"
+  },
+  {
+    "key": "businesses.setup.review.networksBanks",
+    "fr": "Reseaux & banques"
+  },
+  {
+    "key": "businesses.setup.review.readyTitle",
+    "fr": "Pret a envoyer pour validation"
+  },
+  {
+    "key": "businesses.setup.review.readyBody",
+    "fr": "Votre fiche sera examinee par un administrateur. Points forts mis en avant : {spotlight}."
+  },
+  {
+    "key": "businesses.setup.success.congrats",
+    "fr": "Félicitations"
+  },
+  {
+    "key": "businesses.setup.success.title",
+    "fr": "Votre entreprise est créée"
+  },
+  {
+    "key": "businesses.setup.success.body",
+    "fr": "est enregistrée sur MOXT. Notre équipe va valider votre fiche avant publication dans l'annuaire — vous pouvez déjà préparer votre espace pro."
+  },
+  {
+    "key": "businesses.setup.success.recap",
+    "fr": "Récapitulatif"
+  },
+  {
+    "key": "businesses.setup.success.nextSteps",
+    "fr": "Prochaines étapes"
+  },
+  {
+    "key": "businesses.setup.success.stepValidation",
+    "fr": "Validation administrateur (24–48 h en moyenne)"
+  },
+  {
+    "key": "businesses.setup.success.stepSpotlight",
+    "fr": "Points forts : {spotlight}"
+  },
+  {
+    "key": "businesses.setup.success.stepComplete",
+    "fr": "Complétez votre espace pro pour accueillir vos premiers clients"
+  },
+  {
+    "key": "businesses.setup.success.goProfessional",
+    "fr": "Accéder à mon espace entreprise"
+  },
+  {
+    "key": "businesses.setup.success.republish",
+    "fr": "Republier dans l'annuaire"
+  },
+  {
+    "key": "businesses.setup.defaults.serviceZones",
+    "fr": "Moscou et villes proches"
+  },
+  {
+    "key": "businesses.setup.defaults.averageDelay",
+    "fr": "30-60 min"
+  },
+  {
+    "key": "businesses.verification.completeTitle",
+    "fr": "Entreprise complète et vérifiée"
+  },
+  {
+    "key": "businesses.verification.completeBody",
+    "fr": "Fiche renseignée à 100 % et identité entreprise validée par MOXT."
+  },
+  {
+    "key": "businesses.verification.compactTitle",
+    "fr": "Vérification · {percent}%"
+  },
+  {
+    "key": "businesses.verification.compactBody",
+    "fr": "{count} élément(s) restant(s) : {items}."
+  },
+  {
+    "key": "businesses.verification.title",
+    "fr": "Progression de vérification"
+  },
+  {
+    "key": "businesses.verification.progressHint",
+    "fr": "{complete} sur {total} critères complétés · il reste {missing} pour atteindre 100 %."
+  },
+  {
+    "key": "businesses.verification.missingHeading",
+    "fr": "Il vous manque"
+  },
+  {
+    "key": "businesses.verification.proSpace",
+    "fr": "Espace pro"
+  },
+  {
+    "key": "businesses.verification.complete",
+    "fr": "Compléter"
+  },
+  {
+    "key": "businesses.verification.seeValidated",
+    "fr": "Voir les {count} critère(s) déjà validé(s)"
+  },
+  {
+    "key": "businesses.visibility.title",
+    "fr": "Visibilité des publications"
+  },
+  {
+    "key": "businesses.visibility.description",
+    "fr": "Contrôle qui peut consulter la fiche publique et les publications de votre entreprise. Enregistré sur MOXT et synchronisé entre vos appareils."
+  },
+  {
+    "key": "businesses.visibility.hint",
+    "fr": "Les visiteurs non autorisés verront un message d’accès restreint."
+  },
+  {
+    "key": "businesses.subscription.followTitle",
+    "fr": "Suivre cette entreprise"
+  },
+  {
+    "key": "businesses.subscription.followBody",
+    "fr": "Abonnez-vous pour ne pas manquer les annonces et publications de {name}. Vous choisissez le niveau de notifications après l'abonnement."
+  },
+  {
+    "key": "businesses.subscription.benefit.priority",
+    "fr": "Priorité dans vos listes marketplace, colis, jobs et événements"
+  },
+  {
+    "key": "businesses.subscription.benefit.notifications",
+    "fr": "Notifications configurables (toutes, importantes ou sourdine)"
+  },
+  {
+    "key": "businesses.subscription.benefit.access",
+    "fr": "Accès rapide aux nouvelles publications de cette entreprise"
+  },
+  {
+    "key": "businesses.subscription.followedContent",
+    "fr": "Contenus suivis"
+  },
+  {
+    "key": "businesses.subscription.noModules",
+    "fr": "Les modules activés par l'entreprise déterminent les contenus notifiés."
+  },
+  {
+    "key": "businesses.subscription.notifyOptions",
+    "fr": "Options de notification"
+  },
+  {
+    "key": "businesses.subscription.content.listing",
+    "fr": "Annonces marketplace"
+  },
+  {
+    "key": "businesses.subscription.content.parcel",
+    "fr": "Colis disponibles"
+  },
+  {
+    "key": "businesses.subscription.content.job",
+    "fr": "Offres d'emploi"
+  },
+  {
+    "key": "businesses.subscription.content.post",
+    "fr": "Publications communauté"
+  },
+  {
+    "key": "businesses.subscription.ownerTitle",
+    "fr": "Espace professionnel — abonnés"
+  },
+  {
+    "key": "businesses.subscription.ownerCount",
+    "fr": "{count} membre(s) suivent actuellement votre entreprise."
+  },
+  {
+    "key": "businesses.subscription.ownerEmpty",
+    "fr": "Aucun abonné pour le moment — partagez votre fiche pour développer votre audience."
+  },
+  {
+    "key": "businesses.subscription.manage",
+    "fr": "Gérer les abonnés"
+  }
+]

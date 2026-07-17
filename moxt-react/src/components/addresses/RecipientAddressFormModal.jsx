@@ -4,13 +4,25 @@ import { Input } from '../ui/Input'
 import { Modal } from '../ui/Modal'
 import { Select } from '../ui/Select'
 import { IdentityCarousel } from './IdentityCarousel'
+import { useLanguage } from '../../contexts/useLanguage'
+import { phase3Text } from '../../i18n/phase3I18n'
 import {
-  IDENTITY_TYPE_LABELS,
   IDENTITY_TYPES,
-  OWNER_TYPE_LABELS,
   OWNER_TYPES,
 } from '../../types/identityEnums'
 import { validateRecipientAddressForm } from '../../types/carrierAddressValidation'
+
+const DOC_LABEL_KEYS = {
+  PASSEPORT: 'addresses.doc.passport',
+  CNI: 'addresses.doc.idCard',
+  PERMIS: 'addresses.doc.license',
+  AUTRE: 'addresses.doc.other',
+}
+
+const HOLDER_LABEL_KEYS = {
+  PERSON: 'addresses.holder.person',
+  COMPANY: 'addresses.holder.company',
+}
 
 function emptyIdentity() {
   return {
@@ -53,6 +65,8 @@ export function RecipientAddressFormModal({
   initial,
   identityProfiles = [],
 }) {
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const [form, setForm] = useState(emptyForm())
   const [errors, setErrors] = useState({})
   const [selectedProfileId, setSelectedProfileId] = useState(null)
@@ -142,20 +156,24 @@ export function RecipientAddressFormModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={initial ? 'Modifier adresse destinataire' : 'Nouvelle adresse destinataire'}
+      title={
+        initial
+          ? p3('addresses.recipient.modal.edit')
+          : p3('addresses.recipient.modal.create')
+      }
       size="large"
     >
       <form className="grid gap-4" onSubmit={handleSubmit} noValidate>
         <Input
           id="rcp-label"
-          label="Libellé"
+          label={p3('addresses.recipient.label')}
           value={form.label}
           onChange={(e) => setField('label', e.target.value)}
           error={errors.label}
         />
         <Select
           id="rcp-ownerType"
-          label="Type de titulaire"
+          label={p3('addresses.identity.holderType')}
           value={form.ownerType}
           onChange={(e) => {
             const ownerType = e.target.value
@@ -169,9 +187,9 @@ export function RecipientAddressFormModal({
             }))
           }}
         >
-          {OWNER_TYPES.map((t) => (
-            <option key={t} value={t}>
-              {OWNER_TYPE_LABELS[t]}
+          {OWNER_TYPES.map((type) => (
+            <option key={type} value={type}>
+              {p3(HOLDER_LABEL_KEYS[type])}
             </option>
           ))}
         </Select>
@@ -179,7 +197,7 @@ export function RecipientAddressFormModal({
         {filteredProfiles.length ? (
           <div className="grid gap-2">
             <p className="text-xs font-bold uppercase text-[var(--app-text-muted)]">
-              Profil enregistré (optionnel)
+              {p3('addresses.recipient.savedProfile')}
             </p>
             <IdentityCarousel
               items={filteredProfiles}
@@ -192,14 +210,14 @@ export function RecipientAddressFormModal({
         <div className="grid gap-3 sm:grid-cols-2">
           <Input
             id="rcp-country"
-            label="Pays"
+            label={p3('common.country')}
             value={form.country}
             onChange={(e) => setField('country', e.target.value)}
             error={errors.country}
           />
           <Input
             id="rcp-city"
-            label="Ville"
+            label={p3('common.city')}
             value={form.city}
             onChange={(e) => setField('city', e.target.value)}
             error={errors.city}
@@ -207,7 +225,7 @@ export function RecipientAddressFormModal({
         </div>
         <Input
           id="rcp-address"
-          label="Adresse"
+          label={p3('addresses.recipient.address')}
           value={form.addressLine}
           onChange={(e) => setField('addressLine', e.target.value)}
           error={errors.addressLine}
@@ -215,14 +233,14 @@ export function RecipientAddressFormModal({
         <div className="grid gap-3 sm:grid-cols-2">
           <Input
             id="rcp-phone"
-            label="Téléphone"
+            label={p3('common.phone')}
             value={form.phone}
             onChange={(e) => setField('phone', e.target.value)}
             error={errors.phone}
           />
           <Input
             id="rcp-email"
-            label="E-mail"
+            label={p3('addresses.recipient.email')}
             type="email"
             value={form.email}
             onChange={(e) => setField('email', e.target.value)}
@@ -231,17 +249,17 @@ export function RecipientAddressFormModal({
         </div>
 
         <fieldset className="grid gap-3 rounded-2xl border border-[var(--app-border)] p-4">
-          <legend className="px-1 text-sm font-black">Identité du destinataire</legend>
+          <legend className="px-1 text-sm font-black">{p3('addresses.recipient.identitySection')}</legend>
           {variant === 'person' ? (
             <>
               <Input
-                label="Prénoms"
+                label={p3('addresses.identity.firstNames')}
                 value={form.identity.firstNames}
                 onChange={(e) => setIdentity({ firstNames: e.target.value })}
                 error={identityFieldErrors.firstNames}
               />
               <Input
-                label="Nom"
+                label={p3('addresses.identity.lastName')}
                 value={form.identity.lastName}
                 onChange={(e) => setIdentity({ lastName: e.target.value })}
                 error={identityFieldErrors.lastName}
@@ -249,46 +267,46 @@ export function RecipientAddressFormModal({
             </>
           ) : (
             <Input
-              label="Raison sociale"
+              label={p3('addresses.identity.companyName')}
               value={form.identity.companyName}
               onChange={(e) => setIdentity({ companyName: e.target.value })}
               error={identityFieldErrors.companyName}
             />
           )}
           <Select
-            label="Type de pièce"
+            label={p3('addresses.identity.docType')}
             value={form.identity.idType}
             onChange={(e) => setIdentity({ idType: e.target.value })}
             error={identityFieldErrors.idType}
           >
-            {IDENTITY_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {IDENTITY_TYPE_LABELS[t]}
+            {IDENTITY_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {p3(DOC_LABEL_KEYS[type])}
               </option>
             ))}
           </Select>
           <Input
-            label="N° pièce"
+            label={p3('addresses.recipient.docNumber')}
             value={form.identity.passportNumber}
             onChange={(e) => setIdentity({ passportNumber: e.target.value.toUpperCase() })}
             error={identityFieldErrors.passportNumber}
           />
           <Input
-            label="Délivré par"
+            label={p3('addresses.identity.issuedBy')}
             value={form.identity.issuedBy}
             onChange={(e) => setIdentity({ issuedBy: e.target.value })}
             error={identityFieldErrors.issuedBy}
           />
           <div className="grid gap-3 sm:grid-cols-2">
             <Input
-              label="Délivrance"
+              label={p3('addresses.recipient.issuedAt')}
               type="date"
               value={form.identity.issuedAt}
               onChange={(e) => setIdentity({ issuedAt: e.target.value })}
               error={identityFieldErrors.issuedAt}
             />
             <Input
-              label="Expiration"
+              label={p3('addresses.recipient.expiresAt')}
               type="date"
               value={form.identity.expiresAt}
               onChange={(e) => setIdentity({ expiresAt: e.target.value })}
@@ -299,9 +317,9 @@ export function RecipientAddressFormModal({
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Annuler
+            {p3('common.cancel')}
           </Button>
-          <Button type="submit">Enregistrer</Button>
+          <Button type="submit">{p3('common.save')}</Button>
         </div>
       </form>
     </Modal>

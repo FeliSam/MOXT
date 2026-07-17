@@ -16,6 +16,7 @@ import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 import { REVIEW_DISPUTE_STATUS } from '@moxt/shared/utils/reviewUtils.js'
 import { adminDetailLink, normalizeAdminKind } from './adminLinkUtils'
 import { formatDate, formatMoney } from '../transfers/transferUtils'
+import { adminText } from './adminI18n'
 
 export function buildQueues(state) {
   const accountDeletions = (state.account.deletionRequests || [])
@@ -178,98 +179,211 @@ export function detailIconFor(kind) {
   return DETAIL_ICONS[normalizeAdminKind(kind)] || FiEye
 }
 
-export function detailLabelFor(kind) {
-  return {
-    transfer: 'Transfert',
-    support: 'Ticket support',
-    user: 'Utilisateur',
-    verification: 'Verification',
-    dispute: 'Litige',
-    review: 'Avis',
-    report: 'Signalement',
-    businesses: 'Entreprise',
-    listings: 'Annonce',
-    jobs: 'Job',
-    events: 'Evenement',
-    parcels: 'Colis',
-    audit: 'Log audit',
-  }[normalizeAdminKind(kind)] || 'Detail'
+const DETAIL_KIND_KEYS = {
+  transfer: 'admin.detail.kind.transfer',
+  support: 'admin.detail.kind.support',
+  user: 'admin.detail.kind.user',
+  verification: 'admin.detail.kind.verification',
+  dispute: 'admin.detail.kind.dispute',
+  review: 'admin.detail.kind.review',
+  report: 'admin.detail.kind.report',
+  businesses: 'admin.detail.kind.businesses',
+  listings: 'admin.detail.kind.listings',
+  jobs: 'admin.detail.kind.jobs',
+  events: 'admin.detail.kind.events',
+  parcels: 'admin.detail.kind.parcels',
+  audit: 'admin.detail.kind.audit',
 }
 
-export function detailDescriptionFor(kind, item) {
+export function detailLabelFor(kind, t) {
+  const key = DETAIL_KIND_KEYS[normalizeAdminKind(kind)] || 'admin.detail.kind.default'
+  return adminText(t, key)
+}
+
+export function detailDescriptionFor(kind, item, t) {
   switch (kind) {
     case 'transfer':
-      return `${item.exchanger?.name || 'Partenaire'} · ${item.status}`
+      return adminText(t, 'admin.detail.desc.transfer', {
+        partner: item.exchanger?.name || adminText(t, 'admin.common.partnerFallback'),
+        status: item.status,
+      })
     case 'support':
-      return `${item.userName} · priorite ${item.priority} · ${item.status}`
+      return adminText(t, 'admin.detail.desc.support', {
+        name: item.userName,
+        priority: item.priority,
+        status: item.status,
+      })
     case 'user':
-      return `${item.email} · ${item.role}`
+      return adminText(t, 'admin.detail.desc.user', {
+        email: item.email,
+        role: item.role,
+      })
     case 'verification':
-      return `${item.userName || item.userId} · niveau ${item.level} · ${item.status}`
+      return adminText(t, 'admin.detail.desc.verification', {
+        name: item.userName || item.userId,
+        level: item.level,
+        status: item.status,
+      })
     case 'businesses':
-      return `${item.city} · ${item.services?.join(', ') || 'Services a confirmer'}`
+      return adminText(t, 'admin.detail.desc.businesses', {
+        city: item.city,
+        services: item.services?.join(', ') || adminText(t, 'admin.common.servicesFallback'),
+      })
     default:
       return item.description || item.reason || item.comment || item.action || item.id
   }
 }
 
-export function buildDetailFacts(kind, item) {
+export function buildDetailFacts(kind, item, t) {
+  const f = (key) => adminText(t, key)
   switch (normalizeAdminKind(kind)) {
     case 'transfer':
-      return [['Statut', item.status], ['Envoye', formatMoney(item.amountSent, item.currencyFrom)], ['Recu', formatMoney(item.amountReceived, item.currencyTo)], ['Partenaire', item.exchanger?.name || '—'], ['Date', formatDate(item.createdAt)]]
+      return [
+        [f('admin.facts.status'), item.status],
+        [f('admin.facts.sent'), formatMoney(item.amountSent, item.currencyFrom)],
+        [f('admin.facts.received'), formatMoney(item.amountReceived, item.currencyTo)],
+        [f('admin.facts.partner'), item.exchanger?.name || '—'],
+        [f('admin.facts.date'), formatDate(item.createdAt)],
+      ]
     case 'support':
-      return [['Priorite', item.priority], ['Statut', item.status], ['Demandeur', item.userName], ['Messages', item.messages?.length || 0], ['Mis a jour', formatDate(item.updatedAt || item.createdAt)]]
+      return [
+        [f('admin.facts.priority'), item.priority],
+        [f('admin.facts.status'), item.status],
+        [f('admin.facts.requester'), item.userName],
+        [f('admin.facts.messages'), item.messages?.length || 0],
+        [f('admin.facts.updatedAt'), formatDate(item.updatedAt || item.createdAt)],
+      ]
     case 'user':
-      return [['Role', item.role], ['Statut', item.status], ['Ville', item.city || '—'], ['Tel', item.phone || '—'], ['Cree le', formatDate(item.createdAt)]]
+      return [
+        [f('admin.facts.role'), item.role],
+        [f('admin.facts.status'), item.status],
+        [f('admin.facts.city'), item.city || '—'],
+        [f('admin.facts.phone'), item.phone || '—'],
+        [f('admin.facts.createdAt'), formatDate(item.createdAt)],
+      ]
     case 'businesses':
-      return [['Statut', item.status], ['Ville', item.city], ['Tel', item.phone], ['Services', item.services?.join(', ') || '—'], ['Mis a jour', formatDate(item.updatedAt || item.createdAt)]]
+      return [
+        [f('admin.facts.status'), item.status],
+        [f('admin.facts.city'), item.city],
+        [f('admin.facts.phone'), item.phone],
+        [f('admin.facts.services'), item.services?.join(', ') || '—'],
+        [f('admin.facts.updatedAt'), formatDate(item.updatedAt || item.createdAt)],
+      ]
     case 'listings':
-      return [['Prix', item.price ? formatMoney(item.price, item.currency) : '—'], ['Ville', item.city || '—'], ['Categorie', item.category || '—'], ['Etat', item.condition || '—'], ['Statut', item.status]]
+      return [
+        [f('admin.facts.price'), item.price ? formatMoney(item.price, item.currency) : '—'],
+        [f('admin.facts.city'), item.city || '—'],
+        [f('admin.facts.category'), item.category || '—'],
+        [f('admin.facts.condition'), item.condition || '—'],
+        [f('admin.facts.status'), item.status],
+      ]
     case 'jobs':
-      return [['Salaire', item.salary || '—'], ['Lieu', item.location || '—'], ['Secteur', item.sector || '—'], ['Contrat', item.contractType || '—'], ['Statut', item.status]]
+      return [
+        [f('admin.facts.salary'), item.salary || '—'],
+        [f('admin.facts.location'), item.location || '—'],
+        [f('admin.facts.sector'), item.sector || '—'],
+        [f('admin.facts.contract'), item.contractType || '—'],
+        [f('admin.facts.status'), item.status],
+      ]
     case 'events':
-      return [['Date', formatDate(item.startAt)], ['Lieu', `${item.venue || ''} ${item.city || ''}`.trim()], ['Capacite', item.capacity || '—'], ['Prix', item.price ? formatMoney(item.price, item.currency) : 'Gratuit'], ['Statut', item.status]]
+      return [
+        [f('admin.facts.date'), formatDate(item.startAt)],
+        [f('admin.facts.location'), `${item.venue || ''} ${item.city || ''}`.trim()],
+        [f('admin.facts.capacity'), item.capacity || '—'],
+        [f('admin.facts.price'), item.price ? formatMoney(item.price, item.currency) : f('admin.facts.free')],
+        [f('admin.facts.status'), item.status],
+      ]
     case 'parcels':
-      return [['Trajet', `${item.origin} -> ${item.destination}`], ['Depart', item.departureDate || '—'], ['Capacite', `${item.capacityKg || 0} kg`], ['Prix/kg', formatMoney(item.pricePerKg, item.currency)], ['Statut', item.effectiveStatus || item.status], ['Distribution', item.distributionDate || '—']]
+      return [
+        [f('admin.facts.route'), `${item.origin} -> ${item.destination}`],
+        [f('admin.facts.departure'), item.departureDate || '—'],
+        [f('admin.facts.capacity'), `${item.capacityKg || 0} kg`],
+        [f('admin.facts.pricePerKg'), formatMoney(item.pricePerKg, item.currency)],
+        [f('admin.facts.status'), item.effectiveStatus || item.status],
+        [f('admin.facts.distribution'), item.distributionDate || '—'],
+      ]
     case 'verification':
       return [
-        ['Niveau', item.level],
-        ['Statut', item.status],
-        ['Utilisateur', item.userName || item.userId],
-        ['Email', item.userEmail || '—'],
-        ['Documents', item.documentIds?.length || 0],
-        ['Note', item.note || '—'],
-        ['Motif review', item.reviewNote || '—'],
-        ['Cree le', formatDate(item.createdAt)],
-        ['Revu le', item.reviewedAt ? formatDate(item.reviewedAt) : '—'],
+        [f('admin.facts.level'), item.level],
+        [f('admin.facts.status'), item.status],
+        [f('admin.facts.user'), item.userName || item.userId],
+        [f('admin.facts.email'), item.userEmail || '—'],
+        [f('admin.facts.documents'), item.documentIds?.length || 0],
+        [f('admin.facts.note'), item.note || '—'],
+        [f('admin.facts.reviewReason'), item.reviewNote || '—'],
+        [f('admin.facts.createdAt'), formatDate(item.createdAt)],
+        [f('admin.facts.reviewedAt'), item.reviewedAt ? formatDate(item.reviewedAt) : '—'],
       ]
     case 'dispute':
-      return [['Statut', item.status], ['Type', item.relatedType], ['Reference', item.relatedId], ['Preuves', item.evidence?.length || 0], ['Cree le', formatDate(item.createdAt)]]
+      return [
+        [f('admin.facts.status'), item.status],
+        [f('admin.facts.type'), item.relatedType],
+        [f('admin.facts.reference'), item.relatedId],
+        [f('admin.facts.evidence'), item.evidence?.length || 0],
+        [f('admin.facts.createdAt'), formatDate(item.createdAt)],
+      ]
     case 'review':
-      return [['Note', `${item.rating || '—'}/5`], ['Cible', `${item.targetType || '—'}`], ['Auteur', item.authorName || item.authorId || '—'], ['Statut', item.status], ['Cree le', formatDate(item.createdAt)]]
+      return [
+        [f('admin.facts.note'), `${item.rating || '—'}/5`],
+        [f('admin.facts.target'), `${item.targetType || '—'}`],
+        [f('admin.facts.author'), item.authorName || item.authorId || '—'],
+        [f('admin.facts.status'), item.status],
+        [f('admin.facts.createdAt'), formatDate(item.createdAt)],
+      ]
     case 'report':
-      return [['Type', item.reportType], ['Reference', item.relatedId], ['Statut', item.status], ['Raison', item.reason || '—'], ['Preuve', item.evidenceUrl ? 'Oui' : 'Non'], ['Reporter', item.reporterId || '—'], ['Cree le', formatDate(item.createdAt)]]
+      return [
+        [f('admin.facts.type'), item.reportType],
+        [f('admin.facts.reference'), item.relatedId],
+        [f('admin.facts.status'), item.status],
+        [f('admin.facts.note'), item.reason || '—'],
+        [f('admin.facts.evidence'), item.evidenceUrl ? f('admin.facts.yes') : f('admin.facts.no')],
+        [f('admin.facts.reporter'), item.reporterId || '—'],
+        [f('admin.facts.createdAt'), formatDate(item.createdAt)],
+      ]
     default:
-      return [['ID', item.id], ['Statut', item.status || '—']]
+      return [
+        [f('admin.facts.id'), item.id],
+        [f('admin.facts.status'), item.status || '—'],
+      ]
   }
 }
 
-export function contentSubtitle(contentView, item) {
+export function contentSubtitle(contentView, item, t) {
+  const russia = adminText(t, 'admin.common.russiaFallback')
   switch (contentView) {
     case 'businesses':
-      return `${item.city || 'Russie'} · ${item.status}`
+      return adminText(t, 'admin.contentSubtitle.businesses', {
+        city: item.city || russia,
+        status: item.status,
+      })
     case 'listings':
-      return `${item.city || 'Russie'} · ${item.price ? formatMoney(item.price, item.currency) : '—'}`
+      return adminText(t, 'admin.contentSubtitle.listings', {
+        city: item.city || russia,
+        price: item.price ? formatMoney(item.price, item.currency) : '—',
+      })
     case 'jobs':
-      return `${item.location || 'Russie'} · ${item.salary || '—'}`
+      return adminText(t, 'admin.contentSubtitle.jobs', {
+        location: item.location || russia,
+        salary: item.salary || '—',
+      })
     case 'events':
-      return `${item.city || 'Russie'} · ${formatDate(item.startAt)}`
+      return adminText(t, 'admin.contentSubtitle.events', {
+        city: item.city || russia,
+        date: formatDate(item.startAt),
+      })
     case 'parcels':
-      return `${item.origin} -> ${item.destination} · ${item.effectiveStatus || item.status || '—'}`
+      return adminText(t, 'admin.contentSubtitle.parcels', {
+        origin: item.origin,
+        destination: item.destination,
+        status: item.effectiveStatus || item.status || '—',
+      })
     case 'reports':
-      return `${item.reportType} · ${item.status}`
+      return adminText(t, 'admin.contentSubtitle.reports', {
+        type: item.reportType,
+        status: item.status,
+      })
     default:
-      return item.status || '—'
+      return adminText(t, 'admin.contentSubtitle.default', { status: item.status || '—' })
   }
 }
 

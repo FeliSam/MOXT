@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { translateAuthError } from './translateAuthError.js'
+import { OTP_RESEND_COOLDOWN_SECONDS } from './otpCooldown.js'
 
 describe('translateAuthError', () => {
   it('maps phone signup 500 errors to SMS messages, not email', () => {
@@ -74,12 +75,15 @@ describe('translateAuthError', () => {
   })
 
   it('maps Supabase security cooldown to an explicit wait message', () => {
-    expect(
-      translateAuthError(
-        { message: 'For security purposes, you can only request this after 60 seconds.' },
-        { channel: 'phone' },
-      ),
-    ).toMatch(/Patientez au moins \d+ secondes/i)
+    const result = translateAuthError(
+      { message: 'For security purposes, you can only request this after 60 seconds.' },
+      { channel: 'phone' },
+    )
+    if (OTP_RESEND_COOLDOWN_SECONDS > 0) {
+      expect(result).toMatch(/Patientez au moins \d+ secondes/i)
+    } else {
+      expect(result).toMatch(/Trop de tentatives/i)
+    }
   })
 
   it('never returns opaque generic for unrecognized phone-channel errors', () => {

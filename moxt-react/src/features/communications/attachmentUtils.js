@@ -1,3 +1,5 @@
+import { messagesText } from './messagesI18n'
+
 export const MAX_MESSAGE_IMAGES = 4
 
 /** Constant angular step between stacked images (degrees). */
@@ -40,26 +42,29 @@ export function attachmentImageSrcs(attachment) {
   return src ? [src] : []
 }
 
-export function attachmentPreviewLabel(attachment) {
+export function attachmentPreviewLabel(attachment, t) {
   if (!attachment) return ''
   if (isImageAttachment(attachment)) {
     const count = attachmentImageSrcs(attachment).length
-    if (count > 1) return `📷 ${count} photos`
-    return '📷 Photo'
+    if (count > 1) return messagesText(t, 'messages.attachment.photos', { count })
+    return messagesText(t, 'messages.attachment.photo')
   }
-  return `📎 ${attachment.name || 'Pièce jointe'}`
+  const name = attachment.name || messagesText(t, 'messages.attachment.fileFallback')
+  return messagesText(t, 'messages.attachment.file', { name })
 }
 
 /** Plain searchable label (no emoji) for conversation / thread filters. */
-export function attachmentSearchText(attachment) {
+export function attachmentSearchText(attachment, t) {
   if (!attachment) return ''
   const name = attachment.name || ''
   if (isImageAttachment(attachment)) {
     const count = attachmentImageSrcs(attachment).length
-    if (count > 1) return `${name} ${count} photos photo images`.trim()
-    return `${name} photo image`.trim()
+    if (count > 1) {
+      return `${name} ${messagesText(t, 'messages.attachment.searchPhotos', { count })}`.trim()
+    }
+    return `${name} ${messagesText(t, 'messages.attachment.searchPhoto')}`.trim()
   }
-  return name || 'pièce jointe'
+  return name || messagesText(t, 'messages.attachment.searchFileFallback')
 }
 
 export function isImageFile(file) {

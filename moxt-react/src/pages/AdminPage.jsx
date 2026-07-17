@@ -1,12 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { FiDownload } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { useSearchParams } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { PageHeader } from '../components/ui/PageHeader'
+import { useLanguage } from '../contexts/useLanguage'
 import { updateUserStatus } from '../features/administration/administrationSlice'
 import { ADMIN_VIEW_IDS, MAIN_VIEWS, CARD } from '../features/admin/adminConfig'
+import { adminOptionLabel, adminText } from '../features/admin/adminI18n'
 import { AdminAuditPanel } from '../features/admin/components/AdminAuditPanel'
 import { AdminContentPanel } from '../features/admin/components/AdminContentPanel'
 import { AdminDetailPanel } from '../features/admin/components/AdminDetailPanel'
@@ -28,9 +30,10 @@ function resolveAdminView(value) {
 
 export function AdminPage() {
   const dispatch = useDispatch()
+  const { t } = useLanguage()
   const admin = useSelector((v) => v.auth.user)
   const [searchParams, setSearchParams] = useSearchParams()
-  const [view, setView] = useState(() => resolveAdminView(searchParams.get('view')))
+  const view = resolveAdminView(searchParams.get('view'))
   const [contentView, setContentView] = useState('businesses')
   const [selected, setSelected] = useState(null)
   const [supportReply, setSupportReply] = useState('')
@@ -52,14 +55,8 @@ export function AdminPage() {
     allVerifications,
   } = useAdminPageData(query, statusFilter, contentView)
 
-  useEffect(() => {
-    const next = resolveAdminView(searchParams.get('view'))
-    setView(next)
-  }, [searchParams])
-
   function switchView(next) {
     const resolved = resolveAdminView(next)
-    setView(resolved)
     setSelected(null)
     setQuery('')
     setStatusFilter('all')
@@ -69,17 +66,19 @@ export function AdminPage() {
     setSearchParams(params, { replace: true })
   }
 
+  const confirmName = `${confirmUser?.firstName || ''} ${confirmUser?.lastName || ''}`.trim()
+
   return (
     <div className="grid gap-6">
       <SystemStatusBar metrics={metrics} queues={queues} />
 
       <PageHeader
-        eyebrow="Administration"
-        title="Centre de controle"
-        description="Superviser les transferts, contenus, comptes, validations et tickets."
+        eyebrow={adminText(t, 'admin.page.eyebrow')}
+        title={adminText(t, 'admin.page.title')}
+        description={adminText(t, 'admin.page.description')}
         actions={
           <Button variant="secondary" icon={FiDownload} onClick={() => exportSnapshot(state)}>
-            Exporter
+            {adminText(t, 'admin.page.export')}
           </Button>
         }
       />
@@ -98,7 +97,7 @@ export function AdminPage() {
                   active={view === item.id}
                   badge={badge}
                   icon={item.icon}
-                  label={item.label}
+                  label={adminOptionLabel(t, item)}
                   onClick={() => switchView(item.id)}
                 />
               )
@@ -192,11 +191,15 @@ export function AdminPage() {
 
       <ConfirmDialog
         open={Boolean(confirmUser)}
-        title={confirmUser?.status === 'suspended' ? 'Reactiver cet utilisateur ?' : 'Suspendre cet utilisateur ?'}
+        title={
+          confirmUser?.status === 'suspended'
+            ? adminText(t, 'admin.confirm.reactivateTitle')
+            : adminText(t, 'admin.confirm.suspendTitle')
+        }
         description={
           confirmUser?.status === 'suspended'
-            ? `${confirmUser?.firstName || ''} ${confirmUser?.lastName || ''} retrouvera un acces complet a la plateforme.`
-            : `${confirmUser?.firstName || ''} ${confirmUser?.lastName || ''} ne pourra plus se connecter ni utiliser MOXT tant que le compte est suspendu.`
+            ? adminText(t, 'admin.confirm.reactivateBody', { name: confirmName })
+            : adminText(t, 'admin.confirm.suspendBody', { name: confirmName })
         }
         onCancel={() => setConfirmUser(null)}
         onConfirm={() => {

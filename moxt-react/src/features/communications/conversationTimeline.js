@@ -1,3 +1,5 @@
+import { messagesText } from './messagesI18n'
+
 const DEFAULT_PATH_BUILDERS = {
   listing: (id) => `/marketplace/${id}`,
   job: (id) => `/jobs/${id}`,
@@ -13,7 +15,7 @@ function defaultRelatedPath(relatedType, relatedId) {
   return DEFAULT_PATH_BUILDERS[relatedType]?.(relatedId) || null
 }
 
-export function buildContextPreview(entry, conversation = {}) {
+export function buildContextPreview(entry, conversation = {}, t) {
   const snapshot = entry?.relatedSnapshot
   const relatedType = entry?.relatedType || conversation?.relatedType
   const relatedId = entry?.relatedId || conversation?.relatedId
@@ -26,7 +28,10 @@ export function buildContextPreview(entry, conversation = {}) {
   return {
     type: snapshot?.type || relatedType || 'general',
     id: snapshot?.id || relatedId,
-    title: snapshot?.title || conversation?.title || 'Annonce',
+    title:
+      snapshot?.title ||
+      conversation?.title ||
+      messagesText(t, 'communications.snapshot.defaultTitle'),
     path,
     subtitle: snapshot?.subtitle ?? null,
     imageUrl: snapshot?.imageUrl ?? null,

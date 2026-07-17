@@ -16,6 +16,7 @@ import { Badge } from '../../../components/ui/Badge'
 import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
 import { RevealOnScroll } from '../../../components/ui/RevealOnScroll'
+import { useLanguage } from '../../../contexts/useLanguage'
 import { statusMeta } from '../../../config/statuses'
 import { TransferStatusBadge } from '../../transfers/TransferStatusBadge'
 import { formatMoney } from '../../transfers/transferUtils'
@@ -31,6 +32,8 @@ export function DashboardOverviewPanels({
   user,
   business,
 }) {
+  const { t } = useLanguage()
+
   return (
     <>
       {!user.verified ? (
@@ -41,16 +44,14 @@ export function DashboardOverviewPanels({
                 <FiShield />
               </span>
               <div>
-                <h2 className="font-black">Vérifiez votre identité</h2>
+                <h2 className="font-black">{t('dashboard.identityBanner.title')}</h2>
                 <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-                  Le badge vert « Vérifié » confirme que MOXT a validé votre identité (documents KYC).
-                  Cela débloque plafonds élevés, entreprise et offres P2P — ce n’est pas le
-                  remplissage de votre fiche.
+                  {t('dashboard.identityBanner.description')}
                 </p>
               </div>
             </div>
             <Link to="/verification" className="shrink-0">
-              <Button>Vérifier mon identité</Button>
+              <Button>{t('dashboard.identityBanner.verify')}</Button>
             </Link>
           </Card>
         </RevealOnScroll>
@@ -63,28 +64,30 @@ export function DashboardOverviewPanels({
               <FiInbox />
             </span>
             <div>
-              <h2 className="font-black">Actions à faire</h2>
-              <p className="text-xs text-[var(--app-text-muted)]">Ce qui attend votre intervention.</p>
+              <h2 className="font-black">{t('dashboard.overview.todoTitle')}</h2>
+              <p className="text-xs text-[var(--app-text-muted)]">{t('dashboard.overview.todoDescription')}</p>
             </div>
           </div>
           <div className="mt-5 grid gap-2">
             {todoItems.length ? (
               todoItems.map((item) => (
                 <Link
-                  key={item.label}
+                  key={item.labelKey}
                   to={item.to}
                   className="group/row flex items-center gap-3 rounded-2xl bg-[var(--app-surface-muted)] p-3 transition-all duration-[var(--transition-base)] hover:translate-x-1 hover:bg-[var(--app-accent-soft)]"
                 >
                   <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[var(--app-surface)] text-[var(--app-accent)] transition-transform duration-[var(--transition-base)] group-hover/row:scale-110">
                     <item.icon />
                   </span>
-                  <span className="min-w-0 flex-1 text-sm font-bold">{item.label}</span>
+                  <span className="min-w-0 flex-1 text-sm font-bold">
+                    {t(item.labelKey, { count: item.count })}
+                  </span>
                   <FiChevronRight className="shrink-0 text-[var(--app-text-muted)] transition-transform duration-[var(--transition-base)] group-hover/row:translate-x-0.5 group-hover/row:text-[var(--app-accent)]" />
                 </Link>
               ))
             ) : (
               <p className="flex items-center gap-2 rounded-2xl bg-emerald-50 p-4 text-sm font-bold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
-                <FiCheckCircle /> Tout est à jour, aucune action en attente.
+                <FiCheckCircle /> {t('dashboard.overview.allUpToDate')}
               </p>
             )}
           </div>
@@ -97,14 +100,14 @@ export function DashboardOverviewPanels({
                 <FiRepeat />
               </span>
               <div>
-                <h2 className="font-black">Mes transferts en cours</h2>
-                <p className="text-xs text-[var(--app-text-muted)]">Suivi de vos opérations actives.</p>
+                <h2 className="font-black">{t('dashboard.overview.transfersTitle')}</h2>
+                <p className="text-xs text-[var(--app-text-muted)]">{t('dashboard.overview.transfersDescription')}</p>
               </div>
             </div>
             <Link
               to="/transfers/history"
               className="group/arrow grid size-10 shrink-0 place-items-center rounded-2xl border border-[var(--app-border)] transition-all duration-[var(--transition-base)] hover:-translate-y-0.5 hover:border-[var(--app-accent)] hover:text-[var(--app-accent)] hover:shadow-[var(--shadow-card-hover)]"
-              aria-label="Voir l’historique des transferts"
+              aria-label={t('dashboard.overview.history')}
             >
               <FiArrowUpRight className="transition-transform duration-[var(--transition-base)] group-hover/arrow:translate-x-0.5 group-hover/arrow:-translate-y-0.5" />
             </Link>
@@ -126,7 +129,7 @@ export function DashboardOverviewPanels({
                     </span>
                     <strong className="block truncate text-sm">
                       {formatMoney(amount, currency)} ·{' '}
-                      {transfer.exchanger?.name || 'Transfert'}
+                      {transfer.exchanger?.name || t('dashboard.overview.transfer')}
                     </strong>
                     <span className="text-xs text-[var(--app-text-muted)]">{transfer.id}</span>
                   </Link>
@@ -134,9 +137,9 @@ export function DashboardOverviewPanels({
               })
             ) : (
               <div className="grid place-items-center gap-3 rounded-2xl bg-[var(--app-surface-muted)] p-5 text-center text-sm text-[var(--app-text-muted)]">
-                Aucun transfert en cours.
+                {t('dashboard.overview.noTransfers')}
                 <Link to="/transfers">
-                  <Button icon={FiArrowRight}>Créer un transfert</Button>
+                  <Button icon={FiArrowRight}>{t('dashboard.overview.createTransfer')}</Button>
                 </Link>
               </div>
             )}
@@ -151,9 +154,10 @@ export function DashboardOverviewPanels({
               <FiTrendingUp />
             </span>
             <div className="min-w-0">
-              <h2 className="font-black">Taux du jour</h2>
+              <h2 className="font-black">{t('dashboard.overview.rateTitle')}</h2>
               <p className="truncate text-xs text-[var(--app-text-muted)]">
-                {rate.source || 'Taux de référence'} · {rate.date || 'aujourd’hui'}
+                {rate.source || t('dashboard.overview.referenceRate')} ·{' '}
+                {rate.date || t('dashboard.overview.today')}
               </p>
             </div>
           </div>
@@ -168,7 +172,7 @@ export function DashboardOverviewPanels({
             </div>
           </div>
           <Link to="/transfers" className="mt-4 inline-block">
-            <Button icon={FiArrowRight}>Envoyer de l’argent</Button>
+            <Button icon={FiArrowRight}>{t('dashboard.overview.sendMoney')}</Button>
           </Link>
         </Card>
 
@@ -178,10 +182,9 @@ export function DashboardOverviewPanels({
               <FiUser />
             </span>
             <div className="min-w-0 flex-1">
-              <h2 className="font-black">Profil complété</h2>
+              <h2 className="font-black">{t('dashboard.overview.profileCompletion')}</h2>
               <p className="text-xs text-[var(--app-text-muted)]">
-                Champs renseignés (nom, contact, ville…). Complet ≠ vérifié : cela n’atteste pas
-                votre identité.
+                {t('dashboard.overview.profileFields')}
               </p>
             </div>
             <span className="text-2xl font-black">{profileCompletion}%</span>
@@ -192,12 +195,12 @@ export function DashboardOverviewPanels({
           {profileCompletion < 100 ? (
             <Link to="/profile/information" className="mt-4 inline-block">
               <Button variant="secondary" icon={FiArrowRight}>
-                Compléter mon profil
+                {t('dashboard.overview.completeProfile')}
               </Button>
             </Link>
           ) : (
             <p className="mt-4 flex items-center gap-2 text-sm font-bold text-emerald-700 dark:text-emerald-300">
-              <FiCheckCircle /> Votre profil est complet.
+              <FiCheckCircle /> {t('dashboard.overview.profileComplete')}
             </p>
           )}
         </Card>
@@ -213,13 +216,15 @@ export function DashboardOverviewPanels({
               <div>
                 <h2 className="font-black">{business.name}</h2>
                 <p className="text-xs text-[var(--app-text-muted)]">
-                  Votre espace professionnel · {statusMeta(business.status).label}
+                  {t('dashboard.overview.professionalSpace', {
+                    status: statusMeta(business.status).label,
+                  })}
                 </p>
               </div>
             </div>
             <Link to="/professional" className="shrink-0">
               <Button variant="secondary" icon={FiArrowRight}>
-                Ouvrir l’espace pro
+                {t('dashboard.overview.openProfessional')}
               </Button>
             </Link>
           </Card>
@@ -231,9 +236,9 @@ export function DashboardOverviewPanels({
           <Card>
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h2 className="font-black">Premiers pas sur MOXT</h2>
+                <h2 className="font-black">{t('dashboard.overview.onboardingTitle')}</h2>
                 <p className="text-xs text-[var(--app-text-muted)]">
-                  Activez tout le potentiel de votre compte.
+                  {t('dashboard.overview.onboardingDescription')}
                 </p>
               </div>
               <Badge>
@@ -243,7 +248,7 @@ export function DashboardOverviewPanels({
             <div className="mt-4 grid gap-2 sm:grid-cols-3">
               {onboardingSteps.map((step) => (
                 <Link
-                  key={step.label}
+                  key={step.labelKey}
                   to={step.to}
                   className={`flex items-center gap-3 rounded-2xl p-3 transition-all duration-[var(--transition-base)] ${
                     step.done
@@ -261,7 +266,7 @@ export function DashboardOverviewPanels({
                     <FiCheck />
                   </span>
                   <span className={`min-w-0 flex-1 text-sm font-bold ${step.done ? 'line-through' : ''}`}>
-                    {step.label}
+                    {t(step.labelKey)}
                   </span>
                   {!step.done ? (
                     <FiChevronRight className="shrink-0 text-[var(--app-text-muted)]" />

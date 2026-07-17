@@ -47,14 +47,16 @@ import { PublicationScopeButton } from '../features/publications/PublicationScop
 import { SubscribersPanel } from '../features/account/SubscribersPanel'
 import { canRepublishBusinessItem } from '../features/businesses/businessPublishUtils'
 import { addToast } from '../features/ui/uiSlice'
+import { useLanguage } from '../contexts/useLanguage'
+import { phase3Text } from '../i18n/phase3I18n'
 
 const PUBLISH_LINKS = {
-  listing: { to: '/marketplace/publish', label: 'Publier une annonce' },
-  parcel: { to: '/parcels/publish', label: 'Publier un colis' },
-  job: { to: '/jobs/publish', label: 'Publier un job' },
-  event: { to: '/events/publish', label: 'Publier un événement' },
-  post: { to: '/news', label: 'Publier sur le fil' },
-  other: { to: '/dashboard', label: 'Explorer les services' },
+  listing: { to: '/marketplace/publish', labelKey: 'publications.mine.publish.listing' },
+  parcel: { to: '/parcels/publish', labelKey: 'publications.mine.publish.parcel' },
+  job: { to: '/jobs/publish', labelKey: 'publications.mine.publish.job' },
+  event: { to: '/events/publish', labelKey: 'publications.mine.publish.event' },
+  post: { to: '/news', labelKey: 'publications.mine.publish.post' },
+  other: { to: '/dashboard', labelKey: 'publications.mine.publish.other' },
 }
 
 const EMPTY_ICONS = {
@@ -67,6 +69,8 @@ const EMPTY_ICONS = {
 }
 
 export function MyPublicationsPage() {
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const dispatch = useDispatch()
   const [searchParams, setSearchParams] = useSearchParams()
   const [deletingListing, setDeletingListing] = useState(null)
@@ -84,9 +88,8 @@ export function MyPublicationsPage() {
     if (canRepublishBusinessItem(item, businessById)) return true
     dispatch(
       addToast({
-        title: 'Republication impossible',
-        message:
-          'Votre entreprise doit être vérifiée par MOXT pour republier ce contenu au nom de l’entreprise.',
+        title: p3('publications.mine.republishDenied.title'),
+        message: p3('publications.mine.republishDenied.message'),
         tone: 'error',
       }),
     )
@@ -154,7 +157,9 @@ export function MyPublicationsPage() {
   const subscriberPublisherId =
     scope === 'business' && ownBusiness ? ownBusiness.id : user.id
   const subscriberPublisherName =
-    scope === 'business' && ownBusiness ? ownBusiness.name : fullName || 'Mon profil'
+    scope === 'business' && ownBusiness
+      ? ownBusiness.name
+      : fullName || p3('publications.mine.profileFallback')
   const subscriberPublisherPath =
     scope === 'business' && ownBusiness
       ? `/businesses/${ownBusiness.id}`
@@ -163,19 +168,19 @@ export function MyPublicationsPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Compte"
-        title="Mes publications"
+        eyebrow={p3('publications.mine.eyebrow')}
+        title={p3('publications.mine.title')}
         description={
           panel === 'subscribers'
-            ? 'Membres abonnés à vos annonces et publications.'
+            ? p3('publications.mine.description.subscribers')
             : scope === 'business' && ownBusiness
-              ? `Publications publiées au nom de ${ownBusiness.name}.`
-              : 'Annonces, colis, jobs, événements et publications de votre profil personnel.'
+              ? p3('publications.mine.description.business', { name: ownBusiness.name })
+              : p3('publications.mine.description.personal')
         }
         stats={[
-          { label: 'Actives', value: archiveCounts.active },
-          { label: 'Archives', value: archiveCounts.archived },
-          { label: 'Vues annonces', value: totalViews },
+          { label: p3('publications.mine.stats.active'), value: archiveCounts.active },
+          { label: p3('publications.mine.stats.archived'), value: archiveCounts.archived },
+          { label: p3('publications.mine.stats.views'), value: totalViews },
         ]}
         actions={
           <>
@@ -188,11 +193,11 @@ export function MyPublicationsPage() {
               to={`/users/${user.id}/publications${scope === 'business' ? '?scope=business' : ''}`}
             >
               <Button variant="secondary" icon={FiEye}>
-                Vue publique
+                {p3('publications.mine.publicView')}
               </Button>
             </Link>
             <Link to={publishLink.to}>
-              <Button icon={FiPlus}>{publishLink.label}</Button>
+              <Button icon={FiPlus}>{p3(publishLink.labelKey)}</Button>
             </Link>
           </>
         }
@@ -200,11 +205,11 @@ export function MyPublicationsPage() {
 
       <div className="flex flex-wrap gap-2">
         <PillBadge active={panel === 'publications'} onClick={() => setPanel('publications')}>
-          Publications
+          {p3('publications.mine.tabs.publications')}
         </PillBadge>
         <PillBadge active={panel === 'subscribers'} onClick={() => setPanel('subscribers')}>
           <FiUsers className="mr-1 inline" />
-          Mes abonnés
+          {p3('publications.mine.tabs.subscribers')}
         </PillBadge>
       </div>
 
@@ -223,8 +228,16 @@ export function MyPublicationsPage() {
           onChange={setArchiveTab}
           variant="filter"
           tabs={[
-            { key: 'active', label: 'Actives', count: archiveCounts.active },
-            { key: 'archived', label: 'Archives', count: archiveCounts.archived },
+            {
+              key: 'active',
+              label: p3('publications.mine.stats.active'),
+              count: archiveCounts.active,
+            },
+            {
+              key: 'archived',
+              label: p3('publications.mine.stats.archived'),
+              count: archiveCounts.archived,
+            },
           ]}
         />
 
@@ -236,7 +249,7 @@ export function MyPublicationsPage() {
               onClick={() => setTypeTab(tab.id)}
               className="shrink-0 whitespace-nowrap"
             >
-              {tab.label} ({typeCounts[tab.id]})
+              {p3(`publications.mine.types.${tab.id}`)} ({typeCounts[tab.id]})
             </PillBadge>
           ))}
         </div>
@@ -310,12 +323,20 @@ export function MyPublicationsPage() {
       ) : (
         <EmptyState
           icon={EmptyIcon}
-          title={archiveTab === 'active' ? 'Aucune publication active' : 'Aucune archive'}
-          description={`Aucun contenu dans ${PUBLICATION_TYPE_TABS.find((t) => t.id === typeTab)?.label || 'cette catégorie'}.`}
+          title={
+            archiveTab === 'active'
+              ? p3('publications.mine.empty.active')
+              : p3('publications.mine.empty.archived')
+          }
+          description={p3('publications.mine.empty.description', {
+            category: PUBLICATION_TYPE_TABS.some((tab) => tab.id === typeTab)
+              ? p3(`publications.mine.types.${typeTab}`)
+              : p3('publications.mine.empty.category'),
+          })}
           action={
             archiveTab === 'active' && typeTab !== 'other' ? (
               <Link to={publishLink.to}>
-                <Button icon={FiPlus}>{publishLink.label}</Button>
+                <Button icon={FiPlus}>{p3(publishLink.labelKey)}</Button>
               </Link>
             ) : null
           }
@@ -326,8 +347,8 @@ export function MyPublicationsPage() {
 
       <ConfirmDialog
         open={Boolean(deletingListing)}
-        title="Supprimer cette annonce ?"
-        description="Cette suppression locale est définitive et retire également ses signalements."
+        title={p3('publications.mine.delete.title')}
+        description={p3('publications.mine.delete.description')}
         onCancel={() => setDeletingListing(null)}
         onConfirm={() => {
           dispatch(deleteListing({ id: deletingListing.id, ownerId: user.id }))

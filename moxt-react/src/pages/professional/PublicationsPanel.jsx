@@ -5,12 +5,24 @@ import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { statusMeta } from '../../config/statuses'
+import { useLanguage } from '../../contexts/useLanguage'
+import { professionalText } from '../../features/businesses/professionalI18n'
 import { moderateEvent } from '../../features/events/eventSlice'
 import { moderateJob } from '../../features/jobs/jobSlice'
 import { updateListingStatus } from '../../features/marketplace/marketplaceSlice'
 import { updateParcelStatus } from '../../features/parcels/parcelSlice'
 
+const FILTER_OPTIONS = [
+  { value: 'all', labelKey: 'professional.publications.all' },
+  { value: 'listings', labelKey: 'professional.publications.listings' },
+  { value: 'jobs', labelKey: 'professional.publications.jobs' },
+  { value: 'events', labelKey: 'professional.publications.events' },
+  { value: 'parcels', labelKey: 'professional.publications.parcels' },
+]
+
 export function PublicationsPanel({ dispatch, publications }) {
+  const { t } = useLanguage()
+  const pt = (key, vars) => professionalText(t, key, vars)
   const [activeType, setActiveType] = useState('all')
   const contentPath = {
     listings: '/marketplace',
@@ -35,29 +47,13 @@ export function PublicationsPanel({ dispatch, publications }) {
   )
   const submenus = useMemo(
     () =>
-      [
-        { value: 'all', label: 'Toutes', count: publications.length },
-        {
-          value: 'listings',
-          label: 'Annonces',
-          count: publications.filter((item) => item.contentType === 'listings').length,
-        },
-        {
-          value: 'jobs',
-          label: 'Jobs',
-          count: publications.filter((item) => item.contentType === 'jobs').length,
-        },
-        {
-          value: 'events',
-          label: 'Événements',
-          count: publications.filter((item) => item.contentType === 'events').length,
-        },
-        {
-          value: 'parcels',
-          label: 'Colis',
-          count: publications.filter((item) => item.contentType === 'parcels').length,
-        },
-      ].filter((item) => item.value === 'all' || item.count > 0),
+      FILTER_OPTIONS.map((item) => ({
+        ...item,
+        count:
+          item.value === 'all'
+            ? publications.length
+            : publications.filter((entry) => entry.contentType === item.value).length,
+      })).filter((item) => item.value === 'all' || item.count > 0),
     [publications],
   )
   const visiblePublications =
@@ -66,7 +62,7 @@ export function PublicationsPanel({ dispatch, publications }) {
       : publications.filter((item) => item.contentType === activeType)
 
   if (!publications.length) {
-    return <EmptyState title="Aucune publication pour les modules activés" />
+    return <EmptyState title={pt('professional.publications.empty')} />
   }
 
   return (
@@ -83,7 +79,7 @@ export function PublicationsPanel({ dispatch, publications }) {
                 : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'
             }`}
           >
-            {item.label} ({item.count})
+            {pt(item.labelKey)} ({item.count})
           </button>
         ))}
       </div>
@@ -113,7 +109,11 @@ export function PublicationsPanel({ dispatch, publications }) {
                 ) : null}
                 <div className="min-w-0 flex-1">
                   <strong className="block break-words text-sm sm:text-base">
-                    {item.title || `${item.origin} vers ${item.destination}`}
+                    {item.title ||
+                      pt('professional.publications.route', {
+                        origin: item.origin,
+                        destination: item.destination,
+                      })}
                   </strong>
                   <p className="mt-0.5 truncate text-xs text-[var(--app-text-muted)]">
                     {item.contentType}
@@ -123,13 +123,13 @@ export function PublicationsPanel({ dispatch, publications }) {
               <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
                 <Link to={`${contentPath[item.contentType]}/${item.id}`} className="min-w-0">
                   <Button variant="secondary" className="w-full sm:w-auto">
-                    Voir
+                    {pt('professional.publications.view')}
                   </Button>
                 </Link>
                 {editPath[item.contentType] ? (
                   <Link to={editPath[item.contentType](item.id)} className="min-w-0">
                     <Button variant="secondary" className="w-full sm:w-auto">
-                      Modifier
+                      {pt('professional.publications.edit')}
                     </Button>
                   </Link>
                 ) : null}
@@ -140,14 +140,16 @@ export function PublicationsPanel({ dispatch, publications }) {
                       className="w-full sm:w-auto"
                       onClick={() => update(item.id, canPublish ? 'active' : 'suspended')}
                     >
-                      {canPublish ? 'Publier' : 'Suspendre'}
+                      {canPublish
+                        ? pt('professional.publications.publish')
+                        : pt('professional.publications.suspend')}
                     </Button>
                     <Button
                       variant="danger"
                       className="w-full sm:w-auto"
                       onClick={() => update(item.id, 'archived')}
                     >
-                      Archiver
+                      {pt('professional.publications.archive')}
                     </Button>
                   </>
                 ) : null}

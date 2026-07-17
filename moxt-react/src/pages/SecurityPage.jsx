@@ -98,8 +98,8 @@ export function SecurityPage() {
     if (!emailConfirmed) {
       dispatch(
         addToast({
-          title: 'E-mail requis',
-          message: 'Confirmez votre adresse e-mail ci-dessus avant de modifier le mot de passe.',
+          title: t('security.toasts.emailRequiredTitle'),
+          message: t('security.toasts.emailRequiredBody'),
           tone: 'error',
         }),
       )
@@ -117,13 +117,13 @@ export function SecurityPage() {
       setPasswordResendCooldown(OTP_RESEND_COOLDOWN_SECONDS)
       dispatch(
         addToast({
-          title: 'Code envoyé',
-          message: `Un code a été envoyé à ${result.email}. Vérifiez vos spams.`,
+          title: t('security.toasts.otpSentTitle'),
+          message: t('security.toasts.otpSentBody', { email: result.email }),
           tone: 'success',
         }),
       )
     } catch (error) {
-      dispatch(addToast({ title: 'Échec', message: error.message, tone: 'error' }))
+      dispatch(addToast({ title: t('security.toasts.failure'), message: error.message, tone: 'error' }))
     } finally {
       setPasswordLoading(false)
     }
@@ -132,21 +132,39 @@ export function SecurityPage() {
   async function handlePasswordChange(event) {
     event.preventDefault()
     if (!/^\d{6}$/.test(passwordOtp)) {
-      dispatch(addToast({ title: 'Code invalide', message: 'Saisissez le code à 6 chiffres.', tone: 'error' }))
+      dispatch(
+        addToast({
+          title: t('security.toasts.invalidOtpTitle'),
+          message: t('security.toasts.invalidOtpBody'),
+          tone: 'error',
+        }),
+      )
       return
     }
     if (newPassword !== confirmPassword) {
-      dispatch(addToast({ title: 'Erreur', message: 'Les mots de passe ne correspondent pas.', tone: 'error' }))
+      dispatch(
+        addToast({
+          title: t('security.toasts.passwordMismatchTitle'),
+          message: t('security.toasts.passwordMismatchBody'),
+          tone: 'error',
+        }),
+      )
       return
     }
     setPasswordLoading(true)
     try {
       await authService.updatePassword(newPassword, { nonce: passwordOtp })
-      dispatch(addToast({ title: 'Mot de passe mis à jour', message: 'Votre mot de passe a été modifié.', tone: 'success' }))
+      dispatch(
+        addToast({
+          title: t('security.toasts.passwordUpdatedTitle'),
+          message: t('security.toasts.passwordUpdatedBody'),
+          tone: 'success',
+        }),
+      )
       setPasswordOpen(false)
       resetPasswordModal()
     } catch (error) {
-      dispatch(addToast({ title: 'Échec', message: error.message, tone: 'error' }))
+      dispatch(addToast({ title: t('security.toasts.failure'), message: error.message, tone: 'error' }))
     } finally {
       setPasswordLoading(false)
     }
@@ -162,7 +180,7 @@ export function SecurityPage() {
       setMfaChallengeId(challenge.id)
       setMfaOpen(true)
     } catch (error) {
-      dispatch(addToast({ title: '2FA indisponible', message: error.message, tone: 'error' }))
+      dispatch(addToast({ title: t('security.mfa.unavailableTitle'), message: error.message, tone: 'error' }))
     } finally {
       setMfaLoading(false)
     }
@@ -184,11 +202,17 @@ export function SecurityPage() {
           preferences: { twoFactorEnabled: true },
         }),
       )
-      dispatch(addToast({ title: '2FA activée', message: 'La double authentification est active.', tone: 'success' }))
+      dispatch(
+        addToast({
+          title: t('security.mfa.enabledTitle'),
+          message: t('security.mfa.enabledBody'),
+          tone: 'success',
+        }),
+      )
       setMfaOpen(false)
       setMfaCode('')
     } catch (error) {
-      dispatch(addToast({ title: 'Code invalide', message: error.message, tone: 'error' }))
+      dispatch(addToast({ title: t('security.toasts.invalidOtpTitle'), message: error.message, tone: 'error' }))
     } finally {
       setMfaLoading(false)
     }
@@ -210,9 +234,15 @@ export function SecurityPage() {
           preferences: { twoFactorEnabled: false },
         }),
       )
-      dispatch(addToast({ title: '2FA désactivée', message: 'La double authentification a été retirée.', tone: 'success' }))
+      dispatch(
+        addToast({
+          title: t('security.mfa.disabledTitle'),
+          message: t('security.mfa.disabledBody'),
+          tone: 'success',
+        }),
+      )
     } catch (error) {
-      dispatch(addToast({ title: 'Échec', message: error.message, tone: 'error' }))
+      dispatch(addToast({ title: t('common.failure'), message: error.message, tone: 'error' }))
     } finally {
       setMfaLoading(false)
     }
@@ -221,9 +251,15 @@ export function SecurityPage() {
   async function signOutOthers() {
     try {
       await authService.signOutOtherSessions()
-      dispatch(addToast({ title: 'Sessions fermées', message: 'Les autres appareils ont été déconnectés.', tone: 'success' }))
+      dispatch(
+        addToast({
+          title: t('security.sessions.closedTitle'),
+          message: t('security.sessions.closedBody'),
+          tone: 'success',
+        }),
+      )
     } catch (error) {
-      dispatch(addToast({ title: 'Échec', message: error.message, tone: 'error' }))
+      dispatch(addToast({ title: t('common.failure'), message: error.message, tone: 'error' }))
     }
   }
 
@@ -265,7 +301,7 @@ export function SecurityPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <FiLock className="text-2xl text-brand-600" />
-          <h2 className="mt-4 font-black">{t("security.passwordTitle")}</h2>
+          <h2 className="mt-4 font-black">{t('security.passwordTitle')}</h2>
           <p className="mt-2 text-sm text-[var(--app-text-muted)]">
             {emailConfirmed
               ? t('security.passwordHintOtp')
@@ -285,29 +321,31 @@ export function SecurityPage() {
           aria-disabled={!MFA_AVAILABLE || undefined}
         >
           <FiKey className={`text-2xl ${MFA_AVAILABLE ? 'text-brand-600' : 'text-[var(--app-text-muted)]'}`} />
-          <h2 className="mt-4 font-black">Double authentification</h2>
+          <h2 className="mt-4 font-black">{t('security.mfa.title')}</h2>
           <p className="mt-2 text-sm text-[var(--app-text-muted)]">
             {MFA_AVAILABLE
-              ? `État : ${mfaEnabled ? 'activée (TOTP)' : 'désactivée'}.`
-              : 'Cette fonctionnalité n’est pas encore disponible. Elle sera proposée prochainement.'}
+              ? mfaEnabled
+                ? t('security.mfa.statusOn')
+                : t('security.mfa.statusOff')
+              : t('security.mfa.comingSoonBody')}
           </p>
           <Button
             className="mt-5"
             variant="secondary"
             disabled={!MFA_AVAILABLE || mfaLoading}
-            title={!MFA_AVAILABLE ? 'Bientôt disponible' : undefined}
+            title={!MFA_AVAILABLE ? t('security.mfa.comingSoon') : undefined}
             onClick={mfaEnabled ? disableMfa : startMfaEnrollment}
           >
             {MFA_AVAILABLE
               ? mfaEnabled
-                ? 'Désactiver la 2FA'
-                : 'Activer la 2FA'
-              : 'Bientôt disponible'}
+                ? t('security.mfa.disable')
+                : t('security.mfa.enable')
+              : t('security.mfa.comingSoon')}
           </Button>
         </Card>
         <Card>
           <FiShield className="text-2xl text-brand-600" />
-          <h2 className="mt-4 font-black">Alertes de sécurité</h2>
+          <h2 className="mt-4 font-black">{t('security.alerts.title')}</h2>
           <label className="mt-5 flex items-center gap-3 text-sm font-bold">
             <input
               type="checkbox"
@@ -321,22 +359,22 @@ export function SecurityPage() {
                 )
               }
             />
-            Recevoir les alertes importantes
+            {t('security.alerts.checkbox')}
           </label>
           {!emailConfirmed ? (
             <p className="mt-2 text-xs text-[var(--app-text-muted)]">
-              Les alertes e-mail nécessitent une adresse confirmée.
+              {t('security.alerts.emailHint')}
             </p>
           ) : null}
         </Card>
         <Card>
           <FiMonitor className="text-2xl text-brand-600" />
-          <h2 className="mt-4 font-black">Sessions</h2>
+          <h2 className="mt-4 font-black">{t('security.sessions.title')}</h2>
           <p className="mt-2 text-sm text-[var(--app-text-muted)]">
-            Déconnectez les autres appareils connectés à votre compte MOXT.
+            {t('security.sessions.description')}
           </p>
           <Button className="mt-5" variant="secondary" onClick={signOutOthers}>
-            Déconnecter les autres appareils
+            {t('security.sessions.signOutOthers')}
           </Button>
         </Card>
       </div>
@@ -347,7 +385,7 @@ export function SecurityPage() {
           setPasswordOpen(false)
           resetPasswordModal()
         }}
-        title={t("security.passwordModalTitle")}
+        title={t('security.passwordModalTitle')}
       >
         <form className="grid gap-4" onSubmit={handlePasswordChange}>
           <p className="text-sm text-[var(--app-text-muted)]">
@@ -360,7 +398,7 @@ export function SecurityPage() {
           ) : (
             <>
               <Input
-                label={t("security.otpCodeLabel")}
+                label={t('security.otpCodeLabel')}
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 maxLength={6}
@@ -370,7 +408,7 @@ export function SecurityPage() {
                 required
               />
               <Input
-                label={t("security.newPassword")}
+                label={t('security.newPassword')}
                 type="password"
                 value={newPassword}
                 onChange={(event) => setNewPassword(event.target.value)}
@@ -378,7 +416,7 @@ export function SecurityPage() {
                 minLength={8}
               />
               <Input
-                label={t("security.confirmPassword")}
+                label={t('security.confirmPassword')}
                 type="password"
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
@@ -392,7 +430,9 @@ export function SecurityPage() {
                   disabled={passwordResendCooldown > 0 || passwordLoading}
                   onClick={sendPasswordOtp}
                 >
-                  {passwordResendCooldown > 0 ? `Renvoyer (${passwordResendCooldown}s)` : 'Renvoyer le code'}
+                  {passwordResendCooldown > 0
+                    ? t('security.email.resendCooldown', { seconds: passwordResendCooldown })
+                    : t('security.email.resend')}
                 </Button>
                 <Button
                   type="button"
@@ -402,10 +442,10 @@ export function SecurityPage() {
                     resetPasswordModal()
                   }}
                 >
-                  Annuler
+                  {t('security.email.cancel')}
                 </Button>
                 <Button type="submit" disabled={passwordLoading || passwordOtp.length !== 6}>
-                  Enregistrer
+                  {t('common.save')}
                 </Button>
               </div>
             </>
@@ -413,16 +453,16 @@ export function SecurityPage() {
         </form>
       </Modal>
 
-      <Modal open={mfaOpen} onClose={() => setMfaOpen(false)} title="Activer la double authentification">
+      <Modal open={mfaOpen} onClose={() => setMfaOpen(false)} title={t('security.mfa.modalTitle')}>
         <p className="text-sm text-[var(--app-text-muted)]">
-          Scannez le QR code avec votre application d’authentification, puis saisissez le code à 6 chiffres.
+          {t('security.mfa.modalIntro')}
         </p>
         {mfaQrCode ? (
-          <img src={mfaQrCode} alt="QR code 2FA" className="mx-auto mt-4 max-w-48 rounded-xl border" />
+          <img src={mfaQrCode} alt={t('security.mfa.qrAlt')} className="mx-auto mt-4 max-w-48 rounded-xl border" />
         ) : null}
         <form className="mt-4 grid gap-4" onSubmit={verifyMfa}>
           <Input
-            label="Code de vérification"
+            label={t('security.mfa.verifyCodeLabel')}
             value={mfaCode}
             onChange={(event) => setMfaCode(event.target.value)}
             placeholder="000000"
@@ -432,10 +472,10 @@ export function SecurityPage() {
           />
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => setMfaOpen(false)}>
-              Annuler
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={mfaLoading}>
-              Valider
+              {t('security.mfa.validate')}
             </Button>
           </div>
         </form>

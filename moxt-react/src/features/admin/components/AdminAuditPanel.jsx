@@ -1,6 +1,8 @@
 import { FiActivity } from 'react-icons/fi'
+import { useLanguage } from '../../../contexts/useLanguage'
 import { formatDate } from '../../transfers/transferUtils'
 import { CARD } from '../adminConfig'
+import { adminText } from '../adminI18n'
 import { Empty, SectionTitle } from './AdminShared'
 
 function severityColor(action = '') {
@@ -12,9 +14,11 @@ function severityColor(action = '') {
 }
 
 export function AdminAuditPanel({ auditItems, setSelected }) {
+  const { t } = useLanguage()
+
   return (
     <div className={`${CARD} p-5 grid gap-4`}>
-      <SectionTitle icon={FiActivity} label="Journal d'audit" count={auditItems.length} />
+      <SectionTitle icon={FiActivity} label={adminText(t, 'admin.audit.title')} count={auditItems.length} />
       {auditItems.length ? (
         <div className="relative grid gap-0">
           <div className="absolute left-5 top-3 bottom-3 w-px bg-[var(--app-border)]" aria-hidden />
@@ -34,7 +38,7 @@ export function AdminAuditPanel({ auditItems, setSelected }) {
                   <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-black ${severityColor(item.action)}`}>
                     {item.actorRole || 'system'}
                   </span>
-                  <span>{item.targetId || 'global'}</span>
+                  <span>{item.targetId || adminText(t, 'admin.audit.globalFallback')}</span>
                 </p>
               </div>
               <span className="shrink-0 text-xs text-[var(--app-text-muted)]">{formatDate(item.createdAt)}</span>
@@ -42,7 +46,7 @@ export function AdminAuditPanel({ auditItems, setSelected }) {
           ))}
         </div>
       ) : (
-        <Empty label="Aucun log d'audit." icon={FiActivity} />
+        <Empty label={adminText(t, 'admin.empty.noAuditLog')} icon={FiActivity} />
       )}
     </div>
   )

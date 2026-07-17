@@ -11,6 +11,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { PublicationModal } from '../components/ui/PublicationModal'
 import { Select } from '../components/ui/Select'
 import { SUPPORT_PRIORITIES } from '../config/options'
+import { useLanguage } from '../contexts/useLanguage'
 import { messageSchema, supportSchema } from '../features/communications/communicationSchemas'
 import {
   addNotification,
@@ -19,12 +20,15 @@ import {
 } from '../features/communications/communicationSlice'
 import { addToast } from '../features/ui/uiSlice'
 import { formatDate } from '../features/transfers/transferUtils'
+import { phase3Text } from '../i18n/phase3I18n'
 import { storageService } from '../services/storageService'
 
 export function SupportPage() {
   const [requestOpen, setRequestOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const dispatch = useDispatch()
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const user = useSelector((state) => state.auth.user)
   const tickets = useSelector((state) =>
     state.communications.support.filter((item) => item.userId === user.id),
@@ -43,8 +47,8 @@ export function SupportPage() {
       dispatch(
         addNotification({
           userId: user.id,
-          title: 'Demande support creee',
-          message: `Votre demande ${action.payload.id} a ete enregistree.`,
+          title: p3('support.createdTitle'),
+          message: p3('support.createdMessage', { id: action.payload.id }),
           type: 'support',
           link: '/support',
         }),
@@ -58,16 +62,16 @@ export function SupportPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Assistance"
-        title="Support MOXT"
-        description="Demandes, reclamations et suivi avec l'equipe support."
+        eyebrow={p3('support.eyebrow')}
+        title={p3('support.title')}
+        description={p3('support.description')}
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" icon={FiAlertTriangle} onClick={() => setReportOpen(true)}>
-              Signaler une erreur
+              {p3('support.reportBug')}
             </Button>
             <Button icon={FiPlus} onClick={() => setRequestOpen(true)}>
-              Nouvelle demande
+              {p3('support.newRequest')}
             </Button>
           </div>
         }
@@ -82,26 +86,30 @@ export function SupportPage() {
         <PublicationModal
           open={requestOpen}
           onClose={() => setRequestOpen(false)}
-          title="Nouvelle demande"
-          description="Décrivez votre situation avec précision pour permettre à l’équipe de vous répondre rapidement."
+          title={p3('support.newRequest')}
+          description={p3('support.newRequestDesc')}
           icon={FiHelpCircle}
         >
           <form className="mt-5 grid gap-4" onSubmit={formik.handleSubmit} noValidate>
             <Input
               id="support-subject"
-              label="Sujet"
+              label={p3('support.subject')}
               {...formik.getFieldProps('subject')}
               error={errorFor('subject')}
             />
-            <Select id="support-priority" label="Priorite" {...formik.getFieldProps('priority')}>
+            <Select
+              id="support-priority"
+              label={p3('support.priority.label')}
+              {...formik.getFieldProps('priority')}
+            >
               {SUPPORT_PRIORITIES.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  {p3(`support.priority.${option.value}`)}
                 </option>
               ))}
             </Select>
             <label className="grid gap-1.5">
-              <span className="text-sm font-semibold">Message</span>
+              <span className="text-sm font-semibold">{p3('support.message')}</span>
               <textarea
                 className="min-h-36 rounded-xl border border-slate-200 bg-slate-50 p-3.5 dark:border-slate-700 dark:bg-slate-950"
                 {...formik.getFieldProps('message')}
@@ -111,17 +119,17 @@ export function SupportPage() {
               ) : null}
             </label>
             <Button type="submit" icon={FiSend}>
-              Envoyer
+              {p3('support.send')}
             </Button>
           </form>
         </PublicationModal>
         <section className="grid content-start gap-4 xl:grid-cols-2">
-          <h2 className="text-lg font-black xl:col-span-2">Mes demandes</h2>
+          <h2 className="text-lg font-black xl:col-span-2">{p3('support.myRequests')}</h2>
           {tickets.length ? (
             tickets.map((ticket) => <TicketCard ticket={ticket} user={user} dispatch={dispatch} />)
           ) : (
             <Card className="border-dashed text-center text-sm text-slate-500">
-              Aucune demande support.
+              {p3('support.empty')}
             </Card>
           )}
         </section>
@@ -131,6 +139,8 @@ export function SupportPage() {
 }
 
 function ErrorReportModal({ open, onClose, dispatch, user }) {
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const fileInputRef = useRef(null)
   const [file, setFile] = useState(null)
   const [previewUrl, setPreviewUrl] = useState(null)
@@ -141,7 +151,13 @@ function ErrorReportModal({ open, onClose, dispatch, user }) {
     const selected = event.target.files?.[0]
     if (!selected) return
     if (!selected.type.startsWith('image/')) {
-      dispatch(addToast({ title: 'Format invalide', message: 'Choisissez une image.', tone: 'error' }))
+      dispatch(
+        addToast({
+          title: p3('support.invalidFormatTitle'),
+          message: p3('support.invalidFormatMessage'),
+          tone: 'error',
+        }),
+      )
       return
     }
     if (previewUrl) URL.revokeObjectURL(previewUrl)
@@ -165,7 +181,13 @@ function ErrorReportModal({ open, onClose, dispatch, user }) {
   async function submit(event) {
     event.preventDefault()
     if (message.trim().length < 10) {
-      dispatch(addToast({ title: 'Description trop courte', message: 'Décrivez le problème (10 caractères min).', tone: 'error' }))
+      dispatch(
+        addToast({
+          title: p3('support.tooShortTitle'),
+          message: p3('support.tooShortMessage'),
+          tone: 'error',
+        }),
+      )
       return
     }
     setSubmitting(true)
@@ -178,7 +200,7 @@ function ErrorReportModal({ open, onClose, dispatch, user }) {
         createSupportTicket({
           userId: user.id,
           userName: `${user.firstName} ${user.lastName}`,
-          subject: 'Signalement d’erreur',
+          subject: p3('support.bugSubject'),
           priority: 'important',
           category: 'bug',
           message: message.trim(),
@@ -188,16 +210,28 @@ function ErrorReportModal({ open, onClose, dispatch, user }) {
       dispatch(
         addNotification({
           userId: user.id,
-          title: 'Signalement envoyé',
-          message: `Votre signalement ${action.payload.id} a été transmis au support.`,
+          title: p3('support.bugSentTitle'),
+          message: p3('support.bugSentMessage', { id: action.payload.id }),
           type: 'support',
           link: '/support',
         }),
       )
-      dispatch(addToast({ title: 'Merci !', message: 'Votre signalement a été envoyé.', tone: 'success' }))
+      dispatch(
+        addToast({
+          title: p3('support.thanksTitle'),
+          message: p3('support.thanksMessage'),
+          tone: 'success',
+        }),
+      )
       close()
     } catch (error) {
-      dispatch(addToast({ title: 'Envoi impossible', message: error.message || 'Réessayez plus tard.', tone: 'error' }))
+      dispatch(
+        addToast({
+          title: p3('support.sendFailedTitle'),
+          message: error.message || p3('common.retryLater'),
+          tone: 'error',
+        }),
+      )
     } finally {
       setSubmitting(false)
     }
@@ -207,23 +241,23 @@ function ErrorReportModal({ open, onClose, dispatch, user }) {
     <PublicationModal
       open={open}
       onClose={close}
-      title="Signaler une erreur"
-      description="Décrivez le problème rencontré et joignez une capture d’écran pour aider l’équipe."
+      title={p3('support.bugModalTitle')}
+      description={p3('support.bugModalDesc')}
       icon={FiAlertTriangle}
     >
       <form className="mt-5 grid gap-4" onSubmit={submit} noValidate>
         <label className="grid gap-1.5">
-          <span className="text-sm font-semibold">Description du problème</span>
+          <span className="text-sm font-semibold">{p3('support.bugDescription')}</span>
           <textarea
             className="min-h-32 rounded-xl border border-slate-200 bg-slate-50 p-3.5 dark:border-slate-700 dark:bg-slate-950"
-            placeholder="Ex. : le bouton Publier ne répond pas sur la page annonce…"
+            placeholder={p3('support.bugPlaceholder')}
             value={message}
             onChange={(event) => setMessage(event.target.value)}
           />
         </label>
 
         <div className="grid gap-1.5">
-          <span className="text-sm font-semibold">Capture d’écran (optionnelle)</span>
+          <span className="text-sm font-semibold">{p3('support.screenshotLabel')}</span>
           <input
             ref={fileInputRef}
             type="file"
@@ -233,11 +267,15 @@ function ErrorReportModal({ open, onClose, dispatch, user }) {
           />
           {previewUrl ? (
             <div className="relative overflow-hidden rounded-xl border border-[var(--app-border)]">
-              <img src={previewUrl} alt="Aperçu de la capture" className="max-h-64 w-full object-contain bg-[var(--app-surface-muted)]" />
+              <img
+                src={previewUrl}
+                alt={p3('support.screenshotAlt')}
+                className="max-h-64 w-full object-contain bg-[var(--app-surface-muted)]"
+              />
               <button
                 type="button"
                 onClick={clearFile}
-                aria-label="Retirer la capture"
+                aria-label={p3('support.removeScreenshot')}
                 className="absolute right-2 top-2 grid size-8 place-items-center rounded-full bg-black/55 text-white hover:bg-black/70"
               >
                 <FiX />
@@ -250,13 +288,13 @@ function ErrorReportModal({ open, onClose, dispatch, user }) {
               className="flex min-h-24 flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] text-sm text-[var(--app-text-muted)] hover:border-[var(--app-accent)]"
             >
               <FiImage className="text-xl" />
-              Ajouter une capture d’écran
+              {p3('support.addScreenshot')}
             </button>
           )}
         </div>
 
         <Button type="submit" icon={FiSend} loading={submitting} disabled={submitting}>
-          Envoyer le signalement
+          {p3('support.sendBug')}
         </Button>
       </form>
     </PublicationModal>
@@ -264,6 +302,8 @@ function ErrorReportModal({ open, onClose, dispatch, user }) {
 }
 
 function TicketCard({ dispatch, ticket, user }) {
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const formik = useFormik({
     initialValues: { text: '' },
     validationSchema: messageSchema,
@@ -303,7 +343,7 @@ function TicketCard({ dispatch, ticket, user }) {
               <a href={message.imageUrl} target="_blank" rel="noreferrer" className="mt-2 block">
                 <img
                   src={message.imageUrl}
-                  alt="Capture jointe"
+                  alt={p3('support.attachedAlt')}
                   className="max-h-56 w-full rounded-lg border border-[var(--app-border)] object-contain"
                   loading="lazy"
                 />
@@ -316,14 +356,14 @@ function TicketCard({ dispatch, ticket, user }) {
         <form className="mt-4 flex gap-2" onSubmit={formik.handleSubmit}>
           <input
             className="min-h-11 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 dark:border-slate-700 dark:bg-slate-950"
-            placeholder="Répondre"
+            placeholder={p3('support.replyPlaceholder')}
             {...formik.getFieldProps('text')}
           />
-          <Button type="submit" icon={FiSend} aria-label="Envoyer" />
+          <Button type="submit" icon={FiSend} aria-label={p3('support.sendAria')} />
         </form>
       ) : (
         <div className="mt-4">
-          <Alert variant="success">Cette demande est fermee.</Alert>
+          <Alert variant="success">{p3('support.closedAlert')}</Alert>
         </div>
       )}
     </Card>

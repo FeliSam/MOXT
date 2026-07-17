@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Badge } from '../../../components/ui/Badge'
 import { Card } from '../../../components/ui/Card'
 import { SkeletonCard } from '../../../components/ui/Skeleton'
+import { useLanguage } from '../../../contexts/useLanguage'
 import { useHorizontalScroll } from '../../../hooks/useHorizontalScroll'
 import {
   dashboardLiveAccents,
@@ -88,7 +89,7 @@ function DashboardLiveTile({ accent, icon: ItemIcon, item, path }) {
 export function DashboardLiveList({
   accent = 'parcels',
   description,
-  emptyLabel = 'Aucun contenu récent.',
+  emptyLabel,
   icon: SectionIcon,
   items,
   loading = false,
@@ -96,9 +97,11 @@ export function DashboardLiveList({
   scrollRef: externalScrollRef,
   title,
 }) {
+  const { t } = useLanguage()
   const internalScrollRef = useHorizontalScroll()
   const scrollRef = externalScrollRef || internalScrollRef
   const headerIconStyle = dashboardLiveAccents[accent]?.icon || dashboardLiveAccents.parcels.icon
+  const resolvedEmptyLabel = emptyLabel ?? t('dashboard.discovery.emptyRecent')
 
   return (
     <Card className={dashboardLiveCardClass}>
@@ -122,7 +125,7 @@ export function DashboardLiveList({
           <Link
             to={path}
             className="group/arrow grid size-10 shrink-0 place-items-center rounded-2xl border border-[var(--app-border)] bg-white transition-all duration-[var(--transition-base)] hover:-translate-y-0.5 hover:border-brand-200 hover:bg-[var(--app-surface-muted)] hover:shadow-[var(--shadow-card-hover)] dark:bg-[var(--app-surface)] dark:hover:border-brand-800"
-            aria-label={`Voir ${title}`}
+            aria-label={t('dashboard.discovery.viewAria', { title })}
           >
             <FiArrowUpRight
               className="transition-transform duration-[var(--transition-base)] group-hover/arrow:translate-x-0.5 group-hover/arrow:-translate-y-0.5"
@@ -151,7 +154,7 @@ export function DashboardLiveList({
               ))
             : (
               <p className="min-w-full shrink-0 rounded-[var(--radius-card)] border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)]/60 px-5 py-8 text-center text-sm text-[var(--app-text-muted)]">
-                {emptyLabel}
+                {resolvedEmptyLabel}
               </p>
               )}
       </div>

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { FiArrowRight, FiBriefcase, FiCalendar, FiPackage, FiShoppingBag } from 'react-icons/fi'
 import { Card } from '../../components/ui/Card'
+import { useLanguage } from '../../contexts/useLanguage'
 import {
   isActiveEvent,
   isActiveJob,
@@ -9,10 +10,10 @@ import {
 import { isActiveListing } from '../marketplace/listingCatalogUtils'
 
 const TYPE_META = {
-  listing: { icon: FiShoppingBag, label: 'Annonce', path: (id) => `/marketplace/${id}` },
-  job: { icon: FiBriefcase, label: 'Job', path: (id) => `/jobs/${id}` },
-  event: { icon: FiCalendar, label: 'Événement', path: (id) => `/events/${id}` },
-  parcel: { icon: FiPackage, label: 'Colis', path: (id) => `/parcels/${id}` },
+  listing: { icon: FiShoppingBag, labelKey: 'publications.types.listing', path: (id) => `/marketplace/${id}` },
+  job: { icon: FiBriefcase, labelKey: 'publications.types.job', path: (id) => `/jobs/${id}` },
+  event: { icon: FiCalendar, labelKey: 'publications.types.event', path: (id) => `/events/${id}` },
+  parcel: { icon: FiPackage, labelKey: 'publications.types.parcel', path: (id) => `/parcels/${id}` },
 }
 
 function publicationImage(item) {
@@ -34,6 +35,8 @@ export function PublisherPublicationsStrip({
   allPath,
   limit = 5,
 }) {
+  const { t } = useLanguage()
+
   if (!ownerId || !publications) return null
 
   const items = [
@@ -80,13 +83,13 @@ export function PublisherPublicationsStrip({
   return (
     <Card className="min-w-0 overflow-hidden">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="font-black">Autres publications</h2>
+        <h2 className="font-black">{t('publications.strip.title')}</h2>
         {allPath ? (
           <Link
             to={allPath}
             className="inline-flex items-center gap-1 text-xs font-bold text-brand-700 dark:text-brand-300"
           >
-            Tout voir <FiArrowRight />
+            {t('publications.strip.viewAll')} <FiArrowRight />
           </Link>
         ) : null}
       </div>
@@ -116,7 +119,7 @@ export function PublisherPublicationsStrip({
               )}
               <span className="min-w-0">
                 <span className="block text-[10px] font-black uppercase tracking-wide text-[var(--app-text-faint)]">
-                  {meta.label}
+                  {t(meta.labelKey)}
                 </span>
                 <strong className="mt-0.5 block truncate text-sm">{item.title}</strong>
                 {item.meta ? (

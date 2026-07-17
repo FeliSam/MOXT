@@ -12,19 +12,25 @@ import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { CatalogGrid } from '../../components/ui/CatalogGrid'
+import { useLanguage } from '../../contexts/useLanguage'
+import { phase3Text } from '../../i18n/phase3I18n'
 import { formatMoney } from '../transfers/transferUtils'
 import { formatListingPrice } from './favoriteUtils'
 
 function FavoriteRemoveButton({ item, onRemove }) {
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   if (item.legacy) return null
   return (
     <Button className="w-full min-w-0" variant="ghost" icon={FiTrash2} onClick={() => onRemove(item)}>
-      Retirer
+      {p3('favorites.remove')}
     </Button>
   )
 }
 
 function ListingFavoriteCard({ item, onRemove }) {
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const { display, path } = item
   return (
     <Card className="overflow-hidden p-0">
@@ -53,7 +59,7 @@ function ListingFavoriteCard({ item, onRemove }) {
           <h3 className="line-clamp-2 text-sm font-black text-white">{display.title}</h3>
           <div className="mt-1 flex items-end justify-between gap-2">
             <strong className="text-sm font-black text-white">
-              {formatListingPrice(display.price, display.currency)}
+              {formatListingPrice(display.price, display.currency, t)}
             </strong>
             {display.city ? (
               <p className="flex min-w-0 items-center gap-1 text-[11px] text-white/75">
@@ -67,7 +73,7 @@ function ListingFavoriteCard({ item, onRemove }) {
       <div className="grid gap-2 p-3">
         <Link to={path}>
           <Button className="w-full" variant="secondary">
-            Ouvrir
+            {p3('favorites.open')}
           </Button>
         </Link>
         <FavoriteRemoveButton item={item} onRemove={onRemove} />
@@ -77,6 +83,7 @@ function ListingFavoriteCard({ item, onRemove }) {
 }
 
 function ParcelFavoriteCard({ item, onRemove }) {
+  const { t } = useLanguage()
   const { display, path } = item
   return (
     <Card className="grid min-w-0 content-start gap-3 p-4 sm:p-5">
@@ -84,7 +91,7 @@ function ParcelFavoriteCard({ item, onRemove }) {
         <span className="grid size-11 place-items-center rounded-xl bg-sky-50 text-sky-600 dark:bg-sky-950/40">
           <FiPackage />
         </span>
-        <Badge tone="info">Colis</Badge>
+        <Badge tone="info">{t('parcels.favorite.badge')}</Badge>
       </div>
       <div className="min-w-0">
         <h3 className="font-black">
@@ -93,25 +100,28 @@ function ParcelFavoriteCard({ item, onRemove }) {
         {display.departureDate ? (
           <p className="mt-1 flex items-center gap-1 text-sm text-[var(--app-text-muted)]">
             <FiCalendar className="shrink-0" />
-            Départ le {display.departureDate}
+            {t('parcels.favorite.departureOn', { date: display.departureDate })}
           </p>
         ) : null}
       </div>
       <div className="grid gap-1 text-sm">
         {display.remainingKg != null ? (
           <p>
-            <strong>{display.remainingKg} kg</strong> disponibles
+            <strong>{t('parcels.favorite.availableKg', { kg: display.remainingKg })}</strong>{' '}
+            {t('parcels.favorite.availableLabel')}
           </p>
         ) : null}
         {display.pricePerKg != null ? (
           <p className="font-bold text-brand-700">
-            {formatMoney(display.pricePerKg, display.currency)} / kg
+            {t('parcels.favorite.perKg', {
+              price: formatMoney(display.pricePerKg, display.currency),
+            })}
           </p>
         ) : null}
       </div>
       <Link to={path}>
         <Button className="w-full" variant="secondary">
-          Ouvrir
+          {t('parcels.favorite.open')}
         </Button>
       </Link>
       <FavoriteRemoveButton item={item} onRemove={onRemove} />
@@ -120,6 +130,8 @@ function ParcelFavoriteCard({ item, onRemove }) {
 }
 
 function JobFavoriteCard({ item, onRemove }) {
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const { display, path } = item
   return (
     <Card className="grid min-w-0 content-start gap-3 p-4 sm:p-5">
@@ -147,7 +159,7 @@ function JobFavoriteCard({ item, onRemove }) {
       </div>
       <Link to={path}>
         <Button className="w-full" variant="secondary">
-          Ouvrir
+          {p3('favorites.open')}
         </Button>
       </Link>
       <FavoriteRemoveButton item={item} onRemove={onRemove} />
@@ -156,6 +168,8 @@ function JobFavoriteCard({ item, onRemove }) {
 }
 
 function OtherFavoriteCard({ item, onRemove }) {
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const { display, path, relatedType } = item
   const isEvent = relatedType === 'event'
   return (
@@ -171,7 +185,7 @@ function OtherFavoriteCard({ item, onRemove }) {
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/70 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 p-3">
           <Badge tone={isEvent ? 'warning' : 'success'} className="mb-2">
-            {isEvent ? 'Événement' : 'Entreprise'}
+            {isEvent ? p3('favorites.event') : p3('favorites.business')}
           </Badge>
           <h3 className="line-clamp-2 text-sm font-black text-white">{display.title}</h3>
           {display.subtitle ? (
@@ -194,12 +208,12 @@ function OtherFavoriteCard({ item, onRemove }) {
         ) : null}
         {isEvent && display.price != null ? (
           <p className="font-bold text-brand-700">
-            {display.price > 0 ? formatMoney(display.price, display.currency) : 'Gratuit'}
+            {display.price > 0 ? formatMoney(display.price, display.currency) : p3('favorites.free')}
           </p>
         ) : null}
         <Link to={path}>
           <Button className="w-full" variant="secondary">
-            Ouvrir
+            {p3('favorites.open')}
           </Button>
         </Link>
         <FavoriteRemoveButton item={item} onRemove={onRemove} />
@@ -222,12 +236,15 @@ function FavoriteCard({ item, onRemove }) {
 }
 
 export function FavoriteCategorySection({ category, items, onRemove }) {
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
+  const countKey = items.length > 1 ? 'favorites.itemsCountPlural' : 'favorites.itemsCount'
   return (
     <section className="grid gap-4">
       <div>
-        <h3 className="text-base font-black">{category.label}</h3>
+        <h3 className="text-base font-black">{p3(category.labelKey)}</h3>
         <p className="text-sm text-[var(--app-text-muted)]">
-          {items.length} élément{items.length > 1 ? 's' : ''}
+          {p3(countKey, { count: items.length })}
         </p>
       </div>
       <CatalogGrid lazy={false}>

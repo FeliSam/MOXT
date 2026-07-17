@@ -7,21 +7,25 @@ import {
 } from './transferActionUtils'
 
 export const TRANSFER_PROGRESS_MILESTONES = [
-  { key: 'created', label: 'Créé', isDone: () => true },
-  { key: TRANSFER_STATUS.DECLARED, label: 'Déclaré', isDone: hasClientDeclaredPayment },
+  { key: 'created', labelKey: 'transfers.progress.created', isDone: () => true },
+  {
+    key: TRANSFER_STATUS.DECLARED,
+    labelKey: 'transfers.progress.declared',
+    isDone: hasClientDeclaredPayment,
+  },
   {
     key: TRANSFER_STATUS.RECEIVED,
-    label: 'Paiement reçu',
+    labelKey: 'transfers.progress.paymentReceived',
     isDone: hasBusinessConfirmedReception,
   },
   {
     key: TRANSFER_STATUS.PAID_OUT,
-    label: 'Payé',
+    labelKey: 'transfers.progress.paidOut',
     isDone: hasBusinessPayoutWithProof,
   },
   {
     key: TRANSFER_STATUS.COMPLETED,
-    label: 'Terminé',
+    labelKey: 'transfers.progress.completed',
     isDone: (transfer) =>
       transfer.status === TRANSFER_STATUS.COMPLETED || hasRecipientDeclaredReception(transfer),
   },
@@ -48,7 +52,12 @@ export function getTransferProgressState(transfer) {
 
   return {
     steps,
-    activeIndex: activeIndex >= 0 ? activeIndex : firstPendingIndex === -1 ? steps.length - 1 : firstPendingIndex,
+    activeIndex:
+      activeIndex >= 0
+        ? activeIndex
+        : firstPendingIndex === -1
+          ? steps.length - 1
+          : firstPendingIndex,
     completedCount,
   }
 }

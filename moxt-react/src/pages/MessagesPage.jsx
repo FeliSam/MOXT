@@ -49,6 +49,7 @@ import {
   isImageFile,
   MAX_MESSAGE_IMAGES,
 } from '../features/communications/attachmentUtils'
+import { messagesText } from '../features/communications/messagesI18n'
 import { useLanguage } from '../contexts/useLanguage'
 
 const ASSISTANT_ID = 'moxt-assistant'
@@ -164,7 +165,7 @@ export function MessagesPage() {
     const conversation = state.communications.conversations.find((item) => item.id === activeId)
     if (!conversation || assistantActive) return []
     const peer = getConversationPeer(conversation, user.id)
-    return messageSuggestionsForConversation(state, conversation, user.id, peer.name)
+    return messageSuggestionsForConversation(state, conversation, user.id, peer.name, t)
   })
   const formik = useFormik({
     initialValues: { text: '' },
@@ -567,10 +568,18 @@ export function MessagesPage() {
               <div className="min-w-0 flex-1">
                 <h1 className="font-black">{t("messages.conversations")}</h1>
                 <p className="text-xs text-[var(--app-text-muted)]">
-                  {activeHumanConversations.length + 1} échange(s){' '}
+                  {messagesText(t, 'messages.exchangeCount', {
+                    count: activeHumanConversations.length + 1,
+                  })}{' '}
                   {showArchived ? t("messages.archived") : t("messages.active")}
                   {!showArchived && unreadMessagesCount > 0
-                    ? ` · ${unreadMessagesCount} non lu${unreadMessagesCount > 1 ? 's' : ''}`
+                    ? messagesText(
+                        t,
+                        unreadMessagesCount > 1
+                          ? 'messages.unreadCountPlural'
+                          : 'messages.unreadCount',
+                        { count: unreadMessagesCount },
+                      )
                     : ''}
                 </p>
               </div>
@@ -635,7 +644,7 @@ export function MessagesPage() {
                 aria-pressed={showArchived}
               >
                 <FiArchive className="size-3" aria-hidden="true" />
-                {showArchived ? 'Actives' : t('messages.archives')}
+                {showArchived ? messagesText(t, 'messages.actives') : t('messages.archives')}
               </button>
             </div>
           </div>
@@ -824,7 +833,7 @@ export function MessagesPage() {
       <ConfirmDialog
         open={Boolean(pendingDeleteId)}
         title={t("messages.deleteConfirmTitle")}
-        description="Le message sera retiré de votre conversation. Cette action est définitive."
+        description={messagesText(t, 'messages.deleteConfirmDescription')}
         onCancel={() => setPendingDeleteId(null)}
         onConfirm={() => {
           if (active && pendingDeleteId) {

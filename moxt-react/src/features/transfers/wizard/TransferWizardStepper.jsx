@@ -1,7 +1,10 @@
 import { FiCheck } from 'react-icons/fi'
+import { useLanguage } from '../../../contexts/useLanguage'
 import { TRANSFER_WIZARD_STEPS } from './transferWizardConfig'
 
 export function TransferWizardStepper({ step, onGoTo }) {
+  const { t } = useLanguage()
+
   return (
     <div className="relative flex items-start justify-between gap-1 sm:gap-2">
       <div className="absolute left-3 right-3 top-5 h-px bg-[var(--app-border)] sm:left-5 sm:right-5" aria-hidden />
@@ -44,7 +47,7 @@ export function TransferWizardStepper({ step, onGoTo }) {
                 active ? 'text-brand-700 dark:text-brand-400' : 'text-[var(--app-text-muted)]'
               }`}
             >
-              {entry.label}
+              {t(entry.labelKey)}
             </span>
           </button>
         )

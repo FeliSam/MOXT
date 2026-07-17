@@ -1,4 +1,5 @@
 import { categoriesForType, LISTING_TYPES_META } from '../../config/listingConfig'
+import { listingOptionLabel, marketplaceText } from './marketplaceI18n'
 
 const ARCHIVED_STATUSES = new Set(['archived', 'sold', 'expired', 'draft'])
 
@@ -10,12 +11,16 @@ export function isArchivedListing(listing) {
   return ARCHIVED_STATUSES.has(listing?.status)
 }
 
-export function listingTypeLabel(type) {
-  return LISTING_TYPES_META.find((option) => option.value === type)?.label || type || 'Autre'
+export function listingTypeLabel(type, t) {
+  const option = LISTING_TYPES_META.find((item) => item.value === type)
+  if (option && t) return listingOptionLabel(t, option)
+  return option?.label || type || (t ? marketplaceText(t, 'marketplace.types.other.label') : 'Autre')
 }
 
-export function listingCategoryLabel(type, category) {
-  return categoriesForType(type).find((option) => option.value === category)?.label || category || ''
+export function listingCategoryLabel(type, category, t) {
+  const option = categoriesForType(type).find((item) => item.value === category)
+  if (option && t) return listingOptionLabel(t, option)
+  return option?.label || category || ''
 }
 
 export function groupListingsByType(listings) {

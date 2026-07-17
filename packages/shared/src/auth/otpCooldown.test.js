@@ -23,10 +23,11 @@ describe('otpCooldown', () => {
     vi.useRealTimers()
   })
 
-  it('exposes a 90 second resend window and 3 / 3h cap', () => {
+  it('exposes a 90 second resend window and 4 / 3h cap constants', () => {
     expect(OTP_RESEND_COOLDOWN_SECONDS).toBe(90)
     expect(OTP_RESEND_COOLDOWN_MS).toBe(90_000)
-    expect(OTP_MAX_SENDS_PER_WINDOW).toBe(3)
+    expect(OTP_MAX_SENDS_PER_WINDOW).toBe(4)
+    expect(OTP_SEND_CAP_ENABLED).toBe(true)
     expect(OTP_SEND_WINDOW_MS).toBe(3 * 60 * 60 * 1000)
   })
 
@@ -34,9 +35,9 @@ describe('otpCooldown', () => {
     const store = new Map()
     recordOtpSend(store, 'phone', '+79000000010', { persist: false })
 
-    expect(() => recordOtpSend(store, 'phone', '+79000000010', { enforce: true, persist: false })).toThrow(
-      /Patientez \d+ secondes/,
-    )
+    expect(() =>
+      recordOtpSend(store, 'phone', '+79000000010', { enforce: true, persist: false }),
+    ).toThrow(/Patientez \d+ secondes/)
   })
 
   it('allows resend after the cooldown elapsed', () => {
@@ -49,7 +50,7 @@ describe('otpCooldown', () => {
     ).not.toThrow()
   })
 
-  it.skipIf(!OTP_SEND_CAP_ENABLED)('caps at 3 sends per 3 hours for the same identity', () => {
+  it.skipIf(!OTP_SEND_CAP_ENABLED)('caps at 4 sends per 3 hours for the same identity', () => {
     const store = new Map()
     for (let i = 0; i < OTP_MAX_SENDS_PER_WINDOW; i += 1) {
       recordOtpSend(store, 'email', 'a@example.com', { persist: false })
@@ -64,18 +65,19 @@ describe('otpCooldown', () => {
     ).toThrow(/Limite atteinte/)
 
     const state = getOtpSendState(store, 'email', 'a@example.com')
-    expect(state.sendsInWindow).toBe(3)
+    expect(state.sendsInWindow).toBe(OTP_MAX_SENDS_PER_WINDOW)
     expect(state.capped).toBe(true)
     expect(state.remainingSends).toBe(0)
   })
 
   it('resets the rolling window after 3 hours', () => {
     const store = new Map()
-    recordOtpSend(store, 'phone', '+79000000010', { persist: false })
-    vi.advanceTimersByTime(OTP_RESEND_COOLDOWN_MS + 1)
-    recordOtpSend(store, 'phone', '+79000000010', { persist: false })
-    vi.advanceTimersByTime(OTP_RESEND_COOLDOWN_MS + 1)
-    recordOtpSend(store, 'phone', '+79000000010', { persist: false })
+    for (let i = 0; i < OTP_MAX_SENDS_PER_WINDOW; i += 1) {
+      recordOtpSend(store, 'phone', '+79000000010', { persist: false })
+      if (i < OTP_MAX_SENDS_PER_WINDOW - 1) {
+        vi.advanceTimersByTime(OTP_RESEND_COOLDOWN_MS + 1)
+      }
+    }
 
     vi.advanceTimersByTime(OTP_SEND_WINDOW_MS + 1)
     expect(() =>

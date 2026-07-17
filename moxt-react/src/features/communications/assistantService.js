@@ -1,8 +1,10 @@
-export const ASSISTANT_SUGGESTIONS = [
-  "Comment effectuer un transfert d'argent ?",
-  'Comment publier une annonce sur le marketplace ?',
-  "Comment envoyer un colis via un voyageur ?",
-  "Comment vérifier mon identité ?",
-  'Comment contacter le support en cas de litige ?',
-  "Comment créer un compte professionnel ?",
-]
+import { ASSISTANT_SUGGESTION_KEYS, messagesText } from './messagesI18n'
+
+/** @deprecated Prefer ASSISTANT_SUGGESTION_KEYS + messagesText. Kept for tests/compat. */
+export const ASSISTANT_SUGGESTIONS = ASSISTANT_SUGGESTION_KEYS.map((key) =>
+  messagesText(null, key),
+)
+
+export function assistantSuggestions(t) {
+  return ASSISTANT_SUGGESTION_KEYS.map((key) => messagesText(t, key))
+}

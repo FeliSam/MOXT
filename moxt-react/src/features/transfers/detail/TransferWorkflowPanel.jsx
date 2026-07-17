@@ -10,6 +10,7 @@ import {
 } from 'react-icons/fi'
 import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
+import { useLanguage } from '../../../contexts/useLanguage'
 import { TransferStatusBadge } from '../TransferStatusBadge'
 import { TRANSFER_STATUS } from '../transferConfig'
 import { formatDate } from '../transferUtils'
@@ -32,8 +33,13 @@ export function TransferWorkflowPanel({
   proof,
   transfer,
 }) {
+  const { t } = useLanguage()
   const workflow = getTransferWorkflowForView(transfer, actionView, access)
-  const { currentAction, waitingMessage } = workflow
+  const { currentAction, waitingMessageKey } = workflow
+  const actionTitle = currentAction?.titleKey ? t(currentAction.titleKey) : currentAction?.title
+  const actionDescription = currentAction?.descriptionKey
+    ? t(currentAction.descriptionKey)
+    : currentAction?.description
 
   return (
     <Card className="grid gap-0 overflow-hidden p-0">
@@ -41,10 +47,13 @@ export function TransferWorkflowPanel({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-[11px] font-black uppercase tracking-[0.14em] text-brand-700 dark:text-brand-300">
-              Parcours du transfert
+              {t('transfers.workflow.journeyTitle')}
             </p>
             <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-              {workflow.completedCount}/{workflow.steps.length} étapes validées
+              {t('transfers.workflow.stepsValidated', {
+                completed: workflow.completedCount,
+                total: workflow.steps.length,
+              })}
             </p>
           </div>
           <TransferStatusBadge status={transfer.status} />
@@ -55,37 +64,39 @@ export function TransferWorkflowPanel({
       <div className="grid gap-4 px-4 py-5 sm:px-5">
         {currentAction?.type === 'claim' ? (
           <ActionZone
-            description="Toutes les étapes sont complétées. En cas de problème, ouvrez une réclamation."
-            title="Réclamation uniquement"
+            description={t('transfers.workflow.claimOnlyDescription')}
+            title={t('transfers.workflow.claimOnlyTitle')}
           >
             <Button variant="secondary" icon={FiFlag} onClick={onOpenClaim}>
-              Ouvrir une réclamation
+              {t('transfers.workflow.openClaim')}
             </Button>
           </ActionZone>
         ) : null}
 
         {currentAction?.type === 'confirm_payment_reception' ? (
-          <ActionZone description={currentAction.description} title={currentAction.title}>
+          <ActionZone description={actionDescription} title={actionTitle}>
             <Button
               icon={FiCheckCircle}
               onClick={() => onCompleteBusinessStep(TRANSFER_STATUS.RECEIVED)}
             >
-              Confirmer la réception du paiement
+              {t('transfers.workflow.confirmPaymentReception')}
             </Button>
           </ActionZone>
         ) : null}
 
         {currentAction?.type === 'confirm_payout' ? (
-          <ActionZone description={currentAction.description} title={currentAction.title}>
+          <ActionZone description={actionDescription} title={actionTitle}>
             <label className="grid cursor-pointer gap-2 rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3">
               <span className="flex items-center gap-2 text-sm font-bold">
                 <FiUpload className="text-brand-700 dark:text-brand-300" />
-                Preuve de transfert (obligatoire)
+                {t('transfers.workflow.transferProofRequired')}
               </span>
               {businessProof?.file || businessProof?.name ? (
                 <ProofPreview proof={businessProof} />
               ) : (
-                <span className="text-xs text-[var(--app-text-muted)]">Image ou PDF du virement</span>
+                <span className="text-xs text-[var(--app-text-muted)]">
+                  {t('transfers.workflow.imageOrPdf')}
+                </span>
               )}
               <input
                 className="sr-only"
@@ -95,12 +106,15 @@ export function TransferWorkflowPanel({
               />
             </label>
             <Button
-              disabled={(!businessProof?.file && !businessProof?.name && !transfer.businessProof) || businessProof?.uploading}
+              disabled={
+                (!businessProof?.file && !businessProof?.name && !transfer.businessProof) ||
+                businessProof?.uploading
+              }
               loading={businessProof?.uploading}
               icon={FiCheckCircle}
               onClick={() => onCompleteBusinessStep(TRANSFER_STATUS.PAID_OUT)}
             >
-              Confirmer le transfert
+              {t('transfers.workflow.confirmTransfer')}
             </Button>
           </ActionZone>
         ) : null}
@@ -109,20 +123,25 @@ export function TransferWorkflowPanel({
           <ActionZone
             description={
               countdown?.label
-                ? `${currentAction.description} Temps restant : ${countdown.label}.`
-                : currentAction.description
+                ? t('transfers.workflow.declarePaymentWithCountdown', {
+                    description: actionDescription,
+                    countdown: countdown.label,
+                  })
+                : actionDescription
             }
-            title={currentAction.title}
+            title={actionTitle}
           >
             <label className="grid cursor-pointer gap-2 rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3">
               <span className="flex items-center gap-2 text-sm font-bold">
                 <FiUpload className="text-brand-700 dark:text-brand-300" />
-                Preuve de paiement
+                {t('transfers.workflow.paymentProof')}
               </span>
               {proof ? (
                 <ProofPreview proof={proof} />
               ) : (
-                <span className="text-xs text-[var(--app-text-muted)]">Image ou PDF du virement</span>
+                <span className="text-xs text-[var(--app-text-muted)]">
+                  {t('transfers.workflow.imageOrPdf')}
+                </span>
               )}
               <input className="sr-only" type="file" accept="image/*,.pdf" onChange={onProofSelected} />
             </label>
@@ -132,42 +151,47 @@ export function TransferWorkflowPanel({
               icon={FiCheckCircle}
               onClick={onDeclarePayment}
             >
-              Déclarer le paiement
+              {t('transfers.workflow.declarePayment')}
             </Button>
             {transfer.paymentDeadlineAt ? (
               <p className="text-xs text-[var(--app-text-muted)]">
-                Date limite : {formatDate(transfer.paymentDeadlineAt)}
+                {t('transfers.workflow.deadline', { date: formatDate(transfer.paymentDeadlineAt) })}
               </p>
             ) : null}
           </ActionZone>
         ) : null}
 
         {currentAction?.type === 'declare_reception' ? (
-          <ActionZone description={currentAction.description} title={currentAction.title}>
+          <ActionZone description={actionDescription} title={actionTitle}>
             {transfer.businessProof ? (
-              <CompactProof label="Preuve entreprise" proof={transfer.businessProof} />
+              <CompactProof
+                label={t('transfers.workflow.businessProof')}
+                proof={transfer.businessProof}
+              />
             ) : null}
             <Link to={`/transfers/${transfer.id}/receive`} state={{ transferView: 'client' }}>
               <Button className="w-full sm:w-auto" icon={FiCheckCircle}>
-                Déclarer la réception
+                {t('transfers.workflow.declareReception')}
               </Button>
             </Link>
           </ActionZone>
         ) : null}
 
-        {!currentAction && waitingMessage ? (
+        {!currentAction && waitingMessageKey ? (
           <div className="flex items-start gap-3 rounded-xl bg-[var(--app-surface-muted)] p-4">
             <FiClock className="mt-0.5 shrink-0 text-brand-700 dark:text-brand-300" />
             <div>
-              <p className="text-sm font-bold">En attente</p>
-              <p className="mt-1 text-sm leading-6 text-[var(--app-text-muted)]">{waitingMessage}</p>
+              <p className="text-sm font-bold">{t('transfers.workflow.waitingTitle')}</p>
+              <p className="mt-1 text-sm leading-6 text-[var(--app-text-muted)]">
+                {t(waitingMessageKey)}
+              </p>
             </div>
           </div>
         ) : null}
 
         {canCancel ? (
           <Button className="justify-self-start" variant="danger" icon={FiXCircle} onClick={onCancel}>
-            Annuler le transfert
+            {t('transfers.workflow.cancelTransfer')}
           </Button>
         ) : null}
 
@@ -178,10 +202,11 @@ export function TransferWorkflowPanel({
 }
 
 function ActionZone({ children, description, title }) {
+  const { t } = useLanguage()
   return (
     <div className="rounded-2xl border-2 border-brand-300 bg-brand-50/30 p-4 dark:border-brand-700 dark:bg-brand-950/20">
       <p className="text-xs font-black uppercase tracking-wide text-brand-700 dark:text-brand-300">
-        Action requise
+        {t('transfers.workflow.actionRequired')}
       </p>
       <h3 className="mt-1 font-black">{title}</h3>
       <p className="mt-2 text-sm leading-6 text-[var(--app-text-muted)]">{description}</p>
@@ -190,7 +215,20 @@ function ActionZone({ children, description, title }) {
   )
 }
 
+function CompactProof({ label, proof }) {
+  if (!proof?.name) return null
+  return (
+    <div className="flex items-center gap-2 rounded-xl bg-[var(--app-surface-muted)] px-3 py-2 text-xs font-semibold">
+      <FiFileText className="shrink-0 text-brand-700 dark:text-brand-300" />
+      <span className="truncate">
+        {label}: {proof.name}
+      </span>
+    </div>
+  )
+}
+
 function ProofPreview({ proof }) {
+  const { t } = useLanguage()
   const file = proof.file || proof
   const name = file?.name || proof.name
   const type = file?.type || proof.type
@@ -207,7 +245,7 @@ function ProofPreview({ proof }) {
       )}
       <span className="min-w-0 flex-1 truncate text-xs font-semibold">{name}</span>
       {proof.uploading ? (
-        <span className="text-[11px] text-[var(--app-text-muted)]">Envoi…</span>
+        <span className="text-[11px] text-[var(--app-text-muted)]">{t('transfers.workflow.uploading')}</span>
       ) : (
         <FiCheck className="shrink-0 text-emerald-600" />
       )}

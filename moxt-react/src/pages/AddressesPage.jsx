@@ -5,6 +5,7 @@ import { Tabs } from '../components/ui/Tabs'
 import { IdentityProfileSection } from '../components/identity/IdentityProfileSection'
 import { RecipientAddressCarousel } from '../components/addresses/RecipientAddressCarousel'
 import { RecipientAddressFormModal } from '../components/addresses/RecipientAddressFormModal'
+import { useLanguage } from '../contexts/useLanguage'
 import {
   addRecipientAddress,
   removeRecipientAddress,
@@ -14,15 +15,14 @@ import {
   selectIdentityProfilesByUser,
   selectRecipientAddressesByUser,
 } from '../features/addresses/addressesSelectors'
+import { phase3Text } from '../i18n/phase3I18n'
 
-const TABS = [
-  { value: 'identity', label: 'Identité' },
-  { value: 'recipient', label: 'Destinataires' },
-  { value: 'carrier', label: 'Transporteurs' },
-]
+const TAB_KEYS = ['identity', 'recipient', 'carrier']
 
 export function AddressesPage() {
   const dispatch = useDispatch()
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const user = useSelector((state) => state.auth.user)
   const [tab, setTab] = useState('identity')
   const [modalOpen, setModalOpen] = useState(false)
@@ -31,6 +31,11 @@ export function AddressesPage() {
 
   const recipients = useSelector((state) => selectRecipientAddressesByUser(state, user?.id))
   const identityProfiles = useSelector((state) => selectIdentityProfilesByUser(state, user?.id))
+
+  const tabs = TAB_KEYS.map((value) => ({
+    value,
+    label: p3(`addresses.tabs.${value}`),
+  }))
 
   const selectedRecipient = useMemo(
     () => recipients.find((r) => r.id === selectedRecipientId) || recipients[0] || null,
@@ -51,12 +56,12 @@ export function AddressesPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Carnet"
-        title="Carnet d'adresses"
-        description="Profils d'identité et adresses destinataires pour vos envois et transferts."
+        eyebrow={p3('addresses.eyebrow')}
+        title={p3('addresses.title')}
+        description={p3('addresses.description')}
       />
 
-      <Tabs items={TABS} value={tab} onChange={setTab} />
+      <Tabs items={tabs} value={tab} onChange={setTab} />
 
       {tab === 'identity' ? <IdentityProfileSection userId={user?.id} /> : null}
 
@@ -91,7 +96,7 @@ export function AddressesPage() {
 
       {tab === 'carrier' ? (
         <p className="rounded-2xl border border-dashed border-[var(--app-border)] p-6 text-sm text-[var(--app-text-muted)]">
-          Les adresses transporteur seront disponibles dans une prochaine itération.
+          {p3('addresses.carrierSoon')}
         </p>
       ) : null}
     </div>

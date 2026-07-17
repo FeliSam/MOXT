@@ -10,13 +10,16 @@ import { Input } from '../components/ui/Input'
 import { authErrorToast } from '../features/auth/authErrorMessages'
 import { authService } from '../features/auth/authService'
 import { OTP_RESEND_COOLDOWN_SECONDS } from '@moxt/shared/auth/otpCooldown.js'
-import { forgotPasswordSchema } from '../features/auth/authSchemas'
+import { useLanguage } from '../contexts/useLanguage'
+import { createAuthSchemas } from '../features/auth/authSchemas'
 import { addToast } from '../features/ui/uiSlice'
 
 export function ForgotPasswordPage() {
   const dispatch = useDispatch()
+  const { t } = useLanguage()
   const [sent, setSent] = useState(false)
   const [cooldown, setCooldown] = useState(0)
+  const { forgotPasswordSchema } = createAuthSchemas(t)
 
   useEffect(() => {
     if (cooldown <= 0) return undefined
@@ -34,8 +37,8 @@ export function ForgotPasswordPage() {
         setCooldown(OTP_RESEND_COOLDOWN_SECONDS)
         dispatch(
           addToast({
-            title: 'Demande enregistrée',
-            message: 'Si un compte existe, un e-mail de récupération vous sera envoyé sous peu.',
+            title: t('auth.forgot.toastSuccessTitle'),
+            message: t('auth.forgot.toastSuccessBody'),
             tone: 'success',
           }),
         )
@@ -43,8 +46,10 @@ export function ForgotPasswordPage() {
         dispatch(
           addToast(
             authErrorToast(
-              'Envoi impossible',
-              error instanceof Error ? error.message : 'Réessayez plus tard.',
+              t('auth.forgot.toastErrorTitle'),
+              error instanceof Error ? error.message : t('auth.forgot.toastErrorFallback'),
+              'error',
+              t,
             ),
           ),
         )
@@ -56,19 +61,18 @@ export function ForgotPasswordPage() {
 
   return (
     <AuthCard
-      eyebrow="MOXT · Récupération"
-      title="Mot de passe oublié"
-      description="Saisissez votre adresse e-mail. Pour votre sécurité, la réponse reste identique que le compte existe ou non."
+      eyebrow={t('auth.forgot.eyebrow')}
+      title={t('auth.forgot.title')}
+      description={t('auth.forgot.description')}
       corner={<FiMail className="text-xl text-brand-600 dark:text-brand-300" aria-hidden="true" />}
     >
       {sent ? (
         <div className="auth-flow-panel mt-6 grid gap-4">
-          <Alert variant="success" title="Vérifiez votre messagerie">
-            Si cette adresse correspond à un compte MOXT, un lien de réinitialisation vient d'être envoyé.
-            Pensez à consulter les courriers indésirables.
+          <Alert variant="success" title={t('auth.forgot.sentTitle')}>
+            {t('auth.forgot.sentBody')}
           </Alert>
           <p className="auth-flow-hint text-sm text-[var(--app-text-muted)]">
-            Le lien expire après un court délai. Ouvrez-le sur le même appareil si possible.
+            {t('auth.forgot.sentHint')}
           </p>
           <Button
             className="w-full"
@@ -77,17 +81,19 @@ export function ForgotPasswordPage() {
             disabled={cooldown > 0 || formik.isSubmitting}
             onClick={() => formik.handleSubmit()}
           >
-            {cooldown > 0 ? `Renvoyer dans ${cooldown}s` : 'Renvoyer un e-mail'}
+            {cooldown > 0
+              ? t('auth.forgot.resendCooldown', { seconds: cooldown })
+              : t('auth.forgot.resend')}
           </Button>
           <Link className="auth-flow-link text-center" to="/login">
-            Retour à la connexion
+            {t('auth.forgot.backToLogin')}
           </Link>
         </div>
       ) : (
         <form className="auth-flow-panel mt-6 grid gap-4" onSubmit={formik.handleSubmit} noValidate>
           <Input
             id="forgot-email"
-            label="Adresse e-mail"
+            label={t('auth.forgot.email')}
             type="email"
             autoComplete="email"
             placeholder="nom@example.com"
@@ -96,14 +102,13 @@ export function ForgotPasswordPage() {
             error={formik.touched.email ? formik.errors.email : undefined}
           />
           <p className="auth-flow-hint text-xs text-[var(--app-text-muted)]">
-            Compte créé par téléphone ? Connectez-vous avec votre numéro +7 confirmé et votre mot de
-            passe, ou confirmez d&apos;abord l&apos;e-mail dans Sécurité pour la récupération.
+            {t('auth.forgot.phoneAccountHint')}
           </p>
           <Button className="w-full" type="submit" disabled={formik.isSubmitting}>
-            {formik.isSubmitting ? 'Envoi en cours…' : 'Recevoir un lien sécurisé'}
+            {formik.isSubmitting ? t('auth.forgot.submitting') : t('auth.forgot.submit')}
           </Button>
           <Link className="auth-flow-link-muted text-center" to="/login">
-            Retour à la connexion
+            {t('auth.forgot.backToLogin')}
           </Link>
         </form>
       )}

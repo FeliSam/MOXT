@@ -1,5 +1,7 @@
 import { useDispatch, useSelector } from 'react-redux'
 import { FavoriteButton as AnimatedFavoriteButton } from '../../components/ui/FavoriteButton'
+import { useLanguage } from '../../contexts/useLanguage'
+import { phase3Text } from '../../i18n/phase3I18n'
 import { toggleAccountFavorite } from './accountSlice'
 import { buildFavoriteSnapshot } from './favoriteUtils'
 
@@ -17,6 +19,8 @@ export function FavoriteButton({
   showLabel = true,
 }) {
   const dispatch = useDispatch()
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const user = useSelector((state) => state.auth.user)
   const favorite = useSelector((state) =>
     state.account.favorites.some(
@@ -29,7 +33,11 @@ export function FavoriteButton({
     <AnimatedFavoriteButton
       active={favorite}
       variant={variant}
-      label={showLabel ? (favorite ? 'Enregistré' : 'Ajouter aux favoris') : undefined}
+      label={
+        showLabel
+          ? p3(favorite ? 'favorites.saved' : 'favorites.addToFavorites')
+          : undefined
+      }
       className={className}
       onToggle={() =>
         dispatch(

@@ -8,19 +8,25 @@ import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
 import { CitySelector } from '../components/ui/CitySelector'
 import { PageHeader } from '../components/ui/PageHeader'
-import { EVENT_CATEGORIES } from '../config/options'
+import {
+  EVENT_FORMAT_OPTIONS,
+  EVENT_PUBLISH_CATEGORIES,
+} from '../features/events/eventPublishConfig'
 import { updateEvent } from '../features/events/eventSlice'
+import { useLanguage } from '../contexts/useLanguage'
+import { publishOptionLabel, publishText } from '../features/publications/publishI18n'
 
 export function EditEventPage() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const { eventId } = useParams()
   const user = useSelector((state) => state.auth.user)
   const event = useSelector((state) => state.events.items.find((item) => item.id === eventId))
 
   const [form, setForm] = useState(null)
 
-  if (!event) return <Card>Événement introuvable.</Card>
+  if (!event) return <Card>{publishText(t, 'publish.event.edit.notFound')}</Card>
   if (event.ownerId !== user.id) return <Navigate to={`/events/${eventId}`} replace />
 
   const values = form ?? {
@@ -64,53 +70,59 @@ export function EditEventPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Événements"
-        title="Modifier l'événement"
-        description="Mettez à jour les informations de votre événement."
+        eyebrow={publishText(t, 'publish.event.edit.eyebrow')}
+        title={publishText(t, 'publish.event.edit.title')}
+        description={publishText(t, 'publish.event.edit.description')}
         actions={
           <Link to={`/events/${eventId}`}>
-            <Button variant="secondary" icon={FiArrowLeft}>Annuler</Button>
+            <Button variant="secondary" icon={FiArrowLeft}>
+              {t('common.cancel')}
+            </Button>
           </Link>
         }
       />
       <Card className="mx-auto w-full max-w-3xl">
         <form className="grid gap-5" onSubmit={handleSubmit} noValidate>
           <Input
-            label="Titre de l'événement"
+            label={publishText(t, 'publish.event.fields.title')}
             required
             value={values.title}
             onChange={(e) => set('title', e.target.value)}
           />
           <div className="grid gap-4 sm:grid-cols-2">
             <Select
-              label="Catégorie"
+              label={publishText(t, 'publish.event.fields.category')}
               value={values.category}
               onChange={(e) => set('category', e.target.value)}
             >
-              <option value="">Sélectionner</option>
-              {EVENT_CATEGORIES.map((cat) => (
-                <option key={cat.value} value={cat.value}>{cat.label}</option>
+              <option value="">{publishText(t, 'publish.event.fields.selectCategory')}</option>
+              {EVENT_PUBLISH_CATEGORIES.map((cat) => (
+                <option key={cat.value} value={cat.value}>
+                  {publishOptionLabel(t, cat)}
+                </option>
               ))}
             </Select>
             <Select
-              label="Format"
+              label={publishText(t, 'publish.event.fields.format')}
               value={values.format}
               onChange={(e) => set('format', e.target.value)}
             >
-              <option value="in_person">Présentiel</option>
-              <option value="online">En ligne</option>
-              <option value="hybrid">Hybride</option>
+              {EVENT_FORMAT_OPTIONS.map((fmt) => (
+                <option key={fmt.value} value={fmt.value}>
+                  {publishOptionLabel(t, fmt)}
+                </option>
+              ))}
             </Select>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
-              label="Début"
+              label={publishText(t, 'publish.event.fields.start')}
               type="datetime-local"
               value={values.startAt}
               onChange={(e) => set('startAt', e.target.value)}
             />
             <Input
-              label="Fin (optionnel)"
+              label={publishText(t, 'publish.event.fields.end')}
               type="datetime-local"
               value={values.endAt}
               onChange={(e) => set('endAt', e.target.value)}
@@ -118,13 +130,13 @@ export function EditEventPage() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
-              label="Date limite d'inscription"
+              label={publishText(t, 'publish.event.fields.registrationDeadline')}
               type="date"
               value={values.registrationDeadline}
               onChange={(e) => set('registrationDeadline', e.target.value)}
             />
             <Input
-              label="Capacité (personnes)"
+              label={publishText(t, 'publish.event.fields.capacity')}
               type="number"
               min="1"
               value={values.capacity}
@@ -132,7 +144,9 @@ export function EditEventPage() {
             />
           </div>
           <label className="grid gap-1.5">
-            <span className="text-sm font-bold">Description</span>
+            <span className="text-sm font-bold">
+              {publishText(t, 'publish.event.fields.description')}
+            </span>
             <textarea
               className="min-h-32 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3.5 text-sm"
               value={values.description}
@@ -140,7 +154,9 @@ export function EditEventPage() {
             />
           </label>
           <label className="grid gap-1.5">
-            <span className="text-sm font-bold">Programme / déroulé (optionnel)</span>
+            <span className="text-sm font-bold">
+              {publishText(t, 'publish.event.fields.program')}
+            </span>
             <textarea
               className="min-h-20 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3.5 text-sm"
               value={values.program}
@@ -148,24 +164,24 @@ export function EditEventPage() {
             />
           </label>
           <Input
-            label="Intervenants / Artistes (optionnel)"
+            label={publishText(t, 'publish.event.fields.speakers')}
             value={values.speakers}
             onChange={(e) => set('speakers', e.target.value)}
           />
           {values.format !== 'online' ? (
             <>
               <CitySelector
-                label="Ville"
+                label={publishText(t, 'publish.event.fields.city')}
                 value={values.city}
                 onChange={(city) => set('city', city)}
               />
               <Input
-                label="Nom du lieu"
+                label={publishText(t, 'publish.event.fields.venue')}
                 value={values.venue}
                 onChange={(e) => set('venue', e.target.value)}
               />
               <Input
-                label="Adresse complète"
+                label={publishText(t, 'publish.event.fields.address')}
                 value={values.address}
                 onChange={(e) => set('address', e.target.value)}
               />
@@ -173,7 +189,7 @@ export function EditEventPage() {
           ) : null}
           {values.format !== 'in_person' ? (
             <Input
-              label="Lien de connexion"
+              label={publishText(t, 'publish.event.fields.onlineLink')}
               value={values.onlineLink}
               onChange={(e) => set('onlineLink', e.target.value)}
             />
@@ -188,13 +204,17 @@ export function EditEventPage() {
               className="size-5 accent-brand-700"
             />
             <div>
-              <p className="text-sm font-bold">Entrée gratuite</p>
-              <p className="text-xs text-[var(--app-text-muted)]">Décochez pour définir un tarif</p>
+              <p className="text-sm font-bold">
+                {publishText(t, 'publish.event.fields.freeEntry')}
+              </p>
+              <p className="text-xs text-[var(--app-text-muted)]">
+                {publishText(t, 'publish.event.fields.freeEntryHint')}
+              </p>
             </div>
           </label>
           {!values.freeEntry ? (
             <Input
-              label="Tarif d'entrée (RUB)"
+              label={publishText(t, 'publish.event.fields.price')}
               type="number"
               min="0"
               value={values.price}
@@ -203,17 +223,19 @@ export function EditEventPage() {
           ) : null}
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
-              label="Organisateur (nom affiché)"
+              label={publishText(t, 'publish.event.fields.organizerName')}
               value={values.organizerName}
               onChange={(e) => set('organizerName', e.target.value)}
             />
             <Input
-              label="Contact de l'organisateur"
+              label={publishText(t, 'publish.event.fields.organizerContact')}
               value={values.organizerContact}
               onChange={(e) => set('organizerContact', e.target.value)}
             />
           </div>
-          <Button type="submit" icon={FiSave}>Enregistrer les modifications</Button>
+          <Button type="submit" icon={FiSave}>
+            {publishText(t, 'publish.common.saveChanges')}
+          </Button>
         </form>
       </Card>
     </div>

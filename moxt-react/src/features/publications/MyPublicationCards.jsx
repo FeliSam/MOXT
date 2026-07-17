@@ -12,6 +12,8 @@ import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { statusMeta } from '../../config/statuses'
+import { useLanguage } from '../../contexts/useLanguage'
+import { phase3Text } from '../../i18n/phase3I18n'
 import { formatMoney } from '../transfers/transferUtils'
 import { isActiveEvent, isActiveJob, isActiveParcel, isActivePost, archivedPublicationCardClass } from './publicationCatalogUtils'
 
@@ -28,6 +30,8 @@ function PublicationCardShell({
   guestMode = false,
   onGuestInteract,
 }) {
+  const { t } = useLanguage()
+
   function handleGuestClick(event) {
     if (!guestMode) return
     event.preventDefault()
@@ -62,7 +66,7 @@ function PublicationCardShell({
           <div className="flex flex-wrap gap-2">
             <Link to={path} onClick={handleGuestClick}>
               <Button variant="secondary" icon={FiExternalLink} size="sm">
-                Ouvrir
+                {phase3Text(t, 'publications.cards.open')}
               </Button>
             </Link>
             {actions}
@@ -81,7 +85,8 @@ export function MyParcelPublicationCard({
   onArchive,
   onReactivate,
 }) {
-  const status = statusMeta(parcel.status)
+  const { t } = useLanguage()
+  const status = statusMeta(parcel.status, t)
   const active = isActiveParcel(parcel)
   return (
     <PublicationCardShell
@@ -92,12 +97,18 @@ export function MyParcelPublicationCard({
       title={`${parcel.origin} → ${parcel.destination}`}
       subtitle={
         parcel.pricePerKg != null
-          ? `${formatMoney(parcel.pricePerKg, parcel.currency)} / kg`
+          ? t('parcels.my.perKg', {
+              price: formatMoney(parcel.pricePerKg, parcel.currency),
+            })
           : null
       }
       meta={[
-        parcel.departureDate ? `Départ ${parcel.departureDate}` : null,
-        parcel.remainingKg != null ? `${parcel.remainingKg} kg restants` : null,
+        parcel.departureDate
+          ? t('parcels.my.departure', { date: parcel.departureDate })
+          : null,
+        parcel.remainingKg != null
+          ? t('parcels.my.remainingKg', { kg: parcel.remainingKg })
+          : null,
       ].filter(Boolean)}
       path={`/parcels/${parcel.id}`}
       guestMode={guestMode}
@@ -107,16 +118,16 @@ export function MyParcelPublicationCard({
           <>
             <Link to={`/parcels/${parcel.id}/edit`}>
               <Button variant="secondary" icon={FiEdit2} size="sm">
-                Modifier
+                {t('parcels.my.edit')}
               </Button>
             </Link>
             {active ? (
               <Button variant="danger" icon={FiRotateCcw} size="sm" onClick={onArchive}>
-                Clôturer
+                {t('parcels.my.close')}
               </Button>
             ) : (
               <Button icon={FiRotateCcw} size="sm" onClick={onReactivate}>
-                Réactiver
+                {t('parcels.my.reactivate')}
               </Button>
             )}
           </>
@@ -135,7 +146,9 @@ export function MyJobPublicationCard({
   onArchive,
   onReactivate,
 }) {
-  const status = statusMeta(job.status)
+  const { t } = useLanguage()
+  const p3 = (key) => phase3Text(t, key)
+  const status = statusMeta(job.status, t)
   const active = isActiveJob(job)
   return (
     <PublicationCardShell
@@ -154,16 +167,16 @@ export function MyJobPublicationCard({
           <>
             <Link to={`/jobs/${job.id}/edit`}>
               <Button variant="secondary" icon={FiEdit2} size="sm">
-                Modifier
+                {p3('publications.cards.edit')}
               </Button>
             </Link>
             {active ? (
               <Button variant="danger" size="sm" onClick={onArchive}>
-                Archiver
+                {p3('publications.cards.archive')}
               </Button>
             ) : (
               <Button icon={FiRotateCcw} size="sm" onClick={onReactivate}>
-                Republier
+                {p3('publications.cards.republish')}
               </Button>
             )}
           </>
@@ -181,7 +194,9 @@ export function MyEventPublicationCard({
   onArchive,
   onReactivate,
 }) {
-  const status = statusMeta(event.status)
+  const { t } = useLanguage()
+  const p3 = (key) => phase3Text(t, key)
+  const status = statusMeta(event.status, t)
   const active = isActiveEvent(event)
   return (
     <PublicationCardShell
@@ -190,7 +205,9 @@ export function MyEventPublicationCard({
       tone="from-amber-600 to-orange-700"
       badge={<Badge tone={status.tone}>{status.label}</Badge>}
       title={event.title}
-      subtitle={event.price > 0 ? formatMoney(event.price, event.currency) : 'Gratuit'}
+      subtitle={
+        event.price > 0 ? formatMoney(event.price, event.currency) : p3('publications.cards.free')
+      }
       meta={[event.city, event.startAt || event.date].filter(Boolean)}
       path={`/events/${event.id}`}
       guestMode={guestMode}
@@ -200,16 +217,16 @@ export function MyEventPublicationCard({
           <>
             <Link to={`/events/${event.id}/edit`}>
               <Button variant="secondary" icon={FiEdit2} size="sm">
-                Modifier
+                {p3('publications.cards.edit')}
               </Button>
             </Link>
             {active ? (
               <Button variant="danger" size="sm" onClick={onArchive}>
-                Archiver
+                {p3('publications.cards.archive')}
               </Button>
             ) : (
               <Button icon={FiRotateCcw} size="sm" onClick={onReactivate}>
-                Republier
+                {p3('publications.cards.republish')}
               </Button>
             )}
           </>
@@ -226,16 +243,21 @@ export function MyPostPublicationCard({
   onGuestInteract,
   onDelete,
 }) {
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const active = isActivePost(post)
   return (
     <PublicationCardShell
       archived={!active}
       icon={FiFileText}
       tone="from-slate-600 to-slate-800"
-      badge={<Badge tone="info">Publication</Badge>}
-      title={post.message?.slice(0, 80) || 'Publication'}
+      badge={<Badge tone="info">{p3('publications.cards.badge')}</Badge>}
+      title={post.message?.slice(0, 80) || p3('publications.cards.fallbackTitle')}
       subtitle={post.sourceType !== 'free' ? post.sourceType : null}
-      meta={[`${post.likes?.length || 0} j'aime`, `${post.comments?.length || 0} commentaires`]}
+      meta={[
+        p3('publications.cards.likes', { count: post.likes?.length || 0 }),
+        p3('publications.cards.comments', { count: post.comments?.length || 0 }),
+      ]}
       path="/news"
       guestMode={guestMode}
       onGuestInteract={onGuestInteract}
@@ -244,12 +266,12 @@ export function MyPostPublicationCard({
           <>
             <Link to={`/news/${post.id}/edit`}>
               <Button variant="secondary" icon={FiEdit2} size="sm">
-                Modifier
+                {p3('publications.cards.edit')}
               </Button>
             </Link>
             {onDelete ? (
               <Button variant="danger" size="sm" onClick={onDelete}>
-                Supprimer
+                {p3('publications.cards.delete')}
               </Button>
             ) : null}
           </>

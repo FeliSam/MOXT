@@ -6,20 +6,42 @@ import {
   FiLayers,
   FiRepeat,
 } from 'react-icons/fi'
+import { useLanguage } from '../../../contexts/useLanguage'
 import { TransferStatusBadge } from '../../transfers/TransferStatusBadge'
 import { formatMoney } from '../../transfers/transferUtils'
 import { CARD, CONTENT_SECTIONS, ITEM } from '../adminConfig'
+import { adminOptionLabel, adminText } from '../adminI18n'
 import { statusDotColor } from '../adminUtils'
 import { Empty, SectionTitle } from './AdminShared'
 
 export function AdminOverviewPanel({ content, metrics, onOpenContent, onOpenView, queues, setSelected, transfers }) {
+  const { t } = useLanguage()
+
   return (
     <div className="grid gap-5">
       <div className="grid gap-3 sm:grid-cols-3">
         {[
-          { key: 'transfers', icon: FiRepeat, label: 'Piloter les transferts', value: `${metrics.transfers.pending} en cours`, color: 'from-teal-600 to-cyan-500' },
-          { key: 'content', icon: FiLayers, label: 'Moderer les contenus', value: `${metrics.content.pending} en attente`, color: 'from-violet-600 to-purple-500' },
-          { key: 'queues', icon: FiAlertTriangle, label: 'Traiter les files', value: `${queues.urgent} urgentes`, color: 'from-amber-500 to-orange-500' },
+          {
+            key: 'transfers',
+            icon: FiRepeat,
+            label: adminText(t, 'admin.overview.actions.transfers.label'),
+            value: adminText(t, 'admin.overview.actions.transfers.value', { count: metrics.transfers.pending }),
+            color: 'from-teal-600 to-cyan-500',
+          },
+          {
+            key: 'content',
+            icon: FiLayers,
+            label: adminText(t, 'admin.overview.actions.content.label'),
+            value: adminText(t, 'admin.overview.actions.content.value', { count: metrics.content.pending }),
+            color: 'from-violet-600 to-purple-500',
+          },
+          {
+            key: 'queues',
+            icon: FiAlertTriangle,
+            label: adminText(t, 'admin.overview.actions.queues.label'),
+            value: adminText(t, 'admin.overview.actions.queues.value', { count: queues.urgent }),
+            color: 'from-amber-500 to-orange-500',
+          },
         ].map((action) => (
           <button key={action.key} type="button" onClick={() => onOpenView(action.key)} className="text-left">
             <div className={`${CARD} group relative h-full overflow-hidden p-5 transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgb(15_23_42/0.1)]`}>
@@ -39,7 +61,7 @@ export function AdminOverviewPanel({ content, metrics, onOpenContent, onOpenView
       </div>
 
       <div className={`${CARD} p-5 grid gap-4`}>
-        <SectionTitle icon={FiLayers} label="Modules de contenu" count={metrics.content.total} />
+        <SectionTitle icon={FiLayers} label={adminText(t, 'admin.overview.modulesTitle')} count={metrics.content.total} />
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
           {CONTENT_SECTIONS.map((section) => {
             const count = content[section.id]?.length || 0
@@ -53,8 +75,10 @@ export function AdminOverviewPanel({ content, metrics, onOpenContent, onOpenView
                 <span className={`inline-grid size-9 place-items-center rounded-xl ${section.color}`}>
                   <section.icon className="text-sm" />
                 </span>
-                <strong className="mt-2.5 block text-sm">{section.label}</strong>
-                <p className="mt-0.5 text-xs text-[var(--app-text-muted)]">{count} element(s)</p>
+                <strong className="mt-2.5 block text-sm">{adminOptionLabel(t, section)}</strong>
+                <p className="mt-0.5 text-xs text-[var(--app-text-muted)]">
+                  {adminText(t, 'admin.overview.elementCount', { count })}
+                </p>
               </button>
             )
           })}
@@ -65,11 +89,11 @@ export function AdminOverviewPanel({ content, metrics, onOpenContent, onOpenView
         <div className={`${CARD} p-5 grid gap-4`}>
           <SectionTitle
             icon={FiRepeat}
-            label="Transferts recents"
+            label={adminText(t, 'admin.overview.recentTransfers')}
             count={transfers.length}
             action={
               <button type="button" onClick={() => onOpenView('transfers')} className="flex items-center gap-1 text-xs font-bold text-brand-700 hover:underline">
-                Tout voir <FiArrowRight className="text-xs" />
+                {adminText(t, 'admin.overview.viewAll')} <FiArrowRight className="text-xs" />
               </button>
             }
           />
@@ -92,24 +116,24 @@ export function AdminOverviewPanel({ content, metrics, onOpenContent, onOpenView
                 </div>
               </button>
             ))}
-            {!transfers.length && <Empty label="Aucun transfert." icon={FiRepeat} />}
+            {!transfers.length && <Empty label={adminText(t, 'admin.overview.noTransfers')} icon={FiRepeat} />}
           </div>
         </div>
 
         <div className={`${CARD} p-5 grid gap-4`}>
           <SectionTitle
             icon={FiAlertTriangle}
-            label="Priorites du moment"
+            label={adminText(t, 'admin.overview.priorities')}
             count={queues.urgent}
             tone={queues.urgent ? 'warning' : 'success'}
           />
           <div className="grid gap-2">
             {[
-              { label: 'Suppressions de compte', count: queues.accountDeletions.length, view: 'queues' },
-              { label: 'Verifications', count: queues.verifications.length, view: 'verifications' },
-              { label: 'Litiges ouverts', count: queues.disputes.length, view: 'queues' },
-              { label: 'Avis en attente', count: queues.reviews.length, view: 'queues' },
-              { label: 'Signalements', count: queues.reports.length, view: 'queues' },
+              { label: adminText(t, 'admin.overview.queue.deletions'), count: queues.accountDeletions.length, view: 'queues' },
+              { label: adminText(t, 'admin.overview.queue.verifications'), count: queues.verifications.length, view: 'verifications' },
+              { label: adminText(t, 'admin.overview.queue.disputes'), count: queues.disputes.length, view: 'queues' },
+              { label: adminText(t, 'admin.overview.queue.reviews'), count: queues.reviews.length, view: 'queues' },
+              { label: adminText(t, 'admin.overview.queue.reports'), count: queues.reports.length, view: 'queues' },
             ].map((q) => (
               <button
                 key={q.label}

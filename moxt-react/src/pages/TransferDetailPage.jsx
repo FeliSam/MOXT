@@ -32,6 +32,7 @@ import { TRANSFER_STATUS } from '../features/transfers/transferConfig'
 import {
   getTransferDetailAccess,
   transferTimelineLabels,
+  transferTimelineLabelKeys,
 } from '../features/transfers/detail/transferDetailConfig'
 import {
   resolveTransferActionView,
@@ -49,9 +50,11 @@ import {
 } from '../features/transfers/transferUtils'
 import { usePaymentCountdown } from '../features/transfers/usePaymentCountdown'
 import { addToast } from '../features/ui/uiSlice'
+import { useLanguage } from '../contexts/useLanguage'
 import { storageService } from '../services/storageService'
 
 export function TransferDetailPage() {
+  const { t } = useLanguage()
   const [proof, setProof] = useState(null)
   const [businessProof, setBusinessProof] = useState(null)
   const [claimOpen, setClaimOpen] = useState(false)
@@ -84,14 +87,14 @@ export function TransferDetailPage() {
         userId: user.id,
         relatedType: 'transfer',
         relatedId: transfer.id,
-        title: `Transfert ${transfer.id}`,
+        title: t('transfers.detail.receiptTitle', { id: transfer.id }),
         amount: pricing.totalToPay,
         currency: transfer.currencyFrom,
         status: transfer.status,
         details: { exchanger: transfer.exchanger?.name },
       }),
     )
-    printReceipt(transfer)
+    printReceipt(transfer, t)
   }
 
   function copyValue(value, label) {
@@ -99,8 +102,8 @@ export function TransferDetailPage() {
     navigator.clipboard?.writeText(value)
     dispatch(
       addToast({
-        title: 'Copié',
-        message: `${label} copié dans le presse-papiers.`,
+        title: t('transfers.detail.copiedTitle'),
+        message: t('transfers.detail.copiedMessage', { label }),
         tone: 'info',
       }),
     )
@@ -115,8 +118,8 @@ export function TransferDetailPage() {
       setProof({ file, url, path, uploading: false })
       dispatch(
         addToast({
-          title: 'Preuve ajoutée',
-          message: 'Le justificatif de paiement est prêt.',
+          title: t('transfers.detail.proofAddedTitle'),
+          message: t('transfers.detail.paymentProofReady'),
           tone: 'success',
         }),
       )
@@ -124,8 +127,8 @@ export function TransferDetailPage() {
       setProof(null)
       dispatch(
         addToast({
-          title: 'Envoi impossible',
-          message: "Le justificatif n'a pas pu être envoyé.",
+          title: t('transfers.detail.uploadFailedTitle'),
+          message: t('transfers.detail.uploadFailedMessage'),
           tone: 'error',
         }),
       )
@@ -145,8 +148,8 @@ export function TransferDetailPage() {
       setBusinessProof({ file, url, path, uploading: false })
       dispatch(
         addToast({
-          title: 'Preuve ajoutée',
-          message: 'Le justificatif de virement est prêt.',
+          title: t('transfers.detail.proofAddedTitle'),
+          message: t('transfers.detail.payoutProofReady'),
           tone: 'success',
         }),
       )
@@ -154,8 +157,8 @@ export function TransferDetailPage() {
       setBusinessProof(null)
       dispatch(
         addToast({
-          title: 'Envoi impossible',
-          message: "Le justificatif n'a pas pu être envoyé.",
+          title: t('transfers.detail.uploadFailedTitle'),
+          message: t('transfers.detail.uploadFailedMessage'),
           tone: 'error',
         }),
       )
@@ -166,8 +169,8 @@ export function TransferDetailPage() {
     <div className="finance-hero-glow grid gap-7 rounded-[var(--radius-card-lg)]">
       <PageHeader
         eyebrow={transfer.id}
-        title="Détail du transfert"
-        description={`${directionLabel(transfer.direction)} · créé le ${formatDate(transfer.createdAt)}`}
+        title={t('transfers.detail.title')}
+        description={t('transfers.detail.description', { direction: directionLabel(transfer.direction, t), date: formatDate(transfer.createdAt) })}
         actions={
           <div className="flex flex-wrap gap-2">
             <ContactButton
@@ -175,7 +178,7 @@ export function TransferDetailPage() {
               relatedEntity={transfer}
               relatedId={transfer.id}
               relatedPath={`/transfers/${transfer.id}`}
-              relatedTitle={`Transfert ${transfer.id} · ${access.contactTitle}`}
+              relatedTitle={t('transfers.detail.relatedTitle', { id: transfer.id, contact: access.contactTitle })}
               relatedType="transfer"
               variant="secondary"
             />
@@ -188,17 +191,17 @@ export function TransferDetailPage() {
 
       <DetailMetrics
         items={[
-          { icon: FiRepeat, label: 'Direction', value: directionLabel(transfer.direction) },
-          { icon: FiClock, label: 'Création', value: formatDate(transfer.createdAt) },
+          { icon: FiRepeat, label: t('transfers.detail.metrics.direction'), value: directionLabel(transfer.direction, t) },
+          { icon: FiClock, label: t('transfers.detail.metrics.created'), value: formatDate(transfer.createdAt) },
           {
             icon: FiUser,
-            label: 'Destinataire',
+            label: t('transfers.detail.metrics.recipient'),
             value: `${transfer.recipient.firstName} ${transfer.recipient.lastName}`,
           },
           {
             icon: FiShield,
-            label: 'Partenaire',
-            value: transfer.exchanger?.name || 'Partenaire historique',
+            label: t('transfers.detail.metrics.partner'),
+            value: transfer.exchanger?.name || t('transfers.detail.financial.historicPartner'),
           },
         ]}
       />
@@ -210,9 +213,9 @@ export function TransferDetailPage() {
         onChange={setDetailTab}
         variant="section"
         tabs={[
-          { key: 'suivi', label: 'Suivi' },
-          { key: 'paiement', label: 'Paiement' },
-          { key: 'details', label: 'Détails' },
+          { key: 'suivi', label: t('transfers.detail.tabs.tracking') },
+          { key: 'paiement', label: t('transfers.detail.tabs.payment') },
+          { key: 'details', label: t('transfers.detail.tabs.details') },
         ]}
       />
 
@@ -246,8 +249,8 @@ export function TransferDetailPage() {
                 )
                 dispatch(
                   addToast({
-                    title: 'Paiement déclaré',
-                    message: 'L’entreprise va vérifier la réception de votre paiement.',
+                    title: t('transfers.detail.toasts.paymentDeclaredTitle'),
+                    message: t('transfers.detail.toasts.paymentDeclaredMessage'),
                     tone: 'success',
                   }),
                 )
@@ -276,11 +279,11 @@ export function TransferDetailPage() {
                 if (!canApplyModerateTransfer(transfer, nextStatus, proofPayload)) {
                   dispatch(
                     addToast({
-                      title: 'Action impossible',
+                      title: t('transfers.detail.toasts.actionImpossibleTitle'),
                       message:
                         nextStatus === TRANSFER_STATUS.RECEIVED
-                          ? 'La réception du paiement a déjà été confirmée ou le statut a changé.'
-                          : 'Ajoutez une preuve de virement avant de confirmer le transfert.',
+                          ? t('transfers.detail.toasts.receptionAlreadyConfirmed')
+                          : t('transfers.detail.toasts.addPayoutProof'),
                       tone: 'error',
                     }),
                   )
@@ -300,12 +303,12 @@ export function TransferDetailPage() {
                   addToast({
                     title:
                       nextStatus === TRANSFER_STATUS.RECEIVED
-                        ? 'Réception confirmée'
-                        : 'Transfert confirmé',
+                        ? t('transfers.detail.toasts.receptionConfirmedTitle')
+                        : t('transfers.detail.toasts.transferConfirmedTitle'),
                     message:
                       nextStatus === TRANSFER_STATUS.RECEIVED
-                        ? 'Passez à l’étape suivante : preuve et confirmation du virement.'
-                        : 'Le client peut déclarer la réception des fonds.',
+                        ? t('transfers.detail.toasts.receptionConfirmedMessage')
+                        : t('transfers.detail.toasts.transferConfirmedMessage'),
                     tone: 'success',
                   }),
                 )
@@ -320,8 +323,7 @@ export function TransferDetailPage() {
           ) : (
             <>
               <Card className="p-5 text-sm text-[var(--app-text-muted)]">
-                Ce transfert est {transfer.status === TRANSFER_STATUS.CANCELLED ? 'annulé' : 'expiré'}.
-                Aucune action n’est possible.
+                {t('transfers.detail.closedNotice', { status: transfer.status === TRANSFER_STATUS.CANCELLED ? t('transfers.status.cancelled').toLowerCase() : t('transfers.status.expired').toLowerCase() })}
               </Card>
               <TransferProofsSection transfer={transfer} />
             </>
@@ -336,11 +338,11 @@ export function TransferDetailPage() {
             account={receivingAccount}
             direction={transfer.direction}
             originCountry={originCountry}
-            onCopy={(value) => copyValue(value, 'Les coordonnées')}
+            onCopy={(value) => copyValue(value, t('transfers.detail.copy.coordinates'))}
           />
           <TransferDetailFinancialCard
             transfer={transfer}
-            onCopyReference={() => copyValue(transfer.id, 'La référence')}
+            onCopyReference={() => copyValue(transfer.id, t('transfers.detail.copy.reference'))}
             onDownloadReceipt={downloadReceipt}
           />
         </div>
@@ -351,7 +353,7 @@ export function TransferDetailPage() {
           <div className="grid gap-5 xl:grid-cols-2">
             <TransferDetailFinancialCard
               transfer={transfer}
-              onCopyReference={() => copyValue(transfer.id, 'La référence')}
+              onCopyReference={() => copyValue(transfer.id, t('transfers.detail.copy.reference'))}
               onDownloadReceipt={downloadReceipt}
             />
             <TransferDetailParticipantsSection transfer={transfer} />
@@ -359,53 +361,57 @@ export function TransferDetailPage() {
             <TransferProofsSection transfer={transfer} />
           </div>
           <div className="grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
-            <DetailSection title="Informations de l’opération">
+            <DetailSection title={t('transfers.detail.info.title')}>
               <DetailFacts
                 items={[
-                  { label: 'Référence', value: transfer.id },
-                  { label: 'Statut', value: transferTimelineLabels[transfer.status] || transfer.status },
+                  { label: t('transfers.detail.info.reference'), value: transfer.id },
                   {
-                    label: 'Montant envoyé',
+                    label: t('transfers.detail.info.status'),
+                    value: transferTimelineLabelKeys[transfer.status]
+                      ? t(transferTimelineLabelKeys[transfer.status])
+                      : transferTimelineLabels[transfer.status] || transfer.status,
+                  },
+                  {
+                    label: t('transfers.detail.info.amountSent'),
                     value: formatMoney(pricing.amountSent, currFrom),
                   },
                   {
-                    label: 'Montant reçu (estimé)',
+                    label: t('transfers.detail.info.amountReceivedEstimated'),
                     value: formatMoney(
                       transfer.amountReceived ?? pricing.amountSent * (transfer.rate || 1),
                       currTo,
                     ),
                   },
                   {
-                    label: 'Total à payer',
+                    label: t('transfers.detail.info.totalToPay'),
                     value: formatMoney(pricing.totalToPay, currFrom),
                   },
-                  { label: 'Mode', value: 'Transfert assisté MOXT' },
+                  { label: t('transfers.detail.info.mode'), value: t('transfers.detail.info.modeValue') },
                 ]}
               />
             </DetailSection>
             <TrustPanel
-              title="Protection de l’opération"
+              title={t('transfers.detail.trust.title')}
               items={[
-                'Vérifiez l’identité de l’échangeur et les coordonnées de paiement.',
-                'Conservez vos preuves de paiement dans MOXT.',
-                'Le reçu téléchargeable fait foi pour le suivi de l’opération.',
+                t('transfers.detail.trust.item1'),
+                t('transfers.detail.trust.item2'),
+                t('transfers.detail.trust.item3'),
               ]}
             />
           </div>
         </>
       ) : null}
 
-      <Modal open={claimOpen} onClose={() => setClaimOpen(false)} title="Réclamation">
+      <Modal open={claimOpen} onClose={() => setClaimOpen(false)} title={t('transfers.detail.claim.title')}>
         <div className="grid gap-4">
           <Input
             id="transfer-claim"
-            label="Motif de la réclamation"
+            label={t('transfers.detail.claim.reason')}
             value={claimReason}
             onChange={(event) => setClaimReason(event.target.value)}
           />
           <p className="text-xs text-[var(--app-text-muted)]">
-            Notre équipe examine chaque réclamation et vous recontacte sous 48h via votre messagerie
-            MOXT.
+            {t('transfers.detail.claim.help')}
           </p>
           <Button
             disabled={claimReason.trim().length < 5}
@@ -423,15 +429,15 @@ export function TransferDetailPage() {
               setClaimOpen(false)
             }}
           >
-            Envoyer la réclamation
+            {t('transfers.detail.claim.submit')}
           </Button>
         </div>
       </Modal>
 
       <ConfirmDialog
         open={cancelOpen}
-        title="Annuler ce transfert ?"
-        description="Cette action est définitive. Le transfert sera marqué comme annulé et ne pourra plus être repris."
+        title={t('transfers.detail.cancel.title')}
+        description={t('transfers.detail.cancel.description')}
         onCancel={() => setCancelOpen(false)}
         onConfirm={() => {
           dispatch(cancelTransfer(transfer.id))

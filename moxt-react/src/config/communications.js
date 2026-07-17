@@ -1,60 +1,67 @@
 import { FiBox, FiBriefcase, FiCalendar, FiRepeat, FiShoppingBag, FiUsers } from 'react-icons/fi'
 import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
+import { messagesText } from '../features/communications/messagesI18n'
 
 export const RELATED_CONTENT_META = {
-  business: { icon: HiOutlineBuildingOffice2, label: 'Entreprise', tone: 'bg-violet-500' },
-  event: { icon: FiCalendar, label: 'Événement', tone: 'bg-amber-500' },
-  job: { icon: FiBriefcase, label: 'Emploi', tone: 'bg-blue-500' },
-  listing: { icon: FiShoppingBag, label: 'Annonce', tone: 'bg-pink-500' },
-  parcel: { icon: FiBox, label: 'Colis', tone: 'bg-orange-500' },
-  p2p: { icon: FiRepeat, label: 'Échange P2P', tone: 'bg-cyan-600' },
-  transfer: { icon: FiRepeat, label: 'Transfert', tone: 'bg-emerald-600' },
-  general: { icon: FiUsers, label: 'Discussion', tone: 'bg-slate-500' },
+  business: {
+    icon: HiOutlineBuildingOffice2,
+    labelKey: 'communications.related.business',
+    tone: 'bg-violet-500',
+  },
+  event: { icon: FiCalendar, labelKey: 'communications.related.event', tone: 'bg-amber-500' },
+  job: { icon: FiBriefcase, labelKey: 'communications.related.job', tone: 'bg-blue-500' },
+  listing: { icon: FiShoppingBag, labelKey: 'communications.related.listing', tone: 'bg-pink-500' },
+  parcel: { icon: FiBox, labelKey: 'communications.related.parcel', tone: 'bg-orange-500' },
+  p2p: { icon: FiRepeat, labelKey: 'communications.related.p2p', tone: 'bg-cyan-600' },
+  transfer: { icon: FiRepeat, labelKey: 'communications.related.transfer', tone: 'bg-emerald-600' },
+  general: { icon: FiUsers, labelKey: 'communications.related.general', tone: 'bg-slate-500' },
 }
 
 export const MESSAGE_SUGGESTIONS = {
   business: [
-    'Bonjour, quels services proposez-vous ?',
-    'Quels sont vos horaires ?',
-    'Je souhaite obtenir un devis.',
+    { labelKey: 'communications.chips.business.services' },
+    { labelKey: 'communications.chips.business.hours' },
+    { labelKey: 'communications.chips.business.quote' },
   ],
   event: [
-    'Bonjour, reste-t-il des places ?',
-    'Comment se déroule l’inscription ?',
-    'Le lieu est-il accessible ?',
+    { labelKey: 'communications.chips.event.seats' },
+    { labelKey: 'communications.chips.event.register' },
+    { labelKey: 'communications.chips.event.access' },
   ],
   job: [
-    'Bonjour, le poste est-il toujours disponible ?',
-    'Puis-je envoyer mon CV ?',
-    'Quel est le processus de recrutement ?',
+    { labelKey: 'communications.chips.job.available' },
+    { labelKey: 'communications.chips.job.cv' },
+    { labelKey: 'communications.chips.job.process' },
   ],
   listing: [
-    'Bonjour, cette annonce est-elle disponible ?',
-    'Le prix est-il négociable ?',
-    'Pouvez-vous partager plus de détails ?',
+    { labelKey: 'communications.chips.listing.available' },
+    { labelKey: 'communications.chips.listing.price' },
+    { labelKey: 'communications.chips.listing.details' },
   ],
   parcel: [
-    'Bonjour, combien de kilos restent disponibles ?',
-    'Quel est le délai prévu ?',
-    'Quels objets acceptez-vous ?',
+    { labelKey: 'communications.chips.parcel.kg' },
+    { labelKey: 'communications.chips.parcel.delay' },
+    { labelKey: 'communications.chips.parcel.items' },
   ],
   transfer: [
-    'Bonjour, pouvez-vous confirmer le statut du paiement ?',
-    'La preuve de paiement est-elle suffisante ?',
-    'Quel est le délai restant pour finaliser le transfert ?',
+    { labelKey: 'communications.chips.transfer.status' },
+    { labelKey: 'communications.chips.transfer.proof' },
+    { labelKey: 'communications.chips.transfer.deadline' },
   ],
   p2p: [
-    'Bonjour, cette offre est-elle toujours disponible ?',
-    'Quel mode de paiement préférez-vous ?',
-    'Pouvez-vous confirmer le taux ?',
+    { labelKey: 'communications.chips.p2p.available' },
+    { labelKey: 'communications.chips.p2p.payment' },
+    { labelKey: 'communications.chips.p2p.rate' },
   ],
   general: [
-    'Bonjour, je souhaite en savoir plus.',
-    'Merci pour votre message.',
-    'Pouvez-vous préciser votre demande ?',
+    { labelKey: 'communications.chips.general.more' },
+    { labelKey: 'communications.chips.general.thanks' },
+    { labelKey: 'communications.chips.general.clarify' },
   ],
 }
 
-export function messageSuggestionsFor(relatedType) {
-  return MESSAGE_SUGGESTIONS[relatedType] || MESSAGE_SUGGESTIONS.general
+export function messageSuggestionsFor(relatedType, t) {
+  const items = MESSAGE_SUGGESTIONS[relatedType] || MESSAGE_SUGGESTIONS.general
+  if (typeof t !== 'function') return items.map((item) => item.labelKey)
+  return items.map((item) => messagesText(t, item.labelKey))
 }

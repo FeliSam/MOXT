@@ -15,20 +15,21 @@ import { BackButton } from '../components/ui/BackButton'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { PageHeader } from '../components/ui/PageHeader'
+import { useLanguage } from '../contexts/useLanguage'
 import { openDispute } from '../features/disputes/disputeSlice'
 import { createReceipt } from '../features/finance/financeSlice'
 import { addOrderProof, rateOrder, updateOrderStatus } from '../features/p2p/p2pSlice'
 import { formatDate, formatMoney } from '../features/transfers/transferUtils'
 
-const orderStatusLabels = {
-  created: 'Créée',
-  waiting_payment: 'Paiement en cours',
-  completed: 'Terminée',
-  cancelled: 'Annulée',
+const ORDER_STATUS_KEYS = {
+  created: { labelKey: 'p2p.order.status.created' },
+  waiting_payment: { labelKey: 'p2p.order.status.waitingPayment' },
+  completed: { labelKey: 'p2p.order.status.completed' },
+  cancelled: { labelKey: 'p2p.order.status.cancelled' },
 }
-const orderStatusLabel = (status) => orderStatusLabels[status] || status
 
 export function P2POrderPage() {
+  const { t } = useLanguage()
   const dispatch = useDispatch()
   const [disputeReason, setDisputeReason] = useState('')
   const [rating, setRating] = useState(5)
@@ -44,30 +45,37 @@ export function P2POrderPage() {
         !['resolved', 'closed'].includes(item.status),
     ),
   )
+
+  const orderStatusLabel = (status) =>
+    ORDER_STATUS_KEYS[status] ? t(ORDER_STATUS_KEYS[status].labelKey) : status
+
   if (!order || ![order.buyerId, order.sellerId].includes(user.id))
-    return <Card>Transaction introuvable.</Card>
+    return <Card>{t('p2p.order.notFound')}</Card>
 
   return (
     <div className="grid gap-7">
       <PageHeader
         eyebrow={order.id}
-        title="Transaction P2P"
-        description={`${order.sellerName} vers ${order.buyerName}`}
+        title={t('p2p.order.title')}
+        description={t('p2p.order.description', {
+          seller: order.sellerName,
+          buyer: order.buyerName,
+        })}
         actions={<BackButton fallback="/p2p" />}
       />
       <div className="grid gap-5 lg:grid-cols-2">
         <Card>
           <div className="flex justify-between gap-3">
-            <h2 className="font-black">Résumé</h2>
+            <h2 className="font-black">{t('p2p.order.summary')}</h2>
             <Badge tone={order.status === 'completed' ? 'success' : 'info'}>
               {orderStatusLabel(order.status)}
             </Badge>
           </div>
           <div className="mt-4 grid gap-3 text-sm">
-            <Row label="Montant" value={formatMoney(order.amount, order.fromCurrency)} />
-            <Row label="Devise reçue" value={order.toCurrency} />
-            <Row label="Taux" value={order.rate} />
-            <Row label="Frais" value={formatMoney(order.fee, order.fromCurrency)} />
+            <Row label={t('p2p.order.amount')} value={formatMoney(order.amount, order.fromCurrency)} />
+            <Row label={t('p2p.order.receivedCurrency')} value={order.toCurrency} />
+            <Row label={t('p2p.order.rate')} value={order.rate} />
+            <Row label={t('p2p.order.fees')} value={formatMoney(order.fee, order.fromCurrency)} />
           </div>
           {['created', 'waiting_payment'].includes(order.status) ? (
             <div className="mt-5 flex flex-wrap gap-2">
@@ -78,26 +86,26 @@ export function P2POrderPage() {
                   dispatch(updateOrderStatus({ id: order.id, status: 'waiting_payment' }))
                 }
               >
-                Paiement en cours
+                {t('p2p.order.waitingPayment')}
               </Button>
               <Button
                 icon={FiCheckCircle}
                 onClick={() => dispatch(updateOrderStatus({ id: order.id, status: 'completed' }))}
               >
-                Terminer
+                {t('p2p.order.complete')}
               </Button>
               <Button
                 icon={FiXCircle}
                 variant="danger"
                 onClick={() => dispatch(updateOrderStatus({ id: order.id, status: 'cancelled' }))}
               >
-                Annuler
+                {t('p2p.order.cancel')}
               </Button>
             </div>
           ) : null}
           <div className="mt-5 flex flex-wrap gap-2">
             <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-[var(--app-border)] px-4 text-sm font-bold">
-              <FiUpload /> Ajouter une preuve
+              <FiUpload /> {t('p2p.order.addProof')}
               <input
                 className="sr-only"
                 type="file"
@@ -127,7 +135,7 @@ export function P2POrderPage() {
                     userId: user.id,
                     relatedType: 'p2p_order',
                     relatedId: order.id,
-                    title: `Transaction P2P ${order.id}`,
+                    title: t('p2p.order.receiptTitle', { id: order.id }),
                     amount: order.amount,
                     currency: order.fromCurrency,
                     status: order.status,
@@ -136,7 +144,7 @@ export function P2POrderPage() {
                 )
               }
             >
-              Enregistrer le reçu
+              {t('p2p.order.saveReceipt')}
             </Button>
           </div>
           {order.proofs?.length ? (
@@ -153,7 +161,7 @@ export function P2POrderPage() {
           ) : null}
         </Card>
         <Card>
-          <h2 className="font-black">Chronologie</h2>
+          <h2 className="font-black">{t('p2p.order.timeline')}</h2>
           <div className="mt-5 grid gap-4">
             {order.timeline.map((event) => (
               <div key={`${event.status}-${event.at}`} className="flex gap-3">
@@ -167,16 +175,16 @@ export function P2POrderPage() {
           </div>
         </Card>
         <Card>
-          <h2 className="font-black">Litige</h2>
+          <h2 className="font-black">{t('p2p.order.dispute')}</h2>
           {dispute ? (
             <p className="mt-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
-              Litige {dispute.status} : {dispute.reason}
+              {t('p2p.order.disputeOpen', { status: dispute.status, reason: dispute.reason })}
             </p>
           ) : (
             <div className="mt-4 grid gap-3">
               <textarea
                 className="min-h-24 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 text-sm"
-                placeholder="Décrivez précisément le problème"
+                placeholder={t('p2p.order.disputePlaceholder')}
                 value={disputeReason}
                 onChange={(event) => setDisputeReason(event.target.value)}
               />
@@ -196,14 +204,14 @@ export function P2POrderPage() {
                   setDisputeReason('')
                 }}
               >
-                Ouvrir un litige
+                {t('p2p.order.openDispute')}
               </Button>
             </div>
           )}
         </Card>
         {order.status === 'completed' ? (
           <Card>
-            <h2 className="font-black">Évaluer la transaction</h2>
+            <h2 className="font-black">{t('p2p.order.rateTitle')}</h2>
             <div className="mt-4 grid gap-3">
               <select
                 className="min-h-11 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3"
@@ -220,7 +228,7 @@ export function P2POrderPage() {
                 className="min-h-20 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 text-sm"
                 value={comment}
                 onChange={(event) => setComment(event.target.value)}
-                placeholder="Votre commentaire"
+                placeholder={t('p2p.order.commentPlaceholder')}
               />
               <Button
                 icon={FiStar}
@@ -228,7 +236,7 @@ export function P2POrderPage() {
                   dispatch(rateOrder({ id: order.id, userId: user.id, rating, comment }))
                 }
               >
-                Enregistrer l’évaluation
+                {t('p2p.order.saveRating')}
               </Button>
             </div>
           </Card>

@@ -14,6 +14,7 @@ import {
 } from '../components/ui/DetailBlocks'
 import { PageHeader } from '../components/ui/PageHeader'
 import { ReshareButton } from '../components/ui/ReshareButton'
+import { useLanguage } from '../contexts/useLanguage'
 import { FavoriteButton } from '../features/account/FavoriteButton'
 import { ContactButton } from '../features/communications/ContactButton'
 import { buildParcelSnapshot } from '../features/communications/relatedSnapshot'
@@ -22,6 +23,7 @@ import {
   updateParcelProofStatus,
   updateParcelRequestStatus,
 } from '../features/parcels/parcelSlice'
+import { parcelDetailTrustItemKeys } from '../features/parcels/parcelBrowseConfig'
 import { Input } from '../components/ui/Input'
 import { addToast } from '../features/ui/uiSlice'
 import { statusMeta } from '../config/statuses'
@@ -32,6 +34,7 @@ import { usePublisherDetailProfile } from '../features/publications/usePublisher
 
 export function ParcelDetailPage() {
   const dispatch = useDispatch()
+  const { t } = useLanguage()
   const { parcelId } = useParams()
   const user = useSelector((state) => state.auth.user)
   const parcel = useSelector((state) => state.parcels.items.find((item) => item.id === parcelId))
@@ -44,19 +47,26 @@ export function ParcelDetailPage() {
   )
   const publisherProfile = usePublisherDetailProfile(parcel, 'parcel')
 
-  if (!parcel) return <Card>Voyage introuvable.</Card>
+  if (!parcel) return <Card>{t('parcels.detail.notFound')}</Card>
 
   const depositDeadline = parcel.depositDeadline || parcel.departureDate
   const distributionDate = parcel.distributionDate || null
   const isAdmin = ['admin', 'superadmin'].includes(user.role)
   const canSeeProof = isAdmin || user.id === parcel.ownerId
   const proofMeta = statusMeta(parcel.proofStatus)
+  const routeTitle = t('parcels.detail.routeTitle', {
+    origin: parcel.origin,
+    destination: parcel.destination,
+  })
 
   function handleRequestStatus(request, status) {
     dispatch(updateParcelRequestStatus({ id: request.id, status }))
     dispatch(
       addToast({
-        title: status === 'approved' ? 'Demande acceptée' : 'Demande refusée',
+        title:
+          status === 'approved'
+            ? t('parcels.detail.toast.requestAccepted')
+            : t('parcels.detail.toast.requestRejected'),
         message: `${request.requesterName} · ${request.kg} kg`,
         tone: status === 'approved' ? 'success' : 'error',
       }),
@@ -68,8 +78,10 @@ export function ParcelDetailPage() {
     if (!kg || kg <= 0 || kg > parcel.remainingKg) {
       dispatch(
         addToast({
-          title: 'Poids invalide',
-          message: `Indiquez un poids entre 1 et ${parcel.remainingKg} kg.`,
+          title: t('parcels.detail.toast.invalidWeightTitle'),
+          message: t('parcels.detail.toast.invalidWeightMessage', {
+            max: parcel.remainingKg,
+          }),
           tone: 'error',
         }),
       )
@@ -88,8 +100,8 @@ export function ParcelDetailPage() {
     setReserveKg('')
     dispatch(
       addToast({
-        title: 'Demande envoyée',
-        message: `Votre demande de ${kg} kg a été transmise au transporteur.`,
+        title: t('parcels.detail.toast.requestSentTitle'),
+        message: t('parcels.detail.toast.requestSentMessage', { kg }),
         tone: 'success',
       }),
     )
@@ -99,18 +111,25 @@ export function ParcelDetailPage() {
     <div className="grid gap-7">
       <PageHeader
         eyebrow={parcel.id}
-        title={`${parcel.origin} vers ${parcel.destination}`}
+        title={routeTitle}
         description={
           distributionDate
-            ? `Départ le ${parcel.departureDate} · dépôt avant ${depositDeadline} · récupération à partir du ${distributionDate}`
-            : `Départ le ${parcel.departureDate} · dépôt avant ${depositDeadline}`
+            ? t('parcels.detail.descriptionWithDistribution', {
+                departure: parcel.departureDate,
+                deposit: depositDeadline,
+                distribution: distributionDate,
+              })
+            : t('parcels.detail.descriptionWithoutDistribution', {
+                departure: parcel.departureDate,
+                deposit: depositDeadline,
+              })
         }
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <FavoriteButton
               relatedId={parcel.id}
               relatedType="parcel"
-              title={`${parcel.origin} vers ${parcel.destination}`}
+              title={routeTitle}
               path={`/parcels/${parcel.id}`}
               entity={parcel}
               showLabel={false}
@@ -119,7 +138,9 @@ export function ParcelDetailPage() {
             <ReshareButton sourceType="parcel" sourceId={parcel.id} sourceData={parcel} />
             {user.id === parcel.ownerId ? (
               <Link to={`/parcels/${parcelId}/edit`}>
-                <Button variant="secondary" icon={FiEdit2}>Modifier</Button>
+                <Button variant="secondary" icon={FiEdit2}>
+                  {t('parcels.detail.edit')}
+                </Button>
               </Link>
             ) : null}
             <BackButton fallback="/parcels" />
@@ -132,13 +153,17 @@ export function ParcelDetailPage() {
         {parcel.proofStatus ? (
           <span className="absolute -top-3 right-3 z-10">
             <Badge tone={proofMeta.tone} className="!px-1.5 !py-0.5 !text-[9px]">
-              {parcel.proofStatus === 'verified' ? 'Preuve vérifiée' : proofMeta.label}
+              {parcel.proofStatus === 'verified'
+                ? t('parcels.detail.proofVerified')
+                : proofMeta.label}
             </Badge>
           </span>
         ) : null}
         <div className="flex items-center gap-3">
           <div className="min-w-0 flex-1 text-center">
-            <p className="text-[10px] font-black uppercase tracking-wider text-[var(--app-text-faint)]">Origine</p>
+            <p className="text-[10px] font-black uppercase tracking-wider text-[var(--app-text-faint)]">
+              {t('parcels.detail.origin')}
+            </p>
             <p className="mt-1 truncate text-lg font-black sm:text-xl">{parcel.origin}</p>
             {parcel.originAirportCode ? (
               <p className="text-xs font-bold text-[var(--app-text-muted)]">{parcel.originAirportCode}</p>
@@ -148,7 +173,9 @@ export function ParcelDetailPage() {
             <FiArrowRight />
           </span>
           <div className="min-w-0 flex-1 text-center">
-            <p className="text-[10px] font-black uppercase tracking-wider text-[var(--app-text-faint)]">Destination</p>
+            <p className="text-[10px] font-black uppercase tracking-wider text-[var(--app-text-faint)]">
+              {t('parcels.detail.destination')}
+            </p>
             <p className="mt-1 truncate text-lg font-black sm:text-xl">{parcel.destination}</p>
             {parcel.destinationAirportCode ? (
               <p className="text-xs font-bold text-[var(--app-text-muted)]">{parcel.destinationAirportCode}</p>
@@ -159,17 +186,25 @@ export function ParcelDetailPage() {
 
       <DetailMetrics
         items={[
-          { icon: FiBox, label: 'Capacité restante', value: `${parcel.remainingKg} kg` },
-          { icon: FiCalendar, label: 'Départ', value: parcel.departureDate },
-          { icon: FiCalendar, label: 'Dépôt limite', value: depositDeadline },
+          {
+            icon: FiBox,
+            label: t('parcels.detail.metrics.remainingCapacity'),
+            value: `${parcel.remainingKg} kg`,
+          },
+          { icon: FiCalendar, label: t('parcels.detail.metrics.departure'), value: parcel.departureDate },
+          {
+            icon: FiCalendar,
+            label: t('parcels.detail.metrics.depositDeadline'),
+            value: depositDeadline,
+          },
           {
             icon: FiDownload,
-            label: 'Distribution',
-            value: distributionDate || 'À confirmer',
+            label: t('parcels.detail.metrics.distribution'),
+            value: distributionDate || t('parcels.detail.toConfirm'),
           },
           {
             icon: FiMapPin,
-            label: 'Trajet',
+            label: t('parcels.detail.metrics.route'),
             value: `${parcel.origin} → ${parcel.destination}`,
           },
         ]}
@@ -177,22 +212,33 @@ export function ParcelDetailPage() {
       <div className="grid gap-5 lg:grid-cols-2">
         <Card>
           <FiBox className="text-3xl text-brand-700" />
-          <h2 className="mt-4 text-xl font-black">{parcel.remainingKg} kg disponibles</h2>
+          <h2 className="mt-4 text-xl font-black">
+            {t('parcels.detail.kgAvailable', { kg: parcel.remainingKg })}
+          </h2>
           <p className="mt-2 text-sm text-slate-500">
-            {formatMoney(parcel.pricePerKg, parcel.currency)} par kilogramme
+            {t('parcels.detail.perKilogram', {
+              price: formatMoney(parcel.pricePerKg, parcel.currency),
+            })}
           </p>
           <p className="mt-4 rounded-2xl bg-[var(--app-surface-muted)] p-3 text-sm font-bold">
-            Date limite de dépôt : {depositDeadline}
+            {t('parcels.detail.depositDeadlineLabel', { date: depositDeadline })}
           </p>
           {distributionDate ? (
             <p className="mt-2 rounded-2xl bg-emerald-50 p-3 text-sm font-bold text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
-              Récupération possible à partir du {distributionDate}
+              {t('parcels.detail.pickupFromDate', { date: distributionDate })}
             </p>
           ) : null}
           <p className="mt-4 text-sm leading-6">{parcel.conditions}</p>
           <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-[var(--app-text-muted)]">
-            <span>Transporteur : {parcel.ownerName} · {parcel.contact}</span>
-            {parcel.businessId ? <VerifiedBadge size="sm" label="Entreprise" /> : null}
+            <span>
+              {t('parcels.detail.carrier', {
+                name: parcel.ownerName,
+                contact: parcel.contact,
+              })}
+            </span>
+            {parcel.businessId ? (
+              <VerifiedBadge size="sm" label={t('parcels.detail.business')} />
+            ) : null}
           </div>
           <div className="mt-5">
             <ContactButton
@@ -200,26 +246,26 @@ export function ParcelDetailPage() {
               relatedEntity={parcel}
               relatedId={parcel.id}
               relatedPath={`/parcels/${parcel.id}`}
-              relatedTitle={`${parcel.origin} vers ${parcel.destination}`}
+              relatedTitle={routeTitle}
               relatedType="parcel"
             />
           </div>
         </Card>
         {user.id !== parcel.ownerId && parcel.status === 'active' && parcel.remainingKg > 0 ? (
           <Card>
-            <h2 className="font-black">Réserver de la place</h2>
+            <h2 className="font-black">{t('parcels.detail.reserve.title')}</h2>
             <p className="mt-2 text-sm text-[var(--app-text-muted)]">
-              Demandez une réservation. Le transporteur validera votre demande.
+              {t('parcels.detail.reserve.description')}
             </p>
             {myRequest ? (
               <p className="mt-4 rounded-2xl bg-[var(--app-surface-muted)] p-3 text-sm font-bold">
-                Demande en cours · {myRequest.kg} kg · en attente de réponse
+                {t('parcels.detail.reserve.pending', { kg: myRequest.kg })}
               </p>
             ) : (
               <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
                 <Input
                   id="parcel-reserve-kg"
-                  label="Poids (kg)"
+                  label={t('parcels.detail.reserve.weightLabel')}
                   type="number"
                   min="1"
                   max={parcel.remainingKg}
@@ -227,7 +273,7 @@ export function ParcelDetailPage() {
                   onChange={(event) => setReserveKg(event.target.value)}
                 />
                 <Button icon={FiSend} onClick={submitReservation}>
-                  Envoyer la demande
+                  {t('parcels.detail.reserve.submit')}
                 </Button>
               </div>
             )}
@@ -235,7 +281,7 @@ export function ParcelDetailPage() {
         ) : null}
         {user.id === parcel.ownerId ? (
           <Card>
-            <h2 className="font-black">Demandes reçues</h2>
+            <h2 className="font-black">{t('parcels.detail.requests.title')}</h2>
             <div className="mt-5 grid gap-3">
               {requests.length ? (
                 requests.map((request) => {
@@ -245,11 +291,18 @@ export function ParcelDetailPage() {
                   const reservationSnapshot = buildParcelSnapshot(parcel, `/parcels/${parcel.id}`, {
                     reservedKg: request.kg,
                     requesterName: request.requesterName,
+                    t,
                   })
                   const reservationMessage = [
-                    `Bonjour ${request.requesterName || ''},`.trim(),
-                    `Votre réservation de ${request.kg} kg sur le trajet ${parcel.origin} → ${parcel.destination} est acceptée.`,
-                    'Écrivez-moi ici pour plus d’informations (lieu de dépôt, horaires, conditions).',
+                    t('parcels.detail.message.greeting', {
+                      name: request.requesterName || '',
+                    }).trim(),
+                    t('parcels.detail.message.accepted', {
+                      kg: request.kg,
+                      origin: parcel.origin,
+                      destination: parcel.destination,
+                    }),
+                    t('parcels.detail.message.followUp'),
                   ].join('\n')
                   return (
                     <div
@@ -265,11 +318,13 @@ export function ParcelDetailPage() {
                               relatedEntity={parcel}
                               relatedId={parcel.id}
                               relatedPath={`/parcels/${parcel.id}`}
-                              relatedTitle={`${parcel.origin} vers ${parcel.destination}`}
+                              relatedTitle={routeTitle}
                               relatedType="parcel"
                               relatedSnapshot={reservationSnapshot}
                               contactProfile={{
-                                firstName: String(request.requesterName || 'Client')
+                                firstName: String(
+                                  request.requesterName || t('parcels.detail.requests.clientFallback'),
+                                )
                                   .trim()
                                   .split(/\s+/)[0],
                                 lastName: String(request.requesterName || '')
@@ -286,7 +341,7 @@ export function ParcelDetailPage() {
                             <strong>{request.requesterName}</strong>
                           )}
                           <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-                            {request.kg} kg demandés
+                            {t('parcels.detail.requests.kgRequested', { kg: request.kg })}
                           </p>
                         </div>
                         <Badge tone={meta.tone}>{meta.label}</Badge>
@@ -294,13 +349,13 @@ export function ParcelDetailPage() {
                       {request.status === 'submitted' ? (
                         <div className="mt-3 flex gap-2">
                           <Button onClick={() => handleRequestStatus(request, 'approved')}>
-                            Accepter
+                            {t('parcels.detail.requests.accept')}
                           </Button>
                           <Button
                             variant="danger"
                             onClick={() => handleRequestStatus(request, 'rejected')}
                           >
-                            Refuser
+                            {t('parcels.detail.requests.reject')}
                           </Button>
                         </div>
                       ) : null}
@@ -308,40 +363,50 @@ export function ParcelDetailPage() {
                   )
                 })
               ) : (
-                <p className="text-sm text-[var(--app-text-muted)]">Aucune demande reçue.</p>
+                <p className="text-sm text-[var(--app-text-muted)]">
+                  {t('parcels.detail.requests.empty')}
+                </p>
               )}
             </div>
           </Card>
         ) : null}
       </div>
       <div className="grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
-        <DetailSection title="Informations du transport">
+        <DetailSection title={t('parcels.detail.info.title')}>
           <DetailFacts
             items={[
-              { label: 'Origine', value: parcel.origin },
-              { label: 'Destination', value: parcel.destination },
-              { label: 'Date limite de dépôt', value: depositDeadline },
+              { label: t('parcels.detail.info.origin'), value: parcel.origin },
+              { label: t('parcels.detail.info.destination'), value: parcel.destination },
+              { label: t('parcels.detail.info.depositDeadline'), value: depositDeadline },
               {
-                label: 'Date de distribution / récupération',
-                value: distributionDate || 'À confirmer',
+                label: t('parcels.detail.info.distributionDate'),
+                value: distributionDate || t('parcels.detail.toConfirm'),
               },
-              { label: 'Capacité initiale', value: `${parcel.capacityKg} kg` },
               {
-                label: 'Tarif',
+                label: t('parcels.detail.info.initialCapacity'),
+                value: `${parcel.capacityKg} kg`,
+              },
+              {
+                label: t('parcels.detail.info.rate'),
                 value: `${formatMoney(parcel.pricePerKg, parcel.currency)} / kg`,
               },
-              { label: 'Profil', value: parcel.businessId ? 'Entreprise' : 'Particulier' },
-              { label: 'Statut', value: statusMeta(parcel.status).label },
-              { label: 'Transporteur', value: parcel.ownerName },
+              {
+                label: t('parcels.detail.info.profile'),
+                value: parcel.businessId
+                  ? t('parcels.detail.profile.business')
+                  : t('parcels.detail.profile.individual'),
+              },
+              { label: t('parcels.detail.info.status'), value: statusMeta(parcel.status).label },
+              { label: t('parcels.detail.info.carrier'), value: parcel.ownerName },
             ]}
           />
           {canSeeProof ? (
             <div className="mt-5 grid gap-3 rounded-2xl bg-[var(--app-surface-muted)] p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="flex items-center gap-2 text-sm font-black">
-                  <FiShield className="text-brand-700" /> Preuve de voyage
+                  <FiShield className="text-brand-700" /> {t('parcels.detail.proof.title')}
                   <span className="text-[10px] font-bold uppercase tracking-wide text-[var(--app-text-faint)]">
-                    (visible uniquement par vous et l'admin)
+                    {t('parcels.detail.proof.visibilityNote')}
                   </span>
                 </p>
                 <Badge tone={proofMeta.tone}>{proofMeta.label}</Badge>
@@ -350,11 +415,13 @@ export function ParcelDetailPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-bold">
-                      {parcel.travelProofName || 'Justificatif de voyage'}
+                      {parcel.travelProofName || t('parcels.detail.proof.defaultName')}
                     </p>
                     {parcel.travelProofSize ? (
                       <p className="text-xs text-[var(--app-text-muted)]">
-                        {Math.ceil(parcel.travelProofSize / 1024)} Ko
+                        {t('parcels.detail.proof.sizeKb', {
+                          size: Math.ceil(parcel.travelProofSize / 1024),
+                        })}
                       </p>
                     ) : null}
                   </div>
@@ -363,11 +430,13 @@ export function ParcelDetailPage() {
                     download={parcel.travelProofName || true}
                     className="flex shrink-0 items-center gap-2 rounded-xl bg-brand-700 px-3 py-2 text-sm font-bold text-white transition hover:bg-brand-800"
                   >
-                    Télécharger <FiDownload className="text-xs" />
+                    {t('parcels.detail.proof.download')} <FiDownload className="text-xs" />
                   </a>
                 </div>
               ) : (
-                <p className="text-sm text-[var(--app-text-muted)]">Aucun justificatif fourni.</p>
+                <p className="text-sm text-[var(--app-text-muted)]">
+                  {t('parcels.detail.proof.empty')}
+                </p>
               )}
               {isAdmin && parcel.proofStatus !== 'verified' ? (
                 <div className="flex gap-2">
@@ -377,7 +446,7 @@ export function ParcelDetailPage() {
                       dispatch(updateParcelProofStatus({ id: parcel.id, status: 'verified' }))
                     }
                   >
-                    Valider la preuve
+                    {t('parcels.detail.proof.validate')}
                   </Button>
                   <Button
                     size="sm"
@@ -386,7 +455,7 @@ export function ParcelDetailPage() {
                       dispatch(updateParcelProofStatus({ id: parcel.id, status: 'rejected' }))
                     }
                   >
-                    Rejeter
+                    {t('parcels.detail.proof.reject')}
                   </Button>
                 </div>
               ) : null}
@@ -406,12 +475,8 @@ export function ParcelDetailPage() {
             </>
           ) : null}
           <TrustPanel
-            title="Transport sécurisé"
-            items={[
-              'Les preuves de voyage restent privées et réservées à l\'administration.',
-              'Les objets transportés doivent être déclarés.',
-              'La réservation est confirmée par le transporteur.',
-            ]}
+            title={t('parcels.detail.trust.title')}
+            items={parcelDetailTrustItemKeys.map((key) => t(key))}
           />
         </div>
       </div>

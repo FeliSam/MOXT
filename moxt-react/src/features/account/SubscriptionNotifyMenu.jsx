@@ -1,11 +1,9 @@
 import { cloneElement, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { FiBell, FiBellOff, FiCheck, FiStar, FiVolumeX } from 'react-icons/fi'
-import {
-  SUBSCRIPTION_NOTIFY_HINTS,
-  SUBSCRIPTION_NOTIFY_LABELS,
-  SUBSCRIPTION_NOTIFY_PREFS,
-} from '@moxt/shared/utils/subscriptionUtils.js'
+import { SUBSCRIPTION_NOTIFY_PREFS } from '@moxt/shared/utils/subscriptionUtils.js'
+import { useLanguage } from '../../contexts/useLanguage'
+import { phase3Text } from '../../i18n/phase3I18n'
 
 const PREF_ICONS = {
   all: FiBell,
@@ -17,6 +15,18 @@ const PREF_TONES = {
   all: 'text-brand-700 bg-brand-50 dark:text-brand-200 dark:bg-brand-950/40',
   important: 'text-amber-700 bg-amber-50 dark:text-amber-200 dark:bg-amber-950/30',
   muted: 'text-slate-600 bg-slate-100 dark:text-slate-300 dark:bg-slate-800/60',
+}
+
+const PREF_LABEL_KEYS = {
+  all: 'subscriptions.notify.all',
+  important: 'subscriptions.notify.important',
+  muted: 'subscriptions.notify.muted',
+}
+
+const PREF_HINT_KEYS = {
+  all: 'subscriptions.notify.allHint',
+  important: 'subscriptions.notify.importantHint',
+  muted: 'subscriptions.notify.mutedHint',
 }
 
 const MENU_ESTIMATED_HEIGHT = 320
@@ -81,6 +91,8 @@ export function SubscriptionNotifyMenu({
   trigger,
   align = 'right',
 }) {
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const [open, setOpen] = useState(false)
   const anchorRef = useRef(null)
   const menuRef = useRef(null)
@@ -116,10 +128,10 @@ export function SubscriptionNotifyMenu({
           style={floatingStyle}
           className="panel-pop overflow-y-auto rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-1.5 shadow-[var(--shadow-float)] backdrop-blur-xl"
           role="menu"
-          aria-label="Préférences de notification d'abonnement"
+          aria-label={p3('subscriptions.notify.menuAria')}
         >
           <p className="px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--app-text-faint)]">
-            Notifications reçues
+            {p3('subscriptions.notify.heading')}
           </p>
           {SUBSCRIPTION_NOTIFY_PREFS.map((pref) => {
             const Icon = PREF_ICONS[pref]
@@ -142,11 +154,11 @@ export function SubscriptionNotifyMenu({
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-2 text-sm font-bold text-[var(--app-text)]">
-                    {SUBSCRIPTION_NOTIFY_LABELS[pref]}
+                    {p3(PREF_LABEL_KEYS[pref])}
                     {active ? <FiCheck className="text-[var(--app-accent)]" /> : null}
                   </span>
                   <span className="mt-0.5 block text-xs leading-5 text-[var(--app-text-muted)]">
-                    {SUBSCRIPTION_NOTIFY_HINTS[pref]}
+                    {p3(PREF_HINT_KEYS[pref])}
                   </span>
                 </span>
               </button>
@@ -165,7 +177,7 @@ export function SubscriptionNotifyMenu({
                 }}
               >
                 <FiBellOff />
-                Se désabonner
+                {p3('subscriptions.notify.unsubscribe')}
               </button>
             </>
           ) : null}

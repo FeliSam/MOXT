@@ -8,14 +8,18 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { PublicationModal } from '../components/ui/PublicationModal'
 import { statusMeta } from '../config/statuses'
+import { useLanguage } from '../contexts/useLanguage'
 import {
   addWalletEntry,
   createSimulatedPayment,
   updateSimulatedPaymentStatus,
 } from '../features/finance/financeSlice'
 import { formatDate, formatMoney } from '../features/transfers/transferUtils'
+import { phase3Text } from '../i18n/phase3I18n'
 
 export function PaymentsPage() {
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const [simulationOpen, setSimulationOpen] = useState(false)
   const dispatch = useDispatch()
   const user = useSelector((state) => state.auth.user)
@@ -48,7 +52,7 @@ export function PaymentsPage() {
         direction: 'out',
         amount: payment.amount,
         currency: payment.currency,
-        label: `Paiement ${payment.relatedId}`,
+        label: p3('payments.walletLabel', { id: payment.relatedId }),
         relatedType: payment.relatedType,
         relatedId: payment.relatedId,
       }),
@@ -58,27 +62,24 @@ export function PaymentsPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Finances"
-        title="Paiements"
-        description="Suivi et confirmation de vos paiements liés aux transferts."
+        eyebrow={p3('payments.eyebrow')}
+        title={p3('payments.title')}
+        description={p3('payments.description')}
         actions={
           <Button icon={FiPlus} onClick={() => setSimulationOpen(true)}>
-            Nouveau paiement
+            {p3('payments.new')}
           </Button>
         }
       />
       <Card className="flex gap-3 border-amber-300 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30">
         <FiAlertTriangle className="mt-1 shrink-0 text-xl text-amber-600" />
-        <p className="text-sm">
-          Les paiements sont enregistrés sur votre compte MOXT et synchronisés entre appareils.
-          Vérifiez toujours montant et coordonnées avant confirmation.
-        </p>
+        <p className="text-sm">{p3('payments.warning')}</p>
       </Card>
       <PublicationModal
         open={simulationOpen}
         onClose={() => setSimulationOpen(false)}
-        title="Associer un paiement"
-        description="Sélectionnez un transfert existant pour enregistrer le paiement."
+        title={p3('payments.modal.title')}
+        description={p3('payments.modal.description')}
         icon={FiCreditCard}
       >
         <div className="mt-4 flex flex-wrap gap-2">
@@ -97,7 +98,7 @@ export function PaymentsPage() {
       {payments.length ? (
         <div className="grid gap-3">
           {payments.map((payment) => {
-            const meta = statusMeta(payment.status)
+            const meta = statusMeta(payment.status, t)
             return (
               <Card className="flex h-full flex-wrap items-center gap-4">
                 <FiCreditCard className="text-xl text-brand-600" />
@@ -107,11 +108,11 @@ export function PaymentsPage() {
                     {payment.relatedId} · {formatDate(payment.createdAt)}
                   </p>
                 </div>
-                <Badge tone="info">Paiement</Badge>
+                <Badge tone="info">{p3('payments.badge')}</Badge>
                 <Badge tone={meta.tone}>{meta.label}</Badge>
                 {payment.status === 'pending' ? (
                   <Button icon={FiCheckCircle} onClick={() => confirm(payment)}>
-                    Confirmer le paiement
+                    {p3('payments.confirm')}
                   </Button>
                 ) : null}
               </Card>
@@ -119,7 +120,7 @@ export function PaymentsPage() {
           })}
         </div>
       ) : (
-        <EmptyState title="Aucun paiement enregistré" />
+        <EmptyState title={p3('payments.empty')} />
       )}
     </div>
   )

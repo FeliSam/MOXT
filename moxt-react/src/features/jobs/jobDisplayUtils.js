@@ -6,19 +6,25 @@ import {
 } from '../../config/options'
 import { formatShortDate } from '../../utils/formatters'
 
-export const JOB_EMPTY_LABEL = 'Non renseigné'
+export const JOB_EMPTY_LABEL_KEY = 'jobs.labels.empty'
 
 export function hasJobText(value) {
   return value !== null && value !== undefined && String(value).trim() !== ''
 }
 
-export function displayJobField(value, fallback = JOB_EMPTY_LABEL) {
+export function displayJobField(value, t, fallbackKey = JOB_EMPTY_LABEL_KEY) {
+  const fallback = typeof t === 'function' ? t(fallbackKey) : fallbackKey
   return hasJobText(value) ? String(value).trim() : fallback
 }
 
-export function formatJobExperienceLabel(experienceLevel) {
-  if (!hasJobText(experienceLevel)) return JOB_EMPTY_LABEL
-  return optionLabel(JOB_EXPERIENCE_LEVELS, experienceLevel) || JOB_EMPTY_LABEL
+export function formatJobExperienceLabel(experienceLevel, t) {
+  if (!hasJobText(experienceLevel)) {
+    return typeof t === 'function' ? t(JOB_EMPTY_LABEL_KEY) : JOB_EMPTY_LABEL_KEY
+  }
+  return (
+    optionLabel(JOB_EXPERIENCE_LEVELS, experienceLevel) ||
+    (typeof t === 'function' ? t(JOB_EMPTY_LABEL_KEY) : JOB_EMPTY_LABEL_KEY)
+  )
 }
 
 export function formatJobSalaryLabel(job) {
@@ -41,12 +47,17 @@ export function formatJobLanguageLabel(language) {
   return optionLabel(JOB_LANGUAGES, language) || String(language).trim()
 }
 
-export function formatJobLocationLabel(job) {
+export function formatJobLocationLabel(job, t) {
   const location = hasJobText(job?.location) ? String(job.location).trim() : ''
-  if (!location) return job?.remote ? 'Télétravail' : null
-  return job?.remote ? `${location} · Télétravail possible` : location
+  const remoteLabel = typeof t === 'function' ? t('jobs.labels.remote') : 'Télétravail'
+  const remotePossibleLabel =
+    typeof t === 'function' ? t('jobs.labels.remotePossible') : 'Télétravail possible'
+  if (!location) return job?.remote ? remoteLabel : null
+  return job?.remote ? `${location} · ${remotePossibleLabel}` : location
 }
 
-export function jobHeaderSubtitle(job) {
-  return [job?.publisherName, job?.location].filter(hasJobText).join(' · ') || 'Offre d\'emploi'
+export function jobHeaderSubtitle(job, t) {
+  const fallback =
+    typeof t === 'function' ? t('jobs.labels.offerFallback') : "Offre d'emploi"
+  return [job?.publisherName, job?.location].filter(hasJobText).join(' · ') || fallback
 }

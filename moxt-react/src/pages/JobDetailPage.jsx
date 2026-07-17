@@ -25,7 +25,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { ReshareButton } from '../components/ui/ReshareButton'
 import { FavoriteButton } from '../features/account/FavoriteButton'
 import { ContactButton } from '../features/communications/ContactButton'
-import { applicationSchema } from '../features/jobs/jobSchemas'
+import { createJobSchemas } from '../features/jobs/jobSchemas'
 import { applyToJob, reportJob, withdrawApplication } from '../features/jobs/jobSlice'
 import { applicationsForJob, applicationJobId, applicationUserId } from '../features/jobs/jobUtils'
 import {
@@ -37,12 +37,13 @@ import {
   formatJobSalaryLabel,
   hasJobText,
   jobHeaderSubtitle,
-  JOB_EMPTY_LABEL,
+  JOB_EMPTY_LABEL_KEY,
 } from '../features/jobs/jobDisplayUtils'
 import { PublisherDetailCard } from '../features/publications/PublisherDetailCard'
 import { PublisherPublicationsStrip } from '../features/publications/PublisherPublicationsStrip'
 import { usePublisherDetailProfile } from '../features/publications/usePublisherDetailProfile'
 import { ReportDialog } from '../components/ui/ReportDialog'
+import { useLanguage } from '../contexts/useLanguage'
 import { addToast } from '../features/ui/uiSlice'
 import {
   JOB_CONTRACTS,
@@ -50,24 +51,24 @@ import {
 } from '../config/options'
 import { statusMeta } from '../config/statuses'
 
-const applicationNextSteps = {
+const APPLICATION_NEXT_STEPS = {
   submitted: {
-    title: 'Candidature envoyée',
-    description:
-      'Le recruteur peut accepter ou refuser votre candidature depuis son espace de gestion.',
+    titleKey: 'jobs.detail.nextStep.submittedTitle',
+    descriptionKey: 'jobs.detail.nextStep.submittedDescription',
   },
   accepted: {
-    title: 'Candidature acceptée',
-    description: 'Contactez le recruteur pour organiser les prochaines étapes.',
+    titleKey: 'jobs.detail.nextStep.acceptedTitle',
+    descriptionKey: 'jobs.detail.nextStep.acceptedDescription',
   },
   rejected: {
-    title: 'Candidature refusée',
-    description: 'Vous pouvez garder cette offre en favori ou contacter le recruteur si besoin.',
+    titleKey: 'jobs.detail.nextStep.rejectedTitle',
+    descriptionKey: 'jobs.detail.nextStep.rejectedDescription',
   },
 }
 
 export function JobDetailPage() {
   const dispatch = useDispatch()
+  const { t } = useLanguage()
   const { jobId } = useParams()
   const user = useSelector((state) => state.auth.user)
   const job = useSelector((state) => state.jobs.items.find((item) => item.id === jobId))
@@ -81,16 +82,17 @@ export function JobDetailPage() {
   )
   const publisherProfile = usePublisherDetailProfile(job, 'job')
   const [reportOpen, setReportOpen] = useState(false)
-  const contractLabel = optionLabel(JOB_CONTRACTS, job.contractType)
-  const experienceLabel = formatJobExperienceLabel(job.experienceLevel)
+  const emptyLabel = t(JOB_EMPTY_LABEL_KEY)
+  const contractLabel = optionLabel(JOB_CONTRACTS, job?.contractType)
+  const experienceLabel = formatJobExperienceLabel(job?.experienceLevel, t)
   const salaryLabel = formatJobSalaryLabel(job)
-  const locationLabel = formatJobLocationLabel(job)
-  const languageLabel = formatJobLanguageLabel(job.language)
-  const startDateLabel = formatJobDate(job.startDate)
-  const deadlineLabel = formatJobDate(job.applicationDeadline)
+  const locationLabel = formatJobLocationLabel(job, t)
+  const languageLabel = formatJobLanguageLabel(job?.language)
+  const startDateLabel = formatJobDate(job?.startDate)
+  const deadlineLabel = formatJobDate(job?.applicationDeadline)
   const formik = useFormik({
     initialValues: { message: '' },
-    validationSchema: applicationSchema,
+    validationSchema: createJobSchemas(t).applicationSchema,
     onSubmit: (values) =>
       dispatch(
         applyToJob({
@@ -101,17 +103,20 @@ export function JobDetailPage() {
         }),
       ),
   })
-  if (!job) return <Card>Job introuvable.</Card>
+  if (!job) return <Card>{t('jobs.detail.notFound')}</Card>
   const jobStatus = statusMeta(job.status)
   const existingStatus = existing ? statusMeta(existing.status) : null
-  const nextStep = existing ? applicationNextSteps[existing.status] : null
+  const nextStepConfig = existing ? APPLICATION_NEXT_STEPS[existing.status] : null
+  const nextStep = nextStepConfig
+    ? { title: t(nextStepConfig.titleKey), description: t(nextStepConfig.descriptionKey) }
+    : null
 
   return (
     <div className="grid gap-7">
       <PageHeader
         eyebrow={job.sector}
         title={job.title}
-        description={jobHeaderSubtitle(job)}
+        description={jobHeaderSubtitle(job, t)}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {/* Favori — icône seule, coin droit, distinct de la candidature */}
@@ -127,7 +132,7 @@ export function JobDetailPage() {
             <ReshareButton sourceType="job" sourceId={job.id} sourceData={job} />
             {job.ownerId === user.id ? (
               <Link to={`/jobs/${jobId}/edit`}>
-                <Button variant="secondary" icon={FiEdit2}>Modifier</Button>
+                <Button variant="secondary" icon={FiEdit2}>{t('jobs.detail.edit')}</Button>
               </Link>
             ) : null}
             <BackButton fallback="/jobs" />
@@ -149,7 +154,7 @@ export function JobDetailPage() {
             >
               <img
                 src={src}
-                alt={`${job.title} — affiche ${index + 1}`}
+                alt={t('jobs.detail.imageAlt', { title: job.title, index: index + 1 })}
                 className={`w-full object-cover ${index === 0 ? 'aspect-[16/10] max-h-96' : 'aspect-square'}`}
                 loading="lazy"
               />
@@ -159,17 +164,17 @@ export function JobDetailPage() {
       ) : null}
       <DetailMetrics
         items={[
-          { icon: FiBriefcase, label: 'Contrat', value: contractLabel || JOB_EMPTY_LABEL },
-          { icon: FiMapPin, label: 'Lieu', value: locationLabel || JOB_EMPTY_LABEL },
+          { icon: FiBriefcase, label: t('jobs.detail.metrics.contract'), value: contractLabel || emptyLabel },
+          { icon: FiMapPin, label: t('jobs.detail.metrics.location'), value: locationLabel || emptyLabel },
           {
             icon: FiUsers,
-            label: 'Candidatures',
+            label: t('jobs.detail.metrics.applications'),
             value: `${jobApplications.length}`,
           },
           {
             icon: FiBriefcase,
-            label: 'Rémunération',
-            value: salaryLabel || JOB_EMPTY_LABEL,
+            label: t('jobs.detail.metrics.salary'),
+            value: salaryLabel || emptyLabel,
           },
         ]}
       />
@@ -180,17 +185,17 @@ export function JobDetailPage() {
             {salaryLabel ? <Badge tone="success">{salaryLabel}</Badge> : null}
             <Badge tone="info">{experienceLabel}</Badge>
             {languageLabel ? <Badge tone="slate">{languageLabel}</Badge> : null}
-            {job.remote ? <Badge tone="slate">Télétravail</Badge> : null}
+            {job.remote ? <Badge tone="slate">{t('jobs.labels.remote')}</Badge> : null}
             <Badge tone={jobStatus.tone}>{jobStatus.label}</Badge>
-            {job.businessId ? <VerifiedBadge size="sm" label="Entreprise" /> : null}
+            {job.businessId ? <VerifiedBadge size="sm" label={t('jobs.card.business')} /> : null}
           </div>
-          <h2 className="mt-6 font-black">Description</h2>
+          <h2 className="mt-6 font-black">{t('jobs.detail.description')}</h2>
           <p className="mt-3 leading-7 text-slate-600 dark:text-slate-300">
-            {displayJobField(job.description)}
+            {displayJobField(job.description, t)}
           </p>
           {hasJobText(job.requirements) ? (
             <>
-              <h2 className="mt-6 font-black">Profil recherché</h2>
+              <h2 className="mt-6 font-black">{t('jobs.detail.requirements')}</h2>
               <p className="mt-3 leading-7 text-slate-600 dark:text-slate-300">
                 {job.requirements}
               </p>
@@ -198,13 +203,13 @@ export function JobDetailPage() {
           ) : null}
           {job.benefits ? (
             <>
-              <h2 className="mt-6 font-black">Avantages</h2>
+              <h2 className="mt-6 font-black">{t('jobs.detail.benefits')}</h2>
               <p className="mt-3 leading-7 text-slate-600 dark:text-slate-300">{job.benefits}</p>
             </>
           ) : null}
         </Card>
         <Card>
-          <h2 className="font-black">Candidature</h2>
+          <h2 className="font-black">{t('jobs.detail.application')}</h2>
           <div className="mt-4">
             <ContactButton
               ownerId={job.ownerId}
@@ -223,12 +228,12 @@ export function JobDetailPage() {
               icon={FiAlertTriangle}
               onClick={() => setReportOpen(true)}
             >
-              Signaler
+              {t('jobs.detail.report')}
             </Button>
           ) : null}
           {job.ownerId === user.id ? (
             <p className="mt-3 text-sm text-slate-500">
-              {jobApplications.length} candidature(s) reçue(s).
+              {t('jobs.detail.receivedCount', { count: jobApplications.length })}
             </p>
           ) : existing ? (
             <div className="mt-4">
@@ -242,13 +247,12 @@ export function JobDetailPage() {
                 }
                 title={existingStatus.label}
               >
-                {nextStep?.description ||
-                  'Votre candidature est suivie et vous serez notifié à chaque changement.'}
+                {nextStep?.description || t('jobs.detail.applicationTracked')}
               </Alert>
               {nextStep ? (
                 <Card className="mt-3 bg-[var(--app-surface-muted)] p-4 shadow-sm">
                   <span className="text-xs font-black uppercase tracking-[0.12em] text-brand-700">
-                    Prochaine étape
+                    {t('jobs.detail.nextStepLabel')}
                   </span>
                   <h3 className="mt-2 font-black">{nextStep.title}</h3>
                 </Card>
@@ -261,14 +265,14 @@ export function JobDetailPage() {
                     dispatch(withdrawApplication({ id: existing.id, userId: user.id }))
                   }
                 >
-                  Retirer ma candidature
+                  {t('jobs.detail.withdraw')}
                 </Button>
               ) : null}
             </div>
           ) : (
             <form className="mt-5 grid gap-4" onSubmit={formik.handleSubmit}>
               <label className="grid gap-1.5">
-                <span className="text-sm font-semibold">Message</span>
+                <span className="text-sm font-semibold">{t('jobs.detail.message')}</span>
                 <textarea
                   className="min-h-36 rounded-xl border border-slate-200 bg-slate-50 p-3.5 dark:border-slate-700 dark:bg-slate-950"
                   {...formik.getFieldProps('message')}
@@ -278,27 +282,30 @@ export function JobDetailPage() {
                 ) : null}
               </label>
               <Button type="submit" icon={FiSend}>
-                Postuler
+                {t('jobs.detail.apply')}
               </Button>
             </form>
           )}
         </Card>
       </div>
       <div className="grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
-        <DetailSection title="Informations sur le poste">
+        <DetailSection title={t('jobs.detail.infoTitle')}>
           <DetailFacts
             items={[
-              { label: 'Entreprise', value: displayJobField(job.publisherName) },
-              { label: 'Profil', value: job.businessId ? 'Entreprise' : 'Particulier' },
-              { label: 'Secteur', value: displayJobField(job.sector) },
-              { label: 'Type de contrat', value: contractLabel || JOB_EMPTY_LABEL },
-              { label: 'Expérience', value: experienceLabel },
-              ...(languageLabel ? [{ label: 'Langue', value: languageLabel }] : []),
-              { label: 'Localisation', value: locationLabel || JOB_EMPTY_LABEL },
-              ...(startDateLabel ? [{ label: 'Début', value: startDateLabel }] : []),
-              ...(deadlineLabel ? [{ label: 'Date limite', value: deadlineLabel }] : []),
-              { label: 'Statut', value: jobStatus.label },
-              { label: 'Référence', value: job.id },
+              { label: t('jobs.detail.facts.company'), value: displayJobField(job.publisherName, t) },
+              {
+                label: t('jobs.detail.facts.profile'),
+                value: job.businessId ? t('jobs.card.business') : t('jobs.card.individual'),
+              },
+              { label: t('jobs.detail.facts.sector'), value: displayJobField(job.sector, t) },
+              { label: t('jobs.detail.facts.contractType'), value: contractLabel || emptyLabel },
+              { label: t('jobs.detail.facts.experience'), value: experienceLabel },
+              ...(languageLabel ? [{ label: t('jobs.detail.facts.language'), value: languageLabel }] : []),
+              { label: t('jobs.detail.facts.location'), value: locationLabel || emptyLabel },
+              ...(startDateLabel ? [{ label: t('jobs.detail.facts.start'), value: startDateLabel }] : []),
+              ...(deadlineLabel ? [{ label: t('jobs.detail.facts.deadline'), value: deadlineLabel }] : []),
+              { label: t('jobs.detail.facts.status'), value: jobStatus.label },
+              { label: t('jobs.detail.facts.reference'), value: job.id },
             ]}
           />
         </DetailSection>
@@ -315,11 +322,11 @@ export function JobDetailPage() {
             </>
           ) : null}
           <TrustPanel
-            title="Conseils aux candidats"
+            title={t('jobs.detail.tipsTitle')}
             items={[
-              'Ne transmettez aucun paiement pour candidater.',
-              'Échangez avec le recruteur dans la messagerie.',
-              'Vérifiez les conditions avant d’accepter une mission.',
+              t('jobs.detail.tips.noPayment'),
+              t('jobs.detail.tips.useMessaging'),
+              t('jobs.detail.tips.checkConditions'),
             ]}
           />
         </div>
@@ -327,7 +334,7 @@ export function JobDetailPage() {
       <ReportDialog
         open={reportOpen}
         onClose={() => setReportOpen(false)}
-        title="Signaler cette offre"
+        title={t('jobs.detail.reportTitle')}
         userId={user.id}
         onSubmit={async ({ reason, evidenceUrl }) => {
           dispatch(
@@ -340,8 +347,8 @@ export function JobDetailPage() {
           )
           dispatch(
             addToast({
-              title: 'Signalement envoyé',
-              message: 'Notre équipe va examiner cette offre.',
+              title: t('jobs.detail.reportToastTitle'),
+              message: t('jobs.detail.reportToastMessage'),
               tone: 'success',
             }),
           )

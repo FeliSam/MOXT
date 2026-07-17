@@ -8,23 +8,26 @@ import {
   canUseTransferAccount,
   securityGateMessage,
 } from '@moxt/shared/auth/userSecurity.js'
+import { useLanguage } from '../../contexts/useLanguage'
+import { sharedText } from '../../i18n/sharedI18n'
 import { addToast } from '../ui/uiSlice'
 
 export function useSecurityGate() {
   const dispatch = useDispatch()
+  const { t } = useLanguage()
   const user = useSelector((state) => state.auth.user)
 
   const notifyBlocked = useCallback(
     (kind) => {
       dispatch(
         addToast({
-          title: 'Vérification requise',
+          title: sharedText(t, 'shared.securityGate.toastTitle'),
           message: securityGateMessage(kind, user),
           tone: 'warning',
         }),
       )
     },
-    [dispatch, user],
+    [dispatch, t, user],
   )
 
   const requirePublish = useCallback(() => {

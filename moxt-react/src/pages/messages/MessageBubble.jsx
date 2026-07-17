@@ -9,13 +9,14 @@ import {
   FiTrash2,
 } from 'react-icons/fi'
 import { initials, shortTime, formatDateLabel } from './format'
-import { messageReadLabel } from './messageUtils'
+import { messageReadStatus } from './messageUtils'
 import {
   attachmentImageSrcs,
   isImageAttachment,
 } from '../../features/communications/attachmentUtils'
 import { MessageAttachment } from './MessageAttachment'
 import { useLanguage } from '../../contexts/useLanguage'
+import { messagesText } from '../../features/communications/messagesI18n'
 
 function bubbleClassName(mine, groupedWithPrevious, groupedWithNext, failed) {
   const classes = ['message-bubble', mine ? 'message-bubble--sent' : 'message-bubble--received']
@@ -27,11 +28,11 @@ function bubbleClassName(mine, groupedWithPrevious, groupedWithNext, failed) {
 
 const LONG_PRESS_MS = 450
 
-function MessageReadStatus({ label }) {
+function MessageReadStatus({ status }) {
   const { t } = useLanguage()
-  if (!label) return null
-  const isRead = label.includes('Lu')
-  const isDelivered = label.includes('Distribué')
+  if (!status) return null
+  const isRead = status === 'read'
+  const isDelivered = status === 'delivered'
   const text = isRead
     ? t('messages.statusRead')
     : isDelivered
@@ -86,7 +87,7 @@ export function MessageBubble({
   const longPressTimer = useRef(null)
   const longPressTriggered = useRef(false)
   const [placeAbove, setPlaceAbove] = useState(false)
-  const readLabel = messageReadLabel(message, user.id)
+  const readStatus = messageReadStatus(message, user.id)
   const failed = Boolean(message.syncFailed)
   const showActions = openActions
   const hasReactions =
@@ -220,7 +221,7 @@ export function MessageBubble({
         {repliedContext ? (
           <p className={`message-quote ${mine ? 'message-quote--sent' : 'message-quote--received'}`}>
             <span className="block text-[9px] font-bold uppercase tracking-wide opacity-80">
-              Annonce
+              {messagesText(t, 'messages.replyQuoteListing')}
             </span>
             {repliedContext.title}
             {repliedContext.subtitle ? ` · ${repliedContext.subtitle}` : ''}
@@ -267,13 +268,13 @@ export function MessageBubble({
 
         {failed ? (
           <div className="message-failed-banner">
-            <span>Échec d’envoi</span>
+            <span>{messagesText(t, 'messages.sendFailedBanner')}</span>
             <button
               type="button"
               className="message-failed-retry"
               onClick={(event) => runAction(event, () => onRetry?.(message))}
             >
-              <FiRefreshCw aria-hidden="true" /> Réessayer
+              <FiRefreshCw aria-hidden="true" /> {messagesText(t, 'messages.retryAction')}
             </button>
           </div>
         ) : null}
@@ -376,8 +377,10 @@ export function MessageBubble({
       {!groupedWithNext ? (
         <div className={`message-meta ${mine ? 'message-meta--sent' : ''}`}>
           <time dateTime={message.createdAt}>{shortTime(message.createdAt)}</time>
-          {mine && readLabel && !failed ? <MessageReadStatus label={readLabel} /> : null}
-          {mine && failed ? <span className="message-meta-failed">Non synchronisé</span> : null}
+          {mine && readStatus && !failed ? <MessageReadStatus status={readStatus} /> : null}
+          {mine && failed ? (
+            <span className="message-meta-failed">{messagesText(t, 'messages.notSynced')}</span>
+          ) : null}
         </div>
       ) : null}
     </div>
@@ -406,27 +409,34 @@ export function MessageAvatar({ name, avatarUrl, hidden = false, className = '' 
 }
 
 export function MessageDateSeparator({ date }) {
+  const { t } = useLanguage()
   return (
     <div className="my-5 flex items-center gap-3">
       <span className="h-px flex-1 bg-[var(--app-border)]/80" />
-      <span className="message-date-chip">{formatDateLabel(date)}</span>
+      <span className="message-date-chip">{formatDateLabel(date, t)}</span>
       <span className="h-px flex-1 bg-[var(--app-border)]/80" />
     </div>
   )
 }
 
 export function MessageUnreadSeparator({ count }) {
+  const { t } = useLanguage()
   return (
     <div className="message-unread-separator" data-testid="message-unread-separator">
-      <span>{count > 1 ? `${count} messages non lus` : 'Message non lu'}</span>
+      <span>
+        {count > 1
+          ? messagesText(t, 'messages.unreadSeparatorPlural', { count })
+          : messagesText(t, 'messages.unreadSeparator')}
+      </span>
     </div>
   )
 }
 
 export function MessageThreadStart() {
+  const { t } = useLanguage()
   return (
     <div className="my-3 flex justify-center">
-      <span className="message-date-chip">Début de la conversation</span>
+      <span className="message-date-chip">{messagesText(t, 'messages.threadStart')}</span>
     </div>
   )
 }
@@ -439,7 +449,7 @@ export function MessageSecurityNotice() {
       data-testid="message-security-notice"
     >
       <p className="text-[11px] font-black uppercase tracking-wide text-amber-800 dark:text-amber-200">
-        Consignes de sécurité
+        {messagesText(t, 'messages.securityTitle')}
       </p>
       <p className="mt-1.5 text-[11px] leading-[1.35] text-amber-900/90 dark:text-amber-100/90">
         {t("messages.securityNotice")}
@@ -449,13 +459,14 @@ export function MessageSecurityNotice() {
 }
 
 export function MessageEmptyState() {
+  const { t } = useLanguage()
   return (
     <div className="mx-auto mt-8 max-w-sm rounded-[var(--radius-card-lg)] border border-dashed border-[var(--app-border)] bg-[var(--app-surface)]/90 px-6 py-8 text-center shadow-[var(--shadow-card)]">
       <p className="font-display text-sm font-extrabold text-[var(--app-text)]">
-        Aucun message pour l’instant
+        {messagesText(t, 'messages.threadEmptyTitle')}
       </p>
       <p className="mt-2 text-sm leading-6 text-[var(--app-text-muted)]">
-        Écrivez le premier message pour démarrer l’échange.
+        {messagesText(t, 'messages.threadEmptyDescription')}
       </p>
     </div>
   )

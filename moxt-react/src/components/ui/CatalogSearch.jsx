@@ -1,11 +1,12 @@
 import { FiSearch, FiSliders, FiX } from 'react-icons/fi'
+import { useLanguage } from '../../contexts/useLanguage'
 import { Button } from './Button'
 
 export function CatalogSearch({
   advancedOpen,
   children,
   count,
-  label = 'Rechercher',
+  label,
   onClear,
   onQueryChange,
   onToggleAdvanced,
@@ -13,16 +14,20 @@ export function CatalogSearch({
   query,
   activeFilterCount = 0,
 }) {
+  const { t } = useLanguage()
+  const searchLabel = label ?? t('catalog.search.label')
+  const searchPlaceholder = placeholder ?? t('catalog.search.placeholder')
+
   return (
     <section className="rounded-[var(--radius-card-lg)] border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--shadow-card)] sm:p-5">
       <div className="flex flex-col gap-3 lg:flex-row">
         <label className="relative min-w-0 flex-1">
-          <span className="sr-only">{label}</span>
+          <span className="sr-only">{searchLabel}</span>
           <FiSearch className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--app-text-faint)]" />
           <input
-            aria-label={label}
+            aria-label={searchLabel}
             className="min-h-13 w-full rounded-[var(--radius-input)] bg-[var(--app-surface-muted)] pl-11 pr-12 text-sm outline-none transition duration-[var(--transition-fast)] focus:bg-[var(--app-surface)] focus:shadow-[0_0_0_3px_rgba(18,191,163,0.14)]"
-            placeholder={placeholder}
+            placeholder={searchPlaceholder}
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
           />
@@ -30,7 +35,7 @@ export function CatalogSearch({
             <button
               type="button"
               className="absolute right-3 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-xl text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface)]"
-              aria-label="Effacer la recherche"
+              aria-label={t('catalog.search.clearSearch')}
               onClick={onClear}
             >
               <FiX />
@@ -44,7 +49,7 @@ export function CatalogSearch({
           aria-expanded={advancedOpen}
           className="relative shrink-0"
         >
-          Filtres
+          {t('catalog.search.filters')}
           {activeFilterCount > 0 ? (
             <span
               className={`grid size-5 place-items-center rounded-full text-[10px] font-black ${
@@ -58,9 +63,9 @@ export function CatalogSearch({
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-3 text-xs text-[var(--app-text-faint)]">
-        <span>Recherche dynamique, sans rechargement de la page.</span>
+        <span>{t('catalog.search.liveHint')}</span>
         <strong className="shrink-0 rounded-full bg-[var(--app-surface-muted)] px-2.5 py-1 text-[var(--app-text)]">
-          {count} résultat{count > 1 ? 's' : ''}
+          {t(count > 1 ? 'catalog.search.resultsPlural' : 'catalog.search.results', { count })}
         </strong>
       </div>
 
@@ -69,10 +74,10 @@ export function CatalogSearch({
           <div className="mb-4 flex items-center justify-between">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.12em] text-brand-700 dark:text-brand-300">
-                Filtres avancés
+                {t('catalog.search.advancedTitle')}
               </p>
               <p className="mt-1 text-xs text-[var(--app-text-faint)]">
-                Affinez les résultats avec plusieurs critères.
+                {t('catalog.search.advancedDescription')}
               </p>
             </div>
             <button
@@ -80,7 +85,7 @@ export function CatalogSearch({
               className="text-xs font-black text-brand-700 transition hover:text-brand-800 dark:text-brand-300"
               onClick={onClear}
             >
-              Tout effacer
+              {t('catalog.search.clearAll')}
             </button>
           </div>
           {children}

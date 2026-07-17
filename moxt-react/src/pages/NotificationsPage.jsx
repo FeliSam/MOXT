@@ -5,6 +5,7 @@ import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { PageHeader } from '../components/ui/PageHeader'
+import { useLanguage } from '../contexts/useLanguage'
 import {
   archiveNotification,
   markAllNotificationsRead,
@@ -12,6 +13,7 @@ import {
 } from '../features/communications/communicationSlice'
 import { selectUserConversations } from '../features/selectors'
 import { formatDate } from '../features/transfers/transferUtils'
+import { phase3Text } from '../i18n/phase3I18n'
 import {
   isMessageNotification,
   resolveNotificationTarget,
@@ -23,20 +25,20 @@ const PRIORITY_STYLES = {
       'border-rose-300 bg-gradient-to-r from-rose-50/80 via-[var(--app-surface)] to-[var(--app-surface)] dark:from-rose-950/25',
     icon: 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-200',
     badge: 'warning',
-    label: 'Urgent',
+    labelKey: 'notifications.priority.urgent',
   },
   normal: {
     unread:
       'border-brand-300 bg-gradient-to-r from-brand-50/70 via-[var(--app-surface)] to-[var(--app-surface)] dark:from-brand-950/20',
     icon: 'bg-brand-50 text-brand-700 dark:bg-brand-900',
     badge: 'info',
-    label: 'Standard',
+    labelKey: 'notifications.priority.standard',
   },
   low: {
     unread: 'border-slate-200 bg-[var(--app-surface-muted)]/60',
     icon: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
     badge: 'neutral',
-    label: 'Faible',
+    labelKey: 'notifications.priority.low',
   },
 }
 
@@ -55,6 +57,8 @@ function PriorityIcon({ priority }) {
 export function NotificationsPage() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const user = useSelector((state) => state.auth.user)
   const conversations = useSelector(selectUserConversations)
   const notifications = useSelector((state) =>
@@ -76,9 +80,9 @@ export function NotificationsPage() {
   return (
     <div className="grid w-full min-w-0 max-w-full gap-7 overflow-x-hidden">
       <PageHeader
-        eyebrow="Alertes"
-        title="Notifications"
-        description={`${unreadCount} notification(s) non lue(s).`}
+        eyebrow={p3('notifications.eyebrow')}
+        title={p3('notifications.title')}
+        description={p3('notifications.description', { count: unreadCount })}
         actions={
           <Button
             className="w-full sm:w-auto"
@@ -87,7 +91,7 @@ export function NotificationsPage() {
             icon={FiCheck}
             onClick={() => dispatch(markAllNotificationsRead(user.id))}
           >
-            Tout lire
+            {p3('notifications.markAllRead')}
           </Button>
         }
       />
@@ -135,10 +139,12 @@ export function NotificationsPage() {
                       <strong className="min-w-0 break-words leading-snug">{notification.title}</strong>
                       <div className="flex shrink-0 flex-wrap gap-2 self-start">
                         {!notification.read ? (
-                          <Badge tone={styles.badge}>{styles.label}</Badge>
+                          <Badge tone={styles.badge}>{p3(styles.labelKey)}</Badge>
                         ) : null}
                         <Badge tone={notification.read ? 'info' : 'warning'}>
-                          {notification.read ? 'Lue' : 'Nouvelle'}
+                          {notification.read
+                            ? p3('notifications.badge.read')
+                            : p3('notifications.badge.new')}
                         </Badge>
                       </div>
                     </div>
@@ -158,7 +164,9 @@ export function NotificationsPage() {
                           icon={messageAlert ? FiMessageSquare : undefined}
                           onClick={() => openNotification(notification)}
                         >
-                          {messageAlert ? 'Ouvrir la conversation' : 'Ouvrir'}
+                          {messageAlert
+                            ? p3('notifications.openConversation')
+                            : p3('notifications.open')}
                         </Button>
                       ) : null}
                       {!notification.read ? (
@@ -168,7 +176,7 @@ export function NotificationsPage() {
                           className="max-w-full"
                           onClick={() => dispatch(markNotificationRead(notification.id))}
                         >
-                          Marquer lue
+                          {p3('notifications.markRead')}
                         </Button>
                       ) : null}
                       <Button
@@ -180,7 +188,7 @@ export function NotificationsPage() {
                           dispatch(archiveNotification({ id: notification.id, userId: user.id }))
                         }
                       >
-                        Archiver
+                        {p3('notifications.archive')}
                       </Button>
                     </div>
                   </div>
@@ -190,7 +198,7 @@ export function NotificationsPage() {
           })
         ) : (
           <Card className="border-dashed text-center text-sm text-slate-500">
-            Aucune notification.
+            {p3('notifications.empty')}
           </Card>
         )}
       </div>

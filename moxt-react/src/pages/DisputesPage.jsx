@@ -5,9 +5,13 @@ import { Card } from '../components/ui/Card'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { statusMeta } from '../config/statuses'
+import { useLanguage } from '../contexts/useLanguage'
 import { formatDate } from '../features/transfers/transferUtils'
+import { phase3Text } from '../i18n/phase3I18n'
 
 export function DisputesPage() {
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const user = useSelector((state) => state.auth.user)
   const disputes = useSelector((state) =>
     state.disputes.items.filter(
@@ -18,9 +22,9 @@ export function DisputesPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Compte"
-        title="Mes litiges"
-        description="Suivi local des problèmes déclarés sur les opérations compatibles."
+        eyebrow={t('common.account')}
+        title={p3('disputes.title')}
+        description={p3('disputes.description')}
       />
       {disputes.length ? (
         <div className="grid gap-3">
@@ -44,7 +48,7 @@ export function DisputesPage() {
           })}
         </div>
       ) : (
-        <EmptyState icon={FiAlertTriangle} title="Aucun litige" />
+        <EmptyState icon={FiAlertTriangle} title={p3('disputes.empty')} />
       )}
     </div>
   )

@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
 import { useSelector } from 'react-redux'
-import { useLanguage } from '../contexts/useLanguage'
 import { ProfileHeroCard } from '../features/profile/components/ProfileHeroCard'
 import { ProfileLinkGrid } from '../features/profile/components/ProfileLinkGrid'
 import { ProfileQuickStats } from '../features/profile/components/ProfileQuickStats'
@@ -15,7 +14,6 @@ import {
 
 export function ProfilePage() {
   const user = useSelector((state) => state.auth.user)
-  const { translateLabel } = useLanguage()
 
   const profileCompletion = profileCompletionPercent(user)
 
@@ -50,7 +48,7 @@ export function ProfilePage() {
       <ProfileHeroCard profileCompletion={profileCompletion} user={user} />
       {!isPhoneVerified(user) ? <PhoneVerificationCard /> : null}
       <ProfileQuickStats stats={quickStats} />
-      <ProfileLinkGrid sections={accountSections} translateLabel={translateLabel} />
+      <ProfileLinkGrid sections={accountSections} />
       <ProfileSecuritySummary verified={user.verified} />
     </div>
   )

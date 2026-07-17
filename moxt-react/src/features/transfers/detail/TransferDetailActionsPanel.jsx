@@ -9,6 +9,7 @@ import {
 import { Link } from 'react-router-dom'
 import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
+import { useLanguage } from '../../../contexts/useLanguage'
 import { formatDate } from '../transferUtils'
 
 export function TransferDetailActionsPanel({
@@ -22,22 +23,25 @@ export function TransferDetailActionsPanel({
   proof,
   transfer,
 }) {
+  const { t } = useLanguage()
+
   return (
     <Card className="ring-1 ring-transparent transition-shadow duration-300 hover:ring-brand-200 dark:hover:ring-brand-800">
       <h2 className="flex items-center gap-2 font-black">
         <span className="grid size-9 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand-700 dark:bg-brand-900 dark:text-brand-200">
           <FiCheck className="text-sm" />
         </span>
-        Actions
+        {t('transfers.detail.actions.title')}
       </h2>
       <p className="mt-2 text-sm leading-6 text-[var(--app-text-muted)]">
-        Chaque action est unique et la prochaine étape dépend du statut actuel de l’opération.
+        {t('transfers.detail.actions.description')}
       </p>
       <div className="mt-5 flex flex-wrap gap-3">
         {canDeclare ? (
           <label className="grid w-full cursor-pointer gap-3 rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] p-4 transition hover:border-brand-300">
             <span className="flex items-center gap-2 text-sm font-bold">
-              <FiUpload className="text-brand-700 dark:text-brand-300" /> Preuve de paiement
+              <FiUpload className="text-brand-700 dark:text-brand-300" />{' '}
+              {t('transfers.workflow.paymentProof')}
             </span>
             {proof ? (
               <div className="flex items-center gap-3 rounded-xl bg-[var(--app-surface)] p-3">
@@ -55,14 +59,16 @@ export function TransferDetailActionsPanel({
                 <span className="min-w-0 flex-1">
                   <strong className="block truncate text-xs">{proof.file?.name}</strong>
                   <span className="text-xs text-[var(--app-text-muted)]">
-                    {proof.uploading ? 'Envoi...' : `${Math.ceil((proof.file?.size || 0) / 1024)} Ko`}
+                    {proof.uploading
+                      ? t('transfers.workflow.uploading')
+                      : `${Math.ceil((proof.file?.size || 0) / 1024)} Ko`}
                   </span>
                 </span>
                 <FiCheck className="shrink-0 text-emerald-600" />
               </div>
             ) : (
               <span className="text-xs text-[var(--app-text-muted)]">
-                Cliquez pour ajouter une image ou un PDF
+                {t('transfers.detail.actions.clickToAddProof')}
               </span>
             )}
             <input
@@ -77,23 +83,23 @@ export function TransferDetailActionsPanel({
         {transfer.receivedAt ? (
           <Card className="w-full border-emerald-200 bg-emerald-50/40 p-4 dark:border-emerald-900 dark:bg-emerald-950/20">
             <p className="text-xs font-black uppercase text-emerald-800 dark:text-emerald-300">
-              Réception déclarée
+              {t('transfers.detail.actions.receptionDeclared')}
             </p>
             <p className="mt-2 text-sm">
-              Montant :{' '}
+              {t('transfers.detail.actions.amount')}:{' '}
               <strong>
                 {transfer.receivedAmount} ({transfer.receivedMethod})
               </strong>
             </p>
             <p className="text-xs text-[var(--app-text-muted)]">
-              Le {formatDate(transfer.receivedAt)}
+              {t('transfers.detail.actions.onDate', { date: formatDate(transfer.receivedAt) })}
             </p>
           </Card>
         ) : null}
 
         {canReceive ? (
           <Link to={`/transfers/${transfer.id}/receive`}>
-            <Button icon={FiCheckCircle}>Déclarer la réception</Button>
+            <Button icon={FiCheckCircle}>{t('transfers.workflow.declareReception')}</Button>
           </Link>
         ) : null}
 
@@ -104,22 +110,24 @@ export function TransferDetailActionsPanel({
             icon={FiCheckCircle}
             onClick={onDeclarePayment}
           >
-            Déclarer le paiement
+            {t('transfers.workflow.declarePayment')}
           </Button>
         ) : null}
 
         {canCancel ? (
           <Button variant="danger" icon={FiXCircle} onClick={onCancel}>
-            Annuler
+            {t('common.cancel')}
           </Button>
         ) : null}
 
         {!canDeclare && !canCancel ? (
-          <span className="text-sm text-[var(--app-text-muted)]">Aucune action disponible.</span>
+          <span className="text-sm text-[var(--app-text-muted)]">
+            {t('transfers.detail.actions.noneAvailable')}
+          </span>
         ) : null}
 
         <Button variant="secondary" icon={FiFlag} onClick={onOpenClaim}>
-          Ouvrir une réclamation
+          {t('transfers.workflow.openClaim')}
         </Button>
       </div>
     </Card>

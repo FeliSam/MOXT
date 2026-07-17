@@ -1,7 +1,13 @@
 import { FiChevronLeft, FiChevronRight, FiEdit2, FiMapPin, FiPlus, FiTrash2 } from 'react-icons/fi'
 import { useCallback, useEffect, useState } from 'react'
 import { Button } from '../ui/Button'
-import { OWNER_TYPE_LABELS } from '../../types/identityEnums'
+import { useLanguage } from '../../contexts/useLanguage'
+import { phase3Text } from '../../i18n/phase3I18n'
+
+const HOLDER_LABEL_KEYS = {
+  PERSON: 'addresses.holder.person',
+  COMPANY: 'addresses.holder.company',
+}
 
 export function RecipientAddressCarousel({
   items,
@@ -11,6 +17,8 @@ export function RecipientAddressCarousel({
   onEdit,
   onDelete,
 }) {
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const [index, setIndex] = useState(0)
 
   const clampedIndex = items.length ? Math.min(index, items.length - 1) : 0
@@ -35,9 +43,9 @@ export function RecipientAddressCarousel({
   if (!items.length) {
     return (
       <div className="rounded-2xl border border-dashed border-[var(--app-border)] p-6 text-center">
-        <p className="text-sm text-[var(--app-text-muted)]">Aucune adresse destinataire.</p>
+        <p className="text-sm text-[var(--app-text-muted)]">{p3('addresses.recipient.empty')}</p>
         <Button type="button" className="mt-4" icon={FiPlus} onClick={onAdd}>
-          Ajouter une adresse
+          {p3('addresses.recipient.add')}
         </Button>
       </div>
     )
@@ -56,7 +64,7 @@ export function RecipientAddressCarousel({
             type="button"
             className="grid size-9 shrink-0 place-items-center rounded-xl bg-[var(--app-surface)] shadow-sm"
             onClick={() => go(-1)}
-            aria-label="Adresse précédente"
+            aria-label={p3('addresses.recipient.prev')}
           >
             <FiChevronLeft />
           </button>
@@ -70,7 +78,7 @@ export function RecipientAddressCarousel({
             </p>
             <p className="mt-2 text-xs">{current.addressLine}</p>
             <p className="mt-2 text-xs text-[var(--app-text-muted)]">
-              {OWNER_TYPE_LABELS[current.ownerType]}
+              {p3(HOLDER_LABEL_KEYS[current.ownerType])}
               {identityLine ? ` · ${identityLine}` : ''}
             </p>
             <p className="mt-1 text-[10px] text-[var(--app-text-faint)]">
@@ -81,7 +89,7 @@ export function RecipientAddressCarousel({
             type="button"
             className="grid size-9 shrink-0 place-items-center rounded-xl bg-[var(--app-surface)] shadow-sm"
             onClick={() => go(1)}
-            aria-label="Adresse suivante"
+            aria-label={p3('addresses.recipient.next')}
           >
             <FiChevronRight />
           </button>
@@ -89,20 +97,20 @@ export function RecipientAddressCarousel({
       </div>
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="secondary" icon={FiPlus} onClick={onAdd}>
-          Ajouter
+          {p3('common.add')}
         </Button>
         <Button type="button" variant="secondary" icon={FiEdit2} onClick={() => onEdit?.(current)}>
-          Modifier
+          {p3('common.edit')}
         </Button>
         <Button
           type="button"
           variant="danger"
           icon={FiTrash2}
           onClick={() => {
-            if (window.confirm('Supprimer cette adresse ?')) onDelete?.(current.id)
+            if (window.confirm(p3('addresses.recipient.deleteConfirm'))) onDelete?.(current.id)
           }}
         >
-          Supprimer
+          {p3('common.delete')}
         </Button>
       </div>
     </div>

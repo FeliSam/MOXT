@@ -6,6 +6,7 @@ const TECHNICAL_AUTH_PATTERNS = [
   'sms.ru/?panel',
   'smsc.ru',
   'smsc',
+  'p1sms',
   'mode test',
   'supabase auth',
   'phone auth',
@@ -19,22 +20,58 @@ function isTechnicalAuthMessage(lower = '') {
   return TECHNICAL_AUTH_PATTERNS.some((pattern) => lower.includes(pattern))
 }
 
+function translated(t, key, fallback) {
+  if (typeof t !== 'function') return fallback
+  const value = t(key)
+  return value === key ? fallback : value
+}
+
 /** Messages d'erreur auth lisibles par l'utilisateur final (sans jargon technique). */
-export function sanitizeAuthMessage(message = '') {
+export function sanitizeAuthMessage(message = '', t) {
   const text = String(message || '').trim()
-  if (!text) return 'Une erreur est survenue. Réessayez dans un instant.'
+  if (!text) {
+    return translated(t, 'errors.auth.generic', 'Une erreur est survenue. Réessayez dans un instant.')
+  }
   if (text === 'ALREADY_REGISTERED') {
-    return 'Un compte existe déjà avec cet identifiant. Connectez-vous ou utilisez un autre numéro ou e-mail.'
+    return translated(
+      t,
+      'errors.auth.alreadyRegistered',
+      'Un compte existe déjà avec cet identifiant. Connectez-vous ou utilisez un autre numéro ou e-mail.',
+    )
   }
   if (text === 'IDENTITY_LIMIT_REACHED') {
-    return 'Cet e-mail ou ce numéro a déjà servi à deux comptes MOXT. Après suppression, une seule réinscription est possible avec les mêmes identifiants.'
+    return translated(
+      t,
+      'errors.auth.identityLimitReached',
+      'Cet e-mail ou ce numéro a déjà servi à deux comptes MOXT. Après suppression, une seule réinscription est possible avec les mêmes identifiants.',
+    )
   }
   if (text === 'IDENTITY_CHECK_UNAVAILABLE') {
-    return 'Vérification des identifiants indisponible. Réessayez dans un instant.'
+    return translated(
+      t,
+      'errors.auth.identityCheckUnavailable',
+      'Vérification des identifiants indisponible. Réessayez dans un instant.',
+    )
   }
-  // Conserver les plafonds OTP locaux (90s / 3 par 3h) tels quels.
-  if (/^Limite atteinte :|^Patientez \d+ secondes/.test(text)) {
-    return text
+  const cooldownMatch = text.match(/^Patientez (\d+) secondes/)
+  if (cooldownMatch) {
+    const seconds = Number(cooldownMatch[1])
+    const fallback = text
+    if (typeof t !== 'function') return fallback
+    const value = t('errors.auth.otpCooldown', { seconds })
+    return value === 'errors.auth.otpCooldown' ? fallback : value
+  }
+
+  const capMatch = text.match(
+    /^Limite atteinte : maximum (\d+) codes par période de 3 heures\. Réessayez dans environ (\d+) minute/,
+  )
+  if (capMatch) {
+    const max = Number(capMatch[1])
+    const minutes = Number(capMatch[2])
+    const fallback = text
+    if (typeof t !== 'function') return fallback
+    const value = t('errors.auth.otpCap', { max, minutes })
+    return value === 'errors.auth.otpCap' ? fallback : value
   }
 
   const lower = text.toLowerCase()
@@ -42,29 +79,29 @@ export function sanitizeAuthMessage(message = '') {
 
   if (lower.includes('sms') || lower.includes('hook') || lower.includes('téléphone') || lower.includes('telephone')) {
     if (lower.includes('signature') || lower.includes('secret')) {
-      return "L'envoi du code SMS est indisponible (configuration). Réessayez dans quelques minutes ou contactez le support."
+      return translated(t, 'errors.auth.smsConfig', "L'envoi du code SMS est indisponible (configuration). Réessayez dans quelques minutes ou contactez le support.")
     }
     if (lower.includes('solde') || lower.includes('insuffisant')) {
-      return "L'envoi SMS est temporairement indisponible. Réessayez plus tard ou contactez le support."
+      return translated(t, 'errors.auth.smsBalance', "L'envoi SMS est temporairement indisponible. Réessayez plus tard ou contactez le support.")
     }
     if (lower.includes('timeout') || lower.includes('délai') || lower.includes('delai')) {
-      return "L'opérateur SMS met trop longtemps à répondre. Attendez 1–2 minutes puis renvoyez le code (délai 90 s)."
+      return translated(t, 'errors.auth.smsTimeout', "L'opérateur SMS met trop longtemps à répondre. Attendez un instant puis renvoyez le code.")
     }
     if (lower.includes('refusé') || lower.includes('refuse') || lower.includes('mode test')) {
-      return "Ce numéro n'a pas pu recevoir le SMS. Vérifiez le format +7… et réessayez, ou contactez le support."
+      return translated(t, 'errors.auth.smsRejected', "Ce numéro n'a pas pu recevoir le SMS. Vérifiez le format +7… et réessayez, ou contactez le support.")
     }
-    return "L'envoi du code SMS a échoué. Attendez 90 secondes puis renvoyez le code. Si rien n'arrive sous 2–3 minutes, contactez le support."
+    return translated(t, 'errors.auth.smsFailed', "L'envoi du code SMS a échoué. Renvoyez le code. Si rien n'arrive sous 2–3 minutes, contactez le support.")
   }
   if (lower.includes('e-mail') || lower.includes('email') || lower.includes('smtp')) {
-    return "L'envoi d'e-mail est temporairement indisponible. Choisissez la vérification par SMS ou réessayez plus tard."
+    return translated(t, 'errors.auth.emailUnavailable', "L'envoi d'e-mail est temporairement indisponible. Choisissez la vérification par SMS ou réessayez plus tard.")
   }
-  return 'Service temporairement indisponible. Réessayez plus tard ou contactez le support.'
+  return translated(t, 'errors.auth.serviceUnavailable', 'Service temporairement indisponible. Réessayez plus tard ou contactez le support.')
 }
 
-export function authErrorToast(title, message, tone = 'error') {
+export function authErrorToast(title, message, tone = 'error', t) {
   return {
     title,
-    message: sanitizeAuthMessage(message),
+    message: sanitizeAuthMessage(message, t),
     tone,
   }
 }

@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { useDispatch } from 'react-redux'
+import { useLanguage } from '../../contexts/useLanguage'
 import { receiveTransfer } from './transferSlice'
 import { canClientDeclareReception } from './transferActionUtils'
 import { validateReceiveTransferForm, normalizeReceivedAmount } from './transferReceiveValidation'
@@ -13,6 +14,7 @@ const initialValues = {
 }
 
 export function useTransferReceiveForm({ transfer, user, onSuccess }) {
+  const { t } = useLanguage()
   const dispatch = useDispatch()
   const [values, setValues] = useState(initialValues)
   const [errors, setErrors] = useState({})
@@ -25,7 +27,7 @@ export function useTransferReceiveForm({ transfer, user, onSuccess }) {
 
   const submit = useCallback(async () => {
     if (!transfer || !user) return
-    const nextErrors = validateReceiveTransferForm(values)
+    const nextErrors = validateReceiveTransferForm(values, t)
     if (Object.keys(nextErrors).length) {
       setErrors(nextErrors)
       return
@@ -53,9 +55,8 @@ export function useTransferReceiveForm({ transfer, user, onSuccess }) {
       if (!canClientDeclareReception(transfer, transfer.userId === user.id)) {
         dispatch(
           addToast({
-            title: 'Action impossible',
-            message:
-              "L'entreprise doit d'abord confirmer le virement avec preuve avant de déclarer la réception.",
+            title: t('transfers.receive.impossibleTitle'),
+            message: t('transfers.receive.impossibleMessage'),
             tone: 'error',
           }),
         )
@@ -75,11 +76,11 @@ export function useTransferReceiveForm({ transfer, user, onSuccess }) {
 
       onSuccess?.()
     } catch {
-      setErrors({ proofFile: "La preuve n'a pas pu être envoyée." })
+      setErrors({ proofFile: t('transfers.receive.proofUploadFailed') })
     } finally {
       setSubmitting(false)
     }
-  }, [dispatch, onSuccess, transfer, user, values])
+  }, [dispatch, onSuccess, t, transfer, user, values])
 
   return { values, errors, setField, submit, submitting }
 }

@@ -77,26 +77,52 @@ export function getTransferPricing(transfer) {
   }
 }
 
+function resolveMsg(t, key, fallback, vars) {
+  if (typeof t === 'function') {
+    const translated = t(key, vars)
+    if (translated != null && translated !== key) return translated
+  }
+  if (!vars) return fallback
+  return fallback.replace(/\{(\w+)\}/g, (match, name) =>
+    Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : match,
+  )
+}
+
 export function validateTransferAmount(
   amount,
   direction,
   verified = false,
   monthlyTotal = 0,
   originCountry = 'BJ',
+  t,
 ) {
   const calculation = calculateTransfer(amount, direction, undefined, undefined, originCountry)
   const maximum = verified ? calculation.maximumVerified : calculation.maximumUnverified
 
-  if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) return 'Montant invalide.'
+  if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) {
+    return resolveMsg(t, 'validation.transfer.amountInvalid', 'Montant invalide.')
+  }
   if (Number(amount) < calculation.minimumRequired) {
-    return `Le minimum est de ${formatMoney(calculation.minimumRequired, calculation.currencyFrom)}.`
+    const formatted = formatMoney(calculation.minimumRequired, calculation.currencyFrom)
+    return resolveMsg(t, 'validation.transfer.amountMinimum', `Le minimum est de ${formatted}.`, {
+      amount: formatted,
+    })
   }
   if (Number(amount) > maximum) {
-    return `Votre plafond est de ${formatMoney(maximum, calculation.currencyFrom)}.`
+    const formatted = formatMoney(maximum, calculation.currencyFrom)
+    return resolveMsg(t, 'validation.transfer.amountCeiling', `Votre plafond est de ${formatted}.`, {
+      amount: formatted,
+    })
   }
   if (!verified && Number(amount) + Number(monthlyTotal || 0) > maximum) {
     const remaining = Math.max(0, maximum - Number(monthlyTotal || 0))
-    return `Votre plafond mensuel restant est de ${formatMoney(remaining, calculation.currencyFrom)}.`
+    const formatted = formatMoney(remaining, calculation.currencyFrom)
+    return resolveMsg(
+      t,
+      'validation.transfer.amountMonthlyRemaining',
+      `Votre plafond mensuel restant est de ${formatted}.`,
+      { amount: formatted },
+    )
   }
   return null
 }
@@ -125,6 +151,9 @@ export function formatDate(value) {
   return formatDateTime(value)
 }
 
-export function directionLabel(direction) {
-  return direction === DIRECTIONS.BJ_TO_RU ? 'Benin vers Russie' : 'Russie vers Benin'
+export function directionLabel(direction, t) {
+  if (direction === DIRECTIONS.BJ_TO_RU) {
+    return resolveMsg(t, 'transfers.direction.bjToRu', 'Benin vers Russie')
+  }
+  return resolveMsg(t, 'transfers.direction.ruToBj', 'Russie vers Benin')
 }
