@@ -5,11 +5,12 @@ import { PUBLIC_LANDING_CATALOGS } from './publicLandingCatalog.js'
 import { SHARE_REFERRAL_CATALOGS } from './shareReferralCatalog.js'
 import { fr } from './locales/fr.js'
 import { en } from './locales/en.js'
+import { es } from './locales/es.js'
 import { ru } from './locales/ru.js'
 import { pt } from './locales/pt.js'
 
 export const SOURCE_LANGUAGE = 'fr'
-export const SUPPORTED_LANGUAGES = ['fr', 'en', 'ru', 'pt']
+export const SUPPORTED_LANGUAGES = ['fr', 'en', 'ru', 'pt', 'es']
 
 const TARGET_LANGUAGES = SUPPORTED_LANGUAGES.filter((lang) => lang !== SOURCE_LANGUAGE)
 
@@ -51,12 +52,13 @@ const UI_CATALOGS = [
   },
 ]
 
-const KEY_LOCALES = { fr, en, ru, pt }
+const KEY_LOCALES = { fr, en, ru, pt, es }
 
 const LOCALE_FILES = {
   en: 'packages/shared/src/i18n/locales/en.js',
   ru: 'packages/shared/src/i18n/locales/ru.js',
   pt: 'packages/shared/src/i18n/locales/pt.js',
+  es: 'packages/shared/src/i18n/locales/es.js',
 }
 
 function flattenStrings(node, prefix = '') {
@@ -118,6 +120,7 @@ function collectFrenchUiPhrases() {
       en: entry.translations.en || entry.fr,
       ru: entry.translations.ru || entry.fr,
       pt: entry.translations.pt || entry.fr,
+      es: entry.translations.es || entry.fr,
     }))
     .sort((a, b) => a.fr.localeCompare(b.fr, 'fr'))
 }
@@ -266,7 +269,7 @@ export function applyTranslationBundle(bundle, { rootDir, readFile, writeFile })
     for (const change of keyChanges) {
       flatByLang[change.lang][change.key] = change.to
     }
-    for (const lang of ['en', 'ru', 'pt']) {
+    for (const lang of ['en', 'ru', 'pt', 'es']) {
       save(LOCALE_FILES[lang], serializeLocaleModule(lang, unflattenStrings(flatByLang[lang])))
     }
   }

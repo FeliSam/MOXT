@@ -3,6 +3,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { en } from '@moxt/shared/i18n/locales/en.js'
+import { es } from '@moxt/shared/i18n/locales/es.js'
 import { fr } from '@moxt/shared/i18n/locales/fr.js'
 import { pt } from '@moxt/shared/i18n/locales/pt.js'
 import { ru } from '@moxt/shared/i18n/locales/ru.js'
@@ -124,7 +125,7 @@ describe('Phase 3 web translation coverage', () => {
 
     expect(keys.size).toBeGreaterThan(80)
     for (const key of keys) {
-      for (const [language, locale] of Object.entries({ fr, en, ru, pt })) {
+      for (const [language, locale] of Object.entries({ fr, en, ru, pt, es })) {
         expect(resolvePhase3Value(language, locale, key), `${language}: ${key}`).toBeTruthy()
       }
     }

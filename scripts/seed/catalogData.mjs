@@ -40,7 +40,7 @@ export const LISTINGS = [
     country: 'RU',
     condition: 'good',
     images: [
-      'https://images.unsplash.com/photo-1555041469-a586c12ea9bc?w=800&q=80',
+      'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&q=80',
       'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=800&q=80',
     ],
     created_at: publishedAt(-8, 11, 15),
@@ -58,7 +58,7 @@ export const LISTINGS = [
     country: 'RU',
     condition: 'good',
     images: [
-      'https://images.unsplash.com/photo-1485965120188-e220f721d03e?w=800&q=80',
+      'https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?w=800&q=80',
       'https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=800&q=80',
     ],
     created_at: publishedAt(-7, 20, 8),
@@ -76,7 +76,7 @@ export const LISTINGS = [
     condition: 'like_new',
     images: [
       'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&q=80',
-      'https://images.unsplash.com/photo-1611186871348-b1ce696e52be?w=800&q=80',
+      'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&q=80',
     ],
     created_at: publishedAt(-6, 14, 33),
   },
@@ -127,7 +127,7 @@ export const LISTINGS = [
     condition: 'good',
     images: [
       'https://images.unsplash.com/photo-1606813907291-d86efa9b94db?w=800&q=80',
-      'https://images.unsplash.com/photo-1622297845775-a216bb90af56?w=800&q=80',
+      'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=800&q=80',
     ],
     created_at: publishedAt(-3, 21, 5),
   },
@@ -144,7 +144,7 @@ export const LISTINGS = [
     condition: 'good',
     images: [
       'https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=800&q=80',
-      'https://images.unsplash.com/photo-1593062096033-9a2b625b0c59?w=800&q=80',
+      'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80',
     ],
     created_at: publishedAt(-2, 10, 40),
   },
@@ -178,7 +178,7 @@ export const LISTINGS = [
     condition: 'like_new',
     images: [
       'https://images.unsplash.com/photo-1522771930-78848d9293e8?w=800&q=80',
-      'https://images.unsplash.com/photo-1596464116068-ba462f838d71?w=800&q=80',
+      'https://images.unsplash.com/photo-1591348278863-a8fb3887e2aa?w=800&q=80',
     ],
     created_at: publishedAt(0, 8, 27),
   },
@@ -570,14 +570,14 @@ export const PARCELS = [
   parcel('COL-MOX-TG05', 'TG', 'RU', 'Livres scolaires francophones', 'CM1 à terminale, ~15 kg. École diaspora Moscou — budget associatif limité.', 15, 367, 23, -5, 10),
   // Cameroun (5)
   parcel('COL-MOX-CM01', 'CM', 'RU', 'Tenues de cérémonie (mariage)', 'Costumes et robes. Housse garment incluse. Départ impératif avant le 5 août.', 7, 686, 11, -9, 12),
-  parcel('COL-MOX-CM02', 'RU', 'CM', 'Cacao fèves et poudre (export légal)', 'Producteur certifié côté Douala, docs phytosanitaires OK. Retrait Moscou prévu.', 10, 620, 17, -8, 18),
+  parcel('COL-MOX-CM02', 'CM', 'RU', 'Cacao fèves et poudre (export légal)', 'Producteur certifié Douala, documents phytosanitaires OK. Remise Moscou sud.', 10, 620, 17, -8, 18),
   parcel('COL-MOX-CM03', 'CM', 'RU', 'Console Mega Drive + 8 jeux', 'Nostalgie garantie 😄. Emballage bulle soigné.', 3, 800, 14, -7, 11),
   parcel('COL-MOX-CM04', 'RU', 'CM', 'Pièces auto (filtres, plaquettes)', 'Carton 12 kg, marque Bosch/Valeo. Garage Douala attend livraison mi-août.', 12, 425, 20, -6, 9),
-  parcel('COL-MOX-CM05', 'CM', 'RU', 'Produits capillaires naturels', 'Beurre karité, huiles, masques — boutique diaspora. Clientèle fidèle.', 8, 450, 16, -5, 15),
+  parcel('COL-MOX-CM05', 'RU', 'CM', 'Vêtements hiver + manteaux enfants', 'Sacs souples pour famille Yaoundé. Pas de liquide. Dépôt SVO 4 jours avant vol.', 9, 490, 16, -5, 15),
   // Ghana (5)
   parcel('COL-MOX-GH01', 'GH', 'RU', 'Tissus kente Ashanti', 'Rouleaux protégés plastique. Pas de pliage serré. Photo échantillon dispo.', 6, 650, 13, -9, 14),
   parcel('COL-MOX-GH02', 'RU', 'GH', 'Accessoires MacBook + hub USB-C', 'Petit colis high-tech, valeur ~300 $. Emballage d\'origine Apple. Livraison Accra.', 1.2, 1330, 10, -8, 10),
   parcel('COL-MOX-GH03', 'GH', 'RU', 'Shea butter cosmétique (6 cartons)', 'Export Ghana approuvé, étiquettes INCI. Prix négociable volume.', 11, 400, 18, -7, 16),
-  parcel('COL-MOX-GH04', 'RU', 'GH', 'Djembé compact 12"', 'Peau chèvre, housse incluse. Fragile — voyageur expérimenté only. Cadeau famille Accra.', 5, 820, 22, -6, 12),
+  parcel('COL-MOX-GH04', 'RU', 'GH', 'Médicaments + produits de soin', 'Boîtes scellées pour famille Accra. Ordonnances / notices en FR. Fragile — pas de gel.', 3, 900, 22, -6, 12),
   parcel('COL-MOX-GH05', 'GH', 'RU', 'Mangues séchées et snacks', 'Sous vide, cadeaux famille — consommation perso, pas revente.', 4, 675, 15, -5, 8),
 ]

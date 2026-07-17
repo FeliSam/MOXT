@@ -201,7 +201,6 @@ function buildEvent(item, images) {
     organizer_name: PUBLISHER_NAME,
     organizer_contact: PUBLISHER_PHONE,
     status: 'published',
-    payload: { images, organizerName: PUBLISHER_NAME },
     created_at: item.created_at,
     updated_at: item.created_at,
     expires_at: item.ends_at || item.starts_at,
@@ -233,11 +232,6 @@ function buildParcel(item) {
     status: 'active',
     accepted_types: item.accepted_types,
     rejected_types: item.rejected_types || '',
-    payload: {
-      summary: item.summary,
-      details: item.details,
-      ownerName: PUBLISHER_NAME,
-    },
     created_at: item.created_at,
     updated_at: item.created_at,
   }
@@ -348,9 +342,15 @@ function buildFeedPosts({ listings, jobs, events, parcels, avatarUrl }) {
   return posts
 }
 
-async function upsertBatch(admin, table, rows) {
-  const { error } = await admin.from(table).upsert(rows, { onConflict: 'id' })
-  if (error) throw new Error(`${table}: ${error.message}`)
+async function upsertBatch(admin, table, rows, attempts = 3) {
+  let lastError
+  for (let i = 1; i <= attempts; i += 1) {
+    const { error } = await admin.from(table).upsert(rows, { onConflict: 'id' })
+    if (!error) return
+    lastError = error
+    if (i < attempts) await new Promise((r) => setTimeout(r, 800 * i))
+  }
+  throw new Error(`${table}: ${lastError?.message || lastError}`)
 }
 
 async function main() {

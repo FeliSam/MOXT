@@ -21,13 +21,18 @@ describe('translateUiText', () => {
   })
 
   it('renvoie le texte tel quel pour une langue non supportée', () => {
-    expect(translateUiText('Accueil', 'es')).toBe('Accueil')
+    expect(translateUiText('Accueil', 'zz')).toBe('Accueil')
   })
 
   it('traduit une phrase connue en anglais', () => {
     expect(translateUiText('Accueil', 'en')).toBe('Home')
     expect(translateUiText('Mon profil', 'en')).toBe('My profile')
     expect(translateUiText('Jobs actifs', 'en')).toBe('Active jobs')
+  })
+
+  it('traduit une phrase connue en espagnol', () => {
+    expect(translateUiText('Accueil', 'es')).toBe('Inicio')
+    expect(translateUiText('Créer un compte', 'es')).toBe('Crear una cuenta')
   })
 
   it('préserve les espaces de début et de fin', () => {
@@ -61,11 +66,12 @@ describe('translateUiText', () => {
 })
 
 describe('cycleLanguage', () => {
-  it('cycle fr → en → ru → pt → fr', () => {
+  it('cycle fr → en → ru → pt → es → fr', () => {
     expect(cycleLanguage('fr')).toBe('en')
     expect(cycleLanguage('en')).toBe('ru')
     expect(cycleLanguage('ru')).toBe('pt')
-    expect(cycleLanguage('pt')).toBe('fr')
+    expect(cycleLanguage('pt')).toBe('es')
+    expect(cycleLanguage('es')).toBe('fr')
   })
 
   it('retombe sur la langue source pour une valeur inconnue', () => {
@@ -77,23 +83,25 @@ describe('normalizeStoredLanguage', () => {
   it('conserve les langues supportées', () => {
     expect(normalizeStoredLanguage('ru')).toBe('ru')
     expect(normalizeStoredLanguage('pt')).toBe('pt')
+    expect(normalizeStoredLanguage('es')).toBe('es')
   })
 
   it('reinitialise une langue inconnue vers la langue par defaut', () => {
-    expect(normalizeStoredLanguage('es')).toBe('ru')
+    expect(normalizeStoredLanguage('zz')).toBe('ru')
   })
 })
 
 describe('detectBrowserLanguage', () => {
-  it('mappe les locales navigateur vers fr/en/ru/pt', () => {
+  it('mappe les locales navigateur vers fr/en/ru/pt/es', () => {
     expect(detectBrowserLanguage('ru-RU')).toBe('ru')
     expect(detectBrowserLanguage('en-US')).toBe('en')
     expect(detectBrowserLanguage('pt-BR')).toBe('pt')
     expect(detectBrowserLanguage('fr-FR')).toBe('fr')
+    expect(detectBrowserLanguage('es-ES')).toBe('es')
   })
 
   it('retombe sur la langue par defaut pour une locale non supportee', () => {
-    expect(detectBrowserLanguage('es-ES')).toBe('ru')
+    expect(detectBrowserLanguage('de-DE')).toBe('ru')
     expect(detectBrowserLanguage('')).toBe('ru')
   })
 })
@@ -120,7 +128,7 @@ describe('resolveInitialLanguage', () => {
 
 describe('constantes', () => {
   it('expose les langues supportées et la langue source', () => {
-    expect(SUPPORTED_LANGUAGES).toEqual(['fr', 'en', 'ru', 'pt'])
+    expect(SUPPORTED_LANGUAGES).toEqual(['fr', 'en', 'ru', 'pt', 'es'])
     expect(SOURCE_LANGUAGE).toBe('fr')
   })
 })

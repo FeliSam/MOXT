@@ -1,10 +1,11 @@
 import { en } from './locales/en.js'
+import { es } from './locales/es.js'
 import { fr } from './locales/fr.js'
 import { pt } from './locales/pt.js'
 import { ru } from './locales/ru.js'
 
 export const DEFAULT_LOCALE = 'fr'
-const LOCALES = { fr, en, ru, pt }
+const LOCALES = { fr, en, ru, pt, es }
 
 function resolve(dict, key) {
   return key.split('.').reduce((node, part) => (node == null ? undefined : node[part]), dict)

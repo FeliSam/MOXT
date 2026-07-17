@@ -21,7 +21,7 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { PageHeader } from '../components/ui/PageHeader'
 import { useTheme } from '../contexts/useTheme'
 import { useLanguage } from '../contexts/useLanguage'
-import { LANGUAGE_LABELS, SUPPORTED_LANGUAGES } from '../config/uiTranslations'
+import { LanguageSegment } from '../components/ui/LanguageSegment'
 import {
   cancelAccountDeletion,
   requestAccountDeletion,
@@ -253,10 +253,10 @@ export function SettingsPage() {
               <p className="mb-2.5 text-xs font-black uppercase tracking-[0.08em] text-[var(--app-text-muted)]">
                 {t('settings.language.label')}
               </p>
-              <LanguageGrid
-                t={t}
+              <LanguageSegment
                 value={language}
-                onSelect={(code) => {
+                ariaLabel={t('settings.language.label')}
+                onChange={(code) => {
                   setLanguage(code)
                   updatePreference('language', code)
                 }}
@@ -482,46 +482,6 @@ function ThemeToggle({ theme, onSelect, t }) {
           >
             <Icon className="text-base" aria-hidden />
             {t(labelKey)}
-          </button>
-        )
-      })}
-    </div>
-  )
-}
-
-function LanguageGrid({ value, onSelect, t }) {
-  return (
-    <div role="radiogroup" aria-label={t('settings.language.label')} className="grid grid-cols-2 gap-2">
-      {SUPPORTED_LANGUAGES.map((code) => {
-        const active = value === code
-        const meta = LANGUAGE_LABELS[code] || {}
-        return (
-          <button
-            key={code}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            onClick={() => onSelect(code)}
-            className={`flex items-center gap-3 rounded-2xl border p-3 text-left transition ${
-              active
-                ? 'border-[var(--app-accent)] bg-[var(--app-accent-soft)] shadow-sm'
-                : 'border-[var(--app-border)] bg-[var(--app-surface-muted)] hover:border-[var(--app-accent)]/40'
-            }`}
-          >
-            <span className="text-2xl leading-none" aria-hidden>
-              {meta.flag}
-            </span>
-            <span className="min-w-0 flex-1">
-              <span
-                className={`block truncate text-sm font-bold ${active ? 'text-[var(--app-accent)]' : ''}`}
-              >
-                {meta.label || code}
-              </span>
-              <span className="block text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--app-text-faint)]">
-                {code}
-              </span>
-            </span>
-            {active ? <FiCheck className="shrink-0 text-[var(--app-accent)]" aria-hidden /> : null}
           </button>
         )
       })}

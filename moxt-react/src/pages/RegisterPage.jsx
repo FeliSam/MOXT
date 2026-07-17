@@ -16,12 +16,12 @@ import { Alert } from '../components/ui/Alert'
 import { useActionBurst } from '../components/ui/ActionBurst'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
+import { LanguageSegment } from '../components/ui/LanguageSegment'
 import { PasswordInput } from '../components/ui/PasswordInput'
 import { Select } from '../components/ui/Select'
 import { CitySelector } from '../components/ui/CitySelector'
 import { flagEmoji } from '../config/flags'
 import { constrainPhone, phonePrefixForCallingCode } from '../config/phone'
-import { LANGUAGE_LABELS, SUPPORTED_LANGUAGES } from '../config/uiTranslations'
 import { useLanguage } from '../contexts/useLanguage'
 import {
   createAuthSchemas,
@@ -60,7 +60,6 @@ const STEPS = [
   { key: 'verification', labelKey: 'auth.register.steps.verification', icon: FiCheck },
 ]
 
-const LANGUAGE_TILES = LANGUAGE_LABELS
 import { OTP_RESEND_COOLDOWN_SECONDS } from '@moxt/shared/auth/otpCooldown.js'
 import {
   clearPendingRegistration,
@@ -632,42 +631,24 @@ export function RegisterPage() {
               <p className="text-xs font-black uppercase tracking-[0.1em] text-[var(--app-text-muted)]">
                 {t('auth.register.uiLanguage')}
               </p>
-              <div className="mt-2.5 grid grid-cols-2 gap-2">
-                {SUPPORTED_LANGUAGES.map((code) => {
-                  const meta = LANGUAGE_TILES[code] || { flag: '🏳️', label: code.toUpperCase() }
-                  const active = language === code
-                  return (
-                    <button
-                      key={code}
-                      type="button"
-                      onClick={() => {
-                        setLanguage(code)
-                        const uid = authUser?.id || store.getState().auth.user?.id
-                        if (uid) {
-                          dispatch(
-                            updateAccountPreferences({
-                              userId: uid,
-                              preferences: { language: code },
-                            }),
-                          )
-                        }
-                      }}
-                      className={`flex flex-col items-center gap-1 rounded-2xl border-2 py-3 transition-all duration-200 ${
-                        active
-                          ? 'border-brand-500 bg-gradient-to-br from-brand-50 to-cyan-50 shadow-md dark:from-brand-950/40 dark:to-cyan-950/40'
-                          : 'border-[var(--app-border)] hover:border-brand-300 hover:bg-[var(--app-surface-muted)]'
-                      }`}
-                    >
-                      <span className="text-2xl leading-none">{meta.flag}</span>
-                      <span
-                        className={`text-xs font-bold ${active ? 'text-brand-700 dark:text-brand-400' : 'text-[var(--app-text-muted)]'}`}
-                      >
-                        {meta.label}
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
+              <LanguageSegment
+                className="mt-2"
+                size="sm"
+                value={language}
+                ariaLabel={t('auth.register.uiLanguage')}
+                onChange={(code) => {
+                  setLanguage(code)
+                  const uid = authUser?.id || store.getState().auth.user?.id
+                  if (uid) {
+                    dispatch(
+                      updateAccountPreferences({
+                        userId: uid,
+                        preferences: { language: code },
+                      }),
+                    )
+                  }
+                }}
+              />
             </div>
 
             <Select

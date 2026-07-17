@@ -8,7 +8,12 @@ describe('translate', () => {
   })
 
   it('retombe sur le français pour une langue inconnue', () => {
-    expect(translate('es', 'auth.login.submit')).toBe('Se connecter')
+    expect(translate('zz', 'auth.login.submit')).toBe('Se connecter')
+  })
+
+  it('traduit en espagnol via les locales dédiées', () => {
+    expect(translate('es', 'auth.login.submit')).toBe('Iniciar sesión')
+    expect(translate('es', 'auth.register.title')).toBe('Crea tu cuenta MOXT')
   })
 
   it('traduit en russe via les locales dédiées', () => {
