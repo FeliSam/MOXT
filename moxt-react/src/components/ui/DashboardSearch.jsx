@@ -4,10 +4,12 @@ import { FiSearch, FiX } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { searchTypeMeta } from '../../config/searchTypes'
+import { useLanguage } from '../../contexts/useLanguage'
 import { filterSearchIndex, selectSearchIndex } from '../../features/searchSelectors'
 import { Badge } from './Badge'
 
 export function DashboardSearch() {
+  const { t } = useLanguage()
   const [query, setQuery] = useState('')
   const anchorRef = useRef(null)
   const [panelRect, setPanelRect] = useState(null)
@@ -49,24 +51,26 @@ export function DashboardSearch() {
       <div className="mb-3 flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="text-xs font-black uppercase tracking-[0.12em] text-brand-700 dark:text-brand-300">
-            Recherche rapide
+            {t('dashboard.search.title')}
           </p>
           <p className="mt-1 text-xs text-[var(--app-text-faint)]">
-            Colis, entreprise, offre, job, événement, paramètres ou profil.
+            {t('dashboard.search.hint')}
           </p>
         </div>
         {query ? (
           <strong className="shrink-0 rounded-full bg-[var(--app-surface-muted)] px-2.5 py-1 text-xs text-[var(--app-text)]">
-            {results.length} résultat{results.length > 1 ? 's' : ''}
+            {t(results.length > 1 ? 'catalog.search.resultsPlural' : 'catalog.search.results', {
+              count: results.length,
+            })}
           </strong>
         ) : null}
       </div>
       <label className="relative block min-w-0">
         <FiSearch className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--app-text-faint)]" />
         <input
-          aria-label="Recherche rapide"
+          aria-label={t('dashboard.search.title')}
           className="min-h-13 w-full min-w-0 rounded-[var(--radius-input)] bg-[var(--app-surface-muted)] pl-11 pr-12 text-sm outline-none transition duration-[var(--transition-fast)] focus:bg-[var(--app-surface)] focus:shadow-[0_0_0_3px_rgba(18,191,163,0.14)]"
-          placeholder="Rechercher : Cotonou, colis, job, paramètres, sécurité, profil..."
+          placeholder={t('dashboard.search.placeholder')}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
@@ -74,7 +78,7 @@ export function DashboardSearch() {
           <button
             type="button"
             className="absolute right-3 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-xl text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface)]"
-            aria-label="Effacer la recherche"
+            aria-label={t('catalog.search.clearSearch')}
             onClick={() => setQuery('')}
           >
             <FiX />
@@ -83,7 +87,7 @@ export function DashboardSearch() {
       </label>
 
       <p className="mt-3 text-xs text-[var(--app-text-faint)]">
-        Recherche dynamique, sans rechargement de la page.
+        {t('catalog.search.liveHint')}
       </p>
 
       {showPanel && panelRect
@@ -129,7 +133,7 @@ export function DashboardSearch() {
                 </ul>
               ) : (
                 <p className="p-4 text-center text-sm text-[var(--app-text-muted)]">
-                  Aucun résultat pour « {query} ».
+                  {t('dashboard.search.noResults', { query })}
                 </p>
               )}
             </div>,

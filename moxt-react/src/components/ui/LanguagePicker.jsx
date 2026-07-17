@@ -8,7 +8,7 @@ import { updateAccountPreferences } from '../../features/account/accountSlice'
 export function LanguagePicker({ className = '' }) {
   const dispatch = useDispatch()
   const user = useSelector((state) => state.auth.user)
-  const { language, setLanguage } = useLanguage()
+  const { language, setLanguage, t } = useLanguage()
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
   const current = LANGUAGE_LABELS[language] || LANGUAGE_LABELS.fr
@@ -52,7 +52,7 @@ export function LanguagePicker({ className = '' }) {
         type="button"
         className="flex h-10 min-w-10 items-center justify-center gap-1 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-2.5 text-base leading-none transition hover:bg-[var(--app-surface-muted)] focus:border-[var(--app-teal)] focus:shadow-[0_0_0_3px_rgba(18,191,163,0.14)]"
         onClick={() => setOpen((value) => !value)}
-        aria-label={`Langue : ${current.label}`}
+        aria-label={t('nav.languageAria', { language: current.label })}
         aria-haspopup="menu"
         aria-expanded={open}
       >

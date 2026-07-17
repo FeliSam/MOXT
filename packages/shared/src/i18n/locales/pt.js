@@ -155,6 +155,17 @@ export const pt = {
   nav: {
     servicesSupplementaires: "Serviços adicionais",
     qrInvitation: "QR e convite",
+    mainAria: "Navegação principal",
+    mobileQuickAria: "Navegação móvel rápida",
+    closeNavigation: "Fechar navegação",
+    languageAria: "Idioma: {language}",
+    moreServicesAria: "Mais serviços",
+    moreServicesUnreadAria: "Mais serviços ({count} não lidos)",
+    notificationsUnreadAria: "Notificações ({count} não lidas)",
+    messagesUnreadAria: "Mensagens ({count} não lidas)",
+    messages: "Mensagens",
+    enableLightTheme: "Ativar tema claro",
+    enableDarkTheme: "Ativar tema escuro",
   },
   share: {
     title: "QR code e convite",
@@ -709,6 +720,12 @@ export const pt = {
   },
   dashboard: {
     calculatorTitle: "Calculadora de transferência",
+    search: {
+      title: "Pesquisa rápida",
+      hint: "Encomendas, empresa, oferta, emprego, evento, definições ou perfil.",
+      placeholder: "Pesquisar: Cotonou, encomenda, emprego, definições, segurança, perfil...",
+      noResults: "Nenhum resultado para « {query} ».",
+    },
     hero: {
       welcome: "Bem-vindo {name}",
       title: "Todos os seus serviços essenciais, reunidos.",

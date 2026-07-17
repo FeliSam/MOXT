@@ -21,7 +21,10 @@ export const LANGUAGE_LABELS = {
 
 const ENGLISH_PHRASES = {
   Accueil: 'Home',
+  Abonnements: 'Subscriptions',
   Actives: 'Active',
+  Actualité: 'News',
+  Actualités: 'News',
   Administration: 'Administration',
   'Adresse e-mail': 'Email address',
   'Ajouter aux favoris': 'Add to favorites',
@@ -98,6 +101,10 @@ const ENGLISH_PHRASES = {
   Message: 'Message',
   Messages: 'Messages',
   Messagerie: 'Messaging',
+  'Navigation principale': 'Main navigation',
+  'Navigation mobile rapide': 'Quick mobile navigation',
+  'Recherche rapide': 'Quick search',
+  'Fermer la navigation': 'Close navigation',
   Modifier: 'Edit',
   'Modifier le profil': 'Edit profile',
   'Mon profil': 'My profile',
@@ -165,6 +172,8 @@ const RUSSIAN_PHRASES = {
   Communauté: 'Сообщество',
   Communication: 'Связь',
   Compte: 'Аккаунт',
+  Abonnements: 'Подписки',
+  Actualité: 'Новости',
   Administration: 'Администрация',
   'Echanges P2P': 'P2P-обмен',
   Evenements: 'События',
@@ -182,6 +191,10 @@ const RUSSIAN_PHRASES = {
     'Установите MOXT из Safari (на экран «Домой»), чтобы получать уведомления на iPhone',
   'Alertes hors ligne via l’application web installée': 'Оповещения вне сайта через установленное веб-приложение',
   FAQ: 'FAQ',
+  'Navigation principale': 'Основная навигация',
+  'Navigation mobile rapide': 'Быстрая мобильная навигация',
+  'Recherche rapide': 'Быстрый поиск',
+  'Fermer la navigation': 'Закрыть навигацию',
 
   // Routes (titres)
   'Mes activités': 'Мои действия',
@@ -779,6 +792,8 @@ const PORTUGUESE_PHRASES = {
   Communauté: 'Comunidade',
   Communication: 'Comunicação',
   Compte: 'Conta',
+  Abonnements: 'Subscrições',
+  Actualité: 'Notícias',
   Administration: 'Administração',
   'Echanges P2P': 'Troca P2P',
   Evenements: 'Eventos',
@@ -796,6 +811,10 @@ const PORTUGUESE_PHRASES = {
     'Instale o MOXT pelo Safari (ecrã inicial) para alertas no iPhone',
   'Alertes hors ligne via l’application web installée': 'Alertas offline via a aplicação web instalada',
   FAQ: 'FAQ',
+  'Navigation principale': 'Navegação principal',
+  'Navigation mobile rapide': 'Navegação móvel rápida',
+  'Recherche rapide': 'Pesquisa rápida',
+  'Fermer la navigation': 'Fechar navegação',
 
   // Routes (titres)
   'Mes activités': 'Minhas atividades',

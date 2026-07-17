@@ -1,5 +1,5 @@
 import { FiBell, FiChevronDown, FiClock, FiHeart, FiMessageSquare, FiMoon, FiSun } from 'react-icons/fi'
-import { useDispatch, useSelector } from 'react-redux'
+import { useSelector } from 'react-redux'
 import { Link, useLocation } from 'react-router-dom'
 import { getRouteMetadata } from '../../config/routeMeta'
 import { useTheme } from '../../contexts/useTheme'
@@ -13,14 +13,13 @@ import { Brand } from './Brand'
 import { GlobalSearch } from './GlobalSearch'
 
 export function Header({ hideOnMobile = false }) {
-  const dispatch = useDispatch()
   const location = useLocation()
   const route = getRouteMetadata(location.pathname)
   const user = useSelector((state) => state.auth.user)
   const unreadCount = useSelector(selectUnreadNotificationCount)
   const unreadMessagesCount = useSelector(selectUnreadMessageCount)
   const { theme, toggleTheme } = useTheme()
-  const { translateLabel } = useLanguage()
+  const { t, translateLabel } = useLanguage()
   const visible = useSmartNavbar({ disabled: location.pathname === '/messages' })
 
   return (
@@ -33,7 +32,7 @@ export function Header({ hideOnMobile = false }) {
 
         <Link
           to="/profile"
-          aria-label="Ouvrir mon profil"
+          aria-label={t('settings.profileSecurity.openProfile')}
           className="hidden size-11 shrink-0 place-items-center rounded-full transition hover:bg-[var(--app-surface-muted)] max-lg:grid"
         >
           <UserAvatar user={user} size={36} />
@@ -59,7 +58,11 @@ export function Header({ hideOnMobile = false }) {
           <Link
             to="/notifications"
             className="header-action-btn relative grid"
-            aria-label={`Notifications${unreadCount ? ` (${unreadCount} non lues)` : ''}`}
+            aria-label={
+              unreadCount
+                ? t('nav.notificationsUnreadAria', { count: unreadCount })
+                : t('notifications.title')
+            }
           >
             <FiBell className="text-lg" />
             {unreadCount ? (
@@ -73,7 +76,7 @@ export function Header({ hideOnMobile = false }) {
           <Link
             to="/transfers/history"
             className="header-action-btn grid"
-            aria-label="Historique des transferts"
+            aria-label={t('dashboard.overview.history')}
           >
             <FiClock className="text-lg" />
           </Link>
@@ -81,7 +84,11 @@ export function Header({ hideOnMobile = false }) {
           <Link
             to="/messages"
             className="header-action-btn relative grid lg:hidden"
-            aria-label={`Messagerie${unreadMessagesCount ? ` (${unreadMessagesCount} non lus)` : ''}`}
+            aria-label={
+              unreadMessagesCount
+                ? t('nav.messagesUnreadAria', { count: unreadMessagesCount })
+                : t('nav.messages')
+            }
           >
             <FiMessageSquare className="text-lg" />
             {unreadMessagesCount ? (
@@ -95,7 +102,7 @@ export function Header({ hideOnMobile = false }) {
           <Link
             to="/favorites"
             className="header-action-btn hidden lg:grid"
-            aria-label="Mes favoris"
+            aria-label={t('favorites.title')}
           >
             <FiHeart className="text-lg" />
           </Link>
@@ -105,7 +112,9 @@ export function Header({ hideOnMobile = false }) {
           <button
             type="button"
             className="header-action-btn btn-press hidden sm:grid"
-            aria-label={theme === 'dark' ? 'Activer le theme clair' : 'Activer le theme sombre'}
+            aria-label={
+              theme === 'dark' ? t('nav.enableLightTheme') : t('nav.enableDarkTheme')
+            }
             onClick={toggleTheme}
           >
             {theme === 'dark' ? <FiSun className="transition-transform duration-300" /> : <FiMoon className="transition-transform duration-300" />}
@@ -127,7 +136,7 @@ export function Header({ hideOnMobile = false }) {
               />
               {!user?.verified ? (
                 <small className="mt-0.5 block text-[10px] text-[var(--app-text-faint)]">
-                  Bienvenue sur MOXT
+                  {t('dashboard.hero.welcome', { name: 'MOXT' })}
                 </small>
               ) : null}
             </span>
@@ -136,7 +145,7 @@ export function Header({ hideOnMobile = false }) {
 
           <Link
             to="/profile"
-            aria-label="Ouvrir mon profil"
+            aria-label={t('settings.profileSecurity.openProfile')}
             className="hidden size-10 shrink-0 place-items-center rounded-full transition hover:bg-[var(--app-surface-muted)] lg:grid xl:hidden"
           >
             <UserAvatar user={user} size={36} />

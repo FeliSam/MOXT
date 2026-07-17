@@ -245,6 +245,17 @@ export const ru = {
   nav: {
     servicesSupplementaires: "Дополнительные услуги",
     qrInvitation: "QR и приглашение",
+    mainAria: "Основная навигация",
+    mobileQuickAria: "Быстрая мобильная навигация",
+    closeNavigation: "Закрыть навигацию",
+    languageAria: "Язык: {language}",
+    moreServicesAria: "Ещё услуги",
+    moreServicesUnreadAria: "Ещё услуги ({count} непрочитанных)",
+    notificationsUnreadAria: "Уведомления ({count} непрочитанных)",
+    messagesUnreadAria: "Сообщения ({count} непрочитанных)",
+    messages: "Сообщения",
+    enableLightTheme: "Включить светлую тему",
+    enableDarkTheme: "Включить тёмную тему",
   },
   share: {
     title: "QR-код и приглашение",
@@ -799,6 +810,12 @@ export const ru = {
   },
   dashboard: {
     calculatorTitle: "Калькулятор перевода",
+    search: {
+      title: "Быстрый поиск",
+      hint: "Посылки, компания, предложение, вакансия, событие, настройки или профиль.",
+      placeholder: "Поиск: Котону, посылка, работа, настройки, безопасность, профиль...",
+      noResults: "Нет результатов по запросу « {query} ».",
+    },
     hero: {
       welcome: "Добро пожаловать, {name}",
       title: "Все важные сервисы — вместе.",

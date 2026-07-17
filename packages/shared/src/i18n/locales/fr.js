@@ -245,6 +245,17 @@ export const fr = {
   nav: {
     servicesSupplementaires: "Services supplémentaires",
     qrInvitation: "QR & invitation",
+    mainAria: "Navigation principale",
+    mobileQuickAria: "Navigation mobile rapide",
+    closeNavigation: "Fermer la navigation",
+    languageAria: "Langue : {language}",
+    moreServicesAria: "Plus de services",
+    moreServicesUnreadAria: "Plus de services ({count} non lus)",
+    notificationsUnreadAria: "Notifications ({count} non lues)",
+    messagesUnreadAria: "Messagerie ({count} non lus)",
+    messages: "Messagerie",
+    enableLightTheme: "Activer le thème clair",
+    enableDarkTheme: "Activer le thème sombre",
   },
   share: {
     title: "QR code & invitation",
@@ -799,6 +810,12 @@ export const fr = {
   },
   dashboard: {
     calculatorTitle: "Calculatrice de transfert",
+    search: {
+      title: "Recherche rapide",
+      hint: "Colis, entreprise, offre, job, événement, paramètres ou profil.",
+      placeholder: "Rechercher : Cotonou, colis, job, paramètres, sécurité, profil...",
+      noResults: "Aucun résultat pour « {query} ».",
+    },
     hero: {
       welcome: "Bienvenue {name}",
       title: "Tous vos services essentiels, réunis.",

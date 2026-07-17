@@ -245,6 +245,17 @@ export const en = {
   nav: {
     servicesSupplementaires: "Additional services",
     qrInvitation: "QR & invite",
+    mainAria: "Main navigation",
+    mobileQuickAria: "Quick mobile navigation",
+    closeNavigation: "Close navigation",
+    languageAria: "Language: {language}",
+    moreServicesAria: "More services",
+    moreServicesUnreadAria: "More services ({count} unread)",
+    notificationsUnreadAria: "Notifications ({count} unread)",
+    messagesUnreadAria: "Messaging ({count} unread)",
+    messages: "Messaging",
+    enableLightTheme: "Switch to light theme",
+    enableDarkTheme: "Switch to dark theme",
   },
   share: {
     title: "QR code & invitation",
@@ -799,6 +810,12 @@ export const en = {
   },
   dashboard: {
     calculatorTitle: "Transfer calculator",
+    search: {
+      title: "Quick search",
+      hint: "Parcels, business, offer, job, event, settings or profile.",
+      placeholder: "Search: Cotonou, parcel, job, settings, security, profile...",
+      noResults: "No results for “{query}”.",
+    },
     hero: {
       welcome: "Welcome {name}",
       title: "All your essential services, together.",

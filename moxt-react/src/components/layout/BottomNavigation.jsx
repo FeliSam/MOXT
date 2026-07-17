@@ -60,7 +60,7 @@ function BottomNavItem({ icon, label, path, translateLabel, itemRef }) {
 }
 
 export function BottomNavigation() {
-  const { translateLabel } = useLanguage()
+  const { t, translateLabel } = useLanguage()
   const location = useLocation()
   const userId = useSelector((state) => state.auth.user?.id)
   const moreBadge = useSelector((state) => selectMoreMenuBadgeCount(state, userId))
@@ -119,7 +119,7 @@ export function BottomNavigation() {
       <nav
         ref={navRef}
         className="bottom-nav-shell z-[var(--z-nav)] grid grid-cols-5 gap-0.5 rounded-[1rem] border border-[var(--app-border)] bg-[var(--app-surface)]/94 shadow-[var(--shadow-float)] backdrop-blur-xl lg:hidden"
-        aria-label="Navigation mobile rapide"
+        aria-label={t('nav.mobileQuickAria')}
       >
         <span
           aria-hidden="true"
@@ -147,8 +147,8 @@ export function BottomNavigation() {
           onClick={() => setMoreOpen(true)}
           aria-label={
             moreBadge > 0
-              ? `Plus de services (${moreBadge > 9 ? '9+' : moreBadge} non lus)`
-              : 'Plus de services'
+              ? t('nav.moreServicesUnreadAria', { count: moreBadge > 9 ? '9+' : moreBadge })
+              : t('nav.moreServicesAria')
           }
           aria-haspopup="dialog"
           className={`${BOTTOM_NAV_SLOT} relative text-[var(--app-text-muted)]`}

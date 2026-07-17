@@ -83,7 +83,7 @@ export function Sidebar({ open }) {
   const hoverFrameRef = useRef(0)
   const asideRef = useRef(null)
   const location = useLocation()
-  const { translateLabel } = useLanguage()
+  const { t, translateLabel } = useLanguage()
   const groups = navigationGroups.filter((group) => !group.roles || group.roles.includes(role))
 
   function setRailHover(key) {
@@ -153,7 +153,7 @@ export function Sidebar({ open }) {
             type="button"
             className="grid size-10 place-items-center rounded-2xl bg-[var(--app-surface-muted)] lg:hidden"
             onClick={() => dispatch(closeSidebar())}
-            aria-label="Fermer la navigation"
+            aria-label={t('nav.closeNavigation')}
           >
             <FiX />
           </button>
@@ -164,7 +164,7 @@ export function Sidebar({ open }) {
           <div className="sidebar-rail-leading-spacer hidden min-h-0 shrink-0 lg:block" aria-hidden="true" />
           <nav
             className="sidebar-mobile-nav sidebar-rail-nav scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-3 py-4 lg:overflow-visible lg:overscroll-none lg:px-2 lg:py-2"
-            aria-label="Navigation principale"
+            aria-label={t('nav.mainAria')}
           >
             <div className="sidebar-rail-stack grid gap-1 lg:gap-1.5">
               {visiblePrimaryItems.map((item) => (

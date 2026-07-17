@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { getRouteMetadata, isPublicIndexablePath } from '../../config/routeMeta'
+import { useLanguage } from '../../contexts/useLanguage'
 import { buildAbsoluteUrl } from '../../utils/siteUrl'
 
 const SITE_NAME = 'MOXT'
@@ -38,16 +39,21 @@ function upsertCanonical(href) {
 
 export function DocumentTitle() {
   const { pathname } = useLocation()
+  const { translateLabel } = useLanguage()
 
   useEffect(() => {
     const { title, description } = getRouteMetadata(pathname)
+    const localizedTitle = translateLabel(title)
+    const localizedDescription = translateLabel(description)
     const pageTitle =
-      title === SITE_NAME || title.includes(SITE_NAME) ? title : `${title} · ${SITE_NAME}`
+      localizedTitle === SITE_NAME || localizedTitle.includes(SITE_NAME)
+        ? localizedTitle
+        : `${localizedTitle} · ${SITE_NAME}`
     const canonical = buildAbsoluteUrl(pathname === '/' ? '/' : pathname)
     const indexable = isPublicIndexablePath(pathname)
 
     document.title = pageTitle
-    upsertMeta('description', description)
+    upsertMeta('description', localizedDescription)
     upsertMeta(
       'robots',
       indexable ? 'index,follow,max-image-preview:large' : 'noindex,nofollow',
@@ -55,13 +61,13 @@ export function DocumentTitle() {
     upsertCanonical(canonical)
     upsertOg('og:url', canonical)
     upsertOg('og:title', pageTitle)
-    upsertOg('og:description', description)
+    upsertOg('og:description', localizedDescription)
     upsertOg('og:image', DEFAULT_OG_IMAGE)
     upsertMeta('twitter:card', 'summary_large_image')
     upsertMeta('twitter:title', pageTitle)
-    upsertMeta('twitter:description', description)
+    upsertMeta('twitter:description', localizedDescription)
     upsertMeta('twitter:image', DEFAULT_OG_IMAGE)
-  }, [pathname])
+  }, [pathname, translateLabel])
 
   return null
 }

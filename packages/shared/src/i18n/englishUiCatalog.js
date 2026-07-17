@@ -8,6 +8,8 @@ export const ENGLISH_UI_CATALOG = {
   Communauté: 'Community',
   Communication: 'Communication',
   Compte: 'Account',
+  Abonnements: 'Subscriptions',
+  Actualité: 'News',
   Administration: 'Administration',
   'Echanges P2P': 'P2P exchange',
   Evenements: 'Events',
@@ -25,6 +27,10 @@ export const ENGLISH_UI_CATALOG = {
     'Install MOXT from Safari (Home Screen) to enable iPhone alerts',
   'Alertes hors ligne via l’application web installée': 'Offline alerts via the installed web app',
   FAQ: 'FAQ',
+  'Navigation principale': 'Main navigation',
+  'Navigation mobile rapide': 'Quick mobile navigation',
+  'Recherche rapide': 'Quick search',
+  'Fermer la navigation': 'Close navigation',
 
   // Routes (titres)
   'Mes activités': 'My activity',
