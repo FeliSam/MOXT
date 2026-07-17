@@ -268,6 +268,7 @@ export const ru = {
   nav: {
     home: "Главная",
     brand: "Moxt",
+    moxt: "MOXT",
     more: "Ещё",
     transfer: "Перевод",
     transfers: "Переводы",
@@ -313,6 +314,16 @@ export const ru = {
     closeServices: "Закрыть услуги",
     accountSession: "Аккаунт и сессия",
     itemUnreadAria: "{label} ({count} непрочитанных)",
+  },
+  moxtHub: {
+    eyebrow: "Платформа",
+    description: "Все основные сервисы, быстрые действия и личные разделы — в одном месте.",
+    primaryServices: "Основные сервисы",
+    primaryServicesDesc: "Девять главных разделов MOXT.",
+    quickActions: "Быстрые действия",
+    quickActionsDesc: "Опубликуйте или запустите операцию одним касанием.",
+    secondary: "Аккаунт и ещё",
+    secondaryDesc: "Публикации, избранное, профиль, сообщения и настройки.",
   },
   share: {
     title: "QR-код и приглашение",
@@ -5725,6 +5736,10 @@ export const ru = {
       dashboard: {
         title: "Главная",
         subtitle: "Приветственный дашборд",
+      },
+      moxt: {
+        title: "MOXT",
+        subtitle: "Все сервисы",
       },
       transfers: {
         title: "Новый перевод",

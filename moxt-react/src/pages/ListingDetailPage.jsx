@@ -158,6 +158,13 @@ export function ListingDetailPage() {
     images.findIndex((image) => image === activeImage),
   )
   const total = Number(listing.price || 0) * quantity
+  const isListingOwner = listing.ownerId === user.id
+  const mobilePagePadding = isListingOwner
+    ? 'max-md:pb-[calc(1.95rem+env(safe-area-inset-bottom))]'
+    : 'max-md:pb-[calc(6.5rem+env(safe-area-inset-bottom))]'
+  const mobileFloatBottom = isListingOwner
+    ? 'bottom-[calc(1.65rem+env(safe-area-inset-bottom))]'
+    : 'bottom-[calc(5.5rem+env(safe-area-inset-bottom))]'
 
   function selectImageAt(nextIndex) {
     if (!images.length) return
@@ -204,7 +211,7 @@ export function ListingDetailPage() {
   }
 
   return (
-    <div className="grid min-w-0 gap-5 overflow-hidden max-md:pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:gap-7 md:pb-28 xl:overflow-visible xl:pb-0">
+    <div className={`grid min-w-0 gap-5 overflow-hidden ${mobilePagePadding} sm:gap-7 md:pb-28 xl:overflow-visible xl:pb-0`}>
       <nav aria-label={mt('marketplace.detail.breadcrumb')} className="flex min-w-0 items-center gap-2 overflow-hidden text-xs text-[var(--app-text-muted)]">
         <Link to="/marketplace">{mt('marketplace.common.name')}</Link>
         <span>/</span>
@@ -518,10 +525,11 @@ export function ListingDetailPage() {
         </section>
       ) : null}
 
-      <div className="fixed inset-x-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-[var(--z-page-float)] md:hidden">
+      <div className={`fixed inset-x-3 ${mobileFloatBottom} z-[var(--z-page-float)] md:hidden`}>
         <ListingActionButtons
           dispatch={dispatch}
           favorite={favorite}
+          isOwner={isListingOwner}
           layout="bar"
           listing={listing}
           user={user}
@@ -531,6 +539,8 @@ export function ListingDetailPage() {
       <ListingFloatingActions
         dispatch={dispatch}
         favorite={favorite}
+        floatBottomClass={mobileFloatBottom}
+        isOwner={isListingOwner}
         listing={listing}
         open={floatingActionsOpen}
         setOpen={setFloatingActionsOpen}
@@ -781,6 +791,7 @@ function toggleListingFavorite(dispatch, listing, user) {
 function ListingActionButtons({
   dispatch,
   favorite,
+  isOwner = false,
   listing,
   user,
   layout = 'sidebar',
@@ -797,8 +808,27 @@ function ListingActionButtons({
     relatedType: 'listing',
     onContact: () => dispatch(incrementListingContact(listing.id)),
   }
+  const favoriteLabel = favorite
+    ? mt('marketplace.detail.favoriteActive')
+    : mt('marketplace.detail.favorite')
+  const favoriteClassName =
+    'min-w-0 flex-1 !min-h-9 !rounded-[0.7rem] !px-3.5 !text-xs !shadow-none'
 
   if (layout === 'bar') {
+    if (isOwner) {
+      return (
+        <div className="flex justify-end">
+          <FavoriteButton
+            active={favorite}
+            onToggle={toggleFavorite}
+            variant="solid"
+            label={favoriteLabel}
+            className="!min-h-9 !rounded-[0.7rem] !px-4 !text-xs shadow-[var(--shadow-float)]"
+          />
+        </div>
+      )
+    }
+
     return (
       <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]/95 p-2 shadow-[var(--shadow-float)] backdrop-blur-xl">
         <ContactButton className="min-w-0 flex-1" {...contactProps} />
@@ -806,8 +836,8 @@ function ListingActionButtons({
           active={favorite}
           onToggle={toggleFavorite}
           variant="solid"
-          label={favorite ? mt('marketplace.detail.favoriteActive') : mt('marketplace.detail.favorite')}
-          className="min-w-0 flex-1 !min-h-9 !rounded-[0.7rem] !px-3.5 !text-xs !shadow-none"
+          label={favoriteLabel}
+          className={favoriteClassName}
         />
       </div>
     )
@@ -830,6 +860,8 @@ function ListingActionButtons({
 function ListingFloatingActions({
   dispatch,
   favorite,
+  floatBottomClass = 'bottom-[calc(5.5rem+env(safe-area-inset-bottom))]',
+  isOwner = false,
   listing,
   open,
   setOpen,
@@ -848,8 +880,30 @@ function ListingFloatingActions({
     onContact: () => dispatch(incrementListingContact(listing.id)),
   }
 
+  if (isOwner) {
+    return (
+      <div
+        className={`fixed ${floatBottomClass} right-4 z-[var(--z-page-float)] hidden md:flex xl:hidden`}
+      >
+        <FavoriteButton
+          active={favorite}
+          onToggle={toggleFavorite}
+          variant="solid"
+          label={
+            favorite
+              ? mt('marketplace.detail.favoriteActive')
+              : mt('marketplace.detail.favorites')
+          }
+          className="shadow-[var(--shadow-float)]"
+        />
+      </div>
+    )
+  }
+
   return (
-    <div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-[var(--z-page-float)] hidden flex-col items-end gap-1 md:flex xl:hidden">
+    <div
+      className={`fixed ${floatBottomClass} right-4 z-[var(--z-page-float)] hidden flex-col items-end gap-1 md:flex xl:hidden`}
+    >
       {open ? (
         <div className="flex flex-col items-end gap-1">
           <ContactButton

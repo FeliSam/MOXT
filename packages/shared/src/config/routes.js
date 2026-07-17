@@ -1,5 +1,6 @@
 export const ROUTES = {
   dashboard: '/dashboard',
+  moxt: '/moxt',
   profile: '/profile',
   profileInformation: '/profile/information',
   activities: '/activities',

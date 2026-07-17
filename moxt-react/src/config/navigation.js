@@ -8,6 +8,7 @@ import {
   FiGrid,
   FiHeart,
   FiHome,
+  FiLayers,
   FiList,
   FiMessageSquare,
   FiPieChart,
@@ -27,6 +28,7 @@ export const routePreloaders = {
   '/businesses': () => import('../pages/BusinessesPage'),
   '/professional': () => import('../pages/ProfessionalPage'),
   '/dashboard': () => import('../pages/DashboardPage'),
+  '/moxt': () => import('../pages/MoxtHubPage'),
   '/documents': () => import('../pages/DocumentsPage'),
   '/events': () => import('../pages/EventsPage'),
   '/favorites': () => import('../pages/FavoritesPage'),
@@ -73,6 +75,7 @@ export const navigationGroups = [
     icon: FiGrid,
     color: 'from-sky-500 to-blue-600',
     children: [
+      { id: 'moxt', label: 'MOXT', labelKey: 'nav.moxt', path: '/moxt', icon: FiLayers },
       { id: 'dashboard', label: 'Accueil', labelKey: 'nav.home', path: '/dashboard', icon: FiHome },
     ],
   },

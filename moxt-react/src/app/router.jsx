@@ -31,6 +31,7 @@ const BusinessPublicationsPage = lazyPage(
 )
 const BusinessSetupPage = lazyPage(() => import('../pages/BusinessSetupPage'), 'BusinessSetupPage')
 const DashboardPage = lazyPage(() => import('../pages/DashboardPage'), 'DashboardPage')
+const MoxtHubPage = lazyPage(() => import('../pages/MoxtHubPage'), 'MoxtHubPage')
 const DiscoverPage = lazyPage(() => import('../pages/DiscoverPage'), 'DiscoverPage')
 const DisputesPage = lazyPage(() => import('../pages/DisputesPage'), 'DisputesPage')
 const DesignSystemPage = lazyPage(() => import('../pages/DesignSystemPage'), 'DesignSystemPage')
@@ -200,6 +201,7 @@ export function AppRouter() {
               <Route key={path} path={path} element={<Navigate to={target} replace />} />
             ))}
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path={ROUTES.moxt} element={<MoxtHubPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/profile/share-badge" element={<Navigate to="/referral" replace />} />
             <Route path="/profile/information" element={<PersonalInformationPage />} />

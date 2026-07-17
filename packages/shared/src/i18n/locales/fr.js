@@ -267,6 +267,7 @@ export const fr = {
   nav: {
     home: "Accueil",
     brand: "Moxt",
+    moxt: "MOXT",
     more: "Plus",
     transfer: "Transfert",
     transfers: "Transferts",
@@ -312,6 +313,16 @@ export const fr = {
     closeServices: "Fermer les services",
     accountSession: "Compte et session",
     itemUnreadAria: "{label} ({count} non lus)",
+  },
+  moxtHub: {
+    eyebrow: "Plateforme",
+    description: "Tous les services essentiels, les actions rapides et vos espaces personnels — au même endroit.",
+    primaryServices: "Services essentiels",
+    primaryServicesDesc: "Les neuf parcours principaux de MOXT.",
+    quickActions: "Actions rapides",
+    quickActionsDesc: "Publiez ou lancez une opération en un geste.",
+    secondary: "Compte et plus",
+    secondaryDesc: "Publications, favoris, profil, messagerie et réglages.",
   },
   share: {
     title: "QR code & invitation",
@@ -5698,6 +5709,10 @@ export const fr = {
       dashboard: {
         title: "Accueil",
         subtitle: "Tableau de bienvenue",
+      },
+      moxt: {
+        title: "MOXT",
+        subtitle: "Tous les services",
       },
       transfers: {
         title: "Nouveau transfert",

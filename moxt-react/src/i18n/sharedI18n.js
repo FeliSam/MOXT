@@ -70,6 +70,8 @@ export const SHARED_FR_SOURCES = {
   'shared.pages.groups.superadmin': 'Superadmin',
   'shared.pages.dashboard.title': 'Accueil',
   'shared.pages.dashboard.subtitle': 'Tableau de bienvenue',
+  'shared.pages.moxt.title': 'MOXT',
+  'shared.pages.moxt.subtitle': 'Tous les services',
   'shared.pages.transfers.title': 'Nouveau transfert',
   'shared.pages.transfersHistory.title': 'Historique des transferts',
   'shared.pages.exchangers.title': 'Échangeurs',

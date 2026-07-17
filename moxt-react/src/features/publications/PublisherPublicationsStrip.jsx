@@ -34,7 +34,7 @@ export function PublisherPublicationsStrip({
   ownerId,
   publications,
   allPath,
-  limit = 5,
+  limit = 8,
 }) {
   const { t } = useLanguage()
 
@@ -83,55 +83,74 @@ export function PublisherPublicationsStrip({
 
   return (
     <Card className="min-w-0 overflow-hidden">
-      <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="font-black">{t('publications.strip.title')}</h2>
         {allPath ? (
           <Link
             to={allPath}
-            className="inline-flex items-center gap-1 text-xs font-bold text-brand-700 dark:text-brand-300"
+            className="inline-flex shrink-0 items-center gap-1 text-xs font-bold text-brand-700 dark:text-brand-300"
           >
             {t('publications.strip.viewAll')} <FiArrowRight />
           </Link>
         ) : null}
       </div>
-      <div className="grid gap-2 sm:grid-cols-2">
-        {items.map((item) => {
-          const meta = TYPE_META[item.kind]
-          const Icon = meta.icon
-          return (
-            <Link
-              key={`${item.kind}-${item.id}`}
-              to={meta.path(item.id)}
-              className="flex min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 transition hover:border-brand-300 hover:bg-[var(--app-surface)]"
-            >
-              {item.image ? (
-                <span className="size-10 shrink-0 overflow-hidden rounded-xl bg-[var(--app-surface)]">
-                  <img
-                    src={item.image}
-                    alt=""
-                    className="h-full w-full object-cover"
-                    loading="lazy"
-                  />
-                </span>
-              ) : (
-                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
-                  <Icon />
-                </span>
-              )}
-              <span className="min-w-0">
-                <span className="block text-[10px] font-black uppercase tracking-wide text-[var(--app-text-faint)]">
-                  {t(meta.labelKey)}
-                </span>
-                <strong className="mt-0.5 block truncate text-sm">{item.title}</strong>
-                {item.meta ? (
-                  <span className="mt-0.5 block truncate text-xs text-[var(--app-text-muted)]">
-                    {item.meta}
+
+      <div className="relative -mx-1">
+        <div
+          className="scrollbar-hidden flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-1 pb-1 pt-0.5 scroll-smooth"
+          role="list"
+          aria-label={t('publications.strip.title')}
+        >
+          {items.map((item) => {
+            const meta = TYPE_META[item.kind]
+            const Icon = meta.icon
+            return (
+              <Link
+                key={`${item.kind}-${item.id}`}
+                to={meta.path(item.id)}
+                role="listitem"
+                className="group flex w-[11.25rem] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] transition hover:border-brand-300 hover:bg-[var(--app-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 sm:w-[12.5rem]"
+              >
+                {item.image ? (
+                  <span className="relative block aspect-[4/3] overflow-hidden bg-[var(--app-surface)]">
+                    <img
+                      src={item.image}
+                      alt=""
+                      className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                      loading="lazy"
+                    />
+                    <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/45 to-transparent px-2.5 pb-2 pt-6">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-slate-800">
+                        <Icon className="text-[10px]" aria-hidden />
+                        {t(meta.labelKey)}
+                      </span>
+                    </span>
                   </span>
-                ) : null}
-              </span>
-            </Link>
-          )
-        })}
+                ) : (
+                  <span className="relative grid aspect-[4/3] place-items-center bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
+                    <Icon className="text-2xl" aria-hidden />
+                    <span className="absolute inset-x-0 bottom-0 px-2.5 pb-2">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[var(--app-surface)]/90 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-[var(--app-text-muted)]">
+                        <Icon className="text-[10px]" aria-hidden />
+                        {t(meta.labelKey)}
+                      </span>
+                    </span>
+                  </span>
+                )}
+                <span className="flex min-h-[4.25rem] flex-col justify-center gap-0.5 p-3">
+                  <strong className="line-clamp-2 text-sm leading-snug">{item.title}</strong>
+                  {item.meta ? (
+                    <span className="truncate text-xs text-[var(--app-text-muted)]">{item.meta}</span>
+                  ) : null}
+                </span>
+              </Link>
+            )
+          })}
+        </div>
+        <div
+          className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-[var(--app-surface)] to-transparent"
+          aria-hidden
+        />
       </div>
     </Card>
   )

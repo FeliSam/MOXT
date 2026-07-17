@@ -57,6 +57,12 @@ export const routeMetadata = [
     description: 'Mentions légales, CGU et politique de confidentialité MOXT.',
   },
   { pattern: /^\/dashboard$/, title: 'Accueil', eyebrow: 'MOXT' },
+  {
+    pattern: /^\/moxt$/,
+    title: 'MOXT',
+    eyebrow: 'Plateforme',
+    description: 'Tous les services MOXT : essentiels, actions rapides et compte.',
+  },
   { pattern: /^\/activities$/, title: 'Mes activités', eyebrow: 'Compte', back: '/profile' },
   { pattern: /^\/favorites$/, title: 'Mes favoris', eyebrow: 'Compte', back: '/profile' },
   {

@@ -13,6 +13,15 @@ export const searchablePages = [
     keywords: 'accueil home',
   },
   {
+    id: 'page-moxt',
+    title: 'MOXT',
+    titleKey: 'shared.pages.moxt.title',
+    subtitle: 'Tous les services',
+    subtitleKey: 'shared.pages.moxt.subtitle',
+    path: '/moxt',
+    keywords: 'moxt services hub plateforme',
+  },
+  {
     id: 'page-transfers',
     title: 'Nouveau transfert',
     titleKey: 'shared.pages.transfers.title',
