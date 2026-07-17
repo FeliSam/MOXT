@@ -108,8 +108,8 @@ export function BusinessesPage() {
                 · {ownBusiness.city}
               </p>
             </div>
-            <Badge tone={statusMeta(ownBusiness.status).tone}>
-              {statusMeta(ownBusiness.status).label}
+            <Badge tone={statusMeta(ownBusiness.status, t).tone}>
+              {statusMeta(ownBusiness.status, t).label}
             </Badge>
           </div>
           <BusinessVerificationProgress
@@ -224,8 +224,8 @@ export function BusinessesPage() {
                     </div>
 
                     <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <Badge tone={statusMeta(business.status).tone}>
-                        {statusMeta(business.status).label}
+                      <Badge tone={statusMeta(business.status, t).tone}>
+                        {statusMeta(business.status, t).label}
                       </Badge>
                     </div>
 

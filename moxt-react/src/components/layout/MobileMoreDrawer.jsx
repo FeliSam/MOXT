@@ -3,6 +3,7 @@ import { FiLogOut, FiSearch, FiSettings, FiUser, FiX } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import { navigationGroups } from '../../config/navigation'
+import { resolveNavLabel } from '../../config/navLabel'
 import { moreServicesExcludedPaths } from '../../config/primaryNavigation'
 import { logout } from '../../features/auth/authSlice'
 import { stopRealtimeSubscription } from '../../services/realtimeService'
@@ -16,7 +17,8 @@ export function MobileMoreDrawer({ open, onClose }) {
   const user = useSelector((state) => state.auth.user)
   const role = user?.role
   const state = useSelector((v) => v)
-  const { translateLabel } = useLanguage()
+  const { t, translateLabel } = useLanguage()
+  const resolveLabel = (entry) => resolveNavLabel(entry, t, translateLabel)
   const [query, setQuery] = useState('')
   const [closing, setClosing] = useState(false)
 
@@ -41,8 +43,8 @@ export function MobileMoreDrawer({ open, onClose }) {
   )
 
   const filteredGroups = useMemo(
-    () => filterNavigationGroups(groups, role, moreServicesExcludedPaths, query, translateLabel),
-    [groups, query, role, translateLabel],
+    () => filterNavigationGroups(groups, role, moreServicesExcludedPaths, query, resolveLabel),
+    [groups, query, resolveLabel, role],
   )
 
   function requestClose() {
@@ -67,7 +69,7 @@ export function MobileMoreDrawer({ open, onClose }) {
     <div className="fixed inset-0 z-[var(--z-nav-menu)] lg:hidden">
       <button
         type="button"
-        aria-label="Fermer les services"
+        aria-label={t('nav.closeServices')}
         onClick={requestClose}
         className={`absolute inset-0 bg-slate-950/40 backdrop-blur-[2px] ${
           closing ? 'animate-[fadeOut_200ms_ease-in_forwards]' : 'animate-[fadeIn_200ms_ease-out_forwards]'
@@ -124,7 +126,7 @@ export function MobileMoreDrawer({ open, onClose }) {
             groups={filteredGroups}
             layout="grid"
             onNavigate={requestClose}
-            translateLabel={translateLabel}
+            resolveLabel={resolveLabel}
           />
         </div>
 
@@ -136,7 +138,7 @@ export function MobileMoreDrawer({ open, onClose }) {
               className="flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-btn)] border border-[var(--app-border)] bg-[var(--app-surface-muted)] text-xs font-semibold text-[var(--app-text)] transition hover:bg-[var(--app-surface)]"
             >
               <FiSettings className="text-base text-[var(--app-accent)]" />
-              Réglages
+              {t('nav.settings')}
             </Link>
             <Link
               to="/profile"
@@ -144,7 +146,7 @@ export function MobileMoreDrawer({ open, onClose }) {
               className="flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-btn)] border border-[var(--app-border)] bg-[var(--app-surface-muted)] text-xs font-semibold text-[var(--app-text)] transition hover:bg-[var(--app-surface)]"
             >
               <FiUser className="text-base text-[var(--app-accent)]" />
-              Mon profil
+              {t('nav.profile')}
             </Link>
           </div>
           <button
@@ -153,7 +155,7 @@ export function MobileMoreDrawer({ open, onClose }) {
             className="flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-btn)] border border-red-200 bg-red-50 text-sm font-semibold text-red-600 transition hover:bg-red-100 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-400 dark:hover:bg-red-950/35"
           >
             <FiLogOut />
-            Déconnexion
+            {t('nav.signOut')}
           </button>
         </footer>
       </div>

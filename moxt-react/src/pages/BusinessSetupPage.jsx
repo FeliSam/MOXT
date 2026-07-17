@@ -182,7 +182,7 @@ function BusinessPreview({ formik, hasTransfer, serviceOptions }) {
     : experience.promise
   const colors = ACTIVITY_COLORS[v.primaryActivity] || ACTIVITY_COLORS.services
   const Icon = activity?.icon
-  const status = statusMeta('pending_review')
+  const status = statusMeta('pending_review', t)
   const shareUrl = buildBusinessShareUrlFromValues(v)
   const qrUrl = makeQrCodeUrl(shareUrl, 120)
 

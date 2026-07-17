@@ -1,12 +1,36 @@
 /** Navigation principale — labels FR (source i18n), routes web et clés Expo. */
 export const primaryNavigationItems = [
-  { id: 'home', label: 'Accueil', path: '/dashboard', mobileRoute: 'index' },
-  { id: 'transfers', label: 'Transferts', path: '/transfers', mobileRoute: 'transfers' },
-  { id: 'parcels', label: 'Colis', path: '/parcels', mobileRoute: 'parcels' },
-  { id: 'marketplace', label: 'Marketplace', path: '/marketplace', mobileRoute: 'marketplace' },
-  { id: 'jobs', label: 'Jobs', path: '/jobs', mobileRoute: 'jobs' },
-  { id: 'messages', label: 'Messages', path: '/messages', mobileRoute: 'messages' },
-  { id: 'notifications', label: 'Notifications', path: '/notifications', mobileRoute: 'notifications' },
+  { id: 'home', label: 'Accueil', labelKey: 'nav.home', path: '/dashboard', mobileRoute: 'index' },
+  {
+    id: 'transfers',
+    label: 'Transferts',
+    labelKey: 'nav.transfers',
+    path: '/transfers',
+    mobileRoute: 'transfers',
+  },
+  { id: 'parcels', label: 'Colis', labelKey: 'nav.parcels', path: '/parcels', mobileRoute: 'parcels' },
+  {
+    id: 'marketplace',
+    label: 'Marketplace',
+    labelKey: 'nav.marketplace',
+    path: '/marketplace',
+    mobileRoute: 'marketplace',
+  },
+  { id: 'jobs', label: 'Jobs', labelKey: 'nav.jobs', path: '/jobs', mobileRoute: 'jobs' },
+  {
+    id: 'messages',
+    label: 'Messages',
+    labelKey: 'nav.messages',
+    path: '/messages',
+    mobileRoute: 'messages',
+  },
+  {
+    id: 'notifications',
+    label: 'Notifications',
+    labelKey: 'nav.notifications',
+    path: '/notifications',
+    mobileRoute: 'notifications',
+  },
 ];
 
 const primaryById = Object.fromEntries(primaryNavigationItems.map((item) => [item.id, item]));

@@ -6,7 +6,8 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { PageHeader } from '../components/ui/PageHeader'
-import { APP_MESSAGES } from '../config/messages'
+import { APP_MESSAGE_KEYS, APP_MESSAGES } from '../config/messages'
+import { useLanguage } from '../contexts/useLanguage'
 import {
   exportLocalData,
   inspectLocalData,
@@ -16,6 +17,7 @@ import {
 import { formatFileSize } from '../utils/formatters'
 
 export function LocalDataPage() {
+  const { language, t } = useLanguage()
   const [report, setReport] = useState(() => inspectLocalData())
   const [selected, setSelected] = useState([])
   const [confirmReset, setConfirmReset] = useState(false)
@@ -33,7 +35,8 @@ export function LocalDataPage() {
     )
     const link = document.createElement('a')
     link.href = url
-    link.download = `moxt-sauvegarde-locale-${new Date().toISOString().slice(0, 10)}.json`
+    const date = new Date().toISOString().slice(0, 10)
+    link.download = t('localData.backupFilename', { date })
     link.click()
     URL.revokeObjectURL(url)
   }
@@ -46,12 +49,15 @@ export function LocalDataPage() {
     window.setTimeout(() => window.location.reload(), 350)
   }
 
+  const storageUnavailable =
+    t(APP_MESSAGE_KEYS.storageUnavailable) || APP_MESSAGES.storageUnavailable
+
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow="Compte"
-        title="Données locales"
-        description="Contrôlez les données enregistrées dans ce navigateur avant la connexion du backend."
+        eyebrow={t('common.account')}
+        title={t('localData.title')}
+        description={t('localData.description')}
         actions={
           <>
             <BackButton appearance="link" />
@@ -60,10 +66,10 @@ export function LocalDataPage() {
               icon={FiRefreshCw}
               onClick={() => setReport(inspectLocalData())}
             >
-              Actualiser
+              {t('localData.refresh')}
             </Button>
             <Button icon={FiDownload} onClick={downloadBackup}>
-              Télécharger une sauvegarde
+              {t('localData.downloadBackup')}
             </Button>
           </>
         }
@@ -72,15 +78,18 @@ export function LocalDataPage() {
       {!report.available ? (
         <Card className="flex gap-3">
           <FiAlertTriangle className="mt-1 text-xl text-amber-600" />
-          <p>{APP_MESSAGES.storageUnavailable}</p>
+          <p>{storageUnavailable}</p>
         </Card>
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-3">
-            <Metric label="Version du schéma" value={STORAGE_SCHEMA_VERSION} />
-            <Metric label="Espace utilisé" value={formatFileSize(report.totalBytes)} />
+            <Metric label={t('localData.schemaVersion')} value={STORAGE_SCHEMA_VERSION} />
             <Metric
-              label="Données illisibles"
+              label={t('localData.spaceUsed')}
+              value={formatFileSize(report.totalBytes, language)}
+            />
+            <Metric
+              label={t('localData.unreadableData')}
               value={report.invalidKeys.length}
               warning={report.invalidKeys.length > 0}
             />
@@ -89,9 +98,9 @@ export function LocalDataPage() {
           <Card>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="font-black">Domaines enregistrés</h2>
+                <h2 className="font-black">{t('localData.domainsTitle')}</h2>
                 <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-                  Sélectionnez uniquement les catégories que vous souhaitez réinitialiser.
+                  {t('localData.domainsHint')}
                 </p>
               </div>
               <Button
@@ -100,7 +109,7 @@ export function LocalDataPage() {
                 disabled={!selected.length}
                 onClick={() => setConfirmReset(true)}
               >
-                Réinitialiser ({selected.length})
+                {t('localData.reset', { count: selected.length })}
               </Button>
             </div>
 
@@ -117,17 +126,20 @@ export function LocalDataPage() {
                     onChange={() => toggleDomain(domain.id)}
                   />
                   <span className="min-w-0 flex-1">
-                    <strong className="block">{domain.label}</strong>
+                    <strong className="block">{t(domain.labelKey)}</strong>
                     <span className="mt-1 block text-xs text-[var(--app-text-muted)]">
-                      {domain.count} élément(s) · {formatFileSize(domain.bytes)}
+                      {t('localData.itemCount', {
+                        count: domain.count,
+                        size: formatFileSize(domain.bytes, language),
+                      })}
                     </span>
                     {domain.invalid ? (
                       <Badge className="mt-2" tone="danger">
-                        {domain.invalid} clé(s) illisible(s)
+                        {t('localData.invalidKeys', { count: domain.invalid })}
                       </Badge>
                     ) : (
                       <Badge className="mt-2" tone="success">
-                        Données lisibles
+                        {t('localData.readable')}
                       </Badge>
                     )}
                   </span>
@@ -138,10 +150,9 @@ export function LocalDataPage() {
 
           <Card>
             <FiDatabase className="text-2xl text-brand-600" />
-            <h2 className="mt-4 font-black">Ce que fait cette page</h2>
+            <h2 className="mt-4 font-black">{t('localData.aboutTitle')}</h2>
             <p className="mt-2 text-sm leading-6 text-[var(--app-text-muted)]">
-              La sauvegarde contient uniquement les données MOXT de ce navigateur. La
-              réinitialisation ne touche pas votre mot de passe et ne transmet aucune donnée.
+              {t('localData.aboutBody')}
             </p>
           </Card>
         </>
@@ -149,8 +160,8 @@ export function LocalDataPage() {
 
       <ConfirmDialog
         open={confirmReset}
-        title="Réinitialiser les données sélectionnées"
-        description="Cette opération supprime les catégories choisies de ce navigateur. Téléchargez une sauvegarde avant de confirmer."
+        title={t('localData.confirmTitle')}
+        description={t('localData.confirmBody')}
         onCancel={() => setConfirmReset(false)}
         onConfirm={resetSelected}
       />

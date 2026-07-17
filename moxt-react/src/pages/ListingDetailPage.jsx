@@ -218,7 +218,7 @@ export function ListingDetailPage() {
         title={listing.title}
         description={mt('marketplace.detail.meta', {
           city: listing.city,
-          date: formatShortDate(listing.createdAt),
+          date: formatDateTime(listing.createdAt),
           id: listing.id,
         })}
         actions={

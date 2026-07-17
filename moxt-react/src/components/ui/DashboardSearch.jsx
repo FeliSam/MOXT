@@ -105,7 +105,7 @@ export function DashboardSearch() {
               {results.length ? (
                 <ul className="m-0 grid list-none gap-0 p-0 divide-y divide-[var(--app-border)]">
                   {results.map((result, index) => {
-                    const type = searchTypeMeta(result.type, result.typeLabel)
+                    const type = searchTypeMeta(result.type, t, result.typeLabel)
                     return (
                       <li
                         key={`${result.type}-${result.id}`}

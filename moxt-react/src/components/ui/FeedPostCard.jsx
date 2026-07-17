@@ -1,12 +1,14 @@
-import { useState } from 'react'
-import { FiEdit2, FiMessageCircle, FiMoreHorizontal, FiShare2, FiTrash2 } from 'react-icons/fi'
+import { useLayoutEffect, useRef, useState } from 'react'
+import { FiChevronDown, FiEdit2, FiMessageCircle, FiMoreHorizontal, FiShare2, FiTrash2 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { FavoriteButton } from './FavoriteButton'
 import { CountBounce } from './CountBounce'
+import { useLanguage } from '../../contexts/useLanguage'
 import { addComment, deleteComment, deletePost, toggleLike, updatePost } from '../../features/posts/postsSlice'
 import { SOURCE_TYPE_LABELS } from '../../features/posts/postTemplates'
 import { formatDate } from '../../features/transfers/transferUtils'
+import { phase3Text } from '../../i18n/phase3I18n'
 
 const TYPE_COLORS = {
   listing:  'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
@@ -15,6 +17,50 @@ const TYPE_COLORS = {
   event:    'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
   job:      'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
   free:     'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]',
+}
+
+function ExpandableFeedMessage({ text }) {
+  const { t } = useLanguage()
+  const p3 = (key) => phase3Text(t, key)
+  const [expanded, setExpanded] = useState(false)
+  const [canToggle, setCanToggle] = useState(false)
+  const textRef = useRef(null)
+
+  useLayoutEffect(() => {
+    const el = textRef.current
+    if (!el) return
+    if (expanded) return
+    setCanToggle(el.scrollHeight > el.clientHeight + 1)
+  }, [text, expanded])
+
+  return (
+    <div className="feed-post-message">
+      <p
+        ref={textRef}
+        className={`whitespace-pre-line text-sm leading-relaxed text-[var(--app-text)] sm:text-[0.9375rem] sm:leading-7 ${
+          expanded ? '' : 'line-clamp-6'
+        }`}
+      >
+        {text}
+      </p>
+      {canToggle ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          className="group mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.04em] text-[var(--app-accent)] shadow-[0_1px_2px_rgb(0_0_0_/_0.04)] transition hover:border-[var(--app-accent)]/40 hover:bg-[var(--app-accent-soft)] hover:shadow-sm active:scale-[0.98]"
+        >
+          <span>{expanded ? p3('news.seeLess') : p3('news.seeMore')}</span>
+          <FiChevronDown
+            aria-hidden
+            className={`size-3.5 transition-transform duration-200 ease-out ${
+              expanded ? 'rotate-180' : 'rotate-0'
+            } group-hover:translate-y-px`}
+          />
+        </button>
+      ) : null}
+    </div>
+  )
 }
 
 const CTA_LABELS = {
@@ -153,9 +199,7 @@ export function FeedPostCard({ post }) {
             </div>
           </div>
         ) : (
-          <p className="whitespace-pre-line text-sm leading-relaxed sm:text-[0.9375rem] sm:leading-7">
-            {post.message}
-          </p>
+          <ExpandableFeedMessage text={post.message || ''} />
         )}
       </div>
 

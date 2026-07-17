@@ -14,6 +14,7 @@ import { Card } from '../../components/ui/Card'
 import { statusMeta } from '../../config/statuses'
 import { useLanguage } from '../../contexts/useLanguage'
 import { phase3Text } from '../../i18n/phase3I18n'
+import { jobContractLabel } from '../jobs/jobDisplayUtils'
 import { formatMoney } from '../transfers/transferUtils'
 import { isActiveEvent, isActiveJob, isActiveParcel, isActivePost, archivedPublicationCardClass } from './publicationCatalogUtils'
 
@@ -158,7 +159,11 @@ export function MyJobPublicationCard({
       badge={<Badge tone={status.tone}>{status.label}</Badge>}
       title={job.title}
       subtitle={job.salary}
-      meta={[ownerDisplayName || job.publisherName, job.location, job.contractType].filter(Boolean)}
+      meta={[
+        ownerDisplayName || job.publisherName,
+        job.location,
+        job.contractType ? jobContractLabel(t, job.contractType) : null,
+      ].filter(Boolean)}
       path={`/jobs/${job.id}`}
       guestMode={guestMode}
       onGuestInteract={onGuestInteract}

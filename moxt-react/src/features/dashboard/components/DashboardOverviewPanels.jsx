@@ -217,7 +217,7 @@ export function DashboardOverviewPanels({
                 <h2 className="font-black">{business.name}</h2>
                 <p className="text-xs text-[var(--app-text-muted)]">
                   {t('dashboard.overview.professionalSpace', {
-                    status: statusMeta(business.status).label,
+                    status: statusMeta(business.status, t).label,
                   })}
                 </p>
               </div>

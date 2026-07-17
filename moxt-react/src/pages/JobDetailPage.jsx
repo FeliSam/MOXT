@@ -36,7 +36,9 @@ import {
   formatJobLocationLabel,
   formatJobSalaryLabel,
   hasJobText,
+  jobContractLabel,
   jobHeaderSubtitle,
+  jobSectorLabel,
   JOB_EMPTY_LABEL_KEY,
 } from '../features/jobs/jobDisplayUtils'
 import { PublisherDetailCard } from '../features/publications/PublisherDetailCard'
@@ -45,10 +47,6 @@ import { usePublisherDetailProfile } from '../features/publications/usePublisher
 import { ReportDialog } from '../components/ui/ReportDialog'
 import { useLanguage } from '../contexts/useLanguage'
 import { addToast } from '../features/ui/uiSlice'
-import {
-  JOB_CONTRACTS,
-  optionLabel,
-} from '../config/options'
 import { statusMeta } from '../config/statuses'
 
 const APPLICATION_NEXT_STEPS = {
@@ -83,7 +81,8 @@ export function JobDetailPage() {
   const publisherProfile = usePublisherDetailProfile(job, 'job')
   const [reportOpen, setReportOpen] = useState(false)
   const emptyLabel = t(JOB_EMPTY_LABEL_KEY)
-  const contractLabel = optionLabel(JOB_CONTRACTS, job?.contractType)
+  const sectorLabel = jobSectorLabel(t, job?.sector)
+  const contractLabel = jobContractLabel(t, job?.contractType)
   const experienceLabel = formatJobExperienceLabel(job?.experienceLevel, t)
   const salaryLabel = formatJobSalaryLabel(job)
   const locationLabel = formatJobLocationLabel(job, t)
@@ -104,8 +103,8 @@ export function JobDetailPage() {
       ),
   })
   if (!job) return <Card>{t('jobs.detail.notFound')}</Card>
-  const jobStatus = statusMeta(job.status)
-  const existingStatus = existing ? statusMeta(existing.status) : null
+  const jobStatus = statusMeta(job.status, t)
+  const existingStatus = existing ? statusMeta(existing.status, t) : null
   const nextStepConfig = existing ? APPLICATION_NEXT_STEPS[existing.status] : null
   const nextStep = nextStepConfig
     ? { title: t(nextStepConfig.titleKey), description: t(nextStepConfig.descriptionKey) }
@@ -114,7 +113,7 @@ export function JobDetailPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow={job.sector}
+        eyebrow={sectorLabel}
         title={job.title}
         description={jobHeaderSubtitle(job, t)}
         actions={
@@ -297,7 +296,7 @@ export function JobDetailPage() {
                 label: t('jobs.detail.facts.profile'),
                 value: job.businessId ? t('jobs.card.business') : t('jobs.card.individual'),
               },
-              { label: t('jobs.detail.facts.sector'), value: displayJobField(job.sector, t) },
+              { label: t('jobs.detail.facts.sector'), value: sectorLabel || emptyLabel },
               { label: t('jobs.detail.facts.contractType'), value: contractLabel || emptyLabel },
               { label: t('jobs.detail.facts.experience'), value: experienceLabel },
               ...(languageLabel ? [{ label: t('jobs.detail.facts.language'), value: languageLabel }] : []),

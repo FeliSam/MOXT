@@ -84,7 +84,7 @@ export function PublicationsPanel({ dispatch, publications }) {
         ))}
       </div>
       {visiblePublications.map((item) => {
-        const meta = statusMeta(item.status)
+        const meta = statusMeta(item.status, t)
         const canPublish = ['archived', 'suspended', 'draft'].includes(item.status)
         const update = actions[item.contentType]
         return (

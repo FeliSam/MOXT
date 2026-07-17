@@ -1,8 +1,9 @@
 import { FiChevronRight } from 'react-icons/fi'
 import { NavLink } from 'react-router-dom'
 import { preloadRoute } from '../../config/navigation'
+import { resolveNavLabel } from '../../config/navLabel'
 
-function MoreServiceTile({ badge, item, onNavigate, translateLabel }) {
+function MoreServiceTile({ badge, item, onNavigate, resolveLabel }) {
   const Icon = item.icon
   return (
     <NavLink
@@ -22,7 +23,7 @@ function MoreServiceTile({ badge, item, onNavigate, translateLabel }) {
         <Icon className="text-lg" aria-hidden="true" />
       </span>
       <span className="min-w-0 flex-1 line-clamp-2 text-xs font-semibold leading-snug text-[var(--app-text)]">
-        {translateLabel(item.label)}
+        {resolveLabel(item)}
       </span>
       {badge > 0 ? (
         <span className="shrink-0 rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-bold leading-none text-white">
@@ -33,7 +34,7 @@ function MoreServiceTile({ badge, item, onNavigate, translateLabel }) {
   )
 }
 
-function MoreServiceRow({ badge, item, onNavigate, translateLabel }) {
+function MoreServiceRow({ badge, item, onNavigate, resolveLabel }) {
   const Icon = item.icon
   return (
     <NavLink
@@ -52,7 +53,7 @@ function MoreServiceRow({ badge, item, onNavigate, translateLabel }) {
       <span className="grid size-9 shrink-0 place-items-center rounded-[0.7rem] bg-[var(--app-surface-muted)] text-[var(--app-accent)] dark:text-[var(--app-teal)]">
         <Icon className="text-lg" aria-hidden="true" />
       </span>
-      <span className="min-w-0 flex-1 truncate">{translateLabel(item.label)}</span>
+      <span className="min-w-0 flex-1 truncate">{resolveLabel(item)}</span>
       {badge > 0 ? (
         <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-bold text-white">
           {badge > 9 ? '9+' : badge}
@@ -73,8 +74,13 @@ export function MoreServicesContent({
   groups,
   layout = 'grid',
   onNavigate,
+  resolveLabel,
+  t,
   translateLabel,
 }) {
+  const labelOf =
+    resolveLabel || ((entry) => resolveNavLabel(entry, t, translateLabel))
+
   if (!groups.length) {
     return (
       <p className="px-2 py-10 text-center text-sm text-[var(--app-text-muted)]">
@@ -88,7 +94,7 @@ export function MoreServicesContent({
       {groups.map((group) => (
         <section key={group.id} className="mb-5">
           <h3 className="mb-2.5 px-1 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--app-text-faint)]">
-            {translateLabel(group.label)}
+            {labelOf(group)}
           </h3>
           {layout === 'grid' ? (
             <div className="grid grid-cols-2 gap-2">
@@ -98,7 +104,7 @@ export function MoreServicesContent({
                   badge={badgeFor?.(item) ?? 0}
                   item={item}
                   onNavigate={onNavigate}
-                  translateLabel={translateLabel}
+                  resolveLabel={labelOf}
                 />
               ))}
             </div>
@@ -110,7 +116,7 @@ export function MoreServicesContent({
                   badge={badgeFor?.(item) ?? 0}
                   item={item}
                   onNavigate={onNavigate}
-                  translateLabel={translateLabel}
+                  resolveLabel={labelOf}
                 />
               ))}
             </div>

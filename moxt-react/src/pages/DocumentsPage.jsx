@@ -91,7 +91,7 @@ export function DocumentsPage() {
       {documents.length ? (
         <div className="grid gap-3">
           {documents.map((document) => {
-            const meta = statusMeta(document.status)
+            const meta = statusMeta(document.status, t)
             return (
               <Card className="flex h-full flex-wrap items-center gap-4">
                 <FiFileText className="text-2xl text-brand-600" />

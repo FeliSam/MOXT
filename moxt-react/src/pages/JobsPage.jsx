@@ -17,6 +17,7 @@ import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { Select } from '../components/ui/Select'
 import { useLanguage } from '../contexts/useLanguage'
 import { CatalogFavoriteButton } from '../features/account/CatalogFavoriteButton'
+import { jobContractLabel, jobSectorLabel } from '../features/jobs/jobDisplayUtils'
 import { formatMoney } from '../features/transfers/transferUtils'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 
@@ -54,18 +55,22 @@ export function JobsPage() {
     () =>
       jobs.filter((job) => {
         if (showMine && (job.ownerId !== user.id || job.businessId)) return false
+        const sectorLabel = jobSectorLabel(t, job.sector)
         const haystack =
-          `${job.title} ${job.publisherName} ${job.sector} ${job.location} ${job.description}`.toLowerCase()
+          `${job.title} ${job.publisherName} ${job.sector} ${sectorLabel} ${job.location} ${job.description}`.toLowerCase()
+        const sectorFilter = filters.sector.toLowerCase()
         return (
           (!filters.query || haystack.includes(filters.query.toLowerCase())) &&
           (!filters.location ||
             job.location.toLowerCase().includes(filters.location.toLowerCase())) &&
           (!filters.contractType ||
             job.contractType.toLowerCase().includes(filters.contractType.toLowerCase())) &&
-          (!filters.sector || job.sector.toLowerCase().includes(filters.sector.toLowerCase()))
+          (!filters.sector ||
+            job.sector.toLowerCase().includes(sectorFilter) ||
+            sectorLabel.toLowerCase().includes(sectorFilter))
         )
       }),
-    [filters, jobs, showMine, user.id],
+    [filters, jobs, showMine, t, user.id],
   )
 
   const activeJobs = useMemo(
@@ -156,7 +161,7 @@ export function JobsPage() {
               <option value="">{t('jobs.browse.allContracts')}</option>
               {[...new Set(jobs.map((job) => job.contractType).filter(Boolean))].map((type) => (
                 <option key={type} value={type}>
-                  {type}
+                  {jobContractLabel(t, type)}
                 </option>
               ))}
             </Select>
@@ -197,7 +202,7 @@ export function JobsPage() {
                         </p>
                         <div className="mt-4 flex items-center gap-2 rounded-2xl bg-[var(--app-surface-muted)] p-3">
                           <Badge tone={sectorTone(job.sector)} className="min-w-0 truncate normal-case">
-                            {job.sector}
+                            {jobSectorLabel(t, job.sector)}
                           </Badge>
                           <span className="flex min-w-0 flex-1 items-center justify-end gap-1.5 truncate text-xs font-bold text-[var(--app-text-muted)]">
                             <FiMapPin className="shrink-0" />
@@ -234,7 +239,7 @@ export function JobsPage() {
 
                       <div className="mt-4 flex items-center gap-2 rounded-2xl bg-[var(--app-surface-muted)] p-3">
                         <Badge tone={sectorTone(job.sector)} className="min-w-0 truncate normal-case">
-                          {job.sector}
+                          {jobSectorLabel(t, job.sector)}
                         </Badge>
                         <span className="flex min-w-0 flex-1 items-center justify-end gap-1.5 truncate text-xs font-bold text-[var(--app-text-muted)]">
                           <FiMapPin className="shrink-0 text-brand-700 dark:text-brand-300" />
@@ -244,7 +249,11 @@ export function JobsPage() {
 
                       <div className="mt-4 grid flex-1 content-start gap-2 sm:grid-cols-2">
                         <JobMetric value={normalizeJobSalary(job.salary, t)} label={t('jobs.card.salary')} />
-                        <JobMetric value={job.contractType || '—'} label={t('jobs.card.contractType')} icon={FiClock} />
+                        <JobMetric
+                          value={job.contractType ? jobContractLabel(t, job.contractType) : '—'}
+                          label={t('jobs.card.contractType')}
+                          icon={FiClock}
+                        />
                       </div>
 
                       <span className="mt-4 flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-brand-700 px-2 text-center text-xs font-black text-white transition group-hover:bg-brand-800 sm:min-h-11 sm:text-sm dark:bg-brand-600">

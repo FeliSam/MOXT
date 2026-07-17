@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { validatePassport, validateIdentityFields } from './contactsValidation'
-import { validateRecipientAddressForm } from './carrierAddressValidation'
+import {
+  createCarrierAddressValidators,
+  validateRecipientAddressForm,
+} from './carrierAddressValidation'
 
 describe('contactsValidation', () => {
   it('accepts valid passport', () => {
@@ -42,5 +45,30 @@ describe('carrierAddressValidation', () => {
       },
     })
     expect(errors).toEqual({})
+  })
+
+  it('localizes address errors when t is provided', () => {
+    const { validateRecipientAddressForm: validate } = createCarrierAddressValidators((key) =>
+      key === 'validation.address.labelRequired' ? 'Label required' : key,
+    )
+    const errors = validate({
+      label: '',
+      country: 'BJ',
+      city: 'Cotonou',
+      addressLine: 'Rue 1',
+      phone: '+22990000000',
+      email: 'a@b.com',
+      ownerType: 'PERSON',
+      identity: {
+        firstNames: 'Jean',
+        lastName: 'Dupont',
+        idType: 'PASSEPORT',
+        passportNumber: 'AB1234567',
+        issuedBy: 'Cotonou',
+        issuedAt: '2020-01-01',
+        expiresAt: '2030-01-01',
+      },
+    })
+    expect(errors.label).toBe('Label required')
   })
 })

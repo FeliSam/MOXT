@@ -4,9 +4,39 @@ import {
   JOB_SALARY_PERIODS,
   optionLabel,
 } from '../../config/options'
-import { formatShortDate } from '../../utils/formatters'
+import { formatShortDate, formatDateTime } from '../../utils/formatters'
 
 export const JOB_EMPTY_LABEL_KEY = 'jobs.labels.empty'
+
+/** Stored French sector strings → `jobs.sectors.<slug>` keys. */
+const JOB_SECTOR_SLUGS = {
+  'Technologie & informatique': 'tech',
+  'Commerce & vente': 'commerce',
+  'Transport & logistique': 'transport',
+  'Restauration & hôtellerie': 'hospitality',
+  'Enseignement & formation': 'education',
+  'Santé & bien-être': 'health',
+  'Bâtiment & travaux': 'construction',
+  'Services à la personne': 'services',
+  'Finance & comptabilité': 'finance',
+  'Arts & communication': 'arts',
+  Immobilier: 'realEstate',
+  Autre: 'other',
+}
+
+/** Contract codes (and FR labels) → `jobs.contracts.<slug>` keys. */
+const JOB_CONTRACT_SLUGS = {
+  full_time: 'fullTime',
+  part_time: 'partTime',
+  contract: 'contract',
+  internship: 'internship',
+  freelance: 'freelance',
+  'Temps plein': 'fullTime',
+  'Temps partiel': 'partTime',
+  Contrat: 'contract',
+  Stage: 'internship',
+  Freelance: 'freelance',
+}
 
 export function hasJobText(value) {
   return value !== null && value !== undefined && String(value).trim() !== ''
@@ -15,6 +45,34 @@ export function hasJobText(value) {
 export function displayJobField(value, t, fallbackKey = JOB_EMPTY_LABEL_KEY) {
   const fallback = typeof t === 'function' ? t(fallbackKey) : fallbackKey
   return hasJobText(value) ? String(value).trim() : fallback
+}
+
+/**
+ * Localized sector label. DB stores French strings as identifiers — do not change them.
+ * Unknown/legacy values fall back to the raw string.
+ */
+export function jobSectorLabel(t, value) {
+  if (!hasJobText(value)) {
+    return typeof t === 'function' ? t(JOB_EMPTY_LABEL_KEY) : JOB_EMPTY_LABEL_KEY
+  }
+  const raw = String(value).trim()
+  const slug = JOB_SECTOR_SLUGS[raw]
+  if (slug && typeof t === 'function') return t(`jobs.sectors.${slug}`)
+  return raw
+}
+
+/**
+ * Localized contract label. Values are usually codes (`full_time`); FR labels are accepted as aliases.
+ * Unknown/legacy values fall back to the raw string.
+ */
+export function jobContractLabel(t, value) {
+  if (!hasJobText(value)) {
+    return typeof t === 'function' ? t(JOB_EMPTY_LABEL_KEY) : JOB_EMPTY_LABEL_KEY
+  }
+  const raw = String(value).trim()
+  const slug = JOB_CONTRACT_SLUGS[raw]
+  if (slug && typeof t === 'function') return t(`jobs.contracts.${slug}`)
+  return raw
 }
 
 export function formatJobExperienceLabel(experienceLevel, t) {
@@ -59,5 +117,8 @@ export function formatJobLocationLabel(job, t) {
 export function jobHeaderSubtitle(job, t) {
   const fallback =
     typeof t === 'function' ? t('jobs.labels.offerFallback') : "Offre d'emploi"
-  return [job?.publisherName, job?.location].filter(hasJobText).join(' · ') || fallback
+  const base = [job?.publisherName, job?.location].filter(hasJobText).join(' · ') || fallback
+  if (!hasJobText(job?.createdAt) || typeof t !== 'function') return base
+  const published = t('jobs.detail.publishedOn', { date: formatDateTime(job.createdAt) })
+  return `${base} · ${published}`
 }

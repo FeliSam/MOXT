@@ -18,7 +18,7 @@ const registrationStatusTone = {
 
 function resolveStatusLabel(status, t) {
   const key = eventStatusLabelKey(status)
-  return key ? t(key) : statusMeta(status).label
+  return key ? t(key) : statusMeta(status, t).label
 }
 
 export function EventParticipantsSection({ event, eventId }) {
@@ -58,7 +58,7 @@ export function EventParticipantsSection({ event, eventId }) {
         {activeRows.length ? (
           <div className="grid gap-3">
             {activeRows.map((row) => {
-              const status = statusMeta(row.status)
+              const status = statusMeta(row.status, t)
               return (
                 <Card key={row.id} className="bg-[var(--app-surface-muted)] p-4">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">

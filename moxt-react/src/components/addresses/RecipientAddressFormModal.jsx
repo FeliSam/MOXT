@@ -10,7 +10,7 @@ import {
   IDENTITY_TYPES,
   OWNER_TYPES,
 } from '../../types/identityEnums'
-import { validateRecipientAddressForm } from '../../types/carrierAddressValidation'
+import { createCarrierAddressValidators } from '../../types/carrierAddressValidation'
 
 const DOC_LABEL_KEYS = {
   PASSEPORT: 'addresses.doc.passport',
@@ -67,6 +67,7 @@ export function RecipientAddressFormModal({
 }) {
   const { t } = useLanguage()
   const p3 = (key, vars) => phase3Text(t, key, vars)
+  const { validateRecipientAddressForm } = useMemo(() => createCarrierAddressValidators(t), [t])
   const [form, setForm] = useState(emptyForm())
   const [errors, setErrors] = useState({})
   const [selectedProfileId, setSelectedProfileId] = useState(null)

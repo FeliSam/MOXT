@@ -59,7 +59,7 @@ export function ProfilePanel({ activity, business, documents = [], secondaryActi
               {business.description}
             </p>
           </div>
-          <Badge tone={statusMeta(business.status).tone}>{statusMeta(business.status).label}</Badge>
+          <Badge tone={statusMeta(business.status, t).tone}>{statusMeta(business.status, t).label}</Badge>
         </div>
         <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <Info label={pt('professional.profile.primaryDomain')} value={activity?.label || business.sector} />

@@ -6,12 +6,12 @@ const RAW_STORAGE_KEYS = new Set(['moxt-theme'])
 export const STORAGE_DOMAINS = [
   {
     id: 'account',
-    label: 'Compte et préférences',
+    labelKey: 'localData.domains.account',
     keys: ['moxt-account-v1'],
   },
   {
     id: 'businesses',
-    label: 'Entreprises',
+    labelKey: 'localData.domains.businesses',
     keys: [
       'moxt-businesses-v1',
       'moxt-business-members-v1',
@@ -21,12 +21,12 @@ export const STORAGE_DOMAINS = [
   },
   {
     id: 'communications',
-    label: 'Messagerie et notifications',
+    labelKey: 'localData.domains.communications',
     keys: ['moxt-conversations-v1', 'moxt-support-v1', 'moxt-notifications-v1'],
   },
   {
     id: 'community',
-    label: 'Marketplace, jobs et événements',
+    labelKey: 'localData.domains.community',
     keys: [
       'moxt-listings-v1',
       'moxt-listing-reports-v1',
@@ -42,7 +42,7 @@ export const STORAGE_DOMAINS = [
   },
   {
     id: 'services',
-    label: 'Transferts, colis et P2P',
+    labelKey: 'localData.domains.services',
     keys: [
       'moxt-transfers-v1',
       'moxt-parcels-v1',
@@ -56,12 +56,12 @@ export const STORAGE_DOMAINS = [
   },
   {
     id: 'administration',
-    label: 'Administration et audit',
+    labelKey: 'localData.domains.administration',
     keys: ['moxt-administration-v1', 'moxt-audit-v1'],
   },
   {
     id: 'interface',
-    label: 'Interface et cache',
+    labelKey: 'localData.domains.interface',
     keys: ['moxt-theme', 'moxt-rub-xof-rate-v1', STORAGE_MANIFEST_KEY, LEGACY_MIGRATION_KEY],
   },
 ]

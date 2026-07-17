@@ -87,11 +87,11 @@ export const JOB_SALARY_PERIODS = [
 ]
 
 export const JOB_CONTRACTS = [
-  { value: 'full_time', label: 'Temps plein' },
-  { value: 'part_time', label: 'Temps partiel' },
-  { value: 'contract', label: 'Contrat' },
-  { value: 'internship', label: 'Stage' },
-  { value: 'freelance', label: 'Freelance' },
+  { value: 'full_time', label: 'Temps plein', labelKey: 'jobs.contracts.fullTime' },
+  { value: 'part_time', label: 'Temps partiel', labelKey: 'jobs.contracts.partTime' },
+  { value: 'contract', label: 'Contrat', labelKey: 'jobs.contracts.contract' },
+  { value: 'internship', label: 'Stage', labelKey: 'jobs.contracts.internship' },
+  { value: 'freelance', label: 'Freelance', labelKey: 'jobs.contracts.freelance' },
 ]
 
 export const EVENT_CATEGORIES = [

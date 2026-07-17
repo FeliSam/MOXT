@@ -105,6 +105,7 @@ export const SHARED_FR_SOURCES = {
   // ── notifications ────────────────────────────────────────────────────────
   'shared.notifications.someone': 'Un membre',
   'shared.notifications.someoneAlt': 'Quelqu un',
+  'shared.notifications.aBusiness': 'Une entreprise',
   'shared.notifications.publisher': 'Un éditeur',
   'shared.notifications.review.createdTitle': 'Nouvel avis reçu',
   'shared.notifications.review.createdBody':

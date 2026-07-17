@@ -36,6 +36,7 @@ import {
 import { statusMeta } from '../config/statuses'
 import { useLanguage } from '../contexts/useLanguage'
 import { formatDate, formatMoney } from '../features/transfers/transferUtils'
+import { formatDateTime } from '../utils/formatters'
 import { PublisherDetailCard } from '../features/publications/PublisherDetailCard'
 import { PublisherPublicationsStrip } from '../features/publications/PublisherPublicationsStrip'
 import { usePublisherDetailProfile } from '../features/publications/usePublisherDetailProfile'
@@ -43,7 +44,7 @@ import { addToast } from '../features/ui/uiSlice'
 
 function resolveStatusLabel(status, t) {
   const key = eventStatusLabelKey(status)
-  return key ? t(key) : statusMeta(status).label
+  return key ? t(key) : statusMeta(status, t).label
 }
 
 export function EventDetailPage() {
@@ -62,16 +63,22 @@ export function EventDetailPage() {
   const registered = registration && registration.status !== 'cancelled'
   const activeRegistrations = registrations.filter((item) => item.status !== 'cancelled')
   const full = activeRegistrations.length >= event.capacity
-  const eventStatus = statusMeta(event.status)
-  const registrationStatus = registration ? statusMeta(registration.status) : null
+  const eventStatus = statusMeta(event.status, t)
+  const registrationStatus = registration ? statusMeta(registration.status, t) : null
   const nextStepKeys = registration ? registrationNextStepKeys[registration.status] : null
+
+  const publishedLabel = event.createdAt
+    ? t('events.detail.publishedOn', { date: formatDateTime(event.createdAt) })
+    : null
 
   return (
     <div className="grid gap-7">
       <PageHeader
         eyebrow={event.category}
         title={event.title}
-        description={`${formatDate(event.startAt)} · ${event.venue}, ${event.city}`}
+        description={[ `${formatDate(event.startAt)} · ${event.venue}, ${event.city}`, publishedLabel ]
+          .filter(Boolean)
+          .join(' · ')}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {/* Favori — icône seule, coin droit, distinct de l'inscription */}

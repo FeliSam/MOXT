@@ -8,6 +8,7 @@ import { RevealListItem } from '../../../components/ui/RevealListItem'
 import { RevealOnScroll } from '../../../components/ui/RevealOnScroll'
 import { SkeletonCard } from '../../../components/ui/Skeleton'
 import { useLanguage } from '../../../contexts/useLanguage'
+import { jobContractLabel, jobSectorLabel } from '../../jobs/jobDisplayUtils'
 import { MarketplaceListingCard } from '../../marketplace/MarketplaceListingCard'
 import { formatParcelDepartureLabel } from '../../parcels/parcelUtils'
 import { formatDate } from '../../transfers/transferUtils'
@@ -115,7 +116,11 @@ export function DashboardDiscoverySection({
             meta: [item.salary ? `${item.salary} ${item.currency || 'RUB'}` : null, item.city || item.location]
               .filter(Boolean)
               .join(' · '),
-            badge: item.sector || item.contractType,
+            badge: item.sector
+              ? jobSectorLabel(t, item.sector)
+              : item.contractType
+                ? jobContractLabel(t, item.contractType)
+                : undefined,
           }))}
         />
         <DashboardLiveList

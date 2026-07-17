@@ -70,31 +70,28 @@ export function hasUserProfileReviewEligibility(state, authorId, profileUserId) 
   return false
 }
 
+/** @returns {{ allowed: boolean, reasonKey?: string }} */
 export function hasReviewEligibility(state, authorId, targetType, targetId) {
   if (!authorId || !targetType || !targetId) {
-    return { allowed: false, reason: 'Connexion requise pour laisser un avis.' }
+    return { allowed: false, reasonKey: 'reviews.reasons.loginRequired' }
   }
 
   const ownerId = resolveReviewOwnerId(state, { targetType, targetId })
   if (authorId === ownerId) {
-    return { allowed: false, reason: 'Vous ne pouvez pas noter votre propre contenu.' }
+    return { allowed: false, reasonKey: 'reviews.reasons.ownContent' }
   }
 
   const needsOwner =
     targetType === REVIEW_TARGET_TYPES.USER_PROFILE ||
     targetType === REVIEW_TARGET_TYPES.BUSINESS
   if (needsOwner && !ownerId) {
-    return { allowed: false, reason: 'Cible d’avis introuvable.' }
+    return { allowed: false, reasonKey: 'reviews.reasons.targetMissing' }
   }
 
   if (targetType === REVIEW_TARGET_TYPES.USER_PROFILE) {
     return hasUserProfileReviewEligibility(state, authorId, targetId)
       ? { allowed: true }
-      : {
-          allowed: false,
-          reason:
-            'Vous devez avoir échangé avec ce membre (transfert, commande, candidature, colis ou message) avant de laisser un avis.',
-        }
+      : { allowed: false, reasonKey: 'reviews.reasons.profileInteractionRequired' }
   }
 
   if (targetType === REVIEW_TARGET_TYPES.BUSINESS) {
@@ -104,10 +101,7 @@ export function hasReviewEligibility(state, authorId, targetType, targetId) {
       hasUserProfileReviewEligibility(state, authorId, business?.ownerId)
     return eligible
       ? { allowed: true }
-      : {
-          allowed: false,
-          reason: 'Seuls les clients ayant interagi avec cette entreprise peuvent laisser un avis.',
-        }
+      : { allowed: false, reasonKey: 'reviews.reasons.businessClientOnly' }
   }
 
   if (targetType === REVIEW_TARGET_TYPES.LISTING) {
@@ -121,10 +115,7 @@ export function hasReviewEligibility(state, authorId, targetType, targetId) {
     )
     return asked || messaged
       ? { allowed: true }
-      : {
-          allowed: false,
-          reason: 'Posez une question ou contactez le vendeur avant de noter cette annonce.',
-        }
+      : { allowed: false, reasonKey: 'reviews.reasons.listingContactRequired' }
   }
 
   if (targetType === REVIEW_TARGET_TYPES.JOB) {
@@ -133,7 +124,7 @@ export function hasReviewEligibility(state, authorId, targetType, targetId) {
     )
     return eligible
       ? { allowed: true }
-      : { allowed: false, reason: 'Seuls les candidats peuvent noter cette offre.' }
+      : { allowed: false, reasonKey: 'reviews.reasons.jobApplicantOnly' }
   }
 
   if (targetType === REVIEW_TARGET_TYPES.EVENT) {
@@ -142,7 +133,7 @@ export function hasReviewEligibility(state, authorId, targetType, targetId) {
     )
     return eligible
       ? { allowed: true }
-      : { allowed: false, reason: 'Inscrivez-vous à l’événement avant de laisser un avis.' }
+      : { allowed: false, reasonKey: 'reviews.reasons.eventRegisterRequired' }
   }
 
   if (targetType === REVIEW_TARGET_TYPES.PARCEL) {
@@ -156,7 +147,7 @@ export function hasReviewEligibility(state, authorId, targetType, targetId) {
     )
     return reserved || requested
       ? { allowed: true }
-      : { allowed: false, reason: 'Réservez ce colis avant de laisser un avis.' }
+      : { allowed: false, reasonKey: 'reviews.reasons.parcelReserveRequired' }
   }
 
   if (targetType === REVIEW_TARGET_TYPES.POST) {
@@ -166,8 +157,8 @@ export function hasReviewEligibility(state, authorId, targetType, targetId) {
       post?.comments?.some((comment) => comment.authorId === authorId)
     return interacted
       ? { allowed: true }
-      : { allowed: false, reason: 'Interagissez avec la publication avant de laisser un avis.' }
+      : { allowed: false, reasonKey: 'reviews.reasons.postInteractRequired' }
   }
 
-  return { allowed: false, reason: 'Avis non autorisé pour cette cible.' }
+  return { allowed: false, reasonKey: 'reviews.reasons.notAllowed' }
 }

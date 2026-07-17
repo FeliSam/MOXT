@@ -184,7 +184,7 @@ export function VerificationPage() {
               {p3('verification.request.docs', { count: request.documentIds.length })}
             </p>
           </div>
-          <Badge tone={statusMeta(request.status).tone}>{statusMeta(request.status).label}</Badge>
+          <Badge tone={statusMeta(request.status, t).tone}>{statusMeta(request.status, t).label}</Badge>
         </Card>
       ) : null}
 

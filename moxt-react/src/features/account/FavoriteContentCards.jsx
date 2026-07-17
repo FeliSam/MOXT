@@ -14,6 +14,7 @@ import { Card } from '../../components/ui/Card'
 import { CatalogGrid } from '../../components/ui/CatalogGrid'
 import { useLanguage } from '../../contexts/useLanguage'
 import { phase3Text } from '../../i18n/phase3I18n'
+import { jobContractLabel, jobSectorLabel } from '../jobs/jobDisplayUtils'
 import { formatMoney } from '../transfers/transferUtils'
 import { formatListingPrice } from './favoriteUtils'
 
@@ -139,7 +140,7 @@ function JobFavoriteCard({ item, onRemove }) {
         <span className="grid size-11 place-items-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-950/40">
           <FiBriefcase />
         </span>
-        {display.contractType ? <Badge>{display.contractType}</Badge> : null}
+        {display.contractType ? <Badge>{jobContractLabel(t, display.contractType)}</Badge> : null}
       </div>
       <div className="min-w-0">
         <h3 className="font-black">{display.title}</h3>
@@ -155,7 +156,9 @@ function JobFavoriteCard({ item, onRemove }) {
           </p>
         ) : null}
         {display.salary ? <p className="font-bold text-brand-700">{display.salary}</p> : null}
-        {display.sector ? <p className="text-[var(--app-text-muted)]">{display.sector}</p> : null}
+        {display.sector ? (
+          <p className="text-[var(--app-text-muted)]">{jobSectorLabel(t, display.sector)}</p>
+        ) : null}
       </div>
       <Link to={path}>
         <Button className="w-full" variant="secondary">

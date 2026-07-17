@@ -29,7 +29,7 @@ export function DisputesPage() {
       {disputes.length ? (
         <div className="grid gap-3">
           {disputes.map((dispute) => {
-            const meta = statusMeta(dispute.status)
+            const meta = statusMeta(dispute.status, t)
             return (
               <Card className="flex h-full items-start gap-4">
                 <FiAlertTriangle className="mt-1 shrink-0 text-xl text-amber-600" />

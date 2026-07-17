@@ -24,7 +24,7 @@ export function RequestsPanel({ business, dispatch, requests }) {
   return (
     <div className="grid min-w-0 gap-3">
       {requests.map((request) => {
-        const meta = statusMeta(request.status)
+        const meta = statusMeta(request.status, t)
         return (
           <Card key={request.id} className="min-w-0 overflow-hidden !p-3 sm:!p-5">
             <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
@@ -43,7 +43,7 @@ export function RequestsPanel({ business, dispatch, requests }) {
                 </p>
                 <p className="mt-1 break-words text-xs">
                   {(request.timeline || [])
-                    .map((event) => statusMeta(event.status).label)
+                    .map((event) => statusMeta(event.status, t).label)
                     .join(' → ')}
                 </p>
               </div>

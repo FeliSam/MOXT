@@ -28,6 +28,7 @@ import { Input } from '../components/ui/Input'
 import { addToast } from '../features/ui/uiSlice'
 import { statusMeta } from '../config/statuses'
 import { formatMoney } from '../features/transfers/transferUtils'
+import { formatDateTime } from '../utils/formatters'
 import { PublisherDetailCard } from '../features/publications/PublisherDetailCard'
 import { PublisherPublicationsStrip } from '../features/publications/PublisherPublicationsStrip'
 import { usePublisherDetailProfile } from '../features/publications/usePublisherDetailProfile'
@@ -53,7 +54,7 @@ export function ParcelDetailPage() {
   const distributionDate = parcel.distributionDate || null
   const isAdmin = ['admin', 'superadmin'].includes(user.role)
   const canSeeProof = isAdmin || user.id === parcel.ownerId
-  const proofMeta = statusMeta(parcel.proofStatus)
+  const proofMeta = statusMeta(parcel.proofStatus, t)
   const routeTitle = t('parcels.detail.routeTitle', {
     origin: parcel.origin,
     destination: parcel.destination,
@@ -107,23 +108,26 @@ export function ParcelDetailPage() {
     )
   }
 
+  const routeDescription = distributionDate
+    ? t('parcels.detail.descriptionWithDistribution', {
+        departure: parcel.departureDate,
+        deposit: depositDeadline,
+        distribution: distributionDate,
+      })
+    : t('parcels.detail.descriptionWithoutDistribution', {
+        departure: parcel.departureDate,
+        deposit: depositDeadline,
+      })
+  const publishedLabel = parcel.createdAt
+    ? t('parcels.detail.publishedOn', { date: formatDateTime(parcel.createdAt) })
+    : null
+
   return (
     <div className="grid gap-7">
       <PageHeader
         eyebrow={parcel.id}
         title={routeTitle}
-        description={
-          distributionDate
-            ? t('parcels.detail.descriptionWithDistribution', {
-                departure: parcel.departureDate,
-                deposit: depositDeadline,
-                distribution: distributionDate,
-              })
-            : t('parcels.detail.descriptionWithoutDistribution', {
-                departure: parcel.departureDate,
-                deposit: depositDeadline,
-              })
-        }
+        description={[routeDescription, publishedLabel].filter(Boolean).join(' · ')}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <FavoriteButton
@@ -285,7 +289,7 @@ export function ParcelDetailPage() {
             <div className="mt-5 grid gap-3">
               {requests.length ? (
                 requests.map((request) => {
-                  const meta = statusMeta(request.status)
+                  const meta = statusMeta(request.status, t)
                   const canMessageRequester =
                     request.status === 'approved' && request.userId && request.userId !== user.id
                   const reservationSnapshot = buildParcelSnapshot(parcel, `/parcels/${parcel.id}`, {
@@ -396,7 +400,7 @@ export function ParcelDetailPage() {
                   ? t('parcels.detail.profile.business')
                   : t('parcels.detail.profile.individual'),
               },
-              { label: t('parcels.detail.info.status'), value: statusMeta(parcel.status).label },
+              { label: t('parcels.detail.info.status'), value: statusMeta(parcel.status, t).label },
               { label: t('parcels.detail.info.carrier'), value: parcel.ownerName },
             ]}
           />

@@ -2,6 +2,7 @@ import {
   notificationPriorityForSubscription,
   shouldNotifySubscriber,
 } from '@moxt/shared/utils/subscriptionUtils.js'
+import { appText } from '../../i18n/appText'
 import { addNotification } from '../communications/communicationSlice'
 
 export function notifyPublisherSubscribers(
@@ -50,7 +51,8 @@ export function resolvePublisherFromContent(state, item) {
     return {
       publisherType: 'business',
       publisherId: item.businessId,
-      publisherName: business?.name || item.businessName || 'Une entreprise',
+      publisherName:
+        business?.name || item.businessName || appText('shared.notifications.aBusiness'),
     }
   }
   return {
@@ -61,6 +63,6 @@ export function resolvePublisherFromContent(state, item) {
       item.authorName ||
       item.ownerName ||
       [item.firstName, item.lastName].filter(Boolean).join(' ') ||
-      'Un membre',
+      appText('shared.notifications.someone'),
   }
 }

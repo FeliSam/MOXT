@@ -10,6 +10,7 @@ import {
   REVIEW_TARGET_TYPES,
 } from '@moxt/shared/utils/reviewUtils.js'
 import { hasReviewEligibility } from '@moxt/shared/utils/reviewEligibility.js'
+import { useLanguage } from '../../contexts/useLanguage'
 import { createReview } from './reviewSlice'
 import { selectProfileReview } from './reviewSelectors'
 import { ReviewCard, ReviewSummary } from './ReviewPanel'
@@ -23,6 +24,7 @@ export function ReviewsSection({
   currentUser,
   embedded = false,
 }) {
+  const { t } = useLanguage()
   const dispatch = useDispatch()
   const [rating, setRating] = useState(5)
   const [comment, setComment] = useState('')
@@ -44,6 +46,9 @@ export function ReviewsSection({
     [appState, currentUser?.id, profileTargetType, profileTargetId],
   )
   const canReview = eligibility.allowed || Boolean(existingReview)
+  const ineligibleReason = eligibility.reasonKey
+    ? t(eligibility.reasonKey)
+    : eligibility.reason
 
   useEffect(() => {
     if (!existingReview) return
@@ -60,7 +65,9 @@ export function ReviewsSection({
         targetType: profileTargetType,
         targetId: profileTargetId,
         authorId: currentUser.id,
-        authorName: `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || 'Membre MOXT',
+        authorName:
+          `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() ||
+          t('reviews.memberFallback'),
         rating,
         comment,
         createdAt: existingReview?.createdAt,
@@ -78,14 +85,13 @@ export function ReviewsSection({
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-700 dark:text-brand-300">
-              Réputation
+              {t('reviews.reputation')}
             </p>
             <h2 id="reviews-section-title" className="mt-1 text-2xl font-black">
-              Avis de la communauté
+              {t('reviews.communityTitle')}
             </h2>
             <p className="mt-1 max-w-2xl text-sm text-[var(--app-text-muted)]">
-              Note globale calculée sur cette page et sur chaque publication liée (
-              {aggregate.count} avis).
+              {t('reviews.communityDescription', { count: aggregate.count })}
             </p>
           </div>
           {aggregate.count ? (
@@ -99,8 +105,10 @@ export function ReviewsSection({
 
       {embedded ? (
         <p className="text-sm text-[var(--app-text-muted)]">
-          Note globale sur cette page et chaque publication liée — {aggregate.count} avis, moyenne{' '}
-          {aggregate.count ? `${aggregate.average}/5` : '—'}.
+          {t('reviews.embeddedSummary', {
+            count: aggregate.count,
+            average: aggregate.count ? `${aggregate.average}/5` : '—',
+          })}
         </p>
       ) : null}
 
@@ -110,16 +118,16 @@ export function ReviewsSection({
 
           {canReview ? (
             <form className="grid gap-4 border-t border-[var(--app-border)] pt-5" onSubmit={handleSubmit}>
-              <h3 className="font-black">Laisser un avis</h3>
+              <h3 className="font-black">{t('reviews.leaveReview')}</h3>
               <div className="grid gap-2">
-                <span className="text-sm font-semibold">Votre note</span>
+                <span className="text-sm font-semibold">{t('reviews.yourRating')}</span>
                 <StarRating value={rating} onChange={setRating} size="lg" />
               </div>
               <label className="grid gap-2 text-sm font-semibold">
-                Votre commentaire
+                {t('reviews.yourComment')}
                 <textarea
                   className="min-h-28 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 text-sm font-normal"
-                  placeholder="Partagez votre expérience avec ce profil…"
+                  placeholder={t('reviews.commentPlaceholder')}
                   value={comment}
                   onChange={(event) => setComment(event.target.value)}
                   minLength={5}
@@ -127,27 +135,26 @@ export function ReviewsSection({
                 />
               </label>
               <Button type="submit" icon={FiMessageCircle}>
-                {existingReview ? 'Mettre à jour mon avis' : 'Publier mon avis'}
+                {existingReview ? t('reviews.update') : t('reviews.publish')}
               </Button>
             </form>
           ) : null}
 
           {!canReview && !isOwner && currentUser?.id ? (
             <p className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 text-sm text-[var(--app-text-muted)]">
-              {eligibility.reason}
+              {ineligibleReason}
             </p>
           ) : null}
 
           {isOwner ? (
             <p className="rounded-xl border border-brand-100 bg-brand-50/60 p-3 text-sm text-[var(--app-text-muted)] dark:border-brand-900/40 dark:bg-brand-950/20">
-              Vous pouvez répondre ou contester les avis reçus sur votre page et vos
-              publications.
+              {t('reviews.ownerHint')}
             </p>
           ) : null}
         </Card>
 
         <Card className="grid content-start gap-4">
-          <h3 className="font-black">Tous les avis</h3>
+          <h3 className="font-black">{t('reviews.allReviews')}</h3>
           {reviews.length ? (
             <div className="grid max-h-[42rem] gap-3 overflow-y-auto pr-1">
               {reviews.map((review) => (
@@ -163,8 +170,8 @@ export function ReviewsSection({
           ) : (
             <EmptyState
               icon={FiStar}
-              title="Aucun avis pour le moment"
-              description="Soyez le premier à partager votre expérience."
+              title={t('reviews.emptyTitle')}
+              description={t('reviews.emptyDescription')}
             />
           )}
         </Card>

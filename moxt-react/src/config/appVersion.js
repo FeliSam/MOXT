@@ -3,10 +3,19 @@ import { getLocalBuildId } from '../services/appUpdate'
 export const APP_VERSION =
   typeof __MOXT_APP_VERSION__ !== 'undefined' ? __MOXT_APP_VERSION__ : '0.0.0'
 
-export function formatBuildDate(iso) {
+const LOCALE_BY_LANGUAGE = {
+  en: 'en-US',
+  fr: 'fr-FR',
+  pt: 'pt-PT',
+  ru: 'ru-RU',
+}
+
+export function formatBuildDate(iso, locale) {
   if (!iso) return null
+  const resolved =
+    LOCALE_BY_LANGUAGE[String(locale || '').toLowerCase()] || locale || 'fr-FR'
   try {
-    return new Intl.DateTimeFormat('fr-FR', {
+    return new Intl.DateTimeFormat(resolved, {
       day: 'numeric',
       month: 'long',
       year: 'numeric',

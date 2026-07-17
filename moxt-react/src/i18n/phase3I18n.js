@@ -522,6 +522,8 @@ export const PHASE3_FR_SOURCES = {
   'news.empty.title': "Aucun post pour l'instant",
   'news.empty.description': 'Soyez le premier à partager quelque chose avec la communauté !',
   'news.empty.type': 'Aucun post de type "{type}" pour l\'instant.',
+  'news.seeMore': 'Voir plus',
+  'news.seeLess': 'Voir moins',
   'news.types.post': 'Post',
   'news.types.listing': 'Annonce',
   'news.types.parcel': 'Colis',

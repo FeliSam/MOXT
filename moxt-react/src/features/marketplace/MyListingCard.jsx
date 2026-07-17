@@ -48,7 +48,7 @@ export function MyListingCard({
         item.userId === user?.id && item.relatedType === 'listing' && item.relatedId === listing.id,
     ),
   )
-  const status = statusMeta(listing.status)
+  const status = statusMeta(listing.status, t)
   const active = isActiveListing(listing)
   const typeLabel = listingTypeLabel(listing.type, t)
   const categoryLabel = listingCategoryLabel(listing.type, listing.category, t)

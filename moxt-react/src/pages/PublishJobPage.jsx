@@ -37,6 +37,7 @@ import { SecurityGatePanel } from '../features/security/SecurityGatePanel'
 import { useSecurityGate } from '../features/security/useSecurityGate'
 import { initialCatalogStatus } from '@moxt/shared/auth/userSecurity.js'
 import { useLanguage } from '../contexts/useLanguage'
+import { jobContractLabel, jobSectorLabel } from '../features/jobs/jobDisplayUtils'
 import {
   publishOptionLabel,
   publishOptionSub,
@@ -311,7 +312,7 @@ export function PublishJobPage() {
                         <Icon className={`text-base ${active ? '' : 'text-[var(--app-text-muted)]'}`} />
                       </span>
                       <span className={`text-[10px] font-black leading-tight ${active ? '' : 'text-[var(--app-text-muted)]'}`}>
-                        {publishOptionLabel(t, sector)}
+                        {jobSectorLabel(t, sector.value)}
                       </span>
                     </button>
                   )
@@ -321,7 +322,7 @@ export function PublishJobPage() {
               {selectedSector ? (
                 <p className="mt-2 text-xs text-[var(--app-text-muted)]">
                   {publishText(t, 'publish.job.fields.sectorSelected')}{' '}
-                  <strong>{selectedSector.value}</strong>
+                  <strong>{jobSectorLabel(t, selectedSector.value)}</strong>
                 </p>
               ) : null}
             </div>
@@ -350,7 +351,7 @@ export function PublishJobPage() {
                         : 'bg-[var(--app-surface-muted)] text-[var(--app-text)] hover:bg-[var(--app-accent-soft)] hover:text-[var(--app-accent)]'
                     }`}
                   >
-                    {publishOptionLabel(t, c)}
+                    {jobContractLabel(t, c.value)}
                   </button>
                 ))}
               </div>
@@ -566,13 +567,10 @@ export function PublishJobPage() {
             </div>
             {[
               [publishText(t, 'publish.job.review.role'), form.title],
-              [publishText(t, 'publish.job.review.sector'), form.sector],
+              [publishText(t, 'publish.job.review.sector'), jobSectorLabel(t, form.sector)],
               [
                 publishText(t, 'publish.job.review.contract'),
-                publishOptionLabel(
-                  t,
-                  JOB_CONTRACT_OPTIONS.find((c) => c.value === form.contractType),
-                ),
+                jobContractLabel(t, form.contractType),
               ],
               [
                 publishText(t, 'publish.job.review.salary'),

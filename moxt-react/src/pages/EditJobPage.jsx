@@ -11,10 +11,12 @@ import {
   JOB_CONTRACT_OPTIONS,
   JOB_EXPERIENCE_OPTIONS,
   JOB_SALARY_PERIOD_OPTIONS,
+  JOB_SECTOR_OPTIONS,
 } from '../features/jobs/jobPublishConfig'
 import { updateJob } from '../features/jobs/jobSlice'
 import { useState } from 'react'
 import { useLanguage } from '../contexts/useLanguage'
+import { jobContractLabel, jobSectorLabel } from '../features/jobs/jobDisplayUtils'
 import { publishOptionLabel, publishText } from '../features/publications/publishI18n'
 
 export function EditJobPage() {
@@ -81,11 +83,20 @@ export function EditJobPage() {
               value={values.title}
               onChange={(e) => set('title', e.target.value)}
             />
-            <Input
+            <Select
               label={publishText(t, 'publish.job.fields.sector')}
               value={values.sector}
               onChange={(e) => set('sector', e.target.value)}
-            />
+            >
+              {!JOB_SECTOR_OPTIONS.some((s) => s.value === values.sector) && values.sector ? (
+                <option value={values.sector}>{jobSectorLabel(t, values.sector)}</option>
+              ) : null}
+              {JOB_SECTOR_OPTIONS.map((s) => (
+                <option key={s.value} value={s.value}>
+                  {jobSectorLabel(t, s.value)}
+                </option>
+              ))}
+            </Select>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <Select
@@ -95,7 +106,7 @@ export function EditJobPage() {
             >
               {JOB_CONTRACT_OPTIONS.map((c) => (
                 <option key={c.value} value={c.value}>
-                  {publishOptionLabel(t, c)}
+                  {jobContractLabel(t, c.value)}
                 </option>
               ))}
             </Select>

@@ -1,6 +1,5 @@
 import { addNotification } from '../features/communications/communicationSlice'
 import { BUSINESS_VISIBLE_STATUSES } from '../features/businesses/businessPublishUtils'
-import { upsertTransferReceipt } from '../features/finance/financeSlice'
 import { syncTransferReceipt } from '../features/transfers/transferReceiptSync'
 import { addToast } from '../features/ui/uiSlice'
 import {
@@ -19,6 +18,7 @@ import { createNotificationDispatcher } from './notificationTriggers'
 import { hasReviewEligibility } from '@moxt/shared/utils/reviewEligibility.js'
 import { setUser } from '../features/auth/authSlice'
 import { sanitizeAuthMessage } from '../features/auth/authErrorMessages'
+import { appText } from '../i18n/appText'
 
 function notify(store, payload) {
   if (payload.userId) store.dispatch(addNotification(payload))
@@ -34,7 +34,7 @@ function fanOutPublication(store, state, item, contentType, title, linkBuilder, 
       ? `« ${item.title} »`
       : item.body
         ? String(item.body).slice(0, 120)
-        : 'Nouveau contenu publié',
+        : appText('notificationsFeed.newContentPublished'),
     title,
     link: linkBuilder(item.id),
     actorId: state.auth.user?.id,
@@ -64,8 +64,10 @@ export const interactionMiddleware = (store) => {
       if (!eligibility.allowed) {
         store.dispatch(
           addToast({
-            title: 'Avis non autorisé',
-            message: eligibility.reason,
+            title: appText('toasts.reviewNotAllowed'),
+            message: eligibility.reasonKey
+              ? appText(eligibility.reasonKey)
+              : eligibility.reason || appText('reviews.reasons.notAllowed'),
             tone: 'error',
           }),
         )
@@ -163,8 +165,11 @@ export const interactionMiddleware = (store) => {
   if (action.type === 'transfers/createTransfer') {
     notify(store, {
       userId: action.payload.businessOwnerId,
-      title: 'Nouveau transfert reçu',
-      message: `${action.payload.sender.firstName} a choisi votre entreprise pour ${action.payload.id}.`,
+      title: appText('notificationsFeed.newTransferReceived'),
+      message: appText('notificationsFeed.newTransferReceivedBody', {
+        name: action.payload.sender.firstName,
+        id: action.payload.id,
+      }),
       type: 'transfer',
       link: `/transfers/${action.payload.id}`,
     })
@@ -178,8 +183,11 @@ export const interactionMiddleware = (store) => {
     if (transfer?.userId && transfer.userId !== actorId) {
       notify(store, {
         userId: transfer.userId,
-        title: 'Transfert mis à jour',
-        message: `Votre opération ${transfer.id} est maintenant ${action.payload.status}.`,
+        title: appText('notificationsFeed.transferUpdated'),
+        message: appText('notificationsFeed.transferUpdatedBody', {
+          id: transfer.id,
+          status: action.payload.status,
+        }),
         type: 'transfer',
         link: `/transfers/${transfer.id}`,
       })
@@ -190,8 +198,10 @@ export const interactionMiddleware = (store) => {
     if (previousTransfer && previousTransfer.status !== action.payload.status) {
       store.dispatch(
         addToast({
-          title: 'Transfert mis à jour',
-          message: `L'action « ${action.payload.status} » a été ajoutée à la chronologie.`,
+          title: appText('toasts.transferUpdated'),
+          message: appText('toasts.transferTimelineMessage', {
+            status: action.payload.status,
+          }),
           tone: 'success',
         }),
       )
@@ -219,8 +229,8 @@ export const interactionMiddleware = (store) => {
     if (transfer?.businessOwnerId) {
       notify(store, {
         userId: transfer.businessOwnerId,
-        title: 'Paiement declare',
-        message: `Le client a declare le paiement pour ${transfer.id}.`,
+        title: appText('notificationsFeed.paymentDeclared'),
+        message: appText('notificationsFeed.paymentDeclaredBody', { id: transfer.id }),
         type: 'transfer',
         link: `/transfers/${transfer.id}`,
       })
@@ -232,16 +242,16 @@ export const interactionMiddleware = (store) => {
     if (request?.ownerId) {
       notify(store, {
         userId: request.ownerId,
-        title: 'Demande mise à jour',
-        message: `Votre demande est maintenant ${request.status}.`,
+        title: appText('notificationsFeed.requestUpdated'),
+        message: appText('notificationsFeed.requestUpdatedBody', { status: request.status }),
         type: request.relatedType || 'request',
         link: request.relatedId ? `/${request.relatedType}/${request.relatedId}` : '/activities',
       })
     }
     store.dispatch(
       addToast({
-        title: 'Action enregistrée',
-        message: 'La chronologie de la demande a été mise à jour.',
+        title: appText('toasts.actionSaved'),
+        message: appText('toasts.requestTimelineUpdated'),
         tone: 'success',
       }),
     )
@@ -254,8 +264,11 @@ export const interactionMiddleware = (store) => {
     const job = after.jobs.items.find((item) => item.id === action.payload.jobId)
     notify(store, {
       userId: job?.ownerId,
-      title: 'Nouvelle candidature',
-      message: `${action.payload.applicantName} a postule a ${job?.title}.`,
+      title: appText('notificationsFeed.newApplication'),
+      message: appText('notificationsFeed.newApplicationBody', {
+        name: action.payload.applicantName,
+        title: job?.title,
+      }),
       type: 'job',
       link: `/jobs/${job?.id}`,
     })
@@ -268,8 +281,11 @@ export const interactionMiddleware = (store) => {
     if (application && previous?.status !== application.status) {
       notify(store, {
         userId: application.userId,
-        title: 'Candidature mise a jour',
-        message: `Votre candidature pour ${job?.title || 'ce job'} est maintenant ${application.status}.`,
+        title: appText('notificationsFeed.applicationUpdated'),
+        message: appText('notificationsFeed.applicationUpdatedBody', {
+          title: job?.title || appText('notificationsFeed.thisJob'),
+          status: application.status,
+        }),
         type: 'job',
         link: `/jobs/${application.jobId}`,
       })
@@ -283,8 +299,11 @@ export const interactionMiddleware = (store) => {
     const event = after.events.items.find((item) => item.id === action.payload.eventId)
     notify(store, {
       userId: event?.ownerId,
-      title: 'Nouvelle inscription',
-      message: `${action.payload.participantName} participe a ${event?.title}.`,
+      title: appText('notificationsFeed.newRegistration'),
+      message: appText('notificationsFeed.newRegistrationBody', {
+        name: action.payload.participantName,
+        title: event?.title,
+      }),
       type: 'event',
       link: `/events/${event?.id}`,
     })
@@ -297,8 +316,11 @@ export const interactionMiddleware = (store) => {
     if (registration && previous?.status !== registration.status) {
       notify(store, {
         userId: registration.userId,
-        title: 'Inscription evenement mise a jour',
-        message: `Votre inscription a ${event?.title || 'cet evenement'} est maintenant ${registration.status}.`,
+        title: appText('notificationsFeed.eventRegistrationUpdated'),
+        message: appText('notificationsFeed.eventRegistrationUpdatedBody', {
+          title: event?.title || appText('notificationsFeed.thisEvent'),
+          status: registration.status,
+        }),
         type: 'event',
         link: `/events/${registration.eventId}`,
       })
@@ -311,8 +333,8 @@ export const interactionMiddleware = (store) => {
     if (parcel && previous?.remainingKg !== parcel.remainingKg) {
       notify(store, {
         userId: parcel.ownerId,
-        title: 'Nouvelle reservation',
-        message: `${action.payload.kg} kg ont ete reserves sur votre voyage.`,
+        title: appText('notificationsFeed.newReservation'),
+        message: appText('notificationsFeed.newReservationBody', { kg: action.payload.kg }),
         type: 'parcel',
         link: `/parcels/${parcel.id}`,
       })
@@ -326,8 +348,11 @@ export const interactionMiddleware = (store) => {
     const request = action.payload
     notify(store, {
       userId: request.ownerId,
-      title: 'Nouvelle demande de colis',
-      message: `${request.requesterName} demande ${request.kg} kg.`,
+      title: appText('notificationsFeed.newParcelRequest'),
+      message: appText('notificationsFeed.newParcelRequestBody', {
+        name: request.requesterName,
+        kg: request.kg,
+      }),
       type: 'parcel',
       link: `/parcels/${request.parcelId}`,
     })
@@ -339,8 +364,11 @@ export const interactionMiddleware = (store) => {
     if (request && previous?.status !== request.status) {
       notify(store, {
         userId: request.userId,
-        title: 'Demande colis mise a jour',
-        message: `Votre demande de ${request.kg} kg est maintenant ${request.status}.`,
+        title: appText('notificationsFeed.parcelRequestUpdated'),
+        message: appText('notificationsFeed.parcelRequestUpdatedBody', {
+          kg: request.kg,
+          status: request.status,
+        }),
         type: 'parcel',
         link: `/parcels/${request.parcelId}`,
       })
@@ -352,16 +380,19 @@ export const interactionMiddleware = (store) => {
     if (listing?.ownerId && listing.ownerId !== action.payload.question.authorId) {
       notify(store, {
         userId: listing.ownerId,
-        title: 'Nouvelle question sur votre annonce',
-        message: `${action.payload.question.authorName} a posé une question sur « ${listing.title} ».`,
+        title: appText('notificationsFeed.newListingQuestion'),
+        message: appText('notificationsFeed.newListingQuestionBody', {
+          name: action.payload.question.authorName,
+          title: listing.title,
+        }),
         type: 'marketplace',
         link: `/marketplace/${listing.id}`,
       })
     }
     store.dispatch(
       addToast({
-        title: 'Question publiée',
-        message: 'Le vendeur pourra y répondre publiquement.',
+        title: appText('toasts.questionPublished'),
+        message: appText('toasts.questionPublishedBody'),
         tone: 'success',
       }),
     )
@@ -373,16 +404,18 @@ export const interactionMiddleware = (store) => {
     if (question?.authorId && question.authorId !== actorId) {
       notify(store, {
         userId: question.authorId,
-        title: 'Réponse à votre question',
-        message: `Le vendeur a répondu sur « ${listing?.title || 'votre annonce'} ».`,
+        title: appText('notificationsFeed.questionAnswered'),
+        message: appText('notificationsFeed.questionAnsweredBody', {
+          title: listing?.title || appText('notificationsFeed.yourListing'),
+        }),
         type: 'marketplace',
         link: `/marketplace/${action.payload.listingId}`,
       })
     }
     store.dispatch(
       addToast({
-        title: 'Réponse publiée',
-        message: 'Votre réponse est visible sur la fiche.',
+        title: appText('toasts.answerPublished'),
+        message: appText('toasts.answerPublishedBody'),
         tone: 'success',
       }),
     )
@@ -398,24 +431,24 @@ export const interactionMiddleware = (store) => {
       if (isPublishReady && !wasPublishReady) {
         notify(store, {
           userId: business.ownerId,
-          title: 'Entreprise vérifiée',
-          message: `« ${business.name} » est maintenant vérifiée. Vous pouvez publier au nom de l'entreprise et apparaître dans l'annuaire.`,
+          title: appText('notificationsFeed.businessVerified'),
+          message: appText('notificationsFeed.businessVerifiedBody', { name: business.name }),
           type: 'business',
           link: `/businesses/${business.id}`,
         })
       } else if (status === 'rejected') {
         notify(store, {
           userId: business.ownerId,
-          title: 'Entreprise refusée',
-          message: `La validation de « ${business.name} » a été refusée. Contactez le support MOXT pour plus d'informations.`,
+          title: appText('notificationsFeed.businessRejected'),
+          message: appText('notificationsFeed.businessRejectedBody', { name: business.name }),
           type: 'moderation',
           link: `/businesses/${business.id}`,
         })
       } else if (!isPublishReady) {
         notify(store, {
           userId: business.ownerId,
-          title: 'Entreprise mise à jour',
-          message: `Nouveau statut : ${status}.`,
+          title: appText('notificationsFeed.businessUpdated'),
+          message: appText('notificationsFeed.businessUpdatedBody', { status }),
           type: 'moderation',
           link: `/businesses/${business.id}`,
         })
@@ -424,9 +457,13 @@ export const interactionMiddleware = (store) => {
   }
 
   const moderationDomains = {
-    'events/moderateEvent': ['events', '/events/', 'Événement'],
-    'jobs/moderateJob': ['jobs', '/jobs/', 'Job'],
-    'marketplace/updateListingStatus': ['marketplace', '/marketplace/', 'Annonce'],
+    'events/moderateEvent': ['events', '/events/', appText('notificationsFeed.labelEvent')],
+    'jobs/moderateJob': ['jobs', '/jobs/', appText('notificationsFeed.labelJob')],
+    'marketplace/updateListingStatus': [
+      'marketplace',
+      '/marketplace/',
+      appText('notificationsFeed.labelListing'),
+    ],
   }
   const moderation = moderationDomains[action.type]
   if (moderation) {
@@ -435,8 +472,8 @@ export const interactionMiddleware = (store) => {
     if (resource?.ownerId && resource.ownerId !== actorId) {
       notify(store, {
         userId: resource.ownerId,
-        title: `${label} mise a jour`,
-        message: `Nouveau statut: ${action.payload.status}.`,
+        title: appText('notificationsFeed.resourceUpdated', { label }),
+        message: appText('notificationsFeed.newStatus', { status: action.payload.status }),
         type: 'moderation',
         link: `${path}${resource.id}`,
       })
@@ -446,17 +483,17 @@ export const interactionMiddleware = (store) => {
   const contentReportConfig = {
     'marketplace/reportListing': {
       slice: 'marketplace',
-      label: 'Annonce',
+      label: appText('notificationsFeed.labelListing'),
       link: (payload) => `/marketplace/${payload.listingId}`,
     },
     'jobs/reportJob': {
       slice: 'jobs',
-      label: "Offre d'emploi",
+      label: appText('notificationsFeed.labelJobOffer'),
       link: (payload) => `/jobs/${payload.jobId}`,
     },
     'events/reportEvent': {
       slice: 'events',
-      label: 'Événement',
+      label: appText('notificationsFeed.labelEvent'),
       link: (payload) => `/events/${payload.eventId}`,
     },
   }
@@ -468,8 +505,8 @@ export const interactionMiddleware = (store) => {
     if (wasActiveReportAdded(beforeReports, afterReports, action.payload, foreignKey)) {
       store.dispatch(
         addToast({
-          title: 'Signalement envoyé',
-          message: 'La modération MOXT examinera ce contenu.',
+          title: appText('toasts.reportSent'),
+          message: appText('toasts.reportSentBody'),
           tone: 'success',
         }),
       )
@@ -481,8 +518,8 @@ export const interactionMiddleware = (store) => {
     } else if (wasActiveReportDuplicate(beforeReports, afterReports, action.payload, foreignKey)) {
       store.dispatch(
         addToast({
-          title: 'Déjà signalé',
-          message: 'Votre signalement est déjà enregistré pour ce contenu.',
+          title: appText('toasts.alreadyReported'),
+          message: appText('toasts.alreadyReportedBody'),
           tone: 'info',
         }),
       )
@@ -495,8 +532,8 @@ export const interactionMiddleware = (store) => {
     if (afterReports.length > beforeReports.length) {
       store.dispatch(
         addToast({
-          title: 'Signalement envoyé',
-          message: 'La modération MOXT examinera ce dossier.',
+          title: appText('toasts.reportSent'),
+          message: appText('toasts.reportSentCaseBody'),
           tone: 'success',
         }),
       )
@@ -504,8 +541,8 @@ export const interactionMiddleware = (store) => {
     } else {
       store.dispatch(
         addToast({
-          title: 'Déjà signalé',
-          message: 'Ce signalement est déjà enregistré.',
+          title: appText('toasts.alreadyReported'),
+          message: appText('toasts.alreadyReportedCaseBody'),
           tone: 'info',
         }),
       )
@@ -518,16 +555,16 @@ export const interactionMiddleware = (store) => {
     if (afterCount > beforeCount) {
       store.dispatch(
         addToast({
-          title: 'Réclamation enregistrée',
-          message: 'Votre demande sera examinée.',
+          title: appText('toasts.claimRegistered'),
+          message: appText('toasts.claimRegisteredBody'),
           tone: 'success',
         }),
       )
     } else {
       store.dispatch(
         addToast({
-          title: 'Réclamation déjà ouverte',
-          message: 'Une réclamation est déjà en cours pour ce dossier.',
+          title: appText('toasts.claimAlreadyOpen'),
+          message: appText('toasts.claimAlreadyOpenBody'),
           tone: 'info',
         }),
       )
@@ -536,52 +573,52 @@ export const interactionMiddleware = (store) => {
 
   const successActions = {
     'businesses/saveBusiness': {
-      title: 'Entreprise enregistrée',
-      message: 'Le profil et ses modules ont été mis à jour.',
+      title: appText('toasts.businessSaved'),
+      message: appText('toasts.businessSavedBody'),
     },
     'events/createEvent': {
-      title: 'Événement publié',
-      message: 'Votre événement est maintenant visible.',
+      title: appText('toasts.eventPublished'),
+      message: appText('toasts.eventPublishedBody'),
     },
     'jobs/applyToJob': {
-      title: 'Candidature envoyée',
-      message: 'Votre candidature a bien été transmise.',
+      title: appText('toasts.applicationSent'),
+      message: appText('toasts.applicationSentBody'),
     },
     'jobs/createJob': {
-      title: 'Offre publiée',
-      message: "L'offre d'emploi est maintenant visible.",
+      title: appText('toasts.jobPublished'),
+      message: appText('toasts.jobPublishedBody'),
     },
     'marketplace/publishListing/fulfilled': {
-      title: 'Annonce publiée',
-      message: 'Votre annonce est maintenant visible.',
+      title: appText('toasts.listingPublished'),
+      message: appText('toasts.listingPublishedBody'),
     },
     'p2p/createOffer': {
-      title: 'Offre P2P publiée',
-      message: 'Votre offre est maintenant disponible.',
+      title: appText('toasts.p2pOfferPublished'),
+      message: appText('toasts.p2pOfferPublishedBody'),
     },
     'parcels/requestParcelReservation': {
-      title: 'Demande envoyée',
-      message: 'Le transporteur a reçu votre demande de réservation.',
+      title: appText('toasts.parcelRequestSent'),
+      message: appText('toasts.parcelRequestSentBody'),
     },
     'parcels/createParcel': {
-      title: 'Voyage publié',
-      message: 'Votre trajet est maintenant visible.',
+      title: appText('toasts.parcelPublished'),
+      message: appText('toasts.parcelPublishedBody'),
     },
     'finance/createReceipt': {
-      title: 'Reçu enregistré',
-      message: 'Le reçu est disponible dans votre profil.',
+      title: appText('toasts.receiptSaved'),
+      message: appText('toasts.receiptSavedBody'),
     },
     'account/banPublisherSubscriber': {
-      title: 'Abonné banni',
-      message: "L'abonné ne pourra plus suivre vos publications.",
+      title: appText('toasts.subscriberBanned'),
+      message: appText('toasts.subscriberBannedBody'),
     },
     'account/removeSubscriberByPublisher': {
-      title: 'Abonné retiré',
-      message: "L'abonnement a été supprimé.",
+      title: appText('toasts.subscriberRemoved'),
+      message: appText('toasts.subscriberRemovedBody'),
     },
     'transfers/createTransfer': {
-      title: 'Transfert créé',
-      message: "L'entreprise sélectionnée peut maintenant traiter l'opération.",
+      title: appText('toasts.transferCreated'),
+      message: appText('toasts.transferCreatedBody'),
     },
   }
   if (successActions[action.type]) {
@@ -594,7 +631,7 @@ export const interactionMiddleware = (store) => {
       after,
       action.payload,
       'listing',
-      'Nouvelle annonce',
+      appText('notificationsFeed.fanOutListing'),
       (id) => `/marketplace/${id}`,
       'high',
     )
@@ -606,7 +643,7 @@ export const interactionMiddleware = (store) => {
       after,
       action.payload,
       'job',
-      'Nouveau job',
+      appText('notificationsFeed.fanOutJob'),
       (id) => `/jobs/${id}`,
     )
   }
@@ -617,7 +654,7 @@ export const interactionMiddleware = (store) => {
       after,
       action.payload,
       'event',
-      'Nouvel événement',
+      appText('notificationsFeed.fanOutEvent'),
       (id) => `/events/${id}`,
     )
   }
@@ -628,7 +665,7 @@ export const interactionMiddleware = (store) => {
       after,
       action.payload,
       'parcel',
-      'Nouveau colis',
+      appText('notificationsFeed.fanOutParcel'),
       (id) => `/parcels/${id}`,
     )
   }
@@ -639,7 +676,7 @@ export const interactionMiddleware = (store) => {
       after,
       action.payload,
       'post',
-      'Nouvelle publication',
+      appText('notificationsFeed.fanOutPost'),
       () => '/news',
       'high',
     )
@@ -657,15 +694,15 @@ export const interactionMiddleware = (store) => {
     const message =
       typeof action.payload === 'string'
         ? action.payload
-        : action.error?.message || "L'action n'a pas pu être terminée."
+        : action.error?.message || appText('toasts.actionCouldNotComplete')
     const rejectedTitles = {
-      'auth/requestPhoneVerificationOtp/rejected': 'Envoi SMS impossible',
-      'auth/confirmPhoneVerification/rejected': 'Vérification impossible',
+      'auth/requestPhoneVerificationOtp/rejected': appText('toasts.smsSendFailed'),
+      'auth/confirmPhoneVerification/rejected': appText('toasts.verificationFailed'),
     }
     store.dispatch(
       addToast({
-        title: rejectedTitles[action.type] || 'Une erreur est survenue',
-        message: sanitizeAuthMessage(message),
+        title: rejectedTitles[action.type] || appText('toasts.genericError'),
+        message: sanitizeAuthMessage(message, appText),
         tone: 'error',
       }),
     )

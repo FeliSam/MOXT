@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { FiArrowRight, FiBriefcase, FiCalendar, FiPackage, FiShoppingBag } from 'react-icons/fi'
 import { Card } from '../../components/ui/Card'
 import { useLanguage } from '../../contexts/useLanguage'
+import { jobSectorLabel } from '../jobs/jobDisplayUtils'
 import {
   isActiveEvent,
   isActiveJob,
@@ -55,7 +56,7 @@ export function PublisherPublicationsStrip({
         id: item.id,
         kind: 'job',
         title: item.title,
-        meta: item.location || item.sector || '',
+        meta: item.location || (item.sector ? jobSectorLabel(t, item.sector) : '') || '',
         image: publicationImage(item),
       })),
     ...(publications.events || [])

@@ -97,8 +97,8 @@ export function DocumentsPanel({ business, dispatch, documents, initialCategory 
                 {pt('professional.documents.sizeKb', { size: Math.ceil(document.size / 1024) })}
               </span>
             </div>
-            <Badge tone={statusMeta(document.status).tone}>
-              {statusMeta(document.status).label}
+            <Badge tone={statusMeta(document.status, t).tone}>
+              {statusMeta(document.status, t).label}
             </Badge>
           </Card>
         ))

@@ -1,4 +1,5 @@
 import { formatMoney, formatDate } from '../transfers/transferUtils'
+import { jobContractLabel, jobSectorLabel } from '../jobs/jobDisplayUtils'
 import { normalizeConversation } from './communicationSlice'
 import { messagesText } from './messagesI18n'
 
@@ -38,13 +39,18 @@ export function buildListingSnapshot(listing, path, t) {
 
 export function buildJobSnapshot(job, path, t) {
   if (!job) return null
+  const sectorOrContract = job.sector
+    ? jobSectorLabel(t, job.sector)
+    : job.contractType
+      ? jobContractLabel(t, job.contractType)
+      : null
   return baseSnapshot(
     {
       type: 'job',
       id: job.id,
       title: job.title,
       path: path || `/jobs/${job.id}`,
-      subtitle: job.sector || job.contractType || null,
+      subtitle: sectorOrContract,
       badge:
         job.status === 'active'
           ? messagesText(t, 'communications.snapshot.recruiting')

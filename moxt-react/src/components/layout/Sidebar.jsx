@@ -10,6 +10,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { navigationGroups, preloadRoute } from '../../config/navigation'
+import { resolveNavLabel } from '../../config/navLabel'
 import {
   moreServicesExcludedPaths,
   primaryNavigationItems,
@@ -84,6 +85,7 @@ export function Sidebar({ open }) {
   const asideRef = useRef(null)
   const location = useLocation()
   const { t, translateLabel } = useLanguage()
+  const resolveLabel = (entry) => resolveNavLabel(entry, t, translateLabel)
   const groups = navigationGroups.filter((group) => !group.roles || group.roles.includes(role))
 
   function setRailHover(key) {
@@ -172,7 +174,8 @@ export function Sidebar({ open }) {
                   key={item.id}
                   item={item}
                   badge={item.badgeSelector ? badgeForItem(item, appState) : 0}
-                  translateLabel={translateLabel}
+                  t={t}
+                  resolveLabel={resolveLabel}
                   hideOnMobile={mobileHiddenPaths.has(item.path) || item.desktopOnly}
                   proximity={railProximity(railKeys, hoveredRailKey, item.path)}
                   onRailHover={() => setRailHover(item.path)}
@@ -191,7 +194,7 @@ export function Sidebar({ open }) {
                   <FiGrid className="text-base" />
                 </span>
                 <span className="sidebar-rail-label sidebar-rail-label--row">
-                  {translateLabel('Services supplémentaires')}
+                  {t('nav.servicesSupplementaires')}
                   <FiChevronRight className="sidebar-rail-label-chevron" />
                 </span>
               </button>
@@ -206,7 +209,7 @@ export function Sidebar({ open }) {
                   role={role}
                   excludePaths={mobileSidebarExcludePaths}
                   onNavigate={() => dispatch(closeSidebar())}
-                  translateLabel={translateLabel}
+                  resolveLabel={resolveLabel}
                 />
               ))}
             </div>
@@ -233,7 +236,7 @@ export function Sidebar({ open }) {
             </span>
           </NavLink>
 
-          <div className="sidebar-footer-flyout" role="menu" aria-label="Compte et session">
+          <div className="sidebar-footer-flyout" role="menu" aria-label={t('nav.accountSession')}>
             <NavLink
               to="/profile"
               role="menuitem"
@@ -241,7 +244,7 @@ export function Sidebar({ open }) {
               className="sidebar-rail-label sidebar-rail-label--action sidebar-rail-label--profile sidebar-rail-label--interactive"
             >
               <FiUser className="text-sm shrink-0" />
-              <span>Profil</span>
+              <span>{t('nav.profile')}</span>
             </NavLink>
             <div className="sidebar-footer-flyout-actions">
               <NavLink
@@ -251,7 +254,7 @@ export function Sidebar({ open }) {
                 className="sidebar-rail-label sidebar-rail-label--action sidebar-rail-label--interactive"
               >
                 <FiSettings className="text-sm shrink-0" />
-                <span>Réglages</span>
+                <span>{t('nav.settings')}</span>
               </NavLink>
               <button
                 type="button"
@@ -260,7 +263,7 @@ export function Sidebar({ open }) {
                 className="sidebar-rail-label sidebar-rail-label--action sidebar-rail-label--danger sidebar-rail-label--interactive"
               >
                 <FiLogOut className="text-sm shrink-0" />
-                <span>Déconnexion</span>
+                <span>{t('nav.signOut')}</span>
               </button>
             </div>
           </div>
@@ -273,7 +276,7 @@ export function Sidebar({ open }) {
           className="mx-3 mb-3 mt-auto flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-2xl text-sm font-bold text-red-600 hover:bg-red-50 lg:hidden dark:hover:bg-red-950/30"
         >
           <FiLogOut className="text-lg" />
-          Deconnexion
+          {t('nav.signOut')}
         </button>
       </aside>
 
@@ -284,7 +287,7 @@ export function Sidebar({ open }) {
             type="button"
             className="absolute inset-0 bg-slate-950/20 backdrop-blur-[2px]"
             onClick={() => setMoreOpen(false)}
-            aria-label="Fermer les services"
+            aria-label={t('nav.closeServices')}
           />
           <aside className="panel-pop absolute bottom-4 left-24 top-4 flex w-[24rem] flex-col overflow-hidden rounded-[1rem] border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--shadow-float)]">
             <div className="shrink-0 border-b border-[var(--app-border)] p-5">
@@ -294,14 +297,14 @@ export function Sidebar({ open }) {
                     MOXT
                   </p>
                   <h2 className="mt-1 font-display text-xl font-extrabold tracking-tight">
-                    {translateLabel('Services supplémentaires')}
+                    {t('nav.servicesSupplementaires')}
                   </h2>
                 </div>
                 <button
                   type="button"
                   className="grid size-10 place-items-center rounded-[var(--radius-btn)] border border-[var(--app-border)] bg-[var(--app-surface-muted)]"
                   onClick={() => setMoreOpen(false)}
-                  aria-label="Fermer"
+                  aria-label={t('common.close')}
                 >
                   <FiX />
                 </button>
@@ -313,10 +316,10 @@ export function Sidebar({ open }) {
             >
               <MoreServicesContent
                 badgeFor={(item) => badgeForItem(item, appState)}
-                groups={filterNavigationGroups(groups, role, moreServicesExcludedPaths, '', translateLabel)}
+                groups={filterNavigationGroups(groups, role, moreServicesExcludedPaths, '', resolveLabel)}
                 layout="grid"
                 onNavigate={() => setMoreOpen(false)}
-                translateLabel={translateLabel}
+                resolveLabel={resolveLabel}
               />
             </div>
             <div className="shrink-0 border-t border-[var(--app-border)] p-4">
@@ -326,7 +329,7 @@ export function Sidebar({ open }) {
                 className="flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-btn)] border border-red-200 bg-red-50 text-sm font-semibold text-red-600 hover:bg-red-100 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-400"
               >
                 <FiLogOut />
-                Déconnexion
+                {t('nav.signOut')}
               </button>
             </div>
           </aside>
@@ -336,7 +339,7 @@ export function Sidebar({ open }) {
   )
 }
 
-function NavigationGroup({ card = false, excludePaths, group, onNavigate, role, translateLabel }) {
+function NavigationGroup({ card = false, excludePaths, group, onNavigate, role, resolveLabel }) {
   const items = group.children.filter(
     (item) =>
       (!item.roles || item.roles.includes(role)) && (!excludePaths || !excludePaths.has(item.path)),
@@ -346,7 +349,7 @@ function NavigationGroup({ card = false, excludePaths, group, onNavigate, role, 
   return (
     <section className="mb-5">
       <p className="mb-2 px-2 text-[10px] font-black uppercase tracking-[0.18em] text-[var(--app-text-faint)]">
-        {translateLabel(group.label)}
+        {resolveLabel(group)}
       </p>
       <div className={card ? 'grid grid-cols-2 gap-2' : 'grid gap-1'}>
         {items.map((item) => (
@@ -371,7 +374,7 @@ function NavigationGroup({ card = false, excludePaths, group, onNavigate, role, 
             }
           >
             <item.icon className="text-lg" />
-            <span className={card ? 'text-xs font-black' : ''}>{translateLabel(item.label)}</span>
+            <span className={card ? 'text-xs font-black' : ''}>{resolveLabel(item)}</span>
           </NavLink>
         ))}
       </div>
@@ -386,10 +389,11 @@ function SidebarLink({
   onClick,
   onRailHover,
   proximity = null,
-  translateLabel,
+  resolveLabel,
+  t,
 }) {
   const Icon = item.icon
-  const label = translateLabel(item.label)
+  const label = resolveLabel(item)
   return (
     <NavLink
       to={item.path}
@@ -408,7 +412,11 @@ function SidebarLink({
           hideOnMobile ? 'hidden lg:block' : ''
         } ${isActive ? 'lg:z-[1]' : ''}`
       }
-      aria-label={badge > 0 ? `${label} (${badge > 9 ? '9+' : badge} non lus)` : label}
+      aria-label={
+        badge > 0
+          ? t('nav.itemUnreadAria', { label, count: badge > 9 ? '9+' : badge })
+          : label
+      }
     >
       {({ isActive }) => (
         <span

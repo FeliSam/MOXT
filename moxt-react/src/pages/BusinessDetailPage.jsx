@@ -131,7 +131,7 @@ export function BusinessDetailPage() {
       label: bt('businesses.detail.reviewsCount', { count: rating.count }),
       value: `${ratingValue}/5`,
     },
-    { icon: FiShield, label: bt('businesses.common.status'), value: statusMeta(business.status).label },
+    { icon: FiShield, label: bt('businesses.common.status'), value: statusMeta(business.status, t).label },
     { icon: FiMapPin, label: bt('businesses.common.location'), value: business.city },
     {
       icon: HiOutlineBuildingOffice2,
@@ -238,7 +238,7 @@ export function BusinessDetailPage() {
 
         <div className="grid gap-4 pt-8">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge tone={statusMeta(business.status).tone}>{statusMeta(business.status).label}</Badge>
+            <Badge tone={statusMeta(business.status, t).tone}>{statusMeta(business.status, t).label}</Badge>
           </div>
           <p className="max-w-3xl whitespace-pre-line leading-7 text-[var(--app-text-muted)]">
             {business.description}
@@ -342,7 +342,7 @@ export function BusinessDetailPage() {
             <TrustPanel
               items={[
                 bt('businesses.detail.trust.status', {
-                  status: statusMeta(business.status).label.toLowerCase(),
+                  status: statusMeta(business.status, t).label.toLowerCase(),
                 }),
                 bt('businesses.detail.trust.reviews', { count: rating.count }),
                 bt('businesses.detail.trust.contacts'),

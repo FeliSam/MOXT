@@ -4,10 +4,12 @@ import { FiSearch, FiX } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { searchTypeMeta } from '../../config/searchTypes'
+import { useLanguage } from '../../contexts/useLanguage'
 import { filterSearchIndex, searchGlobalResults, selectSearchIndex, selectSubscriptionNetworkProfiles } from '../../features/searchSelectors'
 import { Badge } from '../ui/Badge'
 
 export function GlobalSearch() {
+  const { t } = useLanguage()
   const [query, setQuery] = useState('')
   const inputRef = useRef(null)
   const anchorRef = useRef(null)
@@ -93,7 +95,7 @@ export function GlobalSearch() {
             >
               {results.length ? (
                 results.map(({ id, path, subtitle, title, type, typeLabel }, index) => {
-                  const meta = searchTypeMeta(type, typeLabel)
+                  const meta = searchTypeMeta(type, t, typeLabel)
                   return (
                     <Link
                       key={`${path}-${id}`}

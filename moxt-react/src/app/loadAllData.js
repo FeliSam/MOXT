@@ -65,7 +65,19 @@ function parseJsonField(value, fallback) {
   }
 }
 
-function mergeRemoteItems(localItems = [], remoteItems = []) {
+function enrichEventFromRemoteRow(event) {
+  if (!event || event.images?.length) return event
+  try {
+    const parsed = JSON.parse(event.program || '{}')
+    if (Array.isArray(parsed.images) && parsed.images.length) {
+      return { ...event, images: parsed.images }
+    }
+  } catch {
+    // program field may contain plain text
+  }
+  return event
+}
+
   const merged = new Map((localItems || []).map((item) => [item.id, item]))
   for (const item of remoteItems || []) {
     merged.set(item.id, { ...merged.get(item.id), ...item })
@@ -480,7 +492,7 @@ export const loadAllData = createAsyncThunk(
         reports: mergeRemoteItems(getState().jobs.reports, jobReports),
       }))
       dispatch(setEvents({
-        items: fromRows(eventsRes.data),
+        items: fromRows(eventsRes.data).map(enrichEventFromRemoteRow),
         registrations: eventRegistrations,
         reports: mergeRemoteItems(getState().events.reports, eventReports),
       }))

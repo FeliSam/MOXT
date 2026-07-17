@@ -117,7 +117,7 @@ export function DiscoverPage() {
       {results.length ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {results.map((item) => {
-            const meta = searchTypeMeta(item.type, item.typeLabel)
+            const meta = searchTypeMeta(item.type, p3, item.typeLabel)
             return (
               <Card key={item.id || `${item.type}-${item.title}`} className="h-full">
                 <Badge tone={meta.tone}>{meta.label}</Badge>

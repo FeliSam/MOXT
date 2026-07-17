@@ -4,6 +4,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { bottomNavigationItems } from '../../config/bottomNavigation'
 import { preloadRoute } from '../../config/navigation'
+import { resolveNavLabel } from '../../config/navLabel'
 import { useLanguage } from '../../contexts/useLanguage'
 import { selectMoreMenuBadgeCount } from './moreServicesUtils'
 import { MobileMoreDrawer } from './MobileMoreDrawer'
@@ -35,7 +36,8 @@ function BottomNavLabel({ children }) {
   return <span className={BOTTOM_NAV_LABEL}>{children}</span>
 }
 
-function BottomNavItem({ icon, label, path, translateLabel, itemRef }) {
+function BottomNavItem({ item, resolveLabel, itemRef }) {
+  const { icon, path } = item
   return (
     <NavLink
       ref={itemRef}
@@ -52,7 +54,7 @@ function BottomNavItem({ icon, label, path, translateLabel, itemRef }) {
       {({ isActive }) => (
         <>
           <BottomNavIcon active={isActive} icon={icon} />
-          <BottomNavLabel>{translateLabel(label)}</BottomNavLabel>
+          <BottomNavLabel>{resolveLabel(item)}</BottomNavLabel>
         </>
       )}
     </NavLink>
@@ -61,6 +63,7 @@ function BottomNavItem({ icon, label, path, translateLabel, itemRef }) {
 
 export function BottomNavigation() {
   const { t, translateLabel } = useLanguage()
+  const resolveLabel = (entry) => resolveNavLabel(entry, t, translateLabel)
   const location = useLocation()
   const userId = useSelector((state) => state.auth.user?.id)
   const moreBadge = useSelector((state) => selectMoreMenuBadgeCount(state, userId))
@@ -134,8 +137,8 @@ export function BottomNavigation() {
         {bottomNavigationItems.map((item, index) => (
           <BottomNavItem
             key={item.id}
-            {...item}
-            translateLabel={translateLabel}
+            item={item}
+            resolveLabel={resolveLabel}
             itemRef={(node) => {
               itemRefs.current[index] = node
             }}
@@ -159,7 +162,7 @@ export function BottomNavigation() {
               {moreBadge > 9 ? '9+' : moreBadge}
             </span>
           ) : null}
-          <BottomNavLabel>{translateLabel('Plus')}</BottomNavLabel>
+          <BottomNavLabel>{t('nav.more')}</BottomNavLabel>
         </button>
       </nav>
 

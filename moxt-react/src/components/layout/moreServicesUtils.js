@@ -8,13 +8,14 @@ function filterGroupItems(group, role, excludePaths) {
   )
 }
 
-export function filterNavigationGroups(groups, role, excludePaths, query, translateLabel) {
+/** @param {(item: { label?: string, labelKey?: string }) => string} resolveLabel */
+export function filterNavigationGroups(groups, role, excludePaths, query, resolveLabel) {
   const q = query.trim().toLowerCase()
   return groups
     .map((group) => ({
       ...group,
       children: filterGroupItems(group, role, excludePaths).filter(
-        (item) => !q || translateLabel(item.label).toLowerCase().includes(q),
+        (item) => !q || resolveLabel(item).toLowerCase().includes(q),
       ),
     }))
     .filter((group) => group.children.length > 0)
