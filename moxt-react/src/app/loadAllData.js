@@ -78,6 +78,7 @@ function enrichEventFromRemoteRow(event) {
   return event
 }
 
+function mergeRemoteItems(localItems = [], remoteItems = []) {
   const merged = new Map((localItems || []).map((item) => [item.id, item]))
   for (const item of remoteItems || []) {
     merged.set(item.id, { ...merged.get(item.id), ...item })

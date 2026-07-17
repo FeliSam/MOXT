@@ -23,8 +23,8 @@ export const LISTINGS = [
     country: 'RU',
     condition: 'like_new',
     images: [
-      'https://images.unsplash.com/photo-1610945265064-753e6e5e8c2e?w=800&q=80',
-      'https://images.unsplash.com/photo-1598327275664-199b4fd1ad8a?w=800&q=80',
+      'https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=800&q=80',
+      'https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=800&q=80',
     ],
     created_at: publishedAt(-9, 19, 42),
   },
@@ -92,7 +92,8 @@ export const LISTINGS = [
     country: 'RU',
     condition: 'like_new',
     images: [
-      'https://images.unsplash.com/photo-1570222094114-d054a817e56a?w=800&q=80',
+      'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=800&q=80',
+      'https://images.unsplash.com/photo-1585515320310-259814833e62?w=800&q=80',
     ],
     created_at: publishedAt(-5, 9, 50),
   },
@@ -108,7 +109,7 @@ export const LISTINGS = [
     country: 'RU',
     condition: 'good',
     images: [
-      'https://images.unsplash.com/photo-1539533018447-63fcce267608?w=800&q=80',
+      'https://images.unsplash.com/photo-1544923246-77307dd654cb?w=800&q=80',
       'https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=800&q=80',
     ],
     created_at: publishedAt(-4, 16, 22),
@@ -126,7 +127,7 @@ export const LISTINGS = [
     condition: 'good',
     images: [
       'https://images.unsplash.com/photo-1606813907291-d86efa9b94db?w=800&q=80',
-      'https://images.unsplash.com/photo-1486401899868-0e435ed85128?w=800&q=80',
+      'https://images.unsplash.com/photo-1622297845775-a216bb90af56?w=800&q=80',
     ],
     created_at: publishedAt(-3, 21, 5),
   },
@@ -143,7 +144,7 @@ export const LISTINGS = [
     condition: 'good',
     images: [
       'https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=800&q=80',
-      'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=800&q=80',
+      'https://images.unsplash.com/photo-1593062096033-9a2b625b0c59?w=800&q=80',
     ],
     created_at: publishedAt(-2, 10, 40),
   },
@@ -176,8 +177,8 @@ export const LISTINGS = [
     country: 'RU',
     condition: 'like_new',
     images: [
-      'https://images.unsplash.com/photo-1515488042361-ee00e3ddd4e7?w=800&q=80',
-      'https://images.unsplash.com/photo-1584464491033-06628f3a6b7b?w=800&q=80',
+      'https://images.unsplash.com/photo-1522771930-78848d9293e8?w=800&q=80',
+      'https://images.unsplash.com/photo-1596464116068-ba462f838d71?w=800&q=80',
     ],
     created_at: publishedAt(0, 8, 27),
   },
@@ -266,9 +267,9 @@ export const JOBS = [
   },
   {
     id: 'JOB-MOX-06',
-    title: 'Job d\'été — serveur(se) restaurant fusion afro-européen',
+    title: 'Job d\'été / vacances — serveur(se) restaurant fusion afro-européen',
     description:
-      'Restaurant à Arbat ouvre terrasse d\'été. Shift soir + week-end. Formation 3 jours payée. Bon pour étudiants avec russe conversationnel. Pourboires en plus du fixe horaire.',
+      'Restaurant à Arbat ouvre terrasse d\'été (juillet–août). Shift soir + week-end. Formation 3 jours payée. Bon pour étudiants avec russe conversationnel. Pourboires en plus du fixe horaire.',
     sector: 'Restauration & hôtellerie',
     contractType: 'contract',
     experienceLevel: 'none',
@@ -282,9 +283,9 @@ export const JOBS = [
   },
   {
     id: 'JOB-MOX-07',
-    title: 'Baby-sitting week-end — famille bilingue FR/RU',
+    title: 'Job de vacances — baby-sitting week-end (famille bilingue FR/RU)',
     description:
-      'Garde de 2 enfants (5 et 8 ans) samedi 10h–18h près du métro Sokol. Activités calmes, sorties parc. Français natif souhaité. Contrat ponctuel, possibilité long terme si affinité.',
+      'Garde de 2 enfants (5 et 8 ans) samedi 10h–18h près du métro Sokol — idéal pendant les vacances d\'été. Activités calmes, sorties parc. Français natif souhaité. Contrat ponctuel, possibilité long terme si affinité.',
     sector: 'Services à la personne',
     contractType: 'part_time',
     experienceLevel: 'junior',
@@ -298,9 +299,9 @@ export const JOBS = [
   },
   {
     id: 'JOB-MOX-08',
-    title: 'Stage rémunéré — community manager MOXT (3 mois)',
+    title: 'Stage d\'été rémunéré — community manager MOXT (3 mois)',
     description:
-      'Aide modération feed, réponses messages, petits visuels Canva. 20 h/semaine flexible autour des cours. Idéal étudiant info-com ou marketing. Possibilité embauche après stage.',
+      'Aide modération feed, réponses messages, petits visuels Canva. 20 h/semaine flexible autour des cours / vacances. Idéal étudiant info-com ou marketing. Possibilité embauche après stage.',
     sector: 'Technologie & informatique',
     contractType: 'internship',
     experienceLevel: 'none',
@@ -314,9 +315,9 @@ export const JOBS = [
   },
   {
     id: 'JOB-MOX-09',
-    title: 'Cours particuliers maths — lycée / première année sup',
+    title: 'Job de vacances — cours particuliers maths (lycée / L1)',
     description:
-      'Professeur agrégé (diaspora) cherche aide pour groupes de 3–4 élèves le mercredi soir. Prépa bac russe + entrée université. 90 min/seance. Lieu : bibliothèque ou visio.',
+      'Professeur agrégé (diaspora) cherche aide pour groupes de 3–4 élèves le mercredi soir pendant l\'été. Prépa bac russe + entrée université. 90 min/séance. Lieu : bibliothèque ou visio.',
     sector: 'Enseignement & formation',
     contractType: 'part_time',
     experienceLevel: 'mid',
@@ -330,7 +331,7 @@ export const JOBS = [
   },
   {
     id: 'JOB-MOX-10',
-    title: 'Extra événementiel — accueil soirée diaspora (17 août)',
+    title: 'Extra vacances — accueil soirée diaspora (17 août)',
     description:
       'Soirée networking 200 personnes à Moscou. Accueil, vestiaire, orientation tables. Tenue smart casual fournie (polo). Paiement le soir même. Une soirée, mais on recrute aussi pour septembre.',
     sector: 'Autre',
@@ -555,28 +556,28 @@ function parcel(id, from, to, summary, details, weightKg, pricePerKg, daysUntilD
 }
 
 export const PARCELS = [
-  // Bénin → Russie (5)
+  // Bénin (5) — mix directions
   parcel('COL-MOX-BJ01', 'BJ', 'RU', 'Vêtements wax et pagnes', 'Deux sacs textile bien emballés. Livraison main propre Moscou sud. Pas de produits alimentaires.', 8, 560, 14, -9, 10),
-  parcel('COL-MOX-BJ02', 'BJ', 'RU', 'Parfums et cosmétiques artisanaux', 'Cartons scellés, factures disponibles. Fragile — éviter chocs. Contact WhatsApp avant envoi.', 5, 640, 18, -8, 15),
+  parcel('COL-MOX-BJ02', 'RU', 'BJ', 'Médicaments OTC + documents scolaires', 'Carton léger pour famille à Cotonou. Ordonnances scannées OK. Dépôt avant départ à SVO.', 4, 720, 18, -8, 15),
   parcel('COL-MOX-BJ03', 'BJ', 'RU', 'Documents + petits cadeaux famille', 'Enveloppe renforcée + boîte chaussures. Budget serré — prix juste apprécié.', 3, 600, 10, -7, 9),
-  parcel('COL-MOX-BJ04', 'BJ', 'RU', 'Pièces détachées moto', 'Moteur secondaire démonté, photos sur demande. Transporteur habitué pièces lourdes.', 22, 445, 21, -6, 14),
+  parcel('COL-MOX-BJ04', 'RU', 'BJ', 'Pièces téléphone + chargeurs', 'Lot revente marché Dantokpa. Emballage antistatique. Voyageur habitué pièces électroniques.', 6, 580, 21, -6, 14),
   parcel('COL-MOX-BJ05', 'BJ', 'RU', 'Épices et condiments secs', 'Sachets sous vide, étiquetés. Déclaration douane OK.', 6, 470, 16, -5, 11),
   // Togo (5)
   parcel('COL-MOX-TG01', 'TG', 'RU', 'Statuettes art Ewe', 'Objets déco fragiles, double cartonnage. Assurance recommandée.', 4, 875, 12, -9, 16),
-  parcel('COL-MOX-TG02', 'TG', 'RU', 'Laptop ThinkPad T480 + chargeur', 'Batterie OK. Valeur déclarée 400 €. Voyageur de confiance avec références MOXT.', 2.5, 880, 15, -8, 8),
+  parcel('COL-MOX-TG02', 'RU', 'TG', 'Laptop ThinkPad T480 + chargeur', 'Batterie OK. Valeur déclarée 400 €. Remise main propre Lomé centre.', 2.5, 880, 15, -8, 8),
   parcel('COL-MOX-TG03', 'TG', 'RU', 'Médicaments sur ordonnance', 'Boîtes scellées, ordonnances scannées disponibles. Conformité douanière stricte.', 1.5, 1000, 20, -7, 13),
-  parcel('COL-MOX-TG04', 'TG', 'RU', 'Sacs à main artisanaux (lot 12)', 'Bonne marge pour revendeuse Moscou si vous connaissez le milieu.', 9, 467, 19, -6, 17),
+  parcel('COL-MOX-TG04', 'RU', 'TG', 'Sacs à main artisanaux (lot 12)', 'Retour stock boutique Lomé. Cartons solides, photos disponibles.', 9, 467, 19, -6, 17),
   parcel('COL-MOX-TG05', 'TG', 'RU', 'Livres scolaires francophones', 'CM1 à terminale, ~15 kg. École diaspora Moscou — budget associatif limité.', 15, 367, 23, -5, 10),
   // Cameroun (5)
   parcel('COL-MOX-CM01', 'CM', 'RU', 'Tenues de cérémonie (mariage)', 'Costumes et robes. Housse garment incluse. Départ impératif avant le 5 août.', 7, 686, 11, -9, 12),
-  parcel('COL-MOX-CM02', 'CM', 'RU', 'Cacao fèves et poudre (export légal)', 'Producteur certifié, documents phytosanitaires OK.', 10, 620, 17, -8, 18),
+  parcel('COL-MOX-CM02', 'RU', 'CM', 'Cacao fèves et poudre (export légal)', 'Producteur certifié côté Douala, docs phytosanitaires OK. Retrait Moscou prévu.', 10, 620, 17, -8, 18),
   parcel('COL-MOX-CM03', 'CM', 'RU', 'Console Mega Drive + 8 jeux', 'Nostalgie garantie 😄. Emballage bulle soigné.', 3, 800, 14, -7, 11),
-  parcel('COL-MOX-CM04', 'CM', 'RU', 'Pièces auto (filtres, plaquettes)', 'Carton 12 kg, marque Bosch/Valeo. Garage Moscou attend livraison mi-août.', 12, 425, 20, -6, 9),
+  parcel('COL-MOX-CM04', 'RU', 'CM', 'Pièces auto (filtres, plaquettes)', 'Carton 12 kg, marque Bosch/Valeo. Garage Douala attend livraison mi-août.', 12, 425, 20, -6, 9),
   parcel('COL-MOX-CM05', 'CM', 'RU', 'Produits capillaires naturels', 'Beurre karité, huiles, masques — boutique diaspora. Clientèle fidèle.', 8, 450, 16, -5, 15),
   // Ghana (5)
   parcel('COL-MOX-GH01', 'GH', 'RU', 'Tissus kente Ashanti', 'Rouleaux protégés plastique. Pas de pliage serré. Photo échantillon dispo.', 6, 650, 13, -9, 14),
-  parcel('COL-MOX-GH02', 'GH', 'RU', 'Accessoires MacBook + hub USB-C', 'Petit colis high-tech, valeur ~300 $. Emballage d\'origine Apple.', 1.2, 1330, 10, -8, 10),
+  parcel('COL-MOX-GH02', 'RU', 'GH', 'Accessoires MacBook + hub USB-C', 'Petit colis high-tech, valeur ~300 $. Emballage d\'origine Apple. Livraison Accra.', 1.2, 1330, 10, -8, 10),
   parcel('COL-MOX-GH03', 'GH', 'RU', 'Shea butter cosmétique (6 cartons)', 'Export Ghana approuvé, étiquettes INCI. Prix négociable volume.', 11, 400, 18, -7, 16),
-  parcel('COL-MOX-GH04', 'GH', 'RU', 'Djembé compact 12"', 'Peau chèvre, housse incluse. Fragile — voyageur expérimenté only.', 5, 820, 22, -6, 12),
+  parcel('COL-MOX-GH04', 'RU', 'GH', 'Djembé compact 12"', 'Peau chèvre, housse incluse. Fragile — voyageur expérimenté only. Cadeau famille Accra.', 5, 820, 22, -6, 12),
   parcel('COL-MOX-GH05', 'GH', 'RU', 'Mangues séchées et snacks', 'Sous vide, cadeaux famille — consommation perso, pas revente.', 4, 675, 15, -5, 8),
 ]
