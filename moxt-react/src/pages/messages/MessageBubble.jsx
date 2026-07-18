@@ -116,6 +116,7 @@ export function MessageBubble({
       ? attachmentImageSrcs(message.attachment)
       : []
   const hasImageAttachment = imageSrcs.length > 0
+  const fromStatus = Boolean(message.attachment?.fromStatus)
   // La réaction-emoji à un statut est déjà affichée en surimpression sur l'image ;
   // pas besoin de la répéter en légende texte en dessous.
   const hasCaption = Boolean(message.text?.trim()) && !message.attachment?.reactionEmoji
@@ -211,7 +212,9 @@ export function MessageBubble({
         mine ? 'message-stack--sent' : ''
       } ${pending && mine ? 'message-stack--pending' : ''} ${
         hasImageAttachment ? 'message-stack--media' : ''
-      } ${highlight ? 'message-stack--highlight' : ''      } ${showActions ? 'message-stack--actions' : ''} ${
+      } ${fromStatus ? 'message-stack--status' : ''} ${
+        highlight ? 'message-stack--highlight' : ''
+      } ${showActions ? 'message-stack--actions' : ''} ${
         hasReactions ? 'message-stack--reacted' : ''
       }`}
     >
