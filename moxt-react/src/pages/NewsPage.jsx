@@ -15,14 +15,14 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { ShareToFeedModal } from '../components/ui/ShareToFeedModal'
 import { useLanguage } from '../contexts/useLanguage'
 import { useSecurityGate } from '../features/security/useSecurityGate'
-import { sortPostsByPublishedAt } from '../features/posts/postSortUtils'
+import { buildNewsFeed } from '../features/posts/postFeedUtils'
 import { phase3Text } from '../i18n/phase3I18n'
 
 const FILTER_KEYS = ['all', 'listing', 'job', 'parcel', 'event', 'business', 'free']
 
 export function NewsPage() {
   const navigate = useNavigate()
-  const { t } = useLanguage()
+  const { language, t } = useLanguage()
   const p3 = (key, vars) => phase3Text(t, key, vars)
   const user = useSelector((s) => s.auth.user)
   const posts = useSelector((s) => s.posts?.items ?? [])
@@ -51,13 +51,10 @@ export function NewsPage() {
     [posts],
   )
 
-  const filtered = useMemo(() => {
-    const base =
-      activeFilter === 'all'
-        ? publishedPosts
-        : publishedPosts.filter((p) => p.sourceType === activeFilter)
-    return sortPostsByPublishedAt(base)
-  }, [activeFilter, publishedPosts])
+  const filtered = useMemo(
+    () => buildNewsFeed(publishedPosts, { language, sourceTypeFilter: activeFilter }),
+    [activeFilter, language, publishedPosts],
+  )
 
   return (
     <div className="grid gap-7">

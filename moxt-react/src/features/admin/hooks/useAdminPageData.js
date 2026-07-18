@@ -5,7 +5,7 @@ import {
   buildContentCollections,
   buildQueues,
 } from '../adminData'
-import { isActiveParcel, isArchivedParcel } from '../../publications/publicationCatalogUtils'
+import { isActiveParcel, isArchivedParcel, isActivePost, isArchivedPost } from '../../publications/publicationCatalogUtils'
 import { isActiveListing, isArchivedListing } from '../../marketplace/listingCatalogUtils'
 import { isActiveEvent, isActiveJob, isArchivedEvent, isArchivedJob } from '../../publications/publicationCatalogUtils'
 
@@ -28,6 +28,11 @@ function effectiveContentStatus(section, item) {
   if (section === 'events') {
     if (isActiveEvent(item)) return 'published'
     if (isArchivedEvent(item)) return 'archived'
+    return item.status || 'published'
+  }
+  if (section === 'posts') {
+    if (isActivePost(item)) return 'published'
+    if (isArchivedPost(item)) return 'archived'
     return item.status || 'published'
   }
   return item.status || 'active'
@@ -57,7 +62,14 @@ export function useAdminPageData(query, statusFilter, contentView) {
 
   const supportTickets = useMemo(() => {
     let items = state.communications.support
-    if (statusFilter !== 'all') items = items.filter((i) => i.status === statusFilter)
+    if (statusFilter !== 'all') {
+      items = items.filter((ticket) => {
+        if (statusFilter === 'open') return ticket.status === 'waiting_agent'
+        if (statusFilter === 'pending') return ticket.status === 'waiting_user'
+        if (statusFilter === 'resolved') return ['resolved', 'closed'].includes(ticket.status)
+        return ticket.status === statusFilter
+      })
+    }
     if (query) {
       const q = query.toLowerCase()
       items = items.filter((i) => `${i.subject} ${i.userName} ${i.priority}`.toLowerCase().includes(q))
@@ -101,11 +113,16 @@ export function useAdminPageData(query, statusFilter, contentView) {
     items = items.filter((item) => matchesContentFilter(contentView, item, statusFilter))
     if (query) {
       const q = query.toLowerCase()
-      items = items.filter((item) =>
-        `${item.id} ${item.name || ''} ${item.title || ''} ${item.origin || ''} ${item.destination || ''} ${item.reason || ''} ${item.status || ''}`
+      items = items.filter((item) => {
+        if (contentView === 'posts') {
+          return `${item.id} ${item.authorName || ''} ${item.message || ''} ${item.title || ''} ${item.body || ''} ${item.sourceType || ''} ${item.status || ''}`
+            .toLowerCase()
+            .includes(q)
+        }
+        return `${item.id} ${item.name || ''} ${item.title || ''} ${item.origin || ''} ${item.destination || ''} ${item.reason || ''} ${item.status || ''}`
           .toLowerCase()
-          .includes(q),
-      )
+          .includes(q)
+      })
     }
     return items.map((item) => ({
       ...item,

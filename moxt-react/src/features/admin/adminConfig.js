@@ -2,6 +2,7 @@ import {
   FiActivity,
   FiAlertCircle,
   FiCalendar,
+  FiEdit3,
   FiHeadphones,
   FiInbox,
   FiLayers,
@@ -19,6 +20,7 @@ export const MAIN_VIEWS = [
   { id: 'overview', label: 'Vue generale', labelKey: 'admin.nav.overview', icon: FiShield },
   { id: 'transfers', label: 'Transferts', labelKey: 'admin.nav.transfers', icon: FiRepeat },
   { id: 'content', label: 'Contenus', labelKey: 'admin.nav.content', icon: FiLayers },
+  { id: 'publications', label: 'Publications', labelKey: 'admin.nav.publications', icon: FiEdit3 },
   { id: 'support', label: 'Support', labelKey: 'admin.nav.support', icon: FiHeadphones },
   { id: 'users', label: 'Utilisateurs', labelKey: 'admin.nav.users', icon: FiUsers },
   { id: 'verifications', label: 'Verifications', labelKey: 'admin.nav.verifications', icon: FiUserCheck },
@@ -32,6 +34,7 @@ export const CONTENT_SECTIONS = [
   { id: 'jobs', label: 'Jobs', labelKey: 'admin.content.jobs', icon: FiTrendingUp, route: '/jobs', color: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' },
   { id: 'events', label: 'Evenements', labelKey: 'admin.content.events', icon: FiCalendar, route: '/events', color: 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300' },
   { id: 'parcels', label: 'Colis', labelKey: 'admin.content.parcels', icon: FiPackage, route: '/parcels', color: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300' },
+  { id: 'posts', label: 'Publications', labelKey: 'admin.content.posts', icon: FiEdit3, route: '/news', color: 'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300' },
   { id: 'reports', label: 'Signalements', labelKey: 'admin.content.reports', icon: FiAlertCircle, route: '/admin?view=queues', color: 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300' },
 ]
 
@@ -51,6 +54,7 @@ export const VIEW_FILTERS = {
   support: ['all', 'open', 'resolved', 'pending'],
   users: ['all', 'active', 'suspended', 'pending_deletion', 'user', 'professional', 'admin'],
   content: ['all', 'active', 'pending_review', 'archived', 'published', 'rejected', 'new', 'resolved'],
+  publications: ['all', 'active', 'pending_review', 'archived', 'published'],
   verifications: ['all', 'pending', 'verified', 'rejected'],
   overview: [],
   queues: [],

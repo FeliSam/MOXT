@@ -2,15 +2,28 @@ import { FiBellOff, FiCpu, FiStar } from 'react-icons/fi'
 import { RELATED_CONTENT_META } from '../../config/communications'
 import { VerifiedDisplayName } from '../../components/ui/Badge'
 import { useLanguage } from '../../contexts/useLanguage'
+import { EntityAvatar } from '../../features/account/EntityAvatar'
 import { getConversationPeer } from '../../features/communications/conversationDisplay'
 import { messagesText } from '../../features/communications/messagesI18n'
 import { conversationPreview } from './messageUtils'
 import { shortTime } from './format'
-import { MessageAvatar } from './MessageBubble'
 
-export function ConversationRow({ active, assistant = false, conversation, onClick, userId }) {
+const LIST_AVATAR_CLASS =
+  '!size-14 !rounded-[1.15rem] !text-sm font-black shadow-md self-center'
+
+export function ConversationRow({
+  active,
+  assistant = false,
+  avatarMap = {},
+  conversation,
+  onClick,
+  userId,
+}) {
   const { t } = useLanguage()
   const peer = assistant ? null : getConversationPeer(conversation, userId)
+  const liveEntry = peer?.id ? avatarMap[peer.id] : undefined
+  const avatarSrc =
+    liveEntry !== undefined ? liveEntry.avatarUrl || null : peer?.avatarUrl || null
   const lastMessage = assistant
     ? messagesText(t, 'messages.assistant.preview')
     : conversationPreview(conversation, userId, t)
@@ -34,15 +47,19 @@ export function ConversationRow({ active, assistant = false, conversation, onCli
       }`}
     >
       {assistant ? (
-        <span className="grid size-14 shrink-0 place-items-center rounded-[1.15rem] bg-gradient-to-br from-brand-500 to-cyan-500 text-lg font-black text-white shadow-md">
+        <span className="grid size-14 shrink-0 place-items-center self-center rounded-[1.15rem] bg-gradient-to-br from-brand-500 to-cyan-500 text-lg font-black text-white shadow-md">
           <FiCpu />
         </span>
       ) : (
-        <span className="relative shrink-0">
-          <MessageAvatar
-            avatarUrl={peer?.avatarUrl}
-            className="!size-11 !rounded-[1rem] !text-sm shadow-md"
+        <span className="relative shrink-0 self-center">
+          <EntityAvatar
             name={peer?.name}
+            src={avatarSrc}
+            size="lg"
+            shape="user"
+            ring={false}
+            className={LIST_AVATAR_CLASS}
+            alt={peer?.name || ''}
           />
           {RelatedIcon ? (
             <span

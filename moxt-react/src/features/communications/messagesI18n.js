@@ -68,7 +68,17 @@ export const MESSAGES_FR_SOURCES = {
   'messages.assistant.suggestions.verify': 'Comment vérifier mon identité ?',
   'messages.assistant.suggestions.dispute':
     'Comment contacter le support en cas de litige ?',
+  'messages.assistant.suggestions.admin': 'Je souhaite parler avec un administrateur',
   'messages.assistant.suggestions.business': 'Comment créer un compte professionnel ?',
+  'messages.assistant.contactAdmin': 'Contacter un administrateur',
+  'messages.assistant.contactAdminAria': 'Contacter un administrateur MOXT',
+  'messages.assistant.adminTicketSubject': 'Demande via assistant MOXT',
+  'messages.assistant.adminTicketDefault':
+    'Demande de contact avec un administrateur via l’assistant MOXT.',
+  'messages.assistant.adminEscalated':
+    'Votre demande a été transmise à l’équipe MOXT (ticket {id}). Un administrateur pourra vous répondre depuis Support.',
+  'messages.assistant.adminFollowUp': 'Suivre ma demande',
+  'messages.statusSending': 'Envoi en cours',
   'messages.attachment.photo': '📷 Photo',
   'messages.attachment.photos': '📷 {count} photos',
   'messages.attachment.file': '📎 {name}',
@@ -303,5 +313,6 @@ export const ASSISTANT_SUGGESTION_KEYS = [
   'messages.assistant.suggestions.parcel',
   'messages.assistant.suggestions.verify',
   'messages.assistant.suggestions.dispute',
+  'messages.assistant.suggestions.admin',
   'messages.assistant.suggestions.business',
 ]

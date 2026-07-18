@@ -9,6 +9,19 @@ import { adminOptionLabel, adminText } from '../adminI18n'
 import { statusDotColor } from '../adminUtils'
 import { Empty, SectionTitle } from './AdminShared'
 
+function contentDisplayTitle(contentView, item) {
+  if (contentView === 'posts') {
+    const text = (item.message || item.title || item.body || item.content || '').trim()
+    if (text) return text.length > 96 ? `${text.slice(0, 96)}…` : text
+  }
+  return (
+    item.name ||
+    item.title ||
+    `${item.origin || ''} ${item.destination || ''}`.trim() ||
+    item.id
+  )
+}
+
 function ContentRow({ contentView, dispatch, item, setSelected, t }) {
   const status = item.effectiveStatus || item.status || 'active'
   const isPending = ['pending', 'pending_review', 'draft', 'new'].includes(status)
@@ -23,7 +36,7 @@ function ContentRow({ contentView, dispatch, item, setSelected, t }) {
           className="text-left hover:text-brand-700"
         >
           <strong className="block text-sm">
-            {item.name || item.title || `${item.origin || ''} ${item.destination || ''}`.trim() || item.id}
+            {contentDisplayTitle(contentView, item)}
           </strong>
           <p className="text-xs text-[var(--app-text-muted)]">{contentSubtitle(contentView, item, t)}</p>
         </button>
@@ -51,29 +64,31 @@ function ContentRow({ contentView, dispatch, item, setSelected, t }) {
   )
 }
 
-export function AdminContentPanel({ contentView, dispatch, items, setContentView, setSelected }) {
+export function AdminContentPanel({ contentView, dispatch, items, lockedSection, setContentView, setSelected }) {
   const { t } = useLanguage()
   const activeSection = CONTENT_SECTIONS.find((s) => s.id === contentView)
 
   return (
     <div className="grid gap-5">
-      <div className={`${CARD} flex flex-wrap gap-2 p-3`}>
-        {CONTENT_SECTIONS.map((section) => (
-          <button
-            key={section.id}
-            type="button"
-            onClick={() => setContentView(section.id)}
-            className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold transition-all ${
-              contentView === section.id
-                ? 'bg-brand-700 text-white shadow-sm'
-                : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)] hover:bg-[var(--app-surface)]'
-            }`}
-          >
-            <section.icon className="text-sm" />
-            {adminOptionLabel(t, section)}
-          </button>
-        ))}
-      </div>
+      {!lockedSection ? (
+        <div className={`${CARD} flex flex-wrap gap-2 p-3`}>
+          {CONTENT_SECTIONS.map((section) => (
+            <button
+              key={section.id}
+              type="button"
+              onClick={() => setContentView(section.id)}
+              className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold transition-all ${
+                contentView === section.id
+                  ? 'bg-brand-700 text-white shadow-sm'
+                  : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)] hover:bg-[var(--app-surface)]'
+              }`}
+            >
+              <section.icon className="text-sm" />
+              {adminOptionLabel(t, section)}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       <div className={`${CARD} p-5 grid gap-4`}>
         <SectionTitle

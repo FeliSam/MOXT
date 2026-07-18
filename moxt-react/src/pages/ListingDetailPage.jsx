@@ -239,8 +239,8 @@ export function ListingDetailPage() {
         }
       />
 
-      <div className="grid gap-6 xl:grid-cols-[1.45fr_0.55fr]">
-        <div className="grid gap-6">
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[1.45fr_0.55fr]">
+        <div className="grid min-w-0 gap-6">
           <Gallery
             activeImage={activeImage}
             activeImageIndex={activeImageIndex}
@@ -395,7 +395,7 @@ export function ListingDetailPage() {
           />
         </div>
 
-        <aside className="grid content-start gap-5 xl:sticky xl:top-28">
+        <aside className="grid min-w-0 content-start gap-5 xl:sticky xl:top-28">
           <Card className="hidden min-w-0 overflow-hidden xl:block">
             <div className="flex flex-wrap gap-2">
               <Badge tone="violet">{listingTypeLabel}</Badge>
@@ -436,18 +436,7 @@ export function ListingDetailPage() {
           </Card>
 
           {publisherProfile ? (
-            <>
-              <PublisherDetailCard {...publisherProfile} className="hidden xl:block" />
-              <div className="hidden xl:block">
-                <PublisherPublicationsStrip
-                  currentId={listing.id}
-                  ownerId={publisherProfile.ownerId}
-                  publications={publisherProfile.publications}
-                  allPath={publisherProfile.publicationsPath}
-                  limit={5}
-                />
-              </div>
-            </>
+            <PublisherDetailCard {...publisherProfile} className="hidden xl:block" />
           ) : null}
 
           <Card>
@@ -506,6 +495,18 @@ export function ListingDetailPage() {
           ) : null}
         </aside>
       </div>
+
+      {publisherProfile ? (
+        <div className="hidden min-w-0 xl:block">
+          <PublisherPublicationsStrip
+            currentId={listing.id}
+            ownerId={publisherProfile.ownerId}
+            publications={publisherProfile.publications}
+            allPath={publisherProfile.publicationsPath}
+            limit={8}
+          />
+        </div>
+      ) : null}
 
       {similar.length ? (
         <section>

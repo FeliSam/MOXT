@@ -95,9 +95,9 @@ export function PublisherPublicationsStrip({
         ) : null}
       </div>
 
-      <div className="relative -mx-1">
+      <div className="relative min-w-0">
         <div
-          className="scrollbar-hidden flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-1 pb-1 pt-0.5 scroll-smooth"
+          className="scrollbar-hidden flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain pb-1 pt-0.5 scroll-smooth [-webkit-overflow-scrolling:touch]"
           role="list"
           aria-label={t('publications.strip.title')}
         >
@@ -148,7 +148,7 @@ export function PublisherPublicationsStrip({
           })}
         </div>
         <div
-          className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-[var(--app-surface)] to-transparent"
+          className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-[var(--app-surface)] to-transparent"
           aria-hidden
         />
       </div>

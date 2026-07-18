@@ -6,7 +6,9 @@ import {
   FiHeart,
   FiList,
   FiMessageSquare,
+  FiPieChart,
   FiSettings,
+  FiShield,
   FiUser,
 } from 'react-icons/fi'
 
@@ -73,3 +75,33 @@ export const moxtHubSecondaryLinks = [
     icon: FiSettings,
   },
 ]
+
+/** Liens réservés aux rôles admin / superadmin (alignés sur navigation.js). */
+export const moxtHubAdminLinks = [
+  {
+    id: 'admin',
+    labelKey: 'nav.controlCenter',
+    path: '/admin',
+    icon: FiSettings,
+    roles: ['admin', 'superadmin'],
+  },
+  {
+    id: 'feature-matrix',
+    labelKey: 'nav.featureMatrix',
+    path: '/feature-matrix',
+    icon: FiPieChart,
+    roles: ['admin', 'superadmin'],
+  },
+  {
+    id: 'superadmin',
+    labelKey: 'nav.systemPilotage',
+    path: '/superadmin',
+    icon: FiShield,
+    roles: ['superadmin'],
+  },
+]
+
+export function filterMoxtHubLinksByRole(links, role) {
+  if (!role) return []
+  return links.filter((link) => !link.roles || link.roles.includes(role))
+}

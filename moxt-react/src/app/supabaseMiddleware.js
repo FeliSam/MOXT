@@ -856,6 +856,8 @@ const handlers = {
       message: payload.message,
       image_url: payload.imageUrl || null,
       direct_link: payload.directLink || null,
+      language: payload.language || null,
+      pinned: payload.pinned === true,
       likes: JSON.stringify(payload.likes ?? []),
       comments: JSON.stringify(payload.comments ?? []),
       last_shared_at: payload.lastSharedAt || payload.createdAt,
@@ -869,8 +871,19 @@ const handlers = {
     const fields = {}
     if (payload.message !== undefined) fields.message = payload.message
     if (payload.imageUrl !== undefined) fields.image_url = payload.imageUrl
+    if (payload.status !== undefined) fields.status = payload.status
     fields.updated_at = payload.updatedAt || new Date().toISOString()
     const { error } = await supabase.from('posts').update(fields).eq('id', payload.id)
+    if (error) throw error
+  },
+  'posts/moderatePost': async (payload) => {
+    const { error } = await supabase
+      .from('posts')
+      .update({
+        status: payload.status,
+        updated_at: payload.updatedAt || new Date().toISOString(),
+      })
+      .eq('id', payload.id)
     if (error) throw error
   },
   'posts/deletePost': async (payload) => {
@@ -1177,6 +1190,7 @@ const handlers = {
       user_name: payload.userName,
       subject: payload.subject,
       priority: payload.priority,
+      category: payload.category || 'question',
       status: payload.status,
       messages: payload.messages,
       created_at: payload.createdAt,
@@ -1307,7 +1321,23 @@ export const supabaseMiddleware = (store) => (next) => (action) => {
 
   const handler = handlers[action.type]
   if (handler && supabase) {
-    withRetry(() => handler(action.payload, store.getState(), store.dispatch)).catch((err) => {
+    withRetry(() => handler(action.payload, store.getState(), store.dispatch))
+      .then(() => {
+        if (action.type === 'communications/sendMessage') {
+          const messageId = action.payload?.message?.id
+          if (messageId) {
+            store.dispatch({
+              type: 'communications/setMessagePending',
+              payload: {
+                conversationId: action.payload.conversationId,
+                messageId,
+                pending: false,
+              },
+            })
+          }
+        }
+      })
+      .catch((err) => {
       console.warn('[Supabase]', action.type, err?.message || err)
       if (action.type === 'communications/sendMessage') {
         const messageId = action.payload?.message?.id

@@ -2,11 +2,13 @@ import {
   FiAlertCircle,
   FiAlertTriangle,
   FiCheckCircle,
+  FiHeadphones,
   FiStar,
   FiTrash2,
   FiUserCheck,
   FiX,
 } from 'react-icons/fi'
+import { Link } from 'react-router-dom'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { Button } from '../../../components/ui/Button'
 import { Badge } from '../../../components/ui/Badge'
@@ -119,6 +121,25 @@ export function AdminQueuesPanel({ adminId, dispatch, queues, setSelected }) {
               {t('verification.admin.reject')}
             </Button>
           </>
+        )}
+      />
+      <QueueSection
+        icon={FiHeadphones}
+        items={queues.support}
+        label={adminText(t, 'admin.nav.support')}
+        kind="support"
+        setSelected={setSelected}
+        t={t}
+        renderMeta={(item) =>
+          adminText(t, 'admin.support.meta', {
+            name: item.userName,
+            count: item.messages?.length || 0,
+          })
+        }
+        renderActions={() => (
+          <Link to="/admin?view=support">
+            <Button variant="secondary">{adminText(t, 'admin.support.reply')}</Button>
+          </Link>
         )}
       />
       <QueueSection

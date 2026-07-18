@@ -10,7 +10,7 @@ function match(text, keywords) {
   return keywords.some((kw) => text.includes(kw))
 }
 
-const LOCALE_TAGS = { fr: 'fr', en: 'en', ru: 'ru', pt: 'pt' }
+const LOCALE_TAGS = { fr: 'fr', en: 'en', ru: 'ru', pt: 'pt', es: 'es' }
 
 /** Resolve a user-visible string via `t`, falling back to French when `t` is absent. */
 function assistantText(t, language, key) {
@@ -42,6 +42,7 @@ const DOMAIN_META = {
   verification: { actionPaths: ['/verification', '/documents'], actions: 2, suggestions: 3, texts: 2 },
   p2p: { actionPaths: ['/p2p', '/p2p/publish'], actions: 2, suggestions: 3, texts: 1 },
   litige: { actionPaths: ['/disputes', '/support'], actions: 2, suggestions: 3, texts: 1 },
+  admin: { actionPaths: ['/support'], actions: 1, suggestions: 2, texts: 1 },
   compte: { actionPaths: ['/profile', '/profile/personal-information'], actions: 2, suggestions: 3, texts: 1 },
   recu: { actionPaths: ['/transfers', '/finance'], actions: 2, suggestions: 3, texts: 1 },
   finance: { actionPaths: ['/finance'], actions: 1, suggestions: 3, texts: 1 },
@@ -67,6 +68,7 @@ const DOMAIN_KEYWORDS = {
     verification: ['vérification', 'vérifier', 'identité', 'kyc', 'document', "pièce d'identité", 'selfie', 'valider mon'],
     p2p: ['p2p', 'pair à pair', 'devise', 'acheter des euros', 'vendre des roubles', 'pair-à-pair'],
     litige: ['litige', 'réclamation', 'problème', 'plainte', 'conflit', 'remboursement', 'signaler', 'contestation'],
+    admin: ['administrateur', 'admin', 'parler avec un humain', 'parler avec un agent', 'contacter un admin', 'support humain'],
     compte: ['profil', 'compte', 'modifier', 'photo', 'avatar', 'paramètre', 'informations personnelles'],
     recu: ['reçu', 'historique', 'facture', 'preuve de transfert', 'archive'],
     finance: ['finance', 'portefeuille', 'wallet', 'solde', 'dépenses', 'bilan'],
@@ -87,6 +89,7 @@ const DOMAIN_KEYWORDS = {
     verification: ['verification', 'verify', 'identity', 'kyc', 'document', 'id card', 'selfie', 'validate my'],
     p2p: ['p2p', 'peer to peer', 'peer-to-peer', 'currency', 'buy euros', 'sell rubles'],
     litige: ['dispute', 'claim', 'problem', 'complaint', 'conflict', 'refund', 'report', 'contest'],
+    admin: ['administrator', 'admin', 'speak with a human', 'speak with an agent', 'contact admin', 'human support'],
     compte: ['profile', 'account', 'edit', 'photo', 'avatar', 'settings', 'personal information'],
     recu: ['receipt', 'history', 'invoice', 'transfer proof', 'archive'],
     finance: ['finance', 'wallet', 'balance', 'spending', 'expenses', 'statement'],
@@ -107,6 +110,7 @@ const DOMAIN_KEYWORDS = {
     verification: ['верификация', 'проверка', 'личность', 'kyc', 'документ', 'удостоверение', 'селфи', 'подтвердить'],
     p2p: ['p2p', 'пир ту пир', 'валюта', 'купить евро', 'продать рубли', 'пир-ту-пир'],
     litige: ['спор', 'претензия', 'проблема', 'жалоба', 'конфликт', 'возврат', 'пожаловаться', 'оспорить'],
+    admin: ['администратор', 'админ', 'поговорить с человеком', 'поговорить с оператором', 'связаться с админ'],
     compte: ['профиль', 'аккаунт', 'изменить', 'фото', 'аватар', 'настройки', 'личные данные'],
     recu: ['квитанция', 'история', 'счёт', 'подтверждение перевода', 'архив'],
     finance: ['финансы', 'кошелёк', 'кошелек', 'баланс', 'расходы', 'выписка'],
@@ -127,6 +131,7 @@ const DOMAIN_KEYWORDS = {
     verification: ['verificação', 'verificar', 'identidade', 'kyc', 'documento', 'bilhete de identidade', 'selfie', 'validar'],
     p2p: ['p2p', 'peer to peer', 'peer-to-peer', 'moeda', 'comprar euros', 'vender rublos'],
     litige: ['litígio', 'reclamação', 'problema', 'queixa', 'conflito', 'reembolso', 'denunciar', 'contestar'],
+    admin: ['administrador', 'admin', 'falar com um humano', 'falar com um agente', 'contactar admin', 'suporte humano'],
     compte: ['perfil', 'conta', 'alterar', 'foto', 'avatar', 'definições', 'informações pessoais'],
     recu: ['recibo', 'histórico', 'fatura', 'comprovativo de transferência', 'arquivo'],
     finance: ['finanças', 'carteira', 'wallet', 'saldo', 'despesas', 'extrato'],
@@ -135,6 +140,7 @@ const DOMAIN_KEYWORDS = {
 }
 
 const DOMAIN_ORDER = [
+  'admin',
   'preuve',
   'pays',
   'delai',

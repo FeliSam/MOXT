@@ -655,6 +655,7 @@ const communicationSlice = createSlice({
               readBy: [senderId],
               createdAt: new Date().toISOString(),
               syncFailed: false,
+              pending: true,
             },
           },
         }
@@ -667,6 +668,16 @@ const communicationSlice = createSlice({
       const message = conversation?.messages.find((item) => item.id === action.payload.messageId)
       if (message) {
         message.syncFailed = Boolean(action.payload.failed)
+        message.pending = false
+      }
+    },
+    setMessagePending(state, action) {
+      const conversation = state.conversations.find(
+        (item) => item.id === action.payload.conversationId,
+      )
+      const message = conversation?.messages.find((item) => item.id === action.payload.messageId)
+      if (message) {
+        message.pending = Boolean(action.payload.pending)
       }
     },
     markConversationRead(state, action) {
@@ -1356,6 +1367,7 @@ export const {
   saveConversationDraft,
   sendMessage,
   setMessageSyncFailed,
+  setMessagePending,
   toggleConversationBlock,
   toggleConversationMute,
   toggleConversationPin,

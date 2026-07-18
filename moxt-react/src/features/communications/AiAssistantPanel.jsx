@@ -1,15 +1,22 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { FiArrowLeft, FiCpu, FiPaperclip, FiSend, FiTrash2, FiX, FiZap } from 'react-icons/fi'
-import { useSelector } from 'react-redux'
+import { FiArrowLeft, FiCpu, FiHeadphones, FiPaperclip, FiSend, FiTrash2, FiX, FiZap } from 'react-icons/fi'
+import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { APP_MESSAGES } from '../../config/messages'
 import { useLanguage } from '../../contexts/useLanguage'
 import { selectSearchIndex } from '../searchSelectors'
 import { localAssistantProvider } from './assistantProvider'
+import {
+  buildAssistantTicketMessage,
+  wantsAdminContact,
+} from './assistantAdminUtils'
+import { createSupportTicket } from './communicationSlice'
 import { ASSISTANT_SUGGESTION_KEYS, messagesText } from './messagesI18n'
 import { llmAssistantProvider } from './llmAssistantProvider'
 
 export function AiAssistantPanel({ onBack, showBack = true, userId }) {
+  const dispatch = useDispatch()
+  const user = useSelector((state) => state.auth.user)
   const storageKey = `moxt-ai-assistant-${userId}`
   const messageListRef = useRef(null)
   const searchIndex = useSelector(selectSearchIndex)
@@ -35,11 +42,46 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
     if (messageList) messageList.scrollTop = messageList.scrollHeight
   }, [messages.length, loading])
 
+  function appendAssistantMessage(message) {
+    setMessages((current) => [...current, message])
+  }
+
+  function escalateToAdmin(explicitText, recentMessages = messages) {
+    if (!user) return null
+    const ticketAction = dispatch(
+      createSupportTicket({
+        userId: user.id,
+        userName: `${user.firstName} ${user.lastName}`,
+        subject: messagesText(t, 'messages.assistant.adminTicketSubject'),
+        priority: 'normal',
+        category: 'assistant',
+        message: buildAssistantTicketMessage(
+          recentMessages,
+          explicitText,
+          messagesText(t, 'messages.assistant.adminTicketDefault'),
+        ),
+      }),
+    )
+    appendAssistantMessage({
+      id: `AI-${Date.now()}`,
+      role: 'assistant',
+      text: messagesText(t, 'messages.assistant.adminEscalated', { id: ticketAction.payload.id }),
+      actions: [
+        {
+          label: messagesText(t, 'messages.assistant.adminFollowUp'),
+          path: '/support',
+        },
+      ],
+      createdAt: new Date().toISOString(),
+    })
+    return ticketAction.payload.id
+  }
+
   async function ask(value = question) {
     const text = value.trim()
     if (!text || loading) return
-    setMessages((current) => [
-      ...current,
+    const nextMessages = [
+      ...messages,
       {
         id: `ASK-${Date.now()}`,
         role: 'user',
@@ -47,11 +89,19 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
         attachment: attachment ? { name: attachment.name, size: attachment.size } : null,
         createdAt: new Date().toISOString(),
       },
-    ])
+    ]
+    setMessages(nextMessages)
     setQuestion('')
     setAttachment(null)
     setError('')
     setLoading(true)
+
+    if (wantsAdminContact(text, language)) {
+      escalateToAdmin(text, nextMessages)
+      setLoading(false)
+      return
+    }
+
     try {
       let response
       try {
@@ -100,6 +150,16 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
             {messagesText(t, 'messages.assistant.subtitle')}
           </p>
         </div>
+        <button
+          type="button"
+          onClick={() => escalateToAdmin()}
+          disabled={!user}
+          className="grid size-10 place-items-center rounded-xl hover:bg-[var(--app-surface-muted)] disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label={messagesText(t, 'messages.assistant.contactAdminAria')}
+          title={messagesText(t, 'messages.assistant.contactAdmin')}
+        >
+          <FiHeadphones />
+        </button>
         <button
           type="button"
           onClick={() => setMessages([])}

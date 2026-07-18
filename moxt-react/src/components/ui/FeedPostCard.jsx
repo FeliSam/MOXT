@@ -1,11 +1,12 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { FiChevronDown, FiEdit2, FiMessageCircle, FiMoreHorizontal, FiShare2, FiTrash2 } from 'react-icons/fi'
+import { FiArchive, FiChevronDown, FiEdit2, FiMessageCircle, FiMoreHorizontal, FiShare2, FiTrash2 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { FavoriteButton } from './FavoriteButton'
 import { CountBounce } from './CountBounce'
 import { useLanguage } from '../../contexts/useLanguage'
-import { addComment, deleteComment, deletePost, toggleLike, updatePost } from '../../features/posts/postsSlice'
+import { adminText } from '../../features/admin/adminI18n'
+import { addComment, deleteComment, deletePost, moderatePost, toggleLike, updatePost } from '../../features/posts/postsSlice'
 import { SOURCE_TYPE_LABELS } from '../../features/posts/postTemplates'
 import { formatDate } from '../../features/transfers/transferUtils'
 import { phase3Text } from '../../i18n/phase3I18n'
@@ -48,12 +49,12 @@ function ExpandableFeedMessage({ text }) {
           type="button"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
-          className="group mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.04em] text-[var(--app-accent)] shadow-[0_1px_2px_rgb(0_0_0_/_0.04)] transition hover:border-[var(--app-accent)]/40 hover:bg-[var(--app-accent-soft)] hover:shadow-sm active:scale-[0.98]"
+          className="group mt-1.25 inline-flex items-center gap-0.5 rounded-full border border-[var(--app-border)] bg-[var(--app-surface)] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.04em] text-[var(--app-accent)] shadow-[0_1px_2px_rgb(0_0_0_/_0.04)] transition hover:border-[var(--app-accent)]/40 hover:bg-[var(--app-accent-soft)] hover:shadow-sm active:scale-[0.98]"
         >
           <span>{expanded ? p3('news.seeLess') : p3('news.seeMore')}</span>
           <FiChevronDown
             aria-hidden
-            className={`size-3.5 transition-transform duration-200 ease-out ${
+            className={`size-2.5 transition-transform duration-200 ease-out ${
               expanded ? 'rotate-180' : 'rotate-0'
             } group-hover:translate-y-px`}
           />
@@ -74,8 +75,12 @@ const CTA_LABELS = {
 
 export function FeedPostCard({ post }) {
   const dispatch = useDispatch()
+  const { t } = useLanguage()
+  const p3 = (key, vars) => phase3Text(t, key, vars)
   const user = useSelector((s) => s.auth.user)
   const isAuthor = user?.id === post.authorId
+  const isModerator = user?.role === 'admin' || user?.role === 'superadmin'
+  const canManage = isAuthor || isModerator
 
   const [showComments, setShowComments] = useState(false)
   const [commentText, setCommentText] = useState('')
@@ -113,7 +118,20 @@ export function FeedPostCard({ post }) {
   }
 
   function handleDelete() {
-    if (window.confirm('Supprimer ce post ?')) dispatch(deletePost(post.id))
+    if (window.confirm(p3('news.menu.deleteConfirm'))) {
+      dispatch(deletePost(post.id))
+    }
+    setMenuOpen(false)
+  }
+
+  function handleArchive() {
+    const message = isModerator
+      ? adminText(t, 'admin.actions.archivePostConfirm')
+      : p3('news.archiveConfirm')
+    if (window.confirm(message)) {
+      dispatch(moderatePost({ id: post.id, status: 'archived' }))
+    }
+    setMenuOpen(false)
   }
 
   return (
@@ -137,32 +155,43 @@ export function FeedPostCard({ post }) {
           <span className={`rounded-full px-2.5 py-1 text-[10px] font-black ${typeColor}`}>
             {typeLabel}
           </span>
-          {isAuthor && (
+          {canManage && (
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setMenuOpen((v) => !v)}
-                aria-label="Options du post"
+                aria-label={p3('news.menu.actions')}
                 aria-expanded={menuOpen}
                 className="grid size-8 place-items-center rounded-xl text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)]"
               >
                 <FiMoreHorizontal />
               </button>
               {menuOpen && (
-                <div className="absolute right-0 top-9 z-10 min-w-36 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] py-1 shadow-xl">
-                  <Link
-                    to={`/news/${post.id}/edit`}
-                    onClick={() => setMenuOpen(false)}
-                    className="flex w-full items-center gap-2 px-4 py-2 text-sm hover:bg-[var(--app-surface-muted)]"
-                  >
-                    <FiEdit2 className="text-xs" /> Modifier
-                  </Link>
+                <div className="absolute right-0 top-9 z-10 min-w-40 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] py-1 shadow-xl">
+                  {isAuthor ? (
+                    <Link
+                      to={`/news/${post.id}/edit`}
+                      onClick={() => setMenuOpen(false)}
+                      className="flex w-full items-center gap-2 px-4 py-2 text-sm hover:bg-[var(--app-surface-muted)]"
+                    >
+                      <FiEdit2 className="text-xs" /> {p3('news.menu.edit')}
+                    </Link>
+                  ) : null}
+                  {post.status !== 'archived' ? (
+                    <button
+                      type="button"
+                      onClick={handleArchive}
+                      className="flex w-full items-center gap-2 px-4 py-2 text-sm hover:bg-[var(--app-surface-muted)]"
+                    >
+                      <FiArchive className="text-xs" /> {p3('news.menu.archive')}
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     onClick={handleDelete}
                     className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
                   >
-                    <FiTrash2 className="text-xs" /> Supprimer
+                    <FiTrash2 className="text-xs" /> {p3('news.menu.delete')}
                   </button>
                 </div>
               )}
@@ -278,7 +307,7 @@ export function FeedPostCard({ post }) {
                 <p className="text-xs font-bold">{comment.authorName}</p>
                 <p className="text-sm mt-0.5">{comment.text}</p>
               </div>
-              {(user?.id === comment.authorId || isAuthor) && (
+              {(user?.id === comment.authorId || isAuthor || isModerator) && (
                 <button
                   type="button"
                   onClick={() => dispatch(deleteComment({ postId: post.id, commentId: comment.id }))}

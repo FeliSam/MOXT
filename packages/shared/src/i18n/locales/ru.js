@@ -324,6 +324,8 @@ export const ru = {
     quickActionsDesc: "Опубликуйте или запустите операцию одним касанием.",
     secondary: "Аккаунт и ещё",
     secondaryDesc: "Публикации, избранное, профиль, сообщения и настройки.",
+    admin: "Администрирование",
+    adminDesc: "Центр управления, функциональный охват и системное управление.",
   },
   share: {
     title: "QR-код и приглашение",
@@ -4282,6 +4284,14 @@ export const ru = {
     },
     seeMore: "Ещё",
     seeLess: "Свернуть",
+    menu: {
+      actions: "Действия с публикацией",
+      edit: "Изменить",
+      archive: "В архив",
+      delete: "Удалить",
+      deleteConfirm: "Удалить эту публикацию?",
+    },
+    archiveConfirm: "Архивировать эту публикацию? Она больше не будет видна в ленте.",
     types: {
       post: "Пост",
       listing: "Объявление",
@@ -5421,6 +5431,7 @@ export const ru = {
       overview: "Обзор",
       transfers: "Переводы",
       content: "Контент",
+      publications: "Публикации",
       support: "Поддержка",
       users: "Пользователи",
       verifications: "Проверки",
@@ -5433,6 +5444,7 @@ export const ru = {
       jobs: "Вакансии",
       events: "События",
       parcels: "Посылки",
+      posts: "Публикации",
       reports: "Жалобы",
     },
     filters: {
@@ -5635,6 +5647,9 @@ export const ru = {
       removeReview: "Удалить отзыв",
       rejectContest: "Отклонить оспаривание",
       hide: "Скрыть",
+      delete: "Удалить",
+      deletePostConfirm: "Удалить эту публикацию навсегда?",
+      archivePostConfirm: "Архивировать эту публикацию? Она больше не будет видна в ленте.",
     },
     promote: {
       passwordPrompt: "Пароль повышения до админа\n(в scripts/phase2.env → MOXT_ADMIN_PROMOTE_PASSWORD)",

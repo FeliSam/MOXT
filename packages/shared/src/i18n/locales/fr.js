@@ -323,6 +323,8 @@ export const fr = {
     quickActionsDesc: "Publiez ou lancez une opération en un geste.",
     secondary: "Compte et plus",
     secondaryDesc: "Publications, favoris, profil, messagerie et réglages.",
+    admin: "Administration",
+    adminDesc: "Centre de contrôle, couverture fonctionnelle et pilotage système.",
   },
   share: {
     title: "QR code & invitation",
@@ -477,6 +479,7 @@ export const fr = {
     copyFailed: "Impossible de copier le message sur cet appareil.",
     deleteConfirmTitle: "Supprimer ce message ?",
     statusSent: "Envoyé",
+    statusSending: "Envoi en cours",
     statusDelivered: "Distribué",
     statusRead: "Lu",
     retrySendAria: "Échec d’envoi — renvoyer",
@@ -570,8 +573,16 @@ export const fr = {
         parcel: "Comment envoyer un colis via un voyageur ?",
         verify: "Comment vérifier mon identité ?",
         dispute: "Comment contacter le support en cas de litige ?",
+        admin: "Je souhaite parler avec un administrateur",
         business: "Comment créer un compte professionnel ?",
       },
+      contactAdmin: "Contacter un administrateur",
+      contactAdminAria: "Contacter un administrateur MOXT",
+      adminTicketSubject: "Demande via assistant MOXT",
+      adminTicketDefault: "Demande de contact avec un administrateur via l’assistant MOXT.",
+      adminEscalated:
+        "Votre demande a été transmise à l’équipe MOXT (ticket {id}). Un administrateur pourra vous répondre depuis Support.",
+      adminFollowUp: "Suivre ma demande",
     },
     attachment: {
       photo: "📷 Photo",
@@ -4255,6 +4266,14 @@ export const fr = {
     },
     seeMore: "Voir plus",
     seeLess: "Voir moins",
+    menu: {
+      actions: "Actions de la publication",
+      edit: "Modifier",
+      archive: "Archiver",
+      delete: "Supprimer",
+      deleteConfirm: "Supprimer cette publication ?",
+    },
+    archiveConfirm: "Archiver cette publication ? Elle ne sera plus visible dans le fil.",
     types: {
       post: "Post",
       listing: "Annonce",
@@ -5394,6 +5413,7 @@ export const fr = {
       overview: "Vue generale",
       transfers: "Transferts",
       content: "Contenus",
+      publications: "Publications",
       support: "Support",
       users: "Utilisateurs",
       verifications: "Verifications",
@@ -5406,6 +5426,7 @@ export const fr = {
       jobs: "Jobs",
       events: "Evenements",
       parcels: "Colis",
+      posts: "Publications",
       reports: "Signalements",
     },
     filters: {
@@ -5608,6 +5629,9 @@ export const fr = {
       removeReview: "Retirer l'avis",
       rejectContest: "Refuser la contestation",
       hide: "Masquer",
+      delete: "Supprimer",
+      deletePostConfirm: "Supprimer definitivement cette publication ?",
+      archivePostConfirm: "Archiver cette publication ? Elle ne sera plus visible dans le fil.",
     },
     promote: {
       passwordPrompt: "Mot de passe de promotion administrateur\n(configuré dans scripts/phase2.env → MOXT_ADMIN_PROMOTE_PASSWORD)",
@@ -6151,6 +6175,18 @@ export const fr = {
         },
         texts: {
           "0": "La messagerie MOXT vous permet d'échanger directement avec les autres membres, les changeurs et les prestataires.\n\nChaque conversation est liée à une opération ou une fiche professionnelle, ce qui facilite la recherche du contexte. Vous pouvez aussi contacter le support depuis cette interface pour toute demande d'assistance.",
+        },
+      },
+      admin: {
+        actions: {
+          "0": "Suivre ma demande",
+        },
+        suggestions: {
+          "0": "Je souhaite parler avec un administrateur",
+          "1": "Comment contacter le support ?",
+        },
+        texts: {
+          "0": "Pour parler à un **administrateur MOXT**, utilisez le bouton casque dans l’assistant ou décrivez votre demande ici.\n\nVotre message ouvre un **ticket support** transmis à l’équipe. Un administrateur pourra vous répondre depuis **Support** ou le centre de contrôle admin.",
         },
       },
       fallback: {

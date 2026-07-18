@@ -131,6 +131,7 @@ export function AdminOverviewPanel({ content, metrics, onOpenContent, onOpenView
             {[
               { label: adminText(t, 'admin.overview.queue.deletions'), count: queues.accountDeletions.length, view: 'queues' },
               { label: adminText(t, 'admin.overview.queue.verifications'), count: queues.verifications.length, view: 'verifications' },
+              { label: adminText(t, 'admin.nav.support'), count: queues.support.length, view: 'support' },
               { label: adminText(t, 'admin.overview.queue.disputes'), count: queues.disputes.length, view: 'queues' },
               { label: adminText(t, 'admin.overview.queue.reviews'), count: queues.reviews.length, view: 'queues' },
               { label: adminText(t, 'admin.overview.queue.reports'), count: queues.reports.length, view: 'queues' },

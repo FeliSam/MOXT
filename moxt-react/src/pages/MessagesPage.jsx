@@ -34,6 +34,7 @@ import {
 } from '../features/communications/communicationSlice'
 import { selectUnreadMessageCount, selectUserConversations } from '../features/selectors'
 import { selectAccountPreferences, updateAccountPreferences } from '../features/account/accountSlice'
+import { useProfileAvatarMap } from '../features/account/useProfileAvatarMap'
 import { addToast, setMessageThreadImmersive } from '../features/ui/uiSlice'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useMessagesRealtimeSync } from '../hooks/useMessagesRealtimeSync'
@@ -75,6 +76,7 @@ export function MessagesPage() {
   const [replyToContextId, setReplyToContextId] = useState(null)
   const [editingId, setEditingId] = useState(null)
   const [pendingDeleteId, setPendingDeleteId] = useState(null)
+  const [sentAnimationIds, setSentAnimationIds] = useState([])
   const [showArchived, setShowArchived] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [filter, setFilter] = useState('all')
@@ -154,6 +156,17 @@ export function MessagesPage() {
       })
   }, [activeId, conversations, deferredQuery, desktop, filter, showArchived, user.id])
 
+  const participantAvatarIds = useMemo(() => {
+    const ids = new Set()
+    for (const conversation of conversations) {
+      for (const id of conversation.participantIds || []) {
+        if (id) ids.add(id)
+      }
+    }
+    return [...ids]
+  }, [conversations])
+  const avatarMap = useProfileAvatarMap(participantAvatarIds)
+
   const active = conversations.find((item) => item.id === activeId)
   const assistantActive = activeId === ASSISTANT_ID
   const integratedAssistant = assistantActive && defaultAssistant
@@ -167,6 +180,17 @@ export function MessagesPage() {
     const peer = getConversationPeer(conversation, user.id)
     return messageSuggestionsForConversation(state, conversation, user.id, peer.name, t)
   })
+
+  function flashSentMessage(messageId) {
+    if (!messageId) return
+    setSentAnimationIds((current) =>
+      current.includes(messageId) ? current : [...current, messageId],
+    )
+    window.setTimeout(() => {
+      setSentAnimationIds((current) => current.filter((id) => id !== messageId))
+    }, 920)
+  }
+
   const formik = useFormik({
     initialValues: { text: '' },
     validate: (values) => {
@@ -248,7 +272,7 @@ export function MessagesPage() {
       }
 
       const previousCount = active.messages.length
-      dispatch(
+      const sentAction = dispatch(
         sendMessage({
           conversationId: active.id,
           senderId: user.id,
@@ -259,6 +283,7 @@ export function MessagesPage() {
           relatedContextId: replyToContextId,
         }),
       )
+      flashSentMessage(sentAction.payload.message.id)
       const updated = store
         .getState()
         .communications.conversations.find((item) => item.id === active.id)
@@ -546,6 +571,7 @@ export function MessagesPage() {
                     <ConversationRow
                       key={conversation.id}
                       active={active?.id === conversation.id}
+                      avatarMap={avatarMap}
                       conversation={conversation}
                       userId={user.id}
                       onClick={() => selectConversation(conversation.id)}
@@ -667,6 +693,7 @@ export function MessagesPage() {
               <ConversationRow
                 key={conversation.id}
                 active={active?.id === conversation.id}
+                avatarMap={avatarMap}
                 conversation={conversation}
                 userId={user.id}
                 onClick={() => selectConversation(conversation.id)}
@@ -696,6 +723,7 @@ export function MessagesPage() {
             ) : active ? (
               <ConversationPanel
                 active={active}
+                avatarMap={avatarMap}
                 messagesLoading={Boolean(active.messagesLoading)}
                 messagesLoadingOlder={Boolean(active.messagesLoadingOlder)}
                 hasOlderMessages={Boolean(active.hasOlderMessages)}
@@ -822,6 +850,7 @@ export function MessagesPage() {
                 muted={active.mutedBy?.includes(user.id)}
                 pinned={active.pinnedBy?.includes(user.id)}
                 peerTyping={peerTyping}
+                sentAnimationIds={sentAnimationIds}
                 onTyping={notifyTyping}
                 onStopTyping={stopTyping}
               />

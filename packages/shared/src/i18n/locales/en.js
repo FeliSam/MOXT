@@ -324,6 +324,8 @@ export const en = {
     quickActionsDesc: "Publish or start an operation in one tap.",
     secondary: "Account and more",
     secondaryDesc: "Publications, favorites, profile, messaging and settings.",
+    admin: "Administration",
+    adminDesc: "Control center, feature coverage and system pilotage.",
   },
   share: {
     title: "QR code & invitation",
@@ -4282,6 +4284,14 @@ export const en = {
     },
     seeMore: "See more",
     seeLess: "See less",
+    menu: {
+      actions: "Post actions",
+      edit: "Edit",
+      archive: "Archive",
+      delete: "Delete",
+      deleteConfirm: "Delete this post?",
+    },
+    archiveConfirm: "Archive this post? It will no longer appear in the feed.",
     types: {
       post: "Post",
       listing: "Listing",
@@ -5421,6 +5431,7 @@ export const en = {
       overview: "Overview",
       transfers: "Transfers",
       content: "Content",
+      publications: "Publications",
       support: "Support",
       users: "Users",
       verifications: "Verifications",
@@ -5433,6 +5444,7 @@ export const en = {
       jobs: "Jobs",
       events: "Events",
       parcels: "Parcels",
+      posts: "Publications",
       reports: "Reports",
     },
     filters: {
@@ -5635,6 +5647,9 @@ export const en = {
       removeReview: "Remove review",
       rejectContest: "Reject contestation",
       hide: "Hide",
+      delete: "Delete",
+      deletePostConfirm: "Permanently delete this post?",
+      archivePostConfirm: "Archive this post? It will no longer appear in the feed.",
     },
     promote: {
       passwordPrompt: "Admin promotion password\n(configured in scripts/phase2.env → MOXT_ADMIN_PROMOTE_PASSWORD)",

@@ -53,7 +53,7 @@ export function AdminDetailPanel({ admin, dispatch, onSuspendUser, selected, sup
         </div>
       </div>
 
-      <div className="grid min-w-0 grid-cols-2 gap-2">
+      <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
         {buildDetailFacts(kind, item, t).map(([label, value]) => (
           <div key={label} className="min-w-0 overflow-hidden rounded-xl bg-[var(--app-surface-muted)] px-3 py-2.5">
             <p className="text-[9px] font-black uppercase tracking-wider text-[var(--app-text-muted)]">{label}</p>

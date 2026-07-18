@@ -46,6 +46,7 @@ export const ADMIN_FR_SOURCES = {
   'admin.nav.overview': 'Vue generale',
   'admin.nav.transfers': 'Transferts',
   'admin.nav.content': 'Contenus',
+  'admin.nav.publications': 'Publications',
   'admin.nav.support': 'Support',
   'admin.nav.users': 'Utilisateurs',
   'admin.nav.verifications': 'Verifications',
@@ -56,6 +57,7 @@ export const ADMIN_FR_SOURCES = {
   'admin.content.jobs': 'Jobs',
   'admin.content.events': 'Evenements',
   'admin.content.parcels': 'Colis',
+  'admin.content.posts': 'Publications',
   'admin.content.reports': 'Signalements',
 
   // ── filters / shell ─────────────────────────────────────────────────────
@@ -121,6 +123,7 @@ export const ADMIN_FR_SOURCES = {
   'admin.detail.kind.jobs': 'Job',
   'admin.detail.kind.events': 'Evenement',
   'admin.detail.kind.parcels': 'Colis',
+  'admin.detail.kind.posts': 'Publication',
   'admin.detail.kind.audit': 'Log audit',
   'admin.detail.kind.default': 'Detail',
   'admin.detail.desc.transfer': '{partner} · {status}',
@@ -128,6 +131,7 @@ export const ADMIN_FR_SOURCES = {
   'admin.detail.desc.user': '{email} · {role}',
   'admin.detail.desc.verification': '{name} · niveau {level} · {status}',
   'admin.detail.desc.businesses': '{city} · {services}',
+  'admin.detail.desc.audit': '{role} · cible {target}',
   'admin.common.partnerFallback': 'Partenaire',
   'admin.common.servicesFallback': 'Services a confirmer',
   'admin.common.russiaFallback': 'Russie',
@@ -173,6 +177,8 @@ export const ADMIN_FR_SOURCES = {
   'admin.facts.target': 'Cible',
   'admin.facts.author': 'Auteur',
   'admin.facts.id': 'ID',
+  'admin.facts.action': 'Action',
+  'admin.facts.actor': 'Acteur',
   'admin.facts.free': 'Gratuit',
   'admin.facts.yes': 'Oui',
   'admin.facts.no': 'Non',
@@ -183,6 +189,7 @@ export const ADMIN_FR_SOURCES = {
   'admin.contentSubtitle.jobs': '{location} · {salary}',
   'admin.contentSubtitle.events': '{city} · {date}',
   'admin.contentSubtitle.parcels': '{origin} -> {destination} · {status}',
+  'admin.contentSubtitle.posts': '{author} · {type}',
   'admin.contentSubtitle.reports': '{type} · {status}',
   'admin.contentSubtitle.default': '{status}',
 
@@ -226,6 +233,9 @@ export const ADMIN_FR_SOURCES = {
   'admin.actions.removeReview': "Retirer l'avis",
   'admin.actions.rejectContest': 'Refuser la contestation',
   'admin.actions.hide': 'Masquer',
+  'admin.actions.delete': 'Supprimer',
+  'admin.actions.deletePostConfirm': 'Supprimer definitivement cette publication ?',
+  'admin.actions.archivePostConfirm': 'Archiver cette publication ? Elle ne sera plus visible dans le fil.',
 
   // ── promote ─────────────────────────────────────────────────────────────
   'admin.promote.passwordPrompt':
@@ -269,6 +279,7 @@ export const ADMIN_FR_SOURCES = {
   // ── audit panel ─────────────────────────────────────────────────────────
   'admin.audit.title': "Journal d'audit",
   'admin.audit.globalFallback': 'global',
+  'admin.audit.export': "Exporter le journal",
 }
 
 export function adminText(t, key, vars = {}) {

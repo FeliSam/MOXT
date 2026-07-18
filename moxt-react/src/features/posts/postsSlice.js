@@ -43,6 +43,14 @@ const postsSlice = createSlice({
       state.items = state.items.filter((p) => p.id !== action.payload)
     },
 
+    moderatePost(state, action) {
+      const { id, status } = action.payload || {}
+      const post = state.items.find((p) => p.id === id)
+      if (!post || !status) return
+      post.status = status
+      post.updatedAt = new Date().toISOString()
+    },
+
     /** Soft-archive feed posts linked to a catalog source (client mirror of DB cascade). */
     archivePostsBySource(state, action) {
       const { sourceType, sourceId } = action.payload || {}
@@ -109,6 +117,7 @@ export const {
   createPost,
   updatePost,
   deletePost,
+  moderatePost,
   archivePostsBySource,
   toggleLike,
   addComment,

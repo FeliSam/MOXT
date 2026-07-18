@@ -474,5 +474,44 @@ export function createNotificationDispatcher(store) {
         'notifSysteme',
       )
     },
+    handleSupportTicketCreated(before, after, action) {
+      const created = after.communications.support.some((item) => item.id === action.payload.id)
+      if (!created) return
+      const existed = before.communications.support.some((item) => item.id === action.payload.id)
+      if (existed) return
+
+      const ticket = after.communications.support.find((item) => item.id === action.payload.id)
+      if (!ticket) return
+
+      notifyAdmins({
+        title: notifyT('shared.notifications.support.newTitle'),
+        message: notifyT('shared.notifications.support.newBody', {
+          name: ticket.userName || notifyT('shared.notifications.someone'),
+          subject: ticket.subject,
+        }),
+        type: 'support',
+        link: '/admin?view=support',
+        priority: 'high',
+      })
+    },
+    handleSupportTicketReply(before, after, action) {
+      if (action.payload.role !== 'agent') return
+      const ticket = after.communications.support.find((item) => item.id === action.payload.ticketId)
+      if (!ticket?.userId) return
+
+      notifyUser(
+        ticket.userId,
+        {
+          title: notifyT('shared.notifications.support.replyTitle'),
+          message: notifyT('shared.notifications.support.replyBody', {
+            text: String(action.payload.text || '').slice(0, 120),
+          }),
+          type: 'support',
+          link: '/support',
+          priority: 'high',
+        },
+        'notifSysteme',
+      )
+    },
   }
 }

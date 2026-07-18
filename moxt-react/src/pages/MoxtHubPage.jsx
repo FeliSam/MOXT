@@ -1,3 +1,5 @@
+import { useMemo } from 'react'
+import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { FiChevronRight } from 'react-icons/fi'
 import { Badge } from '../components/ui/Badge'
@@ -13,7 +15,11 @@ import {
   serviceTones,
 } from '../features/dashboard/dashboardConfig'
 import { Dashboard3DIcon } from '../features/dashboard/components/Dashboard3DIcon'
-import { moxtHubSecondaryLinks } from '../features/moxt/moxtHubConfig'
+import {
+  filterMoxtHubLinksByRole,
+  moxtHubAdminLinks,
+  moxtHubSecondaryLinks,
+} from '../features/moxt/moxtHubConfig'
 
 function HubSectionHeading({ description, id, title }) {
   return (
@@ -54,6 +60,11 @@ function SecondaryLinkTile({ icon: Icon, labelKey, path, t }) {
 
 export function MoxtHubPage() {
   const { t } = useLanguage()
+  const role = useSelector((state) => state.auth.user?.role)
+  const adminLinks = useMemo(
+    () => filterMoxtHubLinksByRole(moxtHubAdminLinks, role),
+    [role],
+  )
 
   return (
     <div className="grid min-w-0 gap-8 overflow-x-clip sm:gap-10">
@@ -170,6 +181,31 @@ export function MoxtHubPage() {
           ))}
         </div>
       </section>
+
+      {adminLinks.length > 0 ? (
+        <section
+          className="grid min-w-0 gap-4 border-t border-[var(--app-border)] pt-8"
+          aria-labelledby="moxt-hub-admin"
+        >
+          <RevealOnScroll delay={70}>
+            <HubSectionHeading
+              id="moxt-hub-admin"
+              title={t('moxtHub.admin')}
+              description={t('moxtHub.adminDesc')}
+            />
+          </RevealOnScroll>
+          <nav
+            className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3"
+            aria-label={t('moxtHub.admin')}
+          >
+            {adminLinks.map((link, index) => (
+              <RevealListItem key={link.path} index={index}>
+                <SecondaryLinkTile {...link} t={t} />
+              </RevealListItem>
+            ))}
+          </nav>
+        </section>
+      ) : null}
 
       <section
         className="grid min-w-0 gap-4 border-t border-[var(--app-border)] pt-8"

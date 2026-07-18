@@ -451,7 +451,6 @@ html.messages-route-lock #root {
   height: 1.65rem;
   flex-shrink: 0;
   place-items: center;
-  align-self: flex-end;
   border-radius: 0.75rem;
   background: linear-gradient(135deg, var(--app-accent), var(--app-teal));
   font-size: 0.5625rem;
@@ -459,6 +458,10 @@ html.messages-route-lock #root {
   color: #fff;
   white-space: nowrap;
   box-shadow: var(--shadow-card), 0 0 0 2px color-mix(in srgb, var(--app-surface) 80%, transparent);
+}
+
+.message-row > .message-avatar {
+  align-self: flex-end;
 }
 
 .message-avatar--ghost {
@@ -1705,11 +1708,313 @@ html.messages-route-lock #root {
 
 /* ─── Message enter ──────────────────────────────────────────────────────── */
 .message-stack--enter {
-  animation: message-enter 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: message-enter 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.message-stack--send {
+  animation: message-send-out 0.46s cubic-bezier(0.22, 1.12, 0.36, 1) both;
+}
+
+.message-stack--pending .message-bubble--sent {
+  box-shadow:
+    0 8px 22px rgb(8 112 95 / 22%),
+    0 0 0 1px rgb(255 255 255 / 8%) inset;
+}
+
+.message-stack--pending .message-bubble--sent::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    110deg,
+    transparent 0%,
+    rgb(255 255 255 / 14%) 45%,
+    transparent 70%
+  );
+  animation: message-pending-shimmer 1.35s ease-in-out infinite;
+}
+
+.message-composer-form {
+  transition:
+    border-color 220ms ease,
+    box-shadow 260ms ease,
+    transform 220ms ease,
+    background-color 220ms ease;
+}
+
+.message-composer-form--ready {
+  border-color: color-mix(in srgb, var(--app-accent) 34%, var(--app-border));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.35),
+    0 0 0 1px color-mix(in srgb, var(--app-accent) 12%, transparent),
+    0 10px 28px rgb(8 112 95 / 8%);
+}
+
+.message-composer-form--sending {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--app-accent) 42%, var(--app-border));
+}
+
+.message-send-btn {
+  position: relative;
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  place-items: center;
+  overflow: hidden;
+  border: none;
+  border-radius: 0.75rem;
+  background: linear-gradient(145deg, #0f766e, #115e59 58%, #134e4a);
+  color: #fff;
+  box-shadow: 0 10px 24px rgb(8 112 95 / 0.28);
+  transition:
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 220ms ease,
+    filter 180ms ease,
+    opacity 180ms ease;
+}
+
+.message-send-btn:hover:not(:disabled) {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgb(8 112 95 / 0.34);
+}
+
+.message-send-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.96);
+}
+
+.message-send-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+  box-shadow: none;
+}
+
+.message-send-btn__glow,
+.message-send-btn__ripple,
+.message-send-btn__ring {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.message-send-btn__glow {
+  opacity: 0;
+  background: radial-gradient(circle at 30% 20%, rgb(255 255 255 / 0.35), transparent 58%);
+  transition: opacity 220ms ease;
+}
+
+.message-send-btn--ready .message-send-btn__glow {
+  opacity: 1;
+  animation: composer-send-ready 2.4s ease-in-out infinite;
+}
+
+.message-send-btn__icon {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  font-size: 1rem;
+  transition: transform 260ms cubic-bezier(0.22, 1.12, 0.36, 1);
+}
+
+.message-send-btn--burst .message-send-btn__icon {
+  animation: send-button-launch 520ms cubic-bezier(0.22, 1.15, 0.36, 1) both;
+}
+
+.message-send-btn--sending .message-send-btn__icon {
+  animation: send-button-pulse 680ms ease-in-out infinite;
+}
+
+.message-send-btn__ripple {
+  border-radius: inherit;
+  transform: scale(0.35);
+  opacity: 0;
+  background: rgb(255 255 255 / 0.28);
+}
+
+.message-send-btn--burst .message-send-btn__ripple {
+  animation: send-button-ripple 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.message-send-btn__ring {
+  border-radius: inherit;
+  border: 2px solid rgb(255 255 255 / 0.45);
+  opacity: 0;
+  transform: scale(0.82);
+}
+
+.message-send-btn--sending .message-send-btn__ring {
+  animation: send-button-ring 900ms cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+.message-meta-status--pending {
+  color: color-mix(in srgb, var(--app-accent) 72%, var(--app-text-faint));
+}
+
+.message-pending-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.12rem;
+}
+
+.message-pending-indicator span {
+  width: 0.28rem;
+  height: 0.28rem;
+  border-radius: 999px;
+  background: currentColor;
+  animation: message-pending-dot 1.1s ease-in-out infinite;
+}
+
+.message-pending-indicator span:nth-child(2) {
+  animation-delay: 0.14s;
+}
+
+.message-pending-indicator span:nth-child(3) {
+  animation-delay: 0.28s;
+}
+
+.message-meta-status--pop {
+  animation: message-status-pop 420ms cubic-bezier(0.22, 1.12, 0.36, 1) both;
 }
 
 .message-stack--sent.message-stack--enter {
   animation-name: message-enter;
+}
+
+@keyframes message-send-out {
+  0% {
+    opacity: 0;
+    transform: translate3d(14px, 10px, 0) scale(0.9);
+    filter: blur(2px);
+  }
+  62% {
+    opacity: 1;
+    transform: translate3d(-2px, -2px, 0) scale(1.02);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes message-pending-shimmer {
+  0% {
+    transform: translateX(-120%);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+}
+
+@keyframes composer-send-ready {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes send-button-launch {
+  0% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  45% {
+    transform: translate(2px, -3px) rotate(-18deg) scale(0.92);
+  }
+  100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+}
+
+@keyframes send-button-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.88);
+  }
+}
+
+@keyframes send-button-ripple {
+  0% {
+    transform: scale(0.35);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+@keyframes send-button-ring {
+  0% {
+    transform: scale(0.82);
+    opacity: 0.65;
+  }
+  100% {
+    transform: scale(1.18);
+    opacity: 0;
+  }
+}
+
+@keyframes message-pending-dot {
+  0%,
+  70%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  35% {
+    transform: translateY(-0.12rem);
+    opacity: 1;
+  }
+}
+
+@keyframes message-status-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(4px) scale(0.82);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-1px) scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .message-stack--enter,
+  .message-stack--send,
+  .message-stack--pending .message-bubble--sent::after,
+  .message-send-btn--ready .message-send-btn__glow,
+  .message-send-btn--burst .message-send-btn__icon,
+  .message-send-btn--burst .message-send-btn__ripple,
+  .message-send-btn--sending .message-send-btn__icon,
+  .message-send-btn--sending .message-send-btn__ring,
+  .message-pending-indicator span,
+  .message-meta-status--pop {
+    animation: none !important;
+  }
+
+  .message-composer-form--sending {
+    transform: none;
+  }
 }
 
 /* ─── Star fill ──────────────────────────────────────────────────────────── */

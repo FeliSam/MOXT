@@ -12,6 +12,7 @@ import {
   updateListingStatus,
 } from '../marketplace/marketplaceSlice'
 import { updateParcelStatus } from '../parcels/parcelSlice'
+import { deletePost, moderatePost } from '../posts/postsSlice'
 import { moderateReview } from '../reviews/reviewSlice'
 import { TRANSFER_TRANSITIONS } from '../transfers/transferConfig'
 import { moderateTransfer } from '../transfers/transferSlice'
@@ -152,6 +153,14 @@ export function contentActions(contentView, dispatch, item, t) {
             {adminText(t, 'admin.actions.activate')}
           </ActionButton>
           <ActionButton
+            done={status === 'archived'}
+            doneLabel={adminText(t, 'admin.actions.archivedMasc')}
+            variant="danger"
+            onClick={() => dispatch(moderateJob({ id: item.id, status: 'archived' }))}
+          >
+            {adminText(t, 'admin.actions.archive')}
+          </ActionButton>
+          <ActionButton
             done={status === 'rejected'}
             doneLabel={adminText(t, 'admin.actions.rejected')}
             variant="danger"
@@ -172,7 +181,15 @@ export function contentActions(contentView, dispatch, item, t) {
             {adminText(t, 'admin.actions.publish')}
           </ActionButton>
           <ActionButton
-            done={status === 'rejected' || status === 'archived'}
+            done={status === 'archived'}
+            doneLabel={adminText(t, 'admin.actions.archivedMasc')}
+            variant="danger"
+            onClick={() => dispatch(moderateEvent({ id: item.id, status: 'archived' }))}
+          >
+            {adminText(t, 'admin.actions.archive')}
+          </ActionButton>
+          <ActionButton
+            done={status === 'rejected'}
             doneLabel={adminText(t, 'admin.actions.rejectedMasc')}
             variant="danger"
             onClick={() => dispatch(moderateEvent({ id: item.id, status: 'rejected' }))}
@@ -221,6 +238,40 @@ export function contentActions(contentView, dispatch, item, t) {
           </ActionButton>
         </>
       )
+    case 'posts':
+      return (
+        <>
+          <ActionButton
+            done={status === 'published'}
+            doneLabel={adminText(t, 'admin.actions.publishedMasc')}
+            onClick={() => dispatch(moderatePost({ id: item.id, status: 'published' }))}
+          >
+            {adminText(t, 'admin.actions.publish')}
+          </ActionButton>
+          <ActionButton
+            done={status === 'archived'}
+            doneLabel={adminText(t, 'admin.actions.archivedMasc')}
+            variant="danger"
+            onClick={() => {
+              if (window.confirm(adminText(t, 'admin.actions.archivePostConfirm'))) {
+                dispatch(moderatePost({ id: item.id, status: 'archived' }))
+              }
+            }}
+          >
+            {adminText(t, 'admin.actions.archive')}
+          </ActionButton>
+          <ActionButton
+            variant="danger"
+            onClick={() => {
+              if (window.confirm(adminText(t, 'admin.actions.deletePostConfirm'))) {
+                dispatch(deletePost(item.id))
+              }
+            }}
+          >
+            {adminText(t, 'admin.actions.delete')}
+          </ActionButton>
+        </>
+      )
     default:
       return null
   }
@@ -247,6 +298,7 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
     case 'jobs':
     case 'events':
     case 'parcels':
+    case 'posts':
     case 'report':
       return (
         <>

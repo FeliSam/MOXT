@@ -211,6 +211,8 @@ export const pt = {
     quickActionsDesc: "Publique ou inicie uma operação com um toque.",
     secondary: "Conta e mais",
     secondaryDesc: "Publicações, favoritos, perfil, mensagens e definições.",
+    admin: "Administração",
+    adminDesc: "Centro de controlo, cobertura funcional e pilotagem do sistema.",
   },
   share: {
     title: "QR code e convite",
@@ -4281,6 +4283,14 @@ export const pt = {
     },
     seeMore: "Ver mais",
     seeLess: "Ver menos",
+    menu: {
+      actions: "Ações da publicação",
+      edit: "Editar",
+      archive: "Arquivar",
+      delete: "Eliminar",
+      deleteConfirm: "Eliminar esta publicação?",
+    },
+    archiveConfirm: "Arquivar esta publicação? Deixará de aparecer no feed.",
     types: {
       post: "Post",
       listing: "Anúncio",
@@ -5420,6 +5430,7 @@ export const pt = {
       overview: "Vista geral",
       transfers: "Transferências",
       content: "Conteúdos",
+      publications: "Publicações",
       support: "Suporte",
       users: "Utilizadores",
       verifications: "Verificações",
@@ -5432,6 +5443,7 @@ export const pt = {
       jobs: "Empregos",
       events: "Eventos",
       parcels: "Encomendas",
+      posts: "Publicações",
       reports: "Denúncias",
     },
     filters: {
@@ -5634,6 +5646,9 @@ export const pt = {
       removeReview: "Remover a avaliação",
       rejectContest: "Recusar a contestação",
       hide: "Ocultar",
+      delete: "Eliminar",
+      deletePostConfirm: "Eliminar definitivamente esta publicação?",
+      archivePostConfirm: "Arquivar esta publicação? Deixará de aparecer no feed.",
     },
     promote: {
       passwordPrompt: "Palavra-passe de promoção a administrador\n(configurada em scripts/phase2.env → MOXT_ADMIN_PROMOTE_PASSWORD)",

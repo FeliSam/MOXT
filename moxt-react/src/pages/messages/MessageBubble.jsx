@@ -28,8 +28,23 @@ function bubbleClassName(mine, groupedWithPrevious, groupedWithNext, failed) {
 
 const LONG_PRESS_MS = 450
 
-function MessageReadStatus({ status }) {
+function MessageReadStatus({ pending, pop = false, status }) {
   const { t } = useLanguage()
+  if (pending) {
+    return (
+      <span
+        className="message-meta-status message-meta-status--pending"
+        title={t('messages.statusSending')}
+        aria-label={t('messages.statusSending')}
+      >
+        <span className="message-pending-indicator" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </span>
+      </span>
+    )
+  }
   if (!status) return null
   const isRead = status === 'read'
   const isDelivered = status === 'delivered'
@@ -41,9 +56,9 @@ function MessageReadStatus({ status }) {
 
   return (
     <span
-      className={`message-meta-status ${isRead ? 'message-meta-status--read' : ''} ${
-        isDelivered ? 'message-meta-status--delivered' : ''
-      }`}
+      className={`message-meta-status ${pop ? 'message-meta-status--pop' : ''} ${
+        isRead ? 'message-meta-status--read' : ''
+      } ${isDelivered ? 'message-meta-status--delivered' : ''}`}
       title={text}
     >
       {isRead ? (
@@ -62,6 +77,8 @@ function MessageReadStatus({ status }) {
 }
 
 export function MessageBubble({
+  animateEnter = false,
+  enterVariant = 'received',
   groupedWithNext = false,
   groupedWithPrevious = false,
   highlight = false,
@@ -89,6 +106,7 @@ export function MessageBubble({
   const [placeAbove, setPlaceAbove] = useState(false)
   const readStatus = messageReadStatus(message, user.id)
   const failed = Boolean(message.syncFailed)
+  const pending = Boolean(message.pending)
   const showActions = openActions
   const hasReactions =
     message.reactions && Object.entries(message.reactions).some(([, u]) => u?.length)
@@ -177,14 +195,20 @@ export function MessageBubble({
     onToggleActions?.()
   }
 
+  const enterClass = animateEnter
+    ? enterVariant === 'sent'
+      ? 'message-stack--send'
+      : 'message-stack--enter'
+    : ''
+
   return (
     <div
       ref={stackRef}
-      className={`message-stack message-stack--enter message-stack--interactive ${
+      className={`message-stack message-stack--interactive ${enterClass} ${
         mine ? 'message-stack--sent' : ''
-      } ${hasImageAttachment ? 'message-stack--media' : ''} ${
-        highlight ? 'message-stack--highlight' : ''
-      } ${showActions ? 'message-stack--actions' : ''} ${
+      } ${pending && mine ? 'message-stack--pending' : ''} ${
+        hasImageAttachment ? 'message-stack--media' : ''
+      } ${highlight ? 'message-stack--highlight' : ''      } ${showActions ? 'message-stack--actions' : ''} ${
         hasReactions ? 'message-stack--reacted' : ''
       }`}
     >
@@ -377,7 +401,13 @@ export function MessageBubble({
       {!groupedWithNext ? (
         <div className={`message-meta ${mine ? 'message-meta--sent' : ''}`}>
           <time dateTime={message.createdAt}>{shortTime(message.createdAt)}</time>
-          {mine && readStatus && !failed ? <MessageReadStatus status={readStatus} /> : null}
+          {mine && !failed ? (
+            <MessageReadStatus
+              pending={pending}
+              pop={animateEnter && !pending}
+              status={readStatus}
+            />
+          ) : null}
           {mine && failed ? (
             <span className="message-meta-failed">{messagesText(t, 'messages.notSynced')}</span>
           ) : null}

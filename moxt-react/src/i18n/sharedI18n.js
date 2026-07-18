@@ -162,6 +162,11 @@ export const SHARED_FR_SOURCES = {
   'shared.notifications.dispute.updatedTitle': 'Litige mis à jour',
   'shared.notifications.dispute.updatedBody':
     'Le litige {id} est maintenant : {status}.',
+  'shared.notifications.support.newTitle': 'Nouvelle demande support',
+  'shared.notifications.support.newBody':
+    '{name} a ouvert un ticket : « {subject} ».',
+  'shared.notifications.support.replyTitle': 'Réponse du support MOXT',
+  'shared.notifications.support.replyBody': '{text}',
 
   // ── P2P order status labels (notification display) ───────────────────────
   'shared.notifications.p2p.status.created': 'Commande créée',

@@ -8,7 +8,6 @@ import {
   FiMoreVertical,
   FiPaperclip,
   FiSearch,
-  FiSend,
   FiSlash,
   FiStar,
   FiX,
@@ -17,6 +16,7 @@ import { Link } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { RELATED_CONTENT_META } from '../../config/communications'
 import { useLanguage } from '../../contexts/useLanguage'
+import { EntityAvatar } from '../../features/account/EntityAvatar'
 import { getConversationPeer } from '../../features/communications/conversationDisplay'
 import {
   buildConversationTimeline,
@@ -42,6 +42,7 @@ import {
 import { conversationMessageCount, isMessageFromUser, messageHasReactions, messageSearchHaystack } from './messageUtils'
 import { RelatedContentPreview } from './RelatedContentPreview'
 import { TypingDots, TypingIndicator } from './TypingIndicator'
+import { MessageSendButton } from './MessageSendButton'
 
 function matchesThreadQuery(messageOrText, query) {
   if (!query.trim()) return true
@@ -55,6 +56,7 @@ function matchesThreadQuery(messageOrText, query) {
 export function ConversationPanel({
   active,
   attachments = [],
+  avatarMap = {},
   blocked,
   formik,
   messagesLoading,
@@ -80,6 +82,7 @@ export function ConversationPanel({
   replyToId,
   replyToContextId,
   peerTyping = false,
+  sentAnimationIds = [],
   onTyping,
   onStopTyping,
   archived,
@@ -92,6 +95,9 @@ export function ConversationPanel({
 }) {
   const { t } = useLanguage()
   const peer = getConversationPeer(active, user.id)
+  const liveEntry = peer?.id ? avatarMap[peer.id] : undefined
+  const peerAvatarSrc =
+    liveEntry !== undefined ? liveEntry.avatarUrl || null : peer?.avatarUrl || null
   const relatedPreview = useSelector((state) => resolveRelatedSnapshot(state, active))
   const relatedMeta = RELATED_CONTENT_META[relatedPreview?.type || active.relatedType] || RELATED_CONTENT_META.general
   const RelatedIcon = relatedMeta.icon
@@ -129,6 +135,7 @@ export function ConversationPanel({
     [active.messages, initialUnreadCount, user.id],
   )
   const hasDraft = Boolean(formik.values.text.trim())
+  const canSend = !blocked && (hasDraft || attachments.length)
   const draftSaved = Boolean(active.drafts?.[user.id]?.trim())
   const showDraftHint = hasDraft && draftSaved
   const filteredTimeline = useMemo(() => {
@@ -221,10 +228,14 @@ export function ConversationPanel({
         >
           <FiX />
         </button>
-        <MessageAvatar
-          avatarUrl={peer.avatarUrl}
-          className="!size-10 !rounded-[0.9rem] shadow-[var(--shadow-card)]"
+        <EntityAvatar
           name={peer.name}
+          src={peerAvatarSrc}
+          size="md"
+          shape="user"
+          ring={false}
+          className="!size-10 !rounded-[0.9rem] shadow-[var(--shadow-card)]"
+          alt={peer.name}
         />
         <div className="min-w-0 flex-1 pr-1">
           <div className="flex min-w-0 items-center gap-1.5">
@@ -535,6 +546,8 @@ export function ConversationPanel({
                           <MessageAvatar name={message.senderName} hidden={groupedWithPrevious} />
                         ) : null}
                         <MessageBubble
+                          animateEnter={sentAnimationIds.includes(message.id)}
+                          enterVariant={mine ? 'sent' : 'received'}
                           groupedWithNext={groupedWithNext}
                           groupedWithPrevious={groupedWithPrevious}
                           highlight={highlight}
@@ -719,7 +732,9 @@ export function ConversationPanel({
           </div>
         ) : null}
         <form
-          className="mx-auto flex max-w-3xl items-end gap-1.5 rounded-[1.2rem] border border-[var(--app-border)] bg-[var(--app-surface-muted)]/80 p-1.5 shadow-[inset_0_1px_0_rgb(255_255_255/0.35)]"
+          className={`message-composer-form mx-auto flex max-w-3xl items-end gap-1.5 rounded-[1.2rem] border border-[var(--app-border)] bg-[var(--app-surface-muted)]/80 p-1.5 shadow-[inset_0_1px_0_rgb(255_255_255/0.35)] ${
+            canSend ? 'message-composer-form--ready' : ''
+          } ${formik.isSubmitting ? 'message-composer-form--sending' : ''}`}
           onSubmit={formik.handleSubmit}
         >
           <label
@@ -771,18 +786,12 @@ export function ConversationPanel({
               }
             }}
           />
-          <button
-            className="message-touch-target grid size-11 shrink-0 place-items-center rounded-xl bg-brand-700 text-base text-white shadow-[0_10px_24px_rgb(8_112_95/0.28)] transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-40"
-            type="submit"
-            aria-label={t("messages.send")}
-            disabled={
-              blocked ||
-              (!formik.values.text.trim() && !attachments.length) ||
-              formik.isSubmitting
-            }
-          >
-            <FiSend aria-hidden="true" />
-          </button>
+          <MessageSendButton
+            ariaLabel={t('messages.send')}
+            disabled={blocked || !canSend || formik.isSubmitting}
+            ready={canSend && !formik.isSubmitting}
+            sending={formik.isSubmitting}
+          />
         </form>
         {showDraftHint || formik.values.text.length >= 1800 ? (
           <div className="mx-auto mt-2 flex max-w-3xl items-start justify-between gap-3 px-1">

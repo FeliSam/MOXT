@@ -161,6 +161,12 @@ export const interactionMiddleware = (store) => {
   if (action.type === 'disputes/updateDisputeStatus') {
     triggers.handleDisputeStatus(before, after, action, actorId)
   }
+  if (action.type === 'communications/createSupportTicket') {
+    triggers.handleSupportTicketCreated(before, after, action)
+  }
+  if (action.type === 'communications/replySupportTicket') {
+    triggers.handleSupportTicketReply(before, after, action)
+  }
 
   if (action.type === 'transfers/createTransfer') {
     notify(store, {

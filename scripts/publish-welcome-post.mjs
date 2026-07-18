@@ -146,6 +146,8 @@ async function main() {
     message: MESSAGE,
     image_url: storedUrl,
     direct_link: '/news',
+    language: 'fr',
+    pinned: true,
     likes: [],
     comments: [],
     last_shared_at: now,

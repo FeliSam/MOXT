@@ -35,6 +35,8 @@ export function AdminPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const view = resolveAdminView(searchParams.get('view'))
   const [contentView, setContentView] = useState('businesses')
+  const effectiveContentView = view === 'publications' ? 'posts' : contentView
+  const filterView = view === 'publications' ? 'publications' : view
   const [selected, setSelected] = useState(null)
   const [supportReply, setSupportReply] = useState('')
   const [query, setQuery] = useState('')
@@ -53,7 +55,7 @@ export function AdminPage() {
     activeContentItems,
     allTransfers,
     allVerifications,
-  } = useAdminPageData(query, statusFilter, contentView)
+  } = useAdminPageData(query, statusFilter, effectiveContentView)
 
   function switchView(next) {
     const resolved = resolveAdminView(next)
@@ -67,9 +69,11 @@ export function AdminPage() {
   }
 
   const confirmName = `${confirmUser?.firstName || ''} ${confirmUser?.lastName || ''}`.trim()
+  const auditFullWidth = view === 'audit' && !selected
+  const showDetailPanel = !auditFullWidth || selected
 
   return (
-    <div className="grid gap-6">
+    <div className="grid min-w-0 max-w-full gap-6 overflow-x-clip">
       <SystemStatusBar metrics={metrics} queues={queues} />
 
       <PageHeader
@@ -85,7 +89,13 @@ export function AdminPage() {
 
       <HeroKpiRow metrics={metrics} queues={queues} onSelect={switchView} />
 
-      <div className="grid gap-5 xl:grid-cols-[14rem_minmax(0,1fr)_minmax(0,22rem)]">
+      <div
+        className={`grid min-w-0 gap-5 ${
+          auditFullWidth
+            ? 'xl:grid-cols-[14rem_minmax(0,1fr)]'
+            : 'xl:grid-cols-[14rem_minmax(0,1fr)_minmax(0,22rem)]'
+        }`}
+      >
         <aside className="grid min-w-0 content-start gap-2">
           <AdminIdentityCard admin={admin} />
           <nav className={`${CARD} grid content-start gap-1 p-2`}>
@@ -111,7 +121,7 @@ export function AdminPage() {
             setQuery={setQuery}
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
-            view={view}
+            view={filterView}
           />
 
           {view === 'overview' && (
@@ -119,7 +129,10 @@ export function AdminPage() {
               content={content}
               metrics={metrics}
               queues={queues}
-              onOpenContent={(next) => { setContentView(next); switchView('content') }}
+              onOpenContent={(next) => {
+                setContentView(next)
+                switchView(next === 'posts' ? 'publications' : 'content')
+              }}
               onOpenView={switchView}
               setSelected={setSelected}
               transfers={allTransfers}
@@ -128,11 +141,12 @@ export function AdminPage() {
           {view === 'transfers' && (
             <AdminTransfersPanel dispatch={dispatch} setSelected={setSelected} transfers={transfers} />
           )}
-          {view === 'content' && (
+          {(view === 'content' || view === 'publications') && (
             <AdminContentPanel
-              contentView={contentView}
+              contentView={effectiveContentView}
               dispatch={dispatch}
               items={activeContentItems}
+              lockedSection={view === 'publications' ? 'posts' : null}
               setContentView={setContentView}
               setSelected={setSelected}
             />
@@ -175,18 +189,24 @@ export function AdminPage() {
             />
           )}
           {view === 'audit' && (
-            <AdminAuditPanel auditItems={auditItems} setSelected={setSelected} />
+            <AdminAuditPanel
+              auditItems={auditItems}
+              selectedId={selected?.kind === 'audit' ? selected.item.id : null}
+              setSelected={setSelected}
+            />
           )}
         </div>
 
-        <AdminDetailPanel
-          admin={admin}
-          dispatch={dispatch}
-          onSuspendUser={setConfirmUser}
-          selected={selected}
-          supportReply={supportReply}
-          setSupportReply={setSupportReply}
-        />
+        {showDetailPanel ? (
+          <AdminDetailPanel
+            admin={admin}
+            dispatch={dispatch}
+            onSuspendUser={setConfirmUser}
+            selected={selected}
+            supportReply={supportReply}
+            setSupportReply={setSupportReply}
+          />
+        ) : null}
       </div>
 
       <ConfirmDialog

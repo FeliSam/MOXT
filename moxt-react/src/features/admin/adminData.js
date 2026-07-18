@@ -2,6 +2,7 @@ import {
   FiActivity,
   FiAlertCircle,
   FiCalendar,
+  FiEdit3,
   FiEye,
   FiHeadphones,
   FiPackage,
@@ -50,6 +51,7 @@ export function buildQueues(state) {
   return {
     accountDeletions,
     verifications,
+    support: state.communications.support.filter((item) => item.status === 'waiting_agent'),
     disputes: state.disputes.items.filter((i) => ['new', 'open'].includes(i.status)),
     reviews: state.reviews.items.filter((i) => i.status === 'pending'),
     contestedReviews: state.reviews.items.filter(
@@ -71,6 +73,7 @@ export function buildQueues(state) {
       return (
         this.accountDeletions.length +
         this.verifications.length +
+        this.support.length +
         this.disputes.length +
         this.reports.length +
         this.contestedReviews.length
@@ -86,6 +89,7 @@ export function buildAdminMetrics(state) {
   const jobs = state.jobs.items
   const events = state.events.items
   const parcels = state.parcels.items
+  const posts = state.posts.items
   const reports =
     state.marketplace.reports.length +
     state.jobs.reports.length +
@@ -99,13 +103,14 @@ export function buildAdminMetrics(state) {
       pending: transfers.filter((i) => !['completed', 'cancelled', 'expired'].includes(i.status)).length,
     },
     content: {
-      total: businesses.length + listings.length + jobs.length + events.length + parcels.length,
+      total: businesses.length + listings.length + jobs.length + events.length + parcels.length + posts.length,
       pending:
         businesses.filter((i) => i.status === 'pending_review').length +
         listings.filter((i) => ['draft', 'pending_review'].includes(i.status)).length +
         jobs.filter((i) => ['draft', 'pending_review'].includes(i.status)).length +
         events.filter((i) => ['draft', 'pending_review'].includes(i.status)).length +
         parcels.filter((i) => ['draft', 'pending_review'].includes(i.status)).length +
+        posts.filter((i) => i.status === 'pending_review').length +
         reports,
     },
     users: {
@@ -116,12 +121,17 @@ export function buildAdminMetrics(state) {
       total:
         queues.accountDeletions.length +
         queues.verifications.length +
+        queues.support.length +
         queues.disputes.length +
         queues.reviews.length +
         queues.reports.length,
       urgent: queues.urgent,
     },
     audit: { total: state.audit.items.length },
+    posts: {
+      total: posts.length,
+      pending: posts.filter((i) => i.status === 'pending_review').length,
+    },
   }
 }
 
@@ -142,6 +152,7 @@ export function buildContentCollections(state) {
     jobs: state.jobs.items,
     events: state.events.items,
     parcels: state.parcels.items,
+    posts: state.posts.items,
     reports,
   }
 }
@@ -149,8 +160,10 @@ export function buildContentCollections(state) {
 export function badgeForView(view, metrics, queues) {
   if (view === 'transfers') return metrics.transfers.pending
   if (view === 'content') return metrics.content.pending
+  if (view === 'publications') return metrics.posts.pending
   if (view === 'users') return metrics.users.suspended
   if (view === 'verifications') return queues.verifications.length
+  if (view === 'support') return queues.support.length
   if (view === 'queues') return queues.urgent
   return 0
 }
@@ -172,6 +185,7 @@ const DETAIL_ICONS = {
   jobs: FiTrendingUp,
   events: FiCalendar,
   parcels: FiPackage,
+  posts: FiEdit3,
   audit: FiActivity,
 }
 
@@ -192,6 +206,7 @@ const DETAIL_KIND_KEYS = {
   jobs: 'admin.detail.kind.jobs',
   events: 'admin.detail.kind.events',
   parcels: 'admin.detail.kind.parcels',
+  posts: 'admin.detail.kind.posts',
   audit: 'admin.detail.kind.audit',
 }
 
@@ -229,6 +244,13 @@ export function detailDescriptionFor(kind, item, t) {
         city: item.city,
         services: item.services?.join(', ') || adminText(t, 'admin.common.servicesFallback'),
       })
+    case 'audit':
+      return adminText(t, 'admin.detail.desc.audit', {
+        role: item.actorRole || 'system',
+        target: item.targetId || adminText(t, 'admin.audit.globalFallback'),
+      })
+    case 'posts':
+      return item.message?.slice(0, 160) || item.id
     default:
       return item.description || item.reason || item.comment || item.action || item.id
   }
@@ -340,6 +362,22 @@ export function buildDetailFacts(kind, item, t) {
         [f('admin.facts.reporter'), item.reporterId || '—'],
         [f('admin.facts.createdAt'), formatDate(item.createdAt)],
       ]
+    case 'audit':
+      return [
+        [f('admin.facts.action'), item.action || '—'],
+        [f('admin.facts.role'), item.actorRole || '—'],
+        [f('admin.facts.actor'), item.actorId || '—'],
+        [f('admin.facts.reference'), item.targetId || f('admin.audit.globalFallback')],
+        [f('admin.facts.createdAt'), formatDate(item.createdAt)],
+      ]
+    case 'posts':
+      return [
+        [f('admin.facts.author'), item.authorName || item.authorId || '—'],
+        [f('admin.facts.type'), item.sourceType || 'free'],
+        [f('admin.facts.status'), item.status || '—'],
+        [f('admin.facts.messages'), item.comments?.length || 0],
+        [f('admin.facts.date'), formatDate(item.createdAt)],
+      ]
     default:
       return [
         [f('admin.facts.id'), item.id],
@@ -381,6 +419,11 @@ export function contentSubtitle(contentView, item, t) {
       return adminText(t, 'admin.contentSubtitle.reports', {
         type: item.reportType,
         status: item.status,
+      })
+    case 'posts':
+      return adminText(t, 'admin.contentSubtitle.posts', {
+        author: item.authorName || item.authorId || '—',
+        type: item.sourceType || 'free',
       })
     default:
       return adminText(t, 'admin.contentSubtitle.default', { status: item.status || '—' })

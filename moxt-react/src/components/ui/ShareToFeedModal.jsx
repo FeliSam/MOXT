@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { FiImage, FiSend, FiShare2, FiTrash2, FiX } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
+import { useLanguage } from '../../contexts/useLanguage'
 import { createPost } from '../../features/posts/postsSlice'
 import { generatePostMessage, getSourceImage, SOURCE_TYPE_LABELS, SOURCE_TYPE_LINKS } from '../../features/posts/postTemplates'
 import { useSecurityGate } from '../../features/security/useSecurityGate'
@@ -22,6 +23,7 @@ import { initialCatalogStatus } from '@moxt/shared/auth/userSecurity.js'
 export function ShareToFeedModal({ sourceType = 'free', sourceId = null, sourceData = {}, onClose, onPublished }) {
   const dispatch = useDispatch()
   const user = useSelector((s) => s.auth.user)
+  const { language } = useLanguage()
   const { requirePublish } = useSecurityGate()
   const textareaRef = useRef(null)
   const dialogRef = useRef(null)
@@ -81,6 +83,7 @@ export function ShareToFeedModal({ sourceType = 'free', sourceId = null, sourceD
         imageUrl: imagePreview || null,
         imageFile: imageFile || null,
         directLink,
+        language,
         status,
       }),
     )
