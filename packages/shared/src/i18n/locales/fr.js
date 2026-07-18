@@ -4437,6 +4437,9 @@ export const fr = {
       next: "Suivant",
       reply: "Répondre en message",
       deletedTitle: "Statut supprimé",
+      viewersTitle: "Vu par {count}",
+      noViewers: "Personne n'a encore vu ce statut.",
+      someone: "Quelqu'un",
     },
   },
   exchangers: {

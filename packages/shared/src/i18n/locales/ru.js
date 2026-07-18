@@ -4438,6 +4438,9 @@ export const ru = {
       next: "Далее",
       reply: "Ответить сообщением",
       deletedTitle: "Статус удалён",
+      viewersTitle: "Просмотрели: {count}",
+      noViewers: "Пока никто не видел этот статус.",
+      someone: "Кто-то",
     },
   },
   exchangers: {

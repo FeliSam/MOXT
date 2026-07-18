@@ -955,6 +955,8 @@ const handlers = {
       caption: payload.caption || '',
       is_official: payload.isOfficial === true,
       viewed_by: JSON.stringify(payload.viewedBy ?? []),
+      viewers: JSON.stringify({}),
+      reactions: JSON.stringify({}),
       created_at: payload.createdAt,
       expires_at: payload.expiresAt,
     }
@@ -965,7 +967,18 @@ const handlers = {
     const status = state.statuses?.items?.find((item) => item.id === payload.statusId)
     const { error } = await supabase
       .from('statuses')
-      .update({ viewed_by: JSON.stringify(status?.viewedBy ?? [payload.userId]) })
+      .update({
+        viewed_by: JSON.stringify(status?.viewedBy ?? [payload.userId]),
+        viewers: JSON.stringify(status?.viewers ?? {}),
+      })
+      .eq('id', payload.statusId)
+    if (error) throw error
+  },
+  'statuses/reactToStatus': async (payload, state) => {
+    const status = state.statuses?.items?.find((item) => item.id === payload.statusId)
+    const { error } = await supabase
+      .from('statuses')
+      .update({ reactions: JSON.stringify(status?.reactions ?? {}) })
       .eq('id', payload.statusId)
     if (error) throw error
   },

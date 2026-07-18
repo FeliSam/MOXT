@@ -103,6 +103,10 @@ export const ADMIN_FR_SOURCES = {
   'admin.overview.queue.disputes': 'Litiges ouverts',
   'admin.overview.queue.reviews': 'Avis en attente',
   'admin.overview.queue.reports': 'Signalements',
+  'admin.overview.officialStatus.title': 'Statut officiel MOXT',
+  'admin.overview.officialStatus.description':
+    'Publiez un statut au nom de MOXT, visible 7 jours en tête du bandeau — sans passer par votre compte personnel.',
+  'admin.overview.officialStatus.action': 'Publier un statut MOXT',
 
   // ── detail panel ────────────────────────────────────────────────────────
   'admin.detail.title': 'Vue detaillee',

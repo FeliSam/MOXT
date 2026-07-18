@@ -4436,7 +4436,10 @@ export const es = {
       previous: "Anterior",
       next: "Siguiente",
       reply: "Responder por mensaje",
-      deletedTitle: "Estado eliminado"
+      deletedTitle: "Estado eliminado",
+      viewersTitle: "Visto por {count}",
+      noViewers: "Nadie ha visto este estado todavía.",
+      someone: "Alguien"
     }
   },
   exchangers: {

@@ -631,6 +631,8 @@ export const loadAllData = createAsyncThunk(
         ...s,
         images: parseJsonField(s.images, []).filter((url) => typeof url === 'string' && url).slice(0, 4),
         viewedBy: parseJsonField(s.viewedBy, []),
+        viewers: parseJsonField(s.viewers, {}),
+        reactions: parseJsonField(s.reactions, {}),
         isOfficial: s.isOfficial === true,
       })) }))
       dispatch(mergeRemoteAccount({

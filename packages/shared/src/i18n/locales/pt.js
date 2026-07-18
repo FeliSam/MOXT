@@ -4437,6 +4437,9 @@ export const pt = {
       next: "Seguinte",
       reply: "Responder por mensagem",
       deletedTitle: "Estado eliminado",
+      viewersTitle: "Visto por {count}",
+      noViewers: "Ninguém viu este estado ainda.",
+      someone: "Alguém",
     },
   },
   exchangers: {

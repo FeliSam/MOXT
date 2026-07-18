@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   FiAlertCircle,
   FiAlertTriangle,
@@ -5,20 +6,58 @@ import {
   FiCheckCircle,
   FiLayers,
   FiRepeat,
+  FiZap,
 } from 'react-icons/fi'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { TransferStatusBadge } from '../../transfers/TransferStatusBadge'
 import { formatMoney } from '../../transfers/transferUtils'
+import { StatusComposer } from '../../statuses/StatusComposer'
 import { CARD, CONTENT_SECTIONS, ITEM } from '../adminConfig'
 import { adminOptionLabel, adminText } from '../adminI18n'
 import { statusDotColor } from '../adminUtils'
 import { Empty, SectionTitle } from './AdminShared'
 
+const MOXT_OFFICIAL_IDENTITY = {
+  name: 'MOXT',
+  avatarUrl: '/assets/brand/mark.png?v=20260714e',
+}
+
 export function AdminOverviewPanel({ content, metrics, onOpenContent, onOpenView, queues, setSelected, transfers }) {
   const { t } = useLanguage()
+  const [officialComposerOpen, setOfficialComposerOpen] = useState(false)
 
   return (
     <div className="grid gap-5">
+      {officialComposerOpen ? (
+        <StatusComposer
+          officialIdentity={MOXT_OFFICIAL_IDENTITY}
+          onClose={() => setOfficialComposerOpen(false)}
+        />
+      ) : null}
+
+      <div className={`${CARD} flex flex-wrap items-center justify-between gap-3 p-5`}>
+        <div className="flex items-center gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-brand-700 to-teal-500 text-white shadow-sm">
+            <FiZap className="text-sm" />
+          </span>
+          <div>
+            <strong className="block text-sm font-black">
+              {adminText(t, 'admin.overview.officialStatus.title')}
+            </strong>
+            <p className="text-xs text-[var(--app-text-muted)]">
+              {adminText(t, 'admin.overview.officialStatus.description')}
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setOfficialComposerOpen(true)}
+          className="shrink-0 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-brand-800"
+        >
+          {adminText(t, 'admin.overview.officialStatus.action')}
+        </button>
+      </div>
+
       <div className="grid gap-3 sm:grid-cols-3">
         {[
           {

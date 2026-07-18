@@ -38,11 +38,25 @@ const statusesSlice = createSlice({
     },
 
     markStatusViewed(state, action) {
-      const { statusId, userId } = action.payload
+      const { statusId, userId, userName, userAvatarUrl } = action.payload
       const status = state.items.find((s) => s.id === statusId)
       if (!status) return
       status.viewedBy ||= []
       if (!status.viewedBy.includes(userId)) status.viewedBy.push(userId)
+      status.viewers ||= {}
+      status.viewers[userId] = {
+        name: userName || '',
+        avatarUrl: userAvatarUrl || null,
+        viewedAt: new Date().toISOString(),
+      }
+    },
+
+    reactToStatus(state, action) {
+      const { statusId, userId, emoji } = action.payload
+      const status = state.items.find((s) => s.id === statusId)
+      if (!status) return
+      status.reactions ||= {}
+      status.reactions[userId] = emoji
     },
 
     deleteStatus(state, action) {
@@ -57,7 +71,13 @@ const statusesSlice = createSlice({
   },
 })
 
-export const { setAll, createStatus, markStatusViewed, deleteStatus, pruneExpiredStatuses } =
-  statusesSlice.actions
+export const {
+  setAll,
+  createStatus,
+  markStatusViewed,
+  reactToStatus,
+  deleteStatus,
+  pruneExpiredStatuses,
+} = statusesSlice.actions
 
 export default statusesSlice.reducer

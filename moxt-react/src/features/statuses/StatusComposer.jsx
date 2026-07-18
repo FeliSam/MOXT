@@ -14,7 +14,7 @@ import { createStatus } from './statusesSlice'
  * Composeur de statut — plein écran mobile, centré en modal sur desktop.
  * Réutilise PosterUploader (même sélecteur multi-images que Job/Événement).
  */
-export function StatusComposer({ onClose }) {
+export function StatusComposer({ onClose, officialIdentity }) {
   const dispatch = useDispatch()
   const { t } = useLanguage()
   const user = useSelector((s) => s.auth.user)
@@ -50,11 +50,13 @@ export function StatusComposer({ onClose }) {
         createStatus({
           id: statusId,
           authorId: user.id,
-          authorName: `${user.firstName} ${user.lastName}`,
-          authorAvatarUrl: user.avatarUrl || null,
+          authorName: officialIdentity ? officialIdentity.name : `${user.firstName} ${user.lastName}`,
+          authorAvatarUrl: officialIdentity
+            ? officialIdentity.avatarUrl || null
+            : user.avatarUrl || null,
           images: urls,
           caption: caption.trim(),
-          isOfficial: user.role === 'admin' || user.role === 'superadmin',
+          isOfficial: officialIdentity ? true : user.role === 'admin' || user.role === 'superadmin',
         }),
       )
       dispatch(
@@ -95,10 +97,12 @@ export function StatusComposer({ onClose }) {
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="font-display text-lg font-extrabold tracking-tight">
-              {t('status.composer.title')}
+              {officialIdentity ? t('status.composer.officialTitle') : t('status.composer.title')}
             </h2>
             <p className="mt-1 text-xs text-[var(--app-text-muted)]">
-              {t('status.composer.description')}
+              {officialIdentity
+                ? t('status.composer.officialDescription')
+                : t('status.composer.description')}
             </p>
           </div>
           <button

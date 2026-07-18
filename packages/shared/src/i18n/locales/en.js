@@ -4455,6 +4455,9 @@ export const en = {
       next: "Next",
       reply: "Reply in message",
       deletedTitle: "Status deleted",
+      viewersTitle: "Seen by {count}",
+      noViewers: "No one has seen this status yet.",
+      someone: "Someone",
     },
   },
   exchangers: {

@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { FiChevronLeft, FiChevronRight, FiX } from 'react-icons/fi'
+import { FiChevronLeft, FiChevronRight, FiEye, FiX } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
-import { deleteStatus, markStatusViewed } from './statusesSlice'
+import { deleteStatus, markStatusViewed, reactToStatus } from './statusesSlice'
+import { openConversationWithContact } from '../communications/communicationSlice'
 import { addToast } from '../ui/uiSlice'
 import { useLanguage } from '../../contexts/useLanguage'
 
 const IMAGE_DURATION_MS = 4500
+const QUICK_REACTIONS = ['❤️', '😂', '😮', '😢', '👏', '🔥']
 
 function timeAgo(iso, t) {
   const diffMs = Date.now() - new Date(iso).getTime()
@@ -28,6 +30,8 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
   const [groupIndex, setGroupIndex] = useState(initialGroupIndex)
   const [pageIndex, setPageIndex] = useState(0)
   const [paused, setPaused] = useState(false)
+  const [viewersOpen, setViewersOpen] = useState(false)
+  const [sentReaction, setSentReaction] = useState(null)
   const timerRef = useRef(null)
 
   const group = groups[groupIndex]
@@ -49,11 +53,20 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
 
   useEffect(() => {
     setPageIndex(0)
+    setViewersOpen(false)
+    setSentReaction(null)
   }, [groupIndex])
 
   useEffect(() => {
     if (!page || !viewer?.id) return
-    dispatch(markStatusViewed({ statusId: page.statusId, userId: viewer.id }))
+    dispatch(
+      markStatusViewed({
+        statusId: page.statusId,
+        userId: viewer.id,
+        userName: `${viewer.firstName || ''} ${viewer.lastName || ''}`.trim(),
+        userAvatarUrl: viewer.avatarUrl || null,
+      }),
+    )
   }, [page?.statusId, viewer?.id, dispatch])
 
   function goNextGroup() {
@@ -103,12 +116,42 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
     else goNextPage()
   }
 
+  async function handleReact(emoji) {
+    if (!page || !viewer?.id || isMine) return
+    dispatch(reactToStatus({ statusId: page.statusId, userId: viewer.id, emoji }))
+    setSentReaction(emoji)
+    try {
+      await dispatch(
+        openConversationWithContact({
+          ownerId: group.authorId,
+          createdBy: viewer.id,
+          senderName: `${viewer.firstName} ${viewer.lastName}`,
+          initialMessage: emoji,
+        }),
+      ).unwrap()
+    } catch {
+      // Réaction déjà enregistrée localement ; l'envoi du message peut échouer silencieusement.
+    }
+  }
+
+  const viewersList = group?.items
+    ? Object.entries(
+        group.items.reduce((acc, item) => ({ ...acc, ...(item.viewers || {}) }), {}),
+      )
+        .map(([id, info]) => ({ id, ...info }))
+        .sort((a, b) => new Date(b.viewedAt).getTime() - new Date(a.viewedAt).getTime())
+    : []
+
   if (!group || !page) return null
 
   return createPortal(
     <div className="fixed inset-0 z-[var(--z-modal)] flex flex-col bg-black" role="dialog" aria-modal="true">
       {/* Barres de progression */}
-      <div className="flex shrink-0 gap-1 p-2 pt-3 sm:p-3">
+      <div
+        className="flex shrink-0 gap-1 p-2 sm:p-3"
+        style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0px))' }}
+      >
+
         {pages.map((p, i) => (
           <div key={`${p.statusId}-${i}`} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/25">
             <div
@@ -138,8 +181,17 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
         {isMine ? (
           <button
             type="button"
+            onClick={() => setViewersOpen(true)}
+            className="flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-bold text-white/80 transition hover:bg-white/10 hover:text-white"
+          >
+            <FiEye className="text-sm" /> {viewersList.length}
+          </button>
+        ) : null}
+        {isMine ? (
+          <button
+            type="button"
             onClick={handleDelete}
-            className="rounded-full px-3 py-1.5 text-xs font-bold text-white/80 transition hover:bg-white/10 hover:text-white"
+            className="shrink-0 rounded-full px-3 py-1.5 text-xs font-bold text-white/80 transition hover:bg-white/10 hover:text-white"
           >
             {t('status.viewer.delete')}
           </button>
@@ -190,13 +242,83 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
       </div>
 
       {!isMine ? (
-        <Link
-          to="/messages"
-          onClick={onClose}
-          className="m-3 shrink-0 rounded-2xl border border-white/25 bg-white/10 py-3 text-center text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/20 sm:m-4"
+        <div
+          className="shrink-0 px-3 sm:px-4"
+          style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))' }}
         >
-          {t('status.viewer.reply')}
-        </Link>
+          <div className="mb-2.5 flex items-center justify-center gap-1.5">
+            {QUICK_REACTIONS.map((emoji) => (
+              <button
+                key={emoji}
+                type="button"
+                onClick={() => handleReact(emoji)}
+                className={`grid size-10 place-items-center rounded-full text-xl transition ${
+                  sentReaction === emoji
+                    ? 'scale-110 bg-white/25'
+                    : 'bg-white/10 hover:scale-110 hover:bg-white/20'
+                }`}
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+          <Link
+            to="/messages"
+            onClick={onClose}
+            className="block rounded-2xl border border-white/25 bg-white/10 py-3 text-center text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/20"
+          >
+            {t('status.viewer.reply')}
+          </Link>
+        </div>
+      ) : null}
+
+      {viewersOpen ? (
+        <div
+          className="fixed inset-0 z-10 flex items-end justify-center bg-black/60"
+          role="presentation"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setViewersOpen(false)
+          }}
+        >
+          <div
+            className="max-h-[70dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-[var(--app-surface)] p-5"
+            style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom, 0px))' }}
+          >
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h3 className="font-black">
+                {t('status.viewer.viewersTitle', { count: viewersList.length })}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setViewersOpen(false)}
+                aria-label={t('status.viewer.close')}
+                className="grid size-8 place-items-center rounded-full text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)]"
+              >
+                <FiX />
+              </button>
+            </div>
+            {viewersList.length ? (
+              <ul className="grid gap-3">
+                {viewersList.map((v) => (
+                  <li key={v.id} className="flex items-center gap-3">
+                    {v.avatarUrl ? (
+                      <img src={v.avatarUrl} alt="" className="size-9 shrink-0 rounded-full object-cover" />
+                    ) : (
+                      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-600 text-xs font-black text-white">
+                        {v.name?.charAt(0) || '?'}
+                      </span>
+                    )}
+                    <span className="min-w-0 flex-1 truncate text-sm font-bold">
+                      {v.name || t('status.viewer.someone')}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-[var(--app-text-muted)]">{t('status.viewer.noViewers')}</p>
+            )}
+          </div>
+        </div>
       ) : null}
     </div>,
     document.body,
