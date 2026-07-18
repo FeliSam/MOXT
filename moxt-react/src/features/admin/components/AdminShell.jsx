@@ -11,7 +11,7 @@ import { adminText } from '../adminI18n'
 import { avatarColor, initials } from '../adminUtils'
 import { TrendChip } from './AdminShared'
 
-export function AdminIdentityCard({ admin }) {
+export function AdminIdentityCard({ admin, roleLabel }) {
   const { t } = useLanguage()
   if (!admin) return null
   const name = `${admin.firstName || ''} ${admin.lastName || ''}`.trim()
@@ -27,7 +27,7 @@ export function AdminIdentityCard({ admin }) {
           {name || adminText(t, 'admin.identity.fallbackName')}
         </p>
         <p className="text-[10px] font-bold uppercase tracking-wider text-brand-700">
-          {admin.role || 'admin'}
+          {roleLabel || admin.role || 'admin'}
         </p>
       </div>
     </div>

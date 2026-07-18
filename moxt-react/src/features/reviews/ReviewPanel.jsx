@@ -4,6 +4,7 @@ import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 import { Link } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import { PillBadge } from '../../components/ui/Badge'
+import { EntityVerifiedName } from '../../components/ui/EntityVerifiedName'
 import { Button } from '../../components/ui/Button'
 import { StarRating } from '../../components/ui/StarRating'
 import {
@@ -70,7 +71,13 @@ export function ReviewCard({ review, ownerId, ownerName, isOwner }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <strong className="truncate">{review.authorName || 'Membre MOXT'}</strong>
+            <EntityVerifiedName
+              as="strong"
+              name={review.authorName || 'Membre MOXT'}
+              userId={review.authorId}
+              className="min-w-0"
+              nameClassName="truncate"
+            />
             <PillBadge tone="neutral">{sourceLabel}</PillBadge>
             {disputeLabel ? (
               <PillBadge tone={review.disputeStatus === 'pending' ? 'warning' : 'info'}>

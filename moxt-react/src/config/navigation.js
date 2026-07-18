@@ -24,6 +24,7 @@ import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 
 export const routePreloaders = {
   '/admin': () => import('../pages/AdminPage'),
+  '/moderation': () => import('../pages/ModerationPage'),
   '/activities': () => import('../pages/ActivitiesPage'),
   '/businesses': () => import('../pages/BusinessesPage'),
   '/professional': () => import('../pages/ProfessionalPage'),
@@ -194,6 +195,24 @@ export const navigationGroups = [
         labelKey: 'nav.myPublications',
         path: '/publications/mine',
         icon: FiList,
+      },
+    ],
+  },
+  {
+    id: 'moderation',
+    label: 'Modération',
+    labelKey: 'nav.moderation',
+    icon: FiShield,
+    color: 'from-cyan-500 to-teal-600',
+    roles: ['moderator', 'admin', 'superadmin'],
+    children: [
+      {
+        id: 'moderation-space',
+        label: 'Espace modérateur',
+        labelKey: 'nav.moderationSpace',
+        path: '/moderation',
+        icon: FiShield,
+        roles: ['moderator', 'admin', 'superadmin'],
       },
     ],
   },

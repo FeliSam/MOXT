@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
+import { EntityVerifiedName } from '../../../components/ui/EntityVerifiedName'
 import { RevealListItem } from '../../../components/ui/RevealListItem'
 import { RevealOnScroll } from '../../../components/ui/RevealOnScroll'
 import { SkeletonCard } from '../../../components/ui/Skeleton'
@@ -256,7 +257,13 @@ function DashboardPostCard({ post }) {
             </span>
           )}
           <div className="min-w-0">
-            <p className="truncate text-[11px] font-bold leading-tight">{post.authorName}</p>
+            <EntityVerifiedName
+              as="p"
+              name={post.authorName}
+              userId={post.authorId}
+              className="text-[11px] font-bold leading-tight"
+              nameClassName="truncate"
+            />
             <p className="text-[10px] text-[var(--app-text-faint)]">{formatDate(post.createdAt)}</p>
           </div>
         </div>

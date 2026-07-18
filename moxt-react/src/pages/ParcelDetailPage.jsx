@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { Link, useParams } from 'react-router-dom'
 import { useState } from 'react'
 import { Badge, VerifiedBadge } from '../components/ui/Badge'
+import { EntityVerifiedName } from '../components/ui/EntityVerifiedName'
 import { BackButton } from '../components/ui/BackButton'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
@@ -339,10 +340,17 @@ export function ParcelDetailPage() {
                               }}
                               initialMessage={reservationMessage}
                             >
-                              {request.requesterName}
+                              <EntityVerifiedName
+                                name={request.requesterName}
+                                userId={request.userId}
+                              />
                             </ContactButton>
                           ) : (
-                            <strong>{request.requesterName}</strong>
+                            <EntityVerifiedName
+                              as="strong"
+                              name={request.requesterName}
+                              userId={request.userId}
+                            />
                           )}
                           <p className="mt-1 text-sm text-[var(--app-text-muted)]">
                             {t('parcels.detail.requests.kgRequested', { kg: request.kg })}
@@ -401,7 +409,16 @@ export function ParcelDetailPage() {
                   : t('parcels.detail.profile.individual'),
               },
               { label: t('parcels.detail.info.status'), value: statusMeta(parcel.status, t).label },
-              { label: t('parcels.detail.info.carrier'), value: parcel.ownerName },
+              {
+                label: t('parcels.detail.info.carrier'),
+                value: (
+                  <EntityVerifiedName
+                    name={parcel.ownerName}
+                    userId={parcel.ownerId}
+                    businessId={parcel.businessId}
+                  />
+                ),
+              },
             ]}
           />
           {canSeeProof ? (

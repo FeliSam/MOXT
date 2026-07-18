@@ -281,6 +281,7 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
   const reviewerId = actorId || 'admin'
   switch (normalizeAdminKind(kind)) {
     case 'transfer': {
+      if (actorRole === 'moderator') return detailViewButton('transfer', item, t)
       const next = TRANSFER_TRANSITIONS[item.status]
       return (
         <>
@@ -307,8 +308,17 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
         </>
       )
     case 'user':
+      if (actorRole === 'moderator') return detailViewButton('user', item, t)
       return (
         <>
+          <Button
+            variant="secondary"
+            onClick={() =>
+              dispatchUserRole(dispatch, { actorRole, id: item.id, role: 'moderator', t })
+            }
+          >
+            {adminText(t, 'admin.actions.promoteModerator')}
+          </Button>
           <Button
             variant="secondary"
             disabled={actorRole !== 'superadmin'}
@@ -328,6 +338,7 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
         </>
       )
     case 'verification':
+      if (actorRole === 'moderator') return detailViewButton('verification', item, t)
       return (
         <>
           <ActionButton
@@ -370,6 +381,7 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
         </>
       )
     case 'businessDocument':
+      if (actorRole === 'moderator') return detailViewButton('businessDocument', item, t)
       return (
         <>
           <ActionButton

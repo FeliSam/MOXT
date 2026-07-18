@@ -11,6 +11,7 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { Input } from '../components/ui/Input'
 import { PageHeader } from '../components/ui/PageHeader'
 import { VerifiedBadge } from '../components/ui/Badge'
+import { EntityVerifiedName } from '../components/ui/EntityVerifiedName'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { Select } from '../components/ui/Select'
@@ -213,10 +214,15 @@ export function ParcelsPage() {
                             </span>
                           )}
                         </span>
-                        <div className="flex items-center gap-2 pr-10">
-                          <h2 className="truncate text-sm font-black sm:text-base">
-                            {parcel.ownerName}
-                          </h2>
+                        <div className="flex min-w-0 items-center gap-2 pr-10">
+                          <EntityVerifiedName
+                            as="h2"
+                            name={parcel.ownerName}
+                            userId={parcel.ownerId}
+                            businessId={parcel.businessId}
+                            className="min-w-0 text-sm font-black sm:text-base"
+                            nameClassName="truncate"
+                          />
                         </div>
                         <div className="mt-4 flex items-center gap-2 rounded-2xl bg-[var(--app-surface-muted)] p-3">
                           <div className="min-w-0 flex-1 text-center">
@@ -298,8 +304,15 @@ export function ParcelsPage() {
                       <span className="absolute right-2 top-2 z-10 rounded-full bg-[var(--app-surface-muted)] px-1.5 py-0.5 text-[9px] font-black text-[var(--app-text-faint)]">
                         {t('parcels.card.archived')}
                       </span>
-                      <div className="flex items-center gap-2">
-                        <h2 className="truncate text-sm font-black sm:text-base">{parcel.ownerName}</h2>
+                      <div className="flex min-w-0 items-center gap-2">
+                        <EntityVerifiedName
+                          as="h2"
+                          name={parcel.ownerName}
+                          userId={parcel.ownerId}
+                          businessId={parcel.businessId}
+                          className="min-w-0 text-sm font-black sm:text-base"
+                          nameClassName="truncate"
+                        />
                       </div>
                       <div className="mt-4 flex items-center gap-2 rounded-2xl bg-[var(--app-surface-muted)] p-3">
                         <p className="min-w-0 flex-1 truncate text-center text-xs font-black uppercase tracking-wide">{parcel.origin}</p>

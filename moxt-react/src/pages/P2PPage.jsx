@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import { Badge, VerifiedBadge } from '../components/ui/Badge'
+import { EntityVerifiedName } from '../components/ui/EntityVerifiedName'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { CatalogArchiveTabs } from '../components/ui/CatalogArchiveTabs'
@@ -193,9 +194,14 @@ export function P2PPage() {
                       currency: offer.toCurrency,
                     })}
                   </h2>
-                  <p className="mt-1.5 truncate text-xs text-[var(--app-text-faint)]">
-                    {offer.ownerName}
-                  </p>
+                  <EntityVerifiedName
+                    as="p"
+                    name={offer.ownerName}
+                    userId={offer.ownerId}
+                    businessId={offer.businessId}
+                    className="mt-1.5 text-xs text-[var(--app-text-faint)]"
+                    nameClassName="truncate"
+                  />
 
                   <div className="mt-4 flex items-center gap-2 rounded-2xl bg-[var(--app-surface-muted)] p-3">
                     <div className="min-w-0 flex-1 text-center">

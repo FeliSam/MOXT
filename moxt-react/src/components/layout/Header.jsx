@@ -9,6 +9,7 @@ import { useSmartNavbar } from '../../hooks/useSmartNavbar'
 import { CountBounce } from '../ui/CountBounce'
 import { LanguageSwitcher } from '../ui/LanguageSwitcher'
 import { VerifiedDisplayName } from '../ui/Badge'
+import { isProfileVerified } from '../../features/profile/userProfileUtils'
 import { Brand } from './Brand'
 import { GlobalSearch } from './GlobalSearch'
 
@@ -129,12 +130,12 @@ export function Header({ hideOnMobile = false }) {
               <VerifiedDisplayName
                 as="strong"
                 name={user?.firstName || 'Mon compte'}
-                verified={Boolean(user?.verified)}
+                verified={isProfileVerified(user)}
                 iconSize="sm"
                 className="max-w-[8rem] text-xs font-black"
                 nameClassName="truncate"
               />
-              {!user?.verified ? (
+              {!isProfileVerified(user) ? (
                 <small className="mt-0.5 block text-[10px] text-[var(--app-text-faint)]">
                   {t('dashboard.hero.welcome', { name: 'MOXT' })}
                 </small>

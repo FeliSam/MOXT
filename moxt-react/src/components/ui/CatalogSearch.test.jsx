@@ -10,7 +10,6 @@ vi.mock('../../contexts/useLanguage', () => ({
         'catalog.search.placeholder': 'Rechercher',
         'catalog.search.clearSearch': 'Effacer la recherche',
         'catalog.search.filters': 'Filtres',
-        'catalog.search.liveHint': 'Recherche dynamique, sans rechargement de la page.',
         'catalog.search.results': `${vars?.count ?? 0} résultat`,
         'catalog.search.resultsPlural': `${vars?.count ?? 0} résultats`,
         'catalog.search.advancedTitle': 'Filtres avancés',

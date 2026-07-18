@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../services/supabaseClient'
+import { isProfileVerified } from '../profile/userProfileUtils'
 
 function mapRemoteProfile(row) {
   if (!row) return null
@@ -69,7 +70,7 @@ export function usePublicationProfile(userId, currentUser) {
         city: currentUser?.city || '',
         country: currentUser?.country || '',
         avatarUrl: currentUser?.avatarUrl || null,
-        verified: Boolean(currentUser?.verified),
+        verified: isProfileVerified(currentUser),
         memberSince: currentUser?.createdAt || null,
       }
     : remoteProfile

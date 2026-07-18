@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import { Card } from '../components/ui/Card'
 import { Badge, VerifiedBadge } from '../components/ui/Badge'
+import { EntityVerifiedName } from '../components/ui/EntityVerifiedName'
 import { Button } from '../components/ui/Button'
 import { CatalogArchiveTabs } from '../components/ui/CatalogArchiveTabs'
 import { CatalogSearch } from '../components/ui/CatalogSearch'
@@ -197,9 +198,14 @@ export function JobsPage() {
                         <h2 className="mt-3.5 line-clamp-2 text-sm font-black leading-snug sm:text-base">
                           {job.title}
                         </h2>
-                        <p className="mt-1.5 truncate text-xs text-[var(--app-text-faint)]">
-                          {job.publisherName}
-                        </p>
+                        <EntityVerifiedName
+                          as="p"
+                          name={job.publisherName}
+                          userId={job.ownerId}
+                          businessId={job.businessId}
+                          className="mt-1.5 text-xs text-[var(--app-text-faint)]"
+                          nameClassName="truncate"
+                        />
                         <div className="mt-4 flex items-center gap-2 rounded-2xl bg-[var(--app-surface-muted)] p-3">
                           <Badge tone={sectorTone(job.sector)} className="min-w-0 truncate normal-case">
                             {jobSectorLabel(t, job.sector)}
@@ -233,9 +239,14 @@ export function JobsPage() {
                       <h2 className="mt-3.5 line-clamp-2 text-sm font-black leading-snug sm:text-base">
                         {job.title}
                       </h2>
-                      <p className="mt-1.5 truncate text-xs text-[var(--app-text-faint)]">
-                        {job.publisherName}
-                      </p>
+                      <EntityVerifiedName
+                        as="p"
+                        name={job.publisherName}
+                        userId={job.ownerId}
+                        businessId={job.businessId}
+                        className="mt-1.5 text-xs text-[var(--app-text-faint)]"
+                        nameClassName="truncate"
+                      />
 
                       <div className="mt-4 flex items-center gap-2 rounded-2xl bg-[var(--app-surface-muted)] p-3">
                         <Badge tone={sectorTone(job.sector)} className="min-w-0 truncate normal-case">

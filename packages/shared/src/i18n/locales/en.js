@@ -343,11 +343,13 @@ export const en = {
   share: {
     title: "QR code & invitation",
     eyebrow: "Sharing",
-    description: "One place to invite friends or share your MOXT profile.",
+    description: "One place to invite friends, share your profile, or follow MOXT on Instagram.",
     tabTypeLabel: "Share type",
     inviteTab: "Invite",
     profileTab: "My profile",
+    instagramTab: "Instagram",
     invitationSubtitle: "MOXT invitation",
+    instagramSubtitle: "@MOXTAPP · Official account",
     inviteCountOne: "person invited",
     inviteCountMany: "people invited",
     copyLink: "Copy link",
@@ -363,16 +365,19 @@ export const en = {
       invite: "Scan to join MOXT",
       profile: "Scan to view my publications",
       business: "Scan to discover this business",
+      instagram: "Scan to follow MOXT on Instagram",
     },
     shareTitles: {
       invite: "Join MOXT",
       onMoxt: "{name} on MOXT",
       publications: "Publications by {name}",
+      instagram: "MOXT on Instagram",
     },
     shareTexts: {
       invite: "Transfers, parcels and services between Africa and Russia. Join me on MOXT:",
       profile: "View {name}’s publications on MOXT.",
       business: "Discover {name} on MOXT.",
+      instagram: "Follow the official MOXT account on Instagram:",
     },
     steps: {
       step1Title: "Share your QR",
@@ -758,6 +763,7 @@ export const en = {
       tagline: "Services platform for the diaspora. Exchange with care.",
       security: "Security",
       help: "Help",
+      instagram: "Instagram",
       copyright: "© {year} MOXT. All rights reserved.",
     },
     home: {
@@ -6311,6 +6317,20 @@ export const en = {
         h1: "Internationalization FR / EN / RU / PT",
         h2: "PWA, dark mode, global search",
       },
+    },
+  },
+  social: {
+    instagram: {
+      eyebrow: "Community",
+      title: "Follow MOXT on Instagram",
+      description:
+        "News, tips and diaspora moments — join @MOXTAPP to stay in the loop.",
+      open: "Open Instagram",
+      copy: "Copy link",
+      copied: "Link copied",
+      scanHint: "Scan the QR",
+      enlargeQr: "Enlarge Instagram QR code",
+      qrAlt: "Instagram QR code @MOXTAPP",
     },
   },
   reviews: {

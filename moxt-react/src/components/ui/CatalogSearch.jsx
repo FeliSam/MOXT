@@ -20,7 +20,7 @@ export function CatalogSearch({
 
   return (
     <section className="rounded-[var(--radius-card-lg)] border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--shadow-card)] sm:p-5">
-      <div className="flex flex-col gap-3 lg:flex-row">
+      <div className="flex flex-row items-center gap-2 sm:gap-3">
         <label className="relative min-w-0 flex-1">
           <span className="sr-only">{searchLabel}</span>
           <FiSearch className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--app-text-faint)]" />
@@ -45,11 +45,13 @@ export function CatalogSearch({
         <Button
           variant={advancedOpen ? 'primary' : 'secondary'}
           icon={FiSliders}
+          size="lg"
           onClick={onToggleAdvanced}
           aria-expanded={advancedOpen}
-          className="relative shrink-0"
+          aria-label={t('catalog.search.filters')}
+          className={`relative shrink-0 !px-3.5 sm:!px-7 ${activeFilterCount === 0 ? 'max-sm:!gap-0' : ''}`}
         >
-          {t('catalog.search.filters')}
+          <span className="hidden sm:inline">{t('catalog.search.filters')}</span>
           {activeFilterCount > 0 ? (
             <span
               className={`grid size-5 place-items-center rounded-full text-[10px] font-black ${
@@ -62,8 +64,7 @@ export function CatalogSearch({
         </Button>
       </div>
 
-      <div className="mt-3 flex items-center justify-between gap-3 text-xs text-[var(--app-text-faint)]">
-        <span>{t('catalog.search.liveHint')}</span>
+      <div className="mt-3 flex items-center justify-end gap-3 text-xs text-[var(--app-text-faint)]">
         <strong className="shrink-0 rounded-full bg-[var(--app-surface-muted)] px-2.5 py-1 text-[var(--app-text)]">
           {t(count > 1 ? 'catalog.search.resultsPlural' : 'catalog.search.results', { count })}
         </strong>

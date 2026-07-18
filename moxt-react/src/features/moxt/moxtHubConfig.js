@@ -76,8 +76,15 @@ export const moxtHubSecondaryLinks = [
   },
 ]
 
-/** Liens réservés aux rôles admin / superadmin (alignés sur navigation.js). */
+/** Liens réservés aux rôles staff / admin (alignés sur navigation.js). */
 export const moxtHubAdminLinks = [
+  {
+    id: 'moderation',
+    labelKey: 'nav.moderationSpace',
+    path: '/moderation',
+    icon: FiShield,
+    roles: ['moderator', 'admin', 'superadmin'],
+  },
   {
     id: 'admin',
     labelKey: 'nav.controlCenter',

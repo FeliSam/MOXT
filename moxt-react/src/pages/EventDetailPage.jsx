@@ -11,6 +11,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { Link, useParams } from 'react-router-dom'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
+import { EntityVerifiedName } from '../components/ui/EntityVerifiedName'
 import { BackButton } from '../components/ui/BackButton'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
@@ -152,11 +153,15 @@ export function EventDetailPage() {
           <h2 className="font-black">{t('events.detail.about')}</h2>
           <p className="mt-4 leading-7 text-slate-600 dark:text-slate-300">{event.description}</p>
           <div className="mt-6 grid gap-3 text-sm sm:grid-cols-2">
-            <span>
+            <span className="inline-flex min-w-0 flex-wrap items-center gap-1">
               {t('events.detail.organizerLabel')} :{' '}
-              <strong>
-                {event.organizerName} ({t(eventPublisherTypeKey(event.businessId))})
-              </strong>
+              <EntityVerifiedName
+                as="strong"
+                name={event.organizerName}
+                userId={event.ownerId}
+                businessId={event.businessId}
+              />
+              <span>({t(eventPublisherTypeKey(event.businessId))})</span>
             </span>
             <span>
               {t('events.detail.priceLabel')} :{' '}
@@ -258,7 +263,16 @@ export function EventDetailPage() {
         <DetailSection title={t('events.detail.practicalInfo')}>
           <DetailFacts
             items={[
-              { label: t('events.detail.facts.organizer'), value: event.organizerName },
+              {
+                label: t('events.detail.facts.organizer'),
+                value: (
+                  <EntityVerifiedName
+                    name={event.organizerName}
+                    userId={event.ownerId}
+                    businessId={event.businessId}
+                  />
+                ),
+              },
               {
                 label: t('events.detail.facts.profile'),
                 value: t(eventPublisherTypeKey(event.businessId)),

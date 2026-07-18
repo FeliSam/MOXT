@@ -100,7 +100,8 @@ export function FeedPostCard({ post }) {
   const p3 = (key, vars) => phase3Text(t, key, vars)
   const user = useSelector((s) => s.auth.user)
   const isAuthor = user?.id === post.authorId
-  const isModerator = user?.role === 'admin' || user?.role === 'superadmin'
+  const isModerator =
+    user?.role === 'moderator' || user?.role === 'admin' || user?.role === 'superadmin'
   const isSuperAdmin = user?.role === 'superadmin'
   const canManage = isAuthor || isModerator
   const pinned = post?.pinned === true

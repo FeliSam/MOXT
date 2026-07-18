@@ -342,11 +342,13 @@ export const fr = {
   share: {
     title: "QR code & invitation",
     eyebrow: "Partage",
-    description: "Un seul endroit pour inviter vos proches ou partager votre profil MOXT.",
+    description: "Un seul endroit pour inviter vos proches, partager votre profil ou suivre MOXT sur Instagram.",
     tabTypeLabel: "Type de partage",
     inviteTab: "Inviter",
     profileTab: "Mon profil",
+    instagramTab: "Instagram",
     invitationSubtitle: "Invitation MOXT",
+    instagramSubtitle: "@MOXTAPP · Compte officiel",
     inviteCountOne: "personne invitée",
     inviteCountMany: "personnes invitées",
     copyLink: "Copier le lien",
@@ -362,16 +364,19 @@ export const fr = {
       invite: "Scannez pour rejoindre MOXT",
       profile: "Scannez pour voir mes publications",
       business: "Scannez pour découvrir cette entreprise",
+      instagram: "Scannez pour suivre MOXT sur Instagram",
     },
     shareTitles: {
       invite: "Rejoignez MOXT",
       onMoxt: "{name} sur MOXT",
       publications: "Publications de {name}",
+      instagram: "MOXT sur Instagram",
     },
     shareTexts: {
       invite: "Transferts, colis et services entre l’Afrique et la Russie. Rejoignez-moi sur MOXT :",
       profile: "Consultez les publications de {name} sur MOXT.",
       business: "Découvrez {name} sur MOXT.",
+      instagram: "Suivez le compte officiel MOXT sur Instagram :",
     },
     steps: {
       step1Title: "Partagez votre QR",
@@ -766,6 +771,7 @@ export const fr = {
       tagline: "Plateforme de services pour la diaspora. Échangez en toute vigilance.",
       security: "Sécurité",
       help: "Aide",
+      instagram: "Instagram",
       copyright: "© {year} MOXT. Tous droits réservés.",
     },
     home: {
@@ -6331,6 +6337,20 @@ export const fr = {
         h1: "Internationalisation FR / EN / RU / PT",
         h2: "PWA, mode sombre, recherche globale",
       },
+    },
+  },
+  social: {
+    instagram: {
+      eyebrow: "Communauté",
+      title: "Suivez MOXT sur Instagram",
+      description:
+        "Actus, conseils et moments de la diaspora — rejoignez @MOXTAPP pour rester informé.",
+      open: "Ouvrir Instagram",
+      copy: "Copier le lien",
+      copied: "Lien copié",
+      scanHint: "Scannez le QR",
+      enlargeQr: "Agrandir le QR code Instagram",
+      qrAlt: "QR code Instagram @MOXTAPP",
     },
   },
   reviews: {

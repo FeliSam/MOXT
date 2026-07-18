@@ -43,6 +43,7 @@ export const CONTENT_SECTIONS = [
 export const ROLE_COLORS = {
   superadmin: 'bg-violet-100 text-violet-800 dark:bg-violet-950/60 dark:text-violet-200',
   admin: 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-200',
+  moderator: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950/60 dark:text-cyan-200',
   professional: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-200',
   user: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
 }
@@ -54,7 +55,7 @@ export const CHIP = 'rounded-full px-3 py-1.5 text-xs font-bold transition-all'
 export const VIEW_FILTERS = {
   transfers: ['all', 'pending', 'completed', 'cancelled'],
   support: ['all', 'open', 'resolved', 'pending'],
-  users: ['all', 'active', 'suspended', 'pending_deletion', 'user', 'professional', 'admin'],
+  users: ['all', 'active', 'suspended', 'pending_deletion', 'user', 'professional', 'moderator', 'admin'],
   content: ['all', 'active', 'pending_review', 'archived', 'published', 'rejected', 'new', 'resolved'],
   publications: ['all', 'active', 'pending_review', 'archived', 'published'],
   verifications: ['all', 'pending', 'verified', 'rejected'],

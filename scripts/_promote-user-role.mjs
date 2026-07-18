@@ -51,7 +51,7 @@ function main() {
   const role = arg('--role', '')
   const status = arg('--status', '')
 
-  if (role && !['admin', 'superadmin', 'user', 'professional'].includes(role)) {
+  if (role && !['admin', 'superadmin', 'moderator', 'user', 'professional'].includes(role)) {
     console.error(`Invalid role: ${role}`)
     process.exit(1)
   }

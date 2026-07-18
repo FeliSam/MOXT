@@ -2,6 +2,7 @@ import { FiInbox } from 'react-icons/fi'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import { EntityVerifiedName } from '../../components/ui/EntityVerifiedName'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { statusMeta } from '../../config/statuses'
 import { useLanguage } from '../../contexts/useLanguage'
@@ -30,9 +31,13 @@ export function RequestsPanel({ business, dispatch, requests }) {
             <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
               <div className="min-w-0 flex-1">
                 <strong className="block break-words">{request.title || request.relatedType}</strong>
-                <p className="mt-0.5 truncate text-sm text-[var(--app-text-muted)]">
-                  {request.requesterName || request.ownerId}
-                </p>
+                <EntityVerifiedName
+                  as="p"
+                  name={request.requesterName || request.ownerId}
+                  userId={request.requesterId || request.userId || request.ownerId}
+                  className="mt-0.5 text-sm text-[var(--app-text-muted)]"
+                  nameClassName="truncate"
+                />
               </div>
               <Badge tone={meta.tone} className="self-start lg:self-center">
                 {meta.label}

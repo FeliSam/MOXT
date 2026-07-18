@@ -232,6 +232,7 @@ export const ADMIN_FR_SOURCES = {
   'admin.actions.dismissed': 'Ignoré',
   'admin.actions.advanceTo': 'Passer a {next}',
   'admin.actions.promoteAdmin': 'Passer admin',
+  'admin.actions.promoteModerator': 'Passer modérateur',
   'admin.actions.reactivate': 'Reactiver',
   'admin.actions.suspend': 'Suspendre',
   'admin.actions.rejectPrompt': 'Motif du refus (optionnel) :',

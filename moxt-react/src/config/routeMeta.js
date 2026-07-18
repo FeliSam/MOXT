@@ -213,6 +213,7 @@ export const routeMetadata = [
     title: 'Couverture fonctionnelle',
     eyebrow: 'Administration',
   },
+  { pattern: /^\/moderation$/, title: 'Espace modérateur', eyebrow: 'Modération' },
   { pattern: /^\/admin$/, title: 'Centre de contrôle', eyebrow: 'Administration' },
   { pattern: /^\/superadmin$/, title: 'Pilotage système', eyebrow: 'Superadmin' },
 ]

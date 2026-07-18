@@ -53,151 +53,172 @@ function QueueSection({ icon, items, kind, label, renderActions, renderMeta, set
   )
 }
 
-export function AdminQueuesPanel({ adminId, dispatch, queues, setSelected }) {
+export function AdminQueuesPanel({
+  adminId,
+  dispatch,
+  queues,
+  setSelected,
+  variant = 'admin',
+}) {
   const { t } = useLanguage()
+  const isModeration = variant === 'moderation'
 
   return (
     <div className="grid gap-5">
-      <QueueSection
-        icon={FiTrash2}
-        items={queues.accountDeletions}
-        label={adminText(t, 'admin.overview.queue.deletions')}
-        kind="accountDeletion"
-        setSelected={setSelected}
-        t={t}
-        renderMeta={(item) => `${item.userName || item.userId}${item.userEmail ? ` · ${item.userEmail}` : ''}`}
-        renderActions={(item) => (
-          <Button
-            variant="secondary"
-            onClick={() =>
-              setSelected({
-                kind: 'user',
-                item: { id: item.userId, status: 'pending_deletion' },
+      {!isModeration ? (
+        <>
+          <QueueSection
+            icon={FiTrash2}
+            items={queues.accountDeletions}
+            label={adminText(t, 'admin.overview.queue.deletions')}
+            kind="accountDeletion"
+            setSelected={setSelected}
+            t={t}
+            renderMeta={(item) =>
+              `${item.userName || item.userId}${item.userEmail ? ` · ${item.userEmail}` : ''}`
+            }
+            renderActions={(item) => (
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  setSelected({
+                    kind: 'user',
+                    item: { id: item.userId, status: 'pending_deletion' },
+                  })
+                }
+              >
+                {adminText(t, 'admin.queues.viewProfile')}
+              </Button>
+            )}
+          />
+          <QueueSection
+            icon={FiUserCheck}
+            items={queues.verifications}
+            label={t('verification.admin.title')}
+            kind="verification"
+            setSelected={setSelected}
+            t={t}
+            renderMeta={(i) =>
+              adminText(t, 'admin.queues.levelMeta', {
+                level: i.level,
+                name: i.userName || i.userId,
               })
             }
-          >
-            {adminText(t, 'admin.queues.viewProfile')}
-          </Button>
-        )}
-      />
-      <QueueSection
-        icon={FiUserCheck}
-        items={queues.verifications}
-        label={t('verification.admin.title')}
-        kind="verification"
-        setSelected={setSelected}
-        t={t}
-        renderMeta={(i) => adminText(t, 'admin.queues.levelMeta', { level: i.level, name: i.userName || i.userId })}
-        renderActions={(i) => (
-          <>
-            <Button variant="secondary" onClick={() => setSelected({ kind: 'verification', item: i })}>
-              {t('verification.admin.examine')}
-            </Button>
-            <Button
-              icon={FiCheckCircle}
-              onClick={() =>
-                dispatch(
-                  updateVerificationStatus({
-                    id: i.id,
-                    status: 'verified',
-                    reviewedBy: adminId,
-                  }),
-                )
-              }
-            >
-              {t('verification.admin.approve')}
-            </Button>
-            <Button
-              variant="danger"
-              icon={FiX}
-              onClick={() =>
-                dispatch(
-                  updateVerificationStatus({
-                    id: i.id,
-                    status: 'rejected',
-                    reviewedBy: adminId,
-                  }),
-                )
-              }
-            >
-              {t('verification.admin.reject')}
-            </Button>
-          </>
-        )}
-      />
-      <QueueSection
-        icon={FiFileText}
-        items={queues.businessDocuments}
-        label={adminText(t, 'admin.businessDocuments.title')}
-        kind="businessDocument"
-        setSelected={setSelected}
-        t={t}
-        renderMeta={(i) =>
-          adminText(t, 'admin.businessDocuments.queueMeta', {
-            business: i.businessName || i.businessId,
-            name: i.name,
-          })
-        }
-        renderActions={(i) => (
-          <>
-            <Button
-              variant="secondary"
-              onClick={() => setSelected({ kind: 'businessDocument', item: i })}
-            >
-              {adminText(t, 'admin.businessDocuments.examine')}
-            </Button>
-            <Button
-              icon={FiCheckCircle}
-              onClick={() =>
-                dispatch(
-                  updateBusinessDocumentStatus({
-                    id: i.id,
-                    status: 'verified',
-                    reviewedBy: adminId,
-                    reviewNote: '',
-                  }),
-                )
-              }
-            >
-              {adminText(t, 'admin.actions.approve')}
-            </Button>
-            <Button
-              variant="danger"
-              icon={FiX}
-              onClick={() =>
-                dispatch(
-                  updateBusinessDocumentStatus({
-                    id: i.id,
-                    status: 'rejected',
-                    reviewedBy: adminId,
-                  }),
-                )
-              }
-            >
-              {adminText(t, 'admin.actions.reject')}
-            </Button>
-          </>
-        )}
-      />
-      <QueueSection
-        icon={FiHeadphones}
-        items={queues.support}
-        label={adminText(t, 'admin.nav.support')}
-        kind="support"
-        setSelected={setSelected}
-        t={t}
-        renderMeta={(item) =>
-          adminText(t, 'admin.support.meta', {
-            name: item.userName,
-            count: item.messages?.length || 0,
-          })
-        }
-        renderActions={() => (
-          <Link to="/admin?view=support">
-            <Button variant="secondary">{adminText(t, 'admin.support.reply')}</Button>
-          </Link>
-        )}
-      />
+            renderActions={(i) => (
+              <>
+                <Button
+                  variant="secondary"
+                  onClick={() => setSelected({ kind: 'verification', item: i })}
+                >
+                  {t('verification.admin.examine')}
+                </Button>
+                <Button
+                  icon={FiCheckCircle}
+                  onClick={() =>
+                    dispatch(
+                      updateVerificationStatus({
+                        id: i.id,
+                        status: 'verified',
+                        reviewedBy: adminId,
+                      }),
+                    )
+                  }
+                >
+                  {t('verification.admin.approve')}
+                </Button>
+                <Button
+                  variant="danger"
+                  icon={FiX}
+                  onClick={() =>
+                    dispatch(
+                      updateVerificationStatus({
+                        id: i.id,
+                        status: 'rejected',
+                        reviewedBy: adminId,
+                      }),
+                    )
+                  }
+                >
+                  {t('verification.admin.reject')}
+                </Button>
+              </>
+            )}
+          />
+          <QueueSection
+            icon={FiFileText}
+            items={queues.businessDocuments}
+            label={adminText(t, 'admin.businessDocuments.title')}
+            kind="businessDocument"
+            setSelected={setSelected}
+            t={t}
+            renderMeta={(i) =>
+              adminText(t, 'admin.businessDocuments.queueMeta', {
+                business: i.businessName || i.businessId,
+                name: i.name,
+              })
+            }
+            renderActions={(i) => (
+              <>
+                <Button
+                  variant="secondary"
+                  onClick={() => setSelected({ kind: 'businessDocument', item: i })}
+                >
+                  {adminText(t, 'admin.businessDocuments.examine')}
+                </Button>
+                <Button
+                  icon={FiCheckCircle}
+                  onClick={() =>
+                    dispatch(
+                      updateBusinessDocumentStatus({
+                        id: i.id,
+                        status: 'verified',
+                        reviewedBy: adminId,
+                        reviewNote: '',
+                      }),
+                    )
+                  }
+                >
+                  {adminText(t, 'admin.actions.approve')}
+                </Button>
+                <Button
+                  variant="danger"
+                  icon={FiX}
+                  onClick={() =>
+                    dispatch(
+                      updateBusinessDocumentStatus({
+                        id: i.id,
+                        status: 'rejected',
+                        reviewedBy: adminId,
+                      }),
+                    )
+                  }
+                >
+                  {adminText(t, 'admin.actions.reject')}
+                </Button>
+              </>
+            )}
+          />
+          <QueueSection
+            icon={FiHeadphones}
+            items={queues.support}
+            label={adminText(t, 'admin.nav.support')}
+            kind="support"
+            setSelected={setSelected}
+            t={t}
+            renderMeta={(item) =>
+              adminText(t, 'admin.support.meta', {
+                name: item.userName,
+                count: item.messages?.length || 0,
+              })
+            }
+            renderActions={() => (
+              <Link to="/admin?view=support">
+                <Button variant="secondary">{adminText(t, 'admin.support.reply')}</Button>
+              </Link>
+            )}
+          />
+        </>
+      ) : null}
       <QueueSection
         icon={FiAlertCircle}
         items={queues.disputes}

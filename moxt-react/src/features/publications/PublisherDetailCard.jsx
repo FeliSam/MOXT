@@ -11,6 +11,7 @@ import { VerifiedDisplayName } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { useLanguage } from '../../contexts/useLanguage'
+import { isBusinessPublishReady } from '../businesses/businessPublishUtils'
 import { formatShortDate } from '../../utils/formatters'
 
 export function PublisherDetailCard({
@@ -36,9 +37,7 @@ export function PublisherDetailCard({
   const resolvedDescriptionFallback =
     descriptionFallback ?? t('publications.publisher.descriptionFallback')
   const resolvedCtaLabel = ctaLabel ?? t('publications.publisher.viewAllPublications')
-  const publisherVerified = business
-    ? ['verified', 'approved', 'active'].includes(business.status)
-    : verified
+  const publisherVerified = business ? isBusinessPublishReady(business) : verified
   const profilePath =
     publicationsPath || (ownerId ? `/users/${ownerId}/publications` : null)
 

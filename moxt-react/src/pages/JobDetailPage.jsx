@@ -13,6 +13,7 @@ import { Link, useParams } from 'react-router-dom'
 import { Alert } from '../components/ui/Alert'
 import { BackButton } from '../components/ui/BackButton'
 import { Badge, VerifiedBadge } from '../components/ui/Badge'
+import { EntityVerifiedName } from '../components/ui/EntityVerifiedName'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import {
@@ -291,7 +292,16 @@ export function JobDetailPage() {
         <DetailSection title={t('jobs.detail.infoTitle')}>
           <DetailFacts
             items={[
-              { label: t('jobs.detail.facts.company'), value: displayJobField(job.publisherName, t) },
+              {
+                label: t('jobs.detail.facts.company'),
+                value: (
+                  <EntityVerifiedName
+                    name={displayJobField(job.publisherName, t)}
+                    userId={job.ownerId}
+                    businessId={job.businessId}
+                  />
+                ),
+              },
               {
                 label: t('jobs.detail.facts.profile'),
                 value: job.businessId ? t('jobs.card.business') : t('jobs.card.individual'),

@@ -41,7 +41,10 @@ const administrationSlice = createSlice({
     },
     updateUserRole(state, action) {
       const user = state.users.find((item) => item.id === action.payload.id)
-      if (!user || !['user', 'professional', 'admin', 'superadmin'].includes(action.payload.role)) {
+      if (
+        !user ||
+        !['user', 'professional', 'moderator', 'admin', 'superadmin'].includes(action.payload.role)
+      ) {
         return
       }
       user.role = action.payload.role

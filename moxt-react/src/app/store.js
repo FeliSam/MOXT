@@ -12,6 +12,7 @@ import communicationsReducer from '../features/communications/communicationSlice
 import auditReducer from '../features/audit/auditSlice'
 import accountReducer from '../features/account/accountSlice'
 import administrationReducer from '../features/administration/administrationSlice'
+import profileDirectoryReducer from '../features/profile/profileDirectorySlice'
 import reviewsReducer from '../features/reviews/reviewSlice'
 import postsReducer from '../features/posts/postsSlice'
 import disputesReducer from '../features/disputes/disputeSlice'
@@ -30,6 +31,7 @@ export const store = configureStore({
   reducer: {
     account: accountReducer,
     administration: administrationReducer,
+    profileDirectory: profileDirectoryReducer,
     auth: authReducer,
     ui: uiReducer,
     transfers: transfersReducer,

@@ -12,6 +12,7 @@ export const PERMISSIONS = [
 export const ROLE_PERMISSIONS = {
   user: ['catalog.read', 'content.publish'],
   professional: ['catalog.read', 'content.publish', 'business.manage', 'requests.manage'],
+  moderator: ['catalog.read', 'content.publish', 'moderation.manage'],
   admin: [
     'catalog.read',
     'content.publish',

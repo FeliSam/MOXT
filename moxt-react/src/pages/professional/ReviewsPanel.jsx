@@ -1,5 +1,6 @@
 import { FiStar } from 'react-icons/fi'
 import { Badge } from '../../components/ui/Badge'
+import { EntityVerifiedName } from '../../components/ui/EntityVerifiedName'
 import { Card } from '../../components/ui/Card'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { useLanguage } from '../../contexts/useLanguage'
@@ -17,7 +18,11 @@ export function ReviewsPanel({ reviews }) {
       {visible.map((review) => (
         <Card key={review.id}>
           <div className="flex items-center justify-between gap-3">
-            <strong>{review.authorName}</strong>
+            <EntityVerifiedName
+              as="strong"
+              name={review.authorName}
+              userId={review.authorId}
+            />
             <Badge tone="warning">{review.rating}/5</Badge>
           </div>
           <p className="mt-3 text-sm leading-6 text-[var(--app-text-muted)]">{review.comment}</p>

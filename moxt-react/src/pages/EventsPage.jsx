@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
+import { EntityVerifiedName } from '../components/ui/EntityVerifiedName'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { CatalogSearch } from '../components/ui/CatalogSearch'
@@ -141,11 +142,23 @@ export function EventsPage() {
         </CatalogSearch>
         <CatalogGrid lazy={false} columns="grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
           {visibleEvents.length ? (
-            visibleEvents.map((event, index) => (
+            visibleEvents.map((event, index) => {
+              const coverImage = event.images?.[0]
+              return (
               <RevealListItem key={event.id} index={index} className="h-full overflow-visible">
                 <div className="relative h-full">
                   <Link to={`/events/${event.id}`} className="block h-full">
                     <Card className="relative h-full overflow-hidden transition hover:-translate-y-1 hover:shadow-xl">
+                      {coverImage ? (
+                        <div className="-mx-5 -mt-5 mb-4 aspect-[16/10] overflow-hidden sm:-mx-6 sm:-mt-6">
+                          <img
+                            src={coverImage}
+                            alt={event.title}
+                            className="h-full w-full object-cover"
+                            loading="lazy"
+                          />
+                        </div>
+                      ) : null}
                       <div className="flex justify-between gap-3 pr-10">
                         <span className="grid size-11 place-items-center rounded-2xl bg-brand-50 text-brand-700 dark:bg-brand-900">
                           <FiCalendar />
@@ -153,8 +166,15 @@ export function EventsPage() {
                         <Badge>{event.category}</Badge>
                       </div>
                       <h2 className="mt-4 font-black">{event.title}</h2>
-                      <p className="mt-2 text-sm text-slate-500">
-                        {t(eventPublisherTypeKey(event.businessId))} · {event.organizerName}
+                      <p className="mt-2 flex min-w-0 flex-wrap items-center gap-1 text-sm text-slate-500">
+                        <span>{t(eventPublisherTypeKey(event.businessId))} ·</span>
+                        <EntityVerifiedName
+                          name={event.organizerName}
+                          userId={event.ownerId}
+                          businessId={event.businessId}
+                          className="min-w-0"
+                          nameClassName="truncate"
+                        />
                       </p>
                       <div className="mt-3 grid gap-2 text-sm">
                         <span>{formatDate(event.startAt)}</span>
@@ -179,7 +199,8 @@ export function EventsPage() {
                   />
                 </div>
               </RevealListItem>
-            ))
+              )
+            })
           ) : (
             <Card className="grid place-items-center gap-4 border-dashed py-10 text-center text-sm text-slate-500">
               {t('events.browse.empty')}

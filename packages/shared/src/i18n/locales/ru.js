@@ -297,6 +297,8 @@ export const ru = {
     communication: "Связь",
     account: "Аккаунт",
     administration: "Администрация",
+    moderation: "Модерация",
+    moderationSpace: "Пространство модератора",
     p2p: "P2P-обмен",
     exchangers: "Обменники",
     professional: "Бизнес-пространство",
@@ -343,11 +345,13 @@ export const ru = {
   share: {
     title: "QR-код и приглашение",
     eyebrow: "Поделиться",
-    description: "Одно место, чтобы пригласить близких или поделиться профилем MOXT.",
+    description: "Одно место, чтобы пригласить близких, поделиться профилем или подписаться на MOXT в Instagram.",
     tabTypeLabel: "Тип публикации",
     inviteTab: "Пригласить",
     profileTab: "Мой профиль",
+    instagramTab: "Instagram",
     invitationSubtitle: "Приглашение MOXT",
+    instagramSubtitle: "@MOXTAPP · Официальный аккаунт",
     inviteCountOne: "приглашённый",
     inviteCountMany: "приглашённых",
     copyLink: "Копировать ссылку",
@@ -363,16 +367,19 @@ export const ru = {
       invite: "Сканируйте, чтобы присоединиться к MOXT",
       profile: "Сканируйте, чтобы увидеть мои публикации",
       business: "Сканируйте, чтобы узнать о компании",
+      instagram: "Сканируйте, чтобы подписаться на MOXT в Instagram",
     },
     shareTitles: {
       invite: "Присоединяйтесь к MOXT",
       onMoxt: "{name} на MOXT",
       publications: "Публикации {name}",
+      instagram: "MOXT в Instagram",
     },
     shareTexts: {
       invite: "Переводы, посылки и сервисы между Африкой и Россией. Присоединяйтесь ко мне на MOXT:",
       profile: "Смотрите публикации {name} на MOXT.",
       business: "Узнайте о {name} на MOXT.",
+      instagram: "Подписывайтесь на официальный аккаунт MOXT в Instagram:",
     },
     steps: {
       step1Title: "Поделитесь QR-кодом",
@@ -758,6 +765,7 @@ export const ru = {
       tagline: "Платформа услуг для диаспоры. Обменивайтесь осторожно.",
       security: "Безопасность",
       help: "Помощь",
+      instagram: "Instagram",
       copyright: "© {year} MOXT. Все права защищены.",
     },
     home: {
@@ -6289,6 +6297,20 @@ export const ru = {
         h1: "Интернационализация FR / EN / RU / PT",
         h2: "PWA, тёмный режим, глобальный поиск",
       },
+    },
+  },
+  social: {
+    instagram: {
+      eyebrow: "Сообщество",
+      title: "Подписывайтесь на MOXT в Instagram",
+      description:
+        "Новости, советы и моменты диаспоры — присоединяйтесь к @MOXTAPP, чтобы быть в курсе.",
+      open: "Открыть Instagram",
+      copy: "Скопировать ссылку",
+      copied: "Ссылка скопирована",
+      scanHint: "Сканируйте QR",
+      enlargeQr: "Увеличить QR-код Instagram",
+      qrAlt: "QR-код Instagram @MOXTAPP",
     },
   },
   reviews: {

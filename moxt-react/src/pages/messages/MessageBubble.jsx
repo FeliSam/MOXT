@@ -17,6 +17,7 @@ import {
 import { MessageAttachment } from './MessageAttachment'
 import { useLanguage } from '../../contexts/useLanguage'
 import { messagesText } from '../../features/communications/messagesI18n'
+import { EntityVerifiedName } from '../../components/ui/EntityVerifiedName'
 
 function bubbleClassName(mine, groupedWithPrevious, groupedWithNext, failed) {
   const classes = ['message-bubble', mine ? 'message-bubble--sent' : 'message-bubble--received']
@@ -213,7 +214,12 @@ export function MessageBubble({
       }`}
     >
       {showSenderName && !mine ? (
-        <span className="message-sender-name">{message.senderName}</span>
+        <EntityVerifiedName
+          as="span"
+          name={message.senderName}
+          userId={message.senderId}
+          className="message-sender-name"
+        />
       ) : null}
 
       <div

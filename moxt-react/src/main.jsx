@@ -23,12 +23,12 @@ async function bootstrap() {
 
   createRoot(document.getElementById('root')).render(
     <StrictMode>
-      <AppErrorBoundary>
-        <AppProviders>
+      <AppProviders>
+        <AppErrorBoundary>
           <AppRouter />
           <ToastViewport />
-        </AppProviders>
-      </AppErrorBoundary>
+        </AppErrorBoundary>
+      </AppProviders>
     </StrictMode>,
   )
 

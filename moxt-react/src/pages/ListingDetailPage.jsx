@@ -18,6 +18,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useParams } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
+import { EntityVerifiedName } from '../components/ui/EntityVerifiedName'
 import { BackButton } from '../components/ui/BackButton'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
@@ -1058,7 +1059,11 @@ function Questions({ dispatch, listing, question, setQuestion, submitQuestion, u
           listing.questions.map((item) => (
             <div key={item.id} className="rounded-2xl bg-[var(--app-surface-muted)] p-4">
               <div className="flex justify-between gap-3">
-                <strong>{item.authorName}</strong>
+                <EntityVerifiedName
+                  as="strong"
+                  name={item.authorName}
+                  userId={item.authorId}
+                />
                 <span className="text-xs text-[var(--app-text-muted)]">
                   {formatShortDate(item.createdAt)}
                 </span>

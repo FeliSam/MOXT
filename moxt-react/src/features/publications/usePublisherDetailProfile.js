@@ -15,6 +15,8 @@ import {
   isActiveJob,
   isActiveParcel,
 } from './publicationCatalogUtils'
+import { isBusinessPublishReady } from '../businesses/businessPublishUtils'
+import { resolveEntityVerified } from '../profile/resolveEntityVerified'
 import { usePublicationProfile } from './usePublicationProfile'
 
 const PROFILE_META = {
@@ -140,8 +142,10 @@ export function usePublisherDetailProfile(entity, kind) {
         ? `/users/${ownerId}/publications`
         : `/users/${ownerId}/publications?type=${kind}`
       : null,
-    verified: businessId
-      ? ['verified', 'approved', 'active'].includes(business?.status)
-      : Boolean(ownerProfile?.verified),
+    verified:
+      resolveEntityVerified(appState, { userId: ownerId, businessId }) ||
+      (businessId
+        ? isBusinessPublishReady(business)
+        : Boolean(ownerProfile?.verified)),
   }
 }

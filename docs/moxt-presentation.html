@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>MOXT — Présentation</title>
+  <style>
+    @page { size: 1920px 1080px; margin: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background: #0f1f1c;
+      color: #12201d;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .deck { width: 1920px; }
+    .slide {
+      width: 1920px;
+      height: 1080px;
+      page-break-after: always;
+      break-after: page;
+      position: relative;
+      overflow: hidden;
+      padding: 72px 88px;
+      display: flex;
+      flex-direction: column;
+    }
+    .slide:last-child { page-break-after: auto; }
+
+    /* Brand tokens */
+    .bg-dark {
+      background:
+        radial-gradient(1200px 700px at 85% -10%, rgba(54, 198, 170, 0.28), transparent 55%),
+        radial-gradient(900px 600px at -10% 110%, rgba(8, 112, 95, 0.35), transparent 50%),
+        linear-gradient(145deg, #0b1c19 0%, #12302a 45%, #0f2420 100%);
+      color: #f4fbf8;
+    }
+    .bg-light {
+      background:
+        radial-gradient(1000px 600px at 100% 0%, rgba(8, 112, 95, 0.08), transparent 50%),
+        linear-gradient(180deg, #f7fbf9 0%, #eef6f3 100%);
+      color: #12201d;
+    }
+    .bg-accent {
+      background: linear-gradient(135deg, #08705f 0%, #0b8975 55%, #0d6e5f 100%);
+      color: #fff;
+    }
+
+    .brand {
+      font-size: 42px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .brand span { color: #36c6aa; }
+    .eyebrow {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      opacity: 0.7;
+      margin-bottom: 18px;
+    }
+    h1 {
+      font-size: 78px;
+      line-height: 1.05;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      max-width: 1400px;
+    }
+    h2 {
+      font-size: 56px;
+      line-height: 1.1;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 28px;
+    }
+    .lead {
+      margin-top: 28px;
+      font-size: 28px;
+      line-height: 1.45;
+      max-width: 1100px;
+      opacity: 0.9;
+    }
+    .muted { opacity: 0.72; }
+
+    .footer {
+      margin-top: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 16px;
+      opacity: 0.65;
+      padding-top: 28px;
+    }
+    .accent { color: #0b8975; }
+    .accent-light { color: #7ee0cb; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 36px;
+      flex: 1;
+      align-content: start;
+      margin-top: 12px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
+      flex: 1;
+      align-content: start;
+    }
+    .grid-9 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      flex: 1;
+      align-content: start;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.92);
+      border: 1px solid rgba(8, 112, 95, 0.12);
+      border-radius: 28px;
+      padding: 28px 30px;
+      box-shadow: 0 12px 40px rgba(15, 40, 34, 0.06);
+    }
+    .bg-dark .card {
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(255,255,255,0.1);
+      box-shadow: none;
+      color: #f4fbf8;
+    }
+    .card h3 {
+      font-size: 26px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+    .card p, .bullet {
+      font-size: 20px;
+      line-height: 1.45;
+      opacity: 0.88;
+    }
+    .num {
+      display: inline-grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      background: #ecfdf8;
+      color: #08705f;
+      font-weight: 900;
+      font-size: 18px;
+      margin-bottom: 14px;
+    }
+    .bg-dark .num {
+      background: rgba(54, 198, 170, 0.18);
+      color: #7ee0cb;
+    }
+
+    .service {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      background: #fff;
+      border: 1px solid rgba(8,112,95,0.1);
+      border-radius: 22px;
+      padding: 22px 24px;
+    }
+    .service .icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 16px;
+      background: linear-gradient(145deg, #08705f, #0b8975);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .service strong {
+      display: block;
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .service span {
+      font-size: 17px;
+      line-height: 1.35;
+      opacity: 0.78;
+    }
+
+    ul.clean {
+      list-style: none;
+      display: grid;
+      gap: 16px;
+      margin-top: 8px;
+    }
+    ul.clean li {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      font-size: 24px;
+      line-height: 1.4;
+    }
+    ul.clean li::before {
+      content: "";
+      width: 12px;
+      height: 12px;
+      margin-top: 10px;
+      border-radius: 999px;
+      background: #0b8975;
+      flex-shrink: 0;
+    }
+    .bg-dark ul.clean li::before { background: #36c6aa; }
+
+    .screens {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 22px;
+      margin-top: 8px;
+      flex: 1;
+      align-content: start;
+    }
+    .phone {
+      border-radius: 36px;
+      background: #fff;
+      border: 1px solid rgba(8,112,95,0.12);
+      padding: 18px 16px 22px;
+      min-height: 420px;
+      box-shadow: 0 18px 50px rgba(15,40,34,0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .phone .bar {
+      height: 10px;
+      width: 42%;
+      border-radius: 999px;
+      background: #d7ebe4;
+      margin: 0 auto 6px;
+    }
+    .phone .block {
+      border-radius: 18px;
+      background: linear-gradient(160deg, #ecfdf8, #dff5ef);
+      flex: 1;
+      min-height: 120px;
+      display: grid;
+      place-items: end start;
+      padding: 16px;
+      color: #08705f;
+      font-weight: 800;
+      font-size: 20px;
+    }
+    .phone .line {
+      height: 12px;
+      border-radius: 999px;
+      background: #e5eeea;
+    }
+    .phone .line.short { width: 55%; }
+    .phone label {
+      font-size: 18px;
+      font-weight: 800;
+      text-align: center;
+      color: #0b4f43;
+    }
+
+    .cta-box {
+      margin-top: 36px;
+      display: inline-flex;
+      flex-direction: column;
+      gap: 10px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 28px;
+      padding: 28px 36px;
+      max-width: 720px;
+    }
+    .cta-box .url {
+      font-size: 36px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+    }
+    .cta-box .sub {
+      font-size: 22px;
+      opacity: 0.88;
+    }
+
+    .hero-meta {
+      display: flex;
+      gap: 18px;
+      margin-top: 40px;
+      flex-wrap: wrap;
+    }
+    .pill {
+      border-radius: 999px;
+      padding: 12px 20px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.16);
+      font-size: 18px;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="deck">
+
+    <!-- 1. Cover -->
+    <section class="slide bg-dark">
+      <div class="brand">MOXT<span>.</span></div>
+      <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+        <p class="eyebrow">Plateforme diaspora afro-russe</p>
+        <h1>Les échanges Afrique ↔ Russie,<br/>enfin sur une seule app.</h1>
+        <p class="lead">Transferts, colis, marché, emplois, événements et entreprises — une expérience simple, sécurisée et pensée pour la communauté.</p>
+        <div class="hero-meta">
+          <span class="pill">Web · PWA · Android</span>
+          <span class="pill">moxtapp.ru</span>
+          <span class="pill">FR · EN · RU · PT · ES</span>
+        </div>
+      </div>
+      <div class="footer">
+        <span>Présentation produit · 2026</span>
+        <span>Confidentiel — usage interne / partenaires</span>
+      </div>
+    </section>
+
+    <!-- 2. Problème -->
+    <section class="slide bg-light">
+      <p class="eyebrow accent">01 · Le problème</p>
+      <h2>Aujourd’hui, la diaspora jongle entre trop d’outils.</h2>
+      <div class="grid-2">
+        <div class="card">
+          <div class="num">1</div>
+          <h3>Transferts fragmentés</h3>
+          <p>WhatsApp, contacts personnels, taux opaques, peu de preuves et peu de suivi quand l’argent ou le colis bloque.</p>
+        </div>
+        <div class="card">
+          <div class="num">2</div>
+          <h3>Confiance difficile</h3>
+          <p>Difficile de savoir qui est un vrai changeur, une vraie entreprise, ou un profil fiable dans la communauté.</p>
+        </div>
+        <div class="card">
+          <div class="num">3</div>
+          <h3>Services dispersés</h3>
+          <p>Annonces, jobs, événements et messagerie vivent dans des canaux séparés — sans historique, sans statut, sans identité.</p>
+        </div>
+        <div class="card">
+          <div class="num">4</div>
+          <h3>Besoin Afrique ↔ Russie</h3>
+          <p>Les corridors (ex. Bénin, Togo, Cameroun, Ghana ↔ Russie) demandent une plateforme dédiée, pas un outil générique.</p>
+        </div>
+      </div>
+      <div class="footer">
+        <span>MOXT</span>
+        <span>2 / 10</span>
+      </div>
+    </section>
+
+    <!-- 3. Solution -->
+    <section class="slide bg-light">
+      <p class="eyebrow accent">02 · La solution</p>
+      <h2>MOXT, la plateforme tout-en-un de la diaspora.</h2>
+      <div class="grid-2" style="grid-template-columns: 1.15fr 0.85fr;">
+        <div>
+          <ul class="clean">
+            <li><strong>Un compte, tous les services</strong> — publier, échanger, messager et suivre ses opérations au même endroit.</li>
+            <li><strong>Des partenaires vérifiés</strong> — entreprises de transfert, comptes de réception, statut « Vérifié ».</li>
+            <li><strong>Une expérience mobile-first</strong> — web / PWA et app Android, notifications, favoris, abonnements.</li>
+            <li><strong>Pensé pour la communauté</strong> — multilangue, corridors Afrique–Russie, profils personnels et pro.</li>
+          </ul>
+        </div>
+        <div class="card" style="align-self: stretch; display:flex; flex-direction:column; justify-content:center; background: linear-gradient(160deg,#08705f,#0b8975); color:#fff; border:none;">
+          <h3 style="font-size:32px; margin-bottom:18px;">En une phrase</h3>
+          <p style="font-size:26px; line-height:1.45; opacity:0.95;">
+            MOXT relie les personnes, les entreprises et les flux d’échanges entre l’Afrique et la Russie — avec confiance et clarté.
+          </p>
+        </div>
+      </div>
+      <div class="footer">
+        <span>MOXT</span>
+        <span>3 / 10</span>
+      </div>
+    </section>
+
+    <!-- 4. 9 services -->
+    <section class="slide bg-light">
+      <p class="eyebrow accent">03 · Les 9 services essentiels</p>
+      <h2>Tout ce dont la communauté a besoin.</h2>
+      <div class="grid-9">
+        <div class="service"><div class="icon">1</div><div><strong>Transferts</strong><span>Envoyer et recevoir de l’argent via des partenaires.</span></div></div>
+        <div class="service"><div class="icon">2</div><div><strong>Marketplace</strong><span>Annonces produits, services et locations.</span></div></div>
+        <div class="service"><div class="icon">3</div><div><strong>Colis</strong><span>Mettre en relation voyageurs et expéditeurs.</span></div></div>
+        <div class="service"><div class="icon">4</div><div><strong>Emplois</strong><span>Offres pro et jobs de vacances.</span></div></div>
+        <div class="service"><div class="icon">5</div><div><strong>Échangeurs</strong><span>Annuaire des partenaires de transfert.</span></div></div>
+        <div class="service"><div class="icon">6</div><div><strong>P2P</strong><span>Échanges de devises entre membres.</span></div></div>
+        <div class="service"><div class="icon">7</div><div><strong>Entreprises</strong><span>Fiches pro, services et publications.</span></div></div>
+        <div class="service"><div class="icon">8</div><div><strong>Événements</strong><span>Rencontres, ateliers, soirées diaspora.</span></div></div>
+        <div class="service"><div class="icon">9</div><div><strong>Actualités</strong><span>Fil communautaire et partages.</span></div></div>
+      </div>
+      <div class="footer">
+        <span>MOXT</span>
+        <span>4 / 10</span>
+      </div>
+    </section>
+
+    <!-- 5. Diaspora / transferts -->
+    <section class="slide bg-light">
+      <p class="eyebrow accent">04 · Diaspora & transferts</p>
+      <h2>Le cœur du produit : Afrique ↔ Russie.</h2>
+      <div class="grid-3">
+        <div class="card">
+          <div class="num">A</div>
+          <h3>Corridors ciblés</h3>
+          <p>Bénin, Togo, Cameroun, Ghana et d’autres pays d’origine, avec la Russie comme hub de vie et d’échange.</p>
+        </div>
+        <div class="card">
+          <div class="num">B</div>
+          <h3>Partenaires de transfert</h3>
+          <p>Entreprises déclarées « Transfert », vérifiées, avec comptes de réception (origine + Russie) et devises (ex. XOF / RUB).</p>
+        </div>
+        <div class="card">
+          <div class="num">C</div>
+          <h3>Parcours guidé</h3>
+          <p>Créer un transfert, choisir un partenaire, déclarer le paiement, suivre le statut, conserver les preuves.</p>
+        </div>
+      </div>
+      <div class="card" style="margin-top: 22px;">
+        <h3>Autour du transfert</h3>
+        <p style="margin-top:8px; font-size:22px;">Colis via voyageurs · P2P · Marketplace · Jobs · Événements — les mêmes membres, la même confiance, le même compte.</p>
+      </div>
+      <div class="footer">
+        <span>MOXT</span>
+        <span>5 / 10</span>
+      </div>
+    </section>
+
+    <!-- 6. Confiance KYC -->
+    <section class="slide bg-light">
+      <p class="eyebrow accent">05 · Confiance</p>
+      <h2>La confiance n’est pas un badge décoratif.</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Vérification d’identité (KYC)</h3>
+          <p style="margin-top:12px;">Documents + selfie, revue admin, insignia « Vérifié ». Ce n’est pas juste un profil « complet » : c’est une validation MOXT.</p>
+          <ul class="clean" style="margin-top:22px; gap:12px;">
+            <li style="font-size:20px;">Débloque des limites et opérations sensibles</li>
+            <li style="font-size:20px;">Renforce la crédibilité auprès des partenaires</li>
+            <li style="font-size:20px;">Séparée du simple remplissage de profil</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Entreprises & documents</h3>
+          <p style="margin-top:12px;">Création d’entreprise, services déclarés (Transfert, Colis, Marketplace, Jobs, Events…), documents en revue admin, statut « Vérifié » avant d’apparaître comme partenaire.</p>
+          <ul class="clean" style="margin-top:22px; gap:12px;">
+            <li style="font-size:20px;">Publication pro limitée aux services déclarés</li>
+            <li style="font-size:20px;">Comptes de réception requis pour les transferts</li>
+            <li style="font-size:20px;">Messagerie, litiges et support intégrés</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer">
+        <span>MOXT</span>
+        <span>6 / 10</span>
+      </div>
+    </section>
+
+    <!-- 7. Modèle -->
+    <section class="slide bg-light">
+      <p class="eyebrow accent">06 · Modèle</p>
+      <h2>Comment MOXT crée de la valeur.</h2>
+      <div class="grid-3">
+        <div class="card">
+          <div class="num">1</div>
+          <h3>Réseau d’utilisateurs</h3>
+          <p>Profils personnels, favoris, abonnements, fil d’actualité et messagerie pour animer la communauté.</p>
+        </div>
+        <div class="card">
+          <div class="num">2</div>
+          <h3>Entreprises partenaires</h3>
+          <p>Changeurs, logistique, commerce, recrutement, événements — un espace pro pour publier et être trouvé.</p>
+        </div>
+        <div class="card">
+          <div class="num">3</div>
+          <h3>Flux transactionnels</h3>
+          <p>Transferts et P2P au centre ; marketplace, colis, jobs et events autour — plus d’usage, plus de confiance.</p>
+        </div>
+      </div>
+      <div class="grid-2" style="margin-top:22px; flex:0;">
+        <div class="card">
+          <h3>Levier croissance</h3>
+          <p>Corridors pays par pays, invitations / QR, publications seed, SEO &amp; présence RuStore / Android.</p>
+        </div>
+        <div class="card">
+          <h3>Différenciation</h3>
+          <p>Verticale diaspora afro-russe + KYC + entreprises vérifiées + parcours transfert bout-en-bout.</p>
+        </div>
+      </div>
+      <div class="footer">
+        <span>MOXT</span>
+        <span>7 / 10</span>
+      </div>
+    </section>
+
+    <!-- 8. Captures / écrans -->
+    <section class="slide bg-light">
+      <p class="eyebrow accent">07 · Produit</p>
+      <h2>Une expérience claire, mobile-first.</h2>
+      <div class="screens">
+        <div class="phone">
+          <div class="bar"></div>
+          <div class="block">Accueil</div>
+          <div class="line"></div>
+          <div class="line short"></div>
+          <label>Services & actions rapides</label>
+        </div>
+        <div class="phone">
+          <div class="bar"></div>
+          <div class="block" style="background:linear-gradient(160deg,#dff3ff,#e8f7f2);">Transfert</div>
+          <div class="line"></div>
+          <div class="line short"></div>
+          <label>Partenaires & suivi</label>
+        </div>
+        <div class="phone">
+          <div class="bar"></div>
+          <div class="block" style="background:linear-gradient(160deg,#fff4e8,#f3fbf7);">Marché</div>
+          <div class="line"></div>
+          <div class="line short"></div>
+          <label>Annonces & favoris</label>
+        </div>
+        <div class="phone">
+          <div class="bar"></div>
+          <div class="block" style="background:linear-gradient(160deg,#efe8ff,#eef9f5);">Profil</div>
+          <div class="line"></div>
+          <div class="line short"></div>
+          <label>KYC & espace pro</label>
+        </div>
+      </div>
+      <p class="muted" style="margin-top:18px; font-size:18px;">Disponible sur <strong>moxtapp.ru</strong> · PWA · Android (Capacitor) · multilangue FR / EN / RU / PT / ES</p>
+      <div class="footer">
+        <span>MOXT</span>
+        <span>8 / 10</span>
+      </div>
+    </section>
+
+    <!-- 9. Pourquoi maintenant -->
+    <section class="slide bg-light">
+      <p class="eyebrow accent">08 · Traction produit</p>
+      <h2>Déjà construit. Déjà en ligne.</h2>
+      <div class="grid-2">
+        <ul class="clean">
+          <li>Application web production sur <strong>moxtapp.ru</strong></li>
+          <li>Auth téléphone / e-mail, OTP, sécurité</li>
+          <li>Admin : vérifications, documents entreprises, modération</li>
+          <li>Publications, archive, messagerie, notifications push</li>
+        </ul>
+        <ul class="clean">
+          <li>9 services + hub MOXT + Mes publications</li>
+          <li>Entreprises avec modules de services déclarés</li>
+          <li>Corridors & contenus communauté</li>
+          <li>Préparation distribution Android / RuStore</li>
+        </ul>
+      </div>
+      <div class="card" style="margin-top:28px; background:#ecfdf8; border-color:#b7ebdc;">
+        <p style="font-size:24px; line-height:1.45;"><strong>Objectif :</strong> accélérer l’adoption sur les corridors prioritaires, densifier les partenaires de transfert vérifiés, et faire de MOXT le réflexe quotidien de la diaspora.</p>
+      </div>
+      <div class="footer">
+        <span>MOXT</span>
+        <span>9 / 10</span>
+      </div>
+    </section>
+
+    <!-- 10. CTA -->
+    <section class="slide bg-accent">
+      <div class="brand" style="color:#fff;">MOXT<span style="color:#b8f3e5;">.</span></div>
+      <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+        <p class="eyebrow" style="opacity:0.85; color:#dff7f0;">09 · Prochaine étape</p>
+        <h1 style="color:#fff;">Rejoignez la plateforme<br/>de la diaspora.</h1>
+        <p class="lead" style="color:rgba(255,255,255,0.92);">Testez le produit, créez votre entreprise, ou parlons partenariat corridor / distribution.</p>
+        <div class="cta-box">
+          <div class="url">https://moxtapp.ru</div>
+          <div class="sub">Contact : support@moxtapp.ru</div>
+        </div>
+      </div>
+      <div class="footer" style="opacity:0.8; color:#fff;">
+        <span>Merci</span>
+        <span>10 / 10</span>
+      </div>
+    </section>
+
+  </div>
+</body>
+</html>

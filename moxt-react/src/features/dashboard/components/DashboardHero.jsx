@@ -1,8 +1,9 @@
-import { FiArrowRight } from 'react-icons/fi'
+import { FiArrowRight, FiFileText } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { VerifiedBadge } from '../../../components/ui/Badge'
 import { RevealOnScroll } from '../../../components/ui/RevealOnScroll'
 import { useLanguage } from '../../../contexts/useLanguage'
+import { isProfileVerified } from '../../profile/userProfileUtils'
 import { DashboardTransferCalculator } from '../../transfers/DashboardTransferCalculator'
 
 export function DashboardHero({ user, onOpenCalculator }) {
@@ -19,7 +20,9 @@ export function DashboardHero({ user, onOpenCalculator }) {
         <div>
           <div className="inline-flex items-center gap-1.5 rounded-full bg-white/12 px-4 py-2 text-xs font-bold backdrop-blur">
             <span>{t('dashboard.hero.welcome', { name: user.firstName })}</span>
-            {user.verified ? <VerifiedBadge size="sm" className="!text-emerald-200" /> : null}
+            {isProfileVerified(user) ? (
+              <VerifiedBadge size="sm" className="!text-emerald-200" />
+            ) : null}
           </div>
           <h1 className="font-display mt-6 max-w-4xl text-4xl font-extrabold leading-[0.98] tracking-[-0.03em] sm:text-5xl lg:text-7xl">
             {t('dashboard.hero.title')}
@@ -35,10 +38,10 @@ export function DashboardHero({ user, onOpenCalculator }) {
               {t('dashboard.hero.createTransfer')} <FiArrowRight />
             </Link>
             <Link
-              to="/marketplace"
+              to="/news"
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-btn)] bg-cyan-300 px-5 text-sm font-black text-slate-950 shadow-lg shadow-cyan-950/20 transition hover:-translate-y-0.5 hover:bg-cyan-200"
             >
-              {t('dashboard.hero.marketplace')} <FiArrowRight />
+              <FiFileText aria-hidden /> {t('dashboard.hero.news')}
             </Link>
           </div>
         </div>

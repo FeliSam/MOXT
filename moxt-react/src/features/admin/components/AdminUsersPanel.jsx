@@ -1,6 +1,8 @@
 import { FiUsers } from 'react-icons/fi'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { Button } from '../../../components/ui/Button'
+import { VerifiedDisplayName } from '../../../components/ui/Badge'
+import { isProfileVerified } from '../../profile/userProfileUtils'
 import { dispatchUserRole } from '../promoteAdminUtils'
 import { CARD, ITEM, ROLE_COLORS } from '../adminConfig'
 import { adminText } from '../adminI18n'
@@ -27,7 +29,13 @@ export function AdminUsersPanel({ actorRole, dispatch, onSuspendUser, setSelecte
                   onClick={() => setSelected({ kind: 'user', item: user })}
                   className="min-w-0 flex-1 text-left hover:text-brand-700"
                 >
-                  <strong className="block truncate text-sm">{name || user.email}</strong>
+                  <VerifiedDisplayName
+                    as="strong"
+                    name={name || user.email}
+                    verified={isProfileVerified(user)}
+                    className="block min-w-0 text-sm"
+                    nameClassName="truncate"
+                  />
                   <p className="truncate text-xs text-[var(--app-text-muted)]">{user.email}</p>
                 </button>
                 <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-black ${ROLE_COLORS[user.role] || ROLE_COLORS.user}`}>
@@ -48,7 +56,7 @@ export function AdminUsersPanel({ actorRole, dispatch, onSuspendUser, setSelecte
                 </span>
               </div>
               <div className="flex min-w-0 flex-wrap gap-2">
-                {['user', 'professional', 'admin'].map((role) => (
+                {['user', 'professional', 'moderator', 'admin'].map((role) => (
                   <button
                     key={role}
                     type="button"

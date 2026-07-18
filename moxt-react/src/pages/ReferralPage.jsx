@@ -5,6 +5,7 @@ import { useSearchParams } from 'react-router-dom'
 import { Card } from '../components/ui/Card'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Tabs } from '../components/ui/Tabs'
+import { MOXT_INSTAGRAM } from '../config/socialLinks'
 import { useLanguage } from '../contexts/useLanguage'
 import { selectAccountPreferences } from '../features/account/accountSlice'
 import { buildReferralCode, buildReferralLink } from '../features/referral/referralUtils'
@@ -19,6 +20,8 @@ const STEP_KEYS = [
   { icon: FiGift, titleKey: 'share.steps.step3Title', descKey: 'share.steps.step3Desc' },
 ]
 
+const TAB_VALUES = ['invite', 'profile', 'instagram', 'scan']
+
 export function ReferralPage() {
   const { t } = useLanguage()
   const user = useSelector((state) => state.auth.user)
@@ -26,7 +29,7 @@ export function ReferralPage() {
     user ? selectAccountPreferences(state, user.id) : null,
   )
   const [searchParams, setSearchParams] = useSearchParams()
-  const activeTab = ['profile', 'scan'].includes(searchParams.get('tab'))
+  const activeTab = TAB_VALUES.includes(searchParams.get('tab'))
     ? searchParams.get('tab')
     : 'invite'
 
@@ -34,6 +37,7 @@ export function ReferralPage() {
     () => [
       { value: 'invite', label: t('share.inviteTab') },
       { value: 'profile', label: t('share.profileTab') },
+      { value: 'instagram', label: t('share.instagramTab') },
       { value: 'scan', label: t('share.scanTab') },
     ],
     [t],
@@ -92,6 +96,15 @@ export function ReferralPage() {
           code={referralCode}
           inviteCount={inviteCount}
         />
+      ) : activeTab === 'instagram' ? (
+        <QrSharePanel
+          variant="instagram"
+          title="MOXT"
+          subtitle={t('share.instagramSubtitle')}
+          avatarUrl="/assets/brand/mark.png?v=20260714e"
+          shareUrl={MOXT_INSTAGRAM.url}
+          qrImageSrc={MOXT_INSTAGRAM.qrSrc}
+        />
       ) : (
         <QrSharePanel
           variant="profile"
@@ -107,17 +120,19 @@ export function ReferralPage() {
         />
       )}
 
-      <section className="grid gap-3 sm:grid-cols-3">
-        {STEP_KEYS.map(({ descKey, icon: Icon, titleKey }) => (
-          <Card key={titleKey} className="!p-4">
-            <span className="grid size-9 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
-              <Icon className="text-sm" />
-            </span>
-            <h3 className="mt-3 text-sm font-black">{t(titleKey)}</h3>
-            <p className="mt-1 text-xs leading-5 text-[var(--app-text-muted)]">{t(descKey)}</p>
-          </Card>
-        ))}
-      </section>
+      {activeTab === 'scan' || activeTab === 'instagram' ? null : (
+        <section className="grid gap-3 sm:grid-cols-3">
+          {STEP_KEYS.map(({ descKey, icon: Icon, titleKey }) => (
+            <Card key={titleKey} className="!p-4">
+              <span className="grid size-9 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
+                <Icon className="text-sm" />
+              </span>
+              <h3 className="mt-3 text-sm font-black">{t(titleKey)}</h3>
+              <p className="mt-1 text-xs leading-5 text-[var(--app-text-muted)]">{t(descKey)}</p>
+            </Card>
+          ))}
+        </section>
+      )}
     </div>
   )
 }

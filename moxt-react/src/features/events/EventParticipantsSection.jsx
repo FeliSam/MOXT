@@ -1,6 +1,8 @@
 import { FiCheck, FiUser, FiX } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Badge } from '../../components/ui/Badge'
+import { EntityVerifiedName } from '../../components/ui/EntityVerifiedName'
+import { EntityVerifiedName } from '../../components/ui/EntityVerifiedName'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { DetailSection } from '../../components/ui/DetailBlocks'
@@ -68,9 +70,13 @@ export function EventParticipantsSection({ event, eventId }) {
                           <FiUser />
                         </span>
                         <div className="min-w-0">
-                          <strong className="block truncate">
-                            {row.participantName || t('events.participants.memberFallback')}
-                          </strong>
+                          <EntityVerifiedName
+                            as="strong"
+                            name={row.participantName || t('events.participants.memberFallback')}
+                            userId={row.userId}
+                            className="block min-w-0"
+                            nameClassName="truncate"
+                          />
                           <p className="text-xs text-[var(--app-text-faint)]">
                             {t('events.participants.registeredAt', {
                               date: row.createdAt
@@ -135,9 +141,13 @@ export function EventParticipantsSection({ event, eventId }) {
             </summary>
             <div className="mt-3 grid gap-2">
               {cancelledRows.map((row) => (
-                <p key={row.id} className="text-sm text-[var(--app-text-faint)]">
-                  {row.participantName || t('events.participants.memberFallback')}
-                </p>
+                <EntityVerifiedName
+                  key={row.id}
+                  as="p"
+                  name={row.participantName || t('events.participants.memberFallback')}
+                  userId={row.userId}
+                  className="text-sm text-[var(--app-text-faint)]"
+                />
               ))}
             </div>
           </details>

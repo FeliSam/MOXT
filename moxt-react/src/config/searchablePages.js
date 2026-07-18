@@ -181,7 +181,7 @@ export const searchablePages = [
     subtitle: 'Communication',
     subtitleKey: 'shared.pages.groups.communication',
     path: '/support',
-    keywords: 'aide assistance contact',
+    keywords: 'aide assistance contact instagram moxtapp reseaux sociaux',
   },
   {
     id: 'page-activities',
@@ -263,6 +263,15 @@ export const searchablePages = [
     subtitleKey: 'shared.pages.groups.account',
     path: '/local-data',
     keywords: 'cache stockage local',
+  },
+  {
+    id: 'page-moderation',
+    title: 'Espace modérateur',
+    titleKey: 'shared.pages.moderation.title',
+    subtitle: 'Modération',
+    subtitleKey: 'shared.pages.groups.moderation',
+    path: '/moderation',
+    roles: ['moderator', 'admin', 'superadmin'],
   },
   {
     id: 'page-admin',

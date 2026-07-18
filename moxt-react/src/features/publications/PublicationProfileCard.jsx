@@ -5,6 +5,7 @@ import { Card } from '../../components/ui/Card'
 import { ContactButton } from '../communications/ContactButton'
 import { activityByValue } from '../../config/businessActivities'
 import { useLanguage } from '../../contexts/useLanguage'
+import { isBusinessPublishReady } from '../businesses/businessPublishUtils'
 import {
   buildBusinessShareText,
   buildBusinessShareUrl,
@@ -13,10 +14,6 @@ import {
 } from '../share/businessShareUtils'
 import { ProfileQrShareButton } from '../share/ProfileQrShareButton'
 import { formatMemberSince } from './usePublicationProfile'
-
-function isBusinessVerified(business) {
-  return ['verified', 'approved', 'active'].includes(business?.status)
-}
 
 export function PublicationProfileCard({
   displayName,
@@ -43,7 +40,7 @@ export function PublicationProfileCard({
   const { t } = useLanguage()
   const memberSinceLabel = formatMemberSince(memberSince)
   const isBusinessScope = scope === 'business' && Boolean(ownBusiness)
-  const businessVerified = isBusinessScope && isBusinessVerified(ownBusiness)
+  const businessVerified = isBusinessScope && isBusinessPublishReady(ownBusiness)
   const headlineName = isBusinessScope ? ownBusiness.name : displayName
   const showVerifiedIcon = isBusinessScope ? businessVerified : verified
   const sectorLabel = isBusinessScope
@@ -90,7 +87,7 @@ export function PublicationProfileCard({
             {isBusinessScope && displayName && displayName !== headlineName ? (
               <Badge tone="info">
                 <FiUser className="mr-1 inline" />
-                {displayName}
+                <VerifiedDisplayName name={displayName} verified={verified} iconSize="sm" />
               </Badge>
             ) : null}
             {isBusinessScope && sectorLabel ? (

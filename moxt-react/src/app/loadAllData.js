@@ -17,6 +17,10 @@ import { setAll as setPosts } from '../features/posts/postsSlice'
 import { setRecipientAddresses } from '../features/addresses/recipientAddressesSlice'
 import { hydrateAccountPreferences, mergeRemoteAccount, updateAccountPreferences } from '../features/account/accountSlice'
 import { profileRowToAdminUser, setAdminUsers } from '../features/administration/administrationSlice'
+import {
+  setProfileDirectory,
+  upsertProfileDirectoryEntries,
+} from '../features/profile/profileDirectorySlice'
 import { setUser } from '../features/auth/authSlice'
 import { setIdentityProfiles } from '../features/identity/identitySlice'
 import { listingFromRemoteRow, mergeListingQuestions } from '../features/marketplace/marketplaceRemote'
@@ -135,6 +139,7 @@ export const loadAllData = createAsyncThunk(
 
     const resolvedRole = profileRes.data?.role || user.role || 'user'
     const isAdmin = ['admin', 'superadmin'].includes(resolvedRole)
+    const isStaff = ['moderator', 'admin', 'superadmin'].includes(resolvedRole)
     const authUser = authUserRes?.data?.user || null
 
     if (profileRes.data || authUser) {
@@ -216,12 +221,14 @@ export const loadAllData = createAsyncThunk(
       supabase.from('p2p_offers').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
       supabase.from('p2p_orders').select('*').or(`buyer_id.eq.${uid},seller_id.eq.${uid}`).limit(USER_LIMIT),
       supabase.from('reviews').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
-      supabase.from('disputes').select('*').or(`reporter_id.eq.${uid},target_id.eq.${uid}`).limit(USER_LIMIT),
+      isStaff
+        ? supabase.from('disputes').select('*').order('created_at', { ascending: false }).limit(USER_LIMIT)
+        : supabase.from('disputes').select('*').or(`reporter_id.eq.${uid},target_id.eq.${uid}`).limit(USER_LIMIT),
       supabase.from('payments').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(USER_LIMIT),
       supabase.from('wallet_entries').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(USER_LIMIT),
       supabase.from('receipts').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(USER_LIMIT),
       supabase.from('notifications').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(50),
-      isAdmin
+      isStaff
         ? supabase
             .from('posts')
             .select('*')
@@ -251,7 +258,7 @@ export const loadAllData = createAsyncThunk(
     ])
 
     let adminBusinessesRes = { data: [], error: null }
-    if (isAdmin) {
+    if (isStaff) {
       adminBusinessesRes = await supabase
         .from('businesses')
         .select('*')
@@ -367,13 +374,13 @@ export const loadAllData = createAsyncThunk(
           ? supabase.from('business_documents').select('*').in('business_id', ownedBusinessIds).limit(USER_LIMIT)
           : Promise.resolve({ data: [] }),
       supabase.from('identity_profiles').select('*').eq('user_id', uid).limit(USER_LIMIT),
-      isAdmin
+      isStaff
         ? supabase.from('listing_reports').select('*').order('created_at', { ascending: false }).limit(USER_LIMIT)
         : supabase.from('listing_reports').select('*').eq('reporter_id', uid).limit(USER_LIMIT),
-      isAdmin
+      isStaff
         ? supabase.from('job_reports').select('*').order('created_at', { ascending: false }).limit(USER_LIMIT)
         : supabase.from('job_reports').select('*').eq('reporter_id', uid).limit(USER_LIMIT),
-      isAdmin
+      isStaff
         ? supabase.from('event_reports').select('*').order('created_at', { ascending: false }).limit(USER_LIMIT)
         : supabase.from('event_reports').select('*').eq('reporter_id', uid).limit(USER_LIMIT),
       isAdmin
@@ -384,7 +391,11 @@ export const loadAllData = createAsyncThunk(
             )
             .order('created_at', { ascending: false })
             .limit(USER_LIMIT)
-        : Promise.resolve({ data: [] }),
+        : supabase
+            .from('profiles')
+            .select('id, first_name, last_name, city, country, role, status, created_at, updated_at')
+            .order('created_at', { ascending: false })
+            .limit(USER_LIMIT),
       isAdmin
         ? supabase
             .from('account_deletion_requests')
@@ -592,11 +603,22 @@ export const loadAllData = createAsyncThunk(
           details: parseJsonField(item.details, {}),
         })),
       }))
-      dispatch(setPosts({ items: fromRows(postsRes.data).map((p) => ({
-        ...p,
-        likes: parseJsonField(p.likes, []),
-        comments: parseJsonField(p.comments, []),
-      })) }))
+      dispatch(setPosts({ items: fromRows(postsRes.data).map((p) => {
+        const images = parseJsonField(p.images, [])
+        const normalizedImages = Array.isArray(images)
+          ? images.filter((url) => typeof url === 'string' && url).slice(0, 4)
+          : []
+        const imageUrl =
+          normalizedImages[0] || (typeof p.imageUrl === 'string' ? p.imageUrl : null)
+        return {
+          ...p,
+          pinned: p.pinned === true,
+          images: normalizedImages.length ? normalizedImages : imageUrl ? [imageUrl] : [],
+          imageUrl,
+          likes: parseJsonField(p.likes, []),
+          comments: parseJsonField(p.comments, []),
+        }
+      }) }))
       dispatch(mergeRemoteAccount({
         favorites: fromRows(safeRows(favoritesRes, 'des favoris')),
         subscriptions: fromRows(safeRows(subscriptionsRes, 'des abonnements')).map((item) => ({
@@ -630,13 +652,11 @@ export const loadAllData = createAsyncThunk(
           userId: item.userId || item.user_id,
         })),
       }))
+      const profileDirectoryRows = safeRows(adminProfilesRes, 'des profils utilisateurs')
+      dispatch(setProfileDirectory(profileDirectoryRows))
       if (isAdmin) {
         dispatch(
-          setAdminUsers(
-            safeRows(adminProfilesRes, 'des profils utilisateurs')
-              .map(profileRowToAdminUser)
-              .filter(Boolean),
-          ),
+          setAdminUsers(profileDirectoryRows.map(profileRowToAdminUser).filter(Boolean)),
         )
       }
       dispatch(setRecipientAddresses(fromRows(safeRows(recipientAddressesRes, 'des adresses'))))
@@ -669,6 +689,48 @@ export const loadAllData = createAsyncThunk(
         }
       }
     })
+
+    const knownProfileIds = new Set(
+      safeRows(adminProfilesRes, 'des profils utilisateurs').map((row) => String(row.id)),
+    )
+    knownProfileIds.add(String(uid))
+    const neededProfileIds = new Set()
+    const rememberProfileId = (value) => {
+      if (!value) return
+      const id = String(value)
+      if (!knownProfileIds.has(id)) neededProfileIds.add(id)
+    }
+
+    for (const post of fromRows(postsRes.data)) {
+      rememberProfileId(post.authorId)
+      for (const comment of parseJsonField(post.comments, [])) {
+        rememberProfileId(comment.authorId)
+      }
+    }
+    for (const review of mergedReviews) rememberProfileId(review.authorId)
+    for (const job of jobsFromRemoteRows(jobsRes.data)) rememberProfileId(job.ownerId)
+    for (const event of fromRows(eventsRes.data)) rememberProfileId(event.ownerId)
+    for (const parcel of fromRows(parcelsRes.data)) rememberProfileId(parcel.ownerId)
+    for (const listing of listingsWithQuestions) {
+      rememberProfileId(listing.ownerId)
+      for (const question of listing.questions || []) rememberProfileId(question.authorId)
+    }
+    for (const offer of safeRows(p2pOffersRes, 'des offres P2P')) {
+      rememberProfileId(offer.owner_id || offer.ownerId)
+    }
+
+    const missingProfileIds = [...neededProfileIds].slice(0, 100)
+    if (missingProfileIds.length) {
+      const extraProfilesRes = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, status, role, city, country, created_at, updated_at')
+        .in('id', missingProfileIds)
+      dispatch(
+        upsertProfileDirectoryEntries(
+          safeRows(extraProfilesRes, 'des profils auteurs manquants'),
+        ),
+      )
+    }
     } catch (error) {
       console.error('[MOXT] Échec du chargement des données:', error)
       return rejectWithValue(

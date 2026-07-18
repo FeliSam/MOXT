@@ -86,10 +86,6 @@ export function DashboardSearch() {
         ) : null}
       </label>
 
-      <p className="mt-3 text-xs text-[var(--app-text-faint)]">
-        {t('catalog.search.liveHint')}
-      </p>
-
       {showPanel && panelRect
         ? createPortal(
             <div

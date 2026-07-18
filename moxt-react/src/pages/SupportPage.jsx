@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
+import { EntityVerifiedName } from '../components/ui/EntityVerifiedName'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
@@ -337,7 +338,12 @@ function TicketCard({ dispatch, ticket, user }) {
             key={message.id}
             className={`rounded-xl p-3 text-sm ${message.role === 'agent' ? 'bg-blue-50 dark:bg-blue-950/30' : 'bg-slate-50 dark:bg-slate-950'}`}
           >
-            <strong className="block text-xs">{message.senderName}</strong>
+            <EntityVerifiedName
+              as="strong"
+              name={message.senderName}
+              userId={message.senderId}
+              className="block text-xs"
+            />
             <p className="mt-1">{message.text}</p>
             {message.imageUrl ? (
               <a href={message.imageUrl} target="_blank" rel="noreferrer" className="mt-2 block">

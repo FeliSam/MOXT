@@ -1,5 +1,6 @@
 import { Provider, useSelector } from 'react-redux'
 import { BrowserRouter } from 'react-router-dom'
+import { GlobalNetworkMonitor } from '../components/feedback/GlobalNetworkMonitor'
 import { ScrollToTop } from '../components/routing/ScrollToTop'
 import { DocumentTitle } from '../components/routing/DocumentTitle'
 import { DeepLinkListener } from '../components/routing/DeepLinkListener'
@@ -25,6 +26,7 @@ export function AppProviders({ children }) {
             <DocumentTitle />
             <DeepLinkListener />
             <AppBadgeBridge />
+            <GlobalNetworkMonitor />
             {children}
           </BrowserRouter>
         </ThemeProvider>

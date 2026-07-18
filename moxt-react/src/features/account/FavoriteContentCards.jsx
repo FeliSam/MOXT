@@ -8,9 +8,11 @@ import {
   FiTrash2,
 } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
+import { useSelector } from 'react-redux'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import { EntityVerifiedName } from '../../components/ui/EntityVerifiedName'
 import { CatalogGrid } from '../../components/ui/CatalogGrid'
 import { useLanguage } from '../../contexts/useLanguage'
 import { phase3Text } from '../../i18n/phase3I18n'
@@ -134,6 +136,9 @@ function JobFavoriteCard({ item, onRemove }) {
   const { t } = useLanguage()
   const p3 = (key, vars) => phase3Text(t, key, vars)
   const { display, path } = item
+  const job = useSelector((state) =>
+    state.jobs.items.find((entry) => entry.id === item.relatedId),
+  )
   return (
     <Card className="grid min-w-0 content-start gap-3 p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
@@ -145,7 +150,13 @@ function JobFavoriteCard({ item, onRemove }) {
       <div className="min-w-0">
         <h3 className="font-black">{display.title}</h3>
         {display.publisherName ? (
-          <p className="mt-1 text-sm text-[var(--app-text-muted)]">{display.publisherName}</p>
+          <EntityVerifiedName
+            as="p"
+            name={display.publisherName}
+            userId={job?.ownerId}
+            businessId={job?.businessId}
+            className="mt-1 text-sm text-[var(--app-text-muted)]"
+          />
         ) : null}
       </div>
       <div className="grid gap-1 text-sm">

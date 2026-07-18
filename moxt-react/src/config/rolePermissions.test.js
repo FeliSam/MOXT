@@ -14,4 +14,12 @@ describe('rolePermissions', () => {
     expect(roleCan('admin', 'roles.manage')).toBe(false)
     expect(roleCan('superadmin', 'roles.manage')).toBe(true)
   })
+
+  it('autorise le moderateur a moderer sans gerer les utilisateurs', () => {
+    expect(roleCan('moderator', 'moderation.manage')).toBe(true)
+    expect(roleCan('moderator', 'catalog.read')).toBe(true)
+    expect(roleCan('moderator', 'users.manage')).toBe(false)
+    expect(roleCan('moderator', 'roles.manage')).toBe(false)
+    expect(roleCan('moderator', 'system.audit')).toBe(false)
+  })
 })

@@ -11,7 +11,7 @@ vi.mock('../../../contexts/useLanguage', () => ({
         'dashboard.hero.title': 'Tous vos services essentiels, réunis.',
         'dashboard.hero.subtitle': 'Transferts, colis, ventes, jobs et événements.',
         'dashboard.hero.createTransfer': 'Créer un transfert',
-        'dashboard.hero.marketplace': 'Marketplace',
+        'dashboard.hero.news': 'Actualités',
       }
       return map[key] || key
     },
@@ -23,15 +23,15 @@ vi.mock('../../transfers/DashboardTransferCalculator', () => ({
 }))
 
 describe('DashboardHero', () => {
-  it('propose Marketplace comme action secondaire', () => {
+  it('propose Actualités comme action secondaire', () => {
     render(
       <MemoryRouter>
         <DashboardHero user={{ firstName: 'Amina', verified: true }} onOpenCalculator={() => undefined} />
       </MemoryRouter>,
     )
 
-    const marketplace = screen.getByRole('link', { name: /Marketplace/i })
-    expect(marketplace).toHaveAttribute('href', '/marketplace')
+    const news = screen.getByRole('link', { name: /Actualités/i })
+    expect(news).toHaveAttribute('href', '/news')
     expect(screen.getByRole('link', { name: /Créer un transfert/i })).toHaveAttribute('href', '/transfers')
   })
 })

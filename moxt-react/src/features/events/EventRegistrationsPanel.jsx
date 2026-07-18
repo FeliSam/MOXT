@@ -1,6 +1,8 @@
 import { FiCheck, FiX } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Badge } from '../../components/ui/Badge'
+import { EntityVerifiedName } from '../../components/ui/EntityVerifiedName'
+import { EntityVerifiedName } from '../../components/ui/EntityVerifiedName'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { EmptyState } from '../../components/ui/EmptyState'
@@ -36,9 +38,11 @@ export function EventRegistrationsPanel({ id = 'event-registrations' }) {
                 <Card key={row.id} className="h-full bg-[var(--app-surface-muted)] p-4">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <strong>
-                        {row.participantName || t('events.participants.memberFallback')}
-                      </strong>
+                      <EntityVerifiedName
+                        as="strong"
+                        name={row.participantName || t('events.participants.memberFallback')}
+                        userId={row.userId}
+                      />
                       <p className="mt-1 text-sm text-[var(--app-text-muted)]">{event?.title}</p>
                       {row.message ? (
                         <p className="mt-2 text-sm text-[var(--app-text-muted)]">{row.message}</p>

@@ -1,5 +1,7 @@
+import { FaInstagram } from 'react-icons/fa'
 import { FiMoon, FiSearch, FiSun } from 'react-icons/fi'
 import { Link, NavLink, Outlet } from 'react-router-dom'
+import { MOXT_INSTAGRAM } from '../../config/socialLinks'
 import { useTheme } from '../../contexts/useTheme'
 import { useLanguage } from '../../contexts/useLanguage'
 import { useSmartNavbar } from '../../hooks/useSmartNavbar'
@@ -94,7 +96,16 @@ export function PublicSiteLayout({ children }) {
             </p>
           </div>
           <p>{t('public.footer.tagline')}</p>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <a
+              href={MOXT_INSTAGRAM.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 font-bold text-[var(--app-text)] hover:text-[var(--app-accent)]"
+            >
+              <FaInstagram aria-hidden />
+              {t('public.footer.instagram')}
+            </a>
             <Link to="/trust">{t('public.footer.security')}</Link>
             <Link to="/faq">{t('public.footer.help')}</Link>
             <Link to="/legal/mentions">{t('legal.nav.mentions')}</Link>

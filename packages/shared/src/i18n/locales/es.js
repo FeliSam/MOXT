@@ -296,6 +296,8 @@ export const es = {
     communication: "Comunicación",
     account: "Cuenta",
     administration: "Administración",
+    moderation: "Moderación",
+    moderationSpace: "Espacio moderador",
     p2p: "Intercambio P2P",
     exchangers: "Cambiadores",
     professional: "Espacio profesional",
@@ -342,11 +344,13 @@ export const es = {
   share: {
     title: "QR code y invitación",
     eyebrow: "Partilha",
-    description: "Um só lugar para convidar amigos o compartir o tu perfil MOXT.",
+    description: "Un solo lugar para invitar amigos, compartir tu perfil o seguir a MOXT en Instagram.",
     tabTypeLabel: "Tipo de partilha",
     inviteTab: "Convidar",
     profileTab: "O meu perfil",
+    instagramTab: "Instagram",
     invitationSubtitle: "Invitación MOXT",
+    instagramSubtitle: "@MOXTAPP · Cuenta oficial",
     inviteCountOne: "pessoa convidada",
     inviteCountMany: "pessoas convidadas",
     copyLink: "Copiar ligación",
@@ -361,17 +365,20 @@ export const es = {
     hints: {
       invite: "Digitalize para entrar no MOXT",
       profile: "Digitalize para ver as minhas publicaciones",
-      business: "Digitalize para descobrir esta empresa"
+      business: "Digitalize para descobrir esta empresa",
+      instagram: "Escanea para seguir a MOXT en Instagram"
     },
     shareTitles: {
       invite: "Junte-se ao MOXT",
       onMoxt: "{name} no MOXT",
-      publications: "Publicaciones de {name}"
+      publications: "Publicaciones de {name}",
+      instagram: "MOXT en Instagram"
     },
     shareTexts: {
       invite: "Transferencias, paquetes y servicios entre África y Rusia. Junte-se a mim no MOXT:",
       profile: "Veja as publicaciones de {name} no MOXT.",
-      business: "Descubra {name} no MOXT."
+      business: "Descubra {name} no MOXT.",
+      instagram: "Sigue la cuenta oficial de MOXT en Instagram:"
     },
     steps: {
       step1Title: "Partilhe o tu QR",
@@ -757,6 +764,7 @@ export const es = {
       tagline: "Plataforma de servicios para a diáspora. Troque con cuidado.",
       security: "Seguridad",
       help: "Ayuda",
+      instagram: "Instagram",
       copyright: "© {year} MOXT. Todos os direitos reservados."
     },
     home: {
@@ -6288,6 +6296,20 @@ export const es = {
         h1: "Internacionalización FR / EN / RU / PT",
         h2: "PWA, modo oscuro, búsqueda global"
       }
+    }
+  },
+  social: {
+    instagram: {
+      eyebrow: "Comunidad",
+      title: "Sigue a MOXT en Instagram",
+      description:
+        "Noticias, consejos y momentos de la diáspora — únete a @MOXTAPP para estar al día.",
+      open: "Abrir Instagram",
+      copy: "Copiar enlace",
+      copied: "Enlace copiado",
+      scanHint: "Escanea el QR",
+      enlargeQr: "Ampliar el código QR de Instagram",
+      qrAlt: "Código QR de Instagram @MOXTAPP"
     }
   },
   reviews: {

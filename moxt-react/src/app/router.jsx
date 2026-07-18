@@ -15,10 +15,19 @@ import {
 } from '../config/routes'
 
 function lazyPage(loader, exportName) {
-  return lazy(() => loader().then((module) => ({ default: module[exportName] })))
+  return lazy(() =>
+    loader().then((module) => {
+      const page = module[exportName]
+      if (!page) {
+        throw new Error(`Missing page export: ${exportName}`)
+      }
+      return { default: page }
+    }),
+  )
 }
 
 const AdminPage = lazyPage(() => import('../pages/AdminPage'), 'AdminPage')
+const ModerationPage = lazyPage(() => import('../pages/ModerationPage'), 'ModerationPage')
 const ActivitiesPage = lazyPage(() => import('../pages/ActivitiesPage'), 'ActivitiesPage')
 const BusinessesPage = lazyPage(() => import('../pages/BusinessesPage'), 'BusinessesPage')
 const BusinessDetailPage = lazyPage(
@@ -315,6 +324,14 @@ export function AppRouter() {
               element={
                 <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
                   <FeatureMatrixPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/moderation"
+              element={
+                <ProtectedRoute allowedRoles={['moderator', 'admin', 'superadmin']}>
+                  <ModerationPage />
                 </ProtectedRoute>
               }
             />

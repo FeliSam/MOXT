@@ -27,13 +27,17 @@ export function QrSharePanel({
   shareText,
   code,
   inviteCount,
+  qrImageSrc,
   qrSize = 260,
   showActions = true,
   className = '',
 }) {
   const { t } = useLanguage()
   const [copied, setCopied] = useState(false)
-  const qrUrl = useMemo(() => makeQrCodeUrl(shareUrl, qrSize), [shareUrl, qrSize, title, city, sector, avatarUrl])
+  const qrUrl = useMemo(
+    () => qrImageSrc || makeQrCodeUrl(shareUrl, qrSize),
+    [qrImageSrc, shareUrl, qrSize, title, city, sector, avatarUrl],
+  )
   const showPrivateProfileWarning =
     (variant === 'profile' || variant === 'business') && activityVisibility === 'private'
 
@@ -42,14 +46,18 @@ export function QrSharePanel({
     shareTitle ||
     (variant === 'invite'
       ? t('share.shareTitles.invite')
-      : t('share.shareTitles.onMoxt', { name: title }))
+      : variant === 'instagram'
+        ? t('share.shareTitles.instagram')
+        : t('share.shareTitles.onMoxt', { name: title }))
   const resolvedShareText =
     shareText ||
     (variant === 'invite'
       ? t('share.shareTexts.invite')
-      : variant === 'business'
-        ? t('share.shareTexts.business', { name: title })
-        : t('share.shareTexts.profile', { name: title }))
+      : variant === 'instagram'
+        ? t('share.shareTexts.instagram')
+        : variant === 'business'
+          ? t('share.shareTexts.business', { name: title })
+          : t('share.shareTexts.profile', { name: title }))
 
   async function copyLink() {
     try {
@@ -98,7 +106,9 @@ export function QrSharePanel({
             ? 'linear-gradient(165deg, #0f766e 0%, #0d9488 38%, #155e75 72%, #1e293b 100%)'
             : variant === 'business'
               ? 'linear-gradient(165deg, #020617 0%, #0f172a 32%, #1e293b 58%, #0f766e 100%)'
-              : 'linear-gradient(165deg, #0f766e 0%, #0d9488 42%, #134e4a 78%, #0f172a 100%)',
+              : variant === 'instagram'
+                ? 'linear-gradient(165deg, #0f766e 0%, #0d9488 36%, #155e75 68%, #1e293b 100%)'
+                : 'linear-gradient(165deg, #0f766e 0%, #0d9488 42%, #134e4a 78%, #0f172a 100%)',
       }}
     >
       <div
