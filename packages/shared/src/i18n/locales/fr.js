@@ -168,6 +168,19 @@ export const fr = {
       otpCooldown: "Patientez {seconds} secondes avant de renvoyer un code.",
       otpCap: "Limite atteinte : maximum {max} codes par période de 3 heures. Réessayez dans environ {minutes} minutes.",
     },
+    network: {
+      eyebrow: "Problème de connexion",
+      title: "Connexion interrompue",
+      body: "Cette page n'a pas pu être affichée à cause d'un problème réseau. Vérifiez votre connexion internet, puis reconnectez-vous pour continuer.",
+      retry: "Se reconnecter",
+      close: "Fermer",
+    },
+    display: {
+      eyebrow: "Erreur d'affichage",
+      title: "Cette page n'a pas pu être affichée.",
+      body: "Une erreur inattendue empêche l'affichage. Réessayez ou retournez à l'accueil.",
+      home: "Retour au tableau de bord",
+    },
   },
   validation: {
     password: {
@@ -899,7 +912,7 @@ export const fr = {
       title: "Tous vos services essentiels, réunis.",
       subtitle: "Transferts, colis, ventes, jobs et événements dans une expérience simple, instantanée et pensée pour vos échanges entre l’Afrique et la Russie.",
       createTransfer: "Créer un transfert",
-      marketplace: "Marketplace",
+      news: "Actualités",
     },
     discovery: {
       eyebrow: "Découvrir MOXT",
@@ -4277,9 +4290,18 @@ export const fr = {
     },
     seeMore: "Voir plus",
     seeLess: "Voir moins",
+    pinned: "Publication épinglée",
+    pin: {
+      toastPinnedTitle: "Publication épinglée",
+      toastPinnedBody: "Elle reste en tête du fil d’actualité.",
+      toastUnpinnedTitle: "Publication désépinglée",
+      toastUnpinnedBody: "Elle reprend sa place chronologique dans le fil.",
+    },
     menu: {
       actions: "Actions de la publication",
       edit: "Modifier",
+      pin: "Épingler",
+      unpin: "Désépingler",
       archive: "Archiver",
       delete: "Supprimer",
       deleteConfirm: "Supprimer cette publication ?",
@@ -4327,10 +4349,23 @@ export const fr = {
       messageLabel: "Message du post",
       messagePlaceholder: "Rédigez votre message…",
       previewAlt: "Aperçu",
+      previewAltIndexed: "Aperçu {index}",
       removeImage: "Supprimer l'image",
+      removeImageIndexed: "Supprimer l’image {index}",
       addImage: "Ajouter une image",
+      addImages: "Ajouter des images (max. 4)",
+      addAnother: "Ajouter",
+      imagesHint: "{count}/{max} images",
       link: "Lien : {link}",
       publish: "Publier",
+    },
+    feed: {
+      prevImage: "Image précédente",
+      nextImage: "Image suivante",
+      imageAlt: "Image {index} du post",
+      openPreview: "Voir l'image en grand",
+      closePreview: "Fermer l'aperçu",
+      previewTitle: "Aperçu de l'image",
     },
     card: {
       cta: {

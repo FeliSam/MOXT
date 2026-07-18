@@ -1,16 +1,36 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { FiArchive, FiChevronDown, FiEdit2, FiMessageCircle, FiMoreHorizontal, FiShare2, FiTrash2 } from 'react-icons/fi'
+import {
+  FiArchive,
+  FiChevronDown,
+  FiEdit2,
+  FiMessageCircle,
+  FiMoreHorizontal,
+  FiShare2,
+  FiStar,
+  FiTrash2,
+} from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { FavoriteButton } from './FavoriteButton'
 import { CountBounce } from './CountBounce'
 import { useLanguage } from '../../contexts/useLanguage'
 import { adminText } from '../../features/admin/adminI18n'
-import { addComment, deleteComment, deletePost, moderatePost, toggleLike, updatePost } from '../../features/posts/postsSlice'
+import {
+  addComment,
+  deleteComment,
+  deletePost,
+  moderatePost,
+  setPostPinned,
+  toggleLike,
+  updatePost,
+} from '../../features/posts/postsSlice'
+import { getPostImages } from '../../features/posts/postMediaUtils'
 import { SOURCE_TYPE_LABELS } from '../../features/posts/postTemplates'
 import { formatDate } from '../../features/transfers/transferUtils'
 import { addToast } from '../../features/ui/uiSlice'
 import { phase3Text } from '../../i18n/phase3I18n'
+import { FeedPostImages } from './FeedPostImages'
+import { EntityVerifiedName } from './EntityVerifiedName'
 
 const TYPE_COLORS = {
   listing:  'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
@@ -50,12 +70,12 @@ function ExpandableFeedMessage({ text }) {
           type="button"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
-          className="group mt-1 inline-flex items-center gap-px rounded-full px-1 py-px text-[7px] font-bold uppercase tracking-[0.03em] text-[var(--app-accent)] transition hover:bg-[var(--app-accent-soft)] active:scale-[0.98]"
+          className="group mt-0.5 inline-flex origin-left scale-[0.72] items-center gap-0.5 rounded px-0.5 py-px text-[10px] font-medium leading-none tracking-normal text-[var(--app-accent)] transition hover:bg-[var(--app-accent-soft)] active:scale-[0.68]"
         >
           <span>{expanded ? p3('news.seeLess') : p3('news.seeMore')}</span>
           <FiChevronDown
             aria-hidden
-            className={`size-2 transition-transform duration-200 ease-out ${
+            className={`size-2.5 shrink-0 transition-transform duration-200 ease-out ${
               expanded ? 'rotate-180' : 'rotate-0'
             } group-hover:translate-y-px`}
           />
@@ -81,7 +101,9 @@ export function FeedPostCard({ post }) {
   const user = useSelector((s) => s.auth.user)
   const isAuthor = user?.id === post.authorId
   const isModerator = user?.role === 'admin' || user?.role === 'superadmin'
+  const isSuperAdmin = user?.role === 'superadmin'
   const canManage = isAuthor || isModerator
+  const pinned = post?.pinned === true
 
   const [showComments, setShowComments] = useState(false)
   const [commentText, setCommentText] = useState('')
@@ -133,6 +155,20 @@ export function FeedPostCard({ post }) {
     if (window.confirm(message)) {
       dispatch(moderatePost({ id: post.id, status: 'archived' }))
     }
+    setMenuOpen(false)
+  }
+
+  function handleTogglePin() {
+    if (!isSuperAdmin) return
+    const nextPinned = !pinned
+    dispatch(setPostPinned({ id: post.id, pinned: nextPinned }))
+    dispatch(
+      addToast({
+        title: nextPinned ? p3('news.pin.toastPinnedTitle') : p3('news.pin.toastUnpinnedTitle'),
+        message: nextPinned ? p3('news.pin.toastPinnedBody') : p3('news.pin.toastUnpinnedBody'),
+        tone: 'success',
+      }),
+    )
     setMenuOpen(false)
   }
 
@@ -193,11 +229,25 @@ export function FeedPostCard({ post }) {
             </span>
           )}
           <div>
-            <p className="text-sm font-bold leading-tight">{post.authorName}</p>
+            <EntityVerifiedName
+              as="p"
+              name={post.authorName}
+              userId={post.authorId}
+              className="text-sm font-bold leading-tight"
+            />
             <p className="text-xs text-[var(--app-text-muted)]">{formatDate(post.createdAt)}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {pinned ? (
+            <span
+              className="grid size-8 place-items-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300"
+              title={p3('news.pinned')}
+              aria-label={p3('news.pinned')}
+            >
+              <FiStar className="size-3.5 fill-current" aria-hidden />
+            </span>
+          ) : null}
           <span className={`rounded-full px-2.5 py-1 text-[10px] font-black ${typeColor}`}>
             {typeLabel}
           </span>
@@ -222,6 +272,16 @@ export function FeedPostCard({ post }) {
                     >
                       <FiEdit2 className="text-xs" /> {p3('news.menu.edit')}
                     </Link>
+                  ) : null}
+                  {isSuperAdmin ? (
+                    <button
+                      type="button"
+                      onClick={handleTogglePin}
+                      className="flex w-full items-center gap-2 px-4 py-2 text-sm hover:bg-[var(--app-surface-muted)]"
+                    >
+                      <FiStar className="text-xs" />
+                      {pinned ? p3('news.menu.unpin') : p3('news.menu.pin')}
+                    </button>
                   ) : null}
                   {post.status !== 'archived' ? (
                     <button
@@ -278,21 +338,12 @@ export function FeedPostCard({ post }) {
         )}
       </div>
 
-      {/* Image — hauteur naturelle selon le contenu */}
-      {post.imageUrl && !editing && (
-        <div className="border-y border-[var(--app-border)]/60 bg-[var(--app-surface-muted)]/40">
-          <img
-            src={post.imageUrl}
-            alt={post.message?.slice(0, 120) || 'Image du post'}
-            className="mx-auto block h-auto w-full max-h-[min(36rem,78vh)] object-contain"
-            loading="lazy"
-            decoding="async"
-            onError={(e) => {
-              e.currentTarget.closest('div')?.remove()
-            }}
-          />
-        </div>
-      )}
+      {!editing ? (
+        <FeedPostImages
+          images={getPostImages(post)}
+          alt={(post.message || '').trim().slice(0, 120)}
+        />
+      ) : null}
 
       {/* CTA */}
       {ctaLabel && post.directLink && (
@@ -365,7 +416,12 @@ export function FeedPostCard({ post }) {
                     </span>
                   )}
                   <div className="flex-1 rounded-2xl bg-[var(--app-surface-muted)] px-3 py-2">
-                    <p className="text-xs font-bold">{comment.authorName}</p>
+                    <EntityVerifiedName
+                      as="p"
+                      name={comment.authorName}
+                      userId={comment.authorId}
+                      className="text-xs font-bold"
+                    />
                     <p className="text-sm mt-0.5">{comment.text}</p>
                   </div>
                   {(user?.id === comment.authorId || isAuthor || isModerator) && (

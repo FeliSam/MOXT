@@ -778,7 +778,7 @@ export const pt = {
       title: "Todos os seus serviços essenciais, reunidos.",
       subtitle: "Transferências, encomendas, vendas, empregos e eventos numa experiência simples e instantânea para as suas trocas entre África e Rússia.",
       createTransfer: "Criar uma transferência",
-      marketplace: "Marketplace",
+      news: "Notícias",
     },
     discovery: {
       eyebrow: "Descobrir MOXT",
@@ -1700,6 +1700,19 @@ export const pt = {
       serviceUnavailable: "Serviço temporariamente indisponível. Tente mais tarde ou contacte o suporte.",
       otpCooldown: "Aguarde {seconds} segundos antes de reenviar um código.",
       otpCap: "Limite atingido: máximo de {max} códigos por período de 3 horas. Tente novamente em cerca de {minutes} minutos.",
+    },
+    network: {
+      eyebrow: "Problema de ligação",
+      title: "Ligação interrompida",
+      body: "Esta página não pôde ser mostrada devido a um problema de rede. Verifique a sua ligação à internet e volte a ligar-se para continuar.",
+      retry: "Voltar a ligar",
+      close: "Fechar",
+    },
+    display: {
+      eyebrow: "Erro de apresentação",
+      title: "Esta página não pôde ser apresentada.",
+      body: "Um erro inesperado impede a apresentação. Tente novamente ou volte ao início.",
+      home: "Voltar ao painel",
     },
   },
   validation: {
@@ -4294,9 +4307,12 @@ export const pt = {
     },
     seeMore: "Ver mais",
     seeLess: "Ver menos",
+    pinned: "Publicação fixada",
     menu: {
       actions: "Ações da publicação",
       edit: "Editar",
+      pin: "Fixar",
+      unpin: "Desafixar",
       archive: "Arquivar",
       delete: "Eliminar",
       deleteConfirm: "Eliminar esta publicação?",

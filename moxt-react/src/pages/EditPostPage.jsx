@@ -7,6 +7,7 @@ import { Card } from '../components/ui/Card'
 import { PageHeader } from '../components/ui/PageHeader'
 import { PostComposerForm } from '../components/ui/PostComposerForm'
 import { useLanguage } from '../contexts/useLanguage'
+import { getPostImages, MAX_POST_IMAGES, normalizePostImages } from '../features/posts/postMediaUtils'
 import { updatePost } from '../features/posts/postsSlice'
 import { addToast } from '../features/ui/uiSlice'
 import { phase3Text } from '../i18n/phase3I18n'
@@ -27,47 +28,77 @@ export function EditPostPage() {
   const post = useSelector((state) => state.posts?.items?.find((item) => item.id === postId))
 
   const [message, setMessage] = useState('')
-  const [imageFile, setImageFile] = useState(null)
-  const [imagePreview, setImagePreview] = useState('')
+  /** @type {Array<{ preview: string, file: File|null, remoteUrl: string|null }>} */
+  const [imageItems, setImageItems] = useState([])
   const [initializedFor, setInitializedFor] = useState(null)
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     if (!post || initializedFor === post.id) return
     setMessage(resolvePostMessage(post))
-    setImagePreview(post.imageUrl || '')
-    setImageFile(null)
+    setImageItems(
+      getPostImages(post).map((url) => ({
+        preview: url,
+        file: null,
+        remoteUrl: url,
+      })),
+    )
     setInitializedFor(post.id)
   }, [post, initializedFor])
 
   if (!post) return <Card>{p3('news.edit.notFound')}</Card>
   if (!user || post.authorId !== user.id) return <Navigate to="/news" replace />
 
-  function handleSelectFile(file) {
-    setImageFile(file)
-    const reader = new FileReader()
-    reader.onload = (ev) => setImagePreview(ev.target.result)
-    reader.readAsDataURL(file)
+  function handleAddFiles(files) {
+    const remaining = MAX_POST_IMAGES - imageItems.length
+    if (remaining <= 0) return
+    Array.from(files || [])
+      .slice(0, remaining)
+      .forEach((file) => {
+        const reader = new FileReader()
+        reader.onload = (ev) => {
+          setImageItems((current) => {
+            if (current.length >= MAX_POST_IMAGES) return current
+            return [...current, { preview: ev.target.result, file, remoteUrl: null }]
+          })
+        }
+        reader.readAsDataURL(file)
+      })
   }
 
-  function removeImage() {
-    setImageFile(null)
-    setImagePreview('')
+  function removeImageAt(index) {
+    setImageItems((current) => current.filter((_, i) => i !== index))
   }
 
   async function handleSubmit() {
     if (!message.trim() || submitting) return
     setSubmitting(true)
     try {
-      let imageUrl = imagePreview || null
-      if (imageFile) {
-        imageUrl = await storageService.uploadPostImage(user.id, imageFile)
+      const filesToUpload = imageItems.map((item) => item.file).filter(Boolean)
+      let uploaded = []
+      if (filesToUpload.length) {
+        uploaded = await storageService.uploadPostImages(user.id, postId, filesToUpload, {
+          version: Date.now().toString(36),
+        })
       }
+      let uploadIndex = 0
+      const urls = imageItems
+        .map((item) => {
+          if (item.file) {
+            const url = uploaded[uploadIndex]
+            uploadIndex += 1
+            return url
+          }
+          return item.remoteUrl || null
+        })
+        .filter(Boolean)
+
+      const media = normalizePostImages(urls)
       dispatch(
         updatePost({
           id: postId,
           message: message.trim(),
-          imageUrl,
+          ...media,
         }),
       )
       dispatch(
@@ -99,7 +130,9 @@ export function EditPostPage() {
         description={p3('news.edit.description')}
         actions={
           <Link to="/news">
-            <Button variant="secondary" icon={FiArrowLeft}>{p3('common.cancel')}</Button>
+            <Button variant="secondary" icon={FiArrowLeft}>
+              {p3('common.cancel')}
+            </Button>
           </Link>
         }
       />
@@ -108,9 +141,9 @@ export function EditPostPage() {
           user={user}
           message={message}
           onMessageChange={setMessage}
-          imagePreview={imagePreview}
-          onSelectFile={handleSelectFile}
-          onRemoveImage={removeImage}
+          imagePreviews={imageItems.map((item) => item.preview)}
+          onAddFiles={handleAddFiles}
+          onRemoveImageAt={removeImageAt}
           directLink={post.directLink || null}
           submitLabel={p3('news.edit.save')}
           submitIcon={FiSave}

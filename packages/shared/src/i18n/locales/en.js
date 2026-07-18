@@ -168,6 +168,19 @@ export const en = {
       otpCooldown: "Wait {seconds} seconds before resending a code.",
       otpCap: "Limit reached: maximum {max} codes per 3-hour period. Try again in about {minutes} minutes.",
     },
+    network: {
+      eyebrow: "Connection problem",
+      title: "Connection interrupted",
+      body: "This page could not be displayed because of a network problem. Check your internet connection, then reconnect to continue.",
+      retry: "Reconnect",
+      close: "Close",
+    },
+    display: {
+      eyebrow: "Display error",
+      title: "This page could not be displayed.",
+      body: "An unexpected error is blocking the display. Try again or go back home.",
+      home: "Back to dashboard",
+    },
   },
   validation: {
     password: {
@@ -891,7 +904,7 @@ export const en = {
       title: "All your essential services, together.",
       subtitle: "Transfers, parcels, sales, jobs and events in a simple, instant experience built for your exchanges between Africa and Russia.",
       createTransfer: "Create a transfer",
-      marketplace: "Marketplace",
+      news: "News",
     },
     discovery: {
       eyebrow: "Discover MOXT",
@@ -4295,9 +4308,18 @@ export const en = {
     },
     seeMore: "See more",
     seeLess: "See less",
+    pinned: "Pinned post",
+    pin: {
+      toastPinnedTitle: "Post pinned",
+      toastPinnedBody: "It stays at the top of the news feed.",
+      toastUnpinnedTitle: "Post unpinned",
+      toastUnpinnedBody: "It returns to chronological order in the feed.",
+    },
     menu: {
       actions: "Post actions",
       edit: "Edit",
+      pin: "Pin",
+      unpin: "Unpin",
       archive: "Archive",
       delete: "Delete",
       deleteConfirm: "Delete this post?",
@@ -4345,10 +4367,23 @@ export const en = {
       messageLabel: "Post message",
       messagePlaceholder: "Write your message…",
       previewAlt: "Preview",
+      previewAltIndexed: "Preview {index}",
       removeImage: "Remove image",
+      removeImageIndexed: "Remove image {index}",
       addImage: "Add an image",
+      addImages: "Add images (max. 4)",
+      addAnother: "Add",
+      imagesHint: "{count}/{max} images",
       link: "Link: {link}",
       publish: "Publish",
+    },
+    feed: {
+      prevImage: "Previous image",
+      nextImage: "Next image",
+      imageAlt: "Post image {index}",
+      openPreview: "View full image",
+      closePreview: "Close preview",
+      previewTitle: "Image preview",
     },
     card: {
       cta: {

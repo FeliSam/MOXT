@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { buildNewsFeed, isWelcomePost, postMatchesDisplayLanguage } from './postFeedUtils'
+import {
+  buildNewsFeed,
+  isPinnedPost,
+  isWelcomePost,
+  postMatchesDisplayLanguage,
+} from './postFeedUtils'
 
 describe('postFeedUtils', () => {
   const welcome = {
@@ -29,25 +34,42 @@ describe('postFeedUtils', () => {
     createdAt: '2026-07-02T00:00:00.000Z',
   }
 
-  it('detects the welcome post', () => {
+  it('detects the welcome post without forcing pin state', () => {
     expect(isWelcomePost(welcome)).toBe(true)
-    expect(isWelcomePost(frenchPost)).toBe(false)
+    expect(isPinnedPost(welcome)).toBe(false)
+    expect(isPinnedPost({ ...welcome, pinned: true })).toBe(true)
   })
 
-  it('filters posts by display language but keeps legacy posts', () => {
+  it('filters posts by display language but keeps welcome and legacy posts', () => {
     const legacy = { ...frenchPost, id: 'legacy', language: undefined }
     expect(postMatchesDisplayLanguage(frenchPost, 'fr')).toBe(true)
     expect(postMatchesDisplayLanguage(englishPost, 'fr')).toBe(false)
     expect(postMatchesDisplayLanguage(legacy, 'en')).toBe(true)
+    expect(postMatchesDisplayLanguage(welcome, 'en')).toBe(true)
   })
 
-  it('pins welcome post above language-filtered posts', () => {
+  it('keeps welcome visible across languages even when unpinned', () => {
     const feed = buildNewsFeed([englishPost, frenchPost, welcome], {
       language: 'en',
       sourceTypeFilter: 'all',
     })
-    expect(feed[0].id).toBe('welcome')
+    expect(feed.some((post) => post.id === 'welcome')).toBe(true)
     expect(feed.some((post) => post.id === 'en-post')).toBe(true)
     expect(feed.some((post) => post.id === 'fr-post')).toBe(false)
+  })
+
+  it('puts DB-pinned posts first', () => {
+    const pinned = {
+      ...englishPost,
+      id: 'pinned-en',
+      pinned: true,
+      createdAt: '2026-06-01T00:00:00.000Z',
+    }
+    const feed = buildNewsFeed([frenchPost, englishPost, pinned, welcome], {
+      language: 'en',
+      sourceTypeFilter: 'all',
+    })
+    expect(feed[0].id).toBe('pinned-en')
+    expect(feed.map((post) => post.id)).toContain('welcome')
   })
 })

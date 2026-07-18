@@ -166,8 +166,21 @@ export const es = {
       emailUnavailable: "El envío de correo no está disponible temporalmente. Elige verificación por SMS o inténtalo más tarde.",
       serviceUnavailable: "Servicio temporalmente no disponible. Inténtalo más tarde o contacta con soporte.",
       otpCooldown: "Espera {seconds} segundos antes de reenviar un código.",
-      otpCap: "Límite alcanzado: máximo {max} códigos por periodo de 3 horas. Inténtalo en unos {minutes} minutos."
-    }
+      otpCap: "Límite alcanzado: máximo {max} códigos por periodo de 3 horas. Inténtalo en unos {minutes} minutos.",
+    },
+    network: {
+      eyebrow: "Problema de conexión",
+      title: "Conexión interrumpida",
+      body: "Esta página no se pudo mostrar por un problema de red. Comprueba tu conexión a internet y vuelve a conectarte para continuar.",
+      retry: "Reconectar",
+      close: "Cerrar",
+    },
+    display: {
+      eyebrow: "Error de visualización",
+      title: "Esta página no se pudo mostrar.",
+      body: "Un error inesperado impide la visualización. Inténtalo de nuevo o vuelve al inicio.",
+      home: "Volver al panel",
+    },
   },
   validation: {
     password: {
@@ -890,7 +903,7 @@ export const es = {
       title: "Todos tus servicios esenciales, juntos.",
       subtitle: "Transferencias, envíos, ventas, empleos y eventos en una experiencia simple e instantánea, pensada para tus intercambios entre África y Rusia.",
       createTransfer: "Crear una transferencia",
-      marketplace: "Mercado"
+      news: "Actualidad"
     },
     discovery: {
       eyebrow: "Descobrir MOXT",
@@ -4294,9 +4307,12 @@ export const es = {
     },
     seeMore: "Ver más",
     seeLess: "Ver menos",
+    pinned: "Publicación fijada",
     menu: {
       actions: "Acciones de la publicación",
       edit: "Editar",
+      pin: "Fijar",
+      unpin: "Desfijar",
       archive: "Archivar",
       delete: "Eliminar",
       deleteConfirm: "¿Eliminar esta publicación?"

@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { createId } from '../../services/createId'
 import { createLocalStorage } from '../../services/createLocalStorage'
+import { normalizePostImages } from './postMediaUtils'
 
 const storage = createLocalStorage('moxt-posts-v1')
 
@@ -18,10 +19,12 @@ const postsSlice = createSlice({
       },
       prepare(values) {
         const now = new Date().toISOString()
+        const media = normalizePostImages(values.images ?? (values.imageUrl ? [values.imageUrl] : []))
         return {
           payload: {
             ...values,
-            id: createId('POST'),
+            ...media,
+            id: values.id || createId('POST'),
             likes: [],
             comments: [],
             status: values.status || 'published',
@@ -36,7 +39,14 @@ const postsSlice = createSlice({
     updatePost(state, action) {
       const post = state.items.find((p) => p.id === action.payload.id)
       if (!post) return
-      Object.assign(post, action.payload, { updatedAt: new Date().toISOString() })
+      const next = { ...action.payload }
+      if (next.images !== undefined || next.imageUrl !== undefined) {
+        Object.assign(
+          next,
+          normalizePostImages(next.images ?? (next.imageUrl ? [next.imageUrl] : [])),
+        )
+      }
+      Object.assign(post, next, { updatedAt: new Date().toISOString() })
     },
 
     deletePost(state, action) {
@@ -48,6 +58,14 @@ const postsSlice = createSlice({
       const post = state.items.find((p) => p.id === id)
       if (!post || !status) return
       post.status = status
+      post.updatedAt = new Date().toISOString()
+    },
+
+    setPostPinned(state, action) {
+      const { id, pinned } = action.payload || {}
+      const post = state.items.find((p) => p.id === id)
+      if (!post) return
+      post.pinned = pinned === true
       post.updatedAt = new Date().toISOString()
     },
 
@@ -118,6 +136,7 @@ export const {
   updatePost,
   deletePost,
   moderatePost,
+  setPostPinned,
   archivePostsBySource,
   toggleLike,
   addComment,

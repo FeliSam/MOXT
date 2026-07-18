@@ -2,10 +2,9 @@ import { sortPostsByPublishedAt } from './postSortUtils'
 
 export const WELCOME_POST_IMAGE_MARKER = 'welcome-moxt-launch'
 
-/** Post de lancement MOXT — épinglé en tête du fil pour tous les utilisateurs. */
+/** Post de lancement MOXT (contenu), indépendant du flag d'épinglage DB. */
 export function isWelcomePost(post) {
   if (!post || post.status !== 'published') return false
-  if (post.pinned === true) return true
   if (post.sourceType !== 'free') return false
   if (post.directLink === '/news') return true
   if (post.imageUrl?.includes(WELCOME_POST_IMAGE_MARKER)) return true
@@ -13,29 +12,30 @@ export function isWelcomePost(post) {
   return false
 }
 
+/** Épinglage UI / tri — uniquement le booléen persisté en base. */
+export function isPinnedPost(post) {
+  return post?.pinned === true
+}
+
 /** Affiche les posts sans langue (legacy) pour toutes les locales. */
 export function postMatchesDisplayLanguage(post, language) {
-  if (isWelcomePost(post)) return true
+  if (isPinnedPost(post) || isWelcomePost(post)) return true
   if (!post?.language) return true
   return post.language === language
 }
 
 /**
- * Construit le fil actualités : message de bienvenue épinglé + tri + filtres.
+ * Construit le fil actualités : posts `pinned` en tête, puis tri chronologique.
  */
 export function buildNewsFeed(posts = [], { language = 'fr', sourceTypeFilter = 'all' } = {}) {
   const published = posts.filter((post) => post.status === 'published')
-  const welcome = published.find(isWelcomePost)
-  let pool = published.filter((post) => !isWelcomePost(post))
-  pool = pool.filter((post) => postMatchesDisplayLanguage(post, language))
+  let pool = published.filter((post) => postMatchesDisplayLanguage(post, language))
 
   if (sourceTypeFilter !== 'all') {
     pool = pool.filter((post) => post.sourceType === sourceTypeFilter)
   }
 
-  const sorted = sortPostsByPublishedAt(pool)
-  const showWelcome =
-    welcome && (sourceTypeFilter === 'all' || sourceTypeFilter === 'free')
-
-  return showWelcome ? [welcome, ...sorted] : sorted
+  const pinned = sortPostsByPublishedAt(pool.filter(isPinnedPost))
+  const rest = sortPostsByPublishedAt(pool.filter((post) => !isPinnedPost(post)))
+  return [...pinned, ...rest]
 }

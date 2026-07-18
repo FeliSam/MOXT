@@ -851,7 +851,12 @@ const handlers = {
 
   // ── Posts / Fil d'actualité ───────────────────────────────────────────────────
   'posts/createPost': async (payload) => {
-    const { error } = await supabase.from('posts').insert({
+    const images = Array.isArray(payload.images)
+      ? payload.images.filter((url) => typeof url === 'string' && url).slice(0, 4)
+      : payload.imageUrl
+        ? [payload.imageUrl]
+        : []
+    const row = {
       id: payload.id,
       author_id: payload.authorId,
       author_name: payload.authorName,
@@ -859,26 +864,57 @@ const handlers = {
       source_type: payload.sourceType || 'free',
       source_id: payload.sourceId || null,
       message: payload.message,
-      image_url: payload.imageUrl || null,
+      image_url: images[0] || payload.imageUrl || null,
+      images,
       direct_link: payload.directLink || null,
       language: payload.language || null,
       pinned: payload.pinned === true,
       likes: JSON.stringify(payload.likes ?? []),
       comments: JSON.stringify(payload.comments ?? []),
       last_shared_at: payload.lastSharedAt || payload.createdAt,
-      status: 'published',
+      status: payload.status || 'published',
       created_at: payload.createdAt,
       updated_at: payload.updatedAt,
-    })
+    }
+    let { error } = await supabase.from('posts').insert(row)
+    if (error && /images/i.test(error.message || '')) {
+      const { images: _images, ...legacyRow } = row
+      ;({ error } = await supabase.from('posts').insert(legacyRow))
+    }
     if (error) throw error
   },
   'posts/updatePost': async (payload) => {
     const fields = {}
     if (payload.message !== undefined) fields.message = payload.message
-    if (payload.imageUrl !== undefined) fields.image_url = payload.imageUrl
+    if (payload.images !== undefined) {
+      const images = Array.isArray(payload.images)
+        ? payload.images.filter((url) => typeof url === 'string' && url).slice(0, 4)
+        : []
+      fields.images = images
+      fields.image_url = images[0] || null
+    } else if (payload.imageUrl !== undefined) {
+      fields.image_url = payload.imageUrl
+      fields.images = payload.imageUrl ? [payload.imageUrl] : []
+    }
     if (payload.status !== undefined) fields.status = payload.status
+    if (payload.pinned !== undefined) fields.pinned = payload.pinned === true
     fields.updated_at = payload.updatedAt || new Date().toISOString()
-    const { error } = await supabase.from('posts').update(fields).eq('id', payload.id)
+    let { error } = await supabase.from('posts').update(fields).eq('id', payload.id)
+    if (error && /images/i.test(error.message || '') && 'images' in fields) {
+      const { images: _images, ...legacyFields } = fields
+      ;({ error } = await supabase.from('posts').update(legacyFields).eq('id', payload.id))
+    }
+    if (error) throw error
+  },
+  'posts/setPostPinned': async (payload, state) => {
+    const post = state.posts?.items?.find((item) => item.id === payload.id)
+    const { error } = await supabase
+      .from('posts')
+      .update({
+        pinned: payload.pinned === true,
+        updated_at: post?.updatedAt || new Date().toISOString(),
+      })
+      .eq('id', payload.id)
     if (error) throw error
   },
   'posts/moderatePost': async (payload) => {

@@ -1,10 +1,15 @@
 import { useId, useRef } from 'react'
-import { FiImage, FiRefreshCw, FiSend, FiTrash2 } from 'react-icons/fi'
+import { FiImage, FiPlus, FiSend, FiTrash2 } from 'react-icons/fi'
 import { useLanguage } from '../../contexts/useLanguage'
+import { MAX_POST_IMAGES } from '../../features/posts/postMediaUtils'
+import { isProfileVerified } from '../../features/profile/userProfileUtils'
 import { phase3Text } from '../../i18n/phase3I18n'
+import { EntityVerifiedName } from './EntityVerifiedName'
 
 /**
- * Shared create/edit composer for feed posts (message + optional title + image).
+ * Shared create/edit composer for feed posts (message + up to 4 images).
+ *
+ * imagePreviews: string[] of object URLs / remote URLs / data URLs
  */
 export function PostComposerForm({
   user,
@@ -13,12 +18,18 @@ export function PostComposerForm({
   title,
   onTitleChange,
   showTitle = false,
+  imagePreviews = [],
+  onAddFiles,
+  onRemoveImageAt,
+  /** @deprecated use imagePreviews + onAddFiles */
   imagePreview,
+  /** @deprecated */
   onSelectFile,
+  /** @deprecated */
   onRemoveImage,
-  onReplaceImage,
   directLink = null,
   maxLength = 500,
+  maxImages = MAX_POST_IMAGES,
   submitLabel,
   submitIcon: SubmitIcon = FiSend,
   onSubmit,
@@ -33,15 +44,29 @@ export function PostComposerForm({
   const titleFieldId = useId()
   const fileInputRef = useRef(null)
 
+  const previews =
+    Array.isArray(imagePreviews) && imagePreviews.length
+      ? imagePreviews
+      : imagePreview
+        ? [imagePreview]
+        : []
+  const canAddMore = previews.length < maxImages
+
   function handleFileChange(e) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    onSelectFile?.(file)
+    const files = Array.from(e.target.files || []).filter((file) => file.type.startsWith('image/'))
+    if (!files.length) return
+    if (onAddFiles) onAddFiles(files)
+    else if (onSelectFile) onSelectFile(files[0])
     e.target.value = ''
   }
 
   function openFilePicker() {
     fileInputRef.current?.click()
+  }
+
+  function handleRemove(index) {
+    if (onRemoveImageAt) onRemoveImageAt(index)
+    else if (index === 0) onRemoveImage?.()
   }
 
   return (
@@ -56,9 +81,13 @@ export function PostComposerForm({
             </span>
           )}
           <div>
-            <p className="text-sm font-bold">
-              {user.firstName} {user.lastName}
-            </p>
+            <EntityVerifiedName
+              as="p"
+              name={`${user.firstName || ''} ${user.lastName || ''}`.trim()}
+              userId={user.id}
+              verified={isProfileVerified(user)}
+              className="text-sm font-bold"
+            />
             <p className="text-xs text-[var(--app-text-muted)]">{p3('news.composer.feedName')}</p>
           </div>
         </div>
@@ -98,38 +127,54 @@ export function PostComposerForm({
       </p>
 
       <div className="grid gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs font-semibold text-[var(--app-text-muted)]">
+            {p3('news.composer.imagesHint', { count: previews.length, max: maxImages })}
+          </p>
+        </div>
         <input
           ref={fileInputRef}
           type="file"
           accept="image/*"
+          multiple
           className="hidden"
           onChange={handleFileChange}
         />
-        {imagePreview ? (
-          <div className="relative">
-            <img
-              src={imagePreview}
-              alt={p3('news.composer.previewAlt')}
-              className="h-36 w-full rounded-2xl object-cover"
-            />
-            <div className="absolute right-2 top-2 flex items-center gap-1.5">
+        {previews.length ? (
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {previews.map((src, index) => (
+              <div
+                key={`${src}-${index}`}
+                className="relative aspect-square overflow-hidden rounded-2xl bg-[var(--app-surface-muted)]"
+              >
+                <img
+                  src={src}
+                  alt={p3('news.composer.previewAltIndexed', { index: index + 1 })}
+                  className="h-full w-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleRemove(index)}
+                  className="absolute right-1.5 top-1.5 grid size-7 place-items-center rounded-full bg-black/60 text-white transition hover:bg-black/80"
+                  aria-label={p3('news.composer.removeImageIndexed', { index: index + 1 })}
+                >
+                  <FiTrash2 className="text-xs" />
+                </button>
+                <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/55 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                  {index + 1}/{previews.length}
+                </span>
+              </div>
+            ))}
+            {canAddMore ? (
               <button
                 type="button"
-                onClick={() => (onReplaceImage ? onReplaceImage() : openFilePicker())}
-                className="grid size-7 place-items-center rounded-full bg-black/60 text-white transition hover:bg-black/80"
-                aria-label={p3('news.composer.replaceImage')}
+                onClick={openFilePicker}
+                className="flex aspect-square flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-[var(--app-border)] text-sm font-medium text-[var(--app-text-muted)] transition hover:border-[var(--app-accent)] hover:text-[var(--app-accent)]"
               >
-                <FiRefreshCw className="text-xs" />
+                <FiPlus className="text-lg" />
+                <span className="text-xs">{p3('news.composer.addAnother')}</span>
               </button>
-              <button
-                type="button"
-                onClick={onRemoveImage}
-                className="grid size-7 place-items-center rounded-full bg-black/60 text-white transition hover:bg-black/80"
-                aria-label={p3('news.composer.removeImage')}
-              >
-                <FiTrash2 className="text-xs" />
-              </button>
-            </div>
+            ) : null}
           </div>
         ) : (
           <button
@@ -137,7 +182,7 @@ export function PostComposerForm({
             onClick={openFilePicker}
             className="flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[var(--app-border)] px-4 py-5 text-sm font-medium text-[var(--app-text-muted)] transition hover:border-[var(--app-accent)] hover:text-[var(--app-accent)]"
           >
-            <FiImage className="text-base" /> {p3('news.composer.addImage')}
+            <FiImage className="text-base" /> {p3('news.composer.addImages')}
           </button>
         )}
       </div>
