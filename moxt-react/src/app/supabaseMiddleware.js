@@ -982,6 +982,23 @@ const handlers = {
       .eq('id', payload.statusId)
     if (error) throw error
   },
+  'statuses/removeStatusImage': async (payload, state) => {
+    const status = state.statuses?.items?.find((item) => item.id === payload.statusId)
+    if (!status) return
+    if (!status.images.length) {
+      const { error } = await supabase.from('statuses').delete().eq('id', payload.statusId)
+      if (error) throw error
+      return
+    }
+    const { error } = await supabase
+      .from('statuses')
+      .update({
+        images: status.images,
+        reactions: JSON.stringify(status.reactions ?? {}),
+      })
+      .eq('id', payload.statusId)
+    if (error) throw error
+  },
   'statuses/deleteStatus': async (payload) => {
     const { error } = await supabase.from('statuses').delete().eq('id', payload)
     if (error) throw error

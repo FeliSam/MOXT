@@ -4444,6 +4444,9 @@ export const pt = {
       replyPlaceholder: "Responder ao estado…",
       replySend: "Enviar",
       replySentTitle: "Resposta enviada",
+      deleteConfirmTitle: "Eliminar este estado?",
+      deleteConfirmBody: "Esta ação é definitiva e não pode ser anulada.",
+      deleteConfirmBodyMulti: "Apenas esta foto será removida do estado. As outras fotos continuam visíveis.",
     },
   },
   exchangers: {

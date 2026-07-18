@@ -4462,6 +4462,9 @@ export const en = {
       replyPlaceholder: "Reply to status…",
       replySend: "Send",
       replySentTitle: "Reply sent",
+      deleteConfirmTitle: "Delete this status?",
+      deleteConfirmBody: "This action is permanent and cannot be undone.",
+      deleteConfirmBodyMulti: "Only this photo will be removed from the status. The other photos stay visible.",
     },
   },
   exchangers: {

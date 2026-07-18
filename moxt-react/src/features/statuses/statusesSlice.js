@@ -69,6 +69,37 @@ const statusesSlice = createSlice({
       state.items = state.items.filter((s) => s.id !== action.payload)
     },
 
+    /**
+     * Retire une seule image d'un statut multi-images (les réactions des images
+     * suivantes sont réindexées). Le statut entier est supprimé quand il ne
+     * reste plus aucune image.
+     */
+    removeStatusImage(state, action) {
+      const { statusId, imageIndex } = action.payload
+      const status = state.items.find((s) => s.id === statusId)
+      if (!status) return
+      if (!Array.isArray(status.images) || status.images.length <= 1) {
+        state.items = state.items.filter((s) => s.id !== statusId)
+        return
+      }
+      status.images.splice(imageIndex, 1)
+      if (status.reactions) {
+        const nextReactions = {}
+        for (const [key, value] of Object.entries(status.reactions)) {
+          const [id, indexStr] = key.split(':')
+          if (id !== statusId) {
+            nextReactions[key] = value
+            continue
+          }
+          const index = Number(indexStr)
+          if (index === imageIndex) continue
+          const nextIndex = index > imageIndex ? index - 1 : index
+          nextReactions[`${id}:${nextIndex}`] = value
+        }
+        status.reactions = nextReactions
+      }
+    },
+
     /** Purge locale des statuts expirés (le serveur les filtre déjà côté RLS). */
     pruneExpiredStatuses(state) {
       const now = Date.now()
@@ -83,6 +114,7 @@ export const {
   markStatusViewed,
   reactToStatus,
   deleteStatus,
+  removeStatusImage,
   pruneExpiredStatuses,
 } = statusesSlice.actions
 

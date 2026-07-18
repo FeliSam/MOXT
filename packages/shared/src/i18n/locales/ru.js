@@ -4445,6 +4445,9 @@ export const ru = {
       replyPlaceholder: "Ответить на статус…",
       replySend: "Отправить",
       replySentTitle: "Ответ отправлен",
+      deleteConfirmTitle: "Удалить этот статус?",
+      deleteConfirmBody: "Это действие необратимо и не может быть отменено.",
+      deleteConfirmBodyMulti: "Будет удалено только это фото. Остальные фото статуса останутся видимыми.",
     },
   },
   exchangers: {

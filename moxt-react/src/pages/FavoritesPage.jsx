@@ -50,7 +50,7 @@ export function FavoritesPage() {
   const p3 = (key, vars) => phase3Text(t, key, vars)
   const [profileOpen, setProfileOpen] = useState(false)
   const [editingProfile, setEditingProfile] = useState(null)
-  const [categoryTab, setCategoryTab] = useState('all')
+  const [categoryTab, setCategoryTab] = useState(FAVORITE_CATEGORIES[0].id)
   const user = useSelector((state) => state.auth.user)
   const appState = useSelector((state) => state)
   const transferProfiles = useSelector((state) =>

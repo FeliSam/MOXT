@@ -4443,7 +4443,10 @@ export const es = {
       react: "Reaccionar",
       replyPlaceholder: "Responder al estado…",
       replySend: "Enviar",
-      replySentTitle: "Respuesta enviada"
+      replySentTitle: "Respuesta enviada",
+      deleteConfirmTitle: "¿Eliminar este estado?",
+      deleteConfirmBody: "Esta acción es definitiva y no se puede deshacer.",
+      deleteConfirmBodyMulti: "Solo se eliminará esta foto del estado. Las demás fotos siguen visibles."
     }
   },
   exchangers: {

@@ -4444,6 +4444,10 @@ export const fr = {
       replyPlaceholder: "Répondre au statut…",
       replySend: "Envoyer",
       replySentTitle: "Réponse envoyée",
+      deleteConfirmTitle: "Supprimer ce statut ?",
+      deleteConfirmBody: "Cette action est définitive et ne peut pas être annulée.",
+      deleteConfirmBodyMulti:
+        "Seule cette photo sera supprimée du statut. Les autres photos restent visibles.",
     },
   },
   exchangers: {

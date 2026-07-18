@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { FiChevronLeft, FiChevronRight, FiEye, FiSend, FiSmile, FiX } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
-import { deleteStatus, markStatusViewed, reactToStatus } from './statusesSlice'
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
+import { deleteStatus, markStatusViewed, reactToStatus, removeStatusImage } from './statusesSlice'
 import { openConversationWithContact, sendMessage } from '../communications/communicationSlice'
 import { addToast } from '../ui/uiSlice'
 import { useLanguage } from '../../contexts/useLanguage'
@@ -35,6 +36,7 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
   const [replyOpen, setReplyOpen] = useState(false)
   const [replyText, setReplyText] = useState('')
   const [replySending, setReplySending] = useState(false)
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
   const timerRef = useRef(null)
   const animTimerRef = useRef(null)
 
@@ -45,6 +47,7 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
     return group.items.flatMap((item) =>
       (item.images.length ? item.images : [null]).map((url, i) => ({
         statusId: item.id,
+        imageIndex: i,
         imageKey: `${item.id}:${i}`,
         url,
         caption: i === 0 ? item.caption : '',
@@ -55,7 +58,7 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
 
   const page = pages[pageIndex]
   const isMine = group?.authorId === viewer?.id
-  const effectivePaused = paused || reactionPickerOpen || replyOpen
+  const effectivePaused = paused || reactionPickerOpen || replyOpen || confirmDeleteOpen
 
   const currentStatusItem = group?.items.find((item) => item.id === page?.statusId)
   const myReaction = page ? currentStatusItem?.reactions?.[page.imageKey]?.[viewer?.id] : null
@@ -87,6 +90,19 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
   }, [page?.statusId, viewer?.id, dispatch])
 
   useEffect(() => () => window.clearTimeout(animTimerRef.current), [])
+
+  // Après suppression d'une seule image, l'index courant peut dépasser la
+  // nouvelle taille de la liste : on le ramène sur la dernière page restante.
+  useEffect(() => {
+    if (!pages.length) return
+    if (pageIndex > pages.length - 1) setPageIndex(pages.length - 1)
+  }, [pages.length, pageIndex])
+
+  // Le groupe disparaît de `groups` si son dernier statut/image vient d'être supprimé.
+  useEffect(() => {
+    if (!group) onClose()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [group])
 
   function goNextGroup() {
     if (groupIndex < groups.length - 1) setGroupIndex((i) => i + 1)
@@ -127,12 +143,16 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageIndex, groupIndex])
 
-  function handleDelete() {
+  function confirmDelete() {
     if (!page) return
-    dispatch(deleteStatus(page.statusId))
+    const imageCount = currentStatusItem?.images?.length ?? 1
+    if (imageCount > 1) {
+      dispatch(removeStatusImage({ statusId: page.statusId, imageIndex: page.imageIndex }))
+    } else {
+      dispatch(deleteStatus(page.statusId))
+    }
     dispatch(addToast({ title: t('status.viewer.deletedTitle'), tone: 'success' }))
-    if (pages.length <= 1) onClose()
-    else goNextPage()
+    setConfirmDeleteOpen(false)
   }
 
   async function ensureConversationId() {
@@ -159,7 +179,7 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
     )
     setAnimatingEmoji(emoji)
     window.clearTimeout(animTimerRef.current)
-    animTimerRef.current = window.setTimeout(() => setAnimatingEmoji(null), 450)
+    animTimerRef.current = window.setTimeout(() => setAnimatingEmoji(null), 550)
 
     if (!removing && page.url) {
       try {
@@ -178,7 +198,7 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
       }
     }
 
-    window.setTimeout(() => setReactionPickerOpen(false), 350)
+    window.setTimeout(() => setReactionPickerOpen(false), 600)
   }
 
   async function handleSendReply() {
@@ -270,7 +290,7 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
         {isMine ? (
           <button
             type="button"
-            onClick={handleDelete}
+            onClick={() => setConfirmDeleteOpen(true)}
             className="shrink-0 rounded-full px-3 py-1.5 text-xs font-bold text-white/80 transition hover:bg-white/10 hover:text-white"
           >
             {t('status.viewer.delete')}
@@ -410,6 +430,18 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
           )}
         </div>
       ) : null}
+
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        title={t('status.viewer.deleteConfirmTitle')}
+        description={
+          (currentStatusItem?.images?.length ?? 1) > 1
+            ? t('status.viewer.deleteConfirmBodyMulti')
+            : t('status.viewer.deleteConfirmBody')
+        }
+        onCancel={() => setConfirmDeleteOpen(false)}
+        onConfirm={confirmDelete}
+      />
 
       {viewersOpen ? (
         <div
