@@ -15,6 +15,7 @@ import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { Select } from '../components/ui/Select'
 import { flagEmoji } from '../config/flags'
 import { useLanguage } from '../contexts/useLanguage'
+import { isStaffRole } from '../features/auth/roleUtils'
 import { ExchangerPickerAvatar } from '../features/transfers/ExchangerPickerAvatar'
 import {
   EXCHANGER_DELAY_TO_CONFIRM,
@@ -34,9 +35,11 @@ export function ExchangersPage() {
   const toConfirmLabel = p3('exchangers.toConfirm')
   const [query, setQuery] = useState('')
   const [city, setCity] = useState('')
-  const [countryScope, setCountryScope] = useState(COUNTRY_SCOPE_MINE)
-  const [advancedOpen, setAdvancedOpen] = useState(false)
   const user = useSelector((state) => state.auth.user)
+  const [countryScope, setCountryScope] = useState(
+    isStaffRole(user) ? COUNTRY_SCOPE_ALL : COUNTRY_SCOPE_MINE,
+  )
+  const [advancedOpen, setAdvancedOpen] = useState(false)
   const businesses = useSelector((state) => state.businesses.items)
   const originCountry = user.originCountry || (user.country !== 'RU' ? user.country : 'BJ')
   const userCountry = resolveUserPartnerCountry(user, originCountry)

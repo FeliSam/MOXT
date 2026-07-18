@@ -97,14 +97,11 @@ export function FavoritesPage() {
     )
   }
 
-  const categoryTabs = [
-    { key: 'all', label: p3('favorites.tabs.all'), count: favorites.length },
-    ...FAVORITE_CATEGORIES.map((category) => ({
-      key: category.id,
-      label: p3(category.labelKey),
-      count: favoriteCategories.find((entry) => entry.id === category.id)?.items.length || 0,
-    })),
-  ]
+  const categoryTabs = FAVORITE_CATEGORIES.map((category) => ({
+    key: category.id,
+    label: p3(category.labelKey),
+    count: favoriteCategories.find((entry) => entry.id === category.id)?.items.length || 0,
+  }))
 
   return (
     <div className="grid gap-7">
@@ -141,7 +138,7 @@ export function FavoritesPage() {
             <PillBadge
               key={tab.key}
               active={categoryTab === tab.key}
-              onClick={() => setCategoryTab(tab.key)}
+              onClick={() => setCategoryTab((current) => (current === tab.key ? 'all' : tab.key))}
               className="shrink-0 whitespace-nowrap"
             >
               {tab.label} ({tab.count})
@@ -196,7 +193,7 @@ export function FavoritesPage() {
             {transferProfiles.map((profile) => (
               <Card
                 key={profile.id}
-                className="w-[clamp(16rem,74vw,19rem)] shrink-0 p-4 sm:p-5 lg:w-auto lg:min-w-0 lg:shrink"
+                className="w-[clamp(16rem,74vw,19rem)] shrink-0 !border-transparent p-4 sm:p-5 lg:w-auto lg:min-w-0 lg:shrink"
               >
                 <div className="flex items-start justify-between gap-3">
                   <span className="grid size-11 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">

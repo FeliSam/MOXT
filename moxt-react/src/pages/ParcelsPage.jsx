@@ -20,6 +20,7 @@ import { useGeographyOptions } from '../hooks/useGeographyOptions'
 import { sortByCountryPriority, resolveUserCountryCode } from '@moxt/shared/utils/countryPriority.js'
 import { sortBySubscriptionPriority } from '@moxt/shared/utils/subscriptionUtils.js'
 import { CatalogFavoriteButton } from '../features/account/CatalogFavoriteButton'
+import { isStaffRole } from '../features/auth/roleUtils'
 import { resolveParcelCountry } from '../features/marketplace/listingCatalogUtils'
 import {
   parcelBrowseTabs,
@@ -48,7 +49,9 @@ export function ParcelsPage() {
   const { countries } = useGeographyOptions()
   const parcels = useSelector((state) => state.parcels.items)
   const userCountry = resolveUserCountryCode(user) || 'RU'
-  const activeCountryCode = filters.country === 'ALL' ? null : filters.country || userCountry
+  const unfiltered = isStaffRole(user)
+  const activeCountryCode =
+    filters.country === 'ALL' || unfiltered ? null : filters.country || userCountry
   const today = new Date().toISOString().slice(0, 10)
 
   const isArchived = (parcel) =>

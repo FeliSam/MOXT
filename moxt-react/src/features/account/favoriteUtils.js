@@ -77,7 +77,7 @@ export function buildEventFavoriteSnapshot(event) {
   if (!event) return null
   return {
     title: event.title,
-    image: event.coverUrl || event.imageUrl || null,
+    image: event.images?.[0] || event.coverUrl || event.imageUrl || null,
     date: event.startDate || event.date || '',
     location: event.location || '',
     price: event.price ?? null,
@@ -203,7 +203,7 @@ export function resolveFavoriteItem(favorite, state) {
     return {
       ...favorite,
       display: {
-        image: snapshot.image || event.coverUrl || event.imageUrl || null,
+        image: snapshot.image || event.images?.[0] || event.coverUrl || event.imageUrl || null,
         title: favorite.title || snapshot.title || event.title,
         date: snapshot.date || event.startDate || event.date || '',
         location: snapshot.location || event.location || '',

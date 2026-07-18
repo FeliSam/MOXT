@@ -1071,22 +1071,39 @@ const handlers = {
     await update('subscriber_reports', payload.id, { status: payload.status })
   },
   'account/toggleAccountFavorite': async (payload, state) => {
-    const exists = state.account.favorites.some(
-      (f) => f.relatedId === payload.relatedId && f.userId === payload.userId,
-    )
-    if (exists) {
-      const fav = state.account.favorites.find(
-        (f) => f.relatedId === payload.relatedId && f.userId === payload.userId,
+    // La session Supabase peut ne pas encore être hydratée/rafraîchie au moment
+    // du clic (juste après connexion, ou token expiré) : auth.uid() renvoie alors
+    // null côté serveur et l'insert viole la policy RLS "user_id = auth.uid()".
+    // On s'assure d'avoir une session valide pour CET utilisateur avant d'écrire.
+    let {
+      data: { session },
+    } = await supabase.auth.getSession()
+    if (session?.user?.id !== payload.userId) {
+      ;({
+        data: { session },
+      } = await supabase.auth.refreshSession())
+    }
+    if (session?.user?.id !== payload.userId) {
+      console.warn(
+        '[Supabase] account/toggleAccountFavorite ignoré — session non synchronisée avec cet utilisateur.',
       )
-      if (fav) {
-        const { snapshot: _snapshot, ...remoteFav } = fav
-        await upsert('favorites', remoteFav)
-      }
+      return
+    }
+
+    const match = (f) =>
+      f.relatedId === payload.relatedId &&
+      f.relatedType === payload.relatedType &&
+      f.userId === payload.userId
+    const fav = state.account.favorites.find(match)
+    if (fav) {
+      const { snapshot: _snapshot, ...remoteFav } = fav
+      await upsert('favorites', remoteFav)
     } else {
       await supabase
         .from('favorites')
         .delete()
         .eq('user_id', payload.userId)
+        .eq('related_type', payload.relatedType)
         .eq('related_id', payload.relatedId)
     }
   },

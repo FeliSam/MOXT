@@ -1,3 +1,5 @@
+import { isStaffRole } from '../auth/roleUtils'
+
 export const BUSINESS_VISIBLE_STATUSES = ['verified', 'approved', 'active']
 
 /** Content type → declared business service id (`BUSINESS_SERVICES` / activity modules). */
@@ -28,8 +30,9 @@ export function canPublishAsBusinessFor(business, contentType) {
   return isBusinessPublishReady(business) && businessDeclaresService(business, serviceId)
 }
 
-export function isBusinessDirectoryVisible(business) {
+export function isBusinessDirectoryVisible(business, viewer) {
   if (!business || business.deletedByUserAt) return false
+  if (isStaffRole(viewer)) return true
   return isBusinessPublishReady(business)
 }
 

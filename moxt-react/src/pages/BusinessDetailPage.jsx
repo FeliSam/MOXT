@@ -41,6 +41,7 @@ import { selectBusinessContent } from '../features/businesses/businessSelectors'
 import { BusinessSubscriptionSection } from '../features/businesses/BusinessSubscriptionSection'
 import { BusinessVerificationProgress } from '../features/businesses/BusinessVerificationProgress'
 import { isBusinessVisibleToViewer } from '../features/businesses/businessVisibility'
+import { isStaffRole } from '../features/auth/roleUtils'
 import { moderateBusiness } from '../features/businesses/businessSlice'
 import { ContactButton } from '../features/communications/ContactButton'
 import { BusinessActivityVisibilitySection } from '../features/businesses/BusinessActivityVisibilitySection'
@@ -81,7 +82,7 @@ export function BusinessDetailPage() {
   )
 
   const isOwner = business?.ownerId === user.id
-  const isAdminViewer = ['admin', 'superadmin'].includes(user.role)
+  const isAdminViewer = isStaffRole(user)
   const canView =
     business &&
     canViewBusinessActivity({

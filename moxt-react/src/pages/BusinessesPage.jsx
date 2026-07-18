@@ -48,7 +48,7 @@ export function BusinessesPage() {
   const visibleBusinesses = useMemo(
     () =>
       filterDirectoryBusinesses(businesses).filter((business) => {
-        if (!isBusinessDirectoryVisible(business)) return false
+        if (!isBusinessDirectoryVisible(business, user)) return false
         if (ownBusiness && business.id === ownBusiness.id) return false
         const activity = activityByValue(business.primaryActivity)
         const activityLabel = businessesOptionLabel(t, activity) || business.sector
@@ -61,7 +61,7 @@ export function BusinessesPage() {
           (!filters.service || business.services?.includes(filters.service))
         )
       }),
-    [businesses, filters, ownBusiness, t],
+    [businesses, filters, ownBusiness, t, user],
   )
 
   function clearFilters() {

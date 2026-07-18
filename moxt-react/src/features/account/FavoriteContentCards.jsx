@@ -36,7 +36,7 @@ function ListingFavoriteCard({ item, onRemove }) {
   const p3 = (key, vars) => phase3Text(t, key, vars)
   const { display, path } = item
   return (
-    <Card className="overflow-hidden p-0">
+    <Card className="overflow-hidden !border-transparent p-0">
       <div className="relative h-44 bg-gradient-to-br from-cyan-700 to-blue-600">
         {display.image ? (
           <img src={display.image} alt={display.title} className="h-full w-full object-cover" loading="lazy" />
@@ -89,7 +89,7 @@ function ParcelFavoriteCard({ item, onRemove }) {
   const { t } = useLanguage()
   const { display, path } = item
   return (
-    <Card className="grid min-w-0 content-start gap-3 p-4 sm:p-5">
+    <Card className="grid min-w-0 content-start gap-3 !border-transparent p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <span className="grid size-11 place-items-center rounded-xl bg-sky-50 text-sky-600 dark:bg-sky-950/40">
           <FiPackage />
@@ -140,7 +140,7 @@ function JobFavoriteCard({ item, onRemove }) {
     state.jobs.items.find((entry) => entry.id === item.relatedId),
   )
   return (
-    <Card className="grid min-w-0 content-start gap-3 p-4 sm:p-5">
+    <Card className="grid min-w-0 content-start gap-3 !border-transparent p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <span className="grid size-11 place-items-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-950/40">
           <FiBriefcase />
@@ -187,7 +187,7 @@ function OtherFavoriteCard({ item, onRemove }) {
   const { display, path, relatedType } = item
   const isEvent = relatedType === 'event'
   return (
-    <Card className="overflow-hidden p-0">
+    <Card className="overflow-hidden !border-transparent p-0">
       <div className="relative h-36 bg-gradient-to-br from-slate-700 to-slate-900">
         {display.image ? (
           <img src={display.image} alt={display.title} className="h-full w-full object-cover" loading="lazy" />
