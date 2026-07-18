@@ -1,7 +1,33 @@
--- Fix legacy support_tickets missing category + admin access to support chats
+-- Fix legacy support_tickets missing columns + admin access to support chats
+
+alter table public.support_tickets
+  add column if not exists user_name text not null default '';
+
+alter table public.support_tickets
+  add column if not exists subject text not null default '';
+
+alter table public.support_tickets
+  add column if not exists priority text not null default 'normal';
 
 alter table public.support_tickets
   add column if not exists category text not null default 'other';
+
+alter table public.support_tickets
+  add column if not exists status text not null default 'waiting_agent';
+
+alter table public.support_tickets
+  add column if not exists messages jsonb not null default '[]'::jsonb;
+
+alter table public.support_tickets
+  add column if not exists assigned_to uuid references auth.users (id);
+
+alter table public.support_tickets
+  add column if not exists created_at timestamptz not null default now();
+
+alter table public.support_tickets
+  add column if not exists updated_at timestamptz not null default now();
+
+notify pgrst, 'reload schema';
 
 -- Admins can update support conversations (claim / unread / archive)
 drop policy if exists "MOXT admin update support conversations" on public.conversations;

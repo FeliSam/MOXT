@@ -1211,13 +1211,20 @@ const handlers = {
       created_at: payload.createdAt,
       updated_at: payload.updatedAt,
     }
-    let { error } = await supabase.from('support_tickets').insert(row)
-    // Legacy DBs may miss `category` until migration is applied.
-    if (error && /category/i.test(error.message || '')) {
-      const { category: _category, ...legacyRow } = row
-      ;({ error } = await supabase.from('support_tickets').insert(legacyRow))
+    let attempt = { ...row }
+    let { error } = await supabase.from('support_tickets').insert(attempt)
+    // Legacy DBs may miss columns until migration is applied — strip and retry.
+    for (let i = 0; i < 8 && error; i += 1) {
+      const missing = (error.message || '').match(/Could not find the '([^']+)' column/i)?.[1]
+      if (!missing || !(missing in attempt)) break
+      const { [missing]: _omit, ...rest } = attempt
+      attempt = rest
+      ;({ error } = await supabase.from('support_tickets').insert(attempt))
     }
-    if (error) throw error
+    if (error) {
+      // Ticket is optional for admin chat; do not block conversation sync.
+      console.warn('[Supabase] createSupportTicket skipped:', error.message)
+    }
   },
   'communications/replySupportTicket': async (payload, state) => {
     const ticket = state.communications.support.find((item) => item.id === payload.ticketId)
@@ -1230,7 +1237,9 @@ const handlers = {
           updated_at: ticket.updatedAt,
         })
         .eq('id', ticket.id)
-      if (error) throw error
+      if (error) {
+        console.warn('[Supabase] replySupportTicket skipped:', error.message)
+      }
     }
   },
   'communications/updateSupportStatus': async (payload, state) => {
