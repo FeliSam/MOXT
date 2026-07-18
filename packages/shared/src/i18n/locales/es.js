@@ -1382,6 +1382,10 @@ export const es = {
         marketplaceDesc: "Interesse nos tus anuncios",
         news: "Actualidad",
         newsDesc: "Publicaciones y novidades",
+        statuses: "Estados",
+        statusesDesc: "Nuevos estados, reacciones y respuestas",
+        other: "Otros",
+        otherDesc: "El resto de las notificaciones sin clasificar",
         system: "Sistema",
         systemDesc: "Seguridad y alertas da cuenta"
       },

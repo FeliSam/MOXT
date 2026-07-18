@@ -551,6 +551,8 @@ const NOTIF_CATEGORIES = [
   { key: 'notifEvents', labelKey: 'settings.notifications.cat.events', descriptionKey: 'settings.notifications.cat.eventsDesc' },
   { key: 'notifMarketplace', labelKey: 'settings.notifications.cat.marketplace', descriptionKey: 'settings.notifications.cat.marketplaceDesc' },
   { key: 'notifActualites', labelKey: 'settings.notifications.cat.news', descriptionKey: 'settings.notifications.cat.newsDesc' },
+  { key: 'notifStatuses', labelKey: 'settings.notifications.cat.statuses', descriptionKey: 'settings.notifications.cat.statusesDesc' },
+  { key: 'notifOther', labelKey: 'settings.notifications.cat.other', descriptionKey: 'settings.notifications.cat.otherDesc' },
   { key: 'notifSysteme', labelKey: 'settings.notifications.cat.system', descriptionKey: 'settings.notifications.cat.systemDesc' },
 ]
 

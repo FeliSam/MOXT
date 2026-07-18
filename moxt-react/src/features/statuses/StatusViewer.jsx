@@ -19,6 +19,11 @@ function timeAgo(iso, t) {
   return t('status.viewer.daysAgo', { count: Math.floor(hours / 24) })
 }
 
+function formatClockTime(iso) {
+  if (!iso) return ''
+  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
 /**
  * Lecteur plein écran des statuts d'un auteur, avec navigation vers l'auteur
  * suivant/précédent quand on atteint la fin/le début (comportement story classique).
@@ -481,6 +486,9 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
                     )}
                     <span className="min-w-0 flex-1 truncate text-sm font-bold">
                       {v.name || t('status.viewer.someone')}
+                    </span>
+                    <span className="shrink-0 text-xs text-[var(--app-text-muted)]">
+                      {formatClockTime(v.viewedAt)}
                     </span>
                   </li>
                 ))}
