@@ -6,10 +6,12 @@ import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
 import { CitySelector } from '../components/ui/CitySelector'
+import { PosterUploader } from '../components/ui/PosterUploader'
 import { PageHeader } from '../components/ui/PageHeader'
 import {
   JOB_CONTRACT_OPTIONS,
   JOB_EXPERIENCE_OPTIONS,
+  JOB_LANGUAGE_OPTIONS,
   JOB_SALARY_PERIOD_OPTIONS,
   JOB_SECTOR_OPTIONS,
 } from '../features/jobs/jobPublishConfig'
@@ -18,6 +20,16 @@ import { useState } from 'react'
 import { useLanguage } from '../contexts/useLanguage'
 import { jobContractLabel, jobSectorLabel } from '../features/jobs/jobDisplayUtils'
 import { publishOptionLabel, publishText } from '../features/publications/publishI18n'
+import { storageService } from '../services/storageService'
+import { addToast } from '../features/ui/uiSlice'
+
+function mapExistingImages(images = []) {
+  return images.map((url, index) => ({
+    url,
+    name: `image-${index + 1}`,
+    existing: true,
+  }))
+}
 
 export function EditJobPage() {
   const dispatch = useDispatch()
@@ -28,9 +40,22 @@ export function EditJobPage() {
   const job = useSelector((state) => state.jobs.items.find((item) => item.id === jobId))
 
   const [form, setForm] = useState(null)
+  const [gallery, setGallery] = useState({ entityId: null, photos: [] })
+  const [saving, setSaving] = useState(false)
 
   if (!job) return <Card>{publishText(t, 'publish.job.edit.notFound')}</Card>
   if (job.ownerId !== user.id) return <Navigate to={`/jobs/${jobId}`} replace />
+
+  const photos =
+    gallery.entityId === job.id ? gallery.photos : mapExistingImages(job.images)
+
+  function updatePhotos(updater) {
+    const current = gallery.entityId === job.id ? gallery.photos : mapExistingImages(job.images)
+    setGallery({
+      entityId: job.id,
+      photos: typeof updater === 'function' ? updater(current) : updater,
+    })
+  }
 
   const values = form ?? {
     title: job.title || '',
@@ -48,16 +73,54 @@ export function EditJobPage() {
     startDate: job.startDate || '',
     applicationDeadline: job.applicationDeadline || '',
     publisherName: job.publisherName || '',
+    publisherType: job.publisherType || (job.businessId ? 'business' : 'personal'),
   }
 
   function set(field, value) {
     setForm((prev) => ({ ...(prev ?? values), [field]: value }))
   }
 
-  function handleSubmit(e) {
+  function addPhotos(files) {
+    const added = Array.from(files)
+      .slice(0, 5 - photos.length)
+      .map((file) => ({ file, url: URL.createObjectURL(file), name: file.name }))
+    updatePhotos((current) => [...current, ...added])
+  }
+
+  function removePhoto(index) {
+    updatePhotos((current) => {
+      if (current[index]?.file) URL.revokeObjectURL(current[index].url)
+      return current.filter((_, itemIndex) => itemIndex !== index)
+    })
+  }
+
+  async function handleSubmit(e) {
     e.preventDefault()
-    dispatch(updateJob({ ...values, id: jobId, ownerId: user.id }))
-    navigate(`/jobs/${jobId}`)
+    if (saving) return
+    setSaving(true)
+    try {
+      const newPhotos = photos.filter((photo) => photo.file)
+      const uploaded = newPhotos.length
+        ? await storageService.uploadJobImages(
+            user.id,
+            jobId,
+            newPhotos.map((photo) => photo.file),
+            { version: Date.now().toString(36) },
+          )
+        : []
+      let uploadIndex = 0
+      const images = photos.map((photo) => photo.existing ? photo.url : uploaded[uploadIndex++])
+      dispatch(updateJob({ ...values, images, id: jobId, ownerId: user.id }))
+      navigate(`/jobs/${jobId}`)
+    } catch (error) {
+      dispatch(addToast({
+        title: publishText(t, 'publish.common.toasts.imagesFailedTitle'),
+        message: error.message || publishText(t, 'publish.common.toasts.retry'),
+        tone: 'error',
+      }))
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -98,6 +161,17 @@ export function EditJobPage() {
               ))}
             </Select>
           </div>
+          <Select
+            label={publishText(t, 'publish.job.fields.language')}
+            value={values.language}
+            onChange={(e) => set('language', e.target.value)}
+          >
+            {JOB_LANGUAGE_OPTIONS.map((language) => (
+              <option key={language.value} value={language.value}>
+                {publishOptionLabel(t, language)}
+              </option>
+            ))}
+          </Select>
           <div className="grid gap-4 sm:grid-cols-2">
             <Select
               label={publishText(t, 'publish.job.fields.contractType')}
@@ -209,7 +283,14 @@ export function EditJobPage() {
             value={values.publisherName}
             onChange={(e) => set('publisherName', e.target.value)}
           />
-          <Button type="submit" icon={FiSave}>
+          <PosterUploader
+            photos={photos}
+            onAdd={addPhotos}
+            onRemove={removePhoto}
+            label={publishText(t, 'publish.job.fields.posters')}
+            hint={publishText(t, 'publish.job.fields.postersHint')}
+          />
+          <Button type="submit" icon={FiSave} loading={saving} disabled={saving}>
             {publishText(t, 'publish.common.saveChanges')}
           </Button>
         </form>

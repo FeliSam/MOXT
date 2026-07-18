@@ -1,4 +1,5 @@
 import { useFormik } from 'formik'
+import { useState } from 'react'
 import { FiArrowLeft, FiSave } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
@@ -6,6 +7,7 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { PageHeader } from '../components/ui/PageHeader'
+import { PosterUploader } from '../components/ui/PosterUploader'
 import { Select } from '../components/ui/Select'
 import {
   EXTRA_FIELD_META,
@@ -23,6 +25,16 @@ import {
 import { useGeographyOptions } from '../hooks/useGeographyOptions'
 import { updateListing } from '../features/marketplace/marketplaceSlice'
 import { useLanguage } from '../contexts/useLanguage'
+import { storageService } from '../services/storageService'
+import { addToast } from '../features/ui/uiSlice'
+
+function mapExistingImages(images = []) {
+  return images.map((url, index) => ({
+    url,
+    name: `image-${index + 1}`,
+    existing: true,
+  }))
+}
 
 export function EditListingPage() {
   const dispatch = useDispatch()
@@ -35,6 +47,24 @@ export function EditListingPage() {
   const listing = useSelector((state) =>
     state.marketplace.items.find((item) => item.id === listingId),
   )
+  const [gallery, setGallery] = useState({ entityId: null, photos: [] })
+  const [saving, setSaving] = useState(false)
+
+  const photos =
+    listing && gallery.entityId === listing.id
+      ? gallery.photos
+      : mapExistingImages(listing?.images)
+
+  function updatePhotos(updater) {
+    if (!listing) return
+    const current =
+      gallery.entityId === listing.id ? gallery.photos : mapExistingImages(listing.images)
+    setGallery({
+      entityId: listing.id,
+      photos: typeof updater === 'function' ? updater(current) : updater,
+    })
+  }
+
   const formik = useFormik({
     enableReinitialize: true,
     initialValues: {
@@ -50,7 +80,6 @@ export function EditListingPage() {
       address: listing?.address || '',
       contact: ensurePhoneCountry(listing?.contact || user.phone, 'RU'),
       whatsapp: ensurePhoneCountry(listing?.whatsapp || user.phone, 'RU'),
-      imageUrls: listing?.images?.join('\n') || '',
       condition: listing?.condition || 'used',
       brand: listing?.brand || '',
       model: listing?.model || '',
@@ -58,8 +87,12 @@ export function EditListingPage() {
       stock: listing?.stock ?? 1,
       deliveryFee: listing?.deliveryFee || 0,
       deliveryDelay: listing?.deliveryDelay || '',
+      deliveryOptions: Array.isArray(listing?.deliveryOptions) ? listing.deliveryOptions : [],
       warranty: listing?.warranty || '',
       returnPolicy: listing?.returnPolicy || '',
+      hasDiscount: Boolean(listing?.originalPrice && listing?.discountPercent),
+      originalPrice: listing?.originalPrice || '',
+      discountPercent: listing?.discountPercent || '',
       weight: listing?.weight || '',
       expiryDate: listing?.expiryDate || '',
       ingredients: listing?.ingredients || '',
@@ -84,22 +117,48 @@ export function EditListingPage() {
       reState: listing?.reState || 'good',
     },
     validationSchema: listingSchemaFor('RU', t),
-    onSubmit: (values) => {
-      dispatch(
-        updateListing({
-          id: listingId,
-          ownerId: user.id,
-          changes: {
-            ...values,
-            images: values.imageUrls
-              .split(/[\n,]/)
-              .map((url) => url.trim())
-              .filter(Boolean)
-              .slice(0, 3),
-          },
-        }),
-      )
-      navigate(`/marketplace/${listingId}`)
+    onSubmit: async (values) => {
+      if (saving) return
+      setSaving(true)
+      try {
+        const newPhotos = photos.filter((photo) => photo.file)
+        const uploaded = newPhotos.length
+          ? await storageService.uploadListingImages(
+              user.id,
+              listingId,
+              newPhotos.map((photo) => photo.file),
+              { version: Date.now().toString(36) },
+            )
+          : []
+        let uploadIndex = 0
+        const images = photos
+          .map((photo) => (photo.existing ? photo.url : uploaded[uploadIndex++]))
+          .filter(Boolean)
+          .slice(0, 6)
+        dispatch(
+          updateListing({
+            id: listingId,
+            ownerId: user.id,
+            changes: {
+              ...values,
+              images,
+              originalPrice: values.hasDiscount ? Number(values.originalPrice) || null : null,
+              discountPercent: values.hasDiscount ? Number(values.discountPercent) || null : null,
+            },
+          }),
+        )
+        navigate(`/marketplace/${listingId}`)
+      } catch (error) {
+        dispatch(
+          addToast({
+            title: t('common.error'),
+            message: error.message || t('common.retryLater'),
+            tone: 'error',
+          }),
+        )
+      } finally {
+        setSaving(false)
+      }
     },
   })
 
@@ -108,6 +167,20 @@ export function EditListingPage() {
   const errorFor = (field) => (formik.touched[field] ? formik.errors[field] : undefined)
   const rules = listingRulesFor(formik.values.type)
   const categories = categoriesForType(formik.values.type)
+
+  function addPhotos(files) {
+    const added = Array.from(files)
+      .slice(0, 6 - photos.length)
+      .map((file) => ({ file, url: URL.createObjectURL(file), name: file.name }))
+    updatePhotos((current) => [...current, ...added])
+  }
+
+  function removePhoto(index) {
+    updatePhotos((current) => {
+      if (current[index]?.file) URL.revokeObjectURL(current[index].url)
+      return current.filter((_, itemIndex) => itemIndex !== index)
+    })
+  }
 
   return (
     <div className="grid gap-7">
@@ -276,7 +349,14 @@ export function EditListingPage() {
               error={errorFor('whatsapp')}
             />
           </div>
-          <FieldArea label={mt('marketplace.edit.imagesMax')} field="imageUrls" formik={formik} />
+          <PosterUploader
+            photos={photos}
+            onAdd={addPhotos}
+            onRemove={removePhoto}
+            max={6}
+            label={mt('marketplace.common.photos')}
+            hint={mt('marketplace.edit.imagesMax')}
+          />
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
               label={mt('marketplace.edit.deliveryFee')}
@@ -300,7 +380,7 @@ export function EditListingPage() {
             placeholder={mt('marketplace.edit.returnPolicyPlaceholder')}
             {...formik.getFieldProps('returnPolicy')}
           />
-          <Button type="submit" icon={FiSave}>
+          <Button type="submit" icon={FiSave} loading={saving} disabled={saving}>
             {mt('marketplace.common.save')}
           </Button>
         </form>

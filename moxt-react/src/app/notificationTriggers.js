@@ -432,6 +432,60 @@ export function createNotificationDispatcher(store) {
         'notifSysteme',
       )
     },
+    handleBusinessDocumentSubmitted(before, after, action) {
+      const created = after.businesses.documents.some((item) => item.id === action.payload.id)
+      if (!created) return
+      const existed = before.businesses.documents.some((item) => item.id === action.payload.id)
+      if (existed) return
+
+      const document =
+        after.businesses.documents.find((item) => item.id === action.payload.id) || action.payload
+      const business = after.businesses.items.find((item) => item.id === document.businessId)
+
+      notifyAdmins({
+        title: notifyT('shared.notifications.businessDocument.submittedTitle'),
+        message: notifyT('shared.notifications.businessDocument.submittedBody', {
+          business: business?.name || document.businessId || notifyT('shared.notifications.aBusiness'),
+          name: document.name || document.category || document.id,
+        }),
+        type: 'moderation',
+        link: '/admin?view=documents',
+        priority: 'high',
+      })
+    },
+    handleBusinessDocumentStatus(before, after, action) {
+      const previous = before.businesses.documents.find((item) => item.id === action.payload.id)
+      const document = after.businesses.documents.find((item) => item.id === action.payload.id)
+      if (!document || previous?.status === document.status) return
+      if (!['verified', 'rejected'].includes(document.status)) return
+
+      const statusText =
+        document.status === 'verified'
+          ? notifyT('shared.notifications.businessDocument.statusVerified')
+          : notifyT('shared.notifications.businessDocument.statusRejected')
+      const reason =
+        document.status === 'rejected' && document.reviewNote
+          ? notifyT('shared.notifications.businessDocument.reasonPrefix', {
+              note: String(document.reviewNote).slice(0, 120),
+            })
+          : ''
+
+      notifyUser(
+        document.ownerId,
+        {
+          title: notifyT('shared.notifications.businessDocument.reviewedTitle'),
+          message: notifyT('shared.notifications.businessDocument.reviewedBody', {
+            name: document.name || document.category || document.id,
+            status: statusText,
+            reason,
+          }),
+          type: 'moderation',
+          link: '/professional?tab=documents',
+          priority: 'high',
+        },
+        'notifSysteme',
+      )
+    },
     handleDisputeOpened(before, after, action, actorId) {
       if (after.disputes.items.length <= before.disputes.items.length) return
       const dispute =
@@ -490,7 +544,7 @@ export function createNotificationDispatcher(store) {
           subject: ticket.subject,
         }),
         type: 'support',
-        link: '/admin?view=support',
+        link: `/messages?relatedType=support&relatedId=${encodeURIComponent(`support-${ticket.userId}`)}`,
         priority: 'high',
       })
     },

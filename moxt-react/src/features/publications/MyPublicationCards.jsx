@@ -5,6 +5,8 @@ import {
   FiExternalLink,
   FiFileText,
   FiPackage,
+  FiArchive,
+  FiRepeat,
   FiRotateCcw,
 } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
@@ -16,7 +18,14 @@ import { useLanguage } from '../../contexts/useLanguage'
 import { phase3Text } from '../../i18n/phase3I18n'
 import { jobContractLabel } from '../jobs/jobDisplayUtils'
 import { formatMoney } from '../transfers/transferUtils'
-import { isActiveEvent, isActiveJob, isActiveParcel, isActivePost, archivedPublicationCardClass } from './publicationCatalogUtils'
+import {
+  archivedPublicationCardClass,
+  isActiveEvent,
+  isActiveJob,
+  isActiveP2POffer,
+  isActiveParcel,
+  isActivePost,
+} from './publicationCatalogUtils'
 
 function PublicationCardShell({
   archived = false,
@@ -104,12 +113,8 @@ export function MyParcelPublicationCard({
           : null
       }
       meta={[
-        parcel.departureDate
-          ? t('parcels.my.departure', { date: parcel.departureDate })
-          : null,
-        parcel.remainingKg != null
-          ? t('parcels.my.remainingKg', { kg: parcel.remainingKg })
-          : null,
+        parcel.departureDate ? t('parcels.my.departure', { date: parcel.departureDate }) : null,
+        parcel.remainingKg != null ? t('parcels.my.remainingKg', { kg: parcel.remainingKg }) : null,
       ].filter(Boolean)}
       path={`/parcels/${parcel.id}`}
       guestMode={guestMode}
@@ -123,8 +128,8 @@ export function MyParcelPublicationCard({
               </Button>
             </Link>
             {active ? (
-              <Button variant="danger" icon={FiRotateCcw} size="sm" onClick={onArchive}>
-                {t('parcels.my.close')}
+              <Button variant="danger" icon={FiArchive} size="sm" onClick={onArchive}>
+                {phase3Text(t, 'publications.cards.archive')}
               </Button>
             ) : (
               <Button icon={FiRotateCcw} size="sm" onClick={onReactivate}>
@@ -246,7 +251,8 @@ export function MyPostPublicationCard({
   readOnly = false,
   guestMode = false,
   onGuestInteract,
-  onDelete,
+  onArchive,
+  onReactivate,
 }) {
   const { t } = useLanguage()
   const p3 = (key, vars) => phase3Text(t, key, vars)
@@ -274,9 +280,59 @@ export function MyPostPublicationCard({
                 {p3('publications.cards.edit')}
               </Button>
             </Link>
-            {onDelete ? (
-              <Button variant="danger" size="sm" onClick={onDelete}>
-                {p3('publications.cards.delete')}
+            {active ? (
+              <Button variant="danger" icon={FiArchive} size="sm" onClick={onArchive}>
+                {p3('publications.cards.archive')}
+              </Button>
+            ) : (
+              <Button icon={FiRotateCcw} size="sm" onClick={onReactivate}>
+                {p3('publications.cards.republish')}
+              </Button>
+            )}
+          </>
+        )
+      }
+    />
+  )
+}
+
+export function MyP2POfferPublicationCard({
+  offer,
+  readOnly = false,
+  guestMode = false,
+  onGuestInteract,
+  onArchive,
+  onReactivate,
+}) {
+  const { t } = useLanguage()
+  const p3 = (key) => phase3Text(t, key)
+  const active = isActiveP2POffer(offer)
+  const status = statusMeta(offer.status, t)
+
+  return (
+    <PublicationCardShell
+      archived={!active}
+      icon={FiRepeat}
+      tone="from-emerald-600 to-teal-700"
+      badge={<Badge tone={status.tone}>{status.label}</Badge>}
+      title={formatMoney(offer.amount, offer.fromCurrency)}
+      subtitle={`${offer.fromCurrency} → ${offer.toCurrency}`}
+      meta={[t('p2p.page.rateValue', { rate: offer.rate }), offer.method, offer.ownerName].filter(
+        Boolean,
+      )}
+      path={`/p2p/${offer.id}`}
+      guestMode={guestMode}
+      onGuestInteract={onGuestInteract}
+      actions={
+        readOnly ? null : (
+          <>
+            {active ? (
+              <Button variant="danger" icon={FiArchive} size="sm" onClick={onArchive}>
+                {p3('publications.cards.archive')}
+              </Button>
+            ) : offer.status === 'archived' ? (
+              <Button icon={FiRotateCcw} size="sm" onClick={onReactivate}>
+                {p3('publications.cards.republish')}
               </Button>
             ) : null}
           </>

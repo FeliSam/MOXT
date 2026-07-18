@@ -4,6 +4,7 @@ import {
   FiCalendar,
   FiEdit3,
   FiEye,
+  FiFileText,
   FiHeadphones,
   FiPackage,
   FiRepeat,
@@ -48,9 +49,27 @@ export function buildQueues(state) {
       }
     })
 
+  const businessDocuments = (state.businesses.documents || [])
+    .filter((i) => ['pending_review', 'pending'].includes(i.status))
+    .map((item) => {
+      const business = state.businesses.items.find((entry) => entry.id === item.businessId)
+      const owner = state.administration.users.find((entry) => entry.id === item.ownerId)
+      const ownerName = owner
+        ? `${owner.firstName || ''} ${owner.lastName || ''}`.trim() || owner.email
+        : item.ownerId
+      return {
+        ...item,
+        businessName: business?.name || item.businessId,
+        ownerName,
+        ownerEmail: owner?.email || '',
+        userName: business?.name || ownerName || item.name,
+      }
+    })
+
   return {
     accountDeletions,
     verifications,
+    businessDocuments,
     support: state.communications.support.filter((item) => item.status === 'waiting_agent'),
     disputes: state.disputes.items.filter((i) => ['new', 'open'].includes(i.status)),
     reviews: state.reviews.items.filter((i) => i.status === 'pending'),
@@ -73,6 +92,7 @@ export function buildQueues(state) {
       return (
         this.accountDeletions.length +
         this.verifications.length +
+        this.businessDocuments.length +
         this.support.length +
         this.disputes.length +
         this.reports.length +
@@ -121,6 +141,7 @@ export function buildAdminMetrics(state) {
       total:
         queues.accountDeletions.length +
         queues.verifications.length +
+        queues.businessDocuments.length +
         queues.support.length +
         queues.disputes.length +
         queues.reviews.length +
@@ -163,6 +184,7 @@ export function badgeForView(view, metrics, queues) {
   if (view === 'publications') return metrics.posts.pending
   if (view === 'users') return metrics.users.suspended
   if (view === 'verifications') return queues.verifications.length
+  if (view === 'documents') return queues.businessDocuments.length
   if (view === 'support') return queues.support.length
   if (view === 'queues') return queues.urgent
   return 0
@@ -177,6 +199,7 @@ const DETAIL_ICONS = {
   support: FiHeadphones,
   user: FiUsers,
   verification: FiUserCheck,
+  businessDocument: FiFileText,
   dispute: FiAlertCircle,
   review: FiStar,
   report: FiAlertCircle,
@@ -198,6 +221,7 @@ const DETAIL_KIND_KEYS = {
   support: 'admin.detail.kind.support',
   user: 'admin.detail.kind.user',
   verification: 'admin.detail.kind.verification',
+  businessDocument: 'admin.detail.kind.businessDocument',
   dispute: 'admin.detail.kind.dispute',
   review: 'admin.detail.kind.review',
   report: 'admin.detail.kind.report',
@@ -237,6 +261,11 @@ export function detailDescriptionFor(kind, item, t) {
       return adminText(t, 'admin.detail.desc.verification', {
         name: item.userName || item.userId,
         level: item.level,
+        status: item.status,
+      })
+    case 'businessDocument':
+      return adminText(t, 'admin.detail.desc.businessDocument', {
+        business: item.businessName || item.businessId,
         status: item.status,
       })
     case 'businesses':
@@ -280,6 +309,7 @@ export function buildDetailFacts(kind, item, t) {
         [f('admin.facts.role'), item.role],
         [f('admin.facts.status'), item.status],
         [f('admin.facts.city'), item.city || '—'],
+        [f('admin.facts.originCountry'), item.originCountry || '—'],
         [f('admin.facts.phone'), item.phone || '—'],
         [f('admin.facts.createdAt'), formatDate(item.createdAt)],
       ]
@@ -332,6 +362,18 @@ export function buildDetailFacts(kind, item, t) {
         [f('admin.facts.email'), item.userEmail || '—'],
         [f('admin.facts.documents'), item.documentIds?.length || 0],
         [f('admin.facts.note'), item.note || '—'],
+        [f('admin.facts.reviewReason'), item.reviewNote || '—'],
+        [f('admin.facts.createdAt'), formatDate(item.createdAt)],
+        [f('admin.facts.reviewedAt'), item.reviewedAt ? formatDate(item.reviewedAt) : '—'],
+      ]
+    case 'businessDocument':
+      return [
+        [f('admin.facts.status'), item.status],
+        [f('admin.facts.category'), item.category || '—'],
+        [f('admin.facts.business'), item.businessName || item.businessId || '—'],
+        [f('admin.facts.user'), item.ownerName || item.ownerId || '—'],
+        [f('admin.facts.email'), item.ownerEmail || '—'],
+        [f('admin.facts.file'), item.name || '—'],
         [f('admin.facts.reviewReason'), item.reviewNote || '—'],
         [f('admin.facts.createdAt'), formatDate(item.createdAt)],
         [f('admin.facts.reviewedAt'), item.reviewedAt ? formatDate(item.reviewedAt) : '—'],

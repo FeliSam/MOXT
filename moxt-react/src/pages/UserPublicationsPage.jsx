@@ -7,6 +7,7 @@ import {
   FiFileText,
   FiLock,
   FiPackage,
+  FiRepeat,
   FiShoppingBag,
 } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
@@ -23,8 +24,9 @@ import { MyListingCard } from '../features/marketplace/MyListingCard'
 import {
   MyEventPublicationCard,
   MyJobPublicationCard,
-  MyPostPublicationCard,
+  MyP2POfferPublicationCard,
   MyParcelPublicationCard,
+  MyPostPublicationCard,
 } from '../features/publications/MyPublicationCards'
 import {
   buildUserPublicationProfile,
@@ -62,7 +64,7 @@ const EMPTY_ICONS = {
   job: FiBriefcase,
   event: FiCalendar,
   post: FiFileText,
-  other: FiFileText,
+  other: FiRepeat,
 }
 
 
@@ -471,6 +473,15 @@ export function UserPublicationsPage() {
                 <MyPostPublicationCard
                   key={post.id}
                   post={post}
+                  readOnly
+                  guestMode={guestMode}
+                  onGuestInteract={handleGuestInteract}
+                />
+              ))}
+              {visible.other.map((offer) => (
+                <MyP2POfferPublicationCard
+                  key={offer.id}
+                  offer={offer}
                   readOnly
                   guestMode={guestMode}
                   onGuestInteract={handleGuestInteract}

@@ -97,6 +97,7 @@ export function countConversationsForFilter(conversations, filter, userId, showA
     if (showArchived !== Boolean(archived)) return false
     if (filter === 'unread' && !(item.unreadBy?.[userId] > 0)) return false
     if (filter === 'pinned' && !item.pinnedBy?.includes(userId)) return false
+    if (filter === 'support' && item.relatedType !== 'support') return false
     return true
   }).length
 }

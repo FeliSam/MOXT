@@ -1,4 +1,12 @@
-import { FiBox, FiBriefcase, FiCalendar, FiRepeat, FiShoppingBag, FiUsers } from 'react-icons/fi'
+import {
+  FiBox,
+  FiBriefcase,
+  FiCalendar,
+  FiHeadphones,
+  FiRepeat,
+  FiShoppingBag,
+  FiUsers,
+} from 'react-icons/fi'
 import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 import { messagesText } from '../features/communications/messagesI18n'
 
@@ -14,6 +22,7 @@ export const RELATED_CONTENT_META = {
   parcel: { icon: FiBox, labelKey: 'communications.related.parcel', tone: 'bg-orange-500' },
   p2p: { icon: FiRepeat, labelKey: 'communications.related.p2p', tone: 'bg-cyan-600' },
   transfer: { icon: FiRepeat, labelKey: 'communications.related.transfer', tone: 'bg-emerald-600' },
+  support: { icon: FiHeadphones, labelKey: 'communications.related.support', tone: 'bg-rose-600' },
   general: { icon: FiUsers, labelKey: 'communications.related.general', tone: 'bg-slate-500' },
 }
 
@@ -52,6 +61,11 @@ export const MESSAGE_SUGGESTIONS = {
     { labelKey: 'communications.chips.p2p.available' },
     { labelKey: 'communications.chips.p2p.payment' },
     { labelKey: 'communications.chips.p2p.rate' },
+  ],
+  support: [
+    { labelKey: 'communications.chips.support.received' },
+    { labelKey: 'communications.chips.support.delay' },
+    { labelKey: 'communications.chips.support.needInfo' },
   ],
   general: [
     { labelKey: 'communications.chips.general.more' },

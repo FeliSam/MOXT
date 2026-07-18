@@ -195,14 +195,18 @@ export const PROFESSIONAL_FR_SOURCES = {
   'professional.documents.toast.addedTitle': 'Document ajouté',
   'professional.documents.toast.addedBody':
     '{type} — synchronisation avec votre espace entreprise.',
+  'professional.documents.toast.errorTitle': 'Envoi impossible',
+  'professional.documents.toast.errorBody': 'Le document n’a pas pu être envoyé. Réessayez.',
   'professional.documents.title': 'Documents de l’entreprise',
   'professional.documents.description':
     'Sélectionnez le type de justificatif, puis ajoutez le fichier correspondant.',
   'professional.documents.typeLabel': 'Type de document',
   'professional.documents.add': 'Ajouter',
+  'professional.documents.uploading': 'Envoi…',
   'professional.documents.formatsHint':
     'Formats acceptés : PDF et images. Un justificatif suffit pour compléter la vérification.',
   'professional.documents.sizeKb': '{size} Ko',
+  'professional.documents.rejectNote': 'Motif du refus : {note}',
   'professional.documents.empty': 'Aucun document professionnel',
   'professional.documents.types.registration': 'Enregistrement / statuts (ОГРН, ИНН)',
   'professional.documents.types.license': 'Licence ou autorisation d’activité',

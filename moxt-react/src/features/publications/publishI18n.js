@@ -14,7 +14,13 @@ export const PUBLISH_FR_SOURCES = {
     'Votre entreprise n’est pas autorisée à publier pour le moment. Contactez le support MOXT.',
   'publish.common.business.needsVerification':
     'Votre entreprise doit être vérifiée par MOXT avant toute publication au nom de l’entreprise.',
+  'publish.common.business.serviceNotDeclaredTitle': 'Service non déclaré',
+  'publish.common.business.serviceNotDeclared':
+    "Votre entreprise n'est pas déclarée pour ce service — publication personnelle uniquement.",
+  'publish.common.business.editServices': 'Modifier les services de l’entreprise',
   'publish.common.toasts.businessBlockedTitle': 'Publication entreprise impossible',
+  'publish.common.toasts.businessServiceBlockedMessage':
+    "Votre entreprise n'est pas déclarée pour ce service. Publiez en tant que particulier, ou modifiez vos services.",
   'publish.common.toasts.imagesFailedTitle': 'Images non envoyées',
   'publish.common.toasts.retry': 'Réessayez.',
 
@@ -150,7 +156,9 @@ export const PUBLISH_FR_SOURCES = {
   'publish.parcel.toasts.uploadFailed.message':
     "La preuve de voyage n'a pas pu être envoyée.",
   'publish.parcel.toasts.businessBlockedMessage':
-    'Votre entreprise doit être vérifiée par MOXT avant de publier au nom de l’entreprise.',
+    'Votre entreprise doit être vérifiée et disposer du module Colis avant publication.',
+  'publish.parcel.fields.publishAsHint':
+    "L’association à une entreprise n’est possible que si le module Colis est activé.",
   'publish.parcel.toasts.publishedTitle': 'Voyage publié',
   'publish.parcel.toasts.pendingTitle': 'Voyage envoyé',
   'publish.parcel.toasts.publishedMessage': 'Votre voyage est en ligne.',
@@ -207,7 +215,7 @@ export const PUBLISH_FR_SOURCES = {
   'publish.job.fields.publisherPersonal': 'Profil personnel · {name}',
   'publish.job.fields.publisherBusiness': 'Entreprise · {name}',
   'publish.job.fields.publisherHint':
-    'Toute personne peut publier une offre. L’association à une entreprise est facultative.',
+    'Toute personne peut publier une offre. L’association à une entreprise n’est possible que si le module Jobs est activé.',
   'publish.job.fields.publisherName': "Nom de l'employeur affiché",
   'publish.job.sectors.tech.label': 'Technologie',
   'publish.job.sectors.commerce.label': 'Commerce',
@@ -341,7 +349,14 @@ export const PUBLISH_FR_SOURCES = {
     'Ex : Association MOXT, Club Africain…',
   'publish.event.fields.organizerContact': "Contact de l'organisateur",
   'publish.event.fields.organizerContactPlaceholder': 'Téléphone ou email',
+  'publish.event.fields.publishAs': 'Publier en tant que',
+  'publish.event.fields.publishAsBusiness': '{name} (entreprise)',
+  'publish.event.fields.publishAsPerson': 'Particulier',
+  'publish.event.fields.publishAsHint':
+    "L’association à une entreprise n’est possible que si le module Événements est activé.",
   'publish.event.fields.format': 'Format',
+  'publish.event.toasts.businessBlockedMessage':
+    'Votre entreprise doit être vérifiée et disposer du module Événements avant publication.',
   'publish.event.categories.networking': 'Networking',
   'publish.event.categories.training': 'Formation',
   'publish.event.categories.culture': 'Culture',

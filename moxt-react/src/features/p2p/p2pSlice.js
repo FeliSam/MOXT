@@ -36,6 +36,12 @@ const p2pSlice = createSlice({
         }
       },
     },
+    updateOfferStatus(state, action) {
+      const offer = state.offers.find((item) => item.id === action.payload.id)
+      if (!offer) return
+      offer.status = action.payload.status
+      offer.updatedAt = new Date().toISOString()
+    },
     acceptOffer: {
       reducer(state, action) {
         const offer = state.offers.find((item) => item.id === action.payload.offerId)
@@ -103,6 +109,13 @@ const p2pSlice = createSlice({
   },
 })
 
-export const { acceptOffer, addOrderProof, createOffer, rateOrder, updateOrderStatus, setAll } =
-  p2pSlice.actions
+export const {
+  acceptOffer,
+  addOrderProof,
+  createOffer,
+  rateOrder,
+  setAll,
+  updateOfferStatus,
+  updateOrderStatus,
+} = p2pSlice.actions
 export default p2pSlice.reducer

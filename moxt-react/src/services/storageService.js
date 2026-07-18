@@ -48,34 +48,37 @@ export const storageService = {
     return upload('businesses', `${userId}/${businessId}/banner.${extension}`, compressed)
   },
 
-  async uploadListingImages(userId, listingId, files) {
+  async uploadListingImages(userId, listingId, files, { version = '' } = {}) {
     const urls = await Promise.all(
       files.map(async (file, i) => {
         const compressed = await compressImage(file, { maxPx: 1600, quality: 0.82 })
         const extension = compressed.type === 'image/png' ? 'png' : 'jpg'
-        return upload('listings', `${userId}/${listingId}/${i}.${extension}`, compressed)
+        const filename = version ? `${version}-${i}.${extension}` : `${i}.${extension}`
+        return upload('listings', `${userId}/${listingId}/${filename}`, compressed)
       }),
     )
     return urls
   },
 
   // Bucket public 'listings' réutilisé — la RLS impose ${userId}/... comme préfixe.
-  async uploadJobImages(userId, jobId, files) {
+  async uploadJobImages(userId, jobId, files, { version = '' } = {}) {
     return Promise.all(
       files.map(async (file, i) => {
         const compressed = await compressImage(file, { maxPx: 1600, quality: 0.82 })
         const extension = compressed.type === 'image/png' ? 'png' : 'jpg'
-        return upload('listings', `${userId}/jobs/${jobId}/${i}.${extension}`, compressed)
+        const filename = version ? `${version}-${i}.${extension}` : `${i}.${extension}`
+        return upload('listings', `${userId}/jobs/${jobId}/${filename}`, compressed)
       }),
     )
   },
 
-  async uploadEventImages(userId, eventId, files) {
+  async uploadEventImages(userId, eventId, files, { version = '' } = {}) {
     return Promise.all(
       files.map(async (file, i) => {
         const compressed = await compressImage(file, { maxPx: 1600, quality: 0.82 })
         const extension = compressed.type === 'image/png' ? 'png' : 'jpg'
-        return upload('listings', `${userId}/events/${eventId}/${i}.${extension}`, compressed)
+        const filename = version ? `${version}-${i}.${extension}` : `${i}.${extension}`
+        return upload('listings', `${userId}/events/${eventId}/${filename}`, compressed)
       }),
     )
   },
@@ -84,6 +87,12 @@ export const storageService = {
     const compressed = await compressImage(file, { maxPx: 1600, quality: 0.82 })
     const extension = compressed.type === 'image/png' ? 'png' : 'jpg'
     return upload('listings', `${userId}/support/${Date.now()}.${extension}`, compressed)
+  },
+
+  async uploadPostImage(userId, file) {
+    const compressed = await compressImage(file, { maxPx: 1600, quality: 0.82 })
+    const extension = compressed.type === 'image/png' ? 'png' : 'jpg'
+    return upload('listings', `${userId}/posts/${Date.now()}.${extension}`, compressed)
   },
 
   async uploadMessageImage(userId, conversationId, file, { index = 0 } = {}) {
@@ -99,6 +108,14 @@ export const storageService = {
 
   async uploadDocument(userId, category, file) {
     const path = `${userId}/${category}-${Date.now()}.${ext(file)}`
+    const url = await uploadPrivate('documents', path, file)
+    return { url, path }
+  },
+
+  async uploadBusinessDocument(userId, businessId, category, file) {
+    const safeBusiness = String(businessId || 'business').replace(/[^a-zA-Z0-9_-]/g, '_')
+    const safeCategory = String(category || 'other').replace(/[^a-zA-Z0-9_-]/g, '_')
+    const path = `${userId}/business/${safeBusiness}/${safeCategory}-${Date.now()}.${ext(file)}`
     const url = await uploadPrivate('documents', path, file)
     return { url, path }
   },

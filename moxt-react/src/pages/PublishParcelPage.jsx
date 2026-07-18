@@ -32,7 +32,7 @@ import {
 } from '../features/parcels/parcelPublishConfig'
 import { BusinessPublishNotice } from '../features/businesses/BusinessPublishNotice'
 import {
-  isBusinessPublishReady,
+  canPublishAsBusinessFor,
   resolveBusinessPublishContext,
 } from '../features/businesses/businessPublishUtils'
 import { addToast } from '../features/ui/uiSlice'
@@ -113,7 +113,7 @@ export function PublishParcelPage() {
   const business = useSelector((state) =>
     state.businesses.items.find((item) => item.ownerId === user.id),
   )
-  const canPublishAsBusiness = isBusinessPublishReady(business)
+  const canPublishAsBusiness = canPublishAsBusinessFor(business, 'parcel')
   const { countries } = useGeographyOptions()
 
   const russiaName = publishText(t, 'publish.parcel.countries.russia')
@@ -155,7 +155,7 @@ export function PublishParcelPage() {
     rejectedTypes: '',
     conditions: publishText(t, 'publish.parcel.defaults.conditions'),
     contact: user.phone || '',
-    publishAs: canPublishAsBusiness && business ? 'business' : 'person',
+    publishAs: 'person',
     travelProofFile: null,
   })
   const [proofError, setProofError] = useState('')
@@ -277,6 +277,7 @@ export function PublishParcelPage() {
     const publishContext = resolveBusinessPublishContext({
       business,
       publishAsBusiness: form.publishAs === 'business',
+      contentType: 'parcel',
     })
     if (publishContext.blocked) {
       dispatch(
@@ -672,13 +673,16 @@ export function PublishParcelPage() {
           />
           {business ? (
             <>
-              <BusinessPublishNotice business={business} />
+              <BusinessPublishNotice business={business} contentType="parcel" />
               <Select
                 id="parcel-publisher"
                 label={publishText(t, 'publish.parcel.fields.publishAs')}
                 value={form.publishAs}
                 onChange={(e) => set('publishAs', e.target.value)}
               >
+                <option value="person">
+                  {publishText(t, 'publish.parcel.fields.publishAsPerson')}
+                </option>
                 {canPublishAsBusiness ? (
                   <option value="business">
                     {publishText(t, 'publish.parcel.fields.publishAsBusiness', {
@@ -686,10 +690,12 @@ export function PublishParcelPage() {
                     })}
                   </option>
                 ) : null}
-                <option value="person">
-                  {publishText(t, 'publish.parcel.fields.publishAsPerson')}
-                </option>
               </Select>
+              {!canPublishAsBusiness ? (
+                <p className="text-xs leading-5 text-[var(--app-text-muted)]">
+                  {publishText(t, 'publish.parcel.fields.publishAsHint')}
+                </p>
+              ) : null}
             </>
           ) : null}
         </Card>

@@ -155,6 +155,12 @@ export const interactionMiddleware = (store) => {
       }
     }
   }
+  if (action.type === 'businesses/addBusinessDocument') {
+    triggers.handleBusinessDocumentSubmitted(before, after, action)
+  }
+  if (action.type === 'businesses/updateBusinessDocumentStatus') {
+    triggers.handleBusinessDocumentStatus(before, after, action)
+  }
   if (action.type === 'disputes/openDispute') {
     triggers.handleDisputeOpened(before, after, action, actorId)
   }

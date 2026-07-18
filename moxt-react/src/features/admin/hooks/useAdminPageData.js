@@ -152,5 +152,18 @@ export function useAdminPageData(query, statusFilter, contentView) {
         userEmail: user?.email || '',
       }
     }),
+    allBusinessDocuments: (state.businesses.documents || []).map((item) => {
+      const business = state.businesses.items.find((entry) => entry.id === item.businessId)
+      const owner = state.administration.users.find((entry) => entry.id === item.ownerId)
+      const ownerName = owner
+        ? `${owner.firstName || ''} ${owner.lastName || ''}`.trim() || owner.email
+        : item.ownerId
+      return {
+        ...item,
+        businessName: business?.name || item.businessId,
+        ownerName,
+        ownerEmail: owner?.email || '',
+      }
+    }),
   }
 }

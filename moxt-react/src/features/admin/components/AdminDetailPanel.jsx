@@ -1,12 +1,17 @@
-import { createElement } from 'react'
+import { createElement, useEffect, useState } from 'react'
 import { FiArrowRight, FiEye } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { Button } from '../../../components/ui/Button'
+import { Select } from '../../../components/ui/Select'
+import { flagEmoji } from '../../../config/flags'
+import { useGeographyOptions } from '../../../hooks/useGeographyOptions'
+import { updateUserOriginCountry } from '../../administration/administrationSlice'
 import {
   replySupportTicket,
   updateSupportStatus,
 } from '../../communications/communicationSlice'
+import { addToast } from '../../ui/uiSlice'
 import { renderDetailActions } from '../adminActions'
 import { CARD } from '../adminConfig'
 import {
@@ -20,8 +25,24 @@ import { adminText } from '../adminI18n'
 import { AdminDocumentPreview } from './AdminDocumentPreview'
 import { Empty, SectionTitle } from './AdminShared'
 
-export function AdminDetailPanel({ admin, dispatch, onSuspendUser, selected, supportReply, setSupportReply }) {
+export function AdminDetailPanel({
+  admin,
+  dispatch,
+  onSuspendUser,
+  selected,
+  setSelected,
+  supportReply,
+  setSupportReply,
+}) {
   const { t } = useLanguage()
+  const { countries } = useGeographyOptions()
+  const [originDraft, setOriginDraft] = useState('')
+
+  useEffect(() => {
+    if (selected?.kind === 'user') {
+      setOriginDraft(selected.item?.originCountry || '')
+    }
+  }, [selected])
 
   if (!selected) {
     return (
@@ -70,6 +91,50 @@ export function AdminDetailPanel({ admin, dispatch, onSuspendUser, selected, sup
             {t('verification.admin.documentsTitle')}
           </p>
           <AdminDocumentPreview documentIds={item.documentIds || []} />
+        </div>
+      ) : null}
+
+      {kind === 'businessDocument' ? (
+        <div className="grid min-w-0 gap-2">
+          <p className="text-[10px] font-black uppercase tracking-wider text-[var(--app-text-muted)]">
+            {adminText(t, 'admin.businessDocuments.previewTitle')}
+          </p>
+          <AdminDocumentPreview documents={[item]} />
+        </div>
+      ) : null}
+
+      {kind === 'user' ? (
+        <div className="grid min-w-0 gap-2 rounded-xl bg-[var(--app-surface-muted)] p-3">
+          <Select
+            id="admin-user-origin"
+            label={adminText(t, 'admin.users.editOrigin')}
+            value={originDraft}
+            onChange={(event) => setOriginDraft(event.target.value)}
+          >
+            <option value="">{adminText(t, 'admin.filters.all')}</option>
+            {countries.map((country) => (
+              <option key={country.code} value={country.code}>
+                {flagEmoji(country.code)} {country.name}
+              </option>
+            ))}
+          </Select>
+          <Button
+            variant="secondary"
+            disabled={!originDraft || originDraft === item.originCountry}
+            onClick={() => {
+              dispatch(updateUserOriginCountry({ id: item.id, originCountry: originDraft }))
+              setSelected?.({ kind: 'user', item: { ...item, originCountry: originDraft } })
+              dispatch(
+                addToast({
+                  title: adminText(t, 'admin.users.originSaved'),
+                  message: `${item.firstName || ''} · ${originDraft}`,
+                  tone: 'success',
+                }),
+              )
+            }}
+          >
+            {adminText(t, 'admin.actions.save')}
+          </Button>
         </div>
       ) : null}
 

@@ -13,6 +13,7 @@ import {
 import { addBusinessDocument } from '../../features/businesses/businessSlice'
 import { professionalText } from '../../features/businesses/professionalI18n'
 import { addToast } from '../../features/ui/uiSlice'
+import { storageService } from '../../services/storageService'
 
 export function DocumentsPanel({ business, dispatch, documents, initialCategory = 'registration' }) {
   const { t } = useLanguage()
@@ -20,6 +21,7 @@ export function DocumentsPanel({ business, dispatch, documents, initialCategory 
   const [category, setCategory] = useState(
     isBusinessDocumentType(initialCategory) ? initialCategory : 'registration',
   )
+  const [uploading, setUploading] = useState(false)
 
   const documentTypeLabel = (value) => {
     const item = BUSINESS_DOCUMENT_TYPES.find((entry) => entry.value === value)
@@ -27,27 +29,48 @@ export function DocumentsPanel({ business, dispatch, documents, initialCategory 
     return pt(`professional.documents.types.${item.value}`)
   }
 
-  function add(file) {
-    if (!file) return
-    dispatch(
-      addBusinessDocument({
-        businessId: business.id,
-        ownerId: business.ownerId,
+  async function add(file) {
+    if (!file || uploading) return
+    setUploading(true)
+    try {
+      const uploaded = await storageService.uploadBusinessDocument(
+        business.ownerId,
+        business.id,
         category,
-        name: file.name,
-        size: file.size,
-        type: file.type,
-      }),
-    )
-    dispatch(
-      addToast({
-        title: pt('professional.documents.toast.addedTitle'),
-        message: pt('professional.documents.toast.addedBody', {
-          type: documentTypeLabel(category),
+        file,
+      )
+      dispatch(
+        addBusinessDocument({
+          businessId: business.id,
+          ownerId: business.ownerId,
+          category,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          url: uploaded?.url || uploaded,
+          storagePath: uploaded?.path || null,
         }),
-        tone: 'success',
-      }),
-    )
+      )
+      dispatch(
+        addToast({
+          title: pt('professional.documents.toast.addedTitle'),
+          message: pt('professional.documents.toast.addedBody', {
+            type: documentTypeLabel(category),
+          }),
+          tone: 'success',
+        }),
+      )
+    } catch (err) {
+      dispatch(
+        addToast({
+          title: pt('professional.documents.toast.errorTitle'),
+          message: err?.message || pt('professional.documents.toast.errorBody'),
+          tone: 'error',
+        }),
+      )
+    } finally {
+      setUploading(false)
+    }
   }
 
   return (
@@ -65,6 +88,7 @@ export function DocumentsPanel({ business, dispatch, documents, initialCategory 
             label={pt('professional.documents.typeLabel')}
             value={category}
             onChange={(event) => setCategory(event.target.value)}
+            disabled={uploading}
           >
             {BUSINESS_DOCUMENT_TYPES.map((type) => (
               <option key={type.value} value={type.value}>
@@ -72,13 +96,22 @@ export function DocumentsPanel({ business, dispatch, documents, initialCategory 
               </option>
             ))}
           </Select>
-          <label className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 text-sm font-bold text-white">
-            <FiPlus /> {pt('professional.documents.add')}
+          <label
+            className={`inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 text-sm font-bold text-white ${
+              uploading ? 'pointer-events-none opacity-60' : ''
+            }`}
+          >
+            <FiPlus /> {uploading ? pt('professional.documents.uploading') : pt('professional.documents.add')}
             <input
               className="sr-only"
               type="file"
               accept=".pdf,image/*"
-              onChange={(event) => add(event.target.files?.[0])}
+              disabled={uploading}
+              onChange={(event) => {
+                const file = event.target.files?.[0]
+                event.target.value = ''
+                add(file)
+              }}
             />
           </label>
         </div>
@@ -96,6 +129,11 @@ export function DocumentsPanel({ business, dispatch, documents, initialCategory 
                 {documentTypeLabel(document.category)} ·{' '}
                 {pt('professional.documents.sizeKb', { size: Math.ceil(document.size / 1024) })}
               </span>
+              {document.reviewNote && document.status === 'rejected' ? (
+                <p className="mt-1 text-xs text-rose-700 dark:text-rose-300">
+                  {pt('professional.documents.rejectNote', { note: document.reviewNote })}
+                </p>
+              ) : null}
             </div>
             <Badge tone={statusMeta(document.status, t).tone}>
               {statusMeta(document.status, t).label}

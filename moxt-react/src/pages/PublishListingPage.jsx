@@ -40,7 +40,7 @@ import { CitySelector } from '../components/ui/CitySelector'
 import { useScrollToTopOnStep } from '../hooks/useScrollToTopOnStep'
 import { BusinessPublishNotice } from '../features/businesses/BusinessPublishNotice'
 import {
-  isBusinessPublishReady,
+  canPublishAsBusinessFor,
   resolveBusinessPublishContext,
 } from '../features/businesses/businessPublishUtils'
 import { publishListing } from '../features/marketplace/marketplaceSlice'
@@ -74,7 +74,7 @@ export function PublishListingPage() {
   const business = useSelector((state) =>
     state.businesses.items.find((item) => item.ownerId === user.id),
   )
-  const canPublishAsBusiness = isBusinessPublishReady(business)
+  const canPublishAsBusiness = canPublishAsBusinessFor(business, 'listing')
   const [step, setStep] = useState(1)
   useScrollToTopOnStep(step)
   const [listingType, setListingType] = useState(null)
@@ -92,7 +92,7 @@ export function PublishListingPage() {
     address: '',
     contact: ensurePhoneCountry(user.phone, 'RU'),
     whatsapp: ensurePhoneCountry(user.phone, 'RU'),
-    sellerType: canPublishAsBusiness && business ? 'business' : 'person',
+    sellerType: 'person',
     deliveryOptions: [],
     deliveryFee: 0,
     // Réduction
@@ -227,6 +227,7 @@ export function PublishListingPage() {
     const publishContext = resolveBusinessPublishContext({
       business,
       publishAsBusiness: form.sellerType === 'business',
+      contentType: 'listing',
     })
     if (publishContext.blocked) {
       dispatch(
@@ -898,18 +899,23 @@ export function PublishListingPage() {
           {/* Vendeur pro ou particulier */}
           {business ? (
             <>
-              <BusinessPublishNotice business={business} />
+              <BusinessPublishNotice business={business} contentType="listing" />
               <Select
                 id="pub-seller"
                 label={mt('publish.listing.publishAs')}
                 value={form.sellerType}
                 onChange={(e) => setField('sellerType', e.target.value)}
               >
+                <option value="person">{mt('publish.listing.asIndividual')}</option>
                 {canPublishAsBusiness ? (
                   <option value="business">{mt('publish.listing.asBusiness', { name: business.name })}</option>
                 ) : null}
-                <option value="person">{mt('publish.listing.asIndividual')}</option>
               </Select>
+              {!canPublishAsBusiness ? (
+                <p className="text-xs leading-5 text-[var(--app-text-muted)]">
+                  {mt('publish.listing.publishAsHint')}
+                </p>
+              ) : null}
             </>
           ) : null}
 

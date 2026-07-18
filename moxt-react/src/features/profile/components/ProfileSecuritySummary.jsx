@@ -1,10 +1,22 @@
-import { FiCheckCircle, FiLock, FiShield } from 'react-icons/fi'
-import { Link } from 'react-router-dom'
+import { FiCheckCircle, FiLock, FiLogOut, FiShield } from 'react-icons/fi'
+import { useDispatch } from 'react-redux'
+import { Link, useNavigate } from 'react-router-dom'
+import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
 import { useLanguage } from '../../../contexts/useLanguage'
+import { logout } from '../../auth/authSlice'
+import { stopRealtimeSubscription } from '../../../services/realtimeService'
 
 export function ProfileSecuritySummary({ verified }) {
   const { t } = useLanguage()
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
+
+  async function handleLogout() {
+    stopRealtimeSubscription()
+    await dispatch(logout())
+    navigate('/login')
+  }
 
   return (
     <Card>
@@ -45,6 +57,12 @@ export function ProfileSecuritySummary({ verified }) {
             {verified ? t('profile.security.verified') : t('profile.security.unverified')}
           </span>
         </div>
+      </div>
+
+      <div className="mt-5 border-t border-[var(--app-border)] pt-4">
+        <Button className="w-full sm:w-auto" variant="danger" icon={FiLogOut} onClick={handleLogout}>
+          {t('nav.signOut')}
+        </Button>
       </div>
     </Card>
   )

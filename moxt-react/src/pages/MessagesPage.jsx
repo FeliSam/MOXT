@@ -1,6 +1,7 @@
 import { useFormik } from 'formik'
 import {
   FiArchive,
+  FiHeadphones,
   FiMessageSquare,
   FiSearch,
   FiStar,
@@ -59,6 +60,7 @@ const MESSAGE_FILTER_IDS = [
   { id: 'all', labelKey: 'messages.filterAll' },
   { id: 'unread', labelKey: 'messages.filterUnread' },
   { id: 'pinned', labelKey: 'messages.filterPinned', icon: FiStar },
+  { id: 'support', labelKey: 'messages.filterSupport', icon: FiHeadphones, adminOnly: true },
 ]
 
 export function MessagesPage() {
@@ -142,6 +144,7 @@ export function MessagesPage() {
         if (showArchived !== Boolean(archived)) return false
         if (filter === 'unread' && !(item.unreadBy?.[user.id] > 0)) return false
         if (filter === 'pinned' && !item.pinnedBy?.includes(user.id)) return false
+        if (filter === 'support' && item.relatedType !== 'support') return false
         return conversationMatchesQuery(item, user.id, deferredQuery)
       })
       .sort((left, right) => {
@@ -638,7 +641,9 @@ export function MessagesPage() {
               role="toolbar"
               aria-label={t("messages.filterAria")}
             >
-              {MESSAGE_FILTER_IDS.map((item) => {
+              {MESSAGE_FILTER_IDS.filter(
+                (item) => !item.adminOnly || ['admin', 'superadmin'].includes(user?.role),
+              ).map((item) => {
                 const count = countConversationsForFilter(
                   conversations,
                   item.id,
@@ -658,7 +663,9 @@ export function MessagesPage() {
                     aria-pressed={activeFilter}
                   >
                     {item.icon ? <item.icon className="size-3" aria-hidden="true" /> : null}
-                    {t(item.labelKey)}
+                    {messagesText(t, item.labelKey) !== item.labelKey
+                      ? messagesText(t, item.labelKey)
+                      : t(item.labelKey)}
                     {count ? <span className="message-filter-chip-count">{count}</span> : null}
                   </button>
                 )

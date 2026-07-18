@@ -571,9 +571,16 @@ export const PHASE3_FR_SOURCES = {
   'news.composer.messagePlaceholder': 'Rédigez votre message…',
   'news.composer.previewAlt': 'Aperçu',
   'news.composer.removeImage': "Supprimer l'image",
+  'news.composer.replaceImage': "Remplacer l'image",
   'news.composer.addImage': 'Ajouter une image',
   'news.composer.link': 'Lien : {link}',
   'news.composer.publish': 'Publier',
+  'news.share.successTitle': 'Publication partagée',
+  'news.share.successBody': 'Le lien a été partagé.',
+  'news.share.copiedTitle': 'Lien copié',
+  'news.share.copiedBody': "Le lien de la publication a été copié dans le presse-papiers.",
+  'news.share.errorBody': 'Impossible de partager cette publication pour le moment.',
+  'news.commentsList': 'Commentaires de la publication',
   'news.card.cta.listing': "Voir l'annonce",
   'news.card.cta.parcel': 'Voir le colis',
   'news.card.cta.business': "Voir l'entreprise",
@@ -605,6 +612,8 @@ export const PHASE3_FR_SOURCES = {
   'news.edit.tags': 'Tags (séparés par des virgules)',
   'news.edit.tagsPlaceholder': 'Ex : événement, moscou, culture',
   'news.edit.save': 'Enregistrer les modifications',
+  'news.edit.savedTitle': 'Publication mise à jour',
+  'news.edit.savedMessage': 'Vos modifications sont visibles dans le fil.',
 
   // ── exchangers ─────────────────────────────────────────────────────────
   'exchangers.eyebrow': 'Finances',
@@ -643,6 +652,7 @@ export const PHASE3_FR_SOURCES = {
   'exchangers.detail.startBody':
     'Les taux et coordonnées seront recalculés et contrôlés par le futur backend.',
   'exchangers.detail.choose': 'Choisir cet échangeur',
+  'exchangers.detail.viewBusiness': 'Voir le profil de l’entreprise',
   'exchangers.detail.infoTitle': 'Informations du partenaire',
   'exchangers.detail.name': 'Nom',
   'exchangers.detail.type': 'Type',

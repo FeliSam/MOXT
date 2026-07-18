@@ -1,4 +1,5 @@
 import { FiCheckCircle, FiHeadphones, FiMessageSquare } from 'react-icons/fi'
+import { Link } from 'react-router-dom'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { Button } from '../../../components/ui/Button'
 import { Badge } from '../../../components/ui/Badge'
@@ -70,6 +71,13 @@ export function AdminSupportPanel({ admin, dispatch, reply, setReply, setSelecte
               className="w-full rounded-xl bg-[var(--app-surface)] p-3 text-sm outline-none ring-1 ring-[var(--app-border)] focus:ring-brand-500"
             />
             <div className="flex flex-wrap gap-2">
+              <Link
+                to={`/messages?relatedType=support&relatedId=${encodeURIComponent(`support-${ticket.userId}`)}`}
+              >
+                <Button variant="secondary" icon={FiHeadphones}>
+                  {adminText(t, 'admin.support.openChat')}
+                </Button>
+              </Link>
               <Button
                 icon={FiMessageSquare}
                 onClick={() => {

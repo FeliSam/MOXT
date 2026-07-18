@@ -93,6 +93,8 @@ export function adminDetailLink(kind, item) {
       return item.id ? `/users/${item.id}/publications` : null
     case 'verification':
       return item.userId ? `/users/${item.userId}/publications` : null
+    case 'businessDocument':
+      return item.businessId ? `/businesses/${item.businessId}` : null
     case 'dispute':
       return disputeTargetLink(item)
     case 'review':

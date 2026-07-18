@@ -9,6 +9,7 @@ import { adminText } from '../../features/admin/adminI18n'
 import { addComment, deleteComment, deletePost, moderatePost, toggleLike, updatePost } from '../../features/posts/postsSlice'
 import { SOURCE_TYPE_LABELS } from '../../features/posts/postTemplates'
 import { formatDate } from '../../features/transfers/transferUtils'
+import { addToast } from '../../features/ui/uiSlice'
 import { phase3Text } from '../../i18n/phase3I18n'
 
 const TYPE_COLORS = {
@@ -49,12 +50,12 @@ function ExpandableFeedMessage({ text }) {
           type="button"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
-          className="group mt-1.25 inline-flex items-center gap-0.5 rounded-full border border-[var(--app-border)] bg-[var(--app-surface)] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.04em] text-[var(--app-accent)] shadow-[0_1px_2px_rgb(0_0_0_/_0.04)] transition hover:border-[var(--app-accent)]/40 hover:bg-[var(--app-accent-soft)] hover:shadow-sm active:scale-[0.98]"
+          className="group mt-1 inline-flex items-center gap-px rounded-full px-1 py-px text-[7px] font-bold uppercase tracking-[0.03em] text-[var(--app-accent)] transition hover:bg-[var(--app-accent-soft)] active:scale-[0.98]"
         >
           <span>{expanded ? p3('news.seeLess') : p3('news.seeMore')}</span>
           <FiChevronDown
             aria-hidden
-            className={`size-2.5 transition-transform duration-200 ease-out ${
+            className={`size-2 transition-transform duration-200 ease-out ${
               expanded ? 'rotate-180' : 'rotate-0'
             } group-hover:translate-y-px`}
           />
@@ -87,6 +88,7 @@ export function FeedPostCard({ post }) {
   const [editing, setEditing] = useState(false)
   const [editMessage, setEditMessage] = useState(post.message)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [shareCount, setShareCount] = useState(post.shareCount || 0)
 
   const liked = post.likes?.includes(user?.id)
   const typeLabel = SOURCE_TYPE_LABELS[post.sourceType] || 'Post'
@@ -132,6 +134,50 @@ export function FeedPostCard({ post }) {
       dispatch(moderatePost({ id: post.id, status: 'archived' }))
     }
     setMenuOpen(false)
+  }
+
+  async function handleShare() {
+    const url = `${window.location.origin}/news`
+    const shareData = {
+      title: post.title || post.authorName || 'MOXT',
+      text: (post.message || '').trim().slice(0, 200),
+      url,
+    }
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData)
+        setShareCount((v) => v + 1)
+        dispatch(
+          addToast({
+            title: p3('news.share.successTitle'),
+            message: p3('news.share.successBody'),
+            tone: 'success',
+          }),
+        )
+        return
+      }
+    } catch {
+      return
+    }
+    try {
+      await navigator.clipboard?.writeText(url)
+      setShareCount((v) => v + 1)
+      dispatch(
+        addToast({
+          title: p3('news.share.copiedTitle'),
+          message: p3('news.share.copiedBody'),
+          tone: 'success',
+        }),
+      )
+    } catch {
+      dispatch(
+        addToast({
+          title: p3('common.error'),
+          message: p3('news.share.errorBody'),
+          tone: 'error',
+        }),
+      )
+    }
   }
 
   return (
@@ -289,36 +335,53 @@ export function FeedPostCard({ post }) {
           <FiMessageCircle />
           {post.comments?.length || 0}
         </button>
+        <button
+          type="button"
+          onClick={handleShare}
+          className="flex items-center gap-1.5 text-sm font-bold text-[var(--app-text-muted)] transition hover:text-[var(--app-text)]"
+          aria-label={p3('common.share')}
+        >
+          <FiShare2 />
+          {shareCount}
+        </button>
       </div>
 
-      {/* Commentaires */}
+      {/* Commentaires — 5 visibles, le reste en scroll */}
       {showComments && (
         <div className="grid gap-3 border-t border-[var(--app-border)] px-4 py-3 sm:px-5 sm:py-4">
-          {post.comments?.map((comment) => (
-            <div key={comment.id} className="flex items-start gap-2.5">
-              {comment.authorAvatarUrl ? (
-                <img src={comment.authorAvatarUrl} alt="" className="size-7 rounded-full object-cover shrink-0 mt-0.5" />
-              ) : (
-                <span className="grid size-7 place-items-center rounded-full bg-[var(--app-surface-muted)] text-xs font-black shrink-0 mt-0.5">
-                  {comment.authorName?.charAt(0)}
-                </span>
-              )}
-              <div className="flex-1 rounded-2xl bg-[var(--app-surface-muted)] px-3 py-2">
-                <p className="text-xs font-bold">{comment.authorName}</p>
-                <p className="text-sm mt-0.5">{comment.text}</p>
-              </div>
-              {(user?.id === comment.authorId || isAuthor || isModerator) && (
-                <button
-                  type="button"
-                  onClick={() => dispatch(deleteComment({ postId: post.id, commentId: comment.id }))}
-                  aria-label="Supprimer le commentaire"
-                  className="mt-1 text-[var(--app-text-faint)] hover:text-red-500"
-                >
-                  <FiTrash2 className="text-xs" />
-                </button>
-              )}
+          {(post.comments?.length || 0) > 0 ? (
+            <div
+              className="grid max-h-[17.5rem] gap-3 overflow-y-auto overscroll-contain pr-1 [scrollbar-width:thin]"
+              role="list"
+              aria-label={p3('news.commentsList')}
+            >
+              {post.comments.map((comment) => (
+                <div key={comment.id} className="flex items-start gap-2.5" role="listitem">
+                  {comment.authorAvatarUrl ? (
+                    <img src={comment.authorAvatarUrl} alt="" className="size-7 rounded-full object-cover shrink-0 mt-0.5" />
+                  ) : (
+                    <span className="grid size-7 place-items-center rounded-full bg-[var(--app-surface-muted)] text-xs font-black shrink-0 mt-0.5">
+                      {comment.authorName?.charAt(0)}
+                    </span>
+                  )}
+                  <div className="flex-1 rounded-2xl bg-[var(--app-surface-muted)] px-3 py-2">
+                    <p className="text-xs font-bold">{comment.authorName}</p>
+                    <p className="text-sm mt-0.5">{comment.text}</p>
+                  </div>
+                  {(user?.id === comment.authorId || isAuthor || isModerator) && (
+                    <button
+                      type="button"
+                      onClick={() => dispatch(deleteComment({ postId: post.id, commentId: comment.id }))}
+                      aria-label="Supprimer le commentaire"
+                      className="mt-1 text-[var(--app-text-faint)] hover:text-red-500"
+                    >
+                      <FiTrash2 className="text-xs" />
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
+          ) : null}
           {user && (
             <form onSubmit={handleComment} className="flex items-center gap-2">
               {user.avatarUrl ? (

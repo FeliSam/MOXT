@@ -17,6 +17,8 @@ function profileRowToAdminUser(row) {
     email: row.email || '',
     phone: row.phone || '',
     city: row.city || '',
+    originCountry: row.origin_country || row.originCountry || '',
+    country: row.country || '',
     role: row.role || 'user',
     status,
     verified: row.status === 'verified',
@@ -53,10 +55,21 @@ const administrationSlice = createSlice({
       user.status = action.payload.status
       user.updatedAt = new Date().toISOString()
     },
+    updateUserOriginCountry(state, action) {
+      const user = state.users.find((item) => item.id === action.payload.id)
+      if (!user || !action.payload.originCountry) return
+      user.originCountry = action.payload.originCountry
+      user.updatedAt = new Date().toISOString()
+    },
   },
 })
 
 export { profileRowToAdminUser }
-export const { setAdminUsers, registerAdministrativeUser, updateUserRole, updateUserStatus } =
-  administrationSlice.actions
+export const {
+  setAdminUsers,
+  registerAdministrativeUser,
+  updateUserRole,
+  updateUserStatus,
+  updateUserOriginCountry,
+} = administrationSlice.actions
 export default administrationSlice.reducer

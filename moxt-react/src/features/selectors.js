@@ -27,7 +27,14 @@ export const selectUserConversations = createSelector(
   [(state) => state.communications.conversations, selectCurrentUser],
   (conversations, user) =>
     conversations
-      .filter((item) => normalizeConversation(item).participantIds.includes(user?.id))
+      .filter((item) => {
+        const conversation = normalizeConversation(item)
+        if (conversation.participantIds.includes(user?.id)) return true
+        return (
+          conversation.relatedType === 'support' &&
+          ['admin', 'superadmin'].includes(user?.role)
+        )
+      })
       .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)),
 )
 

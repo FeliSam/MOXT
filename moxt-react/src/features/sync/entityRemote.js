@@ -23,6 +23,17 @@ export function p2pOrderFromRemoteRow(row) {
   }
 }
 
+export function p2pOfferFromRemoteRow(row) {
+  if (!row) return null
+  const base = fromRow(row)
+  const payload = parseJson(row.payload ?? base.payload, {})
+  return {
+    ...payload,
+    ...base,
+    status: base.status || payload.status || 'active',
+  }
+}
+
 export function p2pOrderToRemoteRow(order) {
   return {
     id: order.id,

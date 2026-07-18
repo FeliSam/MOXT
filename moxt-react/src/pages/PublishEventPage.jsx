@@ -21,7 +21,9 @@ import { ShareToFeedModal } from '../components/ui/ShareToFeedModal'
 import { useActionBurst } from '../components/ui/ActionBurst'
 import { CitySelector } from '../components/ui/CitySelector'
 import { Input } from '../components/ui/Input'
+import { Select } from '../components/ui/Select'
 import { createEvent } from '../features/events/eventSlice'
+import { BusinessPublishNotice } from '../features/businesses/BusinessPublishNotice'
 import {
   EVENT_CAT_COLORS,
   EVENT_CAT_ICONS,
@@ -30,7 +32,10 @@ import {
   EVENT_PUBLISH_STEPS,
 } from '../features/events/eventPublishConfig'
 import { useScrollToTopOnStep } from '../hooks/useScrollToTopOnStep'
-import { isBusinessPublishReady } from '../features/businesses/businessPublishUtils'
+import {
+  canPublishAsBusinessFor,
+  resolveBusinessPublishContext,
+} from '../features/businesses/businessPublishUtils'
 import { addToast } from '../features/ui/uiSlice'
 import { SecurityGatePanel } from '../features/security/SecurityGatePanel'
 import { useSecurityGate } from '../features/security/useSecurityGate'
@@ -109,7 +114,7 @@ export function PublishEventPage() {
   const business = useSelector((state) =>
     state.businesses.items.find((item) => item.ownerId === user.id),
   )
-  const canPublishAsBusiness = isBusinessPublishReady(business)
+  const canPublishAsBusiness = canPublishAsBusinessFor(business, 'event')
   const [step, setStep] = useState(1)
   useScrollToTopOnStep(step)
   const [errors, setErrors] = useState({})
@@ -150,7 +155,8 @@ export function PublishEventPage() {
     price: 0,
     currency: 'RUB',
     freeEntry: true,
-    organizerName: business?.name || `${user.firstName} ${user.lastName}`,
+    publishAs: 'person',
+    organizerName: `${user.firstName} ${user.lastName}`,
     organizerContact: user.phone || '',
   })
 
@@ -195,6 +201,21 @@ export function PublishEventPage() {
   async function publish() {
     if (!requirePublish()) return
     if (!validate(3)) return
+    const publishContext = resolveBusinessPublishContext({
+      business,
+      publishAsBusiness: form.publishAs === 'business',
+      contentType: 'event',
+    })
+    if (publishContext.blocked) {
+      dispatch(
+        addToast({
+          title: publishText(t, 'publish.common.toasts.businessBlockedTitle'),
+          message: publishText(t, 'publish.event.toasts.businessBlockedMessage'),
+          tone: 'error',
+        }),
+      )
+      return
+    }
     setPublishing(true)
     let images = []
     try {
@@ -216,13 +237,14 @@ export function PublishEventPage() {
       )
       return
     }
+    const { publishAs: _publishAs, ...eventFields } = form
     const action = dispatch(
       createEvent({
-        ...form,
+        ...eventFields,
         images,
         ownerId: user.id,
-        organizerName: canPublishAsBusiness ? business.name : form.organizerName,
-        businessId: canPublishAsBusiness ? business.id : null,
+        organizerName: publishContext.useBusiness ? business.name : form.organizerName,
+        businessId: publishContext.businessId,
         price: form.freeEntry ? 0 : Number(form.price),
         status: initialCatalogStatus(user, { live: 'published', pending: 'pending_review' }),
       }),
@@ -557,12 +579,49 @@ export function PublishEventPage() {
                 />
               </div>
             ) : null}
+            {business ? (
+              <>
+                <BusinessPublishNotice business={business} contentType="event" />
+                <Select
+                  id="ev-publisher"
+                  label={publishText(t, 'publish.event.fields.publishAs')}
+                  value={form.publishAs}
+                  onChange={(e) => {
+                    const publishAs = e.target.value
+                    set('publishAs', publishAs)
+                    set(
+                      'organizerName',
+                      publishAs === 'business'
+                        ? business.name
+                        : `${user.firstName} ${user.lastName}`,
+                    )
+                  }}
+                >
+                  <option value="person">
+                    {publishText(t, 'publish.event.fields.publishAsPerson')}
+                  </option>
+                  {canPublishAsBusiness ? (
+                    <option value="business">
+                      {publishText(t, 'publish.event.fields.publishAsBusiness', {
+                        name: business.name,
+                      })}
+                    </option>
+                  ) : null}
+                </Select>
+                {!canPublishAsBusiness ? (
+                  <p className="text-xs leading-5 text-[var(--app-text-muted)]">
+                    {publishText(t, 'publish.event.fields.publishAsHint')}
+                  </p>
+                ) : null}
+              </>
+            ) : null}
             <Input
               id="ev-organizer"
               label={publishText(t, 'publish.event.fields.organizerName')}
               placeholder={publishText(t, 'publish.event.fields.organizerNamePlaceholder')}
               value={form.organizerName}
               onChange={(e) => set('organizerName', e.target.value)}
+              disabled={form.publishAs === 'business' && canPublishAsBusiness}
             />
             <Input
               id="ev-contact"

@@ -78,6 +78,25 @@ export const MESSAGES_FR_SOURCES = {
   'messages.assistant.adminEscalated':
     'Votre demande a été transmise à l’équipe MOXT (ticket {id}). Un administrateur pourra vous répondre depuis Support.',
   'messages.assistant.adminFollowUp': 'Suivre ma demande',
+  'messages.assistant.adminComposePrompt':
+    'D’accord — un administrateur MOXT peut vous répondre directement dans la messagerie. Décrivez votre question ou préoccupation ci-dessous.',
+  'messages.assistant.adminComposeTitle': 'Message à l’administrateur',
+  'messages.assistant.adminComposeBody':
+    'Expliquez clairement votre demande. Un admin vous répondra dans les meilleurs délais dans ce chat.',
+  'messages.assistant.adminComposePlaceholder':
+    'Ex. : je souhaite modifier mon pays d’origine, j’ai un problème de publication…',
+  'messages.assistant.adminComposeHint': 'Je souhaite parler avec un administrateur.',
+  'messages.assistant.adminComposeLocked': 'Rédigez votre message dans le formulaire ci-dessus…',
+  'messages.assistant.adminSend': 'Envoyer à l’admin',
+  'messages.assistant.adminSending': 'Envoi…',
+  'messages.assistant.adminChatOpened':
+    'Votre message a été envoyé. La conversation avec le support MOXT est ouverte — un administrateur peut y répondre.',
+  'messages.assistant.adminOpenChat': 'Ouvrir la conversation',
+  'messages.assistant.adminUnavailable':
+    'Aucun administrateur n’est disponible pour le moment. Réessayez un peu plus tard.',
+  'messages.assistant.adminSendFailed':
+    'Impossible d’ouvrir la conversation admin. Vérifiez votre connexion puis réessayez.',
+  'messages.filterSupport': 'Support admin',
   'messages.statusSending': 'Envoi en cours',
   'messages.attachment.photo': '📷 Photo',
   'messages.attachment.photos': '📷 {count} photos',
@@ -106,6 +125,7 @@ export const MESSAGES_FR_SOURCES = {
   'communications.related.p2p': 'Échange P2P',
   'communications.related.transfer': 'Transfert',
   'communications.related.general': 'Discussion',
+  'communications.related.support': 'Support admin',
 
   // ── contact button ───────────────────────────────────────────────────────
   'communications.contact': 'Contacter',
@@ -148,6 +168,9 @@ export const MESSAGES_FR_SOURCES = {
   'communications.chips.general.more': 'Bonjour, je souhaite en savoir plus.',
   'communications.chips.general.thanks': 'Merci pour votre message.',
   'communications.chips.general.clarify': 'Pouvez-vous préciser votre demande ?',
+  'communications.chips.support.received': 'Bien reçu, je regarde cela.',
+  'communications.chips.support.delay': 'Merci pour votre patience, je reviens rapidement.',
+  'communications.chips.support.needInfo': 'Pouvez-vous me donner un peu plus de détails ?',
 
   // ── dynamic composer suggestions ─────────────────────────────────────────
   'messages.suggestions.fallback.listing': 'cette annonce',

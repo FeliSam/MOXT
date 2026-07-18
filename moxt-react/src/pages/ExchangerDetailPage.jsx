@@ -1,4 +1,5 @@
 import { FiClock, FiMapPin, FiRepeat, FiShield, FiStar } from 'react-icons/fi'
+import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 import { useMemo } from 'react'
 import { useSelector } from 'react-redux'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
@@ -149,6 +150,13 @@ export function ExchangerDetailPage() {
                 {p3('exchangers.detail.choose')}
               </Button>
             </Link>
+            {business ? (
+              <Link to={`/businesses/${business.id}`}>
+                <Button className="w-full" variant="secondary" icon={HiOutlineBuildingOffice2}>
+                  {p3('exchangers.detail.viewBusiness')}
+                </Button>
+              </Link>
+            ) : null}
             {business ? (
               <ContactButton
                 ownerId={business.ownerId}

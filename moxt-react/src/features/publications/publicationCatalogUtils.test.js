@@ -3,6 +3,7 @@ import {
   buildBusinessPublicationProfile,
   collectUserPublications,
   filterPublicationsByScope,
+  filterPublicationsByTabs,
 } from './publicationCatalogUtils'
 
 describe('publicationCatalogUtils', () => {
@@ -18,6 +19,13 @@ describe('publicationCatalogUtils', () => {
     jobs: { items: [] },
     events: { items: [] },
     posts: { items: [{ id: 'POST-1', authorId: 'u1' }] },
+    p2p: {
+      offers: [
+        { id: 'O1', ownerId: 'u1', businessId: null, status: 'active' },
+        { id: 'O2', ownerId: 'u1', businessId: 'BIZ-1', status: 'archived' },
+        { id: 'O3', ownerId: 'u2', businessId: null, status: 'active' },
+      ],
+    },
   }
 
   it('inclut les publications personnelles et entreprise du membre', () => {
@@ -25,6 +33,7 @@ describe('publicationCatalogUtils', () => {
     expect(publications.listings).toHaveLength(2)
     expect(publications.parcels).toHaveLength(1)
     expect(publications.posts).toHaveLength(1)
+    expect(publications.others).toHaveLength(2)
   })
 
   it('filtre les publications entreprise', () => {
@@ -34,6 +43,7 @@ describe('publicationCatalogUtils', () => {
     expect(businessOnly.listings[0].id).toBe('L2')
     expect(businessOnly.parcels).toHaveLength(1)
     expect(businessOnly.posts).toHaveLength(0)
+    expect(businessOnly.others.map((item) => item.id)).toEqual(['O2'])
   })
 
   it('filtre les publications personnelles', () => {
@@ -43,6 +53,22 @@ describe('publicationCatalogUtils', () => {
     expect(personalOnly.listings[0].id).toBe('L1')
     expect(personalOnly.parcels).toHaveLength(0)
     expect(personalOnly.posts).toHaveLength(1)
+    expect(personalOnly.others.map((item) => item.id)).toEqual(['O1'])
+  })
+
+  it('sépare les offres P2P actives et archivées', () => {
+    const publications = collectUserPublications(state, 'u1')
+    const active = filterPublicationsByTabs(publications, {
+      archiveTab: 'active',
+      typeTab: 'other',
+    })
+    const archived = filterPublicationsByTabs(publications, {
+      archiveTab: 'archived',
+      typeTab: 'other',
+    })
+
+    expect(active.other.map((item) => item.id)).toEqual(['O1'])
+    expect(archived.other.map((item) => item.id)).toEqual(['O2'])
   })
 
   it('construit le profil entreprise depuis les données actuelles', () => {

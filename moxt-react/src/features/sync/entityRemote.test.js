@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { p2pOrderToRemoteRow, reportToRemoteRow } from './entityRemote'
+import { p2pOfferFromRemoteRow, p2pOrderToRemoteRow, reportToRemoteRow } from './entityRemote'
 
 describe('entityRemote', () => {
   it('mappe un signalement annonce', () => {
@@ -29,5 +29,23 @@ describe('entityRemote', () => {
     })
     expect(row.proofs).toHaveLength(1)
     expect(row.ratings[0].rating).toBe(5)
+  })
+
+  it("restaure les détails métier d'une offre P2P distante", () => {
+    const offer = p2pOfferFromRemoteRow({
+      id: 'P2P-1',
+      owner_id: 'u1',
+      status: 'archived',
+      payload: {
+        businessId: 'BIZ-1',
+        method: 'Mobile Money',
+        comment: 'Sur rendez-vous',
+        status: 'active',
+      },
+    })
+
+    expect(offer.businessId).toBe('BIZ-1')
+    expect(offer.method).toBe('Mobile Money')
+    expect(offer.status).toBe('archived')
   })
 })

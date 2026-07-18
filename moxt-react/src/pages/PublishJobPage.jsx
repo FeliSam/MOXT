@@ -31,7 +31,7 @@ import {
 } from '../features/jobs/jobPublishConfig'
 import { useScrollToTopOnStep } from '../hooks/useScrollToTopOnStep'
 import { BusinessPublishNotice } from '../features/businesses/BusinessPublishNotice'
-import { isBusinessPublishReady } from '../features/businesses/businessPublishUtils'
+import { canPublishAsBusinessFor } from '../features/businesses/businessPublishUtils'
 import { addToast } from '../features/ui/uiSlice'
 import { SecurityGatePanel } from '../features/security/SecurityGatePanel'
 import { useSecurityGate } from '../features/security/useSecurityGate'
@@ -100,8 +100,7 @@ export function PublishJobPage() {
   const business = useSelector((state) =>
     state.businesses.items.find((item) => item.ownerId === user.id),
   )
-  const eligibleBusiness =
-    isBusinessPublishReady(business) && business?.services?.includes('Jobs')
+  const eligibleBusiness = canPublishAsBusinessFor(business, 'job')
 
   const [step, setStep] = useState(1)
   useScrollToTopOnStep(step)
@@ -521,7 +520,9 @@ export function PublishJobPage() {
             label={publishText(t, 'publish.job.fields.posters')}
             hint={publishText(t, 'publish.job.fields.postersHint')}
           />
-          {business ? <BusinessPublishNotice business={business} className="mb-1" /> : null}
+          {business ? (
+            <BusinessPublishNotice business={business} contentType="job" className="mb-1" />
+          ) : null}
           <Select
             id="job-publisher"
             label={publishText(t, 'publish.job.fields.publisherProfile')}

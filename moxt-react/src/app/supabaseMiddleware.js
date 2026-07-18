@@ -588,17 +588,18 @@ const handlers = {
       conversation.unreadBy && typeof conversation.unreadBy === 'object'
         ? { ...conversation.unreadBy }
         : {}
-    await supabase
-      .from('conversations')
-      .update({
-        updated_at: msg.createdAt,
-        message_count: conversation.messageCount ?? null,
-        unread_by: unreadBy,
-        last_message_text: msg.text,
-        last_message_sender_id: msg.senderId,
-        last_message_at: msg.createdAt,
-      })
-      .eq('id', canonicalId)
+    const conversationPatch = {
+      updated_at: msg.createdAt,
+      message_count: conversation.messageCount ?? null,
+      unread_by: unreadBy,
+      last_message_text: msg.text,
+      last_message_sender_id: msg.senderId,
+      last_message_at: msg.createdAt,
+    }
+    if (conversation.relatedType === 'support' && Array.isArray(conversation.participantIds)) {
+      conversationPatch.participant_ids = conversation.participantIds
+    }
+    await supabase.from('conversations').update(conversationPatch).eq('id', canonicalId)
 
     // Le trigger DB crée les lignes notifications ; on pousse ensuite vers les appareils.
     const senderId = String(msg.senderId || '')
@@ -778,6 +779,10 @@ const handlers = {
   // ── P2P ───────────────────────────────────────────────────────────────────────
   'p2p/createOffer': async (payload) => {
     await upsert('p2p_offers', p2pOfferToRemoteRow(payload))
+  },
+  'p2p/updateOfferStatus': async (payload, state) => {
+    const offer = state.p2p.offers.find((item) => item.id === payload.id)
+    if (offer) await upsert('p2p_offers', p2pOfferToRemoteRow(offer))
   },
   'p2p/acceptOffer': async (payload) => {
     await upsert('p2p_orders', p2pOrderToRemoteRow(payload))
@@ -1169,6 +1174,16 @@ const handlers = {
       .eq('id', payload.id)
     if (error) throw error
   },
+  'administration/updateUserOriginCountry': async (payload) => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        origin_country: payload.originCountry,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', payload.id)
+    if (error) throw error
+  },
 
   // ── Adresses destinataires ────────────────────────────────────────────────────
   'recipientAddresses/addRecipientAddress': async (payload) => {
@@ -1184,7 +1199,7 @@ const handlers = {
 
   // ── Support ───────────────────────────────────────────────────────────────────
   'communications/createSupportTicket': async (payload) => {
-    const { error } = await supabase.from('support_tickets').insert({
+    const row = {
       id: payload.id,
       user_id: payload.userId,
       user_name: payload.userName,
@@ -1195,7 +1210,13 @@ const handlers = {
       messages: payload.messages,
       created_at: payload.createdAt,
       updated_at: payload.updatedAt,
-    })
+    }
+    let { error } = await supabase.from('support_tickets').insert(row)
+    // Legacy DBs may miss `category` until migration is applied.
+    if (error && /category/i.test(error.message || '')) {
+      const { category: _category, ...legacyRow } = row
+      ;({ error } = await supabase.from('support_tickets').insert(legacyRow))
+    }
     if (error) throw error
   },
   'communications/replySupportTicket': async (payload, state) => {

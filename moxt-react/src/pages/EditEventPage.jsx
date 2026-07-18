@@ -8,6 +8,7 @@ import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
 import { CitySelector } from '../components/ui/CitySelector'
 import { PageHeader } from '../components/ui/PageHeader'
+import { PosterUploader } from '../components/ui/PosterUploader'
 import {
   EVENT_FORMAT_OPTIONS,
   EVENT_PUBLISH_CATEGORIES,
@@ -15,6 +16,16 @@ import {
 import { updateEvent } from '../features/events/eventSlice'
 import { useLanguage } from '../contexts/useLanguage'
 import { publishOptionLabel, publishText } from '../features/publications/publishI18n'
+import { storageService } from '../services/storageService'
+import { addToast } from '../features/ui/uiSlice'
+
+function mapExistingImages(images = []) {
+  return images.map((url, index) => ({
+    url,
+    name: `image-${index + 1}`,
+    existing: true,
+  }))
+}
 
 export function EditEventPage() {
   const dispatch = useDispatch()
@@ -25,9 +36,23 @@ export function EditEventPage() {
   const event = useSelector((state) => state.events.items.find((item) => item.id === eventId))
 
   const [form, setForm] = useState(null)
+  const [gallery, setGallery] = useState({ entityId: null, photos: [] })
+  const [saving, setSaving] = useState(false)
 
   if (!event) return <Card>{publishText(t, 'publish.event.edit.notFound')}</Card>
   if (event.ownerId !== user.id) return <Navigate to={`/events/${eventId}`} replace />
+
+  const photos =
+    gallery.entityId === event.id ? gallery.photos : mapExistingImages(event.images)
+
+  function updatePhotos(updater) {
+    const current =
+      gallery.entityId === event.id ? gallery.photos : mapExistingImages(event.images)
+    setGallery({
+      entityId: event.id,
+      photos: typeof updater === 'function' ? updater(current) : updater,
+    })
+  }
 
   const values = form ?? {
     title: event.title || '',
@@ -39,14 +64,16 @@ export function EditEventPage() {
     speakers: event.speakers || '',
     startAt: event.startAt ? event.startAt.slice(0, 16) : '',
     endAt: event.endAt ? event.endAt.slice(0, 16) : '',
-    registrationDeadline: event.registrationDeadline ? event.registrationDeadline.slice(0, 10) : '',
+    registrationDeadline: event.registrationDeadline
+      ? event.registrationDeadline.slice(0, 10)
+      : '',
     city: event.city || '',
     venue: event.venue || '',
     address: event.address || '',
     onlineLink: event.onlineLink || '',
     capacity: event.capacity ?? 50,
     price: event.price ?? 0,
-    freeEntry: event.price === 0,
+    freeEntry: Number(event.price || 0) === 0,
     organizerName: event.organizerName || '',
     organizerContact: event.organizerContact || '',
   }
@@ -55,16 +82,59 @@ export function EditEventPage() {
     setForm((prev) => ({ ...(prev ?? values), [field]: value }))
   }
 
-  function handleSubmit(e) {
+  function addPhotos(files) {
+    const added = Array.from(files)
+      .slice(0, 5 - photos.length)
+      .filter((file) => file.type.startsWith('image/'))
+      .map((file) => ({ file, url: URL.createObjectURL(file), name: file.name }))
+    updatePhotos((current) => [...current, ...added])
+  }
+
+  function removePhoto(index) {
+    updatePhotos((current) => {
+      if (current[index]?.file) URL.revokeObjectURL(current[index].url)
+      return current.filter((_, itemIndex) => itemIndex !== index)
+    })
+  }
+
+  async function handleSubmit(e) {
     e.preventDefault()
-    dispatch(updateEvent({
-      ...values,
-      id: eventId,
-      ownerId: user.id,
-      price: values.freeEntry ? 0 : Number(values.price),
-      capacity: Number(values.capacity),
-    }))
-    navigate(`/events/${eventId}`)
+    if (saving) return
+    setSaving(true)
+    try {
+      const newPhotos = photos.filter((photo) => photo.file)
+      const uploaded = newPhotos.length
+        ? await storageService.uploadEventImages(
+            user.id,
+            eventId,
+            newPhotos.map((photo) => photo.file),
+            { version: Date.now().toString(36) },
+          )
+        : []
+      let uploadIndex = 0
+      const images = photos.map((photo) => (photo.existing ? photo.url : uploaded[uploadIndex++]))
+      dispatch(
+        updateEvent({
+          ...values,
+          id: eventId,
+          ownerId: user.id,
+          images,
+          price: values.freeEntry ? 0 : Number(values.price),
+          capacity: Number(values.capacity),
+        }),
+      )
+      navigate(`/events/${eventId}`)
+    } catch (error) {
+      dispatch(
+        addToast({
+          title: publishText(t, 'publish.common.toasts.imagesFailedTitle'),
+          message: error.message || publishText(t, 'publish.common.toasts.retry'),
+          tone: 'error',
+        }),
+      )
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -168,6 +238,13 @@ export function EditEventPage() {
             value={values.speakers}
             onChange={(e) => set('speakers', e.target.value)}
           />
+          <PosterUploader
+            photos={photos}
+            onAdd={addPhotos}
+            onRemove={removePhoto}
+            label={publishText(t, 'publish.event.fields.posters')}
+            hint={publishText(t, 'publish.event.fields.postersHint')}
+          />
           {values.format !== 'online' ? (
             <>
               <CitySelector
@@ -194,9 +271,13 @@ export function EditEventPage() {
               onChange={(e) => set('onlineLink', e.target.value)}
             />
           ) : null}
-          <label className={`flex cursor-pointer items-center gap-3 rounded-2xl border-2 p-4 transition ${
-            values.freeEntry ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30' : 'border-[var(--app-border)]'
-          }`}>
+          <label
+            className={`flex cursor-pointer items-center gap-3 rounded-2xl border-2 p-4 transition ${
+              values.freeEntry
+                ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30'
+                : 'border-[var(--app-border)]'
+            }`}
+          >
             <input
               type="checkbox"
               checked={values.freeEntry}
@@ -233,7 +314,7 @@ export function EditEventPage() {
               onChange={(e) => set('organizerContact', e.target.value)}
             />
           </div>
-          <Button type="submit" icon={FiSave}>
+          <Button type="submit" icon={FiSave} loading={saving} disabled={saving}>
             {publishText(t, 'publish.common.saveChanges')}
           </Button>
         </form>

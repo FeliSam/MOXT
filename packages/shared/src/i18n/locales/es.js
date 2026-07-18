@@ -2706,10 +2706,14 @@ export const es = {
         continueAsIndividual: "Pode continuar como particular.",
         pendingReview: "A tu empresa está em verificación. Podrá publicar em nome da empresa após validación pela MOXT.",
         rejected: "A tu empresa no está autorizada a publicar de momento. Contacte o soporte MOXT.",
-        needsVerification: "A tu empresa deve ser verificada pela MOXT antes de cuálquer publicación em nome da empresa."
+        needsVerification: "A tu empresa deve ser verificada pela MOXT antes de cuálquer publicación em nome da empresa.",
+        serviceNotDeclaredTitle: "Servicio no declarado",
+        serviceNotDeclared: "Tu empresa no está declarada para este servicio — solo publicación personal.",
+        editServices: "Editar los servicios de la empresa"
       },
       toasts: {
         businessBlockedTitle: "Publicación de empresa indisponible",
+        businessServiceBlockedMessage: "Tu empresa no está declarada para este servicio. Publica como particular o modifica tus servicios.",
         imagesFailedTitle: "Imagens no enviadas",
         retry: "Tente nuevamente."
       }
@@ -2773,7 +2777,8 @@ export const es = {
         contact: "Teléfono de contacto (russo)",
         publishAs: "Publicar como",
         publishAsBusiness: "{name} (empresa)",
-        publishAsPerson: "Particular"
+        publishAsPerson: "Particular",
+        publishAsHint: "La asociación a una empresa solo es posible si el módulo Paquetes está activado."
       },
       defaults: {
         conditions: "Objetos autorizados solo após verificación. Fotos pedidas antes da aceitación."
@@ -2864,7 +2869,7 @@ export const es = {
           title: "Envio impossível",
           message: "No foi possível enviar o comprobante de viagem."
         },
-        businessBlockedMessage: "A tu empresa deve ser verificada pela MOXT antes de publicar em nome da empresa.",
+        businessBlockedMessage: "Tu empresa debe estar verificada y tener el módulo Paquetes antes de publicar.",
         publishedTitle: "Viagem publicada",
         pendingTitle: "Viagem enviada",
         publishedMessage: "A tu viagem está en línea.",
@@ -2922,7 +2927,7 @@ export const es = {
         publisherProfile: "Perfil de publicación",
         publisherPersonal: "Perfil pessoal · {name}",
         publisherBusiness: "Empresa · {name}",
-        publisherHint: "Cuálquer pessoa pode publicar una oferta. A associación a una empresa é opcional.",
+        publisherHint: "Cualquier persona puede publicar una oferta. La asociación a una empresa solo es posible si el módulo Empleos está activado.",
         publisherName: "Nome do empregador apresentado"
       },
       sectors: {
@@ -3102,6 +3107,10 @@ export const es = {
         organizerNamePlaceholder: "Ex.: Associación MOXT, Clube Africano...",
         organizerContact: "Contacto do organizador",
         organizerContactPlaceholder: "Teléfono o correo",
+        publishAs: "Publicar como",
+        publishAsBusiness: "{name} (empresa)",
+        publishAsPerson: "Particular",
+        publishAsHint: "La asociación a una empresa solo es posible si el módulo Eventos está activado.",
         format: "Formato"
       },
       categories: {
@@ -3160,6 +3169,7 @@ export const es = {
         description: "Descripción obrigatória."
       },
       toasts: {
+        businessBlockedMessage: "Tu empresa debe estar verificada y tener el módulo Eventos antes de publicar.",
         publishedTitle: "Evento publicado",
         pendingTitle: "Evento enviado",
         publishedMessage: "O tu evento está en línea.",
@@ -3228,11 +3238,12 @@ export const es = {
       publishAs: "Publicar como",
       asBusiness: "{name} (empresa)",
       asIndividual: "Particular",
+      publishAsHint: "La asociación a una empresa solo es posible si el módulo Marketplace está activado.",
       summary: "Resumo",
       publishing: "A publicar...",
       publishCta: "Publicar anuncio",
       businessBlockedTitle: "Publicación como empresa impossível",
-      businessBlockedBody: "A tu empresa deve ser verificada pela MOXT antes de publicar em nome da empresa.",
+      businessBlockedBody: "Tu empresa debe estar verificada y tener el módulo Marketplace antes de publicar.",
       publishedTitle: "Anuncio publicado",
       sentTitle: "Anuncio enviado",
       publishedBody: "O tu anuncio está en línea.",
@@ -4415,6 +4426,7 @@ export const es = {
       startTitle: "Iniciar una operación",
       startBody: "As comisiones y coordenadas serão recalculadas y controladas pelo futuro backend.",
       choose: "Escolher este cambiador",
+      viewBusiness: "Ver el perfil de la empresa",
       infoTitle: "Informaciones do parceiro",
       name: "Nome",
       type: "Tipo",
@@ -5434,6 +5446,7 @@ export const es = {
       support: "Soporte",
       users: "Usuarioes",
       verifications: "Verificaciones",
+      documents: "Documentos",
       queues: "Filas de ación",
       audit: "Auditoria"
     },
@@ -5904,6 +5917,15 @@ export const es = {
         title: "Verificación de cuenta",
         body: "O tu pedido de verificación está {status}.{reason}",
         pendingReview: "em exame",
+        reasonPrefix: " Motivo: {note}"
+      },
+      businessDocument: {
+        submittedTitle: "Documento de empresa por revisar",
+        submittedBody: "{business} ha enviado « {name} ».",
+        reviewedTitle: "Documento de empresa actualizado",
+        reviewedBody: "Tu documento « {name} » está {status}.{reason}",
+        statusVerified: "aprobado",
+        statusRejected: "rechazado",
         reasonPrefix: " Motivo: {note}"
       },
       dispute: {

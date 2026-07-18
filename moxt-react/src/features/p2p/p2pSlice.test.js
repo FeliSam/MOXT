@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import reducer, { acceptOffer, createOffer } from './p2pSlice'
+import reducer, { acceptOffer, createOffer, updateOfferStatus } from './p2pSlice'
 import { calculateP2PFee } from './p2pUtils'
 
 const offerValues = {
@@ -34,5 +34,15 @@ describe('P2P', () => {
     expect(accepted.offers[0].status).toBe('accepted')
     expect(accepted.orders[0].offerId).toBe(offer.id)
     expect(accepted.orders[0].fee).toBe(250)
+  })
+
+  it('archive puis republie une offre', () => {
+    const offered = reducer({ offers: [], orders: [] }, createOffer(offerValues))
+    const offerId = offered.offers[0].id
+    const archived = reducer(offered, updateOfferStatus({ id: offerId, status: 'archived' }))
+    const republished = reducer(archived, updateOfferStatus({ id: offerId, status: 'active' }))
+
+    expect(archived.offers[0].status).toBe('archived')
+    expect(republished.offers[0].status).toBe('active')
   })
 })

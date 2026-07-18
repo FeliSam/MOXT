@@ -616,9 +616,13 @@ const communicationSlice = createSlice({
           (item) => item.id === action.payload.conversationId,
         )
         if (!conversation) return
-        const participantIds = parseIdList(conversation.participantIds).map(String)
+        let participantIds = parseIdList(conversation.participantIds).map(String)
         const senderId = String(action.payload.senderId)
-        if (!participantIds.includes(senderId)) return
+        if (!participantIds.includes(senderId)) {
+          // Admins may join a support thread on first reply.
+          if (conversation.relatedType !== 'support') return
+          participantIds = [...participantIds, senderId]
+        }
         conversation.participantIds = participantIds
         conversation.messages.push({
           ...action.payload.message,

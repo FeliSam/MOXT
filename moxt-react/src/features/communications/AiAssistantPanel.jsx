@@ -1,21 +1,21 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { FiArrowLeft, FiCpu, FiHeadphones, FiPaperclip, FiSend, FiTrash2, FiX, FiZap } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
-import { Link } from 'react-router-dom'
-import { APP_MESSAGES } from '../../config/messages'
+import { Link, useNavigate } from 'react-router-dom'
 import { useLanguage } from '../../contexts/useLanguage'
 import { selectSearchIndex } from '../searchSelectors'
+import { openAdminSupportChat } from './adminSupportChat'
 import { localAssistantProvider } from './assistantProvider'
 import {
   buildAssistantTicketMessage,
   wantsAdminContact,
 } from './assistantAdminUtils'
-import { createSupportTicket } from './communicationSlice'
 import { ASSISTANT_SUGGESTION_KEYS, messagesText } from './messagesI18n'
 import { llmAssistantProvider } from './llmAssistantProvider'
 
 export function AiAssistantPanel({ onBack, showBack = true, userId }) {
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const user = useSelector((state) => state.auth.user)
   const storageKey = `moxt-ai-assistant-${userId}`
   const messageListRef = useRef(null)
@@ -32,6 +32,9 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [attachment, setAttachment] = useState(null)
+  const [adminCompose, setAdminCompose] = useState(false)
+  const [adminDraft, setAdminDraft] = useState('')
+  const [adminSending, setAdminSending] = useState(false)
 
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify(messages.slice(-30)))
@@ -40,46 +43,71 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
   useLayoutEffect(() => {
     const messageList = messageListRef.current
     if (messageList) messageList.scrollTop = messageList.scrollHeight
-  }, [messages.length, loading])
+  }, [messages.length, loading, adminCompose])
 
   function appendAssistantMessage(message) {
     setMessages((current) => [...current, message])
   }
 
-  function escalateToAdmin(explicitText, recentMessages = messages) {
-    if (!user) return null
-    const ticketAction = dispatch(
-      createSupportTicket({
-        userId: user.id,
-        userName: `${user.firstName} ${user.lastName}`,
-        subject: messagesText(t, 'messages.assistant.adminTicketSubject'),
-        priority: 'normal',
-        category: 'assistant',
-        message: buildAssistantTicketMessage(
-          recentMessages,
-          explicitText,
-          messagesText(t, 'messages.assistant.adminTicketDefault'),
+  function beginAdminContact(prefill = '') {
+    if (!user) return
+    setError('')
+    setAdminCompose(true)
+    setAdminDraft(
+      prefill.trim() ||
+        buildAssistantTicketMessage(
+          messages,
+          '',
+          messagesText(t, 'messages.assistant.adminComposeHint'),
         ),
-      }),
     )
     appendAssistantMessage({
       id: `AI-${Date.now()}`,
       role: 'assistant',
-      text: messagesText(t, 'messages.assistant.adminEscalated', { id: ticketAction.payload.id }),
-      actions: [
-        {
-          label: messagesText(t, 'messages.assistant.adminFollowUp'),
-          path: '/support',
-        },
-      ],
+      text: messagesText(t, 'messages.assistant.adminComposePrompt'),
       createdAt: new Date().toISOString(),
     })
-    return ticketAction.payload.id
+  }
+
+  async function submitAdminContact() {
+    const text = adminDraft.trim()
+    if (!text || adminSending || !user) return
+    setAdminSending(true)
+    setError('')
+    try {
+      const result = await dispatch(openAdminSupportChat({ message: text })).unwrap()
+      setAdminCompose(false)
+      setAdminDraft('')
+      appendAssistantMessage({
+        id: `AI-${Date.now()}`,
+        role: 'assistant',
+        text: messagesText(t, 'messages.assistant.adminChatOpened'),
+        actions: [
+          {
+            label: messagesText(t, 'messages.assistant.adminOpenChat'),
+            path: `/messages?conversation=${result.conversationId}`,
+          },
+        ],
+        createdAt: new Date().toISOString(),
+      })
+      if (result.conversationId) {
+        navigate(`/messages?conversation=${result.conversationId}`)
+      }
+    } catch (err) {
+      const code = typeof err === 'string' ? err : err?.message
+      if (code === 'no_admin') {
+        setError(messagesText(t, 'messages.assistant.adminUnavailable'))
+      } else {
+        setError(messagesText(t, 'messages.assistant.adminSendFailed'))
+      }
+    } finally {
+      setAdminSending(false)
+    }
   }
 
   async function ask(value = question) {
     const text = value.trim()
-    if (!text || loading) return
+    if (!text || loading || adminCompose) return
     const nextMessages = [
       ...messages,
       {
@@ -97,15 +125,20 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
     setLoading(true)
 
     if (wantsAdminContact(text, language)) {
-      escalateToAdmin(text, nextMessages)
       setLoading(false)
+      beginAdminContact(text)
       return
     }
 
     try {
       let response
       try {
-        response = await llmAssistantProvider.respond({ question: text, searchIndex, history: messages, language })
+        response = await llmAssistantProvider.respond({
+          question: text,
+          searchIndex,
+          history: messages,
+          language,
+        })
       } catch {
         response = await localAssistantProvider.respond({ question: text, searchIndex, language, t })
       }
@@ -120,9 +153,11 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
           createdAt: new Date().toISOString(),
         },
       ])
-    } catch {
+    } catch (err) {
       setError(
-        messagesText(t, 'messages.assistant.error', { detail: APP_MESSAGES.genericError }),
+        messagesText(t, 'messages.assistant.error', {
+          detail: err?.message || '',
+        }),
       )
     } finally {
       setLoading(false)
@@ -152,8 +187,8 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
         </div>
         <button
           type="button"
-          onClick={() => escalateToAdmin()}
-          disabled={!user}
+          onClick={() => beginAdminContact()}
+          disabled={!user || adminCompose}
           className="grid size-10 place-items-center rounded-xl hover:bg-[var(--app-surface-muted)] disabled:cursor-not-allowed disabled:opacity-40"
           aria-label={messagesText(t, 'messages.assistant.contactAdminAria')}
           title={messagesText(t, 'messages.assistant.contactAdmin')}
@@ -221,6 +256,54 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
               </div>
             ),
           )}
+          {adminCompose ? (
+            <div className="ml-10 rounded-2xl border border-brand-200 bg-brand-50/70 p-4 shadow-sm dark:border-brand-900/40 dark:bg-brand-950/30">
+              <div className="flex items-start gap-3">
+                <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-700 text-white">
+                  <FiHeadphones />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm font-black text-brand-800 dark:text-brand-200">
+                    {messagesText(t, 'messages.assistant.adminComposeTitle')}
+                  </h3>
+                  <p className="mt-1 text-xs leading-5 text-[var(--app-text-muted)]">
+                    {messagesText(t, 'messages.assistant.adminComposeBody')}
+                  </p>
+                  <textarea
+                    value={adminDraft}
+                    onChange={(event) => setAdminDraft(event.target.value)}
+                    rows={4}
+                    placeholder={messagesText(t, 'messages.assistant.adminComposePlaceholder')}
+                    className="mt-3 w-full rounded-xl bg-[var(--app-surface)] p-3 text-sm outline-none ring-1 ring-[var(--app-border)] focus:ring-brand-500"
+                  />
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={!adminDraft.trim() || adminSending}
+                      onClick={submitAdminContact}
+                      className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-brand-700 px-4 text-sm font-bold text-white disabled:opacity-40"
+                    >
+                      <FiSend />
+                      {adminSending
+                        ? messagesText(t, 'messages.assistant.adminSending')
+                        : messagesText(t, 'messages.assistant.adminSend')}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={adminSending}
+                      onClick={() => {
+                        setAdminCompose(false)
+                        setAdminDraft('')
+                      }}
+                      className="inline-flex min-h-10 items-center rounded-xl px-4 text-sm font-bold text-[var(--app-text-muted)] hover:bg-[var(--app-surface-muted)]"
+                    >
+                      {t('common.cancel')}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
           {loading ? <TypingIndicator /> : null}
           {error ? <p className="ml-10 text-sm text-red-600">{error}</p> : null}
         </div>
@@ -265,13 +348,18 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
             className="max-h-32 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-sm outline-none"
             value={question}
             rows={1}
+            disabled={adminCompose}
             onChange={(event) => setQuestion(event.target.value)}
-            placeholder={messagesText(t, 'messages.assistant.placeholder')}
+            placeholder={
+              adminCompose
+                ? messagesText(t, 'messages.assistant.adminComposeLocked')
+                : messagesText(t, 'messages.assistant.placeholder')
+            }
           />
           <button
             className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-700 text-lg text-white shadow-md transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-40"
             type="submit"
-            disabled={!question.trim() || loading}
+            disabled={!question.trim() || loading || adminCompose}
             aria-label={messagesText(t, 'messages.assistant.sendAria')}
           >
             <FiSend aria-hidden="true" />
@@ -282,7 +370,6 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
   )
 }
 
-// Rendu markdown minimal : **gras**, sauts de ligne, listes `-`
 function renderMarkdown(text) {
   const lines = text.split('\n')
   const elements = []
@@ -299,7 +386,11 @@ function renderMarkdown(text) {
     } else if (trimmed === '') {
       elements.push(<br key={key++} />)
     } else {
-      elements.push(<span key={key++} className="block">{inlineBold(trimmed)}</span>)
+      elements.push(
+        <span key={key++} className="block">
+          {inlineBold(trimmed)}
+        </span>,
+      )
     }
   }
   return elements
@@ -307,9 +398,7 @@ function renderMarkdown(text) {
 
 function inlineBold(text) {
   const parts = text.split(/\*\*(.*?)\*\*/g)
-  return parts.map((part, i) =>
-    i % 2 === 1 ? <strong key={i}>{part}</strong> : part,
-  )
+  return parts.map((part, i) => (i % 2 === 1 ? <strong key={i}>{part}</strong> : part))
 }
 
 function AssistantMessage({ actions, sources, sourcesLabel, suggestions, onSuggestion, text }) {

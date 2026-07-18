@@ -3,6 +3,7 @@ import {
   FiAlertCircle,
   FiCalendar,
   FiEdit3,
+  FiFileText,
   FiHeadphones,
   FiInbox,
   FiLayers,
@@ -24,6 +25,7 @@ export const MAIN_VIEWS = [
   { id: 'support', label: 'Support', labelKey: 'admin.nav.support', icon: FiHeadphones },
   { id: 'users', label: 'Utilisateurs', labelKey: 'admin.nav.users', icon: FiUsers },
   { id: 'verifications', label: 'Verifications', labelKey: 'admin.nav.verifications', icon: FiUserCheck },
+  { id: 'documents', label: 'Documents', labelKey: 'admin.nav.documents', icon: FiFileText },
   { id: 'queues', label: "Files d'action", labelKey: 'admin.nav.queues', icon: FiInbox },
   { id: 'audit', label: 'Audit', labelKey: 'admin.nav.audit', icon: FiActivity },
 ]
@@ -56,6 +58,7 @@ export const VIEW_FILTERS = {
   content: ['all', 'active', 'pending_review', 'archived', 'published', 'rejected', 'new', 'resolved'],
   publications: ['all', 'active', 'pending_review', 'archived', 'published'],
   verifications: ['all', 'pending', 'verified', 'rejected'],
+  documents: ['all', 'pending', 'verified', 'rejected'],
   overview: [],
   queues: [],
   audit: [],

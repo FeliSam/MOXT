@@ -26,17 +26,19 @@ async function resolvePreviewUrl(doc) {
   }
 }
 
-export function AdminDocumentPreview({ documentIds = [] }) {
+export function AdminDocumentPreview({ documentIds = [], documents: documentsProp }) {
   const { t } = useLanguage()
-  const documents = useSelector((state) => state.account.documents || [])
+  const personalDocuments = useSelector((state) => state.account.documents || [])
   const [previews, setPreviews] = useState([])
 
   useEffect(() => {
     let cancelled = false
-    const ids = Array.isArray(documentIds) ? documentIds : []
-    const matched = ids
-      .map((id) => documents.find((doc) => doc.id === id))
-      .filter(Boolean)
+
+    const matched = Array.isArray(documentsProp)
+      ? documentsProp.filter(Boolean)
+      : (Array.isArray(documentIds) ? documentIds : [])
+          .map((id) => personalDocuments.find((doc) => doc.id === id))
+          .filter(Boolean)
 
     ;(async () => {
       const next = await Promise.all(
@@ -51,9 +53,13 @@ export function AdminDocumentPreview({ documentIds = [] }) {
     return () => {
       cancelled = true
     }
-  }, [documentIds, documents])
+  }, [documentIds, documentsProp, personalDocuments])
 
-  if (!documentIds?.length) {
+  const expectedCount = Array.isArray(documentsProp)
+    ? documentsProp.filter(Boolean).length
+    : documentIds?.length || 0
+
+  if (!expectedCount) {
     return (
       <p className="text-xs text-[var(--app-text-muted)]">{adminText(t, 'admin.documents.none')}</p>
     )
@@ -62,7 +68,7 @@ export function AdminDocumentPreview({ documentIds = [] }) {
   if (!previews.length) {
     return (
       <p className="break-words text-xs text-[var(--app-text-muted)]">
-        {adminText(t, 'admin.documents.notFound', { count: documentIds.length })}
+        {adminText(t, 'admin.documents.notFound', { count: expectedCount })}
       </p>
     )
   }

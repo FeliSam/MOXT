@@ -1,19 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
-import { FiLogOut, FiSearch, FiSettings, FiUser, FiX } from 'react-icons/fi'
-import { useDispatch, useSelector } from 'react-redux'
-import { Link, useNavigate } from 'react-router-dom'
+import { FiSearch, FiSettings, FiUser, FiX } from 'react-icons/fi'
+import { useSelector } from 'react-redux'
+import { Link } from 'react-router-dom'
 import { navigationGroups } from '../../config/navigation'
 import { resolveNavLabel } from '../../config/navLabel'
 import { moreServicesExcludedPaths } from '../../config/primaryNavigation'
-import { logout } from '../../features/auth/authSlice'
-import { stopRealtimeSubscription } from '../../services/realtimeService'
 import { useLanguage } from '../../contexts/useLanguage'
 import { MoreServicesContent } from './MoreServicesContent'
 import { filterNavigationGroups, useNavigationBadges } from './moreServicesUtils'
 
 export function MobileMoreDrawer({ open, onClose }) {
-  const dispatch = useDispatch()
-  const navigate = useNavigate()
   const user = useSelector((state) => state.auth.user)
   const role = user?.role
   const state = useSelector((v) => v)
@@ -54,13 +50,6 @@ export function MobileMoreDrawer({ open, onClose }) {
       setClosing(false)
       setQuery('')
     }, 220)
-  }
-
-  async function handleLogout() {
-    stopRealtimeSubscription()
-    await dispatch(logout())
-    requestClose()
-    navigate('/login')
   }
 
   if (!open && !closing) return null
@@ -131,7 +120,7 @@ export function MobileMoreDrawer({ open, onClose }) {
         </div>
 
         <footer className="shrink-0 border-t border-[var(--app-border)] bg-[var(--app-surface)] px-4 py-3">
-          <div className="mb-2 grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <Link
               to="/settings"
               onClick={requestClose}
@@ -149,14 +138,6 @@ export function MobileMoreDrawer({ open, onClose }) {
               {t('nav.profile')}
             </Link>
           </div>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-btn)] border border-red-200 bg-red-50 text-sm font-semibold text-red-600 transition hover:bg-red-100 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-400 dark:hover:bg-red-950/35"
-          >
-            <FiLogOut />
-            {t('nav.signOut')}
-          </button>
         </footer>
       </div>
     </div>

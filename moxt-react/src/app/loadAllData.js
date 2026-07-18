@@ -35,7 +35,11 @@ import { matchUserId } from '../features/businesses/businessVisibility'
 import { reviewFromRemoteRow } from '../features/reviews/reviewRemote'
 import { identityFromRemoteRow } from '../features/identity/identityRemote'
 import { transfersFromRemoteRows } from '../features/transfers/transferRemote'
-import { p2pOrderFromRemoteRow, reportFromRemoteRow } from '../features/sync/entityRemote'
+import {
+  p2pOfferFromRemoteRow,
+  p2pOrderFromRemoteRow,
+  reportFromRemoteRow,
+} from '../features/sync/entityRemote'
 
 // Nombre max de lignes pour les tables publiques paginées au login
 const PUBLIC_LIMIT = 50
@@ -353,9 +357,15 @@ export const loadAllData = createAsyncThunk(
       ownedBusinessIds.length
         ? supabase.from('business_members').select('*').in('business_id', ownedBusinessIds).limit(USER_LIMIT)
         : Promise.resolve({ data: [] }),
-      ownedBusinessIds.length
-        ? supabase.from('business_documents').select('*').in('business_id', ownedBusinessIds).limit(USER_LIMIT)
-        : Promise.resolve({ data: [] }),
+      isAdmin
+        ? supabase
+            .from('business_documents')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(USER_LIMIT)
+        : ownedBusinessIds.length
+          ? supabase.from('business_documents').select('*').in('business_id', ownedBusinessIds).limit(USER_LIMIT)
+          : Promise.resolve({ data: [] }),
       supabase.from('identity_profiles').select('*').eq('user_id', uid).limit(USER_LIMIT),
       isAdmin
         ? supabase.from('listing_reports').select('*').order('created_at', { ascending: false }).limit(USER_LIMIT)
@@ -369,7 +379,9 @@ export const loadAllData = createAsyncThunk(
       isAdmin
         ? supabase
             .from('profiles')
-            .select('id, first_name, last_name, email, phone, city, role, status, created_at, updated_at')
+            .select(
+              'id, first_name, last_name, email, phone, city, origin_country, country, role, status, created_at, updated_at',
+            )
             .order('created_at', { ascending: false })
             .limit(USER_LIMIT)
         : Promise.resolve({ data: [] }),
@@ -434,9 +446,31 @@ export const loadAllData = createAsyncThunk(
       console.warn('[MOXT] Chargement des conversations:', conversationsError.message)
     }
 
+    let supportConversationRows = []
+    if (isAdmin) {
+      const supportRes = await supabase.rpc('list_support_conversations', { p_limit: 100 })
+      if (supportRes.error) {
+        const fallback = await supabase
+          .from('conversations')
+          .select('*')
+          .eq('related_type', 'support')
+          .order('updated_at', { ascending: false })
+          .limit(100)
+        if (fallback.error) {
+          console.warn('[MOXT] Chargement conversations support:', fallback.error.message)
+        } else {
+          supportConversationRows = fallback.data || []
+        }
+      } else {
+        supportConversationRows = supportRes.data || []
+      }
+    }
+
     const conversations = mergeConversations(
       getState().communications.conversations,
-      fromRows(conversationRows || []).map((conv) => normalizeConversation({ ...conv, messages: [] })),
+      fromRows([...(conversationRows || []), ...supportConversationRows]).map((conv) =>
+        normalizeConversation({ ...conv, messages: [] }),
+      ),
     )
 
     const remoteBusinesses = remoteBusinessRows.map(businessFromRemoteRow).filter(Boolean)
@@ -458,13 +492,15 @@ export const loadAllData = createAsyncThunk(
       ),
       mergedBusinessIds,
     )
-    const mergedDocuments = filterByBusinessIds(
-      mergeRemoteItems(
-        getState().businesses.documents,
-        safeRows(businessDocumentsRes, 'des documents entreprise').map(businessDocumentFromRemoteRow).filter(Boolean),
-      ),
-      mergedBusinessIds,
-    )
+    const remoteDocuments = safeRows(businessDocumentsRes, 'des documents entreprise')
+      .map(businessDocumentFromRemoteRow)
+      .filter(Boolean)
+    const mergedDocuments = isAdmin
+      ? mergeRemoteItems(getState().businesses.documents, remoteDocuments)
+      : filterByBusinessIds(
+          mergeRemoteItems(getState().businesses.documents, remoteDocuments),
+          mergedBusinessIds,
+        )
     const mergedRequests = filterByBusinessIds(
       mergeRemoteItems(
         getState().businesses.requests,
@@ -543,7 +579,7 @@ export const loadAllData = createAsyncThunk(
         support: supportTickets,
       }))
       dispatch(setP2P({
-        offers: fromRows(p2pOffersRes.data),
+        offers: safeRows(p2pOffersRes, 'des offres P2P').map(p2pOfferFromRemoteRow),
         orders: mergeRemoteItems(getState().p2p.orders, p2pOrders),
       }))
       dispatch(setReviews({ items: mergedReviews }))

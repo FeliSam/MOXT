@@ -182,7 +182,12 @@ const businessSlice = createSlice({
             name: values.name,
             size: Number(values.size) || 0,
             type: values.type || 'application/octet-stream',
+            url: values.url || null,
+            storagePath: values.storagePath || null,
             status: 'pending_review',
+            reviewNote: '',
+            reviewedBy: null,
+            reviewedAt: null,
             createdAt: new Date().toISOString(),
           },
         }
@@ -192,6 +197,11 @@ const businessSlice = createSlice({
       const document = state.documents.find((item) => item.id === action.payload.id)
       if (!document) return
       document.status = action.payload.status
+      if (action.payload.reviewedBy !== undefined) document.reviewedBy = action.payload.reviewedBy
+      if (action.payload.reviewNote !== undefined) {
+        document.reviewNote = action.payload.reviewNote || ''
+      }
+      document.reviewedAt = action.payload.reviewedAt || new Date().toISOString()
       document.updatedAt = new Date().toISOString()
     },
     createBusinessRequest: {

@@ -13,16 +13,14 @@ import { useLanguage } from '../contexts/useLanguage'
 import { selectBusinessById } from '../features/businesses/businessSelectors'
 import { canViewBusinessActivity } from '../features/account/activityVisibility'
 import { useBusinessActivityVisibility } from '../features/businesses/useBusinessActivityVisibility'
-import {
-  businessesOptionLabel,
-  businessesText,
-} from '../features/businesses/businessesI18n'
+import { businessesOptionLabel, businessesText } from '../features/businesses/businessesI18n'
 import { ContactButton } from '../features/communications/ContactButton'
 import { SubscribeButton } from '../features/account/SubscribeButton'
 import { MyListingCard } from '../features/marketplace/MyListingCard'
 import {
   MyEventPublicationCard,
   MyJobPublicationCard,
+  MyP2POfferPublicationCard,
   MyParcelPublicationCard,
 } from '../features/publications/MyPublicationCards'
 import {
@@ -377,6 +375,15 @@ export function BusinessPublicationsPage() {
               key={event.id}
               event={event}
               readOnly={!isOwner}
+              guestMode={guestMode}
+              onGuestInteract={handleGuestInteract}
+            />
+          ))}
+          {visible.other.map((offer) => (
+            <MyP2POfferPublicationCard
+              key={offer.id}
+              offer={offer}
+              readOnly
               guestMode={guestMode}
               onGuestInteract={handleGuestInteract}
             />

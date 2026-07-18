@@ -2,6 +2,7 @@ import {
   FiAlertCircle,
   FiAlertTriangle,
   FiCheckCircle,
+  FiFileText,
   FiHeadphones,
   FiStar,
   FiTrash2,
@@ -13,6 +14,7 @@ import { useLanguage } from '../../../contexts/useLanguage'
 import { Button } from '../../../components/ui/Button'
 import { Badge } from '../../../components/ui/Badge'
 import { updateVerificationStatus } from '../../account/accountSlice'
+import { updateBusinessDocumentStatus } from '../../businesses/businessSlice'
 import { updateDisputeStatus } from '../../disputes/disputeSlice'
 import { moderateReview } from '../../reviews/reviewSlice'
 import { REVIEW_DISPUTE_STATUS } from '@moxt/shared/utils/reviewUtils.js'
@@ -119,6 +121,60 @@ export function AdminQueuesPanel({ adminId, dispatch, queues, setSelected }) {
               }
             >
               {t('verification.admin.reject')}
+            </Button>
+          </>
+        )}
+      />
+      <QueueSection
+        icon={FiFileText}
+        items={queues.businessDocuments}
+        label={adminText(t, 'admin.businessDocuments.title')}
+        kind="businessDocument"
+        setSelected={setSelected}
+        t={t}
+        renderMeta={(i) =>
+          adminText(t, 'admin.businessDocuments.queueMeta', {
+            business: i.businessName || i.businessId,
+            name: i.name,
+          })
+        }
+        renderActions={(i) => (
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => setSelected({ kind: 'businessDocument', item: i })}
+            >
+              {adminText(t, 'admin.businessDocuments.examine')}
+            </Button>
+            <Button
+              icon={FiCheckCircle}
+              onClick={() =>
+                dispatch(
+                  updateBusinessDocumentStatus({
+                    id: i.id,
+                    status: 'verified',
+                    reviewedBy: adminId,
+                    reviewNote: '',
+                  }),
+                )
+              }
+            >
+              {adminText(t, 'admin.actions.approve')}
+            </Button>
+            <Button
+              variant="danger"
+              icon={FiX}
+              onClick={() =>
+                dispatch(
+                  updateBusinessDocumentStatus({
+                    id: i.id,
+                    status: 'rejected',
+                    reviewedBy: adminId,
+                  }),
+                )
+              }
+            >
+              {adminText(t, 'admin.actions.reject')}
             </Button>
           </>
         )}

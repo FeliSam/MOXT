@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { dispatchUserRole } from './promoteAdminUtils'
 import { updateVerificationStatus, updateSubscriberReportStatus } from '../account/accountSlice'
-import { moderateBusiness } from '../businesses/businessSlice'
+import { moderateBusiness, updateBusinessDocumentStatus } from '../businesses/businessSlice'
 import { updateDisputeStatus } from '../disputes/disputeSlice'
 import { moderateEvent, updateEventReportStatus } from '../events/eventSlice'
 import { moderateJob, updateJobReportStatus } from '../jobs/jobSlice'
@@ -367,6 +367,49 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
             {adminText(t, 'admin.actions.reject')}
           </ActionButton>
           {detailViewButton('verification', item, t)}
+        </>
+      )
+    case 'businessDocument':
+      return (
+        <>
+          <ActionButton
+            done={item.status === 'verified'}
+            doneLabel={adminText(t, 'admin.actions.approved')}
+            onClick={() =>
+              dispatch(
+                updateBusinessDocumentStatus({
+                  id: item.id,
+                  status: 'verified',
+                  reviewedBy: reviewerId,
+                  reviewNote: '',
+                }),
+              )
+            }
+          >
+            {adminText(t, 'admin.actions.approve')}
+          </ActionButton>
+          <ActionButton
+            done={item.status === 'rejected'}
+            doneLabel={adminText(t, 'admin.actions.rejected')}
+            variant="danger"
+            onClick={() => {
+              const reviewNote =
+                typeof window !== 'undefined'
+                  ? window.prompt(adminText(t, 'admin.actions.rejectPrompt'), item.reviewNote || '') || ''
+                  : ''
+              dispatch(
+                updateBusinessDocumentStatus({
+                  id: item.id,
+                  status: 'rejected',
+                  reviewedBy: reviewerId,
+                  reviewNote,
+                }),
+              )
+            }}
+          >
+            {adminText(t, 'admin.actions.reject')}
+          </ActionButton>
+          {detailViewButton('businessDocument', item, t)}
         </>
       )
     case 'dispute':

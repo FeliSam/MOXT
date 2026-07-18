@@ -50,6 +50,14 @@ export function isArchivedPost(post) {
   return post ? !isActivePost(post) : false
 }
 
+export function isActiveP2POffer(offer) {
+  return offer?.status === 'active'
+}
+
+export function isArchivedP2POffer(offer) {
+  return offer ? !isActiveP2POffer(offer) : false
+}
+
 function isBusinessPublication(item) {
   return Boolean(item?.businessId)
 }
@@ -65,7 +73,8 @@ export function filterPublicationsByScope(publications, scope = 'personal') {
     parcels: pick(publications.parcels),
     jobs: pick(publications.jobs),
     events: pick(publications.events),
-    posts: scope === 'business' ? [] : publications.posts.filter((item) => !isBusinessPublication(item)),
+    posts:
+      scope === 'business' ? [] : publications.posts.filter((item) => !isBusinessPublication(item)),
     others: pick(publications.others),
   }
 }
@@ -95,8 +104,9 @@ export function collectUserPublications(state, userId) {
   const jobs = (state.jobs?.items || []).filter((item) => item.ownerId === userId)
   const events = (state.events?.items || []).filter((item) => item.ownerId === userId)
   const posts = (state.posts?.items || []).filter((item) => item.authorId === userId)
+  const others = (state.p2p?.offers || []).filter((item) => item.ownerId === userId)
 
-  return { listings, parcels, jobs, events, posts, others: [] }
+  return { listings, parcels, jobs, events, posts, others }
 }
 
 export function publicationTotalCount(publications) {
@@ -121,7 +131,10 @@ export function buildUserPublicationProfile(userId, publications, options = {}) 
     name: displayName,
     city: sampleListing?.city || sampleEvent?.city || '',
     country:
-      sampleListing?.country || publications.parcels[0]?.originCountry || sampleEvent?.country || 'RU',
+      sampleListing?.country ||
+      publications.parcels[0]?.originCountry ||
+      sampleEvent?.country ||
+      'RU',
     activeCount: archiveCounts.active,
     archivedCount: archiveCounts.archived,
     totalViews: publicationTotalViews(publications),
@@ -159,7 +172,10 @@ function filterByArchive(items, isActiveFn, isArchivedFn, archiveTab, includePen
   })
 }
 
-export function filterPublicationsByTabs(publications, { archiveTab, typeTab, includePending = false }) {
+export function filterPublicationsByTabs(
+  publications,
+  { archiveTab, typeTab, includePending = false },
+) {
   const map = {
     listing: filterByArchive(
       publications.listings,
@@ -190,7 +206,13 @@ export function filterPublicationsByTabs(publications, { archiveTab, typeTab, in
       archiveTab,
       includePending,
     ),
-    other: filterByArchive(publications.others, () => true, () => true, archiveTab, includePending),
+    other: filterByArchive(
+      publications.others,
+      isActiveP2POffer,
+      isArchivedP2POffer,
+      archiveTab,
+      includePending,
+    ),
   }
 
   if (typeTab === 'all') {

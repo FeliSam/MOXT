@@ -6,6 +6,7 @@ import {
   FiFileText,
   FiPackage,
   FiPlus,
+  FiRepeat,
   FiShoppingBag,
   FiUsers,
 } from 'react-icons/fi'
@@ -17,10 +18,11 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { PillBadge } from '../components/ui/Badge'
-import { deletePost } from '../features/posts/postsSlice'
+import { moderatePost } from '../features/posts/postsSlice'
 import { moderateEvent } from '../features/events/eventSlice'
 import { moderateJob } from '../features/jobs/jobSlice'
 import { updateParcelStatus } from '../features/parcels/parcelSlice'
+import { updateOfferStatus } from '../features/p2p/p2pSlice'
 import { MyListingCard } from '../features/marketplace/MyListingCard'
 import {
   deleteListing,
@@ -30,8 +32,9 @@ import {
 import {
   MyEventPublicationCard,
   MyJobPublicationCard,
-  MyPostPublicationCard,
+  MyP2POfferPublicationCard,
   MyParcelPublicationCard,
+  MyPostPublicationCard,
 } from '../features/publications/MyPublicationCards'
 import {
   collectUserPublications,
@@ -56,7 +59,7 @@ const PUBLISH_LINKS = {
   job: { to: '/jobs/publish', labelKey: 'publications.mine.publish.job' },
   event: { to: '/events/publish', labelKey: 'publications.mine.publish.event' },
   post: { to: '/news', labelKey: 'publications.mine.publish.post' },
-  other: { to: '/dashboard', labelKey: 'publications.mine.publish.other' },
+  other: { to: '/p2p/publish', labelKey: 'p2p.page.proposeOffer' },
 }
 
 const EMPTY_ICONS = {
@@ -65,7 +68,7 @@ const EMPTY_ICONS = {
   job: FiBriefcase,
   event: FiCalendar,
   post: FiFileText,
-  other: FiFileText,
+  other: FiRepeat,
 }
 
 export function MyPublicationsPage() {
@@ -154,8 +157,7 @@ export function MyPublicationsPage() {
   const EmptyIcon = EMPTY_ICONS[typeTab] || FiShoppingBag
   const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim()
   const subscriberPublisherType = scope === 'business' && ownBusiness ? 'business' : 'user'
-  const subscriberPublisherId =
-    scope === 'business' && ownBusiness ? ownBusiness.id : user.id
+  const subscriberPublisherId = scope === 'business' && ownBusiness ? ownBusiness.id : user.id
   const subscriberPublisherName =
     scope === 'business' && ownBusiness
       ? ownBusiness.name
@@ -184,11 +186,7 @@ export function MyPublicationsPage() {
         ]}
         actions={
           <>
-            <PublicationScopeButton
-              business={ownBusiness}
-              onScopeChange={setScope}
-              scope={scope}
-            />
+            <PublicationScopeButton business={ownBusiness} onScopeChange={setScope} scope={scope} />
             <Link
               to={`/users/${user.id}/publications${scope === 'business' ? '?scope=business' : ''}`}
             >
@@ -222,126 +220,146 @@ export function MyPublicationsPage() {
         />
       ) : (
         <>
-      <div className="grid gap-4">
-        <CatalogArchiveTabs
-          active={archiveTab}
-          onChange={setArchiveTab}
-          variant="filter"
-          tabs={[
-            {
-              key: 'active',
-              label: p3('publications.mine.stats.active'),
-              count: archiveCounts.active,
-            },
-            {
-              key: 'archived',
-              label: p3('publications.mine.stats.archived'),
-              count: archiveCounts.archived,
-            },
-          ]}
-        />
+          <div className="grid gap-4">
+            <CatalogArchiveTabs
+              active={archiveTab}
+              onChange={setArchiveTab}
+              variant="filter"
+              tabs={[
+                {
+                  key: 'active',
+                  label: p3('publications.mine.stats.active'),
+                  count: archiveCounts.active,
+                },
+                {
+                  key: 'archived',
+                  label: p3('publications.mine.stats.archived'),
+                  count: archiveCounts.archived,
+                },
+              ]}
+            />
 
-        <div className="scrollbar-hidden -mx-1 flex touch-pan-x gap-2 overflow-x-auto px-1 pb-1">
-          {PUBLICATION_TYPE_TABS.map((tab) => (
-            <PillBadge
-              key={tab.id}
-              active={typeTab === tab.id}
-              onClick={() => setTypeTab(tab.id)}
-              className="shrink-0 whitespace-nowrap"
-            >
-              {p3(`publications.mine.types.${tab.id}`)} ({typeCounts[tab.id]})
-            </PillBadge>
-          ))}
-        </div>
-      </div>
+            <div className="scrollbar-hidden -mx-1 flex touch-pan-x gap-2 overflow-x-auto px-1 pb-1">
+              {PUBLICATION_TYPE_TABS.map((tab) => (
+                <PillBadge
+                  key={tab.id}
+                  active={typeTab === tab.id}
+                  onClick={() => setTypeTab(tab.id)}
+                  className="shrink-0 whitespace-nowrap"
+                >
+                  {p3(`publications.mine.types.${tab.id}`)} ({typeCounts[tab.id]})
+                </PillBadge>
+              ))}
+            </div>
+          </div>
 
-      {hasContent ? (
-        <div className="grid gap-4">
-          {visible.listing.map((listing) => (
-            <MyListingCard
-              key={listing.id}
-              listing={listing}
-              ownerMode
-              showViews
-              onDuplicate={() => dispatch(duplicateListing({ listing, ownerId: user.id }))}
-              onRepublish={() => {
-                if (!guardBusinessRepublish(listing)) return
-                dispatch(updateListingStatus({ id: listing.id, status: 'active', actorId: user.id }))
-              }}
-              onMarkSold={() =>
-                dispatch(updateListingStatus({ id: listing.id, status: 'sold', actorId: user.id }))
+          {hasContent ? (
+            <div className="grid gap-4">
+              {visible.listing.map((listing) => (
+                <MyListingCard
+                  key={listing.id}
+                  listing={listing}
+                  ownerMode
+                  showViews
+                  onDuplicate={() => dispatch(duplicateListing({ listing, ownerId: user.id }))}
+                  onRepublish={() => {
+                    if (!guardBusinessRepublish(listing)) return
+                    dispatch(
+                      updateListingStatus({ id: listing.id, status: 'active', actorId: user.id }),
+                    )
+                  }}
+                  onMarkSold={() =>
+                    dispatch(
+                      updateListingStatus({ id: listing.id, status: 'sold', actorId: user.id }),
+                    )
+                  }
+                  onArchive={() =>
+                    dispatch(
+                      updateListingStatus({ id: listing.id, status: 'archived', actorId: user.id }),
+                    )
+                  }
+                  onDelete={() => setDeletingListing(listing)}
+                />
+              ))}
+              {visible.parcel.map((parcel) => (
+                <MyParcelPublicationCard
+                  key={parcel.id}
+                  parcel={parcel}
+                  onArchive={() =>
+                    dispatch(updateParcelStatus({ id: parcel.id, status: 'archived' }))
+                  }
+                  onReactivate={() => {
+                    if (!guardBusinessRepublish(parcel)) return
+                    dispatch(updateParcelStatus({ id: parcel.id, status: 'active' }))
+                  }}
+                />
+              ))}
+              {visible.job.map((job) => (
+                <MyJobPublicationCard
+                  key={job.id}
+                  job={job}
+                  onArchive={() => dispatch(moderateJob({ id: job.id, status: 'archived' }))}
+                  onReactivate={() => {
+                    if (!guardBusinessRepublish(job)) return
+                    dispatch(moderateJob({ id: job.id, status: 'active' }))
+                  }}
+                />
+              ))}
+              {visible.event.map((event) => (
+                <MyEventPublicationCard
+                  key={event.id}
+                  event={event}
+                  onArchive={() => dispatch(moderateEvent({ id: event.id, status: 'archived' }))}
+                  onReactivate={() => {
+                    if (!guardBusinessRepublish(event)) return
+                    dispatch(moderateEvent({ id: event.id, status: 'published' }))
+                  }}
+                />
+              ))}
+              {visible.post.map((post) => (
+                <MyPostPublicationCard
+                  key={post.id}
+                  post={post}
+                  onArchive={() => dispatch(moderatePost({ id: post.id, status: 'archived' }))}
+                  onReactivate={() => dispatch(moderatePost({ id: post.id, status: 'published' }))}
+                />
+              ))}
+              {visible.other.map((offer) => (
+                <MyP2POfferPublicationCard
+                  key={offer.id}
+                  offer={offer}
+                  onArchive={() =>
+                    dispatch(updateOfferStatus({ id: offer.id, status: 'archived' }))
+                  }
+                  onReactivate={() => {
+                    if (!guardBusinessRepublish(offer)) return
+                    dispatch(updateOfferStatus({ id: offer.id, status: 'active' }))
+                  }}
+                />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon={EmptyIcon}
+              title={
+                archiveTab === 'active'
+                  ? p3('publications.mine.empty.active')
+                  : p3('publications.mine.empty.archived')
               }
-              onArchive={() =>
-                dispatch(updateListingStatus({ id: listing.id, status: 'archived', actorId: user.id }))
+              description={p3('publications.mine.empty.description', {
+                category: PUBLICATION_TYPE_TABS.some((tab) => tab.id === typeTab)
+                  ? p3(`publications.mine.types.${typeTab}`)
+                  : p3('publications.mine.empty.category'),
+              })}
+              action={
+                archiveTab === 'active' ? (
+                  <Link to={publishLink.to}>
+                    <Button icon={FiPlus}>{p3(publishLink.labelKey)}</Button>
+                  </Link>
+                ) : null
               }
-              onDelete={() => setDeletingListing(listing)}
             />
-          ))}
-          {visible.parcel.map((parcel) => (
-            <MyParcelPublicationCard
-              key={parcel.id}
-              parcel={parcel}
-              onArchive={() =>
-                dispatch(updateParcelStatus({ id: parcel.id, status: 'completed' }))
-              }
-              onReactivate={() => {
-                if (!guardBusinessRepublish(parcel)) return
-                dispatch(updateParcelStatus({ id: parcel.id, status: 'active' }))
-              }}
-            />
-          ))}
-          {visible.job.map((job) => (
-            <MyJobPublicationCard
-              key={job.id}
-              job={job}
-              onArchive={() => dispatch(moderateJob({ id: job.id, status: 'archived' }))}
-              onReactivate={() => {
-                if (!guardBusinessRepublish(job)) return
-                dispatch(moderateJob({ id: job.id, status: 'active' }))
-              }}
-            />
-          ))}
-          {visible.event.map((event) => (
-            <MyEventPublicationCard
-              key={event.id}
-              event={event}
-              onArchive={() => dispatch(moderateEvent({ id: event.id, status: 'archived' }))}
-              onReactivate={() => {
-                if (!guardBusinessRepublish(event)) return
-                dispatch(moderateEvent({ id: event.id, status: 'published' }))
-              }}
-            />
-          ))}
-          {visible.post.map((post) => (
-            <MyPostPublicationCard
-              key={post.id}
-              post={post}
-              onDelete={() => dispatch(deletePost(post.id))}
-            />
-          ))}
-        </div>
-      ) : (
-        <EmptyState
-          icon={EmptyIcon}
-          title={
-            archiveTab === 'active'
-              ? p3('publications.mine.empty.active')
-              : p3('publications.mine.empty.archived')
-          }
-          description={p3('publications.mine.empty.description', {
-            category: PUBLICATION_TYPE_TABS.some((tab) => tab.id === typeTab)
-              ? p3(`publications.mine.types.${typeTab}`)
-              : p3('publications.mine.empty.category'),
-          })}
-          action={
-            archiveTab === 'active' && typeTab !== 'other' ? (
-              <Link to={publishLink.to}>
-                <Button icon={FiPlus}>{p3(publishLink.labelKey)}</Button>
-              </Link>
-            ) : null
-          }
-        />
-      )}
+          )}
         </>
       )}
 

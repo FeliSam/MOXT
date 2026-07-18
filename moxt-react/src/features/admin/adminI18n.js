@@ -50,6 +50,7 @@ export const ADMIN_FR_SOURCES = {
   'admin.nav.support': 'Support',
   'admin.nav.users': 'Utilisateurs',
   'admin.nav.verifications': 'Verifications',
+  'admin.nav.documents': 'Documents',
   'admin.nav.queues': "Files d'action",
   'admin.nav.audit': 'Audit',
   'admin.content.businesses': 'Entreprises',
@@ -98,6 +99,7 @@ export const ADMIN_FR_SOURCES = {
   'admin.overview.priorities': 'Priorites du moment',
   'admin.overview.queue.deletions': 'Suppressions de compte',
   'admin.overview.queue.verifications': 'Verifications',
+  'admin.overview.queue.documents': 'Documents entreprise',
   'admin.overview.queue.disputes': 'Litiges ouverts',
   'admin.overview.queue.reviews': 'Avis en attente',
   'admin.overview.queue.reports': 'Signalements',
@@ -115,6 +117,7 @@ export const ADMIN_FR_SOURCES = {
   'admin.detail.kind.support': 'Ticket support',
   'admin.detail.kind.user': 'Utilisateur',
   'admin.detail.kind.verification': 'Verification',
+  'admin.detail.kind.businessDocument': 'Document entreprise',
   'admin.detail.kind.dispute': 'Litige',
   'admin.detail.kind.review': 'Avis',
   'admin.detail.kind.report': 'Signalement',
@@ -130,6 +133,7 @@ export const ADMIN_FR_SOURCES = {
   'admin.detail.desc.support': '{name} · priorite {priority} · {status}',
   'admin.detail.desc.user': '{email} · {role}',
   'admin.detail.desc.verification': '{name} · niveau {level} · {status}',
+  'admin.detail.desc.businessDocument': '{business} · {status}',
   'admin.detail.desc.businesses': '{city} · {services}',
   'admin.detail.desc.audit': '{role} · cible {target}',
   'admin.common.partnerFallback': 'Partenaire',
@@ -148,11 +152,14 @@ export const ADMIN_FR_SOURCES = {
   'admin.facts.updatedAt': 'Mis a jour',
   'admin.facts.role': 'Role',
   'admin.facts.city': 'Ville',
+  'admin.facts.originCountry': "Pays d'origine",
   'admin.facts.phone': 'Tel',
   'admin.facts.createdAt': 'Cree le',
   'admin.facts.services': 'Services',
   'admin.facts.price': 'Prix',
   'admin.facts.category': 'Categorie',
+  'admin.facts.business': 'Entreprise',
+  'admin.facts.file': 'Fichier',
   'admin.facts.condition': 'Etat',
   'admin.facts.salary': 'Salaire',
   'admin.facts.location': 'Lieu',
@@ -245,11 +252,28 @@ export const ADMIN_FR_SOURCES = {
   // ── users panel ─────────────────────────────────────────────────────────
   'admin.users.title': 'Utilisateurs et roles',
   'admin.users.pendingDeletion': 'suppression demandée',
+  'admin.users.editOrigin': "Modifier le pays d'origine",
+  'admin.users.originSaved': "Pays d'origine mis a jour",
+  'admin.actions.save': 'Enregistrer',
 
   // ── verifications panel ─────────────────────────────────────────────────
   'admin.verifications.meta': 'Niveau {level} · {count} document(s) · {date}',
   'admin.verifications.noteLabel': 'Note : {note}',
   'admin.verifications.rejectNoteLabel': 'Motif refus : {note}',
+
+  // ── business documents panel ────────────────────────────────────────────
+  'admin.businessDocuments.title': 'Documents entreprise',
+  'admin.businessDocuments.description':
+    'Recevoir, ouvrir et analyser les justificatifs déposés par les entreprises, puis les approuver ou les refuser.',
+  'admin.businessDocuments.meta': '{type} · {name} · {date}',
+  'admin.businessDocuments.queueMeta': '{business} · {name}',
+  'admin.businessDocuments.examine': 'Examiner',
+  'admin.businessDocuments.previewTitle': 'Aperçu du document',
+  'admin.businessDocuments.rejectReasonLabel': 'Motif du refus',
+  'admin.businessDocuments.rejectReasonPlaceholder': 'Indiquez pourquoi le document est refusé…',
+  'admin.businessDocuments.rejectConfirm': 'Confirmer le refus',
+  'admin.businessDocuments.rejectNoteLabel': 'Motif refus : {note}',
+  'admin.businessDocuments.empty': 'Aucun document à examiner.',
 
   // ── documents ───────────────────────────────────────────────────────────
   'admin.documents.none': 'Aucun document associé à cette demande.',
@@ -262,6 +286,7 @@ export const ADMIN_FR_SOURCES = {
   'admin.support.meta': '{name} · {count} message(s)',
   'admin.support.replyPlaceholder': 'Reponse rapide...',
   'admin.support.reply': 'Repondre',
+  'admin.support.openChat': 'Ouvrir le chat',
 
   // ── transfers panel ─────────────────────────────────────────────────────
   'admin.transfers.metric.total': 'Total',

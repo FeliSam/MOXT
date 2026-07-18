@@ -92,7 +92,12 @@ export function businessDocumentToRemoteRow(document) {
     name: document.name || '',
     size: Number(document.size) || 0,
     type: document.type || 'application/octet-stream',
+    url: document.url || null,
+    storage_path: document.storagePath || null,
     status: document.status || 'pending_review',
+    reviewed_by: document.reviewedBy || null,
+    review_note: document.reviewNote || '',
+    reviewed_at: document.reviewedAt || null,
     created_at: document.createdAt || new Date().toISOString(),
     updated_at: document.updatedAt || new Date().toISOString(),
   }
