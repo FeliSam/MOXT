@@ -56,6 +56,56 @@ function runNodeSupabase(args, env, { input } = {}) {
   return result.status ?? 1
 }
 
+/**
+ * Comme runNodeSupabase, mais capture stdout/stderr (tout en les affichant)
+ * pour permettre l'auto-réparation ci-dessous.
+ */
+function runNodeSupabaseCaptured(args, env, { input } = {}) {
+  if (!existsSync(supabaseJs)) {
+    console.error('\n✗ CLI Supabase introuvable. Lancez : npm install')
+    return { status: 1, output: '' }
+  }
+  const result = spawnSync(process.execPath, [supabaseJs, ...args], {
+    cwd: root,
+    env,
+    input: input || undefined,
+    encoding: 'utf8',
+  })
+  const output = `${result.stdout || ''}${result.stderr || ''}`
+  process.stdout.write(result.stdout || '')
+  process.stderr.write(result.stderr || '')
+  return { status: result.status ?? 1, output }
+}
+
+/**
+ * `db push` refuse d'avancer quand le serveur connaît une version de migration
+ * absente du dossier local (ex : appliquée directement via l'outil MCP Supabase,
+ * qui attribue son propre timestamp au lieu de celui du fichier local). Le CLI
+ * suggère alors `migration repair --status reverted <version>` : comme toutes nos
+ * migrations sont idempotentes (`if not exists`, `or replace`), il est sûr de
+ * neutraliser ces entrées fantômes puis de relancer le push automatiquement.
+ */
+function autoRepairOrphanVersions(output, env) {
+  const versions = [...output.matchAll(/migration repair --status \S+ (\d+)/g)].map((m) => m[1])
+  const unique = [...new Set(versions)]
+  if (!unique.length) return false
+
+  log(
+    'Auto-réparation',
+    `${unique.length} version(s) distante(s) sans fichier local (${unique.join(', ')}) — nettoyage de l'historique…`,
+  )
+  const repairCode = runNodeSupabase(
+    ['migration', 'repair', '--status', 'reverted', ...unique, '--linked', '--yes'],
+    env,
+  )
+  if (repairCode !== 0) {
+    console.error('\n✗ Auto-réparation échouée.')
+    return false
+  }
+  console.log('✓ Historique des migrations réparé.')
+  return true
+}
+
 function passwordFromArgs() {
   const idx = process.argv.indexOf('--password')
   if (idx >= 0 && process.argv[idx + 1]) return process.argv[idx + 1]
@@ -107,9 +157,21 @@ async function main() {
   }
 
   log('Migrations', 'supabase/migrations → projet distant')
-  const code = runNodeSupabase(['db', 'push', '--linked', '--yes', '--include-all'], env, {
-    input: 'y\n',
-  })
+  let { status: code, output } = runNodeSupabaseCaptured(
+    ['db', 'push', '--linked', '--yes', '--include-all'],
+    env,
+    { input: 'y\n' },
+  )
+
+  if (code !== 0 && autoRepairOrphanVersions(output, env)) {
+    log('Migrations (nouvelle tentative)', 'supabase/migrations → projet distant')
+    ;({ status: code, output } = runNodeSupabaseCaptured(
+      ['db', 'push', '--linked', '--yes', '--include-all'],
+      env,
+      { input: 'y\n' },
+    ))
+  }
+
   if (code !== 0) {
     console.error('\n✗ db push échoué.')
     console.error('  Alternatives :')

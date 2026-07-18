@@ -157,11 +157,6 @@ export function BottomNavigation() {
           className={`${BOTTOM_NAV_SLOT} relative text-[var(--app-text-muted)]`}
         >
           <BottomNavIcon active={false} icon={FiGrid} />
-          {moreBadge > 0 ? (
-            <span className="absolute right-2 top-1 min-w-[1.1rem] rounded-full bg-red-500 px-1 py-0.5 text-center text-[9px] font-bold leading-none text-white">
-              {moreBadge > 9 ? '9+' : moreBadge}
-            </span>
-          ) : null}
           <BottomNavLabel>{t('nav.more')}</BottomNavLabel>
         </button>
       </nav>
