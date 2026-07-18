@@ -190,7 +190,7 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
             senderId: viewer.id,
             senderName: `${viewer.firstName} ${viewer.lastName}`,
             text: emoji,
-            attachment: { url: page.url, type: 'image/jpeg' },
+            attachment: { url: page.url, type: 'image/jpeg', fromStatus: true, reactionEmoji: emoji },
           }),
         )
       } catch {
@@ -213,7 +213,7 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
           senderId: viewer.id,
           senderName: `${viewer.firstName} ${viewer.lastName}`,
           text,
-          attachment: page.url ? { url: page.url, type: 'image/jpeg' } : null,
+          attachment: page.url ? { url: page.url, type: 'image/jpeg', fromStatus: true } : null,
         }),
       )
       dispatch(addToast({ title: t('status.viewer.replySentTitle'), tone: 'success' }))

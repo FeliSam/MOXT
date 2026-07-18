@@ -116,7 +116,9 @@ export function MessageBubble({
       ? attachmentImageSrcs(message.attachment)
       : []
   const hasImageAttachment = imageSrcs.length > 0
-  const hasCaption = Boolean(message.text?.trim())
+  // La réaction-emoji à un statut est déjà affichée en surimpression sur l'image ;
+  // pas besoin de la répéter en légende texte en dessous.
+  const hasCaption = Boolean(message.text?.trim()) && !message.attachment?.reactionEmoji
 
   // Bascule le menu au-dessus de la bulle s'il n'y a pas assez de place en bas
   // (dernier message, bord du conteneur scrollable) pour éviter qu'il soit coupé.

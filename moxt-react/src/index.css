@@ -885,6 +885,43 @@ html.messages-route-lock #root {
   width: 100%;
 }
 
+/* Message issu d'un statut (réaction/réponse) : badge + emoji ancrés sur l'image,
+   même emplacement que les réactions du chat, mais un peu plus grands pour rester
+   lisibles sur une vignette. */
+.message-status-media {
+  position: relative;
+  display: block;
+}
+
+.message-status-badge {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.4rem;
+  z-index: 2;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.55);
+  padding: 0.15rem 0.55rem;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fff;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+
+.message-status-reaction-emoji {
+  position: absolute;
+  bottom: -0.65rem;
+  right: -0.5rem;
+  z-index: 2;
+  font-size: 1.6rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.35));
+  animation: reaction-pop 0.34s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+}
+
 .message-image-lightbox {
   position: fixed;
   inset: 0;

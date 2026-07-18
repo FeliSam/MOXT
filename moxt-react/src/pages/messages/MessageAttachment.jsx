@@ -7,6 +7,7 @@ import {
   messageImageStackRotation,
 } from '../../features/communications/attachmentUtils'
 import { useLanguage } from '../../contexts/useLanguage'
+import { messagesText } from '../../features/communications/messagesI18n'
 
 function MessageImageLightbox({ images, initialIndex = 0, onClose }) {
   const { t } = useLanguage()
@@ -60,7 +61,8 @@ function MessageImageLightbox({ images, initialIndex = 0, onClose }) {
     >
       <button
         type="button"
-        className="absolute right-4 top-4 grid size-11 place-items-center rounded-full bg-black/40 text-white transition hover:bg-black/60"
+        className="absolute right-4 grid size-11 place-items-center rounded-full bg-black/40 text-white transition hover:bg-black/60"
+        style={{ top: 'max(1rem, env(safe-area-inset-top, 0px))' }}
         onClick={onClose}
         aria-label={t("messages.closePreview")}
       >
@@ -159,19 +161,32 @@ function MessageImageStack({ images, name, mine, onOpen }) {
 }
 
 export function MessageAttachment({ attachment, mine }) {
+  const { t } = useLanguage()
   const [lightboxIndex, setLightboxIndex] = useState(null)
   const images = attachmentImageSrcs(attachment)
+  const fromStatus = Boolean(attachment.fromStatus)
+  const reactionEmoji = attachment.reactionEmoji
 
   if (isImageAttachment(attachment) && images.length) {
     const lightboxOpen = lightboxIndex != null
     return (
       <>
-        <MessageImageStack
-          images={images}
-          name={attachment.name}
-          mine={mine}
-          onOpen={setLightboxIndex}
-        />
+        <div className="message-status-media">
+          <MessageImageStack
+            images={images}
+            name={attachment.name}
+            mine={mine}
+            onOpen={setLightboxIndex}
+          />
+          {fromStatus ? (
+            <span className="message-status-badge">{messagesText(t, 'messages.statusBadge')}</span>
+          ) : null}
+          {reactionEmoji ? (
+            <span className="message-status-reaction-emoji" aria-hidden="true">
+              {reactionEmoji}
+            </span>
+          ) : null}
+        </div>
         {lightboxOpen
           ? createPortal(
               <MessageImageLightbox
