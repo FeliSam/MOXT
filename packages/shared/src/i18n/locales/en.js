@@ -4429,6 +4429,34 @@ export const en = {
       save: "Save changes",
     },
   },
+  status: {
+    rail: {
+      title: "Status",
+      addYours: "Your status",
+      you: "You",
+    },
+    composer: {
+      title: "New status",
+      description: "Visible to the community for 7 days.",
+      captionPlaceholder: "Add a caption (optional)…",
+      publish: "Post status",
+      publishing: "Posting…",
+      publishedTitle: "Status posted",
+      publishedMessage: "Your status is visible for 7 days.",
+      imagesRequired: "Add at least one image.",
+    },
+    viewer: {
+      justNow: "Just now",
+      hoursAgo: "{count}h ago",
+      daysAgo: "{count}d ago",
+      delete: "Delete",
+      close: "Close",
+      previous: "Previous",
+      next: "Next",
+      reply: "Reply in message",
+      deletedTitle: "Status deleted",
+    },
+  },
   exchangers: {
     eyebrow: "Finances",
     title: "Exchangers",
@@ -4870,7 +4898,7 @@ export const en = {
       directoryDescription: "The directory only shows verified businesses. The member account country does not affect this list — only validation status matters.",
       viewBusinessCard: "View business page →",
       emptyTitle: "No verified businesses",
-      emptyDescription: "No verified businesses yet. Profiles appear here after MOXT team validation, even if the member shares your country of origin.",
+      emptyDescription: "No verified businesses yet. Profiles appear here after MOXT team validation.",
     },
     detail: {
       notAccessible: "Business not accessible",

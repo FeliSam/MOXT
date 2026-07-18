@@ -15,6 +15,7 @@ import administrationReducer from '../features/administration/administrationSlic
 import profileDirectoryReducer from '../features/profile/profileDirectorySlice'
 import reviewsReducer from '../features/reviews/reviewSlice'
 import postsReducer from '../features/posts/postsSlice'
+import statusesReducer from '../features/statuses/statusesSlice'
 import disputesReducer from '../features/disputes/disputeSlice'
 import financeReducer from '../features/finance/financeSlice'
 import identityReducer from '../features/identity/identitySlice'
@@ -43,6 +44,7 @@ export const store = configureStore({
     parcels: parcelsReducer,
     p2p: p2pReducer,
     posts: postsReducer,
+    statuses: statusesReducer,
     reviews: reviewsReducer,
     marketplace: marketplaceReducer,
     jobs: jobsReducer,

@@ -109,6 +109,20 @@ export const storageService = {
     )
   },
 
+  async uploadStatusImages(userId, statusId, files, { version = '' } = {}) {
+    const list = Array.isArray(files) ? files.filter(Boolean).slice(0, 4) : []
+    return Promise.all(
+      list.map(async (file, i) => {
+        const compressed = await compressImage(file, { maxPx: 1600, quality: 0.82 })
+        const extension = compressed.type === 'image/png' ? 'png' : 'jpg'
+        const stamp = version || Date.now().toString(36)
+        const filename = `${stamp}-${i}.${extension}`
+        const safeStatus = String(statusId || 'draft').replace(/[^a-zA-Z0-9_-]/g, '_')
+        return upload('listings', `${userId}/statuses/${safeStatus}/${filename}`, compressed)
+      }),
+    )
+  },
+
   async uploadMessageImage(userId, conversationId, file, { index = 0 } = {}) {
     const compressed = await compressImage(file, { maxPx: 1600, quality: 0.82 })
     const extension = compressed.type === 'image/png' ? 'png' : 'jpg'

@@ -16,6 +16,7 @@ import { ShareToFeedModal } from '../components/ui/ShareToFeedModal'
 import { useLanguage } from '../contexts/useLanguage'
 import { useSecurityGate } from '../features/security/useSecurityGate'
 import { buildNewsFeed } from '../features/posts/postFeedUtils'
+import { StatusRail } from '../features/statuses/StatusRail'
 import { phase3Text } from '../i18n/phase3I18n'
 
 const FILTER_KEYS = ['all', 'listing', 'job', 'parcel', 'event', 'business', 'free']
@@ -72,8 +73,10 @@ export function NewsPage() {
         }
       />
 
-      {/* Filtres + fil centré, une publication par ligne */}
+      {/* Statuts + filtres + fil centré, une publication par ligne */}
       <div className="mx-auto grid w-full max-w-3xl gap-5">
+        <StatusRail />
+
         <div className="flex items-center gap-6 overflow-x-auto border-b border-[var(--app-border)] scrollbar-hidden">
           {FILTER_KEYS.map((key) => (
             <button

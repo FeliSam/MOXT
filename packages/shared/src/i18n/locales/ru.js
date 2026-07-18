@@ -4412,6 +4412,34 @@ export const ru = {
       save: "Сохранить изменения",
     },
   },
+  status: {
+    rail: {
+      title: "Статусы",
+      addYours: "Ваш статус",
+      you: "Вы",
+    },
+    composer: {
+      title: "Новый статус",
+      description: "Виден сообществу в течение 7 дней.",
+      captionPlaceholder: "Добавить подпись (необязательно)…",
+      publish: "Опубликовать статус",
+      publishing: "Публикация…",
+      publishedTitle: "Статус опубликован",
+      publishedMessage: "Ваш статус будет виден 7 дней.",
+      imagesRequired: "Добавьте хотя бы одно изображение.",
+    },
+    viewer: {
+      justNow: "Только что",
+      hoursAgo: "{count} ч назад",
+      daysAgo: "{count} дн назад",
+      delete: "Удалить",
+      close: "Закрыть",
+      previous: "Назад",
+      next: "Далее",
+      reply: "Ответить сообщением",
+      deletedTitle: "Статус удалён",
+    },
+  },
   exchangers: {
     eyebrow: "Финансы",
     title: "Обменники",
@@ -4853,7 +4881,7 @@ export const ru = {
       directoryDescription: "В каталоге только проверенные компании. Страна аккаунта участника не влияет на список — важен только статус проверки.",
       viewBusinessCard: "Карточка компании →",
       emptyTitle: "Нет проверенных компаний",
-      emptyDescription: "Пока нет проверенных компаний. Профили появляются после проверки командой MOXT, даже если участник из вашей страны.",
+      emptyDescription: "Пока нет проверенных компаний. Профили появляются после проверки командой MOXT.",
     },
     detail: {
       notAccessible: "Компания недоступна",

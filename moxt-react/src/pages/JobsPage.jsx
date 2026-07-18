@@ -128,6 +128,7 @@ export function JobsPage() {
         <CatalogSearch
           advancedOpen={advancedOpen}
           count={displayedJobs.length}
+          showCount={false}
           query={filters.query}
           onQueryChange={(query) => setFilters((current) => ({ ...current, query }))}
           onToggleAdvanced={() => setAdvancedOpen((value) => !value)}
@@ -179,13 +180,13 @@ export function JobsPage() {
         <CatalogGrid lazy={false} columns="grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
           {displayedJobs.length ? (
             displayedJobs.map((job, index) => (
-              <RevealListItem key={job.id} index={index} className="h-full overflow-visible">
-                <div className="relative h-full">
-                  <Link to={`/jobs/${job.id}`} className="block h-full">
+              <RevealListItem key={job.id} index={index} className="h-full min-w-0 overflow-visible">
+                <div className="relative h-full min-w-0">
+                  <Link to={`/jobs/${job.id}`} className="block h-full min-w-0">
                     {tab === 'archived' ? (
                       <Card
                         variant="interactive"
-                        className="group relative flex h-full flex-col overflow-hidden p-4 opacity-80 sm:p-5"
+                        className="group relative flex h-full min-w-0 flex-col overflow-hidden !border-transparent p-4 opacity-80 hover:!border-transparent sm:p-5 dark:hover:!border-transparent"
                       >
                         <span className="absolute right-2 top-2 z-10 rounded-full bg-[var(--app-surface-muted)] px-1.5 py-0.5 text-[9px] font-black text-[var(--app-text-faint)]">
                           {t('jobs.card.archived')}
@@ -219,7 +220,7 @@ export function JobsPage() {
                     ) : (
                     <Card
                       variant="interactive"
-                      className="group relative flex h-full flex-col overflow-hidden p-4 ring-1 ring-transparent transition-shadow duration-300 hover:ring-brand-200 sm:p-5 dark:hover:ring-brand-800"
+                      className="group relative flex h-full min-w-0 flex-col overflow-hidden !border-transparent p-4 transition-shadow duration-300 hover:!border-transparent sm:p-5 dark:hover:!border-transparent"
                     >
                       <span className="absolute left-2 top-2 z-10">
                         {job.businessId ? (
@@ -230,7 +231,7 @@ export function JobsPage() {
                           </span>
                         )}
                       </span>
-                      <div className="flex items-start gap-2 pr-10">
+                      <div className="mt-6 flex items-start gap-2 pr-10 sm:mt-7">
                         <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand-700 dark:bg-brand-900 dark:text-brand-200">
                           <FiBriefcase />
                         </span>

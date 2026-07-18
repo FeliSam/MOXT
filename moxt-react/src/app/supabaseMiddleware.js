@@ -944,6 +944,36 @@ const handlers = {
     })
     if (error) throw error
   },
+  // ── Statuts éphémères (7 jours) ─────────────────────────────────────────────
+  'statuses/createStatus': async (payload) => {
+    const row = {
+      id: payload.id,
+      author_id: payload.authorId,
+      author_name: payload.authorName,
+      author_avatar_url: payload.authorAvatarUrl || null,
+      images: payload.images || [],
+      caption: payload.caption || '',
+      is_official: payload.isOfficial === true,
+      viewed_by: JSON.stringify(payload.viewedBy ?? []),
+      created_at: payload.createdAt,
+      expires_at: payload.expiresAt,
+    }
+    const { error } = await supabase.from('statuses').insert(row)
+    if (error) throw error
+  },
+  'statuses/markStatusViewed': async (payload, state) => {
+    const status = state.statuses?.items?.find((item) => item.id === payload.statusId)
+    const { error } = await supabase
+      .from('statuses')
+      .update({ viewed_by: JSON.stringify(status?.viewedBy ?? [payload.userId]) })
+      .eq('id', payload.statusId)
+    if (error) throw error
+  },
+  'statuses/deleteStatus': async (payload) => {
+    const { error } = await supabase.from('statuses').delete().eq('id', payload)
+    if (error) throw error
+  },
+
   'posts/deleteComment': async (payload) => {
     const { error } = await supabase.rpc('moxt_post_delete_comment', {
       p_post_id: payload.postId,

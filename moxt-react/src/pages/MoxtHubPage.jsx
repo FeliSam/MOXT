@@ -104,7 +104,7 @@ export function MoxtHubPage() {
             description={t('moxtHub.primaryServicesDesc')}
           />
         </RevealOnScroll>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           {coreServices.map(({ descriptionKey, image, imageLogo, path, tagKey, titleKey }, index) => (
             <RevealListItem key={titleKey} index={index}>
               <Link
@@ -115,26 +115,24 @@ export function MoxtHubPage() {
               >
                 <Card
                   variant="interactive"
-                  className="group flex h-full flex-col overflow-hidden !p-4 sm:!p-5"
+                  className="group flex h-full flex-col overflow-hidden !p-3 text-center sm:!p-5 sm:text-left"
                 >
-                  <div className="flex items-start gap-3">
-                    <Dashboard3DIcon
-                      className="shrink-0"
-                      imageLogo={imageLogo}
-                      size="sm"
-                      src={image}
-                    />
-                    <div className="min-w-0 flex-1 pt-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-black tracking-tight text-[var(--app-text)]">
-                          {t(titleKey)}
-                        </h3>
-                        <Badge tone={serviceTones[index]}>{t(tagKey)}</Badge>
-                      </div>
-                      <p className="mt-2 text-xs leading-5 text-[var(--app-text-muted)] sm:text-sm">
-                        {t(descriptionKey)}
-                      </p>
+                  <Dashboard3DIcon
+                    className="mx-auto sm:mx-0"
+                    imageLogo={imageLogo}
+                    size="sm"
+                    src={image}
+                  />
+                  <div className="mt-2 min-w-0 flex-1 sm:mt-3">
+                    <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+                      <h3 className="font-black tracking-tight text-[var(--app-text)]">
+                        {t(titleKey)}
+                      </h3>
+                      <Badge tone={serviceTones[index]}>{t(tagKey)}</Badge>
                     </div>
+                    <p className="mt-2 text-xs leading-5 text-[var(--app-text-muted)] sm:text-sm">
+                      {t(descriptionKey)}
+                    </p>
                   </div>
                 </Card>
               </Link>
@@ -151,7 +149,7 @@ export function MoxtHubPage() {
             description={t('moxtHub.quickActionsDesc')}
           />
         </RevealOnScroll>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5">
           {quickActions.map(({ descriptionKey, image, imageLogo, labelKey, path }, index) => (
             <RevealListItem key={labelKey} index={index}>
               <Link

@@ -218,7 +218,7 @@ export function FeedPostCard({ post }) {
   }
 
   return (
-    <article className="h-auto w-full overflow-hidden rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)]">
+    <article className="h-auto w-full overflow-hidden rounded-3xl bg-[var(--app-surface)] shadow-[var(--shadow-card)]">
       {/* Header */}
       <div className="flex items-start justify-between gap-3 p-4 sm:p-5">
         <div className="flex items-center gap-3">

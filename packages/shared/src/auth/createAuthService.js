@@ -17,6 +17,32 @@ function isOrphanSessionError(error) {
   return error?.code === ORPHAN_SESSION_ERROR || error?.message === ORPHAN_SESSION_ERROR
 }
 
+/**
+ * Les appels réseau Supabase (getSession/refreshSession/getUser) peuvent rester
+ * indéfiniment "pending" (sans jamais résoudre ni rejeter) quand l'app mobile est
+ * relancée depuis l'arrière-plan avec une connectivité instable — le socket est
+ * mort mais aucun événement d'erreur n'est jamais émis. Sans garde-fou, l'écran de
+ * démarrage reste bloqué en chargement jusqu'à ce que l'utilisateur force la
+ * fermeture de l'app. On borne donc chaque appel dans le temps.
+ */
+function withTimeout(promise, ms, label) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`${label} timeout après ${ms}ms`))
+    }, ms)
+    promise.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      (error) => {
+        clearTimeout(timer)
+        reject(error)
+      },
+    )
+  })
+}
+
 function isAuthUserConfirmed(authUser) {
   return Boolean(authUser?.phone_confirmed_at || authUser?.email_confirmed_at)
 }
@@ -1387,10 +1413,14 @@ export function createAuthService(supabase, redirects = {}) {
 
       let session = null
       try {
-        const { data } = await supabase.auth.getSession()
+        const { data } = await withTimeout(supabase.auth.getSession(), 8000, 'getSession')
         session = data.session
         if (!session) {
-          const { data: refreshed } = await supabase.auth.refreshSession()
+          const { data: refreshed } = await withTimeout(
+            supabase.auth.refreshSession(),
+            8000,
+            'refreshSession',
+          )
           session = refreshed.session
         }
       } catch (error) {
@@ -1403,15 +1433,19 @@ export function createAuthService(supabase, redirects = {}) {
       // getUser() (réseau) — pas session.user local — pour email_confirmed_at à jour (Safari / autres onglets)
       let authUser = session.user
       try {
-        authUser = await getAuthenticatedAuthUser()
+        authUser = await withTimeout(getAuthenticatedAuthUser(), 8000, 'getUser')
       } catch (error) {
         console.warn('[MOXT] getUser indisponible, fallback session.user:', error?.message)
       }
 
       try {
-        const user = await resolveEstablishedSessionUser(authUser, {
-          pendingRegistration: loadPendingRegistration(),
-        })
+        const user = await withTimeout(
+          resolveEstablishedSessionUser(authUser, {
+            pendingRegistration: loadPendingRegistration(),
+          }),
+          8000,
+          'resolveEstablishedSessionUser',
+        )
         return { user, token: session.access_token }
       } catch (profileError) {
         if (isOrphanSessionError(profileError)) {

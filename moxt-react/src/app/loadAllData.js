@@ -14,6 +14,7 @@ import { setAll as setReviews } from '../features/reviews/reviewSlice'
 import { setAll as setDisputes } from '../features/disputes/disputeSlice'
 import { setAll as setFinance } from '../features/finance/financeSlice'
 import { setAll as setPosts } from '../features/posts/postsSlice'
+import { setAll as setStatuses } from '../features/statuses/statusesSlice'
 import { setRecipientAddresses } from '../features/addresses/recipientAddressesSlice'
 import { hydrateAccountPreferences, mergeRemoteAccount, updateAccountPreferences } from '../features/account/accountSlice'
 import { profileRowToAdminUser, setAdminUsers } from '../features/administration/administrationSlice'
@@ -187,6 +188,7 @@ export const loadAllData = createAsyncThunk(
       receiptsRes,
       notificationsRes,
       postsRes,
+      statusesRes,
       supportTicketsRes,
       recipientAddressesRes,
     ] = await Promise.all([
@@ -242,6 +244,12 @@ export const loadAllData = createAsyncThunk(
             .order('last_shared_at', { ascending: false, nullsFirst: false })
             .order('created_at', { ascending: false })
             .limit(100),
+      supabase
+        .from('statuses')
+        .select('*')
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(200),
       isAdmin
         ? supabase
             .from('support_tickets')
@@ -619,6 +627,12 @@ export const loadAllData = createAsyncThunk(
           comments: parseJsonField(p.comments, []),
         }
       }) }))
+      dispatch(setStatuses({ items: fromRows(safeRows(statusesRes, 'des statuts')).map((s) => ({
+        ...s,
+        images: parseJsonField(s.images, []).filter((url) => typeof url === 'string' && url).slice(0, 4),
+        viewedBy: parseJsonField(s.viewedBy, []),
+        isOfficial: s.isOfficial === true,
+      })) }))
       dispatch(mergeRemoteAccount({
         favorites: fromRows(safeRows(favoritesRes, 'des favoris')),
         subscriptions: fromRows(safeRows(subscriptionsRes, 'des abonnements')).map((item) => ({
@@ -706,6 +720,9 @@ export const loadAllData = createAsyncThunk(
       for (const comment of parseJsonField(post.comments, [])) {
         rememberProfileId(comment.authorId)
       }
+    }
+    for (const status of fromRows(safeRows(statusesRes, 'des statuts'))) {
+      rememberProfileId(status.authorId)
     }
     for (const review of mergedReviews) rememberProfileId(review.authorId)
     for (const job of jobsFromRemoteRows(jobsRes.data)) rememberProfileId(job.ownerId)

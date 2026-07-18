@@ -13,6 +13,7 @@ export function CatalogSearch({
   placeholder,
   query,
   activeFilterCount = 0,
+  showCount = true,
 }) {
   const { t } = useLanguage()
   const searchLabel = label ?? t('catalog.search.label')
@@ -64,11 +65,13 @@ export function CatalogSearch({
         </Button>
       </div>
 
-      <div className="mt-3 flex items-center justify-end gap-3 text-xs text-[var(--app-text-faint)]">
-        <strong className="shrink-0 rounded-full bg-[var(--app-surface-muted)] px-2.5 py-1 text-[var(--app-text)]">
-          {t(count > 1 ? 'catalog.search.resultsPlural' : 'catalog.search.results', { count })}
-        </strong>
-      </div>
+      {showCount ? (
+        <div className="mt-3 flex items-center justify-end gap-3 text-xs text-[var(--app-text-faint)]">
+          <strong className="shrink-0 rounded-full bg-[var(--app-surface-muted)] px-2.5 py-1 text-[var(--app-text)]">
+            {t(count > 1 ? 'catalog.search.resultsPlural' : 'catalog.search.results', { count })}
+          </strong>
+        </div>
+      ) : null}
 
       {advancedOpen ? (
         <div className="mt-5 rounded-[var(--radius-card)] bg-[var(--app-surface-muted)] p-4 sm:p-5">

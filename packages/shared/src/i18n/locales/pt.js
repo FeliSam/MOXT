@@ -4411,6 +4411,34 @@ export const pt = {
       save: "Guardar alterações",
     },
   },
+  status: {
+    rail: {
+      title: "Estados",
+      addYours: "O seu estado",
+      you: "Você",
+    },
+    composer: {
+      title: "Novo estado",
+      description: "Visível para a comunidade durante 7 dias.",
+      captionPlaceholder: "Adicionar uma legenda (opcional)…",
+      publish: "Publicar estado",
+      publishing: "A publicar…",
+      publishedTitle: "Estado publicado",
+      publishedMessage: "O seu estado fica visível durante 7 dias.",
+      imagesRequired: "Adicione pelo menos uma imagem.",
+    },
+    viewer: {
+      justNow: "Agora mesmo",
+      hoursAgo: "Há {count} h",
+      daysAgo: "Há {count} d",
+      delete: "Eliminar",
+      close: "Fechar",
+      previous: "Anterior",
+      next: "Seguinte",
+      reply: "Responder por mensagem",
+      deletedTitle: "Estado eliminado",
+    },
+  },
   exchangers: {
     eyebrow: "Finanças",
     title: "Cambistas",
@@ -4852,7 +4880,7 @@ export const pt = {
       directoryDescription: "O diretório mostra apenas empresas verificadas. O país da conta do membro não influencia esta lista: só conta o estado de validação.",
       viewBusinessCard: "Ver a ficha da empresa →",
       emptyTitle: "Nenhuma empresa validada",
-      emptyDescription: "Ainda sem empresas verificadas. Os perfis aparecem aqui após validação da equipa MOXT, mesmo que o membro partilhe o seu país de origem.",
+      emptyDescription: "Ainda sem empresas verificadas. Os perfis aparecem aqui após validação da equipa MOXT.",
     },
     detail: {
       notAccessible: "Empresa não acessível",

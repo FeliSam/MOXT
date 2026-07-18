@@ -1,4 +1,4 @@
-import { FiBell, FiChevronDown, FiClock, FiHeart, FiMessageSquare, FiMoon, FiSun } from 'react-icons/fi'
+import { FiBell, FiChevronDown, FiClock, FiFileText, FiHeart, FiMessageSquare, FiMoon, FiSun } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
 import { Link, useLocation } from 'react-router-dom'
 import { getRouteMetadata } from '../../config/routeMeta'
@@ -56,6 +56,14 @@ export function Header({ hideOnMobile = false }) {
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1.5">
+          <Link
+            to="/news"
+            className="header-action-btn grid lg:hidden"
+            aria-label={t('nav.news')}
+          >
+            <FiFileText className="text-lg" />
+          </Link>
+
           <Link
             to="/notifications"
             className="header-action-btn relative grid"

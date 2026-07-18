@@ -93,6 +93,7 @@ export function EventsPage() {
         <CatalogSearch
           advancedOpen={advancedOpen}
           count={visibleEvents.length}
+          showCount={false}
           query={filters.query}
           onQueryChange={(query) => setFilters((current) => ({ ...current, query }))}
           onToggleAdvanced={() => setAdvancedOpen((value) => !value)}
@@ -148,7 +149,7 @@ export function EventsPage() {
               <RevealListItem key={event.id} index={index} className="h-full overflow-visible">
                 <div className="relative h-full">
                   <Link to={`/events/${event.id}`} className="block h-full">
-                    <Card className="relative h-full overflow-hidden transition hover:-translate-y-1 hover:shadow-xl">
+                    <Card className="relative h-full overflow-hidden !border-transparent transition hover:-translate-y-1 hover:shadow-xl">
                       {coverImage ? (
                         <div className="-mx-5 -mt-5 mb-4 aspect-[16/10] overflow-hidden sm:-mx-6 sm:-mt-6">
                           <img

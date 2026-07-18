@@ -187,9 +187,6 @@ export function BusinessesPage() {
 
         <div>
           <h2 className="text-xl font-black">{bt('businesses.page.directoryTitle')}</h2>
-          <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-            {bt('businesses.page.directoryDescription')}
-          </p>
         </div>
 
         <CatalogGrid lazy={false} columns="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
@@ -199,7 +196,10 @@ export function BusinessesPage() {
               const Icon = activity?.icon || FiBriefcase
               return (
                 <RevealListItem key={business.id} index={index}>
-                  <Card variant="verified" className="flex h-full flex-col overflow-hidden p-4 sm:p-5">
+                  <Card
+                    variant="verified"
+                    className="flex h-full flex-col overflow-hidden p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)] sm:p-5"
+                  >
                     <div className="flex items-start gap-3">
                       <img
                         src={business.logoUrl || '/assets/services/service-businesses.svg'}

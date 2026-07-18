@@ -124,6 +124,7 @@ export function ParcelsPage() {
         <CatalogSearch
           advancedOpen={advancedOpen}
           count={visibleParcels.length}
+          showCount={false}
           query={filters.query}
           onQueryChange={(query) => setFilters((current) => ({ ...current, query }))}
           onToggleAdvanced={() => setAdvancedOpen((value) => !value)}
@@ -201,7 +202,10 @@ export function ParcelsPage() {
                 <RevealListItem key={parcel.id} index={index} className="h-full overflow-visible">
                   <div className="relative h-full">
                     <Link to={`/parcels/${parcel.id}`} className="block h-full">
-                      <Card variant="interactive" className="group relative h-full overflow-hidden p-4 sm:p-5">
+                      <Card
+                        variant="interactive"
+                        className="group relative h-full overflow-hidden !border-transparent p-4 hover:!border-transparent sm:p-5 dark:hover:!border-transparent"
+                      >
                         <span className="absolute left-2 top-2 z-10 flex items-center gap-1">
                           {parcel.proofStatus === 'verified' ? (
                             <VerifiedBadge size="sm" label={t('parcels.card.proofVerified')} />
@@ -214,7 +218,7 @@ export function ParcelsPage() {
                             </span>
                           )}
                         </span>
-                        <div className="flex min-w-0 items-center gap-2 pr-10">
+                        <div className="mt-6 flex min-w-0 items-center gap-2 pr-10 sm:mt-7">
                           <EntityVerifiedName
                             as="h2"
                             name={parcel.ownerName}
@@ -249,7 +253,7 @@ export function ParcelsPage() {
                             label={t('parcels.card.perKg')}
                           />
                         </div>
-                        <div className="mt-4 hidden gap-2 text-sm text-[var(--app-text-muted)] sm:grid">
+                        <div className="mt-4 grid gap-2 text-sm text-[var(--app-text-muted)]">
                           <span className="flex items-center gap-2">
                             <FiCalendar /> {t('parcels.card.departure', { date: parcel.departureDate })}
                           </span>
@@ -300,11 +304,14 @@ export function ParcelsPage() {
               archivedParcels.map((parcel, index) => (
                 <RevealListItem key={parcel.id} index={index}>
                   <Link to={`/parcels/${parcel.id}`}>
-                    <Card variant="interactive" className="group relative h-full overflow-hidden p-4 sm:p-5 opacity-80">
+                    <Card
+                      variant="interactive"
+                      className="group relative h-full overflow-hidden !border-transparent p-4 opacity-80 hover:!border-transparent sm:p-5 dark:hover:!border-transparent"
+                    >
                       <span className="absolute right-2 top-2 z-10 rounded-full bg-[var(--app-surface-muted)] px-1.5 py-0.5 text-[9px] font-black text-[var(--app-text-faint)]">
                         {t('parcels.card.archived')}
                       </span>
-                      <div className="flex min-w-0 items-center gap-2">
+                      <div className="mt-6 flex min-w-0 items-center gap-2 pr-10 sm:mt-7">
                         <EntityVerifiedName
                           as="h2"
                           name={parcel.ownerName}

@@ -4411,6 +4411,34 @@ export const fr = {
       save: "Enregistrer les modifications",
     },
   },
+  status: {
+    rail: {
+      title: "Statuts",
+      addYours: "Votre statut",
+      you: "Vous",
+    },
+    composer: {
+      title: "Nouveau statut",
+      description: "Visible 7 jours par la communauté.",
+      captionPlaceholder: "Ajouter une légende (optionnel)…",
+      publish: "Publier le statut",
+      publishing: "Publication…",
+      publishedTitle: "Statut publié",
+      publishedMessage: "Votre statut est visible pendant 7 jours.",
+      imagesRequired: "Ajoutez au moins une image.",
+    },
+    viewer: {
+      justNow: "À l'instant",
+      hoursAgo: "Il y a {count} h",
+      daysAgo: "Il y a {count} j",
+      delete: "Supprimer",
+      close: "Fermer",
+      previous: "Précédent",
+      next: "Suivant",
+      reply: "Répondre en message",
+      deletedTitle: "Statut supprimé",
+    },
+  },
   exchangers: {
     eyebrow: "Finances",
     title: "Échangeurs",
@@ -4852,7 +4880,7 @@ export const fr = {
       directoryDescription: "L’annuaire affiche uniquement les entreprises vérifiées. Le pays du compte membre n’influe pas sur cette liste : seul le statut de validation compte.",
       viewBusinessCard: "Voir la fiche entreprise →",
       emptyTitle: "Aucune entreprise validee",
-      emptyDescription: "Aucune entreprise vérifiée pour le moment. Les profils apparaissent ici après validation par l’équipe MOXT, même si le membre partage votre pays d’origine.",
+      emptyDescription: "Aucune entreprise vérifiée pour le moment. Les profils apparaissent ici après validation par l’équipe MOXT.",
     },
     detail: {
       notAccessible: "Entreprise non accessible",
