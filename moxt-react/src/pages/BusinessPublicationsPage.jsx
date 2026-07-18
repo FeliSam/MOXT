@@ -52,6 +52,7 @@ const TYPE_LABEL_KEYS = {
   parcel: 'businesses.publications.types.parcel',
   job: 'businesses.publications.types.job',
   event: 'businesses.publications.types.event',
+  other: 'businesses.publications.types.other',
 }
 
 const BUSINESS_TYPE_TABS = PUBLICATION_TYPE_TABS.filter((tab) => tab.id !== 'post')

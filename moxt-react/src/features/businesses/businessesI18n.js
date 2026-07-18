@@ -54,8 +54,7 @@ export const BUSINESSES_FR_SOURCES = {
   'businesses.activities.events.description':
     'Rencontres, formations, salons et evenements communautaires.',
   'businesses.activities.education.label': 'Formation',
-  'businesses.activities.education.description':
-    'Cours, accompagnement, coaching et ateliers.',
+  'businesses.activities.education.description': 'Cours, accompagnement, coaching et ateliers.',
   'businesses.activities.real_estate.label': 'Immobilier',
   'businesses.activities.real_estate.description':
     'Location, logement, accompagnement et services immobiliers.',
@@ -68,86 +67,60 @@ export const BUSINESSES_FR_SOURCES = {
     'Entreprises de change, transfert et reception de paiements.',
   'businesses.experience.transfer.promise':
     'Mettez en avant vos delais, vos reseaux d echange, vos frais et votre disponibilite.',
-  'businesses.experience.transfer.onboarding.0':
-    'Renseignez un nom public clair et rassurant.',
+  'businesses.experience.transfer.onboarding.0': 'Renseignez un nom public clair et rassurant.',
   'businesses.experience.transfer.onboarding.1':
     'Ajoutez des contacts russes joignables rapidement.',
   'businesses.experience.transfer.onboarding.2':
     'Activez vos devises et reseaux reellement disponibles.',
-  'businesses.experience.logistics.audience':
-    'Voyageurs, transporteurs et services de logistique.',
+  'businesses.experience.logistics.audience': 'Voyageurs, transporteurs et services de logistique.',
   'businesses.experience.logistics.promise':
     'Montrez vos trajets, vos capacites et vos conditions de depot de colis.',
-  'businesses.experience.logistics.onboarding.0':
-    'Precisez vos villes de depot et de remise.',
-  'businesses.experience.logistics.onboarding.1':
-    'Expliquez les types de colis acceptes.',
+  'businesses.experience.logistics.onboarding.0': 'Precisez vos villes de depot et de remise.',
+  'businesses.experience.logistics.onboarding.1': 'Expliquez les types de colis acceptes.',
   'businesses.experience.logistics.onboarding.2':
     'Mettez vos disponibilites et votre zone de collecte.',
-  'businesses.experience.commerce.audience':
-    'Boutiques, vendeurs pro et services commerciaux.',
+  'businesses.experience.commerce.audience': 'Boutiques, vendeurs pro et services commerciaux.',
   'businesses.experience.commerce.promise':
     'Valorisez votre vitrine, vos categories et votre reactivite commerciale.',
-  'businesses.experience.commerce.onboarding.0':
-    'Decrivez votre specialite principale.',
-  'businesses.experience.commerce.onboarding.1':
-    'Ajoutez votre zone de livraison ou de retrait.',
+  'businesses.experience.commerce.onboarding.0': 'Decrivez votre specialite principale.',
+  'businesses.experience.commerce.onboarding.1': 'Ajoutez votre zone de livraison ou de retrait.',
   'businesses.experience.commerce.onboarding.2':
     'Mettez en avant la confiance et la disponibilite.',
-  'businesses.experience.recruitment.audience':
-    'Cabinets, entreprises et recruteurs.',
+  'businesses.experience.recruitment.audience': 'Cabinets, entreprises et recruteurs.',
   'businesses.experience.recruitment.promise':
     'Centralisez vos offres, vos candidatures et vos besoins terrain.',
-  'businesses.experience.recruitment.onboarding.0':
-    'Expliquez les profils recherches.',
-  'businesses.experience.recruitment.onboarding.1':
-    'Precisez votre ville d intervention.',
+  'businesses.experience.recruitment.onboarding.0': 'Expliquez les profils recherches.',
+  'businesses.experience.recruitment.onboarding.1': 'Precisez votre ville d intervention.',
   'businesses.experience.recruitment.onboarding.2':
     'Indiquez vos horaires de traitement des candidatures.',
-  'businesses.experience.events.audience':
-    'Organisateurs, associations et promoteurs.',
+  'businesses.experience.events.audience': 'Organisateurs, associations et promoteurs.',
   'businesses.experience.events.promise':
     'Presentez vos evenements, votre communaute et vos prochains rendez-vous.',
-  'businesses.experience.events.onboarding.0':
-    'Decrivez le type d evenements organises.',
-  'businesses.experience.events.onboarding.1':
-    'Ajoutez les villes et lieux frequents.',
-  'businesses.experience.events.onboarding.2':
-    'Montrez votre rythme de publication.',
-  'businesses.experience.education.audience':
-    'Formateurs, coaches et structures educatives.',
+  'businesses.experience.events.onboarding.0': 'Decrivez le type d evenements organises.',
+  'businesses.experience.events.onboarding.1': 'Ajoutez les villes et lieux frequents.',
+  'businesses.experience.events.onboarding.2': 'Montrez votre rythme de publication.',
+  'businesses.experience.education.audience': 'Formateurs, coaches et structures educatives.',
   'businesses.experience.education.promise':
     'Mettez en valeur vos cours, ateliers et accompagnements.',
-  'businesses.experience.education.onboarding.0':
-    'Expliquez les domaines enseignes.',
+  'businesses.experience.education.onboarding.0': 'Expliquez les domaines enseignes.',
   'businesses.experience.education.onboarding.1':
     'Renseignez vos modalites presentiel ou en ligne.',
-  'businesses.experience.education.onboarding.2':
-    'Ajoutez vos disponibilites typiques.',
-  'businesses.experience.real_estate.audience':
-    'Agences, bailleurs et services immobiliers.',
+  'businesses.experience.education.onboarding.2': 'Ajoutez vos disponibilites typiques.',
+  'businesses.experience.real_estate.audience': 'Agences, bailleurs et services immobiliers.',
   'businesses.experience.real_estate.promise':
     'Structurez vos annonces, zones et offres d accompagnement.',
-  'businesses.experience.real_estate.onboarding.0':
-    'Precisez vos zones de couverture.',
+  'businesses.experience.real_estate.onboarding.0': 'Precisez vos zones de couverture.',
   'businesses.experience.real_estate.onboarding.1':
     'Indiquez le type de biens ou services proposes.',
-  'businesses.experience.real_estate.onboarding.2':
-    'Ajoutez un contact direct et rassurant.',
-  'businesses.experience.services.audience':
-    'Prestataires administratifs et services pratiques.',
+  'businesses.experience.real_estate.onboarding.2': 'Ajoutez un contact direct et rassurant.',
+  'businesses.experience.services.audience': 'Prestataires administratifs et services pratiques.',
   'businesses.experience.services.promise':
     'Rendez votre assistance concrete, visible et facile a contacter.',
-  'businesses.experience.services.onboarding.0':
-    'Listez clairement les demarches couvertes.',
-  'businesses.experience.services.onboarding.1':
-    'Ajoutez les horaires de prise en charge.',
-  'businesses.experience.services.onboarding.2':
-    'Precisez la zone ou la modalite de service.',
-  'businesses.experience.default.audience':
-    'Entreprises professionnelles sur MOXT.',
-  'businesses.experience.default.promise':
-    'Presentez clairement votre activite et vos services.',
+  'businesses.experience.services.onboarding.0': 'Listez clairement les demarches couvertes.',
+  'businesses.experience.services.onboarding.1': 'Ajoutez les horaires de prise en charge.',
+  'businesses.experience.services.onboarding.2': 'Precisez la zone ou la modalite de service.',
+  'businesses.experience.default.audience': 'Entreprises professionnelles sur MOXT.',
+  'businesses.experience.default.promise': 'Presentez clairement votre activite et vos services.',
 
   // ── spotlight labels + fallback values ───────────────────────────────────
   'businesses.spotlight.feeAnnounced': 'Frais annonces',
@@ -172,7 +145,7 @@ export const BUSINESSES_FR_SOURCES = {
   'businesses.spotlight.zone': 'Zone',
   'businesses.spotlight.services': 'Services',
   'businesses.spotlight.schedule': 'Horaires',
-  'businesses.spotlight.value.perOperation': "Selon l opération",
+  'businesses.spotlight.value.perOperation': 'Selon l opération',
   'businesses.spotlight.value.parcelCapacity': 'Visible dans les annonces de colis',
   'businesses.spotlight.value.linkedPublications': 'Visible dans les publications liées',
   'businesses.spotlight.value.directContact': 'Selon contact direct',
@@ -199,8 +172,7 @@ export const BUSINESSES_FR_SOURCES = {
 
   // ── completion checks ────────────────────────────────────────────────────
   'businesses.completion.name.label': 'Nom de l’entreprise',
-  'businesses.completion.name.hint':
-    'Indiquez le nom affiché sur votre fiche publique.',
+  'businesses.completion.name.hint': 'Indiquez le nom affiché sur votre fiche publique.',
   'businesses.completion.sector.label': 'Secteur d’activité',
   'businesses.completion.sector.hint': 'Choisissez votre domaine principal.',
   'businesses.completion.country.label': 'Pays',
@@ -210,8 +182,7 @@ export const BUSINESSES_FR_SOURCES = {
   'businesses.completion.phone.label': 'Téléphone de contact',
   'businesses.completion.phone.hint': 'Un numéro joignable pour les clients MOXT.',
   'businesses.completion.description.label': 'Description de l’activité',
-  'businesses.completion.description.hint':
-    'Présentez votre entreprise en quelques lignes.',
+  'businesses.completion.description.hint': 'Présentez votre entreprise en quelques lignes.',
   'businesses.completion.services.label': 'Modules activés',
   'businesses.completion.services.hint':
     'Sélectionnez au moins un service (Marketplace, Jobs, Transfert…).',
@@ -230,8 +201,7 @@ export const BUSINESSES_FR_SOURCES = {
   'businessesValidation.activityInvalid': 'Selectionnez un domaine valide.',
   'businessesValidation.activityRequired': 'Domaine principal obligatoire.',
   'businessesValidation.secondaryDifferent': 'Choisissez une activite differente.',
-  'businessesValidation.countryRussiaOnly':
-    'Toutes les entreprises sont situees en Russie.',
+  'businessesValidation.countryRussiaOnly': 'Toutes les entreprises sont situees en Russie.',
   'businessesValidation.cityRequired': 'Ville obligatoire.',
   'businessesValidation.addressMin': 'Ajoutez une adresse complete.',
   'businessesValidation.addressRequired': 'Adresse complete obligatoire.',
@@ -246,8 +216,7 @@ export const BUSINESSES_FR_SOURCES = {
   'businessesValidation.feeRequired': 'Frais obligatoires.',
   'businessesValidation.delayRequired': 'Delai obligatoire.',
   'businessesValidation.currenciesMin': 'Selectionnez les devises echangees.',
-  'businessesValidation.exchangeMethodsMin':
-    'Selectionnez au moins un reseau ou une banque.',
+  'businessesValidation.exchangeMethodsMin': 'Selectionnez au moins un reseau ou une banque.',
 
   // ── directory page ───────────────────────────────────────────────────────
   'businesses.page.eyebrow': 'Services professionnels',
@@ -278,8 +247,7 @@ export const BUSINESSES_FR_SOURCES = {
 
   // ── detail page ──────────────────────────────────────────────────────────
   'businesses.detail.notAccessible': 'Entreprise non accessible',
-  'businesses.detail.notFoundPending':
-    'Entreprise introuvable ou en attente de validation',
+  'businesses.detail.notFoundPending': 'Entreprise introuvable ou en attente de validation',
   'businesses.detail.restrictedVisibility':
     'Cette entreprise a restreint la visibilité de ses publications.',
   'businesses.detail.reviewsCount': '{count} avis',
@@ -312,8 +280,7 @@ export const BUSINESSES_FR_SOURCES = {
 
   // ── publications page ────────────────────────────────────────────────────
   'businesses.publications.loadingTitle': "Chargement de l'aperçu",
-  'businesses.publications.loadingDescription':
-    "Récupération des publications de l'entreprise...",
+  'businesses.publications.loadingDescription': "Récupération des publications de l'entreprise...",
   'businesses.publications.notFound': 'Entreprise introuvable',
   'businesses.publications.notFoundDescription':
     "Cette entreprise n'existe pas ou n'est pas encore validée sur MOXT.",
@@ -334,6 +301,7 @@ export const BUSINESSES_FR_SOURCES = {
   'businesses.publications.types.parcel': 'Colis',
   'businesses.publications.types.job': 'Jobs',
   'businesses.publications.types.event': 'Événements',
+  'businesses.publications.types.other': 'Autres',
   'businesses.publications.emptyTitle': 'Aucune publication entreprise',
   'businesses.publications.emptyDescription':
     'Les annonces publiées au nom de cette entreprise apparaîtront ici.',
@@ -348,14 +316,12 @@ export const BUSINESSES_FR_SOURCES = {
   'businesses.setup.preview.companyNamePlaceholder': 'Nom de l entreprise',
   'businesses.setup.preview.qrAlt': 'QR code apercu',
   'businesses.setup.preview.logoAlt': 'Logo',
-  'businesses.setup.preview.presentationPlaceholder':
-    'Votre presentation apparaitra ici.',
+  'businesses.setup.preview.presentationPlaceholder': 'Votre presentation apparaitra ici.',
   'businesses.setup.preview.cityRussia': '{city}, Russie',
   'businesses.setup.preview.cityDotRussia': '{city} · Russie',
   'businesses.setup.preview.reviewsZero': '0 avis',
   'businesses.setup.preview.fees': 'Frais',
-  'businesses.setup.preview.visibleAfterValidation':
-    'Votre fiche sera visible apres validation',
+  'businesses.setup.preview.visibleAfterValidation': 'Votre fiche sera visible apres validation',
   'businesses.setup.eyebrow': 'Espace entreprise',
   'businesses.setup.title.edit': 'Modifier mon entreprise',
   'businesses.setup.title.create': 'Creer mon entreprise',
@@ -371,24 +337,20 @@ export const BUSINESSES_FR_SOURCES = {
   'businesses.setup.toast.logoFailedTitle': 'Logo non envoyé',
   'businesses.setup.toast.logoFailedBody': "Le logo n'a pas pu être envoyé.",
   'businesses.setup.toast.bannerAddedTitle': 'Bannière ajoutée',
-  'businesses.setup.toast.bannerAddedBody':
-    'La bannière de l’entreprise a été envoyée.',
+  'businesses.setup.toast.bannerAddedBody': 'La bannière de l’entreprise a été envoyée.',
   'businesses.setup.toast.bannerFailedTitle': 'Bannière non envoyée',
   'businesses.setup.toast.bannerFailedBody': "La bannière n'a pas pu être envoyée.",
   'businesses.setup.identity.section': 'Identite de l entreprise',
-  'businesses.setup.identity.sectionHint':
-    'Le nom public qui apparaitra dans l annuaire MOXT.',
+  'businesses.setup.identity.sectionHint': 'Le nom public qui apparaitra dans l annuaire MOXT.',
   'businesses.setup.identity.name': "Nom public de l'entreprise",
-  'businesses.setup.identity.namePlaceholder':
-    'Ex : Koudjo Transfer, Afrik Logistique...',
+  'businesses.setup.identity.namePlaceholder': 'Ex : Koudjo Transfer, Afrik Logistique...',
   'businesses.setup.identity.domainSection': 'Domaine principal',
   'businesses.setup.identity.domainHint':
     'Choisissez le coeur de votre activite. Cela definit vos modules et votre positionnement.',
   'businesses.setup.identity.secondary': 'Activite secondaire (facultatif)',
   'businesses.setup.identity.secondaryNone': 'Aucune activite secondaire',
   'businesses.setup.identity.visualSection': 'Identite visuelle',
-  'businesses.setup.identity.visualHint':
-    'Logo et banniere affiches sur votre fiche publique.',
+  'businesses.setup.identity.visualHint': 'Logo et banniere affiches sur votre fiche publique.',
   'businesses.setup.identity.logo': 'Logo',
   'businesses.setup.identity.changeLogo': 'Changer le logo',
   'businesses.setup.identity.addLogo': 'Ajouter un logo',
@@ -397,18 +359,14 @@ export const BUSINESSES_FR_SOURCES = {
   'businesses.setup.identity.changeBanner': 'Changer la banniere',
   'businesses.setup.identity.addBanner': 'Ajouter une banniere',
   'businesses.setup.contact.locationSection': 'Localisation',
-  'businesses.setup.contact.locationHint':
-    'Ville et adresse de votre activite en Russie.',
+  'businesses.setup.contact.locationHint': 'Ville et adresse de votre activite en Russie.',
   'businesses.setup.contact.cityInRussia': 'Ville en Russie',
   'businesses.setup.contact.fullAddress': 'Adresse complete',
-  'businesses.setup.contact.addressPlaceholder':
-    'Rue, immeuble, metro ou repere',
+  'businesses.setup.contact.addressPlaceholder': 'Rue, immeuble, metro ou repere',
   'businesses.setup.contact.serviceZones': 'Zones desservies',
-  'businesses.setup.contact.serviceZonesPlaceholder':
-    'Moscou, Saint-Petersbourg...',
+  'businesses.setup.contact.serviceZonesPlaceholder': 'Moscou, Saint-Petersbourg...',
   'businesses.setup.contact.coordsSection': 'Coordonnees',
-  'businesses.setup.contact.coordsHint':
-    'Moyens de contact visibles sur votre fiche publique.',
+  'businesses.setup.contact.coordsHint': 'Moyens de contact visibles sur votre fiche publique.',
   'businesses.setup.contact.russianPhone': 'Numero russe',
   'businesses.setup.contact.useAccountPhone': 'Utiliser mon numero du compte',
   'businesses.setup.contact.originPhone': 'Numero du pays d origine',
@@ -421,14 +379,12 @@ export const BUSINESSES_FR_SOURCES = {
   'businesses.setup.contact.presentationSection': 'Presentation',
   'businesses.setup.contact.presentationHint':
     "Decrivez votre entreprise, votre specialite et votre zone d intervention. Cliquez sur l'eclair pour generer un texte a partir de vos informations.",
-  'businesses.setup.contact.generateAria':
-    'Generer automatiquement la presentation',
+  'businesses.setup.contact.generateAria': 'Generer automatiquement la presentation',
   'businesses.setup.contact.about': 'A propos de votre entreprise',
   'businesses.setup.contact.aboutPlaceholder':
     'Nous proposons... Notre specialite est... Nous intervenons sur...',
   'businesses.setup.services.modulesSection': 'Modules actives',
-  'businesses.setup.services.modulesHint':
-    'Definis automatiquement selon votre domaine principal.',
+  'businesses.setup.services.modulesHint': 'Definis automatiquement selon votre domaine principal.',
   'businesses.setup.services.selectDomainFirst':
     'Selectionnez un domaine principal (etape 1) pour activer les modules.',
   'businesses.setup.services.transferSection': 'Configuration transfert',
@@ -438,8 +394,7 @@ export const BUSINESSES_FR_SOURCES = {
   'businesses.setup.services.averageDelay': 'Delai moyen',
   'businesses.setup.services.averageDelayPlaceholder': 'Ex : 30-60 min',
   'businesses.setup.services.currencies': 'Devises echangees',
-  'businesses.setup.services.networksTitle':
-    'Reseaux africains et banques russes',
+  'businesses.setup.services.networksTitle': 'Reseaux africains et banques russes',
   'businesses.setup.services.networksHint':
     'Cochez les modes de paiement que vous acceptez des deux cotes.',
   'businesses.setup.services.africanNetworks': 'Reseaux africains',
@@ -463,8 +418,7 @@ export const BUSINESSES_FR_SOURCES = {
     "est enregistrée sur MOXT. Notre équipe va valider votre fiche avant publication dans l'annuaire — vous pouvez déjà préparer votre espace pro.",
   'businesses.setup.success.recap': 'Récapitulatif',
   'businesses.setup.success.nextSteps': 'Prochaines étapes',
-  'businesses.setup.success.stepValidation':
-    'Validation administrateur (24–48 h en moyenne)',
+  'businesses.setup.success.stepValidation': 'Validation administrateur (24–48 h en moyenne)',
   'businesses.setup.success.stepSpotlight': 'Points forts : {spotlight}',
   'businesses.setup.success.stepComplete':
     'Complétez votre espace pro pour accueillir vos premiers clients',
@@ -478,8 +432,7 @@ export const BUSINESSES_FR_SOURCES = {
   'businesses.verification.completeBody':
     'Fiche renseignée à 100 % et identité entreprise validée par MOXT.',
   'businesses.verification.compactTitle': 'Vérification · {percent}%',
-  'businesses.verification.compactBody':
-    '{count} élément(s) restant(s) : {items}.',
+  'businesses.verification.compactBody': '{count} élément(s) restant(s) : {items}.',
   'businesses.verification.title': 'Progression de vérification',
   'businesses.verification.progressHint':
     '{complete} sur {total} critères complétés · il reste {missing} pour atteindre 100 %.',
@@ -487,15 +440,13 @@ export const BUSINESSES_FR_SOURCES = {
   'businesses.verification.documents': 'Documents',
   'businesses.verification.proSpace': 'Espace pro',
   'businesses.verification.complete': 'Compléter',
-  'businesses.verification.seeValidated':
-    'Voir les {count} critère(s) déjà validé(s)',
+  'businesses.verification.seeValidated': 'Voir les {count} critère(s) déjà validé(s)',
 
   // ── activity visibility ──────────────────────────────────────────────────
   'businesses.visibility.title': 'Visibilité des publications',
   'businesses.visibility.description':
     'Contrôle qui peut consulter la fiche publique et les publications de votre entreprise. Enregistré sur MOXT et synchronisé entre vos appareils.',
-  'businesses.visibility.hint':
-    'Les visiteurs non autorisés verront un message d’accès restreint.',
+  'businesses.visibility.hint': 'Les visiteurs non autorisés verront un message d’accès restreint.',
 
   // ── subscription section (public) ────────────────────────────────────────
   'businesses.subscription.followTitle': 'Suivre cette entreprise',
@@ -517,8 +468,7 @@ export const BUSINESSES_FR_SOURCES = {
   'businesses.subscription.content.event': 'Événements',
   'businesses.subscription.content.post': 'Publications communauté',
   'businesses.subscription.ownerTitle': 'Espace professionnel — abonnés',
-  'businesses.subscription.ownerCount':
-    '{count} membre(s) suivent actuellement votre entreprise.',
+  'businesses.subscription.ownerCount': '{count} membre(s) suivent actuellement votre entreprise.',
   'businesses.subscription.ownerEmpty':
     'Aucun abonné pour le moment — partagez votre fiche pour développer votre audience.',
   'businesses.subscription.manage': 'Gérer les abonnés',
@@ -541,9 +491,7 @@ export function businessesOptionLabel(t, option) {
 
 export function businessesOptionDescription(t, option) {
   if (!option) return ''
-  return option.descriptionKey
-    ? businessesText(t, option.descriptionKey)
-    : option.description || ''
+  return option.descriptionKey ? businessesText(t, option.descriptionKey) : option.description || ''
 }
 
 export function businessesSpotlightLabel(t, key) {

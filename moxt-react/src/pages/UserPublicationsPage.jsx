@@ -46,10 +46,7 @@ import { SubscribeButton } from '../features/account/SubscribeButton'
 import { ContactButton } from '../features/communications/ContactButton'
 import { useGuestAction } from '../features/guest/useGuestAction'
 import { useGuestUserPreview } from '../features/guest/useGuestPreview'
-import {
-  REVIEW_TARGET_TYPES,
-  ReviewsSection,
-} from '../features/reviews/ReviewsSection'
+import { REVIEW_TARGET_TYPES, ReviewsSection } from '../features/reviews/ReviewsSection'
 import {
   calculateAggregateRating,
   collectPublicationTargetIds,
@@ -66,7 +63,6 @@ const EMPTY_ICONS = {
   post: FiFileText,
   other: FiRepeat,
 }
-
 
 export function UserPublicationsPage() {
   const { t } = useLanguage()
@@ -319,11 +315,7 @@ export function UserPublicationsPage() {
               />
             ) : null}
             {isOwner ? (
-              <Link
-                to={
-                  `/publications/mine${scope === 'business' ? '?scope=business' : ''}`
-                }
-              >
+              <Link to={`/publications/mine${scope === 'business' ? '?scope=business' : ''}`}>
                 <Button variant="secondary" icon={FiArrowLeft}>
                   {p3('publications.user.manage')}
                 </Button>
@@ -524,10 +516,5 @@ export function UserListingsRedirect() {
   const { userId } = useParams()
   const [searchParams] = useSearchParams()
   const query = searchParams.toString()
-  return (
-    <Navigate
-      to={`/users/${userId}/publications${query ? `?${query}` : ''}`}
-      replace
-    />
-  )
+  return <Navigate to={`/users/${userId}/publications${query ? `?${query}` : ''}`} replace />
 }
