@@ -4440,6 +4440,10 @@ export const pt = {
       viewersTitle: "Visto por {count}",
       noViewers: "Ninguém viu este estado ainda.",
       someone: "Alguém",
+      react: "Reagir",
+      replyPlaceholder: "Responder ao estado…",
+      replySend: "Enviar",
+      replySentTitle: "Resposta enviada",
     },
   },
   exchangers: {

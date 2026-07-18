@@ -4458,6 +4458,10 @@ export const en = {
       viewersTitle: "Seen by {count}",
       noViewers: "No one has seen this status yet.",
       someone: "Someone",
+      react: "React",
+      replyPlaceholder: "Reply to status…",
+      replySend: "Send",
+      replySentTitle: "Reply sent",
     },
   },
   exchangers: {

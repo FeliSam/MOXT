@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { FiChevronLeft, FiChevronRight, FiEye, FiX } from 'react-icons/fi'
+import { FiChevronLeft, FiChevronRight, FiEye, FiSend, FiSmile, FiX } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
-import { Link } from 'react-router-dom'
 import { deleteStatus, markStatusViewed, reactToStatus } from './statusesSlice'
-import { openConversationWithContact } from '../communications/communicationSlice'
+import { openConversationWithContact, sendMessage } from '../communications/communicationSlice'
 import { addToast } from '../ui/uiSlice'
 import { useLanguage } from '../../contexts/useLanguage'
 
@@ -31,8 +30,13 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
   const [pageIndex, setPageIndex] = useState(0)
   const [paused, setPaused] = useState(false)
   const [viewersOpen, setViewersOpen] = useState(false)
-  const [sentReaction, setSentReaction] = useState(null)
+  const [reactionPickerOpen, setReactionPickerOpen] = useState(false)
+  const [animatingEmoji, setAnimatingEmoji] = useState(null)
+  const [replyOpen, setReplyOpen] = useState(false)
+  const [replyText, setReplyText] = useState('')
+  const [replySending, setReplySending] = useState(false)
   const timerRef = useRef(null)
+  const animTimerRef = useRef(null)
 
   const group = groups[groupIndex]
 
@@ -41,6 +45,7 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
     return group.items.flatMap((item) =>
       (item.images.length ? item.images : [null]).map((url, i) => ({
         statusId: item.id,
+        imageKey: `${item.id}:${i}`,
         url,
         caption: i === 0 ? item.caption : '',
         createdAt: item.createdAt,
@@ -50,12 +55,24 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
 
   const page = pages[pageIndex]
   const isMine = group?.authorId === viewer?.id
+  const effectivePaused = paused || reactionPickerOpen || replyOpen
+
+  const currentStatusItem = group?.items.find((item) => item.id === page?.statusId)
+  const myReaction = page ? currentStatusItem?.reactions?.[page.imageKey]?.[viewer?.id] : null
 
   useEffect(() => {
     setPageIndex(0)
     setViewersOpen(false)
-    setSentReaction(null)
+    setReactionPickerOpen(false)
+    setReplyOpen(false)
+    setReplyText('')
   }, [groupIndex])
+
+  useEffect(() => {
+    setReactionPickerOpen(false)
+    setReplyOpen(false)
+    setReplyText('')
+  }, [pageIndex])
 
   useEffect(() => {
     if (!page || !viewer?.id) return
@@ -68,6 +85,8 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
       }),
     )
   }, [page?.statusId, viewer?.id, dispatch])
+
+  useEffect(() => () => window.clearTimeout(animTimerRef.current), [])
 
   function goNextGroup() {
     if (groupIndex < groups.length - 1) setGroupIndex((i) => i + 1)
@@ -91,11 +110,11 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
   }
 
   useEffect(() => {
-    if (paused || !pages.length) return undefined
+    if (effectivePaused || !pages.length) return undefined
     timerRef.current = window.setTimeout(goNextPage, IMAGE_DURATION_MS)
     return () => window.clearTimeout(timerRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageIndex, groupIndex, paused, pages.length])
+  }, [pageIndex, groupIndex, effectivePaused, pages.length])
 
   useEffect(() => {
     function onKey(e) {
@@ -116,21 +135,80 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
     else goNextPage()
   }
 
-  async function handleReact(emoji) {
+  async function ensureConversationId() {
+    const result = await dispatch(
+      openConversationWithContact({
+        ownerId: group.authorId,
+        createdBy: viewer.id,
+        senderName: `${viewer.firstName} ${viewer.lastName}`,
+      }),
+    ).unwrap()
+    return result.conversation.id
+  }
+
+  async function handlePickEmoji(emoji) {
     if (!page || !viewer?.id || isMine) return
-    dispatch(reactToStatus({ statusId: page.statusId, userId: viewer.id, emoji }))
-    setSentReaction(emoji)
+    const removing = myReaction === emoji
+    dispatch(
+      reactToStatus({
+        statusId: page.statusId,
+        imageKey: page.imageKey,
+        userId: viewer.id,
+        emoji: removing ? null : emoji,
+      }),
+    )
+    setAnimatingEmoji(emoji)
+    window.clearTimeout(animTimerRef.current)
+    animTimerRef.current = window.setTimeout(() => setAnimatingEmoji(null), 450)
+
+    if (!removing && page.url) {
+      try {
+        const conversationId = await ensureConversationId()
+        dispatch(
+          sendMessage({
+            conversationId,
+            senderId: viewer.id,
+            senderName: `${viewer.firstName} ${viewer.lastName}`,
+            text: emoji,
+            attachment: { url: page.url, type: 'image/jpeg' },
+          }),
+        )
+      } catch {
+        // Réaction déjà enregistrée localement ; l'envoi du message peut échouer silencieusement.
+      }
+    }
+
+    window.setTimeout(() => setReactionPickerOpen(false), 350)
+  }
+
+  async function handleSendReply() {
+    const text = replyText.trim()
+    if (!text || !viewer?.id || isMine || replySending) return
+    setReplySending(true)
     try {
-      await dispatch(
-        openConversationWithContact({
-          ownerId: group.authorId,
-          createdBy: viewer.id,
+      const conversationId = await ensureConversationId()
+      dispatch(
+        sendMessage({
+          conversationId,
+          senderId: viewer.id,
           senderName: `${viewer.firstName} ${viewer.lastName}`,
-          initialMessage: emoji,
+          text,
+          attachment: page.url ? { url: page.url, type: 'image/jpeg' } : null,
         }),
-      ).unwrap()
-    } catch {
-      // Réaction déjà enregistrée localement ; l'envoi du message peut échouer silencieusement.
+      )
+      dispatch(addToast({ title: t('status.viewer.replySentTitle'), tone: 'success' }))
+      setReplyText('')
+      setReplyOpen(false)
+    } catch (err) {
+      dispatch(
+        addToast({
+          title: t('common.error'),
+          message: err?.message || t('common.retryLater'),
+          tone: 'error',
+        }),
+      )
+    } finally {
+      setReplySending(false)
     }
   }
 
@@ -151,14 +229,16 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
         className="flex shrink-0 gap-1 p-2 sm:p-3"
         style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0px))' }}
       >
-
         {pages.map((p, i) => (
-          <div key={`${p.statusId}-${i}`} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/25">
+          <div key={p.imageKey} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/25">
             <div
               className="h-full bg-white transition-[width] ease-linear"
               style={{
                 width: i < pageIndex ? '100%' : i > pageIndex ? '0%' : undefined,
-                animation: i === pageIndex && !paused ? `status-progress ${IMAGE_DURATION_MS}ms linear forwards` : undefined,
+                animation:
+                  i === pageIndex && !effectivePaused
+                    ? `status-progress ${IMAGE_DURATION_MS}ms linear forwards`
+                    : undefined,
               }}
             />
           </div>
@@ -246,29 +326,88 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
           className="shrink-0 px-3 sm:px-4"
           style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))' }}
         >
-          <div className="mb-2.5 flex items-center justify-center gap-1.5">
-            {QUICK_REACTIONS.map((emoji) => (
+          {replyOpen ? (
+            <div className="flex items-center gap-2">
               <button
-                key={emoji}
                 type="button"
-                onClick={() => handleReact(emoji)}
-                className={`grid size-10 place-items-center rounded-full text-xl transition ${
-                  sentReaction === emoji
-                    ? 'scale-110 bg-white/25'
-                    : 'bg-white/10 hover:scale-110 hover:bg-white/20'
-                }`}
+                onClick={() => {
+                  setReplyOpen(false)
+                  setReplyText('')
+                }}
+                aria-label={t('status.viewer.close')}
+                className="grid size-11 shrink-0 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
               >
-                {emoji}
+                <FiX />
               </button>
-            ))}
-          </div>
-          <Link
-            to="/messages"
-            onClick={onClose}
-            className="block rounded-2xl border border-white/25 bg-white/10 py-3 text-center text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/20"
-          >
-            {t('status.viewer.reply')}
-          </Link>
+              <input
+                type="text"
+                autoFocus
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSendReply()
+                }}
+                placeholder={t('status.viewer.replyPlaceholder')}
+                className="min-w-0 flex-1 rounded-full border border-white/25 bg-white/10 px-4 py-3 text-sm text-white placeholder:text-white/50 backdrop-blur-sm outline-none focus:border-white/50"
+              />
+              <button
+                type="button"
+                onClick={handleSendReply}
+                disabled={!replyText.trim() || replySending}
+                aria-label={t('status.viewer.replySend')}
+                className="grid size-11 shrink-0 place-items-center rounded-full bg-brand-600 text-white transition hover:bg-brand-700 disabled:opacity-40"
+              >
+                <FiSend className="text-sm" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              {reactionPickerOpen ? (
+                <div className="flex flex-1 items-center justify-center gap-1.5">
+                  {QUICK_REACTIONS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => handlePickEmoji(emoji)}
+                      className={`grid size-10 shrink-0 place-items-center rounded-full text-xl transition ${
+                        myReaction === emoji ? 'bg-white/25' : 'bg-white/10 hover:scale-110 hover:bg-white/20'
+                      } ${animatingEmoji === emoji ? 'status-reaction-anim' : ''}`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setReactionPickerOpen(false)}
+                    aria-label={t('status.viewer.close')}
+                    className="grid size-10 shrink-0 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+                  >
+                    <FiX className="text-sm" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setReactionPickerOpen(true)}
+                  aria-label={t('status.viewer.react')}
+                  className={`grid size-11 shrink-0 place-items-center rounded-full text-xl transition ${
+                    myReaction ? 'bg-white/25' : 'bg-white/10 hover:bg-white/20'
+                  }`}
+                >
+                  {myReaction || <FiSmile className="text-white" />}
+                </button>
+              )}
+              {!reactionPickerOpen ? (
+                <button
+                  type="button"
+                  onClick={() => setReplyOpen(true)}
+                  className="flex-1 rounded-2xl border border-white/25 bg-white/10 py-3 text-center text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/20"
+                >
+                  {t('status.viewer.reply')}
+                </button>
+              ) : null}
+            </div>
+          )}
         </div>
       ) : null}
 

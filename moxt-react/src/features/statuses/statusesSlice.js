@@ -51,12 +51,18 @@ const statusesSlice = createSlice({
       }
     },
 
+    /** Réactions par image : reactions[imageKey][userId] = emoji. `emoji` falsy retire la réaction. */
     reactToStatus(state, action) {
-      const { statusId, userId, emoji } = action.payload
+      const { statusId, imageKey, userId, emoji } = action.payload
       const status = state.items.find((s) => s.id === statusId)
-      if (!status) return
+      if (!status || !imageKey) return
       status.reactions ||= {}
-      status.reactions[userId] = emoji
+      status.reactions[imageKey] ||= {}
+      if (emoji) {
+        status.reactions[imageKey][userId] = emoji
+      } else {
+        delete status.reactions[imageKey][userId]
+      }
     },
 
     deleteStatus(state, action) {

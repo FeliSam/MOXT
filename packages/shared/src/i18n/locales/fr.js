@@ -4440,6 +4440,10 @@ export const fr = {
       viewersTitle: "Vu par {count}",
       noViewers: "Personne n'a encore vu ce statut.",
       someone: "Quelqu'un",
+      react: "Réagir",
+      replyPlaceholder: "Répondre au statut…",
+      replySend: "Envoyer",
+      replySentTitle: "Réponse envoyée",
     },
   },
   exchangers: {

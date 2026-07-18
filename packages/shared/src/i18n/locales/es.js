@@ -4439,7 +4439,11 @@ export const es = {
       deletedTitle: "Estado eliminado",
       viewersTitle: "Visto por {count}",
       noViewers: "Nadie ha visto este estado todavía.",
-      someone: "Alguien"
+      someone: "Alguien",
+      react: "Reaccionar",
+      replyPlaceholder: "Responder al estado…",
+      replySend: "Enviar",
+      replySentTitle: "Respuesta enviada"
     }
   },
   exchangers: {

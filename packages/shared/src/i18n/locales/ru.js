@@ -4441,6 +4441,10 @@ export const ru = {
       viewersTitle: "Просмотрели: {count}",
       noViewers: "Пока никто не видел этот статус.",
       someone: "Кто-то",
+      react: "Реакция",
+      replyPlaceholder: "Ответить на статус…",
+      replySend: "Отправить",
+      replySentTitle: "Ответ отправлен",
     },
   },
   exchangers: {
