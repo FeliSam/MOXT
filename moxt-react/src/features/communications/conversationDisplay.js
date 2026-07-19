@@ -25,6 +25,7 @@ export function getConversationPeer(conversation, currentUserId, t) {
     name,
     avatarUrl: profile?.avatarUrl || null,
     verified: isProfileVerified(profile),
+    lastActiveAt: profile?.lastActiveAt || null,
   }
 }
 
@@ -53,6 +54,7 @@ export function profileFromRemoteRow(row) {
     avatarUrl: row.avatar_url || null,
     status: row.status || '',
     verified: row.status === 'verified',
+    lastActiveAt: row.last_active_at || null,
   }
 }
 
@@ -62,7 +64,7 @@ export async function fetchParticipantProfilesFromRemote(participantIds) {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, first_name, last_name, avatar_url, status')
+    .select('id, first_name, last_name, avatar_url, status, last_active_at')
     .in('id', unique)
   if (error) throw error
 

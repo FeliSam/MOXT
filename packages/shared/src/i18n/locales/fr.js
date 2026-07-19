@@ -466,6 +466,7 @@ export const fr = {
     archives: "Archives",
     pinnedAria: "Épinglée",
     mutedAria: "En sourdine",
+    viewProfile: "Voir le profil",
     pin: "Épingler",
     unpin: "Désépingler",
     mute: "Mettre en sourdine",
@@ -568,6 +569,7 @@ export const fr = {
       yesterday: "Hier",
     },
     activity: {
+      online: "En ligne",
       new: "Nouvelle conversation",
       recent: "Actif récemment",
       seenMinutes: "Vu il y a {minutes} min",
@@ -6038,6 +6040,10 @@ export const fr = {
         openedBody: "Un litige a été ouvert concernant {type} {id}.",
         updatedTitle: "Litige mis à jour",
         updatedBody: "Le litige {id} est maintenant : {status}.",
+      },
+      account: {
+        newTitle: "Nouveau compte créé",
+        newBody: "{name} vient de créer un compte MOXT.",
       },
     },
   },

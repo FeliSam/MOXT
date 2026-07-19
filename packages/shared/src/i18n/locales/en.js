@@ -467,6 +467,7 @@ export const en = {
     archives: "Archives",
     pinnedAria: "Pinned",
     mutedAria: "Muted",
+    viewProfile: "View profile",
     pin: "Pin",
     unpin: "Unpin",
     mute: "Mute alerts",
@@ -568,6 +569,7 @@ export const en = {
       yesterday: "Yesterday",
     },
     activity: {
+      online: "Online",
       new: "New conversation",
       recent: "Active recently",
       seenMinutes: "Seen {minutes} min ago",
@@ -6055,6 +6057,10 @@ export const en = {
         openedBody: "A dispute was opened about {type} {id}.",
         updatedTitle: "Dispute updated",
         updatedBody: "Dispute {id} is now: {status}.",
+      },
+      account: {
+        newTitle: "New account created",
+        newBody: "{name} just created a MOXT account.",
       },
     },
   },

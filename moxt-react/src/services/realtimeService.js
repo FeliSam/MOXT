@@ -23,6 +23,7 @@ import { listingFromRemoteRow } from '../features/marketplace/marketplaceRemote'
 import { hydrateAccountPreferences } from '../features/account/accountSlice'
 import { patchBusiness } from '../features/businesses/businessSlice'
 import { businessFromRemoteRow } from '../features/businesses/businessRemote'
+import { setOnlineUsers } from '../features/presence/presenceSlice'
 
 const camelMap = {
   conversation_id: 'conversationId',
@@ -152,6 +153,31 @@ let activeUserId = null
 let reconnectTimer = null
 let onlineHandler = null
 let connectionStatus = 'idle'
+let heartbeatTimer = null
+
+const HEARTBEAT_INTERVAL_MS = 90 * 1000
+
+async function sendActivityHeartbeat(userId) {
+  if (!supabase || !userId) return
+  if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return
+  await supabase
+    .from('profiles')
+    .update({ last_active_at: new Date().toISOString() })
+    .eq('id', userId)
+}
+
+function startHeartbeat(userId) {
+  stopHeartbeat()
+  void sendActivityHeartbeat(userId)
+  heartbeatTimer = setInterval(() => void sendActivityHeartbeat(userId), HEARTBEAT_INTERVAL_MS)
+}
+
+function stopHeartbeat() {
+  if (heartbeatTimer) {
+    clearInterval(heartbeatTimer)
+    heartbeatTimer = null
+  }
+}
 
 function setConnectionStatus(status) {
   connectionStatus = status
@@ -173,6 +199,7 @@ function clearReconnectTimer() {
 }
 
 function teardownChannel() {
+  stopHeartbeat()
   if (channel) {
     supabase.removeChannel(channel)
     channel = null
@@ -210,7 +237,11 @@ function bindChannel(userId, dispatch, getState) {
   setConnectionStatus('connecting')
 
   channel = supabase
-    .channel(`user-messaging-${userId}-${Date.now()}`)
+    .channel('presence-online', { config: { presence: { key: userId } } })
+
+    .on('presence', { event: 'sync' }, () => {
+      dispatch(setOnlineUsers(Object.keys(channel.presenceState())))
+    })
 
     .on(
       'postgres_changes',
@@ -365,12 +396,15 @@ function bindChannel(userId, dispatch, getState) {
       if (status === 'SUBSCRIBED') {
         clearReconnectTimer()
         setConnectionStatus('subscribed')
+        void channel.track({ online_at: new Date().toISOString() })
+        startHeartbeat(userId)
         return
       }
 
       if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
         setConnectionStatus(status === 'CLOSED' ? 'closed' : 'error')
         channel = null
+        stopHeartbeat()
         scheduleReconnect(userId, dispatch, getState)
       }
     })

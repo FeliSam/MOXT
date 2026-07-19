@@ -29,6 +29,8 @@ import {
   registerStepFields,
 } from '../features/auth/authSchemas'
 import { updateAccountPreferences } from '../features/account/accountSlice'
+import { addNotification } from '../features/communications/communicationSlice'
+import { getAdminUserIds } from '@moxt/shared/utils/notificationUtils.js'
 import {
   clearAuthError,
   completeOAuthProfile,
@@ -236,7 +238,8 @@ export function RegisterPage() {
   async function completeRegistration(destination) {
     await applyPendingReferral()
     await dispatch(loadAllData())
-    const registeredUserId = store.getState().auth.user?.id
+    const registeredUser = store.getState().auth.user
+    const registeredUserId = registeredUser?.id
     if (registeredUserId) {
       dispatch(
         updateAccountPreferences({
@@ -244,6 +247,22 @@ export function RegisterPage() {
           preferences: { language },
         }),
       )
+    }
+    if (registeredUser) {
+      const name = `${registeredUser.firstName || ''} ${registeredUser.lastName || ''}`.trim()
+      const adminIds = getAdminUserIds(store.getState()).filter((id) => id !== registeredUserId)
+      for (const adminId of adminIds) {
+        dispatch(
+          addNotification({
+            userId: adminId,
+            title: t('shared.notifications.account.newTitle'),
+            message: t('shared.notifications.account.newBody', { name: name || t('shared.notifications.someone') }),
+            type: 'moderation',
+            link: '/admin?view=users',
+            priority: 'normal',
+          }),
+        )
+      }
     }
     startRealtimeSubscription(store.getState().auth.user.id, dispatch, store.getState)
     markWelcomePending()

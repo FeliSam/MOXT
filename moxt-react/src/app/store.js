@@ -21,6 +21,7 @@ import disputesReducer from '../features/disputes/disputeSlice'
 import financeReducer from '../features/finance/financeSlice'
 import identityReducer from '../features/identity/identitySlice'
 import recipientAddressesReducer from '../features/addresses/recipientAddressesSlice'
+import presenceReducer from '../features/presence/presenceSlice'
 import { auditMiddleware } from './auditMiddleware'
 import { persistenceMiddleware } from './persistenceMiddleware'
 import { interactionMiddleware } from './interactionMiddleware'
@@ -53,6 +54,7 @@ export const store = configureStore({
     events: eventsReducer,
     communications: communicationsReducer,
     audit: auditReducer,
+    presence: presenceReducer,
     [baseApi.reducerPath]: baseApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>

@@ -1,7 +1,6 @@
 /** French source strings for messages.* / communications.* until locale files are filled. */
 export const MESSAGES_FR_SOURCES = {
   'messages.statusBadge': 'Statut',
-  'messages.viewProfile': 'Voir le profil',
   // ── list / empty / not found ─────────────────────────────────────────────
   'messages.empty.title': 'Aucune conversation pour l’instant',
   'messages.empty.description':

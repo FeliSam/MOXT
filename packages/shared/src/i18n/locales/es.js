@@ -466,6 +466,7 @@ export const es = {
     archives: "Arquivo",
     pinnedAria: "Fixada",
     mutedAria: "Silenciada",
+    viewProfile: "Ver perfil",
     pin: "Fixar",
     unpin: "Desafixar",
     mute: "Silenciar alertas",
@@ -567,6 +568,7 @@ export const es = {
       yesterday: "Ontem"
     },
     activity: {
+      online: "En línea",
       new: "Nueva conversación",
       recent: "Activo recentemente",
       seenMinutes: "Visto há {minutes} min",
@@ -6032,6 +6034,10 @@ export const es = {
         openedBody: "Foi aberto un disputa relactivo a {type} {id}.",
         updatedTitle: "Disputa atualizado",
         updatedBody: "O disputa {id} está ahora: {status}."
+      },
+      account: {
+        newTitle: "Nueva cuenta creada",
+        newBody: "{name} acaba de crear una cuenta MOXT."
       }
     }
   },

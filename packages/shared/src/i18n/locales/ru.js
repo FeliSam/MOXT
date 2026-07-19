@@ -467,6 +467,7 @@ export const ru = {
     archives: "Архив",
     pinnedAria: "Закреплено",
     mutedAria: "Без уведомлений",
+    viewProfile: "Посмотреть профиль",
     pin: "Закрепить",
     unpin: "Открепить",
     mute: "Отключить уведомления",
@@ -568,6 +569,7 @@ export const ru = {
       yesterday: "Вчера",
     },
     activity: {
+      online: "В сети",
       new: "Новая переписка",
       recent: "Недавно в сети",
       seenMinutes: "Был(а) {minutes} мин назад",
@@ -6033,6 +6035,10 @@ export const ru = {
         openedBody: "Открыт спор по {type} {id}.",
         updatedTitle: "Спор обновлён",
         updatedBody: "Спор {id} теперь: {status}.",
+      },
+      account: {
+        newTitle: "Новый аккаунт создан",
+        newBody: "{name} только что создал(а) аккаунт MOXT.",
       },
     },
   },

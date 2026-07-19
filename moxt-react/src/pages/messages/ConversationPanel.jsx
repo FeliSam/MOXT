@@ -96,6 +96,7 @@ export function ConversationPanel({
 }) {
   const { t } = useLanguage()
   const peer = getConversationPeer(active, user.id)
+  const peerOnline = useSelector((state) => (peer?.id ? Boolean(state.presence.online[peer.id]) : false))
   const liveEntry = peer?.id ? avatarMap[peer.id] : undefined
   const peerAvatarSrc =
     liveEntry !== undefined ? liveEntry.avatarUrl || null : peer?.avatarUrl || null
@@ -229,7 +230,7 @@ export function ConversationPanel({
         >
           <FiX />
         </button>
-        <Link to={peer?.id ? `/users/${peer.id}/publications` : '#'} className="shrink-0">
+        <Link to={peer?.id ? `/users/${peer.id}/publications` : '#'} className="relative shrink-0">
           <EntityAvatar
             name={peer.name}
             src={peerAvatarSrc}
@@ -239,6 +240,12 @@ export function ConversationPanel({
             className="!size-10 !rounded-[0.9rem] shadow-[var(--shadow-card)]"
             alt={peer.name}
           />
+          {peerOnline ? (
+            <span
+              className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-[var(--app-surface)] bg-emerald-500"
+              aria-hidden="true"
+            />
+          ) : null}
         </Link>
         <div className="min-w-0 flex-1 pr-1">
           <Link
@@ -261,9 +268,14 @@ export function ConversationPanel({
                 {t('messages.typing')}
                 <TypingDots />
               </span>
+            ) : peerOnline ? (
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold leading-tight text-emerald-600 dark:text-emerald-400">
+                <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
+                {t('messages.activity.online')}
+              </span>
             ) : (
               <span className="text-[11px] leading-tight text-[var(--app-text-muted)]">
-                {peerActivityLabel(active.updatedAt, t)}
+                {peerActivityLabel(peer.lastActiveAt, t)}
               </span>
             )}
             {messageCount ? (

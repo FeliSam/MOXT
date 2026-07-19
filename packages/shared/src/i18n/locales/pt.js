@@ -341,6 +341,7 @@ export const pt = {
     archives: "Arquivo",
     pinnedAria: "Fixada",
     mutedAria: "Silenciada",
+    viewProfile: "Ver perfil",
     pin: "Fixar",
     unpin: "Desafixar",
     mute: "Silenciar alertas",
@@ -442,6 +443,7 @@ export const pt = {
       yesterday: "Ontem",
     },
     activity: {
+      online: "Online",
       new: "Nova conversa",
       recent: "Ativo recentemente",
       seenMinutes: "Visto há {minutes} min",
@@ -6032,6 +6034,10 @@ export const pt = {
         openedBody: "Foi aberto um litígio relativo a {type} {id}.",
         updatedTitle: "Litígio atualizado",
         updatedBody: "O litígio {id} está agora: {status}.",
+      },
+      account: {
+        newTitle: "Nova conta criada",
+        newBody: "{name} acabou de criar uma conta MOXT.",
       },
     },
   },
