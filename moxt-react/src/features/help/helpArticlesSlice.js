@@ -21,9 +21,11 @@ const helpArticlesSlice = createSlice({
       },
       prepare(values) {
         const now = new Date().toISOString()
+        const translationGroupId = values.translationGroupId || createId('HELPGRP')
         return {
           payload: {
-            id: values.id || createId('HELP'),
+            id: values.id || `${translationGroupId}-${values.language || 'fr'}`,
+            translationGroupId,
             category: values.category || 'documents',
             language: values.language || 'fr',
             title: values.title || '',

@@ -4,7 +4,8 @@ import {
   FiArrowDown,
   FiBellOff,
   FiExternalLink,
-  FiMessageSquare,
+  FiEye,
+  FiEyeOff,
   FiMoreVertical,
   FiPaperclip,
   FiSearch,
@@ -358,7 +359,7 @@ export function ConversationPanel({
             className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-[var(--app-surface-muted)]"
             onClick={() => onToggleSuggestions?.()}
           >
-            <FiMessageSquare />{' '}
+            {suggestionsEnabled ? <FiEye /> : <FiEyeOff />}{' '}
             {suggestionsEnabled
               ? messagesText(t, 'messages.hideSuggestions')
               : messagesText(t, 'messages.showSuggestions')}

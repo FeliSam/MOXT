@@ -469,8 +469,8 @@ export const es = {
     viewProfile: "Ver perfil",
     pin: "Fixar",
     unpin: "Desafixar",
-    mute: "Silenciar alertas",
-    unmute: "Reactivar alertas",
+    mute: "Silenciar",
+    unmute: "Reactivar",
     block: "Bloquear",
     unblock: "Desbloquear",
     viewListing: "Ver ficha",
@@ -543,8 +543,8 @@ export const es = {
     actives: "Ativas",
     archive: "Arquivar",
     restore: "Restaurar",
-    showSuggestions: "Mostrar sugestões",
-    hideSuggestions: "Ocultar sugestões",
+    showSuggestions: "Sugerencias",
+    hideSuggestions: "Sugerencias",
     conversationOptionsAria: "Opciones da conversación",
     archivedBanner: "Conversa arquivada — pode restaurá-la a partir do menu ⋯",
     blockedBanner: "Esta conversación está bloqueada. Já no pode enviar mensajes.",
@@ -6557,9 +6557,9 @@ export const es = {
     savedTitle: "Artículo guardado",
     empty: "Todavía no hay artículos.",
     deleteConfirmTitle: "¿Eliminar este artículo?",
-    deleteConfirmBody: "Esta acción es definitiva y retirará el artículo de la guía pública.",
+    deleteConfirmBody: "Esta acción es definitiva y retirará todas sus traducciones de la guía pública.",
     validation: {
-      required: "El título, el resumen y el contenido son obligatorios."
+      required: "El título, el resumen y el contenido en francés son obligatorios."
     },
     status: {
       published: "Publicado",
@@ -6568,6 +6568,7 @@ export const es = {
     fields: {
       category: "Categoría",
       language: "Idioma",
+      translations: "Traducciones",
       title: "Título",
       summary: "Resumen",
       content: "Contenido",
@@ -6576,6 +6577,8 @@ export const es = {
       pinned: "Fijar arriba",
       status: "Estado"
     },
+    copyFromFr: "Copiar FR",
+    incompleteWarning: "Falta traducción para: {languages}. Los visitantes en esos idiomas verán la versión FR por defecto.",
     sourceHint: "Indica siempre una fuente oficial verificable (gobierno, embajada, universidad) para mantener la confianza de los lectores."
   }
 }

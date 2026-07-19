@@ -1008,6 +1008,7 @@ const handlers = {
   'helpArticles/createHelpArticle': async (payload) => {
     const row = {
       id: payload.id,
+      translation_group_id: payload.translationGroupId,
       category: payload.category,
       language: payload.language,
       title: payload.title,
