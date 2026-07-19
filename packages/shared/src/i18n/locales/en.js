@@ -503,6 +503,7 @@ export const en = {
     copyFailed: "Unable to copy the message on this device.",
     deleteConfirmTitle: "Delete this message?",
     statusSent: "Sent",
+    statusSending: "Sending",
     statusDelivered: "Delivered",
     statusRead: "Read",
     retrySendAria: "Send failed — retry",
@@ -597,8 +598,16 @@ export const en = {
         parcel: "How do I send a parcel with a traveller?",
         verify: "How do I verify my identity?",
         dispute: "How do I contact support for a dispute?",
+        admin: "I'd like to talk to an administrator",
         business: "How do I create a business account?",
       },
+      contactAdmin: "Contact an administrator",
+      contactAdminAria: "Contact a MOXT administrator",
+      adminTicketSubject: "Request via MOXT assistant",
+      adminTicketDefault: "Request to contact an administrator via the MOXT assistant.",
+      adminEscalated:
+        "Your request has been sent to the MOXT team (ticket {id}). An administrator will reply from Support.",
+      adminFollowUp: "Follow up my request",
     },
     attachment: {
       photo: "📷 Photo",
@@ -810,6 +819,14 @@ export const en = {
       whyTitle: "Why choose MOXT?",
       createAccount: "Create my account",
       learnMore: "Learn more",
+      preview: {
+        tagline: "Transfers · Parcels · Services",
+        estimatedTransfer: "Estimated transfer",
+        routeExample: "Africa → Russia",
+        discover: "Discover",
+        verifiedPartnerTitle: "Verified business",
+        verifiedPartnerSubtitle: "MOXT partner",
+      },
     },
     pillars: {
       transfers: {
@@ -6305,6 +6322,18 @@ export const en = {
           "0": "The **Finance** section gives an overview of your MOXT activity: payment history, wallet balance, and operation summaries.\n\nEvery movement is logged with date, status, and details. It’s the ideal place to track spending and transfers over a given period.",
         },
       },
+      admin: {
+        actions: {
+          "0": "Follow up my request",
+        },
+        suggestions: {
+          "0": "I'd like to talk to an administrator",
+          "1": "How do I contact support?",
+        },
+        texts: {
+          "0": "To speak with a **MOXT administrator**, use the headset button in the assistant or describe your request here.\n\nYour message opens a **support ticket** sent to the team. An administrator will reply from **Support** or the admin control center.",
+        },
+      },
       message: {
         actions: {
           "0": "Messaging",
@@ -6606,5 +6635,13 @@ export const en = {
     copyFromFr: "Copy FR",
     incompleteWarning: "Missing translation for: {languages}. Visitors in those languages will see the FR version by default.",
     sourceHint: "Always provide a verifiable official source (government, embassy, university) to keep readers' trust.",
+  },
+  guest: {
+    previewBanner: {
+      title: "Sign in to interact",
+      body: "You're viewing this profile in public mode. Sign in to contact, follow, favorite or publish.",
+      createAccount: "Create an account",
+      login: "Log in",
+    },
   },
 }

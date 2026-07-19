@@ -33,6 +33,7 @@ describe('conversationDisplay', () => {
       name: 'Alice Kouassi',
       avatarUrl: 'https://example.com/a.jpg',
       verified: false,
+      lastActiveAt: null,
     })
   })
 

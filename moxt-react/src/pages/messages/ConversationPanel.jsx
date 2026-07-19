@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   FiArchive,
   FiArrowDown,
+  FiBell,
   FiBellOff,
   FiExternalLink,
   FiEye,
@@ -351,7 +352,7 @@ export function ConversationPanel({
             className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-[var(--app-surface-muted)]"
             onClick={onMute}
           >
-            <FiBellOff /> {muted ? t("messages.unmute") : t("messages.mute")}
+            {muted ? <FiBell /> : <FiBellOff />} {muted ? t("messages.unmute") : t("messages.mute")}
           </button>
           <button
             type="button"

@@ -65,12 +65,16 @@ bootstrap()
 
 if (import.meta.env.PROD) {
   void import('./platform/capacitor').then(({ isNative }) => {
-    if (isNative) return
-    void import('./pwa').then(({ registerServiceWorker, listenForInstallPrompt, listenForServiceWorkerMessages }) => {
-      registerServiceWorker()
-      listenForInstallPrompt()
-      listenForServiceWorkerMessages()
-    })
+    // La WebView native charge désormais le site live (voir capacitor.config.ts) :
+    // le service worker + le vérificateur de version doivent tourner là aussi pour
+    // que les déploiements web s'appliquent en silence, sans fermer/rouvrir l'app.
+    if (!isNative) {
+      void import('./pwa').then(({ registerServiceWorker, listenForInstallPrompt, listenForServiceWorkerMessages }) => {
+        registerServiceWorker()
+        listenForInstallPrompt()
+        listenForServiceWorkerMessages()
+      })
+    }
     void import('./services/releaseWatcher').then(({ startReleaseWatcher }) => {
       void import('./app/store').then(({ store }) => {
         startReleaseWatcher(store)

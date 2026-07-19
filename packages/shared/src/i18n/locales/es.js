@@ -502,6 +502,7 @@ export const es = {
     copyFailed: "No foi possível copiar a mensaje neste dispositivo.",
     deleteConfirmTitle: "Eliminar esta mensaje?",
     statusSent: "Enviada",
+    statusSending: "Enviando",
     statusDelivered: "Entregue",
     statusRead: "Lida",
     retrySendAria: "Falha no envio — tentar nuevamente",
@@ -596,8 +597,16 @@ export const es = {
         parcel: "Como enviar una paquete a través de un viajero?",
         verify: "Como verificar a minha identidad?",
         dispute: "Como contactar o soporte em caso de disputa?",
+        admin: "Quiero hablar con un administrador",
         business: "Como crear una cuenta profesional?"
-      }
+      },
+      contactAdmin: "Contactar a un administrador",
+      contactAdminAria: "Contactar a un administrador de MOXT",
+      adminTicketSubject: "Solicitud vía asistente MOXT",
+      adminTicketDefault: "Solicitud de contacto con un administrador vía el asistente MOXT.",
+      adminEscalated:
+        "Tu solicitud fue enviada al equipo MOXT (ticket {id}). Un administrador responderá desde Soporte.",
+      adminFollowUp: "Seguir mi solicitud"
     },
     attachment: {
       photo: "📷 Foto",
@@ -808,7 +817,15 @@ export const es = {
       servicesSubtitle: "O MOXT reúne os usos quotidianos da diáspora: enviar dinero, encontrar un transportador, publicar un anuncio o contactar un profesional verificado.",
       whyTitle: "Por qué elegir o MOXT?",
       createAccount: "Crear a minha cuenta",
-      learnMore: "Saber más"
+      learnMore: "Saber más",
+      preview: {
+        tagline: "Transferencias · Paquetes · Servicios",
+        estimatedTransfer: "Transferencia estimada",
+        routeExample: "África → Rusia",
+        discover: "Descubrir",
+        verifiedPartnerTitle: "Empresa verificada",
+        verifiedPartnerSubtitle: "Socio MOXT"
+      }
     },
     pillars: {
       transfers: {
@@ -4355,6 +4372,12 @@ export const es = {
     seeMore: "Ver más",
     seeLess: "Ver menos",
     pinned: "Publicación fijada",
+    pin: {
+      toastPinnedTitle: "Publicación fijada",
+      toastPinnedBody: "Permanece en la parte superior del feed.",
+      toastUnpinnedTitle: "Publicación desfijada",
+      toastUnpinnedBody: "Vuelve a su lugar cronológico en el feed."
+    },
     menu: {
       actions: "Acciones de la publicación",
       edit: "Editar",
@@ -4407,10 +4430,23 @@ export const es = {
       messageLabel: "Mensaje do post",
       messagePlaceholder: "Escreva a tu mensaje…",
       previewAlt: "Pré-visualización",
+      previewAltIndexed: "Pré-visualización {index}",
       removeImage: "Remover imagem",
+      removeImageIndexed: "Remover imagem {index}",
       addImage: "Adicionar una imagem",
+      addImages: "Adicionar imágenes (máx. 4)",
+      addAnother: "Adicionar",
+      imagesHint: "{count}/{max} imágenes",
       link: "Ligación: {link}",
       publish: "Publicar"
+    },
+    feed: {
+      prevImage: "Imagen anterior",
+      nextImage: "Imagen siguiente",
+      imageAlt: "Imagen {index} del post",
+      openPreview: "Ver imagen en grande",
+      closePreview: "Cerrar vista previa",
+      previewTitle: "Vista previa de la imagen"
     },
     card: {
       cta: {
@@ -5623,6 +5659,7 @@ export const es = {
       queue: {
         deletions: "Eliminaciones de cuenta",
         verifications: "Verificaciones",
+        documents: "Documentos de empresas",
         disputes: "Disputas abertos",
         reviews: "Avaliaciones pendientes",
         reports: "Denúncias"
@@ -5642,6 +5679,7 @@ export const es = {
         support: "Ticket de soporte",
         user: "Usuario",
         verification: "Verificación",
+        businessDocument: "Documento de empresa",
         dispute: "Disputa",
         review: "Avaliaciones",
         report: "Denúncia",
@@ -5658,6 +5696,7 @@ export const es = {
         support: "{name} · prioridade {priority} · {status}",
         user: "{email} · {role}",
         verification: "{name} · nível {level} · {status}",
+        businessDocument: "{business} · {status}",
         businesses: "{city} · {services}"
       }
     },
@@ -6282,6 +6321,18 @@ export const es = {
           "0": "A sección **Finanzas** dá una visão geral da tu atividade no MOXT: histórico de pagamentos, saldo da carteira y resumo das operaciones.\n\nCada movimento é registado con data, estado y detalhe. É o espacio ideal para acompanhar despesas y transferencias num período."
         }
       },
+      admin: {
+        actions: {
+          "0": "Seguir mi solicitud"
+        },
+        suggestions: {
+          "0": "Quiero hablar con un administrador",
+          "1": "Como contactar o soporte?"
+        },
+        texts: {
+          "0": "Para hablar con un **administrador MOXT**, usa el botón de auriculares en el asistente o describe tu solicitud aquí.\n\nTu mensaje abre un **ticket de soporte** enviado al equipo. Un administrador responderá desde **Soporte** o el centro de control admin."
+        }
+      },
       message: {
         actions: {
           "0": "Mensajes"
@@ -6580,5 +6631,13 @@ export const es = {
     copyFromFr: "Copiar FR",
     incompleteWarning: "Falta traducción para: {languages}. Los visitantes en esos idiomas verán la versión FR por defecto.",
     sourceHint: "Indica siempre una fuente oficial verificable (gobierno, embajada, universidad) para mantener la confianza de los lectores."
+  },
+  guest: {
+    previewBanner: {
+      title: "Inicia sesión para interactuar",
+      body: "Estás viendo este perfil en modo público. Inicia sesión para contactar, seguir, marcar como favorito o publicar.",
+      createAccount: "Crear una cuenta",
+      login: "Iniciar sesión"
+    }
   }
 }

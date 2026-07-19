@@ -503,6 +503,7 @@ export const ru = {
     copyFailed: "Нельзя скопировать сообщение на этом устройстве.",
     deleteConfirmTitle: "Удалить это сообщение?",
     statusSent: "Отправлено",
+    statusSending: "Отправка",
     statusDelivered: "Доставлено",
     statusRead: "Прочитано",
     retrySendAria: "Ошибка отправки — повторить",
@@ -597,8 +598,16 @@ export const ru = {
         parcel: "Как отправить посылку через путешественника?",
         verify: "Как подтвердить личность?",
         dispute: "Как связаться с поддержкой при споре?",
+        admin: "Хочу поговорить с администратором",
         business: "Как создать бизнес-аккаунт?",
       },
+      contactAdmin: "Связаться с администратором",
+      contactAdminAria: "Связаться с администратором MOXT",
+      adminTicketSubject: "Запрос через ассистента MOXT",
+      adminTicketDefault: "Запрос на связь с администратором через ассистента MOXT.",
+      adminEscalated:
+        "Ваш запрос передан команде MOXT (тикет {id}). Администратор ответит вам из раздела Поддержка.",
+      adminFollowUp: "Отследить мой запрос",
     },
     attachment: {
       photo: "📷 Фото",
@@ -810,6 +819,14 @@ export const ru = {
       whyTitle: "Почему MOXT?",
       createAccount: "Создать аккаунт",
       learnMore: "Подробнее",
+      preview: {
+        tagline: "Переводы · Посылки · Услуги",
+        estimatedTransfer: "Расчётный перевод",
+        routeExample: "Африка → Россия",
+        discover: "Открыть",
+        verifiedPartnerTitle: "Проверенная компания",
+        verifiedPartnerSubtitle: "Партнёр MOXT",
+      },
     },
     pillars: {
       transfers: {
@@ -4356,6 +4373,12 @@ export const ru = {
     seeMore: "Ещё",
     seeLess: "Свернуть",
     pinned: "Закреплённая публикация",
+    pin: {
+      toastPinnedTitle: "Публикация закреплена",
+      toastPinnedBody: "Она остаётся вверху ленты.",
+      toastUnpinnedTitle: "Публикация откреплена",
+      toastUnpinnedBody: "Она возвращается на своё место по времени в ленте.",
+    },
     menu: {
       actions: "Действия с публикацией",
       edit: "Изменить",
@@ -4408,10 +4431,23 @@ export const ru = {
       messageLabel: "Текст поста",
       messagePlaceholder: "Напишите сообщение…",
       previewAlt: "Превью",
+      previewAltIndexed: "Превью {index}",
       removeImage: "Удалить изображение",
+      removeImageIndexed: "Удалить изображение {index}",
       addImage: "Добавить изображение",
+      addImages: "Добавить изображения (макс. 4)",
+      addAnother: "Добавить",
+      imagesHint: "{count}/{max} изображений",
       link: "Ссылка: {link}",
       publish: "Опубликовать",
+    },
+    feed: {
+      prevImage: "Предыдущее изображение",
+      nextImage: "Следующее изображение",
+      imageAlt: "Изображение {index} поста",
+      openPreview: "Смотреть изображение крупнее",
+      closePreview: "Закрыть просмотр",
+      previewTitle: "Просмотр изображения",
     },
     card: {
       cta: {
@@ -5624,6 +5660,7 @@ export const ru = {
       queue: {
         deletions: "Удаления аккаунтов",
         verifications: "Проверки",
+        documents: "Документы компаний",
         disputes: "Открытые споры",
         reviews: "Отзывы в ожидании",
         reports: "Жалобы",
@@ -5643,6 +5680,7 @@ export const ru = {
         support: "Тикет поддержки",
         user: "Пользователь",
         verification: "Проверка",
+        businessDocument: "Документ компании",
         dispute: "Спор",
         review: "Отзывы",
         report: "Жалоба",
@@ -5659,6 +5697,7 @@ export const ru = {
         support: "{name} · приоритет {priority} · {status}",
         user: "{email} · {role}",
         verification: "{name} · уровень {level} · {status}",
+        businessDocument: "{business} · {status}",
         businesses: "{city} · {services}",
       },
     },
@@ -6283,6 +6322,18 @@ export const ru = {
           "0": "Раздел **Финансы** даёт обзор вашей активности в MOXT: история платежей, баланс кошелька и сводка операций.\n\nКаждое движение фиксируется с датой, статусом и деталями. Это удобное место, чтобы отслеживать расходы и переводы за период.",
         },
       },
+      admin: {
+        actions: {
+          "0": "Отследить мой запрос",
+        },
+        suggestions: {
+          "0": "Хочу поговорить с администратором",
+          "1": "Как связаться с поддержкой?",
+        },
+        texts: {
+          "0": "Чтобы поговорить с **администратором MOXT**, используйте кнопку с гарнитурой в ассистенте или опишите запрос здесь.\n\nВаше сообщение открывает **тикет поддержки**, переданный команде. Администратор ответит вам из раздела **Поддержка** или центра управления.",
+        },
+      },
       message: {
         actions: {
           "0": "Сообщения",
@@ -6584,5 +6635,13 @@ export const ru = {
     copyFromFr: "Копировать FR",
     incompleteWarning: "Нет перевода для: {languages}. Посетители с этими языками увидят версию FR по умолчанию.",
     sourceHint: "Всегда указывайте проверяемый официальный источник (правительство, посольство, университет), чтобы сохранить доверие читателей.",
+  },
+  guest: {
+    previewBanner: {
+      title: "Войдите, чтобы взаимодействовать",
+      body: "Вы просматриваете этот профиль в публичном режиме. Войдите, чтобы связаться, подписаться, добавить в избранное или опубликовать.",
+      createAccount: "Создать аккаунт",
+      login: "Войти",
+    },
   },
 }

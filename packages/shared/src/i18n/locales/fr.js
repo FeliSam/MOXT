@@ -818,6 +818,14 @@ export const fr = {
       whyTitle: "Pourquoi choisir MOXT ?",
       createAccount: "Créer mon compte",
       learnMore: "En savoir plus",
+      preview: {
+        tagline: "Transferts · Colis · Services",
+        estimatedTransfer: "Transfert estimé",
+        routeExample: "Afrique → Russie",
+        discover: "Découvrir",
+        verifiedPartnerTitle: "Entreprise vérifiée",
+        verifiedPartnerSubtitle: "Partenaire MOXT",
+      },
     },
     pillars: {
       transfers: {
@@ -6627,5 +6635,13 @@ export const fr = {
     copyFromFr: "Copier le FR",
     incompleteWarning: "Traduction manquante pour : {languages}. Les visiteurs dans ces langues verront la version FR par défaut.",
     sourceHint: "Indiquez toujours une source officielle vérifiable (gouvernement, ambassade, université) pour garder la confiance des lecteurs.",
+  },
+  guest: {
+    previewBanner: {
+      title: "Connectez-vous pour interagir",
+      body: "Vous consultez ce profil en mode public. Connectez-vous pour contacter, suivre, favoriser ou publier.",
+      createAccount: "Créer un compte",
+      login: "Se connecter",
+    },
   },
 }

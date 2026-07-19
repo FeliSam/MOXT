@@ -1,22 +1,27 @@
 import {
   FiBell,
+  FiCheckCircle,
   FiHome,
   FiMessageSquare,
   FiPackage,
   FiRepeat,
-  FiSearch,
   FiShoppingBag,
 } from 'react-icons/fi'
+import { useLanguage } from '../../contexts/useLanguage'
 
-const NAV = [
-  { icon: FiHome, label: 'Accueil' },
-  { icon: FiRepeat, label: 'Transferts', active: true },
-  { icon: FiPackage, label: 'Colis' },
-  { icon: FiShoppingBag, label: 'Marketplace' },
-  { icon: FiMessageSquare, label: 'Messages' },
-]
+function useNavItems(t) {
+  return [
+    { icon: FiHome, label: t('nav.home') },
+    { icon: FiRepeat, label: t('nav.transfer'), active: true },
+    { icon: FiPackage, label: t('nav.parcels') },
+    { icon: FiShoppingBag, label: t('nav.marketplace') },
+    { icon: FiMessageSquare, label: t('nav.messages') },
+  ]
+}
 
 function AppScreen({ mobile = false }) {
+  const { t } = useLanguage()
+  const nav = useNavItems(t)
   return (
     <div
       className={`flex h-full flex-col bg-[var(--app-bg)] text-[var(--app-text)] ${
@@ -27,7 +32,9 @@ function AppScreen({ mobile = false }) {
         <img src="/assets/brand/mark.png?v=20260714e" alt="" className="size-6 shrink-0 rounded-lg object-cover" />
         <div className="min-w-0 flex-1">
           <p className="truncate font-black">MOXT</p>
-          <p className="truncate text-[9px] text-[var(--app-text-muted)]">Transferts · Colis · Services</p>
+          <p className="truncate text-[9px] text-[var(--app-text-muted)]">
+            {t('public.presentation.preview.tagline')}
+          </p>
         </div>
         <span className="grid size-7 place-items-center rounded-lg bg-[var(--app-surface-muted)]">
           <FiBell className="text-[11px]" />
@@ -36,19 +43,23 @@ function AppScreen({ mobile = false }) {
 
       <div className="flex-1 space-y-2 overflow-hidden p-2.5">
         <div className="rounded-xl bg-gradient-to-br from-brand-800 to-brand-600 p-3 text-white">
-          <p className="text-[9px] font-bold uppercase tracking-wider text-brand-100">Transfert estimé</p>
+          <p className="text-[9px] font-bold uppercase tracking-wider text-brand-100">
+            {t('public.presentation.preview.estimatedTransfer')}
+          </p>
           <p className={`mt-1 font-black tabular-nums ${mobile ? 'text-lg' : 'text-2xl'}`}>125 000 ₽</p>
-          <p className="mt-0.5 text-[9px] text-brand-100">Cotonou → Moscou</p>
+          <p className="mt-0.5 text-[9px] text-brand-100">{t('public.presentation.preview.routeExample')}</p>
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          {['Colis', 'Jobs', 'Events', 'P2P'].map((label) => (
+          {[t('nav.parcels'), t('nav.jobs'), t('nav.events'), t('nav.p2p')].map((label) => (
             <div
               key={label}
               className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-2.5"
             >
               <p className="font-bold">{label}</p>
-              <p className="mt-0.5 text-[9px] text-[var(--app-text-muted)]">Découvrir</p>
+              <p className="mt-0.5 text-[9px] text-[var(--app-text-muted)]">
+                {t('public.presentation.preview.discover')}
+              </p>
             </div>
           ))}
         </div>
@@ -56,11 +67,13 @@ function AppScreen({ mobile = false }) {
         <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-2.5">
           <div className="flex items-center gap-2">
             <span className="grid size-7 place-items-center rounded-lg bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
-              <FiSearch />
+              <FiCheckCircle />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate font-bold">Change Diaspora</p>
-              <p className="text-[9px] text-[var(--app-text-muted)]">Partenaire vérifié · Bénin</p>
+              <p className="truncate font-bold">{t('public.presentation.preview.verifiedPartnerTitle')}</p>
+              <p className="text-[9px] text-[var(--app-text-muted)]">
+                {t('public.presentation.preview.verifiedPartnerSubtitle')}
+              </p>
             </div>
           </div>
         </div>
@@ -71,7 +84,7 @@ function AppScreen({ mobile = false }) {
           mobile ? 'grid-cols-5 gap-0 px-1 py-1.5' : 'grid-cols-5 gap-1 px-2 py-2'
         }`}
       >
-        {NAV.map(({ icon: Icon, label, active }) => (
+        {nav.map(({ icon: Icon, label, active }) => (
           <span
             key={label}
             className={`flex flex-col items-center gap-0.5 rounded-lg px-1 py-1 ${

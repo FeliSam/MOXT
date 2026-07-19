@@ -1,7 +1,7 @@
 {
-  "name": "MOXT — Transferts & Services",
+  "name": "MOXT — Переводы и сервисы",
   "short_name": "MOXT",
-  "description": "Transferts d'argent, colis, marketplace, emplois entre le Bénin et la Russie.",
+  "description": "Денежные переводы, посылки, маркетплейс, вакансии между Африкой и Россией.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -16,25 +16,25 @@
       "sizes": "1080x1920",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Écran d'accueil MOXT"
+      "label": "Главный экран MOXT"
     }
   ],
   "shortcuts": [
     {
-      "name": "Nouveau transfert",
-      "short_name": "Transfert",
+      "name": "Новый перевод",
+      "short_name": "Перевод",
       "url": "/transfers",
       "icons": [{ "src": "/mx-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
-      "name": "Marketplace",
-      "short_name": "Marketplace",
+      "name": "Маркетплейс",
+      "short_name": "Маркетплейс",
       "url": "/marketplace",
       "icons": [{ "src": "/mx-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
-      "name": "Messages",
-      "short_name": "Messages",
+      "name": "Сообщения",
+      "short_name": "Сообщения",
       "url": "/messages",
       "icons": [{ "src": "/mx-192.png", "sizes": "192x192", "type": "image/png" }]
     }

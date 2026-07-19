@@ -124,8 +124,10 @@ export function AppLayout({ children }) {
           </div>
         </main>
       </div>
-      {/* Bottom nav is mobile-only; never keep it mounted over an open thread */}
-      {hideAppChrome ? null : <BottomNavigation />}
+      {/* Toujours monté : la visibilité pendant un thread immersif est gérée en CSS
+          (.messages-thread-immersive .bottom-nav-shell) pour éviter un remount qui
+          fait "réapparaître"/sauter la barre fixe au mauvais endroit du scroll. */}
+      <BottomNavigation />
       <PullToRefreshIndicator disabled={hideAppChrome || isMessagesRoute} />
       <WelcomeGate />
       {messageThreadImmersive ? null : (

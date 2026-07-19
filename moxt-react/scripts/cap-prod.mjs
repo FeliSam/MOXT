@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 /**
- * Build Capacitor PRODUCTION — embarque moxt-react/dist dans l'APK/IPA.
- * N'utilise PAS localhost ni le live reload.
+ * Build Capacitor PRODUCTION — la WebView pointe vers https://moxtapp.ru
+ * (voir capacitor.config.ts). dist/ est copié en secours (offline shell) mais
+ * l'app charge le site live : chaque déploiement web (npm run cpd) s'applique
+ * ensuite instantanément sur les appareils installés, sans nouvelle build native.
  *
  * Usage : npm run cap:prod:sync
  */
@@ -17,8 +19,8 @@ delete env.CAPACITOR_LAN_IP
 console.log(`
 MOXT Capacitor — build PRODUCTION
   • Compile le site (même config que Netlify / Supabase)
-  • Copie dist/ dans Android / iOS
-  • Pas de localhost — l'app fonctionne hors ligne (sauf API Supabase)
+  • Copie dist/ dans Android / iOS (secours hors-ligne)
+  • La WebView charge https://moxtapp.ru — mises à jour web instantanées, sans rebuild
 `)
 
 const result = spawnSync('npm', ['run', 'cap:sync'], {

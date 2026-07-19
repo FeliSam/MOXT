@@ -304,6 +304,13 @@ html.capacitor-native .capacitor-safe-bottom {
   bottom: var(--bottom-nav-offset);
   padding: 0.25rem;
   padding-bottom: var(--bottom-nav-pad);
+  /* Force sa propre couche de composition : évite le décollement/"scroll"
+     visuel de la barre fixe pendant le défilement momentum sur iOS/Android
+     (le navigateur ne doit pas la repeindre avec le contenu de la page). */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 .bottom-nav-shell .bottom-nav-indicator {

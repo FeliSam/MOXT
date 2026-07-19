@@ -33,6 +33,7 @@ export const routePreloaders = {
   '/moxt': () => import('../pages/MoxtHubPage'),
   '/documents': () => import('../pages/DocumentsPage'),
   '/events': () => import('../pages/EventsPage'),
+  '/guide': () => import('../pages/HelpGuidePage'),
   '/favorites': () => import('../pages/FavoritesPage'),
   '/referral': () => import('../pages/ReferralPage'),
   '/feature-matrix': () => import('../pages/FeatureMatrixPage'),
