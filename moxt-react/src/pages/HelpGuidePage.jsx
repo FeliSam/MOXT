@@ -126,6 +126,11 @@ export function HelpArticleDetailPage() {
         title={article.title}
         description={article.summary}
       />
+      {article.createdAt ? (
+        <p className="-mt-3 text-xs text-[var(--app-text-faint)]">
+          {t('help.article.publishedOn', { date: formatDate(article.createdAt) })}
+        </p>
+      ) : null}
       <div className="grid gap-4 rounded-[var(--radius-card-lg)] bg-[var(--app-surface)] p-5 shadow-[var(--shadow-card)] sm:p-6">
         <p className="whitespace-pre-line text-sm leading-7 text-[var(--app-text)]">
           {article.content}

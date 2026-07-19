@@ -6598,6 +6598,7 @@ export const ru = {
     },
     article: {
       pinned: "Важное",
+      publishedOn: "Опубликовано {date} на MOXT",
       verifiedOn: "Проверено {date}",
       notFound: "Эта статья не найдена или была удалена.",
       officialSource: "Открыть официальный источник",

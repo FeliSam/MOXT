@@ -6597,6 +6597,7 @@ export const pt = {
     },
     article: {
       pinned: "Destaque",
+      publishedOn: "Publicado em {date} no MOXT",
       verifiedOn: "Verificado em {date}",
       notFound: "Este artigo não foi encontrado ou foi removido.",
       officialSource: "Ver a fonte oficial",
