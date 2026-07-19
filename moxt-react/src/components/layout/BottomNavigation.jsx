@@ -121,7 +121,7 @@ export function BottomNavigation() {
     <>
       <nav
         ref={navRef}
-        className="bottom-nav-shell z-[var(--z-nav)] grid grid-cols-5 gap-0.5 rounded-[1rem] border border-[var(--app-border)] bg-[var(--app-surface)]/94 shadow-[var(--shadow-float)] backdrop-blur-xl lg:hidden"
+        className="bottom-nav-shell z-[var(--z-nav)] grid grid-cols-5 gap-0.5 rounded-[1rem] border border-[var(--app-border)] bg-[var(--app-surface)]/40 shadow-[var(--shadow-float)] backdrop-blur-xl lg:hidden"
         aria-label={t('nav.mobileQuickAria')}
       >
         <span
