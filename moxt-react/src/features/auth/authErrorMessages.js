@@ -105,3 +105,52 @@ export function authErrorToast(title, message, tone = 'error', t) {
     tone,
   }
 }
+
+/**
+ * True when the error is an SMS delivery/provider failure.
+ * These toasts are suppressed on register — they spam during SMSC outages
+ * and do not help the user complete signup.
+ */
+export function isSmsSendFailureMessage(message = '', t) {
+  const raw = String(message || '').trim()
+  if (!raw) return false
+  const sanitized = sanitizeAuthMessage(raw, t)
+  const haystack = `${raw}\n${sanitized}`.toLowerCase()
+  return (
+    haystack.includes('envoi du code sms a échoué') ||
+    haystack.includes('envoi du code sms est temporairement') ||
+    haystack.includes('envoi sms est temporairement') ||
+    haystack.includes('envoi sms a pris trop de temps') ||
+    haystack.includes('sending the sms code failed') ||
+    haystack.includes('sms is temporarily') ||
+    haystack.includes('unexpected status code returned from hook') ||
+    haystack.includes('hook_timeout') ||
+    /не удалось отправить sms/i.test(haystack) ||
+    /env[ií]o del c[oó]digo sms/i.test(haystack) ||
+    /envio do c[oó]digo sms/i.test(haystack)
+  )
+}
+
+/**
+ * Transient network blips while confirming OTP — muted under « Vérification impossible ».
+ * (Messages 3 & 4: confirm without new SMS / without redemanding code.)
+ */
+export function isOtpConfirmNetworkFailureMessage(message = '', t) {
+  const raw = String(message || '').trim()
+  if (!raw) return false
+  const sanitized = sanitizeAuthMessage(raw, t)
+  const haystack = `${raw}\n${sanitized}`.toLowerCase()
+  return (
+    haystack.includes('connexion au serveur impossible') &&
+    (haystack.includes('confirmer le code') ||
+      haystack.includes('confirmer') &&
+        (haystack.includes('sans en redemander') ||
+          haystack.includes('sans redemander') ||
+          haystack.includes('sans renvoyer')))
+  )
+}
+
+/** Errors that must not toast on the register / OTP confirm path. */
+export function shouldMuteRegisterErrorToast(message = '', t) {
+  return isSmsSendFailureMessage(message, t) || isOtpConfirmNetworkFailureMessage(message, t)
+}

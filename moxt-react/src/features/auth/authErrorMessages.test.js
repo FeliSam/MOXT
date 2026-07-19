@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
-import { authErrorToast, sanitizeAuthMessage } from './authErrorMessages'
+import {
+  authErrorToast,
+  isOtpConfirmNetworkFailureMessage,
+  isSmsSendFailureMessage,
+  sanitizeAuthMessage,
+  shouldMuteRegisterErrorToast,
+} from './authErrorMessages'
 
 describe('authErrorMessages i18n', () => {
   it('traduit les codes auth connus quand t est fourni', () => {
@@ -47,5 +53,36 @@ describe('authErrorMessages i18n', () => {
       title: 'Erreur',
       tone: 'error',
     })
+  })
+
+  it('détecte les échecs d’envoi SMS à ne pas toaster', () => {
+    expect(
+      isSmsSendFailureMessage(
+        "L'envoi du code SMS a échoué. Réessayez dans quelques instants ou contactez le support.",
+      ),
+    ).toBe(true)
+    expect(
+      isSmsSendFailureMessage("L'envoi SMS est temporairement bloqué. Réessayez dans quelques minutes."),
+    ).toBe(true)
+    expect(isSmsSendFailureMessage('ALREADY_REGISTERED')).toBe(false)
+  })
+
+  it('met en sourdine les erreurs réseau 3 et 4 à la confirmation OTP', () => {
+    expect(
+      isOtpConfirmNetworkFailureMessage(
+        'Connexion au serveur impossible. Réessayez de confirmer le code sans en redemander un nouveau.',
+      ),
+    ).toBe(true)
+    expect(
+      isOtpConfirmNetworkFailureMessage(
+        'Connexion au serveur impossible. Réessayez « Confirmer » sans redemander de code.',
+      ),
+    ).toBe(true)
+    expect(
+      shouldMuteRegisterErrorToast(
+        'Connexion au serveur impossible. Réessayez de confirmer le code sans en redemander un nouveau.',
+      ),
+    ).toBe(true)
+    expect(isOtpConfirmNetworkFailureMessage('Le code est invalide ou a expiré.')).toBe(false)
   })
 })

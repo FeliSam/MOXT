@@ -40,7 +40,11 @@ import {
   verifyPhoneRegistration,
 } from '../features/auth/authSlice'
 import { addToast } from '../features/ui/uiSlice'
-import { authErrorToast, sanitizeAuthMessage } from '../features/auth/authErrorMessages'
+import {
+  authErrorToast,
+  sanitizeAuthMessage,
+  shouldMuteRegisterErrorToast,
+} from '../features/auth/authErrorMessages'
 import { MOXT_AUTH_DEV_MODE } from '@moxt/shared/auth/otpCooldown.js'
 import { loadAllData } from '../app/loadAllData'
 import { startRealtimeSubscription } from '../services/realtimeService'
@@ -201,18 +205,20 @@ export function RegisterPage() {
       if (MOXT_AUTH_DEV_MODE) {
         console.warn('[MOXT][dev] verify/register error raw:', error)
       }
-      dispatch(
-        addToast(
-          authErrorToast(t('auth.register.toasts.verifyFailedTitle'), error, 'error', t),
-        ),
-      )
+      if (!shouldMuteRegisterErrorToast(errorText, t)) {
+        dispatch(
+          addToast(
+            authErrorToast(t('auth.register.toasts.verifyFailedTitle'), error, 'error', t),
+          ),
+        )
+      }
     } else if (oauthCompletion) {
       dispatch(
         addToast(
           authErrorToast(t('auth.register.toasts.oauthFailedTitle'), error, 'error', t),
         ),
       )
-    } else {
+    } else if (!shouldMuteRegisterErrorToast(errorText, t)) {
       dispatch(
         addToast(
           authErrorToast(t('auth.register.toasts.registerFailedTitle'), error, 'error', t),
@@ -429,11 +435,13 @@ export function RegisterPage() {
         setPendingVerification(null)
         setStep(3)
         const message = String(error?.message || error || '')
-        dispatch(
-          addToast(
-            authErrorToast(t('auth.register.toasts.registerFailedTitle'), message, 'error', t),
-          ),
-        )
+        if (!shouldMuteRegisterErrorToast(message, t)) {
+          dispatch(
+            addToast(
+              authErrorToast(t('auth.register.toasts.registerFailedTitle'), message, 'error', t),
+            ),
+          )
+        }
       } finally {
         if (!cancelled) setRestoringOtpGate(false)
       }
@@ -502,11 +510,13 @@ export function RegisterPage() {
         if (/Limite atteinte|Patientez \d+ secondes/i.test(payload)) {
           setOtpCapMessage(sanitizeAuthMessage(payload, t))
         }
-        dispatch(
-          addToast(
-            authErrorToast(t('auth.register.toasts.resendFailedTitle'), payload, 'error', t),
-          ),
-        )
+        if (!shouldMuteRegisterErrorToast(payload, t)) {
+          dispatch(
+            addToast(
+              authErrorToast(t('auth.register.toasts.resendFailedTitle'), payload, 'error', t),
+            ),
+          )
+        }
       }
     } finally {
       otpActionLockRef.current = false
