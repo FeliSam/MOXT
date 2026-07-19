@@ -910,7 +910,7 @@ export function RegisterPage() {
             ) : null}
 
             {formGateMessage ? (
-              <Alert title={t('auth.register.toasts.registerFailedTitle')} tone="error">
+              <Alert title={t('auth.register.toasts.registerFailedTitle')} variant="error">
                 {formGateMessage}
               </Alert>
             ) : null}
