@@ -66,10 +66,22 @@ export function buildQueues(state) {
       }
     })
 
+  const parcelProofs = state.parcels.items
+    .filter((item) => {
+      const proof = item.proofStatus || (item.travelProofUrl ? 'pending_review' : 'missing')
+      return proof === 'pending_review' || (item.travelProofUrl && proof !== 'verified' && proof !== 'rejected')
+    })
+    .map((item) => ({
+      ...item,
+      userName: item.ownerName || `${item.origin} → ${item.destination}`,
+      proofStatus: item.proofStatus || 'pending_review',
+    }))
+
   return {
     accountDeletions,
     verifications,
     businessDocuments,
+    parcelProofs,
     support: state.communications.support.filter((item) => item.status === 'waiting_agent'),
     disputes: state.disputes.items.filter((i) => ['new', 'open'].includes(i.status)),
     reviews: state.reviews.items.filter((i) => i.status === 'pending'),
@@ -93,6 +105,7 @@ export function buildQueues(state) {
         this.accountDeletions.length +
         this.verifications.length +
         this.businessDocuments.length +
+        this.parcelProofs.length +
         this.support.length +
         this.disputes.length +
         this.reports.length +
@@ -353,6 +366,14 @@ export function buildDetailFacts(kind, item, t) {
         [f('admin.facts.pricePerKg'), formatMoney(item.pricePerKg, item.currency)],
         [f('admin.facts.status'), item.effectiveStatus || item.status],
         [f('admin.facts.distribution'), item.distributionDate || '—'],
+        [
+          f('admin.facts.proofStatus'),
+          item.proofStatus || (item.travelProofUrl ? 'pending_review' : f('admin.facts.proofMissing')),
+        ],
+        [
+          f('admin.facts.proofFile'),
+          item.travelProofName || (item.travelProofUrl ? f('admin.facts.yes') : f('admin.facts.no')),
+        ],
       ]
     case 'verification':
       return [

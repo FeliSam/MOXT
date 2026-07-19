@@ -103,6 +103,33 @@ export function AdminDetailPanel({
         </div>
       ) : null}
 
+      {kind === 'parcels' && (item.travelProofUrl || item.travelProofName) ? (
+        <div className="grid min-w-0 gap-2">
+          <p className="text-[10px] font-black uppercase tracking-wider text-[var(--app-text-muted)]">
+            {adminText(t, 'admin.detail.proofPreviewTitle')}
+          </p>
+          <AdminDocumentPreview
+            documents={[
+              {
+                id: item.id,
+                name: item.travelProofName || adminText(t, 'admin.detail.proofPreviewTitle'),
+                url: item.travelProofUrl,
+                type: item.travelProofType,
+                size: item.travelProofSize,
+                status: item.proofStatus || 'pending_review',
+              },
+            ]}
+          />
+        </div>
+      ) : null}
+
+      {kind === 'parcels' && !item.travelProofUrl ? (
+        <div className="rounded-xl bg-amber-50 px-3 py-2.5 text-xs font-bold text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+          {adminText(t, 'admin.facts.proofMissing')}
+          {item.proofStatus ? ` · ${item.proofStatus}` : ''}
+        </div>
+      ) : null}
+
       {kind === 'user' ? (
         <div className="grid min-w-0 gap-2 rounded-xl bg-[var(--app-surface-muted)] p-3">
           <Select

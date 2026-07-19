@@ -17,7 +17,6 @@ import { RevealListItem } from '../components/ui/RevealListItem'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { Select } from '../components/ui/Select'
 import { useLanguage } from '../contexts/useLanguage'
-import { CatalogFavoriteButton } from '../features/account/CatalogFavoriteButton'
 import { jobContractLabel, jobSectorLabel } from '../features/jobs/jobDisplayUtils'
 import { formatMoney } from '../features/transfers/transferUtils'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
@@ -231,7 +230,7 @@ export function JobsPage() {
                           </span>
                         )}
                       </span>
-                      <div className="mt-6 flex items-start gap-2 pr-10 sm:mt-7">
+                      <div className="mt-6 flex items-start gap-2 sm:mt-7">
                         <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand-700 dark:bg-brand-900 dark:text-brand-200">
                           <FiBriefcase />
                         </span>
@@ -274,15 +273,6 @@ export function JobsPage() {
                     </Card>
                     )}
                   </Link>
-                  {tab !== 'archived' ? (
-                    <CatalogFavoriteButton
-                      relatedId={job.id}
-                      relatedType="job"
-                      title={job.title}
-                      path={`/jobs/${job.id}`}
-                      entity={job}
-                    />
-                  ) : null}
                 </div>
               </RevealListItem>
             ))

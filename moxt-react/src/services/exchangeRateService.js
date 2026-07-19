@@ -34,12 +34,22 @@ function setSnapshot(state, next) {
   emit(state)
 }
 
+const RATE_FETCH_TIMEOUT_MS = 3000
+
 /** Live rate for base->quote (e.g. fetchRate('RUB', 'NGN')). */
 export async function fetchRate(base, quote) {
   try {
-    const response = await fetch(`${RATE_BASE_URL}/${base}/${quote}`, {
-      headers: { Accept: 'application/json' },
-    })
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null
+    const timer = setTimeout(() => controller?.abort(), RATE_FETCH_TIMEOUT_MS)
+    let response
+    try {
+      response = await fetch(`${RATE_BASE_URL}/${base}/${quote}`, {
+        headers: { Accept: 'application/json' },
+        signal: controller?.signal,
+      })
+    } finally {
+      clearTimeout(timer)
+    }
     if (!response.ok) throw new Error('Rate request failed')
     const data = await response.json()
     const rate = Number(data.rate)

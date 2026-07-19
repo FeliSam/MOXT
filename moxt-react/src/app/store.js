@@ -28,7 +28,6 @@ import { interactionMiddleware } from './interactionMiddleware'
 import { supabaseMiddleware } from './supabaseMiddleware'
 import { engagementToastMiddleware } from './engagementToastMiddleware'
 import { baseApi } from '../services/baseApi'
-import { restoreSession } from '../features/auth/authSlice'
 
 export const store = configureStore({
   reducer: {
@@ -71,5 +70,3 @@ export const store = configureStore({
       engagementToastMiddleware,
     ),
 })
-
-void store.dispatch(restoreSession())

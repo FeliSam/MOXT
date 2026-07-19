@@ -19,7 +19,7 @@ export function DashboardPage() {
   const [calculatorOpen, setCalculatorOpen] = useState(false)
   const quickActionsRef = useHorizontalScroll()
   const trustHighlightsRef = useHorizontalScroll()
-  const coreServicesRef = useHorizontalScroll({ wheelToHorizontal: true })
+  const coreServicesRef = useHorizontalScroll()
   const listingsScrollRef = useHorizontalScroll()
   const user = useSelector((state) => state.auth.user)
   const authLoading = useSelector((state) => state.auth.status === 'loading')

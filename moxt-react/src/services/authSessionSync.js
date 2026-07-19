@@ -37,12 +37,44 @@ async function refreshDataIfNeeded(dispatch, getState) {
   dispatch(loadAllData())
 }
 
-async function resolveSupabaseSession() {
-  const { data } = await supabase.auth.getSession()
-  if (data.session) return data.session
+const SESSION_RESOLVE_TIMEOUT_MS = 8000
 
-  const { data: refreshed } = await supabase.auth.refreshSession()
-  return refreshed.session ?? null
+function withTimeout(promise, ms, label) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`${label} timeout après ${ms}ms`))
+    }, ms)
+    promise.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      (error) => {
+        clearTimeout(timer)
+        reject(error)
+      },
+    )
+  })
+}
+
+async function resolveSupabaseSession() {
+  try {
+    const { data } = await withTimeout(
+      supabase.auth.getSession(),
+      SESSION_RESOLVE_TIMEOUT_MS,
+      'getSession',
+    )
+    if (data.session) return data.session
+
+    const { data: refreshed } = await withTimeout(
+      supabase.auth.refreshSession(),
+      SESSION_RESOLVE_TIMEOUT_MS,
+      'refreshSession',
+    )
+    return refreshed.session ?? null
+  } catch {
+    return null
+  }
 }
 
 async function syncSessionToStore(
@@ -103,11 +135,23 @@ async function refreshAuthUserIfNeeded(dispatch, getState, { force = false } = {
   if (!force && now - lastAuthUserRefresh < AUTH_USER_REFRESH_MS) return
   lastAuthUserRefresh = now
 
-  const payload = await authService.refreshAuthSession()
+  let payload = null
+  try {
+    payload = await authService.refreshAuthSession()
+  } catch {
+    // Erreur réseau / profil — conserver la session Redux.
+    return
+  }
+
   if (!payload) {
-    stopRealtimeSubscription()
-    dispatch(clearSession())
-    clearClientCache({ scope: 'full', reason: 'session-invalid' })
+    // Null ambigu (race getSession, refresh en cours) : ne déconnecter
+    // que si Supabase n'a vraiment plus de session après retry.
+    const session = await resolveSupabaseSession().catch(() => null)
+    if (!session && getState().auth.user) {
+      stopRealtimeSubscription()
+      dispatch(clearSession())
+      clearClientCache({ scope: 'full', reason: 'session-invalid' })
+    }
     return
   }
   dispatch(applySession(payload))

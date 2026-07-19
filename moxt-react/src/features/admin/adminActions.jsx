@@ -11,7 +11,7 @@ import {
   updateListingReportStatus,
   updateListingStatus,
 } from '../marketplace/marketplaceSlice'
-import { updateParcelStatus } from '../parcels/parcelSlice'
+import { updateParcelProofStatus, updateParcelStatus } from '../parcels/parcelSlice'
 import { deletePost, moderatePost } from '../posts/postsSlice'
 import { moderateReview } from '../reviews/reviewSlice'
 import { TRANSFER_TRANSITIONS } from '../transfers/transferConfig'
@@ -216,6 +216,29 @@ export function contentActions(contentView, dispatch, item, t) {
           >
             {adminText(t, 'admin.actions.archive')}
           </ActionButton>
+          {item.travelProofUrl || item.proofStatus === 'pending_review' ? (
+            <>
+              <ActionButton
+                done={item.proofStatus === 'verified'}
+                doneLabel={adminText(t, 'admin.queues.validateProof')}
+                onClick={() =>
+                  dispatch(updateParcelProofStatus({ id: item.id, status: 'verified' }))
+                }
+              >
+                {adminText(t, 'admin.queues.validateProof')}
+              </ActionButton>
+              <ActionButton
+                done={item.proofStatus === 'rejected'}
+                doneLabel={adminText(t, 'admin.queues.rejectProof')}
+                variant="danger"
+                onClick={() =>
+                  dispatch(updateParcelProofStatus({ id: item.id, status: 'rejected' }))
+                }
+              >
+                {adminText(t, 'admin.queues.rejectProof')}
+              </ActionButton>
+            </>
+          ) : null}
         </>
       )
     case 'reports':

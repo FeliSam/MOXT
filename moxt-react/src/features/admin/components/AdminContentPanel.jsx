@@ -26,6 +26,10 @@ function ContentRow({ contentView, dispatch, item, setSelected, t }) {
   const status = item.effectiveStatus || item.status || 'active'
   const isPending = ['pending', 'pending_review', 'draft', 'new'].includes(status)
   const isArchived = ['archived', 'rejected', 'expired', 'completed', 'suspended', 'dismissed'].includes(status)
+  const proofStatus =
+    contentView === 'parcels'
+      ? item.proofStatus || (item.travelProofUrl ? 'pending_review' : 'missing')
+      : null
   return (
     <div className={`${ITEM} grid gap-3 ${isPending ? 'border-amber-200 dark:border-amber-800/40' : ''} ${isArchived ? 'opacity-80' : ''}`}>
       <div className="flex flex-wrap items-center gap-3">
@@ -51,6 +55,23 @@ function ContentRow({ contentView, dispatch, item, setSelected, t }) {
         >
           {status}
         </span>
+        {proofStatus ? (
+          <span
+            className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+              proofStatus === 'verified'
+                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
+                : proofStatus === 'rejected'
+                  ? 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300'
+                  : proofStatus === 'pending_review'
+                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'
+                    : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+            }`}
+          >
+            {proofStatus === 'missing'
+              ? adminText(t, 'admin.facts.proofMissing')
+              : `${adminText(t, 'admin.facts.proofStatus')}: ${proofStatus}`}
+          </span>
+        ) : null}
       </div>
       <div className="flex flex-wrap gap-2">
         {contentActions(contentView, dispatch, item, t)}

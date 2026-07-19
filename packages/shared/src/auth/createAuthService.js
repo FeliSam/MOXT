@@ -25,6 +25,11 @@ function isOrphanSessionError(error) {
  * démarrage reste bloqué en chargement jusqu'à ce que l'utilisateur force la
  * fermeture de l'app. On borne donc chaque appel dans le temps.
  */
+const AUTH_NETWORK_TIMEOUT_MS = 8000
+const AUTH_LOGIN_TIMEOUT_MS = 12000
+/** signUp / signInWithOtp attendent le hook SMS — borné pour ne pas geler « Créer mon compte ». */
+const AUTH_OTP_SEND_TIMEOUT_MS = 15000
+
 function withTimeout(promise, ms, label) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
@@ -41,6 +46,10 @@ function withTimeout(promise, ms, label) {
       },
     )
   })
+}
+
+function isTimeoutError(error) {
+  return typeof error?.message === 'string' && error.message.includes('timeout après')
 }
 
 function isAuthUserConfirmed(authUser) {
@@ -417,15 +426,43 @@ export function createAuthService(supabase, redirects = {}) {
 
     // Prefer signInWithOtp — more reliably triggers the Send SMS hook than auth.resend.
     // Do not mark prefer_p1sms: resend stays on SMSC (P1SMS dual-route paused).
-    const otpResult = await supabase.auth.signInWithOtp({
-      phone,
-      options: { channel: 'sms', shouldCreateUser: false },
-    })
+    let otpResult
+    try {
+      otpResult = await withTimeout(
+        supabase.auth.signInWithOtp({
+          phone,
+          options: { channel: 'sms', shouldCreateUser: false },
+        }),
+        AUTH_OTP_SEND_TIMEOUT_MS,
+        'signInWithOtp',
+      )
+    } catch (error) {
+      if (isTimeoutError(error)) {
+        throw new Error(
+          'L’envoi du SMS prend trop de temps. Vérifiez votre réseau (VPN inclus) puis réessayez.',
+        )
+      }
+      throw error
+    }
     if (otpResult.error) {
-      const resendResult = await supabase.auth.resend({
-        type: 'sms',
-        phone,
-      })
+      let resendResult
+      try {
+        resendResult = await withTimeout(
+          supabase.auth.resend({
+            type: 'sms',
+            phone,
+          }),
+          AUTH_OTP_SEND_TIMEOUT_MS,
+          'resendSms',
+        )
+      } catch (error) {
+        if (isTimeoutError(error)) {
+          throw new Error(
+            'L’envoi du SMS prend trop de temps. Vérifiez votre réseau (VPN inclus) puis réessayez.',
+          )
+        }
+        throw error
+      }
       if (resendResult.error) {
         // Surface the real SMS / Auth error — never collapse to ALREADY_REGISTERED here.
         throw new Error(
@@ -485,13 +522,21 @@ export function createAuthService(supabase, redirects = {}) {
     let data = null
     let error = null
     for (let attempt = 0; attempt < 2; attempt += 1) {
-      ;({ data, error } = await supabase.rpc('moxt_check_identity_available', {
-        p_kind: kind,
-        p_value: value,
-        p_user_id: userId,
-      }))
+      try {
+        ;({ data, error } = await withTimeout(
+          supabase.rpc('moxt_check_identity_available', {
+            p_kind: kind,
+            p_value: value,
+            p_user_id: userId,
+          }),
+          AUTH_NETWORK_TIMEOUT_MS,
+          'checkIdentity',
+        ))
+      } catch (timeoutError) {
+        error = timeoutError
+      }
       if (!error) break
-      if (attempt === 0 && isTransientRpcFailure(error)) {
+      if (attempt === 0 && (isTransientRpcFailure(error) || isTimeoutError(error))) {
         await new Promise((resolve) => setTimeout(resolve, 400))
         continue
       }
@@ -887,20 +932,51 @@ export function createAuthService(supabase, redirects = {}) {
       if (!supabase) throw new Error('Supabase non configuré.')
       const loginIdentifier = (identifier || email || '').trim()
       const isEmail = loginIdentifier.includes('@')
-      const { data, error } = isEmail
-        ? await supabase.auth.signInWithPassword({
-            email: loginIdentifier.toLowerCase(),
-            password,
-          })
-        : await signInWithPhoneFallback(normalizeRussianAuthPhone(loginIdentifier), password)
-      if (error) throw new Error(translateAuthError(error, { channel: isEmail ? 'email' : 'phone' }))
+      const channel = isEmail ? 'email' : 'phone'
+      let data
+      try {
+        const result = await withTimeout(
+          isEmail
+            ? supabase.auth.signInWithPassword({
+                email: loginIdentifier.toLowerCase(),
+                password,
+              })
+            : signInWithPhoneFallback(normalizeRussianAuthPhone(loginIdentifier), password),
+          AUTH_LOGIN_TIMEOUT_MS,
+          'signIn',
+        )
+        data = result.data
+        if (result.error) {
+          throw new Error(translateAuthError(result.error, { channel }))
+        }
+      } catch (error) {
+        if (isTimeoutError(error)) {
+          throw new Error(
+            'La connexion met trop de temps. Vérifiez votre réseau puis réessayez.',
+          )
+        }
+        throw error
+      }
       if (!data?.session || !data?.user) {
         throw new Error('Connexion impossible. Vérifiez vos identifiants.')
       }
-      const user = await fetchOrCreateProfile(data.user, {
-        pendingRegistration: loadPendingRegistration(),
-      })
-      return { user, token: data.session.access_token }
+      try {
+        const user = await withTimeout(
+          fetchOrCreateProfile(data.user, {
+            pendingRegistration: loadPendingRegistration(),
+          }),
+          AUTH_NETWORK_TIMEOUT_MS,
+          'fetchOrCreateProfile',
+        )
+        return { user, token: data.session.access_token }
+      } catch (error) {
+        if (isTimeoutError(error)) {
+          throw new Error(
+            'Profil indisponible pour le moment. Réessayez dans quelques instants.',
+          )
+        }
+        throw error
+      }
     },
 
     async completeOAuthProfile(details) {
@@ -990,8 +1066,12 @@ export function createAuthService(supabase, redirects = {}) {
           options: { channel: 'sms', data: profileFields },
         }
 
-        // Lifetime limit only — unconfirmed Auth phones must not block OTP resume.
-        const phoneAvailability = await checkIdentityAvailability('phone', normalizedPhone)
+        // Phone + e-mail checks in parallel (VPN / réseaux lents).
+        const [phoneAvailability, emailAvailability] = await Promise.all([
+          checkIdentityAvailability('phone', normalizedPhone),
+          checkIdentityAvailability('email', email),
+        ])
+
         if (!phoneAvailability.available && phoneAvailability.reason === 'limit') {
           throw new Error('IDENTITY_LIMIT_REACHED')
         }
@@ -1015,12 +1095,37 @@ export function createAuthService(supabase, redirects = {}) {
         }
 
         // New signup path only — e-mail must not belong to another live account.
-        await assertIdentityAvailable('email', email, null, { channel: 'email' })
+        if (!emailAvailability.available) {
+          if (emailAvailability.reason === 'limit') {
+            throw new Error('IDENTITY_LIMIT_REACHED')
+          }
+          throw new Error(
+            translateAuthError(
+              { message: 'MOXT_IDENTITY_ACTIVE' },
+              { channel: 'email' },
+            ),
+          )
+        }
 
         // Guard before provider send — one code at a time, max 4 / 3h.
         guardOtpSend('phone', normalizedPhone)
 
-        const { data, error } = await supabase.auth.signUp(credentials)
+        let data
+        let error
+        try {
+          ;({ data, error } = await withTimeout(
+            supabase.auth.signUp(credentials),
+            AUTH_OTP_SEND_TIMEOUT_MS,
+            'signUp',
+          ))
+        } catch (timeoutError) {
+          if (isTimeoutError(timeoutError)) {
+            throw new Error(
+              'La création du compte prend trop de temps. Réessayez (VPN ou réseau lent).',
+            )
+          }
+          throw timeoutError
+        }
         if (error) {
           if (isAuthAlreadyExistsError(error)) {
             try {
@@ -1061,7 +1166,11 @@ export function createAuthService(supabase, redirects = {}) {
         trackOtpSend('phone', normalizedPhone)
 
         if (data.session) {
-          await supabase.auth.signOut()
+          try {
+            await withTimeout(supabase.auth.signOut(), AUTH_NETWORK_TIMEOUT_MS, 'signOut')
+          } catch {
+            // Session locale — ne bloque pas l’écran OTP.
+          }
         }
 
         const user = profileToUser({ id: data.user.id, ...profileFields })
@@ -1413,12 +1522,16 @@ export function createAuthService(supabase, redirects = {}) {
 
       let session = null
       try {
-        const { data } = await withTimeout(supabase.auth.getSession(), 8000, 'getSession')
+        const { data } = await withTimeout(
+          supabase.auth.getSession(),
+          AUTH_NETWORK_TIMEOUT_MS,
+          'getSession',
+        )
         session = data.session
         if (!session) {
           const { data: refreshed } = await withTimeout(
             supabase.auth.refreshSession(),
-            8000,
+            AUTH_NETWORK_TIMEOUT_MS,
             'refreshSession',
           )
           session = refreshed.session
@@ -1433,7 +1546,11 @@ export function createAuthService(supabase, redirects = {}) {
       // getUser() (réseau) — pas session.user local — pour email_confirmed_at à jour (Safari / autres onglets)
       let authUser = session.user
       try {
-        authUser = await withTimeout(getAuthenticatedAuthUser(), 8000, 'getUser')
+        authUser = await withTimeout(
+          getAuthenticatedAuthUser(),
+          AUTH_NETWORK_TIMEOUT_MS,
+          'getUser',
+        )
       } catch (error) {
         console.warn('[MOXT] getUser indisponible, fallback session.user:', error?.message)
       }
@@ -1443,7 +1560,7 @@ export function createAuthService(supabase, redirects = {}) {
           resolveEstablishedSessionUser(authUser, {
             pendingRegistration: loadPendingRegistration(),
           }),
-          8000,
+          AUTH_NETWORK_TIMEOUT_MS,
           'resolveEstablishedSessionUser',
         )
         return { user, token: session.access_token }
@@ -1477,18 +1594,29 @@ export function createAuthService(supabase, redirects = {}) {
       }
     },
 
-    async sessionFromSupabaseUser(session) {
+    async sessionFromSupabaseUser(session, { recreateMissingProfile = false } = {}) {
       if (!session?.user) return null
       let authUser = session.user
       try {
-        authUser = await getAuthenticatedAuthUser()
+        authUser = await withTimeout(
+          getAuthenticatedAuthUser(),
+          AUTH_NETWORK_TIMEOUT_MS,
+          'getUser',
+        )
       } catch {
-        // Conservé session.user si getUser échoue (hors-ligne)
+        // Conservé session.user si getUser échoue / timeout (hors-ligne, socket mort)
       }
       try {
-        const user = await resolveEstablishedSessionUser(authUser, {
-          pendingRegistration: loadPendingRegistration(),
-        })
+        const extras = { pendingRegistration: loadPendingRegistration() }
+        // Foreground refresh: recreate if needed — never hard-logout a live tab for a missing row.
+        // Boot restore keeps orphan detection via resolveEstablishedSessionUser.
+        const user = await withTimeout(
+          recreateMissingProfile
+            ? fetchOrCreateProfile(authUser, extras)
+            : resolveEstablishedSessionUser(authUser, extras),
+          AUTH_NETWORK_TIMEOUT_MS,
+          'resolveProfile',
+        )
         return { user, token: session.access_token }
       } catch (error) {
         if (isOrphanSessionError(error)) {
@@ -1522,10 +1650,27 @@ export function createAuthService(supabase, redirects = {}) {
     /** Recharge Auth (getUser) + profil — corrige emailVerified stale (Safari, magic link autre onglet). */
     async refreshAuthSession() {
       if (!supabase) return null
-      const { data } = await supabase.auth.getSession()
-      const session = data.session
+      let session = null
+      try {
+        const { data } = await withTimeout(
+          supabase.auth.getSession(),
+          AUTH_NETWORK_TIMEOUT_MS,
+          'getSession',
+        )
+        session = data.session
+        if (!session) {
+          const { data: refreshed } = await withTimeout(
+            supabase.auth.refreshSession(),
+            AUTH_NETWORK_TIMEOUT_MS,
+            'refreshSession',
+          )
+          session = refreshed.session ?? null
+        }
+      } catch {
+        return null
+      }
       if (!session) return null
-      return this.sessionFromSupabaseUser(session)
+      return this.sessionFromSupabaseUser(session, { recreateMissingProfile: true })
     },
 
     async logout() {

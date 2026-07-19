@@ -12,12 +12,10 @@ import { PasswordInput } from '../components/ui/PasswordInput'
 import { flagEmoji } from '../config/flags'
 import { constrainPhone } from '../config/phone'
 import { useLanguage } from '../contexts/useLanguage'
-import { loadAllData } from '../app/loadAllData'
 import { authErrorToast } from '../features/auth/authErrorMessages'
 import { clearAuthError, login } from '../features/auth/authSlice'
 import { createAuthSchemas } from '../features/auth/authSchemas'
 import { addToast } from '../features/ui/uiSlice'
-import { startRealtimeSubscription } from '../services/realtimeService'
 import { resolveReturnTo, clearReturnTo } from '../features/guest/guestNavigation'
 
 const LOGIN_MODES = [
@@ -26,11 +24,18 @@ const LOGIN_MODES = [
 ]
 
 function finishLogin(dispatch, store, navigate, location, searchParams) {
-  dispatch(loadAllData())
-  startRealtimeSubscription(store.getState().auth.user.id, dispatch, store.getState)
   const destination = resolveReturnTo(searchParams, location.state)
   clearReturnTo()
   navigate(destination, { replace: true })
+
+  // Imports lourds hors du chunk Login — ne bloquent ni l'ouverture ni la navigation.
+  void import('../app/loadAllData').then(({ loadAllData }) => {
+    dispatch(loadAllData())
+  })
+  void import('../services/realtimeService').then(({ startRealtimeSubscription }) => {
+    const userId = store.getState().auth.user?.id
+    if (userId) startRealtimeSubscription(userId, dispatch, store.getState)
+  })
 }
 
 export function LoginPage() {

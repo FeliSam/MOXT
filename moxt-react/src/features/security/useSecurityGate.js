@@ -5,6 +5,7 @@ import {
   canCreateBusiness,
   canPublishContent,
   canPublishP2POffer,
+  canPublishVoyage,
   canUseTransferAccount,
   securityGateMessage,
 } from '@moxt/shared/auth/userSecurity.js'
@@ -36,6 +37,12 @@ export function useSecurityGate() {
     return false
   }, [notifyBlocked, user])
 
+  const requireVoyagePublish = useCallback(() => {
+    if (canPublishVoyage(user)) return true
+    notifyBlocked('voyage')
+    return false
+  }, [notifyBlocked, user])
+
   const requireP2PPublish = useCallback(() => {
     if (canPublishP2POffer(user)) return true
     notifyBlocked('p2p')
@@ -54,5 +61,12 @@ export function useSecurityGate() {
     return false
   }, [notifyBlocked, user])
 
-  return { user, requirePublish, requireP2PPublish, requireBusiness, requireTransfer }
+  return {
+    user,
+    requirePublish,
+    requireVoyagePublish,
+    requireP2PPublish,
+    requireBusiness,
+    requireTransfer,
+  }
 }

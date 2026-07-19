@@ -71,14 +71,15 @@ export async function initCapacitor() {
 
   await bindDeepLinks(App)
 
-  try {
-    const { initNativePushNotifications } = await import('./pushNotifications')
-    await initNativePushNotifications()
-  } catch {
-    /* push optionnel sans google-services.json */
-  }
-
+  // Afficher l'UI tout de suite — ne pas bloquer le splash sur l'init push
+  // (register() peut rester pending et forcer un kill/reopen).
   await SplashScreen.hide()
+
+  void import('./pushNotifications')
+    .then(({ initNativePushNotifications }) => initNativePushNotifications())
+    .catch(() => {
+      /* push optionnel sans google-services.json */
+    })
 }
 
 /** Met à jour la barre de statut quand le thème change (dark/light). */

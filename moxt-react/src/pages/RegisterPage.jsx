@@ -236,10 +236,15 @@ export function RegisterPage() {
   }, [resendCooldown])
 
   async function completeRegistration(destination) {
-    await applyPendingReferral()
-    await dispatch(loadAllData())
     const registeredUser = store.getState().auth.user
     const registeredUserId = registeredUser?.id
+
+    // Naviguer tout de suite — ne pas bloquer l'UI sur loadAllData (30+ requêtes).
+    markWelcomePending()
+    clearReturnTo()
+    navigate(destination, { replace: true })
+
+    void applyPendingReferral()
     if (registeredUserId) {
       dispatch(
         updateAccountPreferences({
@@ -247,7 +252,10 @@ export function RegisterPage() {
           preferences: { language },
         }),
       )
+      startRealtimeSubscription(registeredUserId, dispatch, store.getState)
     }
+    void dispatch(loadAllData())
+
     if (registeredUser) {
       const name = `${registeredUser.firstName || ''} ${registeredUser.lastName || ''}`.trim()
       const adminIds = getAdminUserIds(store.getState()).filter((id) => id !== registeredUserId)
@@ -256,7 +264,9 @@ export function RegisterPage() {
           addNotification({
             userId: adminId,
             title: t('shared.notifications.account.newTitle'),
-            message: t('shared.notifications.account.newBody', { name: name || t('shared.notifications.someone') }),
+            message: t('shared.notifications.account.newBody', {
+              name: name || t('shared.notifications.someone'),
+            }),
             type: 'moderation',
             link: '/admin?view=users',
             priority: 'normal',
@@ -264,10 +274,6 @@ export function RegisterPage() {
         )
       }
     }
-    startRealtimeSubscription(store.getState().auth.user.id, dispatch, store.getState)
-    markWelcomePending()
-    clearReturnTo()
-    navigate(destination, { replace: true })
   }
 
   const formik = useFormik({
@@ -314,20 +320,32 @@ export function RegisterPage() {
           return
         }
 
+        // Afficher l’écran OTP tout de suite — ne pas laisser l’utilisateur
+        // sur le bouton « Créer mon compte » pendant l’envoi SMS / VPN lent.
+        const phoneForOtp = constrainPhone(values.russianPhone, '+7', 10)
+        setPendingVerification({
+          method: 'phone',
+          phone: phoneForOtp,
+          email: values.email,
+          sendingSms: true,
+        })
+        setStep(4)
+        setOtpCapMessage('')
+
         const result = await dispatch(register(values))
         if (!register.fulfilled.match(result)) {
+          setPendingVerification(null)
+          setStep(3)
           const payload = String(result.payload || '')
           if (/Limite atteinte|Patientez \d+ secondes/i.test(payload)) {
             setOtpCapMessage(payload)
           }
-          // Ensure the toast always carries the real rejected payload (not a blank generic).
           if (payload && payload !== 'ALREADY_REGISTERED' && payload !== 'IDENTITY_LIMIT_REACHED') {
             console.warn('[MOXT] Inscription rejetée:', payload)
           }
           return
         }
         dispatch(clearAuthError())
-        setOtpCapMessage('')
         if (result.payload.requiresPhoneConfirmation) {
           const pending = {
             method: 'phone',
@@ -349,10 +367,11 @@ export function RegisterPage() {
             phone: result.payload.phone,
             email: result.payload.email,
             pendingUserId: result.payload.pendingUserId,
+            sendingSms: false,
           })
-          setStep(4)
           return
         }
+        setPendingVerification(null)
         const destination = resolveReturnTo(searchParams, location.state)
         await completeRegistration(destination)
       } finally {
@@ -826,8 +845,17 @@ export function RegisterPage() {
 
         {step === 4 && !oauthCompletion && pendingVerification ? (
           <>
-            <Alert title={t('auth.register.verify.title')} variant="info">
-              {t('auth.register.verify.body', { phone: pendingVerification.phone })}
+            <Alert
+              title={
+                pendingVerification.sendingSms
+                  ? t('auth.register.verify.sendingTitle')
+                  : t('auth.register.verify.title')
+              }
+              variant="info"
+            >
+              {pendingVerification.sendingSms
+                ? t('auth.register.verify.sendingBody', { phone: pendingVerification.phone })
+                : t('auth.register.verify.body', { phone: pendingVerification.phone })}
             </Alert>
             {otpCapMessage ? (
               <Alert title={t('auth.register.otpCapTitle')} variant="warning">
@@ -841,6 +869,7 @@ export function RegisterPage() {
               autoComplete="one-time-code"
               maxLength={6}
               placeholder="000000"
+              disabled={pendingVerification.sendingSms}
               value={verificationCode}
               onChange={(event) =>
                 setVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 6))
@@ -849,11 +878,17 @@ export function RegisterPage() {
             <Button
               type="button"
               icon={FiCheck}
-              loading={authBusy}
-              disabled={authBusy || verificationCode.length !== 6}
+              loading={authBusy || pendingVerification.sendingSms}
+              disabled={
+                authBusy ||
+                pendingVerification.sendingSms ||
+                verificationCode.length !== 6
+              }
               onClick={confirmCode}
             >
-              {t('auth.register.verify.confirm')}
+              {pendingVerification.sendingSms
+                ? t('auth.register.verify.sendingAction')
+                : t('auth.register.verify.confirm')}
             </Button>
             <div className="grid gap-2 text-center">
               <p className="text-sm text-[var(--app-text-muted)]">
@@ -864,7 +899,7 @@ export function RegisterPage() {
                 variant="secondary"
                 className="w-full"
                 loading={authBusy && resendCooldown <= 0}
-                disabled={resendCooldown > 0 || authBusy}
+                disabled={resendCooldown > 0 || authBusy || pendingVerification.sendingSms}
                 onClick={resendVerificationCode}
               >
                 {resendCooldown > 0

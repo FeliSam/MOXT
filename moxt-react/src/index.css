@@ -2582,7 +2582,7 @@ html.locale-animating #root {
   }
 }
 
-/* Carrousels horizontaux — inertie native, snap, sans conflit avec le scroll vertical */
+/* Carrousels horizontaux — pan-x + pan-y pour ne pas bloquer le scroll vertical de page */
 .horizontal-track {
   overflow-x: auto;
   overflow-y: hidden;
@@ -2592,7 +2592,7 @@ html.locale-animating #root {
   scroll-behavior: smooth;
   scroll-snap-type: x proximity;
   scroll-padding-inline: 1rem;
-  touch-action: pan-x pinch-zoom;
+  touch-action: pan-x pan-y pinch-zoom;
   -webkit-mask-image: linear-gradient(to right, transparent 0, #000 0.65rem, #000 calc(100% - 0.65rem), transparent 100%);
   mask-image: linear-gradient(to right, transparent 0, #000 0.65rem, #000 calc(100% - 0.65rem), transparent 100%);
 }

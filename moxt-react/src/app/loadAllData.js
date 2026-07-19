@@ -238,26 +238,26 @@ export const loadAllData = createAsyncThunk(
             .select('*')
             .order('last_shared_at', { ascending: false, nullsFirst: false })
             .order('created_at', { ascending: false })
-            .limit(200)
+            .limit(80)
         : supabase
             .from('posts')
             .select('*')
             .or(`status.eq.published,author_id.eq.${uid}`)
             .order('last_shared_at', { ascending: false, nullsFirst: false })
             .order('created_at', { ascending: false })
-            .limit(100),
+            .limit(40),
       supabase
         .from('statuses')
         .select('*')
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false })
-        .limit(200),
+        .limit(60),
       supabase
         .from('help_articles')
         .select('*')
         .order('pinned', { ascending: false })
         .order('created_at', { ascending: false })
-        .limit(200),
+        .limit(40),
       isAdmin
         ? supabase
             .from('support_tickets')

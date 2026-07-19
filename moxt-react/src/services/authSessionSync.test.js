@@ -44,6 +44,10 @@ vi.mock('../features/communications/communicationSlice', () => ({
   refreshConversations: () => () => Promise.resolve(),
 }))
 
+vi.mock('./clearClientCache', () => ({
+  clearClientCache: vi.fn(),
+}))
+
 describe('authSessionSync visibility handler', () => {
   beforeEach(async () => {
     vi.resetModules()
@@ -132,6 +136,50 @@ describe('authSessionSync visibility handler', () => {
 
     expect(store.getState().auth.user?.id).toBe('u1')
     expect(store.getState().auth.status).toBe('authenticated')
+
+    stopAuthSessionSync()
+  })
+
+  it('ne deconnecte pas si refreshAuthSession renvoie null alors que la session Supabase existe encore', async () => {
+    const { authService } = await import('../features/auth/authService')
+    const { clearClientCache } = await import('./clearClientCache')
+    const { startAuthSessionSync, stopAuthSessionSync } = await import('./authSessionSync')
+
+    const liveSession = {
+      access_token: 'still-valid',
+      user: { id: 'u1', user_metadata: {} },
+    }
+    getSession.mockResolvedValue({ data: { session: liveSession } })
+    authService.refreshAuthSession.mockResolvedValue(null)
+
+    const store = configureStore({
+      reducer: { auth: authReducer },
+      preloadedState: {
+        auth: {
+          user: { id: 'u1', firstName: 'Amina' },
+          token: 'old-token',
+          status: 'authenticated',
+          error: null,
+          registrationEmail: null,
+        },
+      },
+    })
+
+    startAuthSessionSync(store)
+
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'visible',
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    await vi.waitFor(() => {
+      expect(authService.refreshAuthSession).toHaveBeenCalled()
+    })
+
+    expect(store.getState().auth.user?.id).toBe('u1')
+    expect(store.getState().auth.status).toBe('authenticated')
+    expect(clearClientCache).not.toHaveBeenCalled()
 
     stopAuthSessionSync()
   })

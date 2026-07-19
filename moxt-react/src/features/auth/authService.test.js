@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const auth = {
   getUser: vi.fn(),
   getSession: vi.fn(),
+  refreshSession: vi.fn(),
   signInWithPassword: vi.fn(),
   signInWithOtp: vi.fn(),
   signUp: vi.fn(),
@@ -260,6 +261,61 @@ describe('authService', () => {
     expect(result).toBeNull()
     expect(auth.signOut).toHaveBeenCalled()
     expect(profileQuery.upsert).not.toHaveBeenCalled()
+  })
+
+  it('refreshAuthSession recree un profil manquant au lieu de deconnecter', async () => {
+    const user = {
+      id: 'user-refresh',
+      email: 'refresh@example.com',
+      phone_confirmed_at: '2026-07-15T12:00:00.000Z',
+      user_metadata: { first_name: 'Refresh', last_name: 'User' },
+    }
+    auth.getSession.mockResolvedValue({
+      data: { session: { access_token: 'tok', user } },
+      error: null,
+    })
+    auth.getUser.mockResolvedValue({ data: { user }, error: null })
+    auth.signOut.mockResolvedValue({ error: null })
+    profileQuery.maybeSingle.mockResolvedValue({ data: null, error: null })
+    profileQuery.upsert.mockResolvedValue({ error: null })
+
+    const result = await authService.refreshAuthSession()
+
+    expect(result?.user?.id).toBe('user-refresh')
+    expect(auth.signOut).not.toHaveBeenCalled()
+    expect(profileQuery.upsert).toHaveBeenCalled()
+  })
+
+  it('refreshAuthSession retente via refreshSession si getSession est vide', async () => {
+    const user = {
+      id: 'user-retry',
+      email: 'retry@example.com',
+      phone_confirmed_at: '2026-07-15T12:00:00.000Z',
+      user_metadata: { first_name: 'Retry' },
+    }
+    auth.getSession.mockResolvedValue({ data: { session: null }, error: null })
+    auth.refreshSession.mockResolvedValue({
+      data: { session: { access_token: 'fresh', user } },
+      error: null,
+    })
+    auth.getUser.mockResolvedValue({ data: { user }, error: null })
+    profileQuery.maybeSingle.mockResolvedValue({
+      data: {
+        id: 'user-retry',
+        first_name: 'Retry',
+        last_name: '',
+        email: 'retry@example.com',
+        role: 'user',
+        status: 'active',
+      },
+      error: null,
+    })
+
+    const result = await authService.refreshAuthSession()
+
+    expect(auth.refreshSession).toHaveBeenCalled()
+    expect(result?.token).toBe('fresh')
+    expect(result?.user?.id).toBe('user-retry')
   })
 
   it('fusionne les champs pending registration lors de la vérification SMS', async () => {

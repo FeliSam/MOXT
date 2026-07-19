@@ -10,7 +10,7 @@ import { CatalogSearch } from '../components/ui/CatalogSearch'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Input } from '../components/ui/Input'
 import { PageHeader } from '../components/ui/PageHeader'
-import { VerifiedBadge } from '../components/ui/Badge'
+import { Badge, VerifiedBadge } from '../components/ui/Badge'
 import { EntityVerifiedName } from '../components/ui/EntityVerifiedName'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
@@ -19,8 +19,12 @@ import { useLanguage } from '../contexts/useLanguage'
 import { useGeographyOptions } from '../hooks/useGeographyOptions'
 import { sortByCountryPriority, resolveUserCountryCode } from '@moxt/shared/utils/countryPriority.js'
 import { sortBySubscriptionPriority } from '@moxt/shared/utils/subscriptionUtils.js'
-import { CatalogFavoriteButton } from '../features/account/CatalogFavoriteButton'
 import { isStaffRole } from '../features/auth/roleUtils'
+import {
+  parcelProofLabelKey,
+  parcelProofTone,
+  resolveParcelProofStatus,
+} from '../features/parcels/parcelProofUtils'
 import { resolveParcelCountry } from '../features/marketplace/listingCatalogUtils'
 import {
   parcelBrowseTabs,
@@ -209,10 +213,15 @@ export function ParcelsPage() {
                         variant="interactive"
                         className="group relative h-full overflow-hidden !border-transparent p-4 hover:!border-transparent sm:p-5 dark:hover:!border-transparent"
                       >
-                        <span className="absolute left-2 top-2 z-10 flex items-center gap-1">
-                          {parcel.proofStatus === 'verified' ? (
-                            <VerifiedBadge size="sm" label={t('parcels.card.proofVerified')} />
-                          ) : null}
+                        <span className="absolute left-2 top-2 z-10 flex max-w-[calc(100%-1rem)] flex-wrap items-center gap-1">
+                          {(() => {
+                            const proofStatus = resolveParcelProofStatus(parcel)
+                            return (
+                              <Badge tone={parcelProofTone(proofStatus)} className="!px-1.5 !py-0.5 !text-[9px]">
+                                {t(parcelProofLabelKey(proofStatus))}
+                              </Badge>
+                            )
+                          })()}
                           {parcel.businessId ? (
                             <VerifiedBadge size="sm" label={t('parcels.card.business')} />
                           ) : (
@@ -221,7 +230,7 @@ export function ParcelsPage() {
                             </span>
                           )}
                         </span>
-                        <div className="mt-6 flex min-w-0 items-center gap-2 pr-10 sm:mt-7">
+                        <div className="mt-6 flex min-w-0 items-center gap-2 sm:mt-7">
                           <EntityVerifiedName
                             as="h2"
                             name={parcel.ownerName}
@@ -278,13 +287,6 @@ export function ParcelsPage() {
                         </span>
                       </Card>
                     </Link>
-                    <CatalogFavoriteButton
-                      relatedId={parcel.id}
-                      relatedType="parcel"
-                      title={`${parcel.origin} → ${parcel.destination}`}
-                      path={`/parcels/${parcel.id}`}
-                      entity={parcel}
-                    />
                   </div>
                 </RevealListItem>
               ))

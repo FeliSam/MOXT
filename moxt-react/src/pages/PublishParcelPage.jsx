@@ -108,7 +108,7 @@ export function PublishParcelPage() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const { t } = useLanguage()
-  const { requirePublish } = useSecurityGate()
+  const { requireVoyagePublish } = useSecurityGate()
   const user = useSelector((state) => state.auth.user)
   const business = useSelector((state) =>
     state.businesses.items.find((item) => item.ownerId === user.id),
@@ -272,7 +272,7 @@ export function PublishParcelPage() {
   }
 
   function publish() {
-    if (!requirePublish()) return
+    if (!requireVoyagePublish()) return
     if (!validate(3)) return
     const publishContext = resolveBusinessPublishContext({
       business,
@@ -332,7 +332,7 @@ export function PublishParcelPage() {
   const africaFallback = publishText(t, 'publish.parcel.countries.africa')
 
   return (
-    <SecurityGatePanel kind="publish" backTo="/parcels">
+    <SecurityGatePanel kind="voyage" backTo="/parcels">
     <>
     {burstNode}
     {shareModal && (

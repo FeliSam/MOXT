@@ -26,6 +26,10 @@ import {
   updateParcelRequestStatus,
 } from '../features/parcels/parcelSlice'
 import { parcelDetailTrustItemKeys } from '../features/parcels/parcelBrowseConfig'
+import {
+  parcelProofLabelKey,
+  resolveParcelProofStatus,
+} from '../features/parcels/parcelProofUtils'
 import { Input } from '../components/ui/Input'
 import { addToast } from '../features/ui/uiSlice'
 import { statusMeta } from '../config/statuses'
@@ -56,7 +60,21 @@ export function ParcelDetailPage() {
   const distributionDate = parcel.distributionDate || null
   const isAdmin = ['admin', 'superadmin'].includes(user.role)
   const canSeeProof = isAdmin || user.id === parcel.ownerId
-  const proofMeta = statusMeta(parcel.proofStatus, t)
+  const proofStatus = resolveParcelProofStatus(parcel)
+  const proofMeta =
+    proofStatus === 'missing'
+      ? { label: t(parcelProofLabelKey('missing')), tone: 'info' }
+      : {
+          ...statusMeta(proofStatus, t),
+          label:
+            proofStatus === 'verified'
+              ? t(parcelProofLabelKey('verified'))
+              : proofStatus === 'pending_review'
+                ? t(parcelProofLabelKey('pending_review'))
+                : proofStatus === 'rejected'
+                  ? t(parcelProofLabelKey('rejected'))
+                  : statusMeta(proofStatus, t).label,
+        }
   const routeTitle = t('parcels.detail.routeTitle', {
     origin: parcel.origin,
     destination: parcel.destination,
@@ -157,15 +175,11 @@ export function ParcelDetailPage() {
 
       {/* Route visuelle origine -> destination */}
       <div className="relative rounded-[var(--radius-card-lg)] border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--shadow-card)] sm:p-6">
-        {parcel.proofStatus ? (
-          <span className="absolute -top-3 right-3 z-10">
-            <Badge tone={proofMeta.tone} className="!px-1.5 !py-0.5 !text-[9px]">
-              {parcel.proofStatus === 'verified'
-                ? t('parcels.detail.proofVerified')
-                : proofMeta.label}
-            </Badge>
-          </span>
-        ) : null}
+        <span className="absolute -top-3 right-3 z-10">
+          <Badge tone={proofMeta.tone} className="!px-1.5 !py-0.5 !text-[9px]">
+            {proofMeta.label}
+          </Badge>
+        </span>
         <div className="flex items-center gap-3">
           <div className="min-w-0 flex-1 text-center">
             <p className="text-[10px] font-black uppercase tracking-wider text-[var(--app-text-faint)]">
@@ -458,10 +472,10 @@ export function ParcelDetailPage() {
                 </div>
               ) : (
                 <p className="text-sm text-[var(--app-text-muted)]">
-                  {t('parcels.detail.proof.empty')}
+                  {t(parcelProofLabelKey(proofStatus))}
                 </p>
               )}
-              {isAdmin && parcel.proofStatus !== 'verified' ? (
+              {isAdmin && proofStatus !== 'verified' ? (
                 <div className="flex gap-2">
                   <Button
                     size="sm"

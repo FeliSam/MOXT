@@ -401,7 +401,12 @@ function buildBusinessMetrics({
     label: activityLabel
       ? pt('professional.page.metrics.reviewsWithActivity', { activity: activityLabel })
       : pt('professional.page.metrics.reviews'),
-    value: rating.count ? `${rating.average}/5` : '—',
+    value: rating.count
+      ? pt('professional.page.metrics.reviewsValue', {
+          average: rating.average,
+          count: rating.count,
+        })
+      : '—',
   })
 
   return metrics

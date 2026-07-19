@@ -4,6 +4,7 @@ import {
   FiCheckCircle,
   FiFileText,
   FiHeadphones,
+  FiPackage,
   FiStar,
   FiTrash2,
   FiUserCheck,
@@ -16,6 +17,7 @@ import { Badge } from '../../../components/ui/Badge'
 import { updateVerificationStatus } from '../../account/accountSlice'
 import { updateBusinessDocumentStatus } from '../../businesses/businessSlice'
 import { updateDisputeStatus } from '../../disputes/disputeSlice'
+import { updateParcelProofStatus } from '../../parcels/parcelSlice'
 import { moderateReview } from '../../reviews/reviewSlice'
 import { REVIEW_DISPUTE_STATUS } from '@moxt/shared/utils/reviewUtils.js'
 import { contentActions } from '../adminActions'
@@ -194,6 +196,47 @@ export function AdminQueuesPanel({
                   }
                 >
                   {adminText(t, 'admin.actions.reject')}
+                </Button>
+              </>
+            )}
+          />
+          <QueueSection
+            icon={FiPackage}
+            items={queues.parcelProofs || []}
+            label={adminText(t, 'admin.overview.queue.parcelProofs')}
+            kind="parcels"
+            setSelected={setSelected}
+            t={t}
+            renderMeta={(i) =>
+              adminText(t, 'admin.queues.parcelProofMeta', {
+                route: `${i.origin || '—'} → ${i.destination || '—'}`,
+                status: i.proofStatus || 'pending_review',
+              })
+            }
+            renderActions={(i) => (
+              <>
+                <Button
+                  variant="secondary"
+                  onClick={() => setSelected({ kind: 'parcels', item: i })}
+                >
+                  {adminText(t, 'admin.queues.examineProof')}
+                </Button>
+                <Button
+                  icon={FiCheckCircle}
+                  onClick={() =>
+                    dispatch(updateParcelProofStatus({ id: i.id, status: 'verified' }))
+                  }
+                >
+                  {adminText(t, 'admin.queues.validateProof')}
+                </Button>
+                <Button
+                  variant="danger"
+                  icon={FiX}
+                  onClick={() =>
+                    dispatch(updateParcelProofStatus({ id: i.id, status: 'rejected' }))
+                  }
+                >
+                  {adminText(t, 'admin.queues.rejectProof')}
                 </Button>
               </>
             )}

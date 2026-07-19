@@ -23,7 +23,8 @@ import {
 import { directionLabel } from '../../features/transfers/transferUtils'
 import { addToast } from '../../features/ui/uiSlice'
 
-const inputSurface = 'bg-white dark:bg-slate-950'
+const inputSurface =
+  '!bg-[var(--app-surface-muted)] focus:!bg-[var(--app-surface)] dark:!bg-slate-900/80'
 
 const emptyForm = {
   label: '',
@@ -109,7 +110,7 @@ export function TransferAccountsPanel({ business, dispatch, user }) {
   function submit(event) {
     event.preventDefault()
     if (!modalMode) return
-    if (!form.recipientName.trim() || (!form.phone.trim() && !form.accountNumber.trim())) return
+    if (!form.recipientName.trim() || !form.phone.trim()) return
 
     if (modalMode.type === 'slot') {
       persistAccounts(
@@ -377,6 +378,7 @@ function AccountFormFields({ form, methodOptions, modalMeta, pt, setForm }) {
         value={form.method}
         onChange={(event) => setForm((current) => ({ ...current, method: event.target.value }))}
       >
+        <option value="">{pt('professional.accounts.form.methodPlaceholder')}</option>
         {methodOptions.map((method) => (
           <option key={method} value={method}>
             {method}
@@ -386,6 +388,7 @@ function AccountFormFields({ form, methodOptions, modalMeta, pt, setForm }) {
       <Input
         id="transfer-account-label"
         label={pt('professional.accounts.form.label')}
+        placeholder={pt('professional.accounts.form.labelPlaceholder')}
         className={inputSurface}
         value={form.label}
         onChange={(event) => setForm((current) => ({ ...current, label: event.target.value }))}
@@ -393,6 +396,7 @@ function AccountFormFields({ form, methodOptions, modalMeta, pt, setForm }) {
       <Input
         id="transfer-account-recipient"
         label={pt('professional.accounts.form.recipientName')}
+        placeholder={pt('professional.accounts.form.recipientNamePlaceholder')}
         className={inputSurface}
         value={form.recipientName}
         onChange={(event) => setForm((current) => ({ ...current, recipientName: event.target.value }))}
@@ -400,29 +404,18 @@ function AccountFormFields({ form, methodOptions, modalMeta, pt, setForm }) {
       <Input
         id="transfer-account-phone"
         label={pt('professional.accounts.form.phone')}
+        placeholder={pt('professional.accounts.form.phonePlaceholder')}
         className={inputSurface}
         type="tel"
         value={form.phone}
         onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))}
       />
       <Input
-        id="transfer-account-number"
-        label={pt('professional.accounts.form.accountNumber')}
-        className={inputSurface}
-        value={form.accountNumber}
-        onChange={(event) => setForm((current) => ({ ...current, accountNumber: event.target.value }))}
-      />
-      <Input
-        id="transfer-account-bank"
-        label={pt('professional.accounts.form.bankDetail')}
-        className={inputSurface}
-        value={form.bankName}
-        onChange={(event) => setForm((current) => ({ ...current, bankName: event.target.value }))}
-      />
-      <Input
         id="transfer-account-instructions"
         label={pt('professional.accounts.form.instructions')}
-        className={inputSurface}
+        placeholder={pt('professional.accounts.form.instructionsPlaceholder')}
+        className={`${inputSurface} sm:col-span-2`}
+        wrapperClass="sm:col-span-2"
         value={form.instructions}
         onChange={(event) => setForm((current) => ({ ...current, instructions: event.target.value }))}
       />

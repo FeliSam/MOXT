@@ -4,9 +4,10 @@ const AXIS_LOCK_PX = 8
 
 /**
  * Ref pour carrousels horizontaux : verrouillage d'axe tactile + molette.
- * `wheelToHorizontal` convertit la molette verticale en défilement horizontal.
+ * Le scroll vertical de la page n'est jamais capturé — seule une intention
+ * clairement horizontale (deltaX dominant ou Shift+molette) déplace le carrousel.
  */
-export function useHorizontalScroll({ wheelToHorizontal = false } = {}) {
+export function useHorizontalScroll() {
   const ref = useRef(null)
 
   useEffect(() => {
@@ -43,6 +44,7 @@ export function useHorizontalScroll({ wheelToHorizontal = false } = {}) {
         axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'
       }
 
+      // Intention verticale : laisser la page scroller librement.
       if (axis !== 'x') return
 
       const maxScroll = el.scrollWidth - el.clientWidth
@@ -59,15 +61,15 @@ export function useHorizontalScroll({ wheelToHorizontal = false } = {}) {
     function onWheel(event) {
       if (!canScrollX()) return
 
+      const absX = Math.abs(event.deltaX)
+      const absY = Math.abs(event.deltaY)
+      // Uniquement défilement horizontal natif, ou Shift+molette (convention desktop).
+      const delta = absX > absY ? event.deltaX : event.shiftKey ? event.deltaY : 0
+      if (!delta) return
+
       const maxScroll = el.scrollWidth - el.clientWidth
       const atStart = el.scrollLeft <= 0
       const atEnd = el.scrollLeft >= maxScroll - 1
-      const horizontalDelta =
-        Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : null
-      const verticalDelta = event.shiftKey || wheelToHorizontal ? event.deltaY : 0
-      const delta = horizontalDelta ?? verticalDelta
-
-      if (!delta) return
       if (delta < 0 && atStart) return
       if (delta > 0 && atEnd) return
 
@@ -76,7 +78,7 @@ export function useHorizontalScroll({ wheelToHorizontal = false } = {}) {
     }
 
     el.addEventListener('touchstart', onTouchStart, { passive: true })
-    el.addEventListener('touchmove', onTouchMove, { passive: false })
+    el.addEventListener('touchmove', onTouchMove, { passive: true })
     el.addEventListener('touchend', resetGesture, { passive: true })
     el.addEventListener('touchcancel', resetGesture, { passive: true })
     el.addEventListener('wheel', onWheel, { passive: false })
@@ -88,7 +90,7 @@ export function useHorizontalScroll({ wheelToHorizontal = false } = {}) {
       el.removeEventListener('touchcancel', resetGesture)
       el.removeEventListener('wheel', onWheel)
     }
-  }, [wheelToHorizontal])
+  }, [])
 
   return ref
 }

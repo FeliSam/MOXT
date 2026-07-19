@@ -174,6 +174,9 @@ export function createAuthSlice(authService) {
     extraReducers: (builder) => {
       builder
         .addCase(restoreSession.pending, (state) => {
+          // Évite un splash AuthLoadingScreen si la session est déjà résolue
+          // (retry, dispatch en double, retour d'onglet).
+          if (state.status === 'authenticated' || state.status === 'anonymous') return
           state.status = 'loading'
         })
         .addCase(restoreSession.fulfilled, (state, action) => {

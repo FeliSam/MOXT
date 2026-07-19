@@ -13,7 +13,6 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { Select } from '../components/ui/Select'
-import { CatalogFavoriteButton } from '../features/account/CatalogFavoriteButton'
 import { useLanguage } from '../contexts/useLanguage'
 import {
   EVENT_CATEGORY_OPTIONS,
@@ -160,7 +159,7 @@ export function EventsPage() {
                           />
                         </div>
                       ) : null}
-                      <div className="flex justify-between gap-3 pr-10">
+                      <div className="flex justify-between gap-3">
                         <span className="grid size-11 place-items-center rounded-2xl bg-brand-50 text-brand-700 dark:bg-brand-900">
                           <FiCalendar />
                         </span>
@@ -191,13 +190,6 @@ export function EventsPage() {
                       </div>
                     </Card>
                   </Link>
-                  <CatalogFavoriteButton
-                    relatedId={event.id}
-                    relatedType="event"
-                    title={event.title}
-                    path={`/events/${event.id}`}
-                    entity={event}
-                  />
                 </div>
               </RevealListItem>
               )

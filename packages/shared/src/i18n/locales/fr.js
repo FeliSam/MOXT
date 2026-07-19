@@ -63,6 +63,10 @@ export const fr = {
       verify: {
         title: "Confirmez votre numéro",
         body: "Un code à 6 chiffres a été envoyé au {phone} par SMS. L’arrivée peut prendre 1–2 minutes. Un seul code à la fois — le compte est créé après confirmation.",
+        sendingTitle: "Envoi du SMS…",
+        sendingBody:
+          "Préparation du code pour {phone}. Cela peut prendre quelques secondes selon le réseau ou un VPN.",
+        sendingAction: "Envoi en cours…",
         codeLabel: "Code reçu par SMS",
         confirm: "Confirmer et accéder à MOXT",
       },
@@ -2120,6 +2124,9 @@ export const fr = {
     },
     card: {
       proofVerified: "Preuve vérifiée",
+      proofPending: "Preuve en cours de vérification",
+      proofRejected: "Preuve refusée",
+      proofMissing: "Preuve non vérifiée",
       business: "Entreprise",
       individual: "Particulier",
       available: "Disponible",
@@ -5845,6 +5852,12 @@ export const fr = {
         titlePhone: "Numéro russe requis pour publier",
         titleEmail: "E-mail confirmé requis pour publier",
         title: "Vérification requise pour publier",
+      },
+      voyage: {
+        titlePhone: "Numéro russe requis pour publier un voyage",
+        titleEmail: "E-mail confirmé requis pour publier un voyage",
+        title: "Identité vérifiée requise pour publier un voyage",
+        back: "Retour aux colis",
       },
       p2p: {
         titlePhone: "Numéro russe requis pour le P2P",

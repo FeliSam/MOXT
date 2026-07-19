@@ -164,11 +164,15 @@ export function DashboardOverviewPanels({
           <div className="mt-5 grid grid-cols-2 gap-3">
             <div className="rounded-2xl bg-[var(--app-surface-muted)] p-4">
               <span className="text-xs text-[var(--app-text-muted)]">1 XOF</span>
-              <strong className="mt-1 block text-lg">{rate.xofToRub?.toFixed?.(4) ?? '—'} RUB</strong>
+              <strong className="mt-1 block text-lg">
+                {Number.isFinite(rate.originToRub) ? rate.originToRub.toFixed(4) : '—'} RUB
+              </strong>
             </div>
             <div className="rounded-2xl bg-[var(--app-surface-muted)] p-4">
               <span className="text-xs text-[var(--app-text-muted)]">1 RUB</span>
-              <strong className="mt-1 block text-lg">{rate.rubToXof?.toFixed?.(2) ?? '—'} XOF</strong>
+              <strong className="mt-1 block text-lg">
+                {Number.isFinite(rate.rubToOrigin) ? rate.rubToOrigin.toFixed(2) : '—'} XOF
+              </strong>
             </div>
           </div>
           <Link to="/transfers" className="mt-4 inline-block">

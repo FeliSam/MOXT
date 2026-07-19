@@ -11,7 +11,7 @@ const EMAIL_VERIFY_PATH = '/security?verify=email'
 
 export function SecurityGateLinks({ kind = 'publish', user = null }) {
   const { t } = useLanguage()
-  const needsPhoneFirst = kind === 'publish' || kind === 'p2p'
+  const needsPhoneFirst = kind === 'publish' || kind === 'p2p' || kind === 'voyage'
   const phoneOk = isPhoneVerified(user) && isValidRussianPhone(user?.phone)
   const emailOk = isEmailVerified(user)
 

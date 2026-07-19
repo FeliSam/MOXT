@@ -20,6 +20,7 @@ export const PROFESSIONAL_FR_SOURCES = {
   'professional.page.metrics.listings': 'Annonces',
   'professional.page.metrics.reviews': 'Avis',
   'professional.page.metrics.reviewsWithActivity': 'Avis {activity}',
+  'professional.page.metrics.reviewsValue': '{average}/5 · {count} avis',
 
   // ── tab groups ───────────────────────────────────────────────────────────
   'professional.tabs.groups.identity': 'Identité',
@@ -183,11 +184,14 @@ export const PROFESSIONAL_FR_SOURCES = {
   'professional.accounts.form.russianBank': 'Banque russe',
   'professional.accounts.form.transferNetwork': 'Réseau de transfert',
   'professional.accounts.form.label': 'Libellé',
+  'professional.accounts.form.labelPlaceholder': 'Ex. Compte principal',
   'professional.accounts.form.recipientName': 'Nom du bénéficiaire',
+  'professional.accounts.form.recipientNamePlaceholder': 'Nom complet du bénéficiaire',
   'professional.accounts.form.phone': 'Numéro de réception',
-  'professional.accounts.form.accountNumber': 'Compte ou identifiant',
-  'professional.accounts.form.bankDetail': 'Banque ou détail',
+  'professional.accounts.form.phonePlaceholder': '+7…',
   'professional.accounts.form.instructions': 'Instructions',
+  'professional.accounts.form.instructionsPlaceholder': 'Indications pour le payeur (optionnel)',
+  'professional.accounts.form.methodPlaceholder': 'Choisir un moyen',
   'professional.accounts.slot.ruTitle': 'Compte Russie',
   'professional.accounts.slot.originTitle': 'Compte {country}',
 

@@ -3,6 +3,7 @@ import {
   canCreateBusiness,
   canPublishContent,
   canPublishP2POffer,
+  canPublishVoyage,
   canUseTransferAccount,
   initialCatalogStatus,
   isPhoneVerified,
@@ -55,6 +56,11 @@ describe('userSecurity', () => {
       false,
     )
     expect(canPublishP2POffer(identityUser)).toBe(true)
+  })
+
+  it('requires full verification including KYC to publish a voyage', () => {
+    expect(canPublishVoyage(publishReadyUser)).toBe(false)
+    expect(canPublishVoyage(identityUser)).toBe(true)
   })
 
   it('requires identity for business only', () => {

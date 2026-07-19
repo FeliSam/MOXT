@@ -84,6 +84,11 @@ export function canPublishP2POffer(user) {
   )
 }
 
+/** Voyage / colis : mêmes garde-fous que le P2P (téléphone + e-mail + KYC identité). */
+export function canPublishVoyage(user) {
+  return canPublishP2POffer(user)
+}
+
 export function verificationRequestIsStale(request, now = Date.now()) {
   if (!request || request.status !== 'pending_review') return false
   const created = Date.parse(request.createdAt || '')
@@ -104,6 +109,17 @@ export function securityGateMessage(kind, user) {
         return 'Confirmez votre e-mail dans Sécurité avant de publier une annonce, un colis, un job, un événement ou un post.'
       }
       return 'Confirmez votre numéro russe et votre e-mail avant de publier.'
+    case 'voyage':
+      if (!isPhoneVerified(user) || !isValidRussianPhone(user?.phone)) {
+        return 'Confirmez votre numéro russe (+7) avant de publier un voyage.'
+      }
+      if (!isEmailVerified(user)) {
+        return 'Confirmez votre e-mail dans Sécurité avant de publier un voyage.'
+      }
+      if (!isIdentityVerified(user)) {
+        return 'Votre identité doit être vérifiée (KYC / documents validés) avant de publier un voyage.'
+      }
+      return 'Passez toutes les vérifications (téléphone, e-mail et identité) avant de publier un voyage.'
     case 'p2p':
       if (!isPhoneVerified(user) || !isValidRussianPhone(user?.phone)) {
         return 'Confirmez votre numéro russe (+7) avant de publier une offre P2P.'

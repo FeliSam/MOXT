@@ -4,6 +4,7 @@ import {
   canCreateBusiness,
   canPublishContent,
   canPublishP2POffer,
+  canPublishVoyage,
   canUseTransferAccount,
   isEmailVerified,
   isPhoneVerified,
@@ -26,6 +27,12 @@ const GATE_COPY_KEYS = {
     title: 'shared.securityGate.publish.title',
     backLabel: 'common.back',
   },
+  voyage: {
+    titlePhone: 'shared.securityGate.voyage.titlePhone',
+    titleEmail: 'shared.securityGate.voyage.titleEmail',
+    title: 'shared.securityGate.voyage.title',
+    backLabel: 'shared.securityGate.voyage.back',
+  },
   p2p: {
     titlePhone: 'shared.securityGate.p2p.titlePhone',
     titleEmail: 'shared.securityGate.p2p.titleEmail',
@@ -44,6 +51,7 @@ const GATE_COPY_KEYS = {
 
 function canAccess(kind, user) {
   if (kind === 'publish') return canPublishContent(user)
+  if (kind === 'voyage') return canPublishVoyage(user)
   if (kind === 'p2p') return canPublishP2POffer(user)
   if (kind === 'business') return canCreateBusiness(user)
   if (kind === 'transfer') return canUseTransferAccount(user)
@@ -56,7 +64,7 @@ function gateText(t, key) {
 }
 
 function publishGateTitle(kind, user, keys, t) {
-  if (kind !== 'publish' && kind !== 'p2p') return gateText(t, keys.title)
+  if (kind !== 'publish' && kind !== 'p2p' && kind !== 'voyage') return gateText(t, keys.title)
   const phoneOk = isPhoneVerified(user) && isValidRussianPhone(user?.phone)
   if (!phoneOk && keys.titlePhone) return gateText(t, keys.titlePhone)
   if (!isEmailVerified(user) && keys.titleEmail) return gateText(t, keys.titleEmail)
@@ -73,10 +81,10 @@ export function SecurityGatePanel({
   const keys = GATE_COPY_KEYS[kind] || GATE_COPY_KEYS.publish
   const phoneOk = isPhoneVerified(user) && isValidRussianPhone(user?.phone)
   const emailOk = isEmailVerified(user)
-  const showPhoneCard = (kind === 'publish' || kind === 'p2p') && !phoneOk
+  const showPhoneCard = (kind === 'publish' || kind === 'p2p' || kind === 'voyage') && !phoneOk
   const showEmailCard =
     !emailOk &&
-    ((kind === 'publish' || kind === 'p2p') ? phoneOk : kind === 'business')
+    ((kind === 'publish' || kind === 'p2p' || kind === 'voyage') ? phoneOk : kind === 'business')
 
   if (canAccess(kind, user)) return children
 
@@ -100,7 +108,7 @@ export function SecurityGatePanel({
 
       {showPhoneCard ? <PhoneVerificationCard /> : null}
       {showEmailCard ? <EmailVerificationCard /> : null}
-      {kind === 'p2p' || kind === 'business' || kind === 'transfer' ? (
+      {kind === 'voyage' || kind === 'p2p' || kind === 'business' || kind === 'transfer' ? (
         <Alert variant="info" title={sharedText(t, 'shared.securityGate.centerTitle')}>
           {sharedText(t, 'shared.securityGate.centerBody')}{' '}
           <Link className="font-bold text-brand-700 hover:underline" to="/verification">
