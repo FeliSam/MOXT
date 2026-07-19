@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FiMoreHorizontal } from 'react-icons/fi'
+import { FiMoreHorizontal, FiX } from 'react-icons/fi'
 import { useLanguage } from '../../contexts/useLanguage'
 import { ContactButton } from '../../features/communications/ContactButton'
 import { FavoriteButton } from '../../features/account/FavoriteButton'
@@ -74,7 +74,7 @@ export function DetailFloatingActions({
         aria-label={open ? mt('marketplace.detail.closeActionsMenu') : mt('marketplace.detail.openActionsMenu')}
         onClick={() => setOpen((current) => !current)}
       >
-        <FiMoreHorizontal />
+        {open ? <FiX /> : <FiMoreHorizontal />}
       </button>
     </div>
   )

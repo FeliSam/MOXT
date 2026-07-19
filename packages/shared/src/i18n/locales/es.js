@@ -1895,6 +1895,7 @@ export const es = {
         paragraphs: [
           "Al crear una cuenta MOXT, aceptas usar la plataforma de forma leal, proporcionar información exacta y respetar las reglas de verificación (teléfono, identidad, empresa cuando corresponda).",
           "Te comprometes a no publicar contenido fraudulento, engañoso, ilícito o que vulnere derechos de terceros. MOXT puede suspender o eliminar una cuenta en caso de infracciones graves o reiteradas.",
+          "Ningún usuario tiene derecho a estafar, engañar o intentar perjudicar de cualquier forma a otro miembro de la plataforma. Toda persona implicada en una actividad ilícita (fraude, estafa, usurpación de identidad, chantaje, etc.) a través de MOXT se expone a que su información sea transmitida a la justicia y a las autoridades competentes, para que la víctima o MOXT puedan presentar una denuncia en su contra.",
           "Las operaciones sensibles (transferencias, cuentas profesionales, publicaciones de empresa) pueden exigir identidad verificada. Una declaración en la app no sustituye una confirmación oficial de pago o de estatus legal.",
           "MOXT conecta a los miembros y facilita la comunicación; cada usuario sigue siendo responsable de sus compromisos, pagos e intercambios con otros miembros.",
           "MOXT puede actualizar estos términos; la versión vigente está disponible en la app. El uso continuado tras una actualización implica la aceptación de los nuevos términos."

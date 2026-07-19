@@ -1896,6 +1896,7 @@ export const en = {
         paragraphs: [
           "By creating a MOXT account, you agree to use the platform fairly, provide accurate information and comply with verification rules (phone, identity, business where applicable).",
           "You agree not to publish fraudulent, misleading, unlawful content or content that infringes third-party rights. MOXT may suspend or delete an account in case of serious or repeated violations.",
+          "No user is permitted to scam, defraud or otherwise attempt to harm another member of the platform. Anyone involved in unlawful activity (fraud, scamming, identity theft, blackmail, etc.) carried out through MOXT risks having their information passed on to the courts and competent authorities, so the victim or MOXT can file a complaint against them.",
           "Sensitive operations (transfers, professional accounts, business publications) may require verified identity. An in-app declaration does not replace official payment or legal status confirmation.",
           "MOXT connects members and facilitates communication; each user remains responsible for their commitments, payments and exchanges with other members.",
           "MOXT may update these terms; the current version is available in the app. Continued use after an update constitutes acceptance of the new terms.",
