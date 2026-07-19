@@ -527,17 +527,6 @@ export function ListingDetailPage() {
         </section>
       ) : null}
 
-      <div className={`fixed inset-x-3 ${mobileFloatBottom} z-[var(--z-page-float)] md:hidden`}>
-        <ListingActionButtons
-          dispatch={dispatch}
-          favorite={favorite}
-          isOwner={isListingOwner}
-          layout="bar"
-          listing={listing}
-          user={user}
-        />
-      </div>
-
       <ListingFloatingActions
         dispatch={dispatch}
         favorite={favorite}
@@ -790,16 +779,7 @@ function toggleListingFavorite(dispatch, listing, user) {
     )
 }
 
-function ListingActionButtons({
-  dispatch,
-  favorite,
-  isOwner = false,
-  listing,
-  user,
-  layout = 'sidebar',
-}) {
-  const { t } = useLanguage()
-  const mt = (key, vars) => marketplaceText(t, key, vars)
+function ListingActionButtons({ dispatch, favorite, listing, user }) {
   const toggleFavorite = toggleListingFavorite(dispatch, listing, user)
   const contactProps = {
     ownerId: listing.ownerId,
@@ -809,40 +789,6 @@ function ListingActionButtons({
     relatedTitle: listing.title,
     relatedType: 'listing',
     onContact: () => dispatch(incrementListingContact(listing.id)),
-  }
-  const favoriteLabel = favorite
-    ? mt('marketplace.detail.favoriteActive')
-    : mt('marketplace.detail.favorite')
-  const favoriteClassName =
-    'min-w-0 flex-1 !min-h-9 !rounded-[0.7rem] !px-3.5 !text-xs !shadow-none'
-
-  if (layout === 'bar') {
-    if (isOwner) {
-      return (
-        <div className="flex justify-end">
-          <FavoriteButton
-            active={favorite}
-            onToggle={toggleFavorite}
-            variant="solid"
-            label={favoriteLabel}
-            className="!min-h-9 !rounded-[0.7rem] !px-4 !text-xs shadow-[var(--shadow-float)]"
-          />
-        </div>
-      )
-    }
-
-    return (
-      <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]/95 p-2 shadow-[var(--shadow-float)] backdrop-blur-xl">
-        <ContactButton className="min-w-0 flex-1" {...contactProps} />
-        <FavoriteButton
-          active={favorite}
-          onToggle={toggleFavorite}
-          variant="solid"
-          label={favoriteLabel}
-          className={favoriteClassName}
-        />
-      </div>
-    )
   }
 
   return (
@@ -884,9 +830,7 @@ function ListingFloatingActions({
 
   if (isOwner) {
     return (
-      <div
-        className={`fixed ${floatBottomClass} right-4 z-[var(--z-page-float)] hidden md:flex xl:hidden`}
-      >
+      <div className={`fixed ${floatBottomClass} right-4 z-[var(--z-page-float)] flex xl:hidden`}>
         <FavoriteButton
           active={favorite}
           onToggle={toggleFavorite}
@@ -904,7 +848,7 @@ function ListingFloatingActions({
 
   return (
     <div
-      className={`fixed ${floatBottomClass} right-4 z-[var(--z-page-float)] hidden flex-col items-end gap-1 md:flex xl:hidden`}
+      className={`fixed ${floatBottomClass} right-4 z-[var(--z-page-float)] flex flex-col items-end gap-1 xl:hidden`}
     >
       {open ? (
         <div className="flex flex-col items-end gap-1">
@@ -915,10 +859,7 @@ function ListingFloatingActions({
           />
           <FavoriteButton
             active={favorite}
-            onToggle={() => {
-              toggleFavorite()
-              setOpen(false)
-            }}
+            onToggle={toggleFavorite}
             variant="solid"
             label={
               favorite

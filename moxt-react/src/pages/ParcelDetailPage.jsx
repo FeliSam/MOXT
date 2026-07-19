@@ -15,6 +15,7 @@ import {
 } from '../components/ui/DetailBlocks'
 import { PageHeader } from '../components/ui/PageHeader'
 import { ReshareButton } from '../components/ui/ReshareButton'
+import { DetailFloatingActions } from '../components/ui/DetailFloatingActions'
 import { useLanguage } from '../contexts/useLanguage'
 import { FavoriteButton } from '../features/account/FavoriteButton'
 import { ContactButton } from '../features/communications/ContactButton'
@@ -131,6 +132,7 @@ export function ParcelDetailPage() {
         description={[routeDescription, publishedLabel].filter(Boolean).join(' · ')}
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            {/* Sur mobile/tablette, Contacter + Favoris passent par le bouton "..." flottant. */}
             <FavoriteButton
               relatedId={parcel.id}
               relatedType="parcel"
@@ -138,7 +140,7 @@ export function ParcelDetailPage() {
               path={`/parcels/${parcel.id}`}
               entity={parcel}
               showLabel={false}
-              className="size-11 shrink-0"
+              className="hidden !size-11 shrink-0 xl:inline-flex"
             />
             <ReshareButton sourceType="parcel" sourceId={parcel.id} sourceData={parcel} />
             {user.id === parcel.ownerId ? (
@@ -245,7 +247,7 @@ export function ParcelDetailPage() {
               <VerifiedBadge size="sm" label={t('parcels.detail.business')} />
             ) : null}
           </div>
-          <div className="mt-5">
+          <div className="mt-5 hidden xl:block">
             <ContactButton
               ownerId={parcel.ownerId}
               relatedEntity={parcel}
@@ -501,6 +503,15 @@ export function ParcelDetailPage() {
           />
         </div>
       </div>
+      <DetailFloatingActions
+        isOwner={user.id === parcel.ownerId}
+        ownerId={parcel.ownerId}
+        entity={parcel}
+        relatedId={parcel.id}
+        relatedPath={`/parcels/${parcel.id}`}
+        relatedType="parcel"
+        title={routeTitle}
+      />
     </div>
   )
 }

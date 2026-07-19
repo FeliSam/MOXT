@@ -24,6 +24,7 @@ import {
 import { PageHeader } from '../components/ui/PageHeader'
 import { ReportDialog } from '../components/ui/ReportDialog'
 import { ReshareButton } from '../components/ui/ReshareButton'
+import { DetailFloatingActions } from '../components/ui/DetailFloatingActions'
 import { FavoriteButton } from '../features/account/FavoriteButton'
 import { ContactButton } from '../features/communications/ContactButton'
 import { cancelRegistration, registerForEvent, reportEvent } from '../features/events/eventSlice'
@@ -82,7 +83,8 @@ export function EventDetailPage() {
           .join(' · ')}
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            {/* Favori — icône seule, coin droit, distinct de l'inscription */}
+            {/* Favori — icône seule, coin droit, distinct de l'inscription.
+                Sur mobile/tablette, Contacter + Favoris passent par le bouton "..." flottant. */}
             <FavoriteButton
               relatedId={event.id}
               relatedType="event"
@@ -90,7 +92,7 @@ export function EventDetailPage() {
               path={`/events/${event.id}`}
               entity={event}
               showLabel={false}
-              className="size-11 shrink-0"
+              className="hidden !size-11 shrink-0 xl:inline-flex"
             />
             <ReshareButton sourceType="event" sourceId={event.id} sourceData={event} />
             {event.ownerId === user.id ? (
@@ -179,7 +181,7 @@ export function EventDetailPage() {
         </Card>
         <Card>
           <h2 className="font-black">{t('events.detail.registration')}</h2>
-          <div className="mt-4">
+          <div className="mt-4 hidden xl:block">
             <ContactButton
               ownerId={event.ownerId}
               relatedEntity={event}
@@ -331,6 +333,15 @@ export function EventDetailPage() {
             }),
           )
         }}
+      />
+      <DetailFloatingActions
+        isOwner={event.ownerId === user.id}
+        ownerId={event.ownerId}
+        entity={event}
+        relatedId={event.id}
+        relatedPath={`/events/${event.id}`}
+        relatedType="event"
+        title={event.title}
       />
     </div>
   )

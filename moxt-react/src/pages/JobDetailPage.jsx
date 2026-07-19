@@ -24,6 +24,7 @@ import {
 } from '../components/ui/DetailBlocks'
 import { PageHeader } from '../components/ui/PageHeader'
 import { ReshareButton } from '../components/ui/ReshareButton'
+import { DetailFloatingActions } from '../components/ui/DetailFloatingActions'
 import { FavoriteButton } from '../features/account/FavoriteButton'
 import { ContactButton } from '../features/communications/ContactButton'
 import { createJobSchemas } from '../features/jobs/jobSchemas'
@@ -119,7 +120,8 @@ export function JobDetailPage() {
         description={jobHeaderSubtitle(job, t)}
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            {/* Favori — icône seule, coin droit, distinct de la candidature */}
+            {/* Favori — icône seule, coin droit, distinct de la candidature.
+                Sur mobile/tablette, Contacter + Favoris passent par le bouton "..." flottant. */}
             <FavoriteButton
               relatedId={job.id}
               relatedType="job"
@@ -127,7 +129,7 @@ export function JobDetailPage() {
               path={`/jobs/${job.id}`}
               entity={job}
               showLabel={false}
-              className="size-11 shrink-0"
+              className="hidden !size-11 shrink-0 xl:inline-flex"
             />
             <ReshareButton sourceType="job" sourceId={job.id} sourceData={job} />
             {job.ownerId === user.id ? (
@@ -210,7 +212,7 @@ export function JobDetailPage() {
         </Card>
         <Card>
           <h2 className="font-black">{t('jobs.detail.application')}</h2>
-          <div className="mt-4">
+          <div className="mt-4 hidden xl:block">
             <ContactButton
               ownerId={job.ownerId}
               relatedEntity={job}
@@ -362,6 +364,15 @@ export function JobDetailPage() {
             }),
           )
         }}
+      />
+      <DetailFloatingActions
+        isOwner={job.ownerId === user.id}
+        ownerId={job.ownerId}
+        entity={job}
+        relatedId={job.id}
+        relatedPath={`/jobs/${job.id}`}
+        relatedType="job"
+        title={job.title}
       />
     </div>
   )
