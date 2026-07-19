@@ -195,6 +195,12 @@ export const storageService = {
     return { url, path }
   },
 
+  async uploadP2POrderProof(userId, orderId, file) {
+    const path = `${userId}/p2p/${orderId}/${Date.now()}.${ext(file)}`
+    const url = await uploadPrivate('transfers', path, file)
+    return { url, path }
+  },
+
   async getTransferProofSignedUrl(path) {
     const { data, error } = await supabase.storage.from('transfers').createSignedUrl(path, 3600)
     if (error) throw new Error(error.message)

@@ -19,9 +19,12 @@ function timeAgo(iso, t) {
   return t('status.viewer.daysAgo', { count: Math.floor(hours / 24) })
 }
 
-function formatClockTime(iso) {
+function formatViewedAt(iso) {
   if (!iso) return ''
-  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  const date = new Date(iso)
+  const datePart = date.toLocaleDateString([], { day: '2-digit', month: '2-digit' })
+  const timePart = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  return `${datePart} · ${timePart}`
 }
 
 /**
@@ -488,7 +491,7 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
                       {v.name || t('status.viewer.someone')}
                     </span>
                     <span className="shrink-0 text-xs text-[var(--app-text-muted)]">
-                      {formatClockTime(v.viewedAt)}
+                      {formatViewedAt(v.viewedAt)}
                     </span>
                   </li>
                 ))}

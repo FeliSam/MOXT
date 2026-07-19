@@ -89,6 +89,7 @@ const p2pSlice = createSlice({
         name: action.payload.name,
         size: Number(action.payload.size) || 0,
         type: action.payload.type,
+        path: action.payload.path || null,
         createdAt: new Date().toISOString(),
       })
     },

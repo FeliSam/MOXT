@@ -627,14 +627,28 @@ export const loadAllData = createAsyncThunk(
           comments: parseJsonField(p.comments, []),
         }
       }) }))
-      dispatch(setStatuses({ items: fromRows(safeRows(statusesRes, 'des statuts')).map((s) => ({
-        ...s,
-        images: parseJsonField(s.images, []).filter((url) => typeof url === 'string' && url).slice(0, 4),
-        viewedBy: parseJsonField(s.viewedBy, []),
-        viewers: parseJsonField(s.viewers, {}),
-        reactions: parseJsonField(s.reactions, {}),
-        isOfficial: s.isOfficial === true,
-      })) }))
+      // Le marquage "vu" (viewedBy/viewers) est écrit en fire-and-forget côté serveur ;
+      // si ce rechargement arrive avant que l'écriture précédente n'ait abouti, on
+      // fusionne avec l'état local pour ne jamais faire "regresser" un statut déjà vu
+      // (la bordure ne doit pas redevenir non-vue après un simple refresh).
+      const localStatusesById = new Map((getState().statuses?.items || []).map((item) => [item.id, item]))
+      dispatch(setStatuses({ items: fromRows(safeRows(statusesRes, 'des statuts')).map((s) => {
+        const remoteViewedBy = parseJsonField(s.viewedBy, [])
+        const remoteViewers = parseJsonField(s.viewers, {})
+        const local = localStatusesById.get(s.id)
+        const viewedBy = local?.viewedBy?.length
+          ? Array.from(new Set([...remoteViewedBy, ...local.viewedBy]))
+          : remoteViewedBy
+        const viewers = local?.viewers ? { ...remoteViewers, ...local.viewers } : remoteViewers
+        return {
+          ...s,
+          images: parseJsonField(s.images, []).filter((url) => typeof url === 'string' && url).slice(0, 4),
+          viewedBy,
+          viewers,
+          reactions: parseJsonField(s.reactions, {}),
+          isOfficial: s.isOfficial === true,
+        }
+      }) }))
       dispatch(mergeRemoteAccount({
         favorites: fromRows(safeRows(favoritesRes, 'des favoris')),
         subscriptions: fromRows(safeRows(subscriptionsRes, 'des abonnements')).map((item) => ({

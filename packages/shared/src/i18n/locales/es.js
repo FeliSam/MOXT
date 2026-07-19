@@ -3821,7 +3821,8 @@ export const es = {
         created: "Criada",
         waitingPayment: "Pagamento em curso",
         completed: "Concluída",
-        cancelled: "Cancelada"
+        cancelled: "Cancelada",
+        disputed: "Disputa em curso"
       },
       notFound: "Transación no encontrada.",
       title: "Transación P2P",
@@ -3834,7 +3835,17 @@ export const es = {
       waitingPayment: "Pagamento em curso",
       complete: "Concluir",
       cancel: "Cancelar",
+      markPaid: "Envié el pago",
+      markPaidHint: "Añade un comprobante de pago antes de continuar.",
+      confirmReceived: "Confirmar recepción y finalizar",
+      waitingSellerConfirmation: "Esperando la confirmación del vendedor.",
+      waitingBuyerPayment: "Esperando que el comprador envíe el pago.",
+      disputedBanner: "Hay una disputa abierta en esta transacción. Un moderador MOXT intervendrá — los estados quedan bloqueados hasta su resolución.",
+      uploading: "Enviando…",
       addProof: "Adicionar comprobante",
+      viewProof: "Ver",
+      proofBuyer: "Comprador",
+      proofSeller: "Vendedor",
       receiptTitle: "Transación P2P {id}",
       saveReceipt: "Guardar recibo",
       timeline: "Cronologia",
@@ -3844,7 +3855,11 @@ export const es = {
       openDispute: "Abrir un disputa",
       rateTitle: "Avaliar a transación",
       commentPlaceholder: "O tu comentário",
-      saveRating: "Guardar avaliación"
+      saveRating: "Guardar avaliación",
+      updateRating: "Actualizar evaluación",
+      ratingVisibleHint: "Esta evaluación aparecerá en el perfil público de tu contraparte.",
+      ratingSavedTitle: "Evaluación guardada",
+      ratingSavedBody: "Gracias por evaluar a {name}."
     },
     publish: {
       steps: {

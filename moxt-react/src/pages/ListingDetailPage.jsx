@@ -8,7 +8,6 @@ import {
   FiHeart,
   FiMapPin,
   FiMaximize2,
-  FiMoreHorizontal,
   FiPackage,
   FiPercent,
   FiShare2,
@@ -29,6 +28,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { FavoriteButton } from '../components/ui/FavoriteButton'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { ReshareButton } from '../components/ui/ReshareButton'
+import { DetailFloatingActions } from '../components/ui/DetailFloatingActions'
 import { Tabs } from '../components/ui/Tabs'
 import {
   categoriesForType,
@@ -89,7 +89,6 @@ export function ListingDetailPage() {
   const [activeTab, setActiveTab] = useState('description')
   const [quantity, setQuantity] = useState(1)
   const [question, setQuestion] = useState('')
-  const [floatingActionsOpen, setFloatingActionsOpen] = useState(false)
   const isAdminViewer = ['admin', 'superadmin'].includes(user.role)
   const favorite = useSelector((state) =>
     state.account.favorites.some(
@@ -527,15 +526,16 @@ export function ListingDetailPage() {
         </section>
       ) : null}
 
-      <ListingFloatingActions
-        dispatch={dispatch}
-        favorite={favorite}
-        floatBottomClass={mobileFloatBottom}
+      <DetailFloatingActions
         isOwner={isListingOwner}
-        listing={listing}
-        open={floatingActionsOpen}
-        setOpen={setFloatingActionsOpen}
-        user={user}
+        ownerId={listing.ownerId}
+        entity={listing}
+        relatedId={listing.id}
+        relatedPath={`/marketplace/${listing.id}`}
+        relatedType="listing"
+        title={listing.title}
+        floatBottomClass={mobileFloatBottom}
+        onContact={() => dispatch(incrementListingContact(listing.id))}
       />
 
       <Modal open={imageOpen} onClose={() => setImageOpen(false)} title={mt('marketplace.detail.gallery')} size="wide">
@@ -801,88 +801,6 @@ function ListingActionButtons({ dispatch, favorite, listing, user }) {
         label
         className="w-full !shadow-none"
       />
-    </div>
-  )
-}
-
-function ListingFloatingActions({
-  dispatch,
-  favorite,
-  floatBottomClass = 'bottom-[calc(5.5rem+env(safe-area-inset-bottom))]',
-  isOwner = false,
-  listing,
-  open,
-  setOpen,
-  user,
-}) {
-  const { t } = useLanguage()
-  const mt = (key, vars) => marketplaceText(t, key, vars)
-  const toggleFavorite = toggleListingFavorite(dispatch, listing, user)
-  const contactProps = {
-    ownerId: listing.ownerId,
-    relatedEntity: listing,
-    relatedId: listing.id,
-    relatedPath: `/marketplace/${listing.id}`,
-    relatedTitle: listing.title,
-    relatedType: 'listing',
-    onContact: () => dispatch(incrementListingContact(listing.id)),
-  }
-
-  if (isOwner) {
-    return (
-      <div className={`fixed ${floatBottomClass} right-4 z-[var(--z-page-float)] flex xl:hidden`}>
-        <FavoriteButton
-          active={favorite}
-          onToggle={toggleFavorite}
-          variant="solid"
-          label={
-            favorite
-              ? mt('marketplace.detail.favoriteActive')
-              : mt('marketplace.detail.favorites')
-          }
-          className="shadow-[var(--shadow-float)]"
-        />
-      </div>
-    )
-  }
-
-  return (
-    <div
-      className={`fixed ${floatBottomClass} right-4 z-[var(--z-page-float)] flex flex-col items-end gap-1 xl:hidden`}
-    >
-      {open ? (
-        <div className="flex flex-col items-end gap-1">
-          <ContactButton
-            className="shadow-[var(--shadow-float)]"
-            variant="secondary"
-            {...contactProps}
-          />
-          <FavoriteButton
-            active={favorite}
-            onToggle={toggleFavorite}
-            variant="solid"
-            label={
-              favorite
-                ? mt('marketplace.detail.favoriteActive')
-                : mt('marketplace.detail.favorites')
-            }
-            className="shadow-[var(--shadow-float)]"
-          />
-        </div>
-      ) : null}
-      <button
-        type="button"
-        className="btn-press grid size-14 place-items-center rounded-full bg-brand-700 text-2xl text-white shadow-[0_12px_28px_rgb(8_112_95/0.35)] transition hover:bg-brand-800"
-        aria-expanded={open}
-        aria-label={
-          open
-            ? mt('marketplace.detail.closeActionsMenu')
-            : mt('marketplace.detail.openActionsMenu')
-        }
-        onClick={() => setOpen((current) => !current)}
-      >
-        <FiMoreHorizontal />
-      </button>
     </div>
   )
 }
