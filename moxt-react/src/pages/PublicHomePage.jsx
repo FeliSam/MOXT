@@ -7,16 +7,24 @@ import { Card } from '../components/ui/Card'
 import { PUBLIC_RECENT_LIMIT, PUBLIC_SERVICES, TRUST_PRINCIPLES } from '../config/publicContent'
 import { useLanguage } from '../contexts/useLanguage'
 import { selectSearchIndex } from '../features/searchSelectors'
-import { DIRECTIONS } from '../features/transfers/transferConfig'
+import { currencyForCountry, DIRECTIONS } from '../features/transfers/transferConfig'
 import { calculateTransfer, formatMoney } from '../features/transfers/transferUtils'
+import { useExchangeRate } from '../features/transfers/useExchangeRate'
 
 export function PublicHomePage() {
   const { t } = useLanguage()
+  const user = useSelector((state) => state.auth.user)
+  const originCountry = user?.originCountry || (user?.country && user.country !== 'RU' ? user.country : 'BJ')
   const [amount, setAmount] = useState(10000)
   const [direction, setDirection] = useState(DIRECTIONS.BJ_TO_RU)
   const searchIndex = useSelector(selectSearchIndex)
   const recent = searchIndex.slice(0, PUBLIC_RECENT_LIMIT)
-  const calculation = useMemo(() => calculateTransfer(amount, direction), [amount, direction])
+  const liveRate = useExchangeRate(currencyForCountry(originCountry))
+  const selectedRate = direction === DIRECTIONS.BJ_TO_RU ? liveRate.originToRub : liveRate.rubToOrigin
+  const calculation = useMemo(
+    () => calculateTransfer(amount, direction, undefined, selectedRate, originCountry),
+    [amount, direction, selectedRate, originCountry],
+  )
 
   return (
     <>

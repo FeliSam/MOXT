@@ -29,6 +29,7 @@ import { ensurePhoneCountry, phonePlaceholder, phonePrefix } from '../config/pho
 import { isBusinessPublishReady } from '../features/businesses/businessPublishUtils'
 import { isBusinessOwnedBy, selectActiveBusinessForOwner } from '../features/businesses/businessVisibility'
 import {
+  currencyForCountry,
   DIRECTIONS,
   paymentMethodsForCountry,
 } from '../features/transfers/transferConfig'
@@ -79,8 +80,8 @@ export function NewTransferPage() {
     (state.account.transferProfiles || []).filter((item) => item.userId === user.id),
   )
   const draft = useMemo(() => readTransferDraft(), [])
-  const liveRate = useExchangeRate()
   const originCountry = user.originCountry || (user.country !== 'RU' ? user.country : 'BJ')
+  const liveRate = useExchangeRate(currencyForCountry(originCountry))
   const initialDirection = user.country === 'RU' ? DIRECTIONS.RU_TO_BJ : DIRECTIONS.BJ_TO_RU
   const initialInfo = directionInfo(initialDirection, originCountry)
   const formik = useFormik({
@@ -146,7 +147,7 @@ export function NewTransferPage() {
             paymentDetails: paymentView.paymentDetails,
           },
           rateOverride:
-            values.direction === DIRECTIONS.BJ_TO_RU ? liveRate.xofToRub : liveRate.rubToXof,
+            values.direction === DIRECTIONS.BJ_TO_RU ? liveRate.originToRub : liveRate.rubToOrigin,
           rateSource: liveRate.source,
           rateDate: liveRate.date,
           sender: {
@@ -219,7 +220,7 @@ export function NewTransferPage() {
     formik.values.amount,
     formik.values.direction,
     selectedExchanger?.feePercent,
-    formik.values.direction === DIRECTIONS.BJ_TO_RU ? liveRate.xofToRub : liveRate.rubToXof,
+    formik.values.direction === DIRECTIONS.BJ_TO_RU ? liveRate.originToRub : liveRate.rubToOrigin,
     originCountry,
   )
   const info = directionInfo(formik.values.direction, originCountry)
@@ -677,7 +678,7 @@ export function NewTransferPage() {
         title={t('transfers.history.calculatorModalTitle')}
         size="large"
       >
-        <TransferCalculator verified={user.verified} />
+        <TransferCalculator originCountry={originCountry} verified={user.verified} />
       </Modal>
     </div>
   )

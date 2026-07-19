@@ -1,25 +1,30 @@
 import { useMemo, useState } from 'react'
 import { FiRepeat } from 'react-icons/fi'
+import { useSelector } from 'react-redux'
 import { Alert } from '../../components/ui/Alert'
 import { Card } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
 import { Select } from '../../components/ui/Select'
 import { useLanguage } from '../../contexts/useLanguage'
-import { DIRECTIONS } from './transferConfig'
+import { currencyForCountry, DIRECTIONS } from './transferConfig'
 import { calculateTransfer, formatMoney, validateTransferAmount } from './transferUtils'
 import { useExchangeRate } from './useExchangeRate'
 
-export function TransferCalculator({ verified = false }) {
+export function TransferCalculator({ originCountry: originCountryProp, verified = false }) {
   const { t } = useLanguage()
+  const user = useSelector((state) => state.auth.user)
+  const originCountry =
+    originCountryProp || user?.originCountry || (user?.country !== 'RU' ? user?.country : 'BJ')
+  const originCurrency = currencyForCountry(originCountry)
   const [direction, setDirection] = useState(DIRECTIONS.BJ_TO_RU)
   const [amount, setAmount] = useState('50000')
-  const liveRate = useExchangeRate()
-  const selectedRate = direction === DIRECTIONS.BJ_TO_RU ? liveRate.xofToRub : liveRate.rubToXof
+  const liveRate = useExchangeRate(originCurrency)
+  const selectedRate = direction === DIRECTIONS.BJ_TO_RU ? liveRate.originToRub : liveRate.rubToOrigin
   const calculation = useMemo(
-    () => calculateTransfer(amount, direction, undefined, selectedRate),
-    [amount, direction, selectedRate],
+    () => calculateTransfer(amount, direction, undefined, selectedRate, originCountry),
+    [amount, direction, selectedRate, originCountry],
   )
-  const amountError = validateTransferAmount(amount, direction, verified, 0, 'BJ', t)
+  const amountError = validateTransferAmount(amount, direction, verified, 0, originCountry, t)
 
   return (
     <Card>
@@ -39,8 +44,8 @@ export function TransferCalculator({ verified = false }) {
           value={direction}
           onChange={(event) => setDirection(event.target.value)}
         >
-          <option value={DIRECTIONS.BJ_TO_RU}>{t('transfers.calculator.xofToRub')}</option>
-          <option value={DIRECTIONS.RU_TO_BJ}>{t('transfers.calculator.rubToXof')}</option>
+          <option value={DIRECTIONS.BJ_TO_RU}>{originCurrency} → RUB</option>
+          <option value={DIRECTIONS.RU_TO_BJ}>RUB → {originCurrency}</option>
         </Select>
         <Input
           id="calculator-amount"

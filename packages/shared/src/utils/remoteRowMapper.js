@@ -142,6 +142,11 @@ const camelMap = {
   currency_to: 'currencyTo',
   rate_margin_percent: 'rateMarginPercent',
   raw_rate: 'rawRate',
+  source_name: 'sourceName',
+  source_url: 'sourceUrl',
+  verified_at: 'verifiedAt',
+  translation_group_id: 'translationGroupId',
+  last_active_at: 'lastActiveAt',
 }
 
 export function fromRow(row) {

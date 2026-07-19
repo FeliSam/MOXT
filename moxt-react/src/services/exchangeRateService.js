@@ -1,103 +1,127 @@
-const RATE_URL = 'https://api.frankfurter.dev/v2/rate/RUB/XOF'
-const CACHE_KEY = 'moxt-rub-xof-rate-v1'
+const RATE_BASE_URL = 'https://api.frankfurter.dev/v2/rate'
 /** Shared online rate refresh for all `useExchangeRate` consumers. */
 export const EXCHANGE_RATE_REFRESH_MS = 10 * 60 * 1000
 
-const listeners = new Set()
-let snapshot = { rate: null, loading: true }
-let intervalId = null
-let inFlight = null
+const pairs = new Map()
 
-function emit() {
-  for (const listener of listeners) listener(snapshot)
+function cacheKey(base, quote) {
+  return `moxt-rate-${base}-${quote}-v1`
 }
 
-function setSnapshot(next) {
-  snapshot = next
-  emit()
+function pairKey(base, quote) {
+  return `${base}_${quote}`
 }
 
-export async function getRubXofRate() {
+function getPairState(base, quote) {
+  const key = pairKey(base, quote)
+  if (!pairs.has(key)) {
+    pairs.set(key, {
+      listeners: new Set(),
+      snapshot: { rate: null, loading: true },
+      intervalId: null,
+      inFlight: null,
+    })
+  }
+  return pairs.get(key)
+}
+
+function emit(state) {
+  for (const listener of state.listeners) listener(state.snapshot)
+}
+
+function setSnapshot(state, next) {
+  state.snapshot = next
+  emit(state)
+}
+
+/** Live rate for base->quote (e.g. fetchRate('RUB', 'NGN')). */
+export async function fetchRate(base, quote) {
   try {
-    const response = await fetch(RATE_URL, { headers: { Accept: 'application/json' } })
+    const response = await fetch(`${RATE_BASE_URL}/${base}/${quote}`, {
+      headers: { Accept: 'application/json' },
+    })
     if (!response.ok) throw new Error('Rate request failed')
     const data = await response.json()
     const rate = Number(data.rate)
     if (!Number.isFinite(rate) || rate <= 0) throw new Error('Invalid rate')
     const result = {
-      rubToXof: rate,
-      xofToRub: 1 / rate,
+      baseToQuote: rate,
+      quoteToBase: 1 / rate,
       date: data.date || new Date().toISOString().slice(0, 10),
       source: 'Frankfurter',
     }
-    localStorage.setItem(CACHE_KEY, JSON.stringify(result))
+    localStorage.setItem(cacheKey(base, quote), JSON.stringify(result))
     return result
   } catch {
-    const cached = readCachedRate()
+    const cached = readCachedRate(base, quote)
     if (cached) return { ...cached, source: `${cached.source} · cache` }
     throw new Error('Exchange rate unavailable')
   }
 }
 
-export function readCachedRate() {
+export function readCachedRate(base, quote) {
   try {
-    return JSON.parse(localStorage.getItem(CACHE_KEY) || 'null')
+    return JSON.parse(localStorage.getItem(cacheKey(base, quote)) || 'null')
   } catch {
     return null
   }
 }
 
-export function getExchangeRateSnapshot() {
-  return snapshot
+export function getExchangeRateSnapshot(base, quote) {
+  return getPairState(base, quote).snapshot
 }
 
-async function refreshSharedRate() {
-  if (inFlight) return inFlight
-  inFlight = getRubXofRate()
+async function refreshSharedRate(base, quote) {
+  const state = getPairState(base, quote)
+  if (state.inFlight) return state.inFlight
+  state.inFlight = fetchRate(base, quote)
     .then((result) => {
-      setSnapshot({ rate: result, loading: false })
+      setSnapshot(state, { rate: result, loading: false })
       return result
     })
     .catch(() => {
       // Keep last good rate (live or cache already in snapshot).
-      setSnapshot({ rate: snapshot.rate, loading: false })
+      setSnapshot(state, { rate: state.snapshot.rate, loading: false })
     })
     .finally(() => {
-      inFlight = null
+      state.inFlight = null
     })
-  return inFlight
+  return state.inFlight
 }
 
-function startSharedRefresh() {
-  if (intervalId != null) return
-  void refreshSharedRate()
-  intervalId = window.setInterval(() => {
-    void refreshSharedRate()
+function startSharedRefresh(base, quote) {
+  const state = getPairState(base, quote)
+  if (state.intervalId != null) return
+  void refreshSharedRate(base, quote)
+  state.intervalId = window.setInterval(() => {
+    void refreshSharedRate(base, quote)
   }, EXCHANGE_RATE_REFRESH_MS)
 }
 
-function stopSharedRefresh() {
-  if (intervalId == null) return
-  window.clearInterval(intervalId)
-  intervalId = null
+function stopSharedRefresh(base, quote) {
+  const state = getPairState(base, quote)
+  if (state.intervalId == null) return
+  window.clearInterval(state.intervalId)
+  state.intervalId = null
 }
 
 /**
- * Subscribe to the shared RUB/XOF rate. One fetch + one 10-minute timer
- * for the whole app, regardless of how many components call this.
+ * Subscribe to the shared base/quote rate. One fetch + one 10-minute timer
+ * per currency pair for the whole app, regardless of how many components call this.
  */
-export function subscribeExchangeRate(listener) {
-  if (snapshot.rate == null) {
-    const cached = readCachedRate()
-    if (cached) snapshot = { rate: cached, loading: true }
+export function subscribeExchangeRate(base, quote, listener) {
+  const state = getPairState(base, quote)
+  if (state.snapshot.rate == null) {
+    const cached = readCachedRate(base, quote)
+    if (cached) state.snapshot = { rate: cached, loading: true }
   }
 
-  listeners.add(listener)
-  listener(snapshot)
-  startSharedRefresh()
+  state.listeners.add(listener)
+  listener(state.snapshot)
+  startSharedRefresh(base, quote)
 
   return () => {
-    listeners.delete(listener)
-    if (listeners.size === 0) stopSharedRefresh()
+    state.listeners.delete(listener)
+    if (state.listeners.size === 0) stopSharedRefresh(base, quote)
   }
 }

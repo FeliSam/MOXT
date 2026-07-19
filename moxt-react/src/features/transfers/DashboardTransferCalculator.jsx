@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { FiArrowUpRight, FiRepeat } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
 import { useLanguage } from '../../contexts/useLanguage'
-import { DIRECTIONS } from './transferConfig'
+import { currencyForCountry, DIRECTIONS } from './transferConfig'
 import { calculateTransfer } from './transferUtils'
 import { useExchangeRate } from './useExchangeRate'
 
@@ -15,8 +15,8 @@ export function DashboardTransferCalculator({ onOpen }) {
 
   const [direction, setDirection] = useState(initialDirection)
   const [amount, setAmount] = useState(user?.country === 'RU' ? '5000' : '100000')
-  const liveRate = useExchangeRate()
-  const selectedRate = direction === DIRECTIONS.BJ_TO_RU ? liveRate.xofToRub : liveRate.rubToXof
+  const liveRate = useExchangeRate(currencyForCountry(originCountry))
+  const selectedRate = direction === DIRECTIONS.BJ_TO_RU ? liveRate.originToRub : liveRate.rubToOrigin
   const calculation = useMemo(
     () => calculateTransfer(amount, direction, undefined, selectedRate, originCountry),
     [amount, direction, selectedRate, originCountry],
