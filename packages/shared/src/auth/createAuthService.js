@@ -25,10 +25,10 @@ function isOrphanSessionError(error) {
  * démarrage reste bloqué en chargement jusqu'à ce que l'utilisateur force la
  * fermeture de l'app. On borne donc chaque appel dans le temps.
  */
-const AUTH_NETWORK_TIMEOUT_MS = 8000
-const AUTH_LOGIN_TIMEOUT_MS = 12000
+const AUTH_NETWORK_TIMEOUT_MS = 10000
+const AUTH_LOGIN_TIMEOUT_MS = 15000
 /** signUp / signInWithOtp attendent le hook SMS — borné pour ne pas geler « Créer mon compte ». */
-const AUTH_OTP_SEND_TIMEOUT_MS = 15000
+const AUTH_OTP_SEND_TIMEOUT_MS = 30000
 /** Prefetch identité (tél./e-mail) : réutilisé au submit pour éviter un 2ᵉ round-trip. */
 const IDENTITY_CACHE_TTL_MS = 30000
 const identityAvailabilityCache = new Map()
@@ -529,13 +529,17 @@ export function createAuthService(supabase, redirects = {}) {
 
   function isTransientRpcFailure(error) {
     const message = String(error?.message || error || '').toLowerCase()
+    const cause = String(error?.cause?.message || error?.cause?.code || '').toLowerCase()
+    const combined = `${message} ${cause}`
     return (
-      message.includes('fetch failed') ||
-      message.includes('failed to fetch') ||
-      message.includes('network') ||
-      message.includes('timeout') ||
-      message.includes('econnreset') ||
-      message.includes('socket hang up')
+      combined.includes('fetch failed') ||
+      combined.includes('failed to fetch') ||
+      combined.includes('network') ||
+      combined.includes('timeout') ||
+      combined.includes('econnreset') ||
+      combined.includes('connecttimeout') ||
+      combined.includes('und_err_connect_timeout') ||
+      combined.includes('socket hang up')
     )
   }
 
@@ -1249,21 +1253,36 @@ export function createAuthService(supabase, redirects = {}) {
 
         let data
         let error
-        try {
-          ;({ data, error } = await withTimeout(
-            supabase.auth.signUp(credentials),
-            AUTH_OTP_SEND_TIMEOUT_MS,
-            'signUp',
-          ))
-        } catch (timeoutError) {
-          if (isTimeoutError(timeoutError)) {
+        // Auth (Cloudflare) can briefly connect-timeout on VPN — one retry helps.
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          try {
+            ;({ data, error } = await withTimeout(
+              supabase.auth.signUp(credentials),
+              AUTH_OTP_SEND_TIMEOUT_MS,
+              'signUp',
+            ))
+          } catch (timeoutError) {
+            if (isTimeoutError(timeoutError)) {
+              throw new Error(
+                'La création du compte prend trop de temps. Réessayez (VPN ou réseau lent).',
+              )
+            }
+            const transient = isTransientRpcFailure(timeoutError)
+            if (attempt === 0 && transient) {
+              console.warn('[MOXT] signUp réseau, nouvelle tentative…', timeoutError?.message)
+              await new Promise((resolve) => setTimeout(resolve, 800))
+              continue
+            }
             throw new Error(
-              'La création du compte prend trop de temps. Réessayez (VPN ou réseau lent).',
+              translateAuthError(timeoutError, { channel: 'phone', intent: 'register' }),
             )
           }
-          throw new Error(
-            translateAuthError(timeoutError, { channel: 'phone', intent: 'register' }),
-          )
+          if (error && attempt === 0 && isTransientRpcFailure(error)) {
+            console.warn('[MOXT] signUp erreur réseau, nouvelle tentative…', error?.message)
+            await new Promise((resolve) => setTimeout(resolve, 800))
+            continue
+          }
+          break
         }
         if (error) {
           if (isAuthAlreadyExistsError(error)) {

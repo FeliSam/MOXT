@@ -87,6 +87,17 @@ describe('translateAuthError', () => {
     ).toMatch(/confirmer le code|nouveau code/i)
   })
 
+  it('maps register connect-timeout to a VPN-friendly message', () => {
+    const message = translateAuthError(
+      {
+        message: 'fetch failed',
+        cause: { code: 'UND_ERR_CONNECT_TIMEOUT', message: 'Connect Timeout Error' },
+      },
+      { channel: 'phone', intent: 'register' },
+    )
+    expect(message).toMatch(/VPN|inscription/i)
+  })
+
   it('maps Supabase security cooldown to an explicit wait message', () => {
     const result = translateAuthError(
       { message: 'For security purposes, you can only request this after 60 seconds.' },
