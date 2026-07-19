@@ -752,7 +752,7 @@ describe('authService', () => {
     expect(auth.signInWithOtp).not.toHaveBeenCalled()
   })
 
-  it('re-vérifie le téléphone au submit même après prefetch (avant tout SMS)', async () => {
+  it('réutilise le prefetch identité au submit (pas de 2ᵉ RPC téléphone)', async () => {
     let phoneChecks = 0
     rpc.mockImplementation((name, args) => {
       if (name === 'moxt_check_identity_available' && args?.p_kind === 'phone') {
@@ -776,7 +776,7 @@ describe('authService', () => {
     expect(phoneChecks).toBe(1)
 
     await authService.register(registrationDetails())
-    expect(phoneChecks).toBe(2)
+    expect(phoneChecks).toBe(1)
     expect(auth.signUp).toHaveBeenCalledOnce()
   })
 

@@ -564,12 +564,14 @@ export function createAuthService(supabase, redirects = {}) {
   async function checkIdentityAvailability(kind, value, userId = null, { useCache = true } = {}) {
     if (!supabase || !value) return { available: true, reason: null }
 
+    const key = identityCacheKey(kind, value, userId)
     if (useCache) {
       const cached = readIdentityCache(kind, value, userId)
       if (cached) return cached
-      const inflight = identityAvailabilityInflight.get(identityCacheKey(kind, value, userId))
-      if (inflight) return inflight
     }
+    // Always coalesce in-flight checks (even when bypassing cache) to avoid stampedes.
+    const inflight = identityAvailabilityInflight.get(key)
+    if (inflight) return inflight
 
     const run = (async () => {
       let data = null
@@ -612,7 +614,6 @@ export function createAuthService(supabase, redirects = {}) {
       return result
     })()
 
-    const key = identityCacheKey(kind, value, userId)
     identityAvailabilityInflight.set(key, run)
     try {
       return await run
@@ -652,7 +653,10 @@ export function createAuthService(supabase, redirects = {}) {
    * Fresh phone + e-mail availability before OTP UI / SMS.
    * E-mail check = already linked to a live account or not (not e-mail confirmation).
    */
-  async function assertRegistrationIdentitiesEligible({ phone, email } = {}) {
+  async function assertRegistrationIdentitiesEligible(
+    { phone, email } = {},
+    { useCache = true } = {},
+  ) {
     const normalizedPhone = phone ? normalizeRussianAuthPhone(phone) : ''
     const normalizedEmail = String(email || '').trim().toLowerCase()
 
@@ -666,23 +670,40 @@ export function createAuthService(supabase, redirects = {}) {
     const tasks = []
     if (normalizedPhone) {
       tasks.push(
-        checkIdentityAvailability('phone', normalizedPhone, null, { useCache: false }).then(
-          (result) => ({ kind: 'phone', result }),
-        ),
+        checkIdentityAvailability('phone', normalizedPhone, null, { useCache }).then((result) => ({
+          kind: 'phone',
+          result,
+        })),
       )
     }
     if (normalizedEmail) {
       tasks.push(
-        checkIdentityAvailability('email', normalizedEmail, null, { useCache: false }).then(
-          (result) => ({ kind: 'email', result }),
-        ),
+        checkIdentityAvailability('email', normalizedEmail, null, { useCache }).then((result) => ({
+          kind: 'email',
+          result,
+        })),
       )
     }
     if (!tasks.length) {
       throw new Error('Identifiants manquants.')
     }
 
-    const results = await Promise.all(tasks)
+    let results
+    try {
+      results = await Promise.all(tasks)
+    } catch (error) {
+      if (error?.message === 'IDENTITY_CHECK_UNAVAILABLE') {
+        throw new Error(
+          translateAuthError(
+            { message: 'IDENTITY_CHECK_UNAVAILABLE' },
+            { channel: 'phone', intent: 'register' },
+          ),
+        )
+      }
+      throw new Error(
+        translateAuthError(error, { channel: 'phone', intent: 'register' }),
+      )
+    }
     for (const { kind, result } of results) {
       if (result.available) continue
       if (result.reason === 'limit') {
@@ -1216,7 +1237,8 @@ export function createAuthService(supabase, redirects = {}) {
           options: { channel: 'sms', data: profileFields },
         }
 
-        // Fresh phone + e-mail gate BEFORE any SMS (e-mail = already linked or not).
+        // Phone + e-mail gate BEFORE any SMS (prefetch cache OK within TTL).
+        // E-mail check = already linked to a live account or not.
         await assertRegistrationIdentitiesEligible({
           phone: normalizedPhone,
           email,
@@ -1239,7 +1261,9 @@ export function createAuthService(supabase, redirects = {}) {
               'La création du compte prend trop de temps. Réessayez (VPN ou réseau lent).',
             )
           }
-          throw timeoutError
+          throw new Error(
+            translateAuthError(timeoutError, { channel: 'phone', intent: 'register' }),
+          )
         }
         if (error) {
           if (isAuthAlreadyExistsError(error)) {
@@ -1253,7 +1277,9 @@ export function createAuthService(supabase, redirects = {}) {
               throw resumeError instanceof Error ? resumeError : new Error(resumeMessage)
             }
           }
-          throw new Error(translateAuthError(error, { channel: 'phone' }))
+          throw new Error(
+            translateAuthError(error, { channel: 'phone', intent: 'register' }),
+          )
         }
 
         // Supabase anti-enumeration: duplicate email/phone returns identities: [].

@@ -51,12 +51,12 @@ describe('translateAuthError', () => {
   })
 
   it('maps AuthRetryableFetchError empty payload to network retry (phone)', () => {
-    expect(
-      translateAuthError(
-        { name: 'AuthRetryableFetchError', message: '{}', status: 500 },
-        { channel: 'phone' },
-      ),
-    ).toMatch(/Connexion au serveur|réseau/i)
+    const message = translateAuthError(
+      { name: 'AuthRetryableFetchError', message: '{}', status: 500 },
+      { channel: 'phone' },
+    )
+    expect(message).toMatch(/Connexion au serveur|réseau/i)
+    expect(message).not.toMatch(/nouveau code/i)
   })
 
   it('maps TypeError fetch failed to a clear network message (not opaque generic)', () => {
@@ -66,12 +66,25 @@ describe('translateAuthError', () => {
     )
     expect(message).toMatch(/Connexion au serveur|réseau/i)
     expect(message).not.toBe('Une erreur est survenue. Veuillez réessayer.')
+    expect(message).not.toMatch(/nouveau code/i)
   })
 
   it('maps bare fetch failed without AuthRetryable name on phone channel', () => {
+    const message = translateAuthError(
+      { message: 'TypeError: fetch failed' },
+      { channel: 'phone' },
+    )
+    expect(message).toMatch(/Connexion au serveur|réseau/i)
+    expect(message).not.toMatch(/nouveau code/i)
+  })
+
+  it('keeps OTP-specific network wording only while verifying a code', () => {
     expect(
-      translateAuthError({ message: 'TypeError: fetch failed' }, { channel: 'phone' }),
-    ).toMatch(/Connexion au serveur|réseau/i)
+      translateAuthError(
+        { message: 'TypeError: fetch failed' },
+        { channel: 'phone', intent: 'otp_verify' },
+      ),
+    ).toMatch(/confirmer le code|nouveau code/i)
   })
 
   it('maps Supabase security cooldown to an explicit wait message', () => {

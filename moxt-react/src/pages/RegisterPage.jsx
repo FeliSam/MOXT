@@ -407,10 +407,13 @@ export function RegisterPage() {
 
     void (async () => {
       try {
-        await authService.assertRegistrationIdentitiesEligible({
-          phone: pending.phone,
-          email: pending.email,
-        })
+        await authService.assertRegistrationIdentitiesEligible(
+          {
+            phone: pending.phone,
+            email: pending.email,
+          },
+          { useCache: false },
+        )
         if (cancelled) return
         setPendingVerification({
           method: pending.method || 'phone',

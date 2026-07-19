@@ -116,10 +116,12 @@ export function translateAuthError(error, context = {}) {
   }
   // Undici/Chrome/Supabase often surface transient network as "TypeError: fetch failed"
   // or AuthRetryableFetchError with "{}" — never show the opaque generic toast.
+  // OTP-specific wording only while confirming a code — not during signup/login.
   if (isTransientNetworkFailure({ message, name, status })) {
-    return channel === 'phone'
-      ? 'Connexion au serveur impossible. Vérifiez votre réseau et réessayez sans demander un nouveau code.'
-      : 'Connexion au serveur impossible. Vérifiez votre réseau et réessayez.'
+    if (verifyingOtp) {
+      return 'Connexion au serveur impossible. Réessayez de confirmer le code sans en redemander un nouveau.'
+    }
+    return 'Connexion au serveur impossible. Vérifiez votre réseau et réessayez.'
   }
   if (code === 'unexpected_failure' && message.toLowerCase().includes('hook')) {
     return translateSmsHookFailure(message)
@@ -261,9 +263,14 @@ function translateSupabaseError(message, meta = {}, context = {}) {
     m.includes('pgrst') ||
     m.includes('connection')
   ) {
-    return phoneContext
-      ? 'Connexion au serveur impossible. Vérifiez votre réseau et réessayez sans demander un nouveau code.'
-      : 'Connexion au serveur impossible. Vérifiez votre réseau et réessayez.'
+    const verifyingOtp =
+      context.intent === 'otp_verify' ||
+      context.intent === 'phone_verify' ||
+      context.intent === 'email_verification'
+    if (verifyingOtp) {
+      return 'Connexion au serveur impossible. Réessayez de confirmer le code sans en redemander un nouveau.'
+    }
+    return 'Connexion au serveur impossible. Vérifiez votre réseau et réessayez.'
   }
 
   if (m.includes('user already registered') || m.includes('already been registered')) {
