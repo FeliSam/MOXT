@@ -199,7 +199,7 @@ export function createNotificationDispatcher(store) {
             name: subscriberName || notifyT('shared.notifications.someone'),
           }),
           type: 'subscription',
-          link: action.payload.publisherPath || '/subscriptions',
+          link: action.payload.userId ? `/users/${action.payload.userId}/publications` : '/subscriptions',
         },
         'notifNewSubscribers',
       )
