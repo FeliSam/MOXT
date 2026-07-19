@@ -50,12 +50,13 @@ describe('translateAuthError', () => {
     ).toContain('trop de temps')
   })
 
-  it('maps AuthRetryableFetchError empty payload to network retry (phone)', () => {
+  it('maps AuthRetryableFetchError empty 500 payload to SMS hook failure (not VPN)', () => {
     const message = translateAuthError(
       { name: 'AuthRetryableFetchError', message: '{}', status: 500 },
-      { channel: 'phone' },
+      { channel: 'phone', intent: 'register' },
     )
-    expect(message).toMatch(/Connexion au serveur|réseau/i)
+    expect(message).toMatch(/SMS|envoi/i)
+    expect(message).not.toMatch(/VPN/i)
     expect(message).not.toMatch(/nouveau code/i)
   })
 
@@ -87,7 +88,7 @@ describe('translateAuthError', () => {
     ).toMatch(/confirmer le code|nouveau code/i)
   })
 
-  it('maps register connect-timeout to a VPN-friendly message', () => {
+  it('maps register connect-timeout to a network message (not SMS, not VPN blame)', () => {
     const message = translateAuthError(
       {
         message: 'fetch failed',
@@ -95,7 +96,9 @@ describe('translateAuthError', () => {
       },
       { channel: 'phone', intent: 'register' },
     )
-    expect(message).toMatch(/VPN|inscription/i)
+    expect(message).toMatch(/inscription|connexion|réseau/i)
+    expect(message).not.toMatch(/VPN/i)
+    expect(message).not.toMatch(/SMS est temporairement/i)
   })
 
   it('maps Supabase security cooldown to an explicit wait message', () => {

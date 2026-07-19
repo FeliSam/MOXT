@@ -115,20 +115,29 @@ export function translateAuthError(error, context = {}) {
   if (message === 'IDENTITY_CHECK_UNAVAILABLE' || message.includes('IDENTITY_CHECK_UNAVAILABLE')) {
     return 'Vérification des identifiants indisponible. Réessayez dans un instant.'
   }
-  // Undici/Chrome/Supabase often surface transient network as "TypeError: fetch failed"
-  // or AuthRetryableFetchError with "{}" — never show the opaque generic toast.
+  // Auth maps a broken send_sms hook (HTTP ≠ 200) to AuthRetryableFetchError + "{}" / 500.
+  // That is an SMS provider/hook failure — not a client VPN/network outage.
+  if (isAuthHookOpaqueFailure({ message, name, status, code })) {
+    return translateSmsHookFailure(
+      message && message !== '{}'
+        ? message
+        : 'Unexpected status code returned from hook: 500',
+    )
+  }
+  if (code === 'unexpected_failure' && message.toLowerCase().includes('hook')) {
+    return translateSmsHookFailure(message)
+  }
+  // Undici/Chrome/Supabase often surface transient network as "TypeError: fetch failed".
   // OTP-specific wording only while confirming a code — not during signup/login.
+  // VPN hint only for real connect timeouts — never for Auth 500 / empty "{}".
   if (isTransientNetworkFailure({ message, name, status, cause })) {
     if (verifyingOtp) {
       return 'Connexion au serveur impossible. Réessayez de confirmer le code sans en redemander un nouveau.'
     }
-    if (context.intent === 'register') {
-      return "Impossible de joindre le serveur d'inscription. Désactivez le VPN un instant, puis réessayez."
+    if (context.intent === 'register' && isLikelyConnectTimeout({ message, cause })) {
+      return "Impossible de joindre le serveur d'inscription. Vérifiez votre connexion réseau, puis réessayez."
     }
     return 'Connexion au serveur impossible. Vérifiez votre réseau et réessayez.'
-  }
-  if (code === 'unexpected_failure' && message.toLowerCase().includes('hook')) {
-    return translateSmsHookFailure(message)
   }
   if (message.toLowerCase().includes('signups not allowed for otp')) {
     return 'Aucun compte MOXT associé à ce numéro. Créez un compte ou vérifiez le numéro saisi.'
@@ -231,13 +240,53 @@ function translateSmsHookFailure(message = '') {
   return "L'envoi du code SMS a échoué. Réessayez plus tard ou contactez le support."
 }
 
+/** Opaque Auth 500 when the send_sms hook returned a non-2xx status (body discarded by GoTrue). */
+function isAuthHookOpaqueFailure({ message = '', name, status, code } = {}) {
+  const m = String(message || '').trim()
+  const emptyPayload = !m || m === '{}'
+  if (code === 'unexpected_failure' && String(message).toLowerCase().includes('hook')) {
+    return true
+  }
+  if (name === 'AuthRetryableFetchError' && emptyPayload && (status === undefined || status >= 500)) {
+    return true
+  }
+  if (emptyPayload && status >= 500 && code === 'unexpected_failure') {
+    return true
+  }
+  return false
+}
+
+function isLikelyConnectTimeout({ message = '', cause } = {}) {
+  const combined = `${message} ${cause?.message || ''} ${cause?.code || ''}`.toLowerCase()
+  return (
+    combined.includes('und_err_connect_timeout') ||
+    combined.includes('connect timeout') ||
+    combined.includes('connecttimeout') ||
+    combined.includes('etimedout')
+  )
+}
+
 function isTransientNetworkFailure({ message = '', name, status, cause } = {}) {
   const m = String(message || '').toLowerCase()
   const causeMessage = String(cause?.message || cause?.code || '').toLowerCase()
   const combined = `${m} ${causeMessage}`
-  if (name === 'AuthRetryableFetchError') return true
-  if (message === '{}' || String(message || '').trim() === '') {
-    return status >= 500 || status === undefined
+  // AuthRetryableFetchError also wraps Auth HTTP 5xx (hook failures) — those are handled above.
+  if (name === 'AuthRetryableFetchError') {
+    return (
+      combined.includes('failed to fetch') ||
+      combined.includes('fetch failed') ||
+      combined.includes('networkerror') ||
+      combined.includes('network request failed') ||
+      combined.includes('load failed') ||
+      combined.includes('econnreset') ||
+      combined.includes('enotfound') ||
+      combined.includes('etimedout') ||
+      combined.includes('connecttimeout') ||
+      combined.includes('und_err_connect_timeout') ||
+      combined.includes('connect timeout') ||
+      combined.includes('socket hang up') ||
+      combined.includes('typeerror: fetch')
+    )
   }
   return (
     combined.includes('failed to fetch') ||
@@ -285,8 +334,8 @@ function translateSupabaseError(message, meta = {}, context = {}) {
     if (verifyingOtp) {
       return 'Connexion au serveur impossible. Réessayez de confirmer le code sans en redemander un nouveau.'
     }
-    if (context.intent === 'register') {
-      return "Impossible de joindre le serveur d'inscription. Désactivez le VPN un instant, puis réessayez."
+    if (context.intent === 'register' && isLikelyConnectTimeout({ message, cause: meta.cause })) {
+      return "Impossible de joindre le serveur d'inscription. Vérifiez votre connexion réseau, puis réessayez."
     }
     return 'Connexion au serveur impossible. Vérifiez votre réseau et réessayez.'
   }

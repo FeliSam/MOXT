@@ -510,9 +510,9 @@ async function markOtpSmsProvider(phone: string, provider: SmsProvider) {
 }
 
 /**
- * Force every OTP through SMSC (1st + resend).
- * P1SMS code stays intact as failover only when SMSC credentials are missing.
- * Secrets: SMS_OTP_FORCE_SMSC=1 (default behaviour while P1SMS dual-route is paused).
+ * Force every OTP (signup + login + resend) through SMSC only.
+ * P1SMS is not used on the account-creation / OTP path.
+ * Secrets: SMS_OTP_FORCE_SMSC=1 (default).
  */
 function isSmsForceSmsc() {
   const v = (Deno.env.get('SMS_OTP_FORCE_SMSC') || Deno.env.get('MOXT_SMS_DEV') || '1').toLowerCase()
@@ -521,28 +521,24 @@ function isSmsForceSmsc() {
 }
 
 /**
- * Provider selection:
- * - While SMS_OTP_FORCE_SMSC (default): every attempt → SMSC
- * - When force disabled: 1st → SMSC, 2nd+ → P1SMS (legacy dual path)
- * Never send the same OTP via both providers.
+ * Provider selection for Auth send_sms (inscription / connexion / renvoi OTP):
+ * - Default (SMS_OTP_FORCE_SMSC): SMSC only — never P1SMS
+ * - If force disabled: 1st → SMSC, 2nd+ → P1SMS (legacy; keep off in prod)
  */
 function selectProviderForAttempt(attempt: number): SmsProvider | null {
   if (isSmsForceSmsc()) {
+    return providerAvailable('smsc') ? 'smsc' : null
+  }
+  const preferP1 = attempt >= 2
+  if (preferP1) {
+    if (providerAvailable('p1sms')) return 'p1sms'
+    if (providerAvailable('smsc')) return 'smsc'
+  } else {
     if (providerAvailable('smsc')) return 'smsc'
     if (providerAvailable('p1sms')) return 'p1sms'
-  } else {
-    const preferP1 = attempt >= 2
-    if (preferP1) {
-      if (providerAvailable('p1sms')) return 'p1sms'
-      if (providerAvailable('smsc')) return 'smsc'
-    } else {
-      if (providerAvailable('smsc')) return 'smsc'
-      if (providerAvailable('p1sms')) return 'p1sms'
-    }
   }
   if (providerAvailable('smsru')) return 'smsru'
   if (providerAvailable('yandex')) return 'yandex'
-  // Last resort: locked/explicit primary
   const primary = resolveProvider()
   return providerAvailable(primary) ? primary : null
 }
@@ -611,47 +607,54 @@ Deno.serve(async (req) => {
   const payload = await req.text()
   const headers = Object.fromEntries(req.headers)
 
+  const base64Secret = hookSecret.replace('v1,whsec_', '')
+  const wh = new Webhook(base64Secret)
+
+  let user: { phone?: string }
+  let sms: { otp?: string }
   try {
-    const base64Secret = hookSecret.replace('v1,whsec_', '')
-    const wh = new Webhook(base64Secret)
-    const { user, sms } = wh.verify(payload, headers) as {
+    ;({ user, sms } = wh.verify(payload, headers) as {
       user: { phone?: string }
       sms: { otp?: string }
-    }
+    })
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : 'signature invalide'
+    console.error('[send-sms] hook signature:', detail)
+    return json(
+      {
+        error: {
+          http_code: 401,
+          message:
+            'Hook SMS : secret de signature invalide. Relancez npm run setup:smsc pour resynchroniser SEND_SMS_HOOK_SECRET.',
+        },
+      },
+      401,
+    )
+  }
 
-    const phone = user?.phone
-    const otp = sms?.otp
-    if (!phone || !otp) {
-      return json({ error: 'Payload SMS incomplet.' }, 400)
-    }
+  const phone = user?.phone
+  const otp = sms?.otp
+  if (!phone || !otp) {
+    return json({ error: 'Payload SMS incomplet.' }, 400)
+  }
 
+  try {
     await sendOtpSms(phone, otp)
     return json({})
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Échec envoi SMS.'
-    const lower = message.toLowerCase()
-    if (lower.includes('signature') || lower.includes('webhook')) {
-      console.error('[send-sms] hook signature:', message)
-      return json(
-        {
-          error: {
-            http_code: 401,
-            message:
-              'Hook SMS : secret de signature invalide. Relancez npm run setup:smsc pour resynchroniser SEND_SMS_HOOK_SECRET.',
-          },
-        },
-        401,
-      )
-    }
     console.error('[send-sms]', message)
+    // Auth only parses the error body when the hook returns HTTP 200/202.
+    // A raw HTTP 500 becomes "Unexpected status code returned from hook: 500"
+    // and the client loses the SMSC/P1SMS reason (then shows a false VPN message).
     return json(
       {
         error: {
-          http_code: 500,
+          http_code: 422,
           message,
         },
       },
-      500,
+      200,
     )
   }
 })
