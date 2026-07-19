@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useSelector } from 'react-redux'
 import { useNavigate, useParams } from 'react-router-dom'
 import { isProfileComplete } from '@moxt/shared/auth/profileCompletion.js'
-import { MoxtLoadingScreen } from '../components/layout/MoxtLoadingScreen'
+import { AppLoadingFallback } from '../components/layout/AppLoadingFallback'
 import { storePendingInviteCode } from '../features/guest/guestNavigation'
 import { applyPendingReferral } from '../features/referral/referralService'
 
@@ -30,5 +30,5 @@ export function InviteRedirect() {
     navigate(`/register${invite}`, { replace: true })
   }, [code, navigate, status, user])
 
-  return <MoxtLoadingScreen autoRetry={false} />
+  return <AppLoadingFallback />
 }

@@ -34,7 +34,9 @@ vi.mock('../../services/supabaseClient', () => ({
 }))
 
 const { authService, translateAuthError } = await import('./authService')
-const { __resetOtpSendCooldownForTests } = await import('@moxt/shared/auth/createAuthService.js')
+const { __resetOtpSendCooldownForTests, __resetIdentityAvailabilityCacheForTests } = await import(
+  '@moxt/shared/auth/createAuthService.js'
+)
 const { OTP_SEND_CAP_ENABLED, OTP_RESEND_COOLDOWN_SECONDS } = await import(
   '@moxt/shared/auth/otpCooldown.js',
 )
@@ -115,6 +117,7 @@ describe('authService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     __resetOtpSendCooldownForTests()
+    __resetIdentityAvailabilityCacheForTests()
     auth.getUser.mockResolvedValue({
       data: { user: null },
       error: null,
@@ -720,7 +723,12 @@ describe('authService', () => {
   })
 
   it('bloque l inscription si le numéro est encore lié à un compte actif', async () => {
-    rpc.mockResolvedValueOnce({ data: { available: false, reason: 'active' }, error: null })
+    rpc.mockImplementation((name, args) => {
+      if (name === 'moxt_check_identity_available' && args?.p_kind === 'phone') {
+        return Promise.resolve({ data: { available: false, reason: 'active' }, error: null })
+      }
+      return Promise.resolve({ data: { available: true, reason: null }, error: null })
+    })
 
     await expect(authService.register(registrationDetails())).rejects.toThrow('ALREADY_REGISTERED')
     expect(auth.signUp).not.toHaveBeenCalled()
@@ -731,21 +739,112 @@ describe('authService', () => {
     })
   })
 
-  it('reprend l OTP si le numéro est masqué unavailable (inscription SMS inachevée)', async () => {
-    rpc
-      .mockResolvedValueOnce({ data: { available: false, reason: 'unavailable' }, error: null })
-      .mockResolvedValueOnce({ data: { available: true, reason: null }, error: null })
-    auth.signInWithOtp.mockResolvedValue({ error: null })
-
-    const result = await authService.register(registrationDetails())
-
-    expect(auth.signUp).not.toHaveBeenCalled()
-    expect(auth.signInWithOtp).toHaveBeenCalledWith({
-      phone: '+79000000010',
-      options: { channel: 'sms', shouldCreateUser: false },
+  it('bloque l inscription si le numéro est masqué unavailable (compte confirmé, anti-énumération)', async () => {
+    rpc.mockImplementation((name, args) => {
+      if (name === 'moxt_check_identity_available' && args?.p_kind === 'phone') {
+        return Promise.resolve({ data: { available: false, reason: 'unavailable' }, error: null })
+      }
+      return Promise.resolve({ data: { available: true, reason: null }, error: null })
     })
-    expect(result.requiresPhoneConfirmation).toBe(true)
-    expect(result.resumedSignup).toBe(true)
+
+    await expect(authService.register(registrationDetails())).rejects.toThrow('ALREADY_REGISTERED')
+    expect(auth.signUp).not.toHaveBeenCalled()
+    expect(auth.signInWithOtp).not.toHaveBeenCalled()
+  })
+
+  it('re-vérifie le téléphone au submit même après prefetch (avant tout SMS)', async () => {
+    let phoneChecks = 0
+    rpc.mockImplementation((name, args) => {
+      if (name === 'moxt_check_identity_available' && args?.p_kind === 'phone') {
+        phoneChecks += 1
+        return Promise.resolve({ data: { available: true, reason: null }, error: null })
+      }
+      return Promise.resolve({ data: { available: true, reason: null }, error: null })
+    })
+    auth.signUp.mockResolvedValue({
+      data: {
+        user: { id: 'user-prefetch', identities: [{ id: 'id-1' }] },
+        session: null,
+      },
+      error: null,
+    })
+
+    await authService.prefetchRegistrationIdentities({
+      phone: '+79000000010',
+      email: 'personne@example.com',
+    })
+    expect(phoneChecks).toBe(1)
+
+    await authService.register(registrationDetails())
+    expect(phoneChecks).toBe(2)
+    expect(auth.signUp).toHaveBeenCalledOnce()
+  })
+
+  it('refuse l OTP si le numéro est déjà pris (assertRegistrationIdentities)', async () => {
+    rpc.mockImplementation((name, args) => {
+      if (name === 'moxt_check_identity_available' && args?.p_kind === 'phone') {
+        return Promise.resolve({ data: { available: false, reason: 'unavailable' }, error: null })
+      }
+      return Promise.resolve({ data: { available: true, reason: null }, error: null })
+    })
+
+    await expect(
+      authService.assertRegistrationIdentitiesEligible({
+        phone: '+79000000010',
+        email: 'personne@example.com',
+      }),
+    ).rejects.toThrow('ALREADY_REGISTERED')
+  })
+
+  it('refuse l OTP si l e-mail est déjà lié à un compte', async () => {
+    rpc.mockImplementation((name, args) => {
+      if (name === 'moxt_check_identity_available' && args?.p_kind === 'email') {
+        return Promise.resolve({ data: { available: false, reason: 'unavailable' }, error: null })
+      }
+      return Promise.resolve({ data: { available: true, reason: null }, error: null })
+    })
+
+    await expect(
+      authService.assertRegistrationIdentitiesEligible({
+        phone: '+79000000010',
+        email: 'pris@example.com',
+      }),
+    ).rejects.toThrow(/e-mail|email|déjà|compte/i)
+    expect(auth.signUp).not.toHaveBeenCalled()
+  })
+
+  it('bloque register si l e-mail est déjà lié (avant SMS)', async () => {
+    rpc.mockImplementation((name, args) => {
+      if (name === 'moxt_check_identity_available' && args?.p_kind === 'email') {
+        return Promise.resolve({ data: { available: false, reason: 'active' }, error: null })
+      }
+      return Promise.resolve({ data: { available: true, reason: null }, error: null })
+    })
+
+    await expect(authService.register(registrationDetails())).rejects.toThrow(/e-mail|email|déjà|compte/i)
+    expect(auth.signUp).not.toHaveBeenCalled()
+  })
+
+  it('ne reprend pas un OTP pour un numéro déjà confirmé via resumePhoneSignup', async () => {
+    auth.signUp.mockResolvedValue({
+      data: { user: null, session: null },
+      error: { code: 'user_already_exists', message: 'User already registered' },
+    })
+    let phoneChecks = 0
+    rpc.mockImplementation((name, args) => {
+      if (name === 'moxt_check_identity_available' && args?.p_kind === 'phone') {
+        phoneChecks += 1
+        // 1st = register gate (available unfinished); 2nd = resume guard (confirmed)
+        if (phoneChecks >= 2) {
+          return Promise.resolve({ data: { available: false, reason: 'unavailable' }, error: null })
+        }
+        return Promise.resolve({ data: { available: true, reason: null }, error: null })
+      }
+      return Promise.resolve({ data: { available: true, reason: null }, error: null })
+    })
+
+    await expect(authService.register(registrationDetails())).rejects.toThrow('ALREADY_REGISTERED')
+    expect(auth.signInWithOtp).not.toHaveBeenCalled()
   })
 
   it('accepte un signup téléphone sans champ identities (confirmation SMS en attente)', async () => {

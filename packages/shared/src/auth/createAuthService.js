@@ -29,6 +29,15 @@ const AUTH_NETWORK_TIMEOUT_MS = 8000
 const AUTH_LOGIN_TIMEOUT_MS = 12000
 /** signUp / signInWithOtp attendent le hook SMS — borné pour ne pas geler « Créer mon compte ». */
 const AUTH_OTP_SEND_TIMEOUT_MS = 15000
+/** Prefetch identité (tél./e-mail) : réutilisé au submit pour éviter un 2ᵉ round-trip. */
+const IDENTITY_CACHE_TTL_MS = 30000
+const identityAvailabilityCache = new Map()
+const identityAvailabilityInflight = new Map()
+
+export function __resetIdentityAvailabilityCacheForTests() {
+  identityAvailabilityCache.clear()
+  identityAvailabilityInflight.clear()
+}
 
 function withTimeout(promise, ms, label) {
   return new Promise((resolve, reject) => {
@@ -422,6 +431,20 @@ export function createAuthService(supabase, redirects = {}) {
   }
 
   async function resumePhoneSignup(phone, email = '', pendingUserId = null) {
+    // Only unfinished SMS signups are resumable. A live/masked confirmed number
+    // must never receive a "register" OTP (that logs into the existing auth user
+    // and would let finalize overwrite their profile).
+    // Bypass prefetch cache — this is a security gate, not a UX warm-up.
+    const availability = await checkIdentityAvailability('phone', phone, null, {
+      useCache: false,
+    })
+    if (!availability.available) {
+      if (availability.reason === 'limit') {
+        throw new Error('IDENTITY_LIMIT_REACHED')
+      }
+      throw new Error('ALREADY_REGISTERED')
+    }
+
     guardOtpSend('phone', phone)
 
     // Prefer signInWithOtp — more reliably triggers the Send SMS hook than auth.resend.
@@ -516,45 +539,168 @@ export function createAuthService(supabase, redirects = {}) {
     )
   }
 
-  async function checkIdentityAvailability(kind, value, userId = null) {
+  function identityCacheKey(kind, value, userId = null) {
+    return `${kind}:${value}:${userId || ''}`
+  }
+
+  function readIdentityCache(kind, value, userId = null) {
+    const key = identityCacheKey(kind, value, userId)
+    const hit = identityAvailabilityCache.get(key)
+    if (!hit) return null
+    if (hit.expiresAt <= Date.now()) {
+      identityAvailabilityCache.delete(key)
+      return null
+    }
+    return hit.result
+  }
+
+  function writeIdentityCache(kind, value, userId, result) {
+    identityAvailabilityCache.set(identityCacheKey(kind, value, userId), {
+      result,
+      expiresAt: Date.now() + IDENTITY_CACHE_TTL_MS,
+    })
+  }
+
+  async function checkIdentityAvailability(kind, value, userId = null, { useCache = true } = {}) {
     if (!supabase || !value) return { available: true, reason: null }
 
-    let data = null
-    let error = null
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-      try {
-        ;({ data, error } = await withTimeout(
-          supabase.rpc('moxt_check_identity_available', {
-            p_kind: kind,
-            p_value: value,
-            p_user_id: userId,
-          }),
-          AUTH_NETWORK_TIMEOUT_MS,
-          'checkIdentity',
-        ))
-      } catch (timeoutError) {
-        error = timeoutError
-      }
-      if (!error) break
-      if (attempt === 0 && (isTransientRpcFailure(error) || isTimeoutError(error))) {
-        await new Promise((resolve) => setTimeout(resolve, 400))
-        continue
-      }
-      break
+    if (useCache) {
+      const cached = readIdentityCache(kind, value, userId)
+      if (cached) return cached
+      const inflight = identityAvailabilityInflight.get(identityCacheKey(kind, value, userId))
+      if (inflight) return inflight
     }
 
-    if (error) {
-      const wrapped = new Error('IDENTITY_CHECK_UNAVAILABLE')
-      wrapped.cause = error
-      wrapped.code = error.code
-      wrapped.status = error.status
-      throw wrapped
-    }
+    const run = (async () => {
+      let data = null
+      let error = null
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        try {
+          ;({ data, error } = await withTimeout(
+            supabase.rpc('moxt_check_identity_available', {
+              p_kind: kind,
+              p_value: value,
+              p_user_id: userId,
+            }),
+            AUTH_NETWORK_TIMEOUT_MS,
+            'checkIdentity',
+          ))
+        } catch (timeoutError) {
+          error = timeoutError
+        }
+        if (!error) break
+        if (attempt === 0 && (isTransientRpcFailure(error) || isTimeoutError(error))) {
+          await new Promise((resolve) => setTimeout(resolve, 400))
+          continue
+        }
+        break
+      }
 
+      if (error) {
+        const wrapped = new Error('IDENTITY_CHECK_UNAVAILABLE')
+        wrapped.cause = error
+        wrapped.code = error.code
+        wrapped.status = error.status
+        throw wrapped
+      }
+
+      const result = {
+        available: data?.available !== false,
+        reason: data?.reason || null,
+      }
+      writeIdentityCache(kind, value, userId, result)
+      return result
+    })()
+
+    const key = identityCacheKey(kind, value, userId)
+    identityAvailabilityInflight.set(key, run)
+    try {
+      return await run
+    } finally {
+      identityAvailabilityInflight.delete(key)
+    }
+  }
+
+  /** Warm identity cache from the register form (blur) so submit stays snappy. */
+  async function prefetchRegistrationIdentities({ phone, email } = {}) {
+    const tasks = []
+    const normalizedPhone = phone ? normalizeRussianAuthPhone(phone) : ''
+    const normalizedEmail = String(email || '').trim().toLowerCase()
+    if (/^\+7\d{10}$/.test(normalizedPhone)) {
+      tasks.push(
+        checkIdentityAvailability('phone', normalizedPhone, null, { useCache: false }).catch(
+          () => null,
+        ),
+      )
+    }
+    if (normalizedEmail.includes('@') && normalizedEmail.length >= 5) {
+      tasks.push(
+        checkIdentityAvailability('email', normalizedEmail, null, { useCache: false }).catch(
+          () => null,
+        ),
+      )
+    }
+    if (!tasks.length) return { phone: null, email: null }
+    await Promise.all(tasks)
     return {
-      available: data?.available !== false,
-      reason: data?.reason || null,
+      phone: normalizedPhone ? readIdentityCache('phone', normalizedPhone) : null,
+      email: normalizedEmail ? readIdentityCache('email', normalizedEmail) : null,
     }
+  }
+
+  /**
+   * Fresh phone + e-mail availability before OTP UI / SMS.
+   * E-mail check = already linked to a live account or not (not e-mail confirmation).
+   */
+  async function assertRegistrationIdentitiesEligible({ phone, email } = {}) {
+    const normalizedPhone = phone ? normalizeRussianAuthPhone(phone) : ''
+    const normalizedEmail = String(email || '').trim().toLowerCase()
+
+    if (normalizedPhone && !/^\+7\d{10}$/.test(normalizedPhone)) {
+      throw new Error('Numéro de téléphone invalide. Vérifiez le format (+7XXXXXXXXXX).')
+    }
+    if (normalizedEmail && (!normalizedEmail.includes('@') || normalizedEmail.length < 5)) {
+      throw new Error("L'e-mail est obligatoire.")
+    }
+
+    const tasks = []
+    if (normalizedPhone) {
+      tasks.push(
+        checkIdentityAvailability('phone', normalizedPhone, null, { useCache: false }).then(
+          (result) => ({ kind: 'phone', result }),
+        ),
+      )
+    }
+    if (normalizedEmail) {
+      tasks.push(
+        checkIdentityAvailability('email', normalizedEmail, null, { useCache: false }).then(
+          (result) => ({ kind: 'email', result }),
+        ),
+      )
+    }
+    if (!tasks.length) {
+      throw new Error('Identifiants manquants.')
+    }
+
+    const results = await Promise.all(tasks)
+    for (const { kind, result } of results) {
+      if (result.available) continue
+      if (result.reason === 'limit') {
+        throw new Error('IDENTITY_LIMIT_REACHED')
+      }
+      if (kind === 'phone') {
+        throw new Error('ALREADY_REGISTERED')
+      }
+      throw new Error(
+        translateAuthError({ message: 'MOXT_IDENTITY_ACTIVE' }, { channel: 'email' }),
+      )
+    }
+    return true
+  }
+
+  /** @deprecated prefer assertRegistrationIdentitiesEligible */
+  async function assertPhoneEligibleForRegistrationOtp(phone) {
+    return assertRegistrationIdentitiesEligible({ phone })
   }
 
   async function assertIdentityAvailable(kind, value, userId = null, context = {}) {
@@ -928,6 +1074,10 @@ export function createAuthService(supabase, redirects = {}) {
   }
 
   return {
+    prefetchRegistrationIdentities,
+    assertRegistrationIdentitiesEligible,
+    assertPhoneEligibleForRegistrationOtp,
+
     async login({ identifier, email, password }) {
       if (!supabase) throw new Error('Supabase non configuré.')
       const loginIdentifier = (identifier || email || '').trim()
@@ -1066,46 +1216,11 @@ export function createAuthService(supabase, redirects = {}) {
           options: { channel: 'sms', data: profileFields },
         }
 
-        // Phone + e-mail checks in parallel (VPN / réseaux lents).
-        const [phoneAvailability, emailAvailability] = await Promise.all([
-          checkIdentityAvailability('phone', normalizedPhone),
-          checkIdentityAvailability('email', email),
-        ])
-
-        if (!phoneAvailability.available && phoneAvailability.reason === 'limit') {
-          throw new Error('IDENTITY_LIMIT_REACHED')
-        }
-        if (!phoneAvailability.available && phoneAvailability.reason === 'active') {
-          // Authenticated / explicit active: confirmed account already owns this number.
-          throw new Error('ALREADY_REGISTERED')
-        }
-
-        // Resume BEFORE e-mail assert: an unfinished SMS signup must get a new OTP even
-        // if the e-mail is already reserved on another confirmed account's profile check.
-        if (!phoneAvailability.available && phoneAvailability.reason === 'unavailable') {
-          try {
-            return await resumePhoneSignup(normalizedPhone, email, null)
-          } catch (resumeError) {
-            const resumeMessage = String(resumeError?.message || resumeError || '')
-            if (isResumeBlockerMessage(resumeMessage)) {
-              throw new Error('ALREADY_REGISTERED')
-            }
-            throw resumeError instanceof Error ? resumeError : new Error(resumeMessage)
-          }
-        }
-
-        // New signup path only — e-mail must not belong to another live account.
-        if (!emailAvailability.available) {
-          if (emailAvailability.reason === 'limit') {
-            throw new Error('IDENTITY_LIMIT_REACHED')
-          }
-          throw new Error(
-            translateAuthError(
-              { message: 'MOXT_IDENTITY_ACTIVE' },
-              { channel: 'email' },
-            ),
-          )
-        }
+        // Fresh phone + e-mail gate BEFORE any SMS (e-mail = already linked or not).
+        await assertRegistrationIdentitiesEligible({
+          phone: normalizedPhone,
+          email,
+        })
 
         // Guard before provider send — one code at a time, max 4 / 3h.
         guardOtpSend('phone', normalizedPhone)
@@ -1213,6 +1328,19 @@ export function createAuthService(supabase, redirects = {}) {
 
       async function finishPhoneRegistration(authUser, accessToken) {
         const linkedEmail = String(email || profileDetails?.email || '').trim().toLowerCase()
+        // Already-verified profile: never rewrite PII from a registration form
+        // (blocks overwrite if an OTP somehow reached an existing account).
+        const existingProfile = await fetchProfile(authUser.id)
+        if (existingProfile?.phoneVerified) {
+          return {
+            user: enrichUserFromAuth(existingProfile, authUser),
+            token: accessToken,
+            emailLinkDeferred: Boolean(linkedEmail && !authUser.email_confirmed_at),
+            phoneVerified: true,
+            nextVerification: 'email',
+          }
+        }
+
         const profileFields = mergeRegistrationProfileFields(
           authUser,
           profileFieldsFromAuthUser(authUser, { pendingRegistration: loadPendingRegistration() }),

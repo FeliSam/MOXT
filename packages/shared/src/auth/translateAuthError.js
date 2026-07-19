@@ -152,6 +152,9 @@ function duplicateIdentityMessage(context = {}) {
   if (context.intent === 'phone_verification') {
     return 'Ce numéro est déjà associé à un autre compte MOXT. Connectez-vous avec ce numéro ou utilisez un autre numéro.'
   }
+  if (context.channel === 'email' || context.intent === 'email_verification') {
+    return 'Cet e-mail est déjà lié à un compte MOXT. Connectez-vous ou utilisez une autre adresse.'
+  }
   return 'ALREADY_REGISTERED'
 }
 

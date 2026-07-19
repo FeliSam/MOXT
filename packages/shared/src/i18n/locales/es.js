@@ -1133,7 +1133,7 @@ export const es = {
     closeWindow: "Cerrar a janela",
     confirm: "Confirmar",
     continue: "Continuar",
-    loading: "A cargar…",
+    loading: "Cargando…",
     pullToRefresh: {
       pull: "Puxe para atualizar",
       release: "Solte para atualizar",
@@ -6662,5 +6662,28 @@ export const es = {
       createAccount: "Crear una cuenta",
       login: "Iniciar sesión"
     }
-  }
+  },
+  onboarding: {
+    title: "Bienvenido a MOXT",
+    later: "Más tarde",
+    next: "Continuar",
+    start: "Empezar",
+    slide1: {
+      eyebrow: "Cuenta creada",
+      heading: "Hola {name}!",
+      body: "Tu espacio está listo. MOXT conecta África y Rusia para transferencias, paquetes e intercambios del día a día.",
+    },
+    slide2: {
+      heading: "Tres pilares para empezar",
+      transfers: "Transferencias — envía y recibe dinero con confianza.",
+      parcels: "Paquetes — encuentra un viajero o ofrece un trayecto.",
+      marketplace: "Marketplace — compra y vende cerca de ti.",
+    },
+    slide3: {
+      heading: "Listo para explorar",
+      body: "Abre el inicio para descubrir la plataforma. Podrás confirmar email e identidad más tarde en Seguridad.",
+      bodyEmail:
+        "Confirma primero tu email en Seguridad para publicar, luego explora la plataforma.",
+    },
+  },
 }

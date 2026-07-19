@@ -1,6 +1,8 @@
+import { useEffect } from 'react'
 import { Provider, useSelector } from 'react-redux'
 import { BrowserRouter } from 'react-router-dom'
 import { GlobalNetworkMonitor } from '../components/feedback/GlobalNetworkMonitor'
+import { markBootSplashConsumed } from '../components/layout/bootSplash'
 import { ScrollToTop } from '../components/routing/ScrollToTop'
 import { DocumentTitle } from '../components/routing/DocumentTitle'
 import { DeepLinkListener } from '../components/routing/DeepLinkListener'
@@ -16,6 +18,17 @@ function AppBadgeBridge() {
   return null
 }
 
+/** After cold-start auth resolves, never show brand splash art again this session. */
+function BootSplashBridge() {
+  const status = useSelector((state) => state.auth.status)
+  useEffect(() => {
+    if (status !== 'loading') {
+      markBootSplashConsumed()
+    }
+  }, [status])
+  return null
+}
+
 export function AppProviders({ children }) {
   return (
     <Provider store={store}>
@@ -26,6 +39,7 @@ export function AppProviders({ children }) {
             <DocumentTitle />
             <DeepLinkListener />
             <AppBadgeBridge />
+            <BootSplashBridge />
             <GlobalNetworkMonitor />
             {children}
           </BrowserRouter>

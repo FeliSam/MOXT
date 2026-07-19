@@ -68,6 +68,8 @@ import {
   loadPendingRegistration,
   savePendingRegistration,
 } from '@moxt/shared/auth/pendingRegistration.js'
+import { isValidRussianPhone } from '@moxt/shared/auth/userSecurity.js'
+import { authService } from '../features/auth/authService'
 
 /* ─── Stepper visuel — meme pattern que Transfert / Job / Evenement ──────── */
 function Stepper({ step, oauthCompletion = false }) {
@@ -125,7 +127,8 @@ export function RegisterPage() {
   const { error, status } = useSelector((state) => state.auth)
   const [oauthCompletion, setOauthCompletion] = useState(false)
   const [step, setStep] = useState(1)
-  const [pendingVerification, setPendingVerification] = useState(null) // { method, phone?, email }
+  const [pendingVerification, setPendingVerification] = useState(null) // { method, phone?, email, identityChecked? }
+  const [restoringOtpGate, setRestoringOtpGate] = useState(false)
   const [verificationCode, setVerificationCode] = useState('')
   const [resendCooldown, setResendCooldown] = useState(0)
   const [otpCapMessage, setOtpCapMessage] = useState('')
@@ -235,6 +238,11 @@ export function RegisterPage() {
     return () => window.clearInterval(timer)
   }, [resendCooldown])
 
+  function prefetchIdentities({ phone, email } = {}) {
+    if (oauthCompletion) return
+    void authService.prefetchRegistrationIdentities({ phone, email }).catch(() => {})
+  }
+
   async function completeRegistration(destination) {
     const registeredUser = store.getState().auth.user
     const registeredUserId = registeredUser?.id
@@ -320,22 +328,12 @@ export function RegisterPage() {
           return
         }
 
-        // Afficher l’écran OTP tout de suite — ne pas laisser l’utilisateur
-        // sur le bouton « Créer mon compte » pendant l’envoi SMS / VPN lent.
-        const phoneForOtp = constrainPhone(values.russianPhone, '+7', 10)
-        setPendingVerification({
-          method: 'phone',
-          phone: phoneForOtp,
-          email: values.email,
-          sendingSms: true,
-        })
-        setStep(4)
+        // Vérifs identité (tél. / e-mail) + envoi SMS AVANT l’écran OTP.
+        // Ne jamais afficher le code si le numéro/e-mail est déjà pris.
         setOtpCapMessage('')
 
         const result = await dispatch(register(values))
         if (!register.fulfilled.match(result)) {
-          setPendingVerification(null)
-          setStep(3)
           const payload = String(result.payload || '')
           if (/Limite atteinte|Patientez \d+ secondes/i.test(payload)) {
             setOtpCapMessage(payload)
@@ -368,7 +366,9 @@ export function RegisterPage() {
             email: result.payload.email,
             pendingUserId: result.payload.pendingUserId,
             sendingSms: false,
+            identityChecked: true,
           })
+          setStep(4)
           return
         }
         setPendingVerification(null)
@@ -383,17 +383,15 @@ export function RegisterPage() {
   const authBusy = status === 'loading' || formik.isSubmitting
 
   // Restore pending OTP signup after failed code / refresh (sessionStorage, no password).
+  // Never show the OTP step until the phone is re-checked as still eligible.
   useEffect(() => {
     const pending = loadPendingRegistration()
     if (!pending?.phone && !pending?.email) return
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate from sessionStorage once
-    setPendingVerification({
-      method: pending.method || 'phone',
-      phone: pending.phone,
-      email: pending.email,
-      pendingUserId: pending.pendingUserId,
-    })
-    setStep(pending.step || 4)
+
+    let cancelled = false
+    setRestoringOtpGate(true)
+    setStep(3)
+
     formik.setValues((current) => ({
       ...current,
       firstName: pending.firstName || current.firstName,
@@ -406,6 +404,41 @@ export function RegisterPage() {
       avatarUrl: pending.avatarUrl || current.avatarUrl,
       verificationMethod: 'phone',
     }))
+
+    void (async () => {
+      try {
+        await authService.assertRegistrationIdentitiesEligible({
+          phone: pending.phone,
+          email: pending.email,
+        })
+        if (cancelled) return
+        setPendingVerification({
+          method: pending.method || 'phone',
+          phone: pending.phone,
+          email: pending.email,
+          pendingUserId: pending.pendingUserId,
+          identityChecked: true,
+        })
+        setStep(pending.step || 4)
+      } catch (error) {
+        if (cancelled) return
+        clearPendingRegistration()
+        setPendingVerification(null)
+        setStep(3)
+        const message = String(error?.message || error || '')
+        dispatch(
+          addToast(
+            authErrorToast(t('auth.register.toasts.registerFailedTitle'), message, 'error', t),
+          ),
+        )
+      } finally {
+        if (!cancelled) setRestoringOtpGate(false)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- restore once on mount
   }, [])
   useEffect(() => {
@@ -551,6 +584,15 @@ export function RegisterPage() {
     const fields = (oauthCompletion ? oauthProfileStepFields : registerStepFields)[step] || []
     fields.forEach((field) => formik.setFieldTouched(field, true, false))
     if (!fields.some((field) => errors[field])) {
+      if (!oauthCompletion && step === 1) {
+        prefetchIdentities({ email: formik.values.email })
+      }
+      if (!oauthCompletion && step === 2) {
+        prefetchIdentities({
+          email: formik.values.email,
+          phone: formik.values.russianPhone,
+        })
+      }
       const maxStep = oauthCompletion ? 3 : STEPS.length
       setStep((value) => Math.min(value + 1, maxStep))
     }
@@ -625,6 +667,11 @@ export function RegisterPage() {
               autoComplete="email"
               required
               {...formik.getFieldProps('email')}
+              onBlur={(event) => {
+                formik.handleBlur(event)
+                const email = String(event.target.value || '').trim()
+                if (email.includes('@')) prefetchIdentities({ email })
+              }}
               error={errorFor('email')}
             />
             <Button type="button" icon={FiArrowRight} onClick={nextStep}>
@@ -749,6 +796,16 @@ export function RegisterPage() {
                 onChange={(event) =>
                   formik.setFieldValue('russianPhone', constrainPhone(event.target.value, '+7', 10))
                 }
+                onBlur={(event) => {
+                  formik.handleBlur(event)
+                  const phone = constrainPhone(event.target.value, '+7', 10)
+                  if (isValidRussianPhone(phone)) {
+                    prefetchIdentities({
+                      phone,
+                      email: formik.values.email,
+                    })
+                  }
+                }}
                 error={errorFor('russianPhone')}
               />
               <Input
@@ -835,15 +892,25 @@ export function RegisterPage() {
                   {authBusy ? t('auth.register.oauthSubmitting') : t('auth.register.oauthSubmit')}
                 </Button>
               ) : (
-                <Button type="submit" icon={FiCheck} loading={authBusy} disabled={authBusy}>
-                  {authBusy ? t('auth.register.submitting') : t('auth.register.submit')}
+                <Button
+                  type="submit"
+                  icon={FiCheck}
+                  loading={authBusy || restoringOtpGate}
+                  disabled={authBusy || restoringOtpGate}
+                >
+                  {authBusy || restoringOtpGate
+                    ? t('auth.register.submitting')
+                    : t('auth.register.submit')}
                 </Button>
               )}
             </div>
           </>
         ) : null}
 
-        {step === 4 && !oauthCompletion && pendingVerification ? (
+        {step === 4 &&
+        !oauthCompletion &&
+        pendingVerification?.identityChecked &&
+        pendingVerification?.phone ? (
           <>
             <Alert
               title={

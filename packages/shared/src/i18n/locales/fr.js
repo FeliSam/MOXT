@@ -6667,4 +6667,27 @@ export const fr = {
       login: "Se connecter",
     },
   },
+  onboarding: {
+    title: "Bienvenue sur MOXT",
+    later: "Plus tard",
+    next: "Continuer",
+    start: "Commencer",
+    slide1: {
+      eyebrow: "Compte créé",
+      heading: "Bonjour {name} !",
+      body: "Votre espace est prêt. MOXT relie l’Afrique et la Russie pour vos transferts, colis et échanges du quotidien.",
+    },
+    slide2: {
+      heading: "Trois piliers pour démarrer",
+      transfers: "Transferts — envoyez et recevez de l’argent en confiance.",
+      parcels: "Colis — trouvez un voyageur ou proposez un trajet.",
+      marketplace: "Marketplace — achetez et vendez près de chez vous.",
+    },
+    slide3: {
+      heading: "Prêt à explorer",
+      body: "Ouvrez votre accueil pour découvrir la plateforme. Vous pourrez confirmer votre e-mail et votre identité plus tard dans Sécurité.",
+      bodyEmail:
+        "Confirmez d’abord votre e-mail dans Sécurité pour débloquer toutes les publications, puis explorez la plateforme.",
+    },
+  },
 }

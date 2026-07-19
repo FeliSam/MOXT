@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useStore } from 'react-redux'
+import { AppLoadingFallback } from './AppLoadingFallback'
+import { markBootSplashConsumed, shouldShowBootSplash } from './bootSplash'
 import { MoxtLoadingScreen } from './MoxtLoadingScreen'
 import {
   nextLoadingRetryKind,
@@ -8,15 +10,16 @@ import {
 } from './loadingRetry'
 
 /**
- * Splash shown while `auth.status === 'loading'`. After 5s, soft-retries
- * session restore (+ data), then one hard reload if still stuck.
+ * Auth restore wait. Brand splash only on cold boot; later waits use a spinner.
  */
 export function AuthLoadingScreen() {
   const store = useStore()
   const [epoch, setEpoch] = useState(0)
+  const [useSplash] = useState(() => shouldShowBootSplash())
 
   useEffect(() => {
     return () => {
+      markBootSplashConsumed()
       resetSoftLoadingRetryCount()
     }
   }, [])
@@ -32,6 +35,10 @@ export function AuthLoadingScreen() {
       setEpoch((value) => value + 1)
     })
   }, [store])
+
+  if (!useSplash) {
+    return <AppLoadingFallback />
+  }
 
   return <MoxtLoadingScreen key={epoch} autoRetry onStuck={handleStuck} />
 }

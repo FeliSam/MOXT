@@ -248,6 +248,51 @@ html.moxt-splash-lock body {
   pointer-events: none;
 }
 
+/* Lightweight loader (no splash art) — route / post-boot waits */
+.moxt-app-loading {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-lightbox) + 20);
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.85rem;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100dvh;
+  padding:
+    max(1rem, env(safe-area-inset-top, 0px))
+    max(1rem, env(safe-area-inset-right, 0px))
+    max(1rem, env(safe-area-inset-bottom, 0px))
+    max(1rem, env(safe-area-inset-left, 0px));
+  margin: 0;
+  background: var(--app-bg, #f8fafc);
+  overscroll-behavior: none;
+  touch-action: none;
+}
+
+.moxt-app-loading-spinner {
+  display: block;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  border: 2.5px solid color-mix(in srgb, var(--app-teal, #08705f) 25%, transparent);
+  border-top-color: var(--app-teal, #08705f);
+  animation: moxt-app-spin 0.7s linear infinite;
+}
+
+.moxt-app-loading-label {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--app-text-muted, #64748b);
+}
+
+@keyframes moxt-app-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 button, input, select, textarea { font: inherit; }
 
 [aria-disabled='true'], :disabled { cursor: not-allowed; }

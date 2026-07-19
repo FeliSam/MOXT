@@ -857,6 +857,25 @@ export const PHASE3_FR_SOURCES = {
   'faq.report.question': 'Comment signaler un contenu problématique ?',
   'faq.report.answer':
     'Utilisez le signalement disponible sur les fiches. Les modérateurs MOXT traitent les signalements prioritaires.',
+
+  // ── onboarding (post-inscription) ───────────────────────────────────────
+  'onboarding.title': 'Bienvenue sur MOXT',
+  'onboarding.later': 'Plus tard',
+  'onboarding.next': 'Continuer',
+  'onboarding.start': 'Commencer',
+  'onboarding.slide1.eyebrow': 'Compte créé',
+  'onboarding.slide1.heading': 'Bonjour {name} !',
+  'onboarding.slide1.body':
+    'Votre espace est prêt. MOXT relie l’Afrique et la Russie pour vos transferts, colis et échanges du quotidien.',
+  'onboarding.slide2.heading': 'Trois piliers pour démarrer',
+  'onboarding.slide2.transfers': 'Transferts — envoyez et recevez de l’argent en confiance.',
+  'onboarding.slide2.parcels': 'Colis — trouvez un voyageur ou proposez un trajet.',
+  'onboarding.slide2.marketplace': 'Marketplace — achetez et vendez près de chez vous.',
+  'onboarding.slide3.heading': 'Prêt à explorer',
+  'onboarding.slide3.body':
+    'Ouvrez votre accueil pour découvrir la plateforme. Vous pourrez confirmer votre e-mail et votre identité plus tard dans Sécurité.',
+  'onboarding.slide3.bodyEmail':
+    'Confirmez d’abord votre e-mail dans Sécurité pour débloquer toutes les publications, puis explorez la plateforme.',
 }
 
 export function phase3Text(t, key, vars = {}) {
