@@ -6,6 +6,7 @@ import { VerifiedBadge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { useLanguage } from '../../contexts/useLanguage'
 import { makeQrCodeUrl } from '../../utils/qrCode'
+import { DownloadBadgeButton } from './DownloadBadgeButton'
 
 function initialsFromTitle(title = '') {
   const parts = title.trim().split(/\s+/).filter(Boolean)
@@ -216,6 +217,19 @@ export function QrSharePanel({
                 {t('share.share')}
               </Button>
             </div>
+            {variant === 'invite' || variant === 'profile' || variant === 'business' ? (
+              <div className="mt-2.5 flex justify-center">
+                <DownloadBadgeButton
+                  variant={variant}
+                  title={title}
+                  subtitle={variant === 'business' ? sector : undefined}
+                  city={city}
+                  verified={verified}
+                  qrUrl={qrUrl}
+                  avatarUrl={avatarUrl}
+                />
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>

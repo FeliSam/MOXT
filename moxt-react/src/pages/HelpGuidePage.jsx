@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { FiExternalLink, FiStar } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
 import { Link, useParams } from 'react-router-dom'
+import { BackButton } from '../components/ui/BackButton'
 import { Badge, PillBadge } from '../components/ui/Badge'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { CatalogSearch } from '../components/ui/CatalogSearch'
@@ -42,6 +43,7 @@ export function HelpGuidePage() {
         title={t('help.page.title')}
         description={t('help.page.description')}
         stats={[{ label: t('help.page.stats.articles'), value: visibleArticles.length }]}
+        actions={<BackButton fallback="/moxt" />}
       />
 
       <div className="grid gap-5">
@@ -70,7 +72,7 @@ export function HelpGuidePage() {
         </div>
 
         {visibleArticles.length ? (
-          <CatalogGrid lazy={false}>
+          <CatalogGrid lazy={false} columns="grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
             {visibleArticles.map((article, index) => {
               const meta = helpCategoryMeta(article.category)
               const Icon = meta.icon
@@ -125,6 +127,7 @@ export function HelpArticleDetailPage() {
         eyebrow={t(meta.labelKey)}
         title={article.title}
         description={article.summary}
+        actions={<BackButton fallback="/guide" />}
       />
       {article.createdAt ? (
         <p className="-mt-3 text-xs text-[var(--app-text-faint)]">

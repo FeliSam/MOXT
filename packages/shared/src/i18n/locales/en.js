@@ -365,6 +365,14 @@ export const en = {
     qrToShare: "QR code to share",
     showProfileQr: "Show profile QR code",
     showBusinessQr: "Show business QR code",
+    badge: {
+      download: "Download my badge",
+      generating: "Generating…",
+      error: "Failed, try again",
+      taglineLine1: "I use MOXT",
+      taglineLine2Personal: "Join me on MOXT",
+      taglineLine2Business: "Join us on MOXT",
+    },
     hints: {
       invite: "Scan to join MOXT",
       profile: "Scan to view my publications",

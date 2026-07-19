@@ -239,6 +239,14 @@ export const pt = {
     qrToShare: "QR code para partilhar",
     showProfileQr: "Mostrar QR code do perfil",
     showBusinessQr: "Mostrar QR code da empresa",
+    badge: {
+      download: "Baixar meu selo",
+      generating: "Gerando…",
+      error: "Falha, tente novamente",
+      taglineLine1: "Eu uso o MOXT",
+      taglineLine2Personal: "Junte-se a mim no MOXT",
+      taglineLine2Business: "Junte-se a nós no MOXT",
+    },
     hints: {
       invite: "Digitalize para entrar no MOXT",
       profile: "Digitalize para ver as minhas publicações",

@@ -365,6 +365,14 @@ export const ru = {
     qrToShare: "QR-код для отправки",
     showProfileQr: "Показать QR-код профиля",
     showBusinessQr: "Показать QR-код компании",
+    badge: {
+      download: "Скачать мой бейдж",
+      generating: "Создание…",
+      error: "Ошибка, попробуйте снова",
+      taglineLine1: "Я пользуюсь MOXT",
+      taglineLine2Personal: "Присоединяйся ко мне в MOXT",
+      taglineLine2Business: "Присоединяйтесь к нам в MOXT",
+    },
     hints: {
       invite: "Сканируйте, чтобы присоединиться к MOXT",
       profile: "Сканируйте, чтобы увидеть мои публикации",
