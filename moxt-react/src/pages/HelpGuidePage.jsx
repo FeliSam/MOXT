@@ -42,7 +42,14 @@ export function HelpGuidePage() {
         eyebrow={t('help.page.eyebrow')}
         title={t('help.page.title')}
         description={t('help.page.description')}
-        stats={[{ label: t('help.page.stats.articles'), value: visibleArticles.length }]}
+        stats={[
+          {
+            label: t(
+              visibleArticles.length > 1 ? 'help.page.stats.articles' : 'help.page.stats.article',
+            ),
+            value: visibleArticles.length,
+          },
+        ]}
         actions={<BackButton fallback="/moxt" />}
       />
 

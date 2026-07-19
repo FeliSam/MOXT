@@ -365,7 +365,7 @@ export const es = {
     showProfileQr: "Mostrar QR code do perfil",
     showBusinessQr: "Mostrar QR code da empresa",
     badge: {
-      download: "Descargar mi insignia",
+      download: "Descargar la insignia",
       generating: "Generando…",
       error: "Error, inténtalo de nuevo",
       taglineLine1: "Uso MOXT",
@@ -6586,7 +6586,8 @@ export const es = {
       title: "Guía práctica",
       description: "Documentos, trámites, seguridad y consejos para estudiantes y extranjeros que viven en Rusia, verificados y traducidos.",
       stats: {
-        articles: "{count} artículos"
+        article: "Artículo",
+        articles: "Artículos"
       },
       searchPlaceholder: "Buscar un documento, un trámite, un tema...",
       emptyTitle: "No se encontró ningún artículo",

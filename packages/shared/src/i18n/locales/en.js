@@ -366,7 +366,7 @@ export const en = {
     showProfileQr: "Show profile QR code",
     showBusinessQr: "Show business QR code",
     badge: {
-      download: "Download my badge",
+      download: "Download the badge",
       generating: "Generating…",
       error: "Failed, try again",
       taglineLine1: "I use MOXT",
@@ -6590,7 +6590,8 @@ export const en = {
       title: "Practical guide",
       description: "Documents, procedures, safety and tips for students and foreigners living in Russia, verified and translated.",
       stats: {
-        articles: "{count} articles",
+        article: "Article",
+        articles: "Articles",
       },
       searchPlaceholder: "Search a document, a procedure, a topic...",
       emptyTitle: "No article found",

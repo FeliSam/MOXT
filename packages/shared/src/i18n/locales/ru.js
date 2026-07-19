@@ -366,7 +366,7 @@ export const ru = {
     showProfileQr: "Показать QR-код профиля",
     showBusinessQr: "Показать QR-код компании",
     badge: {
-      download: "Скачать мой бейдж",
+      download: "Скачать бейдж",
       generating: "Создание…",
       error: "Ошибка, попробуйте снова",
       taglineLine1: "Я пользуюсь MOXT",
@@ -6590,7 +6590,8 @@ export const ru = {
       title: "Практический гид",
       description: "Документы, процедуры, безопасность и советы для студентов и иностранцев, живущих в России — проверено и переведено.",
       stats: {
-        articles: "{count} статей",
+        article: "Статья",
+        articles: "Статьи",
       },
       searchPlaceholder: "Найти документ, процедуру, тему...",
       emptyTitle: "Статьи не найдены",
