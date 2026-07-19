@@ -87,8 +87,18 @@ export function sanitizeAuthMessage(message = '', t) {
     if (lower.includes('timeout') || lower.includes('délai') || lower.includes('delai')) {
       return translated(t, 'errors.auth.smsTimeout', "L'opérateur SMS met trop longtemps à répondre. Attendez un instant puis renvoyez le code.")
     }
-    if (lower.includes('refusé') || lower.includes('refuse') || lower.includes('mode test')) {
-      return translated(t, 'errors.auth.smsRejected', "Ce numéro n'a pas pu recevoir le SMS. Vérifiez le format +7… et réessayez, ou contactez le support.")
+    if (
+      lower.includes('refusé') ||
+      lower.includes('refuse') ||
+      lower.includes('mode test') ||
+      lower.includes('smsc_number_denied') ||
+      lower.includes('message is denied')
+    ) {
+      return translated(
+        t,
+        'errors.auth.smsRejected',
+        "Ce numéro n'a pas pu recevoir le SMS (opérateur / filtre SMSC). Vérifiez le +7…, réessayez, ou utilisez un autre numéro.",
+      )
     }
     return translated(t, 'errors.auth.smsFailed', "L'envoi du code SMS a échoué. Renvoyez le code. Si rien n'arrive sous 2–3 minutes, contactez le support.")
   }
@@ -107,33 +117,9 @@ export function authErrorToast(title, message, tone = 'error', t) {
 }
 
 /**
- * True when the error is an SMS delivery/provider failure.
- * These toasts are suppressed on register — they spam during SMSC outages
- * and do not help the user complete signup.
- */
-export function isSmsSendFailureMessage(message = '', t) {
-  const raw = String(message || '').trim()
-  if (!raw) return false
-  const sanitized = sanitizeAuthMessage(raw, t)
-  const haystack = `${raw}\n${sanitized}`.toLowerCase()
-  return (
-    haystack.includes('envoi du code sms a échoué') ||
-    haystack.includes('envoi du code sms est temporairement') ||
-    haystack.includes('envoi sms est temporairement') ||
-    haystack.includes('envoi sms a pris trop de temps') ||
-    haystack.includes('sending the sms code failed') ||
-    haystack.includes('sms is temporarily') ||
-    haystack.includes('unexpected status code returned from hook') ||
-    haystack.includes('hook_timeout') ||
-    /не удалось отправить sms/i.test(haystack) ||
-    /env[ií]o del c[oó]digo sms/i.test(haystack) ||
-    /envio do c[oó]digo sms/i.test(haystack)
-  )
-}
-
-/**
  * Transient network blips while confirming OTP — muted under « Vérification impossible ».
  * (Messages 3 & 4: confirm without new SMS / without redemanding code.)
+ * SMS send failures are NOT muted — user asked toasts back.
  */
 export function isOtpConfirmNetworkFailureMessage(message = '', t) {
   const raw = String(message || '').trim()
@@ -143,14 +129,14 @@ export function isOtpConfirmNetworkFailureMessage(message = '', t) {
   return (
     haystack.includes('connexion au serveur impossible') &&
     (haystack.includes('confirmer le code') ||
-      haystack.includes('confirmer') &&
+      (haystack.includes('confirmer') &&
         (haystack.includes('sans en redemander') ||
           haystack.includes('sans redemander') ||
-          haystack.includes('sans renvoyer')))
+          haystack.includes('sans renvoyer'))))
   )
 }
 
-/** Errors that must not toast on the register / OTP confirm path. */
+/** Only OTP-confirm network blips stay muted; SMS errors toast again. */
 export function shouldMuteRegisterErrorToast(message = '', t) {
-  return isSmsSendFailureMessage(message, t) || isOtpConfirmNetworkFailureMessage(message, t)
+  return isOtpConfirmNetworkFailureMessage(message, t)
 }

@@ -221,15 +221,18 @@ async function sendViaSmscOnce(phone: string, otp: string, sender?: string) {
     if (Number(code) === 3) {
       throw new Error('SMSC : solde insuffisant. Rechargez votre compte sur smsc.ru.')
     }
+    if (lower.includes('message is denied') || Number(code) === 8) {
+      // Often operator/sender specific — not necessarily SMSC "test mode".
+      throw new Error(`SMSC_NUMBER_DENIED — ${detail}`)
+    }
     if (
       Number(code) === 6 ||
-      Number(code) === 8 ||
       lower.includes('test') ||
       lower.includes('тест') ||
       lower.includes('запрещ')
     ) {
       throw new Error(
-        'SMSC : envoi refusé pour ce numéro. Désactivez le mode test sur smsc.ru (Paramètres → Mode test) ou ajoutez le numéro aux numéros autorisés.',
+        'SMSC : envoi refusé pour ce numéro. Vérifiez le mode test / numéros autorisés sur smsc.ru, ou réessayez avec un autre numéro.',
       )
     }
     if (isSmscSenderError(code, detail)) {
@@ -255,6 +258,17 @@ function isSmscSenderError(code: unknown, detail = '') {
   )
 }
 
+function shouldRetrySmscWithoutSender(message = '') {
+  const lower = String(message).toLowerCase()
+  return (
+    lower.includes('smsc_sender_invalid') ||
+    lower.includes('smsc_number_denied') ||
+    lower.includes('message is denied') ||
+    lower.includes('envoi refusé') ||
+    isSmscSenderError('inconnu', message)
+  )
+}
+
 async function sendViaSmsc(phone: string, otp: string) {
   const sender = (Deno.env.get('SMSC_SENDER') || '').trim()
   if (!sender) {
@@ -265,11 +279,8 @@ async function sendViaSmsc(phone: string, otp: string) {
     return await sendViaSmscOnce(phone, otp, sender)
   } catch (error) {
     const message = error instanceof Error ? error.message : ''
-    if (
-      message.includes('SMSC_SENDER_INVALID') ||
-      isSmscSenderError('inconnu', message)
-    ) {
-      console.warn('[send-sms] expéditeur SMSC refusé, nouvel essai sans sender:', message)
+    if (shouldRetrySmscWithoutSender(message)) {
+      console.warn('[send-sms] SMSC refus (sender/numéro), nouvel essai sans sender:', message)
       return sendViaSmscOnce(phone, otp)
     }
     throw error

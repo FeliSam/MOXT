@@ -216,14 +216,17 @@ function translateSmsHookFailure(message = '') {
     return "L'envoi du code SMS est temporairement indisponible. Réessayez plus tard ou contactez le support."
   }
   if (
+    lower.includes('smsc_number_denied') ||
     lower.includes('envoi refusé') ||
-    lower.includes('message is denied') ||
-    lower.includes('temporairement bloqué')
+    lower.includes('message is denied')
   ) {
-    return "L'envoi SMS est temporairement bloqué. Réessayez dans quelques minutes ou connectez-vous par e-mail."
+    return "Ce numéro n'a pas pu recevoir le SMS. Vérifiez le format +7… ou réessayez avec un autre numéro."
+  }
+  if (lower.includes('temporairement bloqué')) {
+    return "L'envoi SMS est temporairement bloqué. Réessayez dans quelques minutes ou contactez le support."
   }
   if (lower.includes('mode test') || lower.includes('запрещ') || lower.includes('тест')) {
-    return "L'envoi SMS est temporairement bloqué. Réessayez dans quelques minutes ou connectez-vous par e-mail."
+    return "Ce numéro n'a pas pu recevoir le SMS. Vérifiez le format +7… ou réessayez avec un autre numéro."
   }
   if (lower.includes('expéditeur') || lower.includes('sender') || lower.includes('smsc_sender_invalid')) {
     return "L'envoi du code SMS est temporairement indisponible. Réessayez dans quelques minutes."

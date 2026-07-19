@@ -169,7 +169,7 @@ export function RegisterPage() {
     })()
   }, [authUser, location.state, navigate, oauthCompletion, pendingVerification, searchParams, status])
 
-  // Toasts pour les erreurs « dures » ; échecs SMS / réseau OTP → message inline (pas de silence).
+  // Erreurs d'inscription → toasts (SMS inclus). Seuls les blips réseau OTP restent en sourdine.
   useEffect(() => {
     if (!error) return
     const errorText = String(error || '')
@@ -224,11 +224,8 @@ export function RegisterPage() {
           authErrorToast(t('auth.register.toasts.oauthFailedTitle'), error, 'error', t),
         ),
       )
-    } else if (shouldMuteRegisterErrorToast(errorText, t)) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- surface muted SMS fail inline
-      setFormGateMessage(localizedError)
     } else {
-      setFormGateMessage('')
+      setFormGateMessage(localizedError)
       dispatch(
         addToast(
           authErrorToast(t('auth.register.toasts.registerFailedTitle'), error, 'error', t),
