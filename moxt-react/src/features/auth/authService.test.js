@@ -752,7 +752,7 @@ describe('authService', () => {
     expect(auth.signInWithOtp).not.toHaveBeenCalled()
   })
 
-  it('réutilise le prefetch identité au submit (pas de 2ᵉ RPC téléphone)', async () => {
+  it('refait un contrôle identité frais au submit (pas de cache prefetch pour l OTP)', async () => {
     let phoneChecks = 0
     rpc.mockImplementation((name, args) => {
       if (name === 'moxt_check_identity_available' && args?.p_kind === 'phone') {
@@ -775,9 +775,25 @@ describe('authService', () => {
     })
     expect(phoneChecks).toBe(1)
 
-    await authService.register(registrationDetails())
-    expect(phoneChecks).toBe(1)
+    const result = await authService.register(registrationDetails())
+    expect(phoneChecks).toBe(2)
     expect(auth.signUp).toHaveBeenCalledOnce()
+    expect(result.identityChecked).toBe(true)
+    expect(result.requiresPhoneConfirmation).toBe(true)
+  })
+
+  it('bloque l OTP si le RPC identité renvoie un payload vide (fail closed)', async () => {
+    rpc.mockImplementation((name, args) => {
+      if (name === 'moxt_check_identity_available' && args?.p_kind === 'phone') {
+        return Promise.resolve({ data: null, error: null })
+      }
+      return Promise.resolve({ data: { available: true, reason: null }, error: null })
+    })
+
+    await expect(authService.register(registrationDetails())).rejects.toThrow(
+      /identifiants|indisponible|réseau|serveur/i,
+    )
+    expect(auth.signUp).not.toHaveBeenCalled()
   })
 
   it('refuse l OTP si le numéro est déjà pris (assertRegistrationIdentities)', async () => {

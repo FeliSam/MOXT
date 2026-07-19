@@ -334,8 +334,8 @@ export function RegisterPage() {
           return
         }
 
-        // Vérifs identité (tél. / e-mail) + envoi SMS AVANT l’écran OTP.
-        // Ne jamais afficher le code si le numéro/e-mail est déjà pris.
+        // OTP uniquement si : n° valide + libre, e-mail libre, pas d’erreur réseau
+        // (gate identité + signUp réussis). Sinon rester sur le formulaire.
         setOtpCapMessage('')
 
         const result = await dispatch(register(values))
@@ -347,15 +347,23 @@ export function RegisterPage() {
           if (payload && payload !== 'ALREADY_REGISTERED' && payload !== 'IDENTITY_LIMIT_REACHED') {
             console.warn('[MOXT] Inscription rejetée:', payload)
           }
+          // Échec identité / réseau / SMS → jamais l’écran OTP
+          setPendingVerification(null)
           return
         }
         dispatch(clearAuthError())
-        if (result.payload.requiresPhoneConfirmation) {
+        const payload = result.payload || {}
+        const canOpenOtp =
+          payload.requiresPhoneConfirmation === true &&
+          payload.identityChecked === true &&
+          Boolean(payload.phone) &&
+          Boolean(payload.email)
+        if (canOpenOtp) {
           const pending = {
             method: 'phone',
-            phone: result.payload.phone,
-            email: result.payload.email,
-            pendingUserId: result.payload.pendingUserId,
+            phone: payload.phone,
+            email: payload.email,
+            pendingUserId: payload.pendingUserId,
             firstName: values.firstName,
             lastName: values.lastName,
             originPhone: values.originPhone,
@@ -368,9 +376,9 @@ export function RegisterPage() {
           setResendCooldown(OTP_RESEND_COOLDOWN_SECONDS)
           setPendingVerification({
             method: 'phone',
-            phone: result.payload.phone,
-            email: result.payload.email,
-            pendingUserId: result.payload.pendingUserId,
+            phone: payload.phone,
+            email: payload.email,
+            pendingUserId: payload.pendingUserId,
             sendingSms: false,
             identityChecked: true,
           })

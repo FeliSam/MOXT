@@ -504,6 +504,7 @@ export function createAuthService(supabase, redirects = {}) {
       token: '',
       requiresEmailConfirmation: false,
       requiresPhoneConfirmation: true,
+      identityChecked: true,
       pendingUserId,
       verificationMethod: 'phone',
       email,
@@ -610,9 +611,15 @@ export function createAuthService(supabase, redirects = {}) {
         throw wrapped
       }
 
+      // Fail closed: only an explicit available:true opens the OTP gate.
+      if (!data || typeof data !== 'object' || typeof data.available !== 'boolean') {
+        const wrapped = new Error('IDENTITY_CHECK_UNAVAILABLE')
+        wrapped.cause = new Error('identity RPC payload invalide')
+        throw wrapped
+      }
       const result = {
-        available: data?.available !== false,
-        reason: data?.reason || null,
+        available: data.available === true,
+        reason: data.reason || null,
       }
       writeIdentityCache(kind, value, userId, result)
       return result
@@ -1241,12 +1248,15 @@ export function createAuthService(supabase, redirects = {}) {
           options: { channel: 'sms', data: profileFields },
         }
 
-        // Phone + e-mail gate BEFORE any SMS (prefetch cache OK within TTL).
-        // E-mail check = already linked to a live account or not.
-        await assertRegistrationIdentitiesEligible({
-          phone: normalizedPhone,
-          email,
-        })
+        // OTP page only if phone valid+free, email free, and identity RPC reachable.
+        // Fresh check on submit (no stale prefetch) — network/RPC failure blocks OTP.
+        await assertRegistrationIdentitiesEligible(
+          {
+            phone: normalizedPhone,
+            email,
+          },
+          { useCache: false },
+        )
 
         // Guard before provider send — one code at a time, max 4 / 3h.
         guardOtpSend('phone', normalizedPhone)
@@ -1339,6 +1349,7 @@ export function createAuthService(supabase, redirects = {}) {
           token: '',
           requiresEmailConfirmation: false,
           requiresPhoneConfirmation: true,
+          identityChecked: true,
           pendingUserId: data.user.id,
           verificationMethod: 'phone',
           email,
