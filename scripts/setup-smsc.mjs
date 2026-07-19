@@ -228,7 +228,9 @@ async function main() {
     `SMS_PROVIDER=smsc`,
     `SMSC_LOGIN=${login}`,
     `SMSC_WEBHOOK_SECRET=${vars.SMSC_WEBHOOK_SECRET}`,
-    `SMS_MESSAGE_TEMPLATE=${vars.SMS_MESSAGE_TEMPLATE || vars.YC_SNS_MESSAGE_TEMPLATE || 'Код MOXT: {otp}. Никому не сообщайте.'}`,
+    // Cyrillic via Windows secrets CLI often becomes mojibake (РљРѕРґ…).
+    // Clear remote template so send-sms uses the UTF-8 string baked into index.ts.
+    `SMS_MESSAGE_TEMPLATE=`,
     `SEND_SMS_HOOK_SECRET=${vars.SEND_SMS_HOOK_SECRET || ''}`,
   ]
   if (password) secretLines.push(`SMSC_PASSWORD=${password}`)

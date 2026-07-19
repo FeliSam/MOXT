@@ -33,12 +33,33 @@ function phoneToSmsRu(phone: string) {
   return e164.slice(1)
 }
 
+/** Baked into the function source (UTF-8). Do not rely on Windows-synced secrets for Cyrillic. */
+const DEFAULT_SMS_TEMPLATE = 'Код MOXT: {otp}. Никому не сообщайте.'
+
+/** UTF-8 Cyrillic mis-decoded as Windows-1251/Latin-1 → "РљРѕРґ" instead of "Код". */
+function looksLikeMojibake(text = '') {
+  return /Р[А-Яа-яЁё]{2,}/.test(text) || text.includes('РљРѕРґ') || text.includes('РќРёРєРѕРјСѓ')
+}
+
 function buildSmsText(otp: string) {
+  const fromEnv =
+    Deno.env.get('SMS_MESSAGE_TEMPLATE') || Deno.env.get('YC_SNS_MESSAGE_TEMPLATE') || ''
   const template =
-    Deno.env.get('SMS_MESSAGE_TEMPLATE') ||
-    Deno.env.get('YC_SNS_MESSAGE_TEMPLATE') ||
-    'Код MOXT: {otp}. Никому не сообщайте.'
+    fromEnv && !looksLikeMojibake(fromEnv) && /[А-Яа-яЁё]/.test(fromEnv)
+      ? fromEnv
+      : DEFAULT_SMS_TEMPLATE
+  if (fromEnv && looksLikeMojibake(fromEnv)) {
+    console.warn('[send-sms] SMS_MESSAGE_TEMPLATE corrompu (mojibake) — template source utilisé')
+  }
   return template.replaceAll('{otp}', otp).replaceAll('{code}', otp)
+}
+
+/** SMSC-safe form body: explicit UTF-8 percent-encoding (avoids corrupted env charset). */
+function encodeSmscForm(params: Record<string, string>) {
+  return Object.entries(params)
+    .filter(([, value]) => value !== undefined && value !== '')
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+    .join('&')
 }
 
 type SmsProvider = 'smsru' | 'yandex' | 'smsc' | 'p1sms'
@@ -178,25 +199,25 @@ async function sendViaSmscOnce(phone: string, otp: string, sender?: string) {
 
   const phones = phoneToSmsc(phone)
   const message = buildSmsText(otp)
-  const body = new URLSearchParams({
+  const fields: Record<string, string> = {
     login,
     phones,
     mes: message,
     fmt: '3',
     charset: 'utf-8',
     cost: '3',
-  })
-  if (apikey) body.set('apikey', apikey)
-  else if (password) body.set('psw', password)
-
-  if (sender) body.set('sender', sender)
+  }
+  // Prefer apikey so SMSC API logs never echo the account password.
+  if (apikey) fields.apikey = apikey
+  else if (password) fields.psw = password
+  if (sender) fields.sender = sender
 
   const res = await fetchWithTimeout(
     'https://smsc.ru/sys/send.php',
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-      body,
+      body: encodeSmscForm(fields),
     },
     PROVIDER_TIMEOUT_MS,
     'SMSC',
