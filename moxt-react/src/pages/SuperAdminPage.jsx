@@ -1,5 +1,6 @@
-import { FiActivity, FiCheck, FiDatabase, FiShield, FiUsers, FiX } from 'react-icons/fi'
+import { FiActivity, FiBookOpen, FiCheck, FiDatabase, FiShield, FiUsers, FiX } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
+import { Link } from 'react-router-dom'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -60,6 +61,13 @@ export function SuperAdminPage() {
         eyebrow={adminText(t, 'admin.super.eyebrow')}
         title={adminText(t, 'admin.super.title')}
         description={adminText(t, 'admin.super.description')}
+        actions={
+          <Link to="/admin/guide">
+            <Button variant="secondary" icon={FiBookOpen}>
+              {adminText(t, 'admin.nav.guide')}
+            </Button>
+          </Link>
+        }
       />
       <div className="grid min-w-0 grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         {cards.map(([label, value, Icon]) => (

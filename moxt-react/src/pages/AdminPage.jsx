@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FiDownload } from 'react-icons/fi'
+import { FiBookOpen, FiDownload } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { useSearchParams } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
@@ -20,7 +20,7 @@ import { AdminUsersPanel } from '../features/admin/components/AdminUsersPanel'
 import { AdminBusinessDocumentsPanel } from '../features/admin/components/AdminBusinessDocumentsPanel'
 import { AdminVerificationsPanel } from '../features/admin/components/AdminVerificationsPanel'
 import { GlobalFilterBar, SystemStatusBar } from '../features/admin/components/AdminShared'
-import { AdminIdentityCard, HeroKpiRow, SidebarBtn } from '../features/admin/components/AdminShell'
+import { AdminIdentityCard, HeroKpiRow, SidebarBtn, SidebarLink } from '../features/admin/components/AdminShell'
 import { badgeForView, exportSnapshot } from '../features/admin/adminData'
 import { useAdminPageData } from '../features/admin/hooks/useAdminPageData'
 
@@ -114,6 +114,9 @@ export function AdminPage() {
                 />
               )
             })}
+          </nav>
+          <nav className={`${CARD} grid content-start gap-1 p-2`}>
+            <SidebarLink to="/admin/guide" icon={FiBookOpen} label={adminText(t, 'admin.nav.guide')} />
           </nav>
         </aside>
 

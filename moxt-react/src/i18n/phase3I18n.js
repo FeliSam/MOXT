@@ -614,6 +614,7 @@ export const PHASE3_FR_SOURCES = {
   'moderation.nav.content': 'Contenus',
   'moderation.nav.publications': 'Publications',
   'moderation.nav.queues': "Files d'action",
+  'moderation.nav.guide': 'Guide (articles d’aide)',
   'moderation.kpi.content.label': 'Contenus',
   'moderation.kpi.content.sub': '{count} en attente',
   'moderation.kpi.publications.label': 'Publications',

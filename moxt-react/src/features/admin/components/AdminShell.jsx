@@ -5,6 +5,7 @@ import {
   FiUsers,
   FiZap,
 } from 'react-icons/fi'
+import { Link } from 'react-router-dom'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { CARD } from '../adminConfig'
 import { adminText } from '../adminI18n'
@@ -68,6 +69,21 @@ export function SidebarBtn({ active, badge, icon: Icon, label, onClick }) {
         </span>
       ) : null}
     </button>
+  )
+}
+
+/** Lien de navigation vers une page dédiée hors du systeme de vues inline (?view=). */
+export function SidebarLink({ to, icon: Icon, label }) {
+  return (
+    <Link
+      to={to}
+      className="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-[var(--app-text-muted)] transition-all hover:bg-[var(--app-surface-muted)] hover:text-[var(--app-text)]"
+    >
+      <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--app-surface-muted)] text-brand-700 transition-all group-hover:bg-brand-50">
+        <Icon className="text-sm" />
+      </span>
+      <span className="flex-1 truncate">{label}</span>
+    </Link>
   )
 }
 

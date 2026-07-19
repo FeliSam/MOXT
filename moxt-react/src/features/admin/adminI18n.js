@@ -53,6 +53,7 @@ export const ADMIN_FR_SOURCES = {
   'admin.nav.documents': 'Documents',
   'admin.nav.queues': "Files d'action",
   'admin.nav.audit': 'Audit',
+  'admin.nav.guide': 'Guide (articles d’aide)',
   'admin.content.businesses': 'Entreprises',
   'admin.content.listings': 'Annonces',
   'admin.content.jobs': 'Jobs',

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { FiBookOpen } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -8,7 +9,7 @@ import { AdminContentPanel } from '../features/admin/components/AdminContentPane
 import { AdminDetailPanel } from '../features/admin/components/AdminDetailPanel'
 import { AdminQueuesPanel } from '../features/admin/components/AdminQueuesPanel'
 import { GlobalFilterBar, SystemStatusBar } from '../features/admin/components/AdminShared'
-import { AdminIdentityCard, SidebarBtn } from '../features/admin/components/AdminShell'
+import { AdminIdentityCard, SidebarBtn, SidebarLink } from '../features/admin/components/AdminShell'
 import { useAdminPageData } from '../features/admin/hooks/useAdminPageData'
 import {
   badgeForModerationView,
@@ -96,6 +97,9 @@ export function ModerationPage() {
                 />
               )
             })}
+          </nav>
+          <nav className={`${CARD} grid content-start gap-1 p-2`}>
+            <SidebarLink to="/admin/guide" icon={FiBookOpen} label={moderationText(t, 'moderation.nav.guide')} />
           </nav>
         </aside>
 
