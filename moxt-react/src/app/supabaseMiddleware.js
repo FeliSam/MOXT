@@ -954,9 +954,9 @@ const handlers = {
       images: payload.images || [],
       caption: payload.caption || '',
       is_official: payload.isOfficial === true,
-      viewed_by: JSON.stringify(payload.viewedBy ?? []),
-      viewers: JSON.stringify({}),
-      reactions: JSON.stringify({}),
+      viewed_by: payload.viewedBy ?? [],
+      viewers: {},
+      reactions: {},
       created_at: payload.createdAt,
       expires_at: payload.expiresAt,
     }
@@ -968,8 +968,8 @@ const handlers = {
     const { error } = await supabase
       .from('statuses')
       .update({
-        viewed_by: JSON.stringify(status?.viewedBy ?? [payload.userId]),
-        viewers: JSON.stringify(status?.viewers ?? {}),
+        viewed_by: status?.viewedBy ?? [payload.userId],
+        viewers: status?.viewers ?? {},
       })
       .eq('id', payload.statusId)
     if (error) throw error
@@ -978,7 +978,7 @@ const handlers = {
     const status = state.statuses?.items?.find((item) => item.id === payload.statusId)
     const { error } = await supabase
       .from('statuses')
-      .update({ reactions: JSON.stringify(status?.reactions ?? {}) })
+      .update({ reactions: status?.reactions ?? {} })
       .eq('id', payload.statusId)
     if (error) throw error
   },
@@ -994,7 +994,7 @@ const handlers = {
       .from('statuses')
       .update({
         images: status.images,
-        reactions: JSON.stringify(status.reactions ?? {}),
+        reactions: status.reactions ?? {},
       })
       .eq('id', payload.statusId)
     if (error) throw error

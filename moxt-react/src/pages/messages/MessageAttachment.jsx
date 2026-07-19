@@ -210,8 +210,8 @@ export function MessageAttachment({ attachment, mine }) {
         className={`message-attachment ${mine ? 'message-attachment--sent' : 'message-attachment--received'}`}
         onClick={(event) => event.stopPropagation()}
       >
-        <FiPaperclip aria-hidden="true" />
-        {attachment.name}
+        <FiPaperclip className="shrink-0" aria-hidden="true" />
+        <span className="min-w-0 truncate">{attachment.name}</span>
       </a>
     )
   }
@@ -220,8 +220,8 @@ export function MessageAttachment({ attachment, mine }) {
     <span
       className={`message-attachment ${mine ? 'message-attachment--sent' : 'message-attachment--received'}`}
     >
-      <FiPaperclip aria-hidden="true" />
-      {attachment.name}
+      <FiPaperclip className="shrink-0" aria-hidden="true" />
+      <span className="min-w-0 truncate">{attachment.name}</span>
     </span>
   )
 }

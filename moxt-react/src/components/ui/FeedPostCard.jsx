@@ -222,20 +222,24 @@ export function FeedPostCard({ post }) {
       {/* Header */}
       <div className="flex items-start justify-between gap-3 p-4 sm:p-5">
         <div className="flex items-center gap-3">
-          {post.authorAvatarUrl ? (
-            <img src={post.authorAvatarUrl} alt="" className="size-10 rounded-full object-cover shrink-0" />
-          ) : (
-            <span className="grid size-10 place-items-center rounded-full bg-brand-600 text-sm font-black text-white shrink-0">
-              {post.authorName?.charAt(0)}
-            </span>
-          )}
+          <Link to={`/users/${post.authorId}/publications`} className="shrink-0">
+            {post.authorAvatarUrl ? (
+              <img src={post.authorAvatarUrl} alt="" className="size-10 rounded-full object-cover" />
+            ) : (
+              <span className="grid size-10 place-items-center rounded-full bg-brand-600 text-sm font-black text-white">
+                {post.authorName?.charAt(0)}
+              </span>
+            )}
+          </Link>
           <div>
-            <EntityVerifiedName
-              as="p"
-              name={post.authorName}
-              userId={post.authorId}
-              className="text-sm font-bold leading-tight"
-            />
+            <Link to={`/users/${post.authorId}/publications`} className="hover:underline">
+              <EntityVerifiedName
+                as="p"
+                name={post.authorName}
+                userId={post.authorId}
+                className="text-sm font-bold leading-tight"
+              />
+            </Link>
             <p className="text-xs text-[var(--app-text-muted)]">{formatDate(post.createdAt)}</p>
           </div>
         </div>
@@ -409,20 +413,24 @@ export function FeedPostCard({ post }) {
             >
               {post.comments.map((comment) => (
                 <div key={comment.id} className="flex items-start gap-2.5" role="listitem">
-                  {comment.authorAvatarUrl ? (
-                    <img src={comment.authorAvatarUrl} alt="" className="size-7 rounded-full object-cover shrink-0 mt-0.5" />
-                  ) : (
-                    <span className="grid size-7 place-items-center rounded-full bg-[var(--app-surface-muted)] text-xs font-black shrink-0 mt-0.5">
-                      {comment.authorName?.charAt(0)}
-                    </span>
-                  )}
+                  <Link to={`/users/${comment.authorId}/publications`} className="shrink-0">
+                    {comment.authorAvatarUrl ? (
+                      <img src={comment.authorAvatarUrl} alt="" className="size-7 rounded-full object-cover mt-0.5" />
+                    ) : (
+                      <span className="grid size-7 place-items-center rounded-full bg-[var(--app-surface-muted)] text-xs font-black mt-0.5">
+                        {comment.authorName?.charAt(0)}
+                      </span>
+                    )}
+                  </Link>
                   <div className="flex-1 rounded-2xl bg-[var(--app-surface-muted)] px-3 py-2">
-                    <EntityVerifiedName
-                      as="p"
-                      name={comment.authorName}
-                      userId={comment.authorId}
-                      className="text-xs font-bold"
-                    />
+                    <Link to={`/users/${comment.authorId}/publications`} className="hover:underline">
+                      <EntityVerifiedName
+                        as="p"
+                        name={comment.authorName}
+                        userId={comment.authorId}
+                        className="text-xs font-bold"
+                      />
+                    </Link>
                     <p className="text-sm mt-0.5">{comment.text}</p>
                   </div>
                   {(user?.id === comment.authorId || isAuthor || isModerator) && (

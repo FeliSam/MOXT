@@ -10,6 +10,7 @@ import {
   FiSearch,
   FiSlash,
   FiStar,
+  FiUser,
   FiX,
 } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
@@ -228,17 +229,22 @@ export function ConversationPanel({
         >
           <FiX />
         </button>
-        <EntityAvatar
-          name={peer.name}
-          src={peerAvatarSrc}
-          size="md"
-          shape="user"
-          ring={false}
-          className="!size-10 !rounded-[0.9rem] shadow-[var(--shadow-card)]"
-          alt={peer.name}
-        />
+        <Link to={peer?.id ? `/users/${peer.id}/publications` : '#'} className="shrink-0">
+          <EntityAvatar
+            name={peer.name}
+            src={peerAvatarSrc}
+            size="md"
+            shape="user"
+            ring={false}
+            className="!size-10 !rounded-[0.9rem] shadow-[var(--shadow-card)]"
+            alt={peer.name}
+          />
+        </Link>
         <div className="min-w-0 flex-1 pr-1">
-          <div className="flex min-w-0 items-center gap-1.5">
+          <Link
+            to={peer?.id ? `/users/${peer.id}/publications` : '#'}
+            className="flex min-w-0 items-center gap-1.5 hover:underline"
+          >
             <VerifiedDisplayName
               as="h2"
               name={peer.name}
@@ -248,7 +254,7 @@ export function ConversationPanel({
             />
             {pinned ? <FiStar className="size-3.5 shrink-0 text-amber-500" aria-label={t("messages.pinnedAria")} /> : null}
             {muted ? <FiBellOff className="size-3.5 shrink-0 text-[var(--app-text-faint)]" aria-label={t("messages.mutedAria")} /> : null}
-          </div>
+          </Link>
           <div className="mt-0.5 flex flex-wrap items-center gap-2">
             {peerTyping ? (
               <span className="inline-flex items-center gap-1 text-[11px] font-semibold leading-tight text-brand-700 dark:text-brand-300">
@@ -309,6 +315,15 @@ export function ConversationPanel({
             </span>
           }
         >
+          {peer?.id ? (
+            <Link
+              to={`/users/${peer.id}/publications`}
+              role="menuitem"
+              className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-[var(--app-surface-muted)]"
+            >
+              <FiUser /> {t('messages.viewProfile')}
+            </Link>
+          ) : null}
           <button
             type="button"
             role="menuitem"
