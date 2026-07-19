@@ -136,6 +136,8 @@ export function RegisterPage() {
   const [verificationCode, setVerificationCode] = useState('')
   const [resendCooldown, setResendCooldown] = useState(0)
   const [otpCapMessage, setOtpCapMessage] = useState('')
+  /** Inline form error when toast is muted (ex. échec SMS) — évite « ça tourne puis rien ». */
+  const [formGateMessage, setFormGateMessage] = useState('')
   // Blocks the "already logged-in" auto-landing effect while we navigate to Security after OTP.
   const completingPhoneOtpRef = useRef(false)
   // Sync locks — Formik does not prevent a second submit before React re-renders loading.
@@ -167,14 +169,14 @@ export function RegisterPage() {
     })()
   }, [authUser, location.state, navigate, oauthCompletion, pendingVerification, searchParams, status])
 
-  // Les erreurs d'inscription passent uniquement par des toasts (aucun message
-  // inline en double sur la page).
+  // Toasts pour les erreurs « dures » ; échecs SMS / réseau OTP → message inline (pas de silence).
   useEffect(() => {
     if (!error) return
     const errorText = String(error || '')
     const otpLimited = /Limite atteinte|Patientez \d+ secondes/i.test(errorText)
     const localizedError = sanitizeAuthMessage(errorText, t)
     if (alreadyRegistered) {
+      setFormGateMessage('')
       dispatch(
         addToast({
           title: t('auth.register.toasts.alreadyExistsTitle'),
@@ -183,6 +185,7 @@ export function RegisterPage() {
         }),
       )
     } else if (identityLimitReached) {
+      setFormGateMessage('')
       dispatch(
         addToast({
           title: t('auth.register.toasts.identityLimitTitle'),
@@ -194,6 +197,7 @@ export function RegisterPage() {
       // 90s / 4-par-3h : message explicite, jamais le toast opaque « Inscription impossible ».
       // eslint-disable-next-line react-hooks/set-state-in-effect -- surface OTP cap beside toast
       setOtpCapMessage(localizedError)
+      setFormGateMessage('')
       dispatch(
         addToast({
           title: t('auth.register.toasts.otpLimitedTitle'),
@@ -206,6 +210,7 @@ export function RegisterPage() {
         console.warn('[MOXT][dev] verify/register error raw:', error)
       }
       if (!shouldMuteRegisterErrorToast(errorText, t)) {
+        setFormGateMessage('')
         dispatch(
           addToast(
             authErrorToast(t('auth.register.toasts.verifyFailedTitle'), error, 'error', t),
@@ -213,12 +218,17 @@ export function RegisterPage() {
         )
       }
     } else if (oauthCompletion) {
+      setFormGateMessage('')
       dispatch(
         addToast(
           authErrorToast(t('auth.register.toasts.oauthFailedTitle'), error, 'error', t),
         ),
       )
-    } else if (!shouldMuteRegisterErrorToast(errorText, t)) {
+    } else if (shouldMuteRegisterErrorToast(errorText, t)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- surface muted SMS fail inline
+      setFormGateMessage(localizedError)
+    } else {
+      setFormGateMessage('')
       dispatch(
         addToast(
           authErrorToast(t('auth.register.toasts.registerFailedTitle'), error, 'error', t),
@@ -337,6 +347,7 @@ export function RegisterPage() {
         // OTP uniquement si : n° valide + libre, e-mail libre, pas d’erreur réseau
         // (gate identité + signUp réussis). Sinon rester sur le formulaire.
         setOtpCapMessage('')
+        setFormGateMessage('')
 
         const result = await dispatch(register(values))
         if (!register.fulfilled.match(result)) {
@@ -348,10 +359,12 @@ export function RegisterPage() {
             console.warn('[MOXT] Inscription rejetée:', payload)
           }
           // Échec identité / réseau / SMS → jamais l’écran OTP
+          // (message inline via useEffect si toast SMS en sourdine)
           setPendingVerification(null)
           return
         }
         dispatch(clearAuthError())
+        setFormGateMessage('')
         const payload = result.payload || {}
         const canOpenOtp =
           payload.requiresPhoneConfirmation === true &&
@@ -894,6 +907,12 @@ export function RegisterPage() {
             </label>
             {errorFor('acceptTerms') ? (
               <span role="alert" className="-mt-2 text-xs text-red-600">{errorFor('acceptTerms')}</span>
+            ) : null}
+
+            {formGateMessage ? (
+              <Alert title={t('auth.register.toasts.registerFailedTitle')} tone="error">
+                {formGateMessage}
+              </Alert>
             ) : null}
 
             <div className="hidden items-center gap-1.5 rounded-2xl bg-[var(--app-surface-muted)] px-4 py-2 text-sm font-bold sm:flex">
