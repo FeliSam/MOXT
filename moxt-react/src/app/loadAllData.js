@@ -15,6 +15,7 @@ import { setAll as setDisputes } from '../features/disputes/disputeSlice'
 import { setAll as setFinance } from '../features/finance/financeSlice'
 import { setAll as setPosts } from '../features/posts/postsSlice'
 import { setAll as setStatuses } from '../features/statuses/statusesSlice'
+import { setAll as setHelpArticles } from '../features/help/helpArticlesSlice'
 import { setRecipientAddresses } from '../features/addresses/recipientAddressesSlice'
 import { hydrateAccountPreferences, mergeRemoteAccount, updateAccountPreferences } from '../features/account/accountSlice'
 import { profileRowToAdminUser, setAdminUsers } from '../features/administration/administrationSlice'
@@ -189,6 +190,7 @@ export const loadAllData = createAsyncThunk(
       notificationsRes,
       postsRes,
       statusesRes,
+      helpArticlesRes,
       supportTicketsRes,
       recipientAddressesRes,
     ] = await Promise.all([
@@ -248,6 +250,12 @@ export const loadAllData = createAsyncThunk(
         .from('statuses')
         .select('*')
         .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(200),
+      supabase
+        .from('help_articles')
+        .select('*')
+        .order('pinned', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(200),
       isAdmin
@@ -649,6 +657,7 @@ export const loadAllData = createAsyncThunk(
           isOfficial: s.isOfficial === true,
         }
       }) }))
+      dispatch(setHelpArticles({ items: fromRows(safeRows(helpArticlesRes, 'du guide')) }))
       dispatch(mergeRemoteAccount({
         favorites: fromRows(safeRows(favoritesRes, 'des favoris')),
         subscriptions: fromRows(safeRows(subscriptionsRes, 'des abonnements')).map((item) => ({

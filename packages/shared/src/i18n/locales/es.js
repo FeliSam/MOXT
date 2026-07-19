@@ -298,6 +298,8 @@ export const es = {
     administration: "Administración",
     moderation: "Moderación",
     moderationSpace: "Espacio moderador",
+    guide: "Guía",
+    guideAdmin: "Gestión de la guía",
     p2p: "Intercambio P2P",
     exchangers: "Cambiadores",
     professional: "Espacio profesional",
@@ -6512,5 +6514,62 @@ export const es = {
     fanOutEvent: "Nuevo evento",
     fanOutParcel: "Nueva paquete",
     fanOutPost: "Nueva publicación"
+  },
+  help: {
+    page: {
+      eyebrow: "Vivir en Rusia",
+      title: "Guía práctica",
+      description: "Documentos, trámites, seguridad y consejos para estudiantes y extranjeros que viven en Rusia, verificados y traducidos.",
+      stats: {
+        articles: "{count} artículos"
+      },
+      searchPlaceholder: "Buscar un documento, un trámite, un tema...",
+      emptyTitle: "No se encontró ningún artículo",
+      emptyDescription: "Prueba con otra categoría o palabra clave."
+    },
+    categories: {
+      all: "Todo",
+      documents: "Documentos",
+      studentLife: "Vida estudiantil",
+      money: "Dinero",
+      safety: "Seguridad",
+      laws: "Leyes"
+    },
+    article: {
+      pinned: "Destacado",
+      verifiedOn: "Verificado el {date}",
+      notFound: "Este artículo no se encontró o fue eliminado.",
+      officialSource: "Ver la fuente oficial"
+    }
+  },
+  adminHelp: {
+    eyebrow: "Guía práctica",
+    title: "Gestión de la guía",
+    description: "Añade, edita o traduce los artículos de ayuda para estudiantes y extranjeros.",
+    newArticle: "Nuevo artículo",
+    editArticle: "Editar artículo",
+    savedTitle: "Artículo guardado",
+    empty: "Todavía no hay artículos.",
+    deleteConfirmTitle: "¿Eliminar este artículo?",
+    deleteConfirmBody: "Esta acción es definitiva y retirará el artículo de la guía pública.",
+    validation: {
+      required: "El título, el resumen y el contenido son obligatorios."
+    },
+    status: {
+      published: "Publicado",
+      draft: "Borrador"
+    },
+    fields: {
+      category: "Categoría",
+      language: "Idioma",
+      title: "Título",
+      summary: "Resumen",
+      content: "Contenido",
+      sourceName: "Nombre de la fuente",
+      sourceUrl: "Enlace de la fuente",
+      pinned: "Fijar arriba",
+      status: "Estado"
+    },
+    sourceHint: "Indica siempre una fuente oficial verificable (gobierno, embajada, universidad) para mantener la confianza de los lectores."
   }
 }

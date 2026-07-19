@@ -1,6 +1,7 @@
 import {
   FiActivity,
   FiBell,
+  FiBookOpen,
   FiGift,
   FiGrid,
   FiHeart,
@@ -14,6 +15,12 @@ import {
 
 /** Destinations secondaires du hub MOXT (compte, communication, outils). */
 export const moxtHubSecondaryLinks = [
+  {
+    id: 'guide',
+    labelKey: 'nav.guide',
+    path: '/guide',
+    icon: FiBookOpen,
+  },
   {
     id: 'my-publications',
     labelKey: 'nav.myPublications',
@@ -78,6 +85,13 @@ export const moxtHubSecondaryLinks = [
 
 /** Liens réservés aux rôles staff / admin (alignés sur navigation.js). */
 export const moxtHubAdminLinks = [
+  {
+    id: 'guide-admin',
+    labelKey: 'nav.guideAdmin',
+    path: '/admin/guide',
+    icon: FiBookOpen,
+    roles: ['moderator', 'admin', 'superadmin'],
+  },
   {
     id: 'moderation',
     labelKey: 'nav.moderationSpace',

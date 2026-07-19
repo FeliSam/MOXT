@@ -1,5 +1,6 @@
 import {
   FiBell,
+  FiBookOpen,
   FiBox,
   FiBriefcase,
   FiCalendar,
@@ -133,6 +134,7 @@ export const navigationGroups = [
       { id: 'news', label: 'Actualités', labelKey: 'nav.news', path: '/news', icon: FiFileText },
       { id: 'jobs', label: 'Jobs', labelKey: 'nav.jobs', path: '/jobs', icon: FiBriefcase },
       { id: 'events', label: 'Evenements', labelKey: 'nav.events', path: '/events', icon: FiCalendar },
+      { id: 'guide', label: 'Guide', labelKey: 'nav.guide', path: '/guide', icon: FiBookOpen },
     ],
   },
   {

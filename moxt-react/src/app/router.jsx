@@ -28,6 +28,15 @@ function lazyPage(loader, exportName) {
 
 const AdminPage = lazyPage(() => import('../pages/AdminPage'), 'AdminPage')
 const ModerationPage = lazyPage(() => import('../pages/ModerationPage'), 'ModerationPage')
+const HelpGuidePage = lazyPage(() => import('../pages/HelpGuidePage'), 'HelpGuidePage')
+const HelpArticleDetailPage = lazyPage(
+  () => import('../pages/HelpGuidePage'),
+  'HelpArticleDetailPage',
+)
+const AdminHelpArticlesPage = lazyPage(
+  () => import('../pages/AdminHelpArticlesPage'),
+  'AdminHelpArticlesPage',
+)
 const ActivitiesPage = lazyPage(() => import('../pages/ActivitiesPage'), 'ActivitiesPage')
 const BusinessesPage = lazyPage(() => import('../pages/BusinessesPage'), 'BusinessesPage')
 const BusinessDetailPage = lazyPage(
@@ -332,6 +341,16 @@ export function AppRouter() {
               element={
                 <ProtectedRoute allowedRoles={['moderator', 'admin', 'superadmin']}>
                   <ModerationPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/guide" element={<HelpGuidePage />} />
+            <Route path="/guide/:articleId" element={<HelpArticleDetailPage />} />
+            <Route
+              path="/admin/guide"
+              element={
+                <ProtectedRoute allowedRoles={['moderator', 'admin', 'superadmin']}>
+                  <AdminHelpArticlesPage />
                 </ProtectedRoute>
               }
             />

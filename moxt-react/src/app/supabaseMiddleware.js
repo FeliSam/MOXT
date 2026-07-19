@@ -1004,6 +1004,54 @@ const handlers = {
     if (error) throw error
   },
 
+  // ── Guide d'aide (étudiants / étrangers en Russie) ─────────────────────────────
+  'helpArticles/createHelpArticle': async (payload) => {
+    const row = {
+      id: payload.id,
+      category: payload.category,
+      language: payload.language,
+      title: payload.title,
+      summary: payload.summary,
+      content: payload.content,
+      source_name: payload.sourceName || null,
+      source_url: payload.sourceUrl || null,
+      verified_at: payload.verifiedAt || null,
+      pinned: payload.pinned === true,
+      status: payload.status || 'published',
+      author_id: payload.authorId,
+      author_name: payload.authorName || '',
+      created_at: payload.createdAt,
+      updated_at: payload.updatedAt,
+    }
+    const { error } = await supabase.from('help_articles').insert(row)
+    if (error) throw error
+  },
+  'helpArticles/updateHelpArticle': async (payload, state) => {
+    const article = state.helpArticles?.items?.find((item) => item.id === payload.id)
+    if (!article) return
+    const { error } = await supabase
+      .from('help_articles')
+      .update({
+        category: article.category,
+        language: article.language,
+        title: article.title,
+        summary: article.summary,
+        content: article.content,
+        source_name: article.sourceName || null,
+        source_url: article.sourceUrl || null,
+        verified_at: article.verifiedAt || null,
+        pinned: article.pinned === true,
+        status: article.status || 'published',
+        updated_at: article.updatedAt,
+      })
+      .eq('id', payload.id)
+    if (error) throw error
+  },
+  'helpArticles/deleteHelpArticle': async (payload) => {
+    const { error } = await supabase.from('help_articles').delete().eq('id', payload)
+    if (error) throw error
+  },
+
   'posts/deleteComment': async (payload) => {
     const { error } = await supabase.rpc('moxt_post_delete_comment', {
       p_post_id: payload.postId,
