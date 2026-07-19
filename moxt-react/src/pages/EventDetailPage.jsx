@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ImageLightbox } from '../components/ui/ImageLightbox'
 import {
   FiAlertTriangle,
   FiCalendar,
@@ -60,6 +61,7 @@ export function EventDetailPage() {
   )
   const publisherProfile = usePublisherDetailProfile(event, 'event')
   const [reportOpen, setReportOpen] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState(null)
   if (!event) return <Card>{t('events.detail.notFound')}</Card>
   const registration = registrations.find((item) => item.userId === user.id)
   const registered = registration && registration.status !== 'cancelled'
@@ -127,11 +129,10 @@ export function EventDetailPage() {
       {event.images?.length ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {event.images.map((src, index) => (
-            <a
+            <button
               key={src}
-              href={src}
-              target="_blank"
-              rel="noreferrer"
+              type="button"
+              onClick={() => setLightboxIndex(index)}
               className={`overflow-hidden rounded-2xl border border-[var(--app-border)] ${index === 0 ? 'col-span-2 row-span-2' : ''}`}
             >
               <img
@@ -140,10 +141,20 @@ export function EventDetailPage() {
                 className="h-full w-full object-cover"
                 loading="lazy"
               />
-            </a>
+            </button>
           ))}
         </div>
       ) : null}
+      <ImageLightbox
+        open={lightboxIndex !== null}
+        onClose={() => setLightboxIndex(null)}
+        images={event.images || []}
+        index={lightboxIndex ?? 0}
+        onIndexChange={(updater) =>
+          setLightboxIndex((current) => updater(current ?? 0))
+        }
+        alt={event.title}
+      />
       <div className="grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
         <Card>
           <div className="mb-5 flex flex-wrap gap-2">

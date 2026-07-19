@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import { FiImage, FiX } from 'react-icons/fi'
+import { useLanguage } from '../../contexts/useLanguage'
 
 /**
  * Sélecteur multi-images réutilisable (affiches job / événement, etc.).
@@ -10,10 +11,13 @@ export function PosterUploader({
   onAdd,
   onRemove,
   max = 5,
-  label = 'Affiches / photos',
-  hint = 'Ajoutez une ou plusieurs images (JPG/PNG).',
+  label,
+  hint,
 }) {
+  const { t } = useLanguage()
   const inputRef = useRef(null)
+  const resolvedLabel = label ?? t('common.poster.addImages')
+  const resolvedHint = hint ?? ''
 
   function handleFiles(event) {
     if (!event.target.files?.length) return
@@ -30,7 +34,7 @@ export function PosterUploader({
   return (
     <div className="grid gap-2">
       <span className="text-sm font-semibold">
-        {label}{' '}
+        {resolvedLabel}{' '}
         <span className="text-[var(--app-text-faint)]">
           ({photos.length}/{max})
         </span>
@@ -45,14 +49,14 @@ export function PosterUploader({
             <button
               type="button"
               onClick={() => onRemove(index)}
-              aria-label="Retirer l’image"
+              aria-label={t('common.poster.removeImage')}
               className="absolute right-1 top-1 grid size-6 place-items-center rounded-full bg-black/55 text-white transition hover:bg-black/75"
             >
               <FiX className="text-xs" />
             </button>
             {index === 0 ? (
               <span className="absolute bottom-1 left-1 rounded-md bg-black/55 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-white">
-                Principale
+                {t('common.poster.primary')}
               </span>
             ) : null}
           </div>
@@ -61,14 +65,14 @@ export function PosterUploader({
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            aria-label="Ajouter des images"
+            aria-label={t('common.poster.addImages')}
             className="grid size-24 place-items-center rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] text-[var(--app-text-muted)] transition hover:border-[var(--app-accent)] hover:text-[var(--app-accent)]"
           >
             <FiImage className="text-xl" />
           </button>
         ) : null}
       </div>
-      <p className="text-xs text-[var(--app-text-muted)]">{hint}</p>
+      {resolvedHint ? <p className="text-xs text-[var(--app-text-muted)]">{resolvedHint}</p> : null}
       <input
         ref={inputRef}
         type="file"

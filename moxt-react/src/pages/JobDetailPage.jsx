@@ -1,5 +1,6 @@
 import { useFormik } from 'formik'
 import { useState } from 'react'
+import { ImageLightbox } from '../components/ui/ImageLightbox'
 import {
   FiAlertTriangle,
   FiBriefcase,
@@ -82,6 +83,7 @@ export function JobDetailPage() {
   )
   const publisherProfile = usePublisherDetailProfile(job, 'job')
   const [reportOpen, setReportOpen] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState(null)
   const emptyLabel = t(JOB_EMPTY_LABEL_KEY)
   const sectorLabel = jobSectorLabel(t, job?.sector)
   const contractLabel = jobContractLabel(t, job?.contractType)
@@ -145,11 +147,10 @@ export function JobDetailPage() {
       {job.images?.length ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {job.images.map((src, index) => (
-            <a
+            <button
               key={`${src}-${index}`}
-              href={src}
-              target="_blank"
-              rel="noreferrer"
+              type="button"
+              onClick={() => setLightboxIndex(index)}
               className={`relative block overflow-hidden rounded-2xl border border-[var(--app-border)] ${
                 index === 0 ? 'col-span-2 sm:col-span-2' : ''
               }`}
@@ -160,10 +161,20 @@ export function JobDetailPage() {
                 className={`w-full object-cover ${index === 0 ? 'aspect-[16/10] max-h-96' : 'aspect-square'}`}
                 loading="lazy"
               />
-            </a>
+            </button>
           ))}
         </div>
       ) : null}
+      <ImageLightbox
+        open={lightboxIndex !== null}
+        onClose={() => setLightboxIndex(null)}
+        images={job.images || []}
+        index={lightboxIndex ?? 0}
+        onIndexChange={(updater) =>
+          setLightboxIndex((current) => updater(current ?? 0))
+        }
+        alt={job.title}
+      />
       <DetailMetrics
         items={[
           { icon: FiBriefcase, label: t('jobs.detail.metrics.contract'), value: contractLabel || emptyLabel },

@@ -623,6 +623,14 @@ export function ConversationPanel({
             className="message-suggestions scrollbar-hidden mx-auto mb-1.5 flex max-w-3xl gap-1 overflow-x-auto"
             data-testid="message-suggestions"
           >
+            <button
+              type="button"
+              onClick={() => onToggleSuggestions?.()}
+              aria-label={messagesText(t, 'messages.hideSuggestions')}
+              className="message-touch-target grid size-8 shrink-0 place-items-center rounded-full text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)]"
+            >
+              <FiX />
+            </button>
             {suggestions.map((suggestion, index) => (
               <button
                 key={`${index}-${suggestion.slice(0, 24)}`}

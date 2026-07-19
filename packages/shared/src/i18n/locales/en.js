@@ -1107,6 +1107,21 @@ export const en = {
       release: "Release to refresh",
       refreshing: "Refreshing",
     },
+    poster: {
+      removeImage: "Remove image",
+      addImages: "Add images",
+      primary: "Main",
+    },
+    update: {
+      title: "MOXT update",
+      body: "A new version is available — reloading automatically as soon as possible.",
+    },
+    lightbox: {
+      title: "Image preview",
+      close: "Close preview",
+      previous: "Previous image",
+      next: "Next image",
+    },
     edit: "Edit",
     delete: "Delete",
     add: "Add",

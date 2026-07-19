@@ -969,6 +969,21 @@ export const pt = {
       release: "Solte para atualizar",
       refreshing: "A atualizar",
     },
+    poster: {
+      removeImage: "Remover a imagem",
+      addImages: "Adicionar imagens",
+      primary: "Principal",
+    },
+    update: {
+      title: "Atualização MOXT",
+      body: "Nova versão disponível — atualização automática assim que possível.",
+    },
+    lightbox: {
+      title: "Pré-visualização da imagem",
+      close: "Fechar pré-visualização",
+      previous: "Imagem anterior",
+      next: "Imagem seguinte",
+    },
     cancel: "Cancelar",
     save: "Guardar",
     validate: "Validar",

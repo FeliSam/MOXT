@@ -1106,6 +1106,21 @@ export const es = {
       release: "Solte para atualizar",
       refreshing: "A atualizar"
     },
+    poster: {
+      removeImage: "Quitar la imagen",
+      addImages: "Añadir imágenes",
+      primary: "Principal"
+    },
+    update: {
+      title: "Actualización MOXT",
+      body: "Nueva versión disponible — recarga automática en cuanto sea posible."
+    },
+    lightbox: {
+      title: "Vista previa de la imagen",
+      close: "Cerrar vista previa",
+      previous: "Imagen anterior",
+      next: "Imagen siguiente"
+    },
     edit: "Editar",
     delete: "Eliminar",
     add: "Adicionar",

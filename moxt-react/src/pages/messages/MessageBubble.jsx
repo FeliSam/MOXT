@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   FiAlertCircle,
   FiCheck,
@@ -7,6 +8,7 @@ import {
   FiEdit2,
   FiRefreshCw,
   FiTrash2,
+  FiUser,
 } from 'react-icons/fi'
 import { initials, shortTime, formatDateLabel } from './format'
 import { messageReadStatus } from './messageUtils'
@@ -385,6 +387,19 @@ export function MessageBubble({
           >
             <FiCopy />
           </button>
+          {!mine ? (
+            <Link
+              to={`/users/${message.senderId}/publications`}
+              onClick={(event) => {
+                event.stopPropagation()
+                onCloseActions?.()
+              }}
+              aria-label={messagesText(t, 'messages.viewProfile')}
+              className="message-action-menu-btn"
+            >
+              <FiUser />
+            </Link>
+          ) : null}
           {mine ? (
             <button
               type="button"
