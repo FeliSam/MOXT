@@ -296,6 +296,8 @@ export const fr = {
     communication: "Communication",
     account: "Compte",
     administration: "Administration",
+    moderation: "Modération",
+    moderationSpace: "Espace modérateur",
     p2p: "Echanges P2P",
     exchangers: "Échangeurs",
     professional: "Espace professionnel",

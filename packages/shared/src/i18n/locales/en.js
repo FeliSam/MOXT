@@ -297,6 +297,8 @@ export const en = {
     communication: "Communication",
     account: "Account",
     administration: "Administration",
+    moderation: "Moderation",
+    moderationSpace: "Moderator space",
     p2p: "P2P exchanges",
     exchangers: "Exchangers",
     professional: "Professional space",
