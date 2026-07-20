@@ -2488,7 +2488,7 @@ html.locale-animating #root {
 
 /* Same Feather family as bottom nav (`text-lg`). */
 .header-action-icon {
-  @apply text-lg text-[var(--app-text-muted)] opacity-75 transition-opacity;
+  @apply text-lg text-[var(--app-text-muted)] opacity-70 transition-opacity;
 }
 
 .header-action-btn:hover .header-action-icon,
@@ -2496,14 +2496,24 @@ html.locale-animating #root {
   opacity: 1;
 }
 
-/* Mobile / tablet header: size-10 → sm size-11, glyph text-lg. */
+/* Mobile / tablet: prior size +10% (profile avatar excluded). */
 @media (max-width: 1023px) {
   .header-action-btn {
-    @apply size-10 rounded-full border border-[var(--app-border)]/50 bg-[var(--app-surface)]/80 backdrop-blur-md hover:bg-[var(--app-surface)]/90 sm:size-11;
+    @apply rounded-full border border-[var(--app-border)]/50 bg-[var(--app-surface)]/80 backdrop-blur-md hover:bg-[var(--app-surface)]/90;
+    width: 3.1625rem;
+    height: 3.1625rem;
+  }
+
+  @media (min-width: 640px) {
+    .header-action-btn {
+      width: 3.47875rem;
+      height: 3.47875rem;
+    }
   }
 
   .header-action-icon {
-    @apply text-lg opacity-75;
+    font-size: 1.423125rem; /* prior glyph +10% */
+    opacity: 0.7;
   }
 
   .app-top-header {
