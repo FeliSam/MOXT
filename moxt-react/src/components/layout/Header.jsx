@@ -25,19 +25,19 @@ export function Header({ hideOnMobile = false }) {
 
   return (
     <header
-      className={`app-top-header sticky top-0 z-[var(--z-nav)] shrink-0 px-3 pt-3 transition-transform duration-300 ease-out sm:px-5 lg:px-5 lg:pt-4 ${
+      className={`app-top-header sticky top-0 z-[var(--z-nav)] shrink-0 px-3 pt-5 transition-transform duration-300 ease-out sm:px-5 sm:pt-5 lg:px-5 lg:pt-5 ${
         visible ? 'translate-y-0' : '-translate-y-[calc(100%+1rem)]'
       } ${hideOnMobile ? 'hidden lg:block' : ''}`}
     >
-      <div className="mx-auto flex max-w-[96rem] items-center gap-1.5 sm:gap-2 lg:min-h-[4.75rem] lg:gap-3 lg:rounded-[1.4rem] lg:border lg:border-[var(--app-border)] lg:bg-[var(--app-surface)]/94 lg:px-6 lg:py-3 lg:shadow-[var(--shadow-card)] lg:backdrop-blur-xl">
-        {/* Mobile: avatar + page title share one pill (h-11). Desktop: children flow into outer pill. */}
-        <div className="header-brand-chip flex h-11 min-w-0 flex-1 items-center gap-2 rounded-full border border-[var(--app-border)]/50 bg-[var(--app-surface)]/40 px-1.5 pr-2.5 backdrop-blur-md sm:gap-2.5 sm:pr-3 lg:contents lg:h-auto lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+      <div className="mx-auto flex max-w-[96rem] items-center gap-1.5 sm:gap-2 lg:min-h-[4.75rem] lg:gap-3 lg:rounded-[1.4rem] lg:border lg:border-[var(--app-border)] lg:bg-[var(--app-surface)]/80 lg:px-6 lg:py-3 lg:shadow-[var(--shadow-card)] lg:backdrop-blur-xl">
+        {/* Mobile: avatar + page title share one pill. Desktop: children flow into outer pill. */}
+        <div className="header-brand-chip flex h-12 min-w-0 flex-1 items-center gap-2 rounded-full border border-[var(--app-border)]/50 bg-[var(--app-surface)]/80 px-1.5 pr-2.5 backdrop-blur-md sm:h-[3.25rem] sm:gap-2.5 sm:pr-3 lg:contents lg:h-auto lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
           <Link
             to="/profile"
             aria-label={t('settings.profileSecurity.openProfile')}
-            className="hidden size-8 shrink-0 place-items-center rounded-full transition hover:bg-[var(--app-surface-muted)]/60 max-lg:grid"
+            className="hidden size-9 shrink-0 place-items-center rounded-full transition hover:bg-[var(--app-surface-muted)]/60 max-lg:grid"
           >
-            <UserAvatar user={user} size={32} />
+            <UserAvatar user={user} size={36} />
           </Link>
 
           <div className="hidden w-[8rem] shrink-0 lg:flex xl:hidden">
@@ -49,19 +49,19 @@ export function Header({ hideOnMobile = false }) {
           </div>
 
           <div className="min-w-0 flex-1 lg:hidden">
-            <p className="truncate text-sm font-black leading-none" title={translateLabel(route.title)}>
+            <p className="truncate text-[0.9375rem] font-black leading-none text-[var(--app-text)]" title={translateLabel(route.title)}>
               {translateLabel(route.title)}
             </p>
           </div>
         </div>
 
-        <div className="ml-auto flex h-11 shrink-0 items-center gap-1.5 lg:h-auto lg:gap-1.5">
+        <div className="ml-auto flex h-12 shrink-0 items-center gap-1.5 sm:h-[3.25rem] lg:h-auto lg:gap-1.5">
           <Link
             to="/news"
             className="header-action-btn grid lg:hidden"
             aria-label={t('nav.news')}
           >
-            <FiFileText className="text-lg" />
+            <FiFileText className="header-action-icon" />
           </Link>
 
           <Link
@@ -73,7 +73,7 @@ export function Header({ hideOnMobile = false }) {
                 : t('notifications.title')
             }
           >
-            <FiBell className="text-lg" />
+            <FiBell className="header-action-icon" />
             {unreadCount ? (
               <CountBounce
                 value={unreadCount}
@@ -87,7 +87,7 @@ export function Header({ hideOnMobile = false }) {
             className="header-action-btn grid"
             aria-label={t('dashboard.overview.history')}
           >
-            <FiClock className="text-lg" />
+            <FiClock className="header-action-icon" />
           </Link>
 
           <Link
@@ -99,7 +99,7 @@ export function Header({ hideOnMobile = false }) {
                 : t('nav.messages')
             }
           >
-            <FiMessageSquare className="text-lg" />
+            <FiMessageSquare className="header-action-icon" />
             {unreadMessagesCount ? (
               <CountBounce
                 value={unreadMessagesCount}
@@ -113,7 +113,7 @@ export function Header({ hideOnMobile = false }) {
             className="header-action-btn hidden lg:grid"
             aria-label={t('favorites.title')}
           >
-            <FiHeart className="text-lg" />
+            <FiHeart className="header-action-icon" />
           </Link>
 
           <LanguageSwitcher className="hidden shrink-0 xl:block" />
@@ -126,7 +126,11 @@ export function Header({ hideOnMobile = false }) {
             }
             onClick={toggleTheme}
           >
-            {theme === 'dark' ? <FiSun className="transition-transform duration-300" /> : <FiMoon className="transition-transform duration-300" />}
+            {theme === 'dark' ? (
+              <FiSun className="header-action-icon transition-transform duration-300" />
+            ) : (
+              <FiMoon className="header-action-icon transition-transform duration-300" />
+            )}
           </button>
 
           <Link

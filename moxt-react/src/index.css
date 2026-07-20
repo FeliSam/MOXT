@@ -321,7 +321,7 @@ textarea:focus-visible {
 /* ─── Capacitor (shell natif) ───────────────────────────────────────────── */
 html.capacitor-native header,
 html.capacitor-native .app-top-header {
-  padding-top: max(0.75rem, env(safe-area-inset-top));
+  padding-top: max(1.25rem, calc(env(safe-area-inset-top) + 0.35rem));
 }
 
 html.capacitor-native .capacitor-safe-bottom {
@@ -404,7 +404,7 @@ html.capacitor-native {
   }
 
   .app-top-header {
-    padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+    padding-top: max(1.25rem, calc(env(safe-area-inset-top, 0px) + 0.35rem));
   }
 
   /* Légèrement plus collé au home indicator en PWA, sans !important wars */
@@ -2483,13 +2483,25 @@ html.locale-animating #root {
 
 /* ─── Utilitaires ────────────────────────────────────────────────────────── */
 .header-action-btn {
-  @apply size-9 shrink-0 place-items-center rounded-xl text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)] sm:size-10 sm:rounded-2xl;
+  @apply size-9 shrink-0 place-items-center rounded-xl text-[var(--app-text)] transition hover:bg-[var(--app-surface-muted)] sm:size-10 sm:rounded-2xl;
 }
 
-/* Mobile: action pills match brand chip height (h-11 / size-11), square, bg 40%. */
+.header-action-icon {
+  @apply text-[1.25rem] stroke-[2.25];
+}
+
+/* Mobile: action pills match brand chip (h-12), bg 80%, icons larger. */
 @media (max-width: 1023px) {
   .header-action-btn {
-    @apply size-11 rounded-full border border-[var(--app-border)]/50 bg-[var(--app-surface)]/40 backdrop-blur-md hover:bg-[var(--app-surface)]/55;
+    @apply size-12 rounded-full border border-[var(--app-border)]/50 bg-[var(--app-surface)]/80 text-[var(--app-text)] backdrop-blur-md hover:bg-[var(--app-surface)]/90 sm:size-[3.25rem];
+  }
+
+  .header-action-icon {
+    @apply text-[1.35rem] stroke-[2.35];
+  }
+
+  .app-top-header {
+    padding-top: max(1.25rem, calc(env(safe-area-inset-top, 0px) + 0.5rem));
   }
 }
 
