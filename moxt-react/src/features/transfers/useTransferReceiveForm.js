@@ -67,6 +67,7 @@ export function useTransferReceiveForm({ transfer, user, onSuccess }) {
       dispatch(
         receiveTransfer({
           id: transfer.id,
+          actorId: user.id,
           receivedAmount: normalizeReceivedAmount(values.receivedAmount),
           receivedMethod: values.receivedMethod,
           receivedProof: proofPayload,

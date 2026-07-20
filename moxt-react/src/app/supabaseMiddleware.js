@@ -756,7 +756,8 @@ const handlers = {
     }
   },
   'transfers/cancelTransfer': async (payload, state) => {
-    const transfer = state.transfers.items.find((t) => t.id === payload)
+    const id = typeof payload === 'string' ? payload : payload?.id
+    const transfer = state.transfers.items.find((t) => t.id === id)
     if (transfer) {
       await update('transfers', transfer.id, {
         status: transfer.status,

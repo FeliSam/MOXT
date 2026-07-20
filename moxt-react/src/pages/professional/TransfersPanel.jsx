@@ -10,6 +10,7 @@ import { addToast } from '../../features/ui/uiSlice'
 import { moderateTransfer } from '../../features/transfers/transferSlice'
 import { TRANSFER_STATUS } from '../../features/transfers/transferConfig'
 import {
+  canActorPerformBusinessTransferAction,
   canApplyModerateTransfer,
   isClaimOnlyPhase,
 } from '../../features/transfers/transferActionUtils'
@@ -47,8 +48,14 @@ export function TransfersPanel({ business, dispatch, transfers, user }) {
       ) : null}
       {transfers.map((transfer) => {
         const claimOnly = isClaimOnlyPhase(transfer)
-        const awaitingPaymentReception = transfer.status === TRANSFER_STATUS.DECLARED
-        const awaitingPayout = transfer.status === TRANSFER_STATUS.RECEIVED
+        const canActAsBusiness = canActorPerformBusinessTransferAction(
+          transfer,
+          user?.id,
+          user?.role,
+        )
+        const awaitingPaymentReception =
+          canActAsBusiness && transfer.status === TRANSFER_STATUS.DECLARED
+        const awaitingPayout = canActAsBusiness && transfer.status === TRANSFER_STATUS.RECEIVED
         const needsBusinessAction = awaitingPaymentReception || awaitingPayout
         const proof = proofs[transfer.id]
         const pricing = getTransferPricing(transfer)
@@ -116,6 +123,7 @@ export function TransfersPanel({ business, dispatch, transfers, user }) {
                         id: transfer.id,
                         status: TRANSFER_STATUS.RECEIVED,
                         actorId: user.id,
+                        actorRole: user.role,
                       }),
                     )
                     dispatch(
@@ -181,6 +189,7 @@ export function TransfersPanel({ business, dispatch, transfers, user }) {
                           id: transfer.id,
                           status: TRANSFER_STATUS.PAID_OUT,
                           actorId: user.id,
+                          actorRole: user.role,
                           proof: proofPayload,
                         }),
                       )

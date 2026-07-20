@@ -309,7 +309,25 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
       return (
         <>
           {next && (
-            <Button onClick={() => dispatch(moderateTransfer({ id: item.id, status: next }))}>
+            <Button
+              onClick={() =>
+                dispatch(
+                  moderateTransfer({
+                    id: item.id,
+                    status: next,
+                    actorId: reviewerId,
+                    actorRole: actorRole || 'admin',
+                    proof:
+                      next === 'paid_out'
+                        ? item.businessProof || {
+                            name: 'admin-advance.pdf',
+                            uploadedAt: new Date().toISOString(),
+                          }
+                        : undefined,
+                  }),
+                )
+              }
+            >
               {adminText(t, 'admin.actions.advanceTo', { next })}
             </Button>
           )}

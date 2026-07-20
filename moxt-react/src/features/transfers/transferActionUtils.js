@@ -80,11 +80,30 @@ export function canApplyModerateTransfer(transfer, targetStatus, proof = null) {
   return true
 }
 
-export function isBusinessViewerForTransfer(transfer, user, business, ownedBusinessIds = []) {
+/**
+ * True only for the partner business (owner / owned business id).
+ * Never true for the transfer sender — even if they also own another business.
+ * `business` arg kept for call-site compatibility; must not grant access by catalog match.
+ */
+export function isBusinessViewerForTransfer(transfer, user, _business, ownedBusinessIds = []) {
   if (!transfer || !user) return false
+  // Client who created the transfer cannot act as the business on that same transfer.
+  if (transfer.userId === user.id) return false
   return (
-    transfer.businessOwnerId === user.id ||
-    ownedBusinessIds.includes(transfer.businessId) ||
-    business?.id === transfer.businessId
+    transfer.businessOwnerId === user.id || ownedBusinessIds.includes(transfer.businessId)
   )
+}
+
+/** Client-only status changes (declare / cancel / receive→complete). */
+export function canActorPerformClientTransferAction(transfer, actorId) {
+  if (!transfer || !actorId) return false
+  return transfer.userId === actorId
+}
+
+/** Business-only status changes (confirm reception / payout). Admin/moderator override. */
+export function canActorPerformBusinessTransferAction(transfer, actorId, actorRole) {
+  if (!transfer || !actorId) return false
+  if (transfer.userId === actorId) return false
+  if (['admin', 'superadmin', 'moderator'].includes(actorRole)) return true
+  return transfer.businessOwnerId === actorId
 }

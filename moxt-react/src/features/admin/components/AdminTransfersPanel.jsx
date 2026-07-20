@@ -1,9 +1,10 @@
 import { FiClock, FiDollarSign, FiEye, FiRepeat } from 'react-icons/fi'
+import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { Button } from '../../../components/ui/Button'
 import { TransferStatusBadge } from '../../transfers/TransferStatusBadge'
-import { TRANSFER_TRANSITIONS } from '../../transfers/transferConfig'
+import { TRANSFER_STATUS, TRANSFER_TRANSITIONS } from '../../transfers/transferConfig'
 import { moderateTransfer } from '../../transfers/transferSlice'
 import { formatMoney } from '../../transfers/transferUtils'
 import { CARD, ITEM } from '../adminConfig'
@@ -13,6 +14,7 @@ import { Empty, MetricCard, SectionTitle } from './AdminShared'
 
 export function AdminTransfersPanel({ dispatch, setSelected, transfers }) {
   const { t } = useLanguage()
+  const user = useSelector((state) => state.auth.user)
   const completedVolume = transfers
     .filter((i) => i.status === 'completed')
     .reduce((sum, i) => sum + Number(i.amountSent || 0), 0)
@@ -63,7 +65,25 @@ export function AdminTransfersPanel({ dispatch, setSelected, transfers }) {
                     <Button variant="secondary" icon={FiEye}>{adminText(t, 'admin.actions.open')}</Button>
                   </Link>
                   {next && (
-                    <Button onClick={() => dispatch(moderateTransfer({ id: transfer.id, status: next }))}>
+                    <Button
+                      onClick={() =>
+                        dispatch(
+                          moderateTransfer({
+                            id: transfer.id,
+                            status: next,
+                            actorId: user?.id,
+                            actorRole: user?.role || 'admin',
+                            proof:
+                              next === TRANSFER_STATUS.PAID_OUT
+                                ? transfer.businessProof || {
+                                    name: 'admin-advance.pdf',
+                                    uploadedAt: new Date().toISOString(),
+                                  }
+                                : undefined,
+                          }),
+                        )
+                      }
+                    >
                       {adminText(t, 'admin.actions.advanceTo', { next })}
                     </Button>
                   )}

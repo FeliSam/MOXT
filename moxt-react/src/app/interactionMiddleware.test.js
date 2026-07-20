@@ -189,10 +189,26 @@ describe('interactionMiddleware', () => {
       }),
     )
     const id = store.getState().transfers.items[0].id
-    store.dispatch(declarePayment(id))
-    store.dispatch(moderateTransfer({ id, status: TRANSFER_STATUS.RECEIVED }))
-    store.dispatch(moderateTransfer({ id, status: TRANSFER_STATUS.PAID_OUT }))
-    store.dispatch(moderateTransfer({ id, status: TRANSFER_STATUS.COMPLETED }))
+    store.dispatch(declarePayment({ id, actorId: 'client' }))
+    store.dispatch(
+      moderateTransfer({ id, status: TRANSFER_STATUS.RECEIVED, actorId: 'business-owner' }),
+    )
+    store.dispatch(
+      moderateTransfer({
+        id,
+        status: TRANSFER_STATUS.PAID_OUT,
+        actorId: 'business-owner',
+        proof: { name: 'virement.pdf' },
+      }),
+    )
+    store.dispatch(
+      moderateTransfer({
+        id,
+        status: TRANSFER_STATUS.COMPLETED,
+        actorId: 'admin',
+        actorRole: 'admin',
+      }),
+    )
 
     expect(
       store

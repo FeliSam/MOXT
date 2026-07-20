@@ -174,7 +174,7 @@ describe('authSessionSync visibility handler', () => {
     })
     document.dispatchEvent(new Event('visibilitychange'))
 
-    await vi.advanceTimersByTimeAsync(9000)
+    await vi.advanceTimersByTimeAsync(16_000)
 
     expect(store.getState().auth.user?.id).toBe('u1')
     expect(store.getState().auth.status).toBe('authenticated')

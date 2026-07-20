@@ -4,6 +4,7 @@ import {
   canApplyModerateTransfer,
   canClientDeclareReception,
   hasBusinessPayoutWithProof,
+  isBusinessViewerForTransfer,
   isClaimOnlyPhase,
 } from './transferActionUtils'
 
@@ -81,5 +82,21 @@ describe('transferActionUtils', () => {
     }
     expect(canApplyModerateTransfer(transfer, TRANSFER_STATUS.RECEIVED)).toBe(true)
     expect(canApplyModerateTransfer(transfer, TRANSFER_STATUS.PAID_OUT)).toBe(false)
+  })
+
+  it('ne traite jamais le client createur comme viewer entreprise', () => {
+    const transfer = {
+      userId: 'client-1',
+      businessId: 'EXC-1',
+      businessOwnerId: 'owner-1',
+    }
+    const catalogBusiness = { id: 'EXC-1', ownerId: 'owner-1' }
+    expect(
+      isBusinessViewerForTransfer(transfer, { id: 'client-1' }, catalogBusiness, ['EXC-1']),
+    ).toBe(false)
+    expect(isBusinessViewerForTransfer(transfer, { id: 'owner-1' }, catalogBusiness, [])).toBe(true)
+    expect(
+      isBusinessViewerForTransfer(transfer, { id: 'member-1' }, catalogBusiness, ['EXC-1']),
+    ).toBe(true)
   })
 })

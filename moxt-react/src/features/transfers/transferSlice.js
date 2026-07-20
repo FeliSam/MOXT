@@ -1,5 +1,9 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { matchUserId } from '../businesses/businessVisibility'
+import {
+  canActorPerformBusinessTransferAction,
+  canActorPerformClientTransferAction,
+} from './transferActionUtils'
 import { TRANSFER_CONFIG, TRANSFER_STATUS, TRANSFER_TRANSITIONS } from './transferConfig'
 import { transferStorage } from './transferStorage'
 import { calculateTransfer } from './transferUtils'
@@ -81,32 +85,76 @@ const transferSlice = createSlice({
         typeof action.payload === 'string' ? { id: action.payload, proof: null } : action.payload
       const transfer = state.items.find((item) => item.id === payload.id)
       if (!transfer || transfer.status !== TRANSFER_STATUS.PENDING) return
+      if (!canActorPerformClientTransferAction(transfer, payload.actorId)) return
       transfer.status = TRANSFER_STATUS.DECLARED
       transfer.paymentProof = payload.proof || null
       transfer.updatedAt = new Date().toISOString()
       transfer.timeline.push({
         status: TRANSFER_STATUS.DECLARED,
         at: transfer.updatedAt,
+        actorType: 'client',
+        actorId: payload.actorId,
         proofName: payload.proof?.name,
       })
     },
     cancelTransfer(state, action) {
-      const transfer = state.items.find((item) => item.id === action.payload)
+      const payload =
+        typeof action.payload === 'string' ? { id: action.payload } : action.payload
+      const transfer = state.items.find((item) => item.id === payload.id)
       if (
         !transfer ||
         ![TRANSFER_STATUS.PENDING, TRANSFER_STATUS.DECLARED].includes(transfer.status)
       )
         return
+      if (!canActorPerformClientTransferAction(transfer, payload.actorId)) return
       transfer.status = TRANSFER_STATUS.CANCELLED
       transfer.updatedAt = new Date().toISOString()
-      transfer.timeline.push({ status: TRANSFER_STATUS.CANCELLED, at: transfer.updatedAt })
+      transfer.timeline.push({
+        status: TRANSFER_STATUS.CANCELLED,
+        at: transfer.updatedAt,
+        actorType: 'client',
+        actorId: payload.actorId,
+      })
     },
     moderateTransfer(state, action) {
       const transfer = state.items.find((item) => item.id === action.payload.id)
       if (!transfer) return
+      if (
+        !canActorPerformBusinessTransferAction(
+          transfer,
+          action.payload.actorId,
+          action.payload.actorRole,
+        )
+      ) {
+        return
+      }
+
+      const isStaff = ['admin', 'superadmin', 'moderator'].includes(action.payload.actorRole)
+      if (
+        action.payload.status === TRANSFER_STATUS.CANCELLED &&
+        isStaff &&
+        transfer.status !== TRANSFER_STATUS.CANCELLED
+      ) {
+        transfer.status = TRANSFER_STATUS.CANCELLED
+        transfer.updatedAt = new Date().toISOString()
+        transfer.timeline ||= []
+        transfer.timeline.push({
+          status: TRANSFER_STATUS.CANCELLED,
+          at: transfer.updatedAt,
+          actorType: 'admin',
+          actorId: action.payload.actorId,
+          note: action.payload.note || 'admin_force_cancel',
+        })
+        return
+      }
+
       const expectedStatus = TRANSFER_TRANSITIONS[transfer.status]
       if (!expectedStatus || action.payload.status !== expectedStatus) return
       if (expectedStatus === TRANSFER_STATUS.PAID_OUT && !action.payload.proof) return
+      // Completing after payout is a client action (receiveTransfer); only staff may force it.
+      if (expectedStatus === TRANSFER_STATUS.COMPLETED && !isStaff) {
+        return
+      }
       transfer.status = expectedStatus
       if (action.payload.proof) transfer.businessProof = action.payload.proof
       transfer.updatedAt = new Date().toISOString()
@@ -114,7 +162,7 @@ const transferSlice = createSlice({
       transfer.timeline.push({
         status: expectedStatus,
         at: transfer.updatedAt,
-        actorType: 'business',
+        actorType: isStaff ? 'admin' : 'business',
         actorId: action.payload.actorId || transfer.businessOwnerId,
         note: action.payload.note || '',
         proofName: action.payload.proof?.name,
@@ -123,6 +171,7 @@ const transferSlice = createSlice({
     receiveTransfer(state, action) {
       const transfer = state.items.find((item) => item.id === action.payload.id)
       if (!transfer) return
+      if (!canActorPerformClientTransferAction(transfer, action.payload.actorId)) return
       if (!transfer.businessProof || transfer.status !== TRANSFER_STATUS.PAID_OUT) return
       transfer.receivedAmount = action.payload.receivedAmount
       transfer.receivedMethod = action.payload.receivedMethod
@@ -134,12 +183,16 @@ const transferSlice = createSlice({
       transfer.timeline.push({
         status: 'received',
         at: action.payload.receivedAt,
+        actorType: 'client',
+        actorId: action.payload.actorId,
         amount: action.payload.receivedAmount,
         method: action.payload.receivedMethod,
       })
       transfer.timeline.push({
         status: TRANSFER_STATUS.COMPLETED,
         at: action.payload.receivedAt,
+        actorType: 'client',
+        actorId: action.payload.actorId,
       })
     },
     expireOverdueTransfers(state, action) {

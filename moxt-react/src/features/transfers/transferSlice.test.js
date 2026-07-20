@@ -58,12 +58,23 @@ describe('transferSlice', () => {
   it('autorise la declaration puis l annulation du paiement', () => {
     const created = reducer({ items: [] }, createTransfer(payload))
     const id = created.items[0].id
-    const declared = reducer(created, declarePayment(id))
-    const cancelled = reducer(declared, cancelTransfer(id))
+    const declared = reducer(created, declarePayment({ id, actorId: 'u1' }))
+    const cancelled = reducer(declared, cancelTransfer({ id, actorId: 'u1' }))
 
     expect(declared.items[0].status).toBe(TRANSFER_STATUS.DECLARED)
     expect(cancelled.items[0].status).toBe(TRANSFER_STATUS.CANCELLED)
     expect(cancelled.items[0].timeline).toHaveLength(3)
+  })
+
+  it('refuse les actions entreprise au client createur', () => {
+    const created = reducer({ items: [] }, createTransfer(payload))
+    const id = created.items[0].id
+    const declared = reducer(created, declarePayment({ id, actorId: 'u1' }))
+    const spoofed = reducer(
+      declared,
+      moderateTransfer({ id, status: TRANSFER_STATUS.RECEIVED, actorId: 'u1' }),
+    )
+    expect(spoofed.items[0].status).toBe(TRANSFER_STATUS.DECLARED)
   })
 
   it('conserve les métadonnées de preuve et expire un paiement en retard', () => {
@@ -71,7 +82,11 @@ describe('transferSlice', () => {
     const id = created.items[0].id
     const declared = reducer(
       created,
-      declarePayment({ id, proof: { name: 'preuve.pdf', size: 1200, type: 'application/pdf' } }),
+      declarePayment({
+        id,
+        actorId: 'u1',
+        proof: { name: 'preuve.pdf', size: 1200, type: 'application/pdf' },
+      }),
     )
     expect(declared.items[0].paymentProof.name).toBe('preuve.pdf')
 
@@ -91,12 +106,25 @@ describe('transferSlice', () => {
   it('impose des actions entreprise uniques et ordonnées', () => {
     const created = reducer({ items: [] }, createTransfer(payload))
     const id = created.items[0].id
-    const declared = reducer(created, declarePayment(id))
-    const invalid = reducer(declared, moderateTransfer({ id, status: TRANSFER_STATUS.COMPLETED }))
+    const declared = reducer(created, declarePayment({ id, actorId: 'u1' }))
+    const invalid = reducer(
+      declared,
+      moderateTransfer({
+        id,
+        status: TRANSFER_STATUS.COMPLETED,
+        actorId: 'business-owner',
+      }),
+    )
     expect(invalid.items[0].status).toBe(TRANSFER_STATUS.DECLARED)
 
-    const received = reducer(invalid, moderateTransfer({ id, status: TRANSFER_STATUS.RECEIVED }))
-    const duplicate = reducer(received, moderateTransfer({ id, status: TRANSFER_STATUS.RECEIVED }))
+    const received = reducer(
+      invalid,
+      moderateTransfer({ id, status: TRANSFER_STATUS.RECEIVED, actorId: 'business-owner' }),
+    )
+    const duplicate = reducer(
+      received,
+      moderateTransfer({ id, status: TRANSFER_STATUS.RECEIVED, actorId: 'business-owner' }),
+    )
     expect(duplicate.items[0].status).toBe(TRANSFER_STATUS.RECEIVED)
     expect(duplicate.items[0].timeline).toHaveLength(received.items[0].timeline.length)
 
@@ -105,12 +133,17 @@ describe('transferSlice', () => {
       moderateTransfer({
         id,
         status: TRANSFER_STATUS.PAID_OUT,
+        actorId: 'business-owner',
         proof: { name: 'virement.pdf' },
       }),
     )
     const paidOutWithoutProof = reducer(
       duplicate,
-      moderateTransfer({ id, status: TRANSFER_STATUS.PAID_OUT }),
+      moderateTransfer({
+        id,
+        status: TRANSFER_STATUS.PAID_OUT,
+        actorId: 'business-owner',
+      }),
     )
     expect(paidOutWithoutProof.items[0].status).toBe(TRANSFER_STATUS.RECEIVED)
     expect(paidOut.items[0].businessProof.name).toBe('virement.pdf')

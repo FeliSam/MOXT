@@ -2,6 +2,7 @@ import { setAll as resetBusinesses } from '../features/businesses/businessSlice'
 import { setAll as resetCommunications } from '../features/communications/communicationSlice'
 import { clearAppBadge } from '../platform/appBadge'
 import { clearClientCache } from '../services/clearClientCache'
+import { markIntentionalSignOut } from '../services/authSessionSync'
 
 const persistenceMap = {
   account: [{ key: 'moxt-account-v1', select: (state) => state.account }],
@@ -131,6 +132,11 @@ function clearSessionData(store, { scope = 'full' } = {}) {
 }
 
 export const persistenceMiddleware = (store) => (next) => (action) => {
+  // Before auth.signOut() runs inside the logout thunk — so SIGNED_OUT is intentional.
+  if (action.type === 'auth/logout/pending') {
+    markIntentionalSignOut()
+  }
+
   const result = next(action)
 
   if (action.type === 'auth/login/rejected') {

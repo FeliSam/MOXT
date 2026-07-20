@@ -237,6 +237,7 @@ export function TransferDetailPage() {
                 dispatch(
                   declarePayment({
                     id: transfer.id,
+                    actorId: user.id,
                     proof: {
                       name: proof.file.name,
                       size: proof.file.size,
@@ -295,6 +296,7 @@ export function TransferDetailPage() {
                     id: transfer.id,
                     status: nextStatus,
                     actorId: user.id,
+                    actorRole: user.role,
                     proof: proofPayload,
                   }),
                 )
@@ -440,7 +442,7 @@ export function TransferDetailPage() {
         description={t('transfers.detail.cancel.description')}
         onCancel={() => setCancelOpen(false)}
         onConfirm={() => {
-          dispatch(cancelTransfer(transfer.id))
+          dispatch(cancelTransfer({ id: transfer.id, actorId: user.id }))
           setCancelOpen(false)
         }}
       />

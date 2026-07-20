@@ -60,6 +60,8 @@ export function ResetPasswordPage() {
     onSubmit: async (values, helpers) => {
       try {
         await authService.updatePassword(values.password)
+        const { markIntentionalSignOut } = await import('../services/authSessionSync')
+        markIntentionalSignOut()
         await supabase?.auth.signOut()
         dispatch(clearSession())
         dispatch(

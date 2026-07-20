@@ -12,15 +12,28 @@ import {
 let authSubscription = null
 let visibilityHandler = null
 let pageShowHandler = null
+let keepaliveTimer = null
+let retryTimer = null
 let lastConversationRefresh = 0
 let lastDataRefresh = 0
 let lastAuthUserRefresh = 0
+let lastProactiveRefresh = 0
+let intentionalSignOutUntil = 0
+
 const CONVERSATION_REFRESH_MS = 60000
 const DATA_REFRESH_MS = 120000
 /** Toujours assez court pour rattraper une confirmation e-mail faite hors onglet (Safari Mail). */
 const AUTH_USER_REFRESH_MS = 4000
-/** Refresh access token this many seconds before expires_at. */
-const ACCESS_TOKEN_SKEW_SECONDS = 60
+/**
+ * Refresh access token this many seconds before expires_at.
+ * Safari freezes timers in background — refresh early while the tab is still awake.
+ */
+const ACCESS_TOKEN_SKEW_SECONDS = 10 * 60
+/** While tab is visible, check JWT freshness on this cadence (~JWT is 1h). */
+const KEEPALIVE_MS = 45_000
+const PROACTIVE_REFRESH_MIN_GAP_MS = 20_000
+const SESSION_RESOLVE_TIMEOUT_MS = 15_000
+const TRANSIENT_RETRY_MS = 5_000
 
 async function refreshConversationsIfNeeded(dispatch, getState) {
   if (!getState().auth.user) return
@@ -39,8 +52,6 @@ async function refreshDataIfNeeded(dispatch, getState) {
   const { loadAllData } = await import('../app/loadAllData')
   dispatch(loadAllData())
 }
-
-const SESSION_RESOLVE_TIMEOUT_MS = 8000
 
 function withTimeout(promise, ms, label) {
   return new Promise((resolve, reject) => {
@@ -73,12 +84,23 @@ function isDefinitiveSessionLoss(error) {
   return (
     code === 'refresh_token_not_found' ||
     code === 'session_not_found' ||
+    code === 'refresh_token_already_used' ||
     message.includes('invalid refresh token') ||
     message.includes('refresh token not found') ||
     message.includes('refresh_token_not_found') ||
+    message.includes('refresh_token_already_used') ||
     message.includes('session from session_id claim in jwt does not exist') ||
     (Number(error?.status) === 401 && message.includes('refresh'))
   )
+}
+
+/** Call before auth.signOut() so SIGNED_OUT is treated as intentional logout. */
+export function markIntentionalSignOut(durationMs = 15_000) {
+  intentionalSignOutUntil = Date.now() + durationMs
+}
+
+function isIntentionalSignOut() {
+  return Date.now() < intentionalSignOutUntil
 }
 
 /**
@@ -98,7 +120,7 @@ async function resolveSupabaseSession() {
 
     let session = data?.session ?? null
 
-    // Safari suspends timers — access JWT often expired after a few hours idle.
+    // Safari suspends timers — access JWT often expired after ~1h idle.
     if (session && isAccessTokenExpiring(session)) {
       try {
         const { data: refreshed, error: refreshError } = await withTimeout(
@@ -107,6 +129,7 @@ async function resolveSupabaseSession() {
           'refreshSession',
         )
         if (refreshed?.session) {
+          lastProactiveRefresh = Date.now()
           return { status: 'ok', session: refreshed.session }
         }
         if (isDefinitiveSessionLoss(refreshError)) {
@@ -136,6 +159,7 @@ async function resolveSupabaseSession() {
         'refreshSession',
       )
       if (refreshed?.session) {
+        lastProactiveRefresh = Date.now()
         return { status: 'ok', session: refreshed.session }
       }
       if (isDefinitiveSessionLoss(refreshError)) {
@@ -161,6 +185,29 @@ function forceLogout(dispatch, reason) {
   clearClientCache({ scope: 'full', reason })
 }
 
+function scheduleTransientRetry(dispatch, getState) {
+  if (retryTimer || typeof window === 'undefined') return
+  retryTimer = window.setTimeout(() => {
+    retryTimer = null
+    if (document.visibilityState !== 'visible') return
+    if (!getState().auth.user) return
+    void onForeground(dispatch, getState, { forceAuth: true })
+  }, TRANSIENT_RETRY_MS)
+}
+
+async function applyTokenToStore(session, dispatch, getState) {
+  if (!session?.access_token) return
+  const current = getState().auth.user
+  if (!current) return
+  dispatch(
+    applySession({
+      user: current,
+      token: session.access_token,
+    }),
+  )
+  await syncRealtimeAuthToken()
+}
+
 async function syncSessionToStore(
   session,
   dispatch,
@@ -180,6 +227,15 @@ async function syncSessionToStore(
 
   const previousUser = getState().auth.user
   const previousUserId = previousUser?.id
+  const authStatus = getState().auth.status
+
+  // During login/OTP thunks, SIGNED_IN can race with a metadata stub (incomplete
+  // firstName/phone). Applying it bounces PublicOnlyRoute → /register while
+  // Supabase already has a real session. Let the thunk finish instead.
+  if (authStatus === 'loading' && !isProfileComplete(payload.user) && !isProfileComplete(previousUser)) {
+    return
+  }
+
   // SIGNED_IN after OTP can resolve a stub profile after verifyPhoneRegistration
   // already stored a complete user — never downgrade completeness in Redux.
   const sessionPayload =
@@ -238,10 +294,55 @@ async function refreshAuthUserIfNeeded(dispatch, getState, { force = false } = {
     const resolved = await resolveSupabaseSession()
     if (resolved.status === 'missing' && getState().auth.user) {
       forceLogout(dispatch, 'session-invalid')
+    } else if (resolved.status === 'transient') {
+      scheduleTransientRetry(dispatch, getState)
     }
     return
   }
+
+  const previousUser = getState().auth.user
+  if (
+    previousUser?.id === payload.user?.id &&
+    isProfileComplete(previousUser) &&
+    !isProfileComplete(payload.user)
+  ) {
+    return
+  }
   dispatch(applySession(payload))
+}
+
+async function ensureFreshAccessToken(dispatch, getState) {
+  if (!supabase || !getState().auth.user) return
+  const now = Date.now()
+  if (now - lastProactiveRefresh < PROACTIVE_REFRESH_MIN_GAP_MS) return
+
+  try {
+    const { data } = await withTimeout(
+      supabase.auth.getSession(),
+      SESSION_RESOLVE_TIMEOUT_MS,
+      'getSession',
+    )
+    const session = data?.session
+    if (!session) return
+    if (!isAccessTokenExpiring(session)) return
+
+    const { data: refreshed, error } = await withTimeout(
+      supabase.auth.refreshSession(),
+      SESSION_RESOLVE_TIMEOUT_MS,
+      'refreshSession',
+    )
+    if (refreshed?.session) {
+      lastProactiveRefresh = Date.now()
+      await applyTokenToStore(refreshed.session, dispatch, getState)
+      return
+    }
+    if (isDefinitiveSessionLoss(error) && isAccessTokenExpiring(session, 0)) {
+      // Only logout when JWT is already dead AND refresh token is definitively invalid.
+      forceLogout(dispatch, 'session-expired')
+    }
+  } catch {
+    // Keep session — retry on next keepalive / visibility.
+  }
 }
 
 async function onForeground(dispatch, getState, { forceAuth = false } = {}) {
@@ -249,6 +350,10 @@ async function onForeground(dispatch, getState, { forceAuth = false } = {}) {
     const resolved = await resolveSupabaseSession()
     if (resolved.status === 'ok') {
       await syncRealtimeAuthToken()
+      // Keep Redux access_token aligned after Safari resume refresh.
+      if (resolved.session?.access_token) {
+        await applyTokenToStore(resolved.session, dispatch, getState)
+      }
       await refreshAuthUserIfNeeded(dispatch, getState, { force: forceAuth })
       await refreshDataIfNeeded(dispatch, getState)
       await refreshConversationsIfNeeded(dispatch, getState)
@@ -257,7 +362,8 @@ async function onForeground(dispatch, getState, { forceAuth = false } = {}) {
 
     if (resolved.status === 'transient') {
       // iPhone Safari: tab resume often times out getSession/refreshSession.
-      // Keep Redux session; next successful refresh or SIGNED_OUT will reconcile.
+      // Keep Redux session; retry shortly instead of wiping tokens.
+      scheduleTransientRetry(dispatch, getState)
       return
     }
 
@@ -267,6 +373,20 @@ async function onForeground(dispatch, getState, { forceAuth = false } = {}) {
   } catch {
     // Erreur réseau — conserver la session Redux en place.
   }
+}
+
+function startKeepalive(dispatch, getState) {
+  if (typeof window === 'undefined' || keepaliveTimer) return
+  keepaliveTimer = window.setInterval(() => {
+    if (document.visibilityState !== 'visible') return
+    void ensureFreshAccessToken(dispatch, getState)
+  }, KEEPALIVE_MS)
+}
+
+function stopKeepalive() {
+  if (!keepaliveTimer) return
+  clearInterval(keepaliveTimer)
+  keepaliveTimer = null
 }
 
 /** Garde Redux aligné avec Supabase (refresh token, déconnexion, retour d'onglet). */
@@ -295,7 +415,28 @@ export function startAuthSessionSync(store) {
   }
   const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_OUT') {
-      forceLogout(dispatch, 'signed-out')
+      // Intentional logout (button / RegisterPage) — clear immediately.
+      if (isIntentionalSignOut()) {
+        forceLogout(dispatch, 'signed-out')
+        return
+      }
+
+      // Safari / supabase-js can emit SIGNED_OUT after a failed proactive refresh
+      // near the 1h JWT boundary. Recover before wiping Redux + localStorage.
+      await new Promise((resolve) => setTimeout(resolve, 300))
+      const resolved = await resolveSupabaseSession()
+      if (resolved.status === 'ok') {
+        await syncSessionToStore(resolved.session, dispatch, getState, { skipDataLoad: true })
+        return
+      }
+      if (resolved.status === 'transient' && getState().auth.user) {
+        scheduleTransientRetry(dispatch, getState)
+        return
+      }
+      // Only clear if we were authenticated and recovery failed definitively.
+      if (getState().auth.user) {
+        forceLogout(dispatch, 'signed-out')
+      }
       return
     }
 
@@ -324,7 +465,8 @@ export function startAuthSessionSync(store) {
 
     if (event === 'TOKEN_REFRESHED' && session) {
       if (window.location.pathname.startsWith('/reset-password')) return
-      await syncRealtimeAuthToken()
+      lastProactiveRefresh = Date.now()
+      await applyTokenToStore(session, dispatch, getState)
       return
     }
 
@@ -351,6 +493,10 @@ export function startAuthSessionSync(store) {
   }
   window.addEventListener('pageshow', pageShowHandler)
 
+  startKeepalive(dispatch, getState)
+  // Warm refresh shortly after boot while the tab is awake.
+  void ensureFreshAccessToken(dispatch, getState)
+
   void import('../platform/capacitor').then(({ isNative }) => {
     if (!isNative) return
     void import('@capacitor/app').then(({ App }) => {
@@ -364,6 +510,11 @@ export function startAuthSessionSync(store) {
 export function stopAuthSessionSync() {
   authSubscription?.unsubscribe()
   authSubscription = null
+  stopKeepalive()
+  if (retryTimer) {
+    clearTimeout(retryTimer)
+    retryTimer = null
+  }
   if (visibilityHandler) {
     document.removeEventListener('visibilitychange', visibilityHandler)
     visibilityHandler = null
@@ -379,6 +530,7 @@ export async function softRefreshSession(store) {
   const { dispatch, getState } = store
   lastAuthUserRefresh = 0
   lastDataRefresh = 0
+  lastProactiveRefresh = 0
   await onForeground(dispatch, getState, { forceAuth: true })
   const { loadAllData } = await import('../app/loadAllData')
   await dispatch(loadAllData())
