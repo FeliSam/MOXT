@@ -308,6 +308,95 @@ async function sendViaSmsc(phone: string, otp: string) {
   }
 }
 
+/** Default ON — SMSC Telegram channel when SMS is denied for the number. */
+function isSmscTelegramFailoverEnabled() {
+  const v = (Deno.env.get('SMSC_TG_FAILOVER') || '1').toLowerCase()
+  return !(v === '0' || v === 'false' || v === 'no' || v === 'off')
+}
+
+function shouldFailoverToTelegram(message = '') {
+  const lower = String(message).toLowerCase()
+  if (lower.includes('solde insuffisant') || lower.includes('non configuré')) return false
+  return (
+    lower.includes('smsc_number_denied') ||
+    lower.includes('message is denied') ||
+    lower.includes('envoi refusé') ||
+    lower.includes('smsc_sender_invalid') ||
+    lower.includes('smsc ') ||
+    lower.startsWith('smsc')
+  )
+}
+
+/**
+ * SMSC Telegram OTP (tg=1 or bot=@…).
+ * Docs: verification codes must be 4–8 digits only in `mes`.
+ * Recipient must have started the SMSC Telegram bot once.
+ */
+async function sendViaSmscTelegram(phone: string, otp: string) {
+  const login = Deno.env.get('SMSC_LOGIN')
+  const password = Deno.env.get('SMSC_PASSWORD')
+  const apikey = Deno.env.get('SMSC_API_KEY')
+  if (!login || (!password && !apikey)) {
+    throw new Error('SMSC Telegram non configuré (SMSC_LOGIN + SMSC_PASSWORD ou SMSC_API_KEY).')
+  }
+
+  const digits = String(otp).replace(/\D/g, '')
+  if (digits.length < 4 || digits.length > 8) {
+    throw new Error('SMSC Telegram : le code OTP doit faire entre 4 et 8 chiffres.')
+  }
+
+  const phones = phoneToSmsc(phone)
+  const fields: Record<string, string> = {
+    login,
+    phones,
+    mes: digits,
+    fmt: '3',
+    charset: 'utf-8',
+    cost: '3',
+  }
+  if (apikey) fields.apikey = apikey
+  else if (password) fields.psw = password
+
+  const customBot = (Deno.env.get('SMSC_TG_BOT') || '').trim()
+  if (customBot) {
+    fields.bot = customBot.startsWith('@') ? customBot : `@${customBot}`
+  } else {
+    fields.tg = '1'
+  }
+
+  const res = await fetchWithTimeout(
+    'https://smsc.ru/sys/send.php',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+      body: encodeSmscForm(fields),
+    },
+    PROVIDER_TIMEOUT_MS,
+    'SMSC-Telegram',
+  )
+
+  const text = await res.text()
+  let data: Record<string, unknown> | null = null
+  try {
+    data = text ? JSON.parse(text) : null
+  } catch {
+    data = null
+  }
+
+  if (!res.ok) {
+    throw new Error(`SMSC Telegram HTTP ${res.status}${text ? ` — ${text}` : ''}`)
+  }
+  if (!data || data.error) {
+    const code = data?.error_code ?? 'inconnu'
+    const detail = String(data?.error || text || 'réponse invalide')
+    throw new Error(
+      `SMSC Telegram ${code} — ${detail}. Ouvrez le bot Telegram SMSC (Start) avec ce numéro, puis renvoyez le code.`,
+    )
+  }
+  const id = data.id
+  return id ? String(id) : 'ok'
+}
+
 function phoneToP1sms(phone: string) {
   // P1SMS expects 11 digits without '+' (e.g. 79001234567).
   const e164 = normalizeE164(phone)
@@ -618,6 +707,29 @@ async function sendOtpSms(phone: string, otp: string) {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'échec inconnu'
     console.warn(`[send-sms] ${provider} échoué (tentative ${attempt}):`, message)
+
+    // SMSC SMS denied (ex. Yota) → Telegram OTP on the same phone.
+    if (
+      provider === 'smsc' &&
+      isSmscTelegramFailoverEnabled() &&
+      shouldFailoverToTelegram(message)
+    ) {
+      const budgetLeft = HOOK_BUDGET_MS - (Date.now() - started)
+      if (budgetLeft > 800) {
+        const tgMs = Math.min(PROVIDER_TIMEOUT_MS, Math.max(800, budgetLeft))
+        console.warn(`[send-sms] failover SMSC SMS → Telegram (${tgMs}ms)`)
+        try {
+          const id = await withTimeout(sendViaSmscTelegram(phone, otp), tgMs, 'smsc-tg')
+          await markOtpSmsProvider(phone, 'smsc')
+          return id
+        } catch (tgError) {
+          const tgMessage = tgError instanceof Error ? tgError.message : 'échec Telegram'
+          console.warn('[send-sms] Telegram failover échoué:', tgMessage)
+          throw new Error(`smsc: ${message}; telegram: ${tgMessage}`)
+        }
+      }
+    }
+
     throw new Error(`${provider}: ${message}`)
   }
 }

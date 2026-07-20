@@ -236,6 +236,9 @@ async function main() {
   if (password) secretLines.push(`SMSC_PASSWORD=${password}`)
   if (apikey) secretLines.push(`SMSC_API_KEY=${apikey}`)
   if (vars.SMSC_SENDER) secretLines.push(`SMSC_SENDER=${vars.SMSC_SENDER}`)
+  // Telegram failover when SMS is denied for the number (default ON).
+  secretLines.push(`SMSC_TG_FAILOVER=${vars.SMSC_TG_FAILOVER || '1'}`)
+  if (vars.SMSC_TG_BOT) secretLines.push(`SMSC_TG_BOT=${vars.SMSC_TG_BOT}`)
   if (vars.SMS_RU_API_ID) secretLines.push(`SMS_RU_API_ID=${vars.SMS_RU_API_ID}`)
   if (vars.P1SMS_API_KEY) secretLines.push(`P1SMS_API_KEY=${vars.P1SMS_API_KEY}`)
   if (vars.P1SMS_CHANNEL) secretLines.push(`P1SMS_CHANNEL=${vars.P1SMS_CHANNEL}`)

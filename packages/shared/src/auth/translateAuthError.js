@@ -215,12 +215,15 @@ function translateSmsHookFailure(message = '') {
   if (lower.includes('solde insuffisant') || lower.includes('insufficient balance')) {
     return "L'envoi du code SMS est temporairement indisponible. Réessayez plus tard ou contactez le support."
   }
+  if (lower.includes('telegram') && (lower.includes('bot') || lower.includes('start') || lower.includes('tg'))) {
+    return "SMS refusé pour ce numéro. Ouvrez le bot Telegram SMSC (Start), puis renvoyez le code — il arrivera sur Telegram."
+  }
   if (
     lower.includes('smsc_number_denied') ||
     lower.includes('envoi refusé') ||
     lower.includes('message is denied')
   ) {
-    return "Ce numéro n'a pas pu recevoir le SMS. Vérifiez le format +7… ou réessayez avec un autre numéro."
+    return "Ce numéro n'a pas pu recevoir le SMS. Ouvrez le bot Telegram SMSC (Start) puis renvoyez le code, ou utilisez un autre numéro."
   }
   if (lower.includes('temporairement bloqué')) {
     return "L'envoi SMS est temporairement bloqué. Réessayez dans quelques minutes ou contactez le support."

@@ -87,6 +87,13 @@ export function sanitizeAuthMessage(message = '', t) {
     if (lower.includes('timeout') || lower.includes('délai') || lower.includes('delai')) {
       return translated(t, 'errors.auth.smsTimeout', "L'opérateur SMS met trop longtemps à répondre. Attendez un instant puis renvoyez le code.")
     }
+    if (lower.includes('telegram')) {
+      return translated(
+        t,
+        'errors.auth.smsTelegram',
+        "SMS refusé pour ce numéro. Ouvrez le bot Telegram SMSC (Start), puis renvoyez le code.",
+      )
+    }
     if (
       lower.includes('refusé') ||
       lower.includes('refuse') ||
@@ -97,7 +104,7 @@ export function sanitizeAuthMessage(message = '', t) {
       return translated(
         t,
         'errors.auth.smsRejected',
-        "Ce numéro n'a pas pu recevoir le SMS (opérateur / filtre SMSC). Vérifiez le +7…, réessayez, ou utilisez un autre numéro.",
+        "Ce numéro n'a pas pu recevoir le SMS. Ouvrez le bot Telegram SMSC (Start) puis renvoyez le code, ou utilisez un autre numéro.",
       )
     }
     return translated(t, 'errors.auth.smsFailed', "L'envoi du code SMS a échoué. Renvoyez le code. Si rien n'arrive sous 2–3 minutes, contactez le support.")
