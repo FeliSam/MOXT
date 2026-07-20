@@ -148,9 +148,9 @@ export function Sidebar({ open }) {
             setHoveredRailKey(null)
           }
         }}
-        className={`group/sidebar fixed inset-y-0 left-0 z-[var(--z-nav)] flex max-h-dvh w-[18rem] flex-col bg-[var(--app-surface)] shadow-2xl transition-transform duration-300 ease-out lg:z-[var(--z-nav-menu)] ${
+        className={`group/sidebar fixed inset-y-0 left-0 z-[var(--z-nav)] flex max-h-dvh w-[18rem] flex-col border-r border-[var(--app-border)]/80 bg-[var(--app-surface)]/65 shadow-2xl backdrop-blur-xl transition-transform duration-300 ease-out lg:z-[var(--z-nav-menu)] ${
           open ? 'translate-x-0' : '-translate-x-full'
-        } lg:inset-y-3 lg:left-3 lg:flex lg:max-h-[calc(100dvh-1.5rem)] lg:w-[4.75rem] lg:translate-x-0 lg:overflow-visible lg:rounded-[1.75rem] lg:border lg:border-[var(--app-border)] lg:bg-[var(--app-surface)]/95 lg:shadow-[var(--shadow-float)] lg:backdrop-blur-xl`}
+        } lg:inset-y-3 lg:left-3 lg:flex lg:max-h-[calc(100dvh-1.5rem)] lg:w-[4.75rem] lg:translate-x-0 lg:overflow-visible lg:rounded-[1.75rem] lg:border lg:border-[var(--app-border)]/80 lg:bg-[var(--app-surface)]/65 lg:shadow-[var(--shadow-card)] lg:backdrop-blur-xl`}
       >
         {/* Logo — icône seule sur desktop */}
         <div className="flex h-[4.5rem] shrink-0 items-center justify-between px-5 lg:justify-center lg:border-b lg:border-[var(--app-border)]/70 lg:px-0">
@@ -229,7 +229,7 @@ export function Sidebar({ open }) {
 
         {/* Réglages bas de sidebar — flyout : Profil en haut, Réglages + Déconnexion en bas */}
         <div
-          className="sidebar-footer-zone group/footer relative z-10 hidden shrink-0 overflow-visible border-t border-[var(--app-border)]/70 bg-[var(--app-surface)] p-3 lg:block"
+          className="sidebar-footer-zone group/footer relative z-10 hidden shrink-0 overflow-visible border-t border-[var(--app-border)]/70 bg-transparent p-3 lg:block"
           onMouseEnter={() => setRailHover('settings')}
         >
           <NavLink
@@ -302,21 +302,23 @@ export function Sidebar({ open }) {
           />
           <aside
             data-tour="more-panel"
-            className="panel-pop absolute bottom-4 left-24 top-4 flex w-[24rem] flex-col overflow-hidden rounded-[1rem] border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--shadow-float)]"
+            className="panel-pop absolute bottom-4 left-24 top-4 flex w-[24rem] flex-col overflow-hidden rounded-[1.4rem] border border-[var(--app-border)]/80 bg-[var(--app-surface)]/55 shadow-[var(--shadow-card)] backdrop-blur-xl"
           >
-            <div className="shrink-0 border-b border-[var(--app-border)] p-5">
+            <div className="shrink-0 border-b border-[var(--app-border)]/70 bg-transparent p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-brand-700">
-                    MOXT
-                  </p>
+                  <img
+                    src="/assets/logos/MOXTlogo.png"
+                    alt="MOXT"
+                    className="mb-2 h-6 w-auto max-w-[7.5rem] object-contain object-left"
+                  />
                   <h2 className="mt-1 font-display text-xl font-extrabold tracking-tight">
                     {t('nav.servicesSupplementaires')}
                   </h2>
                 </div>
                 <button
                   type="button"
-                  className="grid size-10 place-items-center rounded-[var(--radius-btn)] border border-[var(--app-border)] bg-[var(--app-surface-muted)]"
+                  className="grid size-10 place-items-center rounded-[var(--radius-btn)] border border-[var(--app-border)]/80 bg-[var(--app-surface)]/65 backdrop-blur-md"
                   onClick={() => setMoreOpen(false)}
                   aria-label={t('common.close')}
                 >
@@ -336,7 +338,7 @@ export function Sidebar({ open }) {
                 resolveLabel={resolveLabel}
               />
             </div>
-            <div className="shrink-0 border-t border-[var(--app-border)] p-4">
+            <div className="shrink-0 border-t border-[var(--app-border)]/70 bg-transparent p-4">
               <button
                 type="button"
                 onClick={handleLogout}

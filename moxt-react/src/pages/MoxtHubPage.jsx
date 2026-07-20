@@ -64,22 +64,17 @@ export function MoxtHubPage() {
   return (
     <div className="grid min-w-0 gap-8 overflow-x-clip sm:gap-10">
       <RevealOnScroll>
-        <header className="relative overflow-hidden rounded-[var(--radius-card-lg)] border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-[var(--shadow-card)] sm:p-8">
+        <header className="relative overflow-hidden rounded-[var(--radius-card-lg)] border border-[var(--app-border)]/80 bg-[var(--app-surface)]/65 p-6 shadow-[var(--shadow-card)] backdrop-blur-xl sm:p-8">
           <div
-            className="pointer-events-none absolute inset-0 bg-gradient-to-br from-brand-50/70 via-transparent to-[var(--app-cobalt-soft)]/25 dark:from-brand-950/35 dark:to-[var(--app-cobalt-soft)]/15"
+            className="pointer-events-none absolute inset-0 bg-gradient-to-br from-brand-50/50 via-transparent to-[var(--app-cobalt-soft)]/20 dark:from-brand-950/25 dark:to-[var(--app-cobalt-soft)]/10"
             aria-hidden="true"
           />
-          <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div className="min-w-0">
-              <h1 className="font-display text-4xl font-extrabold tracking-[-0.04em] text-[var(--app-text)] sm:text-5xl">
-                MOXT
-              </h1>
-            </div>
+          <div className="relative">
+            <h1 className="sr-only">MOXT</h1>
             <img
-              src="/assets/brand/mark.png?v=20260714e"
-              alt=""
-              className="size-14 shrink-0 rounded-2xl object-cover shadow-[var(--shadow-card)] sm:size-16"
-              aria-hidden="true"
+              src="/assets/logos/MOXTlogo.png"
+              alt="MOXT"
+              className="h-11 w-auto max-w-[min(100%,14rem)] object-contain object-left sm:h-14 sm:max-w-[16rem]"
             />
           </div>
         </header>

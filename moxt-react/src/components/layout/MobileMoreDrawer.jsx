@@ -66,7 +66,7 @@ export function MobileMoreDrawer({ open, onClose }) {
       />
 
       <div
-        className={`absolute inset-x-0 bottom-0 flex max-h-[88dvh] flex-col rounded-t-[1rem] border border-b-0 border-[var(--app-border)] bg-[var(--app-bg)] shadow-[var(--shadow-float)] ${
+        className={`absolute inset-x-0 bottom-0 flex max-h-[88dvh] flex-col rounded-t-[1.4rem] border border-b-0 border-[var(--app-border)]/80 bg-[var(--app-surface)]/55 shadow-[var(--shadow-card)] backdrop-blur-xl ${
           closing ? 'drawer-leave' : 'drawer-enter'
         }`}
         data-tour="more-panel"
@@ -76,12 +76,14 @@ export function MobileMoreDrawer({ open, onClose }) {
           <span className="h-1 w-9 rounded-full bg-[var(--app-border-md)]" />
         </div>
 
-        <header className="shrink-0 border-b border-[var(--app-border)] bg-[var(--app-surface)] px-4 pb-4 pt-1">
+        <header className="shrink-0 border-b border-[var(--app-border)]/70 bg-transparent px-4 pb-4 pt-1">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-brand-700">
-                MOXT
-              </p>
+              <img
+                src="/assets/logos/MOXTlogo.png"
+                alt="MOXT"
+                className="mb-2 h-6 w-auto max-w-[7.5rem] object-contain object-left"
+              />
               <h2 className="font-display text-xl font-extrabold tracking-tight text-[var(--app-text)]">
                 {t('nav.morePanelTitle')}
               </h2>
@@ -93,13 +95,13 @@ export function MobileMoreDrawer({ open, onClose }) {
               type="button"
               onClick={requestClose}
               aria-label={t('common.close')}
-              className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-btn)] border border-[var(--app-border)] bg-[var(--app-surface-muted)] text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface)]"
+              className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-btn)] border border-[var(--app-border)]/80 bg-[var(--app-surface)]/65 text-[var(--app-text-muted)] backdrop-blur-md transition hover:bg-[var(--app-surface)]/80"
             >
               <FiX />
             </button>
           </div>
 
-          <div className="mt-4 flex items-center gap-2 rounded-[var(--radius-input)] border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2.5">
+          <div className="mt-4 flex items-center gap-2 rounded-[var(--radius-input)] border border-[var(--app-border)]/80 bg-[var(--app-surface)]/50 px-3 py-2.5 backdrop-blur-md">
             <FiSearch className="shrink-0 text-[var(--app-text-faint)]" aria-hidden="true" />
             <input
               value={query}
@@ -120,12 +122,12 @@ export function MobileMoreDrawer({ open, onClose }) {
           />
         </div>
 
-        <footer className="shrink-0 border-t border-[var(--app-border)] bg-[var(--app-surface)] px-4 py-3">
+        <footer className="shrink-0 border-t border-[var(--app-border)]/70 bg-transparent px-4 py-3">
           <div className="grid grid-cols-2 gap-2">
             <Link
               to="/settings"
               onClick={requestClose}
-              className="flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-btn)] border border-[var(--app-border)] bg-[var(--app-surface-muted)] text-xs font-semibold text-[var(--app-text)] transition hover:bg-[var(--app-surface)]"
+              className="flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-btn)] border border-[var(--app-border)]/80 bg-[var(--app-surface)]/65 text-xs font-semibold text-[var(--app-text)] backdrop-blur-md transition hover:bg-[var(--app-surface)]/80"
             >
               <FiSettings className="text-base text-[var(--app-accent)]" />
               {t('nav.settings')}
@@ -133,7 +135,7 @@ export function MobileMoreDrawer({ open, onClose }) {
             <Link
               to="/profile"
               onClick={requestClose}
-              className="flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-btn)] border border-[var(--app-border)] bg-[var(--app-surface-muted)] text-xs font-semibold text-[var(--app-text)] transition hover:bg-[var(--app-surface)]"
+              className="flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-btn)] border border-[var(--app-border)]/80 bg-[var(--app-surface)]/65 text-xs font-semibold text-[var(--app-text)] backdrop-blur-md transition hover:bg-[var(--app-surface)]/80"
             >
               <FiUser className="text-base text-[var(--app-accent)]" />
               {t('nav.profile')}

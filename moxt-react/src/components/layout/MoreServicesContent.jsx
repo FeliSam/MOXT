@@ -13,14 +13,14 @@ function MoreServiceTile({ badge, item, onNavigate, resolveLabel }) {
       onFocus={() => preloadRoute(item.path)}
       onMouseEnter={() => preloadRoute(item.path)}
       className={({ isActive }) =>
-        `relative flex min-h-[3.5rem] items-center gap-2.5 rounded-[var(--radius-card)] border p-2.5 transition-all duration-[var(--transition-fast)] ${
+        `relative flex min-h-[3.5rem] items-center gap-2.5 rounded-[var(--radius-card)] border p-2.5 backdrop-blur-md transition-all duration-[var(--transition-fast)] ${
           isActive
-            ? 'border-[var(--app-accent)] bg-[var(--app-accent-soft)] shadow-[var(--shadow-card)]'
-            : 'border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--shadow-card)] hover:border-brand-200 hover:shadow-[var(--shadow-card-hover)] dark:hover:border-brand-800'
+            ? 'border-[var(--app-accent)]/70 bg-[var(--app-accent-soft)]/80 shadow-[var(--shadow-card)]'
+            : 'border-[var(--app-border)]/80 bg-[var(--app-surface)]/65 shadow-[var(--shadow-card)] hover:border-brand-200 hover:bg-[var(--app-surface)]/80 hover:shadow-[var(--shadow-card-hover)] dark:hover:border-brand-800'
         }`
       }
     >
-      <span className="grid size-9 shrink-0 place-items-center rounded-[0.7rem] bg-[var(--app-surface-muted)] text-[var(--app-accent)] dark:text-[var(--app-teal)]">
+      <span className="grid size-9 shrink-0 place-items-center rounded-[0.7rem] bg-[var(--app-surface)]/50 text-[var(--app-accent)] backdrop-blur-sm dark:text-[var(--app-teal)]">
         <Icon className="text-lg" aria-hidden="true" />
       </span>
       <span className="min-w-0 flex-1 line-clamp-2 text-xs font-semibold leading-snug text-[var(--app-text)]">
@@ -48,11 +48,11 @@ function MoreServiceRow({ badge, item, onNavigate, resolveLabel }) {
         `flex min-h-11 items-center gap-3 rounded-xl px-2.5 text-sm font-semibold transition-all duration-[var(--transition-fast)] ${
           isActive
             ? 'nav-item-active'
-            : 'text-[var(--app-text-muted)] hover:bg-[var(--app-surface-muted)] hover:text-[var(--app-text)]'
+            : 'text-[var(--app-text-muted)] hover:bg-[var(--app-surface)]/50 hover:text-[var(--app-text)]'
         }`
       }
     >
-      <span className="grid size-9 shrink-0 place-items-center rounded-[0.7rem] bg-[var(--app-surface-muted)] text-[var(--app-accent)] dark:text-[var(--app-teal)]">
+      <span className="grid size-9 shrink-0 place-items-center rounded-[0.7rem] bg-[var(--app-surface)]/50 text-[var(--app-accent)] backdrop-blur-sm dark:text-[var(--app-teal)]">
         <Icon className="text-lg" aria-hidden="true" />
       </span>
       <span className="min-w-0 flex-1 truncate">{resolveLabel(item)}</span>
@@ -111,7 +111,7 @@ export function MoreServicesContent({
               ))}
             </div>
           ) : (
-            <div className="grid gap-1 rounded-[var(--radius-card)] border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-1.5">
+            <div className="grid gap-1 rounded-[var(--radius-card)] border border-[var(--app-border)]/80 bg-[var(--app-surface)]/40 p-1.5 backdrop-blur-md">
               {group.children.map((item) => (
                 <MoreServiceRow
                   key={item.path}

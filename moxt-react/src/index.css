@@ -2923,13 +2923,14 @@ html.locale-animating #root {
   z-index: var(--z-nav-menu);
   max-width: 12rem;
   border-radius: 0.85rem;
-  border: 1px solid var(--app-border);
-  background: color-mix(in srgb, var(--app-surface) 98%, transparent);
+  border: 1px solid color-mix(in srgb, var(--app-border) 80%, transparent);
+  background: color-mix(in srgb, var(--app-surface) 65%, transparent);
   font-size: 0.75rem;
   font-weight: 700;
   color: var(--app-text);
-  box-shadow: var(--shadow-float);
-  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   transform-origin: left center;
   white-space: nowrap;
   translate: 0 -50%;
