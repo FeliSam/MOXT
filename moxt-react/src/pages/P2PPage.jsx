@@ -1,4 +1,4 @@
-import { FiAlertTriangle, FiArrowRight, FiPlus, FiShield, FiUsers } from 'react-icons/fi'
+import { FiArrowRight, FiPlus, FiUsers } from 'react-icons/fi'
 import { useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
@@ -12,7 +12,6 @@ import { CatalogSearch } from '../components/ui/CatalogSearch'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { RevealListItem } from '../components/ui/RevealListItem'
-import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { Select } from '../components/ui/Select'
 import { useLanguage } from '../contexts/useLanguage'
 import { acceptOffer } from '../features/p2p/p2pSlice'
@@ -84,9 +83,7 @@ export function P2PPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow={t('p2p.page.eyebrow')}
         title={t('p2p.page.title')}
-        description={t('p2p.page.description')}
         stats={[{ label: t('p2p.page.activeOffers'), value: activeOffers.length }]}
         actions={
           <Button icon={FiPlus} onClick={openPublish}>
@@ -94,20 +91,6 @@ export function P2PPage() {
           </Button>
         }
       />
-
-      <ScrollSectionAnchor className="scroll-mt-24 flex flex-col gap-3 rounded-[var(--radius-card-lg)] border border-amber-200 bg-amber-50 p-4 sm:flex-row sm:items-start lg:scroll-mt-28 dark:border-amber-900/40 dark:bg-amber-950/20">
-        <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
-          <FiShield />
-        </span>
-        <div className="grid gap-1 text-sm text-amber-900 dark:text-amber-200">
-          <strong className="flex items-center gap-1.5 font-black">
-            <FiAlertTriangle className="text-xs" /> {t('p2p.page.safetyTitle')}
-          </strong>
-          <p className="text-xs leading-5 text-amber-800/90 dark:text-amber-300/80">
-            {t('p2p.page.safetyBody')}
-          </p>
-        </div>
-      </ScrollSectionAnchor>
 
       <div className="grid gap-5">
         <CatalogSearch

@@ -10,7 +10,6 @@ import {
   DetailFacts,
   DetailMetrics,
   DetailSection,
-  TrustPanel,
 } from '../components/ui/DetailBlocks'
 import { Input } from '../components/ui/Input'
 import { Modal } from '../components/ui/Modal'
@@ -168,9 +167,7 @@ export function TransferDetailPage() {
   return (
     <div className="finance-hero-glow grid gap-7 rounded-[var(--radius-card-lg)]">
       <PageHeader
-        eyebrow={transfer.id}
         title={t('transfers.detail.title')}
-        description={t('transfers.detail.description', { direction: directionLabel(transfer.direction, t), date: formatDate(transfer.createdAt) })}
         actions={
           <div className="flex flex-wrap gap-2">
             <ContactButton
@@ -362,7 +359,7 @@ export function TransferDetailPage() {
             <TransferDetailTimelineCard transfer={transfer} />
             <TransferProofsSection transfer={transfer} />
           </div>
-          <div className="grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
+          <div className="grid gap-5">
             <DetailSection title={t('transfers.detail.info.title')}>
               <DetailFacts
                 items={[
@@ -392,14 +389,6 @@ export function TransferDetailPage() {
                 ]}
               />
             </DetailSection>
-            <TrustPanel
-              title={t('transfers.detail.trust.title')}
-              items={[
-                t('transfers.detail.trust.item1'),
-                t('transfers.detail.trust.item2'),
-                t('transfers.detail.trust.item3'),
-              ]}
-            />
           </div>
         </>
       ) : null}

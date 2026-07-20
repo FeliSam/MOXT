@@ -20,7 +20,6 @@ import {
   DetailFacts,
   DetailMetrics,
   DetailSection,
-  TrustPanel,
 } from '../components/ui/DetailBlocks'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -152,7 +151,6 @@ export function BusinessDetailPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow={bt('businesses.detail.eyebrow')}
         title={
           <VerifiedDisplayName
             name={business.name}
@@ -160,7 +158,6 @@ export function BusinessDetailPage() {
             iconSize="md"
           />
         }
-        description={`${business.sector} · ${business.city}`}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <ReshareButton sourceType="business" sourceId={business.id} sourceData={business} />
@@ -340,15 +337,6 @@ export function BusinessDetailPage() {
                 ))}
               </div>
             </DetailSection>
-            <TrustPanel
-              items={[
-                bt('businesses.detail.trust.status', {
-                  status: statusMeta(business.status, t).label.toLowerCase(),
-                }),
-                bt('businesses.detail.trust.reviews', { count: rating.count }),
-                bt('businesses.detail.trust.contacts'),
-              ]}
-            />
           </div>
           {isAdminViewer ? (
             <Card className="border border-brand-100 bg-brand-50/60 dark:border-brand-900/40 dark:bg-brand-950/20">

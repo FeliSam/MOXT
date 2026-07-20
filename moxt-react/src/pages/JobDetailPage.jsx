@@ -21,7 +21,6 @@ import {
   DetailFacts,
   DetailMetrics,
   DetailSection,
-  TrustPanel,
 } from '../components/ui/DetailBlocks'
 import { PageHeader } from '../components/ui/PageHeader'
 import { ReshareButton } from '../components/ui/ReshareButton'
@@ -41,7 +40,6 @@ import {
   formatJobSalaryLabel,
   hasJobText,
   jobContractLabel,
-  jobHeaderSubtitle,
   jobSectorLabel,
   JOB_EMPTY_LABEL_KEY,
 } from '../features/jobs/jobDisplayUtils'
@@ -55,15 +53,12 @@ import { statusMeta } from '../config/statuses'
 
 const APPLICATION_NEXT_STEPS = {
   submitted: {
-    titleKey: 'jobs.detail.nextStep.submittedTitle',
     descriptionKey: 'jobs.detail.nextStep.submittedDescription',
   },
   accepted: {
-    titleKey: 'jobs.detail.nextStep.acceptedTitle',
     descriptionKey: 'jobs.detail.nextStep.acceptedDescription',
   },
   rejected: {
-    titleKey: 'jobs.detail.nextStep.rejectedTitle',
     descriptionKey: 'jobs.detail.nextStep.rejectedDescription',
   },
 }
@@ -130,34 +125,31 @@ export function JobDetailPage() {
   const existingStatus = existing ? statusMeta(existing.status, t) : null
   const nextStepConfig = existing ? APPLICATION_NEXT_STEPS[existing.status] : null
   const nextStep = nextStepConfig
-    ? { title: t(nextStepConfig.titleKey), description: t(nextStepConfig.descriptionKey) }
+    ? { description: t(nextStepConfig.descriptionKey) }
     : null
 
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow={sectorLabel}
         title={job.title}
-        description={jobHeaderSubtitle(job, t)}
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            {/* Favori — icône seule, coin droit, distinct de la candidature.
-                Sur mobile/tablette, Contacter + Favoris passent par le bouton "..." flottant. */}
-            <FavoriteButton
-              relatedId={job.id}
-              relatedType="job"
-              title={job.title}
-              path={`/jobs/${job.id}`}
-              entity={job}
-              showLabel={false}
-              className="hidden !size-11 shrink-0 xl:inline-flex"
-            />
             <ReshareButton sourceType="job" sourceId={job.id} sourceData={job} />
             {job.ownerId === user.id ? (
               <Link to={`/jobs/${jobId}/edit`}>
                 <Button variant="secondary" icon={FiEdit2}>{t('jobs.detail.edit')}</Button>
               </Link>
             ) : null}
+            <FavoriteButton
+              relatedId={job.id}
+              relatedType="job"
+              title={job.title}
+              path={`/jobs/${job.id}`}
+              entity={job}
+              variant="solid"
+              showLabel={false}
+              className="hidden !size-11 !min-h-11 !rounded-2xl shrink-0 xl:inline-grid"
+            />
             <BackButton fallback="/jobs" />
           </div>
         }
@@ -281,14 +273,6 @@ export function JobDetailPage() {
               >
                 {nextStep?.description || t('jobs.detail.applicationTracked')}
               </Alert>
-              {nextStep ? (
-                <Card className="mt-3 bg-[var(--app-surface-muted)] p-4 shadow-sm">
-                  <span className="text-xs font-black uppercase tracking-[0.12em] text-brand-700">
-                    {t('jobs.detail.nextStepLabel')}
-                  </span>
-                  <h3 className="mt-2 font-black">{nextStep.title}</h3>
-                </Card>
-              ) : null}
               {existing.status === 'submitted' ? (
                 <Button
                   className="mt-3"
@@ -362,14 +346,6 @@ export function JobDetailPage() {
               />
             </>
           ) : null}
-          <TrustPanel
-            title={t('jobs.detail.tipsTitle')}
-            items={[
-              t('jobs.detail.tips.noPayment'),
-              t('jobs.detail.tips.useMessaging'),
-              t('jobs.detail.tips.checkConditions'),
-            ]}
-          />
         </div>
       </div>
       <ReportDialog

@@ -6,7 +6,6 @@ import {
   FiCheckCircle,
   FiDollarSign,
   FiRepeat,
-  FiShield,
   FiUsers,
 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
@@ -257,12 +256,6 @@ export function PublishP2PPage() {
                 </div>
               </div>
             </Card>
-            <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
-              <FiShield className="mt-0.5 shrink-0 text-amber-700 dark:text-amber-300" />
-              <p className="text-sm text-amber-900 dark:text-amber-200">
-                {t('p2p.publish.safetyNote')}
-              </p>
-            </div>
           </div>
         ) : null}
 

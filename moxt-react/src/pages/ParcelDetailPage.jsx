@@ -11,7 +11,6 @@ import {
   DetailFacts,
   DetailMetrics,
   DetailSection,
-  TrustPanel,
 } from '../components/ui/DetailBlocks'
 import { PageHeader } from '../components/ui/PageHeader'
 import { ReshareButton } from '../components/ui/ReshareButton'
@@ -26,7 +25,6 @@ import {
   updateParcelProofStatus,
   updateParcelRequestStatus,
 } from '../features/parcels/parcelSlice'
-import { parcelDetailTrustItemKeys } from '../features/parcels/parcelBrowseConfig'
 import {
   parcelProofLabelKey,
   resolveParcelProofStatus,
@@ -35,7 +33,6 @@ import { Input } from '../components/ui/Input'
 import { addToast } from '../features/ui/uiSlice'
 import { statusMeta } from '../config/statuses'
 import { formatMoney } from '../features/transfers/transferUtils'
-import { formatDateTime } from '../utils/formatters'
 import { PublisherDetailCard } from '../features/publications/PublisherDetailCard'
 import { PublisherPublicationsStrip } from '../features/publications/PublisherPublicationsStrip'
 import { usePublisherDetailProfile } from '../features/publications/usePublisherDetailProfile'
@@ -113,16 +110,6 @@ export function ParcelDetailPage() {
       )
       return
     }
-    if (message.length < 5) {
-      dispatch(
-        addToast({
-          title: t('parcels.detail.toast.messageRequiredTitle'),
-          message: t('parcels.detail.toast.messageRequiredBody'),
-          tone: 'error',
-        }),
-      )
-      return
-    }
     setSendingRequest(true)
     dispatch(
       requestParcelReservation({
@@ -134,7 +121,16 @@ export function ParcelDetailPage() {
         kg,
       }),
     )
-    const chatMessage = t('parcels.detail.reserve.chatMessage', { kg, message })
+    const chatMessage = [
+      t('parcels.detail.reserve.chatRoute', {
+        origin: parcel.origin,
+        destination: parcel.destination,
+      }),
+      t('parcels.detail.reserve.chatKg', { kg }),
+      message || null,
+    ]
+      .filter(Boolean)
+      .join('\n')
     await openRelatedConversation({
       dispatch,
       navigate,
@@ -152,38 +148,12 @@ export function ParcelDetailPage() {
     setSendingRequest(false)
   }
 
-  const routeDescription = distributionDate
-    ? t('parcels.detail.descriptionWithDistribution', {
-        departure: parcel.departureDate,
-        deposit: depositDeadline,
-        distribution: distributionDate,
-      })
-    : t('parcels.detail.descriptionWithoutDistribution', {
-        departure: parcel.departureDate,
-        deposit: depositDeadline,
-      })
-  const publishedLabel = parcel.createdAt
-    ? t('parcels.detail.publishedOn', { date: formatDateTime(parcel.createdAt) })
-    : null
-
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow={parcel.id}
         title={routeTitle}
-        description={[routeDescription, publishedLabel].filter(Boolean).join(' · ')}
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            {/* Sur mobile/tablette, Contacter + Favoris passent par le bouton "..." flottant. */}
-            <FavoriteButton
-              relatedId={parcel.id}
-              relatedType="parcel"
-              title={routeTitle}
-              path={`/parcels/${parcel.id}`}
-              entity={parcel}
-              showLabel={false}
-              className="hidden !size-11 shrink-0 xl:inline-flex"
-            />
             <ReshareButton sourceType="parcel" sourceId={parcel.id} sourceData={parcel} />
             {user.id === parcel.ownerId ? (
               <Link to={`/parcels/${parcelId}/edit`}>
@@ -192,6 +162,16 @@ export function ParcelDetailPage() {
                 </Button>
               </Link>
             ) : null}
+            <FavoriteButton
+              relatedId={parcel.id}
+              relatedType="parcel"
+              title={routeTitle}
+              path={`/parcels/${parcel.id}`}
+              entity={parcel}
+              variant="solid"
+              showLabel={false}
+              className="hidden !size-11 !min-h-11 !rounded-2xl shrink-0 xl:inline-grid"
+            />
             <BackButton fallback="/parcels" />
           </div>
         }
@@ -548,10 +528,6 @@ export function ParcelDetailPage() {
               />
             </>
           ) : null}
-          <TrustPanel
-            title={t('parcels.detail.trust.title')}
-            items={parcelDetailTrustItemKeys.map((key) => t(key))}
-          />
         </div>
       </div>
       <DetailFloatingActions

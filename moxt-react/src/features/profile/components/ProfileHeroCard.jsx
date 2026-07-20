@@ -35,10 +35,7 @@ export function ProfileHeroCard({ profileCompletion, user }) {
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--app-text-faint)]">
-            {t('profile.hero.eyebrow')}
-          </p>
-          <h1 className="font-display mt-1 text-2xl font-extrabold tracking-[-0.02em] text-[var(--app-text)]">
+          <h1 className="font-display text-2xl font-extrabold tracking-[-0.02em] text-[var(--app-text)]">
             <VerifiedDisplayName
               name={displayName}
               verified={Boolean(user.verified)}

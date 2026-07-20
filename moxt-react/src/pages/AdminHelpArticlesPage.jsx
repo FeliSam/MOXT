@@ -186,11 +186,9 @@ export function AdminHelpArticlesPage() {
   const missingLanguages = LANGUAGES.filter((lang) => !isTranslationFilled(form.translations[lang]))
 
   return (
-    <div className="grid gap-7">
+    <div className="grid min-w-0 gap-4 overflow-x-clip sm:gap-7">
       <PageHeader
-        eyebrow={t('adminHelp.eyebrow')}
         title={t('adminHelp.title')}
-        description={t('adminHelp.description')}
         actions={
           <Button icon={FiPlus} onClick={openCreate}>
             {t('adminHelp.newArticle')}
@@ -204,7 +202,7 @@ export function AdminHelpArticlesPage() {
             const meta = helpCategoryMeta(group.primary.category)
             const presentLangs = new Set(group.rows.map((row) => row.language))
             return (
-              <Card key={group.groupId} className="flex flex-wrap items-center justify-between gap-3">
+              <Card key={group.groupId} className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <PillBadge active={false}>{t(meta.labelKey)}</PillBadge>
@@ -230,14 +228,14 @@ export function AdminHelpArticlesPage() {
                       ))}
                     </span>
                   </div>
-                  <h3 className="mt-1.5 truncate font-black">{group.primary.title}</h3>
+                  <h3 className="mt-1.5 break-words font-black">{group.primary.title}</h3>
                   {group.primary.verifiedAt ? (
                     <p className="mt-0.5 text-xs text-[var(--app-text-muted)]">
                       {t('help.article.verifiedOn', { date: formatDate(group.primary.verifiedAt) })}
                     </p>
                   ) : null}
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex w-full justify-end gap-2 sm:w-auto sm:shrink-0">
                   {group.primary.sourceUrl ? (
                     <a
                       href={group.primary.sourceUrl}
@@ -349,13 +347,14 @@ export function AdminHelpArticlesPage() {
             <Input
               id={`help-title-${activeLang}`}
               label={t('adminHelp.fields.title')}
+              className="min-w-0 w-full"
               value={activeTranslation.title}
               onChange={(event) => setTranslation(activeLang, 'title', event.target.value)}
             />
             <label className="grid gap-1.5">
               <span className="text-sm font-bold">{t('adminHelp.fields.summary')}</span>
               <textarea
-                className="min-h-16 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 text-sm"
+                className="min-h-16 min-w-0 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 text-sm"
                 value={activeTranslation.summary}
                 onChange={(event) => setTranslation(activeLang, 'summary', event.target.value)}
               />
@@ -363,7 +362,7 @@ export function AdminHelpArticlesPage() {
             <label className="grid gap-1.5">
               <span className="text-sm font-bold">{t('adminHelp.fields.content')}</span>
               <textarea
-                className="min-h-40 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 text-sm"
+                className="min-h-40 min-w-0 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 text-sm"
                 value={activeTranslation.content}
                 onChange={(event) => setTranslation(activeLang, 'content', event.target.value)}
               />
@@ -374,12 +373,14 @@ export function AdminHelpArticlesPage() {
             <Input
               id="help-source-name"
               label={t('adminHelp.fields.sourceName')}
+              className="min-w-0 w-full"
               value={form.sourceName}
               onChange={(event) => set('sourceName', event.target.value)}
             />
             <Input
               id="help-source-url"
               label={t('adminHelp.fields.sourceUrl')}
+              className="min-w-0 w-full"
               value={form.sourceUrl}
               onChange={(event) => set('sourceUrl', event.target.value)}
             />
@@ -394,7 +395,7 @@ export function AdminHelpArticlesPage() {
             {t('adminHelp.fields.pinned')}
           </label>
           <p className="text-xs text-[var(--app-text-muted)]">{t('adminHelp.sourceHint')}</p>
-          <Button onClick={handleSave}>{t('common.save')}</Button>
+          <Button className="w-full sm:w-auto" onClick={handleSave}>{t('common.save')}</Button>
         </div>
       </Modal>
 

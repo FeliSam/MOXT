@@ -226,9 +226,7 @@ export function SettingsPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow={t('settings.pageEyebrow')}
         title={t('settings.pageTitle')}
-        description={t('settings.pageDescription')}
         actions={<BackButton appearance="link" />}
       />
       <div className="grid gap-4 md:grid-cols-2">

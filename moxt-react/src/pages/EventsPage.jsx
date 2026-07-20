@@ -68,9 +68,7 @@ export function EventsPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow={t('events.browse.eyebrow')}
         title={t('events.browse.title')}
-        description={t('events.browse.description')}
         actions={
           <>
             {canManage ? (

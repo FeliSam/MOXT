@@ -21,9 +21,7 @@ export function ReceiptsPage() {
   return (
     <div className="grid min-w-0 gap-6 sm:gap-7">
       <PageHeader
-        eyebrow={p3('receipts.eyebrow')}
         title={p3('receipts.title')}
-        description={p3('receipts.description')}
       />
       {receipts.length ? (
         <CatalogGrid columns="grid-cols-1 sm:grid-cols-2 xl:grid-cols-3" lazy={false}>

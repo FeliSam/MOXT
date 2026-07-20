@@ -132,8 +132,13 @@ export async function saveJobRemote(job) {
 }
 
 export async function saveJobApplicationRemote(application) {
-  const { error } = await supabase
-    .from('job_applications')
-    .upsert(jobApplicationToRemoteRow(application), { onConflict: 'id' })
+  const row = jobApplicationToRemoteRow(application)
+  let { error } = await supabase.from('job_applications').upsert(row, { onConflict: 'id' })
+  if (error && /message/i.test(String(error.message || ''))) {
+    const { message: _message, ...withoutMessage } = row
+    ;({ error } = await supabase
+      .from('job_applications')
+      .upsert(withoutMessage, { onConflict: 'id' }))
+  }
   if (error) throw error
 }

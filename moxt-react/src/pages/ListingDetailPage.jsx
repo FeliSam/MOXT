@@ -221,13 +221,7 @@ export function ListingDetailPage() {
       </nav>
 
       <PageHeader
-        eyebrow={listingCategoryLabel}
         title={listing.title}
-        description={mt('marketplace.detail.meta', {
-          city: listing.city,
-          date: formatDateTime(listing.createdAt),
-          id: listing.id,
-        })}
         actions={
           <>
             <ReshareButton sourceType="listing" sourceId={listing.id} sourceData={listing} />
@@ -420,29 +414,13 @@ export function ListingDetailPage() {
             </p>
           </Card>
 
-          <Card className="bg-amber-50 text-sm leading-6 text-amber-900 xl:hidden dark:bg-amber-950/30 dark:text-amber-100">
-            <div className="flex gap-3">
-              <FiAlertTriangle className="mt-1 shrink-0 text-xl" />
-              <p>
-                {mt('marketplace.detail.verifyWarning')}
-              </p>
-            </div>
-          </Card>
-
           {publisherProfile ? (
             <PublisherDetailCard {...publisherProfile} className="hidden xl:block" />
           ) : null}
 
           <Card>
-            <FiShield className="text-2xl text-brand-600" />
-            <h2 className="mt-3 font-black">{mt('marketplace.detail.buyCarefully')}</h2>
-            <ul className="mt-4 grid gap-3 text-sm text-[var(--app-text-muted)]">
-              <li>{mt('marketplace.detail.buyTip1')}</li>
-              <li>{mt('marketplace.detail.buyTip2')}</li>
-              <li>{mt('marketplace.detail.buyTip3')}</li>
-            </ul>
             {listing.ownerId === user.id ? (
-              <div className="mt-5 grid gap-2">
+              <div className="grid gap-2">
                 <Link to={`/marketplace/${listing.id}/edit`}>
                   <Button className="w-full" variant="secondary" icon={FiEdit2}>
                     {mt('marketplace.detail.editListing')}
@@ -456,7 +434,6 @@ export function ListingDetailPage() {
               </div>
             ) : (
               <Button
-                className="mt-5"
                 variant="danger"
                 icon={FiAlertTriangle}
                 onClick={() => setReportOpen(true)}

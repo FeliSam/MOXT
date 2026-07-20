@@ -39,9 +39,7 @@ export function HelpGuidePage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow={t('help.page.eyebrow')}
         title={t('help.page.title')}
-        description={t('help.page.description')}
         stats={[
           {
             label: t(
@@ -126,20 +124,15 @@ export function HelpArticleDetailPage() {
     state.helpArticles.items.find((item) => item.id === articleId),
   )
   if (!article) return <EmptyState title={t('help.article.notFound')} />
-  const meta = helpCategoryMeta(article.category)
 
   return (
     <div className="mx-auto grid max-w-3xl gap-6">
       <PageHeader
-        eyebrow={t(meta.labelKey)}
         title={article.title}
-        description={article.summary}
         actions={<BackButton fallback="/guide" />}
       />
-      {article.createdAt ? (
-        <p className="-mt-3 text-xs text-[var(--app-text-faint)]">
-          {t('help.article.publishedOn', { date: formatDate(article.createdAt) })}
-        </p>
+      {article.summary ? (
+        <p className="-mt-2 text-sm leading-6 text-[var(--app-text-muted)]">{article.summary}</p>
       ) : null}
       <div className="grid gap-4 rounded-[var(--radius-card-lg)] bg-[var(--app-surface)] p-5 shadow-[var(--shadow-card)] sm:p-6">
         <p className="whitespace-pre-line text-sm leading-7 text-[var(--app-text)]">

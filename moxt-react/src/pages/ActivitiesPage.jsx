@@ -100,9 +100,7 @@ export function ActivitiesPage() {
   return (
     <div className="grid min-w-0 max-w-full gap-6 sm:gap-7">
       <PageHeader
-        eyebrow={p3('activities.eyebrow')}
         title={p3('activities.title')}
-        description={p3('activities.description')}
         actions={<BackButton appearance="link" />}
       />
       {activities.length ? (

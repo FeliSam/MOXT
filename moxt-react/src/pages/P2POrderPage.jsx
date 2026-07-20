@@ -166,12 +166,7 @@ export function P2POrderPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow={order.id}
         title={t('p2p.order.title')}
-        description={t('p2p.order.description', {
-          seller: order.sellerName,
-          buyer: order.buyerName,
-        })}
         actions={<BackButton fallback="/p2p" />}
       />
       {isDisputed ? (

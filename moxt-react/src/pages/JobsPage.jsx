@@ -97,9 +97,7 @@ export function JobsPage() {
   return (
     <div className="community-warm-bg grid gap-7 rounded-[var(--radius-card-lg)]">
       <PageHeader
-        eyebrow={t('jobs.browse.eyebrow')}
         title={t('jobs.browse.title')}
-        description={t('jobs.browse.description')}
         stats={[{ label: t('jobs.browse.activeOffers'), value: activeJobs.length }]}
         actions={
           <>

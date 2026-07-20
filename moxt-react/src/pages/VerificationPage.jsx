@@ -152,9 +152,7 @@ export function VerificationPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow={p3('verification.eyebrow')}
         title={p3('verification.title')}
-        description={p3('verification.description')}
         actions={<BackButton appearance="link" />}
       />
 

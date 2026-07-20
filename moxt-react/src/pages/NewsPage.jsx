@@ -60,9 +60,7 @@ export function NewsPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow={p3('news.eyebrow')}
         title={p3('news.title')}
-        description={p3('news.description')}
         stats={[{ label: p3('news.stats.publications'), value: publishedPosts.length }]}
         actions={
           user && (

@@ -106,9 +106,7 @@ export function ParcelsPage() {
   return (
     <div className="community-warm-bg grid gap-7 rounded-[var(--radius-card-lg)]">
       <PageHeader
-        eyebrow={t('parcels.browse.eyebrow')}
         title={t('parcels.browse.title')}
-        description={t('parcels.browse.description')}
         stats={[
           { label: t('parcels.browse.stats.availableTrips'), value: visibleParcels.length },
         ]}

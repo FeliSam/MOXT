@@ -11,7 +11,6 @@ import {
   DetailFacts,
   DetailMetrics,
   DetailSection,
-  TrustPanel,
 } from '../components/ui/DetailBlocks'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -72,9 +71,7 @@ export function ExchangerDetailPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow={p3('exchangers.detail.eyebrow')}
         title={exchanger.name}
-        description={exchanger.description || p3('exchangers.detail.fallbackDesc')}
         actions={<BackButton fallback="/exchangers" />}
       />
       <DetailMetrics
@@ -195,15 +192,6 @@ export function ExchangerDetailPage() {
             ]}
           />
         </DetailSection>
-        <TrustPanel
-          items={[
-            business
-              ? p3('exchangers.detail.trustBusiness')
-              : p3('exchangers.detail.trustPartner'),
-            p3('exchangers.detail.trustRates'),
-            p3('exchangers.detail.trustNoReal'),
-          ]}
-        />
       </div>
     </div>
   )

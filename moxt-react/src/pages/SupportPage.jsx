@@ -63,9 +63,7 @@ export function SupportPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow={p3('support.eyebrow')}
         title={p3('support.title')}
-        description={p3('support.description')}
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" icon={FiAlertTriangle} onClick={() => setReportOpen(true)}>

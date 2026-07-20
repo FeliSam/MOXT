@@ -24,9 +24,7 @@ export function WalletPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow={p3('wallet.eyebrow')}
         title={p3('wallet.title')}
-        description={p3('wallet.description')}
       />
       <Card className="border-amber-300 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30">
         <div className="flex gap-3">

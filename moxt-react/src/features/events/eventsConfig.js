@@ -14,24 +14,15 @@ export const EVENT_PRICE_FILTER_OPTIONS = [
 
 export const registrationNextStepKeys = {
   registered: {
-    titleKey: 'events.registration.registered.title',
     descriptionKey: 'events.registration.registered.description',
   },
   checked_in: {
-    titleKey: 'events.registration.checkedIn.title',
     descriptionKey: 'events.registration.checkedIn.description',
   },
   cancelled: {
-    titleKey: 'events.registration.cancelled.title',
     descriptionKey: 'events.registration.cancelled.description',
   },
 }
-
-export const eventTrustItemKeys = [
-  'events.detail.trust.venue',
-  'events.detail.trust.confirmation',
-  'events.detail.trust.contact',
-]
 
 export const eventPublisherTypeKeys = {
   business: 'events.publisher.business',

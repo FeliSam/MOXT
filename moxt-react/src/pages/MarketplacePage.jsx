@@ -94,9 +94,7 @@ export function MarketplacePage() {
   return (
     <div className="community-warm-bg grid gap-7 rounded-[var(--radius-card-lg)]">
       <PageHeader
-        eyebrow={mt('marketplace.common.name')}
         title={mt('marketplace.common.name')}
-        description={mt('marketplace.page.description')}
         stats={[
           { label: mt('marketplace.page.stats.activeListings'), value: visible.length },
           { label: mt('marketplace.page.stats.categories'), value: LISTING_TYPES_META.length },

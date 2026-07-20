@@ -18,20 +18,15 @@ import { Dashboard3DIcon } from '../features/dashboard/components/Dashboard3DIco
 import {
   filterMoxtHubLinksByRole,
   moxtHubAdminLinks,
-  moxtHubSecondaryLinks,
+  moxtHubSecondaryGroups,
 } from '../features/moxt/moxtHubConfig'
 
-function HubSectionHeading({ description, id, title }) {
+function HubSectionHeading({ id, title }) {
   return (
     <div className="min-w-0">
       <h2 id={id} className="text-xl font-black tracking-[-0.03em] text-[var(--app-text)] sm:text-2xl">
         {title}
       </h2>
-      {description ? (
-        <p className="mt-1.5 max-w-2xl text-sm leading-6 text-[var(--app-text-muted)]">
-          {description}
-        </p>
-      ) : null}
     </div>
   )
 }
@@ -76,15 +71,9 @@ export function MoxtHubPage() {
           />
           <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div className="min-w-0">
-              <p className="mb-2 text-[11px] font-black uppercase tracking-[0.2em] text-brand-700 dark:text-brand-300">
-                {t('moxtHub.eyebrow')}
-              </p>
               <h1 className="font-display text-4xl font-extrabold tracking-[-0.04em] text-[var(--app-text)] sm:text-5xl">
                 MOXT
               </h1>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--app-text-muted)] sm:text-base">
-                {t('moxtHub.description')}
-              </p>
             </div>
             <img
               src="/assets/brand/mark.png?v=20260714e"
@@ -101,11 +90,10 @@ export function MoxtHubPage() {
           <HubSectionHeading
             id="moxt-hub-services"
             title={t('moxtHub.primaryServices')}
-            description={t('moxtHub.primaryServicesDesc')}
           />
         </RevealOnScroll>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          {coreServices.map(({ descriptionKey, image, imageLogo, path, tagKey, titleKey }, index) => (
+          {coreServices.map(({ image, imageLogo, path, tagKey, titleKey }, index) => (
             <RevealListItem key={titleKey} index={index}>
               <Link
                 className="block h-full"
@@ -130,9 +118,6 @@ export function MoxtHubPage() {
                       </h3>
                       <Badge tone={serviceTones[index]}>{t(tagKey)}</Badge>
                     </div>
-                    <p className="mt-2 text-xs leading-5 text-[var(--app-text-muted)] sm:text-sm">
-                      {t(descriptionKey)}
-                    </p>
                   </div>
                 </Card>
               </Link>
@@ -146,11 +131,10 @@ export function MoxtHubPage() {
           <HubSectionHeading
             id="moxt-hub-actions"
             title={t('moxtHub.quickActions')}
-            description={t('moxtHub.quickActionsDesc')}
           />
         </RevealOnScroll>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5">
-          {quickActions.map(({ descriptionKey, image, imageLogo, labelKey, path }, index) => (
+          {quickActions.map(({ image, imageLogo, labelKey, path }, index) => (
             <RevealListItem key={labelKey} index={index}>
               <Link
                 className="block h-full"
@@ -163,9 +147,6 @@ export function MoxtHubPage() {
                 >
                   <div className="min-w-0">
                     <h3 className="text-sm font-black leading-snug sm:text-base">{t(labelKey)}</h3>
-                    <p className="mt-1.5 text-xs leading-5 text-[var(--app-text-muted)]">
-                      {t(descriptionKey)}
-                    </p>
                   </div>
                   <Dashboard3DIcon
                     className="mt-3 self-end"
@@ -189,7 +170,6 @@ export function MoxtHubPage() {
             <HubSectionHeading
               id="moxt-hub-admin"
               title={t('moxtHub.admin')}
-              description={t('moxtHub.adminDesc')}
             />
           </RevealOnScroll>
           <nav
@@ -206,26 +186,32 @@ export function MoxtHubPage() {
       ) : null}
 
       <section
-        className="grid min-w-0 gap-4 border-t border-[var(--app-border)] pt-8"
+        className="grid min-w-0 gap-6 border-t border-[var(--app-border)] pt-8"
         aria-labelledby="moxt-hub-secondary"
       >
         <RevealOnScroll delay={80}>
           <HubSectionHeading
             id="moxt-hub-secondary"
             title={t('moxtHub.secondary')}
-            description={t('moxtHub.secondaryDesc')}
           />
         </RevealOnScroll>
-        <nav
-          className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3"
-          aria-label={t('moxtHub.secondary')}
-        >
-          {moxtHubSecondaryLinks.map((link, index) => (
-            <RevealListItem key={link.path} index={index}>
-              <SecondaryLinkTile {...link} t={t} />
-            </RevealListItem>
-          ))}
-        </nav>
+        {moxtHubSecondaryGroups.map((group) => (
+          <div key={group.id} className="grid min-w-0 gap-3">
+            <h3 className="text-sm font-black uppercase tracking-[0.12em] text-[var(--app-text-faint)]">
+              {t(group.titleKey)}
+            </h3>
+            <nav
+              className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3"
+              aria-label={t(group.titleKey)}
+            >
+              {group.links.map((link, index) => (
+                <RevealListItem key={link.id || link.path} index={index}>
+                  <SecondaryLinkTile {...link} t={t} />
+                </RevealListItem>
+              ))}
+            </nav>
+          </div>
+        ))}
       </section>
     </div>
   )

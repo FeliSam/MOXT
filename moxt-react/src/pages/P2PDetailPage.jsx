@@ -9,7 +9,6 @@ import {
   DetailFacts,
   DetailMetrics,
   DetailSection,
-  TrustPanel,
 } from '../components/ui/DetailBlocks'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -37,12 +36,10 @@ export function P2PDetailPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow={offer.id}
         title={t('p2p.detail.title', {
           amount: formatMoney(offer.amount, offer.fromCurrency),
           currency: offer.toCurrency,
         })}
-        description={t('p2p.detail.description', { name: offer.ownerName })}
         actions={<BackButton fallback="/p2p" />}
       />
       <DetailMetrics
@@ -137,14 +134,6 @@ export function P2PDetailPage() {
             ]}
           />
         </DetailSection>
-        <TrustPanel
-          title={t('p2p.detail.trustTitle')}
-          items={[
-            t('p2p.detail.trustItem1'),
-            t('p2p.detail.trustItem2'),
-            t('p2p.detail.trustItem3'),
-          ]}
-        />
       </div>
     </div>
   )

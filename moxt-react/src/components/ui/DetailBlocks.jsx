@@ -44,7 +44,7 @@ export function DetailFacts({ items }) {
     <dl className="grid gap-3 sm:grid-cols-2">
       {items.map(({ label, value }) => (
         <div key={label} className="rounded-[var(--radius-card)] bg-[var(--app-surface-muted)] p-4">
-          <dt className="text-xs font-black uppercase tracking-[0.08em] text-[var(--app-text-faint)]">
+          <dt className="text-xs font-semibold text-[var(--app-text-faint)]">
             {label}
           </dt>
           <dd className="mt-2 break-words font-bold tabular-nums">{value || 'Non renseigné'}</dd>

@@ -20,7 +20,6 @@ import {
   DetailFacts,
   DetailMetrics,
   DetailSection,
-  TrustPanel,
 } from '../components/ui/DetailBlocks'
 import { PageHeader } from '../components/ui/PageHeader'
 import { ReportDialog } from '../components/ui/ReportDialog'
@@ -34,13 +33,11 @@ import { EventParticipantsSection } from '../features/events/EventParticipantsSe
 import {
   eventPublisherTypeKey,
   eventStatusLabelKey,
-  eventTrustItemKeys,
   registrationNextStepKeys,
 } from '../features/events/eventsConfig'
 import { statusMeta } from '../config/statuses'
 import { useLanguage } from '../contexts/useLanguage'
 import { formatDate, formatMoney } from '../features/transfers/transferUtils'
-import { formatDateTime } from '../utils/formatters'
 import { PublisherDetailCard } from '../features/publications/PublisherDetailCard'
 import { PublisherPublicationsStrip } from '../features/publications/PublisherPublicationsStrip'
 import { usePublisherDetailProfile } from '../features/publications/usePublisherDetailProfile'
@@ -74,10 +71,6 @@ export function EventDetailPage() {
   const registrationStatus = registration ? statusMeta(registration.status, t) : null
   const nextStepKeys = registration ? registrationNextStepKeys[registration.status] : null
 
-  const publishedLabel = event.createdAt
-    ? t('events.detail.publishedOn', { date: formatDateTime(event.createdAt) })
-    : null
-
   async function handleRegister() {
     if (registering) return
     setRegistering(true)
@@ -106,24 +99,9 @@ export function EventDetailPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow={event.category}
         title={event.title}
-        description={[ `${formatDate(event.startAt)} · ${event.venue}, ${event.city}`, publishedLabel ]
-          .filter(Boolean)
-          .join(' · ')}
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            {/* Favori — icône seule, coin droit, distinct de l'inscription.
-                Sur mobile/tablette, Contacter + Favoris passent par le bouton "..." flottant. */}
-            <FavoriteButton
-              relatedId={event.id}
-              relatedType="event"
-              title={event.title}
-              path={`/events/${event.id}`}
-              entity={event}
-              showLabel={false}
-              className="hidden !size-11 shrink-0 xl:inline-flex"
-            />
             <ReshareButton sourceType="event" sourceId={event.id} sourceData={event} />
             {event.ownerId === user.id ? (
               <Link to={`/events/${eventId}/edit`}>
@@ -132,6 +110,16 @@ export function EventDetailPage() {
                 </Button>
               </Link>
             ) : null}
+            <FavoriteButton
+              relatedId={event.id}
+              relatedType="event"
+              title={event.title}
+              path={`/events/${event.id}`}
+              entity={event}
+              variant="solid"
+              showLabel={false}
+              className="hidden !size-11 !min-h-11 !rounded-2xl shrink-0 xl:inline-grid"
+            />
             <BackButton fallback="/events" />
           </div>
         }
@@ -259,14 +247,6 @@ export function EventDetailPage() {
                   ? t(nextStepKeys.descriptionKey)
                   : t('events.detail.registrationTracked')}
               </Alert>
-              {nextStepKeys ? (
-                <Card className="mt-3 bg-[var(--app-surface-muted)] p-4 shadow-sm">
-                  <span className="text-xs font-black uppercase tracking-[0.12em] text-brand-700">
-                    {t('events.detail.nextStep')}
-                  </span>
-                  <h3 className="mt-2 font-black">{t(nextStepKeys.titleKey)}</h3>
-                </Card>
-              ) : null}
               <Button
                 className="mt-3"
                 variant="secondary"
@@ -334,10 +314,6 @@ export function EventDetailPage() {
               />
             </>
           ) : null}
-          <TrustPanel
-            title={t('events.detail.trustTitle')}
-            items={eventTrustItemKeys.map((key) => t(key))}
-          />
         </div>
       </div>
       {event.ownerId === user.id ? (

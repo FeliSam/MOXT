@@ -81,13 +81,7 @@ export function ExchangersPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow={p3('exchangers.eyebrow')}
         title={p3('exchangers.title')}
-        description={
-          countryScope === COUNTRY_SCOPE_ALL
-            ? p3('exchangers.description.all')
-            : p3('exchangers.description.country')
-        }
         stats={[{ label: p3('exchangers.stats.partners'), value: visibleExchangers.length }]}
         actions={
           <Link to="/transfers">

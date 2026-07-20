@@ -352,9 +352,15 @@ export const es = {
     quickActions: "Acciones rápidas",
     quickActionsDesc: "Publica o inicia en un toque.",
     secondary: "Espacios personales",
-    secondaryDesc: "Tu cuenta, actividad y preferencias.",
+    secondaryDesc: "Cuenta, finanzas, mensajes, documentos y seguridad — por categoría.",
     admin: "Administración",
-    adminDesc: "Centro de control, cobertura funcional y pilotaje del sistema."
+    adminDesc: "Centro de control, cobertura funcional y piloto del sistema.",
+    groups: {
+      account: "Cuenta",
+      finance: "Finanzas y documentos",
+      communication: "Comunicación y ayuda",
+      security: "Seguridad y ajustes"
+    }
   },
   share: {
     title: "QR code y invitación",
@@ -2200,9 +2206,11 @@ export const es = {
         description: "Indica el peso y un mensaje: la solicitud va al chat del transportista.",
         pending: "Pedido em curso · {kg} kg · à espera de resposta",
         weightLabel: "Peso (kg)",
-        messageLabel: "Mensaje",
+        messageLabel: "Mensaje (opcional)",
         messagePlaceholder: "Contenido del paquete, ciudad de entrega, restricciones…",
-        chatMessage: "Hola, me gustaría reservar {kg} kg.\n\n{message}",
+        chatRoute: "{origin} → {destination}",
+        chatKg: "{kg} kg",
+        chatMessage: "{origin} → {destination}\n{kg} kg",
         submit: "Enviar en mensajes",
         sending: "Enviando…"
       },

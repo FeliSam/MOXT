@@ -106,9 +106,7 @@ export function FavoritesPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow={p3('favorites.eyebrow')}
         title={p3('favorites.title')}
-        description={p3('favorites.description')}
         stats={[{ label: p3('favorites.stats.items'), value: favorites.length }]}
         actions={
           <>

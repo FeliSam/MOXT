@@ -71,9 +71,7 @@ export function BusinessesPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow={bt('businesses.page.eyebrow')}
         title={bt('businesses.page.title')}
-        description={bt('businesses.page.description')}
         stats={[{ label: bt('businesses.page.stats.verified'), value: visibleBusinesses.length }]}
         actions={
           <Link to="/businesses/setup">

@@ -266,9 +266,7 @@ export function SecurityPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        eyebrow={t('security.pageEyebrow')}
         title={t('security.pageTitle')}
-        description={t('security.pageDescription')}
         actions={<BackButton appearance="link" />}
       />
       {phoneConfirmed && !emailConfirmed ? (
