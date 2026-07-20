@@ -104,6 +104,7 @@ describe('authSessionSync visibility handler', () => {
   })
 
   it('conserve la session Redux en cas d erreur reseau', async () => {
+    const { clearClientCache } = await import('./clearClientCache')
     const { startAuthSessionSync, stopAuthSessionSync } = await import('./authSessionSync')
 
     getSession.mockRejectedValue(new Error('network'))
@@ -133,9 +134,103 @@ describe('authSessionSync visibility handler', () => {
     await vi.waitFor(() => {
       expect(getSession).toHaveBeenCalled()
     })
+    // Let onForeground finish (must not clear on transient errors).
+    await new Promise((resolve) => setTimeout(resolve, 20))
 
     expect(store.getState().auth.user?.id).toBe('u1')
     expect(store.getState().auth.status).toBe('authenticated')
+    expect(clearClientCache).not.toHaveBeenCalled()
+
+    stopAuthSessionSync()
+  })
+
+  it('conserve la session si getSession timeout (Safari resume)', async () => {
+    const { clearClientCache } = await import('./clearClientCache')
+    const { startAuthSessionSync, stopAuthSessionSync } = await import('./authSessionSync')
+
+    getSession.mockImplementation(
+      () => new Promise(() => {}), // hang until timeout
+    )
+
+    const store = configureStore({
+      reducer: { auth: authReducer },
+      preloadedState: {
+        auth: {
+          user: { id: 'u1', firstName: 'Amina' },
+          token: 'old-token',
+          status: 'authenticated',
+          error: null,
+          registrationEmail: null,
+        },
+      },
+    })
+
+    vi.useFakeTimers()
+    startAuthSessionSync(store)
+
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'visible',
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    await vi.advanceTimersByTimeAsync(9000)
+
+    expect(store.getState().auth.user?.id).toBe('u1')
+    expect(store.getState().auth.status).toBe('authenticated')
+    expect(clearClientCache).not.toHaveBeenCalled()
+
+    stopAuthSessionSync()
+    vi.useRealTimers()
+  })
+
+  it('rafraichit un JWT expire encore present en localStorage', async () => {
+    const { startAuthSessionSync, stopAuthSessionSync } = await import('./authSessionSync')
+
+    const expiredSession = {
+      access_token: 'expired-token',
+      expires_at: Math.floor(Date.now() / 1000) - 120,
+      user: { id: 'u1', user_metadata: {} },
+    }
+    getSession.mockResolvedValue({ data: { session: expiredSession } })
+    refreshSession.mockResolvedValue({
+      data: {
+        session: {
+          access_token: 'fresh-token',
+          expires_at: Math.floor(Date.now() / 1000) + 3600,
+          user: { id: 'u1', user_metadata: {} },
+        },
+      },
+    })
+
+    const store = configureStore({
+      reducer: {
+        auth: authReducer,
+        communications: () => ({ conversations: [] }),
+      },
+      preloadedState: {
+        auth: {
+          user: { id: 'u1', firstName: 'Amina' },
+          token: 'expired-token',
+          status: 'authenticated',
+          error: null,
+          registrationEmail: null,
+        },
+      },
+    })
+
+    startAuthSessionSync(store)
+
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'visible',
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    await vi.waitFor(() => {
+      expect(refreshSession).toHaveBeenCalled()
+      expect(store.getState().auth.token).toBe('fresh-token')
+    })
 
     stopAuthSessionSync()
   })

@@ -483,6 +483,97 @@ describe('authService', () => {
     expect(result.user.id).toBe(user.id)
   })
 
+  it('finalise encore si phone_verified=true mais profil incomplet (course SIGNED_IN)', async () => {
+    mockSmsVerifySession({ user_metadata: { phone: '+79000000010' } })
+    profileQuery.maybeSingle.mockResolvedValue({
+      data: {
+        id: 'user-sms',
+        first_name: 'Utilisateur',
+        last_name: '',
+        email: '',
+        phone: '+79000000010',
+        phone_verified: true,
+        phone_verified_at: '2026-07-15T12:00:00.000Z',
+        origin_country: 'BJ',
+        city: '',
+        role: 'user',
+        status: 'active',
+      },
+      error: null,
+    })
+    mockFinalizePhoneProfile({
+      first_name: 'Nova',
+      last_name: 'Test',
+      city: 'Moscou',
+      origin_country: 'BJ',
+    })
+
+    const result = await authService.verifyPhoneRegistration({
+      phone: '+79000000010',
+      token: '123456',
+      email: 'nova@example.com',
+      profileDetails: {
+        firstName: 'Nova',
+        lastName: 'Test',
+        residenceCity: 'Moscou',
+        originCountry: 'BJ',
+      },
+    })
+
+    expect(rpc).toHaveBeenCalledWith(
+      'moxt_finalize_phone_registration',
+      expect.objectContaining({
+        p_first_name: 'Nova',
+        p_last_name: 'Test',
+        p_city: 'Moscou',
+      }),
+    )
+    expect(result.user.city).toBe('Moscou')
+    expect(result.user.lastName).toBe('Test')
+    expect(result.user.phoneVerified).toBe(true)
+  })
+
+  it('ne réécrit pas un profil déjà vérifié et complet', async () => {
+    mockSmsVerifySession({ user_metadata: { phone: '+79000000010' } })
+    profileQuery.maybeSingle.mockResolvedValue({
+      data: {
+        id: 'user-sms',
+        first_name: 'Existing',
+        last_name: 'Owner',
+        email: 'owner@example.com',
+        phone: '+79000000010',
+        phone_verified: true,
+        phone_verified_at: '2026-07-15T12:00:00.000Z',
+        origin_country: 'BJ',
+        city: 'Moscou',
+        role: 'user',
+        status: 'active',
+      },
+      error: null,
+    })
+    rpc.mockClear()
+
+    const result = await authService.verifyPhoneRegistration({
+      phone: '+79000000010',
+      token: '123456',
+      email: 'attacker@example.com',
+      profileDetails: {
+        firstName: 'Hacker',
+        lastName: 'Overwrite',
+        residenceCity: 'Paris',
+        originCountry: 'FR',
+      },
+    })
+
+    expect(rpc).not.toHaveBeenCalledWith(
+      'moxt_finalize_phone_registration',
+      expect.anything(),
+    )
+    expect(result.user.firstName).toBe('Existing')
+    expect(result.user.lastName).toBe('Owner')
+    expect(result.user.city).toBe('Moscou')
+  })
+
   it('surface une erreur claire si finalize RPC échoue', async () => {
     mockSmsVerifySession()
     rpc.mockImplementation((name) => {

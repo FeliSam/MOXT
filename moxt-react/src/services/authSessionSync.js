@@ -1,3 +1,4 @@
+import { isProfileComplete } from '@moxt/shared/auth/profileCompletion.js'
 import { applySession, clearSession } from '../features/auth/authSlice'
 import { authService } from '../features/auth/authService'
 import { supabase } from './supabaseClient'
@@ -18,6 +19,8 @@ const CONVERSATION_REFRESH_MS = 60000
 const DATA_REFRESH_MS = 120000
 /** Toujours assez court pour rattraper une confirmation e-mail faite hors onglet (Safari Mail). */
 const AUTH_USER_REFRESH_MS = 4000
+/** Refresh access token this many seconds before expires_at. */
+const ACCESS_TOKEN_SKEW_SECONDS = 60
 
 async function refreshConversationsIfNeeded(dispatch, getState) {
   if (!getState().auth.user) return
@@ -57,24 +60,105 @@ function withTimeout(promise, ms, label) {
   })
 }
 
+function isAccessTokenExpiring(session, skewSeconds = ACCESS_TOKEN_SKEW_SECONDS) {
+  if (!session) return true
+  const expiresAt = Number(session.expires_at)
+  if (!Number.isFinite(expiresAt) || expiresAt <= 0) return false
+  return expiresAt * 1000 <= Date.now() + skewSeconds * 1000
+}
+
+function isDefinitiveSessionLoss(error) {
+  const message = String(error?.message || error || '').toLowerCase()
+  const code = String(error?.code || '').toLowerCase()
+  return (
+    code === 'refresh_token_not_found' ||
+    code === 'session_not_found' ||
+    message.includes('invalid refresh token') ||
+    message.includes('refresh token not found') ||
+    message.includes('refresh_token_not_found') ||
+    message.includes('session from session_id claim in jwt does not exist') ||
+    (Number(error?.status) === 401 && message.includes('refresh'))
+  )
+}
+
+/**
+ * Resolve Supabase session without treating Safari resume timeouts as logout.
+ * @returns {{ status: 'ok', session: object } | { status: 'missing' } | { status: 'transient' }}
+ */
 async function resolveSupabaseSession() {
   try {
-    const { data } = await withTimeout(
+    const { data, error } = await withTimeout(
       supabase.auth.getSession(),
       SESSION_RESOLVE_TIMEOUT_MS,
       'getSession',
     )
-    if (data.session) return data.session
+    if (error && isDefinitiveSessionLoss(error)) {
+      return { status: 'missing' }
+    }
 
-    const { data: refreshed } = await withTimeout(
-      supabase.auth.refreshSession(),
-      SESSION_RESOLVE_TIMEOUT_MS,
-      'refreshSession',
-    )
-    return refreshed.session ?? null
+    let session = data?.session ?? null
+
+    // Safari suspends timers — access JWT often expired after a few hours idle.
+    if (session && isAccessTokenExpiring(session)) {
+      try {
+        const { data: refreshed, error: refreshError } = await withTimeout(
+          supabase.auth.refreshSession(),
+          SESSION_RESOLVE_TIMEOUT_MS,
+          'refreshSession',
+        )
+        if (refreshed?.session) {
+          return { status: 'ok', session: refreshed.session }
+        }
+        if (isDefinitiveSessionLoss(refreshError)) {
+          return { status: 'missing' }
+        }
+        // Keep the stored session if refresh failed transiently and JWT not hard-expired.
+        if (!isAccessTokenExpiring(session, 0)) {
+          return { status: 'ok', session }
+        }
+        return { status: 'transient' }
+      } catch {
+        if (!isAccessTokenExpiring(session, 0)) {
+          return { status: 'ok', session }
+        }
+        return { status: 'transient' }
+      }
+    }
+
+    if (session) {
+      return { status: 'ok', session }
+    }
+
+    try {
+      const { data: refreshed, error: refreshError } = await withTimeout(
+        supabase.auth.refreshSession(),
+        SESSION_RESOLVE_TIMEOUT_MS,
+        'refreshSession',
+      )
+      if (refreshed?.session) {
+        return { status: 'ok', session: refreshed.session }
+      }
+      if (isDefinitiveSessionLoss(refreshError)) {
+        return { status: 'missing' }
+      }
+      // Empty session + no definitive auth error: treat as logged out only when
+      // refresh completed cleanly without a session (not a hang/timeout).
+      if (!refreshError) {
+        return { status: 'missing' }
+      }
+      return { status: 'transient' }
+    } catch {
+      return { status: 'transient' }
+    }
   } catch {
-    return null
+    return { status: 'transient' }
   }
+}
+
+function forceLogout(dispatch, reason) {
+  stopRealtimeSubscription()
+  dispatch(clearSession())
+  clearClientCache({ scope: 'full', reason })
 }
 
 async function syncSessionToStore(
@@ -84,22 +168,27 @@ async function syncSessionToStore(
   { skipDataLoad = false } = {},
 ) {
   if (!session) {
-    stopRealtimeSubscription()
-    dispatch(clearSession())
-    clearClientCache({ scope: 'full', reason: 'session-missing' })
+    forceLogout(dispatch, 'session-missing')
     return
   }
 
   const payload = await authService.sessionFromSupabaseUser(session)
   if (!payload) {
-    stopRealtimeSubscription()
-    dispatch(clearSession())
-    clearClientCache({ scope: 'full', reason: 'orphan-session' })
+    forceLogout(dispatch, 'orphan-session')
     return
   }
 
-  const previousUserId = getState().auth.user?.id
-  dispatch(applySession(payload))
+  const previousUser = getState().auth.user
+  const previousUserId = previousUser?.id
+  // SIGNED_IN after OTP can resolve a stub profile after verifyPhoneRegistration
+  // already stored a complete user — never downgrade completeness in Redux.
+  const sessionPayload =
+    previousUser?.id === payload.user?.id &&
+    isProfileComplete(previousUser) &&
+    !isProfileComplete(payload.user)
+      ? { user: previousUser, token: payload.token }
+      : payload
+  dispatch(applySession(sessionPayload))
 
   void startRealtimeSubscription(payload.user.id, dispatch, getState)
 
@@ -144,13 +233,11 @@ async function refreshAuthUserIfNeeded(dispatch, getState, { force = false } = {
   }
 
   if (!payload) {
-    // Null ambigu (race getSession, refresh en cours) : ne déconnecter
-    // que si Supabase n'a vraiment plus de session après retry.
-    const session = await resolveSupabaseSession().catch(() => null)
-    if (!session && getState().auth.user) {
-      stopRealtimeSubscription()
-      dispatch(clearSession())
-      clearClientCache({ scope: 'full', reason: 'session-invalid' })
+    // Null ambigu (timeout Safari, refresh en cours) : ne déconnecter
+    // que si Supabase confirme explicitement l'absence de session.
+    const resolved = await resolveSupabaseSession()
+    if (resolved.status === 'missing' && getState().auth.user) {
+      forceLogout(dispatch, 'session-invalid')
     }
     return
   }
@@ -159,8 +246,8 @@ async function refreshAuthUserIfNeeded(dispatch, getState, { force = false } = {
 
 async function onForeground(dispatch, getState, { forceAuth = false } = {}) {
   try {
-    const session = await resolveSupabaseSession()
-    if (session) {
+    const resolved = await resolveSupabaseSession()
+    if (resolved.status === 'ok') {
       await syncRealtimeAuthToken()
       await refreshAuthUserIfNeeded(dispatch, getState, { force: forceAuth })
       await refreshDataIfNeeded(dispatch, getState)
@@ -168,10 +255,14 @@ async function onForeground(dispatch, getState, { forceAuth = false } = {}) {
       return
     }
 
+    if (resolved.status === 'transient') {
+      // iPhone Safari: tab resume often times out getSession/refreshSession.
+      // Keep Redux session; next successful refresh or SIGNED_OUT will reconcile.
+      return
+    }
+
     if (getState().auth.user) {
-      stopRealtimeSubscription()
-      dispatch(clearSession())
-      clearClientCache({ scope: 'full', reason: 'session-expired' })
+      forceLogout(dispatch, 'session-expired')
     }
   } catch {
     // Erreur réseau — conserver la session Redux en place.
@@ -204,9 +295,7 @@ export function startAuthSessionSync(store) {
   }
   const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_OUT') {
-      stopRealtimeSubscription()
-      dispatch(clearSession())
-      clearClientCache({ scope: 'full', reason: 'signed-out' })
+      forceLogout(dispatch, 'signed-out')
       return
     }
 

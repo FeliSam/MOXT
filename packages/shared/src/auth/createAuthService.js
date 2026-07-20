@@ -964,6 +964,13 @@ export function createAuthService(supabase, redirects = {}) {
       return existing
     }
 
+    // Incomplete signup profiles must go through moxt_finalize_phone_registration.
+    // Marking phone_verified here races SIGNED_IN sync vs OTP confirm and causes
+    // finishPhoneRegistration to skip finalize → bounce /dashboard → /register.
+    if (existing && !isProfileComplete(existing)) {
+      return existing
+    }
+
     const now = new Date().toISOString()
     await patchProfileFields(
       userId,
@@ -1384,12 +1391,13 @@ export function createAuthService(supabase, redirects = {}) {
 
       async function finishPhoneRegistration(authUser, accessToken) {
         const linkedEmail = String(email || profileDetails?.email || '').trim().toLowerCase()
-        // Already-verified profile: never rewrite PII from a registration form
+        // Already-verified AND complete: never rewrite PII from a registration form
         // (blocks overwrite if an OTP somehow reached an existing account).
+        // Incomplete + phoneVerified (SIGNED_IN race) must still finalize blanks.
         const existingProfile = await fetchProfile(authUser.id)
-        if (existingProfile?.phoneVerified) {
+        if (existingProfile?.phoneVerified && isProfileComplete(existingProfile)) {
           return {
-            user: enrichUserFromAuth(existingProfile, authUser),
+            user: await enrichUserFromAuth(existingProfile, authUser),
             token: accessToken,
             emailLinkDeferred: Boolean(linkedEmail && !authUser.email_confirmed_at),
             phoneVerified: true,
@@ -1842,13 +1850,30 @@ export function createAuthService(supabase, redirects = {}) {
           'getSession',
         )
         session = data.session
-        if (!session) {
+        const expiresAt = Number(session?.expires_at)
+        const accessExpiring =
+          !session ||
+          (Number.isFinite(expiresAt) &&
+            expiresAt > 0 &&
+            expiresAt * 1000 <= Date.now() + 60_000)
+        // Safari idle: JWT often still in storage but expired — must refresh, not reuse.
+        if (accessExpiring) {
           const { data: refreshed } = await withTimeout(
             supabase.auth.refreshSession(),
             AUTH_NETWORK_TIMEOUT_MS,
             'refreshSession',
           )
-          session = refreshed.session ?? null
+          if (refreshed?.session) {
+            session = refreshed.session
+          } else if (
+            session &&
+            Number.isFinite(expiresAt) &&
+            expiresAt * 1000 > Date.now()
+          ) {
+            // Still within hard expiry — keep stored session after a failed refresh.
+          } else {
+            session = null
+          }
         }
       } catch {
         return null
