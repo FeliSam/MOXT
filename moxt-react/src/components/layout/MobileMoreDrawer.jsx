@@ -69,6 +69,7 @@ export function MobileMoreDrawer({ open, onClose }) {
         className={`absolute inset-x-0 bottom-0 flex max-h-[88dvh] flex-col rounded-t-[1rem] border border-b-0 border-[var(--app-border)] bg-[var(--app-bg)] shadow-[var(--shadow-float)] ${
           closing ? 'drawer-leave' : 'drawer-enter'
         }`}
+        data-tour="more-panel"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="flex justify-center pt-2.5">
@@ -82,16 +83,16 @@ export function MobileMoreDrawer({ open, onClose }) {
                 MOXT
               </p>
               <h2 className="font-display text-xl font-extrabold tracking-tight text-[var(--app-text)]">
-                Tous les services
+                {t('nav.morePanelTitle')}
               </h2>
               <p className="mt-1 text-xs text-[var(--app-text-muted)]">
-                Accédez aux modules hors barre de navigation.
+                {t('nav.morePanelSubtitle')}
               </p>
             </div>
             <button
               type="button"
               onClick={requestClose}
-              aria-label="Fermer"
+              aria-label={t('common.close')}
               className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-btn)] border border-[var(--app-border)] bg-[var(--app-surface-muted)] text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface)]"
             >
               <FiX />
@@ -103,7 +104,7 @@ export function MobileMoreDrawer({ open, onClose }) {
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Rechercher un service..."
+              placeholder={t('nav.searchServicePlaceholder')}
               className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--app-text-faint)]"
             />
           </div>

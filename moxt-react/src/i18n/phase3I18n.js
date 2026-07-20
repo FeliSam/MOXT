@@ -865,24 +865,74 @@ export const PHASE3_FR_SOURCES = {
   'faq.report.answer':
     'Utilisez le signalement disponible sur les fiches. Les modérateurs MOXT traitent les signalements prioritaires.',
 
-  // ── onboarding (post-inscription) ───────────────────────────────────────
+  // ── onboarding (product tour post-inscription) ─────────────────────────
   'onboarding.title': 'Bienvenue sur MOXT',
   'onboarding.later': 'Plus tard',
-  'onboarding.next': 'Continuer',
-  'onboarding.start': 'Commencer',
-  'onboarding.slide1.eyebrow': 'Compte créé',
-  'onboarding.slide1.heading': 'Bonjour {name} !',
-  'onboarding.slide1.body':
-    'Votre espace est prêt. MOXT relie l’Afrique et la Russie pour vos transferts, colis et échanges du quotidien.',
-  'onboarding.slide2.heading': 'Trois piliers pour démarrer',
-  'onboarding.slide2.transfers': 'Transferts — envoyez et recevez de l’argent en confiance.',
-  'onboarding.slide2.parcels': 'Colis — trouvez un voyageur ou proposez un trajet.',
-  'onboarding.slide2.marketplace': 'Marketplace — achetez et vendez près de chez vous.',
-  'onboarding.slide3.heading': 'Prêt à explorer',
-  'onboarding.slide3.body':
-    'Ouvrez votre accueil pour découvrir la plateforme. Vous pourrez confirmer votre e-mail et votre identité plus tard dans Sécurité.',
-  'onboarding.slide3.bodyEmail':
-    'Confirmez d’abord votre e-mail dans Sécurité pour débloquer toutes les publications, puis explorez la plateforme.',
+  'onboarding.skip': 'Passer',
+  'onboarding.next': 'Suivant',
+  'onboarding.start': 'C’est parti',
+  'onboarding.tour.eyebrow': 'Visite guidée',
+  'onboarding.tour.stepOf': '{current} / {total}',
+  'onboarding.tour.secure': 'Sécuriser mon compte',
+  'onboarding.tour.welcome.title': 'Bienvenue, {name}',
+  'onboarding.tour.welcome.body':
+    'En moins d’une minute, découvrez où se trouvent les outils essentiels de MOXT. Vous pouvez passer à tout moment.',
+  'onboarding.tour.mobile.bottomNav.title': 'Navigation principale',
+  'onboarding.tour.mobile.bottomNav.body':
+    'Cette barre vous accompagne partout : transferts, accueil Moxt, marketplace, colis, et le menu Plus.',
+  'onboarding.tour.mobile.home.title': 'Accueil Moxt',
+  'onboarding.tour.mobile.home.body':
+    'Votre tableau de bord : activité récente, raccourcis et vue d’ensemble de la plateforme.',
+  'onboarding.tour.mobile.transfers.title': 'Transferts',
+  'onboarding.tour.mobile.transfers.body':
+    'Envoyez et recevez de l’argent entre l’Afrique et la Russie, en toute confiance.',
+  'onboarding.tour.mobile.marketplace.title': 'Marketplace',
+  'onboarding.tour.mobile.marketplace.body':
+    'Achetez, vendez et explorez les annonces près de chez vous.',
+  'onboarding.tour.mobile.parcels.title': 'Colis',
+  'onboarding.tour.mobile.parcels.body':
+    'Trouvez un voyageur ou proposez un trajet pour faire voyager un colis.',
+  'onboarding.tour.mobile.more.title': 'Menu Plus',
+  'onboarding.tour.mobile.more.body':
+    'Ouvrez ici tous les autres services : guide, jobs, entreprise, et plus encore.',
+  'onboarding.tour.mobile.morePanel.title': 'Tous les services',
+  'onboarding.tour.mobile.morePanel.body':
+    'Ce panneau regroupe ce qui n’est pas dans la barre du bas. Parcourez les tuiles ou utilisez la recherche.',
+  'onboarding.tour.mobile.headerNews.title': 'Actualités',
+  'onboarding.tour.mobile.headerNews.body':
+    'Accès rapide aux actualités depuis la barre du haut.',
+  'onboarding.tour.mobile.header.title': 'Barre du haut',
+  'onboarding.tour.mobile.header.body':
+    'Notifications, messages et raccourcis essentiels — toujours visibles pendant que vous naviguez.',
+  'onboarding.tour.news.title': 'Actualités',
+  'onboarding.tour.news.body':
+    'Suivez les infos et publications de la communauté MOXT — Afrique et Russie.',
+  'onboarding.tour.guide.title': 'Guide',
+  'onboarding.tour.guide.body':
+    'Informations pour vivre en Russie : démarches, règles du quotidien et lois utiles à connaître.',
+  'onboarding.tour.desktop.sidebar.title': 'Rail de navigation',
+  'onboarding.tour.desktop.sidebar.body':
+    'Accédez aux sections clés depuis ce rail flottant. Survolez une icône pour afficher son libellé.',
+  'onboarding.tour.desktop.more.title': 'Services supplémentaires',
+  'onboarding.tour.desktop.more.body':
+    'Le menu Plus ouvre le catalogue complet : guide, événements, jobs, et le reste des modules.',
+  'onboarding.tour.desktop.morePanel.title': 'Catalogue des services',
+  'onboarding.tour.desktop.morePanel.body':
+    'Retrouvez ici tout ce qui n’est pas sur le rail — organisé par thèmes, prêt à un clic.',
+  'onboarding.tour.desktop.search.title': 'Recherche globale',
+  'onboarding.tour.desktop.search.body':
+    'Retrouvez rapidement personnes, annonces, colis ou services depuis n’importe quelle page.',
+  'onboarding.tour.desktop.actions.title': 'Actions rapides',
+  'onboarding.tour.desktop.actions.body':
+    'Notifications, favoris et thème — vos outils du quotidien, toujours à portée.',
+  'onboarding.tour.desktop.profile.title': 'Votre compte',
+  'onboarding.tour.desktop.profile.body':
+    'Profil, sécurité et paramètres : gérez votre identité et votre confiance depuis ici.',
+  'onboarding.tour.done.title': 'Vous êtes prêt',
+  'onboarding.tour.done.body':
+    'Explorez à votre rythme. Vous pourrez confirmer e-mail et identité plus tard dans Sécurité.',
+  'onboarding.tour.done.bodyEmail':
+    'Confirmez d’abord votre e-mail dans Sécurité pour débloquer toutes les publications, puis explorez librement.',
 }
 
 export function phase3Text(t, key, vars = {}) {

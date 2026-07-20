@@ -8,6 +8,7 @@ function MoreServiceTile({ badge, item, onNavigate, resolveLabel }) {
   return (
     <NavLink
       to={item.path}
+      data-tour={item.id ? `more-${item.id}` : undefined}
       onClick={onNavigate}
       onFocus={() => preloadRoute(item.path)}
       onMouseEnter={() => preloadRoute(item.path)}
@@ -39,6 +40,7 @@ function MoreServiceRow({ badge, item, onNavigate, resolveLabel }) {
   return (
     <NavLink
       to={item.path}
+      data-tour={item.id ? `more-${item.id}` : undefined}
       onClick={onNavigate}
       onFocus={() => preloadRoute(item.path)}
       onMouseEnter={() => preloadRoute(item.path)}

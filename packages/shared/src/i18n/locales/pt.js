@@ -219,6 +219,9 @@ export const pt = {
     settings: "Definições",
     signOut: "Terminar sessão",
     closeServices: "Fechar serviços",
+    morePanelTitle: "Todos os serviços",
+    morePanelSubtitle: "Aceda aos módulos fora da barra de navegação.",
+    searchServicePlaceholder: "Pesquisar um serviço...",
     itemUnreadAria: "{label} ({count} não lidos)",
     accountSession: "Conta e sessão",
   },
@@ -5707,6 +5710,18 @@ export const pt = {
       },
     },
     overview: {
+      officialStatus: {
+        title: "Estado oficial MOXT",
+        description:
+          "Publique um estado como MOXT, visível 7 dias no topo do banner — sem usar a sua conta pessoal.",
+        action: "Publicar um estado MOXT",
+      },
+      tourPreview: {
+        title: "Visita guiada (teste)",
+        description:
+          "Relança o onboarding no Início — mobile e desktop têm passos diferentes.",
+        action: "Lançar a visita",
+      },
       actions: {
         transfers: {
           label: "Pilotar transferências",
@@ -6490,6 +6505,15 @@ export const pt = {
       channel: "Canal",
     },
     changelog: {
+      v120: {
+        date: "Julho 2026",
+        h0: "Barra superior móvel: atalhos contextuais, etiquetas no hover e tamanhos harmonizados",
+        h1: "Mensagens: teclado permanece aberto após enviar, sem espaço vazio sob o compositor",
+        h2: "Registo: OTP por e-mail se o SMSC recusar o número",
+        h3: "Guia: todos os artigos publicados são mostrados",
+        h4: "Página Carteira removida; redirecionamento para recibos",
+        h5: "Perfil: Conta / Confiança / Documentos com ícone e nome na mesma linha",
+      },
       v110: {
         date: "Julho 2026",
         h0: "Notificações push nativas (Android / iOS) e permissões de câmara Capacitor",
@@ -6725,24 +6749,95 @@ export const pt = {
   onboarding: {
     title: "Bem-vindo ao MOXT",
     later: "Mais tarde",
-    next: "Continuar",
-    start: "Começar",
-    slide1: {
-      eyebrow: "Conta criada",
-      heading: "Olá {name}!",
-      body: "O seu espaço está pronto. O MOXT liga África e Rússia para transferências, encomendas e trocas do dia a dia.",
-    },
-    slide2: {
-      heading: "Três pilares para começar",
-      transfers: "Transferências — envie e receba dinheiro com confiança.",
-      parcels: "Encomendas — encontre um viajante ou ofereça uma viagem.",
-      marketplace: "Marketplace — compre e venda perto de si.",
-    },
-    slide3: {
-      heading: "Pronto para explorar",
-      body: "Abra o início para descobrir a plataforma. Pode confirmar o email e a identidade mais tarde em Segurança.",
-      bodyEmail:
-        "Confirme primeiro o email em Segurança para publicar, depois explore a plataforma.",
+    skip: "Saltar",
+    next: "Seguinte",
+    start: "Vamos lá",
+    tour: {
+      eyebrow: "Visita guiada",
+      stepOf: "{current} / {total}",
+      secure: "Proteger a minha conta",
+      welcome: {
+        title: "Bem-vindo, {name}",
+        body: "Em menos de um minuto, veja onde estão as ferramentas essenciais do MOXT. Pode saltar a qualquer momento.",
+      },
+      mobile: {
+        bottomNav: {
+          title: "Navegação principal",
+          body: "Esta barra acompanha-o: transferências, início Moxt, marketplace, encomendas e Mais.",
+        },
+        home: {
+          title: "Início Moxt",
+          body: "O seu painel: atividade recente, atalhos e uma visão clara da plataforma.",
+        },
+        transfers: {
+          title: "Transferências",
+          body: "Envie e receba dinheiro entre África e Rússia com confiança.",
+        },
+        marketplace: {
+          title: "Marketplace",
+          body: "Compre, venda e explore anúncios perto de si.",
+        },
+        parcels: {
+          title: "Encomendas",
+          body: "Encontre um viajante ou ofereça uma viagem para fazer circular uma encomenda.",
+        },
+        more: {
+          title: "Menu Mais",
+          body: "Abra aqui os outros serviços: guia, empregos, empresa e mais.",
+        },
+        morePanel: {
+          title: "Todos os serviços",
+          body: "Este painel reúne o que não está na barra inferior. Explore as tiles ou pesquise.",
+        },
+        headerNews: {
+          title: "Notícias",
+          body: "Acesso rápido às notícias a partir da barra superior.",
+        },
+        header: {
+          title: "Barra superior",
+          body: "Notificações, mensagens e atalhos essenciais — sempre visíveis enquanto navega.",
+        },
+      },
+      news: {
+        title: "Notícias",
+        body: "Acompanhe novidades e publicações da comunidade MOXT — África e Rússia.",
+      },
+      guide: {
+        title: "Guia",
+        body: "Viver na Rússia: procedimentos, regras do dia a dia e leis úteis a conhecer.",
+      },
+      desktop: {
+        sidebar: {
+          title: "Rail de navegação",
+          body: "Aceda às secções-chave a partir deste rail flutuante. Passe o rato para ver o rótulo.",
+        },
+        more: {
+          title: "Mais serviços",
+          body: "O menu Mais abre o catálogo completo: guia, eventos, empregos e outros módulos.",
+        },
+        morePanel: {
+          title: "Catálogo de serviços",
+          body: "Encontre aqui tudo o que não está no rail — organizado por temas.",
+        },
+        search: {
+          title: "Pesquisa global",
+          body: "Encontre rapidamente pessoas, anúncios, encomendas ou serviços em qualquer página.",
+        },
+        actions: {
+          title: "Ações rápidas",
+          body: "Notificações, favoritos e tema — as suas ferramentas do dia a dia, sempre à mão.",
+        },
+        profile: {
+          title: "A sua conta",
+          body: "Perfil, segurança e definições: gira a identidade e a confiança a partir daqui.",
+        },
+      },
+      done: {
+        title: "Está pronto",
+        body: "Explore ao seu ritmo. Pode confirmar o email e a identidade mais tarde em Segurança.",
+        bodyEmail:
+          "Confirme primeiro o email em Segurança para publicar, depois explore livremente.",
+      },
     },
   },
 }

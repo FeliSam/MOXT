@@ -2483,12 +2483,12 @@ html.locale-animating #root {
 
 /* ─── Utilitaires ────────────────────────────────────────────────────────── */
 .header-action-btn {
-  @apply size-9 shrink-0 place-items-center rounded-xl text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)] sm:size-10 sm:rounded-2xl;
+  @apply size-9 shrink-0 place-items-center rounded-xl text-[var(--app-text)]/72 transition hover:bg-[var(--app-surface-muted)] sm:size-10 sm:rounded-2xl;
 }
 
-/* Same Feather family as bottom nav (`text-lg`). */
+/* Aligné barre basse : texte ~72 %, trait un peu plus marqué. */
 .header-action-icon {
-  @apply text-lg text-[var(--app-text-muted)] opacity-70 transition-opacity;
+  @apply text-lg text-[var(--app-text)] opacity-[0.72] transition-opacity;
 }
 
 .header-action-btn:hover .header-action-icon,
@@ -2496,10 +2496,52 @@ html.locale-animating #root {
   opacity: 1;
 }
 
+.header-action-label {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 50%;
+  z-index: 30;
+  max-width: 9rem;
+  transform: translateX(-50%) translateY(-0.15rem);
+  border-radius: 0.5rem;
+  border: 1px solid var(--app-border);
+  background: color-mix(in srgb, var(--app-surface) 92%, transparent);
+  padding: 0.28rem 0.55rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  color: var(--app-text);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+}
+
+.header-action-btn:hover .header-action-label,
+.header-action-btn:focus-visible .header-action-label {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+@media (hover: none) {
+  .header-action-btn:hover .header-action-label {
+    opacity: 0;
+  }
+
+  .header-action-btn:focus-visible .header-action-label {
+    opacity: 1;
+  }
+}
+
 /* Mobile / tablet: prior size +10% (profile avatar excluded). */
 @media (max-width: 1023px) {
   .header-action-btn {
-    @apply rounded-full border border-[var(--app-border)]/50 bg-[var(--app-surface)]/80 backdrop-blur-md hover:bg-[var(--app-surface)]/90;
+    @apply rounded-full border border-[var(--app-border)]/80 bg-[var(--app-surface)]/65 backdrop-blur-md hover:bg-[var(--app-surface)]/80;
     width: 3.1625rem;
     height: 3.1625rem;
   }
@@ -2513,7 +2555,7 @@ html.locale-animating #root {
 
   .header-action-icon {
     font-size: 1.423125rem; /* prior glyph +10% */
-    opacity: 0.7;
+    opacity: 0.72;
   }
 
   .app-top-header {
@@ -3675,5 +3717,237 @@ nav[aria-label='Navigation mobile rapide'] a {
 
   .ptr-orb__spark {
     transition: none;
+  }
+}
+
+/* --- Product tour (post-registration presentation) ----------------------- */
+:root {
+  --z-tour: 160;
+}
+
+body.moxt-tour-active .app-top-header {
+  transform: translateY(0) !important;
+}
+
+.moxt-tour {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-tour);
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.moxt-tour--visible {
+  opacity: 1;
+}
+
+.moxt-tour-scrim {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, #020617 58%, transparent);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.moxt-tour-spotlight {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 9999px color-mix(in srgb, #020617 62%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--app-accent) 35%, transparent),
+    0 12px 40px color-mix(in srgb, var(--app-accent) 22%, transparent);
+  background: transparent;
+  transition:
+    top 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    left 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    height 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.moxt-tour-spotlight-ring {
+  position: absolute;
+  inset: -3px;
+  border: 2px solid color-mix(in srgb, var(--app-accent) 75%, white);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--app-accent) 18%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, white 18%, transparent);
+  animation: moxt-tour-pulse 2.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+@keyframes moxt-tour-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.72;
+    transform: scale(1.015);
+  }
+}
+
+.moxt-tour-card {
+  position: absolute;
+  z-index: 2;
+  max-width: calc(100vw - 2rem);
+  overflow: hidden;
+  border-radius: 1.35rem;
+  border: 1px solid color-mix(in srgb, var(--app-border) 80%, transparent);
+  background:
+    linear-gradient(
+      155deg,
+      color-mix(in srgb, var(--app-surface) 92%, white) 0%,
+      var(--app-surface) 48%,
+      color-mix(in srgb, var(--app-surface) 88%, var(--app-accent-soft)) 100%
+    );
+  box-shadow:
+    var(--shadow-float),
+    0 0 0 1px color-mix(in srgb, white 6%, transparent),
+    0 24px 64px color-mix(in srgb, #020617 28%, transparent);
+  padding: 1.05rem 1.15rem 1.15rem;
+  transition:
+    top 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    left 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 220ms ease,
+    transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dark .moxt-tour-card {
+  background:
+    linear-gradient(
+      155deg,
+      color-mix(in srgb, var(--app-surface) 92%, #1a3a34) 0%,
+      var(--app-surface) 55%,
+      color-mix(in srgb, var(--app-surface) 85%, var(--app-accent-soft)) 100%
+    );
+}
+
+.moxt-tour-card-glow {
+  position: absolute;
+  top: -40%;
+  right: -20%;
+  width: 12rem;
+  height: 12rem;
+  border-radius: 999px;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--app-accent) 28%, transparent) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.moxt-tour-card-top {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.moxt-tour-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.28rem 0.65rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--app-accent);
+  background: color-mix(in srgb, var(--app-accent-soft) 80%, var(--app-surface));
+  border: 1px solid color-mix(in srgb, var(--app-accent) 22%, transparent);
+}
+
+.moxt-tour-skip-icon {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.7rem;
+  color: var(--app-text-muted);
+  background: color-mix(in srgb, var(--app-surface-muted) 70%, transparent);
+  border: 1px solid var(--app-border);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.moxt-tour-skip-icon:hover {
+  color: var(--app-text);
+  background: var(--app-surface-muted);
+}
+
+.moxt-tour-progress {
+  position: relative;
+  z-index: 1;
+  margin-top: 0.85rem;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-border-md) 70%, transparent);
+}
+
+.moxt-tour-progress-bar {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--app-accent), var(--app-teal));
+  transition: width 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.moxt-tour-stepcount {
+  position: relative;
+  z-index: 1;
+  margin-top: 0.7rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--app-text-faint);
+}
+
+.moxt-tour-title {
+  position: relative;
+  z-index: 1;
+  margin-top: 0.35rem;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+  color: var(--app-text);
+}
+
+.moxt-tour-body {
+  position: relative;
+  z-index: 1;
+  margin-top: 0.45rem;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--app-text-muted);
+}
+
+.moxt-tour-actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1.15rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .moxt-tour,
+  .moxt-tour-spotlight,
+  .moxt-tour-card,
+  .moxt-tour-progress-bar {
+    transition: none !important;
+  }
+
+  .moxt-tour-spotlight-ring {
+    animation: none !important;
   }
 }

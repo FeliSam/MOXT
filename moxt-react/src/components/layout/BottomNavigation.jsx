@@ -6,6 +6,7 @@ import { bottomNavigationItems } from '../../config/bottomNavigation'
 import { preloadRoute } from '../../config/navigation'
 import { resolveNavLabel } from '../../config/navLabel'
 import { useLanguage } from '../../contexts/useLanguage'
+import { TOUR_MORE_EVENT } from '../../features/onboarding/tourChrome'
 import { selectMoreMenuBadgeCount } from './moreServicesUtils'
 import { MobileMoreDrawer } from './MobileMoreDrawer'
 
@@ -24,10 +25,10 @@ function BottomNavIcon({ active, icon: Icon }) {
       className={`${BOTTOM_NAV_ICON} ${
         active
           ? 'text-[var(--app-accent)] dark:text-[var(--app-teal)]'
-          : 'text-[var(--app-text-muted)]'
+          : 'text-[var(--app-text)]/72'
       }`}
     >
-      <Icon className="text-lg" aria-hidden="true" />
+      <Icon className="text-lg" strokeWidth={2.1} aria-hidden="true" />
     </span>
   )
 }
@@ -37,17 +38,20 @@ function BottomNavLabel({ children }) {
 }
 
 function BottomNavItem({ item, resolveLabel, itemRef }) {
-  const { icon, path } = item
+  const { icon, path, id } = item
   return (
     <NavLink
       ref={itemRef}
       to={path}
       end={path === '/dashboard'}
+      data-tour={`nav-${id}`}
       onFocus={() => preloadRoute(path)}
       onMouseEnter={() => preloadRoute(path)}
       className={({ isActive }) =>
         `${BOTTOM_NAV_SLOT} ${
-          isActive ? 'nav-item-active-bottom text-[var(--app-accent)] dark:text-[var(--app-teal)]' : 'text-[var(--app-text-muted)]'
+          isActive
+            ? 'nav-item-active-bottom text-[var(--app-accent)] dark:text-[var(--app-teal)]'
+            : 'text-[var(--app-text)]/72'
         }`
       }
     >
@@ -80,6 +84,14 @@ export function BottomNavigation() {
   useLayoutEffect(() => {
     setMoreOpen(false)
   }, [location.pathname])
+
+  useEffect(() => {
+    function onTourMore(event) {
+      setMoreOpen(Boolean(event.detail?.open))
+    }
+    window.addEventListener(TOUR_MORE_EVENT, onTourMore)
+    return () => window.removeEventListener(TOUR_MORE_EVENT, onTourMore)
+  }, [])
 
   useEffect(() => {
     function onPageShow(event) {
@@ -121,7 +133,8 @@ export function BottomNavigation() {
     <>
       <nav
         ref={navRef}
-        className="bottom-nav-shell z-[var(--z-nav)] grid grid-cols-5 gap-0.5 rounded-[1rem] border border-[var(--app-border)] bg-[var(--app-surface)]/40 shadow-[var(--shadow-float)] backdrop-blur-xl lg:hidden"
+        data-tour="bottom-nav"
+        className="bottom-nav-shell z-[var(--z-nav)] grid grid-cols-5 gap-0.5 rounded-[1rem] border border-[var(--app-border)]/80 bg-[var(--app-surface)]/65 shadow-[var(--shadow-float)] backdrop-blur-xl lg:hidden"
         aria-label={t('nav.mobileQuickAria')}
       >
         <span
@@ -147,6 +160,7 @@ export function BottomNavigation() {
 
         <button
           type="button"
+          data-tour="nav-more"
           onClick={() => setMoreOpen(true)}
           aria-label={
             moreBadge > 0
@@ -154,7 +168,7 @@ export function BottomNavigation() {
               : t('nav.moreServicesAria')
           }
           aria-haspopup="dialog"
-          className={`${BOTTOM_NAV_SLOT} relative text-[var(--app-text-muted)]`}
+          className={`${BOTTOM_NAV_SLOT} relative text-[var(--app-text)]/72`}
         >
           <BottomNavIcon active={false} icon={FiGrid} />
           <BottomNavLabel>{t('nav.more')}</BottomNavLabel>

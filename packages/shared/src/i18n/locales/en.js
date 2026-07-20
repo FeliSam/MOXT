@@ -354,6 +354,9 @@ export const en = {
     settings: "Settings",
     signOut: "Sign out",
     closeServices: "Close services",
+    morePanelTitle: "All services",
+    morePanelSubtitle: "Access modules outside the bottom navigation.",
+    searchServicePlaceholder: "Search a service...",
     accountSession: "Account and session",
     itemUnreadAria: "{label} ({count} unread)",
   },
@@ -5708,6 +5711,18 @@ export const en = {
       },
     },
     overview: {
+      officialStatus: {
+        title: "Official MOXT status",
+        description:
+          "Publish a status as MOXT, visible for 7 days at the top of the banner — without using your personal account.",
+        action: "Publish a MOXT status",
+      },
+      tourPreview: {
+        title: "Guided tour (test)",
+        description:
+          "Replay the onboarding tour on Home — mobile and desktop have different steps.",
+        action: "Start the tour",
+      },
       actions: {
         transfers: {
           label: "Steer transfers",
@@ -6491,6 +6506,15 @@ export const en = {
       channel: "Channel",
     },
     changelog: {
+      v120: {
+        date: "July 2026",
+        h0: "Mobile top bar: contextual shortcuts, hover labels, and balanced sizes",
+        h1: "Messaging: keyboard stays open after send, no gap under the composer",
+        h2: "Sign-up: email OTP fallback when SMSC rejects the number",
+        h3: "Guide: all published articles are shown",
+        h4: "Wallet page removed; redirects to receipts",
+        h5: "Profile: Account / Trust / Documents with icon and label on one line",
+      },
       v110: {
         date: "July 2026",
         h0: "Native push notifications (Android / iOS) and Capacitor camera permissions",
@@ -6726,24 +6750,95 @@ export const en = {
   onboarding: {
     title: "Welcome to MOXT",
     later: "Later",
-    next: "Continue",
-    start: "Get started",
-    slide1: {
-      eyebrow: "Account created",
-      heading: "Hello {name}!",
-      body: "Your space is ready. MOXT connects Africa and Russia for transfers, parcels, and everyday exchange.",
-    },
-    slide2: {
-      heading: "Three pillars to start",
-      transfers: "Transfers — send and receive money with confidence.",
-      parcels: "Parcels — find a traveler or offer a trip.",
-      marketplace: "Marketplace — buy and sell near you.",
-    },
-    slide3: {
-      heading: "Ready to explore",
-      body: "Open your home feed to discover the platform. You can confirm email and identity later in Security.",
-      bodyEmail:
-        "Confirm your email in Security first to unlock publishing, then explore the platform.",
+    skip: "Skip",
+    next: "Next",
+    start: "Let’s go",
+    tour: {
+      eyebrow: "Guided tour",
+      stepOf: "{current} / {total}",
+      secure: "Secure my account",
+      welcome: {
+        title: "Welcome, {name}",
+        body: "In under a minute, see where MOXT’s essential tools live. You can skip anytime.",
+      },
+      mobile: {
+        bottomNav: {
+          title: "Main navigation",
+          body: "This bar stays with you: transfers, Moxt home, marketplace, parcels, and More.",
+        },
+        home: {
+          title: "Moxt home",
+          body: "Your dashboard: recent activity, shortcuts, and a clear overview of the platform.",
+        },
+        transfers: {
+          title: "Transfers",
+          body: "Send and receive money between Africa and Russia with confidence.",
+        },
+        marketplace: {
+          title: "Marketplace",
+          body: "Buy, sell, and browse listings near you.",
+        },
+        parcels: {
+          title: "Parcels",
+          body: "Find a traveler or offer a trip to move a parcel.",
+        },
+        more: {
+          title: "More menu",
+          body: "Open all other services here: guide, jobs, business, and more.",
+        },
+        morePanel: {
+          title: "All services",
+          body: "This panel gathers what isn’t in the bottom bar. Browse the tiles or use search.",
+        },
+        headerNews: {
+          title: "News",
+          body: "Quick access to news from the top bar.",
+        },
+        header: {
+          title: "Top bar",
+          body: "Notifications, messages, and essential shortcuts — always visible while you browse.",
+        },
+      },
+      news: {
+        title: "News",
+        body: "Follow community updates and publications on MOXT — Africa and Russia.",
+      },
+      guide: {
+        title: "Guide",
+        body: "Living in Russia: practical steps, everyday rules, and laws worth knowing.",
+      },
+      desktop: {
+        sidebar: {
+          title: "Navigation rail",
+          body: "Reach key sections from this floating rail. Hover an icon to reveal its label.",
+        },
+        more: {
+          title: "More services",
+          body: "The More menu opens the full catalog: guide, events, jobs, and other modules.",
+        },
+        morePanel: {
+          title: "Service catalog",
+          body: "Find everything that isn’t on the rail — grouped by theme, one click away.",
+        },
+        search: {
+          title: "Global search",
+          body: "Quickly find people, listings, parcels, or services from any page.",
+        },
+        actions: {
+          title: "Quick actions",
+          body: "Notifications, favorites, and theme — everyday tools, always within reach.",
+        },
+        profile: {
+          title: "Your account",
+          body: "Profile, security, and settings: manage identity and trust from here.",
+        },
+      },
+      done: {
+        title: "You’re ready",
+        body: "Explore at your own pace. You can confirm email and identity later in Security.",
+        bodyEmail:
+          "Confirm your email in Security first to unlock publishing, then explore freely.",
+      },
     },
   },
 }

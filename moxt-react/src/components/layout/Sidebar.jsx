@@ -21,6 +21,7 @@ import { logout } from '../../features/auth/authSlice'
 import { stopRealtimeSubscription } from '../../services/realtimeService'
 import { closeSidebar } from '../../features/ui/uiSlice'
 import { useLanguage } from '../../contexts/useLanguage'
+import { TOUR_MORE_EVENT } from '../../features/onboarding/tourChrome'
 import { CountBounce } from '../ui/CountBounce'
 import { MoreServicesContent } from './MoreServicesContent'
 import { filterNavigationGroups, useNavigationBadges } from './moreServicesUtils'
@@ -121,6 +122,14 @@ export function Sidebar({ open }) {
     return () => window.removeEventListener('pageshow', onPageShow)
   }, [dispatch])
 
+  useEffect(() => {
+    function onTourMore(event) {
+      setMoreOpen(Boolean(event.detail?.open))
+    }
+    window.addEventListener(TOUR_MORE_EVENT, onTourMore)
+    return () => window.removeEventListener(TOUR_MORE_EVENT, onTourMore)
+  }, [])
+
   async function handleLogout() {
     stopRealtimeSubscription()
     await dispatch(logout())
@@ -132,6 +141,7 @@ export function Sidebar({ open }) {
       {/* ── Sidebar : dock flottant, rail fixe desktop, cascade 4 niveaux au survol ── */}
       <aside
         ref={asideRef}
+        data-tour="sidebar"
         onMouseLeave={() => setRailHover(null)}
         onBlur={(event) => {
           if (!event.currentTarget.contains(event.relatedTarget)) {
@@ -185,6 +195,7 @@ export function Sidebar({ open }) {
 
               <button
                 type="button"
+                data-tour="nav-more"
                 onClick={() => setMoreOpen(true)}
                 onMouseEnter={() => setRailHover('more')}
                 onFocus={() => setRailHover('more')}
@@ -289,7 +300,10 @@ export function Sidebar({ open }) {
             onClick={() => setMoreOpen(false)}
             aria-label={t('nav.closeServices')}
           />
-          <aside className="panel-pop absolute bottom-4 left-24 top-4 flex w-[24rem] flex-col overflow-hidden rounded-[1rem] border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--shadow-float)]">
+          <aside
+            data-tour="more-panel"
+            className="panel-pop absolute bottom-4 left-24 top-4 flex w-[24rem] flex-col overflow-hidden rounded-[1rem] border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--shadow-float)]"
+          >
             <div className="shrink-0 border-b border-[var(--app-border)] p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -398,6 +412,7 @@ function SidebarLink({
     <NavLink
       to={item.path}
       end={item.path === '/dashboard'}
+      data-tour={item.id ? `nav-${item.id}` : undefined}
       onClick={onClick}
       onMouseEnter={() => {
         preloadRoute(item.path)

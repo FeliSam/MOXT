@@ -353,6 +353,9 @@ export const fr = {
     settings: "Réglages",
     signOut: "Déconnexion",
     closeServices: "Fermer les services",
+    morePanelTitle: "Tous les services",
+    morePanelSubtitle: "Accédez aux modules hors barre de navigation.",
+    searchServicePlaceholder: "Rechercher un service...",
     accountSession: "Compte et session",
     itemUnreadAria: "{label} ({count} non lus)",
   },
@@ -5682,6 +5685,18 @@ export const fr = {
       },
     },
     overview: {
+      officialStatus: {
+        title: "Statut officiel MOXT",
+        description:
+          "Publiez un statut au nom de MOXT, visible 7 jours en tête du bandeau — sans passer par votre compte personnel.",
+        action: "Publier un statut MOXT",
+      },
+      tourPreview: {
+        title: "Visite guidée (test)",
+        description:
+          "Relance la présentation onboarding sur l’accueil — mobile et desktop ont des étapes différentes.",
+        action: "Lancer la visite",
+      },
       actions: {
         transfers: {
           label: "Piloter les transferts",
@@ -6491,6 +6506,15 @@ export const fr = {
       channel: "Canal",
     },
     changelog: {
+      v120: {
+        date: "Juillet 2026",
+        h0: "Barre haute mobile : raccourcis contextuels, labels au survol et tailles harmonisées",
+        h1: "Messagerie : clavier qui reste ouvert à l’envoi, sans vide sous le composer",
+        h2: "Inscription : secours OTP e-mail si SMSC refuse le numéro",
+        h3: "Guide : affichage de tous les articles publiés",
+        h4: "Page Portefeuille retirée ; redirection vers les reçus",
+        h5: "Profil : Mon compte / Confiance / Documents avec icône et libellé sur une ligne",
+      },
       v110: {
         date: "Juillet 2026",
         h0: "Notifications push natives (Android / iOS) et permissions caméra Capacitor",
@@ -6726,24 +6750,95 @@ export const fr = {
   onboarding: {
     title: "Bienvenue sur MOXT",
     later: "Plus tard",
-    next: "Continuer",
-    start: "Commencer",
-    slide1: {
-      eyebrow: "Compte créé",
-      heading: "Bonjour {name} !",
-      body: "Votre espace est prêt. MOXT relie l’Afrique et la Russie pour vos transferts, colis et échanges du quotidien.",
-    },
-    slide2: {
-      heading: "Trois piliers pour démarrer",
-      transfers: "Transferts — envoyez et recevez de l’argent en confiance.",
-      parcels: "Colis — trouvez un voyageur ou proposez un trajet.",
-      marketplace: "Marketplace — achetez et vendez près de chez vous.",
-    },
-    slide3: {
-      heading: "Prêt à explorer",
-      body: "Ouvrez votre accueil pour découvrir la plateforme. Vous pourrez confirmer votre e-mail et votre identité plus tard dans Sécurité.",
-      bodyEmail:
-        "Confirmez d’abord votre e-mail dans Sécurité pour débloquer toutes les publications, puis explorez la plateforme.",
+    skip: "Passer",
+    next: "Suivant",
+    start: "C’est parti",
+    tour: {
+      eyebrow: "Visite guidée",
+      stepOf: "{current} / {total}",
+      secure: "Sécuriser mon compte",
+      welcome: {
+        title: "Bienvenue, {name}",
+        body: "En moins d’une minute, découvrez où se trouvent les outils essentiels de MOXT. Vous pouvez passer à tout moment.",
+      },
+      mobile: {
+        bottomNav: {
+          title: "Navigation principale",
+          body: "Cette barre vous accompagne partout : transferts, accueil Moxt, marketplace, colis, et le menu Plus.",
+        },
+        home: {
+          title: "Accueil Moxt",
+          body: "Votre tableau de bord : activité récente, raccourcis et vue d’ensemble de la plateforme.",
+        },
+        transfers: {
+          title: "Transferts",
+          body: "Envoyez et recevez de l’argent entre l’Afrique et la Russie, en toute confiance.",
+        },
+        marketplace: {
+          title: "Marketplace",
+          body: "Achetez, vendez et explorez les annonces près de chez vous.",
+        },
+        parcels: {
+          title: "Colis",
+          body: "Trouvez un voyageur ou proposez un trajet pour faire voyager un colis.",
+        },
+        more: {
+          title: "Menu Plus",
+          body: "Ouvrez ici tous les autres services : guide, jobs, entreprise, et plus encore.",
+        },
+        morePanel: {
+          title: "Tous les services",
+          body: "Ce panneau regroupe ce qui n’est pas dans la barre du bas. Parcourez les tuiles ou utilisez la recherche.",
+        },
+        headerNews: {
+          title: "Actualités",
+          body: "Accès rapide aux actualités depuis la barre du haut.",
+        },
+        header: {
+          title: "Barre du haut",
+          body: "Notifications, messages et raccourcis essentiels — toujours visibles pendant que vous naviguez.",
+        },
+      },
+      news: {
+        title: "Actualités",
+        body: "Suivez les infos et publications de la communauté MOXT — Afrique et Russie.",
+      },
+      guide: {
+        title: "Guide",
+        body: "Informations pour vivre en Russie : démarches, règles du quotidien et lois utiles à connaître.",
+      },
+      desktop: {
+        sidebar: {
+          title: "Rail de navigation",
+          body: "Accédez aux sections clés depuis ce rail flottant. Survolez une icône pour afficher son libellé.",
+        },
+        more: {
+          title: "Services supplémentaires",
+          body: "Le menu Plus ouvre le catalogue complet : guide, événements, jobs, et le reste des modules.",
+        },
+        morePanel: {
+          title: "Catalogue des services",
+          body: "Retrouvez ici tout ce qui n’est pas sur le rail — organisé par thèmes, prêt à un clic.",
+        },
+        search: {
+          title: "Recherche globale",
+          body: "Retrouvez rapidement personnes, annonces, colis ou services depuis n’importe quelle page.",
+        },
+        actions: {
+          title: "Actions rapides",
+          body: "Notifications, favoris et thème — vos outils du quotidien, toujours à portée.",
+        },
+        profile: {
+          title: "Votre compte",
+          body: "Profil, sécurité et paramètres : gérez votre identité et votre confiance depuis ici.",
+        },
+      },
+      done: {
+        title: "Vous êtes prêt",
+        body: "Explorez à votre rythme. Vous pourrez confirmer e-mail et identité plus tard dans Sécurité.",
+        bodyEmail:
+          "Confirmez d’abord votre e-mail dans Sécurité pour débloquer toutes les publications, puis explorez librement.",
+      },
     },
   },
 }

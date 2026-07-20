@@ -11,6 +11,18 @@ import { formatDateTime } from '../utils/formatters'
 
 const CHANGELOG = [
   {
+    version: '1.2.0',
+    dateKey: 'version.changelog.v120.date',
+    highlightKeys: [
+      'version.changelog.v120.h0',
+      'version.changelog.v120.h1',
+      'version.changelog.v120.h2',
+      'version.changelog.v120.h3',
+      'version.changelog.v120.h4',
+      'version.changelog.v120.h5',
+    ],
+  },
+  {
     version: '1.1.0',
     dateKey: 'version.changelog.v110.date',
     highlightKeys: [

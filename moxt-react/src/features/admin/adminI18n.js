@@ -114,6 +114,10 @@ export const ADMIN_FR_SOURCES = {
   'admin.overview.officialStatus.description':
     'Publiez un statut au nom de MOXT, visible 7 jours en tête du bandeau — sans passer par votre compte personnel.',
   'admin.overview.officialStatus.action': 'Publier un statut MOXT',
+  'admin.overview.tourPreview.title': 'Visite guidée (test)',
+  'admin.overview.tourPreview.description':
+    'Relance la présentation onboarding sur l’accueil — mobile et desktop ont des étapes différentes.',
+  'admin.overview.tourPreview.action': 'Lancer la visite',
 
   // ── detail panel ────────────────────────────────────────────────────────
   'admin.detail.title': 'Vue detaillee',

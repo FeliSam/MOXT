@@ -297,10 +297,10 @@ export function SettingsPage() {
               onChange={(v) => updatePreference('pushNotifications', v)}
             />
             {showWebPushPrompt ? (
-              <div className="sm:col-span-2 rounded-2xl border border-brand-200 bg-brand-50/80 p-4 dark:border-brand-900/50 dark:bg-brand-950/40">
+              <div className="sm:col-span-2 rounded-2xl border border-brand-200 bg-[var(--app-accent-soft)] p-4 dark:border-brand-700">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-sm font-bold">{t('settings.push.permissionRequiredTitle')}</p>
+                    <p className="text-sm font-bold text-[var(--app-text)]">{t('settings.push.permissionRequiredTitle')}</p>
                     <p className="mt-1 text-xs leading-5 text-[var(--app-text-muted)]">
                       {t('settings.push.permissionRequiredBody')}
                     </p>
@@ -570,7 +570,7 @@ function NotifToggle({ label, description, checked, onChange }) {
       onClick={() => onChange(!checked)}
       className={`flex items-center gap-3 rounded-2xl border p-3 text-left transition ${
         checked
-          ? 'border-brand-300 bg-brand-50 text-slate-900 dark:border-brand-600 dark:bg-brand-950 dark:text-brand-50'
+          ? 'border-brand-300 bg-[var(--app-accent-soft)] text-[var(--app-text)] dark:border-brand-700'
           : 'border-[var(--app-border)] bg-[var(--app-surface-muted)] text-[var(--app-text)]'
       }`}
     >
@@ -586,16 +586,8 @@ function NotifToggle({ label, description, checked, onChange }) {
         />
       </span>
       <span className="min-w-0">
-        <strong className="block text-sm text-inherit">{label}</strong>
-        <span
-          className={`block text-xs ${
-            checked
-              ? 'text-slate-600 dark:text-brand-100/80'
-              : 'text-[var(--app-text-muted)]'
-          }`}
-        >
-          {description}
-        </span>
+        <strong className="block text-sm text-[var(--app-text)]">{label}</strong>
+        <span className="block text-xs text-[var(--app-text-muted)]">{description}</span>
       </span>
     </button>
   )

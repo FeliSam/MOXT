@@ -5,13 +5,16 @@ import {
   FiArrowRight,
   FiCheckCircle,
   FiLayers,
+  FiMap,
   FiRepeat,
   FiZap,
 } from 'react-icons/fi'
+import { useNavigate } from 'react-router-dom'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { TransferStatusBadge } from '../../transfers/TransferStatusBadge'
 import { formatMoney } from '../../transfers/transferUtils'
 import { StatusComposer } from '../../statuses/StatusComposer'
+import { markTourPreview } from '../../onboarding/welcomeStorage'
 import { CARD, CONTENT_SECTIONS, ITEM } from '../adminConfig'
 import { adminOptionLabel, adminText } from '../adminI18n'
 import { statusDotColor } from '../adminUtils'
@@ -24,7 +27,13 @@ const MOXT_OFFICIAL_IDENTITY = {
 
 export function AdminOverviewPanel({ content, metrics, onOpenContent, onOpenView, queues, setSelected, transfers }) {
   const { t } = useLanguage()
+  const navigate = useNavigate()
   const [officialComposerOpen, setOfficialComposerOpen] = useState(false)
+
+  function handlePreviewTour() {
+    markTourPreview()
+    navigate('/dashboard')
+  }
 
   return (
     <div className="grid gap-5">
@@ -55,6 +64,29 @@ export function AdminOverviewPanel({ content, metrics, onOpenContent, onOpenView
           className="shrink-0 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-brand-800"
         >
           {adminText(t, 'admin.overview.officialStatus.action')}
+        </button>
+      </div>
+
+      <div className={`${CARD} flex flex-wrap items-center justify-between gap-3 p-5`}>
+        <div className="flex items-center gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-slate-800 to-brand-600 text-white shadow-sm dark:from-slate-700 dark:to-teal-500">
+            <FiMap className="text-sm" />
+          </span>
+          <div>
+            <strong className="block text-sm font-black">
+              {adminText(t, 'admin.overview.tourPreview.title')}
+            </strong>
+            <p className="text-xs text-[var(--app-text-muted)]">
+              {adminText(t, 'admin.overview.tourPreview.description')}
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={handlePreviewTour}
+          className="shrink-0 rounded-xl border border-[var(--app-border-md)] bg-[var(--app-surface)] px-4 py-2.5 text-sm font-bold text-[var(--app-text)] shadow-sm transition hover:bg-[var(--app-surface-muted)]"
+        >
+          {adminText(t, 'admin.overview.tourPreview.action')}
         </button>
       </div>
 

@@ -353,6 +353,9 @@ export const es = {
     settings: "Ajustes",
     signOut: "Cerrar sesión",
     closeServices: "Cerrar servicios",
+    morePanelTitle: "Todos los servicios",
+    morePanelSubtitle: "Accede a los módulos fuera de la barra inferior.",
+    searchServicePlaceholder: "Buscar un servicio...",
     accountSession: "Cuenta y sesión",
     itemUnreadAria: "{label} ({count} sin leer)"
   },
@@ -5707,6 +5710,18 @@ export const es = {
       }
     },
     overview: {
+      officialStatus: {
+        title: "Estado oficial MOXT",
+        description:
+          "Publica un estado como MOXT, visible 7 días arriba del banner — sin usar tu cuenta personal.",
+        action: "Publicar un estado MOXT",
+      },
+      tourPreview: {
+        title: "Visita guiada (prueba)",
+        description:
+          "Relanza el onboarding en Inicio — móvil y escritorio tienen pasos distintos.",
+        action: "Lanzar la visita",
+      },
       actions: {
         transfers: {
           label: "Pilotar transferencias",
@@ -6490,6 +6505,15 @@ export const es = {
       channel: "Canal"
     },
     changelog: {
+      v120: {
+        date: "Julio 2026",
+        h0: "Barra superior móvil: atajos contextuales, etiquetas al pasar el cursor y tamaños armonizados",
+        h1: "Mensajes: el teclado se mantiene abierto al enviar, sin hueco bajo el compositor",
+        h2: "Registro: OTP por correo si SMSC rechaza el número",
+        h3: "Guía: se muestran todos los artículos publicados",
+        h4: "Página Cartera eliminada; redirección a recibos",
+        h5: "Perfil: Cuenta / Confianza / Documentos con icono y nombre en la misma línea"
+      },
       v110: {
         date: "Julho 2026",
         h0: "Notificaciones push nactivas (Android / iOS) y permissões de câmara Capacitor",
@@ -6722,24 +6746,95 @@ export const es = {
   onboarding: {
     title: "Bienvenido a MOXT",
     later: "Más tarde",
-    next: "Continuar",
+    skip: "Omitir",
+    next: "Siguiente",
     start: "Empezar",
-    slide1: {
-      eyebrow: "Cuenta creada",
-      heading: "Hola {name}!",
-      body: "Tu espacio está listo. MOXT conecta África y Rusia para transferencias, paquetes e intercambios del día a día.",
-    },
-    slide2: {
-      heading: "Tres pilares para empezar",
-      transfers: "Transferencias — envía y recibe dinero con confianza.",
-      parcels: "Paquetes — encuentra un viajero o ofrece un trayecto.",
-      marketplace: "Marketplace — compra y vende cerca de ti.",
-    },
-    slide3: {
-      heading: "Listo para explorar",
-      body: "Abre el inicio para descubrir la plataforma. Podrás confirmar email e identidad más tarde en Seguridad.",
-      bodyEmail:
-        "Confirma primero tu email en Seguridad para publicar, luego explora la plataforma.",
+    tour: {
+      eyebrow: "Visita guiada",
+      stepOf: "{current} / {total}",
+      secure: "Proteger mi cuenta",
+      welcome: {
+        title: "Bienvenido, {name}",
+        body: "En menos de un minuto, descubre dónde están las herramientas esenciales de MOXT. Puedes omitir en cualquier momento.",
+      },
+      mobile: {
+        bottomNav: {
+          title: "Navegación principal",
+          body: "Esta barra te acompaña: transferencias, inicio Moxt, marketplace, paquetes y Más.",
+        },
+        home: {
+          title: "Inicio Moxt",
+          body: "Tu panel: actividad reciente, accesos directos y una visión clara de la plataforma.",
+        },
+        transfers: {
+          title: "Transferencias",
+          body: "Envía y recibe dinero entre África y Rusia con confianza.",
+        },
+        marketplace: {
+          title: "Marketplace",
+          body: "Compra, vende y explora anuncios cerca de ti.",
+        },
+        parcels: {
+          title: "Paquetes",
+          body: "Encuentra un viajero u ofrece un trayecto para mover un paquete.",
+        },
+        more: {
+          title: "Menú Más",
+          body: "Abre aquí el resto de servicios: guía, empleos, empresa y más.",
+        },
+        morePanel: {
+          title: "Todos los servicios",
+          body: "Este panel reúne lo que no está en la barra inferior. Explora las tarjetas o busca.",
+        },
+        headerNews: {
+          title: "Noticias",
+          body: "Acceso rápido a las noticias desde la barra superior.",
+        },
+        header: {
+          title: "Barra superior",
+          body: "Notificaciones, mensajes y atajos esenciales — siempre visibles mientras navegas.",
+        },
+      },
+      news: {
+        title: "Noticias",
+        body: "Sigue las novedades y publicaciones de la comunidad MOXT — África y Rusia.",
+      },
+      guide: {
+        title: "Guía",
+        body: "Vivir en Rusia: trámites, normas del día a día y leyes útiles que conviene conocer.",
+      },
+      desktop: {
+        sidebar: {
+          title: "Rail de navegación",
+          body: "Accede a las secciones clave desde este rail flotante. Pasa el cursor para ver la etiqueta.",
+        },
+        more: {
+          title: "Más servicios",
+          body: "El menú Más abre el catálogo completo: guía, eventos, empleos y otros módulos.",
+        },
+        morePanel: {
+          title: "Catálogo de servicios",
+          body: "Encuentra aquí todo lo que no está en el rail — organizado por temas.",
+        },
+        search: {
+          title: "Búsqueda global",
+          body: "Encuentra rápido personas, anuncios, paquetes o servicios desde cualquier página.",
+        },
+        actions: {
+          title: "Acciones rápidas",
+          body: "Notificaciones, favoritos y tema — tus herramientas diarias, siempre a mano.",
+        },
+        profile: {
+          title: "Tu cuenta",
+          body: "Perfil, seguridad y ajustes: gestiona tu identidad y confianza desde aquí.",
+        },
+      },
+      done: {
+        title: "Ya estás listo",
+        body: "Explora a tu ritmo. Podrás confirmar email e identidad más tarde en Seguridad.",
+        bodyEmail:
+          "Confirma primero tu email en Seguridad para publicar, luego explora libremente.",
+      },
     },
   },
 }

@@ -1,32 +1,44 @@
 import { useEffect, useState } from 'react'
 import { useSelector } from 'react-redux'
-import { useLocation } from 'react-router-dom'
 import {
+  clearTourPreview,
   hasSeenWelcome,
+  isTourPreview,
   isWelcomePending,
   markWelcomeSeen,
+  TOUR_PREVIEW_EVENT,
 } from '../../features/onboarding/welcomeStorage'
-import { WelcomeModal } from './WelcomeModal'
+import { ProductTour } from './ProductTour'
 
 export function WelcomeGate() {
   const user = useSelector((state) => state.auth.user)
-  const location = useLocation()
-  const [open, setOpen] = useState(false)
+  const [dismissedWelcomeFor, setDismissedWelcomeFor] = useState(null)
+  const [previewOpen, setPreviewOpen] = useState(() => isTourPreview())
 
   useEffect(() => {
-    if (!user?.id) {
-      setOpen(false)
-      return
+    function onPreview() {
+      setPreviewOpen(true)
     }
-    setOpen(isWelcomePending() && !hasSeenWelcome(user.id))
-  }, [user?.id, location.pathname])
+    window.addEventListener(TOUR_PREVIEW_EVENT, onPreview)
+    return () => window.removeEventListener(TOUR_PREVIEW_EVENT, onPreview)
+  }, [])
+
+  if (!user?.id) return null
+
+  const welcomeOpen =
+    dismissedWelcomeFor !== user.id &&
+    isWelcomePending() &&
+    !hasSeenWelcome(user.id)
+  const open = welcomeOpen || previewOpen
 
   function handleClose() {
-    if (user?.id) markWelcomeSeen(user.id)
-    setOpen(false)
+    if (welcomeOpen) {
+      markWelcomeSeen(user.id)
+      setDismissedWelcomeFor(user.id)
+    }
+    clearTourPreview()
+    setPreviewOpen(false)
   }
 
-  if (!user) return null
-
-  return <WelcomeModal open={open} onClose={handleClose} user={user} />
+  return <ProductTour open={open} onClose={handleClose} user={user} />
 }
