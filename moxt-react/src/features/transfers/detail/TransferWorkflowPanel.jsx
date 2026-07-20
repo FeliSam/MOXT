@@ -131,9 +131,9 @@ export function TransferWorkflowPanel({
             }
             title={actionTitle}
           >
-            <label className="grid cursor-pointer gap-2 rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3">
+            <label className="grid min-w-0 cursor-pointer gap-2 overflow-hidden rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3">
               <span className="flex items-center gap-2 text-sm font-bold">
-                <FiUpload className="text-brand-700 dark:text-brand-300" />
+                <FiUpload className="shrink-0 text-brand-700 dark:text-brand-300" />
                 {t('transfers.workflow.paymentProof')}
               </span>
               {proof ? (
@@ -218,9 +218,9 @@ function ActionZone({ children, description, title }) {
 function CompactProof({ label, proof }) {
   if (!proof?.name) return null
   return (
-    <div className="flex items-center gap-2 rounded-xl bg-[var(--app-surface-muted)] px-3 py-2 text-xs font-semibold">
+    <div className="flex min-w-0 items-center gap-2 overflow-hidden rounded-xl bg-[var(--app-surface-muted)] px-3 py-2 text-xs font-semibold">
       <FiFileText className="shrink-0 text-brand-700 dark:text-brand-300" />
-      <span className="truncate">
+      <span className="min-w-0 flex-1 truncate" title={`${label}: ${proof.name}`}>
         {label}: {proof.name}
       </span>
     </div>
@@ -235,7 +235,7 @@ function ProofPreview({ proof }) {
   const previewUrl = proof.url || (file instanceof File ? URL.createObjectURL(file) : null)
 
   return (
-    <div className="flex items-center gap-3 rounded-lg bg-[var(--app-surface)] p-2">
+    <div className="flex min-w-0 items-center gap-3 overflow-hidden rounded-lg bg-[var(--app-surface)] p-2">
       {type?.startsWith('image/') && previewUrl ? (
         <img src={previewUrl} alt={name} className="size-10 shrink-0 rounded-md object-cover" />
       ) : (
@@ -243,9 +243,13 @@ function ProofPreview({ proof }) {
           <FiFileText className="text-sm" />
         </span>
       )}
-      <span className="min-w-0 flex-1 truncate text-xs font-semibold">{name}</span>
+      <span className="min-w-0 flex-1 truncate text-xs font-semibold" title={name}>
+        {name}
+      </span>
       {proof.uploading ? (
-        <span className="text-[11px] text-[var(--app-text-muted)]">{t('transfers.workflow.uploading')}</span>
+        <span className="shrink-0 text-[11px] text-[var(--app-text-muted)]">
+          {t('transfers.workflow.uploading')}
+        </span>
       ) : (
         <FiCheck className="shrink-0 text-emerald-600" />
       )}

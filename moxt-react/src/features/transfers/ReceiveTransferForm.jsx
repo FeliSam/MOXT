@@ -56,17 +56,19 @@ export function ReceiveTransferForm({
         ) : null}
       </label>
 
-      <label className="grid gap-1 text-sm">
+      <label className="grid min-w-0 gap-1 overflow-hidden text-sm">
         <span className="font-bold">{t('transfers.receive.proofLabel')}</span>
         <input
           type="file"
           accept="image/*,.pdf"
-          className="text-sm"
+          className="max-w-full text-sm"
           disabled={submitting}
           onChange={(e) => onChange('proofFile', e.target.files?.[0] || null)}
         />
         {values.proofFile ? (
-          <span className="text-xs text-[var(--app-text-muted)]">{values.proofFile.name}</span>
+          <span className="truncate text-xs text-[var(--app-text-muted)]" title={values.proofFile.name}>
+            {values.proofFile.name}
+          </span>
         ) : null}
         {errors.proofFile ? <span className="text-xs text-red-600">{errors.proofFile}</span> : null}
       </label>

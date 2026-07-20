@@ -391,12 +391,16 @@ function BusinessStepCard({ active, children, description, done, locked, number,
 function StoredProofCard({ label, proof }) {
   if (!proof?.name) return null
   return (
-    <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 text-sm dark:border-emerald-900/40 dark:bg-emerald-950/20">
+    <div className="overflow-hidden rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 text-sm dark:border-emerald-900/40 dark:bg-emerald-950/20">
       <p className="font-black text-emerald-800 dark:text-emerald-300">{label}</p>
-      <div className="mt-2 flex items-center gap-2 text-xs text-[var(--app-text-muted)]">
+      <div className="mt-2 flex min-w-0 items-center gap-2 text-xs text-[var(--app-text-muted)]">
         <FiFileText className="shrink-0 text-emerald-600" />
-        <span className="truncate">{proof.name}</span>
-        {proof.uploadedAt ? <span>· {formatDate(proof.uploadedAt)}</span> : null}
+        <span className="min-w-0 flex-1 truncate" title={proof.name}>
+          {proof.name}
+        </span>
+        {proof.uploadedAt ? (
+          <span className="shrink-0">· {formatDate(proof.uploadedAt)}</span>
+        ) : null}
       </div>
     </div>
   )
@@ -404,7 +408,7 @@ function StoredProofCard({ label, proof }) {
 
 function ProofPreview({ proof }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl bg-[var(--app-surface)] p-3">
+    <div className="flex min-w-0 items-center gap-3 overflow-hidden rounded-xl bg-[var(--app-surface)] p-3">
       {proof.file?.type?.startsWith('image/') ? (
         <img
           src={proof.url || URL.createObjectURL(proof.file)}
@@ -416,8 +420,10 @@ function ProofPreview({ proof }) {
           <FiFileText />
         </span>
       )}
-      <span className="min-w-0 flex-1">
-        <strong className="block truncate text-xs">{proof.file?.name}</strong>
+      <span className="min-w-0 flex-1 overflow-hidden">
+        <strong className="block truncate text-xs" title={proof.file?.name}>
+          {proof.file?.name}
+        </strong>
         <span className="text-xs text-[var(--app-text-muted)]">
           {proof.uploading ? 'Envoi...' : `${Math.ceil((proof.file?.size || 0) / 1024)} Ko`}
         </span>

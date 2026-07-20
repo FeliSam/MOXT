@@ -679,39 +679,50 @@ const handlers = {
   // ── Transferts ────────────────────────────────────────────────────────────────
   'transfers/createTransfer': async (payload) => {
     if (payload.blocked) return
-    await upsert('transfers', {
-      id: payload.id,
-      userId: payload.userId,
-      originCountry: payload.originCountry,
-      businessId: payload.businessId,
-      businessOwnerId: payload.businessOwnerId,
-      status: payload.status,
-      direction: payload.direction,
-      amount: payload.amountSent,
-      fee: payload.fees ?? payload.fee ?? 0,
-      receivedAmount: payload.amountReceived,
-      rate: payload.rate,
-      rateDate: payload.rateDate,
-      rateSource: payload.rateSource,
-      sender: payload.sender,
-      recipient: payload.recipient,
-      exchanger: payload.exchanger,
-      timeline: payload.timeline,
-      createdAt: payload.createdAt,
-      updatedAt: payload.updatedAt,
-      paymentDeadlineAt: payload.paymentDeadlineAt,
-      payload: {
-        amountSent: payload.amountSent,
-        amountReceived: payload.amountReceived,
-        fees: payload.fees,
-        totalToPay: payload.totalToPay,
-        currencyFrom: payload.currencyFrom,
-        currencyTo: payload.currencyTo,
-        feePercent: payload.feePercent,
-        rateMarginPercent: payload.rateMarginPercent,
-        rawRate: payload.rawRate,
-      },
-    })
+    const remotePayload = {
+      amountSent: payload.amountSent,
+      amountReceived: payload.amountReceived,
+      fees: payload.fees,
+      totalToPay: payload.totalToPay,
+      currencyFrom: payload.currencyFrom,
+      currencyTo: payload.currencyTo,
+      feePercent: payload.feePercent,
+      rateMarginPercent: payload.rateMarginPercent,
+      rawRate: payload.rawRate,
+    }
+    try {
+      await upsert('transfers', {
+        id: payload.id,
+        userId: payload.userId,
+        originCountry: payload.originCountry,
+        businessId: payload.businessId,
+        businessOwnerId: payload.businessOwnerId,
+        status: payload.status,
+        direction: payload.direction,
+        amount: payload.amountSent,
+        fee: payload.fees ?? payload.fee ?? 0,
+        receivedAmount: payload.amountReceived,
+        rate: payload.rate,
+        rateDate: payload.rateDate,
+        rateSource: payload.rateSource,
+        sender: payload.sender,
+        recipient: payload.recipient,
+        exchanger: payload.exchanger,
+        timeline: payload.timeline,
+        createdAt: payload.createdAt,
+        updatedAt: payload.updatedAt,
+        paymentDeadlineAt: payload.paymentDeadlineAt,
+        payload: remotePayload,
+      })
+    } catch (error) {
+      const message = String(error?.message || error || '')
+      if (/could not find.*['"]payload['"].*transfers|payload.*transfers.*schema cache/i.test(message)) {
+        throw new Error(
+          "La colonne transfers.payload manque encore dans Supabase. Appliquez la migration Transferts, puis réessayez.",
+        )
+      }
+      throw error
+    }
     triggerEmail(payload.id, 'created').catch(() => {})
   },
   'transfers/declarePayment': async (payload, state) => {

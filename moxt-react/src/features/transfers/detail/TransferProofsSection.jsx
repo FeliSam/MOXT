@@ -91,14 +91,16 @@ function ProofDownloadRow({ compact, entry, transfer, transferId }) {
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3">
-      <div className="flex min-w-0 items-center gap-3">
+    <div className="flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3">
+      <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden">
         <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700 dark:bg-brand-900 dark:text-brand-200">
           <FiFileText />
         </span>
-        <div className="min-w-0">
-          <p className="text-sm font-bold">{label}</p>
-          <p className="truncate text-xs text-[var(--app-text-muted)]">{proof.name}</p>
+        <div className="min-w-0 flex-1 overflow-hidden">
+          <p className="truncate text-sm font-bold">{label}</p>
+          <p className="truncate text-xs text-[var(--app-text-muted)]" title={proof.name}>
+            {proof.name}
+          </p>
           {proof.uploadedAt ? (
             <p className="text-[11px] text-[var(--app-text-faint)]">
               {t('transfers.proof.addedOn', { date: formatDate(proof.uploadedAt) })}
@@ -106,7 +108,13 @@ function ProofDownloadRow({ compact, entry, transfer, transferId }) {
           ) : null}
         </div>
       </div>
-      <Button variant="secondary" icon={FiDownload} loading={downloading} onClick={handleDownload}>
+      <Button
+        className="shrink-0"
+        variant="secondary"
+        icon={FiDownload}
+        loading={downloading}
+        onClick={handleDownload}
+      >
         {t('transfers.proof.download')}
       </Button>
     </div>

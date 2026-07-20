@@ -38,13 +38,13 @@ export function TransferDetailActionsPanel({
       </p>
       <div className="mt-5 flex flex-wrap gap-3">
         {canDeclare ? (
-          <label className="grid w-full cursor-pointer gap-3 rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] p-4 transition hover:border-brand-300">
+          <label className="grid w-full min-w-0 cursor-pointer gap-3 overflow-hidden rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] p-4 transition hover:border-brand-300">
             <span className="flex items-center gap-2 text-sm font-bold">
-              <FiUpload className="text-brand-700 dark:text-brand-300" />{' '}
+              <FiUpload className="shrink-0 text-brand-700 dark:text-brand-300" />{' '}
               {t('transfers.workflow.paymentProof')}
             </span>
             {proof ? (
-              <div className="flex items-center gap-3 rounded-xl bg-[var(--app-surface)] p-3">
+              <div className="flex min-w-0 items-center gap-3 overflow-hidden rounded-xl bg-[var(--app-surface)] p-3">
                 {proof.file?.type?.startsWith('image/') ? (
                   <img
                     src={proof.url || URL.createObjectURL(proof.file)}
@@ -56,8 +56,10 @@ export function TransferDetailActionsPanel({
                     <FiFileText />
                   </span>
                 )}
-                <span className="min-w-0 flex-1">
-                  <strong className="block truncate text-xs">{proof.file?.name}</strong>
+                <span className="min-w-0 flex-1 overflow-hidden">
+                  <strong className="block truncate text-xs" title={proof.file?.name}>
+                    {proof.file?.name}
+                  </strong>
                   <span className="text-xs text-[var(--app-text-muted)]">
                     {proof.uploading
                       ? t('transfers.workflow.uploading')
