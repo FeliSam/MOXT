@@ -63,7 +63,7 @@ export function AppLayout({ children }) {
 
   return (
     <div
-      className={`w-full max-w-full text-[var(--app-text)] ${
+      className={`w-full max-w-full overflow-x-clip text-[var(--app-text)] ${
         isMessagesRoute
           ? 'messages-shell h-dvh max-h-dvh overflow-hidden overscroll-none'
           : 'min-h-screen'
@@ -84,8 +84,6 @@ export function AppLayout({ children }) {
         />
       ) : null}
       <Sidebar open={sidebarOpen} />
-      {/* overflow-x only on the content column — never on a shell that wraps
-          position:fixed bottom nav (clip/hidden forces overflow-y and lifts the bar). */}
       <div
         className={`min-w-0 max-w-full overflow-x-clip lg:pl-28 ${
           isMessagesRoute ? 'flex h-full min-h-0 flex-col overflow-hidden' : ''

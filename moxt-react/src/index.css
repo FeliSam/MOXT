@@ -173,7 +173,6 @@ html {
   max-width: 100%;
   min-height: 100%;
   overflow-x: hidden;
-  overflow-y: scroll;
   overscroll-behavior-x: none;
   scroll-behavior: smooth;
 }
@@ -190,18 +189,15 @@ body {
   color: var(--app-text);
   transition: background-color 180ms ease, color 180ms ease;
   overflow-x: hidden;
-  overflow-y: visible;
   overscroll-behavior-x: none;
 }
 
-/* Do not clip #root — overflow-x on an ancestor of .bottom-nav-shell turns
-   position:fixed into a contained offset and leaves a gap under the menu. */
 #root {
   width: 100%;
   min-height: 100dvh;
   max-width: 100%;
   min-width: 0;
-  overflow: visible;
+  overflow-x: clip;
 }
 
 /* Mobile: vertical scroll only at document level — stops left/right rubber-band wobble.
