@@ -2486,10 +2486,10 @@ html.locale-animating #root {
   @apply size-9 shrink-0 place-items-center rounded-xl text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)] sm:size-10 sm:rounded-2xl;
 }
 
-/* Mobile top actions: individual translucent pills (bar bg stays on logo+label). */
+/* Mobile: action pills match brand chip height (h-11 / size-11), square, bg 40%. */
 @media (max-width: 1023px) {
   .header-action-btn {
-    @apply rounded-full bg-[var(--app-surface)]/40 backdrop-blur-md hover:bg-[var(--app-surface)]/55;
+    @apply size-11 rounded-full border border-[var(--app-border)]/50 bg-[var(--app-surface)]/40 backdrop-blur-md hover:bg-[var(--app-surface)]/55;
   }
 }
 

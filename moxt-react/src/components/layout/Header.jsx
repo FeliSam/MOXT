@@ -29,15 +29,15 @@ export function Header({ hideOnMobile = false }) {
         visible ? 'translate-y-0' : '-translate-y-[calc(100%+1rem)]'
       } ${hideOnMobile ? 'hidden lg:block' : ''}`}
     >
-      <div className="mx-auto flex max-w-[96rem] items-center gap-2 sm:gap-3 lg:min-h-[4.75rem] lg:gap-3 lg:rounded-[1.4rem] lg:border lg:border-[var(--app-border)] lg:bg-[var(--app-surface)]/94 lg:px-6 lg:py-3 lg:shadow-[var(--shadow-card)] lg:backdrop-blur-xl">
-        {/* Mobile: surface bg only on avatar + page label. Desktop: children flow into outer pill. */}
-        <div className="flex min-w-0 flex-1 items-center gap-2.5 rounded-[1.4rem] border border-[var(--app-border)] bg-[var(--app-surface)]/94 px-2.5 py-2 shadow-[var(--shadow-card)] backdrop-blur-xl sm:gap-3 sm:px-3 sm:py-2.5 lg:contents lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
+      <div className="mx-auto flex max-w-[96rem] items-center gap-1.5 sm:gap-2 lg:min-h-[4.75rem] lg:gap-3 lg:rounded-[1.4rem] lg:border lg:border-[var(--app-border)] lg:bg-[var(--app-surface)]/94 lg:px-6 lg:py-3 lg:shadow-[var(--shadow-card)] lg:backdrop-blur-xl">
+        {/* Mobile: avatar + page title share one pill (h-11). Desktop: children flow into outer pill. */}
+        <div className="header-brand-chip flex h-11 min-w-0 flex-1 items-center gap-2 rounded-full border border-[var(--app-border)]/50 bg-[var(--app-surface)]/40 px-1.5 pr-2.5 backdrop-blur-md sm:gap-2.5 sm:pr-3 lg:contents lg:h-auto lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
           <Link
             to="/profile"
             aria-label={t('settings.profileSecurity.openProfile')}
-            className="hidden size-11 shrink-0 place-items-center rounded-full transition hover:bg-[var(--app-surface-muted)] max-lg:grid"
+            className="hidden size-8 shrink-0 place-items-center rounded-full transition hover:bg-[var(--app-surface-muted)]/60 max-lg:grid"
           >
-            <UserAvatar user={user} size={36} />
+            <UserAvatar user={user} size={32} />
           </Link>
 
           <div className="hidden w-[8rem] shrink-0 lg:flex xl:hidden">
@@ -49,14 +49,13 @@ export function Header({ hideOnMobile = false }) {
           </div>
 
           <div className="min-w-0 flex-1 lg:hidden">
-            <p className="hidden truncate text-[9px] font-black uppercase tracking-[0.16em] text-brand-700 sm:block">
-              {translateLabel(route.eyebrow)}
+            <p className="truncate text-sm font-black leading-none" title={translateLabel(route.title)}>
+              {translateLabel(route.title)}
             </p>
-            <p className="truncate text-sm font-black leading-tight">{translateLabel(route.title)}</p>
           </div>
         </div>
 
-        <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-1.5 lg:gap-1.5">
+        <div className="ml-auto flex h-11 shrink-0 items-center gap-1.5 lg:h-auto lg:gap-1.5">
           <Link
             to="/news"
             className="header-action-btn grid lg:hidden"
