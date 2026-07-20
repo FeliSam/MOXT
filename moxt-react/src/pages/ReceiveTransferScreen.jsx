@@ -1,8 +1,7 @@
-import { useMemo, useState } from 'react'
-import { FiArrowLeft, FiCheckCircle, FiClock, FiCopy, FiInfo } from 'react-icons/fi'
+import { useState } from 'react'
+import { FiArrowLeft, FiCheckCircle, FiClock, FiCopy } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Alert } from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -37,7 +36,6 @@ export function ReceiveTransferScreen() {
   const transfer = useSelector((state) =>
     state.transfers.items.find((item) => item.id === transferId),
   )
-  const walletEntries = useSelector((state) => state.finance.walletEntries)
 
   const [submitted, setSubmitted] = useState(false)
 
@@ -49,13 +47,6 @@ export function ReceiveTransferScreen() {
     user,
     onSuccess: () => setSubmitted(true),
   })
-
-  const walletBalance = useMemo(() => {
-    if (!user?.id) return 0
-    return walletEntries
-      .filter((entry) => entry.userId === user.id)
-      .reduce((sum, entry) => sum + Number(entry.amount || 0), 0)
-  }, [user, walletEntries])
 
   if (!transfer) {
     return (
@@ -213,15 +204,6 @@ export function ReceiveTransferScreen() {
           </Button>
         </Card>
       ) : null}
-
-      <Alert variant="info" title={t('transfers.receive.walletTitle')}>
-        <span className="flex items-center gap-2">
-          <FiInfo />
-          {t('transfers.receive.walletBalance', {
-            balance: formatMoney(walletBalance, transfer.currencyTo || transfer.toCurrency),
-          })}
-        </span>
-      </Alert>
 
       <Card className="p-5 sm:p-6">
         <ReceiveTransferForm

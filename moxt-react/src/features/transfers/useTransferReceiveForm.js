@@ -1,24 +1,38 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { useLanguage } from '../../contexts/useLanguage'
 import { receiveTransfer } from './transferSlice'
 import { canClientDeclareReception } from './transferActionUtils'
-import { validateReceiveTransferForm, normalizeReceivedAmount } from './transferReceiveValidation'
+import {
+  validateReceiveTransferForm,
+  normalizeReceivedAmount,
+  defaultReceivedAmountInput,
+} from './transferReceiveValidation'
 import { storageService } from '../../services/storageService'
 import { addToast } from '../ui/uiSlice'
 
-const initialValues = {
-  receivedAmount: '',
-  receivedMethod: 'cash',
-  proofFile: null,
-}
+const DEFAULT_RECEIVE_METHOD = 'cash'
 
 export function useTransferReceiveForm({ transfer, user, onSuccess }) {
   const { t } = useLanguage()
   const dispatch = useDispatch()
-  const [values, setValues] = useState(initialValues)
+  const [values, setValues] = useState(() => ({
+    receivedAmount: defaultReceivedAmountInput(transfer),
+    receivedMethod: DEFAULT_RECEIVE_METHOD,
+    proofFile: null,
+  }))
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (!transfer) return
+    setValues((prev) => {
+      if (prev.receivedAmount) return prev
+      const nextAmount = defaultReceivedAmountInput(transfer)
+      if (!nextAmount) return prev
+      return { ...prev, receivedAmount: nextAmount }
+    })
+  }, [transfer])
 
   const setField = useCallback((field, value) => {
     setValues((prev) => ({ ...prev, [field]: value }))
@@ -69,7 +83,7 @@ export function useTransferReceiveForm({ transfer, user, onSuccess }) {
           id: transfer.id,
           actorId: user.id,
           receivedAmount: normalizeReceivedAmount(values.receivedAmount),
-          receivedMethod: values.receivedMethod,
+          receivedMethod: values.receivedMethod || DEFAULT_RECEIVE_METHOD,
           receivedProof: proofPayload,
           receivedAt: new Date().toISOString(),
         }),

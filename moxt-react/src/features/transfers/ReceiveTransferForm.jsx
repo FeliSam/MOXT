@@ -1,5 +1,4 @@
 import { useLanguage } from '../../contexts/useLanguage'
-import { RECEIVE_METHODS } from './transferReceiveValidation'
 
 export function ReceiveTransferForm({
   values,
@@ -25,7 +24,7 @@ export function ReceiveTransferForm({
         <span className="font-bold">{t('transfers.receive.amountLabel')}</span>
         <input
           type="text"
-          inputMode="decimal"
+          inputMode="numeric"
           className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-4 py-3"
           value={values.receivedAmount}
           onChange={(e) => onChange('receivedAmount', e.target.value)}
@@ -34,25 +33,6 @@ export function ReceiveTransferForm({
         />
         {errors.receivedAmount ? (
           <span className="text-xs text-red-600">{errors.receivedAmount}</span>
-        ) : null}
-      </label>
-
-      <label className="grid gap-1 text-sm">
-        <span className="font-bold">{t('transfers.receive.methodLabel')}</span>
-        <select
-          className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-4 py-3"
-          value={values.receivedMethod}
-          onChange={(e) => onChange('receivedMethod', e.target.value)}
-          disabled={submitting}
-        >
-          {RECEIVE_METHODS.map((m) => (
-            <option key={m.value} value={m.value}>
-              {t(m.labelKey)}
-            </option>
-          ))}
-        </select>
-        {errors.receivedMethod ? (
-          <span className="text-xs text-red-600">{errors.receivedMethod}</span>
         ) : null}
       </label>
 

@@ -15,6 +15,19 @@ function resolveMsg(t, key, fallback) {
   return fallback
 }
 
+/** Montant attendu prérempli sans séparateur ni virgule (ex. 125000). */
+export function defaultReceivedAmountInput(transfer) {
+  const raw = transfer?.amountReceived ?? transfer?.receivedAmount
+  if (raw == null || raw === '') return ''
+  if (typeof raw === 'number' && Number.isFinite(raw) && raw > 0) {
+    return String(Math.round(raw))
+  }
+  const normalized = String(raw).trim().replace(/\s/g, '').replace(',', '.')
+  const n = Number(normalized)
+  if (Number.isFinite(n) && n > 0) return String(Math.round(n))
+  return String(raw).replace(/[^\d]/g, '')
+}
+
 export function validateReceiveTransferForm(values, t) {
   const errors = {}
   const amount = String(values.receivedAmount || '').trim().replace(',', '.')
@@ -35,19 +48,6 @@ export function validateReceiveTransferForm(values, t) {
       t,
       'validation.transfer.amountPositive',
       'Le montant doit être positif.',
-    )
-  }
-  if (!values.receivedMethod) {
-    errors.receivedMethod = resolveMsg(
-      t,
-      'validation.transfer.receiveMethodChoose',
-      'Choisissez une méthode de réception.',
-    )
-  } else if (!RECEIVE_METHODS.some((m) => m.value === values.receivedMethod)) {
-    errors.receivedMethod = resolveMsg(
-      t,
-      'validation.transfer.receiveMethodInvalid',
-      'Méthode invalide.',
     )
   }
   return errors

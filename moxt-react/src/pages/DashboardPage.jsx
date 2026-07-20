@@ -2,13 +2,19 @@ import { useState } from 'react'
 import { shallowEqual, useSelector } from 'react-redux'
 import { DashboardSearch } from '../components/ui/DashboardSearch'
 import { Modal } from '../components/ui/Modal'
-import { RevealOnScroll } from '../components/ui/RevealOnScroll'
+import { SkeletonCard } from '../components/ui/Skeleton'
 import { DashboardDiscoverySection } from '../features/dashboard/components/DashboardDiscoverySection'
 import { DashboardHero } from '../features/dashboard/components/DashboardHero'
 import { DashboardOverviewPanels } from '../features/dashboard/components/DashboardOverviewPanels'
-import { DashboardQuickActionsSection } from '../features/dashboard/components/DashboardQuickActionsSection'
+import { DashboardSectionHeading } from '../features/dashboard/components/DashboardSectionHeading'
 import { DashboardServiceCarousels } from '../features/dashboard/components/DashboardServiceCarousels'
+import { ScrollArrows } from '../features/dashboard/components/ScrollArrows'
+import {
+  dashboardListingItemClass,
+  dashboardListingTrackClass,
+} from '../features/dashboard/dashboardConfig'
 import { useDashboardStats } from '../features/dashboard/hooks/useDashboardStats'
+import { MarketplaceListingCard } from '../features/marketplace/MarketplaceListingCard'
 import { TransferCalculator } from '../features/transfers/TransferCalculator'
 import { useExchangeRate } from '../features/transfers/useExchangeRate'
 import { useHorizontalScroll } from '../hooks/useHorizontalScroll'
@@ -17,8 +23,6 @@ import { useLanguage } from '../contexts/useLanguage'
 export function DashboardPage() {
   const { t } = useLanguage()
   const [calculatorOpen, setCalculatorOpen] = useState(false)
-  const quickActionsRef = useHorizontalScroll()
-  const trustHighlightsRef = useHorizontalScroll()
   const coreServicesRef = useHorizontalScroll()
   const listingsScrollRef = useHorizontalScroll()
   const user = useSelector((state) => state.auth.user)
@@ -32,25 +36,40 @@ export function DashboardPage() {
   const rate = useExchangeRate()
 
   return (
-    <div className="grid min-w-0 gap-6 overflow-x-clip sm:gap-8">
+    <div className="grid min-w-0 gap-6 overflow-x-clip sm:gap-7">
       <DashboardHero user={user} onOpenCalculator={() => setCalculatorOpen(true)} />
 
-      <RevealOnScroll delay={60} className="lg:hidden">
+      <div className="lg:hidden">
         <DashboardSearch />
-      </RevealOnScroll>
+      </div>
 
-      <DashboardQuickActionsSection scrollRef={quickActionsRef} />
+      <DashboardOverviewPanels {...stats} rate={rate} user={user} />
 
-      <DashboardOverviewPanels
-        {...stats}
-        rate={rate}
-        user={user}
-      />
+      <section className="grid min-w-0 gap-3">
+        <DashboardSectionHeading
+          title={t('dashboard.discovery.latestListings')}
+          link="/marketplace"
+          linkLabel={t('dashboard.discovery.viewMarket')}
+        />
+        <div className="relative min-w-0 pb-3">
+          <div ref={listingsScrollRef} className={`${dashboardListingTrackClass} min-w-0`}>
+            {authLoading
+              ? Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className={dashboardListingItemClass}>
+                    <SkeletonCard />
+                  </div>
+                ))
+              : listings.map((listing) => (
+                  <div key={listing.id} className={dashboardListingItemClass}>
+                    <MarketplaceListingCard listing={listing} />
+                  </div>
+                ))}
+          </div>
+          <ScrollArrows scrollRef={listingsScrollRef} />
+        </div>
+      </section>
 
-      <DashboardServiceCarousels
-        coreServicesRef={coreServicesRef}
-        trustHighlightsRef={trustHighlightsRef}
-      />
+      <DashboardServiceCarousels coreServicesRef={coreServicesRef} />
 
       <DashboardDiscoverySection
         conversations={stats.conversations}
@@ -58,9 +77,6 @@ export function DashboardPage() {
         eventsLoading={authLoading}
         jobs={jobs}
         jobsLoading={authLoading}
-        listings={listings}
-        listingsLoading={authLoading}
-        listingsScrollRef={listingsScrollRef}
         myTransfers={stats.myTransfers}
         parcels={parcels}
         parcelsLoading={authLoading}

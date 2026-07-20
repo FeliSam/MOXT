@@ -5,23 +5,14 @@ import { Link } from 'react-router-dom'
 import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
 import { EntityVerifiedName } from '../../../components/ui/EntityVerifiedName'
-import { RevealListItem } from '../../../components/ui/RevealListItem'
-import { RevealOnScroll } from '../../../components/ui/RevealOnScroll'
-import { SkeletonCard } from '../../../components/ui/Skeleton'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { jobContractLabel, jobSectorLabel } from '../../jobs/jobDisplayUtils'
-import { MarketplaceListingCard } from '../../marketplace/MarketplaceListingCard'
 import { formatParcelDepartureLabel } from '../../parcels/parcelUtils'
 import { formatDate } from '../../transfers/transferUtils'
 import { sortPostsByPublishedAt } from '../../posts/postSortUtils'
-import {
-  dashboardCarouselTrackClass,
-  dashboardListingItemClass,
-  dashboardListingTrackClass,
-} from '../dashboardConfig'
+import { dashboardCarouselTrackClass } from '../dashboardConfig'
 import { DashboardLiveList } from './DashboardLiveList'
 import { DashboardSectionHeading } from './DashboardSectionHeading'
-import { ScrollArrows } from './ScrollArrows'
 
 export function DashboardDiscoverySection({
   conversations,
@@ -29,9 +20,6 @@ export function DashboardDiscoverySection({
   eventsLoading,
   jobs,
   jobsLoading,
-  listings,
-  listingsLoading,
-  listingsScrollRef,
   myTransfers,
   parcels,
   parcelsLoading,
@@ -45,30 +33,6 @@ export function DashboardDiscoverySection({
 
   return (
     <>
-      <RevealOnScroll delay={80}>
-        <DashboardSectionHeading
-          title={t('dashboard.discovery.latestListings')}
-          link="/marketplace"
-          linkLabel={t('dashboard.discovery.viewMarket')}
-        />
-      </RevealOnScroll>
-      <div className="relative min-w-0 pb-3">
-        <div ref={listingsScrollRef} className={`${dashboardListingTrackClass} min-w-0`}>
-          {listingsLoading
-            ? Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className={dashboardListingItemClass}>
-                  <SkeletonCard />
-                </div>
-              ))
-            : listings.map((listing, index) => (
-                <RevealListItem key={listing.id} index={index} className={dashboardListingItemClass}>
-                  <MarketplaceListingCard listing={listing} />
-                </RevealListItem>
-              ))}
-        </div>
-        <ScrollArrows scrollRef={listingsScrollRef} />
-      </div>
-
       <section className="grid min-w-0 gap-6 [&>*]:min-w-0">
         <DashboardLiveList
           accent="parcels"
@@ -144,28 +108,24 @@ export function DashboardDiscoverySection({
         />
       </section>
 
-      <RevealOnScroll delay={80}>
-        <DashboardSectionHeading
-          title={t('dashboard.discovery.newsTitle')}
-          link="/news"
-          linkLabel={t('dashboard.discovery.readAll')}
-        />
-      </RevealOnScroll>
+      <DashboardSectionHeading
+        title={t('dashboard.discovery.newsTitle')}
+        link="/news"
+        linkLabel={t('dashboard.discovery.readAll')}
+      />
       {posts.length > 0 ? (
         <div className={dashboardCarouselTrackClass}>
-          {posts.map((post, index) => (
-            <RevealListItem
+          {posts.map((post) => (
+            <div
               key={post.id}
-              index={index}
               className="w-[clamp(14rem,72vw,19rem)] shrink-0 sm:w-[clamp(15rem,48vw,20rem)] lg:w-[clamp(16rem,28vw,21rem)]"
             >
               <DashboardPostCard post={post} />
-            </RevealListItem>
+            </div>
           ))}
         </div>
       ) : (
-        <Card className="flex flex-col items-center gap-3 py-10 text-center">
-          <span className="text-3xl">📰</span>
+        <Card className="flex flex-col items-center gap-3 py-8 text-center">
           <p className="text-sm text-[var(--app-text-muted)]">{t('dashboard.discovery.noNews')}</p>
           <Link to="/news">
             <Button variant="secondary">{t('dashboard.discovery.newsLink')}</Button>
@@ -193,7 +153,7 @@ export function DashboardDiscoverySection({
                 <Link
                   key={label}
                   to={to}
-                  className="rounded-2xl bg-white/8 p-3 transition-all duration-[var(--transition-base)] hover:-translate-y-0.5 hover:bg-white/15 hover:shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+                  className="rounded-2xl bg-white/8 p-3 transition hover:bg-white/15"
                 >
                   <strong className="block text-2xl">{value}</strong>
                   <span className="text-[10px] text-white/55">{label}</span>
@@ -242,12 +202,10 @@ function DashboardPostCard({ post }) {
   return (
     <Link to={`/news`}>
       <Card className="relative flex h-full flex-col overflow-hidden p-4 transition hover:-translate-y-0.5 hover:shadow-lg">
-        {/* Type badge — absolu top-right */}
         <span className={`absolute right-2.5 top-2.5 rounded-full px-1.5 py-0.5 text-[9px] font-black ${TYPE_COLORS[post.sourceType] ?? TYPE_COLORS.free}`}>
           {t(typeLabelKey)}
         </span>
 
-        {/* Auteur */}
         <div className="flex items-center gap-2 pr-14">
           {post.authorAvatarUrl ? (
             <img src={post.authorAvatarUrl} alt="" className="size-7 shrink-0 rounded-full object-cover" />
@@ -268,7 +226,6 @@ function DashboardPostCard({ post }) {
           </div>
         </div>
 
-        {/* Image */}
         {post.imageUrl && (
           <img
             src={post.imageUrl}
@@ -279,12 +236,10 @@ function DashboardPostCard({ post }) {
           />
         )}
 
-        {/* Message */}
         <p className="mt-2.5 line-clamp-4 flex-1 text-xs leading-relaxed text-[var(--app-text-muted)]">
           {post.message}
         </p>
 
-        {/* Compteurs */}
         <div className="mt-3 flex items-center gap-3 border-t border-[var(--app-border)] pt-2.5 text-[10px] text-[var(--app-text-faint)]">
           <span className="flex items-center gap-1">
             <FiHeart className="text-[10px]" />{post.likes?.length || 0}

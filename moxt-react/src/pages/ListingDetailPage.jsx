@@ -272,26 +272,6 @@ export function ListingDetailPage() {
             />
           </Card>
 
-          <Card className="min-w-0 overflow-hidden p-4 sm:p-6 xl:hidden">
-            <h2 className="font-black">{mt('marketplace.detail.characteristics')}</h2>
-            <div className="mt-4">
-              <DetailFacts items={characteristicItems} />
-            </div>
-          </Card>
-
-          {publisherProfile ? (
-            <div className="grid gap-5 xl:hidden">
-              <PublisherDetailCard {...publisherProfile} />
-              <PublisherPublicationsStrip
-                currentId={listing.id}
-                ownerId={publisherProfile.ownerId}
-                publications={publisherProfile.publications}
-                allPath={publisherProfile.publicationsPath}
-                limit={5}
-              />
-            </div>
-          ) : null}
-
           <Card className="min-w-0 overflow-hidden p-4 sm:p-6">
             <Tabs active={activeTab} items={tabs} onChange={setActiveTab} label={mt('marketplace.detail.tabsLabel')} />
             <div className="mt-6">
@@ -359,6 +339,20 @@ export function ListingDetailPage() {
               ) : null}
             </div>
           </Card>
+
+          {publisherProfile ? (
+            <div className="grid gap-5 xl:hidden">
+              <PublisherDetailCard {...publisherProfile} />
+              <PublisherPublicationsStrip
+                currentId={listing.id}
+                ownerId={publisherProfile.ownerId}
+                publications={publisherProfile.publications}
+                allPath={publisherProfile.publicationsPath}
+                limit={5}
+              />
+            </div>
+          ) : null}
+
           <DetailMetrics
             items={[
               rules.showCondition

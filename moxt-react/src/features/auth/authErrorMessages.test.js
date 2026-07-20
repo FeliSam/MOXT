@@ -3,6 +3,7 @@ import {
   authErrorToast,
   isOtpConfirmNetworkFailureMessage,
   sanitizeAuthMessage,
+  sanitizeUserFacingMessage,
   shouldMuteRegisterErrorToast,
 } from './authErrorMessages'
 
@@ -52,6 +53,17 @@ describe('authErrorMessages i18n', () => {
       title: 'Erreur',
       tone: 'error',
     })
+  })
+
+  it('humanise les erreurs techniques JWT / RLS / réseau', () => {
+    expect(sanitizeUserFacingMessage('JWT expired')).toMatch(/session a expiré/i)
+    expect(sanitizeUserFacingMessage('new row violates row-level security policy')).toMatch(
+      /autorisation/i,
+    )
+    expect(sanitizeUserFacingMessage('Failed to fetch')).toMatch(/Connexion impossible/i)
+    expect(sanitizeUserFacingMessage('Could not find the column in the schema cache')).toMatch(
+      /technique/i,
+    )
   })
 
   it('re-toaste les échecs SMS ; mute seulement le réseau OTP 3/4', () => {

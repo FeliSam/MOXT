@@ -42,13 +42,11 @@ export const PHASE3_FR_SOURCES = {
   // ── favorites ──────────────────────────────────────────────────────────
   'favorites.eyebrow': 'Compte',
   'favorites.title': 'Mes favoris',
-  'favorites.description':
-    'Annonces, colis, jobs et autres contenus enregistrés — organisés par catégorie.',
+  'favorites.description': 'Annonces, colis, jobs et contenus enregistrés.',
   'favorites.stats.items': 'Éléments',
   'favorites.actions.transferProfile': 'Profil de transfert',
   'favorites.empty.title': 'Aucun contenu favori',
-  'favorites.empty.description':
-    'Enregistrez des annonces, colis, jobs ou entreprises depuis leurs fiches.',
+  'favorites.empty.description': 'Enregistrez depuis les fiches pour les retrouver ici.',
   'favorites.empty.cta': 'Explorer la marketplace',
   'favorites.tabs.all': 'Tous',
   'favorites.categories.listing': 'Annonces',
@@ -66,12 +64,10 @@ export const PHASE3_FR_SOURCES = {
   'favorites.saved': 'Enregistré',
   'favorites.addToFavorites': 'Ajouter aux favoris',
   'favorites.profiles.title': 'Profils de transfert',
-  'favorites.profiles.description':
-    'Contacts réutilisables pour remplir vos transferts plus rapidement.',
+  'favorites.profiles.description': 'Contacts réutilisables pour vos transferts.',
   'favorites.profiles.add': 'Ajouter',
   'favorites.profiles.empty.title': 'Aucun profil de transfert',
-  'favorites.profiles.empty.description':
-    'Ajoutez vos contacts habituels pour gagner du temps.',
+  'favorites.profiles.empty.description': 'Ajoutez vos contacts habituels.',
   'favorites.profiles.modal.edit': 'Modifier le profil',
   'favorites.profiles.modal.create': 'Nouveau profil',
   'favorites.profiles.method.network': 'Réseau mobile',

@@ -1,7 +1,6 @@
-import { FiArrowRight, FiFileText } from 'react-icons/fi'
+import { FiArrowRight } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { VerifiedBadge } from '../../../components/ui/Badge'
-import { RevealOnScroll } from '../../../components/ui/RevealOnScroll'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { isProfileVerified } from '../../profile/userProfileUtils'
 import { DashboardTransferCalculator } from '../../transfers/DashboardTransferCalculator'
@@ -10,43 +9,40 @@ export function DashboardHero({ user, onOpenCalculator }) {
   const { t } = useLanguage()
 
   return (
-    <RevealOnScroll
-      as="section"
-      className="relative overflow-hidden rounded-[var(--radius-card-lg)] bg-[linear-gradient(125deg,#07594d_0%,#08705f_42%,#245de8_100%)] px-6 py-8 text-white shadow-[var(--shadow-card-lg)] sm:px-10 sm:py-12 lg:min-h-[31rem] lg:px-14"
-    >
+    <section className="relative overflow-hidden rounded-[var(--radius-card-lg)] bg-[linear-gradient(125deg,#07594d_0%,#08705f_42%,#245de8_100%)] px-6 py-8 text-white shadow-[var(--shadow-card-lg)] sm:px-10 sm:py-10 lg:px-14">
       <div className="absolute -right-24 -top-32 size-96 rounded-full bg-cyan-300/20 blur-3xl" />
       <div className="absolute -bottom-40 left-1/3 size-96 rounded-full bg-blue-400/25 blur-3xl" />
-      <div className="relative z-10 grid gap-10 lg:grid-cols-[1.3fr_0.7fr] lg:items-center">
+      <div className="relative z-10 grid gap-8 lg:grid-cols-[1.3fr_0.7fr] lg:items-center">
         <div>
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-white/12 px-4 py-2 text-xs font-bold backdrop-blur">
+          <div className="inline-flex items-center gap-1.5 text-sm font-bold text-white/90">
             <span>{t('dashboard.hero.welcome', { name: user.firstName })}</span>
             {isProfileVerified(user) ? (
               <VerifiedBadge size="sm" className="!text-emerald-200" />
             ) : null}
           </div>
-          <h1 className="font-display mt-6 max-w-4xl text-4xl font-extrabold leading-[0.98] tracking-[-0.03em] sm:text-5xl lg:text-7xl">
+          <h1 className="font-display mt-4 max-w-4xl text-3xl font-extrabold leading-[1.05] tracking-[-0.03em] sm:text-5xl lg:text-6xl">
             {t('dashboard.hero.title')}
           </h1>
-          <p className="mt-6 max-w-2xl text-sm leading-7 text-white/75 sm:text-base">
-            {t('dashboard.hero.subtitle')}
+          <p className="mt-4 max-w-xl text-sm leading-6 text-white/75 sm:text-base">
+            {t('dashboard.hero.subtitleShort')}
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-7 flex flex-wrap items-center gap-4">
             <Link
               to="/transfers"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-btn)] bg-white px-5 text-sm font-black text-emerald-950 shadow-xl transition hover:-translate-y-0.5 hover:bg-emerald-50"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-btn)] bg-white px-5 text-sm font-black text-emerald-950 shadow-xl transition hover:bg-emerald-50"
             >
               {t('dashboard.hero.createTransfer')} <FiArrowRight />
             </Link>
-            <Link
-              to="/news"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-btn)] bg-cyan-300 px-5 text-sm font-black text-slate-950 shadow-lg shadow-cyan-950/20 transition hover:-translate-y-0.5 hover:bg-cyan-200"
-            >
-              <FiFileText aria-hidden /> {t('dashboard.hero.news')}
+            <Link to="/news" className="text-sm font-bold text-white/85 underline-offset-4 hover:underline">
+              {t('dashboard.hero.news')}
+            </Link>
+            <Link to="/guide" className="text-sm font-bold text-white/85 underline-offset-4 hover:underline">
+              {t('dashboard.hero.guide')}
             </Link>
           </div>
         </div>
         <DashboardTransferCalculator onOpen={onOpenCalculator} />
       </div>
-    </RevealOnScroll>
+    </section>
   )
 }

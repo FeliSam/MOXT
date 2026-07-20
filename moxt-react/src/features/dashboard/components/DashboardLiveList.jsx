@@ -119,7 +119,9 @@ export function DashboardLiveList({
               <h2 className="font-display text-lg font-extrabold tracking-[-0.02em] text-[var(--app-text)] sm:text-xl">
                 {title}
               </h2>
-              <p className="mt-0.5 text-xs text-[var(--app-text-muted)] sm:text-sm">{description}</p>
+              {description ? (
+                <p className="mt-0.5 text-xs text-[var(--app-text-muted)] sm:text-sm">{description}</p>
+              ) : null}
             </div>
           </div>
           <Link

@@ -9,9 +9,10 @@ vi.mock('../../../contexts/useLanguage', () => ({
       const map = {
         'dashboard.hero.welcome': `Bienvenue ${vars?.name || ''}`,
         'dashboard.hero.title': 'Tous vos services essentiels, réunis.',
-        'dashboard.hero.subtitle': 'Transferts, colis, ventes, jobs et événements.',
+        'dashboard.hero.subtitleShort': 'Envoyez de l’argent, trouvez un colis ou une annonce.',
         'dashboard.hero.createTransfer': 'Créer un transfert',
         'dashboard.hero.news': 'Actualités',
+        'dashboard.hero.guide': 'Guide',
       }
       return map[key] || key
     },
@@ -23,15 +24,15 @@ vi.mock('../../transfers/DashboardTransferCalculator', () => ({
 }))
 
 describe('DashboardHero', () => {
-  it('propose Actualités comme action secondaire', () => {
+  it('garde un seul CTA principal et des liens secondaires', () => {
     render(
       <MemoryRouter>
         <DashboardHero user={{ firstName: 'Amina', verified: true }} onOpenCalculator={() => undefined} />
       </MemoryRouter>,
     )
 
-    const news = screen.getByRole('link', { name: /Actualités/i })
-    expect(news).toHaveAttribute('href', '/news')
     expect(screen.getByRole('link', { name: /Créer un transfert/i })).toHaveAttribute('href', '/transfers')
+    expect(screen.getByRole('link', { name: /Actualités/i })).toHaveAttribute('href', '/news')
+    expect(screen.getByRole('link', { name: /^Guide$/i })).toHaveAttribute('href', '/guide')
   })
 })

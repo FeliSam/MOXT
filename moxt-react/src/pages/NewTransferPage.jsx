@@ -6,6 +6,7 @@ import {
   FiCheck,
   FiClock,
   FiExternalLink,
+  FiPlus,
   FiRefreshCw,
   FiSend,
   FiShield,
@@ -24,8 +25,10 @@ import { Input } from '../components/ui/Input'
 import { Modal } from '../components/ui/Modal'
 import { PageHeader } from '../components/ui/PageHeader'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
+import { Select } from '../components/ui/Select'
 import { flagColor, flagEmoji } from '../config/flags'
-import { ensurePhoneCountry, phonePlaceholder, phonePrefix } from '../config/phone'
+import { ensurePhoneCountry, phoneError, phonePlaceholder, phonePrefix, validatePhone } from '../config/phone'
+import { saveTransferProfile } from '../features/account/accountSlice'
 import { isBusinessPublishReady } from '../features/businesses/businessPublishUtils'
 import { isBusinessOwnedBy, selectActiveBusinessForOwner } from '../features/businesses/businessVisibility'
 import {
@@ -562,7 +565,7 @@ export function NewTransferPage() {
                     { label: t('transfers.new.estimatedDelay'), value: selectedExchanger.averageDelay },
                   ].map(({ label, value, highlight }) => (
                     <div key={label} className="grid gap-0.5 px-4 py-3 text-center">
-                      <span className="text-[10px] font-bold uppercase tracking-wide text-[var(--app-text-faint)]">
+                      <span className="text-[10px] font-bold text-[var(--app-text-faint)]">
                         {label}
                       </span>
                       <span className={`text-sm font-black ${highlight ? 'text-red-500' : 'text-[var(--app-text)]'}`}>
@@ -593,6 +596,7 @@ export function NewTransferPage() {
             formik={formik}
             methods={sourceMethods}
             errorFor={errorFor}
+            userId={user.id}
             onProfile={(profile) => applyProfile('sender', profile)}
           />
         ) : null}
@@ -604,6 +608,7 @@ export function NewTransferPage() {
             formik={formik}
             methods={destinationMethods}
             errorFor={errorFor}
+            userId={user.id}
             onProfile={(profile) => applyProfile('recipient', profile)}
           />
         ) : null}
@@ -684,22 +689,78 @@ export function NewTransferPage() {
   )
 }
 
-function PartyCard({ title, prefix, profiles, formik, methods, errorFor, onProfile }) {
+function PartyCard({ title, prefix, profiles, formik, methods, errorFor, onProfile, userId }) {
   const { t } = useLanguage()
+  const dispatch = useDispatch()
+  const [createOpen, setCreateOpen] = useState(false)
+  const [createError, setCreateError] = useState('')
   const country =
     prefix === 'sender' ? formik.values.sourceCountry : formik.values.destinationCountry
   const isRecipient = prefix === 'recipient'
+  const [draft, setDraft] = useState({
+    firstName: '',
+    lastName: '',
+    phone: phonePrefix(country),
+    method: '',
+  })
+
+  function openCreateModal() {
+    setDraft({
+      firstName: String(formik.values[`${prefix}FirstName`] || '').trim(),
+      lastName: String(formik.values[`${prefix}LastName`] || '').trim(),
+      phone: String(formik.values[`${prefix}Phone`] || phonePrefix(country)).trim() || phonePrefix(country),
+      method: String(formik.values[`${prefix}Method`] || ''),
+    })
+    setCreateError('')
+    setCreateOpen(true)
+  }
+
+  function submitCreateProfile(event) {
+    event.preventDefault()
+    const firstName = draft.firstName.trim()
+    const lastName = draft.lastName.trim()
+    const phone = draft.phone.trim()
+    const method = draft.method.trim()
+    if (!firstName || !lastName) {
+      setCreateError(t('transfers.new.profileCreate.errors.name'))
+      return
+    }
+    if (!validatePhone(phone, country)) {
+      setCreateError(phoneError(country))
+      return
+    }
+    if (!method) {
+      setCreateError(t('transfers.new.profileCreate.errors.method'))
+      return
+    }
+    const action = saveTransferProfile({
+      userId,
+      firstName,
+      lastName,
+      phone,
+      country,
+      method,
+    })
+    dispatch(action)
+    onProfile(action.payload)
+    setCreateOpen(false)
+  }
+
   return (
     <div className="grid gap-5">
-      {/* Profils favoris */}
-      {profiles.length ? (
-        <Card className="grid gap-4">
-          <div className="flex items-center gap-3 border-b border-[var(--app-border)] pb-4">
+      <Card className="grid gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--app-border)] pb-4">
+          <div className="flex items-center gap-3">
             <span className="grid size-9 place-items-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
               <FiStar className="text-base" />
             </span>
             <h2 className="font-black">{t('transfers.new.favoriteProfiles')}</h2>
           </div>
+          <Button type="button" variant="secondary" icon={FiPlus} onClick={openCreateModal}>
+            {t('transfers.new.profileCreate.button')}
+          </Button>
+        </div>
+        {profiles.length ? (
           <div className="grid gap-2 sm:grid-cols-2">
             {profiles.map((profile) => (
               <button
@@ -712,20 +773,31 @@ function PartyCard({ title, prefix, profiles, formik, methods, errorFor, onProfi
                   {`${profile.firstName?.[0] || ''}${profile.lastName?.[0] || ''}`.toUpperCase()}
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-bold">{profile.firstName} {profile.lastName}</p>
+                  <p className="truncate text-sm font-bold">
+                    {profile.firstName} {profile.lastName}
+                  </p>
                   <p className="truncate text-xs text-[var(--app-text-muted)]">{profile.method}</p>
                 </div>
                 <FiCheck className="ml-auto shrink-0 text-[var(--app-text-muted)]" />
               </button>
             ))}
           </div>
-        </Card>
-      ) : null}
+        ) : (
+          <p className="text-xs text-[var(--app-text-muted)]">
+            {t('transfers.new.noFavoriteProfiles')}
+          </p>
+        )}
+      </Card>
 
-      {/* Identity */}
       <Card className="grid gap-5">
         <div className="flex items-center gap-3 border-b border-[var(--app-border)] pb-4">
-          <span className={`grid size-9 place-items-center rounded-xl ${isRecipient ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950/40 dark:text-cyan-300' : 'bg-[var(--app-accent-soft)] text-[var(--app-accent)]'}`}>
+          <span
+            className={`grid size-9 place-items-center rounded-xl ${
+              isRecipient
+                ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950/40 dark:text-cyan-300'
+                : 'bg-[var(--app-accent-soft)] text-[var(--app-accent)]'
+            }`}
+          >
             <FiUsers className="text-base" />
           </span>
           <h2 className="font-black">{title}</h2>
@@ -777,12 +849,63 @@ function PartyCard({ title, prefix, profiles, formik, methods, errorFor, onProfi
             ) : null}
           </div>
         </div>
-        {!profiles.length ? (
-          <p className="text-xs text-[var(--app-text-muted)]">
-            {t('transfers.new.noFavoriteProfiles')}
-          </p>
-        ) : null}
       </Card>
+
+      <Modal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        title={t('transfers.new.profileCreate.title', {
+          party: isRecipient
+            ? t('transfers.new.recipient')
+            : t('transfers.new.sender'),
+        })}
+      >
+        <form className="grid gap-4" onSubmit={submitCreateProfile} noValidate>
+          <p className="text-sm text-[var(--app-text-muted)]">
+            {t('transfers.new.profileCreate.description')}
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              id={`${prefix}-profile-firstName`}
+              label={t('transfers.new.firstName')}
+              value={draft.firstName}
+              onChange={(event) => setDraft((current) => ({ ...current, firstName: event.target.value }))}
+            />
+            <Input
+              id={`${prefix}-profile-lastName`}
+              label={t('transfers.new.lastName')}
+              value={draft.lastName}
+              onChange={(event) => setDraft((current) => ({ ...current, lastName: event.target.value }))}
+            />
+          </div>
+          <Input
+            id={`${prefix}-profile-phone`}
+            label={t('transfers.new.phone')}
+            type="tel"
+            inputMode="tel"
+            placeholder={phonePlaceholder(country)}
+            value={draft.phone}
+            onChange={(event) => setDraft((current) => ({ ...current, phone: event.target.value }))}
+          />
+          <Select
+            id={`${prefix}-profile-method`}
+            label={t('transfers.new.networkOrBank')}
+            value={draft.method}
+            onChange={(event) => setDraft((current) => ({ ...current, method: event.target.value }))}
+          >
+            <option value="">{t('common.select')}</option>
+            {methods.map((method) => (
+              <option key={method} value={method}>
+                {method}
+              </option>
+            ))}
+          </Select>
+          {createError ? <p className="text-xs text-red-600">{createError}</p> : null}
+          <Button type="submit" icon={FiPlus}>
+            {t('transfers.new.profileCreate.submit')}
+          </Button>
+        </form>
+      </Modal>
     </div>
   )
 }

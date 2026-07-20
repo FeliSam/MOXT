@@ -115,6 +115,53 @@ export function sanitizeAuthMessage(message = '', t) {
   return translated(t, 'errors.auth.serviceUnavailable', 'Service temporairement indisponible. Réessayez plus tard ou contactez le support.')
 }
 
+/** Remplace le jargon technique (JWT, RLS, PGRST, fetch…) par un message compréhensible. */
+export function sanitizeUserFacingMessage(message = '', t) {
+  const authSanitized = sanitizeAuthMessage(message, t)
+  const lower = String(authSanitized || '').toLowerCase()
+  if (!lower) {
+    return translated(t, 'errors.app.technical', 'Une erreur technique est survenue. Réessayez ou contactez le support.')
+  }
+
+  if (
+    /failed to fetch|networkerror|network request failed|err_internet|err_connection|offline|connexion impossible|load failed/.test(
+      lower,
+    )
+  ) {
+    return translated(t, 'errors.app.network', 'Connexion impossible. Vérifiez votre réseau puis réessayez.')
+  }
+  if (/jwt|session.*expir|token.*expir|not authenticated|invalid refresh/.test(lower)) {
+    return translated(t, 'errors.app.sessionExpired', 'Votre session a expiré. Reconnectez-vous pour continuer.')
+  }
+  if (
+    /row-level security|rls|permission denied|not authorized|403|forbidden|violates policy/.test(lower)
+  ) {
+    return translated(t, 'errors.app.permissionDenied', "Vous n’avez pas l’autorisation pour cette action.")
+  }
+  if (/pgrst116|0 rows|not found|404|no rows/.test(lower)) {
+    return translated(t, 'errors.app.notFound', 'Élément introuvable ou déjà supprimé.')
+  }
+  if (/duplicate key|unique constraint|23505|already exists|conflit/.test(lower)) {
+    return translated(
+      t,
+      'errors.app.conflict',
+      'Cette action entre en conflit avec une donnée existante. Actualisez puis réessayez.',
+    )
+  }
+  if (/timeout|timed out|57014|canceling statement/.test(lower)) {
+    return translated(t, 'errors.app.timeout', 'Le serveur met trop longtemps à répondre. Réessayez dans un instant.')
+  }
+  if (
+    /pgrst|postgres|sqlstate|column|relation |schema cache|undefined column|npm run|edge function|vapid|supabase/.test(
+      lower,
+    )
+  ) {
+    return translated(t, 'errors.app.technical', 'Une erreur technique est survenue. Réessayez ou contactez le support.')
+  }
+
+  return authSanitized
+}
+
 export function authErrorToast(title, message, tone = 'error', t) {
   return {
     title,

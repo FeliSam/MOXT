@@ -17,7 +17,7 @@ import { archivePostsBySource } from '../features/posts/postsSlice'
 import { createNotificationDispatcher } from './notificationTriggers'
 import { hasReviewEligibility } from '@moxt/shared/utils/reviewEligibility.js'
 import { setUser } from '../features/auth/authSlice'
-import { sanitizeAuthMessage } from '../features/auth/authErrorMessages'
+import { sanitizeUserFacingMessage } from '../features/auth/authErrorMessages'
 import { appText } from '../i18n/appText'
 
 function notify(store, payload) {
@@ -714,7 +714,7 @@ export const interactionMiddleware = (store) => {
     store.dispatch(
       addToast({
         title: rejectedTitles[action.type] || appText('toasts.genericError'),
-        message: sanitizeAuthMessage(message, appText),
+        message: sanitizeUserFacingMessage(message, appText),
         tone: 'error',
       }),
     )

@@ -246,6 +246,18 @@ export function FavoritesPage() {
             icon={FiRepeat}
             title={p3('favorites.profiles.empty.title')}
             description={p3('favorites.profiles.empty.description')}
+            action={
+              <Button
+                icon={FiPlus}
+                onClick={() => {
+                  setEditingProfile(null)
+                  formik.resetForm()
+                  setProfileOpen(true)
+                }}
+              >
+                {p3('favorites.profiles.add')}
+              </Button>
+            }
           />
         )}
       </section>
