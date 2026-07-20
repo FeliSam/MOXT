@@ -134,7 +134,7 @@ export function BottomNavigation() {
       <nav
         ref={navRef}
         data-tour="bottom-nav"
-        className="bottom-nav-shell z-[var(--z-nav)] grid grid-cols-5 gap-0.5 rounded-t-[1rem] border border-b-0 border-[var(--app-border)]/80 bg-[var(--app-surface)]/65 shadow-[var(--shadow-float)] backdrop-blur-xl lg:hidden"
+        className="bottom-nav-shell z-[var(--z-nav)] grid grid-cols-5 gap-0.5 rounded-[1rem] border border-[var(--app-border)]/80 bg-[var(--app-surface)]/65 shadow-[var(--shadow-float)] backdrop-blur-xl lg:hidden"
         aria-label={t('nav.mobileQuickAria')}
       >
         <span
