@@ -47,7 +47,7 @@
     "@capacitor/status-bar": "^8.0.2",
     "@moxt/shared": "*",
     "@reduxjs/toolkit": "^2.12.0",
-    "@supabase/supabase-js": "^2.108.2",
+    "@supabase/supabase-js": "^2.110.2",
     "@zxing/browser": "^0.2.1",
     "formik": "^2.4.9",
     "react": "19.2.3",
