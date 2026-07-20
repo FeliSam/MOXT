@@ -176,6 +176,8 @@ html {
   overflow-y: scroll;
   overscroll-behavior-x: none;
   scroll-behavior: smooth;
+  /* Évite une bande blanche hors body (safe-area / overscroll iOS). */
+  background: var(--app-bg);
 }
 
 body {
@@ -366,28 +368,30 @@ html.capacitor-native .capacitor-safe-bottom {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
 }
 
-/* ─── Bottom nav — modèle unique Chrome + Safari (+ Capacitor) ─────────────
-   Safe-area dans `bottom` (offset du shell), PAS dans padding-bottom.
-   Avant: Tailwind pb-[max(0.35rem,safe-area)] étirait la pilule sur Chrome
-   (Android / desktop avec inset) alors que Safari mobile browser renvoyait souvent 0.
-   Standalone !important conflictuel retiré — mêmes règles partout.
+/* ─── Bottom nav — docké au bas de l’écran (iPhone home indicator) ──────────
+   Ne jamais mettre safe-area dans `bottom` : ça soulève la barre et laisse
+   une bande blanche sous la pilule (PWA / Safari viewport-fit=cover).
+   Safe-area = padding-bottom interne → le verre remplit jusqu’au bord.
 */
 :root {
   --keyboard-inset: 0px;
   --bottom-nav-gap: 0.75rem;
   --bottom-nav-pad: 0.35rem;
-  --bottom-nav-offset: max(var(--bottom-nav-gap), env(safe-area-inset-bottom, 0px));
-  --bottom-nav-clearance: calc(5.75rem + env(safe-area-inset-bottom, 0px));
-  --bottom-nav-clearance-loose: calc(7.5rem + env(safe-area-inset-bottom, 0px));
+  --bottom-nav-safe: env(safe-area-inset-bottom, 0px);
+  --bottom-nav-offset: 0px;
+  --bottom-nav-clearance: calc(5.75rem + var(--bottom-nav-safe));
+  --bottom-nav-clearance-loose: calc(7.5rem + var(--bottom-nav-safe));
 }
 
 .bottom-nav-shell {
   position: fixed;
   left: 0.75rem;
   right: 0.75rem;
-  bottom: var(--bottom-nav-offset);
+  bottom: 0;
   padding: 0.25rem;
-  padding-bottom: var(--bottom-nav-pad);
+  padding-bottom: max(var(--bottom-nav-gap), var(--bottom-nav-safe));
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
   /* Force sa propre couche de composition : évite le décollement/"scroll"
      visuel de la barre fixe pendant le défilement momentum sur iOS/Android
      (le navigateur ne doit pas la repeindre avec le contenu de la page). */
@@ -395,6 +399,19 @@ html.capacitor-native .capacitor-safe-bottom {
   -webkit-transform: translateZ(0);
   will-change: transform;
   backface-visibility: hidden;
+}
+
+/* Couvre les fentes latérales (inset 0.75rem) sous la barre — pas de bande blanche. */
+.bottom-nav-shell::before {
+  content: '';
+  position: absolute;
+  left: -0.75rem;
+  right: -0.75rem;
+  bottom: 0;
+  height: max(var(--bottom-nav-gap), var(--bottom-nav-safe));
+  background: var(--app-bg);
+  pointer-events: none;
+  z-index: -1;
 }
 
 /* Soft keyboard open: keep bottom nav under the keyboard (no lift / no gap). */
@@ -422,11 +439,12 @@ html.keyboard-open .message-composer-shell {
 
 .bottom-nav-shell .bottom-nav-indicator {
   top: 0.25rem;
-  bottom: var(--bottom-nav-pad);
+  /* Aligne le bas de l’indicateur sur la zone utile (au-dessus de la safe-area). */
+  bottom: max(var(--bottom-nav-gap), var(--bottom-nav-safe));
 }
 
 html.capacitor-native {
-  --bottom-nav-offset: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  --bottom-nav-offset: 0px;
 }
 
 @media (display-mode: standalone) {
