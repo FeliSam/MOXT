@@ -2486,18 +2486,21 @@ html.locale-animating #root {
   @apply size-9 shrink-0 place-items-center rounded-xl text-[var(--app-text)] transition hover:bg-[var(--app-surface-muted)] sm:size-10 sm:rounded-2xl;
 }
 
+/* Same Feather weight as bottom nav (`text-lg`). */
 .header-action-icon {
-  @apply text-[1.25rem] stroke-[2.25];
+  @apply text-lg text-[var(--app-text-muted)];
 }
 
-/* Mobile: action pills match brand chip (h-12), bg 80%, icons larger / softer. */
+/* Mobile: pills −25% vs previous h-12, icons = bottom-nav style −25%. */
 @media (max-width: 1023px) {
   .header-action-btn {
-    @apply size-12 rounded-full border border-[var(--app-border)]/50 bg-[var(--app-surface)]/80 text-[var(--app-text)] backdrop-blur-md hover:bg-[var(--app-surface)]/90 sm:size-[3.25rem];
+    @apply size-9 rounded-full border border-[var(--app-border)]/50 bg-[var(--app-surface)]/80 text-[var(--app-text-muted)] backdrop-blur-md hover:bg-[var(--app-surface)]/90 sm:size-10;
   }
 
   .header-action-icon {
-    @apply text-[1.35rem] stroke-[2.35] opacity-60;
+    /* bottom nav uses text-lg (1.125rem); −25% → 0.84375rem */
+    font-size: 0.84375rem;
+    opacity: 0.6;
   }
 
   .app-top-header {
