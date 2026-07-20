@@ -32,6 +32,17 @@ export function createAuthSlice(authService) {
     }
   })
 
+  const registerWithEmailAfterSmsDenied = createAsyncThunk(
+    'auth/registerWithEmailAfterSmsDenied',
+    async (details, { rejectWithValue }) => {
+      try {
+        return await authService.registerWithEmailAfterSmsDenied(details)
+      } catch (error) {
+        return rejectWithValue(error instanceof Error ? error.message : String(error))
+      }
+    },
+  )
+
   const verifyEmailRegistration = createAsyncThunk(
     'auth/verifyEmailRegistration',
     async (details, { rejectWithValue }) => {
@@ -214,6 +225,20 @@ export function createAuthSlice(authService) {
           setSession(state, action)
         })
         .addCase(register.rejected, setFailure)
+        .addCase(registerWithEmailAfterSmsDenied.pending, setLoading)
+        .addCase(registerWithEmailAfterSmsDenied.fulfilled, (state, action) => {
+          if (action.payload.requiresEmailConfirmation) {
+            state.user = null
+            state.token = null
+            state.status = 'anonymous'
+            state.error = null
+            state.registrationEmail = action.payload.email
+            return
+          }
+          state.registrationEmail = null
+          setSession(state, action)
+        })
+        .addCase(registerWithEmailAfterSmsDenied.rejected, setFailure)
         .addCase(verifyEmailRegistration.pending, setLoading)
         .addCase(verifyEmailRegistration.fulfilled, setSession)
         .addCase(verifyEmailRegistration.rejected, setFailure)
@@ -285,6 +310,7 @@ export function createAuthSlice(authService) {
     login,
     completeOAuthProfile,
     register,
+    registerWithEmailAfterSmsDenied,
     verifyEmailRegistration,
     verifyPhoneRegistration,
     resendPhoneRegistrationOtp,

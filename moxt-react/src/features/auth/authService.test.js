@@ -118,6 +118,7 @@ describe('authService', () => {
     vi.clearAllMocks()
     __resetOtpSendCooldownForTests()
     __resetIdentityAvailabilityCacheForTests()
+    vi.stubGlobal('window', { location: { origin: 'http://localhost:5173' } })
     auth.getUser.mockResolvedValue({
       data: { user: null },
       error: null,
@@ -1005,6 +1006,112 @@ describe('authService', () => {
     })
     expect(result.requiresPhoneConfirmation).toBe(true)
     expect(result.resumedSignup).toBe(true)
+  })
+
+  it('surface SMS_NUMBER_PROVIDER_DENIED quand SMSC refuse le numéro', async () => {
+    auth.signUp.mockResolvedValue({
+      data: { user: null, session: null },
+      error: {
+        code: 'sms_send_failed',
+        message: 'SMSC_NUMBER_DENIED — message is denied',
+      },
+    })
+
+    await expect(authService.register(registrationDetails())).rejects.toThrow(
+      'SMS_NUMBER_PROVIDER_DENIED',
+    )
+  })
+
+  it('registerWithEmailAfterSmsDenied envoie un OTP e-mail sans canal SMS', async () => {
+    auth.signUp.mockResolvedValue({
+      data: {
+        user: { id: 'user-email-fallback', identities: [{ id: 'identity-email' }] },
+        session: null,
+      },
+      error: null,
+    })
+
+    const result = await authService.registerWithEmailAfterSmsDenied(registrationDetails())
+
+    expect(auth.signUp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: 'personne@example.com',
+        options: expect.objectContaining({
+          data: expect.objectContaining({
+            phone: '+79000000010',
+            registration_via: 'email_after_sms_denied',
+          }),
+        }),
+      }),
+    )
+    expect(auth.signUp.mock.calls[0][0].options?.channel).toBeUndefined()
+    expect(result.requiresEmailConfirmation).toBe(true)
+    expect(result.verificationMethod).toBe('email')
+    expect(result.phone).toBe('+79000000010')
+  })
+
+  it('verifyEmailRegistration finalise le profil avec téléphone non vérifié', async () => {
+    const user = {
+      id: 'user-email-fallback',
+      email: 'personne@example.com',
+      email_confirmed_at: '2026-07-20T12:00:00.000Z',
+      phone: null,
+      user_metadata: {
+        first_name: 'Nouvelle',
+        phone: '+79000000010',
+      },
+    }
+    const session = {
+      access_token: 'email-session',
+      refresh_token: 'email-refresh',
+      user,
+    }
+    auth.verifyOtp.mockResolvedValue({ data: { user, session }, error: null })
+    auth.setSession.mockResolvedValue({ data: { session, user }, error: null })
+    auth.getUser.mockResolvedValue({ data: { user }, error: null })
+    auth.getSession.mockResolvedValue({ data: { session }, error: null })
+    rpc.mockImplementation((name, args) => {
+      if (name === 'moxt_finalize_email_registration') {
+        return Promise.resolve({
+          data: {
+            id: 'user-email-fallback',
+            first_name: args?.p_first_name || 'Nouvelle',
+            last_name: args?.p_last_name || 'Personne',
+            email: args?.p_email || 'personne@example.com',
+            phone: args?.p_phone || '+79000000010',
+            phone_verified: false,
+            phone_verified_at: null,
+            email_verified: true,
+            origin_country: 'BJ',
+            city: 'Moscou',
+            role: 'user',
+            status: 'active',
+          },
+          error: null,
+        })
+      }
+      if (name === 'moxt_check_identity_available') {
+        return Promise.resolve({ data: { available: true, reason: null }, error: null })
+      }
+      return Promise.resolve({ data: null, error: null })
+    })
+
+    const result = await authService.verifyEmailRegistration({
+      email: 'personne@example.com',
+      token: '123456',
+      profileDetails: registrationDetails(),
+    })
+
+    expect(rpc).toHaveBeenCalledWith(
+      'moxt_finalize_email_registration',
+      expect.objectContaining({
+        p_email: 'personne@example.com',
+        p_phone: '+79000000010',
+      }),
+    )
+    expect(result.emailVerified).toBe(true)
+    expect(result.phoneLinkDeferred).toBe(true)
+    expect(result.phoneVerified).toBe(false)
   })
 
   it('envoie un OTP phone_change pour un compte e-mail sans téléphone Auth', async () => {

@@ -33,6 +33,12 @@ export function PhoneVerificationCard({ className = '' }) {
   const [resendCooldown, setResendCooldown] = useState(0)
 
   useEffect(() => {
+    if (user?.phone && user.phone !== '+7') {
+      setPhone(user.phone)
+    }
+  }, [user?.phone])
+
+  useEffect(() => {
     if (!authError) return
     dispatch(addToast(authErrorToast(t('security.phone.errorTitle'), authError, 'error', t)))
     dispatch(clearAuthError())

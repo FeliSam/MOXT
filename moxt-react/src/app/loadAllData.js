@@ -257,7 +257,7 @@ export const loadAllData = createAsyncThunk(
         .select('*')
         .order('pinned', { ascending: false })
         .order('created_at', { ascending: false })
-        .limit(40),
+        .limit(200),
       isAdmin
         ? supabase
             .from('support_tickets')

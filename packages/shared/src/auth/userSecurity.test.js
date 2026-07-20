@@ -7,6 +7,7 @@ import {
   canUseTransferAccount,
   initialCatalogStatus,
   isPhoneVerified,
+  securityGateMessage,
   verificationRequestIsStale,
 } from './userSecurity.js'
 
@@ -41,6 +42,24 @@ describe('userSecurity', () => {
     expect(canPublishContent({ ...publishReadyUser, emailVerified: false, emailVerifiedAt: null })).toBe(
       false,
     )
+  })
+
+  it('blocks email-created accounts from publishing until phone is confirmed', () => {
+    const emailOnly = {
+      id: 'u-email',
+      email: 'a@b.ru',
+      emailVerified: true,
+      emailVerifiedAt: '2026-01-01',
+      phone: '+79001234567',
+      phoneVerified: false,
+      firstName: 'Ali',
+      lastName: 'Ben',
+      city: 'Moscou',
+      originCountry: 'BJ',
+    }
+    expect(canPublishContent(emailOnly)).toBe(false)
+    expect(canPublishContent({ ...emailOnly, phoneVerified: true })).toBe(true)
+    expect(securityGateMessage('publish', emailOnly)).toMatch(/numéro russe/i)
   })
 
   it('publishes live only when identity is verified', () => {

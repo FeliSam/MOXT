@@ -7,6 +7,7 @@ export const {
   login,
   completeOAuthProfile,
   register,
+  registerWithEmailAfterSmsDenied,
   verifyEmailRegistration,
   verifyPhoneRegistration,
   resendPhoneRegistrationOtp,

@@ -99,16 +99,17 @@ export function verificationRequestIsStale(request, now = Date.now()) {
 export function securityGateMessage(kind, user) {
   switch (kind) {
     case 'publish':
+      // Phone first: email-fallback signups already confirmed email but must confirm phone.
       if (!isValidRussianPhone(user?.phone)) {
-        return 'Ajoutez un numéro russe (+7) valide dans votre profil.'
+        return 'Ajoutez un numéro russe (+7) valide dans Sécurité avant de publier.'
       }
       if (!isPhoneVerified(user)) {
-        return 'Confirmez votre numéro russe par SMS avant de publier une annonce, un colis, un job ou un événement.'
+        return 'Confirmez votre numéro russe par SMS dans Sécurité avant de publier une annonce, un colis, un job ou un événement.'
       }
       if (!isEmailVerified(user)) {
         return 'Confirmez votre e-mail dans Sécurité avant de publier une annonce, un colis, un job, un événement ou un post.'
       }
-      return 'Confirmez votre numéro russe et votre e-mail avant de publier.'
+      return 'Confirmez votre e-mail et votre numéro russe avant de publier.'
     case 'voyage':
       if (!isPhoneVerified(user) || !isValidRussianPhone(user?.phone)) {
         return 'Confirmez votre numéro russe (+7) avant de publier un voyage.'

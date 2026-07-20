@@ -1,6 +1,49 @@
 import { describe, expect, it } from 'vitest'
-import { translateAuthError } from './translateAuthError.js'
+import {
+  isSmsNumberProviderDenied,
+  SMS_NUMBER_PROVIDER_DENIED,
+  translateAuthError,
+} from './translateAuthError.js'
 import { OTP_RESEND_COOLDOWN_SECONDS } from './otpCooldown.js'
+
+describe('isSmsNumberProviderDenied', () => {
+  it('detects SMSC number denied and message is denied', () => {
+    expect(isSmsNumberProviderDenied('SMSC_NUMBER_DENIED — message is denied')).toBe(true)
+    expect(isSmsNumberProviderDenied({ message: 'Message is denied' })).toBe(true)
+    expect(
+      isSmsNumberProviderDenied({
+        message: 'SMSC : envoi refusé pour ce numéro. Vérifiez le mode test',
+      }),
+    ).toBe(true)
+  })
+
+  it('ignores balance, timeout, rate limit and sender-only errors', () => {
+    expect(isSmsNumberProviderDenied('SMSC : solde insuffisant. Rechargez')).toBe(false)
+    expect(isSmsNumberProviderDenied({ code: 'hook_timeout', message: 'Failed to reach hook' })).toBe(
+      false,
+    )
+    expect(isSmsNumberProviderDenied({ code: 'over_sms_send_rate_limit', message: 'rate' })).toBe(
+      false,
+    )
+    expect(isSmsNumberProviderDenied('SMSC_SENDER_INVALID — bad sender')).toBe(false)
+  })
+
+  it('treats sms_send_failed as denied only with operator wording', () => {
+    expect(
+      isSmsNumberProviderDenied({ code: 'sms_send_failed', message: 'failed' }),
+    ).toBe(false)
+    expect(
+      isSmsNumberProviderDenied({
+        code: 'sms_send_failed',
+        message: 'Operator denied delivery',
+      }),
+    ).toBe(true)
+  })
+
+  it('exports stable machine code', () => {
+    expect(SMS_NUMBER_PROVIDER_DENIED).toBe('SMS_NUMBER_PROVIDER_DENIED')
+  })
+})
 
 describe('translateAuthError', () => {
   it('maps phone signup 500 errors to SMS messages, not email', () => {

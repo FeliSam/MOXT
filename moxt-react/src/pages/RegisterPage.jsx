@@ -36,9 +36,13 @@ import {
   completeOAuthProfile,
   logout,
   register,
+  registerWithEmailAfterSmsDenied,
+  resendEmailRegistrationOtp,
   resendPhoneRegistrationOtp,
+  verifyEmailRegistration,
   verifyPhoneRegistration,
 } from '../features/auth/authSlice'
+import { SMS_NUMBER_PROVIDER_DENIED } from '@moxt/shared/auth/translateAuthError.js'
 import { addToast } from '../features/ui/uiSlice'
 import {
   authErrorToast,
@@ -138,6 +142,8 @@ export function RegisterPage() {
   const [otpCapMessage, setOtpCapMessage] = useState('')
   /** Inline form error when toast is muted (ex. échec SMS) — évite « ça tourne puis rien ». */
   const [formGateMessage, setFormGateMessage] = useState('')
+  /** SMSC refused this MSISDN — offer e-mail OTP instead of SMS. */
+  const [emailSmsFallback, setEmailSmsFallback] = useState(false)
   // Blocks the "already logged-in" auto-landing effect while we navigate to Security after OTP.
   const completingPhoneOtpRef = useRef(false)
   // Sync locks — Formik does not prevent a second submit before React re-renders loading.
@@ -173,6 +179,13 @@ export function RegisterPage() {
   useEffect(() => {
     if (!error) return
     const errorText = String(error || '')
+    if (errorText === SMS_NUMBER_PROVIDER_DENIED) {
+      setEmailSmsFallback(true)
+      setFormGateMessage('')
+      setPendingVerification(null)
+      dispatch(clearAuthError())
+      return
+    }
     const otpLimited = /Limite atteinte|Patientez \d+ secondes/i.test(errorText)
     const localizedError = sanitizeAuthMessage(errorText, t)
     if (alreadyRegistered) {
@@ -317,7 +330,7 @@ export function RegisterPage() {
     enableReinitialize: true,
     onSubmit: async (values) => {
       // Step 4: Enter key / form submit must confirm OTP — never re-trigger SMS signup.
-      if (step === 4 && pendingVerification?.phone && !oauthCompletion) {
+      if (step === 4 && pendingVerification && !oauthCompletion) {
         await confirmCode()
         return
       }
@@ -345,10 +358,16 @@ export function RegisterPage() {
         // (gate identité + signUp réussis). Sinon rester sur le formulaire.
         setOtpCapMessage('')
         setFormGateMessage('')
+        setEmailSmsFallback(false)
 
         const result = await dispatch(register(values))
         if (!register.fulfilled.match(result)) {
           const payload = String(result.payload || '')
+          if (payload === SMS_NUMBER_PROVIDER_DENIED) {
+            setEmailSmsFallback(true)
+            setPendingVerification(null)
+            return
+          }
           if (/Limite atteinte|Patientez \d+ secondes/i.test(payload)) {
             setOtpCapMessage(payload)
           }
@@ -494,6 +513,47 @@ export function RegisterPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- formik identity changes every render
   }, [authUser, formik.setValues, pendingVerification])
 
+  async function startEmailOtpFallback() {
+    if (registerSubmitLockRef.current || authBusy) return
+    registerSubmitLockRef.current = true
+    try {
+      setOtpCapMessage('')
+      setFormGateMessage('')
+      const result = await dispatch(registerWithEmailAfterSmsDenied(formik.values))
+      if (!registerWithEmailAfterSmsDenied.fulfilled.match(result)) {
+        const payload = String(result.payload || '')
+        if (/Limite atteinte|Patientez \d+ secondes/i.test(payload)) {
+          setOtpCapMessage(payload)
+        }
+        return
+      }
+      const payload = result.payload || {}
+      if (!payload.requiresEmailConfirmation || !payload.email) return
+      dispatch(clearAuthError())
+      const pending = {
+        method: 'email',
+        phone: payload.phone || formik.values.russianPhone,
+        email: payload.email,
+        pendingUserId: payload.pendingUserId,
+        firstName: formik.values.firstName,
+        lastName: formik.values.lastName,
+        originPhone: formik.values.originPhone,
+        originCountry: formik.values.originCountry,
+        residenceCity: formik.values.residenceCity,
+        avatarUrl: formik.values.avatarUrl,
+        identityChecked: true,
+        step: 4,
+      }
+      savePendingRegistration(pending)
+      setResendCooldown(OTP_RESEND_COOLDOWN_SECONDS)
+      setEmailSmsFallback(false)
+      setPendingVerification(pending)
+      setStep(4)
+    } finally {
+      registerSubmitLockRef.current = false
+    }
+  }
+
   async function resendVerificationCode() {
     if (!pendingVerification || resendCooldown > 0 || authBusy || otpActionLockRef.current) return
     otpActionLockRef.current = true
@@ -511,15 +571,23 @@ export function RegisterPage() {
     })
 
     try {
-      const result = await dispatch(resendPhoneRegistrationOtp(pendingVerification.phone))
-      if (resendPhoneRegistrationOtp.fulfilled.match(result)) {
+      const isEmail = pendingVerification.method === 'email'
+      const result = isEmail
+        ? await dispatch(resendEmailRegistrationOtp(pendingVerification.email))
+        : await dispatch(resendPhoneRegistrationOtp(pendingVerification.phone))
+      const ok = isEmail
+        ? resendEmailRegistrationOtp.fulfilled.match(result)
+        : resendPhoneRegistrationOtp.fulfilled.match(result)
+      if (ok) {
         dispatch(clearAuthError())
         setOtpCapMessage('')
         setResendCooldown(OTP_RESEND_COOLDOWN_SECONDS)
         dispatch(
           addToast({
             title: t('auth.register.codeResentTitle'),
-            message: t('auth.register.codeResentSms', { phone: pendingVerification.phone }),
+            message: isEmail
+              ? t('auth.register.codeResentEmail', { email: pendingVerification.email })
+              : t('auth.register.codeResentSms', { phone: pendingVerification.phone }),
             tone: 'success',
           }),
         )
@@ -553,19 +621,62 @@ export function RegisterPage() {
     otpActionLockRef.current = true
 
     try {
+      const profileDetails = {
+        firstName: formik.values.firstName || pendingVerification.firstName,
+        lastName: formik.values.lastName || pendingVerification.lastName,
+        originPhone: formik.values.originPhone || pendingVerification.originPhone,
+        originCountry: formik.values.originCountry || pendingVerification.originCountry,
+        residenceCity: formik.values.residenceCity || pendingVerification.residenceCity,
+        avatarUrl: formik.values.avatarUrl || pendingVerification.avatarUrl,
+        russianPhone: formik.values.russianPhone || pendingVerification.phone,
+      }
+
+      if (pendingVerification.method === 'email') {
+        const result = await dispatch(
+          verifyEmailRegistration({
+            email: pendingVerification.email || formik.values.email,
+            token: verificationCode,
+            profileDetails,
+          }),
+        )
+        if (verifyEmailRegistration.fulfilled.match(result)) {
+          completingPhoneOtpRef.current = true
+          dispatch(clearAuthError())
+          clearPendingRegistration()
+          setPendingVerification(null)
+          setVerificationCode('')
+          setEmailSmsFallback(false)
+          triggerBurst()
+          dispatch(
+            addToast({
+              title: t('auth.register.toasts.welcomeTitle'),
+              message: t('auth.register.toasts.welcomeEmailBody'),
+              tone: 'success',
+            }),
+          )
+          if (result.payload?.phoneLinkDeferred) {
+            dispatch(
+              addToast({
+                title: t('auth.register.toasts.phonePendingTitle'),
+                message: t('auth.register.toasts.phonePendingBody'),
+                tone: 'info',
+                link: '/security',
+              }),
+            )
+            await completeRegistration('/security')
+            return
+          }
+          await completeRegistration(POST_PHONE_OTP_LANDING)
+        }
+        return
+      }
+
       const result = await dispatch(
         verifyPhoneRegistration({
           phone: pendingVerification.phone,
           email: pendingVerification.email || formik.values.email,
           token: verificationCode,
-          profileDetails: {
-            firstName: formik.values.firstName || pendingVerification.firstName,
-            lastName: formik.values.lastName || pendingVerification.lastName,
-            originPhone: formik.values.originPhone || pendingVerification.originPhone,
-            originCountry: formik.values.originCountry || pendingVerification.originCountry,
-            residenceCity: formik.values.residenceCity || pendingVerification.residenceCity,
-            avatarUrl: formik.values.avatarUrl || pendingVerification.avatarUrl,
-          },
+          profileDetails,
         }),
       )
       if (verifyPhoneRegistration.fulfilled.match(result)) {
@@ -912,6 +1023,26 @@ export function RegisterPage() {
               </Alert>
             ) : null}
 
+            {emailSmsFallback && !oauthCompletion ? (
+              <Alert title={t('auth.register.emailFallback.title')} variant="warning">
+                <div className="grid gap-3">
+                  <p>{t('auth.register.emailFallback.body')}</p>
+                  <p className="font-bold text-[var(--app-text)]">
+                    {t('auth.register.emailFallback.emailLabel')}: {formik.values.email}
+                  </p>
+                  <Button
+                    type="button"
+                    icon={FiCheck}
+                    loading={authBusy}
+                    disabled={authBusy}
+                    onClick={startEmailOtpFallback}
+                  >
+                    {t('auth.register.emailFallback.sendButton')}
+                  </Button>
+                </div>
+              </Alert>
+            ) : null}
+
             <div className="hidden items-center gap-1.5 rounded-2xl bg-[var(--app-surface-muted)] px-4 py-2 text-sm font-bold sm:flex">
               <span className="text-base leading-none">{flagEmoji(formik.values.originCountry)}</span>
               {selectedCountry?.name || t('auth.register.fallbackCountry')}
@@ -947,19 +1078,23 @@ export function RegisterPage() {
         {step === 4 &&
         !oauthCompletion &&
         pendingVerification?.identityChecked &&
-        pendingVerification?.phone ? (
+        (pendingVerification?.phone || pendingVerification?.method === 'email') ? (
           <>
             <Alert
               title={
-                pendingVerification.sendingSms
-                  ? t('auth.register.verify.sendingTitle')
-                  : t('auth.register.verify.title')
+                pendingVerification.method === 'email'
+                  ? t('auth.register.verify.emailTitle')
+                  : pendingVerification.sendingSms
+                    ? t('auth.register.verify.sendingTitle')
+                    : t('auth.register.verify.title')
               }
               variant="info"
             >
-              {pendingVerification.sendingSms
-                ? t('auth.register.verify.sendingBody', { phone: pendingVerification.phone })
-                : t('auth.register.verify.body', { phone: pendingVerification.phone })}
+              {pendingVerification.method === 'email'
+                ? t('auth.register.verify.emailBody', { email: pendingVerification.email })
+                : pendingVerification.sendingSms
+                  ? t('auth.register.verify.sendingBody', { phone: pendingVerification.phone })
+                  : t('auth.register.verify.body', { phone: pendingVerification.phone })}
             </Alert>
             {otpCapMessage ? (
               <Alert title={t('auth.register.otpCapTitle')} variant="warning">
@@ -968,7 +1103,11 @@ export function RegisterPage() {
             ) : null}
             <Input
               id="verification-code"
-              label={t('auth.register.verify.codeLabel')}
+              label={
+                pendingVerification.method === 'email'
+                  ? t('auth.register.verify.emailCodeLabel')
+                  : t('auth.register.verify.codeLabel')
+              }
               inputMode="numeric"
               autoComplete="one-time-code"
               maxLength={6}
@@ -996,7 +1135,9 @@ export function RegisterPage() {
             </Button>
             <div className="grid gap-2 text-center">
               <p className="text-sm text-[var(--app-text-muted)]">
-                {t('auth.register.codeNotReceivedSms')}
+                {pendingVerification.method === 'email'
+                  ? t('auth.register.codeNotReceivedEmail')
+                  : t('auth.register.codeNotReceivedSms')}
               </p>
               <Button
                 type="button"
@@ -1008,7 +1149,9 @@ export function RegisterPage() {
               >
                 {resendCooldown > 0
                   ? t('auth.register.resendCooldown', { seconds: resendCooldown })
-                  : t('auth.register.resendSms')}
+                  : pendingVerification.method === 'email'
+                    ? t('auth.register.resendEmail')
+                    : t('auth.register.resendSms')}
               </Button>
               <button
                 type="button"
@@ -1018,6 +1161,7 @@ export function RegisterPage() {
                   setPendingVerification(null)
                   setVerificationCode('')
                   setOtpCapMessage('')
+                  setEmailSmsFallback(false)
                   setStep(3)
                   dispatch(clearAuthError())
                 }}

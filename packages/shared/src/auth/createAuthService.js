@@ -8,7 +8,11 @@ import {
 } from './otpCooldown.js'
 import { loadPendingRegistration } from './pendingRegistration.js'
 import { isProfileComplete } from './profileCompletion.js'
-import { translateAuthError } from './translateAuthError.js'
+import {
+  isSmsNumberProviderDenied,
+  SMS_NUMBER_PROVIDER_DENIED,
+  translateAuthError,
+} from './translateAuthError.js'
 
 /** Thrown when Supabase Auth session exists but profiles row was wiped (ops / DB reset). */
 export const ORPHAN_SESSION_ERROR = 'MOXT_ORPHAN_SESSION'
@@ -487,10 +491,12 @@ export function createAuthService(supabase, redirects = {}) {
         throw error
       }
       if (resendResult.error) {
+        const smsError = otpResult.error || resendResult.error
+        if (isSmsNumberProviderDenied(smsError)) {
+          throw new Error(SMS_NUMBER_PROVIDER_DENIED)
+        }
         // Surface the real SMS / Auth error — never collapse to ALREADY_REGISTERED here.
-        throw new Error(
-          translateAuthError(otpResult.error || resendResult.error, { channel: 'phone' }),
-        )
+        throw new Error(translateAuthError(smsError, { channel: 'phone' }))
       }
     }
 
@@ -1302,6 +1308,9 @@ export function createAuthService(supabase, redirects = {}) {
           break
         }
         if (error) {
+          if (isSmsNumberProviderDenied(error)) {
+            throw new Error(SMS_NUMBER_PROVIDER_DENIED)
+          }
           if (isAuthAlreadyExistsError(error)) {
             try {
               return await resumePhoneSignup(normalizedPhone, email, null)
@@ -1310,12 +1319,17 @@ export function createAuthService(supabase, redirects = {}) {
               if (isResumeBlockerMessage(resumeMessage)) {
                 throw new Error('ALREADY_REGISTERED')
               }
+              if (isSmsNumberProviderDenied(resumeError) || resumeMessage === SMS_NUMBER_PROVIDER_DENIED) {
+                throw new Error(SMS_NUMBER_PROVIDER_DENIED)
+              }
               throw resumeError instanceof Error ? resumeError : new Error(resumeMessage)
             }
           }
-          throw new Error(
-            translateAuthError(error, { channel: 'phone', intent: 'register' }),
-          )
+          const translated = translateAuthError(error, { channel: 'phone', intent: 'register' })
+          if (isSmsNumberProviderDenied(translated) || isSmsNumberProviderDenied(error)) {
+            throw new Error(SMS_NUMBER_PROVIDER_DENIED)
+          }
+          throw new Error(translated)
         }
 
         // Supabase anti-enumeration: duplicate email/phone returns identities: [].
@@ -1365,22 +1379,149 @@ export function createAuthService(supabase, redirects = {}) {
       })
     },
 
-    async verifyEmailRegistration({ email, token }) {
+    async registerWithEmailAfterSmsDenied(details) {
       if (!supabase) throw new Error('Supabase non configuré.')
+      const email = String(details.email || '').trim().toLowerCase()
+      if (!email) throw new Error("L'e-mail est obligatoire.")
+      const normalizedPhone = normalizeRussianAuthPhone(details.russianPhone)
+
+      return withOtpInFlight('email', email, async () => {
+        const profileFields = {
+          first_name: details.firstName.trim(),
+          last_name: details.lastName.trim(),
+          email,
+          phone: normalizedPhone,
+          origin_phone: details.originPhone?.trim() || '',
+          country: 'RU',
+          origin_country: details.originCountry,
+          city: details.residenceCity?.trim() || '',
+          avatar_url: details.avatarUrl?.trim() || '',
+          role: 'user',
+          status: 'active',
+          registration_via: 'email_after_sms_denied',
+        }
+
+        await assertRegistrationIdentitiesEligible(
+          { phone: normalizedPhone, email },
+          { useCache: false },
+        )
+        guardOtpSend('email', email)
+
+        const redirectTo = emailRedirectTo()
+        const { data, error } = await withTimeout(
+          supabase.auth.signUp({
+            email,
+            password: details.password,
+            options: {
+              data: profileFields,
+              ...(redirectTo ? { emailRedirectTo: redirectTo } : {}),
+            },
+          }),
+          AUTH_OTP_SEND_TIMEOUT_MS,
+          'signUpEmail',
+        )
+
+        if (error) {
+          if (isAuthAlreadyExistsError(error)) {
+            throw new Error('ALREADY_REGISTERED')
+          }
+          throw new Error(translateAuthError(error, { channel: 'email', intent: 'register' }))
+        }
+        if (
+          data.user &&
+          !data.session &&
+          Array.isArray(data.user.identities) &&
+          data.user.identities.length === 0
+        ) {
+          throw new Error('ALREADY_REGISTERED')
+        }
+        if (!data.user) throw new Error('Échec de création du compte.')
+
+        trackOtpSend('email', email)
+
+        if (data.session) {
+          try {
+            await withTimeout(supabase.auth.signOut(), AUTH_NETWORK_TIMEOUT_MS, 'signOut')
+          } catch {
+            // ignore
+          }
+        }
+
+        return {
+          user: profileToUser({ id: data.user.id, ...profileFields }),
+          token: '',
+          requiresEmailConfirmation: true,
+          requiresPhoneConfirmation: false,
+          identityChecked: true,
+          pendingUserId: data.user.id,
+          verificationMethod: 'email',
+          email,
+          phone: normalizedPhone,
+        }
+      })
+    },
+
+    async verifyEmailRegistration({ email, token, profileDetails }) {
+      if (!supabase) throw new Error('Supabase non configuré.')
+      const normalizedEmail = email.trim().toLowerCase()
       const { data, error } = await supabase.auth.verifyOtp({
-        email: email.trim().toLowerCase(),
+        email: normalizedEmail,
         token: token.trim(),
         type: 'signup',
       })
-      if (error) throw new Error(translateAuthError(error, { channel: 'email' }))
+      if (error) throw new Error(translateAuthError(error, { channel: 'email', intent: 'otp_verify' }))
       if (!data.session || !data.user) {
         throw new Error("Le code est invalide ou a expiré. Recommencez l'inscription.")
       }
       const session = await establishAuthSession(data.session, { channel: 'email' })
-      const user = await fetchOrCreateProfile(session.user, {
-        pendingRegistration: loadPendingRegistration(),
-      })
-      return { user, token: session.access_token }
+      const pending = loadPendingRegistration() || {}
+      const meta = session.user.user_metadata || {}
+      const phone = normalizeRussianAuthPhone(
+        profileDetails?.russianPhone ||
+          pending.phone ||
+          meta.phone ||
+          '',
+      )
+
+      const finalizePayload = {
+        p_first_name:
+          profileDetails?.firstName || pending.firstName || meta.first_name || null,
+        p_last_name: profileDetails?.lastName || pending.lastName || meta.last_name || null,
+        p_email: normalizedEmail,
+        p_phone: phone || null,
+        p_origin_phone:
+          profileDetails?.originPhone || pending.originPhone || meta.origin_phone || null,
+        p_origin_country:
+          profileDetails?.originCountry ||
+          pending.originCountry ||
+          meta.origin_country ||
+          null,
+        p_city: profileDetails?.residenceCity || pending.residenceCity || meta.city || null,
+        p_avatar_url: profileDetails?.avatarUrl || pending.avatarUrl || meta.avatar_url || null,
+      }
+
+      const { data: finalized, error: finalizeError } = await supabase.rpc(
+        'moxt_finalize_email_registration',
+        finalizePayload,
+      )
+      if (finalizeError || !finalized?.id) {
+        throw new Error(
+          translateAuthError(
+            { message: finalizeError?.message || 'MOXT_FINALIZE_FAILED' },
+            { channel: 'email', intent: 'otp_verify' },
+          ),
+        )
+      }
+
+      const user = await enrichUserFromAuth(profileToUser(finalized), session.user)
+      return {
+        user,
+        token: session.access_token,
+        emailVerified: true,
+        phoneVerified: Boolean(user.phoneVerified),
+        nextVerification: user.phoneVerified ? null : 'phone',
+        phoneLinkDeferred: !user.phoneVerified,
+      }
     },
 
     async verifyPhoneRegistration({ phone, token, email, profileDetails }) {
@@ -2067,4 +2208,10 @@ export function createAuthService(supabase, redirects = {}) {
   }
 }
 
-export { normalizePhone, normalizeRussianAuthPhone, translateAuthError }
+export {
+  normalizePhone,
+  normalizeRussianAuthPhone,
+  translateAuthError,
+  isSmsNumberProviderDenied,
+  SMS_NUMBER_PROVIDER_DENIED,
+}

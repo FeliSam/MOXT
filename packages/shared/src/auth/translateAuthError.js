@@ -7,6 +7,65 @@ function otpResendHint() {
   return 'ou renvoyez un code'
 }
 
+/**
+ * SMSC / provider refused delivery for this MSISDN (operator block), not balance/timeout.
+ * Used to switch registration to e-mail OTP.
+ */
+export function isSmsNumberProviderDenied(errorOrMessage) {
+  const code =
+    typeof errorOrMessage === 'object' && errorOrMessage !== null
+      ? String(errorOrMessage.code || '')
+      : ''
+  const message = String(
+    typeof errorOrMessage === 'string'
+      ? errorOrMessage
+      : errorOrMessage?.message || errorOrMessage?.error_description || '',
+  )
+  const lower = message.toLowerCase()
+
+  if (
+    lower.includes('solde insuffisant') ||
+    lower.includes('insufficient balance') ||
+    lower.includes('hook_timeout') ||
+    lower.includes('failed to reach hook') ||
+    lower.includes('rate limit') ||
+    lower.includes('trop de tentatives') ||
+    lower.includes('smsc_sender_invalid') ||
+    code === 'hook_timeout' ||
+    code === 'hook_timeout_after_retries' ||
+    code === 'over_sms_send_rate_limit'
+  ) {
+    return false
+  }
+
+  if (
+    lower.includes('smsc_number_denied') ||
+    lower.includes('message is denied') ||
+    lower.includes('envoi refusé pour ce numéro') ||
+    lower.includes('envoi refuse pour ce numero')
+  ) {
+    return true
+  }
+
+  // Auth sms_send_failed only when the body points at a number/operator refusal.
+  if (code === 'sms_send_failed') {
+    return (
+      lower.includes('denied') ||
+      lower.includes('refusé') ||
+      lower.includes('refuse') ||
+      lower.includes('запрещ') ||
+      lower.includes('fournisseur') ||
+      lower.includes('operator') ||
+      lower.includes('opérateur') ||
+      lower.includes('operateur')
+    )
+  }
+
+  return false
+}
+
+export const SMS_NUMBER_PROVIDER_DENIED = 'SMS_NUMBER_PROVIDER_DENIED'
+
 export function translateAuthError(error, context = {}) {
   const code = typeof error === 'object' && error !== null ? error.code : undefined
   const name = typeof error === 'object' && error !== null ? error.name : undefined
@@ -52,6 +111,11 @@ export function translateAuthError(error, context = {}) {
     return verifyingOtp
       ? `Le numéro n’est pas encore confirmé. Vérifiez les 6 chiffres ${otpResendHint()}.`
       : 'Le numéro n’est pas confirmé. Renvoyez un code puis confirmez.'
+  }
+  if (message.includes('MOXT_EMAIL_NOT_CONFIRMED')) {
+    return verifyingOtp
+      ? `L’e-mail n’est pas encore confirmé. Vérifiez les 6 chiffres ${otpResendHint()}.`
+      : 'L’e-mail n’est pas confirmé. Renvoyez un code puis confirmez.'
   }
 
   // Confirming an OTP must never look like a fresh SMS send failure.
@@ -223,7 +287,9 @@ function translateSmsHookFailure(message = '') {
     lower.includes('envoi refusé') ||
     lower.includes('message is denied')
   ) {
-    return "Ce numéro n'a pas pu recevoir le SMS. Ouvrez le bot Telegram SMSC (Start) puis renvoyez le code, ou utilisez un autre numéro."
+    // Machine code when registering — UI switches to e-mail OTP.
+    // Elsewhere keep a human SMS fallback hint.
+    return "Ce numéro n'a pas pu recevoir le SMS (opérateur). Utilisez la confirmation par e-mail ou un autre numéro."
   }
   if (lower.includes('temporairement bloqué')) {
     return "L'envoi SMS est temporairement bloqué. Réessayez dans quelques minutes ou contactez le support."

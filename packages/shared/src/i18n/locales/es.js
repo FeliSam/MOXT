@@ -68,7 +68,16 @@ export const es = {
           "Preparando el código para {phone}. Puede tardar unos segundos según la red o un VPN.",
         sendingAction: "Enviando…",
         codeLabel: "Código recibido por SMS",
-        confirm: "Confirmar y acceder a MOXT"
+        confirm: "Confirmar y acceder a MOXT",
+        emailTitle: "Confirma tu correo",
+        emailBody: "Se envió un código de 6 dígitos a {email}. Introdúcelo para crear tu cuenta.",
+        emailCodeLabel: "Código recibido por correo",
+      },
+      emailFallback: {
+        title: "SMS no disponible para este número",
+        body: "El operador de este número no puede recibir el código SMS. Continúa con el correo ya indicado para crear tu cuenta.",
+        emailLabel: "Correo",
+        sendButton: "Recibir el código por correo",
       },
       toasts: {
         alreadyExistsTitle: "La cuenta ya existe",
@@ -86,8 +95,11 @@ export const es = {
         welcomeTitle: "Bienvenido a MOXT",
         welcomeDeferredBody: "Número confirmado. Confirma tu correo en Seguridad cuando quieras.",
         welcomeReadyBody: "Número confirmado. Tu cuenta está lista — ¡bienvenido!",
+        welcomeEmailBody: "Correo confirmado. Confirma tu número +7 en Seguridad antes de publicar.",
         emailPendingTitle: "Correo por confirmar",
-        emailPendingBody: "Abre Seguridad para vincular y verificar tu dirección de correo."
+        emailPendingBody: "Abre Seguridad para vincular y verificar tu dirección de correo.",
+        phonePendingTitle: "Número por confirmar",
+        phonePendingBody: "Confirma tu número ruso (+7) en Seguridad antes de publicar un anuncio, paquete, empleo, evento u oferta P2P.",
       },
       loginNoticePendingOtp: "Si el registro está completo, inicia sesión con tu número +7 y la contraseña elegida. Si no, introduce primero el código SMS recibido arriba.",
       resendSms: "Reenviar SMS",
