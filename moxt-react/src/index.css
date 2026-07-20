@@ -2483,24 +2483,27 @@ html.locale-animating #root {
 
 /* ─── Utilitaires ────────────────────────────────────────────────────────── */
 .header-action-btn {
-  @apply size-9 shrink-0 place-items-center rounded-xl text-[var(--app-text)] transition hover:bg-[var(--app-surface-muted)] sm:size-10 sm:rounded-2xl;
+  @apply size-9 shrink-0 place-items-center rounded-xl text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)] sm:size-10 sm:rounded-2xl;
 }
 
-/* Same Feather weight as bottom nav (`text-lg`). */
+/* Same Feather family as bottom nav (`text-lg`). */
 .header-action-icon {
-  @apply text-lg text-[var(--app-text-muted)];
+  @apply text-lg text-[var(--app-text-muted)] opacity-75 transition-opacity;
 }
 
-/* Mobile: pills −25% vs previous h-12, icons = bottom-nav style −25%. */
+.header-action-btn:hover .header-action-icon,
+.header-action-btn:focus-visible .header-action-icon {
+  opacity: 1;
+}
+
+/* Mobile / tablet header: size-10 → sm size-11, glyph text-lg. */
 @media (max-width: 1023px) {
   .header-action-btn {
-    @apply size-9 rounded-full border border-[var(--app-border)]/50 bg-[var(--app-surface)]/80 text-[var(--app-text-muted)] backdrop-blur-md hover:bg-[var(--app-surface)]/90 sm:size-10;
+    @apply size-10 rounded-full border border-[var(--app-border)]/50 bg-[var(--app-surface)]/80 backdrop-blur-md hover:bg-[var(--app-surface)]/90 sm:size-11;
   }
 
   .header-action-icon {
-    /* bottom nav uses text-lg (1.125rem); −25% → 0.84375rem */
-    font-size: 0.84375rem;
-    opacity: 0.6;
+    @apply text-lg opacity-75;
   }
 
   .app-top-header {
