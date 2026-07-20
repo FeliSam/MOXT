@@ -3,13 +3,14 @@ import { DIRECTIONS } from './transferConfig'
 import { calculateTransfer, getTransferPricing, validateTransferAmount } from './transferUtils'
 
 describe('calcul des transferts', () => {
-  it('applique la marge et les frais sur un transfert XOF vers RUB', () => {
+  it('applique la marge et les frais inclus dans le montant saisi (XOF vers RUB)', () => {
     const result = calculateTransfer(50000, DIRECTIONS.BJ_TO_RU)
 
     expect(result.rate).toBeCloseTo(0.100485)
-    expect(result.amountReceived).toBeCloseTo(5024.25)
+    expect(result.totalToPay).toBe(50000)
     expect(result.fees).toBe(1250)
-    expect(result.totalToPay).toBe(51250)
+    expect(result.amountSent).toBe(48750)
+    expect(result.amountReceived).toBeCloseTo(48750 * 0.100485)
   })
 
   it('utilise les devises opposees dans le sens Russie vers Benin', () => {
@@ -17,16 +18,30 @@ describe('calcul des transferts', () => {
 
     expect(result.currencyFrom).toBe('RUB')
     expect(result.currencyTo).toBe('XOF')
-    expect(result.amountReceived).toBeCloseTo(9751.5)
+    expect(result.totalToPay).toBe(1000)
+    expect(result.amountSent).toBe(975)
+    expect(result.amountReceived).toBeCloseTo(975 * result.rate)
   })
 
-  it('adapte la devise locale au pays d origine', () => {
-    const result = calculateTransfer(1000, DIRECTIONS.BJ_TO_RU, undefined, undefined, 'NG')
+  it('applique la reduction d entreprise a la place de la marge plateforme', () => {
+    const result = calculateTransfer(1000, DIRECTIONS.BJ_TO_RU, 2.5, 0.1, 'BJ', 5)
 
-    expect(result.currencyFrom).toBe('NGN')
-    expect(result.currencyTo).toBe('RUB')
-    expect(result.sourceCountry).toBe('NG')
-    expect(result.destinationCountry).toBe('RU')
+    expect(result.rateMarginPercent).toBe(5)
+    expect(result.rate).toBeCloseTo(0.095)
+    expect(result.totalToPay).toBe(1000)
+    expect(result.fees).toBe(25)
+    expect(result.amountSent).toBe(975)
+    expect(result.amountReceived).toBeCloseTo(92.625)
+  })
+
+  it('borne la reduction entre 0 et 15 %', () => {
+    const high = calculateTransfer(1000, DIRECTIONS.BJ_TO_RU, 0, 1, 'BJ', 99)
+    const low = calculateTransfer(1000, DIRECTIONS.BJ_TO_RU, 0, 1, 'BJ', -3)
+
+    expect(high.rateMarginPercent).toBe(15)
+    expect(high.rate).toBeCloseTo(0.85)
+    expect(low.rateMarginPercent).toBe(0)
+    expect(low.rate).toBe(1)
   })
 
   it('refuse un montant sous le minimum', () => {

@@ -97,6 +97,8 @@ function toSnake(obj) {
     primaryActivity: 'primary_activity',
     secondaryActivity: 'secondary_activity',
     feePercent: 'fee_percent',
+    rateReductionToRu: 'rate_reduction_to_ru',
+    rateReductionFromRu: 'rate_reduction_from_ru',
     averageDelay: 'average_delay',
     exchangeMethods: 'exchange_methods',
     transferAccounts: 'transfer_accounts',
@@ -1342,37 +1344,10 @@ const handlers = {
   },
   'administration/updateUserRole': async (payload, state) => {
     const privileged = payload.role === 'admin' || payload.role === 'superadmin'
+    // Privileged promotions are persisted in promoteAdminUtils (edge) before Redux updates.
     if (privileged) {
-      const actor = state.auth.user
-      if (actor?.role !== 'superadmin') {
-        throw new Error('Seul un superadmin peut promouvoir un administrateur.')
-      }
-      if (!payload.promotePassword) {
-        throw new Error('Mot de passe de promotion administrateur requis.')
-      }
-
-      const { data, error } = await supabase.functions.invoke('admin-promote-role', {
-        body: {
-          userId: payload.id,
-          role: payload.role,
-          promotePassword: payload.promotePassword,
-        },
-      })
-
-      if (error) {
-        let detail = error.message
-        if (error.context && typeof error.context.json === 'function') {
-          try {
-            const body = await error.context.json()
-            if (body?.error) detail = String(body.error)
-          } catch {
-            // ignore
-          }
-        }
-        throw new Error(detail)
-      }
-      if (data?.error) throw new Error(String(data.error))
-      return
+      if (payload.remoteSynced) return
+      throw new Error('Promotion admin : synchronisation distante requise.')
     }
 
     const { error } = await supabase
@@ -1514,6 +1489,12 @@ const handlers = {
         updatedAt: business.updatedAt,
       })
     }
+  },
+  'businesses/updateBusinessTransferPricing': async (payload, state) => {
+    const business = state.businesses.items.find(
+      (item) => item.id === payload.businessId && item.ownerId === payload.ownerId,
+    )
+    if (business) await saveBusinessRemote(business)
   },
 
   // ── Avis ──────────────────────────────────────────────────────────────────────

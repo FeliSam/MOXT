@@ -3505,9 +3505,11 @@ export const ru = {
       recipientReceives: "Получатель получит",
       feesPercent: "Комиссия {percent}%",
       totalToPay: "Итого к оплате",
+      appliedRate: "Применённый курс",
+      feesDetail: "Комиссия включена ({percent}%): {fees}",
       fixAmount: "Исправьте сумму, чтобы получить оценку.",
       dateUnavailable: "дата недоступна",
-      rateNote: "1 {from} = {rate} {to} · {date}",
+      rateNote: "1 {from} = {rate} {to} · {date} · скидка {margin}%",
     },
     dashboardCalc: {
       eyebrow: "Быстрый перевод",

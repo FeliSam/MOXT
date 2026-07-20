@@ -750,7 +750,7 @@ describe('authService', () => {
     )
 
     expect(auth.resend).toHaveBeenCalledWith({
-      type: 'email_change',
+      type: 'signup',
       email: 'personne@example.com',
       options: {
         emailRedirectTo: expect.stringMatching(/\/auth\/callback\?next=\/security/),

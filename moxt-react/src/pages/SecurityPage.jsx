@@ -269,28 +269,28 @@ export function SecurityPage() {
         title={t('security.pageTitle')}
         actions={<BackButton appearance="link" />}
       />
-      {phoneConfirmed && !emailConfirmed ? (
-        <Alert variant="info" title={t('security.postSignupEmailTitle')}>
-          <div className="grid gap-3">
-            <p>{t('security.postSignupEmailBody')}</p>
-            <div>
-              <Button type="button" variant="secondary" onClick={() => navigate('/dashboard')}>
-                {t('security.postSignupEmailLater')}
-              </Button>
-            </div>
-          </div>
-        </Alert>
-      ) : null}
       {searchParams.get('email') === 'confirmed' && emailConfirmed ? (
         <Alert variant="success" title={t('security.emailConfirmedToastTitle')}>
           {t('security.emailConfirmedToastBody')}
         </Alert>
       ) : null}
+      {phoneConfirmed && !emailConfirmed ? (
+        <Alert variant="info" title={t('security.postSignupEmailTitle')}>
+          <div className="grid gap-3">
+            <p>{t('security.postSignupEmailBody')}</p>
+            <Button type="button" variant="secondary" onClick={() => navigate('/dashboard')}>
+              {t('security.postSignupEmailLater')}
+            </Button>
+          </div>
+        </Alert>
+      ) : null}
       <div
         id="security-email-verify"
         className={
-          highlightEmail && !emailConfirmed
-            ? 'rounded-3xl ring-2 ring-brand-500 ring-offset-2 ring-offset-[var(--app-bg)]'
+          !emailConfirmed
+            ? highlightEmail
+              ? 'rounded-3xl ring-2 ring-brand-500 ring-offset-2 ring-offset-[var(--app-bg)]'
+              : 'rounded-3xl ring-1 ring-brand-400/40'
             : undefined
         }
       >

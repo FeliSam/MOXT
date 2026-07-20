@@ -1786,16 +1786,41 @@ export function createAuthService(supabase, redirects = {}) {
 
       if (sameUnconfirmedEmail) {
         guardOtpSend('email', normalizedEmail)
-        const { error } = await supabase.auth.resend({
+        const redirectOptions = redirectTo ? { emailRedirectTo: redirectTo } : undefined
+        const sendContext = { channel: 'email', intent: 'email_verification' }
+        // Compte jamais confirmé → OTP signup ; sinon email_change ; puis signInWithOtp.
+        const signupAttempt = await supabase.auth.resend({
+          type: 'signup',
+          email: normalizedEmail,
+          options: redirectOptions,
+        })
+        if (!signupAttempt.error) {
+          trackOtpSend('email', normalizedEmail)
+          return { email: normalizedEmail, otpType: 'signup' }
+        }
+        const changeAttempt = await supabase.auth.resend({
           type: 'email_change',
           email: normalizedEmail,
-          options: redirectTo ? { emailRedirectTo: redirectTo } : undefined,
+          options: redirectOptions,
         })
-        if (error) {
-          throw new Error(translateAuthError(error, { channel: 'email', intent: 'email_verification' }))
+        if (!changeAttempt.error) {
+          trackOtpSend('email', normalizedEmail)
+          return { email: normalizedEmail, otpType: 'email_change' }
+        }
+        const otpAttempt = await supabase.auth.signInWithOtp({
+          email: normalizedEmail,
+          options: {
+            shouldCreateUser: false,
+            ...(redirectTo ? { emailRedirectTo: redirectTo } : {}),
+          },
+        })
+        if (otpAttempt.error) {
+          throw new Error(
+            translateAuthError(otpAttempt.error || changeAttempt.error || signupAttempt.error, sendContext),
+          )
         }
         trackOtpSend('email', normalizedEmail)
-        return { email: normalizedEmail, otpType: 'email_change' }
+        return { email: normalizedEmail, otpType: 'email' }
       }
 
       guardOtpSend('email', normalizedEmail)
@@ -1814,7 +1839,7 @@ export function createAuthService(supabase, redirects = {}) {
     async confirmEmailVerification(currentUser, { email, token, otpType }) {
       if (!supabase || !currentUser) throw new Error('Session expirée.')
       const normalizedEmail = String(email || '').trim().toLowerCase()
-      const emailContext = { channel: 'email', intent: 'email_verification' }
+      const emailContext = { channel: 'email', intent: 'otp_verify' }
 
       const authUser = await getAuthenticatedAuthUser()
       const syncedUser = await syncEmailVerifiedFromAuth(authUser, currentUser.id)
@@ -1825,7 +1850,10 @@ export function createAuthService(supabase, redirects = {}) {
         return syncedUser
       }
 
-      const type = otpType === 'signup' || otpType === 'email_change' ? otpType : 'email_change'
+      const type =
+        otpType === 'signup' || otpType === 'email_change' || otpType === 'email'
+          ? otpType
+          : 'email_change'
       const { data, error } = await supabase.auth.verifyOtp({
         email: normalizedEmail,
         token: String(token || '').trim(),

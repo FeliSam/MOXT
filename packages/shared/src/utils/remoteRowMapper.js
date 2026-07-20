@@ -63,6 +63,8 @@ const camelMap = {
   primary_activity: 'primaryActivity',
   secondary_activity: 'secondaryActivity',
   fee_percent: 'feePercent',
+  rate_reduction_to_ru: 'rateReductionToRu',
+  rate_reduction_from_ru: 'rateReductionFromRu',
   average_delay: 'averageDelay',
   exchange_methods: 'exchangeMethods',
   transfer_accounts: 'transferAccounts',

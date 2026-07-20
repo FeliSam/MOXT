@@ -22,6 +22,11 @@ function contentDisplayTitle(contentView, item) {
   )
 }
 
+function listingThumb(item) {
+  const images = Array.isArray(item?.images) ? item.images.filter(Boolean) : []
+  return images[0] || null
+}
+
 function ContentRow({ contentView, dispatch, item, setSelected, t }) {
   const status = item.effectiveStatus || item.status || 'active'
   const isPending = ['pending', 'pending_review', 'draft', 'new'].includes(status)
@@ -30,14 +35,25 @@ function ContentRow({ contentView, dispatch, item, setSelected, t }) {
     contentView === 'parcels'
       ? item.proofStatus || (item.travelProofUrl ? 'pending_review' : 'missing')
       : null
+  const thumb = contentView === 'listings' ? listingThumb(item) : null
   return (
     <div className={`${ITEM} grid gap-3 ${isPending ? 'border-amber-200 dark:border-amber-800/40' : ''} ${isArchived ? 'opacity-80' : ''}`}>
       <div className="flex flex-wrap items-center gap-3">
-        <span className={`size-2 shrink-0 rounded-full ${statusDotColor(status)}`} />
+        {thumb ? (
+          <button
+            type="button"
+            onClick={() => setSelected({ kind: contentView, item })}
+            className="size-12 shrink-0 overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)]"
+          >
+            <img src={thumb} alt="" className="size-full object-cover" />
+          </button>
+        ) : (
+          <span className={`size-2 shrink-0 rounded-full ${statusDotColor(status)}`} />
+        )}
         <button
           type="button"
           onClick={() => setSelected({ kind: contentView, item })}
-          className="text-left hover:text-brand-700"
+          className="min-w-0 flex-1 text-left hover:text-brand-700"
         >
           <strong className="block text-sm">
             {contentDisplayTitle(contentView, item)}

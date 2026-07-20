@@ -3504,9 +3504,11 @@ export const pt = {
       recipientReceives: "O destinatário recebe",
       feesPercent: "Taxas {percent}%",
       totalToPay: "Total a pagar",
+      appliedRate: "Taxa aplicada",
+      feesDetail: "Taxas incluídas ({percent}%): {fees}",
       fixAmount: "Corrija o montante para obter uma estimativa.",
       dateUnavailable: "data indisponível",
-      rateNote: "1 {from} = {rate} {to} · {date}",
+      rateNote: "1 {from} = {rate} {to} · {date} · redução {margin}%",
     },
     dashboardCalc: {
       eyebrow: "Transferência rápida",

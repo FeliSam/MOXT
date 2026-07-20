@@ -72,16 +72,17 @@ export function TransferCalculator({ originCountry: originCountryProp, verified 
       {!amountError ? (
         <div className="mt-5 grid gap-3 rounded-2xl bg-slate-50 p-4 sm:grid-cols-3 dark:bg-slate-950">
           <Metric
-            label={t('transfers.calculator.recipientReceives')}
-            value={formatMoney(calculation.amountReceived, calculation.currencyTo)}
-          />
-          <Metric
-            label={t('transfers.calculator.feesPercent', { percent: calculation.feePercent })}
-            value={formatMoney(calculation.fees, calculation.currencyFrom)}
-          />
-          <Metric
             label={t('transfers.calculator.totalToPay')}
             value={formatMoney(calculation.totalToPay, calculation.currencyFrom)}
+            emphasize
+          />
+          <Metric
+            label={t('transfers.calculator.appliedRate')}
+            value={`1 ${calculation.currencyFrom} = ${calculation.rate.toFixed(6)} ${calculation.currencyTo}`}
+          />
+          <Metric
+            label={t('transfers.calculator.recipientReceives')}
+            value={formatMoney(calculation.amountReceived, calculation.currencyTo)}
           />
         </div>
       ) : (
@@ -89,10 +90,18 @@ export function TransferCalculator({ originCountry: originCountryProp, verified 
           <Alert variant="info">{t('transfers.calculator.fixAmount')}</Alert>
         </div>
       )}
+      {!amountError ? (
+        <p className="mt-3 text-xs text-slate-500">
+          {t('transfers.calculator.feesDetail', {
+            percent: calculation.feePercent,
+            fees: formatMoney(calculation.fees, calculation.currencyFrom),
+          })}
+        </p>
+      ) : null}
       <p className="mt-4 text-xs leading-5 text-slate-500">
         {t('transfers.calculator.rateNote', {
           from: calculation.currencyFrom,
-          rate: calculation.rawRate.toFixed(6),
+          rate: calculation.rate.toFixed(6),
           to: calculation.currencyTo,
           date: liveRate.date || t('transfers.calculator.dateUnavailable'),
           margin: calculation.rateMarginPercent,
@@ -102,11 +111,13 @@ export function TransferCalculator({ originCountry: originCountryProp, verified 
   )
 }
 
-function Metric({ label, value }) {
+function Metric({ label, value, emphasize = false }) {
   return (
     <div>
       <span className="block text-xs text-slate-500">{label}</span>
-      <strong className="mt-1 block text-sm">{value}</strong>
+      <strong className={`mt-1 block ${emphasize ? 'text-base text-brand-700 dark:text-brand-300' : 'text-sm'}`}>
+        {value}
+      </strong>
     </div>
   )
 }

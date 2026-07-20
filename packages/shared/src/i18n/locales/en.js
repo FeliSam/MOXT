@@ -3505,9 +3505,11 @@ export const en = {
       recipientReceives: "Recipient receives",
       feesPercent: "Fees {percent}%",
       totalToPay: "Total to pay",
+      appliedRate: "Applied rate",
+      feesDetail: "Fees included ({percent}%): {fees}",
       fixAmount: "Correct the amount to get an estimate.",
       dateUnavailable: "date unavailable",
-      rateNote: "1 {from} = {rate} {to} · {date}",
+      rateNote: "1 {from} = {rate} {to} · {date} · reduction {margin}%",
     },
     dashboardCalc: {
       eyebrow: "Quick transfer",

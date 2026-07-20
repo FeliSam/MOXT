@@ -225,6 +225,11 @@ export function NewTransferPage() {
     selectedExchanger?.feePercent,
     formik.values.direction === DIRECTIONS.BJ_TO_RU ? liveRate.originToRub : liveRate.rubToOrigin,
     originCountry,
+    selectedExchanger
+      ? formik.values.direction === DIRECTIONS.BJ_TO_RU
+        ? selectedExchanger.rateReductionToRu
+        : selectedExchanger.rateReductionFromRu
+      : undefined,
   )
   const info = directionInfo(formik.values.direction, originCountry)
   const usedThisMonth = monthlyTransferTotal(transfers, user.id, info.from)
@@ -544,7 +549,8 @@ export function NewTransferPage() {
                       <div className="flex max-w-full flex-wrap items-center justify-center gap-1 rounded-full bg-white/20 px-3 py-1">
                         <FiArrowRight className="shrink-0 text-xs text-white" />
                         <span className="text-center text-[10px] font-bold leading-4 text-white">
-                          1 {calculation.currencyFrom} = {calculation.rawRate} {calculation.currencyTo}
+                          1 {calculation.currencyFrom} = {calculation.rate.toFixed(6)}{' '}
+                          {calculation.currencyTo}
                         </span>
                       </div>
                     </div>
@@ -620,7 +626,7 @@ export function NewTransferPage() {
               {/* Amount highlight */}
               <div className="flex flex-col items-stretch gap-4 rounded-2xl bg-gradient-to-br from-brand-600 to-cyan-600 p-5 text-white sm:flex-row sm:items-center sm:justify-between">
                 <div className="text-center sm:text-left">
-                  <p className="text-xs font-bold opacity-80">{t('transfers.new.youSend')}</p>
+                  <p className="text-xs font-bold opacity-80">{t('transfers.new.youPay')}</p>
                   <p className="text-xl font-black sm:text-2xl">{formatMoney(calculation.totalToPay, calculation.currencyFrom)}</p>
                 </div>
                 <FiArrowRight className="mx-auto shrink-0 text-2xl opacity-70 sm:text-3xl" />

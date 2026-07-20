@@ -73,10 +73,9 @@ export function translateAuthError(error, context = {}) {
   const status = typeof error === 'object' && error !== null ? error.status : undefined
   const cause = typeof error === 'object' && error !== null ? error.cause : undefined
   const channel = context.channel === 'phone' || context.channel === 'email' ? context.channel : inferChannel(message, context)
+  // Only confirm/verify paths — never map *send* (email_verification) to « confirmer ce code ».
   const verifyingOtp =
-    context.intent === 'otp_verify' ||
-    context.intent === 'phone_verify' ||
-    context.intent === 'email_verification'
+    context.intent === 'otp_verify' || context.intent === 'phone_verify'
 
   if (/^Patientez \d+ secondes avant de renvoyer un code\./.test(message)) {
     return message
@@ -400,9 +399,7 @@ function translateSupabaseError(message, meta = {}, context = {}) {
     (m.includes('connection') && (m.includes('reset') || m.includes('refused') || m.includes('timeout')))
   ) {
     const verifyingOtp =
-      context.intent === 'otp_verify' ||
-      context.intent === 'phone_verify' ||
-      context.intent === 'email_verification'
+      context.intent === 'otp_verify' || context.intent === 'phone_verify'
     if (verifyingOtp) {
       return 'Connexion au serveur impossible. Réessayez de confirmer le code sans en redemander un nouveau.'
     }
@@ -478,6 +475,9 @@ function translateSupabaseError(message, meta = {}, context = {}) {
   // Keep send-path wording only when we are not verifying an OTP.
   if (context.intent === 'otp_verify' || context.intent === 'phone_verify') {
     return `Impossible de confirmer ce code. Vérifiez les 6 chiffres, ${otpResendHint()}.`
+  }
+  if (context.intent === 'email_verification') {
+    return "Impossible d'envoyer le code e-mail. Réessayez dans quelques instants ou vérifiez l'adresse."
   }
   return phoneContext
     ? "L'envoi du code SMS a échoué. Réessayez dans quelques instants ou contactez le support."

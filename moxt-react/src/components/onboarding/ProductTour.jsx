@@ -62,7 +62,7 @@ function ProductTourSession({ variant, onClose, user }) {
   const isLast = index >= steps.length - 1
   const displayName = String(user?.firstName || '').trim() || 'MOXT'
   const needsEmail = Boolean(user?.email) && !isEmailVerified(user)
-  const finishTo = needsEmail ? '/security' : '/dashboard'
+  const finishTo = needsEmail ? '/security?verify=email' : '/dashboard'
 
   useEffect(() => {
     let cancelled = false

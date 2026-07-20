@@ -598,11 +598,13 @@ export const loadAllData = createAsyncThunk(
       }))
       dispatch(setCommunications({
         conversations,
-        notifications: fromRows(safeRows(notificationsRes, 'des notifications')).map((item) => ({
-          ...item,
-          priority: item.priority || 'normal',
-          archived: item.archived === true,
-        })),
+        notifications: fromRows(safeRows(notificationsRes, 'des notifications'))
+          .filter((item) => item.type !== 'message')
+          .map((item) => ({
+            ...item,
+            priority: item.priority || 'normal',
+            archived: item.archived === true,
+          })),
         support: supportTickets,
       }))
       dispatch(setP2P({

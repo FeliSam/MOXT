@@ -306,19 +306,14 @@ export function Sidebar({ open }) {
           >
             <div className="shrink-0 border-b border-[var(--app-border)]/70 bg-transparent p-5">
               <div className="flex items-start justify-between gap-3">
-                <div>
-                  <img
-                    src="/assets/logos/MOXTlogo.png"
-                    alt="MOXT"
-                    className="mb-2 h-6 w-auto max-w-[7.5rem] object-contain object-left"
-                  />
-                  <h2 className="mt-1 font-display text-xl font-extrabold tracking-tight">
+                <div className="min-w-0">
+                  <h2 className="font-display text-xl font-extrabold tracking-tight">
                     {t('nav.servicesSupplementaires')}
                   </h2>
                 </div>
                 <button
                   type="button"
-                  className="grid size-10 place-items-center rounded-[var(--radius-btn)] border border-[var(--app-border)]/80 bg-[var(--app-surface)]/65 backdrop-blur-md"
+                  className="grid size-10 place-items-center rounded-[var(--radius-btn)] border border-[var(--app-border)]/70 bg-[var(--app-surface)]/40 backdrop-blur-md"
                   onClick={() => setMoreOpen(false)}
                   aria-label={t('common.close')}
                 >

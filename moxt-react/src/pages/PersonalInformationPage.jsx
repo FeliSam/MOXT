@@ -1,6 +1,6 @@
 import { useFormik } from 'formik'
 import React, { useRef } from 'react'
-import { FiCamera, FiCheckCircle, FiFlag, FiMapPin, FiUser } from 'react-icons/fi'
+import { FiCamera, FiCheckCircle, FiFlag, FiMail, FiMapPin, FiUser } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Alert } from '../components/ui/Alert'
 import { BackButton } from '../components/ui/BackButton'
@@ -214,7 +214,6 @@ export function PersonalInformationPage() {
                   error={errorFor('lastName')}
                 />
               </div>
-              <EmailVerificationCard variant="embedded" idPrefix="profile" />
             </Card>
 
             {/* Résidence en Russie */}
@@ -315,6 +314,12 @@ export function PersonalInformationPage() {
           </div>
         </div>
       </form>
+
+      {/* Hors du form profil : évite qu’« Envoyer le code » déclenche une soumission / confirmation. */}
+      <Card className="grid gap-4">
+        <SectionTitle icon={FiMail} label={t('profile.personal.emailLabel')} />
+        <EmailVerificationCard variant="embedded" idPrefix="profile" />
+      </Card>
     </div>
   )
 }

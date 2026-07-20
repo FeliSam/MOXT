@@ -25,6 +25,7 @@ export function calculateTransfer(
   feePercent = TRANSFER_CONFIG.feePercent,
   rawRateOverride,
   originCountry = 'BJ',
+  rateReductionPercent,
 ) {
   const numericAmount = Math.max(0, Number(amount) || 0)
   const info = directionInfo(direction, originCountry)
@@ -32,28 +33,47 @@ export function calculateTransfer(
     Number.isFinite(Number(rawRateOverride)) && Number(rawRateOverride) > 0
       ? Number(rawRateOverride)
       : info.rawRate
-  const rate = rawRate * (1 - TRANSFER_CONFIG.rateMarginPercent / 100)
+  const margin =
+    rateReductionPercent != null && Number.isFinite(Number(rateReductionPercent))
+      ? Math.min(15, Math.max(0, Number(rateReductionPercent)))
+      : TRANSFER_CONFIG.rateMarginPercent
+  const rate = rawRate * (1 - margin / 100)
+  // Montant saisi = total à payer (frais inclus). Montant envoyé = total − frais.
   const fees = numericAmount * (Number(feePercent) / 100)
+  const totalToPay = numericAmount
+  const amountSent = Math.max(0, numericAmount - fees)
   const limits = transferLimitsForCurrency(info.from)
 
   return {
-    amountSent: numericAmount,
-    amountReceived: numericAmount * rate,
+    amountSent,
+    amountReceived: amountSent * rate,
     fees,
-    totalToPay: numericAmount + fees,
+    totalToPay,
     currencyFrom: info.from,
     currencyTo: info.to,
     rawRate,
     rate,
     rateSource: rawRateOverride ? 'api' : 'fallback',
     feePercent: Number(feePercent),
-    rateMarginPercent: TRANSFER_CONFIG.rateMarginPercent,
+    rateMarginPercent: margin,
     minimumRequired: limits.minimum,
     maximumUnverified: limits.unverified,
     maximumVerified: limits.verified,
     sourceCountry: info.sourceCountry,
     destinationCountry: info.destinationCountry,
   }
+}
+
+/** Business % reduction for a transfer direction (0–15). Null if no business. */
+export function rateReductionForDirection(businessOrExchanger, direction) {
+  if (!businessOrExchanger) return null
+  if (direction === DIRECTIONS.BJ_TO_RU) {
+    return Number(businessOrExchanger.rateReductionToRu ?? 0)
+  }
+  if (direction === DIRECTIONS.RU_TO_BJ) {
+    return Number(businessOrExchanger.rateReductionFromRu ?? 0)
+  }
+  return null
 }
 
 export function getTransferPricing(transfer) {
@@ -140,7 +160,10 @@ export function monthlyTransferTotal(transfers, userId, currency) {
         createdAt.getFullYear() === now.getFullYear()
       )
     })
-    .reduce((total, transfer) => total + Number(transfer.amountSent || 0), 0)
+    .reduce(
+      (total, transfer) => total + Number(transfer.totalToPay || transfer.amountSent || 0),
+      0,
+    )
 }
 
 export function formatMoney(amount, currency) {

@@ -17,6 +17,11 @@ import { useLanguage } from '../../contexts/useLanguage'
 
 import { OTP_RESEND_COOLDOWN_SECONDS } from '@moxt/shared/auth/otpCooldown.js'
 
+function stopFormEvent(event) {
+  event?.preventDefault?.()
+  event?.stopPropagation?.()
+}
+
 export function EmailVerificationCard({
   className = '',
   variant = 'card',
@@ -41,6 +46,7 @@ export function EmailVerificationCard({
   const profileEmail = String(user?.email || '').trim().toLowerCase()
   const draftEmail = email.trim().toLowerCase()
   const emailDiffersFromProfile = Boolean(profileEmail && draftEmail && draftEmail !== profileEmail)
+  const sending = busy || authStatus === 'loading'
 
   useEffect(() => {
     if (!authError) return
@@ -101,6 +107,7 @@ export function EmailVerificationCard({
       return
     }
     setBusy(true)
+    setOtp('')
     try {
       const result = await dispatch(requestEmailVerificationOtp(normalized))
       if (!requestEmailVerificationOtp.fulfilled.match(result)) return
@@ -134,6 +141,16 @@ export function EmailVerificationCard({
   }
 
   async function confirmCode() {
+    if (!otpSent) {
+      dispatch(
+        addToast({
+          title: t('security.email.errorTitle'),
+          message: t('security.email.otpHint'),
+          tone: 'error',
+        }),
+      )
+      return
+    }
     if (!/^\d{6}$/.test(otp)) return
     setBusy(true)
     try {
@@ -165,6 +182,16 @@ export function EmailVerificationCard({
     setOtpSent(false)
     setOtp('')
     setEmail(user?.email || '')
+  }
+
+  function onSendClick(event) {
+    stopFormEvent(event)
+    void sendCode()
+  }
+
+  function onConfirmClick(event) {
+    stopFormEvent(event)
+    void confirmCode()
   }
 
   if (verified && !showOtpFlow) {
@@ -221,8 +248,13 @@ export function EmailVerificationCard({
         type="email"
         autoComplete="email"
         value={email}
-        onChange={(event) => setEmail(event.target.value)}
-        disabled={otpSent}
+        onChange={(event) => {
+          setEmail(event.target.value)
+          if (otpSent) {
+            setOtpSent(false)
+            setOtp('')
+          }
+        }}
         hint={
           embedded
             ? verified
@@ -231,58 +263,55 @@ export function EmailVerificationCard({
             : undefined
         }
       />
-      {otpSent ? (
-        <>
-          <Input
-            id={`${idPrefix}-email-otp`}
-            label={t('security.email.otpLabel')}
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            placeholder="000000"
-            value={otp}
-            onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
-            hint={t('security.email.otpHint')}
-          />
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              icon={FiCheckCircle}
-              loading={busy || authStatus === 'loading'}
-              disabled={otp.length !== 6}
-              onClick={confirmCode}
-            >
-              {t('security.email.confirmButton')}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={resendCooldown > 0 || busy}
-              onClick={sendCode}
-            >
-              {resendCooldown > 0
-                ? t('security.email.resendCooldown', { seconds: resendCooldown })
-                : t('security.email.resend')}
-            </Button>
-            {verified ? (
-              <Button type="button" variant="ghost" onClick={cancelChange}>
-                {t('security.email.cancel')}
-              </Button>
-            ) : null}
-          </div>
-        </>
-      ) : (
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" loading={busy || authStatus === 'loading'} onClick={sendCode}>
-            {verified ? t('security.email.sendValidation') : t('security.email.sendConfirmation')}
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          icon={FiMail}
+          loading={sending}
+          disabled={resendCooldown > 0 && otpSent}
+          onClick={onSendClick}
+        >
+          {otpSent
+            ? resendCooldown > 0
+              ? t('security.email.resendCooldown', { seconds: resendCooldown })
+              : t('security.email.resend')
+            : verified
+              ? t('security.email.sendValidation')
+              : t('security.email.sendConfirmation')}
+        </Button>
+        {verified && changeMode ? (
+          <Button type="button" variant="ghost" onClick={cancelChange}>
+            {t('security.email.cancel')}
           </Button>
-          {verified && changeMode ? (
-            <Button type="button" variant="ghost" onClick={cancelChange}>
-              {t('security.email.cancel')}
-            </Button>
-          ) : null}
-        </div>
-      )}
+        ) : null}
+      </div>
+      {otpSent ? (
+        <Alert variant="info">
+          {t('security.email.codeSentBody', { email: draftEmail || email })}
+        </Alert>
+      ) : null}
+      <Input
+        id={`${idPrefix}-email-otp`}
+        label={t('security.email.otpLabel')}
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        maxLength={6}
+        placeholder="000000"
+        value={otp}
+        disabled={!otpSent}
+        onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
+        hint={otpSent ? t('security.email.otpHint') : t('security.email.hintConfirm')}
+      />
+      <Button
+        type="button"
+        variant={otpSent ? 'primary' : 'secondary'}
+        icon={FiCheckCircle}
+        loading={sending}
+        disabled={!otpSent || otp.length !== 6}
+        onClick={onConfirmClick}
+      >
+        {t('security.email.confirmButton')}
+      </Button>
     </>
   )
 

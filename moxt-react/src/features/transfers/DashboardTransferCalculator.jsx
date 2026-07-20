@@ -68,7 +68,7 @@ export function DashboardTransferCalculator({ onOpen }) {
       </div>
       <div className="mt-3 flex items-center justify-between gap-3 text-[10px] text-white/65">
         <span>
-          1 {calculation.currencyFrom} = {calculation.rawRate.toFixed(5)} {calculation.currencyTo}
+          1 {calculation.currencyFrom} = {calculation.rate.toFixed(5)} {calculation.currencyTo}
         </span>
         <span>
           {liveRate.loading

@@ -20,6 +20,7 @@ export function DashboardDiscoverySection({
   eventsLoading,
   jobs,
   jobsLoading,
+  listingsSection = null,
   myTransfers,
   parcels,
   parcelsLoading,
@@ -107,6 +108,8 @@ export function DashboardDiscoverySection({
           }))}
         />
       </section>
+
+      {listingsSection}
 
       <DashboardSectionHeading
         title={t('dashboard.discovery.newsTitle')}

@@ -89,16 +89,18 @@ export function directionInfo(direction: string, originCountry = 'BJ') {
 export function calculateTransfer(amount: number, direction: string, feePercent = 2.5) {
   const info = directionInfo(direction);
   const numAmount = Number(amount) || 0;
+  // Montant saisi = total à payer (frais inclus). Montant envoyé = total − frais.
   const fees = Math.round(numAmount * (feePercent / 100));
-  const totalToPay = numAmount + fees;
+  const totalToPay = numAmount;
+  const amountSent = Math.max(0, numAmount - fees);
   const rawRate = direction === DIRECTIONS.RU_TO_BJ ? RATE_RUB_XOF : 1 / RATE_RUB_XOF;
-  const amountReceived = numAmount * rawRate;
+  const amountReceived = amountSent * rawRate;
   const minimum = info.from === 'RUB' ? 500 : 1000;
   return {
     ...info,
     currencyFrom: info.from,
     currencyTo: info.to,
-    amountSent: numAmount,
+    amountSent,
     fees,
     totalToPay,
     amountReceived,

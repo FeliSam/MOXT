@@ -49,6 +49,7 @@ import { ReviewsPanel } from './professional/ReviewsPanel'
 import { StatisticsPanel } from './professional/StatisticsPanel'
 import { SubscriptionsPanel } from './professional/SubscriptionsPanel'
 import { TransfersPanel } from './professional/TransfersPanel'
+import { TransferRateSettingsPanel } from './professional/TransferRateSettingsPanel'
 
 function buildProfessionalTabGroups({ hasTransfers, subscriberCount, reviewCount, pt }) {
   return [
@@ -67,7 +68,10 @@ function buildProfessionalTabGroups({ hasTransfers, subscriberCount, reviewCount
         { value: 'publications', label: pt('professional.tabs.publications') },
         { value: 'requests', label: pt('professional.tabs.requests') },
         ...(hasTransfers
-          ? [{ value: 'transfers', label: pt('professional.tabs.transfers') }]
+          ? [
+              { value: 'transfers', label: pt('professional.tabs.transfers') },
+              { value: 'rateSettings', label: pt('professional.tabs.rateSettings') },
+            ]
           : []),
       ],
     },
@@ -285,6 +289,9 @@ export function ProfessionalPage() {
       ) : null}
       {safeActive === 'transfers' && hasTransfers ? (
         <TransfersPanel business={business} transfers={transfers} dispatch={dispatch} user={user} />
+      ) : null}
+      {safeActive === 'rateSettings' && hasTransfers ? (
+        <TransferRateSettingsPanel business={business} dispatch={dispatch} user={user} />
       ) : null}
       {safeActive === 'publications' ? (
         <PublicationsPanel publications={publications} dispatch={dispatch} />

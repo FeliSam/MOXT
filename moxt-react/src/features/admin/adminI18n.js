@@ -121,6 +121,7 @@ export const ADMIN_FR_SOURCES = {
 
   // ── detail panel ────────────────────────────────────────────────────────
   'admin.detail.title': 'Vue detaillee',
+  'admin.detail.imagesTitle': 'Images',
   'admin.detail.emptyLabel': 'Selectionnez un element',
   'admin.detail.emptySub': 'Cliquez sur un element dans la liste pour afficher sa fiche et ses actions.',
   'admin.detail.actionsLabel': 'Actions',
@@ -261,12 +262,17 @@ export const ADMIN_FR_SOURCES = {
   'admin.actions.hide': 'Masquer',
   'admin.actions.delete': 'Supprimer',
   'admin.actions.deletePostConfirm': 'Supprimer definitivement cette publication ?',
+  'admin.actions.deleteListingConfirm': 'Supprimer definitivement cette annonce ?',
   'admin.actions.archivePostConfirm': 'Archiver cette publication ? Elle ne sera plus visible dans le fil.',
 
   // ── promote ─────────────────────────────────────────────────────────────
   'admin.promote.passwordPrompt':
     'Mot de passe de promotion administrateur\n(configuré dans scripts/phase2.env → MOXT_ADMIN_PROMOTE_PASSWORD)',
   'admin.promote.superadminOnly': 'Seul un superadmin peut promouvoir un administrateur.',
+  'admin.promote.successTitle': 'Rôle mis à jour',
+  'admin.promote.successBody': 'Le compte est maintenant « {role} » (enregistré).',
+  'admin.promote.failedTitle': 'Promotion impossible',
+  'admin.promote.failedBody': 'Le rôle n’a pas pu être enregistré. Vérifiez le mot de passe.',
 
   // ── users panel ─────────────────────────────────────────────────────────
   'admin.users.title': 'Utilisateurs et roles',
@@ -299,6 +305,7 @@ export const ADMIN_FR_SOURCES = {
   'admin.documents.notFound': 'Documents introuvables ({count}). Vérifiez le chargement admin.',
   'admin.documents.previewUnavailable': 'Aperçu non disponible pour ce type — utilisez Ouvrir.',
   'admin.documents.noSignedUrl': 'Impossible de générer un lien signé pour ce document.',
+  'admin.documents.download': 'Télécharger',
 
   // ── support panel ───────────────────────────────────────────────────────
   'admin.support.title': 'Tickets support',

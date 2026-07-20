@@ -6,6 +6,7 @@ import { SkeletonCard } from '../components/ui/Skeleton'
 import { DashboardDiscoverySection } from '../features/dashboard/components/DashboardDiscoverySection'
 import { DashboardHero } from '../features/dashboard/components/DashboardHero'
 import { DashboardOverviewPanels } from '../features/dashboard/components/DashboardOverviewPanels'
+import { DashboardQuickActionsSection } from '../features/dashboard/components/DashboardQuickActionsSection'
 import { DashboardSectionHeading } from '../features/dashboard/components/DashboardSectionHeading'
 import { DashboardServiceCarousels } from '../features/dashboard/components/DashboardServiceCarousels'
 import { ScrollArrows } from '../features/dashboard/components/ScrollArrows'
@@ -24,6 +25,7 @@ export function DashboardPage() {
   const { t } = useLanguage()
   const [calculatorOpen, setCalculatorOpen] = useState(false)
   const coreServicesRef = useHorizontalScroll()
+  const quickActionsScrollRef = useHorizontalScroll()
   const listingsScrollRef = useHorizontalScroll()
   const user = useSelector((state) => state.auth.user)
   const authLoading = useSelector((state) => state.auth.status === 'loading')
@@ -35,6 +37,32 @@ export function DashboardPage() {
   const stats = useDashboardStats(user)
   const rate = useExchangeRate()
 
+  const listingsSection = (
+    <section className="grid min-w-0 gap-3">
+      <DashboardSectionHeading
+        title={t('dashboard.discovery.latestListings')}
+        link="/marketplace"
+        linkLabel={t('dashboard.discovery.viewMarket')}
+      />
+      <div className="relative min-w-0 pb-3">
+        <div ref={listingsScrollRef} className={`${dashboardListingTrackClass} min-w-0`}>
+          {authLoading
+            ? Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className={dashboardListingItemClass}>
+                  <SkeletonCard />
+                </div>
+              ))
+            : listings.map((listing) => (
+                <div key={listing.id} className={dashboardListingItemClass}>
+                  <MarketplaceListingCard listing={listing} />
+                </div>
+              ))}
+        </div>
+        <ScrollArrows scrollRef={listingsScrollRef} />
+      </div>
+    </section>
+  )
+
   return (
     <div className="grid min-w-0 gap-6 overflow-x-clip sm:gap-7">
       <DashboardHero user={user} onOpenCalculator={() => setCalculatorOpen(true)} />
@@ -43,31 +71,9 @@ export function DashboardPage() {
         <DashboardSearch />
       </div>
 
-      <DashboardOverviewPanels {...stats} rate={rate} user={user} />
+      <DashboardQuickActionsSection scrollRef={quickActionsScrollRef} />
 
-      <section className="grid min-w-0 gap-3">
-        <DashboardSectionHeading
-          title={t('dashboard.discovery.latestListings')}
-          link="/marketplace"
-          linkLabel={t('dashboard.discovery.viewMarket')}
-        />
-        <div className="relative min-w-0 pb-3">
-          <div ref={listingsScrollRef} className={`${dashboardListingTrackClass} min-w-0`}>
-            {authLoading
-              ? Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className={dashboardListingItemClass}>
-                    <SkeletonCard />
-                  </div>
-                ))
-              : listings.map((listing) => (
-                  <div key={listing.id} className={dashboardListingItemClass}>
-                    <MarketplaceListingCard listing={listing} />
-                  </div>
-                ))}
-          </div>
-          <ScrollArrows scrollRef={listingsScrollRef} />
-        </div>
-      </section>
+      <DashboardOverviewPanels {...stats} rate={rate} user={user} />
 
       <DashboardServiceCarousels coreServicesRef={coreServicesRef} />
 
@@ -77,6 +83,7 @@ export function DashboardPage() {
         eventsLoading={authLoading}
         jobs={jobs}
         jobsLoading={authLoading}
+        listingsSection={listingsSection}
         myTransfers={stats.myTransfers}
         parcels={parcels}
         parcelsLoading={authLoading}

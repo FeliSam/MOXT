@@ -85,7 +85,7 @@ export function AppLayout({ children }) {
       ) : null}
       <Sidebar open={sidebarOpen} />
       <div
-        className={`lg:pl-28 ${
+        className={`min-w-0 max-w-full overflow-x-clip lg:pl-28 ${
           isMessagesRoute ? 'flex h-full min-h-0 flex-col overflow-hidden' : ''
         }`}
       >

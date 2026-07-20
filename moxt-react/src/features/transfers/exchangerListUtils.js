@@ -151,6 +151,8 @@ export function businessToExchangerOption(
     name: business.name,
     rating: Number(business.rating) || 0,
     feePercent: Number(business.feePercent || 0),
+    rateReductionToRu: Math.min(15, Math.max(0, Number(business.rateReductionToRu) || 0)),
+    rateReductionFromRu: Math.min(15, Math.max(0, Number(business.rateReductionFromRu) || 0)),
     averageDelay: business.averageDelay || toConfirmLabel,
     methods: business.exchangeMethods || business.paymentMethods || [],
     logoUrl: business.logoUrl || '',

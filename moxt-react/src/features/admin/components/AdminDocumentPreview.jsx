@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { FiExternalLink, FiFileText, FiImage } from 'react-icons/fi'
+import { FiDownload, FiExternalLink, FiFileText, FiImage } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { storageService } from '../../../services/storageService'
@@ -26,6 +26,25 @@ async function resolvePreviewUrl(doc) {
   }
 }
 
+async function downloadDocument(url, filename) {
+  try {
+    const response = await fetch(url)
+    if (!response.ok) throw new Error('download failed')
+    const blob = await response.blob()
+    const objectUrl = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = objectUrl
+    anchor.download = filename || 'document'
+    anchor.rel = 'noopener'
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    URL.revokeObjectURL(objectUrl)
+  } catch {
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
+}
+
 export function AdminDocumentPreview({ documentIds = [], documents: documentsProp }) {
   const { t } = useLanguage()
   const personalDocuments = useSelector((state) => state.account.documents || [])
@@ -40,7 +59,7 @@ export function AdminDocumentPreview({ documentIds = [], documents: documentsPro
           .map((id) => personalDocuments.find((doc) => doc.id === id))
           .filter(Boolean)
 
-    ;(async () => {
+    async function load() {
       const next = await Promise.all(
         matched.map(async (doc) => ({
           doc,
@@ -48,8 +67,9 @@ export function AdminDocumentPreview({ documentIds = [], documents: documentsPro
         })),
       )
       if (!cancelled) setPreviews(next)
-    })()
+    }
 
+    load()
     return () => {
       cancelled = true
     }
@@ -57,11 +77,13 @@ export function AdminDocumentPreview({ documentIds = [], documents: documentsPro
 
   const expectedCount = Array.isArray(documentsProp)
     ? documentsProp.filter(Boolean).length
-    : documentIds?.length || 0
+    : (Array.isArray(documentIds) ? documentIds.length : 0)
 
   if (!expectedCount) {
     return (
-      <p className="text-xs text-[var(--app-text-muted)]">{adminText(t, 'admin.documents.none')}</p>
+      <p className="break-words text-xs text-[var(--app-text-muted)]">
+        {adminText(t, 'admin.documents.none')}
+      </p>
     )
   }
 
@@ -97,14 +119,23 @@ export function AdminDocumentPreview({ documentIds = [], documents: documentsPro
                 </p>
               </div>
               {url ? (
-                <a
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-brand-700 hover:bg-brand-50 dark:hover:bg-brand-950/40"
-                >
-                  {t('verification.admin.openDocument')} <FiExternalLink />
-                </a>
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => downloadDocument(url, doc.name || doc.id)}
+                    className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-brand-700 hover:bg-brand-50 dark:hover:bg-brand-950/40"
+                  >
+                    {adminText(t, 'admin.documents.download')} <FiDownload />
+                  </button>
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-brand-700 hover:bg-brand-50 dark:hover:bg-brand-950/40"
+                  >
+                    {t('verification.admin.openDocument')} <FiExternalLink />
+                  </a>
+                </div>
               ) : null}
             </div>
             {url && image ? (

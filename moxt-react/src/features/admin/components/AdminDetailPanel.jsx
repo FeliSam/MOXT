@@ -85,6 +85,27 @@ export function AdminDetailPanel({
         ))}
       </div>
 
+      {kind === 'listings' && Array.isArray(item.images) && item.images.filter(Boolean).length ? (
+        <div className="grid min-w-0 gap-2">
+          <p className="text-[10px] font-black uppercase tracking-wider text-[var(--app-text-muted)]">
+            {adminText(t, 'admin.detail.imagesTitle')}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {item.images.filter(Boolean).slice(0, 6).map((src) => (
+              <a
+                key={src}
+                href={src}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="size-16 overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)]"
+              >
+                <img src={src} alt="" className="size-full object-cover" />
+              </a>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       {kind === 'verification' ? (
         <div className="grid min-w-0 gap-2">
           <p className="text-[10px] font-black uppercase tracking-wider text-[var(--app-text-muted)]">

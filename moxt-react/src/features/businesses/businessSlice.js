@@ -77,6 +77,12 @@ const businessSlice = createSlice({
             scheduleSummary: values.scheduleSummary || values.hours?.trim() || '',
             serviceZones: values.serviceZones?.trim() || '',
             feePercent: values.services?.includes('Transfert') ? Number(values.feePercent) : 0,
+            rateReductionToRu: values.services?.includes('Transfert')
+              ? Math.min(15, Math.max(0, Number(values.rateReductionToRu) || 0))
+              : 0,
+            rateReductionFromRu: values.services?.includes('Transfert')
+              ? Math.min(15, Math.max(0, Number(values.rateReductionFromRu) || 0))
+              : 0,
             averageDelay: values.services?.includes('Transfert') ? values.averageDelay.trim() : '',
             currencies: values.services?.includes('Transfert') ? values.currencies || [] : [],
             exchangeMethods: values.services?.includes('Transfert')
@@ -138,6 +144,28 @@ const businessSlice = createSlice({
       business.transferAccounts = (action.payload.accounts || []).map((account) =>
         normalizeTransferAccount(account, action.payload.originCountry || 'BJ'),
       )
+      business.updatedAt = new Date().toISOString()
+    },
+    updateBusinessTransferPricing(state, action) {
+      const business = state.items.find(
+        (item) => item.id === action.payload.businessId && item.ownerId === action.payload.ownerId,
+      )
+      if (!business || !business.services?.includes('Transfert')) return
+      if (action.payload.feePercent != null) {
+        business.feePercent = Math.max(0, Number(action.payload.feePercent) || 0)
+      }
+      if (action.payload.rateReductionToRu != null) {
+        business.rateReductionToRu = Math.min(
+          15,
+          Math.max(0, Number(action.payload.rateReductionToRu) || 0),
+        )
+      }
+      if (action.payload.rateReductionFromRu != null) {
+        business.rateReductionFromRu = Math.min(
+          15,
+          Math.max(0, Number(action.payload.rateReductionFromRu) || 0),
+        )
+      }
       business.updatedAt = new Date().toISOString()
     },
     addBusinessMember: {
@@ -264,6 +292,7 @@ export const {
   updateBusinessMember,
   updateBusinessRequestStatus,
   updateBusinessTransferAccounts,
+  updateBusinessTransferPricing,
   setAll,
 } = businessSlice.actions
 export default businessSlice.reducer

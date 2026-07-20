@@ -187,6 +187,22 @@ body {
 
 #root { min-height: 100dvh; }
 
+/* Contenu page uniquement : bloque le pan latéral au scroll vertical.
+   Menus (bottom-nav, sidebar, drawers) hors de #main-content — non concernés. */
+@media (max-width: 1023px) {
+  #main-content {
+    overscroll-behavior-x: none;
+    touch-action: pan-y;
+  }
+
+  #main-content .touch-pan-x,
+  #main-content .overflow-x-auto,
+  #main-content .overflow-x-scroll {
+    touch-action: pan-x;
+    overscroll-behavior-x: contain;
+  }
+}
+
 /* ─── Web splash (MoxtLoadingScreen only) — edge-to-edge #ffffff ────────────
    Full-viewport cover while splash is mounted (portal + moxt-splash-lock).
    Cleared on unmount — does not change global theme / Capacitor chrome. */

@@ -42,6 +42,8 @@ export function businessToRemoteRow(business) {
     schedule_summary: business.scheduleSummary || business.hours?.trim() || '',
     service_zones: business.serviceZones?.trim() || '',
     fee_percent: Number(business.feePercent) || 0,
+    rate_reduction_to_ru: Math.min(15, Math.max(0, Number(business.rateReductionToRu) || 0)),
+    rate_reduction_from_ru: Math.min(15, Math.max(0, Number(business.rateReductionFromRu) || 0)),
     average_delay: business.averageDelay?.trim() || '',
     services: business.services || [],
     currencies: business.currencies || [],

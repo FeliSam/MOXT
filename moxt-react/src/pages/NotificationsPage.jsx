@@ -11,7 +11,7 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
 } from '../features/communications/communicationSlice'
-import { selectUserConversations } from '../features/selectors'
+import { selectUserConversations, selectVisibleNotifications } from '../features/selectors'
 import { formatDate } from '../features/transfers/transferUtils'
 import { phase3Text } from '../i18n/phase3I18n'
 import {
@@ -61,9 +61,7 @@ export function NotificationsPage() {
   const p3 = (key, vars) => phase3Text(t, key, vars)
   const user = useSelector((state) => state.auth.user)
   const conversations = useSelector(selectUserConversations)
-  const notifications = useSelector((state) =>
-    state.communications.notifications.filter((item) => item.userId === user.id && !item.archived),
-  )
+  const notifications = useSelector(selectVisibleNotifications)
   const unreadCount = notifications.filter((item) => !item.read).length
 
   function openNotification(notification) {

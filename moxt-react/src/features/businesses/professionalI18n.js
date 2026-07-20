@@ -33,6 +33,7 @@ export const PROFESSIONAL_FR_SOURCES = {
   'professional.tabs.publications': 'Publications',
   'professional.tabs.requests': 'Demandes',
   'professional.tabs.transfers': 'Transferts',
+  'professional.tabs.rateSettings': 'Réglages taux',
   'professional.tabs.subscriptions': 'Abonnements',
   'professional.tabs.reviews': 'Avis',
   'professional.tabs.members': 'Membres',
@@ -140,6 +141,27 @@ export const PROFESSIONAL_FR_SOURCES = {
   'professional.transfers.toast.confirmedTitle': 'Transfert confirmé',
   'professional.transfers.toast.confirmedBody':
     'Le client peut maintenant déclarer la réception des fonds.',
+
+  'professional.rateSettings.title': 'Réglages des taux de transfert',
+  'professional.rateSettings.description':
+    'Ajustez votre réduction sur le taux Frankfurter ({source}) pour {currency}, par sens. Les frais restent inclus dans le total à payer affiché au client.',
+  'professional.rateSettings.rateLoading': 'chargement…',
+  'professional.rateSettings.feePercent': 'Frais de transaction (%)',
+  'professional.rateSettings.toRuTitle': 'Vers la Russie',
+  'professional.rateSettings.toRuSubtitle': '{from} → {to}',
+  'professional.rateSettings.fromRuTitle': 'Depuis la Russie',
+  'professional.rateSettings.fromRuSubtitle': '{from} → {to}',
+  'professional.rateSettings.frankfurterLabel': 'Frankfurter : {rate}',
+  'professional.rateSettings.reductionPercent': 'Réduction sur le taux (%)',
+  'professional.rateSettings.reductionHint':
+    '0 à 15 %. Le taux client = Frankfurter × (1 − réduction).',
+  'professional.rateSettings.clientPreview': 'Taux affiché au client',
+  'professional.rateSettings.exampleTotal':
+    'Exemple total à payer : {total} (dont frais {fees})',
+  'professional.rateSettings.save': 'Enregistrer les réglages',
+  'professional.rateSettings.toastSavedTitle': 'Réglages enregistrés',
+  'professional.rateSettings.toastSavedBody':
+    'Vos réductions de taux et frais s’appliquent aux prochaines estimations.',
 
   // ── transfer accounts ────────────────────────────────────────────────────
   'professional.accounts.toast.updatedTitle': 'Coordonnées mises à jour',

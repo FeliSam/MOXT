@@ -177,4 +177,20 @@ describe('translateAuthError', () => {
       ),
     ).toMatch(/confirmer ce code/i)
   })
+
+  it('maps email send failures to send wording, not confirm-code wording', () => {
+    expect(
+      translateAuthError(
+        { message: 'some obscure provider glitch xyz' },
+        { channel: 'email', intent: 'email_verification' },
+      ),
+    ).toMatch(/envoyer le code e-mail/i)
+
+    expect(
+      translateAuthError(
+        { message: 'some obscure provider glitch xyz' },
+        { channel: 'email', intent: 'email_verification' },
+      ),
+    ).not.toMatch(/confirmer ce code/i)
+  })
 })

@@ -4,7 +4,7 @@ import {
   canActorPerformBusinessTransferAction,
   canActorPerformClientTransferAction,
 } from './transferActionUtils'
-import { TRANSFER_CONFIG, TRANSFER_STATUS, TRANSFER_TRANSITIONS } from './transferConfig'
+import { DIRECTIONS, TRANSFER_CONFIG, TRANSFER_STATUS, TRANSFER_TRANSITIONS } from './transferConfig'
 import { transferStorage } from './transferStorage'
 import { calculateTransfer } from './transferUtils'
 
@@ -50,6 +50,9 @@ const transferSlice = createSlice({
           exchanger.feePercent,
           rateOverride,
           originCountry,
+          direction === DIRECTIONS.BJ_TO_RU
+            ? exchanger.rateReductionToRu
+            : exchanger.rateReductionFromRu,
         )
         const createdAt = new Date().toISOString()
         return {

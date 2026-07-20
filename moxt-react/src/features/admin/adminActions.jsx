@@ -8,6 +8,7 @@ import { updateDisputeStatus } from '../disputes/disputeSlice'
 import { moderateEvent, updateEventReportStatus } from '../events/eventSlice'
 import { moderateJob, updateJobReportStatus } from '../jobs/jobSlice'
 import {
+  deleteListing,
   updateListingReportStatus,
   updateListingStatus,
 } from '../marketplace/marketplaceSlice'
@@ -139,6 +140,16 @@ export function contentActions(contentView, dispatch, item, t) {
             onClick={() => dispatch(updateListingStatus({ id: item.id, status: 'archived' }))}
           >
             {adminText(t, 'admin.actions.archive')}
+          </ActionButton>
+          <ActionButton
+            variant="danger"
+            onClick={() => {
+              if (window.confirm(adminText(t, 'admin.actions.deleteListingConfirm'))) {
+                dispatch(deleteListing({ id: item.id, ownerId: item.ownerId }))
+              }
+            }}
+          >
+            {adminText(t, 'admin.actions.delete')}
           </ActionButton>
         </>
       )
