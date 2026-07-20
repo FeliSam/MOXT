@@ -148,9 +148,9 @@ export function Sidebar({ open }) {
             setHoveredRailKey(null)
           }
         }}
-        className={`group/sidebar fixed inset-y-0 left-0 z-[var(--z-nav)] flex max-h-dvh w-[18rem] max-w-[85vw] flex-col overflow-hidden border-r border-[var(--app-border)]/80 bg-[var(--app-surface)]/65 shadow-2xl backdrop-blur-xl transition-transform duration-300 ease-out lg:z-[var(--z-nav-menu)] ${
+        className={`group/sidebar fixed inset-y-0 left-0 z-[var(--z-nav)] flex max-h-dvh w-[18rem] flex-col border-r border-[var(--app-border)]/80 bg-[var(--app-surface)]/65 shadow-2xl backdrop-blur-xl transition-transform duration-300 ease-out lg:z-[var(--z-nav-menu)] ${
           open ? 'translate-x-0' : '-translate-x-full'
-        } lg:inset-y-3 lg:left-3 lg:flex lg:max-h-[calc(100dvh-1.5rem)] lg:w-[4.75rem] lg:max-w-none lg:translate-x-0 lg:overflow-visible lg:rounded-[1.75rem] lg:border lg:border-[var(--app-border)]/80 lg:bg-[var(--app-surface)]/65 lg:shadow-[var(--shadow-card)] lg:backdrop-blur-xl`}
+        } lg:inset-y-3 lg:left-3 lg:flex lg:max-h-[calc(100dvh-1.5rem)] lg:w-[4.75rem] lg:translate-x-0 lg:overflow-visible lg:rounded-[1.75rem] lg:border lg:border-[var(--app-border)]/80 lg:bg-[var(--app-surface)]/65 lg:shadow-[var(--shadow-card)] lg:backdrop-blur-xl`}
       >
         {/* Logo — icône seule sur desktop */}
         <div className="flex h-[4.5rem] shrink-0 items-center justify-between px-5 lg:justify-center lg:border-b lg:border-[var(--app-border)]/70 lg:px-0">

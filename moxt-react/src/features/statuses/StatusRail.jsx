@@ -55,8 +55,7 @@ export function StatusRail() {
   if (!user) return null
 
   return (
-    <div className="min-w-0 overflow-x-clip">
-      <div className="scrollbar-hidden -mx-4 flex touch-pan-x gap-4 overflow-x-auto overscroll-x-contain px-4 py-2 sm:gap-5">
+    <div className="scrollbar-hidden -mx-4 flex touch-pan-x gap-4 overflow-x-auto px-4 py-2 sm:gap-5">
       {officialGroups.map((group) => (
         <AuthorBubble
           key={group.authorId}
@@ -122,7 +121,6 @@ export function StatusRail() {
       ) : null}
 
       {composerOpen ? <StatusComposer onClose={() => setComposerOpen(false)} /> : null}
-      </div>
     </div>
   )
 }

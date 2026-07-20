@@ -169,18 +169,12 @@ h1, h2, h3 {
 
 html {
   min-width: 320px;
-  width: 100%;
-  max-width: 100%;
   min-height: 100%;
-  overflow-x: hidden;
-  overscroll-behavior-x: none;
   scroll-behavior: smooth;
 }
 
 body {
   min-width: 320px;
-  width: 100%;
-  max-width: 100%;
   min-height: 100vh;
   margin: 0;
   background:
@@ -189,37 +183,9 @@ body {
   color: var(--app-text);
   transition: background-color 180ms ease, color 180ms ease;
   overflow-x: hidden;
-  overscroll-behavior-x: none;
 }
 
-#root {
-  width: 100%;
-  min-height: 100dvh;
-  max-width: 100%;
-  min-width: 0;
-  overflow-x: clip;
-}
-
-/* Mobile: vertical scroll only at document level — stops left/right rubber-band wobble.
-   Horizontal carousels keep working via .touch-pan-x / overflow-x-auto children. */
-@media (max-width: 1023px) {
-  html,
-  body {
-    overscroll-behavior-x: none;
-    overscroll-behavior-y: auto;
-  }
-
-  body {
-    touch-action: pan-y;
-  }
-
-  .touch-pan-x,
-  .overflow-x-auto,
-  .overflow-x-scroll {
-    touch-action: pan-x;
-    overscroll-behavior-x: contain;
-  }
-}
+#root { min-height: 100dvh; }
 
 /* ─── Web splash (MoxtLoadingScreen only) — edge-to-edge #ffffff ────────────
    Full-viewport cover while splash is mounted (portal + moxt-splash-lock).
@@ -429,7 +395,6 @@ html.capacitor-native {
   html,
   body {
     height: 100%;
-    overscroll-behavior-x: none;
     overscroll-behavior-y: none;
   }
 
@@ -2570,13 +2535,6 @@ html.locale-animating #root {
 
   .header-action-btn:focus-visible .header-action-label {
     opacity: 1;
-  }
-}
-
-/* Tooltips can overflow the viewport and cause horizontal rubber-band on mobile. */
-@media (max-width: 1023px) {
-  .header-action-label {
-    display: none;
   }
 }
 

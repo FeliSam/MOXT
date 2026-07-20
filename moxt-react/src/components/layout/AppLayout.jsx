@@ -63,7 +63,7 @@ export function AppLayout({ children }) {
 
   return (
     <div
-      className={`w-full max-w-full overflow-x-clip text-[var(--app-text)] ${
+      className={`text-[var(--app-text)] ${
         isMessagesRoute
           ? 'messages-shell h-dvh max-h-dvh overflow-hidden overscroll-none'
           : 'min-h-screen'
@@ -85,7 +85,7 @@ export function AppLayout({ children }) {
       ) : null}
       <Sidebar open={sidebarOpen} />
       <div
-        className={`min-w-0 max-w-full overflow-x-clip lg:pl-28 ${
+        className={`lg:pl-28 ${
           isMessagesRoute ? 'flex h-full min-h-0 flex-col overflow-hidden' : ''
         }`}
       >
