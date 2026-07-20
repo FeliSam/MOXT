@@ -1,0 +1,66 @@
+# Configure Web Push : secrets VAPID + déploiement send-push
+#
+# Secrets GitHub requis :
+#   SUPABASE_ACCESS_TOKEN
+#   VITE_VAPID_PUBLIC_KEY (ou VAPID_PUBLIC_KEY)
+#   VAPID_PRIVATE_KEY
+#   PUSH_DISPATCH_SECRET
+
+name: Deploy — Supabase Push
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/send-push/**'
+      - '.github/workflows/deploy-supabase-push.yml'
+
+concurrency:
+  group: deploy-supabase-push
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Link Supabase
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: npx supabase link --project-ref rbvqfkccbkwjxkvpnwqn --yes
+
+      - name: Set Edge Function secrets (VAPID)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          PUSH_DISPATCH_SECRET: ${{ secrets.PUSH_DISPATCH_SECRET }}
+        run: |
+          if [ -z "$VAPID_PUBLIC_KEY" ] || [ -z "$VAPID_PRIVATE_KEY" ] || [ -z "$PUSH_DISPATCH_SECRET" ]; then
+            echo "::error::VAPID secrets manquants — npm run push:generate-vapid puis npm run setup:github-secrets"
+            exit 1
+          fi
+          cat > /tmp/push-secrets.env <<EOF
+          VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}
+          VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
+          PUSH_DISPATCH_SECRET=${PUSH_DISPATCH_SECRET}
+          VAPID_SUBJECT=mailto:support@moxtapp.ru
+          EOF
+          npx supabase secrets set --env-file /tmp/push-secrets.env
+
+      - name: Deploy send-push
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: npx supabase functions deploy send-push --no-verify-jwt

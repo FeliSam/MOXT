@@ -227,6 +227,13 @@ async function main() {
   const postboxUser = process.env.MOXT_POSTBOX_SMTP_USER || phase2.MOXT_POSTBOX_SMTP_USER
   const postboxPass = process.env.MOXT_POSTBOX_SMTP_PASS || phase2.MOXT_POSTBOX_SMTP_PASS
   const postboxFrom = process.env.MOXT_POSTBOX_FROM || phase2.MOXT_POSTBOX_FROM
+  const vapidPublic =
+    process.env.VITE_VAPID_PUBLIC_KEY ||
+    phase2.VITE_VAPID_PUBLIC_KEY ||
+    phase2.VAPID_PUBLIC_KEY ||
+    envProd.VITE_VAPID_PUBLIC_KEY
+  const vapidPrivate = process.env.VAPID_PRIVATE_KEY || phase2.VAPID_PRIVATE_KEY
+  const pushDispatchSecret = process.env.PUSH_DISPATCH_SECRET || phase2.PUSH_DISPATCH_SECRET
 
   if (!supabaseUrl || !supabaseAnon) {
     throw new Error('VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY introuvables (moxt-react/.env.production)')
@@ -299,6 +306,18 @@ async function main() {
     await setSecret('MOXT_POSTBOX_FROM', postboxFrom)
   } else {
     console.log('  ⚠ secrets Postbox ignorés (MOXT_POSTBOX_* dans scripts/phase2.env)')
+  }
+
+  if (vapidPublic) {
+    await setSecret('VITE_VAPID_PUBLIC_KEY', vapidPublic)
+  } else {
+    console.log('  ⚠ VITE_VAPID_PUBLIC_KEY ignoré — npm run push:generate-vapid')
+  }
+  if (vapidPrivate) {
+    await setSecret('VAPID_PRIVATE_KEY', vapidPrivate)
+  }
+  if (pushDispatchSecret) {
+    await setSecret('PUSH_DISPATCH_SECRET', pushDispatchSecret)
   }
 
   log('Variables Actions')
