@@ -180,6 +180,14 @@ export function ConversationPanel({
     el.style.height = `${Math.min(el.scrollHeight, 128)}px`
   }, [formik.values.text])
 
+  const wasSubmittingRef = useRef(false)
+  useEffect(() => {
+    if (wasSubmittingRef.current && !formik.isSubmitting && !blocked) {
+      composerRef.current?.focus({ preventScroll: true })
+    }
+    wasSubmittingRef.current = formik.isSubmitting
+  }, [formik.isSubmitting, blocked])
+
   useEffect(() => {
     stickToBottomRef.current = true
   }, [active.id])
@@ -629,7 +637,7 @@ export function ConversationPanel({
       </div>
 
       <div
-        className="message-composer-shell relative z-10 shrink-0 border-t border-[var(--app-border)]/60 bg-[var(--app-surface)]/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl sm:p-4 sm:pb-[max(1rem,env(safe-area-inset-bottom))]"
+        className="message-composer-shell relative z-10 shrink-0 border-t border-[var(--app-border)]/60 bg-[var(--app-surface)]/95 p-3 backdrop-blur-xl sm:p-4"
         data-testid="message-composer"
       >
         {!blocked && suggestionsEnabled && suggestions.length ? (

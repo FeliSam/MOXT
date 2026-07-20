@@ -62,7 +62,6 @@ export const routePreloaders = {
   '/transfers': () => import('../pages/NewTransferPage'),
   '/transfers/history': () => import('../pages/TransfersPage'),
   '/verification': () => import('../pages/VerificationPage'),
-  '/wallet': () => import('../pages/WalletPage'),
   '/disputes': () => import('../pages/DisputesPage'),
 }
 

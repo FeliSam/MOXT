@@ -49,7 +49,7 @@ const config: CapacitorConfig = {
       backgroundColor: '#08705f',
     },
     Keyboard: {
-      resize: 'body',
+      resize: 'none',
       resizeOnFullScreen: true,
     },
     PushNotifications: {

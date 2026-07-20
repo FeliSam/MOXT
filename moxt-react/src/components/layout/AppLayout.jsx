@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { useEffect, useLayoutEffect } from 'react'
 import { closeSidebar } from '../../features/ui/uiSlice'
 import { useContentLifecycle } from '../../features/content/useContentLifecycle'
+import { useKeyboardInset } from '../../hooks/useKeyboardInset'
 import { AppThemeScope } from './AppThemeScope'
 import { BottomNavigation } from './BottomNavigation'
 import { Header } from './Header'
@@ -34,6 +35,7 @@ export function AppLayout({ children }) {
   /** Hide app chrome: URL thread (immediate) OR page-confirmed mobile immersion */
   const hideAppChrome = isMessageThread || messageThreadImmersive
   useContentLifecycle()
+  useKeyboardInset()
 
   useLayoutEffect(() => {
     dispatch(closeSidebar())

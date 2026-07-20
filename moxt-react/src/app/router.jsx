@@ -164,8 +164,6 @@ const InviteRedirect = lazyPage(() => import('../pages/InviteRedirect'), 'Invite
 const TrustPage = lazyPage(() => import('../pages/TrustPage'), 'TrustPage')
 const LegalPage = lazyPage(() => import('../pages/LegalPage'), 'LegalPage')
 const VerificationPage = lazyPage(() => import('../pages/VerificationPage'), 'VerificationPage')
-const WalletPage = lazyPage(() => import('../pages/WalletPage'), 'WalletPage')
-
 const isProd = import.meta.env.PROD
 
 export function AppRouter() {
@@ -243,7 +241,7 @@ export function AppRouter() {
             <Route path="/transfers/:transferId" element={<TransferDetailPage />} />
             <Route path="/exchangers" element={<ExchangersPage />} />
             <Route path="/exchangers/:exchangerId" element={<ExchangerDetailPage />} />
-            <Route path="/wallet" element={<WalletPage />} />
+            <Route path="/wallet" element={<Navigate to="/receipts" replace />} />
             <Route path="/referral" element={<ReferralPage />} />
             <Route path="/payments" element={<PaymentsPage />} />
             <Route path="/receipts" element={<ReceiptsPage />} />

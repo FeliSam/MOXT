@@ -113,7 +113,6 @@ export const routeMetadata = [
     eyebrow: 'Finances',
     back: '/exchangers',
   },
-  { pattern: /^\/wallet$/, title: 'Portefeuille', eyebrow: 'Finances' },
   { pattern: /^\/payments$/, title: 'Paiements', eyebrow: 'Finances' },
   { pattern: /^\/receipts$/, title: 'Reçus', eyebrow: 'Finances' },
   { pattern: /^\/receipts\/[^/]+$/, title: 'Détail du reçu', eyebrow: 'Finances' },
@@ -235,7 +234,7 @@ export function getRouteMetadata(pathname) {
 const eyebrowDescriptions = {
   MOXT: 'Tableau de bord et accès rapide aux services MOXT entre le Bénin et la Russie.',
   Compte: 'Gestion du profil, documents, sécurité et préférences personnelles.',
-  Finances: 'Transferts, portefeuille, paiements, reçus et échanges financiers.',
+  Finances: 'Transferts, paiements, reçus et échanges financiers.',
   Services: 'Marketplace, colis, entreprises et services professionnels vérifiés.',
   Communauté: 'Jobs, événements, actualités et vie de la diaspora afro-russe.',
   Communication: 'Messagerie, notifications et support utilisateur.',

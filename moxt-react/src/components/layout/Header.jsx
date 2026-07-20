@@ -29,33 +29,34 @@ export function Header({ hideOnMobile = false }) {
         visible ? 'translate-y-0' : '-translate-y-[calc(100%+1rem)]'
       } ${hideOnMobile ? 'hidden lg:block' : ''}`}
     >
-      <div className="mx-auto flex max-w-[96rem] items-center gap-3 rounded-[1.4rem] border border-[var(--app-border)] bg-[var(--app-surface)]/94 px-3 py-3 shadow-[var(--shadow-card)] backdrop-blur-xl sm:px-5 lg:min-h-[4.75rem] lg:px-6">
+      <div className="mx-auto flex max-w-[96rem] items-center gap-2 sm:gap-3 lg:min-h-[4.75rem] lg:gap-3 lg:rounded-[1.4rem] lg:border lg:border-[var(--app-border)] lg:bg-[var(--app-surface)]/94 lg:px-6 lg:py-3 lg:shadow-[var(--shadow-card)] lg:backdrop-blur-xl">
+        {/* Mobile: surface bg only on avatar + page label. Desktop: children flow into outer pill. */}
+        <div className="flex min-w-0 flex-1 items-center gap-2.5 rounded-[1.4rem] border border-[var(--app-border)] bg-[var(--app-surface)]/94 px-2.5 py-2 shadow-[var(--shadow-card)] backdrop-blur-xl sm:gap-3 sm:px-3 sm:py-2.5 lg:contents lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
+          <Link
+            to="/profile"
+            aria-label={t('settings.profileSecurity.openProfile')}
+            className="hidden size-11 shrink-0 place-items-center rounded-full transition hover:bg-[var(--app-surface-muted)] max-lg:grid"
+          >
+            <UserAvatar user={user} size={36} />
+          </Link>
 
-        <Link
-          to="/profile"
-          aria-label={t('settings.profileSecurity.openProfile')}
-          className="hidden size-11 shrink-0 place-items-center rounded-full transition hover:bg-[var(--app-surface-muted)] max-lg:grid"
-        >
-          <UserAvatar user={user} size={36} />
-        </Link>
+          <div className="hidden w-[8rem] shrink-0 lg:flex xl:hidden">
+            <Brand compact iconOnly />
+          </div>
 
-        <div className="hidden w-[8rem] shrink-0 lg:flex xl:hidden">
-          <Brand compact iconOnly />
+          <div className="hidden flex-1 lg:block lg:max-w-[26rem]">
+            <GlobalSearch />
+          </div>
+
+          <div className="min-w-0 flex-1 lg:hidden">
+            <p className="hidden truncate text-[9px] font-black uppercase tracking-[0.16em] text-brand-700 sm:block">
+              {translateLabel(route.eyebrow)}
+            </p>
+            <p className="truncate text-sm font-black leading-tight">{translateLabel(route.title)}</p>
+          </div>
         </div>
 
-        {/* Recherche globale — desktop uniquement */}
-        <div className="hidden flex-1 lg:block lg:max-w-[26rem]">
-          <GlobalSearch />
-        </div>
-
-        <div className="min-w-0 flex-1 lg:hidden">
-          <p className="hidden truncate text-[9px] font-black uppercase tracking-[0.16em] text-brand-700 sm:block">
-            {translateLabel(route.eyebrow)}
-          </p>
-          <p className="truncate text-sm font-black leading-tight">{translateLabel(route.title)}</p>
-        </div>
-
-        <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1.5">
+        <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-1.5 lg:gap-1.5">
           <Link
             to="/news"
             className="header-action-btn grid lg:hidden"

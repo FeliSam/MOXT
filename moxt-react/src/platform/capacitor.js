@@ -38,7 +38,9 @@ export async function initCapacitor() {
     ])
 
   try {
-    await Keyboard.setResizeMode({ mode: KeyboardResize.Body })
+    // None: layout viewport stays full so fixed bottom chrome is not lifted.
+    // Composer/chat use --keyboard-inset from visualViewport instead.
+    await Keyboard.setResizeMode({ mode: KeyboardResize.None })
   } catch {
     /* plugin indisponible sur certaines plateformes */
   }

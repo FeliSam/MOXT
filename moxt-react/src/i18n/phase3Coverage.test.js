@@ -29,7 +29,6 @@ const PHASE_THREE_PAGES = [
   'DocumentsPage.jsx',
   'AddressesPage.jsx',
   'SubscriptionsPage.jsx',
-  'WalletPage.jsx',
   'DisputesPage.jsx',
   'VerificationPage.jsx',
   'ActivitiesPage.jsx',

@@ -9,12 +9,10 @@ function ProfileLinkTile({ descriptionKey, icon: Icon, labelKey, path, t }) {
       to={path}
       onFocus={() => preloadRoute(path)}
       onMouseEnter={() => preloadRoute(path)}
-      className="group flex min-h-[5.25rem] flex-col justify-between rounded-[var(--radius-card)] border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-[var(--shadow-card)] transition-all duration-[var(--transition-fast)] hover:border-brand-200 hover:shadow-[var(--shadow-card-hover)] dark:hover:border-brand-800 sm:min-h-0 sm:flex-row sm:items-center sm:gap-3 sm:p-4"
+      className="group flex min-h-0 items-center gap-2.5 rounded-[var(--radius-card)] border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2.5 shadow-[var(--shadow-card)] transition-all duration-[var(--transition-fast)] hover:border-brand-200 hover:shadow-[var(--shadow-card-hover)] dark:hover:border-brand-800 sm:gap-3 sm:p-4"
     >
-      <span className="flex items-start justify-between gap-2 sm:contents">
-        <span className="grid size-9 shrink-0 place-items-center rounded-[0.7rem] bg-[var(--app-surface-muted)] text-[var(--app-accent)] dark:text-[var(--app-teal)]">
-          <Icon className="text-lg" aria-hidden="true" />
-        </span>
+      <span className="grid size-8 shrink-0 place-items-center rounded-[0.7rem] bg-[var(--app-surface-muted)] text-[var(--app-accent)] dark:text-[var(--app-teal)] sm:size-9">
+        <Icon className="text-base sm:text-lg" aria-hidden="true" />
       </span>
       <span className="min-w-0 flex-1">
         <strong className="block text-xs font-semibold leading-snug text-[var(--app-text)] sm:text-sm">

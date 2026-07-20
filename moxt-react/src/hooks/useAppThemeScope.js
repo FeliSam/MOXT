@@ -3,7 +3,6 @@ import { useLocation } from 'react-router-dom'
 
 const FINANCE_PREFIXES = [
   '/transfers',
-  '/wallet',
   '/payments',
   '/receipts',
   '/exchangers',

@@ -335,6 +335,7 @@ html.capacitor-native .capacitor-safe-bottom {
    Standalone !important conflictuel retiré — mêmes règles partout.
 */
 :root {
+  --keyboard-inset: 0px;
   --bottom-nav-gap: 0.75rem;
   --bottom-nav-pad: 0.35rem;
   --bottom-nav-offset: max(var(--bottom-nav-gap), env(safe-area-inset-bottom, 0px));
@@ -356,6 +357,29 @@ html.capacitor-native .capacitor-safe-bottom {
   -webkit-transform: translateZ(0);
   will-change: transform;
   backface-visibility: hidden;
+}
+
+/* Soft keyboard open: keep bottom nav under the keyboard (no lift / no gap). */
+html.keyboard-open .bottom-nav-shell {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.message-composer-shell {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  margin-bottom: var(--keyboard-inset, 0px);
+}
+
+@media (min-width: 640px) {
+  .message-composer-shell {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  }
+}
+
+html.keyboard-open .message-composer-shell {
+  /* Avoid safe-area gap stacked above the keyboard. */
+  padding-bottom: 0.75rem;
 }
 
 .bottom-nav-shell .bottom-nav-indicator {
@@ -2460,6 +2484,13 @@ html.locale-animating #root {
 /* ─── Utilitaires ────────────────────────────────────────────────────────── */
 .header-action-btn {
   @apply size-9 shrink-0 place-items-center rounded-xl text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)] sm:size-10 sm:rounded-2xl;
+}
+
+/* Mobile top actions: individual translucent pills (bar bg stays on logo+label). */
+@media (max-width: 1023px) {
+  .header-action-btn {
+    @apply rounded-full bg-[var(--app-surface)]/40 backdrop-blur-md hover:bg-[var(--app-surface)]/55;
+  }
 }
 
 .lazy-content { content-visibility: auto; }

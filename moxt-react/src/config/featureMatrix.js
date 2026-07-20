@@ -97,8 +97,8 @@ export const FEATURE_MATRIX = [
         note: 'Les bases existent, mais les transitions, délais, permissions des deux parties et reprise de litige doivent être renforcés.',
       },
       {
-        id: 'wallet',
-        label: 'Portefeuille, paiements et reçus',
+        id: 'payments-receipts',
+        label: 'Paiements et reçus',
         status: 'partial',
         note: 'Les parcours existent mais doivent encore être unifiés avec le suivi de transfert.',
       },

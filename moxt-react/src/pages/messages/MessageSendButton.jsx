@@ -20,6 +20,8 @@ export function MessageSendButton({ ariaLabel, disabled, ready, sending }) {
       disabled={disabled}
       aria-label={ariaLabel}
       aria-busy={sending}
+      onMouseDown={(event) => event.preventDefault()}
+      onPointerDown={(event) => event.preventDefault()}
     >
       <span className="message-send-btn__glow" aria-hidden="true" />
       <span className="message-send-btn__ripple" aria-hidden="true" />

@@ -55,15 +55,6 @@ export const searchablePages = [
     path: '/p2p',
   },
   {
-    id: 'page-wallet',
-    title: 'Portefeuille',
-    titleKey: 'shared.pages.wallet.title',
-    subtitle: 'Finances',
-    subtitleKey: 'shared.pages.groups.finances',
-    path: '/wallet',
-    keywords: 'wallet solde',
-  },
-  {
     id: 'page-payments',
     title: 'Paiements',
     titleKey: 'shared.pages.payments.title',
