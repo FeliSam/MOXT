@@ -2490,14 +2490,14 @@ html.locale-animating #root {
   @apply text-[1.25rem] stroke-[2.25];
 }
 
-/* Mobile: action pills match brand chip (h-12), bg 80%, icons larger. */
+/* Mobile: action pills match brand chip (h-12), bg 80%, icons larger / softer. */
 @media (max-width: 1023px) {
   .header-action-btn {
     @apply size-12 rounded-full border border-[var(--app-border)]/50 bg-[var(--app-surface)]/80 text-[var(--app-text)] backdrop-blur-md hover:bg-[var(--app-surface)]/90 sm:size-[3.25rem];
   }
 
   .header-action-icon {
-    @apply text-[1.35rem] stroke-[2.35];
+    @apply text-[1.35rem] stroke-[2.35] opacity-60;
   }
 
   .app-top-header {

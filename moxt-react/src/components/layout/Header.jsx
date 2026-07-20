@@ -1,4 +1,14 @@
-import { FiBell, FiChevronDown, FiClock, FiFileText, FiHeart, FiMessageSquare, FiMoon, FiSun } from 'react-icons/fi'
+import {
+  FiBell,
+  FiBriefcase,
+  FiChevronDown,
+  FiClock,
+  FiFileText,
+  FiHeart,
+  FiMessageSquare,
+  FiMoon,
+  FiSun,
+} from 'react-icons/fi'
 import { useSelector } from 'react-redux'
 import { Link, useLocation } from 'react-router-dom'
 import { getRouteMetadata } from '../../config/routeMeta'
@@ -13,6 +23,22 @@ import { isProfileVerified } from '../../features/profile/userProfileUtils'
 import { Brand } from './Brand'
 import { GlobalSearch } from './GlobalSearch'
 
+function pathMatches(pathname, prefix) {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`)
+}
+
+/** Mobile header shortcuts — contextual per section. */
+function getMobileHeaderActions(pathname) {
+  const isTransfers = pathMatches(pathname, '/transfers')
+  const isParcels = pathMatches(pathname, '/parcels')
+  return {
+    showNews: !isTransfers && !isParcels,
+    showHistory: isTransfers,
+    showJobs: isParcels,
+    showMessages: true,
+  }
+}
+
 export function Header({ hideOnMobile = false }) {
   const location = useLocation()
   const route = getRouteMetadata(location.pathname)
@@ -22,6 +48,7 @@ export function Header({ hideOnMobile = false }) {
   const { theme, toggleTheme } = useTheme()
   const { t, translateLabel } = useLanguage()
   const visible = useSmartNavbar({ disabled: location.pathname === '/messages' })
+  const mobileActions = getMobileHeaderActions(location.pathname)
 
   return (
     <header
@@ -56,13 +83,25 @@ export function Header({ hideOnMobile = false }) {
         </div>
 
         <div className="ml-auto flex h-12 shrink-0 items-center gap-1.5 sm:h-[3.25rem] lg:h-auto lg:gap-1.5">
-          <Link
-            to="/news"
-            className="header-action-btn grid lg:hidden"
-            aria-label={t('nav.news')}
-          >
-            <FiFileText className="header-action-icon" />
-          </Link>
+          {mobileActions.showNews ? (
+            <Link
+              to="/news"
+              className="header-action-btn grid lg:hidden"
+              aria-label={t('nav.news')}
+            >
+              <FiFileText className="header-action-icon" />
+            </Link>
+          ) : null}
+
+          {mobileActions.showJobs ? (
+            <Link
+              to="/jobs"
+              className="header-action-btn grid lg:hidden"
+              aria-label={t('nav.jobs')}
+            >
+              <FiBriefcase className="header-action-icon" />
+            </Link>
+          ) : null}
 
           <Link
             to="/notifications"
@@ -82,31 +121,35 @@ export function Header({ hideOnMobile = false }) {
             ) : null}
           </Link>
 
-          <Link
-            to="/transfers/history"
-            className="header-action-btn grid"
-            aria-label={t('dashboard.overview.history')}
-          >
-            <FiClock className="header-action-icon" />
-          </Link>
+          {mobileActions.showHistory ? (
+            <Link
+              to="/transfers/history"
+              className="header-action-btn grid"
+              aria-label={t('dashboard.overview.history')}
+            >
+              <FiClock className="header-action-icon" />
+            </Link>
+          ) : null}
 
-          <Link
-            to="/messages"
-            className="header-action-btn relative grid lg:hidden"
-            aria-label={
-              unreadMessagesCount
-                ? t('nav.messagesUnreadAria', { count: unreadMessagesCount })
-                : t('nav.messages')
-            }
-          >
-            <FiMessageSquare className="header-action-icon" />
-            {unreadMessagesCount ? (
-              <CountBounce
-                value={unreadMessagesCount}
-                className="absolute right-0 top-0 grid min-w-[1.05rem] place-items-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-sm"
-              />
-            ) : null}
-          </Link>
+          {mobileActions.showMessages ? (
+            <Link
+              to="/messages"
+              className="header-action-btn relative grid lg:hidden"
+              aria-label={
+                unreadMessagesCount
+                  ? t('nav.messagesUnreadAria', { count: unreadMessagesCount })
+                  : t('nav.messages')
+              }
+            >
+              <FiMessageSquare className="header-action-icon" />
+              {unreadMessagesCount ? (
+                <CountBounce
+                  value={unreadMessagesCount}
+                  className="absolute right-0 top-0 grid min-w-[1.05rem] place-items-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-sm"
+                />
+              ) : null}
+            </Link>
+          ) : null}
 
           <Link
             to="/favorites"
