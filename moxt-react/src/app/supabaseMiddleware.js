@@ -176,7 +176,26 @@ const TABLES_WITHOUT_UPDATED_AT = new Set([
   'subscriber_reports',
   'verification_requests',
   'personal_documents',
+  'receipts',
+  'wallet_entries',
 ])
+
+function receiptToRemoteRow(receipt) {
+  if (!receipt?.id) return null
+  return {
+    id: receipt.id,
+    userId: receipt.userId,
+    relatedType: receipt.relatedType || '',
+    relatedId: receipt.relatedId || '',
+    title: receipt.title || '',
+    amount: Number(receipt.amount) || 0,
+    currency: receipt.currency || 'RUB',
+    status: receipt.status || 'issued',
+    details: receipt.details || {},
+    simulation: receipt.simulation === true,
+    createdAt: receipt.createdAt,
+  }
+}
 
 function stripUnsupportedColumns(table, payload) {
   const next = { ...payload }
@@ -1446,16 +1465,19 @@ const handlers = {
     await upsert('wallet_entries', payload)
   },
   'finance/createReceipt': async (payload) => {
-    await upsert('receipts', {
-      ...payload,
-      details: payload.details || {},
-    })
+    const row = receiptToRemoteRow(payload)
+    if (row) await upsert('receipts', row)
   },
-  'finance/upsertTransferReceipt': async (payload) => {
-    await upsert('receipts', {
-      ...payload,
-      details: payload.details || {},
-    })
+  'finance/upsertTransferReceipt': async (payload, state) => {
+    const receipt =
+      state.finance.receipts.find(
+        (item) =>
+          item.userId === payload.userId &&
+          item.relatedType === payload.relatedType &&
+          item.relatedId === payload.relatedId,
+      ) || null
+    const row = receiptToRemoteRow(receipt)
+    if (row) await upsert('receipts', row)
   },
 
   // ── Entreprises (compléments) ─────────────────────────────────────────────────

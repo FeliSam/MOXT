@@ -31,10 +31,34 @@ describe('transferActionUtils', () => {
     ).toBe(true)
   })
 
-  it('autorise la declaration de reception avant la phase reclamation', () => {
+  it('autorise la declaration de reception apres confirmation entreprise uniquement', () => {
     expect(canClientDeclareReception(baseTransfer, true)).toBe(true)
     expect(
       canClientDeclareReception({ ...baseTransfer, receivedAt: '2026-01-05' }, true),
+    ).toBe(false)
+    expect(
+      canClientDeclareReception(
+        {
+          ...baseTransfer,
+          status: TRANSFER_STATUS.RECEIVED,
+          businessProof: null,
+          timeline: baseTransfer.timeline.filter((e) => e.status !== TRANSFER_STATUS.PAID_OUT),
+        },
+        true,
+      ),
+    ).toBe(false)
+    expect(
+      canClientDeclareReception(
+        {
+          ...baseTransfer,
+          status: TRANSFER_STATUS.DECLARED,
+          businessProof: null,
+          timeline: baseTransfer.timeline.filter(
+            (e) => ![TRANSFER_STATUS.RECEIVED, TRANSFER_STATUS.PAID_OUT].includes(e.status),
+          ),
+        },
+        true,
+      ),
     ).toBe(false)
   })
 

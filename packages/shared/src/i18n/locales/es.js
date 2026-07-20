@@ -3539,6 +3539,11 @@ export const es = {
       saving: "A guardar…",
       impossibleTitle: "Ación impossível",
       impossibleMessage: "A empresa deve primero confirmar a transferencia con comprobante antes de declarar a receción.",
+      waitBusinessTitle: "En espera de la empresa",
+      waitBusinessMessage:
+        "Podrá declarar la recepción de los fondos solo después de que la empresa confirme su pago y luego el envío al destinatario con comprobante.",
+      alreadyDeclaredTitle: "Recepción ya declarada",
+      alreadyDeclaredMessage: "Esta etapa está terminada. Consulte el seguimiento de la transferencia.",
       proofUploadFailed: "No foi possível enviar o comprobante.",
       copiedTitle: "Copiado",
       copiedMessage: "{label} copiado para a área de transferencia.",
@@ -3547,7 +3552,7 @@ export const es = {
       notFoundDescription: "Esta transferencia no existe o já no está acessível.",
       backToTransfers: "Voltar às transferencias",
       successTitle: "Receción registada",
-      successDescription: "A tu declaración foi enviada. O cambiador podrá validar a receción.",
+      successDescription: "Su declaración cierra la transferencia. Si hay un problema, abra una reclamación.",
       viewTransfer: "Ver transferencia",
       myTransfers: "As minhas transferencias",
       eyebrow: "Receción",
@@ -3589,9 +3594,9 @@ export const es = {
         none: "Ninguna ación necessária de momento."
       },
       clientWaiting: {
-        declared: "A tu declaración foi enviada. A empresa verifica a receción do pagamento.",
-        received: "A empresa prepara a transferencia. Será notificado assim que for confirmada.",
-        paidOut: "A transferencia foi confirmada. Em breve podrá declarar a receción dos fundos.",
+        declared: "Su declaración fue enviada. Espere a que la empresa confirme la recepción del pago.",
+        received: "La empresa recibió su pago. Espere a que confirme el envío con comprobante — solo entonces podrá declarar la recepción.",
+        paidOut: "Espere el comprobante de envío de la empresa antes de declarar la recepción de los fondos.",
         completed: "Transferencia concluída."
       },
       businessWaiting: {

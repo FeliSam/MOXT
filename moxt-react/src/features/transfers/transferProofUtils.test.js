@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildReceiptProofsFromTransfer,
+  buildTransferReceiptPayload,
   getTransferProofEntries,
   inferProofStoragePath,
 } from './transferProofUtils'
@@ -35,5 +36,17 @@ describe('transferProofUtils', () => {
     expect(proofs).toHaveLength(3)
     expect(proofs[0]).toMatchObject({ kind: 'payment', name: 'paiement.pdf' })
     expect(proofs[1].path).toBe('biz-owner-1/MXT-ABC/business.jpg')
+  })
+
+  it('n envoie pas titleKey comme colonne receipts', () => {
+    const payload = buildTransferReceiptPayload({
+      ...transfer,
+      totalToPay: 1000,
+      currencyFrom: 'XOF',
+      status: 'payment_declared',
+    })
+    expect(payload).not.toHaveProperty('titleKey')
+    expect(payload.title).toContain('MXT-ABC')
+    expect(payload.details.titleKey).toBe('transfers.receipt.storedTitle')
   })
 })

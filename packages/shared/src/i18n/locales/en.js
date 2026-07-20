@@ -3540,6 +3540,11 @@ export const en = {
       saving: "Saving…",
       impossibleTitle: "Action not available",
       impossibleMessage: "The business must first confirm the payout with proof before you can declare receipt.",
+      waitBusinessTitle: "Waiting for the business",
+      waitBusinessMessage:
+        "You can declare receipt of the funds only after the business has confirmed your payment, then confirmed the payout to the recipient with proof.",
+      alreadyDeclaredTitle: "Receipt already declared",
+      alreadyDeclaredMessage: "This step is done. Open the transfer tracking page for the next steps.",
       proofUploadFailed: "The proof could not be uploaded.",
       copiedTitle: "Copied",
       copiedMessage: "{label} copied to the clipboard.",
@@ -3548,7 +3553,7 @@ export const en = {
       notFoundDescription: "This transfer does not exist or is no longer accessible.",
       backToTransfers: "Back to transfers",
       successTitle: "Receipt recorded",
-      successDescription: "Your declaration has been submitted. The exchanger can validate the receipt.",
+      successDescription: "Your declaration closes the transfer. If there is a problem, open a claim.",
       viewTransfer: "View transfer",
       myTransfers: "My transfers",
       eyebrow: "Receipt",
@@ -3590,9 +3595,9 @@ export const en = {
         none: "No action required right now.",
       },
       clientWaiting: {
-        declared: "Your declaration has been sent. The business is verifying payment receipt.",
-        received: "The business is preparing the payout. You will be notified once it is confirmed.",
-        paidOut: "The payout has been confirmed. You will soon be able to declare receipt of the funds.",
+        declared: "Your declaration has been sent. Wait for the business to confirm payment receipt.",
+        received: "The business received your payment. Wait until it confirms the payout with proof — only then can you declare receipt.",
+        paidOut: "Wait for the business payout proof before declaring receipt of the funds.",
         completed: "Transfer completed.",
       },
       businessWaiting: {

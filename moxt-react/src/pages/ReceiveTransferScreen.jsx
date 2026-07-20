@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { FiArrowLeft, FiCheckCircle, FiCopy, FiInfo } from 'react-icons/fi'
+import { FiArrowLeft, FiCheckCircle, FiClock, FiCopy, FiInfo } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Alert } from '../components/ui/Alert'
@@ -9,6 +9,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { useLanguage } from '../contexts/useLanguage'
 import { addToast } from '../features/ui/uiSlice'
 import { useTransferReceiveForm } from '../features/transfers/useTransferReceiveForm'
+import { canClientDeclareReception } from '../features/transfers/transferActionUtils'
 import { formatMoney } from '../features/transfers/transferUtils'
 import { ReceiveTransferForm } from '../features/transfers/ReceiveTransferForm'
 
@@ -39,6 +40,9 @@ export function ReceiveTransferScreen() {
   const walletEntries = useSelector((state) => state.finance.walletEntries)
 
   const [submitted, setSubmitted] = useState(false)
+
+  const isSender = Boolean(user?.id && transfer?.userId === user.id)
+  const canDeclare = canClientDeclareReception(transfer, isSender)
 
   const form = useTransferReceiveForm({
     transfer,
@@ -91,6 +95,51 @@ export function ReceiveTransferScreen() {
     )
   }
 
+  const backLink = (
+    <Link
+      to={`/transfers/${transfer.id}`}
+      state={{ transferView: 'client' }}
+      className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-[var(--app-surface)] px-4 text-sm font-bold shadow-sm hover:bg-[var(--app-surface-muted)]"
+    >
+      <FiArrowLeft /> {t('common.back')}
+    </Link>
+  )
+
+  // Wait for the business to confirm payout before the client can declare receipt.
+  if (!canDeclare) {
+    const alreadyDeclared = Boolean(transfer.receivedAt)
+    return (
+      <div className="mx-auto grid max-w-lg gap-6">
+        <PageHeader
+          eyebrow={t('transfers.receive.eyebrow')}
+          title={t('transfers.receive.title')}
+          description={t('transfers.receive.description', { id: transfer.id })}
+          actions={backLink}
+        />
+        <Card className="grid gap-4 p-6">
+          <span className="grid size-12 place-items-center rounded-2xl bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+            <FiClock className="text-xl" />
+          </span>
+          <div>
+            <h2 className="text-lg font-black">
+              {alreadyDeclared
+                ? t('transfers.receive.alreadyDeclaredTitle')
+                : t('transfers.receive.waitBusinessTitle')}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--app-text-muted)]">
+              {alreadyDeclared
+                ? t('transfers.receive.alreadyDeclaredMessage')
+                : t('transfers.receive.waitBusinessMessage')}
+            </p>
+          </div>
+          <Button variant="secondary" onClick={() => navigate(`/transfers/${transfer.id}`, { state: { transferView: 'client' } })}>
+            {t('transfers.receive.viewTransfer')}
+          </Button>
+        </Card>
+      </div>
+    )
+  }
+
   const paymentAccount = transfer.exchanger?.paymentAccount
   const paymentDetails = transfer.exchanger?.paymentDetails
 
@@ -100,15 +149,7 @@ export function ReceiveTransferScreen() {
         eyebrow={t('transfers.receive.eyebrow')}
         title={t('transfers.receive.title')}
         description={t('transfers.receive.description', { id: transfer.id })}
-        actions={
-          <Link
-            to={`/transfers/${transfer.id}`}
-            state={{ transferView: 'client' }}
-            className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-[var(--app-surface)] px-4 text-sm font-bold shadow-sm hover:bg-[var(--app-surface-muted)]"
-          >
-            <FiArrowLeft /> {t('common.back')}
-          </Link>
-        }
+        actions={backLink}
       />
 
       <Card className="grid gap-3 p-5">
@@ -119,7 +160,7 @@ export function ReceiveTransferScreen() {
           <div>
             <span className="text-[var(--app-text-muted)]">{t('transfers.receive.expectedAmount')}</span>
             <p className="font-black text-brand-700">
-              {formatMoney(transfer.receivedAmount, transfer.toCurrency)}
+              {formatMoney(transfer.amountReceived ?? transfer.receivedAmount, transfer.currencyTo || transfer.toCurrency)}
             </p>
           </div>
           <div>
@@ -177,7 +218,7 @@ export function ReceiveTransferScreen() {
         <span className="flex items-center gap-2">
           <FiInfo />
           {t('transfers.receive.walletBalance', {
-            balance: formatMoney(walletBalance, transfer.toCurrency),
+            balance: formatMoney(walletBalance, transfer.currencyTo || transfer.toCurrency),
           })}
         </span>
       </Alert>

@@ -47,8 +47,11 @@ export function isClaimOnlyPhase(transfer) {
 
 export function canClientDeclareReception(transfer, isSender) {
   if (!isSender || !transfer || isClaimOnlyPhase(transfer)) return false
+  // Client confirms fund receipt only after the business has:
+  // 1) confirmed payment reception, and 2) confirmed payout with proof.
   return (
     transfer.status === TRANSFER_STATUS.PAID_OUT &&
+    hasBusinessConfirmedReception(transfer) &&
     hasBusinessPayoutWithProof(transfer) &&
     !hasRecipientDeclaredReception(transfer)
   )

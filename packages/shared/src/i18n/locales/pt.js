@@ -3539,6 +3539,11 @@ export const pt = {
       saving: "A guardar…",
       impossibleTitle: "Ação impossível",
       impossibleMessage: "A empresa deve primeiro confirmar a transferência com comprovativo antes de declarar a receção.",
+      waitBusinessTitle: "A aguardar a empresa",
+      waitBusinessMessage:
+        "Só pode declarar a receção dos fundos depois de a empresa confirmar o seu pagamento e, em seguida, a transferência para o destinatário com comprovativo.",
+      alreadyDeclaredTitle: "Receção já declarada",
+      alreadyDeclaredMessage: "Esta etapa está concluída. Consulte o acompanhamento da transferência.",
       proofUploadFailed: "Não foi possível enviar o comprovativo.",
       copiedTitle: "Copiado",
       copiedMessage: "{label} copiado para a área de transferência.",
@@ -3547,7 +3552,7 @@ export const pt = {
       notFoundDescription: "Esta transferência não existe ou já não está acessível.",
       backToTransfers: "Voltar às transferências",
       successTitle: "Receção registada",
-      successDescription: "A sua declaração foi enviada. O cambista poderá validar a receção.",
+      successDescription: "A sua declaração encerra a transferência. Em caso de problema, abra uma reclamação.",
       viewTransfer: "Ver transferência",
       myTransfers: "As minhas transferências",
       eyebrow: "Receção",
@@ -3589,9 +3594,9 @@ export const pt = {
         none: "Nenhuma ação necessária de momento.",
       },
       clientWaiting: {
-        declared: "A sua declaração foi enviada. A empresa verifica a receção do pagamento.",
-        received: "A empresa prepara a transferência. Será notificado assim que for confirmada.",
-        paidOut: "A transferência foi confirmada. Em breve poderá declarar a receção dos fundos.",
+        declared: "A sua declaração foi enviada. Aguarde que a empresa confirme a receção do pagamento.",
+        received: "A empresa recebeu o seu pagamento. Aguarde que confirme a transferência com comprovativo — só depois poderá declarar a receção.",
+        paidOut: "Aguarde o comprovativo de transferência da empresa antes de declarar a receção dos fundos.",
         completed: "Transferência concluída.",
       },
       businessWaiting: {

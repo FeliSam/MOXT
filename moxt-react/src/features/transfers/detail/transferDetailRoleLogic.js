@@ -51,7 +51,8 @@ export function getTransferRoleLanes(transfer, access) {
       break
     case TRANSFER_STATUS.DECLARED:
       clientLane.completedSteps = ['Paiement déclaré']
-      clientLane.instruction = 'Votre déclaration est envoyée. L’entreprise vérifie la réception.'
+      clientLane.instruction =
+        'Votre déclaration est envoyée. Attendez que l’entreprise confirme la réception du paiement.'
       businessLane.isActive = true
       businessLane.isWaiting = false
       businessLane.statusLabel = 'À faire maintenant'
@@ -61,7 +62,8 @@ export function getTransferRoleLanes(transfer, access) {
       break
     case TRANSFER_STATUS.RECEIVED:
       clientLane.completedSteps = ['Paiement déclaré', 'Réception confirmée par l’entreprise']
-      clientLane.instruction = 'L’entreprise prépare le virement vers le destinataire.'
+      clientLane.instruction =
+        'Attendez que l’entreprise confirme le virement avec preuve — vous pourrez ensuite déclarer la réception des fonds.'
       businessLane.completedSteps = ['Réception du paiement confirmée']
       businessLane.isActive = true
       businessLane.isWaiting = false
@@ -82,12 +84,12 @@ export function getTransferRoleLanes(transfer, access) {
         clientLane.isWaiting = false
         clientLane.statusLabel = 'À faire maintenant'
         clientLane.instruction =
-          'L’entreprise a confirmé le virement. Déclarez la réception des fonds par le destinataire.'
+          'L’entreprise a confirmé le virement avec preuve. Vous pouvez maintenant déclarer la réception des fonds.'
         clientLane.actionType = 'declare_reception'
       }
       businessLane.completedSteps = ['Virement confirmé avec preuve']
       businessLane.statusLabel = 'Terminé'
-      businessLane.instruction = 'Le virement est confirmé. En attente de la déclaration de réception.'
+      businessLane.instruction = 'Le virement est confirmé. En attente de la déclaration de réception du client.'
       break
     case TRANSFER_STATUS.COMPLETED:
       clientLane.completedSteps = ['Paiement déclaré', 'Virement effectué', 'Réception confirmée']
@@ -221,18 +223,19 @@ const clientNextStepView = {
       'Effectuez le virement puis déclarez votre paiement avec une preuve avant la date limite.',
   },
   [TRANSFER_STATUS.DECLARED]: {
-    title: 'Déclaration envoyée',
-    description: 'Votre paiement a été déclaré. Vous serez notifié dès la suite du traitement.',
+    title: 'En attente de l’entreprise',
+    description:
+      'Votre paiement a été déclaré. Attendez que l’entreprise confirme la réception du paiement.',
   },
   [TRANSFER_STATUS.RECEIVED]: {
-    title: 'Virement en cours',
+    title: 'En attente du virement',
     description:
-      'L’entreprise confirme le virement vers le destinataire. Vous verrez la preuve dès qu’elle sera ajoutée.',
+      'L’entreprise a confirmé la réception. Attendez qu’elle confirme le virement avec preuve avant de déclarer la réception des fonds.',
   },
   [TRANSFER_STATUS.PAID_OUT]: {
     title: 'Virement confirmé',
     description:
-      'L’entreprise a confirmé le virement avec preuve. Déclarez la réception des fonds par le destinataire.',
+      'L’entreprise a confirmé le virement avec preuve. Vous pouvez maintenant déclarer la réception des fonds.',
   },
   [TRANSFER_STATUS.COMPLETED]: {
     title: 'Opération terminée',

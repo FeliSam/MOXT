@@ -90,12 +90,13 @@ export function buildTransferReceiptPayload(transfer) {
     userId: transfer.userId,
     relatedType: 'transfer',
     relatedId: transfer.id,
-    titleKey: 'transfers.receipt.storedTitle',
+    // DB column is `title` only — never send titleKey (i18n) to PostgREST.
     title: `Reçu transfert ${transfer.id}`,
     amount: transfer.totalToPay || transfer.amountSent || transfer.amount,
     currency: transfer.currencyFrom || transfer.currency || 'XOF',
     status: transfer.status,
     details: {
+      titleKey: 'transfers.receipt.storedTitle',
       direction: transfer.direction,
       exchanger: transfer.exchanger?.name,
       receivedAmount: transfer.receivedAmount,

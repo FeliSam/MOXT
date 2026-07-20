@@ -3539,6 +3539,11 @@ export const fr = {
       saving: "Enregistrement…",
       impossibleTitle: "Action impossible",
       impossibleMessage: "L'entreprise doit d'abord confirmer le virement avec preuve avant de déclarer la réception.",
+      waitBusinessTitle: "En attente de l’entreprise",
+      waitBusinessMessage:
+        "Vous pourrez déclarer la réception des fonds seulement après que l’entreprise ait confirmé la réception de votre paiement, puis le virement vers le destinataire avec preuve.",
+      alreadyDeclaredTitle: "Réception déjà déclarée",
+      alreadyDeclaredMessage: "Cette étape est terminée. Consultez le suivi du transfert pour la suite.",
       proofUploadFailed: "La preuve n'a pas pu être envoyée.",
       copiedTitle: "Copié",
       copiedMessage: "{label} copié dans le presse-papiers.",
@@ -3547,7 +3552,7 @@ export const fr = {
       notFoundDescription: "Ce transfert n’existe pas ou n’est plus accessible.",
       backToTransfers: "Retour aux transferts",
       successTitle: "Réception enregistrée",
-      successDescription: "Votre déclaration a été transmise. Le changeur pourra valider la réception.",
+      successDescription: "Votre déclaration clôture le transfert. En cas de problème, ouvrez une réclamation.",
       viewTransfer: "Voir le transfert",
       myTransfers: "Mes transferts",
       eyebrow: "Réception",
@@ -3589,9 +3594,9 @@ export const fr = {
         none: "Aucune action requise pour le moment.",
       },
       clientWaiting: {
-        declared: "Votre déclaration est envoyée. L’entreprise vérifie la réception du paiement.",
-        received: "L’entreprise prépare le virement. Vous serez notifié dès qu’il sera confirmé.",
-        paidOut: "Le virement a été confirmé. Vous pourrez bientôt déclarer la réception des fonds.",
+        declared: "Votre déclaration est envoyée. Attendez que l’entreprise confirme la réception du paiement.",
+        received: "L’entreprise a reçu votre paiement. Attendez qu’elle confirme le virement vers le destinataire avec preuve — ensuite seulement vous pourrez déclarer la réception.",
+        paidOut: "Attendez la preuve de virement de l’entreprise avant de déclarer la réception des fonds.",
         completed: "Transfert terminé.",
       },
       businessWaiting: {
