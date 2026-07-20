@@ -55,6 +55,18 @@ describe('transferSlice', () => {
     expect(state.items).toHaveLength(0)
   })
 
+  it('refuse un transfert sans proprietaire entreprise', () => {
+    const state = reducer(
+      { items: [] },
+      createTransfer({
+        ...payload,
+        exchanger: { ...payload.exchanger, ownerId: null },
+      }),
+    )
+
+    expect(state.items).toHaveLength(0)
+  })
+
   it('autorise la declaration puis l annulation du paiement', () => {
     const created = reducer({ items: [] }, createTransfer(payload))
     const id = created.items[0].id

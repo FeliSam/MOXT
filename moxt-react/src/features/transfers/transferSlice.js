@@ -36,8 +36,13 @@ const transferSlice = createSlice({
         sender,
         user,
       }) {
-        if (!exchanger || matchUserId(exchanger.ownerId, user.id)) {
-          return { payload: { blocked: true, reason: 'self_business_transfer' } }
+        if (!exchanger || !exchanger.ownerId || matchUserId(exchanger.ownerId, user.id)) {
+          return {
+            payload: {
+              blocked: true,
+              reason: !exchanger?.ownerId ? 'missing_business_owner' : 'self_business_transfer',
+            },
+          }
         }
         const calculation = calculateTransfer(
           amount,

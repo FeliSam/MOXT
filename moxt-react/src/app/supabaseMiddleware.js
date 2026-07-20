@@ -698,6 +698,20 @@ const handlers = {
   // ── Transferts ────────────────────────────────────────────────────────────────
   'transfers/createTransfer': async (payload) => {
     if (payload.blocked) return
+    let businessOwnerId = payload.businessOwnerId || null
+    if (!businessOwnerId && payload.businessId) {
+      const { data: businessRow } = await supabase
+        .from('businesses')
+        .select('owner_id')
+        .eq('id', payload.businessId)
+        .maybeSingle()
+      businessOwnerId = businessRow?.owner_id || null
+    }
+    if (!businessOwnerId) {
+      throw new Error(
+        "Impossible de créer le transfert : propriétaire de l'entreprise introuvable. Réessayez ou choisissez un autre changeur.",
+      )
+    }
     const remotePayload = {
       amountSent: payload.amountSent,
       amountReceived: payload.amountReceived,
@@ -715,7 +729,7 @@ const handlers = {
         userId: payload.userId,
         originCountry: payload.originCountry,
         businessId: payload.businessId,
-        businessOwnerId: payload.businessOwnerId,
+        businessOwnerId,
         status: payload.status,
         direction: payload.direction,
         amount: payload.amountSent,
