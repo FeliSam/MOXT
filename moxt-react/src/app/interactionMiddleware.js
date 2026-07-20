@@ -269,23 +269,6 @@ export const interactionMiddleware = (store) => {
     )
   }
 
-  if (
-    action.type === 'jobs/applyToJob' &&
-    after.jobs.applications.length > before.jobs.applications.length
-  ) {
-    const job = after.jobs.items.find((item) => item.id === action.payload.jobId)
-    notify(store, {
-      userId: job?.ownerId,
-      title: appText('notificationsFeed.newApplication'),
-      message: appText('notificationsFeed.newApplicationBody', {
-        name: action.payload.applicantName,
-        title: job?.title,
-      }),
-      type: 'job',
-      link: `/jobs/${job?.id}`,
-    })
-  }
-
   if (action.type === 'jobs/updateApplicationStatus') {
     const application = after.jobs.applications.find((item) => item.id === action.payload.id)
     const previous = before.jobs.applications.find((item) => item.id === action.payload.id)
@@ -302,23 +285,6 @@ export const interactionMiddleware = (store) => {
         link: `/jobs/${application.jobId}`,
       })
     }
-  }
-
-  if (
-    action.type === 'events/registerForEvent' &&
-    after.events.registrations.length > before.events.registrations.length
-  ) {
-    const event = after.events.items.find((item) => item.id === action.payload.eventId)
-    notify(store, {
-      userId: event?.ownerId,
-      title: appText('notificationsFeed.newRegistration'),
-      message: appText('notificationsFeed.newRegistrationBody', {
-        name: action.payload.participantName,
-        title: event?.title,
-      }),
-      type: 'event',
-      link: `/events/${event?.id}`,
-    })
   }
 
   if (action.type === 'events/updateRegistrationStatus') {
@@ -351,23 +317,6 @@ export const interactionMiddleware = (store) => {
         link: `/parcels/${parcel.id}`,
       })
     }
-  }
-
-  if (
-    action.type === 'parcels/requestParcelReservation' &&
-    after.parcels.requests.length > before.parcels.requests.length
-  ) {
-    const request = action.payload
-    notify(store, {
-      userId: request.ownerId,
-      title: appText('notificationsFeed.newParcelRequest'),
-      message: appText('notificationsFeed.newParcelRequestBody', {
-        name: request.requesterName,
-        kg: request.kg,
-      }),
-      type: 'parcel',
-      link: `/parcels/${request.parcelId}`,
-    })
   }
 
   if (action.type === 'parcels/updateParcelRequestStatus') {

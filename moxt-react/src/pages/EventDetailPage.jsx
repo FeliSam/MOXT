@@ -9,7 +9,7 @@ import {
   FiUsers,
 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
 import { EntityVerifiedName } from '../components/ui/EntityVerifiedName'
@@ -28,6 +28,7 @@ import { ReshareButton } from '../components/ui/ReshareButton'
 import { DetailFloatingActions } from '../components/ui/DetailFloatingActions'
 import { FavoriteButton } from '../features/account/FavoriteButton'
 import { ContactButton } from '../features/communications/ContactButton'
+import { openRelatedConversation } from '../features/communications/openRelatedConversation'
 import { cancelRegistration, registerForEvent, reportEvent } from '../features/events/eventSlice'
 import { EventParticipantsSection } from '../features/events/EventParticipantsSection'
 import {
@@ -53,6 +54,7 @@ function resolveStatusLabel(status, t) {
 export function EventDetailPage() {
   const { t } = useLanguage()
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const { eventId } = useParams()
   const user = useSelector((state) => state.auth.user)
   const event = useSelector((state) => state.events.items.find((item) => item.id === eventId))
@@ -62,6 +64,7 @@ export function EventDetailPage() {
   const publisherProfile = usePublisherDetailProfile(event, 'event')
   const [reportOpen, setReportOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(null)
+  const [registering, setRegistering] = useState(false)
   if (!event) return <Card>{t('events.detail.notFound')}</Card>
   const registration = registrations.find((item) => item.userId === user.id)
   const registered = registration && registration.status !== 'cancelled'
@@ -74,6 +77,31 @@ export function EventDetailPage() {
   const publishedLabel = event.createdAt
     ? t('events.detail.publishedOn', { date: formatDateTime(event.createdAt) })
     : null
+
+  async function handleRegister() {
+    if (registering) return
+    setRegistering(true)
+    dispatch(
+      registerForEvent({
+        eventId,
+        userId: user.id,
+        participantName: `${user.firstName} ${user.lastName}`,
+      }),
+    )
+    await openRelatedConversation({
+      dispatch,
+      navigate,
+      user,
+      ownerId: event.ownerId,
+      relatedType: 'event',
+      relatedId: event.id,
+      relatedPath: `/events/${event.id}`,
+      relatedEntity: event,
+      relatedTitle: event.title,
+      initialMessage: t('events.detail.registerChatMessage'),
+    })
+    setRegistering(false)
+  }
 
   return (
     <div className="grid gap-7">
@@ -257,17 +285,10 @@ export function EventDetailPage() {
             <Button
               className="mt-5"
               icon={FiCheckCircle}
-              onClick={() =>
-                dispatch(
-                  registerForEvent({
-                    eventId,
-                    userId: user.id,
-                    participantName: `${user.firstName} ${user.lastName}`,
-                  }),
-                )
-              }
+              disabled={registering}
+              onClick={handleRegister}
             >
-              {t('events.detail.register')}
+              {registering ? t('events.detail.registering') : t('events.detail.register')}
             </Button>
           )}
         </Card>

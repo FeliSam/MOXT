@@ -2040,7 +2040,9 @@ export const es = {
       nextStep: "Próximo paso",
       cancelRegistration: "Cancelar a minha inscrición",
       eventFull: "Este evento está esgotado.",
-      register: "Inscrever-me",
+      register: "Inscribirme y escribir",
+      registering: "Inscribiendo…",
+      registerChatMessage: "Hola, me gustaría inscribirme en su evento.",
       practicalInfo: "Informaciones práticas",
       facts: {
         organizer: "Organizador",
@@ -2168,6 +2170,8 @@ export const es = {
         requestRejected: "Pedido recusado",
         invalidWeightTitle: "Peso inválido",
         invalidWeightMessage: "Indica un peso entre 1 y {max} kg.",
+        messageRequiredTitle: "Mensaje obligatorio",
+        messageRequiredBody: "Añade un mensaje corto para el transportista.",
         requestSentTitle: "Pedido enviado",
         requestSentMessage: "O tu pedido de {kg} kg foi enviado ao transportador."
       },
@@ -2193,10 +2197,14 @@ export const es = {
       business: "Empresa",
       reserve: {
         title: "Reservar lugar",
-        description: "Peça una reserva. O transportador validará o tu pedido.",
+        description: "Indica el peso y un mensaje: la solicitud va al chat del transportista.",
         pending: "Pedido em curso · {kg} kg · à espera de resposta",
         weightLabel: "Peso (kg)",
-        submit: "Enviar pedido"
+        messageLabel: "Mensaje",
+        messagePlaceholder: "Contenido del paquete, ciudad de entrega, restricciones…",
+        chatMessage: "Hola, me gustaría reservar {kg} kg.\n\n{message}",
+        submit: "Enviar en mensajes",
+        sending: "Enviando…"
       },
       requests: {
         title: "Pedidos recebidos",
@@ -2327,7 +2335,7 @@ export const es = {
       nextStepLabel: "Próximo paso",
       nextStep: {
         submittedTitle: "Candidatura enviada",
-        submittedDescription: "O reclutador pode aceitar o recusar a tu candidatura na área de gestão.",
+        submittedDescription: "Tu mensaje se envió al reclutador en la mensajería MOXT.",
         acceptedTitle: "Candidatura aceite",
         acceptedDescription: "Contacte o reclutador para organizar os próximos pasos.",
         rejectedTitle: "Candidatura recusada",
@@ -2335,7 +2343,8 @@ export const es = {
       },
       withdraw: "Retirar a minha candidatura",
       message: "Mensaje",
-      apply: "Candidatar-me",
+      apply: "Candidatarme y escribir",
+      applying: "Enviando…",
       infoTitle: "Informaciones sobre o posto",
       facts: {
         company: "Empresa",

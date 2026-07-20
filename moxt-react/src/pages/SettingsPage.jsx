@@ -572,13 +572,13 @@ function NotifToggle({ label, description, checked, onChange }) {
       onClick={() => onChange(!checked)}
       className={`flex items-center gap-3 rounded-2xl border p-3 text-left transition ${
         checked
-          ? 'border-brand-200 bg-brand-50 dark:border-brand-800 dark:bg-brand-950/30'
-          : 'border-[var(--app-border)] bg-[var(--app-surface-muted)]'
+          ? 'border-brand-300 bg-brand-50 text-slate-900 dark:border-brand-600 dark:bg-brand-950 dark:text-brand-50'
+          : 'border-[var(--app-border)] bg-[var(--app-surface-muted)] text-[var(--app-text)]'
       }`}
     >
       <span
         className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
-          checked ? 'bg-brand-600' : 'bg-[var(--app-border)]'
+          checked ? 'bg-brand-600 dark:bg-brand-500' : 'bg-[var(--app-border)]'
         }`}
       >
         <span
@@ -588,8 +588,16 @@ function NotifToggle({ label, description, checked, onChange }) {
         />
       </span>
       <span className="min-w-0">
-        <strong className="block text-sm">{label}</strong>
-        <span className="block text-xs text-[var(--app-text-muted)]">{description}</span>
+        <strong className="block text-sm text-inherit">{label}</strong>
+        <span
+          className={`block text-xs ${
+            checked
+              ? 'text-slate-600 dark:text-brand-100/80'
+              : 'text-[var(--app-text-muted)]'
+          }`}
+        >
+          {description}
+        </span>
       </span>
     </button>
   )

@@ -116,6 +116,7 @@ export const routeMetadata = [
   { pattern: /^\/wallet$/, title: 'Portefeuille', eyebrow: 'Finances' },
   { pattern: /^\/payments$/, title: 'Paiements', eyebrow: 'Finances' },
   { pattern: /^\/receipts$/, title: 'Reçus', eyebrow: 'Finances' },
+  { pattern: /^\/receipts\/[^/]+$/, title: 'Détail du reçu', eyebrow: 'Finances' },
   { pattern: /^\/disputes$/, title: 'Mes litiges', eyebrow: 'Compte' },
   {
     pattern: /^\/businesses\/[^/]+$/,

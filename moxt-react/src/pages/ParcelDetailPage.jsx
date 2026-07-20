@@ -1,6 +1,6 @@
 import { FiArrowRight, FiBox, FiCalendar, FiDownload, FiEdit2, FiMapPin, FiSend, FiShield } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useState } from 'react'
 import { Badge, VerifiedBadge } from '../components/ui/Badge'
 import { EntityVerifiedName } from '../components/ui/EntityVerifiedName'
@@ -19,6 +19,7 @@ import { DetailFloatingActions } from '../components/ui/DetailFloatingActions'
 import { useLanguage } from '../contexts/useLanguage'
 import { FavoriteButton } from '../features/account/FavoriteButton'
 import { ContactButton } from '../features/communications/ContactButton'
+import { openRelatedConversation } from '../features/communications/openRelatedConversation'
 import { buildParcelSnapshot } from '../features/communications/relatedSnapshot'
 import {
   requestParcelReservation,
@@ -41,6 +42,7 @@ import { usePublisherDetailProfile } from '../features/publications/usePublisher
 
 export function ParcelDetailPage() {
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const { t } = useLanguage()
   const { parcelId } = useParams()
   const user = useSelector((state) => state.auth.user)
@@ -49,6 +51,8 @@ export function ParcelDetailPage() {
     state.parcels.requests.filter((item) => item.parcelId === parcelId),
   )
   const [reserveKg, setReserveKg] = useState('')
+  const [reserveMessage, setReserveMessage] = useState('')
+  const [sendingRequest, setSendingRequest] = useState(false)
   const myRequest = requests.find(
     (item) => item.userId === user.id && item.status === 'submitted',
   )
@@ -94,8 +98,9 @@ export function ParcelDetailPage() {
     )
   }
 
-  function submitReservation() {
+  async function submitReservation() {
     const kg = Number(reserveKg)
+    const message = reserveMessage.trim()
     if (!kg || kg <= 0 || kg > parcel.remainingKg) {
       dispatch(
         addToast({
@@ -108,6 +113,17 @@ export function ParcelDetailPage() {
       )
       return
     }
+    if (message.length < 5) {
+      dispatch(
+        addToast({
+          title: t('parcels.detail.toast.messageRequiredTitle'),
+          message: t('parcels.detail.toast.messageRequiredBody'),
+          tone: 'error',
+        }),
+      )
+      return
+    }
+    setSendingRequest(true)
     dispatch(
       requestParcelReservation({
         parcelId: parcel.id,
@@ -118,14 +134,22 @@ export function ParcelDetailPage() {
         kg,
       }),
     )
+    const chatMessage = t('parcels.detail.reserve.chatMessage', { kg, message })
+    await openRelatedConversation({
+      dispatch,
+      navigate,
+      user,
+      ownerId: parcel.ownerId,
+      relatedType: 'parcel',
+      relatedId: parcel.id,
+      relatedPath: `/parcels/${parcel.id}`,
+      relatedEntity: parcel,
+      relatedTitle: routeTitle,
+      initialMessage: chatMessage,
+    })
     setReserveKg('')
-    dispatch(
-      addToast({
-        title: t('parcels.detail.toast.requestSentTitle'),
-        message: t('parcels.detail.toast.requestSentMessage', { kg }),
-        tone: 'success',
-      }),
-    )
+    setReserveMessage('')
+    setSendingRequest(false)
   }
 
   const routeDescription = distributionDate
@@ -283,7 +307,7 @@ export function ParcelDetailPage() {
                 {t('parcels.detail.reserve.pending', { kg: myRequest.kg })}
               </p>
             ) : (
-              <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+              <div className="mt-4 grid gap-3">
                 <Input
                   id="parcel-reserve-kg"
                   label={t('parcels.detail.reserve.weightLabel')}
@@ -293,8 +317,21 @@ export function ParcelDetailPage() {
                   value={reserveKg}
                   onChange={(event) => setReserveKg(event.target.value)}
                 />
-                <Button icon={FiSend} onClick={submitReservation}>
-                  {t('parcels.detail.reserve.submit')}
+                <label className="grid gap-1.5">
+                  <span className="text-sm font-semibold">
+                    {t('parcels.detail.reserve.messageLabel')}
+                  </span>
+                  <textarea
+                    className="min-h-28 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3.5 text-sm"
+                    placeholder={t('parcels.detail.reserve.messagePlaceholder')}
+                    value={reserveMessage}
+                    onChange={(event) => setReserveMessage(event.target.value)}
+                  />
+                </label>
+                <Button icon={FiSend} disabled={sendingRequest} onClick={submitReservation}>
+                  {sendingRequest
+                    ? t('parcels.detail.reserve.sending')
+                    : t('parcels.detail.reserve.submit')}
                 </Button>
               </div>
             )}

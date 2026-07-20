@@ -102,6 +102,8 @@ const camelMap = {
   listing_id: 'listingId',
   job_id: 'jobId',
   applicant_name: 'applicantName',
+  requester_name: 'requesterName',
+  participant_name: 'participantName',
   experience_level: 'experienceLevel',
   salary_period: 'salaryPeriod',
   start_date: 'startDate',

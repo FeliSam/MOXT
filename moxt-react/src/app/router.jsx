@@ -140,6 +140,7 @@ const RegisterPage = lazyPage(() => import('../pages/RegisterPage'), 'RegisterPa
 const AuthCallbackPage = lazyPage(() => import('../pages/AuthCallbackPage'), 'AuthCallbackPage')
 const ResetPasswordPage = lazyPage(() => import('../pages/ResetPasswordPage'), 'ResetPasswordPage')
 const ReceiptsPage = lazyPage(() => import('../pages/ReceiptsPage'), 'ReceiptsPage')
+const ReceiptDetailPage = lazyPage(() => import('../pages/ReceiptDetailPage'), 'ReceiptDetailPage')
 const SupportPage = lazyPage(() => import('../pages/SupportPage'), 'SupportPage')
 const SettingsPage = lazyPage(() => import('../pages/SettingsPage'), 'SettingsPage')
 const VersionPage = lazyPage(() => import('../pages/VersionPage'), 'VersionPage')
@@ -246,6 +247,7 @@ export function AppRouter() {
             <Route path="/referral" element={<ReferralPage />} />
             <Route path="/payments" element={<PaymentsPage />} />
             <Route path="/receipts" element={<ReceiptsPage />} />
+            <Route path="/receipts/:receiptId" element={<ReceiptDetailPage />} />
             <Route path="/disputes" element={<DisputesPage />} />
             <Route
               path="/transfer-detail"

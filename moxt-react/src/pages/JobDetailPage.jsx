@@ -10,7 +10,7 @@ import {
   FiUsers,
 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Alert } from '../components/ui/Alert'
 import { BackButton } from '../components/ui/BackButton'
 import { Badge, VerifiedBadge } from '../components/ui/Badge'
@@ -28,6 +28,7 @@ import { ReshareButton } from '../components/ui/ReshareButton'
 import { DetailFloatingActions } from '../components/ui/DetailFloatingActions'
 import { FavoriteButton } from '../features/account/FavoriteButton'
 import { ContactButton } from '../features/communications/ContactButton'
+import { openRelatedConversation } from '../features/communications/openRelatedConversation'
 import { createJobSchemas } from '../features/jobs/jobSchemas'
 import { applyToJob, reportJob, withdrawApplication } from '../features/jobs/jobSlice'
 import { applicationsForJob, applicationJobId, applicationUserId } from '../features/jobs/jobUtils'
@@ -69,6 +70,7 @@ const APPLICATION_NEXT_STEPS = {
 
 export function JobDetailPage() {
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const { t } = useLanguage()
   const { jobId } = useParams()
   const user = useSelector((state) => state.auth.user)
@@ -84,6 +86,7 @@ export function JobDetailPage() {
   const publisherProfile = usePublisherDetailProfile(job, 'job')
   const [reportOpen, setReportOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(null)
+  const [applying, setApplying] = useState(false)
   const emptyLabel = t(JOB_EMPTY_LABEL_KEY)
   const sectorLabel = jobSectorLabel(t, job?.sector)
   const contractLabel = jobContractLabel(t, job?.contractType)
@@ -96,7 +99,9 @@ export function JobDetailPage() {
   const formik = useFormik({
     initialValues: { message: '' },
     validationSchema: createJobSchemas(t).applicationSchema,
-    onSubmit: (values) =>
+    onSubmit: async (values) => {
+      if (!job || applying) return
+      setApplying(true)
       dispatch(
         applyToJob({
           ...values,
@@ -104,7 +109,21 @@ export function JobDetailPage() {
           userId: user.id,
           applicantName: `${user.firstName} ${user.lastName}`,
         }),
-      ),
+      )
+      await openRelatedConversation({
+        dispatch,
+        navigate,
+        user,
+        ownerId: job.ownerId,
+        relatedType: 'job',
+        relatedId: job.id,
+        relatedPath: `/jobs/${job.id}`,
+        relatedEntity: job,
+        relatedTitle: job.title,
+        initialMessage: values.message.trim(),
+      })
+      setApplying(false)
+    },
   })
   if (!job) return <Card>{t('jobs.detail.notFound')}</Card>
   const jobStatus = statusMeta(job.status, t)
@@ -294,8 +313,8 @@ export function JobDetailPage() {
                   <span className="text-xs text-red-600">{formik.errors.message}</span>
                 ) : null}
               </label>
-              <Button type="submit" icon={FiSend}>
-                {t('jobs.detail.apply')}
+              <Button type="submit" icon={FiSend} disabled={applying || formik.isSubmitting}>
+                {applying ? t('jobs.detail.applying') : t('jobs.detail.apply')}
               </Button>
             </form>
           )}

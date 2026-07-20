@@ -6,6 +6,10 @@ import { reviewToRemoteRow } from '../features/reviews/reviewRemote'
 import { identityToRemoteRow } from '../features/identity/identityRemote'
 import { p2pOfferToRemoteRow, p2pOrderToRemoteRow, reportToRemoteRow, subscriberBanToRemoteRow, subscriberReportToRemoteRow } from '../features/sync/entityRemote'
 import {
+  eventRegistrationToRemoteRow,
+  parcelRequestToRemoteRow,
+} from '../features/sync/interestRemote'
+import {
   persistConversationRemote,
   persistMessageForConversation,
   persistMessageRemote,
@@ -84,6 +88,8 @@ function toSnake(obj) {
     startDate: 'start_date',
     applicationDeadline: 'application_deadline',
     applicantName: 'applicant_name',
+    requesterName: 'requester_name',
+    participantName: 'participant_name',
     expiresAt: 'expires_at',
     startAt: 'start_at',
     logoUrl: 'logo_url',
@@ -418,7 +424,10 @@ const handlers = {
     await upsert('parcels', cleaned)
   },
   'parcels/requestParcelReservation': async (payload) => {
-    await upsert('parcel_requests', payload)
+    const { error } = await supabase
+      .from('parcel_requests')
+      .upsert(parcelRequestToRemoteRow(payload), { onConflict: 'id' })
+    if (error) throw error
   },
   'parcels/updateParcelRequestStatus': async (payload, state) => {
     const request = state.parcels.requests.find((r) => r.id === payload.id)
@@ -497,10 +506,9 @@ const handlers = {
     await upsert('events', payload)
   },
   'events/registerForEvent': async (payload) => {
-    const { error } = await supabase.from('event_registrations').upsert(
-      { ...toSnake(payload), event_id: payload.eventId, user_id: payload.userId },
-      { onConflict: 'id' },
-    )
+    const { error } = await supabase
+      .from('event_registrations')
+      .upsert(eventRegistrationToRemoteRow(payload), { onConflict: 'id' })
     if (error) throw error
   },
   'events/updateRegistrationStatus': async (payload) => {

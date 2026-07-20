@@ -23,6 +23,7 @@ const PHASE_THREE_PAGES = [
   'ProfessionalPage.jsx',
   'FavoritesPage.jsx',
   'ReceiptsPage.jsx',
+  'ReceiptDetailPage.jsx',
   'NotificationsPage.jsx',
   'SupportPage.jsx',
   'DocumentsPage.jsx',

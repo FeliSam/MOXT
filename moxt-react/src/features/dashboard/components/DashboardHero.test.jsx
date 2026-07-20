@@ -24,7 +24,7 @@ vi.mock('../../transfers/DashboardTransferCalculator', () => ({
 }))
 
 describe('DashboardHero', () => {
-  it('garde un seul CTA principal et des liens secondaires', () => {
+  it('affiche les CTA Accueil en boutons (transfert, actualités, guide)', () => {
     render(
       <MemoryRouter>
         <DashboardHero user={{ firstName: 'Amina', verified: true }} onOpenCalculator={() => undefined} />
