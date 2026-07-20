@@ -1,7 +1,6 @@
--- Enforce two-party transfer workflow:
--- - client cannot create a transfer against their own business
--- - status transitions are role-bound (sender vs business owner)
--- Admins/superadmins/moderators may override.
+-- Fix: operator does not exist: text = uuid
+-- transfers.user_id / business_owner_id or profiles.id may be text in some envs;
+-- always compare via ::text like other MOXT RLS policies.
 
 create or replace function public.moxt_is_staff_user(uid uuid)
 returns boolean
@@ -71,7 +70,6 @@ begin
     end if;
 
     if old.status = 'pending_payment' and new.status = 'expired' then
-      -- Either party (or client-side expiry sync) may mark expired.
       return new;
     end if;
 
@@ -96,23 +94,5 @@ begin
   return new;
 end;
 $$;
-
-drop trigger if exists moxt_enforce_transfer_roles on public.transfers;
-create trigger moxt_enforce_transfer_roles
-  before insert or update on public.transfers
-  for each row
-  execute function public.moxt_enforce_transfer_roles();
-
-drop policy if exists "MOXT insert transfers" on public.transfers;
-create policy "MOXT insert transfers" on public.transfers
-  for insert to authenticated
-  with check (
-    user_id::text = (select auth.uid())::text
-    and (
-      business_owner_id is null
-      or business_owner_id::text is distinct from (select auth.uid())::text
-      or public.moxt_is_staff_user(auth.uid())
-    )
-  );
 
 notify pgrst, 'reload schema';
