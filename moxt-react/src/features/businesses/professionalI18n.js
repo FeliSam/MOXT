@@ -5,11 +5,11 @@ export const PROFESSIONAL_FR_SOURCES = {
   'professional.page.emptyDescription':
     'Un profil professionnel est nécessaire pour regrouper et piloter vos publications.',
   'professional.page.createBusiness': 'Créer mon entreprise',
-  'professional.page.eyebrow': 'Espace professionnel',
+  'professional.page.eyebrow': 'Mon entreprise',
   'professional.page.description':
     'Demandes, équipe, documents, publications et performances dans un espace adapté à votre activité.',
   'professional.page.viewPublic': 'Voir la fiche publique',
-  'professional.page.tabsAria': "Sections de l'espace professionnel",
+  'professional.page.tabsAria': 'Sections de mon entreprise',
   'professional.page.metrics.profileComplete': 'Profil complété',
   'professional.page.metrics.requests': 'Demandes',
   'professional.page.metrics.publications': 'Publications',

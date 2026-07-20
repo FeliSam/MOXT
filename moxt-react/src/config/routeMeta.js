@@ -125,7 +125,7 @@ export const routeMetadata = [
     back: '/businesses',
   },
   { pattern: /^\/businesses$/, title: 'Entreprises', eyebrow: 'Services' },
-  { pattern: /^\/professional$/, title: 'Espace professionnel', eyebrow: 'Services' },
+  { pattern: /^\/professional$/, title: 'Mon entreprise', eyebrow: 'Services' },
   {
     pattern: /^\/parcels\/[^/]+$/,
     title: 'Détail du colis',

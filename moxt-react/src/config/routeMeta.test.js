@@ -46,13 +46,13 @@ describe('route metadata', () => {
     expect(primaryNavigationItems.some((item) => item.id === 'notifications')).toBe(false)
   })
 
-  it('resolves Centre de contrôle and espace professionnel metadata', () => {
+  it('resolves Centre de contrôle and mon entreprise metadata', () => {
     expect(getRouteMetadata('/admin')).toMatchObject({
       title: 'Centre de contrôle',
       eyebrow: 'Administration',
     })
     expect(getRouteMetadata('/professional')).toMatchObject({
-      title: 'Espace professionnel',
+      title: 'Mon entreprise',
       eyebrow: 'Services',
     })
   })

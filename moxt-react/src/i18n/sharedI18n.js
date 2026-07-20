@@ -82,7 +82,7 @@ export const SHARED_FR_SOURCES = {
   'shared.pages.receipts.title': 'Reçus',
   'shared.pages.disputes.title': 'Mes litiges',
   'shared.pages.businesses.title': 'Entreprises',
-  'shared.pages.professional.title': 'Espace professionnel',
+  'shared.pages.professional.title': 'Mon entreprise',
   'shared.pages.parcels.title': 'Colis',
   'shared.pages.marketplace.title': 'Marketplace',
   'shared.pages.myPublications.title': 'Mes publications',

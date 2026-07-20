@@ -110,7 +110,7 @@ export const navigationGroups = [
       },
       {
         id: 'professional',
-        label: 'Espace professionnel',
+        label: 'Mon entreprise',
         labelKey: 'nav.professional',
         path: '/professional',
         icon: FiGrid,

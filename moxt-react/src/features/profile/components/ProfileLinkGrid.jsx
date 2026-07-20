@@ -36,15 +36,15 @@ export function ProfileLinkGrid({ sections }) {
   const { t } = useLanguage()
 
   return (
-    <>
+    <div className="grid gap-4 sm:grid-cols-3 sm:gap-3 lg:gap-4">
       {sections.map((group) => {
         const title = t(group.titleKey)
         return (
-          <section key={group.id}>
+          <section key={group.id} className="min-w-0">
             <h2 className="mb-2.5 px-1 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--app-text-faint)]">
               {title}
             </h2>
-            <nav className="grid grid-cols-2 gap-2 lg:grid-cols-3" aria-label={title}>
+            <nav className="grid grid-cols-2 gap-2 sm:grid-cols-1" aria-label={title}>
               {group.links.map((link) => (
                 <ProfileLinkTile key={link.path} {...link} t={t} />
               ))}
@@ -52,6 +52,6 @@ export function ProfileLinkGrid({ sections }) {
           </section>
         )
       })}
-    </>
+    </div>
   )
 }

@@ -1,5 +1,4 @@
-import { FiBox, FiBriefcase, FiFileText, FiHome, FiMessageSquare, FiRepeat, FiShoppingBag } from 'react-icons/fi'
-import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
+import { FiBox, FiBriefcase, FiFileText, FiGrid, FiHome, FiMessageSquare, FiRepeat, FiShoppingBag } from 'react-icons/fi'
 
 /** Sidebar — ordre complet (messagerie + entreprise owner + actualité en fin desktop) */
 export const primaryNavigationItems = [
@@ -18,10 +17,10 @@ export const primaryNavigationItems = [
   },
   {
     id: 'businesses',
-    label: 'Entreprise',
-    labelKey: 'nav.business',
+    label: 'Mon entreprise',
+    labelKey: 'nav.professional',
     path: '/professional',
-    icon: HiOutlineBuildingOffice2,
+    icon: FiGrid,
     desktopOnly: true,
     requiresOwnedBusiness: true,
   },

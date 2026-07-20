@@ -300,7 +300,7 @@ export const es = {
     marketplace: "Mercado",
     parcels: "Envíos",
     jobs: "Empleos",
-    business: "Empresa",
+    business: "Mi empresa",
     businesses: "Empresas",
     news: "Actualidad",
     finances: "Finanzas",
@@ -315,7 +315,7 @@ export const es = {
     guideAdmin: "Gestión de la guía",
     p2p: "Intercambio P2P",
     exchangers: "Cambiadores",
-    professional: "Espacio profesional",
+    professional: "Mi empresa",
     events: "Eventos",
     notifications: "Notificaciones",
     subscriptions: "Suscripciones",
@@ -1709,9 +1709,9 @@ export const es = {
       superadmin: "Superadministrador"
     },
     sections: {
-      account: "A minha cuenta",
-      trust: "Confiança y seguridad",
-      documents: "Documentos y assistência"
+      account: "Mi cuenta",
+      trust: "Confianza",
+      documents: "Documentos"
     },
     links: {
       personalInfo: "Informaciones pessoais",
@@ -5010,9 +5010,9 @@ export const es = {
       createBusiness: "Crear una empresa",
       pendingAlertTitle: "A tu empresa está em validación",
       pendingAlertBody: "aún no aparece no diretório para os otros membros. Com o estado «Verificado», será visível para toda a comunidad MOXT. Pode consultá-la y editá-la a partir do seu",
-      professionalSpaceLink: "espacio profesional",
+      professionalSpaceLink: "mi empresa",
       yourBusiness: "A tu empresa",
-      professionalSpace: "Espacio profesional",
+      professionalSpace: "Mi empresa",
       viewPublicProfile: "Ver a ficha pública",
       searchPlaceholder: "Empresa, serviço, domínio o ciudad...",
       filter: {
@@ -5252,7 +5252,7 @@ export const es = {
         event: "Eventos",
         post: "Publicaciones da comunidad"
       },
-      ownerTitle: "Espacio profesional — subscritores",
+      ownerTitle: "Mi empresa — suscriptores",
       ownerCount: "{count} membro(s) seguem atualmente a tu empresa.",
       ownerEmpty: "Aún sin subscritores — partilhe a ficha para desenvolver a audiência.",
       manage: "Gerir subscritores"
@@ -5286,7 +5286,7 @@ export const es = {
       emptyTitle: "Crie a tu empresa",
       emptyDescription: "É necessário un perfil profesional para agrupar y gerir as publicaciones.",
       createBusiness: "Crear a minha empresa",
-      eyebrow: "Espacio profesional",
+      eyebrow: "Mi empresa",
       description: "Pedidos, equipo, documentos, publicaciones y desempenho num espacio adaptado à atividade.",
       viewPublic: "Ver a ficha pública",
       tabsAria: "Secciones do espacio profesional",
@@ -6001,7 +6001,7 @@ export const es = {
         title: "Empresas"
       },
       professional: {
-        title: "Espacio profesional"
+        title: "Mi empresa"
       },
       parcels: {
         title: "Paquetes"

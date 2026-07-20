@@ -98,7 +98,7 @@ export const searchablePages = [
   },
   {
     id: 'page-professional',
-    title: 'Espace professionnel',
+    title: 'Mon entreprise',
     titleKey: 'shared.pages.professional.title',
     subtitle: 'Services',
     subtitleKey: 'shared.pages.groups.services',

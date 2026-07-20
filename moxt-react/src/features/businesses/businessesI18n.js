@@ -229,9 +229,9 @@ export const BUSINESSES_FR_SOURCES = {
   'businesses.page.pendingAlertTitle': 'Votre entreprise est en cours de validation',
   'businesses.page.pendingAlertBody':
     'n’apparaît pas encore dans l’annuaire pour les autres membres. Une fois le statut « Vérifié », elle sera visible par toute la communauté MOXT. Vous pouvez la consulter et la modifier depuis votre',
-  'businesses.page.professionalSpaceLink': 'espace professionnel',
+  'businesses.page.professionalSpaceLink': 'mon entreprise',
   'businesses.page.yourBusiness': 'Votre entreprise',
-  'businesses.page.professionalSpace': 'Espace professionnel',
+  'businesses.page.professionalSpace': 'Mon entreprise',
   'businesses.page.viewPublicProfile': 'Voir la fiche publique',
   'businesses.page.searchPlaceholder': 'Entreprise, service, domaine ou ville...',
   'businesses.page.filter.domain': 'Domaine',
@@ -467,7 +467,7 @@ export const BUSINESSES_FR_SOURCES = {
   'businesses.subscription.content.job': "Offres d'emploi",
   'businesses.subscription.content.event': 'Événements',
   'businesses.subscription.content.post': 'Publications communauté',
-  'businesses.subscription.ownerTitle': 'Espace professionnel — abonnés',
+  'businesses.subscription.ownerTitle': 'Mon entreprise — abonnés',
   'businesses.subscription.ownerCount': '{count} membre(s) suivent actuellement votre entreprise.',
   'businesses.subscription.ownerEmpty':
     'Aucun abonné pour le moment — partagez votre fiche pour développer votre audience.',
