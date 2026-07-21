@@ -20,6 +20,7 @@ const excludedActions = new Set([
   'communications/receiveRemoteMessage',
   'communications/receiveRemoteConversation',
   'communications/setConversationMessages',
+  'transfers/receiveRemoteTransfer',
   'audit/recordAudit',
 ])
 

@@ -13,6 +13,7 @@ import {
   EVENT_FORMAT_OPTIONS,
   EVENT_PUBLISH_CATEGORIES,
 } from '../features/events/eventPublishConfig'
+import { useUploadProgress } from '../hooks/useUploadProgress'
 import { updateEvent } from '../features/events/eventSlice'
 import { useLanguage } from '../contexts/useLanguage'
 import { publishOptionLabel, publishText } from '../features/publications/publishI18n'
@@ -38,6 +39,7 @@ export function EditEventPage() {
   const [form, setForm] = useState(null)
   const [gallery, setGallery] = useState({ entityId: null, photos: [] })
   const [saving, setSaving] = useState(false)
+  const { progress: uploadProgress, track: trackUpload } = useUploadProgress()
 
   if (!event) return <Card>{publishText(t, 'publish.event.edit.notFound')}</Card>
   if (event.ownerId !== user.id) return <Navigate to={`/events/${eventId}`} replace />
@@ -104,11 +106,13 @@ export function EditEventPage() {
     try {
       const newPhotos = photos.filter((photo) => photo.file)
       const uploaded = newPhotos.length
-        ? await storageService.uploadEventImages(
-            user.id,
-            eventId,
-            newPhotos.map((photo) => photo.file),
-            { version: Date.now().toString(36) },
+        ? await trackUpload((onProgress) =>
+            storageService.uploadEventImages(
+              user.id,
+              eventId,
+              newPhotos.map((photo) => photo.file),
+              { version: Date.now().toString(36), onProgress },
+            ),
           )
         : []
       let uploadIndex = 0
@@ -244,6 +248,7 @@ export function EditEventPage() {
             onRemove={removePhoto}
             label={publishText(t, 'publish.event.fields.posters')}
             hint={publishText(t, 'publish.event.fields.postersHint')}
+            progress={uploadProgress}
           />
           {values.format !== 'online' ? (
             <>

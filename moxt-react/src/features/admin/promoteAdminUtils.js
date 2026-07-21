@@ -48,6 +48,20 @@ export async function dispatchUserRole(dispatch, { actorRole, id, role, t }) {
           } catch {
             // ignore
           }
+        } else if (error.context && typeof error.context.text === 'function') {
+          try {
+            const text = await error.context.text()
+            if (text?.trim()) detail = text.trim().slice(0, 240)
+          } catch {
+            // ignore
+          }
+        }
+        if (/failed to send a request to the edge function/i.test(detail)) {
+          detail = adminText(
+            t,
+            'admin.promote.edgeUnreachable',
+            'Impossible de joindre la fonction de promotion. Vérifiez la connexion puis réessayez.',
+          )
         }
         throw new Error(detail)
       }

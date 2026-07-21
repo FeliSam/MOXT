@@ -14,6 +14,9 @@ import { publishOptionLabel, publishOptionSub, publishText } from '../features/p
 import { storageService } from '../services/storageService'
 import { addToast } from '../features/ui/uiSlice'
 import { createId } from '../services/createId'
+import { UploadProgress } from '../components/ui/UploadProgress'
+import { FileNameText } from '../components/ui/FileNameText'
+import { useUploadProgress } from '../hooks/useUploadProgress'
 
 export function EditParcelPage() {
   const dispatch = useDispatch()
@@ -26,6 +29,7 @@ export function EditParcelPage() {
   const [form, setForm] = useState(null)
   const [proofError, setProofError] = useState('')
   const [saving, setSaving] = useState(false)
+  const { progress: proofProgress, track: trackProofUpload } = useUploadProgress()
 
   if (!parcel) return <Card>{publishText(t, 'publish.parcel.edit.notFound')}</Card>
   if (parcel.ownerId !== user.id) return <Navigate to={`/parcels/${parcelId}`} replace />
@@ -78,8 +82,18 @@ export function EditParcelPage() {
     setProofError('')
     set('travelProofFile', { name: file.name, size: file.size, type: file.type, uploading: true })
     try {
-      const url = await storageService.uploadParcelProof(user.id, parcelId || createId('DRAFT'), file)
-      set('travelProofFile', { name: file.name, size: file.size, type: file.type, url })
+      const path = await trackProofUpload((onProgress) =>
+        storageService.uploadParcelProof(user.id, parcelId || createId('DRAFT'), file, {
+          onProgress,
+        }),
+      )
+      set('travelProofFile', {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        url: URL.createObjectURL(file),
+        path,
+      })
     } catch {
       setProofError(publishText(t, 'publish.parcel.toasts.uploadFailed.inline'))
       set('travelProofFile', null)
@@ -109,7 +123,7 @@ export function EditParcelPage() {
           travelProofName: travelProofFile?.name || null,
           travelProofType: travelProofFile?.type || null,
           travelProofSize: travelProofFile?.size || null,
-          travelProofUrl: travelProofFile?.url || null,
+          travelProofUrl: travelProofFile?.path || travelProofFile?.url || null,
         }),
       )
       navigate(`/parcels/${parcelId}`)
@@ -269,12 +283,17 @@ export function EditParcelPage() {
                     className="h-40 w-full rounded-xl object-cover"
                   />
                 ) : null}
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 items-center gap-3 overflow-hidden">
                   <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-950/40">
                     <FiFileText className="text-lg" />
                   </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold">{values.travelProofFile.name}</p>
+                  <div className="min-w-0 flex-1 overflow-hidden">
+                    <FileNameText
+                      as="p"
+                      name={values.travelProofFile.name}
+                      className="text-sm font-bold"
+                      maxLength={36}
+                    />
                     <p className="text-xs text-[var(--app-text-muted)]">
                       {values.travelProofFile.uploading
                         ? publishText(t, 'publish.parcel.fields.travelProofUploading')
@@ -312,6 +331,11 @@ export function EditParcelPage() {
               </label>
             )}
             {proofError ? <p className="text-xs font-bold text-red-600">{proofError}</p> : null}
+            {proofProgress.active ||
+            proofProgress.phase === 'done' ||
+            proofProgress.phase === 'error' ? (
+              <UploadProgress progress={proofProgress} compact />
+            ) : null}
           </label>
           <Input
             label={publishText(t, 'publish.parcel.fields.contact')}

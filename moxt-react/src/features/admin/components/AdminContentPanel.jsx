@@ -53,12 +53,14 @@ function ContentRow({ contentView, dispatch, item, setSelected, t }) {
         <button
           type="button"
           onClick={() => setSelected({ kind: contentView, item })}
-          className="min-w-0 flex-1 text-left hover:text-brand-700"
+          className="min-w-0 flex-1 overflow-hidden text-left hover:text-brand-700"
         >
-          <strong className="block text-sm">
+          <strong className="block truncate text-sm" title={contentDisplayTitle(contentView, item)}>
             {contentDisplayTitle(contentView, item)}
           </strong>
-          <p className="text-xs text-[var(--app-text-muted)]">{contentSubtitle(contentView, item, t)}</p>
+          <p className="truncate text-xs text-[var(--app-text-muted)]">
+            {contentSubtitle(contentView, item, t)}
+          </p>
         </button>
         <span
           className={`rounded-full px-2 py-0.5 text-[10px] font-black ${

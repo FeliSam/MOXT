@@ -174,12 +174,12 @@ export const interactionMiddleware = (store) => {
     triggers.handleSupportTicketReply(before, after, action)
   }
 
-  if (action.type === 'transfers/createTransfer') {
+  if (action.type === 'transfers/createTransfer' && !action.payload?.blocked) {
     notify(store, {
       userId: action.payload.businessOwnerId,
       title: appText('notificationsFeed.newTransferReceived'),
       message: appText('notificationsFeed.newTransferReceivedBody', {
-        name: action.payload.sender.firstName,
+        name: action.payload.sender?.firstName,
         id: action.payload.id,
       }),
       type: 'transfer',

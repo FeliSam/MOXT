@@ -1,5 +1,7 @@
 import {
+  FiAlertCircle,
   FiCalendar,
+  FiCheckCircle,
   FiFileText,
   FiInbox,
   FiPackage,
@@ -36,7 +38,12 @@ import {
 import { selectActiveBusinessForOwner } from '../features/businesses/businessVisibility'
 import { businessesOptionLabel } from '../features/businesses/businessesI18n'
 import { professionalText } from '../features/businesses/professionalI18n'
+import {
+  businessHasPublicationModules,
+  computeBusinessTransferStats,
+} from '../features/transfers/businessTransferStats'
 import { selectTransfersVisibleToUser } from '../features/transfers/transferSelectors'
+import { refreshVisibleTransfers } from '../features/transfers/transferSync'
 import { isBusinessDocumentType } from '../features/businesses/businessDocumentTypes'
 import { ActionsPanel } from './professional/ActionsPanel'
 import { DocumentsPanel } from './professional/DocumentsPanel'
@@ -51,7 +58,13 @@ import { SubscriptionsPanel } from './professional/SubscriptionsPanel'
 import { TransfersPanel } from './professional/TransfersPanel'
 import { TransferRateSettingsPanel } from './professional/TransferRateSettingsPanel'
 
-function buildProfessionalTabGroups({ hasTransfers, subscriberCount, reviewCount, pt }) {
+function buildProfessionalTabGroups({
+  hasTransfers,
+  showRequests,
+  subscriberCount,
+  reviewCount,
+  pt,
+}) {
   return [
     {
       id: 'identity',
@@ -66,7 +79,9 @@ function buildProfessionalTabGroups({ hasTransfers, subscriberCount, reviewCount
       label: pt('professional.tabs.groups.activity'),
       tabs: [
         { value: 'publications', label: pt('professional.tabs.publications') },
-        { value: 'requests', label: pt('professional.tabs.requests') },
+        ...(showRequests
+          ? [{ value: 'requests', label: pt('professional.tabs.requests') }]
+          : []),
         ...(hasTransfers
           ? [
               { value: 'transfers', label: pt('professional.tabs.transfers') },
@@ -86,7 +101,9 @@ function buildProfessionalTabGroups({ hasTransfers, subscriberCount, reviewCount
         },
         {
           value: 'reviews',
-          label: pt('professional.tabs.reviews'),
+          label: hasTransfers
+            ? pt('professional.tabs.reviewsTransfer')
+            : pt('professional.tabs.reviews'),
           count: reviewCount || undefined,
         },
         { value: 'members', label: pt('professional.tabs.members') },
@@ -141,6 +158,12 @@ export function ProfessionalPage() {
     if (!business?.id) return visible
     return visible.filter((item) => item.businessId === business.id)
   })
+
+  useEffect(() => {
+    if (!user?.id) return
+    dispatch(refreshVisibleTransfers({ userId: user.id, businessId: business?.id }))
+  }, [business?.id, dispatch, user?.id])
+
   const reviews = useSelector((state) =>
     state.reviews.items.filter(
       (item) => item.targetType === 'business' && item.targetId === business?.id,
@@ -151,6 +174,8 @@ export function ProfessionalPage() {
   )
 
   const enabledServices = useMemo(() => business?.services || [], [business])
+  const hasPublicationModules = businessHasPublicationModules(enabledServices)
+  const showRequests = hasPublicationModules
   const enabledKeys = enabledServices.map((service) => serviceContentMap[service]).filter(Boolean)
   const publications = enabledKeys.flatMap((key) =>
     content[key].map((item) => ({ ...item, contentType: key })),
@@ -160,15 +185,20 @@ export function ProfessionalPage() {
   const activity = activityByValue(business?.primaryActivity)
   const secondaryActivity = activityByValue(business?.secondaryActivity)
   const hasTransfers = enabledServices.includes('Transfert')
+  const transferStats = useMemo(
+    () => (hasTransfers ? computeBusinessTransferStats(transfers, rating) : null),
+    [hasTransfers, rating, transfers],
+  )
   const tabGroups = useMemo(
     () =>
       buildProfessionalTabGroups({
         hasTransfers,
+        showRequests,
         subscriberCount: subscribers.length,
         reviewCount: reviews.length,
         pt,
       }),
-    [hasTransfers, pt, reviews.length, subscribers.length],
+    [hasTransfers, pt, reviews.length, showRequests, subscribers.length],
   )
   const tabs = useMemo(() => flattenGroupedTabs(tabGroups), [tabGroups])
   const safeActive = tabs.some((item) => item.value === active) ? active : 'profile'
@@ -196,14 +226,32 @@ export function ProfessionalPage() {
         completion,
         content,
         enabledServices,
+        hasTransfers,
+        showRequests,
         publications,
         rating,
         requests,
-        transfers,
+        transferStats,
+        onOpenReviews: () => handleTabChange('reviews'),
+        onOpenTransfers: () => handleTabChange('transfers'),
         pt,
         t,
       }),
-    [activity, completion, content, enabledServices, publications, pt, rating, requests, transfers, t],
+    [
+      activity,
+      completion,
+      content,
+      enabledServices,
+      hasTransfers,
+      publications,
+      pt,
+      rating,
+      requests,
+      searchParams,
+      showRequests,
+      t,
+      transferStats,
+    ],
   )
 
   if (!business) {
@@ -254,7 +302,13 @@ export function ProfessionalPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {metrics.map((metric) => (
-          <Metric key={metric.label} value={metric.value} label={metric.label} icon={metric.icon} />
+          <Metric
+            key={metric.label}
+            value={metric.value}
+            label={metric.label}
+            icon={metric.icon}
+            onClick={metric.onClick}
+          />
         ))}
       </div>
 
@@ -281,10 +335,12 @@ export function ProfessionalPage() {
           members={members}
           publications={publications}
           requests={requests}
+          showRequests={showRequests}
           transfers={transfers}
+          transferStats={transferStats}
         />
       ) : null}
-      {safeActive === 'requests' ? (
+      {safeActive === 'requests' && showRequests ? (
         <RequestsPanel business={business} dispatch={dispatch} requests={requests} />
       ) : null}
       {safeActive === 'transfers' && hasTransfers ? (
@@ -315,9 +371,12 @@ export function ProfessionalPage() {
           rating={rating}
           requests={requests}
           transfers={transfers}
+          onOpenReviews={() => handleTabChange('reviews')}
         />
       ) : null}
-      {safeActive === 'reviews' ? <ReviewsPanel reviews={reviews} /> : null}
+      {safeActive === 'reviews' ? (
+        <ReviewsPanel reviews={reviews} rating={rating} transferMode={hasTransfers} />
+      ) : null}
       {safeActive === 'subscriptions' ? (
         <SubscriptionsPanel business={business} enabledServices={enabledServices} />
       ) : null}
@@ -326,18 +385,30 @@ export function ProfessionalPage() {
   )
 }
 
-function Metric({ icon: Icon, label, value }) {
-  return (
-    <Card className="flex items-center gap-4">
+function Metric({ icon: Icon, label, value, onClick }) {
+  const content = (
+    <>
       <span className="grid size-11 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
         <Icon />
       </span>
-      <div>
-        <strong className="block text-2xl">{value}</strong>
+      <div className="min-w-0">
+        <strong className="block truncate text-2xl">{value}</strong>
         <span className="text-xs text-[var(--app-text-muted)]">{label}</span>
       </div>
-    </Card>
+    </>
   )
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className="flex w-full items-center gap-4 rounded-[1.4rem] border border-[var(--app-border)] bg-[var(--app-surface)] p-4 text-left transition hover:border-[var(--app-accent)] hover:shadow-sm"
+      >
+        {content}
+      </button>
+    )
+  }
+  return <Card className="flex items-center gap-4">{content}</Card>
 }
 
 function buildBusinessMetrics({
@@ -345,10 +416,14 @@ function buildBusinessMetrics({
   completion,
   content,
   enabledServices,
+  hasTransfers,
+  showRequests,
   publications,
   rating,
   requests,
-  transfers,
+  transferStats,
+  onOpenReviews,
+  onOpenTransfers,
   pt,
   t,
 }) {
@@ -358,48 +433,67 @@ function buildBusinessMetrics({
       label: pt('professional.page.metrics.profileComplete'),
       value: `${completion}%`,
     },
-    {
-      icon: FiInbox,
-      label: pt('professional.page.metrics.requests'),
-      value: requests.length,
-    },
-    {
+  ]
+
+  if (hasTransfers && transferStats) {
+    metrics.push(
+      {
+        icon: FiRepeat,
+        label: pt('professional.page.metrics.inPipeline'),
+        value: transferStats.inPipeline,
+        onClick: onOpenTransfers,
+      },
+      {
+        icon: FiCheckCircle,
+        label: pt('professional.page.metrics.completedTransfers'),
+        value: transferStats.completed,
+        onClick: onOpenTransfers,
+      },
+      {
+        icon: FiAlertCircle,
+        label: pt('professional.page.metrics.awaitingAction'),
+        value: transferStats.awaitingBusinessAction,
+        onClick: onOpenTransfers,
+      },
+    )
+  } else {
+    if (showRequests) {
+      metrics.push({
+        icon: FiInbox,
+        label: pt('professional.page.metrics.requests'),
+        value: requests.length,
+      })
+    }
+    metrics.push({
       icon: FiFileText,
       label: pt('professional.page.metrics.publications'),
       value: publications.length,
-    },
-  ]
-
-  if (enabledServices.includes('Transfert')) {
-    metrics.push({
-      icon: FiRepeat,
-      label: pt('professional.page.metrics.transfersReceived'),
-      value: transfers.length,
     })
-  } else if (enabledServices.includes('Events')) {
-    metrics.push({
-      icon: FiCalendar,
-      label: pt('professional.page.metrics.events'),
-      value: content.events.length,
-    })
-  } else if (enabledServices.includes('Jobs')) {
-    metrics.push({
-      icon: FiUsers,
-      label: pt('professional.page.metrics.jobs'),
-      value: content.jobs.length,
-    })
-  } else if (enabledServices.includes('Colis')) {
-    metrics.push({
-      icon: FiPackage,
-      label: pt('professional.page.metrics.parcels'),
-      value: content.parcels.length,
-    })
-  } else if (enabledServices.includes('Marketplace')) {
-    metrics.push({
-      icon: FiShoppingBag,
-      label: pt('professional.page.metrics.listings'),
-      value: content.listings.length,
-    })
+    if (enabledServices.includes('Events')) {
+      metrics.push({
+        icon: FiCalendar,
+        label: pt('professional.page.metrics.events'),
+        value: content.events.length,
+      })
+    } else if (enabledServices.includes('Jobs')) {
+      metrics.push({
+        icon: FiUsers,
+        label: pt('professional.page.metrics.jobs'),
+        value: content.jobs.length,
+      })
+    } else if (enabledServices.includes('Colis')) {
+      metrics.push({
+        icon: FiPackage,
+        label: pt('professional.page.metrics.parcels'),
+        value: content.parcels.length,
+      })
+    } else if (enabledServices.includes('Marketplace')) {
+      metrics.push({
+        icon: FiShoppingBag,
+        label: pt('professional.page.metrics.listings'),
+        value: content.listings.length,
+      })
+    }
   }
 
   const activityLabel = businessesOptionLabel(t, activity)
@@ -414,6 +508,7 @@ function buildBusinessMetrics({
           count: rating.count,
         })
       : '—',
+    onClick: onOpenReviews,
   })
 
   return metrics

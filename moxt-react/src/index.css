@@ -2225,6 +2225,89 @@ html.locale-animating #root {
   flex-shrink: 0;
 }
 
+/* Empêche les noms de fichiers natifs d’élargir la page */
+input[type='file'] {
+  max-width: 100%;
+}
+
+/* ─── Upload progress ────────────────────────────────────────────────────── */
+.upload-progress {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--app-accent) 22%, var(--app-border));
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--app-accent-soft) 70%, transparent),
+      var(--app-surface)
+    );
+  padding: 0.85rem 1rem;
+  box-shadow: 0 8px 24px rgba(8, 112, 95, 0.08);
+}
+
+.upload-progress--compact {
+  padding: 0.65rem 0.8rem;
+  border-radius: 0.85rem;
+}
+
+.upload-progress--done {
+  border-color: color-mix(in srgb, #10b981 35%, var(--app-border));
+}
+
+.upload-progress--error {
+  border-color: color-mix(in srgb, #f43f5e 40%, var(--app-border));
+}
+
+.upload-progress-track {
+  position: relative;
+  height: 0.45rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-border) 80%, transparent);
+}
+
+.upload-progress-bar {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    var(--app-teal, #12bfa3),
+    color-mix(in srgb, var(--app-accent, #08705f) 85%, #0ea5e9)
+  );
+  box-shadow: 0 0 12px color-mix(in srgb, var(--app-teal, #12bfa3) 45%, transparent);
+  transition: width 180ms ease-out;
+  position: relative;
+}
+
+.upload-progress-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.35) 50%,
+    transparent 70%
+  );
+  background-size: 220% 100%;
+  animation: upload-progress-sheen 1.1s linear infinite;
+}
+
+@keyframes upload-progress-sheen {
+  from { background-position: 120% 0; }
+  to { background-position: -120% 0; }
+}
+
+.upload-progress--done .upload-progress-bar::after,
+.upload-progress--error .upload-progress-bar::after {
+  animation: none;
+  opacity: 0;
+}
+
 /* ─── Global search (desktop header) ─────────────────────────────────────── */
 @keyframes global-search-panel-in {
   from {

@@ -1,7 +1,15 @@
+import { avatarDisplayUrl } from './avatarDisplayUrl'
+
 const SIZES = {
   sm: 'size-9 text-[11px]',
   md: 'size-11 text-xs',
   lg: 'size-12 text-sm',
+}
+
+const SIZE_PX = {
+  sm: 72,
+  md: 96,
+  lg: 128,
 }
 
 function initialsFromName(name = '') {
@@ -29,14 +37,17 @@ export function EntityAvatar({
   const ringClass = ring
     ? 'ring-2 ring-[var(--app-surface)] ring-offset-1 ring-offset-[color-mix(in_srgb,var(--app-accent)_35%,transparent)]'
     : ''
+  const displaySrc = src ? avatarDisplayUrl(src, { width: SIZE_PX[size] || SIZE_PX.md }) : src
 
-  if (src) {
+  if (displaySrc) {
     return (
       <img
-        src={src}
+        src={displaySrc}
         alt={alt || name || ''}
         loading="lazy"
         decoding="async"
+        width={SIZE_PX[size] || SIZE_PX.md}
+        height={SIZE_PX[size] || SIZE_PX.md}
         className={`shrink-0 object-cover ${sizeClass} ${radius} ${ringClass} ${className}`}
       />
     )

@@ -12,6 +12,7 @@ import {
 } from './assistantAdminUtils'
 import { ASSISTANT_SUGGESTION_KEYS, messagesText } from './messagesI18n'
 import { llmAssistantProvider } from './llmAssistantProvider'
+import { shortenFileName } from '../../services/uploadProgress'
 
 export function AiAssistantPanel({ onBack, showBack = true, userId }) {
   const dispatch = useDispatch()
@@ -249,8 +250,11 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
               >
                 {message.text}
                 {message.attachment ? (
-                  <span className="mt-2 flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-xs">
-                    <FiPaperclip /> {message.attachment.name}
+                  <span className="mt-2 flex min-w-0 max-w-full items-center gap-2 overflow-hidden rounded-xl bg-white/10 px-3 py-2 text-xs">
+                    <FiPaperclip className="shrink-0" />
+                    <span className="min-w-0 truncate" title={message.attachment.name}>
+                      {shortenFileName(message.attachment.name, 28)}
+                    </span>
                   </span>
                 ) : null}
               </div>

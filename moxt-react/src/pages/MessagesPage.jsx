@@ -40,12 +40,17 @@ import { addToast, setMessageThreadImmersive } from '../features/ui/uiSlice'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useMessagesRealtimeSync } from '../hooks/useMessagesRealtimeSync'
 import { useConversationTyping } from '../hooks/useConversationTyping'
+import { useUploadProgress } from '../hooks/useUploadProgress'
 import { ConversationFilterMenu } from './messages/ConversationFilterMenu'
 import { ConversationNotFound } from './messages/ConversationNotFound'
 import { ConversationPanel } from './messages/ConversationPanel'
 import { ConversationRow } from './messages/ConversationRow'
 import { MessagesEmptyState } from './messages/MessagesEmptyState'
-import { countConversationsForFilter, conversationMatchesQuery } from './messages/messageUtils'
+import {
+  countConversationsForFilter,
+  conversationMatchesQuery,
+  shouldShowConversationInList,
+} from './messages/messageUtils'
 import { storageService } from '../services/storageService'
 import {
   isImageFile,
@@ -74,6 +79,7 @@ export function MessagesPage() {
   const [query, setQuery] = useState('')
   const deferredQuery = useDeferredValue(query)
   const [attachments, setAttachments] = useState([])
+  const { progress: uploadProgress, track: trackUpload } = useUploadProgress()
   const [replyToId, setReplyToId] = useState(null)
   const [replyToContextId, setReplyToContextId] = useState(null)
   const [editingId, setEditingId] = useState(null)
@@ -145,6 +151,7 @@ export function MessagesPage() {
         if (filter === 'unread' && !(item.unreadBy?.[user.id] > 0)) return false
         if (filter === 'pinned' && !item.pinnedBy?.includes(user.id)) return false
         if (filter === 'support' && item.relatedType !== 'support') return false
+        if (!shouldShowConversationInList(item, user.id, activeId)) return false
         return conversationMatchesQuery(item, user.id, deferredQuery)
       })
       .sort((left, right) => {
@@ -236,14 +243,23 @@ export function MessagesPage() {
 
           if (imageFiles.length) {
             const urls = []
-            for (let index = 0; index < imageFiles.length; index += 1) {
-              const file = imageFiles[index]
-              urls.push(
-                await storageService.uploadMessageImage(user.id, active.id, file, {
-                  index,
-                }),
-              )
-            }
+            await trackUpload(async (onProgress) => {
+              for (let index = 0; index < imageFiles.length; index += 1) {
+                const file = imageFiles[index]
+                urls.push(
+                  await storageService.uploadMessageImage(user.id, active.id, file, {
+                    index,
+                    onProgress: (update) =>
+                      onProgress({
+                        ...update,
+                        fileIndex: index,
+                        fileCount: imageFiles.length,
+                        fileName: file.name,
+                      }),
+                  }),
+                )
+              }
+            })
             attachmentPayload = {
               name:
                 imageFiles.length === 1
@@ -736,6 +752,7 @@ export function MessagesPage() {
                 hasOlderMessages={Boolean(active.hasOlderMessages)}
                 onLoadOlder={() => dispatch(loadOlderConversationMessages(active.id))}
                 attachments={attachments}
+                uploadProgress={uploadProgress}
                 blocked={blocked}
                 formik={formik}
                 onArchive={() => {

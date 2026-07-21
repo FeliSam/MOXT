@@ -13,7 +13,9 @@ export function Overview({
   members,
   publications,
   requests,
+  showRequests = true,
   transfers,
+  transferStats = null,
 }) {
   const { t } = useLanguage()
   const pt = (key, vars) => professionalText(t, key, vars)
@@ -24,7 +26,9 @@ export function Overview({
     members,
     publications,
     requests,
+    showRequests,
     transfers,
+    transferStats,
     pt,
   })
 
@@ -70,34 +74,64 @@ export function Overview({
   )
 }
 
-function buildOverviewCards({ business, documents, members, publications, requests, transfers, pt }) {
+function buildOverviewCards({
+  business,
+  documents,
+  members,
+  publications,
+  requests,
+  showRequests,
+  transfers,
+  transferStats,
+  pt,
+}) {
   const modules = business.services || []
-  const cards = [
-    [pt('professional.overview.cards.openRequests'), requests.filter((item) => item.status !== 'completed').length],
-    [pt('professional.overview.cards.activePublications'), publications.filter((item) => item.status === 'active').length],
+
+  if (modules.includes('Transfert') && transferStats) {
+    const cards = [
+      [pt('professional.page.metrics.inPipeline'), transferStats.inPipeline],
+      [pt('professional.page.metrics.completedTransfers'), transferStats.completed],
+      [pt('professional.page.metrics.awaitingAction'), transferStats.awaitingBusinessAction],
+      [pt('professional.overview.cards.transfersReceived'), transfers.length],
+      [pt('professional.overview.cards.activeMembers'), members.filter((item) => item.status === 'active').length],
+      [pt('professional.overview.cards.documents'), documents.length],
+    ]
+    return cards
+  }
+
+  const cards = []
+  if (showRequests) {
+    cards.push([
+      pt('professional.overview.cards.openRequests'),
+      requests.filter((item) => item.status !== 'completed').length,
+    ])
+  }
+  cards.push(
+    [
+      pt('professional.overview.cards.activePublications'),
+      publications.filter((item) => item.status === 'active').length,
+    ],
     [pt('professional.overview.cards.activeMembers'), members.filter((item) => item.status === 'active').length],
     [pt('professional.overview.cards.documents'), documents.length],
-  ]
+  )
 
-  if (modules.includes('Transfert')) {
-    cards[1] = [pt('professional.overview.cards.transfersReceived'), transfers.length]
-  } else if (modules.includes('Events')) {
-    cards[1] = [
+  if (modules.includes('Events')) {
+    cards[showRequests ? 1 : 0] = [
       pt('professional.overview.cards.publishedEvents'),
       publications.filter((item) => item.contentType === 'events').length,
     ]
   } else if (modules.includes('Jobs')) {
-    cards[1] = [
+    cards[showRequests ? 1 : 0] = [
       pt('professional.overview.cards.publishedJobs'),
       publications.filter((item) => item.contentType === 'jobs').length,
     ]
   } else if (modules.includes('Colis')) {
-    cards[1] = [
+    cards[showRequests ? 1 : 0] = [
       pt('professional.overview.cards.publishedParcels'),
       publications.filter((item) => item.contentType === 'parcels').length,
     ]
   } else if (modules.includes('Marketplace')) {
-    cards[1] = [
+    cards[showRequests ? 1 : 0] = [
       pt('professional.overview.cards.publishedListings'),
       publications.filter((item) => item.contentType === 'listings').length,
     ]

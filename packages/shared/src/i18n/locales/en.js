@@ -1179,6 +1179,17 @@ export const en = {
       addImages: "Add images",
       primary: "Main",
     },
+    upload: {
+      fileOf: "{current}/{total}",
+      phases: {
+        preparing: "Preparing",
+        compressing: "Optimizing",
+        uploading: "Uploading",
+        finalizing: "Finalizing",
+        done: "Done",
+        error: "Upload failed",
+      },
+    },
     update: {
       title: "MOXT update",
       body: "A new version is available — reloading automatically as soon as possible.",
@@ -3623,6 +3634,14 @@ export const en = {
       claimOnlyTitle: "Claim only",
       claimOnlyDescription: "All steps are complete. If there is an issue, open a claim.",
       openClaim: "Open a claim",
+      contactChat: "Contact",
+      payoutAccount: {
+        title: "Payout account",
+        help: "Send the transfer to this recipient, then attach the proof.",
+        beneficiary: "Beneficiary",
+        method: "Method",
+        numberOrAccount: "Number / account",
+      },
       confirmPaymentReception: "Confirm payment receipt",
       transferProofRequired: "Transfer proof (required)",
       imageOrPdf: "Image or PDF of the payout",
@@ -3732,6 +3751,7 @@ export const en = {
         },
       },
       errors: {
+        createFailedTitle: "Transfer not created",
         chooseAvailableBusiness: "Choose an available business.",
         cannotUseOwnBusiness: "You cannot use your own business.",
         businessMissingReceivingAccount: "This business has not yet configured the receiving account for this transfer direction.",
@@ -3797,8 +3817,23 @@ export const en = {
       claim: {
         title: "Claim",
         reason: "Claim reason",
+        motive: "Reason",
+        motivePlaceholder: "Choose a reason",
+        transferNumber: "Transfer number",
+        message: "Message",
+        messagePlaceholder: "Describe the issue…",
         help: "Our team reviews every claim and contacts you within 48 hours via your MOXT messaging.",
         submit: "Submit claim",
+        submittedTitle: "Claim submitted",
+        submittedMessage: "Your case has been sent to the MOXT team.",
+        motives: {
+          nonReceived: "Funds not received",
+          wrongAmount: "Incorrect amount",
+          fraud: "Suspected fraud",
+          delay: "Excessive delay",
+          paymentIssue: "Payment / proof issue",
+          other: "Other",
+        },
       },
       cancel: {
         title: "Cancel this transfer?",
@@ -3830,6 +3865,14 @@ export const en = {
         title: "Participants",
         sender: "Sender",
         recipient: "Recipient",
+        addFavorite: "Add to favorite profiles",
+        removeFavorite: "Remove from favorite profiles",
+        favoriteSavedTitle: "Favorite profile saved",
+        favoriteSavedMessage: "This contact is available for your next transfers.",
+        favoriteRemovedTitle: "Removed from favorites",
+        favoriteRemovedMessage: "This contact will no longer appear in your favorite profiles.",
+        favoriteErrorTitle: "Unable to save",
+        favoriteIncomplete: "First name, last name and phone are required for a favorite.",
       },
       timeline: {
         title: "Timeline",
@@ -6786,7 +6829,7 @@ export const en = {
         },
         more: {
           title: "More menu",
-          body: "Open all other services here: guide, jobs, business, and more.",
+          body: "Open all other services here: MOXT, jobs, business, and more.",
         },
         morePanel: {
           title: "All services",
@@ -6805,9 +6848,9 @@ export const en = {
         title: "News",
         body: "Follow community updates and publications on MOXT — Africa and Russia.",
       },
-      guide: {
-        title: "Guide",
-        body: "Living in Russia: practical steps, everyday rules, and laws worth knowing.",
+      moxt: {
+        title: "MOXT",
+        body: "This button gathers all the essential links on the site — one place to reach key services quickly.",
       },
       desktop: {
         sidebar: {
@@ -6816,7 +6859,7 @@ export const en = {
         },
         more: {
           title: "More services",
-          body: "The More menu opens the full catalog: guide, events, jobs, and other modules.",
+          body: "The More menu opens the full catalog: MOXT, events, jobs, and other modules.",
         },
         morePanel: {
           title: "Service catalog",

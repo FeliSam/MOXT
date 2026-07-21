@@ -2,7 +2,10 @@ import { useRef, useState } from 'react'
 import { FiImage, FiUpload } from 'react-icons/fi'
 import { Modal } from './Modal'
 import { Button } from './Button'
+import { UploadProgress } from './UploadProgress'
+import { FileNameText } from './FileNameText'
 import { storageService } from '../../services/storageService'
+import { useUploadProgress } from '../../hooks/useUploadProgress'
 import { useLanguage } from '../../contexts/useLanguage'
 
 /**
@@ -23,6 +26,7 @@ export function ReportDialog({
   const [error, setError] = useState('')
   const [uploading, setUploading] = useState(false)
   const inputRef = useRef(null)
+  const { progress: uploadProgress, track: trackUpload } = useUploadProgress()
 
   if (!open) return null
 
@@ -67,7 +71,9 @@ export function ReportDialog({
     try {
       let evidenceUrl = null
       if (file && userId) {
-        evidenceUrl = await storageService.uploadSupportScreenshot(userId, file)
+        evidenceUrl = await trackUpload((onProgress) =>
+          storageService.uploadSupportScreenshot(userId, file, { onProgress }),
+        )
       }
       await onSubmit({ reason: trimmed, evidenceUrl })
       reset()
@@ -100,10 +106,14 @@ export function ReportDialog({
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] px-4 py-6 text-sm font-semibold text-[var(--app-text-muted)] transition hover:border-[var(--app-teal)]"
+            className="flex min-w-0 max-w-full items-center justify-center gap-2 overflow-hidden rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] px-4 py-6 text-sm font-semibold text-[var(--app-text-muted)] transition hover:border-[var(--app-teal)]"
           >
-            <FiUpload />
-            {file ? file.name : t('report.addImage')}
+            <FiUpload className="shrink-0" />
+            {file ? (
+              <FileNameText name={file.name} className="font-semibold" maxLength={36} />
+            ) : (
+              t('report.addImage')
+            )}
           </button>
           <input
             ref={inputRef}
@@ -121,6 +131,11 @@ export function ReportDialog({
               <FiImage /> {t('report.screenshotHint')}
             </p>
           )}
+          {uploadProgress.active ||
+          uploadProgress.phase === 'done' ||
+          uploadProgress.phase === 'error' ? (
+            <UploadProgress progress={uploadProgress} compact />
+          ) : null}
         </div>
 
         {error ? <p className="text-sm font-semibold text-red-600">{error}</p> : null}

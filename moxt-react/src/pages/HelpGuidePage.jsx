@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { FiExternalLink, FiStar } from 'react-icons/fi'
-import { useSelector } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { Link, useParams } from 'react-router-dom'
 import { BackButton } from '../components/ui/BackButton'
 import { Badge, PillBadge } from '../components/ui/Badge'
@@ -11,13 +11,19 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { HELP_CATEGORIES, helpCategoryMeta } from '../config/helpCategories'
 import { useLanguage } from '../contexts/useLanguage'
+import { loadHelpArticles } from '../features/help/helpArticlesSlice'
 import { formatDate } from '../features/transfers/transferUtils'
 
 export function HelpGuidePage() {
+  const dispatch = useDispatch()
   const { t, language } = useLanguage()
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('')
   const articles = useSelector((state) => state.helpArticles.items)
+
+  useEffect(() => {
+    dispatch(loadHelpArticles())
+  }, [dispatch])
 
   const visibleArticles = useMemo(() => {
     const q = query.trim().toLowerCase()

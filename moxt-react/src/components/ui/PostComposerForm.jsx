@@ -5,6 +5,7 @@ import { MAX_POST_IMAGES } from '../../features/posts/postMediaUtils'
 import { isProfileVerified } from '../../features/profile/userProfileUtils'
 import { phase3Text } from '../../i18n/phase3I18n'
 import { EntityVerifiedName } from './EntityVerifiedName'
+import { UploadProgress } from './UploadProgress'
 
 /**
  * Shared create/edit composer for feed posts (message + up to 4 images).
@@ -37,6 +38,7 @@ export function PostComposerForm({
   cancelLabel,
   submitting = false,
   footerExtra = null,
+  progress = null,
 }) {
   const { t } = useLanguage()
   const p3 = (key, vars) => phase3Text(t, key, vars)
@@ -191,6 +193,10 @@ export function PostComposerForm({
         <p className="truncate text-xs text-[var(--app-text-faint)]">
           {p3('news.composer.link', { link: directLink })}
         </p>
+      ) : null}
+
+      {progress?.active || progress?.phase === 'done' || progress?.phase === 'error' ? (
+        <UploadProgress progress={progress} compact />
       ) : null}
 
       <div className="flex items-center justify-end gap-3 border-t border-[var(--app-border)] pt-4">

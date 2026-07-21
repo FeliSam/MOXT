@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { FiCheck, FiCopy, FiEdit2, FiExternalLink, FiPlus, FiStar, FiTrash2 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Badge, PillBadge } from '../components/ui/Badge'
@@ -15,6 +15,7 @@ import { createId } from '../services/createId'
 import {
   createHelpArticle,
   deleteHelpArticle,
+  loadHelpArticles,
   updateHelpArticle,
 } from '../features/help/helpArticlesSlice'
 import { addToast } from '../features/ui/uiSlice'
@@ -65,6 +66,10 @@ export function AdminHelpArticlesPage() {
   const [activeLang, setActiveLang] = useState('fr')
   const [modalOpen, setModalOpen] = useState(false)
   const [confirmDeleteGroupId, setConfirmDeleteGroupId] = useState(null)
+
+  useEffect(() => {
+    dispatch(loadHelpArticles())
+  }, [dispatch])
 
   const groups = useMemo(() => groupArticles(articles), [articles])
 

@@ -14,6 +14,7 @@ import {
 import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
 import { Badge } from '../../../components/ui/Badge'
+import { shortenFileName } from '../../../services/uploadProgress'
 import { TRANSFER_STATUS } from '../transferConfig'
 import { formatDate } from '../transferUtils'
 import { hasBusinessConfirmedReception, hasBusinessPayoutWithProof } from '../transferActionUtils'
@@ -396,7 +397,7 @@ function StoredProofCard({ label, proof }) {
       <div className="mt-2 flex min-w-0 items-center gap-2 text-xs text-[var(--app-text-muted)]">
         <FiFileText className="shrink-0 text-emerald-600" />
         <span className="min-w-0 flex-1 truncate" title={proof.name}>
-          {proof.name}
+          {shortenFileName(proof.name, 32)}
         </span>
         {proof.uploadedAt ? (
           <span className="shrink-0">· {formatDate(proof.uploadedAt)}</span>
@@ -422,7 +423,7 @@ function ProofPreview({ proof }) {
       )}
       <span className="min-w-0 flex-1 overflow-hidden">
         <strong className="block truncate text-xs" title={proof.file?.name}>
-          {proof.file?.name}
+          {shortenFileName(proof.file?.name, 28)}
         </strong>
         <span className="text-xs text-[var(--app-text-muted)]">
           {proof.uploading ? 'Envoi...' : `${Math.ceil((proof.file?.size || 0) / 1024)} Ko`}

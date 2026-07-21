@@ -12,6 +12,7 @@ import { updatePost } from '../features/posts/postsSlice'
 import { addToast } from '../features/ui/uiSlice'
 import { phase3Text } from '../i18n/phase3I18n'
 import { storageService } from '../services/storageService'
+import { useUploadProgress } from '../hooks/useUploadProgress'
 
 function resolvePostMessage(post) {
   if (!post) return ''
@@ -32,6 +33,7 @@ export function EditPostPage() {
   const [imageItems, setImageItems] = useState([])
   const [initializedFor, setInitializedFor] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const { progress: uploadProgress, track: trackUpload } = useUploadProgress()
 
   useEffect(() => {
     if (!post || initializedFor === post.id) return
@@ -77,9 +79,12 @@ export function EditPostPage() {
       const filesToUpload = imageItems.map((item) => item.file).filter(Boolean)
       let uploaded = []
       if (filesToUpload.length) {
-        uploaded = await storageService.uploadPostImages(user.id, postId, filesToUpload, {
-          version: Date.now().toString(36),
-        })
+        uploaded = await trackUpload((onProgress) =>
+          storageService.uploadPostImages(user.id, postId, filesToUpload, {
+            version: Date.now().toString(36),
+            onProgress,
+          }),
+        )
       }
       let uploadIndex = 0
       const urls = imageItems
@@ -150,6 +155,7 @@ export function EditPostPage() {
           onSubmit={handleSubmit}
           onCancel={() => navigate('/news')}
           submitting={submitting}
+          progress={uploadProgress}
         />
       </Card>
     </div>

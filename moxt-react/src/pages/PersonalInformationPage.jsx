@@ -19,7 +19,9 @@ import { updateProfile } from '../features/auth/authSlice'
 import { EmailVerificationCard } from '../features/security/EmailVerificationCard'
 import { addToast } from '../features/ui/uiSlice'
 import { useGeographyOptions } from '../hooks/useGeographyOptions'
+import { useUploadProgress } from '../hooks/useUploadProgress'
 import { storageService } from '../services/storageService'
+import { UploadProgress } from '../components/ui/UploadProgress'
 
 function SectionTitle({ icon: Icon, label }) {
   const I = Icon
@@ -43,6 +45,7 @@ export function PersonalInformationPage() {
   const { countries } = useGeographyOptions()
   const avatarInputRef = useRef(null)
   const [avatarUploading, setAvatarUploading] = React.useState(false)
+  const { progress: avatarProgress, track: trackAvatarUpload } = useUploadProgress()
 
   const formik = useFormik({
     enableReinitialize: true,
@@ -86,7 +89,9 @@ export function PersonalInformationPage() {
     formik.setFieldValue('avatarUrl', URL.createObjectURL(file)) // prévisualisation immédiate
     setAvatarUploading(true)
     try {
-      const url = await storageService.uploadAvatar(user.id, file)
+      const url = await trackAvatarUpload((onProgress) =>
+        storageService.uploadAvatar(user.id, file, { onProgress }),
+      )
       formik.setFieldValue('avatarUrl', url)
       dispatch(
         addToast({
@@ -169,6 +174,11 @@ export function PersonalInformationPage() {
               >
                 {avatarUploading ? t('profile.personal.uploading') : t('profile.personal.choosePhoto')}
               </Button>
+              {avatarProgress.active ||
+              avatarProgress.phase === 'done' ||
+              avatarProgress.phase === 'error' ? (
+                <UploadProgress progress={avatarProgress} compact className="w-full" />
+              ) : null}
               {formik.values.avatarUrl ? (
                 <button
                   type="button"

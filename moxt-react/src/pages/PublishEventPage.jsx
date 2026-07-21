@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { PosterUploader } from '../components/ui/PosterUploader'
 import { storageService } from '../services/storageService'
+import { useUploadProgress } from '../hooks/useUploadProgress'
 import {
   FiArrowLeft,
   FiArrowRight,
@@ -121,6 +122,7 @@ export function PublishEventPage() {
   const [shareModal, setShareModal] = useState(null)
   const [photos, setPhotos] = useState([])
   const [publishing, setPublishing] = useState(false)
+  const { progress: uploadProgress, track: trackUpload } = useUploadProgress()
   const { trigger: triggerBurst, node: burstNode } = useActionBurst()
 
   function addPhotos(files) {
@@ -220,10 +222,13 @@ export function PublishEventPage() {
     let images = []
     try {
       if (photos.length) {
-        images = await storageService.uploadEventImages(
-          user.id,
-          Date.now().toString(36),
-          photos.map((photo) => photo.file),
+        images = await trackUpload((onProgress) =>
+          storageService.uploadEventImages(
+            user.id,
+            Date.now().toString(36),
+            photos.map((photo) => photo.file),
+            { onProgress },
+          ),
         )
       }
     } catch (error) {
@@ -483,6 +488,7 @@ export function PublishEventPage() {
               onRemove={removePhoto}
               label={publishText(t, 'publish.event.fields.posters')}
               hint={publishText(t, 'publish.event.fields.postersHint')}
+              progress={uploadProgress}
             />
           </Card>
           {form.format !== 'online' ? (

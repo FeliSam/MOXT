@@ -21,6 +21,8 @@ import {
 import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 import { useDispatch, useSelector } from 'react-redux'
 import { storageService } from '../services/storageService'
+import { UploadProgress } from '../components/ui/UploadProgress'
+import { useUploadProgress } from '../hooks/useUploadProgress'
 import { Link, useNavigate } from 'react-router-dom'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
@@ -620,13 +622,17 @@ function IdentityStep({ businessId, errorFor, formik, userId }) {
   const selectedActivity = BUSINESS_ACTIVITIES.find((a) => a.value === formik.values.primaryActivity)
   const logoInputRef = useRef(null)
   const bannerInputRef = useRef(null)
+  const { progress: logoProgress, track: trackLogoUpload } = useUploadProgress()
+  const { progress: bannerProgress, track: trackBannerUpload } = useUploadProgress()
 
   async function handleLogoFile(event) {
     const file = event.target.files?.[0]
     if (!file) return
     formik.setFieldValue('logoUrl', URL.createObjectURL(file))
     try {
-      const url = await storageService.uploadBusinessLogo(userId, businessId, file)
+      const url = await trackLogoUpload((onProgress) =>
+        storageService.uploadBusinessLogo(userId, businessId, file, { onProgress }),
+      )
       formik.setFieldValue('logoUrl', url)
       dispatch(
         addToast({
@@ -650,7 +656,9 @@ function IdentityStep({ businessId, errorFor, formik, userId }) {
     if (!file) return
     formik.setFieldValue('bannerUrl', URL.createObjectURL(file))
     try {
-      const url = await storageService.uploadBusinessBanner(userId, businessId, file)
+      const url = await trackBannerUpload((onProgress) =>
+        storageService.uploadBusinessBanner(userId, businessId, file, { onProgress }),
+      )
       formik.setFieldValue('bannerUrl', url)
       dispatch(
         addToast({
@@ -780,6 +788,9 @@ function IdentityStep({ businessId, errorFor, formik, userId }) {
           </div>
           <input ref={logoInputRef} type="file" accept="image/*" className="sr-only" onChange={handleLogoFile} />
           {errorFor('logoUrl') ? <p className="mt-1 text-xs text-red-600">{errorFor('logoUrl')}</p> : null}
+          {logoProgress.active || logoProgress.phase === 'done' || logoProgress.phase === 'error' ? (
+            <UploadProgress progress={logoProgress} compact className="mt-3" />
+          ) : null}
         </div>
 
         {/* Banner */}
@@ -802,6 +813,11 @@ function IdentityStep({ businessId, errorFor, formik, userId }) {
           </Button>
           <input ref={bannerInputRef} type="file" accept="image/*" className="sr-only" onChange={handleBannerFile} />
           {errorFor('bannerUrl') ? <p className="mt-1 text-xs text-red-600">{errorFor('bannerUrl')}</p> : null}
+          {bannerProgress.active ||
+          bannerProgress.phase === 'done' ||
+          bannerProgress.phase === 'error' ? (
+            <UploadProgress progress={bannerProgress} compact className="mt-3" />
+          ) : null}
         </div>
       </Card>
     </div>

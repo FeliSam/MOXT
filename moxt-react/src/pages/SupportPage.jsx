@@ -23,6 +23,8 @@ import { addToast } from '../features/ui/uiSlice'
 import { formatDate } from '../features/transfers/transferUtils'
 import { phase3Text } from '../i18n/phase3I18n'
 import { storageService } from '../services/storageService'
+import { UploadProgress } from '../components/ui/UploadProgress'
+import { useUploadProgress } from '../hooks/useUploadProgress'
 
 export function SupportPage() {
   const [requestOpen, setRequestOpen] = useState(false)
@@ -145,6 +147,7 @@ function ErrorReportModal({ open, onClose, dispatch, user }) {
   const [previewUrl, setPreviewUrl] = useState(null)
   const [message, setMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const { progress: uploadProgress, track: trackUpload } = useUploadProgress()
 
   function pickFile(event) {
     const selected = event.target.files?.[0]
@@ -193,7 +196,9 @@ function ErrorReportModal({ open, onClose, dispatch, user }) {
     try {
       let screenshotUrl = null
       if (file) {
-        screenshotUrl = await storageService.uploadSupportScreenshot(user.id, file)
+        screenshotUrl = await trackUpload((onProgress) =>
+          storageService.uploadSupportScreenshot(user.id, file, { onProgress }),
+        )
       }
       const action = dispatch(
         createSupportTicket({
@@ -290,6 +295,11 @@ function ErrorReportModal({ open, onClose, dispatch, user }) {
               {p3('support.addScreenshot')}
             </button>
           )}
+          {uploadProgress.active ||
+          uploadProgress.phase === 'done' ||
+          uploadProgress.phase === 'error' ? (
+            <UploadProgress progress={uploadProgress} compact />
+          ) : null}
         </div>
 
         <Button type="submit" icon={FiSend} loading={submitting} disabled={submitting}>

@@ -1,13 +1,29 @@
-import { createSlice } from '@reduxjs/toolkit'
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import { createId } from '../../services/createId'
 import { createLocalStorage } from '../../services/createLocalStorage'
 import { mergeRemoteById } from '@moxt/shared/utils/mergeRemoteById.js'
+import { fromRows } from '../../services/remoteRowMapper'
+import { supabase } from '../../services/supabaseClient'
 
 const storage = createLocalStorage('moxt-help-articles-v1')
 
+export const loadHelpArticles = createAsyncThunk('helpArticles/loadHelpArticles', async () => {
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('help_articles')
+    .select(
+      'id, translation_group_id, category, language, title, summary, content, source_name, source_url, verified_at, pinned, status, author_id, author_name, created_at, updated_at',
+    )
+    .order('pinned', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(200)
+  if (error) throw error
+  return fromRows(data || [])
+})
+
 const helpArticlesSlice = createSlice({
   name: 'helpArticles',
-  initialState: { items: storage.read() ?? [] },
+  initialState: { items: storage.read() ?? [], loading: false },
   reducers: {
     setAll(state, action) {
       if (action.payload.items) {
@@ -54,6 +70,19 @@ const helpArticlesSlice = createSlice({
     deleteHelpArticle(state, action) {
       state.items = state.items.filter((item) => item.id !== action.payload)
     },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(loadHelpArticles.pending, (state) => {
+        state.loading = true
+      })
+      .addCase(loadHelpArticles.fulfilled, (state, action) => {
+        state.loading = false
+        state.items = mergeRemoteById(state.items, action.payload || [])
+      })
+      .addCase(loadHelpArticles.rejected, (state) => {
+        state.loading = false
+      })
   },
 })
 

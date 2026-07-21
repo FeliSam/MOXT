@@ -185,7 +185,7 @@ export const PHASE3_FR_SOURCES = {
   'documents.types.other': 'Autre document',
   'documents.upload': 'Ajouter un document',
   'documents.hint':
-    'Les fichiers sont stockés sur le serveur MOXT et synchronisés avec votre compte.',
+    'Formats acceptés : PDF et images (JPG, PNG, WEBP…). Taille conseillée : 5 Mo max. Les fichiers sont stockés sur le serveur MOXT.',
   'documents.remove': 'Retirer',
   'documents.empty': 'Aucun document',
   'documents.toast.sentTitle': 'Document envoyé',
@@ -894,7 +894,7 @@ export const PHASE3_FR_SOURCES = {
     'Trouvez un voyageur ou proposez un trajet pour faire voyager un colis.',
   'onboarding.tour.mobile.more.title': 'Menu Plus',
   'onboarding.tour.mobile.more.body':
-    'Ouvrez ici tous les autres services : guide, jobs, entreprise, et plus encore.',
+    'Ouvrez ici tous les autres services : MOXT, jobs, entreprise, et plus encore.',
   'onboarding.tour.mobile.morePanel.title': 'Tous les services',
   'onboarding.tour.mobile.morePanel.body':
     'Ce panneau regroupe ce qui n’est pas dans la barre du bas. Parcourez les tuiles ou utilisez la recherche.',
@@ -907,15 +907,15 @@ export const PHASE3_FR_SOURCES = {
   'onboarding.tour.news.title': 'Actualités',
   'onboarding.tour.news.body':
     'Suivez les infos et publications de la communauté MOXT — Afrique et Russie.',
-  'onboarding.tour.guide.title': 'Guide',
-  'onboarding.tour.guide.body':
-    'Informations pour vivre en Russie : démarches, règles du quotidien et lois utiles à connaître.',
+  'onboarding.tour.moxt.title': 'MOXT',
+  'onboarding.tour.moxt.body':
+    'Ce bouton regroupe tous les liens essentiels du site : un seul endroit pour accéder rapidement aux services clés.',
   'onboarding.tour.desktop.sidebar.title': 'Rail de navigation',
   'onboarding.tour.desktop.sidebar.body':
     'Accédez aux sections clés depuis ce rail flottant. Survolez une icône pour afficher son libellé.',
   'onboarding.tour.desktop.more.title': 'Services supplémentaires',
   'onboarding.tour.desktop.more.body':
-    'Le menu Plus ouvre le catalogue complet : guide, événements, jobs, et le reste des modules.',
+    'Le menu Plus ouvre le catalogue complet : MOXT, événements, jobs, et le reste des modules.',
   'onboarding.tour.desktop.morePanel.title': 'Catalogue des services',
   'onboarding.tour.desktop.morePanel.body':
     'Retrouvez ici tout ce qui n’est pas sur le rail — organisé par thèmes, prêt à un clic.',

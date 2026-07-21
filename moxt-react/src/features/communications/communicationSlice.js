@@ -22,6 +22,48 @@ const MESSAGE_FETCH_LIMIT = 200
 const MESSAGE_INCREMENTAL_LIMIT = 100
 const MESSAGE_OLDER_LIMIT = 100
 
+const MESSAGE_SELECT_COLUMNS = [
+  'id',
+  'conversation_id',
+  'sender_id',
+  'sender_name',
+  'text',
+  'attachment',
+  'reply_to_id',
+  'related_context_id',
+  'reactions',
+  'deleted_by',
+  'delivered_to',
+  'read_by',
+  'created_at',
+].join(',')
+
+const CONVERSATION_SELECT_COLUMNS = [
+  'id',
+  'title',
+  'related_type',
+  'related_id',
+  'related_path',
+  'related_snapshot',
+  'related_contexts',
+  'participant_profiles',
+  'participant_ids',
+  'participant_key',
+  'created_by',
+  'status',
+  'unread_by',
+  'archived_by',
+  'pinned_by',
+  'muted_by',
+  'blocked_by',
+  'message_count',
+  'last_message_text',
+  'last_message_sender_id',
+  'last_message_at',
+  'created_at',
+  'updated_at',
+].join(',')
+
 export function mergeMessageReceipts(localMessage, remoteMessage) {
   const local = normalizeMessage(localMessage)
   const remote = normalizeMessage(remoteMessage)
@@ -1010,8 +1052,7 @@ export const loadConversationMessages = createAsyncThunk(
 
     if (canIncremental) {
       const { data, error } = await supabase
-        .from('messages')
-        .select('*')
+        .from('messages').select(MESSAGE_SELECT_COLUMNS)
         .in('conversation_id', conversationIds)
         .gt('created_at', lastMessageAt)
         .order('created_at', { ascending: true })
@@ -1041,8 +1082,7 @@ export const loadConversationMessages = createAsyncThunk(
     }
 
     const { data, error } = await supabase
-      .from('messages')
-      .select('*')
+      .from('messages').select(MESSAGE_SELECT_COLUMNS)
       .in('conversation_id', conversationIds)
       .order('created_at', { ascending: false })
       .limit(MESSAGE_FETCH_LIMIT)
@@ -1090,8 +1130,7 @@ export const loadOlderConversationMessages = createAsyncThunk(
     }
 
     const { data, error } = await supabase
-      .from('messages')
-      .select('*')
+      .from('messages').select(MESSAGE_SELECT_COLUMNS)
       .in('conversation_id', conversationIds)
       .lt('created_at', firstMessageAt)
       .order('created_at', { ascending: false })
@@ -1217,8 +1256,7 @@ export const openConversationWithContact = createAsyncThunk(
 
     const key = participantKey(participantIds)
     const { data, error } = await supabase
-      .from('conversations')
-      .select('*')
+      .from('conversations').select(CONVERSATION_SELECT_COLUMNS)
       .eq('participant_key', key)
       .maybeSingle()
     if (error) throw error
@@ -1273,8 +1311,7 @@ export const openConversationWithContact = createAsyncThunk(
     const canonicalId = (await persistConversationRemote(created)) || created.id
     if (canonicalId !== created.id) {
       const { data: canonicalRow, error: canonicalError } = await supabase
-        .from('conversations')
-        .select('*')
+        .from('conversations').select(CONVERSATION_SELECT_COLUMNS)
         .eq('id', canonicalId)
         .maybeSingle()
       if (canonicalError) throw canonicalError
@@ -1340,7 +1377,7 @@ export const ensureConversationFromRemote = createAsyncThunk(
     const existing = getState().communications.conversations.find((c) => c.id === conversationId)
     if (existing) return existing
 
-    const { data, error } = await supabase.from('conversations').select('*').eq('id', conversationId).maybeSingle()
+    const { data, error } = await supabase.from('conversations').select(CONVERSATION_SELECT_COLUMNS).eq('id', conversationId).maybeSingle()
     if (error) throw error
     if (!data) return null
 

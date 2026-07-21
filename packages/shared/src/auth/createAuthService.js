@@ -1774,21 +1774,36 @@ export function createAuthService(supabase, redirects = {}) {
         return { email: normalizedEmail, user: syncedUser }
       }
 
-      await assertIdentityAvailable('email', normalizedEmail, currentUser.id, {
-        channel: 'email',
-        intent: 'email_verification',
-      })
-
       const authEmail = String(authUser.email || '').trim().toLowerCase()
-      const sameUnconfirmedEmail =
-        authEmail === normalizedEmail && !authUser.email_confirmed_at
-      const redirectTo = emailRedirectTo()
+      const profileEmail = String(currentUser.email || '').trim().toLowerCase()
+      // Confirmation de l’e-mail déjà sur ce compte — ne pas le traiter comme « déjà pris ».
+      const isOwnEmail =
+        normalizedEmail === authEmail || normalizedEmail === profileEmail
 
-      if (sameUnconfirmedEmail) {
+      if (!isOwnEmail) {
+        await assertIdentityAvailable('email', normalizedEmail, currentUser.id, {
+          channel: 'email',
+          intent: 'email_verification',
+        })
+      }
+
+      const redirectTo = emailRedirectTo()
+      const redirectOptions = redirectTo ? { emailRedirectTo: redirectTo } : undefined
+      const sendContext = { channel: 'email', intent: 'email_verification' }
+
+      function isEmailTakenError(error) {
+        const code = String(error?.code || '')
+        const msg = String(error?.message || '').toLowerCase()
+        return (
+          code === 'email_exists' ||
+          msg.includes('already') ||
+          msg.includes('exists') ||
+          msg.includes('registered')
+        )
+      }
+
+      async function sendOwnEmailOtp() {
         guardOtpSend('email', normalizedEmail)
-        const redirectOptions = redirectTo ? { emailRedirectTo: redirectTo } : undefined
-        const sendContext = { channel: 'email', intent: 'email_verification' }
-        // Compte jamais confirmé → OTP signup ; sinon email_change ; puis signInWithOtp.
         const signupAttempt = await supabase.auth.resend({
           type: 'signup',
           email: normalizedEmail,
@@ -1816,23 +1831,34 @@ export function createAuthService(supabase, redirects = {}) {
         })
         if (otpAttempt.error) {
           throw new Error(
-            translateAuthError(otpAttempt.error || changeAttempt.error || signupAttempt.error, sendContext),
+            translateAuthError(
+              otpAttempt.error || changeAttempt.error || signupAttempt.error,
+              sendContext,
+            ),
           )
         }
         trackOtpSend('email', normalizedEmail)
         return { email: normalizedEmail, otpType: 'email' }
       }
 
+      // Auth a déjà cet e-mail non confirmé → renvoyer le code (sans contrôle « déjà lié »).
+      if (authEmail === normalizedEmail && !authUser.email_confirmed_at) {
+        return sendOwnEmailOtp()
+      }
+
+      // Rattacher / changer l’e-mail (profil seul, ou nouvelle adresse).
       guardOtpSend('email', normalizedEmail)
       const { error } = await supabase.auth.updateUser(
         { email: normalizedEmail },
         redirectTo ? { emailRedirectTo: redirectTo } : undefined,
       )
       if (error) {
-        throw new Error(translateAuthError(error, { channel: 'email', intent: 'email_verification' }))
+        if (isOwnEmail && isEmailTakenError(error)) {
+          return sendOwnEmailOtp()
+        }
+        throw new Error(translateAuthError(error, sendContext))
       }
       trackOtpSend('email', normalizedEmail)
-
       return { email: normalizedEmail, otpType: 'email_change' }
     },
 

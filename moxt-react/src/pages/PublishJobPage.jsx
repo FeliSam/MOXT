@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { PosterUploader } from '../components/ui/PosterUploader'
 import { storageService } from '../services/storageService'
+import { useUploadProgress } from '../hooks/useUploadProgress'
 import {
   FiArrowLeft,
   FiArrowRight,
@@ -108,6 +109,7 @@ export function PublishJobPage() {
   const [shareModal, setShareModal] = useState(null)
   const [photos, setPhotos] = useState([])
   const [publishing, setPublishing] = useState(false)
+  const { progress: uploadProgress, track: trackUpload } = useUploadProgress()
 
   function addPhotos(files) {
     const added = Array.from(files)
@@ -199,10 +201,13 @@ export function PublishJobPage() {
     let images = []
     try {
       if (photos.length) {
-        images = await storageService.uploadJobImages(
-          user.id,
-          jobId,
-          photos.map((photo) => photo.file),
+        images = await trackUpload((onProgress) =>
+          storageService.uploadJobImages(
+            user.id,
+            jobId,
+            photos.map((photo) => photo.file),
+            { onProgress },
+          ),
         )
       }
     } catch (error) {
@@ -519,6 +524,7 @@ export function PublishJobPage() {
             onRemove={removePhoto}
             label={publishText(t, 'publish.job.fields.posters')}
             hint={publishText(t, 'publish.job.fields.postersHint')}
+            progress={uploadProgress}
           />
           {business ? (
             <BusinessPublishNotice business={business} contentType="job" className="mb-1" />

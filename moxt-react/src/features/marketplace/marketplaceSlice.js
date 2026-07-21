@@ -385,11 +385,13 @@ export const {
 
 export const publishListing = createAsyncThunk(
   'marketplace/publishListing',
-  async ({ files = [], values }, { dispatch, rejectWithValue }) => {
+  async ({ files = [], values, onProgress }, { dispatch, rejectWithValue }) => {
     try {
       const prepared = createListing({ ...values, images: [] }).payload
       const images = files.length
-        ? await storageService.uploadListingImages(prepared.ownerId, prepared.id, files)
+        ? await storageService.uploadListingImages(prepared.ownerId, prepared.id, files, {
+            onProgress,
+          })
         : values.images || []
       const saved = await saveListingRemote({ ...prepared, images })
       dispatch(receiveRemoteListing(saved))

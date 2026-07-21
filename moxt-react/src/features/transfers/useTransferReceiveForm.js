@@ -10,12 +10,14 @@ import {
 } from './transferReceiveValidation'
 import { storageService } from '../../services/storageService'
 import { addToast } from '../ui/uiSlice'
+import { useUploadProgress } from '../../hooks/useUploadProgress'
 
 const DEFAULT_RECEIVE_METHOD = 'cash'
 
 export function useTransferReceiveForm({ transfer, user, onSuccess }) {
   const { t } = useLanguage()
   const dispatch = useDispatch()
+  const { progress: uploadProgress, track: trackUpload } = useUploadProgress()
   const [values, setValues] = useState(() => ({
     receivedAmount: defaultReceivedAmountInput(transfer),
     receivedMethod: DEFAULT_RECEIVE_METHOD,
@@ -51,16 +53,19 @@ export function useTransferReceiveForm({ transfer, user, onSuccess }) {
     let proofPayload = null
     try {
       if (values.proofFile) {
-        const { url, path } = await storageService.uploadTransferProof(
-          user.id,
-          `${transfer.id}-receive`,
-          values.proofFile,
+        const { url, path } = await trackUpload((onProgress) =>
+          storageService.uploadTransferProof(
+            user.id,
+            `${transfer.id}-receive`,
+            values.proofFile,
+            { onProgress },
+          ),
         )
         proofPayload = {
           name: values.proofFile.name,
           size: values.proofFile.size,
           type: values.proofFile.type,
-          url,
+          url: url || null,
           path,
           uploadedAt: new Date().toISOString(),
         }
@@ -95,7 +100,7 @@ export function useTransferReceiveForm({ transfer, user, onSuccess }) {
     } finally {
       setSubmitting(false)
     }
-  }, [dispatch, onSuccess, t, transfer, user, values])
+  }, [dispatch, onSuccess, t, trackUpload, transfer, user, values])
 
-  return { values, errors, setField, submit, submitting }
+  return { values, errors, setField, submit, submitting, uploadProgress }
 }

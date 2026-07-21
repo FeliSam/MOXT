@@ -151,16 +151,17 @@ export function Header({ hideOnMobile = false }) {
             <HeaderActionLabel>{t('notifications.title')}</HeaderActionLabel>
           </Link>
 
-          {mobileActions.showHistory ? (
-            <Link
-              to="/transfers/history"
-              className="header-action-btn relative grid"
-              aria-label={t('dashboard.overview.history')}
-            >
-              <FiClock className="header-action-icon" strokeWidth={2.1} aria-hidden="true" />
-              <HeaderActionLabel>{t('dashboard.overview.history')}</HeaderActionLabel>
-            </Link>
-          ) : null}
+          {/* Desktop: toujours visible. Mobile: uniquement sur les pages transferts. */}
+          <Link
+            to="/transfers/history"
+            className={`header-action-btn relative ${
+              mobileActions.showHistory ? 'grid' : 'hidden lg:grid'
+            }`}
+            aria-label={t('dashboard.overview.history')}
+          >
+            <FiClock className="header-action-icon" strokeWidth={2.1} aria-hidden="true" />
+            <HeaderActionLabel>{t('dashboard.overview.history')}</HeaderActionLabel>
+          </Link>
 
           {mobileActions.showMessages ? (
             <Link

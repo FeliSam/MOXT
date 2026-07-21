@@ -13,6 +13,7 @@ import { TransferCalculator } from '../features/transfers/TransferCalculator'
 import { TransferStatusBadge } from '../features/transfers/TransferStatusBadge'
 import { expireOverdueTransfers } from '../features/transfers/transferSlice'
 import { selectTransfersVisibleToUser } from '../features/transfers/transferSelectors'
+import { refreshVisibleTransfers } from '../features/transfers/transferSync'
 import {
   directionLabel,
   formatDate,
@@ -45,7 +46,10 @@ export function TransfersPage() {
 
   useEffect(() => {
     dispatch(expireOverdueTransfers())
-  }, [dispatch])
+    if (user?.id) {
+      dispatch(refreshVisibleTransfers({ userId: user.id }))
+    }
+  }, [dispatch, user?.id])
 
   return (
     <div className="finance-hero-glow grid gap-7 rounded-[var(--radius-card-lg)]">

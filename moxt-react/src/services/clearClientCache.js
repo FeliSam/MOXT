@@ -83,10 +83,10 @@ async function notifyServiceWorkerSkipWaiting() {
 }
 
 /**
- * @param {{ scope?: 'full' | 'auth', reason?: string }} [options]
+ * @param {{ scope?: 'full' | 'auth', reason?: string, preserveAuth?: boolean }} [options]
  * @returns {string[]} keys removed from localStorage (for diagnostics)
  */
-export function clearClientCache({ scope = 'full' } = {}) {
+export function clearClientCache({ scope = 'full', preserveAuth = false } = {}) {
   const removed = []
   clearAuthClientCache()
   clearWelcomePending()
@@ -109,9 +109,12 @@ export function clearClientCache({ scope = 'full' } = {}) {
       local.removeItem(key)
       removed.push(key)
     }
-    for (const key of collectSupabaseAuthKeys(local)) {
-      local.removeItem(key)
-      removed.push(key)
+    // Ne pas effacer sb-*-auth-token sauf logout explicite (preserveAuth=false).
+    if (!preserveAuth) {
+      for (const key of collectSupabaseAuthKeys(local)) {
+        local.removeItem(key)
+        removed.push(key)
+      }
     }
     clearSearchHistory()
   }
@@ -125,12 +128,22 @@ export function clearClientCache({ scope = 'full' } = {}) {
   return removed
 }
 
-/** One-time client cache migration after version bump (boot). Returns true if wiped. */
+/** True si une session Supabase est encore en localStorage. */
+export function hasSupabaseAuthInStorage() {
+  const local = getLocalStorage()
+  if (!local) return false
+  return collectSupabaseAuthKeys(local).length > 0
+}
+
+/**
+ * One-time client cache migration after version bump (boot).
+ * Préserve toujours les tokens auth — un deploy ne doit pas déconnecter.
+ */
 export function ensureClientCacheVersion() {
   const local = getLocalStorage()
   if (!local) return false
   if (local.getItem(MOXT_CACHE_VERSION_KEY) === MOXT_CACHE_VERSION) return false
-  clearClientCache({ scope: 'full', reason: 'version-bump' })
+  clearClientCache({ scope: 'full', reason: 'version-bump', preserveAuth: true })
   local.setItem(MOXT_CACHE_VERSION_KEY, MOXT_CACHE_VERSION)
   return true
 }

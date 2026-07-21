@@ -1,5 +1,4 @@
 /* eslint-disable react-refresh/only-export-components -- action helpers + local ActionButton */
-import { Link } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { dispatchUserRole } from './promoteAdminUtils'
 import { updateVerificationStatus, updateSubscriberReportStatus } from '../account/accountSlice'
@@ -18,19 +17,9 @@ import { moderateReview } from '../reviews/reviewSlice'
 import { TRANSFER_TRANSITIONS } from '../transfers/transferConfig'
 import { moderateTransfer } from '../transfers/transferSlice'
 import { REVIEW_DISPUTE_STATUS } from '@moxt/shared/utils/reviewUtils.js'
-import { FiCheck, FiEye } from 'react-icons/fi'
-import { adminDetailLink, normalizeAdminKind, normalizeReportType } from './adminLinkUtils'
+import { FiCheck } from 'react-icons/fi'
+import { normalizeAdminKind, normalizeReportType } from './adminLinkUtils'
 import { adminText } from './adminI18n'
-
-function detailViewButton(kind, item, t) {
-  const link = adminDetailLink(kind, item)
-  if (!link) return null
-  return (
-    <Link to={link}>
-      <Button variant="secondary" icon={FiEye}>{adminText(t, 'admin.actions.view')}</Button>
-    </Link>
-  )
-}
 
 function ActionButton({ done, doneLabel, children, ...props }) {
   if (done) {
@@ -315,36 +304,31 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
   const reviewerId = actorId || 'admin'
   switch (normalizeAdminKind(kind)) {
     case 'transfer': {
-      if (actorRole === 'moderator') return detailViewButton('transfer', item, t)
+      if (actorRole === 'moderator') return null
       const next = TRANSFER_TRANSITIONS[item.status]
-      return (
-        <>
-          {next && (
-            <Button
-              onClick={() =>
-                dispatch(
-                  moderateTransfer({
-                    id: item.id,
-                    status: next,
-                    actorId: reviewerId,
-                    actorRole: actorRole || 'admin',
-                    proof:
-                      next === 'paid_out'
-                        ? item.businessProof || {
-                            name: 'admin-advance.pdf',
-                            uploadedAt: new Date().toISOString(),
-                          }
-                        : undefined,
-                  }),
-                )
-              }
-            >
-              {adminText(t, 'admin.actions.advanceTo', { next })}
-            </Button>
-          )}
-          {detailViewButton('transfer', item, t)}
-        </>
-      )
+      return next ? (
+        <Button
+          onClick={() =>
+            dispatch(
+              moderateTransfer({
+                id: item.id,
+                status: next,
+                actorId: reviewerId,
+                actorRole: actorRole || 'admin',
+                proof:
+                  next === 'paid_out'
+                    ? item.businessProof || {
+                        name: 'admin-advance.pdf',
+                        uploadedAt: new Date().toISOString(),
+                      }
+                    : undefined,
+              }),
+            )
+          }
+        >
+          {adminText(t, 'admin.actions.advanceTo', { next })}
+        </Button>
+      ) : null
     }
     case 'businesses':
     case 'listings':
@@ -353,14 +337,14 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
     case 'parcels':
     case 'posts':
     case 'report':
-      return (
-        <>
-          {contentActions(normalizeAdminKind(kind) === 'report' ? 'reports' : normalizeAdminKind(kind), dispatch, item, t)}
-          {detailViewButton(kind, item, t)}
-        </>
+      return contentActions(
+        normalizeAdminKind(kind) === 'report' ? 'reports' : normalizeAdminKind(kind),
+        dispatch,
+        item,
+        t,
       )
     case 'user':
-      if (actorRole === 'moderator') return detailViewButton('user', item, t)
+      if (actorRole === 'moderator') return null
       return (
         <>
           <Button
@@ -386,11 +370,10 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
               ? adminText(t, 'admin.actions.reactivate')
               : adminText(t, 'admin.actions.suspend')}
           </Button>
-          {detailViewButton('user', item, t)}
         </>
       )
     case 'verification':
-      if (actorRole === 'moderator') return detailViewButton('verification', item, t)
+      if (actorRole === 'moderator') return null
       return (
         <>
           <ActionButton
@@ -429,11 +412,10 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
           >
             {adminText(t, 'admin.actions.reject')}
           </ActionButton>
-          {detailViewButton('verification', item, t)}
         </>
       )
     case 'businessDocument':
-      if (actorRole === 'moderator') return detailViewButton('businessDocument', item, t)
+      if (actorRole === 'moderator') return null
       return (
         <>
           <ActionButton
@@ -473,7 +455,6 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
           >
             {adminText(t, 'admin.actions.reject')}
           </ActionButton>
-          {detailViewButton('businessDocument', item, t)}
         </>
       )
     case 'dispute':
@@ -485,7 +466,6 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
           <Button variant="secondary" onClick={() => dispatch(updateDisputeStatus({ id: item.id, status: 'closed', updatedBy: 'admin' }))}>
             {adminText(t, 'admin.actions.close')}
           </Button>
-          {detailViewButton('dispute', item, t)}
         </>
       )
     case 'review':
@@ -521,7 +501,6 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
             >
               {adminText(t, 'admin.actions.rejectContest')}
             </Button>
-            {detailViewButton('review', item, t)}
           </>
         )
       }
@@ -533,7 +512,6 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
           <Button variant="danger" onClick={() => dispatch(moderateReview({ id: item.id, status: 'hidden', moderatedBy: 'admin' }))}>
             {adminText(t, 'admin.actions.hide')}
           </Button>
-          {detailViewButton('review', item, t)}
         </>
       )
     default:

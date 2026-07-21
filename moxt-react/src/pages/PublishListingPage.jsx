@@ -50,6 +50,8 @@ import { SecurityGatePanel } from '../features/security/SecurityGatePanel'
 import { useSecurityGate } from '../features/security/useSecurityGate'
 import { initialCatalogStatus } from '@moxt/shared/auth/userSecurity.js'
 import { useLanguage } from '../contexts/useLanguage'
+import { useUploadProgress } from '../hooks/useUploadProgress'
+import { UploadProgress } from '../components/ui/UploadProgress'
 import {
   listingOptionHint,
   listingOptionLabel,
@@ -127,6 +129,7 @@ export function PublishListingPage() {
   const [errors, setErrors] = useState({})
   const [shareModal, setShareModal] = useState(null)
   const [publishing, setPublishing] = useState(false)
+  const { progress: uploadProgress, track: trackUpload } = useUploadProgress()
   const fileInputRef = useRef(null)
   const { trigger: triggerBurst, node: burstNode } = useActionBurst()
 
@@ -245,23 +248,30 @@ export function PublishListingPage() {
       type: listingType,
       category,
     })
-    const result = await dispatch(
-      publishListing({
-        files: photos.map((photo) => photo.file),
-        values: {
-          ...sanitizedForm,
-          ownerId: user.id,
-          sellerName: publishContext.useBusiness
-            ? business.name
-            : `${user.firstName} ${user.lastName}`,
-          businessId: publishContext.businessId,
-          currency: 'RUB',
-          country: 'RU',
-          status: initialCatalogStatus(user),
-        },
-      }),
-    )
-    setPublishing(false)
+    let result
+    try {
+      result = await trackUpload(async (onProgress) =>
+        dispatch(
+          publishListing({
+            files: photos.map((photo) => photo.file),
+            onProgress,
+            values: {
+              ...sanitizedForm,
+              ownerId: user.id,
+              sellerName: publishContext.useBusiness
+                ? business.name
+                : `${user.firstName} ${user.lastName}`,
+              businessId: publishContext.businessId,
+              currency: 'RUB',
+              country: 'RU',
+              status: initialCatalogStatus(user),
+            },
+          }),
+        ),
+      )
+    } finally {
+      setPublishing(false)
+    }
     if (publishListing.fulfilled.match(result)) {
       triggerBurst()
       const live = result.payload?.status === 'active'
@@ -951,6 +961,12 @@ export function PublishListingPage() {
       ) : null}
 
       {/* Navigation */}
+      {uploadProgress.active ||
+      uploadProgress.phase === 'done' ||
+      uploadProgress.phase === 'error' ? (
+        <UploadProgress progress={uploadProgress} />
+      ) : null}
+
       <div className="flex items-center justify-between gap-3">
         {step > 1 ? (
           <Button variant="secondary" icon={FiArrowLeft} onClick={back}>
