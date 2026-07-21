@@ -132,6 +132,18 @@ export function Header({ hideOnMobile = false }) {
             </Link>
           ) : null}
 
+          {/* Desktop: toujours visible. Mobile: uniquement sur les pages transferts. */}
+          <Link
+            to="/transfers/history"
+            className={`header-action-btn relative ${
+              mobileActions.showHistory ? 'grid' : 'hidden lg:grid'
+            }`}
+            aria-label={t('dashboard.overview.history')}
+          >
+            <FiClock className="header-action-icon" strokeWidth={2.1} aria-hidden="true" />
+            <HeaderActionLabel>{t('dashboard.overview.history')}</HeaderActionLabel>
+          </Link>
+
           <Link
             to="/notifications"
             className="header-action-btn relative grid"
@@ -149,18 +161,6 @@ export function Header({ hideOnMobile = false }) {
               />
             ) : null}
             <HeaderActionLabel>{t('notifications.title')}</HeaderActionLabel>
-          </Link>
-
-          {/* Desktop: toujours visible. Mobile: uniquement sur les pages transferts. */}
-          <Link
-            to="/transfers/history"
-            className={`header-action-btn relative ${
-              mobileActions.showHistory ? 'grid' : 'hidden lg:grid'
-            }`}
-            aria-label={t('dashboard.overview.history')}
-          >
-            <FiClock className="header-action-icon" strokeWidth={2.1} aria-hidden="true" />
-            <HeaderActionLabel>{t('dashboard.overview.history')}</HeaderActionLabel>
           </Link>
 
           {mobileActions.showMessages ? (

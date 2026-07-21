@@ -20,6 +20,7 @@ import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 export const MAIN_VIEWS = [
   { id: 'overview', label: 'Vue generale', labelKey: 'admin.nav.overview', icon: FiShield },
   { id: 'transfers', label: 'Transferts', labelKey: 'admin.nav.transfers', icon: FiRepeat },
+  { id: 'rates', label: 'Taux', labelKey: 'admin.nav.rates', icon: FiTrendingUp },
   { id: 'content', label: 'Contenus', labelKey: 'admin.nav.content', icon: FiLayers },
   { id: 'publications', label: 'Publications', labelKey: 'admin.nav.publications', icon: FiEdit3 },
   { id: 'support', label: 'Support', labelKey: 'admin.nav.support', icon: FiHeadphones },
@@ -61,6 +62,7 @@ export const VIEW_FILTERS = {
   verifications: ['all', 'pending', 'verified', 'rejected'],
   documents: ['all', 'pending', 'verified', 'rejected'],
   overview: [],
+  rates: [],
   queues: [],
   audit: [],
 }

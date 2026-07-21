@@ -45,6 +45,7 @@ export const ADMIN_FR_SOURCES = {
   // ── nav / content ───────────────────────────────────────────────────────
   'admin.nav.overview': 'Vue generale',
   'admin.nav.transfers': 'Transferts',
+  'admin.nav.rates': 'Taux de change',
   'admin.nav.content': 'Contenus',
   'admin.nav.publications': 'Publications',
   'admin.nav.support': 'Support',
@@ -54,6 +55,31 @@ export const ADMIN_FR_SOURCES = {
   'admin.nav.queues': "Files d'action",
   'admin.nav.audit': 'Audit',
   'admin.nav.guide': 'Guide (articles d’aide)',
+
+  // ── rates ───────────────────────────────────────────────────────────────
+  'admin.rates.title': 'Taux plateforme',
+  'admin.rates.description':
+    'Définissez les taux P2P et transfert (par devise d’origine ↔ RUB). Laisser vide pour utiliser Frankfurter.',
+  'admin.rates.currency': 'Devise d’origine',
+  'admin.rates.updatedAt': 'Dernière mise à jour : {date}',
+  'admin.rates.transferTitle': 'Taux d’échange transfert',
+  'admin.rates.transferDescription':
+    'Taux appliqué aux transferts MOXT lorsque renseigné (sinon Frankfurter + réductions entreprise).',
+  'admin.rates.p2pTitle': 'Taux P2P',
+  'admin.rates.p2pDescription':
+    'Taux proposé automatiquement à la création d’une offre P2P (non modifiable par l’utilisateur).',
+  'admin.rates.originToRub': '1 {currency} → RUB',
+  'admin.rates.rubToOrigin': '1 RUB → {currency}',
+  'admin.rates.frankfurterHint':
+    'Référence Frankfurter : 1 {currency} = {originToRub} RUB · 1 RUB = {rubToOrigin} {currency} ({source})',
+  'admin.rates.save': 'Enregistrer',
+  'admin.rates.useFrankfurter': 'Préremplir Frankfurter',
+  'admin.rates.clear': 'Effacer (revenir à Frankfurter)',
+  'admin.rates.toastSavedTitle': 'Taux enregistrés',
+  'admin.rates.toastSavedBody': '{kind} · {currency} ↔ RUB mis à jour.',
+  'admin.rates.toastClearedTitle': 'Taux effacés',
+  'admin.rates.toastClearedBody': '{kind} · {currency} utilise à nouveau Frankfurter.',
+
   'admin.content.businesses': 'Entreprises',
   'admin.content.listings': 'Annonces',
   'admin.content.jobs': 'Jobs',

@@ -15,9 +15,9 @@ const offerValues = {
 describe('P2P', () => {
   beforeEach(() => localStorage.clear())
 
-  it('applique les frais minimums', () => {
-    expect(calculateP2PFee(1000, 'XOF')).toBe(250)
-    expect(calculateP2PFee(1000, 'RUB')).toBe(25)
+  it('applique 0 % de frais plateforme', () => {
+    expect(calculateP2PFee(1000, 'XOF')).toBe(0)
+    expect(calculateP2PFee(1000, 'RUB')).toBe(0)
   })
 
   it('cree une transaction et ferme l offre acceptee', () => {
@@ -33,7 +33,7 @@ describe('P2P', () => {
 
     expect(accepted.offers[0].status).toBe('accepted')
     expect(accepted.orders[0].offerId).toBe(offer.id)
-    expect(accepted.orders[0].fee).toBe(250)
+    expect(accepted.orders[0].fee).toBe(0)
   })
 
   it('archive puis republie une offre', () => {

@@ -1,3 +1,4 @@
+import { isFeedPostSourceAvailable } from './archiveLinkedPosts'
 import { sortPostsByPublishedAt } from './postSortUtils'
 
 export const WELCOME_POST_IMAGE_MARKER = 'welcome-moxt-launch'
@@ -26,10 +27,18 @@ export function postMatchesDisplayLanguage(post, language) {
 
 /**
  * Construit le fil actualités : posts `pinned` en tête, puis tri chronologique.
+ * Avec `catalogs`, masque les posts liés à une source absente / archivée / indisponible.
  */
-export function buildNewsFeed(posts = [], { language = 'fr', sourceTypeFilter = 'all' } = {}) {
+export function buildNewsFeed(
+  posts = [],
+  { language = 'fr', sourceTypeFilter = 'all', catalogs } = {},
+) {
   const published = posts.filter((post) => post.status === 'published')
   let pool = published.filter((post) => postMatchesDisplayLanguage(post, language))
+
+  if (catalogs) {
+    pool = pool.filter((post) => isFeedPostSourceAvailable(post, catalogs))
+  }
 
   if (sourceTypeFilter !== 'all') {
     pool = pool.filter((post) => post.sourceType === sourceTypeFilter)

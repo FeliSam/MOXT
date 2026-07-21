@@ -27,6 +27,11 @@ export function NewsPage() {
   const p3 = (key, vars) => phase3Text(t, key, vars)
   const user = useSelector((s) => s.auth.user)
   const posts = useSelector((s) => s.posts?.items ?? [])
+  const listings = useSelector((s) => s.marketplace?.items ?? [])
+  const parcels = useSelector((s) => s.parcels?.items ?? [])
+  const jobs = useSelector((s) => s.jobs?.items ?? [])
+  const events = useSelector((s) => s.events?.items ?? [])
+  const businesses = useSelector((s) => s.businesses?.items ?? [])
   const { requirePublish } = useSecurityGate()
 
   const [activeFilter, setActiveFilter] = useState('all')
@@ -47,14 +52,22 @@ export function NewsPage() {
     }
   }
 
+  const catalogs = useMemo(
+    () => ({ listings, parcels, jobs, events, businesses }),
+    [businesses, events, jobs, listings, parcels],
+  )
+
   const publishedPosts = useMemo(
-    () => posts.filter((p) => p.status === 'published'),
-    [posts],
+    () => buildNewsFeed(posts, { language, catalogs }),
+    [catalogs, language, posts],
   )
 
   const filtered = useMemo(
-    () => buildNewsFeed(publishedPosts, { language, sourceTypeFilter: activeFilter }),
-    [activeFilter, language, publishedPosts],
+    () =>
+      activeFilter === 'all'
+        ? publishedPosts
+        : buildNewsFeed(posts, { language, sourceTypeFilter: activeFilter, catalogs }),
+    [activeFilter, catalogs, language, posts, publishedPosts],
   )
 
   return (

@@ -8,8 +8,8 @@ import { EntityVerifiedName } from '../../../components/ui/EntityVerifiedName'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { jobContractLabel, jobSectorLabel } from '../../jobs/jobDisplayUtils'
 import { formatParcelDepartureLabel } from '../../parcels/parcelUtils'
+import { buildNewsFeed } from '../../posts/postFeedUtils'
 import { formatDate } from '../../transfers/transferUtils'
-import { sortPostsByPublishedAt } from '../../posts/postSortUtils'
 import { dashboardCarouselTrackClass } from '../dashboardConfig'
 import { DashboardLiveList } from './DashboardLiveList'
 import { DashboardSectionHeading } from './DashboardSectionHeading'
@@ -25,11 +25,26 @@ export function DashboardDiscoverySection({
   parcels,
   parcelsLoading,
 }) {
-  const { t } = useLanguage()
+  const { language, t } = useLanguage()
   const allPosts = useSelector((s) => s.posts?.items ?? [])
+  const listings = useSelector((s) => s.marketplace?.items ?? [])
+  const catalogParcels = useSelector((s) => s.parcels?.items ?? [])
+  const catalogJobs = useSelector((s) => s.jobs?.items ?? [])
+  const catalogEvents = useSelector((s) => s.events?.items ?? [])
+  const businesses = useSelector((s) => s.businesses?.items ?? [])
   const posts = useMemo(
-    () => sortPostsByPublishedAt(allPosts.filter((p) => p.status === 'published')).slice(0, 3),
-    [allPosts],
+    () =>
+      buildNewsFeed(allPosts, {
+        language,
+        catalogs: {
+          listings,
+          parcels: catalogParcels,
+          jobs: catalogJobs,
+          events: catalogEvents,
+          businesses,
+        },
+      }).slice(0, 3),
+    [allPosts, businesses, catalogEvents, catalogJobs, catalogParcels, language, listings],
   )
 
   return (

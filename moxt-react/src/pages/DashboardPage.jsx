@@ -14,6 +14,12 @@ import {
   dashboardListingItemClass,
   dashboardListingTrackClass,
 } from '../features/dashboard/dashboardConfig'
+import {
+  selectDashboardEvents,
+  selectDashboardJobs,
+  selectDashboardListings,
+  selectDashboardParcels,
+} from '../features/dashboard/dashboardBrowseUtils'
 import { useDashboardStats } from '../features/dashboard/hooks/useDashboardStats'
 import { MarketplaceListingCard } from '../features/marketplace/MarketplaceListingCard'
 import { TransferCalculator } from '../features/transfers/TransferCalculator'
@@ -29,10 +35,16 @@ export function DashboardPage() {
   const listingsScrollRef = useHorizontalScroll()
   const user = useSelector((state) => state.auth.user)
   const authLoading = useSelector((state) => state.auth.status === 'loading')
-  const listings = useSelector((state) => state.marketplace.items.slice(0, 4), shallowEqual)
-  const parcels = useSelector((state) => state.parcels.items.slice(0, 5), shallowEqual)
-  const jobs = useSelector((state) => state.jobs.items.slice(0, 5), shallowEqual)
-  const events = useSelector((state) => state.events.items.slice(0, 5), shallowEqual)
+  const listings = useSelector(
+    (state) => selectDashboardListings(state.marketplace.items),
+    shallowEqual,
+  )
+  const parcels = useSelector(
+    (state) => selectDashboardParcels(state.parcels.items),
+    shallowEqual,
+  )
+  const jobs = useSelector((state) => selectDashboardJobs(state.jobs.items), shallowEqual)
+  const events = useSelector((state) => selectDashboardEvents(state.events.items), shallowEqual)
 
   const stats = useDashboardStats(user)
   const rate = useExchangeRate()

@@ -63,25 +63,10 @@ export function MoxtHubPage() {
 
   return (
     <div className="grid min-w-0 gap-8 overflow-x-clip sm:gap-10">
-      <RevealOnScroll>
-        <header className="relative overflow-hidden rounded-[var(--radius-card-lg)] border border-[var(--app-border)]/80 bg-[var(--app-surface)]/65 p-6 shadow-[var(--shadow-card)] backdrop-blur-xl sm:p-8">
-          <div
-            className="pointer-events-none absolute inset-0 bg-gradient-to-br from-brand-50/50 via-transparent to-[var(--app-cobalt-soft)]/20 dark:from-brand-950/25 dark:to-[var(--app-cobalt-soft)]/10"
-            aria-hidden="true"
-          />
-          <div className="relative">
-            <h1 className="sr-only">MOXT</h1>
-            <img
-              src="/assets/logos/MOXTlogo.png"
-              alt="MOXT"
-              className="h-11 w-auto max-w-[min(100%,14rem)] object-contain object-left sm:h-14 sm:max-w-[16rem]"
-            />
-          </div>
-        </header>
-      </RevealOnScroll>
+      <h1 className="sr-only">MOXT</h1>
 
       <section className="grid min-w-0 gap-4" aria-labelledby="moxt-hub-services">
-        <RevealOnScroll delay={40}>
+        <RevealOnScroll>
           <HubSectionHeading
             id="moxt-hub-services"
             title={t('moxtHub.primaryServices')}

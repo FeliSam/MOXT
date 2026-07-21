@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   collectCascadeArchiveTargets,
+  isFeedPostSourceAvailable,
   shouldArchiveLinkedPosts,
 } from './archiveLinkedPosts'
 
@@ -80,5 +81,32 @@ describe('collectCascadeArchiveTargets', () => {
     expect(
       collectCascadeArchiveTargets({ type: 'marketplace/expireListings', payload: '' }, before, after),
     ).toEqual([{ sourceType: 'listing', sourceId: 'L1' }])
+  })
+})
+
+describe('isFeedPostSourceAvailable', () => {
+  it('keeps free posts and hides missing or archived sources', () => {
+    expect(isFeedPostSourceAvailable({ sourceType: 'free' }, {})).toBe(true)
+    expect(
+      isFeedPostSourceAvailable(
+        { sourceType: 'job', sourceId: 'J1' },
+        { jobs: [{ id: 'J1', status: 'active' }] },
+      ),
+    ).toBe(true)
+    expect(
+      isFeedPostSourceAvailable(
+        { sourceType: 'job', sourceId: 'J1' },
+        { jobs: [{ id: 'J1', status: 'expired' }] },
+      ),
+    ).toBe(false)
+    expect(
+      isFeedPostSourceAvailable({ sourceType: 'parcel', sourceId: 'P1' }, { parcels: [] }),
+    ).toBe(false)
+    expect(
+      isFeedPostSourceAvailable(
+        { sourceType: 'parcel', sourceId: 'P1' },
+        { parcels: [{ id: 'P1', status: 'active', departureDate: '2020-01-01' }] },
+      ),
+    ).toBe(false)
   })
 })

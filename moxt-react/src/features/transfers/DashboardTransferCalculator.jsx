@@ -36,22 +36,22 @@ export function DashboardTransferCalculator({ onOpen }) {
   }
 
   return (
-    <div className="rounded-[var(--radius-card-lg)] bg-white/12 p-4 shadow-2xl backdrop-blur-xl sm:p-5">
-      <div className="flex items-center justify-between gap-3">
-        <div>
+    <div className="min-w-0 max-w-full overflow-hidden rounded-[var(--radius-card-lg)] bg-white/12 p-3 shadow-2xl backdrop-blur-xl sm:p-5">
+      <div className="flex min-w-0 items-center justify-between gap-2 sm:gap-3">
+        <div className="min-w-0">
           <p className="text-xs font-bold text-white/65">{t('transfers.dashboardCalc.eyebrow')}</p>
-          <h2 className="mt-1 text-xl font-black">{t('transfers.dashboardCalc.title')}</h2>
+          <h2 className="mt-1 truncate text-lg font-black sm:text-xl">{t('transfers.dashboardCalc.title')}</h2>
         </div>
         <button
           type="button"
           onClick={invert}
-          className="grid size-11 place-items-center rounded-[var(--radius-btn)] bg-white text-brand-800"
+          className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-btn)] bg-white text-brand-800 sm:size-11"
           aria-label={t('transfers.calculator.invertAria')}
         >
           <FiRepeat />
         </button>
       </div>
-      <div className="mt-6 grid gap-3">
+      <div className="mt-5 grid min-w-0 gap-3 sm:mt-6">
         <CurrencyField
           label={t('transfers.dashboardCalc.youSend')}
           currency={calculation.currencyFrom}
@@ -66,11 +66,11 @@ export function DashboardTransferCalculator({ onOpen }) {
           onChange={updateReceived}
         />
       </div>
-      <div className="mt-3 flex items-center justify-between gap-3 text-[10px] text-white/65">
-        <span>
+      <div className="mt-3 flex min-w-0 flex-wrap items-center justify-between gap-2 text-[10px] text-white/65">
+        <span className="min-w-0 truncate">
           1 {calculation.currencyFrom} = {calculation.rate.toFixed(5)} {calculation.currencyTo}
         </span>
-        <span>
+        <span className="shrink-0">
           {liveRate.loading
             ? t('transfers.calculator.refreshing')
             : `${liveRate.source}${liveRate.date ? ` · ${liveRate.date}` : ''}`}
@@ -79,9 +79,10 @@ export function DashboardTransferCalculator({ onOpen }) {
       <button
         type="button"
         onClick={onOpen}
-        className="mt-4 flex items-center justify-between rounded-[var(--radius-btn)] bg-cyan-300 px-4 py-3 text-sm font-black text-slate-950"
+        className="mt-4 flex w-full min-w-0 items-center justify-between gap-2 rounded-[var(--radius-btn)] bg-cyan-300 px-3 py-3 text-sm font-black text-slate-950 sm:px-4"
       >
-        {t('transfers.dashboardCalc.openCalculator')} <FiArrowUpRight />
+        <span className="truncate">{t('transfers.dashboardCalc.openCalculator')}</span>
+        <FiArrowUpRight className="shrink-0" />
       </button>
     </div>
   )
@@ -89,24 +90,28 @@ export function DashboardTransferCalculator({ onOpen }) {
 
 function CurrencyField({ currency, dark = false, label, onChange, value }) {
   return (
-    <label className={`rounded-[var(--radius-input)] p-4 ${dark ? 'bg-slate-950/25' : 'bg-white text-slate-950'}`}>
+    <label
+      className={`min-w-0 overflow-hidden rounded-[var(--radius-input)] p-3 sm:p-4 ${
+        dark ? 'bg-slate-950/25' : 'bg-white text-slate-950'
+      }`}
+    >
       <span
-        className={`text-[10px] font-black uppercase tracking-wider ${
+        className={`block truncate text-[10px] font-black uppercase tracking-wider ${
           dark ? 'text-white/55' : 'text-slate-400'
         }`}
       >
         {label}
       </span>
-      <span className="mt-2 flex items-center gap-3">
+      <span className="mt-2 flex min-w-0 items-center gap-2 sm:gap-3">
         <input
-          className="min-w-0 flex-1 bg-transparent text-2xl font-black outline-none"
+          className="min-w-0 flex-1 bg-transparent text-xl font-black outline-none sm:text-2xl"
           type="number"
           min="0"
           value={value}
           onChange={(event) => onChange(event.target.value)}
         />
         <span
-          className={`rounded-full px-3 py-1 text-xs font-black ${
+          className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-black sm:px-3 ${
             dark ? 'bg-white/15' : 'bg-emerald-100 text-emerald-800'
           }`}
         >

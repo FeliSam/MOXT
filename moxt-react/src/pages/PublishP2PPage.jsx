@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   FiArrowLeft,
   FiArrowRight,
@@ -17,10 +17,24 @@ import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
 import { useLanguage } from '../contexts/useLanguage'
 import { createOffer } from '../features/p2p/p2pSlice'
-import { calculateP2PFee, p2pLimit } from '../features/p2p/p2pUtils'
+import {
+  calculateP2PFee,
+  formatP2PRate,
+  frankfurterRateForPair,
+  P2P_CONFIG,
+  p2pLimit,
+} from '../features/p2p/p2pUtils'
+import {
+  methodCountryForP2POffer,
+  usePaymentMethodOptions,
+} from '../features/p2p/usePaymentMethodOptions'
 import { SecurityGatePanel } from '../features/security/SecurityGatePanel'
 import { useSecurityGate } from '../features/security/useSecurityGate'
-import { transferCurrenciesForCountry } from '../features/transfers/transferConfig'
+import {
+  currencyForCountry,
+  transferCurrenciesForCountry,
+} from '../features/transfers/transferConfig'
+import { useExchangeRate } from '../features/transfers/useExchangeRate'
 import { formatMoney } from '../features/transfers/transferUtils'
 import { addToast } from '../features/ui/uiSlice'
 import { useScrollToTopOnStep } from '../hooks/useScrollToTopOnStep'
@@ -76,12 +90,23 @@ function Stepper({ step, onGoTo, t }) {
   )
 }
 
-function SectionTitle({ icon: Icon, label }) {
+function SectionTitle({ icon: Icon, label, onIconClick, iconAriaLabel }) {
   return (
     <div className="flex items-center gap-3 border-b border-[var(--app-border)] pb-4">
-      <span className="grid size-9 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
-        <Icon className="text-base" />
-      </span>
+      {onIconClick ? (
+        <button
+          type="button"
+          onClick={onIconClick}
+          aria-label={iconAriaLabel || label}
+          className="grid size-9 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)] transition hover:bg-brand-100 hover:text-brand-700 dark:hover:bg-brand-950/40"
+        >
+          <Icon className="text-base" />
+        </button>
+      ) : (
+        <span className="grid size-9 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
+          <Icon className="text-base" />
+        </span>
+      )}
       <h2 className="font-black">{label}</h2>
     </div>
   )
@@ -97,24 +122,80 @@ export function PublishP2PPage() {
     state.businesses.items.find((item) => item.ownerId === user.id),
   )
   const originCountry = user.originCountry || (user.country !== 'RU' ? user.country : 'BJ')
+  const originCurrency = currencyForCountry(originCountry)
   const availableCurrencies = transferCurrenciesForCountry(originCountry)
+  const otherCurrency = (currency) => (currency === 'RUB' ? originCurrency : 'RUB')
 
   const [step, setStep] = useState(1)
   useScrollToTopOnStep(step)
   const [errors, setErrors] = useState({})
   const [publishing, setPublishing] = useState(false)
   const [form, setForm] = useState({
-    fromCurrency: availableCurrencies[0] || 'RUB',
-    toCurrency: availableCurrencies[1] || availableCurrencies[0] || 'XOF',
+    fromCurrency: originCurrency,
+    toCurrency: 'RUB',
     amount: '',
     rate: '',
     method: '',
     comment: '',
   })
+  const liveRate = useExchangeRate(originCurrency, { kind: 'p2p' })
+  const methodCountry = methodCountryForP2POffer(form.fromCurrency, originCountry)
+  const { options: methodOptions, loading: methodsLoading, isRussia: methodIsRussia } =
+    usePaymentMethodOptions(methodCountry)
+
+  useEffect(() => {
+    if (!methodOptions.length) return
+    setForm((prev) => {
+      if (prev.method && methodOptions.includes(prev.method)) return prev
+      return { ...prev, method: '' }
+    })
+  }, [methodOptions])
+
+  const platformRate = useMemo(
+    () =>
+      frankfurterRateForPair(
+        liveRate,
+        form.fromCurrency,
+        form.toCurrency,
+        originCurrency,
+      ),
+    [form.fromCurrency, form.toCurrency, liveRate, originCurrency],
+  )
+  const rateFormatted = formatP2PRate(platformRate)
+
+  useEffect(() => {
+    if (!rateFormatted) return
+    setForm((prev) => (prev.rate === rateFormatted ? prev : { ...prev, rate: rateFormatted }))
+  }, [rateFormatted])
 
   function set(field, value) {
-    setForm((prev) => ({ ...prev, [field]: value }))
+    setForm((prev) => {
+      if (field === 'fromCurrency') {
+        return {
+          ...prev,
+          fromCurrency: value,
+          toCurrency: otherCurrency(value),
+        }
+      }
+      if (field === 'toCurrency') {
+        return {
+          ...prev,
+          toCurrency: value,
+          fromCurrency: otherCurrency(value),
+        }
+      }
+      return { ...prev, [field]: value }
+    })
     setErrors((prev) => ({ ...prev, [field]: undefined }))
+  }
+
+  function swapCurrencies() {
+    setForm((prev) => ({
+      ...prev,
+      fromCurrency: prev.toCurrency,
+      toCurrency: prev.fromCurrency,
+    }))
+    setErrors((prev) => ({ ...prev, fromCurrency: undefined, toCurrency: undefined }))
   }
 
   function validate(n) {
@@ -124,6 +205,14 @@ export function PublishP2PPage() {
       if (!form.toCurrency) errs.toCurrency = t('validation.p2p.toCurrencyRequired')
       if (form.fromCurrency === form.toCurrency) {
         errs.toCurrency = t('validation.p2p.differentCurrency')
+      }
+      const pairOk =
+        (form.fromCurrency === 'RUB' && form.toCurrency === originCurrency) ||
+        (form.toCurrency === 'RUB' && form.fromCurrency === originCurrency)
+      if (!pairOk) {
+        errs.toCurrency = t('validation.p2p.originRubPair', {
+          currency: originCurrency,
+        })
       }
     }
     if (n === 2) {
@@ -171,6 +260,9 @@ export function PublishP2PPage() {
     const action = dispatch(
       createOffer({
         ...form,
+        rate: Number(form.rate),
+        rateSource: liveRate.source || 'Frankfurter',
+        feePercent: P2P_CONFIG.platformFeePercent,
         ownerId: user.id,
         ownerName: business?.name || `${user.firstName} ${user.lastName}`,
         businessId: business?.id || null,
@@ -189,7 +281,9 @@ export function PublishP2PPage() {
 
   const amountNumber = Number(form.amount)
   const estimatedFee =
-    amountNumber > 0 ? calculateP2PFee(amountNumber, form.fromCurrency) : 0
+    amountNumber > 0
+      ? calculateP2PFee(amountNumber, form.fromCurrency, P2P_CONFIG.platformFeePercent)
+      : 0
 
   return (
     <SecurityGatePanel kind="p2p" backTo="/p2p">
@@ -208,11 +302,19 @@ export function PublishP2PPage() {
         {step === 1 ? (
           <div className="grid gap-5">
             <Card className="grid gap-5">
-              <SectionTitle icon={FiRepeat} label={t('p2p.publish.currencyPair')} />
+              <SectionTitle
+                icon={FiRepeat}
+                label={t('p2p.publish.currencyPair')}
+                onIconClick={swapCurrencies}
+                iconAriaLabel={t('p2p.publish.swapCurrencies')}
+              />
               <p className="text-sm text-[var(--app-text-muted)]">
-                {t('p2p.publish.currencyLimit', { currencies: availableCurrencies.join(', ') })}
+                {t('p2p.publish.currencyLimit', {
+                  currencies: availableCurrencies.join(', '),
+                  origin: originCurrency,
+                })}
               </p>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-[1fr_auto_1fr] sm:items-end">
                 <Select
                   id="p2p-publish-from"
                   label={t('p2p.publish.iOffer')}
@@ -226,6 +328,14 @@ export function PublishP2PPage() {
                     </option>
                   ))}
                 </Select>
+                <button
+                  type="button"
+                  onClick={swapCurrencies}
+                  aria-label={t('p2p.publish.swapCurrencies')}
+                  className="mx-auto mb-1 grid size-10 place-items-center rounded-full bg-brand-700 text-white transition hover:bg-brand-600 dark:bg-brand-600"
+                >
+                  <FiRepeat className="text-sm" />
+                </button>
                 <Select
                   id="p2p-publish-to"
                   label={t('p2p.publish.iSeek')}
@@ -246,9 +356,14 @@ export function PublishP2PPage() {
                     {form.fromCurrency}
                   </p>
                 </div>
-                <span className="grid size-7 shrink-0 place-items-center rounded-full bg-brand-700 text-white dark:bg-brand-600">
+                <button
+                  type="button"
+                  onClick={swapCurrencies}
+                  aria-label={t('p2p.publish.swapCurrencies')}
+                  className="grid size-7 shrink-0 place-items-center rounded-full bg-brand-700 text-white transition hover:bg-brand-600 dark:bg-brand-600"
+                >
                   <FiArrowRight className="text-xs" />
-                </span>
+                </button>
                 <div className="min-w-0 flex-1 text-center">
                   <p className="truncate text-xs font-black uppercase tracking-wide">
                     {form.toCurrency}
@@ -287,16 +402,36 @@ export function PublishP2PPage() {
                 step="0.0001"
                 inputMode="decimal"
                 value={form.rate}
-                onChange={(event) => set('rate', event.target.value)}
+                readOnly
+                disabled
                 error={errors.rate}
               />
-              {amountNumber > 0 ? (
-                <Alert variant="info">
-                  {t('p2p.publish.estimatedFees', {
-                    amount: formatMoney(estimatedFee, form.fromCurrency),
+              <p className="text-xs text-[var(--app-text-muted)]">
+                {t('p2p.publish.rateReadonlyHint', {
+                  source: liveRate.source || 'Frankfurter',
+                  date: liveRate.date || '—',
+                })}
+              </p>
+              {rateFormatted ? (
+                <div className="rounded-2xl bg-[var(--app-surface-muted)] px-4 py-3 text-sm text-[var(--app-text-muted)]">
+                  {t('p2p.publish.rateAppliedHint', {
+                    rate: rateFormatted,
+                    from: form.fromCurrency,
+                    to: form.toCurrency,
+                    source: liveRate.source || 'Frankfurter',
                   })}
-                </Alert>
+                </div>
+              ) : liveRate.loading ? (
+                <p className="text-sm text-[var(--app-text-muted)]">
+                  {t('p2p.publish.frankfurterRateLoading')}
+                </p>
               ) : null}
+              <Alert variant="info">
+                {t('p2p.publish.estimatedFees', {
+                  amount: formatMoney(estimatedFee, form.fromCurrency),
+                  percent: P2P_CONFIG.platformFeePercent,
+                })}
+              </Alert>
             </Card>
           </div>
         ) : null}
@@ -305,14 +440,29 @@ export function PublishP2PPage() {
           <div className="grid gap-5">
             <Card className="grid gap-5">
               <SectionTitle icon={FiUsers} label={t('p2p.publish.exchangeTerms')} />
-              <Input
+              <Select
                 id="p2p-publish-method"
-                label={t('p2p.publish.method')}
-                placeholder={t('p2p.publish.methodPlaceholder')}
+                label={
+                  methodIsRussia
+                    ? t('p2p.publish.methodRussia')
+                    : t('p2p.publish.methodAfrica', { country: originCountry })
+                }
                 value={form.method}
                 onChange={(event) => set('method', event.target.value)}
                 error={errors.method}
-              />
+                disabled={methodsLoading && methodIsRussia}
+              >
+                <option value="">
+                  {methodsLoading
+                    ? t('p2p.publish.methodLoading')
+                    : t('p2p.publish.methodPlaceholder')}
+                </option>
+                {methodOptions.map((method) => (
+                  <option key={method} value={method}>
+                    {method}
+                  </option>
+                ))}
+              </Select>
               <Input
                 id="p2p-publish-comment"
                 label={t('p2p.publish.conditionsOptional')}
@@ -325,16 +475,14 @@ export function PublishP2PPage() {
             <Card className="grid gap-4">
               <SectionTitle icon={FiCheckCircle} label={t('p2p.publish.recap')} />
               {[
-                [
-                  t('p2p.publish.iOffer'),
-                  `${form.amount || '—'} ${form.fromCurrency}`,
-                ],
+                [t('p2p.publish.iOffer'), `${form.amount || '—'} ${form.fromCurrency}`],
                 [t('p2p.publish.iSeek'), form.toCurrency],
                 [t('p2p.publish.rate'), form.rate || '—'],
+                [t('p2p.publish.rateSource'), liveRate.source || 'Frankfurter'],
                 [t('p2p.publish.method'), form.method || '—'],
                 [
                   t('p2p.publish.estimatedFeesLabel'),
-                  amountNumber > 0 ? formatMoney(estimatedFee, form.fromCurrency) : '—',
+                  formatMoney(estimatedFee, form.fromCurrency),
                 ],
               ].map(([label, value]) => (
                 <div

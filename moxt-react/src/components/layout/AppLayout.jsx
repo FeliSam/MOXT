@@ -63,7 +63,7 @@ export function AppLayout({ children }) {
 
   return (
     <div
-      className={`text-[var(--app-text)] ${
+      className={`max-w-full min-w-0 overflow-x-clip text-[var(--app-text)] ${
         isMessagesRoute
           ? 'messages-shell h-dvh max-h-dvh overflow-hidden overscroll-none'
           : 'min-h-screen'

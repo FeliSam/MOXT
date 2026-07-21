@@ -7,6 +7,7 @@ import { markIntentionalSignOut } from '../services/authSessionSync'
 const persistenceMap = {
   account: [{ key: 'moxt-account-v1', select: (state) => state.account }],
   administration: [{ key: 'moxt-administration-v1', select: (state) => state.administration }],
+  platformRates: [{ key: 'moxt-platform-rates-v1', select: (state) => state.platformRates }],
   // audit: retiré volontairement — données sensibles ne doivent pas être en localStorage en clair
   businesses: [
     { key: 'moxt-businesses-v1', select: (state) => state.businesses.items },

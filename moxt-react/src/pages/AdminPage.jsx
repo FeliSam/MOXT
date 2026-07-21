@@ -14,6 +14,7 @@ import { AdminContentPanel } from '../features/admin/components/AdminContentPane
 import { AdminDetailPanel } from '../features/admin/components/AdminDetailPanel'
 import { AdminOverviewPanel } from '../features/admin/components/AdminOverviewPanel'
 import { AdminQueuesPanel } from '../features/admin/components/AdminQueuesPanel'
+import { AdminRatesPanel } from '../features/admin/components/AdminRatesPanel'
 import { AdminSupportPanel } from '../features/admin/components/AdminSupportPanel'
 import { AdminTransfersPanel } from '../features/admin/components/AdminTransfersPanel'
 import { AdminUsersPanel } from '../features/admin/components/AdminUsersPanel'
@@ -146,6 +147,7 @@ export function AdminPage() {
           {view === 'transfers' && (
             <AdminTransfersPanel dispatch={dispatch} setSelected={setSelected} transfers={transfers} />
           )}
+          {view === 'rates' && <AdminRatesPanel admin={admin} />}
           {(view === 'content' || view === 'publications') && (
             <AdminContentPanel
               contentView={effectiveContentView}

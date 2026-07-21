@@ -338,10 +338,72 @@ textarea:focus-visible {
 html.capacitor-native header,
 html.capacitor-native .app-top-header {
   padding-top: max(1.25rem, calc(env(safe-area-inset-top) + 0.35rem));
+  padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+  padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
 }
 
 html.capacitor-native .capacitor-safe-bottom {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+/* Android WebView : éviter le zoom texte / largeur forcée qui coupe les bords */
+html.capacitor-native,
+html.capacitor-native body {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html.capacitor-android,
+html.capacitor-android body {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html.capacitor-native #root {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+/* Padding horizontal = max(gutters, safe-area) — évite le clip sous encoche / gesture */
+html.capacitor-native #main-content {
+  padding-left: max(1rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1rem, env(safe-area-inset-right, 0px));
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+@media (min-width: 640px) {
+  html.capacitor-native #main-content {
+    padding-left: max(1.5rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1.5rem, env(safe-area-inset-right, 0px));
+  }
+}
+
+@media (min-width: 1024px) {
+  html.capacitor-native #main-content {
+    padding-left: max(2rem, env(safe-area-inset-left, 0px));
+    padding-right: max(2rem, env(safe-area-inset-right, 0px));
+  }
+}
+
+/*
+  Les pistes dashboard-h-bleed débordent volontairement sur le web mobile.
+  Sur Capacitor, le bleed élargit la page (mx-auto) → clip des deux côtés.
+*/
+html.capacitor-native #main-content .dashboard-h-bleed,
+html.capacitor-native #main-content .\-mx-4 {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+html.capacitor-native .bottom-nav-shell {
+  left: max(0.75rem, env(safe-area-inset-left, 0px));
+  right: max(0.75rem, env(safe-area-inset-right, 0px));
 }
 
 /* ─── Bottom nav — modèle unique Chrome + Safari (+ Capacitor) ─────────────
@@ -384,7 +446,7 @@ html.keyboard-open .bottom-nav-shell {
 
 .message-composer-shell {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
-  margin-bottom: var(--keyboard-inset, 0px);
+  margin-bottom: 0;
 }
 
 @media (min-width: 640px) {
@@ -394,6 +456,7 @@ html.keyboard-open .bottom-nav-shell {
 }
 
 html.keyboard-open .message-composer-shell {
+  margin-bottom: var(--keyboard-inset, 0px);
   /* Avoid safe-area gap stacked above the keyboard. */
   padding-bottom: 0.75rem;
 }
@@ -2829,6 +2892,9 @@ input[type='file'] {
 
 /* Carrousels horizontaux — pan-x + pan-y pour ne pas bloquer le scroll vertical de page */
 .horizontal-track {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
   overscroll-behavior-x: contain;
@@ -2840,6 +2906,19 @@ input[type='file'] {
   touch-action: pan-x pan-y pinch-zoom;
   -webkit-mask-image: linear-gradient(to right, transparent 0, #000 0.65rem, #000 calc(100% - 0.65rem), transparent 100%);
   mask-image: linear-gradient(to right, transparent 0, #000 0.65rem, #000 calc(100% - 0.65rem), transparent 100%);
+}
+
+/* Bleed horizontal des carrousels dashboard (compense px-4 du main). */
+.dashboard-h-bleed {
+  margin-left: -1rem;
+  margin-right: -1rem;
+}
+
+@media (min-width: 640px) {
+  .dashboard-h-bleed {
+    margin-left: -1.5rem;
+    margin-right: -1.5rem;
+  }
 }
 
 .horizontal-track > * {

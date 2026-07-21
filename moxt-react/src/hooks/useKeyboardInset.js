@@ -1,10 +1,11 @@
 import { useEffect } from 'react'
 
-const KEYBOARD_OPEN_PX = 80
+/** Seuil anti faux-positifs (chrome Safari / URL bar ≈ 40–100px). */
+const KEYBOARD_OPEN_PX = 180
 
 /**
  * Tracks soft-keyboard height via visualViewport and exposes:
- * - CSS var `--keyboard-inset`
+ * - CSS var `--keyboard-inset` (0 si pas un vrai clavier)
  * - class `keyboard-open` on <html>
  */
 export function useKeyboardInset() {
@@ -13,11 +14,13 @@ export function useKeyboardInset() {
     const vv = window.visualViewport
 
     function update() {
-      const inset = vv
+      const raw = vv
         ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop))
         : 0
-      root.style.setProperty('--keyboard-inset', `${inset}px`)
-      root.classList.toggle('keyboard-open', inset >= KEYBOARD_OPEN_PX)
+      const open = raw >= KEYBOARD_OPEN_PX
+      // Fermé → forcer 0 (pas de margin fantôme sur le composer).
+      root.style.setProperty('--keyboard-inset', open ? `${raw}px` : '0px')
+      root.classList.toggle('keyboard-open', open)
     }
 
     update()
