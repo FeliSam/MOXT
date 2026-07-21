@@ -93,7 +93,7 @@ export const coreServices = [
     imageLogo: '/assets/services/service-marketplace.png',
     tagKey: 'dashboard.config.services.marketplace.tag',
     size: 'featured',
-    iconPos: 'tr',
+    iconPos: 'br',
     surface:
       'bg-[linear-gradient(160deg,color-mix(in_srgb,#0ea5e9_14.52%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(160deg,rgba(14,165,233,0.266)_0%,var(--app-surface-muted)_100%)]',
   },
@@ -106,7 +106,7 @@ export const coreServices = [
     imageLogo: '/assets/services/service-parcel.png',
     tagKey: 'dashboard.config.services.parcels.tag',
     size: 'medium',
-    iconPos: 'bl',
+    iconPos: 'br',
     surface:
       'bg-[linear-gradient(145deg,color-mix(in_srgb,#d97706_10.89%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(217,119,6,0.218)_0%,var(--app-surface-muted)_100%)]',
   },
@@ -132,7 +132,7 @@ export const coreServices = [
     imageLogo: '/assets/services/service-p2p.png',
     tagKey: 'dashboard.config.services.p2p.tag',
     size: 'compact',
-    iconPos: 'tr',
+    iconPos: 'br',
     surface:
       'bg-[linear-gradient(145deg,color-mix(in_srgb,#0891b2_9.68%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(8,145,178,0.194)_0%,var(--app-surface-muted)_100%)]',
   },
@@ -158,7 +158,7 @@ export const coreServices = [
     imageLogo: '/assets/services/service-businesses.png',
     tagKey: 'dashboard.config.services.businesses.tag',
     size: 'compact',
-    iconPos: 'bl',
+    iconPos: 'br',
     surface:
       'bg-[linear-gradient(145deg,color-mix(in_srgb,#245de8_9.68%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(36,93,232,0.194)_0%,var(--app-surface-muted)_100%)]',
   },
@@ -171,7 +171,7 @@ export const coreServices = [
     imageLogo: '/assets/services/quick-event.png',
     tagKey: 'dashboard.config.services.events.tag',
     size: 'compact',
-    iconPos: 'tr',
+    iconPos: 'br',
     surface:
       'bg-[linear-gradient(145deg,color-mix(in_srgb,#ea580c_9.68%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(234,88,12,0.194)_0%,var(--app-surface-muted)_100%)]',
   },
@@ -270,7 +270,7 @@ export const dashboardLiveItemClass =
 export const dashboardLiveTrackClass =
   'horizontal-track scrollbar-hidden flex w-full max-w-full min-w-0 gap-3 py-1 sm:gap-4'
 
-export const dashboardLiveCardClass = 'min-w-0 overflow-hidden !p-0'
+export const dashboardLiveCardClass = 'min-w-0 overflow-hidden !border-0 !p-0 shadow-none'
 
 /** Accents visuels par type de liste live. */
 export const dashboardLiveAccents = {

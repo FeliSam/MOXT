@@ -158,7 +158,7 @@ export const tw = {
   listingPrice: 'text-sm font-black tabular-nums text-white sm:text-base',
   listingCity: 'text-[11px] text-white/75',
 
-  liveListCard: 'mx-4 min-w-0 overflow-hidden !p-0 rounded-2xl bg-white shadow-sm dark:bg-zinc-900',
+  liveListCard: 'mx-4 min-w-0 overflow-hidden !p-0 rounded-2xl bg-transparent shadow-none',
   liveListHeader: 'p-5 pb-4 sm:p-6 sm:pb-4',
   liveListTitle: 'font-display text-lg font-extrabold tracking-[-0.02em] text-app-text dark:text-zinc-50 sm:text-xl',
   liveListDesc: 'mt-0.5 text-xs text-app-text-muted dark:text-zinc-400 sm:text-sm',
@@ -301,7 +301,7 @@ export const CORE_SERVICES: {
     tag: 'Découvrir',
     tone: 'info',
     size: 'featured',
-    iconPos: 'tr',
+    iconPos: 'br',
   },
   {
     id: 'parcels',
@@ -312,7 +312,7 @@ export const CORE_SERVICES: {
     tag: 'Voyages',
     tone: 'warning',
     size: 'medium',
-    iconPos: 'bl',
+    iconPos: 'br',
   },
   {
     id: 'jobs',
@@ -334,7 +334,7 @@ export const CORE_SERVICES: {
     tag: 'Échanges',
     tone: 'rose',
     size: 'compact',
-    iconPos: 'tr',
+    iconPos: 'br',
   },
   {
     id: 'exchangers',
@@ -356,7 +356,7 @@ export const CORE_SERVICES: {
     tag: 'Professionnel',
     tone: 'info',
     size: 'compact',
-    iconPos: 'bl',
+    iconPos: 'br',
   },
   {
     id: 'events',
@@ -367,7 +367,7 @@ export const CORE_SERVICES: {
     tag: 'Agenda',
     tone: 'warning',
     size: 'compact',
-    iconPos: 'tr',
+    iconPos: 'br',
   },
   {
     id: 'news',
