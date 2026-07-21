@@ -2,19 +2,12 @@ import { useMemo } from 'react'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { FiChevronRight } from 'react-icons/fi'
-import { Badge } from '../components/ui/Badge'
-import { Card } from '../components/ui/Card'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { RevealOnScroll } from '../components/ui/RevealOnScroll'
 import { preloadRoute } from '../config/navigation'
 import { useLanguage } from '../contexts/useLanguage'
-import {
-  coreServices,
-  quickActionAccents,
-  quickActions,
-  serviceTones,
-} from '../features/dashboard/dashboardConfig'
-import { Dashboard3DIcon } from '../features/dashboard/components/Dashboard3DIcon'
+import { coreServices, quickActions } from '../features/dashboard/dashboardConfig'
+import { DashboardBentoGrid } from '../features/dashboard/components/DashboardBentoGrid'
 import {
   filterMoxtHubLinksByRole,
   moxtHubAdminLinks,
@@ -76,38 +69,7 @@ export function MoxtHubPage() {
             title={t('moxtHub.primaryServices')}
           />
         </RevealOnScroll>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          {coreServices.map(({ image, imageLogo, path, tagKey, titleKey }, index) => (
-            <RevealListItem key={titleKey} index={index}>
-              <Link
-                className="block h-full"
-                to={path}
-                onFocus={() => preloadRoute(path)}
-                onMouseEnter={() => preloadRoute(path)}
-              >
-                <Card
-                  variant="interactive"
-                  className="group flex h-full flex-col overflow-hidden !border-0 !p-3 text-center shadow-none sm:!p-5 sm:text-left"
-                >
-                  <Dashboard3DIcon
-                    className="mx-auto sm:mx-0"
-                    imageLogo={imageLogo}
-                    size="sm"
-                    src={image}
-                  />
-                  <div className="mt-2 min-w-0 flex-1 sm:mt-3">
-                    <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-                      <h3 className="font-black tracking-tight text-[var(--app-text)]">
-                        {t(titleKey)}
-                      </h3>
-                      <Badge tone={serviceTones[index]}>{t(tagKey)}</Badge>
-                    </div>
-                  </div>
-                </Card>
-              </Link>
-            </RevealListItem>
-          ))}
-        </div>
+        <DashboardBentoGrid items={coreServices} />
       </section>
 
       <section className="grid min-w-0 gap-4" aria-labelledby="moxt-hub-actions">
@@ -117,32 +79,7 @@ export function MoxtHubPage() {
             title={t('moxtHub.quickActions')}
           />
         </RevealOnScroll>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5">
-          {quickActions.map(({ image, imageLogo, labelKey, path }, index) => (
-            <RevealListItem key={labelKey} index={index}>
-              <Link
-                className="block h-full"
-                to={path}
-                onFocus={() => preloadRoute(path)}
-                onMouseEnter={() => preloadRoute(path)}
-              >
-                <Card
-                  className={`group flex h-full min-h-[9.5rem] flex-col justify-between bg-gradient-to-br !border-0 !p-4 shadow-none transition duration-300 hover:-translate-y-1 hover:shadow-xl sm:!p-5 ${quickActionAccents[index]}`}
-                >
-                  <div className="min-w-0">
-                    <h3 className="text-sm font-black leading-snug sm:text-base">{t(labelKey)}</h3>
-                  </div>
-                  <Dashboard3DIcon
-                    className="mt-3 self-end"
-                    imageLogo={imageLogo}
-                    size="sm"
-                    src={image}
-                  />
-                </Card>
-              </Link>
-            </RevealListItem>
-          ))}
-        </div>
+        <DashboardBentoGrid items={quickActions} />
       </section>
 
       {adminLinks.length > 0 ? (

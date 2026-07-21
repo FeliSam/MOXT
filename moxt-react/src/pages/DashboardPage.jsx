@@ -30,7 +30,6 @@ import { useLanguage } from '../contexts/useLanguage'
 export function DashboardPage() {
   const { t } = useLanguage()
   const [calculatorOpen, setCalculatorOpen] = useState(false)
-  const quickActionsScrollRef = useHorizontalScroll()
   const listingsScrollRef = useHorizontalScroll()
   const user = useSelector((state) => state.auth.user)
   const authLoading = useSelector((state) => state.auth.status === 'loading')
@@ -76,17 +75,17 @@ export function DashboardPage() {
 
   return (
     <div className="grid min-w-0 gap-6 overflow-x-clip sm:gap-7">
+      <DashboardServiceCarousels />
+
       <DashboardHero user={user} onOpenCalculator={() => setCalculatorOpen(true)} />
 
       <div className="lg:hidden">
         <DashboardSearch />
       </div>
 
-      <DashboardQuickActionsSection scrollRef={quickActionsScrollRef} />
+      <DashboardQuickActionsSection />
 
       <DashboardOverviewPanels {...stats} rate={rate} user={user} />
-
-      <DashboardServiceCarousels />
 
       <DashboardDiscoverySection
         conversations={stats.conversations}

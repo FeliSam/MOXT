@@ -2972,6 +2972,8 @@ input[type='file'] {
   border-radius: 1.35rem;
   padding: 1rem 1rem 1.1rem;
   min-width: 0;
+  /* +10 % saturation / vivacité des teintes bento */
+  filter: saturate(1.1);
   transition:
     transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
     filter 280ms ease;
@@ -2985,7 +2987,7 @@ input[type='file'] {
 @media (hover: hover) {
   .dashboard-bento-tile:hover {
     transform: translateY(-2px);
-    filter: brightness(1.02);
+    filter: saturate(1.1) brightness(1.02);
   }
 }
 

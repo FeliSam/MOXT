@@ -1,38 +1,67 @@
+/**
+ * Actions rapides — disposition bento (même modèle que Services essentiels).
+ * size: hero | featured | medium | compact
+ */
 export const quickActions = [
   {
+    id: 'qa-transfer',
     labelKey: 'dashboard.config.quickActions.transfer.label',
     descriptionKey: 'dashboard.config.quickActions.transfer.description',
     path: '/transfers',
     image: '/assets/services/3d/service-transfer.png',
     imageLogo: '/assets/services/service-transfer.png',
+    size: 'hero',
+    iconPos: 'br',
+    surface:
+      'bg-[linear-gradient(135deg,color-mix(in_srgb,var(--app-teal)_15.4%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(135deg,rgba(8,112,95,0.308)_0%,var(--app-surface-muted)_100%)]',
   },
   {
+    id: 'qa-listing',
     labelKey: 'dashboard.config.quickActions.listing.label',
     descriptionKey: 'dashboard.config.quickActions.listing.description',
     path: '/marketplace/publish',
     image: '/assets/services/3d/quick-marketplace.png',
     imageLogo: '/assets/services/quick-marketplace.png',
+    size: 'featured',
+    iconPos: 'tr',
+    surface:
+      'bg-[linear-gradient(160deg,color-mix(in_srgb,#0891b2_13.2%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(160deg,rgba(8,145,178,0.242)_0%,var(--app-surface-muted)_100%)]',
   },
   {
+    id: 'qa-parcel',
     labelKey: 'dashboard.config.quickActions.parcel.label',
     descriptionKey: 'dashboard.config.quickActions.parcel.description',
     path: '/parcels/publish',
     image: '/assets/services/3d/quick-parcel.png',
     imageLogo: '/assets/services/quick-parcel.png',
+    size: 'medium',
+    iconPos: 'br',
+    surface:
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#245de8_9.9%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(36,93,232,0.198)_0%,var(--app-surface-muted)_100%)]',
   },
   {
+    id: 'qa-job',
     labelKey: 'dashboard.config.quickActions.job.label',
     descriptionKey: 'dashboard.config.quickActions.job.description',
     path: '/jobs/publish',
     image: '/assets/services/3d/quick-job.png',
     imageLogo: '/assets/services/quick-job.png',
+    size: 'medium',
+    iconPos: 'bl',
+    surface:
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#b45309_9.9%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(180,83,9,0.198)_0%,var(--app-surface-muted)_100%)]',
   },
   {
+    id: 'qa-event',
     labelKey: 'dashboard.config.quickActions.event.label',
     descriptionKey: 'dashboard.config.quickActions.event.description',
     path: '/events/publish',
     image: '/assets/services/3d/quick-event.png',
     imageLogo: '/assets/services/quick-event.png',
+    size: 'compact',
+    iconPos: 'tr',
+    surface:
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#7c3aed_8.8%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(124,58,237,0.176)_0%,var(--app-surface-muted)_100%)]',
   },
 ]
 
@@ -53,7 +82,7 @@ export const coreServices = [
     size: 'hero',
     iconPos: 'br',
     surface:
-      'bg-[linear-gradient(135deg,color-mix(in_srgb,var(--app-teal)_14%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(135deg,rgba(8,112,95,0.28)_0%,var(--app-surface-muted)_100%)]',
+      'bg-[linear-gradient(135deg,color-mix(in_srgb,var(--app-teal)_15.4%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(135deg,rgba(8,112,95,0.308)_0%,var(--app-surface-muted)_100%)]',
   },
   {
     id: 'p2p',
@@ -66,7 +95,7 @@ export const coreServices = [
     size: 'featured',
     iconPos: 'tr',
     surface:
-      'bg-[linear-gradient(160deg,color-mix(in_srgb,#0891b2_12%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(160deg,rgba(8,145,178,0.22)_0%,var(--app-surface-muted)_100%)]',
+      'bg-[linear-gradient(160deg,color-mix(in_srgb,#0891b2_13.2%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(160deg,rgba(8,145,178,0.242)_0%,var(--app-surface-muted)_100%)]',
   },
   {
     id: 'marketplace',
@@ -78,7 +107,8 @@ export const coreServices = [
     tagKey: 'dashboard.config.services.marketplace.tag',
     size: 'medium',
     iconPos: 'br',
-    surface: 'bg-[var(--app-surface-muted)]',
+    surface:
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#0ea5e9_9.9%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(14,165,233,0.198)_0%,var(--app-surface-muted)_100%)]',
   },
   {
     id: 'parcels',
@@ -90,7 +120,8 @@ export const coreServices = [
     tagKey: 'dashboard.config.services.parcels.tag',
     size: 'medium',
     iconPos: 'bl',
-    surface: 'bg-[var(--app-surface-muted)]',
+    surface:
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#d97706_9.9%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(217,119,6,0.198)_0%,var(--app-surface-muted)_100%)]',
   },
   {
     id: 'jobs',
@@ -102,7 +133,8 @@ export const coreServices = [
     tagKey: 'dashboard.config.services.jobs.tag',
     size: 'compact',
     iconPos: 'tr',
-    surface: 'bg-[var(--app-surface)]',
+    surface:
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#7c3aed_8.8%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(124,58,237,0.176)_0%,var(--app-surface-muted)_100%)]',
   },
   {
     id: 'exchangers',
@@ -114,7 +146,8 @@ export const coreServices = [
     tagKey: 'dashboard.config.services.exchangers.tag',
     size: 'compact',
     iconPos: 'br',
-    surface: 'bg-[var(--app-surface)]',
+    surface:
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#08705f_8.8%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(8,112,95,0.176)_0%,var(--app-surface-muted)_100%)]',
   },
   {
     id: 'businesses',
@@ -126,7 +159,8 @@ export const coreServices = [
     tagKey: 'dashboard.config.services.businesses.tag',
     size: 'compact',
     iconPos: 'bl',
-    surface: 'bg-[var(--app-surface)]',
+    surface:
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#245de8_8.8%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(36,93,232,0.176)_0%,var(--app-surface-muted)_100%)]',
   },
   {
     id: 'events',
@@ -138,7 +172,8 @@ export const coreServices = [
     tagKey: 'dashboard.config.services.events.tag',
     size: 'compact',
     iconPos: 'tr',
-    surface: 'bg-[var(--app-surface-muted)]',
+    surface:
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#ea580c_8.8%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(234,88,12,0.176)_0%,var(--app-surface-muted)_100%)]',
   },
   {
     id: 'news',
@@ -150,7 +185,8 @@ export const coreServices = [
     tagKey: 'dashboard.config.services.news.tag',
     size: 'compact',
     iconPos: 'br',
-    surface: 'bg-[var(--app-surface-muted)]',
+    surface:
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#db2777_8.8%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(219,39,119,0.176)_0%,var(--app-surface-muted)_100%)]',
   },
 ]
 

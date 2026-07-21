@@ -18,18 +18,14 @@ export function DashboardHero({ user, onOpenCalculator }) {
       <div className="relative z-10 grid min-w-0 gap-6 sm:gap-8 lg:grid-cols-[1.3fr_0.7fr] lg:items-center">
         <div className="min-w-0">
           <div className="inline-flex max-w-full items-center gap-1.5 text-sm font-bold text-white/90">
-            <span className="truncate">{t('dashboard.hero.welcome', { name: user.firstName })}</span>
+            <h1 className="truncate font-bold">
+              {t('dashboard.hero.welcome', { name: user.firstName })}
+            </h1>
             {isProfileVerified(user) ? (
               <VerifiedBadge size="sm" className="!text-emerald-200" />
             ) : null}
           </div>
-          <h1 className="font-display mt-3 max-w-4xl text-[1.75rem] font-extrabold leading-[1.08] tracking-[-0.03em] sm:mt-4 sm:text-5xl lg:text-6xl">
-            {t('dashboard.hero.title')}
-          </h1>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-white/75 sm:mt-4 sm:text-base">
-            {t('dashboard.hero.subtitleShort')}
-          </p>
-          <div className="mt-6 grid min-w-0 grid-cols-1 gap-2.5 sm:mt-7 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
+          <div className="mt-5 grid min-w-0 grid-cols-1 gap-2.5 sm:mt-6 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
             <Link
               to="/transfers"
               className={`${heroBtnBase} bg-white text-emerald-950 shadow-xl hover:bg-emerald-50`}

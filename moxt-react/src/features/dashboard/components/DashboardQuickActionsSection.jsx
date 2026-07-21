@@ -1,61 +1,16 @@
-import { Link } from 'react-router-dom'
-import { Card } from '../../../components/ui/Card'
-import { RevealListItem } from '../../../components/ui/RevealListItem'
-import { RevealOnScroll } from '../../../components/ui/RevealOnScroll'
 import { useLanguage } from '../../../contexts/useLanguage'
-import {
-  dashboardQuickActionsItemClass,
-  dashboardQuickActionsTrackClass,
-  quickActionAccents,
-  quickActions,
-} from '../dashboardConfig'
-import { Dashboard3DIcon } from './Dashboard3DIcon'
-import { DashboardSectionHeading } from './DashboardSectionHeading'
-import { ScrollArrows } from './ScrollArrows'
+import { quickActions } from '../dashboardConfig'
+import { DashboardBentoGrid } from './DashboardBentoGrid'
 
-export function DashboardQuickActionsSection({ scrollRef }) {
+export function DashboardQuickActionsSection() {
   const { t } = useLanguage()
 
   return (
-    <section className="grid min-w-0 gap-3">
-      <RevealOnScroll delay={80}>
-        <DashboardSectionHeading
-          title={t('dashboard.quickActions.title')}
-          link="/activities"
-          linkLabel={t('dashboard.quickActions.activitiesLink')}
-        />
-      </RevealOnScroll>
-      <div className="relative min-w-0 pb-3">
-        <div ref={scrollRef} className={`${dashboardQuickActionsTrackClass} min-w-0`}>
-          {quickActions.map(({ descriptionKey, image, imageLogo, labelKey, path }, index) => (
-            <RevealListItem
-              key={labelKey}
-              index={index}
-              className={dashboardQuickActionsItemClass}
-            >
-              <Link className="block h-full" to={path}>
-                <Card
-                  className={`group flex h-full min-h-[10.5rem] flex-col justify-between bg-gradient-to-br !border-0 p-4 shadow-none transition duration-300 hover:-translate-y-1 hover:shadow-xl sm:min-h-[11rem] sm:p-5 lg:min-h-[10.5rem] lg:p-5 xl:flex-row xl:items-center xl:justify-between xl:gap-4 ${quickActionAccents[index]}`}
-                >
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-base font-black leading-snug">{t(labelKey)}</h3>
-                    <p className="mt-2 text-sm leading-5 text-[var(--app-text-muted)] lg:text-xs">
-                      {t(descriptionKey)}
-                    </p>
-                  </div>
-                  <Dashboard3DIcon
-                    className="mt-3 self-end xl:mt-0 xl:self-center"
-                    imageLogo={imageLogo}
-                    size="quick"
-                    src={image}
-                  />
-                </Card>
-              </Link>
-            </RevealListItem>
-          ))}
-        </div>
-        <ScrollArrows scrollRef={scrollRef} showOnDesktop />
-      </div>
+    <section className="grid min-w-0 gap-3" aria-label={t('dashboard.quickActions.title')}>
+      <h2 className="text-2xl font-black tracking-[-0.035em] text-[var(--app-text)]">
+        {t('dashboard.quickActions.title')}
+      </h2>
+      <DashboardBentoGrid items={quickActions} />
     </section>
   )
 }

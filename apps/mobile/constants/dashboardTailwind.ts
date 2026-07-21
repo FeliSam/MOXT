@@ -186,13 +186,65 @@ export const badgeTones: Record<string, string> = {
 };
 
 export const QUICK_ACTIONS: {
-  Icon: LucideIcon; tint: string; label: string; description: string; route: string;
+  id: string;
+  Icon: LucideIcon;
+  tint: string;
+  label: string;
+  description: string;
+  route: string;
+  size: 'hero' | 'featured' | 'medium' | 'compact';
+  iconPos: 'br' | 'bl' | 'tr';
 }[] = [
-  { Icon: Send, tint: '#0b8975', label: 'Créer un transfert', description: 'Envoyer de l’argent en quelques étapes', route: '/transfer/wizard' },
-  { Icon: Megaphone, tint: '#08705f', label: 'Publier une annonce', description: 'Produit, service ou location', route: '/listing/create' },
-  { Icon: PackagePlus, tint: '#245de8', label: 'Envoyer un colis', description: 'Trouver ou proposer un trajet', route: '/parcels' },
-  { Icon: Briefcase, tint: '#b45309', label: 'Publier un job', description: 'Mission ou opportunité', route: '/jobs' },
-  { Icon: CalendarPlus, tint: '#7c3aed', label: 'Créer un événement', description: 'Rencontre, atelier ou formation', route: '/search' },
+  {
+    id: 'qa-transfer',
+    Icon: Send,
+    tint: '#0b8975',
+    label: 'Créer un transfert',
+    description: 'Envoyer de l’argent en quelques étapes',
+    route: '/transfer/wizard',
+    size: 'hero',
+    iconPos: 'br',
+  },
+  {
+    id: 'qa-listing',
+    Icon: Megaphone,
+    tint: '#0891b2',
+    label: 'Publier une annonce',
+    description: 'Produit, service ou location',
+    route: '/listing/create',
+    size: 'featured',
+    iconPos: 'tr',
+  },
+  {
+    id: 'qa-parcel',
+    Icon: PackagePlus,
+    tint: '#245de8',
+    label: 'Envoyer un colis',
+    description: 'Trouver ou proposer un trajet',
+    route: '/parcels',
+    size: 'medium',
+    iconPos: 'br',
+  },
+  {
+    id: 'qa-job',
+    Icon: Briefcase,
+    tint: '#b45309',
+    label: 'Publier un job',
+    description: 'Mission ou opportunité',
+    route: '/jobs',
+    size: 'medium',
+    iconPos: 'bl',
+  },
+  {
+    id: 'qa-event',
+    Icon: CalendarPlus,
+    tint: '#7c3aed',
+    label: 'Créer un événement',
+    description: 'Rencontre, atelier ou formation',
+    route: '/search',
+    size: 'compact',
+    iconPos: 'tr',
+  },
 ];
 
 export const QUICK_ACCENTS_LIGHT: [string, string][] = [

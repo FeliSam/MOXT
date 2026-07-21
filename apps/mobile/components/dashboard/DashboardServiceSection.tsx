@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -6,13 +6,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { router } from 'expo-router';
 
-import {
-  CORE_SERVICES,
-  TRUST_HIGHLIGHTS,
-  dashboardWidths,
-  tw,
-} from '@/constants/dashboardTailwind';
-import { DashboardSectionHeading } from '@/components/dashboard/DashboardSectionHeading';
+import { CORE_SERVICES } from '@/constants/dashboardTailwind';
 import { DashboardToneBadge } from '@/components/dashboard/DashboardToneBadge';
 import { cn } from '@/lib/cn';
 
@@ -21,15 +15,15 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 type BentoSize = 'hero' | 'featured' | 'medium' | 'compact';
 
 const SURFACE: Record<string, string> = {
-  transfers: 'bg-emerald-50 dark:bg-emerald-950/35',
-  p2p: 'bg-cyan-50 dark:bg-cyan-950/30',
-  marketplace: 'bg-zinc-100 dark:bg-zinc-900',
-  parcels: 'bg-amber-50/80 dark:bg-amber-950/25',
-  jobs: 'bg-white dark:bg-zinc-900',
-  exchangers: 'bg-white dark:bg-zinc-900',
-  businesses: 'bg-white dark:bg-zinc-900',
-  events: 'bg-zinc-100 dark:bg-zinc-900',
-  news: 'bg-zinc-100 dark:bg-zinc-900',
+  transfers: 'bg-emerald-100 dark:bg-emerald-950/40',
+  p2p: 'bg-cyan-100 dark:bg-cyan-950/35',
+  marketplace: 'bg-sky-50 dark:bg-sky-950/30',
+  parcels: 'bg-amber-100/90 dark:bg-amber-950/30',
+  jobs: 'bg-violet-50 dark:bg-violet-950/30',
+  exchangers: 'bg-teal-50 dark:bg-teal-950/30',
+  businesses: 'bg-blue-50 dark:bg-blue-950/30',
+  events: 'bg-orange-50 dark:bg-orange-950/30',
+  news: 'bg-rose-50 dark:bg-rose-950/30',
 };
 
 function BentoTile({
@@ -105,34 +99,16 @@ export function DashboardServiceSection() {
   const compacts = CORE_SERVICES.filter((s) => s.size === 'compact');
 
   return (
-    <View className="gap-3">
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName={tw.carouselTrack}>
-        {TRUST_HIGHLIGHTS.map(([title, description], index) => (
-          <View key={title} style={{ width: dashboardWidths.fourUp }} className={tw.trustCardOuter}>
-            <Text className={tw.trustNumber}>0{index + 1}</Text>
-            <Text className={tw.trustTitle}>{title}</Text>
-            <Text className={tw.trustDesc}>{description}</Text>
-          </View>
+    <View className="gap-3 overflow-visible px-4" accessibilityLabel="Services essentiels">
+      {hero ? <BentoTile service={hero} size="hero" /> : null}
+
+      <View className="flex-row flex-wrap justify-between gap-y-3 overflow-visible">
+        {featured ? <BentoTile service={featured} size="featured" half /> : null}
+        {mediums[0] ? <BentoTile service={mediums[0]} size="medium" half /> : null}
+        {mediums[1] ? <BentoTile service={mediums[1]} size="medium" half /> : null}
+        {compacts.map((service) => (
+          <BentoTile key={service.id} service={service} size="compact" half />
         ))}
-      </ScrollView>
-
-      <DashboardSectionHeading
-        title="Services essentiels"
-        linkLabel="Tout explorer"
-        onPress={() => router.push('/organization' as any)}
-      />
-
-      <View className="gap-3 overflow-visible">
-        {hero ? <BentoTile service={hero} size="hero" /> : null}
-
-        <View className="flex-row flex-wrap justify-between gap-y-3 overflow-visible">
-          {featured ? <BentoTile service={featured} size="featured" half /> : null}
-          {mediums[0] ? <BentoTile service={mediums[0]} size="medium" half /> : null}
-          {mediums[1] ? <BentoTile service={mediums[1]} size="medium" half /> : null}
-          {compacts.map((service) => (
-            <BentoTile key={service.id} service={service} size="compact" half />
-          ))}
-        </View>
       </View>
     </View>
   );
