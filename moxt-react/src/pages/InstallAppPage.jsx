@@ -1,12 +1,6 @@
 import { useEffect, useState } from 'react'
-import {
-  FiCheckCircle,
-  FiDownload,
-  FiHome,
-  FiShare2,
-  FiSmartphone,
-  FiUpload,
-} from 'react-icons/fi'
+import { FiDownload, FiSmartphone, FiUpload } from 'react-icons/fi'
+import { MdPhoneIphone } from 'react-icons/md'
 import { useDispatch, useSelector } from 'react-redux'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
@@ -22,6 +16,15 @@ const TABS = [
   { id: 'iphone', labelKey: 'install.tabs.iphone' },
 ]
 
+const IPHONE_GUIDE_BY_LANG = {
+  ru: '/assets/install/iphone-add-home-ru.png',
+  fr: '/assets/install/iphone-add-home-fr.png',
+  // Guides illustrés disponibles en FR / RU ; les autres langues utilisent le FR.
+  en: '/assets/install/iphone-add-home-fr.png',
+  es: '/assets/install/iphone-add-home-fr.png',
+  pt: '/assets/install/iphone-add-home-fr.png',
+}
+
 function formatBytes(size) {
   const n = Number(size) || 0
   if (n < 1024) return `${n} o`
@@ -29,28 +32,13 @@ function formatBytes(size) {
   return `${(n / (1024 * 1024)).toFixed(1)} Mo`
 }
 
-function StepVisual({ icon: Icon, title, body, step }) {
-  return (
-    <Card className="grid gap-4 p-5 sm:grid-cols-[7.5rem_1fr] sm:items-center">
-      <div className="relative mx-auto flex h-36 w-24 items-end justify-center overflow-hidden rounded-[1.4rem] border-2 border-[var(--app-border)] bg-[linear-gradient(160deg,#0b3d36_0%,#1a5cff_100%)] p-2 shadow-lg">
-        <div className="absolute top-2 h-1.5 w-10 rounded-full bg-white/30" />
-        <div className="mb-3 grid size-14 place-items-center rounded-2xl bg-white/95 text-[var(--app-accent)] shadow">
-          <Icon className="text-2xl" aria-hidden />
-        </div>
-        <span className="absolute left-2 top-2 grid size-6 place-items-center rounded-full bg-white text-[10px] font-black text-emerald-900">
-          {step}
-        </span>
-      </div>
-      <div className="min-w-0">
-        <h3 className="font-black">{title}</h3>
-        <p className="mt-2 text-sm leading-6 text-[var(--app-text-muted)]">{body}</p>
-      </div>
-    </Card>
-  )
+function iphoneGuideSrc(language) {
+  const lang = String(language || 'fr').slice(0, 2).toLowerCase()
+  return IPHONE_GUIDE_BY_LANG[lang] || IPHONE_GUIDE_BY_LANG.fr
 }
 
 export function InstallAppPage() {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const dispatch = useDispatch()
   const user = useSelector((state) => state.auth.user)
   const isStaff = ['admin', 'superadmin', 'moderator'].includes(user?.role)
@@ -59,6 +47,7 @@ export function InstallAppPage() {
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [versionDraft, setVersionDraft] = useState('')
+  const guideSrc = iphoneGuideSrc(language)
 
   useEffect(() => {
     let cancelled = false
@@ -138,7 +127,7 @@ export function InstallAppPage() {
                 : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)] hover:bg-[var(--app-surface)]'
             }`}
           >
-            {item.id === 'android' ? <FiSmartphone /> : <FiShare2 />}
+            {item.id === 'android' ? <FiSmartphone /> : <MdPhoneIphone />}
             {t(item.labelKey)}
           </button>
         ))}
@@ -233,24 +222,14 @@ export function InstallAppPage() {
             </div>
           </Card>
 
-          <StepVisual
-            step={1}
-            icon={FiShare2}
-            title={t('install.iphone.step1Title')}
-            body={t('install.iphone.step1Body')}
-          />
-          <StepVisual
-            step={2}
-            icon={FiHome}
-            title={t('install.iphone.step2Title')}
-            body={t('install.iphone.step2Body')}
-          />
-          <StepVisual
-            step={3}
-            icon={FiCheckCircle}
-            title={t('install.iphone.step3Title')}
-            body={t('install.iphone.step3Body')}
-          />
+          <Card className="overflow-hidden p-2 sm:p-3">
+            <img
+              src={guideSrc}
+              alt={t('install.iphone.guideAlt')}
+              className="mx-auto h-auto w-full max-w-3xl rounded-xl object-contain"
+              loading="lazy"
+            />
+          </Card>
 
           <Card className="p-5 text-sm leading-6 text-[var(--app-text-muted)]">
             {t('install.iphone.note')}

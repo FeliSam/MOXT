@@ -30,7 +30,6 @@ import { useLanguage } from '../contexts/useLanguage'
 export function DashboardPage() {
   const { t } = useLanguage()
   const [calculatorOpen, setCalculatorOpen] = useState(false)
-  const coreServicesRef = useHorizontalScroll()
   const quickActionsScrollRef = useHorizontalScroll()
   const listingsScrollRef = useHorizontalScroll()
   const user = useSelector((state) => state.auth.user)
@@ -87,7 +86,7 @@ export function DashboardPage() {
 
       <DashboardOverviewPanels {...stats} rate={rate} user={user} />
 
-      <DashboardServiceCarousels coreServicesRef={coreServicesRef} />
+      <DashboardServiceCarousels />
 
       <DashboardDiscoverySection
         conversations={stats.conversations}

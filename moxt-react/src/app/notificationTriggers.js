@@ -18,6 +18,7 @@ const P2P_STATUS_KEYS = {
   waiting_payment: 'shared.notifications.p2p.status.waitingPayment',
   completed: 'shared.notifications.p2p.status.completed',
   cancelled: 'shared.notifications.p2p.status.cancelled',
+  disputed: 'shared.notifications.p2p.status.disputed',
 }
 
 function currentLanguage() {

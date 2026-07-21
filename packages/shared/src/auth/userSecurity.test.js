@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   canCreateBusiness,
   canPublishContent,
+  canAcceptP2POffer,
   canPublishP2POffer,
   canPublishVoyage,
   canUseTransferAccount,
@@ -75,6 +76,12 @@ describe('userSecurity', () => {
       false,
     )
     expect(canPublishP2POffer(identityUser)).toBe(true)
+  })
+
+  it('requires the same KYC to accept a P2P offer', () => {
+    expect(canAcceptP2POffer(publishReadyUser)).toBe(false)
+    expect(canAcceptP2POffer(identityUser)).toBe(true)
+    expect(securityGateMessage('p2pAccept', publishReadyUser)).toMatch(/identité|identity|vérif/i)
   })
 
   it('requires full verification including KYC to publish a voyage', () => {

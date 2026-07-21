@@ -897,6 +897,12 @@ const handlers = {
     const offer = state.p2p.offers.find((item) => item.id === order.offerId)
     await syncP2pOrder(order, offer || null)
   },
+  'p2p/expireOrder': async (payload, state) => {
+    const order = state.p2p.orders.find((item) => item.id === payload.id)
+    if (!order) return
+    const offer = state.p2p.offers.find((item) => item.id === order.offerId)
+    await syncP2pOrder(order, offer || null)
+  },
   'p2p/moderateOrder': async (payload, state) => {
     const order = state.p2p.orders.find((item) => item.id === payload.id)
     if (!order) return

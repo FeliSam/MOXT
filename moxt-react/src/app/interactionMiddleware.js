@@ -136,7 +136,7 @@ export const interactionMiddleware = (store) => {
   if (action.type === 'p2p/acceptOffer') {
     triggers.handleP2PAcceptOffer(after, action)
   }
-  if (action.type === 'p2p/updateOrderStatus') {
+  if (action.type === 'p2p/updateOrderStatus' || action.type === 'p2p/expireOrder') {
     triggers.handleP2POrderStatus(before, after, action, actorId)
   }
   if (action.type === 'p2p/addOrderProof') {

@@ -10,16 +10,19 @@ import { CatalogArchiveTabs } from '../components/ui/CatalogArchiveTabs'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { CatalogSearch } from '../components/ui/CatalogSearch'
 import { EmptyState } from '../components/ui/EmptyState'
+import { Modal } from '../components/ui/Modal'
 import { PageHeader } from '../components/ui/PageHeader'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { Select } from '../components/ui/Select'
 import { useLanguage } from '../contexts/useLanguage'
+import { P2PNoEscrowBanner } from '../features/p2p/components/P2PNoEscrowBanner'
+import { P2PReputationBadge } from '../features/p2p/components/P2PReputationBadge'
 import { acceptOffer } from '../features/p2p/p2pSlice'
 import { calculateP2PFee } from '../features/p2p/p2pUtils'
+import { useSecurityGate } from '../features/security/useSecurityGate'
 import { transferCurrenciesForCountry } from '../features/transfers/transferConfig'
 import { formatMoney } from '../features/transfers/transferUtils'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
-import { useSecurityGate } from '../features/security/useSecurityGate'
 
 export function P2PPage() {
   const { t } = useLanguage()
@@ -33,10 +36,12 @@ export function P2PPage() {
   })
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const { requireP2PPublish } = useSecurityGate()
+  const { requireP2PPublish, requireP2PAccept } = useSecurityGate()
   const user = useSelector((state) => state.auth.user)
   const offers = useSelector((state) => state.p2p.offers)
   const orders = useSelector((state) => state.p2p.orders)
+  const reviews = useSelector((state) => state.reviews.items)
+  const [acceptOfferTarget, setAcceptOfferTarget] = useState(null)
   const originCountry = user.originCountry || (user.country !== 'RU' ? user.country : 'BJ')
   const availableCurrencies = transferCurrenciesForCountry(originCountry)
   const filteredOffers = useMemo(
@@ -75,8 +80,15 @@ export function P2PPage() {
     if (requireP2PPublish()) navigate('/p2p/publish')
   }
 
-  function handleAccept(offer) {
-    const action = dispatch(acceptOffer({ buyer: user, offer }))
+  function requestAccept(offer) {
+    if (!requireP2PAccept()) return
+    setAcceptOfferTarget(offer)
+  }
+
+  function confirmAccept() {
+    if (!acceptOfferTarget) return
+    const action = dispatch(acceptOffer({ buyer: user, offer: acceptOfferTarget }))
+    setAcceptOfferTarget(null)
     if (action.payload?.id) navigate(`/p2p/orders/${action.payload.id}`)
   }
 
@@ -91,6 +103,8 @@ export function P2PPage() {
           </Button>
         }
       />
+
+      <P2PNoEscrowBanner />
 
       <div className="grid gap-5">
         <CatalogSearch
@@ -185,6 +199,12 @@ export function P2PPage() {
                     className="mt-1.5 text-xs text-[var(--app-text-faint)]"
                     nameClassName="truncate"
                   />
+                  <P2PReputationBadge
+                    userId={offer.ownerId}
+                    orders={orders}
+                    reviews={reviews}
+                    className="mt-1.5"
+                  />
 
                   <div className="mt-4 flex items-center gap-2 rounded-2xl bg-[var(--app-surface-muted)] p-3">
                     <div className="min-w-0 flex-1 text-center">
@@ -227,7 +247,7 @@ export function P2PPage() {
                       <Button
                         size="sm"
                         className="min-h-10 flex-1 sm:min-h-11"
-                        onClick={() => handleAccept(offer)}
+                        onClick={() => requestAccept(offer)}
                       >
                         {t('p2p.page.accept')}
                       </Button>
@@ -297,6 +317,24 @@ export function P2PPage() {
           ) : null}
         </CatalogGrid>
       </div>
+
+      <Modal
+        open={Boolean(acceptOfferTarget)}
+        onClose={() => setAcceptOfferTarget(null)}
+        title={t('p2p.acceptConfirm.title')}
+      >
+        <div className="grid gap-4">
+          <p className="text-sm leading-6 text-[var(--app-text-muted)]">
+            {t('p2p.acceptConfirm.body')}
+          </p>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button variant="secondary" onClick={() => setAcceptOfferTarget(null)}>
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={confirmAccept}>{t('p2p.acceptConfirm.cta')}</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

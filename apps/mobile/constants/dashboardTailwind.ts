@@ -219,17 +219,115 @@ export const TRUST_HIGHLIGHTS: [string, string][] = [
 ];
 
 export const CORE_SERVICES: {
-  Icon: LucideIcon; title: string; description: string; route: string; tag: string; tone: string;
+  id: string;
+  Icon: LucideIcon;
+  title: string;
+  description: string;
+  route: string;
+  tag: string;
+  tone: string;
+  size: 'hero' | 'featured' | 'medium' | 'compact';
+  iconPos: 'br' | 'bl' | 'tr';
 }[] = [
-  { Icon: ArrowLeftRight, title: 'Transferts', description: 'Envoyez, suivez et gérez vos opérations simplement.', route: '/transfers', tag: 'Essentiel', tone: 'success' },
-  { Icon: ShoppingBag, title: 'Marketplace', description: 'Achetez et vendez entre particuliers et entreprises.', route: '/marketplace', tag: 'Découvrir', tone: 'info' },
-  { Icon: Package, title: 'Colis', description: 'Publiez, trouvez et réservez des kilos disponibles.', route: '/parcels', tag: 'Voyages', tone: 'warning' },
-  { Icon: Briefcase, title: 'Jobs', description: 'Découvrez des missions, jobs et opportunités professionnelles.', route: '/jobs', tag: 'Carrière', tone: 'success' },
-  { Icon: Handshake, title: 'Échangeurs', description: 'Trouvez des partenaires fiables et vérifiés.', route: '/organization', tag: 'Vérifiés', tone: 'violet' },
-  { Icon: Repeat, title: 'P2P', description: 'Publiez et trouvez des offres entre utilisateurs vérifiés.', route: '/marketplace', tag: 'Échanges', tone: 'rose' },
-  { Icon: Building2, title: 'Entreprises', description: 'Explorez les services des professionnels MOXT.', route: '/organization', tag: 'Professionnel', tone: 'info' },
-  { Icon: CalendarDays, title: 'Événements', description: 'Participez aux rencontres, ateliers et activités de la communauté.', route: '/search', tag: 'Agenda', tone: 'warning' },
-  { Icon: Newspaper, title: 'Actualité', description: 'Jobs, événements, actualités et opportunités.', route: '/search', tag: 'En direct', tone: 'violet' },
+  {
+    id: 'transfers',
+    Icon: ArrowLeftRight,
+    title: 'Transferts',
+    description: 'Envoyez, suivez et gérez vos opérations simplement.',
+    route: '/transfers',
+    tag: 'Essentiel',
+    tone: 'success',
+    size: 'hero',
+    iconPos: 'br',
+  },
+  {
+    id: 'p2p',
+    Icon: Repeat,
+    title: 'P2P',
+    description: 'Publiez et trouvez des offres entre utilisateurs vérifiés.',
+    route: '/p2p',
+    tag: 'Échanges',
+    tone: 'rose',
+    size: 'featured',
+    iconPos: 'tr',
+  },
+  {
+    id: 'marketplace',
+    Icon: ShoppingBag,
+    title: 'Marketplace',
+    description: 'Achetez et vendez entre particuliers et entreprises.',
+    route: '/marketplace',
+    tag: 'Découvrir',
+    tone: 'info',
+    size: 'medium',
+    iconPos: 'br',
+  },
+  {
+    id: 'parcels',
+    Icon: Package,
+    title: 'Colis',
+    description: 'Publiez, trouvez et réservez des kilos disponibles.',
+    route: '/parcels',
+    tag: 'Voyages',
+    tone: 'warning',
+    size: 'medium',
+    iconPos: 'bl',
+  },
+  {
+    id: 'jobs',
+    Icon: Briefcase,
+    title: 'Jobs',
+    description: 'Découvrez des missions, jobs et opportunités professionnelles.',
+    route: '/jobs',
+    tag: 'Carrière',
+    tone: 'success',
+    size: 'compact',
+    iconPos: 'tr',
+  },
+  {
+    id: 'exchangers',
+    Icon: Handshake,
+    title: 'Échangeurs',
+    description: 'Trouvez des partenaires fiables et vérifiés.',
+    route: '/organization',
+    tag: 'Vérifiés',
+    tone: 'violet',
+    size: 'compact',
+    iconPos: 'br',
+  },
+  {
+    id: 'businesses',
+    Icon: Building2,
+    title: 'Entreprises',
+    description: 'Explorez les services des professionnels MOXT.',
+    route: '/organization',
+    tag: 'Professionnel',
+    tone: 'info',
+    size: 'compact',
+    iconPos: 'bl',
+  },
+  {
+    id: 'events',
+    Icon: CalendarDays,
+    title: 'Événements',
+    description: 'Participez aux rencontres, ateliers et activités de la communauté.',
+    route: '/search',
+    tag: 'Agenda',
+    tone: 'warning',
+    size: 'compact',
+    iconPos: 'tr',
+  },
+  {
+    id: 'news',
+    Icon: Newspaper,
+    title: 'Actualité',
+    description: 'Jobs, événements, actualités et opportunités.',
+    route: '/search',
+    tag: 'En direct',
+    tone: 'violet',
+    size: 'compact',
+    iconPos: 'br',
+  },
 ];
 
 export const LISTING_TYPES: Record<string, string> = {

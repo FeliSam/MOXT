@@ -34,6 +34,8 @@ describe('P2P', () => {
     expect(accepted.offers[0].status).toBe('accepted')
     expect(accepted.orders[0].offerId).toBe(offer.id)
     expect(accepted.orders[0].fee).toBe(0)
+    expect(accepted.orders[0].paymentDueAt).toBeTruthy()
+    expect(accepted.orders[0].status).toBe('created')
   })
 
   it('archive puis republie une offre', () => {

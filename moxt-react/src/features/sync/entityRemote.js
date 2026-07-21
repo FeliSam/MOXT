@@ -20,6 +20,8 @@ export function p2pOrderFromRemoteRow(row) {
     proofs: parseJson(row.proofs ?? base.proofs, []),
     ratings: parseJson(row.ratings ?? base.ratings, []),
     timeline: parseJson(row.timeline ?? base.timeline, []),
+    paymentDueAt: base.paymentDueAt || row.payment_due_at || null,
+    confirmDueAt: base.confirmDueAt || row.confirm_due_at || null,
   }
 }
 
@@ -51,6 +53,8 @@ export function p2pOrderToRemoteRow(order) {
     proofs: order.proofs || [],
     ratings: order.ratings || [],
     timeline: order.timeline || [],
+    payment_due_at: order.paymentDueAt || null,
+    confirm_due_at: order.confirmDueAt || null,
     created_at: order.createdAt || new Date().toISOString(),
   }
 }

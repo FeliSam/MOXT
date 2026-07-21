@@ -4,6 +4,8 @@ import { supabase } from './supabaseClient'
 const BUCKET = 'app-releases'
 
 function publicUrlFor(path) {
+  if (!path) return null
+  if (/^https?:\/\//i.test(path)) return path
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
   return data?.publicUrl || null
 }

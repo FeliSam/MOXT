@@ -151,6 +151,8 @@ const camelMap = {
   verified_at: 'verifiedAt',
   translation_group_id: 'translationGroupId',
   last_active_at: 'lastActiveAt',
+  payment_due_at: 'paymentDueAt',
+  confirm_due_at: 'confirmDueAt',
 }
 
 export function fromRow(row) {

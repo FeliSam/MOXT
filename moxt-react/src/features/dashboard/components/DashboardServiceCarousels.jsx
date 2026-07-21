@@ -1,18 +1,24 @@
 import { Link } from 'react-router-dom'
-import { Badge } from '../../../components/ui/Badge'
-import { Card } from '../../../components/ui/Card'
 import { useLanguage } from '../../../contexts/useLanguage'
-import {
-  coreServices,
-  dashboardServiceItemClass,
-  dashboardServicesTrackClass,
-  serviceTones,
-} from '../dashboardConfig'
+import { coreServices } from '../dashboardConfig'
 import { Dashboard3DIcon } from './Dashboard3DIcon'
 import { DashboardSectionHeading } from './DashboardSectionHeading'
-import { ScrollArrows } from './ScrollArrows'
 
-export function DashboardServiceCarousels({ coreServicesRef }) {
+const SIZE_CLASS = {
+  hero: 'dashboard-bento-tile--hero col-span-2 min-h-[9.25rem] sm:min-h-[10rem]',
+  featured: 'dashboard-bento-tile--featured min-h-[8.5rem] sm:row-span-2 sm:min-h-0',
+  medium: 'dashboard-bento-tile--medium min-h-[7.25rem]',
+  compact: 'dashboard-bento-tile--compact min-h-[6.35rem]',
+}
+
+const ICON_SIZE = {
+  hero: 'hero',
+  featured: 'featured',
+  medium: 'lg',
+  compact: 'compact',
+}
+
+export function DashboardServiceCarousels() {
   const { t } = useLanguage()
 
   return (
@@ -22,26 +28,51 @@ export function DashboardServiceCarousels({ coreServicesRef }) {
         link="/businesses"
         linkLabel={t('dashboard.services.exploreAll')}
       />
-      <div className="relative min-w-0 pb-3">
-        <div ref={coreServicesRef} className={`${dashboardServicesTrackClass} min-w-0`}>
-          {coreServices.map(({ descriptionKey, image, imageLogo, path, tagKey, titleKey }, index) => (
-            <div key={titleKey} className={dashboardServiceItemClass}>
-              <Link className="block h-full" to={path}>
-                <Card className="group flex h-full flex-col overflow-hidden !border-0 p-3 shadow-none transition hover:shadow-lg">
-                  <Dashboard3DIcon className="mx-auto -mb-1" imageLogo={imageLogo} size="lg" src={image} />
-                  <h3 className="mt-3 font-black tracking-tight">{t(titleKey)}</h3>
-                  <p className="mt-2 flex-1 text-xs leading-5 text-[var(--app-text-muted)]">
-                    {t(descriptionKey)}
-                  </p>
-                  <div className="mt-4">
-                    <Badge tone={serviceTones[index % coreServices.length]}>{t(tagKey)}</Badge>
-                  </div>
-                </Card>
-              </Link>
-            </div>
-          ))}
-        </div>
-        <ScrollArrows scrollRef={coreServicesRef} />
+
+      <div className="dashboard-services-bento">
+        {coreServices.map((service) => {
+          const size = service.size || 'compact'
+          const showDescription = size === 'hero' || size === 'featured'
+          return (
+            <Link
+              key={service.id || service.titleKey}
+              to={service.path}
+              className={`dashboard-bento-tile group ${SIZE_CLASS[size]} ${service.surface || 'bg-[var(--app-surface-muted)]'}`}
+            >
+              <div className="relative z-[1] flex h-full min-h-0 flex-col justify-between pr-14 sm:pr-16">
+                <div className="min-w-0">
+                  <h3
+                    className={`font-black tracking-tight text-[var(--app-text)] ${
+                      size === 'hero'
+                        ? 'text-lg sm:text-xl'
+                        : size === 'featured'
+                          ? 'text-base sm:text-lg'
+                          : 'text-sm sm:text-base'
+                    }`}
+                  >
+                    {t(service.titleKey)}
+                  </h3>
+                  {showDescription ? (
+                    <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-[var(--app-text-muted)] sm:text-sm sm:leading-6">
+                      {t(service.descriptionKey)}
+                    </p>
+                  ) : null}
+                </div>
+                {service.tagKey ? (
+                  <span className="mt-3 w-fit rounded-lg bg-[color-mix(in_srgb,var(--app-surface)_72%,transparent)] px-2 py-1 text-[10px] font-black uppercase tracking-wide text-[var(--app-text-muted)]">
+                    {t(service.tagKey)}
+                  </span>
+                ) : null}
+              </div>
+              <Dashboard3DIcon
+                imageLogo={service.imageLogo}
+                pos={service.iconPos || 'br'}
+                size={ICON_SIZE[size]}
+                src={service.image}
+              />
+            </Link>
+          )
+        })}
       </div>
     </section>
   )

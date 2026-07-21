@@ -1,11 +1,24 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { createId } from '../../services/createId'
 import { createLocalStorage } from '../../services/createLocalStorage'
-import { calculateP2PFee } from './p2pUtils'
+import { addMs, calculateP2PFee, P2P_CONFIG } from './p2pUtils'
 import { mergeRemoteById } from '@moxt/shared/utils/mergeRemoteById.js'
 
 const offersStorage = createLocalStorage('moxt-p2p-offers-v1')
 const ordersStorage = createLocalStorage('moxt-p2p-orders-v1')
+
+function reactivateOffer(state, offerId) {
+  const offer = state.offers.find((item) => item.id === offerId)
+  if (!offer || offer.status !== 'accepted') return
+  const otherOpen = state.orders.some(
+    (order) =>
+      order.offerId === offerId &&
+      !['cancelled', 'completed'].includes(order.status),
+  )
+  if (otherOpen) return
+  offer.status = 'active'
+  offer.updatedAt = new Date().toISOString()
+}
 
 const p2pSlice = createSlice({
   name: 'p2p',
@@ -63,11 +76,15 @@ const p2pSlice = createSlice({
             fromCurrency: offer.fromCurrency,
             toCurrency: offer.toCurrency,
             rate: offer.rate,
+            method: offer.method || '',
+            comment: offer.comment || '',
             fee: calculateP2PFee(offer.amount, offer.fromCurrency),
             status: 'created',
             proofs: [],
             ratings: [],
             createdAt: now,
+            paymentDueAt: addMs(now, P2P_CONFIG.paymentWindowMs),
+            confirmDueAt: null,
             timeline: [{ status: 'created', at: now }],
           },
         }
@@ -76,8 +93,31 @@ const p2pSlice = createSlice({
     updateOrderStatus(state, action) {
       const order = state.orders.find((item) => item.id === action.payload.id)
       if (!order) return
-      order.status = action.payload.status
-      order.timeline.push({ status: action.payload.status, at: new Date().toISOString() })
+      const next = action.payload.status
+      if (order.status === next) return
+      order.status = next
+      const at = new Date().toISOString()
+      order.timeline ||= []
+      order.timeline.push({
+        status: next,
+        at,
+        note: action.payload.note || null,
+      })
+      if (next === 'waiting_payment') {
+        order.confirmDueAt = addMs(at, P2P_CONFIG.confirmWindowMs)
+      }
+      if (next === 'cancelled') {
+        reactivateOffer(state, order.offerId)
+      }
+    },
+    expireOrder(state, action) {
+      const order = state.orders.find((item) => item.id === action.payload.id)
+      if (!order || order.status !== 'created') return
+      const at = new Date().toISOString()
+      order.status = 'cancelled'
+      order.timeline ||= []
+      order.timeline.push({ status: 'cancelled', at, note: 'payment_expired' })
+      reactivateOffer(state, order.offerId)
     },
     moderateOffer(state, action) {
       const offer = state.offers.find((item) => item.id === action.payload.id)
@@ -104,6 +144,9 @@ const p2pSlice = createSlice({
         actorId: action.payload.actorId || null,
         note: action.payload.note || 'admin_moderate',
       })
+      if (next === 'cancelled') {
+        reactivateOffer(state, order.offerId)
+      }
     },
     addOrderProof(state, action) {
       const order = state.orders.find((item) => item.id === action.payload.id)
@@ -140,6 +183,7 @@ export const {
   acceptOffer,
   addOrderProof,
   createOffer,
+  expireOrder,
   moderateOffer,
   moderateOrder,
   rateOrder,
