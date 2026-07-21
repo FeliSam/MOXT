@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { FiEdit2, FiPlus, FiTrash2, FiUser } from 'react-icons/fi'
 import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
+import { FileNameText } from '../ui/FileNameText'
 import { Modal } from '../ui/Modal'
 import { Select } from '../ui/Select'
 import { Input } from '../ui/Input'
@@ -107,11 +108,12 @@ function IdentityFormFields({ variant, values, onChange, errors, p3 }) {
           error={errors.expiresAt}
         />
       </div>
-      <label className="grid gap-1 text-sm">
+      <label className="grid min-w-0 gap-1 overflow-hidden text-sm">
         <span className="font-bold">{p3('addresses.identity.scan')}</span>
         <input
           type="file"
           accept="image/*,.pdf"
+          className="max-w-full"
           onChange={(e) => {
             const file = e.target.files?.[0]
             if (!file) return
@@ -121,7 +123,11 @@ function IdentityFormFields({ variant, values, onChange, errors, p3 }) {
           }}
         />
         {values.scanMeta ? (
-          <span className="text-xs text-[var(--app-text-muted)]">{values.scanMeta.name}</span>
+          <FileNameText
+            name={values.scanMeta.name}
+            className="text-xs text-[var(--app-text-muted)]"
+            maxLength={36}
+          />
         ) : null}
       </label>
     </div>

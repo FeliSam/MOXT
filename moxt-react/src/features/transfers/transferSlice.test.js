@@ -5,6 +5,7 @@ import reducer, {
   declarePayment,
   expireOverdueTransfers,
   moderateTransfer,
+  receiveRemoteTransfer,
 } from './transferSlice'
 import { DIRECTIONS, TRANSFER_STATUS } from './transferConfig'
 
@@ -161,5 +162,23 @@ describe('transferSlice', () => {
     expect(paidOut.items[0].businessProof.name).toBe('virement.pdf')
     expect(paidOut.items[0].status).toBe(TRANSFER_STATUS.PAID_OUT)
     expect(paidOut.items[0].timeline).toHaveLength(4)
+  })
+
+  it('insère un transfert distant dès la création pour le tableau entreprise', () => {
+    const remote = {
+      id: 'MXT-REMOTE1',
+      userId: 'client-1',
+      businessId: 'EXC-1',
+      businessOwnerId: 'business-owner',
+      status: TRANSFER_STATUS.PENDING,
+    }
+    const added = reducer({ items: [] }, receiveRemoteTransfer(remote))
+    expect(added.items[0].id).toBe('MXT-REMOTE1')
+    const updated = reducer(
+      added,
+      receiveRemoteTransfer({ ...remote, status: TRANSFER_STATUS.DECLARED }),
+    )
+    expect(updated.items).toHaveLength(1)
+    expect(updated.items[0].status).toBe(TRANSFER_STATUS.DECLARED)
   })
 })

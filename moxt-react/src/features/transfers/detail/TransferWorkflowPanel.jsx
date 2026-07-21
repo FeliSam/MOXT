@@ -4,31 +4,35 @@ import {
   FiCheckCircle,
   FiClock,
   FiFileText,
-  FiFlag,
   FiUpload,
   FiXCircle,
 } from 'react-icons/fi'
 import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
 import { useLanguage } from '../../../contexts/useLanguage'
+import { ContactButton } from '../../communications/ContactButton'
+import { TransferRecipientAccountCard } from '../TransferRecipientAccountCard'
 import { TransferStatusBadge } from '../TransferStatusBadge'
 import { TRANSFER_STATUS } from '../transferConfig'
 import { formatDate } from '../transferUtils'
 import { TransferProgressStepper } from './TransferDetailParts'
 import { TransferProofsSection } from './TransferProofsSection'
 import { getTransferWorkflowForView } from './transferWorkflowUtils'
+import { UploadProgress } from '../../../components/ui/UploadProgress'
+import { shortenFileName } from '../../../services/uploadProgress'
 
 export function TransferWorkflowPanel({
   access,
   actionView,
   businessProof,
   canCancel,
+  contactOwnerId,
+  contactTitle,
   countdown,
   onBusinessProofSelected,
   onCancel,
   onCompleteBusinessStep,
   onDeclarePayment,
-  onOpenClaim,
   onProofSelected,
   proof,
   transfer,
@@ -66,11 +70,7 @@ export function TransferWorkflowPanel({
           <ActionZone
             description={t('transfers.workflow.claimOnlyDescription')}
             title={t('transfers.workflow.claimOnlyTitle')}
-          >
-            <Button variant="secondary" icon={FiFlag} onClick={onOpenClaim}>
-              {t('transfers.workflow.openClaim')}
-            </Button>
-          </ActionZone>
+          />
         ) : null}
 
         {currentAction?.type === 'confirm_payment_reception' ? (
@@ -86,6 +86,7 @@ export function TransferWorkflowPanel({
 
         {currentAction?.type === 'confirm_payout' ? (
           <ActionZone description={actionDescription} title={actionTitle}>
+            <TransferRecipientAccountCard transfer={transfer} />
             <label className="grid cursor-pointer gap-2 rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3">
               <span className="flex items-center gap-2 text-sm font-bold">
                 <FiUpload className="text-brand-700 dark:text-brand-300" />
@@ -196,6 +197,25 @@ export function TransferWorkflowPanel({
         ) : null}
 
         <TransferProofsSection className="border-t border-[var(--app-border)] pt-4" compact transfer={transfer} />
+
+        {contactOwnerId ? (
+          <div className="flex justify-end border-t border-[var(--app-border)] pt-4">
+            <ContactButton
+              ownerId={contactOwnerId}
+              relatedEntity={transfer}
+              relatedId={transfer.id}
+              relatedPath={`/transfers/${transfer.id}`}
+              relatedTitle={t('transfers.detail.relatedTitle', {
+                id: transfer.id,
+                contact: contactTitle || '',
+              })}
+              relatedType="transfer"
+              variant="secondary"
+            >
+              {t('transfers.workflow.contactChat')}
+            </ContactButton>
+          </div>
+        ) : null}
       </div>
     </Card>
   )
@@ -210,7 +230,7 @@ function ActionZone({ children, description, title }) {
       </p>
       <h3 className="mt-1 font-black">{title}</h3>
       <p className="mt-2 text-sm leading-6 text-[var(--app-text-muted)]">{description}</p>
-      <div className="mt-4 grid gap-3">{children}</div>
+      {children ? <div className="mt-4 grid gap-3">{children}</div> : null}
     </div>
   )
 }
@@ -220,9 +240,9 @@ function CompactProof({ label, proof }) {
   return (
     <div className="flex min-w-0 items-center gap-2 overflow-hidden rounded-xl bg-[var(--app-surface-muted)] px-3 py-2 text-xs font-semibold">
       <FiFileText className="shrink-0 text-brand-700 dark:text-brand-300" />
-      <span className="min-w-0 flex-1 truncate" title={`${label}: ${proof.name}`}>
-        {label}: {proof.name}
-      </span>
+        <span className="min-w-0 flex-1 truncate" title={`${label}: ${proof.name}`}>
+          {label}: {shortenFileName(proof.name, 28)}
+        </span>
     </div>
   )
 }
@@ -233,26 +253,39 @@ function ProofPreview({ proof }) {
   const name = file?.name || proof.name
   const type = file?.type || proof.type
   const previewUrl = proof.url || (file instanceof File ? URL.createObjectURL(file) : null)
+  const uploading = Boolean(proof.uploading)
 
   return (
-    <div className="flex min-w-0 items-center gap-3 overflow-hidden rounded-lg bg-[var(--app-surface)] p-2">
-      {type?.startsWith('image/') && previewUrl ? (
-        <img src={previewUrl} alt={name} className="size-10 shrink-0 rounded-md object-cover" />
-      ) : (
-        <span className="grid size-10 shrink-0 place-items-center rounded-md bg-brand-50 text-brand-700 dark:bg-brand-900 dark:text-brand-200">
-          <FiFileText className="text-sm" />
+    <div className="grid min-w-0 gap-2 overflow-hidden rounded-lg bg-[var(--app-surface)] p-2">
+      <div className="flex min-w-0 items-center gap-3">
+        {type?.startsWith('image/') && previewUrl ? (
+          <img src={previewUrl} alt={name} className="size-10 shrink-0 rounded-md object-cover" />
+        ) : (
+          <span className="grid size-10 shrink-0 place-items-center rounded-md bg-brand-50 text-brand-700 dark:bg-brand-900 dark:text-brand-200">
+            <FiFileText className="text-sm" />
+          </span>
+        )}
+        <span className="min-w-0 flex-1 truncate text-xs font-semibold" title={name}>
+          {shortenFileName(name, 28)}
         </span>
-      )}
-      <span className="min-w-0 flex-1 truncate text-xs font-semibold" title={name}>
-        {name}
-      </span>
-      {proof.uploading ? (
-        <span className="shrink-0 text-[11px] text-[var(--app-text-muted)]">
+        {uploading ? null : <FiCheck className="shrink-0 text-emerald-600" />}
+      </div>
+      {uploading ? (
+        <UploadProgress
+          compact
+          progress={{
+            active: true,
+            phase: proof.phase || 'uploading',
+            percent: proof.progress ?? 35,
+            fileName: name,
+          }}
+        />
+      ) : null}
+      {!uploading && !proof.url && !previewUrl ? (
+        <span className="text-[11px] text-[var(--app-text-muted)]">
           {t('transfers.workflow.uploading')}
         </span>
-      ) : (
-        <FiCheck className="shrink-0 text-emerald-600" />
-      )}
+      ) : null}
     </div>
   )
 }

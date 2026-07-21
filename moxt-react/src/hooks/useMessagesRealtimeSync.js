@@ -9,7 +9,7 @@ import {
   reconnectRealtimeSubscription,
 } from '../services/realtimeService'
 
-const POLL_CONNECTED_MS = 25000
+/** Safety net only when realtime is down — avoid redundant polling while connected. */
 const POLL_DEGRADED_MS = 12000
 
 export function useMessagesRealtimeSync(activeConversationId) {
@@ -51,10 +51,6 @@ export function useMessagesRealtimeSync(activeConversationId) {
 
     void syncInbox()
 
-    const intervalId = window.setInterval(() => {
-      void syncInbox()
-    }, POLL_CONNECTED_MS)
-
     const degradedId = window.setInterval(() => {
       if (isRealtimeConnected()) return
       void syncInbox()
@@ -62,7 +58,6 @@ export function useMessagesRealtimeSync(activeConversationId) {
 
     return () => {
       cancelled = true
-      window.clearInterval(intervalId)
       window.clearInterval(degradedId)
     }
   }, [activeConversationId, dispatch, store])

@@ -9,6 +9,7 @@ import { Input } from '../components/ui/Input'
 import { PageHeader } from '../components/ui/PageHeader'
 import { PosterUploader } from '../components/ui/PosterUploader'
 import { Select } from '../components/ui/Select'
+import { useUploadProgress } from '../hooks/useUploadProgress'
 import {
   EXTRA_FIELD_META,
   LISTING_TYPES_META,
@@ -48,6 +49,7 @@ export function EditListingPage() {
     state.marketplace.items.find((item) => item.id === listingId),
   )
   const [gallery, setGallery] = useState({ entityId: null, photos: [] })
+  const { progress: uploadProgress, track: trackUpload } = useUploadProgress()
   const [saving, setSaving] = useState(false)
 
   const photos =
@@ -123,11 +125,13 @@ export function EditListingPage() {
       try {
         const newPhotos = photos.filter((photo) => photo.file)
         const uploaded = newPhotos.length
-          ? await storageService.uploadListingImages(
-              user.id,
-              listingId,
-              newPhotos.map((photo) => photo.file),
-              { version: Date.now().toString(36) },
+          ? await trackUpload((onProgress) =>
+              storageService.uploadListingImages(
+                user.id,
+                listingId,
+                newPhotos.map((photo) => photo.file),
+                { version: Date.now().toString(36), onProgress },
+              ),
             )
           : []
         let uploadIndex = 0
@@ -356,6 +360,7 @@ export function EditListingPage() {
             max={6}
             label={mt('marketplace.common.photos')}
             hint={mt('marketplace.edit.imagesMax')}
+            progress={uploadProgress}
           />
           <div className="grid gap-4 sm:grid-cols-2">
             <Input

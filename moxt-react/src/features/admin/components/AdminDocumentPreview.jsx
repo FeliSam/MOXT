@@ -22,26 +22,49 @@ async function resolvePreviewUrl(doc) {
   try {
     return await storageService.getDocumentSignedUrl(source)
   } catch {
-    return doc.url || null
+    // Never reuse an expired signed URL as fallback (InvalidJWT / exp).
+    return null
   }
 }
 
-async function downloadDocument(url, filename) {
+async function freshDocumentUrl(doc) {
+  const source = doc.storagePath || doc.url
+  if (!source) throw new Error('missing document path')
+  return storageService.getDocumentSignedUrl(source)
+}
+
+async function downloadDocument(doc) {
+  const filename = doc.name || doc.id || 'document'
   try {
+    const url = await freshDocumentUrl(doc)
     const response = await fetch(url)
     if (!response.ok) throw new Error('download failed')
     const blob = await response.blob()
     const objectUrl = URL.createObjectURL(blob)
     const anchor = document.createElement('a')
     anchor.href = objectUrl
-    anchor.download = filename || 'document'
+    anchor.download = filename
     anchor.rel = 'noopener'
     document.body.appendChild(anchor)
     anchor.click()
     anchor.remove()
     URL.revokeObjectURL(objectUrl)
   } catch {
+    try {
+      const url = await freshDocumentUrl(doc)
+      window.open(url, '_blank', 'noopener,noreferrer')
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+async function openDocument(doc) {
+  try {
+    const url = await freshDocumentUrl(doc)
     window.open(url, '_blank', 'noopener,noreferrer')
+  } catch {
+    /* ignore */
   }
 }
 
@@ -77,7 +100,9 @@ export function AdminDocumentPreview({ documentIds = [], documents: documentsPro
 
   const expectedCount = Array.isArray(documentsProp)
     ? documentsProp.filter(Boolean).length
-    : (Array.isArray(documentIds) ? documentIds.length : 0)
+    : Array.isArray(documentIds)
+      ? documentIds.length
+      : 0
 
   if (!expectedCount) {
     return (
@@ -96,60 +121,66 @@ export function AdminDocumentPreview({ documentIds = [], documents: documentsPro
   }
 
   return (
-    <div className="grid min-w-0 gap-3">
+    <div className="grid min-w-0 max-w-full gap-3 overflow-hidden">
       {previews.map(({ doc, url }) => {
         const image = isImageType(doc)
         const pdf = isPdfType(doc)
+        const displayName = doc.name || doc.id
         return (
           <div
             key={doc.id}
-            className="min-w-0 overflow-hidden rounded-xl border border-[color:rgb(148_163_184/0.14)] bg-[var(--app-surface-muted)]"
+            className="min-w-0 max-w-full overflow-hidden rounded-xl border border-[color:rgb(148_163_184/0.14)] bg-[var(--app-surface-muted)]"
           >
-            <div className="flex min-w-0 items-center gap-2 border-b border-[color:rgb(148_163_184/0.12)] px-3 py-2">
+            <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 border-b border-[color:rgb(148_163_184/0.12)] px-3 py-2">
               {image ? (
                 <FiImage className="shrink-0 text-brand-700" />
               ) : (
                 <FiFileText className="shrink-0 text-brand-700" />
               )}
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold">{doc.name || doc.id}</p>
+              <div className="min-w-0 flex-1 basis-[8rem] overflow-hidden">
+                <p className="truncate text-sm font-bold" title={displayName}>
+                  {displayName}
+                </p>
                 <p className="truncate text-[10px] uppercase tracking-wider text-[var(--app-text-muted)]">
                   {doc.category}
-                  {doc.deletedAt || doc.deletedByUser ? ` · ${t('verification.admin.softDeleted')}` : ''}
+                  {doc.deletedAt || doc.deletedByUser
+                    ? ` · ${t('verification.admin.softDeleted')}`
+                    : ''}
                 </p>
               </div>
-              {url ? (
-                <div className="flex shrink-0 items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => downloadDocument(url, doc.name || doc.id)}
-                    className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-brand-700 hover:bg-brand-50 dark:hover:bg-brand-950/40"
-                  >
-                    {adminText(t, 'admin.documents.download')} <FiDownload />
-                  </button>
-                  <a
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-brand-700 hover:bg-brand-50 dark:hover:bg-brand-950/40"
-                  >
-                    {t('verification.admin.openDocument')} <FiExternalLink />
-                  </a>
-                </div>
-              ) : null}
+              <div className="flex shrink-0 flex-wrap items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => downloadDocument(doc)}
+                  className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-brand-700 hover:bg-brand-50 dark:hover:bg-brand-950/40"
+                >
+                  {adminText(t, 'admin.documents.download')} <FiDownload />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openDocument(doc)}
+                  className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-brand-700 hover:bg-brand-50 dark:hover:bg-brand-950/40"
+                >
+                  {t('verification.admin.openDocument')} <FiExternalLink />
+                </button>
+              </div>
             </div>
             {url && image ? (
-              <a href={url} target="_blank" rel="noopener noreferrer" className="block max-w-full overflow-hidden">
+              <button
+                type="button"
+                onClick={() => openDocument(doc)}
+                className="block w-full max-w-full overflow-hidden"
+              >
                 <img
                   src={url}
-                  alt={doc.name || 'Document'}
+                  alt={displayName}
                   className="mx-auto block max-h-64 max-w-full object-contain bg-[var(--app-surface)]"
                 />
-              </a>
+              </button>
             ) : null}
             {url && pdf ? (
               <iframe
-                title={doc.name || 'PDF'}
+                title={displayName}
                 src={url}
                 className="block h-72 max-w-full w-full bg-[var(--app-surface)]"
               />

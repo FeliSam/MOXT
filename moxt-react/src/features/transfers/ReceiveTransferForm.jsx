@@ -1,4 +1,6 @@
 import { useLanguage } from '../../contexts/useLanguage'
+import { FileNameText } from '../../components/ui/FileNameText'
+import { UploadProgress } from '../../components/ui/UploadProgress'
 
 export function ReceiveTransferForm({
   values,
@@ -7,6 +9,7 @@ export function ReceiveTransferForm({
   onSubmit,
   submitting = false,
   submitLabel,
+  uploadProgress = null,
 }) {
   const { t } = useLanguage()
   const resolvedSubmitLabel = submitLabel || t('transfers.receive.confirm')
@@ -46,11 +49,18 @@ export function ReceiveTransferForm({
           onChange={(e) => onChange('proofFile', e.target.files?.[0] || null)}
         />
         {values.proofFile ? (
-          <span className="truncate text-xs text-[var(--app-text-muted)]" title={values.proofFile.name}>
-            {values.proofFile.name}
-          </span>
+          <FileNameText
+            name={values.proofFile.name}
+            className="text-xs text-[var(--app-text-muted)]"
+            maxLength={36}
+          />
         ) : null}
         {errors.proofFile ? <span className="text-xs text-red-600">{errors.proofFile}</span> : null}
+        {uploadProgress?.active ||
+        uploadProgress?.phase === 'done' ||
+        uploadProgress?.phase === 'error' ? (
+          <UploadProgress progress={uploadProgress} compact />
+        ) : null}
       </label>
 
       <button

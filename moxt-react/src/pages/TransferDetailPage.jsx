@@ -1,4 +1,4 @@
-import { FiClock, FiRepeat, FiShield, FiUser } from 'react-icons/fi'
+import { FiClock, FiFlag, FiRepeat, FiShield, FiUser } from 'react-icons/fi'
 import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useLocation, useParams } from 'react-router-dom'
@@ -11,12 +11,17 @@ import {
   DetailMetrics,
   DetailSection,
 } from '../components/ui/DetailBlocks'
-import { Input } from '../components/ui/Input'
+import { Input, Textarea } from '../components/ui/Input'
+import { Select } from '../components/ui/Select'
 import { Modal } from '../components/ui/Modal'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Button } from '../components/ui/Button'
 import { ContactButton } from '../features/communications/ContactButton'
 import { openDispute } from '../features/disputes/disputeSlice'
+import {
+  TRANSFER_CLAIM_MOTIVES,
+  buildTransferClaimReason,
+} from '../features/transfers/transferProfileFavorites'
 import { createReceipt } from '../features/finance/financeSlice'
 import { TransferWorkflowPanel } from '../features/transfers/detail/TransferWorkflowPanel'
 import { TransferProofsSection } from '../features/transfers/detail/TransferProofsSection'
@@ -27,6 +32,7 @@ import { TransferDetailNotFound } from '../features/transfers/detail/TransferDet
 import { TransferDetailParticipantsSection } from '../features/transfers/detail/TransferDetailParticipantsSection'
 import { TransferDetailTimelineCard } from '../features/transfers/detail/TransferDetailTimelineCard'
 import { TransferReceivingAccountCard } from '../features/transfers/TransferReceivingAccountCard'
+import { TransferRecipientAccountCard } from '../features/transfers/TransferRecipientAccountCard'
 import { TRANSFER_STATUS } from '../features/transfers/transferConfig'
 import {
   getTransferDetailAccess,
@@ -51,13 +57,17 @@ import { usePaymentCountdown } from '../features/transfers/usePaymentCountdown'
 import { addToast } from '../features/ui/uiSlice'
 import { useLanguage } from '../contexts/useLanguage'
 import { storageService } from '../services/storageService'
+import { useUploadProgress } from '../hooks/useUploadProgress'
 
 export function TransferDetailPage() {
   const { t } = useLanguage()
   const [proof, setProof] = useState(null)
   const [businessProof, setBusinessProof] = useState(null)
+  const { track: trackProofUpload } = useUploadProgress()
+  const { track: trackBusinessProofUpload } = useUploadProgress()
   const [claimOpen, setClaimOpen] = useState(false)
-  const [claimReason, setClaimReason] = useState('')
+  const [claimMotive, setClaimMotive] = useState('')
+  const [claimMessage, setClaimMessage] = useState('')
   const [cancelOpen, setCancelOpen] = useState(false)
   const [detailTab, setDetailTab] = useState('suivi')
   const dispatch = useDispatch()
@@ -111,10 +121,26 @@ export function TransferDetailPage() {
   async function handleProofSelected(event) {
     const file = event.target.files?.[0]
     if (!file) return
-    setProof({ file, uploading: true })
+    setProof({ file, uploading: true, progress: 4, phase: 'preparing' })
     try {
-      const { url, path } = await storageService.uploadTransferProof(user.id, transfer.id, file)
-      setProof({ file, url, path, uploading: false })
+      const { url, path } = await trackProofUpload((onProgress) =>
+        storageService.uploadTransferProof(user.id, transfer.id, file, {
+          onProgress: (update) => {
+            onProgress(update)
+            setProof((current) =>
+              current
+                ? {
+                    ...current,
+                    uploading: true,
+                    progress: update.percent,
+                    phase: update.phase,
+                  }
+                : current,
+            )
+          },
+        }),
+      )
+      setProof({ file, url, path, uploading: false, progress: 100, phase: 'done' })
       dispatch(
         addToast({
           title: t('transfers.detail.proofAddedTitle'),
@@ -137,14 +163,26 @@ export function TransferDetailPage() {
   async function handleBusinessProofSelected(event) {
     const file = event.target.files?.[0]
     if (!file) return
-    setBusinessProof({ file, uploading: true })
+    setBusinessProof({ file, uploading: true, progress: 4, phase: 'preparing' })
     try {
-      const { url, path } = await storageService.uploadBusinessTransferProof(
-        user.id,
-        transfer.id,
-        file,
+      const { url, path } = await trackBusinessProofUpload((onProgress) =>
+        storageService.uploadBusinessTransferProof(user.id, transfer.id, file, {
+          onProgress: (update) => {
+            onProgress(update)
+            setBusinessProof((current) =>
+              current
+                ? {
+                    ...current,
+                    uploading: true,
+                    progress: update.percent,
+                    phase: update.phase,
+                  }
+                : current,
+            )
+          },
+        }),
       )
-      setBusinessProof({ file, url, path, uploading: false })
+      setBusinessProof({ file, url, path, uploading: false, progress: 100, phase: 'done' })
       dispatch(
         addToast({
           title: t('transfers.detail.proofAddedTitle'),
@@ -224,6 +262,8 @@ export function TransferDetailPage() {
               actionView={actionView}
               businessProof={businessProof}
               canCancel={access.canCancel}
+              contactOwnerId={access.contactId}
+              contactTitle={access.contactTitle}
               countdown={countdown}
               proof={proof}
               transfer={transfer}
@@ -317,7 +357,6 @@ export function TransferDetailPage() {
                 }
               }}
               onCancel={() => setCancelOpen(true)}
-              onOpenClaim={() => setClaimOpen(true)}
             />
           ) : (
             <>
@@ -327,6 +366,25 @@ export function TransferDetailPage() {
               <TransferProofsSection transfer={transfer} />
             </>
           )}
+          {access.isSender ? (
+            <TransferReceivingAccountCard
+              account={receivingAccount}
+              direction={transfer.direction}
+              originCountry={originCountry}
+              compact
+              onCopy={(value) => copyValue(value, t('transfers.detail.copy.coordinates'))}
+            />
+          ) : null}
+          {access.isBusinessViewer ? (
+            <TransferRecipientAccountCard transfer={transfer} />
+          ) : null}
+          {access.canOpenClaim ? (
+            <div className="flex justify-start">
+              <Button variant="secondary" icon={FiFlag} onClick={() => setClaimOpen(true)}>
+                {t('transfers.workflow.openClaim')}
+              </Button>
+            </div>
+          ) : null}
           {access.isAdminViewer ? <TransferDetailAdminPanel transfer={transfer} /> : null}
         </>
       ) : null}
@@ -393,30 +451,73 @@ export function TransferDetailPage() {
         </>
       ) : null}
 
-      <Modal open={claimOpen} onClose={() => setClaimOpen(false)} title={t('transfers.detail.claim.title')}>
+      <Modal
+        open={claimOpen}
+        onClose={() => {
+          setClaimOpen(false)
+          setClaimMotive('')
+          setClaimMessage('')
+        }}
+        title={t('transfers.detail.claim.title')}
+      >
         <div className="grid gap-4">
+          <Select
+            id="transfer-claim-motive"
+            label={t('transfers.detail.claim.motive')}
+            value={claimMotive}
+            onChange={(event) => setClaimMotive(event.target.value)}
+          >
+            <option value="">{t('transfers.detail.claim.motivePlaceholder')}</option>
+            {TRANSFER_CLAIM_MOTIVES.map((motive) => (
+              <option key={motive.key} value={motive.key}>
+                {t(motive.labelKey)}
+              </option>
+            ))}
+          </Select>
           <Input
-            id="transfer-claim"
-            label={t('transfers.detail.claim.reason')}
-            value={claimReason}
-            onChange={(event) => setClaimReason(event.target.value)}
+            id="transfer-claim-number"
+            label={t('transfers.detail.claim.transferNumber')}
+            value={transfer.id}
+            readOnly
+          />
+          <Textarea
+            id="transfer-claim-message"
+            label={t('transfers.detail.claim.message')}
+            rows={4}
+            value={claimMessage}
+            onChange={(event) => setClaimMessage(event.target.value)}
+            placeholder={t('transfers.detail.claim.messagePlaceholder')}
           />
           <p className="text-xs text-[var(--app-text-muted)]">
             {t('transfers.detail.claim.help')}
           </p>
           <Button
-            disabled={claimReason.trim().length < 5}
+            disabled={!claimMotive || claimMessage.trim().length < 5}
             onClick={() => {
+              const motive = TRANSFER_CLAIM_MOTIVES.find((item) => item.key === claimMotive)
               dispatch(
                 openDispute({
                   openedBy: user.id,
                   businessId: transfer.businessId,
                   relatedType: 'transfer',
                   relatedId: transfer.id,
-                  reason: claimReason,
+                  reason: buildTransferClaimReason({
+                    motiveKey: claimMotive,
+                    motiveLabel: motive ? t(motive.labelKey) : claimMotive,
+                    transferId: transfer.id,
+                    message: claimMessage,
+                  }),
                 }),
               )
-              setClaimReason('')
+              dispatch(
+                addToast({
+                  title: t('transfers.detail.claim.submittedTitle'),
+                  message: t('transfers.detail.claim.submittedMessage'),
+                  tone: 'success',
+                }),
+              )
+              setClaimMotive('')
+              setClaimMessage('')
               setClaimOpen(false)
             }}
           >

@@ -38,6 +38,7 @@ import {
 } from '../features/transfers/transferConfig'
 import { createTransferSchemas } from '../features/transfers/transferSchemas'
 import { createTransfer } from '../features/transfers/transferSlice'
+import { addToast } from '../features/ui/uiSlice'
 import { TransferCalculator } from '../features/transfers/TransferCalculator'
 import { TransferReceivingAccountCard } from '../features/transfers/TransferReceivingAccountCard'
 import {
@@ -167,6 +168,19 @@ export function NewTransferPage() {
           },
         }),
       )
+      if (action.payload?.blocked || !action.payload?.id) {
+        dispatch(
+          addToast({
+            title: t('transfers.new.errors.createFailedTitle'),
+            message:
+              action.payload?.reason === 'self_business_transfer'
+                ? t('transfers.new.errors.cannotUseOwnBusiness')
+                : t('transfers.new.errors.chooseAvailableBusiness'),
+            tone: 'error',
+          }),
+        )
+        return
+      }
       clearTransferDraft()
       navigate(`/transfers/${action.payload.id}`, { state: { transferView: 'client' } })
     },
@@ -739,13 +753,19 @@ function PartyCard({ title, prefix, profiles, formik, methods, errorFor, onProfi
       setCreateError(t('transfers.new.profileCreate.errors.method'))
       return
     }
+    const existing = profiles.find(
+      (item) =>
+        String(item.phone || '').replace(/\D/g, '') === String(phone || '').replace(/\D/g, ''),
+    )
     const action = saveTransferProfile({
+      id: existing?.id,
       userId,
       firstName,
       lastName,
       phone,
       country,
       method,
+      createdAt: existing?.createdAt,
     })
     dispatch(action)
     onProfile(action.payload)

@@ -1,10 +1,13 @@
-import { useSelector } from 'react-redux'
+import { useEffect } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
 import {
   canUserAccessTransfer,
   selectOwnedBusinessIds,
 } from '../transferSelectors'
+import { ensureTransferFromRemote } from '../transferSync'
 
 export function useTransferDetail(transferId, user) {
+  const dispatch = useDispatch()
   const ownedBusinessIds = useSelector((state) => selectOwnedBusinessIds(state, user?.id))
   const transfer = useSelector((state) => {
     const item = state.transfers.items.find((entry) => entry.id === transferId)
@@ -18,6 +21,14 @@ export function useTransferDetail(transferId, user) {
       ? state.businesses.items.find((item) => item.id === transfer.businessId)
       : null,
   )
+
+  useEffect(() => {
+    if (!transferId || !user?.id || transfer) return undefined
+    const promise = dispatch(ensureTransferFromRemote(transferId))
+    return () => {
+      promise.abort?.()
+    }
+  }, [dispatch, transfer, transferId, user?.id])
 
   return { business: transferBusiness || ownedBusiness, transfer }
 }

@@ -24,6 +24,43 @@ import { hydrateAccountPreferences } from '../features/account/accountSlice'
 import { patchBusiness } from '../features/businesses/businessSlice'
 import { businessFromRemoteRow } from '../features/businesses/businessRemote'
 import { setOnlineUsers } from '../features/presence/presenceSlice'
+import { transferFromRemoteRow } from '../features/transfers/transferRemote'
+import { receiveRemoteTransfer } from '../features/transfers/transferSlice'
+import {
+  isTransferRelevantToUser,
+  ownedBusinessIdsForUser,
+  shouldAcceptRealtimeListing,
+  userParticipatesInConversation,
+} from './realtimeFilterUtils'
+
+/** Colonnes conversation pour le fallback fetch (évite select *). */
+const CONVERSATION_FALLBACK_SELECT = [
+  'id',
+  'title',
+  'related_type',
+  'related_id',
+  'related_path',
+  'related_snapshot',
+  'related_contexts',
+  'participant_profiles',
+  'participant_ids',
+  'participant_key',
+  'created_by',
+  'status',
+  'unread_by',
+  'archived_by',
+  'pinned_by',
+  'muted_by',
+  'blocked_by',
+  'message_count',
+  'last_message_text',
+  'last_message_sender_id',
+  'last_message_at',
+  'created_at',
+  'updated_at',
+].join(',')
+
+const MAX_TRANSFER_BUSINESS_FILTERS = 8
 
 const camelMap = {
   conversation_id: 'conversationId',
@@ -94,7 +131,7 @@ async function ingestRemoteMessage(conversationId, row, userId, dispatch, getSta
   if (!conversation && supabase) {
     const { data } = await supabase
       .from('conversations')
-      .select('*')
+      .select(CONVERSATION_FALLBACK_SELECT)
       .eq('id', conversationId)
       .maybeSingle()
     if (data) {
@@ -104,7 +141,7 @@ async function ingestRemoteMessage(conversationId, row, userId, dispatch, getSta
         messagesLoaded: false,
       })
       remoteParticipantIds = remoteConversation.participantIds
-      if (remoteConversation.participantIds.includes(userId)) {
+      if (userParticipatesInConversation(remoteConversation, userId)) {
         const duplicate = findConversationByParticipants(
           getState().communications.conversations,
           remoteConversation.participantIds,
@@ -127,6 +164,7 @@ async function ingestRemoteMessage(conversationId, row, userId, dispatch, getSta
     conversation = resolveConversationForMessage(getState(), conversationId, remoteParticipantIds)
   }
   if (!conversation) return
+  if (!userParticipatesInConversation(conversation, userId)) return
 
   const message = normalizeMessage(fromRow(row))
   const alreadyExists = conversation.messages.some((m) => m.id === message.id)
@@ -155,7 +193,7 @@ let onlineHandler = null
 let connectionStatus = 'idle'
 let heartbeatTimer = null
 
-const HEARTBEAT_INTERVAL_MS = 90 * 1000
+const HEARTBEAT_INTERVAL_MS = 4 * 60 * 1000
 
 async function sendActivityHeartbeat(userId) {
   if (!supabase || !userId) return
@@ -236,7 +274,25 @@ function removeOnlineReconnect() {
 function bindChannel(userId, dispatch, getState) {
   setConnectionStatus('connecting')
 
-  channel = supabase
+  const handleTransferChange = (payload) => {
+    const transfer = transferFromRemoteRow(payload.new)
+    if (!transfer?.id) return
+    const ownedIds = ownedBusinessIdsForUser(getState().businesses?.items, userId)
+    if (!isTransferRelevantToUser(transfer, userId, ownedIds)) return
+    dispatch(receiveRemoteTransfer(transfer))
+  }
+
+  const handleListingUpsert = (payload) => {
+    const listing = listingFromRemoteRow(payload.new)
+    if (!listing?.id) return
+    if (shouldAcceptRealtimeListing(listing, userId)) {
+      dispatch(receiveRemoteListing(listing))
+      return
+    }
+    dispatch(removeRemoteListing(listing.id))
+  }
+
+  let nextChannel = supabase
     .channel('presence-online', { config: { presence: { key: userId } } })
 
     .on('presence', { event: 'sync' }, () => {
@@ -260,7 +316,7 @@ function bindChannel(userId, dispatch, getState) {
           getState(),
           row.conversationId || payload.new.conversation_id,
         )
-        if (!conversation?.participantIds?.map(String).includes(String(userId))) return
+        if (!userParticipatesInConversation(conversation, userId)) return
         dispatch(
           syncRemoteMessage({
             ...row,
@@ -276,7 +332,7 @@ function bindChannel(userId, dispatch, getState) {
       (payload) => {
         const row = fromRow(payload.new)
         const conversation = normalizeConversation({ ...row, messages: [] })
-        if (!conversation.participantIds.includes(userId)) return
+        if (!userParticipatesInConversation(conversation, userId)) return
         dispatch(receiveRemoteConversation(conversation))
       },
     )
@@ -287,7 +343,7 @@ function bindChannel(userId, dispatch, getState) {
       (payload) => {
         const row = fromRow(payload.new)
         const conversation = normalizeConversation({ ...row, messages: [] })
-        if (!conversation.participantIds.includes(userId)) return
+        if (!userParticipatesInConversation(conversation, userId)) return
         dispatch(syncRemoteConversation(conversation))
         maybeReloadConversationMessages(conversation, dispatch, getState)
       },
@@ -295,10 +351,15 @@ function bindChannel(userId, dispatch, getState) {
 
     .on(
       'postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'notifications' },
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${userId}`,
+      },
       (payload) => {
         const row = payload.new
-        if (row.user_id !== userId || row.type === 'message') return
+        if (String(row.user_id) !== String(userId) || row.type === 'message') return
         dispatch(
           receiveRemoteNotification({
             id: row.id,
@@ -317,13 +378,52 @@ function bindChannel(userId, dispatch, getState) {
 
     .on(
       'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'transfers',
+        filter: `user_id=eq.${userId}`,
+      },
+      handleTransferChange,
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'transfers',
+        filter: `business_owner_id=eq.${userId}`,
+      },
+      handleTransferChange,
+    )
+
+  const ownedBusinessIds = ownedBusinessIdsForUser(
+    getState().businesses?.items,
+    userId,
+  ).slice(0, MAX_TRANSFER_BUSINESS_FILTERS)
+  for (const businessId of ownedBusinessIds) {
+    nextChannel = nextChannel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'transfers',
+        filter: `business_id=eq.${businessId}`,
+      },
+      handleTransferChange,
+    )
+  }
+
+  channel = nextChannel
+    .on(
+      'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'listings' },
-      (payload) => dispatch(receiveRemoteListing(listingFromRemoteRow(payload.new))),
+      handleListingUpsert,
     )
     .on(
       'postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'listings' },
-      (payload) => dispatch(receiveRemoteListing(listingFromRemoteRow(payload.new))),
+      handleListingUpsert,
     )
     .on(
       'postgres_changes',

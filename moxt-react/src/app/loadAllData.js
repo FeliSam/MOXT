@@ -15,7 +15,6 @@ import { setAll as setDisputes } from '../features/disputes/disputeSlice'
 import { setAll as setFinance } from '../features/finance/financeSlice'
 import { setAll as setPosts } from '../features/posts/postsSlice'
 import { setAll as setStatuses } from '../features/statuses/statusesSlice'
-import { setAll as setHelpArticles } from '../features/help/helpArticlesSlice'
 import { setRecipientAddresses } from '../features/addresses/recipientAddressesSlice'
 import { hydrateAccountPreferences, mergeRemoteAccount, updateAccountPreferences } from '../features/account/accountSlice'
 import { profileRowToAdminUser, setAdminUsers } from '../features/administration/administrationSlice'
@@ -252,12 +251,8 @@ export const loadAllData = createAsyncThunk(
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false })
         .limit(60),
-      supabase
-        .from('help_articles')
-        .select('*')
-        .order('pinned', { ascending: false })
-        .order('created_at', { ascending: false })
-        .limit(200),
+      // Guide chargé à la demande (HelpGuidePage / AdminHelpArticlesPage)
+      Promise.resolve({ data: [], error: null }),
       isAdmin
         ? supabase
             .from('support_tickets')
@@ -407,11 +402,7 @@ export const loadAllData = createAsyncThunk(
             )
             .order('created_at', { ascending: false })
             .limit(USER_LIMIT)
-        : supabase
-            .from('profiles')
-            .select('id, first_name, last_name, city, country, role, status, created_at, updated_at')
-            .order('created_at', { ascending: false })
-            .limit(USER_LIMIT),
+        : Promise.resolve({ data: [], error: null }),
       isAdmin
         ? supabase
             .from('account_deletion_requests')
@@ -659,7 +650,6 @@ export const loadAllData = createAsyncThunk(
           isOfficial: s.isOfficial === true,
         }
       }) }))
-      dispatch(setHelpArticles({ items: fromRows(safeRows(helpArticlesRes, 'du guide')) }))
       dispatch(mergeRemoteAccount({
         favorites: fromRows(safeRows(favoritesRes, 'des favoris')),
         subscriptions: fromRows(safeRows(subscriptionsRes, 'des abonnements')).map((item) => ({
@@ -679,7 +669,14 @@ export const loadAllData = createAsyncThunk(
           }),
         ),
         transferProfiles: fromRows(safeRows(transferProfilesRes, 'des profils transfert')),
-        documents: fromRows(safeRows(personalDocumentsRes, 'des documents')),
+        documents: fromRows(safeRows(personalDocumentsRes, 'des documents')).map((doc) => ({
+          ...doc,
+          storagePath:
+            doc.storagePath ||
+            doc.storage_path ||
+            (typeof doc.url === 'string' && !doc.url.includes('://') ? doc.url : null) ||
+            null,
+        })),
         verificationRequests: fromRows(
           safeRows(verificationRequestsRes, 'des demandes de verification'),
         ).map((item) => ({

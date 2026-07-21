@@ -37,6 +37,9 @@ import {
 } from '../features/businesses/businessPublishUtils'
 import { addToast } from '../features/ui/uiSlice'
 import { createId } from '../services/createId'
+import { UploadProgress } from '../components/ui/UploadProgress'
+import { FileNameText } from '../components/ui/FileNameText'
+import { useUploadProgress } from '../hooks/useUploadProgress'
 import { SecurityGatePanel } from '../features/security/SecurityGatePanel'
 import { useSecurityGate } from '../features/security/useSecurityGate'
 import { initialCatalogStatus } from '@moxt/shared/auth/userSecurity.js'
@@ -159,6 +162,7 @@ export function PublishParcelPage() {
     travelProofFile: null,
   })
   const [proofError, setProofError] = useState('')
+  const { progress: proofProgress, track: trackProofUpload } = useUploadProgress()
 
   async function handleProofFile(file) {
     if (!file) return
@@ -176,8 +180,16 @@ export function PublishParcelPage() {
     setProofError('')
     set('travelProofFile', { name: file.name, size: file.size, type: file.type, uploading: true })
     try {
-      const url = await storageService.uploadParcelProof(user.id, createId('DRAFT'), file)
-      set('travelProofFile', { name: file.name, size: file.size, type: file.type, url })
+      const path = await trackProofUpload((onProgress) =>
+        storageService.uploadParcelProof(user.id, createId('DRAFT'), file, { onProgress }),
+      )
+      set('travelProofFile', {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        url: URL.createObjectURL(file),
+        path,
+      })
       dispatch(
         addToast({
           title: publishText(t, 'publish.parcel.toasts.proofAdded.title'),
@@ -309,7 +321,7 @@ export function PublishParcelPage() {
         travelProofName: travelProofFile.name,
         travelProofType: travelProofFile.type,
         travelProofSize: travelProofFile.size,
-        travelProofUrl: travelProofFile.url || null,
+        travelProofUrl: travelProofFile.path || travelProofFile.url || null,
         status: initialCatalogStatus(user),
       }),
     )
@@ -604,16 +616,13 @@ export function PublishParcelPage() {
                 <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-950/40">
                   <FiFileText className="text-lg" />
                 </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold">
-                    {(() => {
-                      const name = form.travelProofFile.name
-                      const dot = name.lastIndexOf('.')
-                      const base = dot > 0 ? name.slice(0, dot) : name
-                      const ext = dot > 0 ? name.slice(dot) : ''
-                      return base.length > 28 ? `${base.slice(0, 28)}…${ext}` : name
-                    })()}
-                  </p>
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <FileNameText
+                    as="p"
+                    name={form.travelProofFile.name}
+                    className="text-sm font-bold"
+                    maxLength={36}
+                  />
                   <p className="text-xs text-[var(--app-text-muted)]">
                     {publishText(t, 'publish.parcel.fields.travelProofKb', {
                       size: Math.ceil(form.travelProofFile.size / 1024),
@@ -650,6 +659,11 @@ export function PublishParcelPage() {
                 {publishText(t, 'publish.parcel.fields.travelProofHint')}
               </p>
             )}
+            {proofProgress.active ||
+            proofProgress.phase === 'done' ||
+            proofProgress.phase === 'error' ? (
+              <UploadProgress progress={proofProgress} compact />
+            ) : null}
           </label>
           <label className="grid gap-1.5">
             <span className="text-sm font-bold">

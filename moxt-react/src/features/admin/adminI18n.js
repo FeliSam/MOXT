@@ -128,7 +128,7 @@ export const ADMIN_FR_SOURCES = {
   'admin.detail.replyLabel': 'Reponse detaillee',
   'admin.detail.replyPlaceholder': 'Reponse au ticket...',
   'admin.detail.send': 'Envoyer',
-  'admin.detail.openFull': 'Ouvrir la fiche complete',
+  'admin.detail.openFull': 'Ouvrir la fiche compte',
   'admin.detail.kind.transfer': 'Transfert',
   'admin.detail.kind.support': 'Ticket support',
   'admin.detail.kind.user': 'Utilisateur',
@@ -273,6 +273,8 @@ export const ADMIN_FR_SOURCES = {
   'admin.promote.successBody': 'Le compte est maintenant « {role} » (enregistré).',
   'admin.promote.failedTitle': 'Promotion impossible',
   'admin.promote.failedBody': 'Le rôle n’a pas pu être enregistré. Vérifiez le mot de passe.',
+  'admin.promote.edgeUnreachable':
+    'Impossible de joindre la fonction de promotion. Vérifiez la connexion puis réessayez.',
 
   // ── users panel ─────────────────────────────────────────────────────────
   'admin.users.title': 'Utilisateurs et roles',

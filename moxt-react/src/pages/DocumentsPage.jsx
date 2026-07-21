@@ -8,10 +8,13 @@ import { Card } from '../components/ui/Card'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Select } from '../components/ui/Select'
+import { UploadProgress } from '../components/ui/UploadProgress'
+import { FileNameText } from '../components/ui/FileNameText'
 import { statusMeta } from '../config/statuses'
 import { useLanguage } from '../contexts/useLanguage'
 import { addPersonalDocument, removePersonalDocument } from '../features/account/accountSlice'
 import { addToast } from '../features/ui/uiSlice'
+import { useUploadProgress } from '../hooks/useUploadProgress'
 import { phase3Text } from '../i18n/phase3I18n'
 import { storageService } from '../services/storageService'
 
@@ -26,11 +29,14 @@ export function DocumentsPage() {
     ),
   )
   const [category, setCategory] = useState('identity')
+  const { progress, track } = useUploadProgress()
 
   async function addDocument(file) {
-    if (!file) return
+    if (!file || progress.active) return
     try {
-      const uploaded = await storageService.uploadDocument(user.id, category, file)
+      const uploaded = await track((onProgress) =>
+        storageService.uploadDocument(user.id, category, file, { onProgress }),
+      )
       dispatch(
         addPersonalDocument({
           userId: user.id,
@@ -38,7 +44,7 @@ export function DocumentsPage() {
           name: file.name,
           size: file.size,
           type: file.type,
-          url: uploaded?.url || uploaded,
+          url: uploaded?.url || null,
           storagePath: uploaded?.path || null,
         }),
       )
@@ -69,22 +75,33 @@ export function DocumentsPage() {
             label={p3('documents.typeLabel')}
             value={category}
             onChange={(event) => setCategory(event.target.value)}
+            disabled={progress.active}
           >
             <option value="identity">{p3('documents.types.identity')}</option>
             <option value="address">{p3('documents.types.address')}</option>
             <option value="income">{p3('documents.types.income')}</option>
             <option value="other">{p3('documents.types.other')}</option>
           </Select>
-          <label className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 text-sm font-bold text-white">
+          <label
+            className={`inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 text-sm font-bold text-white ${
+              progress.active ? 'pointer-events-none opacity-60' : ''
+            }`}
+          >
             <FiUpload /> {p3('documents.upload')}
             <input
               className="sr-only"
               type="file"
               accept=".pdf,image/*"
+              disabled={progress.active}
               onChange={(event) => addDocument(event.target.files?.[0])}
             />
           </label>
         </div>
+        {progress.active || progress.phase === 'done' || progress.phase === 'error' ? (
+          <div className="mt-4">
+            <UploadProgress progress={progress} />
+          </div>
+        ) : null}
         <p className="mt-3 text-xs text-[var(--app-text-muted)]">{p3('documents.hint')}</p>
       </Card>
 
@@ -93,10 +110,13 @@ export function DocumentsPage() {
           {documents.map((document) => {
             const meta = statusMeta(document.status, t)
             return (
-              <Card className="flex h-full flex-wrap items-center gap-4">
-                <FiFileText className="text-2xl text-brand-600" />
-                <div className="min-w-0 flex-1">
-                  <strong className="block truncate">{document.name}</strong>
+              <Card
+                key={document.id}
+                className="flex h-full min-w-0 max-w-full flex-wrap items-center gap-4 overflow-hidden"
+              >
+                <FiFileText className="shrink-0 text-2xl text-brand-600" />
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <FileNameText as="strong" name={document.name} className="block font-bold" maxLength={40} />
                   <p className="text-xs text-[var(--app-text-muted)]">
                     {document.category} · {Math.ceil(document.size / 1024)} {p3('common.kb')}
                   </p>

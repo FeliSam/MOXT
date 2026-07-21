@@ -1,10 +1,12 @@
 import { useRef } from 'react'
 import { FiImage, FiX } from 'react-icons/fi'
 import { useLanguage } from '../../contexts/useLanguage'
+import { UploadProgress } from './UploadProgress'
 
 /**
  * Sélecteur multi-images réutilisable (affiches job / événement, etc.).
  * `photos` : [{ file, url, name }]. Le parent gère l'état + l'upload.
+ * `progress` : état de useUploadProgress() pour afficher la barre pendant l'envoi.
  */
 export function PosterUploader({
   photos,
@@ -13,14 +15,17 @@ export function PosterUploader({
   max = 5,
   label,
   hint,
+  progress = null,
+  disabled = false,
 }) {
   const { t } = useLanguage()
   const inputRef = useRef(null)
   const resolvedLabel = label ?? t('common.poster.addImages')
   const resolvedHint = hint ?? ''
+  const busy = disabled || progress?.active
 
   function handleFiles(event) {
-    if (!event.target.files?.length) return
+    if (!event.target.files?.length || busy) return
     const accepted = Array.from(event.target.files).filter(
       (file) =>
         !file.type ||
@@ -49,8 +54,9 @@ export function PosterUploader({
             <button
               type="button"
               onClick={() => onRemove(index)}
+              disabled={busy}
               aria-label={t('common.poster.removeImage')}
-              className="absolute right-1 top-1 grid size-6 place-items-center rounded-full bg-black/55 text-white transition hover:bg-black/75"
+              className="absolute right-1 top-1 grid size-6 place-items-center rounded-full bg-black/55 text-white transition hover:bg-black/75 disabled:opacity-40"
             >
               <FiX className="text-xs" />
             </button>
@@ -65,13 +71,17 @@ export function PosterUploader({
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
+            disabled={busy}
             aria-label={t('common.poster.addImages')}
-            className="grid size-24 place-items-center rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] text-[var(--app-text-muted)] transition hover:border-[var(--app-accent)] hover:text-[var(--app-accent)]"
+            className="grid size-24 place-items-center rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] text-[var(--app-text-muted)] transition hover:border-[var(--app-accent)] hover:text-[var(--app-accent)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             <FiImage className="text-xl" />
           </button>
         ) : null}
       </div>
+      {progress?.active || progress?.phase === 'done' || progress?.phase === 'error' ? (
+        <UploadProgress progress={progress} compact />
+      ) : null}
       {resolvedHint ? <p className="text-xs text-[var(--app-text-muted)]">{resolvedHint}</p> : null}
       <input
         ref={inputRef}
@@ -79,6 +89,7 @@ export function PosterUploader({
         accept="image/*"
         multiple
         className="hidden"
+        disabled={busy}
         onChange={handleFiles}
       />
     </div>

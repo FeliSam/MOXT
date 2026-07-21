@@ -44,17 +44,31 @@ describe('clearClientCache', () => {
     expect(sessionStorage.getItem(PENDING_REGISTRATION_KEY)).toBeNull()
   })
 
-  it('ensureClientCacheVersion clears once then records version', () => {
+  it('ensureClientCacheVersion clears app caches but preserves auth tokens', () => {
     localStorage.setItem('moxt-account-v1', '{}')
     localStorage.setItem('moxt-theme', 'light')
+    localStorage.setItem('sb-xxxxx-auth-token', '{"access_token":"keep"}')
 
     expect(ensureClientCacheVersion()).toBe(true)
     expect(localStorage.getItem('moxt-account-v1')).toBeNull()
     expect(localStorage.getItem('moxt-theme')).toBe('light')
+    expect(localStorage.getItem('sb-xxxxx-auth-token')).toBe('{"access_token":"keep"}')
     expect(localStorage.getItem('MOXT_CACHE_VERSION')).toBe(MOXT_CACHE_VERSION)
 
     localStorage.setItem('moxt-account-v1', '{}')
     expect(ensureClientCacheVersion()).toBe(false)
     expect(localStorage.getItem('moxt-account-v1')).toBe('{}')
+  })
+
+  it('full clear without preserveAuth removes supabase auth keys', () => {
+    localStorage.setItem('sb-xxxxx-auth-token', '{"access_token":"x"}')
+    clearClientCache({ scope: 'full' })
+    expect(localStorage.getItem('sb-xxxxx-auth-token')).toBeNull()
+  })
+
+  it('full clear with preserveAuth keeps supabase auth keys', () => {
+    localStorage.setItem('sb-xxxxx-auth-token', '{"access_token":"x"}')
+    clearClientCache({ scope: 'full', preserveAuth: true })
+    expect(localStorage.getItem('sb-xxxxx-auth-token')).toBe('{"access_token":"x"}')
   })
 })

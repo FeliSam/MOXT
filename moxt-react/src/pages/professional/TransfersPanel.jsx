@@ -4,9 +4,12 @@ import { Link } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { EmptyState } from '../../components/ui/EmptyState'
+import { FileNameText } from '../../components/ui/FileNameText'
+import { ImageLightbox } from '../../components/ui/ImageLightbox'
 import { useLanguage } from '../../contexts/useLanguage'
 import { professionalText } from '../../features/businesses/professionalI18n'
 import { addToast } from '../../features/ui/uiSlice'
+import { TransferRecipientAccountCard } from '../../features/transfers/TransferRecipientAccountCard'
 import { moderateTransfer } from '../../features/transfers/transferSlice'
 import { TRANSFER_STATUS } from '../../features/transfers/transferConfig'
 import {
@@ -22,10 +25,22 @@ import {
 } from '../../features/transfers/transferUtils'
 import { TransferAccountsPanel } from './TransferAccountsPanel'
 
+function collectProofImages(transfer, localProof) {
+  const urls = []
+  if (localProof?.type?.startsWith('image/') && localProof instanceof File) {
+    urls.push(URL.createObjectURL(localProof))
+  }
+  for (const proof of [transfer.paymentProof, transfer.businessProof]) {
+    if (proof?.type?.startsWith('image/') && proof.url) urls.push(proof.url)
+  }
+  return urls
+}
+
 export function TransfersPanel({ business, dispatch, transfers, user }) {
   const { t } = useLanguage()
   const pt = (key, vars) => professionalText(t, key, vars)
   const [proofs, setProofs] = useState({})
+  const [lightbox, setLightbox] = useState(null)
   if (!transfers.length) {
     return (
       <div className="grid gap-5">
@@ -62,6 +77,7 @@ export function TransfersPanel({ business, dispatch, transfers, user }) {
         const currency =
           transfer.currencyFrom ||
           directionInfo(transfer.direction, transfer.originCountry).from
+        const proofImages = collectProofImages(transfer, proof)
 
         return (
           <Card key={transfer.id} className="grid gap-4">
@@ -85,6 +101,20 @@ export function TransfersPanel({ business, dispatch, transfers, user }) {
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <TransferStatusBadge status={transfer.status} />
+                {proofImages.length ? (
+                  <Button
+                    variant="secondary"
+                    onClick={() =>
+                      setLightbox({
+                        images: proofImages,
+                        index: 0,
+                        alt: transfer.id,
+                      })
+                    }
+                  >
+                    {pt('professional.publications.viewProof')}
+                  </Button>
+                ) : null}
                 <Link to={`/transfers/${transfer.id}`} state={{ transferView: 'business' }}>
                   <Button variant="secondary">
                     {claimOnly
@@ -96,6 +126,8 @@ export function TransfersPanel({ business, dispatch, transfers, user }) {
                 </Link>
               </div>
             </div>
+
+            <TransferRecipientAccountCard transfer={transfer} compact />
 
             {!claimOnly && awaitingPaymentReception ? (
               <div className="rounded-2xl border border-brand-200 bg-brand-50/40 p-4 dark:border-brand-800 dark:bg-brand-950/20">
@@ -149,8 +181,13 @@ export function TransfersPanel({ business, dispatch, transfers, user }) {
                   {pt('professional.transfers.step2Body')}
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-[var(--app-surface)] px-4 text-sm font-bold shadow-sm">
-                    <FiUpload /> {proof ? proof.name : pt('professional.transfers.proofLabel')}
+                  <label className="inline-flex min-h-11 min-w-0 max-w-full cursor-pointer items-center gap-2 overflow-hidden rounded-xl bg-[var(--app-surface)] px-4 text-sm font-bold shadow-sm">
+                    <FiUpload className="shrink-0" />
+                    {proof ? (
+                      <FileNameText name={proof.name} className="font-bold" maxLength={28} />
+                    ) : (
+                      <span className="min-w-0 truncate">{pt('professional.transfers.proofLabel')}</span>
+                    )}
                     <input
                       className="sr-only"
                       type="file"
@@ -163,6 +200,20 @@ export function TransfersPanel({ business, dispatch, transfers, user }) {
                       }
                     />
                   </label>
+                  {proof?.type?.startsWith('image/') ? (
+                    <Button
+                      variant="secondary"
+                      onClick={() =>
+                        setLightbox({
+                          images: [URL.createObjectURL(proof)],
+                          index: 0,
+                          alt: proof.name,
+                        })
+                      }
+                    >
+                      {pt('professional.publications.viewImages')}
+                    </Button>
+                  ) : null}
                   <Button
                     disabled={!proof}
                     onClick={() => {
@@ -210,6 +261,23 @@ export function TransfersPanel({ business, dispatch, transfers, user }) {
           </Card>
         )
       })}
+      <ImageLightbox
+        open={Boolean(lightbox)}
+        images={lightbox?.images || []}
+        index={lightbox?.index || 0}
+        alt={lightbox?.alt || ''}
+        onClose={() => setLightbox(null)}
+        onIndexChange={(updater) =>
+          setLightbox((current) =>
+            current
+              ? {
+                  ...current,
+                  index: typeof updater === 'function' ? updater(current.index) : updater,
+                }
+              : current,
+          )
+        }
+      />
     </div>
   )
 }

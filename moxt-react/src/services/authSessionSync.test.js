@@ -46,6 +46,7 @@ vi.mock('../features/communications/communicationSlice', () => ({
 
 vi.mock('./clearClientCache', () => ({
   clearClientCache: vi.fn(),
+  hasSupabaseAuthInStorage: vi.fn(() => false),
 }))
 
 describe('authSessionSync visibility handler', () => {
@@ -271,6 +272,110 @@ describe('authSessionSync visibility handler', () => {
     await vi.waitFor(() => {
       expect(authService.refreshAuthSession).toHaveBeenCalled()
     })
+
+    expect(store.getState().auth.user?.id).toBe('u1')
+    expect(store.getState().auth.status).toBe('authenticated')
+    expect(clearClientCache).not.toHaveBeenCalled()
+
+    stopAuthSessionSync()
+  })
+
+  it('ne deconnecte pas sur refresh_token_already_used (race)', async () => {
+    const { clearClientCache } = await import('./clearClientCache')
+    const { startAuthSessionSync, stopAuthSessionSync } = await import('./authSessionSync')
+
+    const expiredSession = {
+      access_token: 'expired-token',
+      expires_at: Math.floor(Date.now() / 1000) - 120,
+      user: { id: 'u1', user_metadata: {} },
+    }
+    const freshSession = {
+      access_token: 'fresh-token',
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+      user: { id: 'u1', user_metadata: {} },
+    }
+    getSession
+      .mockResolvedValueOnce({ data: { session: expiredSession } })
+      .mockResolvedValue({ data: { session: freshSession } })
+    refreshSession.mockResolvedValue({
+      data: { session: null },
+      error: { code: 'refresh_token_already_used', message: 'Invalid Refresh Token: Already Used' },
+    })
+
+    const store = configureStore({
+      reducer: {
+        auth: authReducer,
+        communications: () => ({ conversations: [] }),
+      },
+      preloadedState: {
+        auth: {
+          user: { id: 'u1', firstName: 'Amina' },
+          token: 'expired-token',
+          status: 'authenticated',
+          error: null,
+          registrationEmail: null,
+        },
+      },
+    })
+
+    startAuthSessionSync(store)
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'visible',
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    await vi.waitFor(() => {
+      expect(refreshSession).toHaveBeenCalled()
+    })
+    await new Promise((resolve) => setTimeout(resolve, 50))
+
+    expect(store.getState().auth.user?.id).toBe('u1')
+    expect(store.getState().auth.status).toBe('authenticated')
+    expect(clearClientCache).not.toHaveBeenCalled()
+
+    stopAuthSessionSync()
+  })
+
+  it('ignore SIGNED_OUT non intentionnel et conserve la session', async () => {
+    const { clearClientCache } = await import('./clearClientCache')
+    const { startAuthSessionSync, stopAuthSessionSync } = await import('./authSessionSync')
+
+    let authCallback = null
+    onAuthStateChange.mockImplementation((cb) => {
+      authCallback = cb
+      return { data: { subscription: { unsubscribe: vi.fn() } } }
+    })
+
+    const liveSession = {
+      access_token: 'still-valid',
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+      user: { id: 'u1', user_metadata: {} },
+    }
+    getSession.mockResolvedValue({ data: { session: liveSession } })
+    refreshSession.mockResolvedValue({ data: { session: liveSession } })
+
+    const store = configureStore({
+      reducer: {
+        auth: authReducer,
+        communications: () => ({ conversations: [] }),
+        account: () => ({ preferences: {} }),
+      },
+      preloadedState: {
+        auth: {
+          user: { id: 'u1', firstName: 'Amina' },
+          token: 'old-token',
+          status: 'authenticated',
+          error: null,
+          registrationEmail: null,
+        },
+      },
+    })
+
+    startAuthSessionSync(store)
+    expect(authCallback).toBeTypeOf('function')
+
+    await authCallback('SIGNED_OUT', null)
 
     expect(store.getState().auth.user?.id).toBe('u1')
     expect(store.getState().auth.status).toBe('authenticated')

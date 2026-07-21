@@ -32,6 +32,9 @@ import { VerificationGuidePanel } from '../features/verification/VerificationGui
 import { phase3Text } from '../i18n/phase3I18n'
 import { storageService } from '../services/storageService'
 import { addToast } from '../features/ui/uiSlice'
+import { UploadProgress } from '../components/ui/UploadProgress'
+import { FileNameText } from '../components/ui/FileNameText'
+import { useUploadProgress } from '../hooks/useUploadProgress'
 
 const LEVEL_VALUES = ['identity', 'enhanced']
 
@@ -61,6 +64,7 @@ export function VerificationPage() {
   const [selfieDoc, setSelfieDoc] = useState(null)
   const [addressDoc, setAddressDoc] = useState(null)
   const [privacyConsent, setPrivacyConsent] = useState(false)
+  const { progress: uploadProgress, track: trackUpload } = useUploadProgress()
 
   const levels = LEVEL_VALUES.map((value) => ({
     value,
@@ -114,7 +118,9 @@ export function VerificationPage() {
     const persist = async (doc, category) => {
       if (!doc?.file) return
       try {
-        const uploaded = await storageService.uploadDocument(user.id, category, doc.file)
+        const uploaded = await trackUpload((onProgress) =>
+          storageService.uploadDocument(user.id, category, doc.file, { onProgress }),
+        )
         const action = dispatch(
           addPersonalDocument({
             userId: user.id,
@@ -122,7 +128,7 @@ export function VerificationPage() {
             name: doc.file.name,
             size: doc.file.size,
             type: doc.file.type,
-            url: uploaded?.url || uploaded,
+            url: uploaded?.url || null,
             storagePath: uploaded?.path || null,
           }),
         )
@@ -420,7 +426,12 @@ export function VerificationPage() {
             <span />
           )}
           {current.key === 'review' ? (
-            <Button icon={FiCheckCircle} disabled={!ready || !privacyConsent} onClick={submit}>
+            <Button
+              icon={FiCheckCircle}
+              disabled={!ready || !privacyConsent || uploadProgress.active}
+              loading={uploadProgress.active}
+              onClick={submit}
+            >
               {p3('verification.submit')}
             </Button>
           ) : (
@@ -429,6 +440,11 @@ export function VerificationPage() {
             </Button>
           )}
         </div>
+        {uploadProgress.active ||
+        uploadProgress.phase === 'done' ||
+        uploadProgress.phase === 'error' ? (
+          <UploadProgress progress={uploadProgress} className="mt-4" />
+        ) : null}
       </Card>
     </div>
   )
@@ -436,12 +452,16 @@ export function VerificationPage() {
 
 function UploadField({ doc, hint, icon: Icon, kbLabel, label, onFile }) {
   return (
-    <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-[var(--app-border)] p-4 transition hover:border-brand-400">
+    <label className="flex min-w-0 max-w-full cursor-pointer items-center gap-3 overflow-hidden rounded-2xl border border-dashed border-[var(--app-border)] p-4 transition hover:border-brand-400">
       <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[var(--app-surface-muted)] text-[var(--app-accent)]">
         <Icon />
       </span>
-      <span className="min-w-0 flex-1">
-        <strong className="block truncate text-sm">{doc ? doc.file.name : label}</strong>
+      <span className="min-w-0 flex-1 overflow-hidden">
+        {doc ? (
+          <FileNameText as="strong" name={doc.file.name} className="block text-sm font-bold" maxLength={36} />
+        ) : (
+          <strong className="block truncate text-sm">{label}</strong>
+        )}
         <span className="text-xs text-[var(--app-text-muted)]">
           {doc ? `${Math.ceil(doc.file.size / 1024)} ${kbLabel}` : hint}
         </span>

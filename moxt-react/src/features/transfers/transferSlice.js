@@ -216,6 +216,13 @@ const transferSlice = createSlice({
         }
       })
     },
+    receiveRemoteTransfer(state, action) {
+      const transfer = action.payload
+      if (!transfer?.id || transfer.blocked) return
+      const index = state.items.findIndex((item) => item.id === transfer.id)
+      if (index === -1) state.items.unshift(transfer)
+      else state.items[index] = { ...state.items[index], ...transfer }
+    },
   },
 })
 
@@ -225,6 +232,7 @@ export const {
   declarePayment,
   expireOverdueTransfers,
   moderateTransfer,
+  receiveRemoteTransfer,
   receiveTransfer,
   setAll,
 } = transferSlice.actions

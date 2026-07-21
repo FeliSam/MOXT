@@ -87,6 +87,27 @@ export function conversationMessageCount(conversation, userId) {
   return Math.max(visible.length, conversation.messageCount || 0)
 }
 
+/** Conversation ouverte via Contacter sans aucun message envoyé. */
+export function isEmptyConversation(conversation, userId) {
+  if (!conversation) return true
+  if (conversationMessageCount(conversation, userId) > 0) return false
+  if (conversation.lastMessageAt || conversation.last_message_at) return false
+  if (String(conversation.lastMessageText || conversation.last_message_text || '').trim()) {
+    return false
+  }
+  return true
+}
+
+/**
+ * Masque les chats sans message (clic Contacter sans envoi),
+ * sauf la conversation active encore ouverte.
+ */
+export function shouldShowConversationInList(conversation, userId, activeId = null) {
+  if (!conversation) return false
+  if (activeId && conversation.id === activeId) return true
+  return !isEmptyConversation(conversation, userId)
+}
+
 export function countUnreadMessages(conversations, userId) {
   return conversations.reduce((total, item) => total + (item.unreadBy?.[userId] || 0), 0)
 }
@@ -98,6 +119,7 @@ export function countConversationsForFilter(conversations, filter, userId, showA
     if (filter === 'unread' && !(item.unreadBy?.[userId] > 0)) return false
     if (filter === 'pinned' && !item.pinnedBy?.includes(userId)) return false
     if (filter === 'support' && item.relatedType !== 'support') return false
+    if (isEmptyConversation(item, userId)) return false
     return true
   }).length
 }

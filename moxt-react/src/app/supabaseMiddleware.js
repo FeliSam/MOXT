@@ -305,9 +305,13 @@ function verificationRequestToRemoteRow(request) {
   }
 }
 
-/** Schema columns only — `url` is the storage link column (not file_url / public_url). */
+/** Schema columns only — prefer durable `storage_path`; `url` may hold a short-lived signed link. */
 function personalDocumentToRemoteRow(doc) {
-  const storageUrl = doc.url || doc.fileUrl || doc.publicUrl || doc.storagePath || null
+  const storagePath =
+    doc.storagePath ||
+    (typeof doc.url === 'string' && !doc.url.includes('://') ? doc.url : null) ||
+    null
+  const storageUrl = doc.url || doc.fileUrl || doc.publicUrl || null
   const row = {
     id: doc.id,
     user_id: doc.userId,
@@ -319,6 +323,7 @@ function personalDocumentToRemoteRow(doc) {
     status: doc.status || 'pending_review',
     created_at: doc.createdAt || new Date().toISOString(),
   }
+  if (storagePath) row.storage_path = storagePath
   if (doc.deletedAt) row.deleted_at = doc.deletedAt
   if (doc.deletedByUser != null) row.deleted_by_user = Boolean(doc.deletedByUser)
   return row

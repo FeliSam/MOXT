@@ -7,6 +7,7 @@ import { addToast } from '../../ui/uiSlice'
 import { formatDate } from '../transferUtils'
 import { downloadTransferProofFile } from '../transferProofDownload'
 import { getReceiptProofEntries, getTransferProofEntries } from '../transferProofUtils'
+import { shortenFileName } from '../../../services/uploadProgress'
 
 export function TransferProofsSection({ className = '', compact = false, receipt, transfer }) {
   const { t } = useLanguage()
@@ -99,7 +100,7 @@ function ProofDownloadRow({ compact, entry, transfer, transferId }) {
         <div className="min-w-0 flex-1 overflow-hidden">
           <p className="truncate text-sm font-bold">{label}</p>
           <p className="truncate text-xs text-[var(--app-text-muted)]" title={proof.name}>
-            {proof.name}
+            {shortenFileName(proof.name, 36)}
           </p>
           {proof.uploadedAt ? (
             <p className="text-[11px] text-[var(--app-text-faint)]">

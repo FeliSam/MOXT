@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { conversationMatchesQuery, conversationPreview, messageReadLabel } from './messageUtils.js'
+import {
+  conversationMatchesQuery,
+  conversationPreview,
+  messageReadLabel,
+  shouldShowConversationInList,
+} from './messageUtils.js'
 
 describe('messageReadLabel', () => {
   it('affiche Lu quand le correspondant a lu', () => {
@@ -45,6 +50,36 @@ describe('conversationPreview', () => {
       'u1',
     )
     expect(preview).toBe('Vous : Ma réponse')
+  })
+})
+
+describe('shouldShowConversationInList', () => {
+  it('masque une conversation sans message', () => {
+    expect(
+      shouldShowConversationInList(
+        { id: 'c1', messageCount: 0, messages: [], lastMessageText: '' },
+        'u1',
+      ),
+    ).toBe(false)
+  })
+
+  it('garde la conversation active même vide', () => {
+    expect(
+      shouldShowConversationInList(
+        { id: 'c1', messageCount: 0, messages: [], lastMessageText: '' },
+        'u1',
+        'c1',
+      ),
+    ).toBe(true)
+  })
+
+  it('affiche une conversation avec messages', () => {
+    expect(
+      shouldShowConversationInList(
+        { id: 'c1', messageCount: 1, lastMessageText: 'Salut', lastMessageAt: '2026-01-01' },
+        'u1',
+      ),
+    ).toBe(true)
   })
 })
 

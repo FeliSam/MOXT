@@ -8,6 +8,7 @@ import { Select } from '../components/ui/Select'
 import { CitySelector } from '../components/ui/CitySelector'
 import { PosterUploader } from '../components/ui/PosterUploader'
 import { PageHeader } from '../components/ui/PageHeader'
+import { useUploadProgress } from '../hooks/useUploadProgress'
 import {
   JOB_CONTRACT_OPTIONS,
   JOB_EXPERIENCE_OPTIONS,
@@ -42,6 +43,7 @@ export function EditJobPage() {
   const [form, setForm] = useState(null)
   const [gallery, setGallery] = useState({ entityId: null, photos: [] })
   const [saving, setSaving] = useState(false)
+  const { progress: uploadProgress, track: trackUpload } = useUploadProgress()
 
   if (!job) return <Card>{publishText(t, 'publish.job.edit.notFound')}</Card>
   if (job.ownerId !== user.id) return <Navigate to={`/jobs/${jobId}`} replace />
@@ -101,11 +103,13 @@ export function EditJobPage() {
     try {
       const newPhotos = photos.filter((photo) => photo.file)
       const uploaded = newPhotos.length
-        ? await storageService.uploadJobImages(
-            user.id,
-            jobId,
-            newPhotos.map((photo) => photo.file),
-            { version: Date.now().toString(36) },
+        ? await trackUpload((onProgress) =>
+            storageService.uploadJobImages(
+              user.id,
+              jobId,
+              newPhotos.map((photo) => photo.file),
+              { version: Date.now().toString(36), onProgress },
+            ),
           )
         : []
       let uploadIndex = 0
@@ -289,6 +293,7 @@ export function EditJobPage() {
             onRemove={removePhoto}
             label={publishText(t, 'publish.job.fields.posters')}
             hint={publishText(t, 'publish.job.fields.postersHint')}
+            progress={uploadProgress}
           />
           <Button type="submit" icon={FiSave} loading={saving} disabled={saving}>
             {publishText(t, 'publish.common.saveChanges')}

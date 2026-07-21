@@ -25,6 +25,9 @@ import { REVIEW_TARGET_TYPES } from '@moxt/shared/utils/reviewUtils.js'
 import { formatDate, formatMoney } from '../features/transfers/transferUtils'
 import { storageService } from '../services/storageService'
 import { addToast } from '../features/ui/uiSlice'
+import { UploadProgress } from '../components/ui/UploadProgress'
+import { FileNameText } from '../components/ui/FileNameText'
+import { useUploadProgress } from '../hooks/useUploadProgress'
 
 const ORDER_STATUS_KEYS = {
   created: { labelKey: 'p2p.order.status.created' },
@@ -41,6 +44,7 @@ export function P2POrderPage() {
   const [rating, setRating] = useState(5)
   const [comment, setComment] = useState('')
   const [uploading, setUploading] = useState(false)
+  const { progress: proofProgress, track: trackProofUpload } = useUploadProgress()
   const { orderId } = useParams()
   const user = useSelector((state) => state.auth.user)
   const order = useSelector((state) => state.p2p.orders.find((item) => item.id === orderId))
@@ -81,7 +85,9 @@ export function P2POrderPage() {
     if (!file) return
     setUploading(true)
     try {
-      const { path } = await storageService.uploadP2POrderProof(user.id, order.id, file)
+      const { path } = await trackProofUpload((onProgress) =>
+        storageService.uploadP2POrderProof(user.id, order.id, file, { onProgress }),
+      )
       dispatch(
         addOrderProof({
           id: order.id,
@@ -232,37 +238,44 @@ export function P2POrderPage() {
           ) : null}
 
           {!isTerminal ? (
-            <div className="mt-5 flex flex-wrap gap-2">
-              <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-[var(--app-border)] px-4 text-sm font-bold">
-                <FiUpload /> {uploading ? t('p2p.order.uploading') : t('p2p.order.addProof')}
-                <input
-                  className="sr-only"
-                  type="file"
-                  accept=".pdf,image/*"
-                  disabled={uploading}
-                  onChange={handleProofUpload}
-                />
-              </label>
-              <Button
-                variant="secondary"
-                icon={FiFileText}
-                onClick={() =>
-                  dispatch(
-                    createReceipt({
-                      userId: user.id,
-                      relatedType: 'p2p_order',
-                      relatedId: order.id,
-                      title: t('p2p.order.receiptTitle', { id: order.id }),
-                      amount: order.amount,
-                      currency: order.fromCurrency,
-                      status: order.status,
-                      details: { sellerName: order.sellerName, buyerName: order.buyerName },
-                    }),
-                  )
-                }
-              >
-                {t('p2p.order.saveReceipt')}
-              </Button>
+            <div className="mt-5 grid gap-3">
+              <div className="flex flex-wrap gap-2">
+                <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-[var(--app-border)] px-4 text-sm font-bold">
+                  <FiUpload /> {uploading ? t('p2p.order.uploading') : t('p2p.order.addProof')}
+                  <input
+                    className="sr-only"
+                    type="file"
+                    accept=".pdf,image/*"
+                    disabled={uploading}
+                    onChange={handleProofUpload}
+                  />
+                </label>
+                <Button
+                  variant="secondary"
+                  icon={FiFileText}
+                  onClick={() =>
+                    dispatch(
+                      createReceipt({
+                        userId: user.id,
+                        relatedType: 'p2p_order',
+                        relatedId: order.id,
+                        title: t('p2p.order.receiptTitle', { id: order.id }),
+                        amount: order.amount,
+                        currency: order.fromCurrency,
+                        status: order.status,
+                        details: { sellerName: order.sellerName, buyerName: order.buyerName },
+                      }),
+                    )
+                  }
+                >
+                  {t('p2p.order.saveReceipt')}
+                </Button>
+              </div>
+              {proofProgress.active ||
+              proofProgress.phase === 'done' ||
+              proofProgress.phase === 'error' ? (
+                <UploadProgress progress={proofProgress} compact />
+              ) : null}
             </div>
           ) : null}
           {order.proofs?.length ? (
@@ -270,11 +283,11 @@ export function P2POrderPage() {
               {order.proofs.map((proof) => (
                 <div
                   key={proof.id}
-                  className="flex items-center justify-between gap-2 rounded-xl bg-[var(--app-surface-muted)] p-3 text-sm"
+                  className="flex min-w-0 items-center justify-between gap-2 overflow-hidden rounded-xl bg-[var(--app-surface-muted)] p-3 text-sm"
                 >
-                  <span className="flex min-w-0 items-center gap-2">
+                  <span className="flex min-w-0 items-center gap-2 overflow-hidden">
                     <FiFileText className="shrink-0" />
-                    <span className="min-w-0 truncate">{proof.name}</span>
+                    <FileNameText name={proof.name} className="font-medium" maxLength={28} />
                     {proof.userId === order.buyerId ? (
                       <Badge tone="info" className="shrink-0 !text-[10px]">
                         {t('p2p.order.proofBuyer')}

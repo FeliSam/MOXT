@@ -1178,6 +1178,17 @@ export const fr = {
       addImages: "Ajouter des images",
       primary: "Principale",
     },
+    upload: {
+      fileOf: "{current}/{total}",
+      phases: {
+        preparing: "Préparation",
+        compressing: "Optimisation",
+        uploading: "Envoi",
+        finalizing: "Finalisation",
+        done: "Terminé",
+        error: "Échec de l’envoi",
+      },
+    },
     update: {
       title: "Mise à jour MOXT",
       body: "Nouvelle version disponible — rechargement automatique dès que possible.",
@@ -3622,6 +3633,14 @@ export const fr = {
       claimOnlyTitle: "Réclamation uniquement",
       claimOnlyDescription: "Toutes les étapes sont complétées. En cas de problème, ouvrez une réclamation.",
       openClaim: "Ouvrir une réclamation",
+      contactChat: "Contacter",
+      payoutAccount: {
+        title: "Compte de versement",
+        help: "Effectuez le transfert vers ce destinataire, puis joignez la preuve.",
+        beneficiary: "Bénéficiaire",
+        method: "Méthode",
+        numberOrAccount: "N° / compte",
+      },
       confirmPaymentReception: "Confirmer la réception du paiement",
       transferProofRequired: "Preuve de transfert (obligatoire)",
       imageOrPdf: "Image ou PDF du virement",
@@ -3731,6 +3750,7 @@ export const fr = {
         },
       },
       errors: {
+        createFailedTitle: "Transfert non créé",
         chooseAvailableBusiness: "Choisissez une entreprise disponible.",
         cannotUseOwnBusiness: "Vous ne pouvez pas utiliser votre propre entreprise.",
         businessMissingReceivingAccount: "Cette entreprise n'a pas encore configuré le compte de réception pour ce sens de transfert.",
@@ -3796,8 +3816,23 @@ export const fr = {
       claim: {
         title: "Réclamation",
         reason: "Motif de la réclamation",
+        motive: "Motif",
+        motivePlaceholder: "Choisir un motif",
+        transferNumber: "N° de transfert",
+        message: "Message",
+        messagePlaceholder: "Décrivez le problème rencontré…",
         help: "Notre équipe examine chaque réclamation et vous recontacte sous 48h via votre messagerie MOXT.",
         submit: "Envoyer la réclamation",
+        submittedTitle: "Réclamation envoyée",
+        submittedMessage: "Votre dossier a été transmis à l’équipe MOXT.",
+        motives: {
+          nonReceived: "Fonds non reçus",
+          wrongAmount: "Montant incorrect",
+          fraud: "Fraude suspectée",
+          delay: "Retard excessif",
+          paymentIssue: "Problème de paiement / preuve",
+          other: "Autre",
+        },
       },
       cancel: {
         title: "Annuler ce transfert ?",
@@ -3829,6 +3864,14 @@ export const fr = {
         title: "Participants",
         sender: "Expéditeur",
         recipient: "Destinataire",
+        addFavorite: "Ajouter aux profils favoris",
+        removeFavorite: "Retirer des profils favoris",
+        favoriteSavedTitle: "Profil favori enregistré",
+        favoriteSavedMessage: "Ce contact est disponible pour vos prochains transferts.",
+        favoriteRemovedTitle: "Profil retiré des favoris",
+        favoriteRemovedMessage: "Ce contact n’apparaîtra plus dans vos profils favoris.",
+        favoriteErrorTitle: "Impossible d’enregistrer",
+        favoriteIncomplete: "Prénom, nom et téléphone sont requis pour un favori.",
       },
       timeline: {
         title: "Chronologie",
@@ -5736,7 +5779,7 @@ export const fr = {
       replyLabel: "Reponse detaillee",
       replyPlaceholder: "Reponse au ticket...",
       send: "Envoyer",
-      openFull: "Ouvrir la fiche complete",
+      openFull: "Ouvrir la fiche compte",
       kind: {
         transfer: "Transfert",
         support: "Ticket support",
@@ -6786,7 +6829,7 @@ export const fr = {
         },
         more: {
           title: "Menu Plus",
-          body: "Ouvrez ici tous les autres services : guide, jobs, entreprise, et plus encore.",
+          body: "Ouvrez ici tous les autres services : MOXT, jobs, entreprise, et plus encore.",
         },
         morePanel: {
           title: "Tous les services",
@@ -6805,9 +6848,9 @@ export const fr = {
         title: "Actualités",
         body: "Suivez les infos et publications de la communauté MOXT — Afrique et Russie.",
       },
-      guide: {
-        title: "Guide",
-        body: "Informations pour vivre en Russie : démarches, règles du quotidien et lois utiles à connaître.",
+      moxt: {
+        title: "MOXT",
+        body: "Ce bouton regroupe tous les liens essentiels du site : un seul endroit pour accéder rapidement aux services clés.",
       },
       desktop: {
         sidebar: {
@@ -6816,7 +6859,7 @@ export const fr = {
         },
         more: {
           title: "Services supplémentaires",
-          body: "Le menu Plus ouvre le catalogue complet : guide, événements, jobs, et le reste des modules.",
+          body: "Le menu Plus ouvre le catalogue complet : MOXT, événements, jobs, et le reste des modules.",
         },
         morePanel: {
           title: "Catalogue des services",

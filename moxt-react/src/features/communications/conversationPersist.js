@@ -2,6 +2,32 @@ import { supabase } from '../../services/supabaseClient'
 import { conversationToRemoteRow, messageToRemoteRow } from './messagingRemote'
 import { participantKey } from './conversationUtils'
 
+const CONVERSATION_SELECT_COLUMNS = [
+  'id',
+  'title',
+  'related_type',
+  'related_id',
+  'related_path',
+  'related_snapshot',
+  'related_contexts',
+  'participant_profiles',
+  'participant_ids',
+  'participant_key',
+  'created_by',
+  'status',
+  'unread_by',
+  'archived_by',
+  'pinned_by',
+  'muted_by',
+  'blocked_by',
+  'message_count',
+  'last_message_text',
+  'last_message_sender_id',
+  'last_message_at',
+  'created_at',
+  'updated_at',
+].join(',')
+
 /** Résout l'id canonique et tous les ids liés (doublons participant_key) pour charger les messages. */
 export async function resolveMessageLoadScope(conversationId, conversation) {
   const conversationIds = new Set([conversationId])
@@ -15,7 +41,7 @@ export async function resolveMessageLoadScope(conversationId, conversation) {
 
   const { data: row, error } = await supabase
     .from('conversations')
-    .select('*')
+    .select(CONVERSATION_SELECT_COLUMNS)
     .eq('id', conversationId)
     .maybeSingle()
   if (error) throw error

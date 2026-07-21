@@ -1032,6 +1032,17 @@ export const pt = {
       addImages: "Adicionar imagens",
       primary: "Principal",
     },
+    upload: {
+      fileOf: "{current}/{total}",
+      phases: {
+        preparing: "Preparação",
+        compressing: "Otimização",
+        uploading: "Envio",
+        finalizing: "Finalização",
+        done: "Concluído",
+        error: "Falha no envio",
+      },
+    },
     update: {
       title: "Atualização MOXT",
       body: "Nova versão disponível — atualização automática assim que possível.",
@@ -3622,6 +3633,14 @@ export const pt = {
       claimOnlyTitle: "Apenas reclamação",
       claimOnlyDescription: "Todas as etapas estão concluídas. Em caso de problema, abra uma reclamação.",
       openClaim: "Abrir uma reclamação",
+      contactChat: "Contactar",
+      payoutAccount: {
+        title: "Conta de pagamento",
+        help: "Efetue a transferência para este destinatário e anexe o comprovativo.",
+        beneficiary: "Beneficiário",
+        method: "Método",
+        numberOrAccount: "N.º / conta",
+      },
       confirmPaymentReception: "Confirmar receção do pagamento",
       transferProofRequired: "Comprovativo de transferência (obrigatório)",
       imageOrPdf: "Imagem ou PDF da transferência",
@@ -3796,8 +3815,23 @@ export const pt = {
       claim: {
         title: "Reclamação",
         reason: "Motivo da reclamação",
+        motive: "Motivo",
+        motivePlaceholder: "Escolher um motivo",
+        transferNumber: "N.º da transferência",
+        message: "Mensagem",
+        messagePlaceholder: "Descreva o problema…",
         help: "A nossa equipa analisa cada reclamação e contacta-o em 48h através da mensagens MOXT.",
         submit: "Enviar reclamação",
+        submittedTitle: "Reclamação enviada",
+        submittedMessage: "O seu caso foi enviado à equipa MOXT.",
+        motives: {
+          nonReceived: "Fundos não recebidos",
+          wrongAmount: "Montante incorreto",
+          fraud: "Fraude suspeita",
+          delay: "Atraso excessivo",
+          paymentIssue: "Problema de pagamento / comprovativo",
+          other: "Outro",
+        },
       },
       cancel: {
         title: "Cancelar esta transferência?",
@@ -3829,6 +3863,14 @@ export const pt = {
         title: "Participantes",
         sender: "Remetente",
         recipient: "Destinatário",
+        addFavorite: "Adicionar aos perfis favoritos",
+        removeFavorite: "Remover dos perfis favoritos",
+        favoriteSavedTitle: "Perfil favorito guardado",
+        favoriteSavedMessage: "Este contacto está disponível para as suas próximas transferências.",
+        favoriteRemovedTitle: "Perfil removido dos favoritos",
+        favoriteRemovedMessage: "Este contacto já não aparecerá nos seus perfis favoritos.",
+        favoriteErrorTitle: "Não foi possível guardar",
+        favoriteIncomplete: "Nome, apelido e telefone são obrigatórios para um favorito.",
       },
       timeline: {
         title: "Cronologia",
@@ -6785,7 +6827,7 @@ export const pt = {
         },
         more: {
           title: "Menu Mais",
-          body: "Abra aqui os outros serviços: guia, empregos, empresa e mais.",
+          body: "Abra aqui os outros serviços: MOXT, empregos, empresa e mais.",
         },
         morePanel: {
           title: "Todos os serviços",
@@ -6804,9 +6846,9 @@ export const pt = {
         title: "Notícias",
         body: "Acompanhe novidades e publicações da comunidade MOXT — África e Rússia.",
       },
-      guide: {
-        title: "Guia",
-        body: "Viver na Rússia: procedimentos, regras do dia a dia e leis úteis a conhecer.",
+      moxt: {
+        title: "MOXT",
+        body: "Este botão reúne todos os links essenciais do site — um só sítio para aceder depressa aos serviços principais.",
       },
       desktop: {
         sidebar: {
@@ -6815,7 +6857,7 @@ export const pt = {
         },
         more: {
           title: "Mais serviços",
-          body: "O menu Mais abre o catálogo completo: guia, eventos, empregos e outros módulos.",
+          body: "O menu Mais abre o catálogo completo: MOXT, eventos, empregos e outros módulos.",
         },
         morePanel: {
           title: "Catálogo de serviços",

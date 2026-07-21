@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/Button'
 import { PosterUploader } from '../../components/ui/PosterUploader'
 import { createId } from '../../services/createId'
 import { storageService } from '../../services/storageService'
+import { useUploadProgress } from '../../hooks/useUploadProgress'
 import { addToast } from '../ui/uiSlice'
 import { useLanguage } from '../../contexts/useLanguage'
 import { createStatus } from './statusesSlice'
@@ -21,6 +22,7 @@ export function StatusComposer({ onClose, officialIdentity }) {
   const [caption, setCaption] = useState('')
   const [photos, setPhotos] = useState([])
   const [submitting, setSubmitting] = useState(false)
+  const { progress: uploadProgress, track: trackUpload } = useUploadProgress()
 
   function addPhotos(files) {
     const added = Array.from(files)
@@ -41,10 +43,13 @@ export function StatusComposer({ onClose, officialIdentity }) {
     setSubmitting(true)
     try {
       const statusId = createId('STA')
-      const urls = await storageService.uploadStatusImages(
-        user.id,
-        statusId,
-        photos.map((p) => p.file),
+      const urls = await trackUpload((onProgress) =>
+        storageService.uploadStatusImages(
+          user.id,
+          statusId,
+          photos.map((p) => p.file),
+          { onProgress },
+        ),
       )
       dispatch(
         createStatus({
@@ -122,6 +127,7 @@ export function StatusComposer({ onClose, officialIdentity }) {
           max={4}
           label={t('status.composer.title')}
           hint={t('status.composer.imagesRequired')}
+          progress={uploadProgress}
         />
 
         <textarea

@@ -95,7 +95,7 @@ export function MoreServicesContent({
     <>
       {groups.map((group) => (
         <section key={group.id} className="mb-5">
-          <h3 className="mb-2.5 px-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--app-text-muted)]">
+          <h3 className="mb-2.5 px-1 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--app-text-faint)]">
             {labelOf(group)}
           </h3>
           {layout === 'grid' ? (

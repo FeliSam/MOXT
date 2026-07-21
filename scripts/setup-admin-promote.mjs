@@ -87,7 +87,13 @@ function main() {
   }
 
   log('Déploiement', 'admin-promote-role')
-  if (runSupabase(['functions', 'deploy', 'admin-promote-role'], supabaseEnv) !== 0) {
+  // JWT vérifié dans la fonction (getUser) — évite l’échec opaque CORS du gateway.
+  if (
+    runSupabase(
+      ['functions', 'deploy', 'admin-promote-role', '--no-verify-jwt'],
+      supabaseEnv,
+    ) !== 0
+  ) {
     process.exit(1)
   }
 

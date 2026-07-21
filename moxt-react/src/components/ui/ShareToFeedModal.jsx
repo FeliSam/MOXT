@@ -17,6 +17,7 @@ import { initialCatalogStatus } from '@moxt/shared/auth/userSecurity.js'
 import { storageService } from '../../services/storageService'
 import { phase3Text } from '../../i18n/phase3I18n'
 import { createId } from '../../services/createId'
+import { useUploadProgress } from '../../hooks/useUploadProgress'
 import { PostComposerForm } from './PostComposerForm'
 
 /**
@@ -47,6 +48,7 @@ export function ShareToFeedModal({
   )
   const [submitting, setSubmitting] = useState(false)
   const [dialogEl, setDialogEl] = useState(null)
+  const { progress: uploadProgress, track: trackUpload } = useUploadProgress()
 
   useEffect(() => {
     dialogEl?.focus()
@@ -89,7 +91,9 @@ export function ShareToFeedModal({
       const filesToUpload = imageItems.map((item) => item.file).filter(Boolean)
       let uploaded = []
       if (filesToUpload.length && user?.id) {
-        uploaded = await storageService.uploadPostImages(user.id, postId, filesToUpload)
+        uploaded = await trackUpload((onProgress) =>
+          storageService.uploadPostImages(user.id, postId, filesToUpload, { onProgress }),
+        )
       }
       let uploadIndex = 0
       const urls = imageItems.map((item) => {
@@ -196,6 +200,7 @@ export function ShareToFeedModal({
             onSubmit={handlePublish}
             onCancel={onClose}
             submitting={submitting}
+            progress={uploadProgress}
           />
         </div>
       </div>

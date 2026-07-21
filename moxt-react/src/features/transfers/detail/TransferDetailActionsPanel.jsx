@@ -11,6 +11,7 @@ import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { formatDate } from '../transferUtils'
+import { shortenFileName } from '../../../services/uploadProgress'
 
 export function TransferDetailActionsPanel({
   canCancel,
@@ -58,7 +59,7 @@ export function TransferDetailActionsPanel({
                 )}
                 <span className="min-w-0 flex-1 overflow-hidden">
                   <strong className="block truncate text-xs" title={proof.file?.name}>
-                    {proof.file?.name}
+                    {shortenFileName(proof.file?.name, 28)}
                   </strong>
                   <span className="text-xs text-[var(--app-text-muted)]">
                     {proof.uploading

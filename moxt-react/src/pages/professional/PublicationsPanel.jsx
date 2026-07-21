@@ -4,6 +4,7 @@ import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { EmptyState } from '../../components/ui/EmptyState'
+import { ImageLightbox } from '../../components/ui/ImageLightbox'
 import { statusMeta } from '../../config/statuses'
 import { useLanguage } from '../../contexts/useLanguage'
 import { professionalText } from '../../features/businesses/professionalI18n'
@@ -24,6 +25,7 @@ export function PublicationsPanel({ dispatch, publications }) {
   const { t } = useLanguage()
   const pt = (key, vars) => professionalText(t, key, vars)
   const [activeType, setActiveType] = useState('all')
+  const [lightbox, setLightbox] = useState(null)
   const contentPath = {
     listings: '/marketplace',
     jobs: '/jobs',
@@ -100,12 +102,26 @@ export function PublicationsPanel({ dispatch, publications }) {
             <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
               <div className="flex min-w-0 flex-1 items-start gap-3 pr-14 sm:pr-0">
                 {item.images?.[0] ? (
-                  <img
-                    src={item.images[0]}
-                    alt={item.title}
-                    className="size-16 shrink-0 rounded-2xl object-cover sm:size-20"
-                    loading="lazy"
-                  />
+                  <button
+                    type="button"
+                    className="shrink-0 overflow-hidden rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
+                    aria-label={pt('professional.publications.viewImages')}
+                    onClick={() =>
+                      setLightbox({
+                        images: item.images.filter(Boolean),
+                        index: 0,
+                        alt: item.title || '',
+                      })
+                    }
+                  >
+                    <img
+                      src={item.images[0]}
+                      alt={item.title}
+                      className="size-16 object-cover sm:size-20"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </button>
                 ) : null}
                 <div className="min-w-0 flex-1">
                   <strong className="block break-words text-sm sm:text-base">
@@ -121,6 +137,21 @@ export function PublicationsPanel({ dispatch, publications }) {
                 </div>
               </div>
               <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
+                {item.images?.length ? (
+                  <Button
+                    variant="secondary"
+                    className="w-full sm:w-auto"
+                    onClick={() =>
+                      setLightbox({
+                        images: item.images.filter(Boolean),
+                        index: 0,
+                        alt: item.title || '',
+                      })
+                    }
+                  >
+                    {pt('professional.publications.viewImages')}
+                  </Button>
+                ) : null}
                 <Link to={`${contentPath[item.contentType]}/${item.id}`} className="min-w-0">
                   <Button variant="secondary" className="w-full sm:w-auto">
                     {pt('professional.publications.view')}
@@ -158,6 +189,24 @@ export function PublicationsPanel({ dispatch, publications }) {
           </Card>
         )
       })}
+      <ImageLightbox
+        open={Boolean(lightbox)}
+        images={lightbox?.images || []}
+        index={lightbox?.index || 0}
+        alt={lightbox?.alt || ''}
+        onClose={() => setLightbox(null)}
+        onIndexChange={(updater) =>
+          setLightbox((current) =>
+            current
+              ? {
+                  ...current,
+                  index:
+                    typeof updater === 'function' ? updater(current.index) : updater,
+                }
+              : current,
+          )
+        }
+      />
     </div>
   )
 }

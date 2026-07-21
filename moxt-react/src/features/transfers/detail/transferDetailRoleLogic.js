@@ -167,7 +167,10 @@ export function getTransferDetailAccess(transfer, user, business, ownedBusinessI
       isBusinessViewer &&
       nextBusinessStatus === TRANSFER_STATUS.PAID_OUT,
     canDeclareReception: canClientDeclareReception(transfer, isSender),
-    canOpenClaim: claimOnly,
+    // Réclamation disponible dès la création pour les deux parties (hors annulé/expiré).
+    canOpenClaim:
+      (isSender || isBusinessViewer) &&
+      ![TRANSFER_STATUS.CANCELLED, TRANSFER_STATUS.EXPIRED].includes(transfer.status),
     contactId: isBusinessViewer ? transfer.userId : transfer.businessOwnerId,
     contactTitle: isBusinessViewer
       ? `${transfer.sender.firstName} ${transfer.sender.lastName}`

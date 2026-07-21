@@ -212,6 +212,7 @@ export function ReceiveTransferScreen() {
           onChange={form.setField}
           onSubmit={form.submit}
           submitting={form.submitting}
+          uploadProgress={form.uploadProgress}
           submitLabel={t('transfers.receive.confirm')}
         />
       </Card>

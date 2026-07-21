@@ -1,4 +1,4 @@
-const UPDATE_CHECK_MS = 60 * 1000
+const UPDATE_CHECK_MS = 10 * 60 * 1000
 const RELOAD_DELAY_MS = 1500
 
 let reloadScheduled = false

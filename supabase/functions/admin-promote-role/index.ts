@@ -1,45 +1,29 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const DEFAULT_ORIGINS = ['https://moxtapp.ru', 'https://www.moxtapp.ru', 'http://localhost:5173']
-
-function allowedOrigins() {
-  const raw = Deno.env.get('MOXT_ALLOWED_ORIGINS') || ''
-  const fromEnv = raw
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean)
-  return fromEnv.length ? fromEnv : DEFAULT_ORIGINS
+/** CORS permissif pour supabase.functions.invoke (navigateur) — auth réelle via JWT + mot de passe. */
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type, x-supabase-api-version',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-function corsHeaders(origin: string | null) {
-  const allowed = allowedOrigins()
-  const resolved =
-    origin && allowed.includes(origin) ? origin : allowed[0] || DEFAULT_ORIGINS[0]
-  return {
-    'Access-Control-Allow-Origin': resolved,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    Vary: 'Origin',
-  }
-}
-
-function json(body: Record<string, unknown>, status = 200, origin: string | null = null) {
+function json(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   })
 }
 
 const PRIVILEGED_ROLES = new Set(['admin', 'superadmin'])
 
 Deno.serve(async (req) => {
-  const origin = req.headers.get('origin')
-
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders(origin) })
+    return new Response('ok', { headers: corsHeaders })
   }
 
   if (req.method !== 'POST') {
-    return json({ error: 'Method not allowed' }, 405, origin)
+    return json({ error: 'Method not allowed' }, 405)
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
@@ -47,7 +31,7 @@ Deno.serve(async (req) => {
   const promoteSecret = Deno.env.get('MOXT_ADMIN_PROMOTE_PASSWORD')
 
   if (!supabaseUrl || !serviceRoleKey) {
-    return json({ error: 'Configuration Supabase incomplète.' }, 503, origin)
+    return json({ error: 'Configuration Supabase incomplète.' }, 503)
   }
 
   if (!promoteSecret) {
@@ -57,21 +41,20 @@ Deno.serve(async (req) => {
           'MOXT_ADMIN_PROMOTE_PASSWORD manquant. Définissez-le dans scripts/phase2.env puis npm run setup:admin-promote.',
       },
       503,
-      origin,
     )
   }
 
   const authHeader = req.headers.get('authorization') || ''
   const token = authHeader.replace(/^Bearer\s+/i, '').trim()
   if (!token) {
-    return json({ error: 'Session expirée.' }, 401, origin)
+    return json({ error: 'Session expirée.' }, 401)
   }
 
   let body: { userId?: string; role?: string; promotePassword?: string }
   try {
     body = await req.json()
   } catch {
-    return json({ error: 'Corps JSON invalide.' }, 400, origin)
+    return json({ error: 'Corps JSON invalide.' }, 400)
   }
 
   const userId = String(body.userId || '').trim()
@@ -79,11 +62,11 @@ Deno.serve(async (req) => {
   const promotePassword = String(body.promotePassword || '')
 
   if (!userId || !PRIVILEGED_ROLES.has(role)) {
-    return json({ error: 'Promotion admin invalide.' }, 400, origin)
+    return json({ error: 'Promotion admin invalide.' }, 400)
   }
 
   if (!promotePassword || promotePassword !== promoteSecret) {
-    return json({ error: 'Mot de passe de promotion administrateur incorrect.' }, 403, origin)
+    return json({ error: 'Mot de passe de promotion administrateur incorrect.' }, 403)
   }
 
   const admin = createClient(supabaseUrl, serviceRoleKey, {
@@ -92,7 +75,7 @@ Deno.serve(async (req) => {
 
   const { data: authData, error: authError } = await admin.auth.getUser(token)
   if (authError || !authData?.user) {
-    return json({ error: 'Session invalide.' }, 401, origin)
+    return json({ error: 'Session invalide.' }, 401)
   }
 
   const callerId = authData.user.id
@@ -103,15 +86,15 @@ Deno.serve(async (req) => {
     .maybeSingle()
 
   if (callerError) {
-    return json({ error: callerError.message }, 500, origin)
+    return json({ error: callerError.message }, 500)
   }
 
   if (callerProfile?.role !== 'superadmin') {
-    return json({ error: 'Seul un superadmin peut créer un administrateur.' }, 403, origin)
+    return json({ error: 'Seul un superadmin peut créer un administrateur.' }, 403)
   }
 
   if (role === 'superadmin' && callerProfile.role !== 'superadmin') {
-    return json({ error: 'Promotion superadmin refusée.' }, 403, origin)
+    return json({ error: 'Promotion superadmin refusée.' }, 403)
   }
 
   const { error: updateError } = await admin
@@ -120,8 +103,8 @@ Deno.serve(async (req) => {
     .eq('id', userId)
 
   if (updateError) {
-    return json({ error: updateError.message }, 500, origin)
+    return json({ error: updateError.message }, 500)
   }
 
-  return json({ ok: true, userId, role }, 200, origin)
+  return json({ ok: true, userId, role }, 200)
 })

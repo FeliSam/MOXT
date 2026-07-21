@@ -19,6 +19,8 @@ import { Link } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { RELATED_CONTENT_META } from '../../config/communications'
 import { useLanguage } from '../../contexts/useLanguage'
+import { UploadProgress } from '../../components/ui/UploadProgress'
+import { shortenFileName } from '../../services/uploadProgress'
 import { EntityAvatar } from '../../features/account/EntityAvatar'
 import { getConversationPeer } from '../../features/communications/conversationDisplay'
 import {
@@ -59,6 +61,7 @@ function matchesThreadQuery(messageOrText, query) {
 export function ConversationPanel({
   active,
   attachments = [],
+  uploadProgress = null,
   avatarMap = {},
   blocked,
   formik,
@@ -684,8 +687,8 @@ export function ConversationPanel({
                   ) : (
                     <FiPaperclip className="shrink-0" />
                   )}
-                  <span className="max-w-[7rem] truncate font-semibold sm:max-w-[10rem]">
-                    {file.name}
+                  <span className="max-w-[7rem] truncate font-semibold sm:max-w-[10rem]" title={file.name}>
+                    {shortenFileName(file.name, 22)}
                   </span>
                   <button
                     type="button"
@@ -709,6 +712,13 @@ export function ConversationPanel({
             >
               {messagesText(t, 'messages.removeAllVisible')}
             </button>
+          </div>
+        ) : null}
+        {uploadProgress?.active ||
+        uploadProgress?.phase === 'done' ||
+        uploadProgress?.phase === 'error' ? (
+          <div className="mx-auto mb-2 max-w-3xl">
+            <UploadProgress progress={uploadProgress} compact />
           </div>
         ) : null}
         {replyToContextId && replyContextPreview ? (
