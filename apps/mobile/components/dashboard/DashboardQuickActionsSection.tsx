@@ -14,11 +14,11 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 type BentoSize = 'hero' | 'featured' | 'medium' | 'compact';
 
 const SURFACE: Record<string, string> = {
-  'qa-transfer': 'bg-emerald-100 dark:bg-emerald-950/40',
-  'qa-listing': 'bg-cyan-100 dark:bg-cyan-950/35',
-  'qa-parcel': 'bg-blue-50 dark:bg-blue-950/30',
-  'qa-job': 'bg-amber-100/90 dark:bg-amber-950/30',
-  'qa-event': 'bg-violet-50 dark:bg-violet-950/30',
+  'qa-transfer': 'bg-emerald-200 dark:bg-emerald-950/45',
+  'qa-listing': 'bg-cyan-200 dark:bg-cyan-950/40',
+  'qa-parcel': 'bg-blue-100 dark:bg-blue-950/35',
+  'qa-job': 'bg-amber-200/90 dark:bg-amber-950/35',
+  'qa-event': 'bg-violet-100 dark:bg-violet-950/35',
 };
 
 function BentoTile({

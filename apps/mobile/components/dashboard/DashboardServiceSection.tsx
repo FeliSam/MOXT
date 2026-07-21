@@ -15,15 +15,15 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 type BentoSize = 'hero' | 'featured' | 'medium' | 'compact';
 
 const SURFACE: Record<string, string> = {
-  transfers: 'bg-emerald-100 dark:bg-emerald-950/40',
+  transfers: 'bg-emerald-200 dark:bg-emerald-950/45',
+  marketplace: 'bg-sky-200 dark:bg-sky-950/40',
   p2p: 'bg-cyan-100 dark:bg-cyan-950/35',
-  marketplace: 'bg-sky-50 dark:bg-sky-950/30',
-  parcels: 'bg-amber-100/90 dark:bg-amber-950/30',
-  jobs: 'bg-violet-50 dark:bg-violet-950/30',
-  exchangers: 'bg-teal-50 dark:bg-teal-950/30',
-  businesses: 'bg-blue-50 dark:bg-blue-950/30',
-  events: 'bg-orange-50 dark:bg-orange-950/30',
-  news: 'bg-rose-50 dark:bg-rose-950/30',
+  parcels: 'bg-amber-200/90 dark:bg-amber-950/35',
+  jobs: 'bg-violet-100 dark:bg-violet-950/35',
+  exchangers: 'bg-teal-100 dark:bg-teal-950/35',
+  businesses: 'bg-blue-100 dark:bg-blue-950/35',
+  events: 'bg-orange-100 dark:bg-orange-950/35',
+  news: 'bg-rose-100 dark:bg-rose-950/35',
 };
 
 function BentoTile({

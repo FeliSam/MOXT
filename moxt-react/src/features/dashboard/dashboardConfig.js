@@ -13,7 +13,7 @@ export const quickActions = [
     size: 'hero',
     iconPos: 'br',
     surface:
-      'bg-[linear-gradient(135deg,color-mix(in_srgb,var(--app-teal)_15.4%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(135deg,rgba(8,112,95,0.308)_0%,var(--app-surface-muted)_100%)]',
+      'bg-[linear-gradient(135deg,color-mix(in_srgb,var(--app-teal)_16.94%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(135deg,rgba(8,112,95,0.339)_0%,var(--app-surface-muted)_100%)]',
   },
   {
     id: 'qa-listing',
@@ -25,7 +25,7 @@ export const quickActions = [
     size: 'featured',
     iconPos: 'tr',
     surface:
-      'bg-[linear-gradient(160deg,color-mix(in_srgb,#0891b2_13.2%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(160deg,rgba(8,145,178,0.242)_0%,var(--app-surface-muted)_100%)]',
+      'bg-[linear-gradient(160deg,color-mix(in_srgb,#0891b2_14.52%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(160deg,rgba(8,145,178,0.266)_0%,var(--app-surface-muted)_100%)]',
   },
   {
     id: 'qa-parcel',
@@ -37,7 +37,7 @@ export const quickActions = [
     size: 'medium',
     iconPos: 'br',
     surface:
-      'bg-[linear-gradient(145deg,color-mix(in_srgb,#245de8_9.9%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(36,93,232,0.198)_0%,var(--app-surface-muted)_100%)]',
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#245de8_10.89%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(36,93,232,0.218)_0%,var(--app-surface-muted)_100%)]',
   },
   {
     id: 'qa-job',
@@ -49,7 +49,7 @@ export const quickActions = [
     size: 'medium',
     iconPos: 'bl',
     surface:
-      'bg-[linear-gradient(145deg,color-mix(in_srgb,#b45309_9.9%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(180,83,9,0.198)_0%,var(--app-surface-muted)_100%)]',
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#b45309_10.89%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(180,83,9,0.218)_0%,var(--app-surface-muted)_100%)]',
   },
   {
     id: 'qa-event',
@@ -61,7 +61,7 @@ export const quickActions = [
     size: 'compact',
     iconPos: 'tr',
     surface:
-      'bg-[linear-gradient(145deg,color-mix(in_srgb,#7c3aed_8.8%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(124,58,237,0.176)_0%,var(--app-surface-muted)_100%)]',
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#7c3aed_9.68%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(124,58,237,0.194)_0%,var(--app-surface-muted)_100%)]',
   },
 ]
 
@@ -82,20 +82,7 @@ export const coreServices = [
     size: 'hero',
     iconPos: 'br',
     surface:
-      'bg-[linear-gradient(135deg,color-mix(in_srgb,var(--app-teal)_15.4%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(135deg,rgba(8,112,95,0.308)_0%,var(--app-surface-muted)_100%)]',
-  },
-  {
-    id: 'p2p',
-    titleKey: 'dashboard.config.services.p2p.title',
-    descriptionKey: 'dashboard.config.services.p2p.description',
-    path: '/p2p',
-    image: '/assets/services/3d/service-p2p.png',
-    imageLogo: '/assets/services/service-p2p.png',
-    tagKey: 'dashboard.config.services.p2p.tag',
-    size: 'featured',
-    iconPos: 'tr',
-    surface:
-      'bg-[linear-gradient(160deg,color-mix(in_srgb,#0891b2_13.2%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(160deg,rgba(8,145,178,0.242)_0%,var(--app-surface-muted)_100%)]',
+      'bg-[linear-gradient(135deg,color-mix(in_srgb,var(--app-teal)_16.94%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(135deg,rgba(8,112,95,0.339)_0%,var(--app-surface-muted)_100%)]',
   },
   {
     id: 'marketplace',
@@ -105,10 +92,10 @@ export const coreServices = [
     image: '/assets/services/3d/service-marketplace.png',
     imageLogo: '/assets/services/service-marketplace.png',
     tagKey: 'dashboard.config.services.marketplace.tag',
-    size: 'medium',
-    iconPos: 'br',
+    size: 'featured',
+    iconPos: 'tr',
     surface:
-      'bg-[linear-gradient(145deg,color-mix(in_srgb,#0ea5e9_9.9%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(14,165,233,0.198)_0%,var(--app-surface-muted)_100%)]',
+      'bg-[linear-gradient(160deg,color-mix(in_srgb,#0ea5e9_14.52%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(160deg,rgba(14,165,233,0.266)_0%,var(--app-surface-muted)_100%)]',
   },
   {
     id: 'parcels',
@@ -121,7 +108,7 @@ export const coreServices = [
     size: 'medium',
     iconPos: 'bl',
     surface:
-      'bg-[linear-gradient(145deg,color-mix(in_srgb,#d97706_9.9%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(217,119,6,0.198)_0%,var(--app-surface-muted)_100%)]',
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#d97706_10.89%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(217,119,6,0.218)_0%,var(--app-surface-muted)_100%)]',
   },
   {
     id: 'jobs',
@@ -131,10 +118,23 @@ export const coreServices = [
     image: '/assets/services/3d/service-job.png',
     imageLogo: '/assets/services/quick-job.png',
     tagKey: 'dashboard.config.services.jobs.tag',
+    size: 'medium',
+    iconPos: 'br',
+    surface:
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#7c3aed_10.89%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(124,58,237,0.218)_0%,var(--app-surface-muted)_100%)]',
+  },
+  {
+    id: 'p2p',
+    titleKey: 'dashboard.config.services.p2p.title',
+    descriptionKey: 'dashboard.config.services.p2p.description',
+    path: '/p2p',
+    image: '/assets/services/3d/service-p2p.png',
+    imageLogo: '/assets/services/service-p2p.png',
+    tagKey: 'dashboard.config.services.p2p.tag',
     size: 'compact',
     iconPos: 'tr',
     surface:
-      'bg-[linear-gradient(145deg,color-mix(in_srgb,#7c3aed_8.8%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(124,58,237,0.176)_0%,var(--app-surface-muted)_100%)]',
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#0891b2_9.68%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(8,145,178,0.194)_0%,var(--app-surface-muted)_100%)]',
   },
   {
     id: 'exchangers',
@@ -147,7 +147,7 @@ export const coreServices = [
     size: 'compact',
     iconPos: 'br',
     surface:
-      'bg-[linear-gradient(145deg,color-mix(in_srgb,#08705f_8.8%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(8,112,95,0.176)_0%,var(--app-surface-muted)_100%)]',
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#08705f_9.68%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(8,112,95,0.194)_0%,var(--app-surface-muted)_100%)]',
   },
   {
     id: 'businesses',
@@ -160,7 +160,7 @@ export const coreServices = [
     size: 'compact',
     iconPos: 'bl',
     surface:
-      'bg-[linear-gradient(145deg,color-mix(in_srgb,#245de8_8.8%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(36,93,232,0.176)_0%,var(--app-surface-muted)_100%)]',
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#245de8_9.68%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(36,93,232,0.194)_0%,var(--app-surface-muted)_100%)]',
   },
   {
     id: 'events',
@@ -173,7 +173,7 @@ export const coreServices = [
     size: 'compact',
     iconPos: 'tr',
     surface:
-      'bg-[linear-gradient(145deg,color-mix(in_srgb,#ea580c_8.8%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(234,88,12,0.176)_0%,var(--app-surface-muted)_100%)]',
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#ea580c_9.68%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(234,88,12,0.194)_0%,var(--app-surface-muted)_100%)]',
   },
   {
     id: 'news',
@@ -186,7 +186,7 @@ export const coreServices = [
     size: 'compact',
     iconPos: 'br',
     surface:
-      'bg-[linear-gradient(145deg,color-mix(in_srgb,#db2777_8.8%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(219,39,119,0.176)_0%,var(--app-surface-muted)_100%)]',
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#db2777_9.68%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(219,39,119,0.194)_0%,var(--app-surface-muted)_100%)]',
   },
 ]
 
