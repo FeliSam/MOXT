@@ -99,6 +99,40 @@ export function useAdminPageData(query, statusFilter, contentView) {
     return items
   }, [query, statusFilter, state.transfers.items])
 
+  const p2pOffers = useMemo(() => {
+    let items = state.p2p.offers
+    const offerStatuses = ['active', 'accepted', 'archived']
+    const orderStatuses = ['created', 'waiting_payment', 'completed', 'cancelled', 'disputed']
+    if (statusFilter !== 'all') {
+      if (offerStatuses.includes(statusFilter)) items = items.filter((i) => i.status === statusFilter)
+      else if (orderStatuses.includes(statusFilter)) items = []
+    }
+    if (query) {
+      const q = query.toLowerCase()
+      items = items.filter((i) =>
+        `${i.id} ${i.ownerName || ''} ${i.fromCurrency || ''} ${i.toCurrency || ''} ${i.status || ''}`.toLowerCase().includes(q),
+      )
+    }
+    return items
+  }, [query, statusFilter, state.p2p.offers])
+
+  const p2pOrders = useMemo(() => {
+    let items = state.p2p.orders
+    const offerStatuses = ['active', 'accepted', 'archived']
+    const orderStatuses = ['created', 'waiting_payment', 'completed', 'cancelled', 'disputed']
+    if (statusFilter !== 'all') {
+      if (orderStatuses.includes(statusFilter)) items = items.filter((i) => i.status === statusFilter)
+      else if (offerStatuses.includes(statusFilter)) items = []
+    }
+    if (query) {
+      const q = query.toLowerCase()
+      items = items.filter((i) =>
+        `${i.id} ${i.buyerName || ''} ${i.sellerName || ''} ${i.status || ''}`.toLowerCase().includes(q),
+      )
+    }
+    return items
+  }, [query, statusFilter, state.p2p.orders])
+
   const auditItems = useMemo(() => {
     let items = state.audit.items
     if (query) {
@@ -138,6 +172,8 @@ export function useAdminPageData(query, statusFilter, contentView) {
     supportTickets,
     users,
     transfers,
+    p2pOffers,
+    p2pOrders,
     auditItems,
     activeContentItems,
     allTransfers: state.transfers.items,

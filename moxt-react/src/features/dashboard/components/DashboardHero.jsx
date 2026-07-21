@@ -1,4 +1,4 @@
-import { FiArrowRight } from 'react-icons/fi'
+import { FiArrowRight, FiDownload } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { VerifiedBadge } from '../../../components/ui/Badge'
 import { useLanguage } from '../../../contexts/useLanguage'
@@ -37,10 +37,10 @@ export function DashboardHero({ user, onOpenCalculator }) {
               {t('dashboard.hero.createTransfer')} <FiArrowRight />
             </Link>
             <Link
-              to="/news"
+              to="/install"
               className={`${heroBtnBase} border border-white/45 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20`}
             >
-              {t('dashboard.hero.news')}
+              <FiDownload aria-hidden /> {t('dashboard.hero.install')}
             </Link>
             <Link
               to="/guide"

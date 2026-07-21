@@ -18,7 +18,9 @@ import { Select } from '../components/ui/Select'
 import { useLanguage } from '../contexts/useLanguage'
 import { createOffer } from '../features/p2p/p2pSlice'
 import {
+  applyP2PRateMargin,
   calculateP2PFee,
+  clampP2PRateMargin,
   formatP2PRate,
   frankfurterRateForPair,
   P2P_CONFIG,
@@ -135,6 +137,7 @@ export function PublishP2PPage() {
     toCurrency: 'RUB',
     amount: '',
     rate: '',
+    rateMarginPercent: '0',
     method: '',
     comment: '',
   })
@@ -151,7 +154,7 @@ export function PublishP2PPage() {
     })
   }, [methodOptions])
 
-  const platformRate = useMemo(
+  const frankfurterRaw = useMemo(
     () =>
       frankfurterRateForPair(
         liveRate,
@@ -161,7 +164,12 @@ export function PublishP2PPage() {
       ),
     [form.fromCurrency, form.toCurrency, liveRate, originCurrency],
   )
-  const rateFormatted = formatP2PRate(platformRate)
+  const appliedRate = useMemo(
+    () => applyP2PRateMargin(frankfurterRaw, form.rateMarginPercent),
+    [frankfurterRaw, form.rateMarginPercent],
+  )
+  const rateFormatted = formatP2PRate(appliedRate)
+  const frankfurterFormatted = formatP2PRate(frankfurterRaw)
 
   useEffect(() => {
     if (!rateFormatted) return
@@ -225,6 +233,14 @@ export function PublishP2PPage() {
         })
       }
       if (!form.rate || !(rate > 0)) errs.rate = t('validation.p2p.rateRequired')
+      const margin = Number(form.rateMarginPercent)
+      if (form.rateMarginPercent !== '' && form.rateMarginPercent != null && !Number.isFinite(margin)) {
+        errs.rateMarginPercent = t('validation.p2p.marginInvalid')
+      } else if (Number.isFinite(margin) && Math.abs(margin) > P2P_CONFIG.maxRateMarginPercent) {
+        errs.rateMarginPercent = t('validation.p2p.marginRange', {
+          max: P2P_CONFIG.maxRateMarginPercent,
+        })
+      }
     }
     if (n === 3) {
       if (!form.method.trim()) errs.method = t('validation.p2p.methodRequired')
@@ -261,6 +277,8 @@ export function PublishP2PPage() {
       createOffer({
         ...form,
         rate: Number(form.rate),
+        rateMarginPercent: clampP2PRateMargin(form.rateMarginPercent),
+        frankfurterRate: frankfurterRaw,
         rateSource: liveRate.source || 'Frankfurter',
         feePercent: P2P_CONFIG.platformFeePercent,
         ownerId: user.id,
@@ -280,10 +298,15 @@ export function PublishP2PPage() {
   }
 
   const amountNumber = Number(form.amount)
+  const rateNumber = Number(form.rate)
   const estimatedFee =
     amountNumber > 0
       ? calculateP2PFee(amountNumber, form.fromCurrency, P2P_CONFIG.platformFeePercent)
       : 0
+  const amountReceived =
+    amountNumber > 0 && rateNumber > 0 ? amountNumber * rateNumber : 0
+  const amountReceivedFormatted =
+    amountReceived > 0 ? formatMoney(amountReceived, form.toCurrency) : null
 
   return (
     <SecurityGatePanel kind="p2p" backTo="/p2p">
@@ -406,25 +429,55 @@ export function PublishP2PPage() {
                 disabled
                 error={errors.rate}
               />
-              <p className="text-xs text-[var(--app-text-muted)]">
-                {t('p2p.publish.rateReadonlyHint', {
-                  source: liveRate.source || 'Frankfurter',
-                  date: liveRate.date || '—',
+              <Input
+                id="p2p-publish-margin"
+                label={t('p2p.publish.rateMarginLabel', {
+                  max: P2P_CONFIG.maxRateMarginPercent,
                 })}
+                type="number"
+                step="0.1"
+                inputMode="decimal"
+                value={form.rateMarginPercent}
+                onChange={(event) => set('rateMarginPercent', event.target.value)}
+                error={errors.rateMarginPercent}
+              />
+              <p className="text-xs text-[var(--app-text-muted)]">
+                {t('p2p.publish.rateMarginHint')}
               </p>
-              {rateFormatted ? (
+              {frankfurterFormatted ? (
                 <div className="rounded-2xl bg-[var(--app-surface-muted)] px-4 py-3 text-sm text-[var(--app-text-muted)]">
-                  {t('p2p.publish.rateAppliedHint', {
-                    rate: rateFormatted,
+                  {t('p2p.publish.frankfurterRateHint', {
+                    rate: frankfurterFormatted,
+                    applied: rateFormatted || frankfurterFormatted,
                     from: form.fromCurrency,
                     to: form.toCurrency,
                     source: liveRate.source || 'Frankfurter',
+                    date: liveRate.date || '—',
+                    margin: clampP2PRateMargin(form.rateMarginPercent),
                   })}
                 </div>
               ) : liveRate.loading ? (
                 <p className="text-sm text-[var(--app-text-muted)]">
                   {t('p2p.publish.frankfurterRateLoading')}
                 </p>
+              ) : null}
+              {amountReceivedFormatted ? (
+                <div className="rounded-[var(--radius-card)] border border-brand-200/60 bg-brand-50/80 px-4 py-4 dark:border-brand-800/50 dark:bg-brand-950/30">
+                  <p className="text-xs font-black uppercase tracking-[0.12em] text-brand-700 dark:text-brand-300">
+                    {t('p2p.publish.receivedLabel')}
+                  </p>
+                  <p className="mt-1 text-2xl font-black tabular-nums text-[var(--app-text)]">
+                    {amountReceivedFormatted}
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--app-text-muted)]">
+                    {t('p2p.publish.receivedHint', {
+                      amount: formatMoney(amountNumber, form.fromCurrency),
+                      rate: rateFormatted || form.rate,
+                      from: form.fromCurrency,
+                      to: form.toCurrency,
+                    })}
+                  </p>
+                </div>
               ) : null}
               <Alert variant="info">
                 {t('p2p.publish.estimatedFees', {
@@ -477,7 +530,15 @@ export function PublishP2PPage() {
               {[
                 [t('p2p.publish.iOffer'), `${form.amount || '—'} ${form.fromCurrency}`],
                 [t('p2p.publish.iSeek'), form.toCurrency],
+                [
+                  t('p2p.publish.receivedLabel'),
+                  amountReceivedFormatted || '—',
+                ],
                 [t('p2p.publish.rate'), form.rate || '—'],
+                [
+                  t('p2p.publish.rateMarginRecap'),
+                  `${clampP2PRateMargin(form.rateMarginPercent)} %`,
+                ],
                 [t('p2p.publish.rateSource'), liveRate.source || 'Frankfurter'],
                 [t('p2p.publish.method'), form.method || '—'],
                 [

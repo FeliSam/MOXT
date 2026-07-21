@@ -79,6 +79,32 @@ const p2pSlice = createSlice({
       order.status = action.payload.status
       order.timeline.push({ status: action.payload.status, at: new Date().toISOString() })
     },
+    moderateOffer(state, action) {
+      const offer = state.offers.find((item) => item.id === action.payload.id)
+      if (!offer) return
+      const next = action.payload.status
+      if (!['active', 'archived'].includes(next)) return
+      offer.status = next
+      offer.updatedAt = new Date().toISOString()
+    },
+    moderateOrder(state, action) {
+      const order = state.orders.find((item) => item.id === action.payload.id)
+      if (!order) return
+      const isStaff = ['admin', 'superadmin', 'moderator'].includes(action.payload.actorRole)
+      if (!isStaff) return
+      const next = action.payload.status
+      if (!['completed', 'cancelled', 'waiting_payment'].includes(next)) return
+      if (order.status === next) return
+      order.status = next
+      order.timeline ||= []
+      order.timeline.push({
+        status: next,
+        at: new Date().toISOString(),
+        actorType: 'admin',
+        actorId: action.payload.actorId || null,
+        note: action.payload.note || 'admin_moderate',
+      })
+    },
     addOrderProof(state, action) {
       const order = state.orders.find((item) => item.id === action.payload.id)
       if (!order) return
@@ -114,6 +140,8 @@ export const {
   acceptOffer,
   addOrderProof,
   createOffer,
+  moderateOffer,
+  moderateOrder,
   rateOrder,
   setAll,
   updateOfferStatus,

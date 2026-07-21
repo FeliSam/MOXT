@@ -29,6 +29,7 @@ function lazyPage(loader, exportName) {
 const AdminPage = lazyPage(() => import('../pages/AdminPage'), 'AdminPage')
 const ModerationPage = lazyPage(() => import('../pages/ModerationPage'), 'ModerationPage')
 const HelpGuidePage = lazyPage(() => import('../pages/HelpGuidePage'), 'HelpGuidePage')
+const InstallAppPage = lazyPage(() => import('../pages/InstallAppPage'), 'InstallAppPage')
 const HelpArticleDetailPage = lazyPage(
   () => import('../pages/HelpGuidePage'),
   'HelpArticleDetailPage',
@@ -346,6 +347,7 @@ export function AppRouter() {
             />
             <Route path="/guide" element={<HelpGuidePage />} />
             <Route path="/guide/:articleId" element={<HelpArticleDetailPage />} />
+            <Route path="/install" element={<InstallAppPage />} />
             <Route
               path="/admin/guide"
               element={

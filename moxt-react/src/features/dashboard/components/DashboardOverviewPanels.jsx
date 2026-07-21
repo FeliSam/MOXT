@@ -27,7 +27,7 @@ export function DashboardOverviewPanels({ activeTransfers, rate, user, business 
       ) : null}
 
       <section className="grid gap-5 lg:grid-cols-2">
-        <Card>
+        <Card className="!border-0 shadow-none">
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-black">{t('dashboard.overview.transfersTitle')}</h2>
             <Link
@@ -71,7 +71,7 @@ export function DashboardOverviewPanels({ activeTransfers, rate, user, business 
           </div>
         </Card>
 
-        <Card>
+        <Card className="!border-0 shadow-none">
           <div className="flex items-center gap-3">
             <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
               <FiTrendingUp />

@@ -19,7 +19,7 @@ export function DashboardQuickActions({ scrollRef }) {
         <RevealListItem key={labelKey} index={index} className={dashboardQuickActionsItemClass}>
           <Link className="block h-full" to={path}>
             <Card
-              className={`group flex h-full min-h-[9.5rem] flex-col justify-between bg-gradient-to-br transition duration-300 hover:-translate-y-1 hover:shadow-xl lg:min-h-[10.5rem] lg:p-5 ${quickActionAccents[index]}`}
+              className={`group flex h-full min-h-[9.5rem] flex-col justify-between bg-gradient-to-br !border-0 shadow-none transition duration-300 hover:-translate-y-1 hover:shadow-xl lg:min-h-[10.5rem] lg:p-5 ${quickActionAccents[index]}`}
             >
               <div className="min-w-0 flex-1">
                 <h3 className="font-black leading-snug lg:text-base">{t(labelKey)}</h3>

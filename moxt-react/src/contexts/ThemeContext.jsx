@@ -5,7 +5,8 @@ const STORAGE_KEY = 'moxt-theme'
 function getInitialTheme() {
   const storedTheme = localStorage.getItem(STORAGE_KEY)
   if (storedTheme === 'light' || storedTheme === 'dark') return storedTheme
-  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  // Première visite : light (fond blanc), indépendamment du OS.
+  return 'light'
 }
 
 export function ThemeProvider({ children }) {

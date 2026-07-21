@@ -46,7 +46,7 @@ export function DashboardSearch() {
   return (
     <section
       ref={anchorRef}
-      className="relative min-w-0 rounded-[var(--radius-card-lg)] border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--shadow-card)] sm:p-5"
+      className="relative min-w-0 rounded-[var(--radius-card-lg)] border-0 bg-[var(--app-surface)] p-4 shadow-none sm:p-5"
     >
       <div className="mb-3 flex items-start justify-between gap-4">
         <div className="min-w-0">

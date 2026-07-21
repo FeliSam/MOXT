@@ -140,6 +140,7 @@ export function ModerationPage() {
           {view === 'queues' ? (
             <AdminQueuesPanel
               adminId={staff?.id}
+              actorRole={staff?.role || 'moderator'}
               dispatch={dispatch}
               queues={moderationQueues}
               setSelected={setSelected}

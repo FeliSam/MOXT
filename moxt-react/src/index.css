@@ -2700,23 +2700,24 @@ input[type='file'] {
   }
 }
 
-/* Mobile / tablet: prior size +10% (profile avatar excluded). */
+/* Mobile / tablet: barre −5 %, glyphes −10 % (avatar profil exclu des glyphes). */
 @media (max-width: 1023px) {
   .header-action-btn {
     @apply rounded-full border border-[var(--app-border)]/80 bg-[var(--app-surface)]/65 backdrop-blur-md hover:bg-[var(--app-surface)]/80;
-    width: 3.1625rem;
-    height: 3.1625rem;
+    width: 3.004375rem;
+    height: 3.004375rem;
+    border-width: 0.8px;
   }
 
   @media (min-width: 640px) {
     .header-action-btn {
-      width: 3.47875rem;
-      height: 3.47875rem;
+      width: 3.3048125rem;
+      height: 3.3048125rem;
     }
   }
 
   .header-action-icon {
-    font-size: 1.423125rem; /* prior glyph +10% */
+    font-size: 1.2808125rem;
     opacity: 0.72;
   }
 

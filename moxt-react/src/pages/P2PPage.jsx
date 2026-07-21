@@ -149,7 +149,7 @@ export function P2PPage() {
               <RevealListItem key={offer.id} index={index}>
                 <Card
                   variant="interactive"
-                  className={`group flex h-full flex-col overflow-hidden p-4 ring-1 ring-transparent transition-shadow duration-300 hover:ring-brand-200 sm:p-5 dark:hover:ring-brand-800 ${tab === 'archived' ? 'opacity-80' : ''}`}
+                  className={`group flex h-full flex-col overflow-hidden !border-0 p-4 shadow-none ring-0 transition-shadow duration-300 sm:p-5 ${tab === 'archived' ? 'opacity-80' : ''}`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand-700 dark:bg-brand-900 dark:text-brand-200">

@@ -1,15 +1,16 @@
 import {
-  FiBell,
-  FiBookOpen,
-  FiBriefcase,
-  FiChevronDown,
-  FiClock,
-  FiFileText,
-  FiHeart,
-  FiMessageSquare,
-  FiMoon,
-  FiSun,
-} from 'react-icons/fi'
+  LuBell,
+  LuBriefcase,
+  LuChevronDown,
+  LuCompass,
+  LuHeart,
+  LuHistory,
+  LuMessageCircle,
+  LuMoon,
+  LuNewspaper,
+  LuSun,
+  LuUsers,
+} from 'react-icons/lu'
 import { useSelector } from 'react-redux'
 import { Link, useLocation } from 'react-router-dom'
 import { getRouteMetadata } from '../../config/routeMeta'
@@ -23,6 +24,8 @@ import { VerifiedDisplayName } from '../ui/Badge'
 import { isProfileVerified } from '../../features/profile/userProfileUtils'
 import { Brand } from './Brand'
 import { GlobalSearch } from './GlobalSearch'
+
+const HEADER_ICON_STROKE = 1.48
 
 function HeaderActionLabel({ children }) {
   return (
@@ -41,8 +44,10 @@ function getMobileHeaderActions(pathname) {
   const isTransfers = pathMatches(pathname, '/transfers')
   const isParcels = pathMatches(pathname, '/parcels')
   const isNews = pathMatches(pathname, '/news')
+  const isMarketplace = pathMatches(pathname, '/marketplace')
   return {
-    showNews: !isTransfers && !isParcels && !isNews,
+    showNews: !isTransfers && !isParcels && !isNews && !isMarketplace,
+    showP2p: isMarketplace,
     showGuide: isNews,
     showHistory: isTransfers,
     showJobs: isParcels,
@@ -70,13 +75,13 @@ export function Header({ hideOnMobile = false }) {
     >
       <div className="mx-auto flex max-w-[96rem] items-center gap-1.5 sm:gap-2 lg:min-h-[4.75rem] lg:gap-3 lg:rounded-[1.4rem] lg:border lg:border-[var(--app-border)]/80 lg:bg-[var(--app-surface)]/65 lg:px-6 lg:py-3 lg:shadow-[var(--shadow-card)] lg:backdrop-blur-xl">
         {/* Mobile: avatar + page title share one pill. Desktop: children flow into outer pill. */}
-        <div className="header-brand-chip flex h-[3.1625rem] min-w-0 flex-1 items-center gap-2 rounded-full border border-[var(--app-border)]/80 bg-[var(--app-surface)]/65 px-1.5 pr-2.5 backdrop-blur-md sm:h-[3.47875rem] sm:gap-2.5 sm:pr-3 lg:contents lg:h-auto lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+        <div className="header-brand-chip flex h-[3.004375rem] min-w-0 flex-1 items-center gap-2 rounded-full border border-[var(--app-border)]/80 bg-[var(--app-surface)]/65 px-1.5 pr-2.5 backdrop-blur-md sm:h-[3.3048125rem] sm:gap-2.5 sm:pr-3 lg:contents lg:h-auto lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
           <Link
             to="/profile"
             aria-label={t('settings.profileSecurity.openProfile')}
-            className="hidden size-[2.3rem] shrink-0 place-items-center rounded-full transition hover:bg-[var(--app-surface-muted)]/60 max-lg:grid sm:size-[2.5875rem]"
+            className="hidden size-[2.185rem] shrink-0 place-items-center rounded-full transition hover:bg-[var(--app-surface-muted)]/60 max-lg:grid sm:size-[2.458125rem]"
           >
-            <UserAvatar user={user} size={37} />
+            <UserAvatar user={user} size={35} />
           </Link>
 
           <div className="hidden w-[8rem] shrink-0 lg:flex xl:hidden">
@@ -95,7 +100,7 @@ export function Header({ hideOnMobile = false }) {
         </div>
 
         <div
-          className="ml-auto flex h-[3.1625rem] shrink-0 items-center gap-1.5 sm:h-[3.47875rem] lg:h-auto lg:gap-1.5"
+          className="ml-auto flex h-[3.004375rem] shrink-0 items-center gap-1.5 sm:h-[3.3048125rem] lg:h-auto lg:gap-1.5"
           data-tour="header-actions"
         >
           {mobileActions.showNews ? (
@@ -105,8 +110,20 @@ export function Header({ hideOnMobile = false }) {
               className="header-action-btn relative grid lg:hidden"
               aria-label={t('nav.news')}
             >
-              <FiFileText className="header-action-icon" strokeWidth={2.1} aria-hidden="true" />
+              <LuNewspaper className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
               <HeaderActionLabel>{t('nav.news')}</HeaderActionLabel>
+            </Link>
+          ) : null}
+
+          {mobileActions.showP2p ? (
+            <Link
+              to="/p2p"
+              data-tour="header-p2p"
+              className="header-action-btn relative grid lg:hidden"
+              aria-label={t('nav.p2p')}
+            >
+              <LuUsers className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
+              <HeaderActionLabel>{t('nav.p2p')}</HeaderActionLabel>
             </Link>
           ) : null}
 
@@ -116,7 +133,7 @@ export function Header({ hideOnMobile = false }) {
               className="header-action-btn relative grid lg:hidden"
               aria-label={t('nav.guide')}
             >
-              <FiBookOpen className="header-action-icon" strokeWidth={2.1} aria-hidden="true" />
+              <LuCompass className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
               <HeaderActionLabel>{t('nav.guide')}</HeaderActionLabel>
             </Link>
           ) : null}
@@ -127,7 +144,7 @@ export function Header({ hideOnMobile = false }) {
               className="header-action-btn relative grid lg:hidden"
               aria-label={t('nav.jobs')}
             >
-              <FiBriefcase className="header-action-icon" strokeWidth={2.1} aria-hidden="true" />
+              <LuBriefcase className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
               <HeaderActionLabel>{t('nav.jobs')}</HeaderActionLabel>
             </Link>
           ) : null}
@@ -140,7 +157,7 @@ export function Header({ hideOnMobile = false }) {
             }`}
             aria-label={t('dashboard.overview.history')}
           >
-            <FiClock className="header-action-icon" strokeWidth={2.1} aria-hidden="true" />
+            <LuHistory className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
             <HeaderActionLabel>{t('dashboard.overview.history')}</HeaderActionLabel>
           </Link>
 
@@ -153,7 +170,7 @@ export function Header({ hideOnMobile = false }) {
                 : t('notifications.title')
             }
           >
-            <FiBell className="header-action-icon" strokeWidth={2.1} aria-hidden="true" />
+            <LuBell className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
             {unreadCount ? (
               <CountBounce
                 value={unreadCount}
@@ -173,7 +190,7 @@ export function Header({ hideOnMobile = false }) {
                   : t('nav.messages')
               }
             >
-              <FiMessageSquare className="header-action-icon" strokeWidth={2.1} aria-hidden="true" />
+              <LuMessageCircle className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
               {unreadMessagesCount ? (
                 <CountBounce
                   value={unreadMessagesCount}
@@ -189,7 +206,7 @@ export function Header({ hideOnMobile = false }) {
             className="header-action-btn relative hidden lg:grid"
             aria-label={t('favorites.title')}
           >
-            <FiHeart className="header-action-icon" strokeWidth={2.1} aria-hidden="true" />
+            <LuHeart className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
             <HeaderActionLabel>{t('favorites.title')}</HeaderActionLabel>
           </Link>
 
@@ -204,9 +221,9 @@ export function Header({ hideOnMobile = false }) {
             onClick={toggleTheme}
           >
             {theme === 'dark' ? (
-              <FiSun className="header-action-icon transition-transform duration-300" strokeWidth={2.1} />
+              <LuSun className="header-action-icon transition-transform duration-300" strokeWidth={HEADER_ICON_STROKE} />
             ) : (
-              <FiMoon className="header-action-icon transition-transform duration-300" strokeWidth={2.1} />
+              <LuMoon className="header-action-icon transition-transform duration-300" strokeWidth={HEADER_ICON_STROKE} />
             )}
             <HeaderActionLabel>
               {theme === 'dark' ? t('nav.enableLightTheme') : t('nav.enableDarkTheme')}
@@ -234,7 +251,7 @@ export function Header({ hideOnMobile = false }) {
                 </small>
               ) : null}
             </span>
-            <FiChevronDown className="ml-1 shrink-0 text-sm text-[var(--app-text-faint)]" />
+            <LuChevronDown className="ml-1 shrink-0 text-sm text-[var(--app-text-faint)]" />
           </Link>
 
           <Link

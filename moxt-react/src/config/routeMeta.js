@@ -58,6 +58,13 @@ export const routeMetadata = [
   },
   { pattern: /^\/dashboard$/, title: 'Accueil', eyebrow: 'MOXT' },
   {
+    pattern: /^\/install$/,
+    title: 'Installer l’application',
+    eyebrow: 'MOXT',
+    description: 'Télécharger MOXT sur Android ou ajouter l’app sur iPhone.',
+    back: '/dashboard',
+  },
+  {
     pattern: /^\/moxt$/,
     title: 'MOXT',
     eyebrow: 'Plateforme',

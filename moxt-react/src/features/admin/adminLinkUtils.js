@@ -69,6 +69,10 @@ export function adminDetailLink(kind, item) {
   switch (k) {
     case 'transfer':
       return `/transfers/${item.id}`
+    case 'p2p_offer':
+      return '/p2p'
+    case 'p2p_order':
+      return `/p2p/orders/${item.id}`
     case 'businesses':
     case 'business':
       return `/businesses/${item.id}`

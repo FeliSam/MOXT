@@ -16,6 +16,7 @@ import { deletePost, moderatePost } from '../posts/postsSlice'
 import { moderateReview } from '../reviews/reviewSlice'
 import { TRANSFER_TRANSITIONS } from '../transfers/transferConfig'
 import { moderateTransfer } from '../transfers/transferSlice'
+import { moderateOffer, moderateOrder } from '../p2p/p2pSlice'
 import { REVIEW_DISPUTE_STATUS } from '@moxt/shared/utils/reviewUtils.js'
 import { FiCheck } from 'react-icons/fi'
 import { normalizeAdminKind, normalizeReportType } from './adminLinkUtils'
@@ -37,6 +38,22 @@ function ActionButton({ done, doneLabel, children, ...props }) {
     )
   }
   return <Button type="button" {...props}>{children}</Button>
+}
+
+/** Resolve/close a dispute and unlock the linked P2P order when applicable. */
+export function resolveDisputeAndUnlockOrder(dispatch, dispute, { status, actorId, actorRole }) {
+  dispatch(updateDisputeStatus({ id: dispute.id, status, updatedBy: 'admin' }))
+  if (dispute.relatedType !== 'p2p_order' || !dispute.relatedId) return
+  const orderStatus = status === 'closed' ? 'cancelled' : 'waiting_payment'
+  dispatch(
+    moderateOrder({
+      id: dispute.relatedId,
+      status: orderStatus,
+      actorId,
+      actorRole: actorRole || 'admin',
+      note: status === 'closed' ? 'dispute_closed_cancel' : 'dispute_resolved_restore',
+    }),
+  )
 }
 
 export function handleReportApprove(dispatch, item) {
@@ -330,6 +347,81 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
         </Button>
       ) : null
     }
+    case 'p2p_offer':
+      return (
+        <>
+          {item.status === 'active' ? (
+            <Button
+              variant="secondary"
+              onClick={() => dispatch(moderateOffer({ id: item.id, status: 'archived' }))}
+            >
+              {adminText(t, 'admin.actions.archive')}
+            </Button>
+          ) : null}
+          {item.status === 'archived' ? (
+            <Button onClick={() => dispatch(moderateOffer({ id: item.id, status: 'active' }))}>
+              {adminText(t, 'admin.actions.reactivate')}
+            </Button>
+          ) : null}
+        </>
+      )
+    case 'p2p_order':
+      return (
+        <>
+          {item.status === 'disputed' ? (
+            <Button
+              onClick={() =>
+                dispatch(
+                  moderateOrder({
+                    id: item.id,
+                    status: 'waiting_payment',
+                    actorId: reviewerId,
+                    actorRole: actorRole || 'admin',
+                    note: 'admin_restore',
+                  }),
+                )
+              }
+            >
+              {adminText(t, 'admin.p2p.restoreOrder')}
+            </Button>
+          ) : null}
+          {!['completed', 'cancelled'].includes(item.status) ? (
+            <>
+              <Button
+                onClick={() =>
+                  dispatch(
+                    moderateOrder({
+                      id: item.id,
+                      status: 'completed',
+                      actorId: reviewerId,
+                      actorRole: actorRole || 'admin',
+                      note: 'admin_complete',
+                    }),
+                  )
+                }
+              >
+                {adminText(t, 'admin.p2p.completeOrder')}
+              </Button>
+              <Button
+                variant="danger"
+                onClick={() =>
+                  dispatch(
+                    moderateOrder({
+                      id: item.id,
+                      status: 'cancelled',
+                      actorId: reviewerId,
+                      actorRole: actorRole || 'admin',
+                      note: 'admin_cancel',
+                    }),
+                  )
+                }
+              >
+                {adminText(t, 'admin.p2p.cancelOrder')}
+              </Button>
+            </>
+          ) : null}
+        </>
+      )
     case 'businesses':
     case 'listings':
     case 'jobs':
@@ -460,10 +552,27 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
     case 'dispute':
       return (
         <>
-          <Button onClick={() => dispatch(updateDisputeStatus({ id: item.id, status: 'resolved', updatedBy: 'admin' }))}>
+          <Button
+            onClick={() =>
+              resolveDisputeAndUnlockOrder(dispatch, item, {
+                status: 'resolved',
+                actorId: reviewerId,
+                actorRole: actorRole || 'admin',
+              })
+            }
+          >
             {adminText(t, 'admin.actions.resolve')}
           </Button>
-          <Button variant="secondary" onClick={() => dispatch(updateDisputeStatus({ id: item.id, status: 'closed', updatedBy: 'admin' }))}>
+          <Button
+            variant="secondary"
+            onClick={() =>
+              resolveDisputeAndUnlockOrder(dispatch, item, {
+                status: 'closed',
+                actorId: reviewerId,
+                actorRole: actorRole || 'admin',
+              })
+            }
+          >
             {adminText(t, 'admin.actions.close')}
           </Button>
         </>

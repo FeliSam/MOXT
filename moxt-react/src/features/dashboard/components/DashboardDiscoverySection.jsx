@@ -143,7 +143,7 @@ export function DashboardDiscoverySection({
           ))}
         </div>
       ) : (
-        <Card className="flex flex-col items-center gap-3 py-8 text-center">
+        <Card className="flex flex-col items-center gap-3 !border-0 py-8 text-center shadow-none">
           <p className="text-sm text-[var(--app-text-muted)]">{t('dashboard.discovery.noNews')}</p>
           <Link to="/news">
             <Button variant="secondary">{t('dashboard.discovery.newsLink')}</Button>
@@ -219,7 +219,7 @@ function DashboardPostCard({ post }) {
 
   return (
     <Link to={`/news`}>
-      <Card className="relative flex h-full flex-col overflow-hidden p-4 transition hover:-translate-y-0.5 hover:shadow-lg">
+      <Card className="relative flex h-full flex-col overflow-hidden !border-0 p-4 shadow-none transition hover:-translate-y-0.5 hover:shadow-lg">
         <span className={`absolute right-2.5 top-2.5 rounded-full px-1.5 py-0.5 text-[9px] font-black ${TYPE_COLORS[post.sourceType] ?? TYPE_COLORS.free}`}>
           {t(typeLabelKey)}
         </span>
@@ -258,7 +258,7 @@ function DashboardPostCard({ post }) {
           {post.message}
         </p>
 
-        <div className="mt-3 flex items-center gap-3 border-t border-[var(--app-border)] pt-2.5 text-[10px] text-[var(--app-text-faint)]">
+        <div className="mt-3 flex items-center gap-3 pt-2.5 text-[10px] text-[var(--app-text-faint)]">
           <span className="flex items-center gap-1">
             <FiHeart className="text-[10px]" />{post.likes?.length || 0}
           </span>

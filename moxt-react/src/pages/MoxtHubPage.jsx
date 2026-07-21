@@ -31,13 +31,17 @@ function HubSectionHeading({ id, title }) {
   )
 }
 
-function SecondaryLinkTile({ icon: Icon, labelKey, path, t }) {
+function SecondaryLinkTile({ icon: Icon, labelKey, path, t, borderless = false }) {
   return (
     <Link
       to={path}
       onFocus={() => preloadRoute(path)}
       onMouseEnter={() => preloadRoute(path)}
-      className="group flex min-h-[3.75rem] items-center gap-3 rounded-[var(--radius-card)] border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-[var(--shadow-card)] transition-all duration-[var(--transition-fast)] hover:border-brand-200 hover:shadow-[var(--shadow-card-hover)] dark:hover:border-brand-800"
+      className={`group flex min-h-[3.75rem] items-center gap-3 rounded-[var(--radius-card)] bg-[var(--app-surface)] p-3 transition-all duration-[var(--transition-fast)] ${
+        borderless
+          ? 'shadow-none'
+          : 'border border-[var(--app-border)] shadow-[var(--shadow-card)] hover:border-brand-200 hover:shadow-[var(--shadow-card-hover)] dark:hover:border-brand-800'
+      }`}
     >
       <span className="grid size-9 shrink-0 place-items-center rounded-[0.7rem] bg-[var(--app-surface-muted)] text-[var(--app-accent)] dark:text-[var(--app-teal)]">
         <Icon className="text-lg" aria-hidden="true" />
@@ -83,7 +87,7 @@ export function MoxtHubPage() {
               >
                 <Card
                   variant="interactive"
-                  className="group flex h-full flex-col overflow-hidden !p-3 text-center sm:!p-5 sm:text-left"
+                  className="group flex h-full flex-col overflow-hidden !border-0 !p-3 text-center shadow-none sm:!p-5 sm:text-left"
                 >
                   <Dashboard3DIcon
                     className="mx-auto sm:mx-0"
@@ -123,7 +127,7 @@ export function MoxtHubPage() {
                 onMouseEnter={() => preloadRoute(path)}
               >
                 <Card
-                  className={`group flex h-full min-h-[9.5rem] flex-col justify-between bg-gradient-to-br !p-4 transition duration-300 hover:-translate-y-1 hover:shadow-xl sm:!p-5 ${quickActionAccents[index]}`}
+                  className={`group flex h-full min-h-[9.5rem] flex-col justify-between bg-gradient-to-br !border-0 !p-4 shadow-none transition duration-300 hover:-translate-y-1 hover:shadow-xl sm:!p-5 ${quickActionAccents[index]}`}
                 >
                   <div className="min-w-0">
                     <h3 className="text-sm font-black leading-snug sm:text-base">{t(labelKey)}</h3>
@@ -158,7 +162,7 @@ export function MoxtHubPage() {
           >
             {adminLinks.map((link, index) => (
               <RevealListItem key={link.path} index={index}>
-                <SecondaryLinkTile {...link} t={t} />
+                <SecondaryLinkTile {...link} t={t} borderless />
               </RevealListItem>
             ))}
           </nav>
@@ -186,7 +190,7 @@ export function MoxtHubPage() {
             >
               {group.links.map((link, index) => (
                 <RevealListItem key={link.id || link.path} index={index}>
-                  <SecondaryLinkTile {...link} t={t} />
+                  <SecondaryLinkTile {...link} t={t} borderless />
                 </RevealListItem>
               ))}
             </nav>

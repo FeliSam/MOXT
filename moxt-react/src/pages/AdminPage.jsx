@@ -17,6 +17,7 @@ import { AdminQueuesPanel } from '../features/admin/components/AdminQueuesPanel'
 import { AdminRatesPanel } from '../features/admin/components/AdminRatesPanel'
 import { AdminSupportPanel } from '../features/admin/components/AdminSupportPanel'
 import { AdminTransfersPanel } from '../features/admin/components/AdminTransfersPanel'
+import { AdminP2PPanel } from '../features/admin/components/AdminP2PPanel'
 import { AdminUsersPanel } from '../features/admin/components/AdminUsersPanel'
 import { AdminBusinessDocumentsPanel } from '../features/admin/components/AdminBusinessDocumentsPanel'
 import { AdminVerificationsPanel } from '../features/admin/components/AdminVerificationsPanel'
@@ -53,6 +54,8 @@ export function AdminPage() {
     supportTickets,
     users,
     transfers,
+    p2pOffers,
+    p2pOrders,
     auditItems,
     activeContentItems,
     allTransfers,
@@ -147,6 +150,14 @@ export function AdminPage() {
           {view === 'transfers' && (
             <AdminTransfersPanel dispatch={dispatch} setSelected={setSelected} transfers={transfers} />
           )}
+          {view === 'p2p' && (
+            <AdminP2PPanel
+              dispatch={dispatch}
+              setSelected={setSelected}
+              offers={p2pOffers}
+              orders={p2pOrders}
+            />
+          )}
           {view === 'rates' && <AdminRatesPanel admin={admin} />}
           {(view === 'content' || view === 'publications') && (
             <AdminContentPanel
@@ -200,6 +211,7 @@ export function AdminPage() {
           {view === 'queues' && (
             <AdminQueuesPanel
               adminId={admin?.id}
+              actorRole={admin?.role || 'admin'}
               dispatch={dispatch}
               queues={queues}
               setSelected={setSelected}

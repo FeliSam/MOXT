@@ -1,8 +1,9 @@
 const RATE_BASE_URL = 'https://api.frankfurter.dev/v2/rate'
 /** Shared online rate refresh for all `useExchangeRate` consumers. */
-export const EXCHANGE_RATE_REFRESH_MS = 10 * 60 * 1000
+export const EXCHANGE_RATE_REFRESH_MS = 2 * 60 * 1000
 
 const pairs = new Map()
+let visibilityBound = false
 
 function cacheKey(base, quote) {
   return `moxt-rate-${base}-${quote}-v1`
@@ -99,8 +100,22 @@ async function refreshSharedRate(base, quote) {
   return state.inFlight
 }
 
+function ensureVisibilityRefresh() {
+  if (visibilityBound || typeof document === 'undefined') return
+  visibilityBound = true
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return
+    for (const [key, state] of pairs) {
+      if (state.listeners.size === 0) continue
+      const [base, quote] = key.split('_')
+      void refreshSharedRate(base, quote)
+    }
+  })
+}
+
 function startSharedRefresh(base, quote) {
   const state = getPairState(base, quote)
+  ensureVisibilityRefresh()
   if (state.intervalId != null) return
   void refreshSharedRate(base, quote)
   state.intervalId = window.setInterval(() => {
@@ -116,7 +131,7 @@ function stopSharedRefresh(base, quote) {
 }
 
 /**
- * Subscribe to the shared base/quote rate. One fetch + one 10-minute timer
+ * Subscribe to the shared base/quote rate. One fetch + one timer
  * per currency pair for the whole app, regardless of how many components call this.
  */
 export function subscribeExchangeRate(base, quote, listener) {

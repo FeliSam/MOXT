@@ -344,7 +344,7 @@ export function NewTransferPage() {
         {step === 1 ? (
           <div className="grid gap-5">
             {/* Direction — 2 visual cards */}
-            <Card className="grid gap-5">
+            <Card className="grid gap-5 !border-0 shadow-none">
               <SectionTitle icon={FiZap} label={t('transfers.new.directionTitle')} />
               <div className="grid gap-3 sm:grid-cols-2">
                 {[DIRECTIONS.BJ_TO_RU, DIRECTIONS.RU_TO_BJ].map((dir) => {
@@ -406,7 +406,7 @@ export function NewTransferPage() {
             </Card>
 
             {/* Amount */}
-            <Card className="grid gap-5">
+            <Card className="grid gap-5 !border-0 shadow-none">
               <SectionTitle icon={FiSend} label={t('transfers.new.amountToSend', { currency: calculation.currencyFrom })} />
               <Input
                 id="amount"
@@ -429,7 +429,7 @@ export function NewTransferPage() {
             </Card>
 
             {/* Exchanger cards */}
-            <Card className="grid gap-4">
+            <Card className="grid gap-4 !border-0 shadow-none">
               <div className="flex items-center justify-between gap-3 border-b border-[var(--app-border)] pb-4">
                 <div className="flex items-center gap-3">
                   <span className="grid size-9 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">

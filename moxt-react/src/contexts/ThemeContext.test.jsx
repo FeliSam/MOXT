@@ -14,6 +14,18 @@ describe('ThemeProvider', () => {
     document.documentElement.classList.remove('dark')
   })
 
+  it('utilise light par defaut a la premiere visite', () => {
+    render(
+      <ThemeProvider>
+        <ThemeProbe />
+      </ThemeProvider>,
+    )
+
+    expect(screen.getByRole('button')).toHaveTextContent('light')
+    expect(document.documentElement).not.toHaveClass('dark')
+    expect(localStorage.getItem('moxt-theme')).toBe('light')
+  })
+
   it('bascule et persiste le theme sombre', () => {
     render(
       <ThemeProvider>

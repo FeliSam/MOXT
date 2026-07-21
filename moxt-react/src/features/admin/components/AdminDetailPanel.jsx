@@ -1,5 +1,6 @@
 import { createElement, useEffect, useState } from 'react'
 import { FiArrowRight, FiEye } from 'react-icons/fi'
+import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { Button } from '../../../components/ui/Button'
@@ -37,6 +38,10 @@ export function AdminDetailPanel({
   const { t } = useLanguage()
   const { countries } = useGeographyOptions()
   const [originDraft, setOriginDraft] = useState('')
+  const p2pOrderForDispute = useSelector((state) => {
+    if (selected?.kind !== 'dispute' || selected.item?.relatedType !== 'p2p_order') return null
+    return state.p2p.orders.find((order) => order.id === selected.item.relatedId) || null
+  })
 
   useEffect(() => {
     if (selected?.kind === 'user') {
@@ -75,7 +80,7 @@ export function AdminDetailPanel({
       </div>
 
       <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
-        {buildDetailFacts(kind, item, t).map(([label, value]) => (
+        {buildDetailFacts(kind, item, t, { p2pOrder: p2pOrderForDispute }).map(([label, value]) => (
           <div key={label} className="min-w-0 overflow-hidden rounded-xl bg-[var(--app-surface-muted)] px-3 py-2.5">
             <p className="text-[9px] font-black uppercase tracking-wider text-[var(--app-text-muted)]">{label}</p>
             <strong className="mt-0.5 block break-words text-sm leading-snug [overflow-wrap:anywhere]">

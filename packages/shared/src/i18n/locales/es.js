@@ -979,6 +979,7 @@ export const es = {
       subtitleShort: "Envía dinero, encuentra un paquete o un anuncio.",
       createTransfer: "Crear una transferencia",
       news: "Actualidad",
+      install: "Instalar la app",
       guide: "Guía",
     },
     discovery: {
@@ -4036,9 +4037,15 @@ export const es = {
       amountAndRate: "Importe y tarifa",
       currentCeiling: "Limite atual: {amount}",
       amountLabel: "Importe ({currency})",
-      rateLabel: "Taxa proposta ({from} → {to})",
-      rateReadonlyHint: "Tasa de la plataforma ({source} · {date}) — no editable.",
-      rateAppliedHint: "{rate} ({from} → {to}) · fuente {source}",
+      rateLabel: "Tasa propuesta ({from} → {to})",
+      rateMarginLabel: "Margen sobre la tasa (−{max} % a +{max} %)",
+      rateMarginHint:
+        "La tasa Frankfurter se aplica directamente. Un margen positivo la sube, uno negativo la baja — en ambos sentidos del par.",
+      rateMarginRecap: "Margen sobre la tasa",
+      frankfurterRateHint:
+        "Frankfurter: {rate} → aplicado {applied} ({from} → {to}) · margen {margin} % · {source} · {date}",
+      receivedLabel: "Importe recibido estimado",
+      receivedHint: "{amount} × {rate} = conversión a {to}",
       rateSource: "Fuente de la tasa",
       frankfurterRateLoading: "Cargando la tasa…",
       estimatedFees: "Comisión de plataforma ({percent} %): {amount}",
@@ -5708,6 +5715,8 @@ export const es = {
     nav: {
       overview: "Vista geral",
       transfers: "Transferencias",
+      p2p: "P2P",
+      rates: "Tipos de cambio",
       content: "Conteúdos",
       publications: "Publicaciones",
       support: "Soporte",
@@ -5979,6 +5988,22 @@ export const es = {
       listTitle: "Lista de transferencias",
       receivedSuffix: "{amount} recebido"
     },
+    p2p: {
+      metric: {
+        activeOffers: "Ofertas activas",
+        openOrders: "Pedidos abiertos",
+        disputed: "Disputas"
+      },
+      offersTitle: "Ofertas P2P",
+      ordersTitle: "Pedidos P2P",
+      emptyOffers: "Ninguna oferta encontrada.",
+      emptyOrders: "Ningún pedido encontrado.",
+      proofsCount: "{count} prueba(s)",
+      noProofs: "Sin pruebas",
+      restoreOrder: "Restaurar",
+      completeOrder: "Completar",
+      cancelOrder: "Cancelar"
+    },
     queues: {
       disputesLabel: "Disputas",
       contestedReviewsLabel: "Avaliaciones contestadas",
@@ -5989,6 +6014,42 @@ export const es = {
       title: "Diário de auditoria",
       globalFallback: "global"
     }
+  },
+  install: {
+    eyebrow: "Aplicación",
+    title: "Instalar MOXT",
+    description: "Descarga el APK Android o añade MOXT a la pantalla de inicio en iPhone.",
+    tabs: { android: "Android", iphone: "iPhone" },
+    android: {
+      title: "Descargar para Android",
+      body: "Instala el archivo APK directamente en tu teléfono Android.",
+      loading: "Cargando la versión disponible…",
+      available: "Disponible",
+      download: "Descargar APK",
+      hint: "Si Android bloquea la instalación, permite orígenes desconocidos para el navegador o el gestor de archivos.",
+      unavailable: "Aún no hay versión Android publicada. Vuelve pronto.",
+      rustoreLater: "El enlace de RuStore se añadirá más adelante.",
+      loadError: "No se pudo cargar la versión Android.",
+      staffTitle: "Publicación staff",
+      staffBody: "Sube un archivo .apk para reemplazar la versión activa.",
+      versionPlaceholder: "Versión (ej. 1.0.3)",
+      upload: "Subir APK",
+      uploading: "Subiendo…",
+      uploadOkTitle: "APK publicado",
+      uploadOkBody: "{name} ya se puede descargar.",
+      uploadError: "Error al subir el APK.",
+    },
+    iphone: {
+      title: "Añadir MOXT en iPhone",
+      body: "En iPhone, instala MOXT desde Safari en la pantalla de inicio (PWA).",
+      step1Title: "Abrir en Safari",
+      step1Body: "Abre moxtapp.ru en Safari (no Chrome). Pulsa el botón Compartir abajo.",
+      step2Title: "En la pantalla de inicio",
+      step2Body: "En el menú Compartir, elige «En la pantalla de inicio» y añade.",
+      step3Title: "Abrir como app",
+      step3Body: "El icono MOXT aparece en la pantalla de inicio. Ábrelo a pantalla completa.",
+      note: "Las notificaciones push en iPhone requieren esta instalación.",
+    },
   },
   shared: {
     contact: "Contactar",

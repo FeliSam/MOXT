@@ -68,7 +68,10 @@ export function P2POrderPage() {
   const orderStatusLabel = (status) =>
     ORDER_STATUS_KEYS[status] ? t(ORDER_STATUS_KEYS[status].labelKey) : status
 
-  if (!order || ![order.buyerId, order.sellerId].includes(user.id))
+  const isStaff = ['admin', 'superadmin', 'moderator'].includes(user?.role)
+  const isParty = order && [order.buyerId, order.sellerId].includes(user.id)
+
+  if (!order || (!isParty && !isStaff))
     return <Card>{t('p2p.order.notFound')}</Card>
 
   const isBuyer = user.id === order.buyerId
@@ -78,6 +81,7 @@ export function P2POrderPage() {
   const isDisputed = order.status === 'disputed'
   const otherPartyId = isBuyer ? order.sellerId : order.buyerId
   const otherPartyName = isBuyer ? order.sellerName : order.buyerName
+  // Staff en lecture : actions métier réservées aux parties (sauf ouverture litige déjà gérée)
 
   async function handleProofUpload(event) {
     const file = event.target.files?.[0]
@@ -216,7 +220,7 @@ export function P2POrderPage() {
                   {t('p2p.order.confirmReceived')}
                 </Button>
               ) : null}
-              {order.status === 'created' ? (
+              {order.status === 'created' && isParty ? (
                 <Button icon={FiXCircle} variant="danger" onClick={handleCancel}>
                   {t('p2p.order.cancel')}
                 </Button>
@@ -237,7 +241,7 @@ export function P2POrderPage() {
             </p>
           ) : null}
 
-          {!isTerminal ? (
+          {!isTerminal && isParty ? (
             <div className="mt-5 grid gap-3">
               <div className="flex flex-wrap gap-2">
                 <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-[var(--app-border)] px-4 text-sm font-bold">
@@ -332,7 +336,7 @@ export function P2POrderPage() {
             <p className="mt-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
               {t('p2p.order.disputeOpen', { status: dispute.status, reason: dispute.reason })}
             </p>
-          ) : isTerminal ? null : (
+          ) : isTerminal || !isParty ? null : (
             <div className="mt-4 grid gap-3">
               <textarea
                 className="min-h-24 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 text-sm"
@@ -351,7 +355,7 @@ export function P2POrderPage() {
             </div>
           )}
         </Card>
-        {order.status === 'completed' ? (
+        {order.status === 'completed' && isParty ? (
           <Card>
             <h2 className="font-black">{t('p2p.order.rateTitle')}</h2>
             <div className="mt-4 grid gap-3">

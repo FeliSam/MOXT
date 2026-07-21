@@ -35,7 +35,7 @@ export function DashboardQuickActionsSection({ scrollRef }) {
             >
               <Link className="block h-full" to={path}>
                 <Card
-                  className={`group flex h-full min-h-[10.5rem] flex-col justify-between bg-gradient-to-br p-4 transition duration-300 hover:-translate-y-1 hover:shadow-xl sm:min-h-[11rem] sm:p-5 lg:min-h-[10.5rem] lg:p-5 xl:flex-row xl:items-center xl:justify-between xl:gap-4 ${quickActionAccents[index]}`}
+                  className={`group flex h-full min-h-[10.5rem] flex-col justify-between bg-gradient-to-br !border-0 p-4 shadow-none transition duration-300 hover:-translate-y-1 hover:shadow-xl sm:min-h-[11rem] sm:p-5 lg:min-h-[10.5rem] lg:p-5 xl:flex-row xl:items-center xl:justify-between xl:gap-4 ${quickActionAccents[index]}`}
                 >
                   <div className="min-w-0 flex-1">
                     <h3 className="text-base font-black leading-snug">{t(labelKey)}</h3>

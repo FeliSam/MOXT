@@ -1,13 +1,11 @@
 // Applique le theme avant le premier paint pour eviter le flash (FOUC).
 // Charge en script bloquant dans <head> ; respecte la CSP script-src 'self'.
 // La logique doit rester alignee avec getInitialTheme() de ThemeContext.
+// Premiere visite : toujours light (fond clair), sauf preference deja enregistree.
 ;(function () {
   try {
     var stored = localStorage.getItem('moxt-theme')
-    var prefersDark =
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(prefers-color-scheme: dark)').matches
-    var theme = stored === 'light' || stored === 'dark' ? stored : prefersDark ? 'dark' : 'light'
+    var theme = stored === 'dark' ? 'dark' : 'light'
     var isDark = theme === 'dark'
     document.documentElement.classList.toggle('dark', isDark)
     // Fond pose directement pour couvrir l'instant avant le chargement du CSS.

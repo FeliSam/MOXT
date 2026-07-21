@@ -1,35 +1,39 @@
+import fs from 'node:fs/promises'
 import path from 'node:path'
 import sharp from 'sharp'
 
 const root = path.resolve(import.meta.dirname, '..')
 const brand = path.join(root, 'public', 'assets', 'brand', 'mark.png')
 const mobile = path.join(root, '..', 'apps', 'mobile', 'assets', 'images')
-const teal = { r: 8, g: 112, b: 95, alpha: 1 }
-const transparent = { r: 0, g: 0, b: 0, alpha: 0 }
+const dark = { r: 10, g: 14, b: 24, alpha: 1 }
 const white = { r: 255, g: 255, b: 255, alpha: 1 }
 
-await sharp(brand)
-  .resize(1024, 1024, { fit: 'cover', position: 'centre' })
-  .png()
-  .toFile(path.join(mobile, 'icon.png'))
+/**
+ * Carré plein (pas de coins arrondis dans le PNG).
+ * Évite le double masque Android (squircle du fichier + masque launcher).
+ */
+async function squareBrandIcon(size) {
+  const layered = await sharp(brand)
+    .resize(size, size, { fit: 'cover', position: 'centre' })
+    .ensureAlpha()
+    .png()
+    .toBuffer()
 
-const fgSize = 1024
-const inset = Math.round(fgSize * 0.18)
-const inner = fgSize - inset * 2
-const logo = await sharp(brand)
-  .resize(inner, inner, { fit: 'contain', background: transparent })
-  .png()
-  .toBuffer()
+  return sharp({
+    create: { width: size, height: size, channels: 3, background: dark },
+  })
+    .composite([{ input: layered }])
+    .flatten({ background: dark })
+    .png()
+    .toBuffer()
+}
+
+const iconBuf = await squareBrandIcon(1024)
+await fs.writeFile(path.join(mobile, 'icon.png'), iconBuf)
+await fs.writeFile(path.join(mobile, 'android-icon-foreground.png'), iconBuf)
 
 await sharp({
-  create: { width: fgSize, height: fgSize, channels: 4, background: transparent },
-})
-  .composite([{ input: logo, left: inset, top: inset }])
-  .png()
-  .toFile(path.join(mobile, 'android-icon-foreground.png'))
-
-await sharp({
-  create: { width: 1024, height: 1024, channels: 3, background: teal },
+  create: { width: 1024, height: 1024, channels: 3, background: dark },
 })
   .png()
   .toFile(path.join(mobile, 'android-icon-background.png'))
@@ -40,4 +44,4 @@ await sharp(brand)
   .png()
   .toFile(path.join(mobile, 'splash-icon.png'))
 
-console.log('Mobile brand assets rewritten from mark.png')
+console.log('Mobile brand icons: full-square mark (no baked squircle)')

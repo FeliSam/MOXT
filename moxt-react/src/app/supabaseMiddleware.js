@@ -186,6 +186,10 @@ const TABLES_WITHOUT_UPDATED_AT = new Set([
   'personal_documents',
   'receipts',
   'wallet_entries',
+  // Guard until 20260721180000_p2p_offers_orders_updated_at is applied everywhere.
+  // Safe to keep: full offer/order state lives in payload / client store.
+  'p2p_offers',
+  'p2p_orders',
 ])
 
 function receiptToRemoteRow(receipt) {
@@ -217,6 +221,34 @@ async function upsert(table, data) {
   const payload = stripUnsupportedColumns(table, toSnake(data))
   const { error } = await supabase.from(table).upsert(payload, { onConflict: 'id' })
   if (error) throw error
+}
+
+/** Upsert offre (si fournie) + commande via RPC — respecte la FK offer_id. */
+async function syncP2pOrder(order, offer = null) {
+  const { error } = await supabase.rpc('moxt_sync_p2p_order', {
+    p_order: p2pOrderToRemoteRow(order),
+    p_offer: offer ? p2pOfferToRemoteRow(offer) : null,
+  })
+  if (!error) return
+
+  // Fallback si la migration RPC n'est pas encore appliquée.
+  const missingRpc =
+    error.code === 'PGRST202' ||
+    /moxt_sync_p2p_order|Could not find the function/i.test(error.message || '')
+  if (!missingRpc) throw error
+
+  if (offer) {
+    try {
+      await upsert('p2p_offers', p2pOfferToRemoteRow(offer))
+    } catch (offerError) {
+      // RLS acheteur : l'upsert offre peut échouer si l'offre existe déjà — OK pour la FK.
+      const isRls =
+        offerError?.code === '42501' ||
+        /row-level security|permission denied/i.test(offerError?.message || '')
+      if (!isRls) throw offerError
+    }
+  }
+  await upsert('p2p_orders', p2pOrderToRemoteRow(order))
 }
 
 async function insertRow(table, data) {
@@ -837,6 +869,17 @@ const handlers = {
   },
 
   // ── P2P ───────────────────────────────────────────────────────────────────────
+  'p2p/acceptOffer': async (payload, state) => {
+    const offer = state.p2p.offers.find((item) => item.id === payload.offerId)
+    if (!offer) {
+      throw new Error(
+        `Offre P2P introuvable (${payload.offerId}). Republiez l’offre puis réessayez.`,
+      )
+    }
+    // RPC security definer : crée l'offre parente si absente (FK) puis la commande.
+    // Contourne le RLS « own offers » qui empêche l'acheteur d'upsert l'offre.
+    await syncP2pOrder(payload, { ...offer, status: 'accepted' })
+  },
   'p2p/createOffer': async (payload) => {
     await upsert('p2p_offers', p2pOfferToRemoteRow(payload))
   },
@@ -844,23 +887,33 @@ const handlers = {
     const offer = state.p2p.offers.find((item) => item.id === payload.id)
     if (offer) await upsert('p2p_offers', p2pOfferToRemoteRow(offer))
   },
-  'p2p/acceptOffer': async (payload) => {
-    await upsert('p2p_orders', p2pOrderToRemoteRow(payload))
-    await update('p2p_offers', payload.offerId, { status: 'accepted' })
+  'p2p/moderateOffer': async (payload, state) => {
+    const offer = state.p2p.offers.find((item) => item.id === payload.id)
+    if (offer) await upsert('p2p_offers', p2pOfferToRemoteRow(offer))
   },
   'p2p/updateOrderStatus': async (payload, state) => {
     const order = state.p2p.orders.find((item) => item.id === payload.id)
-    if (order) {
-      await upsert('p2p_orders', p2pOrderToRemoteRow(order))
-    }
+    if (!order) return
+    const offer = state.p2p.offers.find((item) => item.id === order.offerId)
+    await syncP2pOrder(order, offer || null)
+  },
+  'p2p/moderateOrder': async (payload, state) => {
+    const order = state.p2p.orders.find((item) => item.id === payload.id)
+    if (!order) return
+    const offer = state.p2p.offers.find((item) => item.id === order.offerId)
+    await syncP2pOrder(order, offer || null)
   },
   'p2p/addOrderProof': async (payload, state) => {
     const order = state.p2p.orders.find((item) => item.id === payload.id)
-    if (order) await upsert('p2p_orders', p2pOrderToRemoteRow(order))
+    if (!order) return
+    const offer = state.p2p.offers.find((item) => item.id === order.offerId)
+    await syncP2pOrder(order, offer || null)
   },
   'p2p/rateOrder': async (payload, state) => {
     const order = state.p2p.orders.find((item) => item.id === payload.id)
-    if (order) await upsert('p2p_orders', p2pOrderToRemoteRow(order))
+    if (!order) return
+    const offer = state.p2p.offers.find((item) => item.id === order.offerId)
+    await syncP2pOrder(order, offer || null)
   },
 
   // ── Notifications ─────────────────────────────────────────────────────────────

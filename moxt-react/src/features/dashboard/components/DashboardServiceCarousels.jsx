@@ -27,7 +27,7 @@ export function DashboardServiceCarousels({ coreServicesRef }) {
           {coreServices.map(({ descriptionKey, image, imageLogo, path, tagKey, titleKey }, index) => (
             <div key={titleKey} className={dashboardServiceItemClass}>
               <Link className="block h-full" to={path}>
-                <Card className="group flex h-full flex-col overflow-hidden p-3 transition hover:shadow-lg">
+                <Card className="group flex h-full flex-col overflow-hidden !border-0 p-3 shadow-none transition hover:shadow-lg">
                   <Dashboard3DIcon className="mx-auto -mb-1" imageLogo={imageLogo} size="lg" src={image} />
                   <h3 className="mt-3 font-black tracking-tight">{t(titleKey)}</h3>
                   <p className="mt-2 flex-1 text-xs leading-5 text-[var(--app-text-muted)]">

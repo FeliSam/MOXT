@@ -117,6 +117,8 @@ export function buildQueues(state) {
 
 export function buildAdminMetrics(state) {
   const transfers = state.transfers.items
+  const p2pOffers = state.p2p.offers
+  const p2pOrders = state.p2p.orders
   const businesses = state.businesses.items
   const listings = state.marketplace.items
   const jobs = state.jobs.items
@@ -134,6 +136,12 @@ export function buildAdminMetrics(state) {
     transfers: {
       total: transfers.length,
       pending: transfers.filter((i) => !['completed', 'cancelled', 'expired'].includes(i.status)).length,
+    },
+    p2p: {
+      total: p2pOffers.length + p2pOrders.length,
+      activeOffers: p2pOffers.filter((i) => i.status === 'active').length,
+      openOrders: p2pOrders.filter((i) => !['completed', 'cancelled'].includes(i.status)).length,
+      disputed: p2pOrders.filter((i) => i.status === 'disputed').length,
     },
     content: {
       total: businesses.length + listings.length + jobs.length + events.length + parcels.length + posts.length,
@@ -193,6 +201,7 @@ export function buildContentCollections(state) {
 
 export function badgeForView(view, metrics, queues) {
   if (view === 'transfers') return metrics.transfers.pending
+  if (view === 'p2p') return metrics.p2p.disputed || metrics.p2p.openOrders
   if (view === 'content') return metrics.content.pending
   if (view === 'publications') return metrics.posts.pending
   if (view === 'users') return metrics.users.suspended
@@ -209,6 +218,8 @@ export function detailLinkFor(kind, item) {
 
 const DETAIL_ICONS = {
   transfer: FiRepeat,
+  p2p_offer: FiUsers,
+  p2p_order: FiUsers,
   support: FiHeadphones,
   user: FiUsers,
   verification: FiUserCheck,
@@ -231,6 +242,8 @@ export function detailIconFor(kind) {
 
 const DETAIL_KIND_KEYS = {
   transfer: 'admin.detail.kind.transfer',
+  p2p_offer: 'admin.detail.kind.p2p_offer',
+  p2p_order: 'admin.detail.kind.p2p_order',
   support: 'admin.detail.kind.support',
   user: 'admin.detail.kind.user',
   verification: 'admin.detail.kind.verification',
@@ -257,6 +270,17 @@ export function detailDescriptionFor(kind, item, t) {
     case 'transfer':
       return adminText(t, 'admin.detail.desc.transfer', {
         partner: item.exchanger?.name || adminText(t, 'admin.common.partnerFallback'),
+        status: item.status,
+      })
+    case 'p2p_offer':
+      return adminText(t, 'admin.detail.desc.p2p_offer', {
+        owner: item.ownerName || item.ownerId || '—',
+        status: item.status,
+      })
+    case 'p2p_order':
+      return adminText(t, 'admin.detail.desc.p2p_order', {
+        buyer: item.buyerName || item.buyerId || '—',
+        seller: item.sellerName || item.sellerId || '—',
         status: item.status,
       })
     case 'support':
@@ -298,7 +322,7 @@ export function detailDescriptionFor(kind, item, t) {
   }
 }
 
-export function buildDetailFacts(kind, item, t) {
+export function buildDetailFacts(kind, item, t, context = {}) {
   const f = (key) => adminText(t, key)
   switch (normalizeAdminKind(kind)) {
     case 'transfer':
@@ -307,6 +331,25 @@ export function buildDetailFacts(kind, item, t) {
         [f('admin.facts.sent'), formatMoney(item.amountSent, item.currencyFrom)],
         [f('admin.facts.received'), formatMoney(item.amountReceived, item.currencyTo)],
         [f('admin.facts.partner'), item.exchanger?.name || '—'],
+        [f('admin.facts.date'), formatDate(item.createdAt)],
+      ]
+    case 'p2p_offer':
+      return [
+        [f('admin.facts.status'), item.status],
+        [f('admin.facts.sent'), formatMoney(item.amount, item.fromCurrency)],
+        [f('admin.facts.rate'), item.rate],
+        [f('admin.facts.pair'), `${item.fromCurrency} → ${item.toCurrency}`],
+        [f('admin.facts.owner'), item.ownerName || item.ownerId || '—'],
+        [f('admin.facts.date'), formatDate(item.createdAt)],
+      ]
+    case 'p2p_order':
+      return [
+        [f('admin.facts.status'), item.status],
+        [f('admin.facts.sent'), formatMoney(item.amount, item.fromCurrency)],
+        [f('admin.facts.rate'), item.rate],
+        [f('admin.facts.buyer'), item.buyerName || item.buyerId || '—'],
+        [f('admin.facts.seller'), item.sellerName || item.sellerId || '—'],
+        [f('admin.facts.evidence'), item.proofs?.length || 0],
         [f('admin.facts.date'), formatDate(item.createdAt)],
       ]
     case 'support':
@@ -399,14 +442,27 @@ export function buildDetailFacts(kind, item, t) {
         [f('admin.facts.createdAt'), formatDate(item.createdAt)],
         [f('admin.facts.reviewedAt'), item.reviewedAt ? formatDate(item.reviewedAt) : '—'],
       ]
-    case 'dispute':
-      return [
+    case 'dispute': {
+      const facts = [
         [f('admin.facts.status'), item.status],
         [f('admin.facts.type'), item.relatedType],
         [f('admin.facts.reference'), item.relatedId],
         [f('admin.facts.evidence'), item.evidence?.length || 0],
         [f('admin.facts.createdAt'), formatDate(item.createdAt)],
       ]
+      const order = context.p2pOrder
+      if (item.relatedType === 'p2p_order' && order) {
+        facts.splice(
+          3,
+          0,
+          [f('admin.facts.sent'), formatMoney(order.amount, order.fromCurrency)],
+          [f('admin.facts.buyer'), order.buyerName || order.buyerId || '—'],
+          [f('admin.facts.seller'), order.sellerName || order.sellerId || '—'],
+          [f('admin.facts.orderStatus'), order.status],
+        )
+      }
+      return facts
+    }
     case 'review':
       return [
         [f('admin.facts.note'), `${item.rating || '—'}/5`],
@@ -443,8 +499,8 @@ export function buildDetailFacts(kind, item, t) {
       ]
     default:
       return [
-        [f('admin.facts.id'), item.id],
         [f('admin.facts.status'), item.status || '—'],
+        [f('admin.facts.createdAt'), item.createdAt ? formatDate(item.createdAt) : '—'],
       ]
   }
 }

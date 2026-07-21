@@ -20,6 +20,7 @@ import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 export const MAIN_VIEWS = [
   { id: 'overview', label: 'Vue generale', labelKey: 'admin.nav.overview', icon: FiShield },
   { id: 'transfers', label: 'Transferts', labelKey: 'admin.nav.transfers', icon: FiRepeat },
+  { id: 'p2p', label: 'P2P', labelKey: 'admin.nav.p2p', icon: FiUsers },
   { id: 'rates', label: 'Taux', labelKey: 'admin.nav.rates', icon: FiTrendingUp },
   { id: 'content', label: 'Contenus', labelKey: 'admin.nav.content', icon: FiLayers },
   { id: 'publications', label: 'Publications', labelKey: 'admin.nav.publications', icon: FiEdit3 },
@@ -55,6 +56,7 @@ export const CHIP = 'rounded-full px-3 py-1.5 text-xs font-bold transition-all'
 
 export const VIEW_FILTERS = {
   transfers: ['all', 'pending', 'completed', 'cancelled'],
+  p2p: ['all', 'active', 'accepted', 'archived', 'created', 'waiting_payment', 'completed', 'cancelled', 'disputed'],
   support: ['all', 'open', 'resolved', 'pending'],
   users: ['all', 'active', 'suspended', 'pending_deletion', 'user', 'professional', 'moderator', 'admin'],
   content: ['all', 'active', 'pending_review', 'archived', 'published', 'rejected', 'new', 'resolved'],
