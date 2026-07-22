@@ -1,7 +1,5 @@
-import { useState } from 'react'
 import { shallowEqual, useSelector } from 'react-redux'
 import { DashboardSearch } from '../components/ui/DashboardSearch'
-import { Modal } from '../components/ui/Modal'
 import { SkeletonCard } from '../components/ui/Skeleton'
 import { DashboardDiscoverySection } from '../features/dashboard/components/DashboardDiscoverySection'
 import { DashboardHero } from '../features/dashboard/components/DashboardHero'
@@ -22,14 +20,12 @@ import {
 } from '../features/dashboard/dashboardBrowseUtils'
 import { useDashboardStats } from '../features/dashboard/hooks/useDashboardStats'
 import { MarketplaceListingCard } from '../features/marketplace/MarketplaceListingCard'
-import { TransferCalculator } from '../features/transfers/TransferCalculator'
 import { useExchangeRate } from '../features/transfers/useExchangeRate'
 import { useHorizontalScroll } from '../hooks/useHorizontalScroll'
 import { useLanguage } from '../contexts/useLanguage'
 
 export function DashboardPage() {
   const { t } = useLanguage()
-  const [calculatorOpen, setCalculatorOpen] = useState(false)
   const listingsScrollRef = useHorizontalScroll()
   const user = useSelector((state) => state.auth.user)
   const authLoading = useSelector((state) => state.auth.status === 'loading')
@@ -77,7 +73,7 @@ export function DashboardPage() {
     <div className="grid min-w-0 gap-6 overflow-x-clip sm:gap-7">
       <DashboardServiceCarousels />
 
-      <DashboardHero user={user} onOpenCalculator={() => setCalculatorOpen(true)} />
+      <DashboardHero user={user} />
 
       <div className="lg:hidden">
         <DashboardSearch />
@@ -98,15 +94,6 @@ export function DashboardPage() {
         parcels={parcels}
         parcelsLoading={authLoading}
       />
-
-      <Modal
-        open={calculatorOpen}
-        onClose={() => setCalculatorOpen(false)}
-        title={t('dashboard.calculatorTitle')}
-        size="large"
-      >
-        <TransferCalculator verified={user.verified} />
-      </Modal>
     </div>
   )
 }

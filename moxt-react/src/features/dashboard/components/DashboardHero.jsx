@@ -8,7 +8,7 @@ import { DashboardTransferCalculator } from '../../transfers/DashboardTransferCa
 const heroBtnBase =
   'inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-btn)] px-5 text-sm font-black transition sm:w-auto'
 
-export function DashboardHero({ user, onOpenCalculator }) {
+export function DashboardHero({ user }) {
   const { t } = useLanguage()
 
   return (
@@ -47,7 +47,7 @@ export function DashboardHero({ user, onOpenCalculator }) {
           </div>
         </div>
         <div className="min-w-0">
-          <DashboardTransferCalculator onOpen={onOpenCalculator} />
+          <DashboardTransferCalculator />
         </div>
       </div>
     </section>

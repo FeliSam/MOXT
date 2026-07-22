@@ -25,7 +25,7 @@ describe('DashboardHero', () => {
   it('affiche les CTA Accueil en boutons (transfert, installer, guide)', () => {
     render(
       <MemoryRouter>
-        <DashboardHero user={{ firstName: 'Amina', verified: true }} onOpenCalculator={() => undefined} />
+        <DashboardHero user={{ firstName: 'Amina', verified: true }} />
       </MemoryRouter>,
     )
 

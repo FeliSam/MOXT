@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react'
-import { FiArrowUpRight, FiRepeat } from 'react-icons/fi'
+import { FiRepeat } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
 import { useLanguage } from '../../contexts/useLanguage'
 import { currencyForCountry, DIRECTIONS } from './transferConfig'
 import { calculateTransfer } from './transferUtils'
 import { useExchangeRate } from './useExchangeRate'
 
-export function DashboardTransferCalculator({ onOpen }) {
+export function DashboardTransferCalculator() {
   const { t } = useLanguage()
   const user = useSelector((state) => state.auth.user)
   const originCountry = user?.originCountry || (user?.country !== 'RU' ? user?.country : 'BJ')
@@ -76,14 +76,6 @@ export function DashboardTransferCalculator({ onOpen }) {
             : `${liveRate.source}${liveRate.date ? ` · ${liveRate.date}` : ''}`}
         </span>
       </div>
-      <button
-        type="button"
-        onClick={onOpen}
-        className="mt-4 flex w-full min-w-0 items-center justify-between gap-2 rounded-[var(--radius-btn)] bg-cyan-300 px-3 py-3 text-sm font-black text-slate-950 sm:px-4"
-      >
-        <span className="truncate">{t('transfers.dashboardCalc.openCalculator')}</span>
-        <FiArrowUpRight className="shrink-0" />
-      </button>
     </div>
   )
 }

@@ -165,8 +165,8 @@ export function InstallAppPage() {
                     </span>
                   ) : null}
                 </div>
-                <p className="text-sm font-medium">{release.fileName}</p>
-                <a href={release.downloadUrl} download={release.fileName || 'moxt.apk'}>
+                <p className="text-sm font-medium">Moxt.apk</p>
+                <a href={release.downloadUrl} download="Moxt.apk">
                   <Button icon={FiDownload}>{t('install.android.download')}</Button>
                 </a>
                 <p className="text-xs text-[var(--app-text-muted)]">{t('install.android.hint')}</p>

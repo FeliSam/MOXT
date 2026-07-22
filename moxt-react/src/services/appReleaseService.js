@@ -38,7 +38,7 @@ export const appReleaseService = {
   async uploadAndroidApk(file, { version = '', notes = '', uploadedBy } = {}) {
     if (!file) throw new Error('Fichier APK manquant')
     const id = createId('APK')
-    const safeName = String(file.name || 'moxt.apk').replace(/[^\w.\-]+/g, '_')
+    const safeName = 'Moxt.apk'
     const path = `android/${id}/${safeName}`
 
     const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, file, {

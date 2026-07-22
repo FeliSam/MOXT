@@ -18,12 +18,11 @@ import {
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const PROJECT_REF = 'rbvqfkccbkwjxkvpnwqn'
 const BUCKET = process.env.MOXT_YC_BUCKET || 'moxtapp-web'
-const APK_PATH = path.join(
-  root,
-  'moxt-react/android/app/build/outputs/apk/debug/Moxt.apk',
-)
+const APK_PATH = path.join(root, 'releases', 'Moxt-1.2.1-release.apk')
 const OBJECT_KEY = 'downloads/Moxt.apk'
 const PUBLIC_URL = `https://moxtapp.ru/${OBJECT_KEY}`
+const APK_VERSION = '1.2.1'
+const DOWNLOAD_NAME = 'Moxt.apk'
 
 function parseEnv(filePath) {
   const vars = {}
@@ -82,7 +81,7 @@ async function main() {
       Body: createReadStream(APK_PATH),
       ContentType: 'application/vnd.android.package-archive',
       CacheControl: 'public, max-age=300',
-      ContentDisposition: 'attachment; filename="Moxt.apk"',
+      ContentDisposition: `attachment; filename="${DOWNLOAD_NAME}"`,
     },
   })
   upload.on('httpUploadProgress', (p) => {
@@ -115,12 +114,12 @@ async function main() {
   const { error } = await admin.from('app_releases').insert({
     id,
     platform: 'android',
-    version: 'debug',
-    file_name: 'Moxt.apk',
+    version: APK_VERSION,
+    file_name: DOWNLOAD_NAME,
     storage_path: PUBLIC_URL,
     file_size: size,
     is_active: true,
-    notes: 'Hébergé sur CDN Yandex (downloads/Moxt.apk)',
+    notes: `Release ${APK_VERSION} — CDN Yandex (${OBJECT_KEY})`,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   })
