@@ -151,6 +151,7 @@ export function RegisterPage() {
   // Sync locks — Formik does not prevent a second submit before React re-renders loading.
   const registerSubmitLockRef = useRef(false)
   const otpActionLockRef = useRef(false)
+  const autoEmailFallbackStartedRef = useRef(false)
   const { trigger: triggerBurst, node: burstNode } = useActionBurst()
   const { countries } = useGeographyOptions()
   const alreadyRegistered = error === 'ALREADY_REGISTERED'
@@ -406,6 +407,7 @@ export function RegisterPage() {
           }
           savePendingRegistration(pending)
           setPhoneResendCount(0)
+          autoEmailFallbackStartedRef.current = false
           setResendCooldown(OTP_RESEND_COOLDOWN_SECONDS)
           setPendingVerification({
             method: 'phone',
@@ -428,6 +430,23 @@ export function RegisterPage() {
   })
 
   const authBusy = status === 'loading' || formik.isSubmitting
+
+  // After the only SMS resend + 90s wait without verification → switch to e-mail automatically.
+  useEffect(() => {
+    if (
+      !pendingVerification ||
+      pendingVerification.method !== 'phone' ||
+      phoneResendCount < SMS_REGISTRATION_MAX_RESENDS ||
+      resendCooldown > 0 ||
+      authBusy ||
+      autoEmailFallbackStartedRef.current
+    ) {
+      return
+    }
+    autoEmailFallbackStartedRef.current = true
+    void startEmailOtpFallback({ reason: 'sms_resend_limit' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional gate on cooldown/resend count
+  }, [authBusy, pendingVerification, phoneResendCount, resendCooldown])
 
   // Restore pending OTP signup after failed code / refresh (sessionStorage, no password).
   // Never show the OTP step until the phone is re-checked as still eligible.
@@ -519,7 +538,10 @@ export function RegisterPage() {
   }, [authUser, formik.setValues, pendingVerification])
 
   async function startEmailOtpFallback({ reason } = {}) {
-    if (registerSubmitLockRef.current || authBusy) return
+    if (registerSubmitLockRef.current || authBusy) {
+      autoEmailFallbackStartedRef.current = false
+      return
+    }
     registerSubmitLockRef.current = true
     try {
       setOtpCapMessage('')
@@ -533,6 +555,7 @@ export function RegisterPage() {
         }),
       )
       if (!registerWithEmailAfterSmsDenied.fulfilled.match(result)) {
+        autoEmailFallbackStartedRef.current = false
         const payload = String(result.payload || '')
         if (/Limite atteinte|Patientez \d+ secondes/i.test(payload)) {
           setOtpCapMessage(payload)
@@ -540,7 +563,10 @@ export function RegisterPage() {
         return
       }
       const payload = result.payload || {}
-      if (!payload.requiresEmailConfirmation || !payload.email) return
+      if (!payload.requiresEmailConfirmation || !payload.email) {
+        autoEmailFallbackStartedRef.current = false
+        return
+      }
       dispatch(clearAuthError())
       const pending = {
         method: 'email',
@@ -580,16 +606,18 @@ export function RegisterPage() {
   }
 
   async function resendVerificationCode() {
-    if (!pendingVerification || resendCooldown > 0 || authBusy || otpActionLockRef.current) return
+    if (!pendingVerification || authBusy || otpActionLockRef.current) return
 
-    // After 1 initial SMS + 2 resends, switch registration to e-mail OTP.
-    if (
+    // After 1 initial SMS + 1 resend: offer e-mail immediately (no extra 90s wait).
+    const switchToEmail =
       pendingVerification.method === 'phone' &&
       phoneResendCount >= SMS_REGISTRATION_MAX_RESENDS
-    ) {
+    if (switchToEmail) {
       await startEmailOtpFallback({ reason: 'sms_resend_limit' })
       return
     }
+
+    if (resendCooldown > 0) return
 
     otpActionLockRef.current = true
 
@@ -1193,22 +1221,36 @@ export function RegisterPage() {
                     ? t('auth.register.emailFallback.smsResendLimitHint')
                     : t('auth.register.codeNotReceivedSms')}
               </p>
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full"
-                loading={authBusy && resendCooldown <= 0}
-                disabled={resendCooldown > 0 || authBusy || pendingVerification.sendingSms}
-                onClick={resendVerificationCode}
-              >
-                {resendCooldown > 0
-                  ? t('auth.register.resendCooldown', { seconds: resendCooldown })
-                  : pendingVerification.method === 'email'
-                    ? t('auth.register.resendEmail')
-                    : phoneResendCount >= SMS_REGISTRATION_MAX_RESENDS
-                      ? t('auth.register.emailFallback.sendButton')
+              {pendingVerification.method === 'phone' &&
+              phoneResendCount >= SMS_REGISTRATION_MAX_RESENDS ? (
+                <Button
+                  type="button"
+                  className="w-full"
+                  loading={authBusy}
+                  disabled={authBusy || pendingVerification.sendingSms}
+                  onClick={() => {
+                    autoEmailFallbackStartedRef.current = true
+                    void startEmailOtpFallback({ reason: 'sms_resend_limit' })
+                  }}
+                >
+                  {t('auth.register.emailFallback.sendButton')}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full"
+                  loading={authBusy && resendCooldown <= 0}
+                  disabled={resendCooldown > 0 || authBusy || pendingVerification.sendingSms}
+                  onClick={resendVerificationCode}
+                >
+                  {resendCooldown > 0
+                    ? t('auth.register.resendCooldown', { seconds: resendCooldown })
+                    : pendingVerification.method === 'email'
+                      ? t('auth.register.resendEmail')
                       : t('auth.register.resendSms')}
-              </Button>
+                </Button>
+              )}
               <button
                 type="button"
                 className="text-sm font-bold text-[var(--app-text-muted)] underline-offset-2 hover:underline"
@@ -1219,6 +1261,7 @@ export function RegisterPage() {
                   setOtpCapMessage('')
                   setEmailSmsFallback(false)
                   setPhoneResendCount(0)
+                  autoEmailFallbackStartedRef.current = false
                   setStep(3)
                   dispatch(clearAuthError())
                 }}

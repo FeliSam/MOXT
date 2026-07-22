@@ -62,6 +62,9 @@ export function P2POrderPage() {
   const { orderId } = useParams()
   const user = useSelector((state) => state.auth.user)
   const order = useSelector((state) => state.p2p.orders.find((item) => item.id === orderId))
+  const linkedOffer = useSelector((state) =>
+    state.p2p.offers.find((item) => item.id === order?.offerId),
+  )
   const orders = useSelector((state) => state.p2p.orders)
   const reviews = useSelector((state) => state.reviews.items)
   const myReview = useSelector((state) =>
@@ -88,6 +91,14 @@ export function P2POrderPage() {
   const isParty = order && [order.buyerId, order.sellerId].includes(user.id)
   const isBuyer = Boolean(order && user.id === order.buyerId)
   const isSeller = Boolean(order && user.id === order.sellerId)
+  const receivePhone = order?.receivePhone || linkedOffer?.receivePhone || ''
+  const receiveName =
+    order?.receiveName ||
+    linkedOffer?.receiveName ||
+    order?.receiveAccount ||
+    linkedOffer?.receiveAccount ||
+    ''
+  const receiveMethod = order?.method || linkedOffer?.method || ''
 
   const handleExpire = useCallback(() => {
     if (!order || order.status !== 'created') return
@@ -294,7 +305,38 @@ export function P2POrderPage() {
             label={isBuyer ? t('p2p.order.seller') : t('p2p.order.buyer')}
             value={otherPartyName}
           />
+          {order.createdAt ? (
+            <Row label={t('p2p.order.createdAt')} value={formatDate(order.createdAt)} />
+          ) : null}
         </div>
+
+        {(receivePhone || receiveName) && isBuyer ? (
+          <div className="rounded-2xl border border-brand-200/70 bg-brand-50/70 p-4 dark:border-brand-800/50 dark:bg-brand-950/30">
+            <p className="text-xs font-black uppercase tracking-wide text-brand-700 dark:text-brand-300">
+              {t('p2p.order.payToTitle')}
+            </p>
+            <p className="mt-1 text-sm text-[var(--app-text-muted)]">{t('p2p.order.payToHint')}</p>
+            <div className="mt-3 grid gap-2 text-sm">
+              {receiveMethod ? <Row label={t('p2p.detail.method')} value={receiveMethod} /> : null}
+              {receiveName ? <Row label={t('p2p.order.receiveName')} value={receiveName} /> : null}
+              {receivePhone ? (
+                <Row label={t('p2p.order.receivePhone')} value={receivePhone} />
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
+        {(receivePhone || receiveName) && isSeller ? (
+          <div className="rounded-2xl bg-[var(--app-surface-muted)] p-4 text-sm">
+            <p className="font-bold">{t('p2p.order.yourReceiveTitle')}</p>
+            <div className="mt-2 grid gap-2">
+              {receiveName ? <Row label={t('p2p.order.receiveName')} value={receiveName} /> : null}
+              {receivePhone ? (
+                <Row label={t('p2p.order.receivePhone')} value={receivePhone} />
+              ) : null}
+            </div>
+          </div>
+        ) : null}
 
         <P2PReputationBadge userId={otherPartyId} orders={orders} reviews={reviews} />
 
@@ -470,8 +512,11 @@ export function P2POrderPage() {
         </Card>
 
         {order.status === 'completed' && isParty ? (
-          <Card className="lg:col-span-2">
+          <Card className="lg:col-span-2 border border-amber-200/80 bg-amber-50/40 dark:border-amber-900/40 dark:bg-amber-950/20">
             <h2 className="font-black">{t('p2p.order.rateTitle')}</h2>
+            <p className="mt-2 text-sm text-[var(--app-text-muted)]">
+              {t('p2p.order.rateIntro', { name: otherPartyName })}
+            </p>
             <div className="mt-4 grid gap-3 sm:max-w-md">
               <select
                 className="min-h-11 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3"

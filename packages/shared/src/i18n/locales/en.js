@@ -82,7 +82,8 @@ export const en = {
         switchedBody: "A code was sent to {email}. Enter it to create your account.",
         afterSmsResends:
           "Too many SMS resends. A code was sent to {email} to finish sign-up by email.",
-        smsResendLimitHint: "You already resent the SMS twice. Continue with the email code.",
+        smsResendLimitHint:
+          "SMS already resent once. You can still enter the code if it arrives, or receive it by email now (automatic switch after 90s).",
       },
       toasts: {
         alreadyExistsTitle: "Account already exists",
@@ -286,6 +287,7 @@ export const en = {
       marginInvalid: "Invalid margin.",
       marginRange: "Margin must be between −{max}% and +{max}%.",
       commentMax: "300 characters maximum.",
+      receiveNameRequired: "Enter the recipient’s first and last name.",
     },
     address: {
       labelRequired: "Label is required.",
@@ -3560,6 +3562,15 @@ export const en = {
       emptySearch: "No results match your search.",
       emptyDefault: "Create your first operation.",
       calculatorModalTitle: "Transfer calculator",
+      tabTransfers: "Transfers",
+      tabP2p: "P2P exchanges",
+      p2pSearchPlaceholder: "Reference, counterpart or currency…",
+      p2pSectionTitle: "P2P exchanges",
+      p2pOperationsCount: "{count} P2P exchange(s)",
+      p2pWith: "With {name}",
+      p2pEmptyTitle: "No P2P exchanges",
+      p2pEmptyDefault: "Your P2P orders will appear here after you accept an offer.",
+      p2pBrowse: "Browse P2P offers",
     },
     calculator: {
       title: "Calculator",
@@ -4011,6 +4022,8 @@ export const en = {
       emptyArchiveDescription: "Accepted or closed offers will appear here.",
       recentOrders: "My recent transactions",
       orderDirection: "{seller} to {buyer}",
+      publishedOn: "Published on {date}",
+      leaveReview: "Leave a review",
     },
     detail: {
       notFound: "P2P offer not found",
@@ -4124,12 +4137,19 @@ export const en = {
         disputeBody: "Actions will be frozen until a moderator decides.",
       },
       rateTitle: "Rate the transaction",
+      rateIntro: "How did the exchange with {name} go?",
       commentPlaceholder: "Your comment",
       saveRating: "Save rating",
       updateRating: "Update rating",
       ratingVisibleHint: "This rating will appear on your counterparty's public profile.",
       ratingSavedTitle: "Rating saved",
       ratingSavedBody: "Thanks for rating {name}.",
+      createdAt: "Date",
+      payToTitle: "Payment details",
+      payToHint: "Pay only to this number / account, using the stated method.",
+      receivePhone: "Receiving number",
+      receiveName: "Full name",
+      yourReceiveTitle: "Your receiving details (shown to the buyer)",
     },
     publish: {
       steps: {
@@ -4166,6 +4186,14 @@ export const en = {
       methodRussia: "Russian bank",
       methodLoading: "Loading banks…",
       methodPlaceholder: "Choose a method",
+      receiveSection: "Receiving number",
+      receiveHintAfrica:
+        "Enter the Mobile Money number ({country}) where the buyer should send the transfer.",
+      receiveHintRussia:
+        "Enter the SBP / Russian phone number and the recipient’s first and last name.",
+      receivePhone: "Receiving number",
+      receiveName: "Information (first and last name)",
+      receiveNamePlaceholder: "Recipient’s first and last name",
       conditionsOptional: "Conditions (optional)",
       conditionsPlaceholder: "Hours, delays, details…",
       recap: "Summary",

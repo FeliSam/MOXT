@@ -83,7 +83,7 @@ export const fr = {
         afterSmsResends:
           "Trop de renvois SMS. Un code a été envoyé à {email} pour finaliser l’inscription par e-mail.",
         smsResendLimitHint:
-          "Vous avez déjà renvoyé le SMS 2 fois. Continuez avec le code par e-mail.",
+          "SMS déjà renvoyé une fois. Vous pouvez saisir le code s’il arrive, ou recevoir le code par e-mail maintenant (bascule automatique après 90 s).",
       },
       toasts: {
         alreadyExistsTitle: "Compte déjà existant",
@@ -287,6 +287,7 @@ export const fr = {
       marginInvalid: "Marge invalide.",
       marginRange: "La marge doit être entre −{max} % et +{max} %.",
       commentMax: "300 caractères maximum.",
+      receiveNameRequired: "Indiquez le nom et le(s) prénom(s) du bénéficiaire.",
     },
     address: {
       labelRequired: "Le libellé est obligatoire.",
@@ -3560,6 +3561,15 @@ export const fr = {
       emptySearch: "Aucun resultat ne correspond a la recherche.",
       emptyDefault: "Créez votre première opération.",
       calculatorModalTitle: "Calculatrice de transfert",
+      tabTransfers: "Transfert",
+      tabP2p: "Échanges P2P",
+      p2pSearchPlaceholder: "Référence, contrepartie ou devise…",
+      p2pSectionTitle: "Échanges P2P",
+      p2pOperationsCount: "{count} échange(s) P2P",
+      p2pWith: "Avec {name}",
+      p2pEmptyTitle: "Aucun échange P2P",
+      p2pEmptyDefault: "Vos commandes P2P apparaîtront ici après acceptation d’une offre.",
+      p2pBrowse: "Voir les offres P2P",
     },
     calculator: {
       title: "Calculateur",
@@ -4011,6 +4021,8 @@ export const fr = {
       emptyArchiveDescription: "Les offres acceptées ou clôturées apparaîtront ici.",
       recentOrders: "Mes transactions récentes",
       orderDirection: "{seller} vers {buyer}",
+      publishedOn: "Publiée le {date}",
+      leaveReview: "Donnez votre avis",
     },
     detail: {
       notFound: "Offre P2P introuvable",
@@ -4098,12 +4110,19 @@ export const fr = {
       openDispute: "Ouvrir un litige",
       openDisputeNoReceive: "Je n’ai pas reçu — Ouvrir un litige",
       rateTitle: "Évaluer la transaction",
+      rateIntro: "Comment s’est passé l’échange avec {name} ?",
       commentPlaceholder: "Votre commentaire",
       saveRating: "Enregistrer l’évaluation",
       updateRating: "Mettre à jour l’évaluation",
       ratingVisibleHint: "Cette évaluation apparaîtra sur le profil public de votre interlocuteur.",
       ratingSavedTitle: "Évaluation enregistrée",
       ratingSavedBody: "Merci d’avoir évalué {name}.",
+      createdAt: "Date",
+      payToTitle: "Coordonnées de paiement",
+      payToHint: "Payez uniquement sur ce numéro / compte, avec la méthode indiquée.",
+      receivePhone: "Numéro de réception",
+      receiveName: "Nom et prénoms",
+      yourReceiveTitle: "Vos coordonnées de réception (affichées à l’acheteur)",
       expiredTitle: "Délai de paiement dépassé",
       expiredBody: "La commande a été annulée automatiquement. L’offre peut être à nouveau disponible.",
       countdown: {
@@ -4169,6 +4188,14 @@ export const fr = {
       methodRussia: "Banque russe",
       methodLoading: "Chargement des banques…",
       methodPlaceholder: "Choisir une méthode",
+      receiveSection: "Numéro de réception",
+      receiveHintAfrica:
+        "Indiquez le numéro Mobile Money ({country}) et le nom et prénom(s) du bénéficiaire.",
+      receiveHintRussia:
+        "Indiquez le numéro SBP / téléphone russe et le nom et prénom(s) du bénéficiaire.",
+      receivePhone: "Numéro de réception",
+      receiveName: "Information (nom et prénoms)",
+      receiveNamePlaceholder: "Nom et prénom(s) du bénéficiaire",
       conditionsOptional: "Conditions (optionnel)",
       conditionsPlaceholder: "Horaires, délais, précisions…",
       recap: "Récapitulatif",

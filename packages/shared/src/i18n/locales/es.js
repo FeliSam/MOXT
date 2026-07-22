@@ -82,7 +82,8 @@ export const es = {
         switchedBody: "Se envió un código a {email}. Introdúcelo para crear tu cuenta.",
         afterSmsResends:
           "Demasiados reenvíos SMS. Se envió un código a {email} para terminar el registro por correo.",
-        smsResendLimitHint: "Ya reenviaste el SMS dos veces. Continúa con el código por correo.",
+        smsResendLimitHint:
+          "SMS ya reenviado una vez. Puedes introducir el código si llega, o recibirlo por correo ahora (cambio automático tras 90 s).",
       },
       toasts: {
         alreadyExistsTitle: "La cuenta ya existe",
@@ -285,7 +286,8 @@ export const es = {
       rateRequired: "A tarifa é obrigatória.",
       marginInvalid: "Margen no válido.",
       marginRange: "El margen debe estar entre −{max} % y +{max} %.",
-      commentMax: "Máximo de 300 caracteres."
+      commentMax: "Máximo de 300 caracteres.",
+      receiveNameRequired: "Indica el nombre y apellido(s) del beneficiario."
     },
     address: {
       labelRequired: "A etiqueta é obrigatória.",
@@ -3558,7 +3560,16 @@ export const es = {
       emptyTitle: "Ninguna transferencia",
       emptySearch: "Ningún resultado corresponde à búsqueda.",
       emptyDefault: "Crie a tu primeira operación.",
-      calculatorModalTitle: "Calculadora de transferencia"
+      calculatorModalTitle: "Calculadora de transferencia",
+      tabTransfers: "Transferencias",
+      tabP2p: "Intercambios P2P",
+      p2pSearchPlaceholder: "Referencia, contraparte o moneda…",
+      p2pSectionTitle: "Intercambios P2P",
+      p2pOperationsCount: "{count} intercambio(s) P2P",
+      p2pWith: "Con {name}",
+      p2pEmptyTitle: "Ningún intercambio P2P",
+      p2pEmptyDefault: "Tus pedidos P2P aparecerán aquí tras aceptar una oferta.",
+      p2pBrowse: "Ver ofertas P2P"
     },
     calculator: {
       title: "Calculadora",
@@ -4009,7 +4020,9 @@ export const es = {
       emptyActiveDescription: "Proponha a primeira oferta o ajuste os filtros.",
       emptyArchiveDescription: "As ofertas aceites o encerradas aparecerão aquí.",
       recentOrders: "As minhas transaciones recentes",
-      orderDirection: "{seller} para {buyer}"
+      orderDirection: "{seller} para {buyer}",
+      publishedOn: "Publicada el {date}",
+      leaveReview: "Deja tu valoración"
     },
     detail: {
       notFound: "Oferta P2P no encontrada",
@@ -4123,12 +4136,19 @@ export const es = {
         disputeBody: "Las acciones se congelarán hasta la decisión de un moderador.",
       },
       rateTitle: "Avaliar a transación",
+      rateIntro: "¿Cómo fue el intercambio con {name}?",
       commentPlaceholder: "O tu comentário",
       saveRating: "Guardar avaliación",
       updateRating: "Actualizar evaluación",
       ratingVisibleHint: "Esta evaluación aparecerá en el perfil público de tu contraparte.",
       ratingSavedTitle: "Evaluación guardada",
-      ratingSavedBody: "Gracias por evaluar a {name}."
+      ratingSavedBody: "Gracias por evaluar a {name}.",
+      createdAt: "Fecha",
+      payToTitle: "Datos de pago",
+      payToHint: "Paga solo a este número / cuenta, con el método indicado.",
+      receivePhone: "Número de recepción",
+      receiveName: "Nombre y apellidos",
+      yourReceiveTitle: "Tus datos de recepción (mostrados al comprador)"
     },
     publish: {
       steps: {
@@ -4165,6 +4185,14 @@ export const es = {
       methodRussia: "Banco ruso",
       methodLoading: "Cargando bancos…",
       methodPlaceholder: "Elegir un método",
+      receiveSection: "Número de recepción",
+      receiveHintAfrica:
+        "Indica el número Mobile Money ({country}) al que el comprador debe enviar la transferencia.",
+      receiveHintRussia:
+        "Indica el número SBP / teléfono ruso y el nombre y apellido(s) del beneficiario.",
+      receivePhone: "Número de recepción",
+      receiveName: "Información (nombre y apellidos)",
+      receiveNamePlaceholder: "Nombre y apellido(s) del beneficiario",
       conditionsOptional: "Condiciones (opcional)",
       conditionsPlaceholder: "Horários, plazos, detalhes…",
       recap: "Resumo",

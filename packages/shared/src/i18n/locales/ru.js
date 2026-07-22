@@ -82,7 +82,8 @@ export const ru = {
         switchedBody: "Код отправлен на {email}. Введите его, чтобы создать аккаунт.",
         afterSmsResends:
           "Слишком много повторных SMS. Код отправлен на {email}, чтобы завершить регистрацию по e-mail.",
-        smsResendLimitHint: "Вы уже дважды запрашивали SMS. Продолжите с кодом по e-mail.",
+        smsResendLimitHint:
+          "SMS уже повторно отправлен один раз. Можно ввести код, если он придёт, или получить код на e-mail сейчас (автопереход через 90 с).",
       },
       toasts: {
         alreadyExistsTitle: "Аккаунт уже существует",
@@ -286,6 +287,7 @@ export const ru = {
       marginInvalid: "Некорректная маржа.",
       marginRange: "Маржа должна быть от −{max} % до +{max} %.",
       commentMax: "Не более 300 символов.",
+      receiveNameRequired: "Укажите фамилию и имя получателя.",
     },
     address: {
       labelRequired: "Укажите название.",
@@ -3560,6 +3562,15 @@ export const ru = {
       emptySearch: "По запросу ничего не найдено.",
       emptyDefault: "Создайте первую операцию.",
       calculatorModalTitle: "Калькулятор перевода",
+      tabTransfers: "Переводы",
+      tabP2p: "P2P-обмены",
+      p2pSearchPlaceholder: "Ссылка, контрагент или валюта…",
+      p2pSectionTitle: "P2P-обмены",
+      p2pOperationsCount: "{count} P2P-обмен(ов)",
+      p2pWith: "С {name}",
+      p2pEmptyTitle: "Нет P2P-обменов",
+      p2pEmptyDefault: "Ваши P2P-заказы появятся здесь после принятия предложения.",
+      p2pBrowse: "Смотреть P2P-предложения",
     },
     calculator: {
       title: "Калькулятор",
@@ -4011,6 +4022,8 @@ export const ru = {
       emptyArchiveDescription: "Принятые или закрытые предложения появятся здесь.",
       recentOrders: "Мои недавние сделки",
       orderDirection: "{seller} → {buyer}",
+      publishedOn: "Опубликовано {date}",
+      leaveReview: "Оставить отзыв",
     },
     detail: {
       notFound: "P2P-предложение не найдено",
@@ -4124,12 +4137,19 @@ export const ru = {
         disputeBody: "Действия будут заморожены до решения модератора.",
       },
       rateTitle: "Оценить сделку",
+      rateIntro: "Как прошёл обмен с {name}?",
       commentPlaceholder: "Ваш комментарий",
       saveRating: "Сохранить оценку",
       updateRating: "Обновить оценку",
       ratingVisibleHint: "Эта оценка появится в публичном профиле вашего собеседника.",
       ratingSavedTitle: "Оценка сохранена",
       ratingSavedBody: "Спасибо за оценку {name}.",
+      createdAt: "Дата",
+      payToTitle: "Реквизиты для оплаты",
+      payToHint: "Платите только на этот номер / счёт указанным способом.",
+      receivePhone: "Номер для получения",
+      receiveName: "Фамилия и имя",
+      yourReceiveTitle: "Ваши реквизиты получения (видны покупателю)",
     },
     publish: {
       steps: {
@@ -4166,6 +4186,14 @@ export const ru = {
       methodRussia: "Российский банк",
       methodLoading: "Загрузка банков…",
       methodPlaceholder: "Выберите способ",
+      receiveSection: "Номер для получения",
+      receiveHintAfrica:
+        "Укажите номер Mobile Money ({country}), на который покупатель должен отправить перевод.",
+      receiveHintRussia:
+        "Укажите номер СБП / российский телефон и фамилию с именем получателя.",
+      receivePhone: "Номер для получения",
+      receiveName: "Информация (фамилия и имя)",
+      receiveNamePlaceholder: "Фамилия и имя получателя",
       conditionsOptional: "Условия (необязательно)",
       conditionsPlaceholder: "Часы, сроки, детали…",
       recap: "Сводка",

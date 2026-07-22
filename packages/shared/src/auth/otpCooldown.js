@@ -10,9 +10,9 @@ export const OTP_RESEND_COOLDOWN_MS = OTP_RESEND_COOLDOWN_SECONDS * 1000
 
 /**
  * Max SMS resends during phone registration (after the initial send).
- * 1 initial + 2 resends = 3 SMS; the next resend switches to e-mail OTP.
+ * 1 initial + 1 resend = 2 SMS; the next action switches to e-mail OTP.
  */
-export const SMS_REGISTRATION_MAX_RESENDS = 2
+export const SMS_REGISTRATION_MAX_RESENDS = 1
 
 /** Max OTP sends per identity inside the rolling window (4 tentatives / 3 h). */
 export const OTP_MAX_SENDS_PER_WINDOW = 4

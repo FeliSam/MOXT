@@ -93,7 +93,8 @@ export const pt = {
         switchedBody: "Foi enviado um código para {email}. Introduza-o para criar a sua conta.",
         afterSmsResends:
           "Demasiados reenvios de SMS. Foi enviado um código para {email} para concluir o registo por e-mail.",
-        smsResendLimitHint: "Já reenviou o SMS duas vezes. Continue com o código por e-mail.",
+        smsResendLimitHint:
+          "SMS já reenviado uma vez. Pode introduzir o código se chegar, ou recebê-lo por e-mail agora (mudança automática após 90 s).",
       },
       toasts: {
         alreadyExistsTitle: "Conta já existente",
@@ -1947,6 +1948,7 @@ export const pt = {
       marginInvalid: "Margem inválida.",
       marginRange: "A margem deve estar entre −{max} % e +{max} %.",
       commentMax: "Máximo de 300 caracteres.",
+      receiveNameRequired: "Indique o nome e apelido(s) do beneficiário.",
     },
     address: {
       labelRequired: "A etiqueta é obrigatória.",
@@ -3559,6 +3561,15 @@ export const pt = {
       emptySearch: "Nenhum resultado corresponde à pesquisa.",
       emptyDefault: "Crie a sua primeira operação.",
       calculatorModalTitle: "Calculadora de transferência",
+      tabTransfers: "Transferências",
+      tabP2p: "Trocas P2P",
+      p2pSearchPlaceholder: "Referência, contraparte ou moeda…",
+      p2pSectionTitle: "Trocas P2P",
+      p2pOperationsCount: "{count} troca(s) P2P",
+      p2pWith: "Com {name}",
+      p2pEmptyTitle: "Nenhuma troca P2P",
+      p2pEmptyDefault: "As suas encomendas P2P aparecerão aqui após aceitar uma oferta.",
+      p2pBrowse: "Ver ofertas P2P",
     },
     calculator: {
       title: "Calculadora",
@@ -4010,6 +4021,8 @@ export const pt = {
       emptyArchiveDescription: "As ofertas aceites ou encerradas aparecerão aqui.",
       recentOrders: "As minhas transações recentes",
       orderDirection: "{seller} para {buyer}",
+      publishedOn: "Publicada em {date}",
+      leaveReview: "Deixe a sua avaliação",
     },
     detail: {
       notFound: "Oferta P2P não encontrada",
@@ -4123,12 +4136,19 @@ export const pt = {
         disputeBody: "As ações ficarão congeladas até decisão de um moderador.",
       },
       rateTitle: "Avaliar a transação",
+      rateIntro: "Como correu a troca com {name}?",
       commentPlaceholder: "O seu comentário",
       saveRating: "Guardar avaliação",
       updateRating: "Atualizar avaliação",
       ratingVisibleHint: "Esta avaliação vai aparecer no perfil público da outra parte.",
       ratingSavedTitle: "Avaliação guardada",
       ratingSavedBody: "Obrigado por avaliar {name}.",
+      createdAt: "Data",
+      payToTitle: "Dados de pagamento",
+      payToHint: "Pague apenas para este número / conta, com o método indicado.",
+      receivePhone: "Número de receção",
+      receiveName: "Nome e apelidos",
+      yourReceiveTitle: "Os seus dados de receção (mostrados ao comprador)",
     },
     publish: {
       steps: {
@@ -4165,6 +4185,14 @@ export const pt = {
       methodRussia: "Banco russo",
       methodLoading: "A carregar bancos…",
       methodPlaceholder: "Escolher um método",
+      receiveSection: "Número de receção",
+      receiveHintAfrica:
+        "Indique o número Mobile Money ({country}) para o qual o comprador deve enviar a transferência.",
+      receiveHintRussia:
+        "Indique o número SBP / telefone russo e o nome e apelido(s) do beneficiário.",
+      receivePhone: "Número de receção",
+      receiveName: "Informação (nome e apelidos)",
+      receiveNamePlaceholder: "Nome e apelido(s) do beneficiário",
       conditionsOptional: "Condições (opcional)",
       conditionsPlaceholder: "Horários, prazos, detalhes…",
       recap: "Resumo",

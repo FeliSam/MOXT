@@ -224,7 +224,12 @@ export const loadAllData = createAsyncThunk(
       supabase.from('p2p_offers').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
       isStaff
         ? supabase.from('p2p_orders').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT)
-        : supabase.from('p2p_orders').select('*').or(`buyer_id.eq.${uid},seller_id.eq.${uid}`).limit(USER_LIMIT),
+        : supabase
+            .from('p2p_orders')
+            .select('*')
+            .or(`buyer_id.eq.${uid},seller_id.eq.${uid}`)
+            .order('created_at', { ascending: false })
+            .limit(USER_LIMIT),
       supabase.from('reviews').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
       isStaff
         ? supabase.from('disputes').select('*').order('created_at', { ascending: false }).limit(USER_LIMIT)

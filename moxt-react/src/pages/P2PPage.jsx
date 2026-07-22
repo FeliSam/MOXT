@@ -1,4 +1,4 @@
-import { FiArrowRight, FiPlus, FiUsers } from 'react-icons/fi'
+import { FiArrowRight, FiPlus, FiStar, FiUsers } from 'react-icons/fi'
 import { useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
@@ -22,8 +22,16 @@ import { calculateP2PFee } from '../features/p2p/p2pUtils'
 import { selectPlatformFees } from '../features/admin/platformRatesSlice'
 import { useSecurityGate } from '../features/security/useSecurityGate'
 import { transferCurrenciesForCountry } from '../features/transfers/transferConfig'
-import { formatMoney } from '../features/transfers/transferUtils'
+import { formatDate, formatMoney } from '../features/transfers/transferUtils'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
+
+function byCreatedAtDesc(a, b) {
+  return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+}
+
+function userRatedOrder(order, userId) {
+  return Boolean(order?.ratings?.some((entry) => entry.userId === userId))
+}
 
 export function P2PPage() {
   const { t } = useLanguage()
@@ -48,17 +56,19 @@ export function P2PPage() {
   const availableCurrencies = transferCurrenciesForCountry(originCountry)
   const filteredOffers = useMemo(
     () =>
-      offers.filter((offer) => {
-        const haystack =
-          `${offer.ownerName} ${offer.method} ${offer.comment} ${offer.fromCurrency} ${offer.toCurrency}`.toLowerCase()
-        return (
-          availableCurrencies.includes(offer.fromCurrency) &&
-          availableCurrencies.includes(offer.toCurrency) &&
-          (!filters.query || haystack.includes(filters.query.toLowerCase())) &&
-          (!filters.fromCurrency || offer.fromCurrency === filters.fromCurrency) &&
-          (!filters.toCurrency || offer.toCurrency === filters.toCurrency)
-        )
-      }),
+      offers
+        .filter((offer) => {
+          const haystack =
+            `${offer.ownerName} ${offer.method} ${offer.comment} ${offer.fromCurrency} ${offer.toCurrency}`.toLowerCase()
+          return (
+            availableCurrencies.includes(offer.fromCurrency) &&
+            availableCurrencies.includes(offer.toCurrency) &&
+            (!filters.query || haystack.includes(filters.query.toLowerCase())) &&
+            (!filters.fromCurrency || offer.fromCurrency === filters.fromCurrency) &&
+            (!filters.toCurrency || offer.toCurrency === filters.toCurrency)
+          )
+        })
+        .sort(byCreatedAtDesc),
     [availableCurrencies, filters, offers],
   )
 
@@ -73,6 +83,14 @@ export function P2PPage() {
   )
 
   const displayedOffers = tab === 'active' ? activeOffers : archivedOffers
+
+  const myOrders = useMemo(
+    () =>
+      orders
+        .filter((order) => [order.buyerId, order.sellerId].includes(user.id))
+        .sort(byCreatedAtDesc),
+    [orders, user.id],
+  )
 
   function clearFilters() {
     setFilters({ query: '', fromCurrency: '', toCurrency: '' })
@@ -203,6 +221,11 @@ export function P2PPage() {
                     className="mt-1.5 text-xs text-[var(--app-text-faint)]"
                     nameClassName="truncate"
                   />
+                  {offer.createdAt ? (
+                    <p className="mt-1 text-[11px] text-[var(--app-text-faint)]">
+                      {t('p2p.page.publishedOn', { date: formatDate(offer.createdAt) })}
+                    </p>
+                  ) : null}
                   <P2PReputationBadge
                     userId={offer.ownerId}
                     orders={orders}
@@ -294,28 +317,41 @@ export function P2PPage() {
               }
             />
           )}
-          {orders.length ? (
-            <div className="mt-3">
+          {myOrders.length ? (
+            <div className="col-span-full mt-3">
               <h2 className="mb-3 text-lg font-black">{t('p2p.page.recentOrders')}</h2>
               <div className="grid gap-3">
-                {orders
-                  .filter((order) => [order.buyerId, order.sellerId].includes(user.id))
-                  .map((order) => (
+                {myOrders.map((order) => {
+                  const needsReview =
+                    order.status === 'completed' && !userRatedOrder(order, user.id)
+                  return (
                     <Link key={order.id} to={`/p2p/orders/${order.id}`}>
                       <Card className="flex items-center justify-between gap-4">
-                        <div>
-                          <strong>{order.id}</strong>
+                        <div className="min-w-0">
+                          <strong className="block truncate">{order.id}</strong>
                           <p className="mt-1 text-xs text-slate-500">
                             {t('p2p.page.orderDirection', {
                               seller: order.sellerName,
                               buyer: order.buyerName,
                             })}
                           </p>
+                          {order.createdAt ? (
+                            <p className="mt-1 text-[11px] text-[var(--app-text-faint)]">
+                              {formatDate(order.createdAt)}
+                            </p>
+                          ) : null}
+                          {needsReview ? (
+                            <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                              <FiStar className="text-xs" />
+                              {t('p2p.page.leaveReview')}
+                            </p>
+                          ) : null}
                         </div>
-                        <FiArrowRight className="text-brand-700" />
+                        <FiArrowRight className="shrink-0 text-brand-700" />
                       </Card>
                     </Link>
-                  ))}
+                  )
+                })}
               </div>
             </div>
           ) : null}

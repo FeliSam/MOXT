@@ -18,6 +18,8 @@ export const createP2PSchemas = (t) => {
     method: Yup.string()
       .trim()
       .required(m('validation.p2p.methodRequired', 'Méthode obligatoire.')),
+    receivePhone: Yup.string().trim().required(),
+    receiveName: Yup.string().trim().min(2).required(),
     comment: Yup.string().trim().max(300),
   })
 

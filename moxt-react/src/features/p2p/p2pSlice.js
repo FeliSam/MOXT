@@ -78,6 +78,9 @@ const p2pSlice = createSlice({
             rate: offer.rate,
             method: offer.method || '',
             comment: offer.comment || '',
+            receivePhone: offer.receivePhone || '',
+            receiveName: offer.receiveName || offer.receiveAccount || '',
+            receiveCountry: offer.receiveCountry || '',
             fee: calculateP2PFee(offer.amount, offer.fromCurrency, feePercent),
             status: 'created',
             proofs: [],
@@ -85,7 +88,17 @@ const p2pSlice = createSlice({
             createdAt: now,
             paymentDueAt: addMs(now, P2P_CONFIG.paymentWindowMs),
             confirmDueAt: null,
-            timeline: [{ status: 'created', at: now }],
+            timeline: [
+              {
+                status: 'created',
+                at: now,
+                method: offer.method || '',
+                comment: offer.comment || '',
+                receivePhone: offer.receivePhone || '',
+                receiveName: offer.receiveName || offer.receiveAccount || '',
+                receiveCountry: offer.receiveCountry || '',
+              },
+            ],
           },
         }
       },

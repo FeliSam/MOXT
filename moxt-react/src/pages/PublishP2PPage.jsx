@@ -5,6 +5,7 @@ import {
   FiCheck,
   FiCheckCircle,
   FiDollarSign,
+  FiPhone,
   FiRepeat,
   FiUsers,
 } from 'react-icons/fi'
@@ -15,6 +16,12 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
+import {
+  ensurePhoneCountry,
+  phoneError,
+  phonePlaceholder,
+  validatePhone,
+} from '../config/phone'
 import { useLanguage } from '../contexts/useLanguage'
 import { createOffer } from '../features/p2p/p2pSlice'
 import {
@@ -139,6 +146,8 @@ export function PublishP2PPage() {
     rate: '',
     rateMarginPercent: '0',
     method: '',
+    receivePhone: '',
+    receiveName: '',
     comment: '',
   })
   const liveRate = useExchangeRate(originCurrency, { kind: 'p2p' })
@@ -153,6 +162,13 @@ export function PublishP2PPage() {
       return { ...prev, method: '' }
     })
   }, [methodOptions])
+
+  useEffect(() => {
+    setForm((prev) => ({
+      ...prev,
+      receivePhone: ensurePhoneCountry(prev.receivePhone, methodCountry),
+    }))
+  }, [methodCountry])
 
   const frankfurterRaw = useMemo(
     () =>
@@ -244,6 +260,12 @@ export function PublishP2PPage() {
     }
     if (n === 3) {
       if (!form.method.trim()) errs.method = t('validation.p2p.methodRequired')
+      if (!validatePhone(form.receivePhone, methodCountry)) {
+        errs.receivePhone = phoneError(methodCountry)
+      }
+      if (!String(form.receiveName || '').trim() || String(form.receiveName).trim().length < 2) {
+        errs.receiveName = t('validation.p2p.receiveNameRequired')
+      }
       if (form.comment.trim().length > 300) errs.comment = t('validation.p2p.commentMax')
     }
     setErrors(errs)
@@ -276,6 +298,9 @@ export function PublishP2PPage() {
     const action = dispatch(
       createOffer({
         ...form,
+        receivePhone: form.receivePhone.trim(),
+        receiveName: form.receiveName.trim(),
+        receiveCountry: methodCountry,
         rate: Number(form.rate),
         rateMarginPercent: clampP2PRateMargin(form.rateMarginPercent),
         frankfurterRate: frankfurterRaw,
@@ -516,6 +541,37 @@ export function PublishP2PPage() {
                   </option>
                 ))}
               </Select>
+            </Card>
+            <Card className="grid gap-5">
+              <SectionTitle icon={FiPhone} label={t('p2p.publish.receiveSection')} />
+              <p className="text-sm text-[var(--app-text-muted)]">
+                {methodIsRussia
+                  ? t('p2p.publish.receiveHintRussia')
+                  : t('p2p.publish.receiveHintAfrica', { country: methodCountry })}
+              </p>
+              <Input
+                id="p2p-publish-receive-phone"
+                label={t('p2p.publish.receivePhone')}
+                placeholder={phonePlaceholder(methodCountry)}
+                value={form.receivePhone}
+                onChange={(event) =>
+                  set('receivePhone', ensurePhoneCountry(event.target.value, methodCountry))
+                }
+                onFocus={() => {
+                  if (!String(form.receivePhone || '').replace(/\D/g, '').slice(1)) {
+                    set('receivePhone', ensurePhoneCountry('', methodCountry))
+                  }
+                }}
+                error={errors.receivePhone}
+              />
+              <Input
+                id="p2p-publish-receive-name"
+                label={t('p2p.publish.receiveName')}
+                placeholder={t('p2p.publish.receiveNamePlaceholder')}
+                value={form.receiveName}
+                onChange={(event) => set('receiveName', event.target.value)}
+                error={errors.receiveName}
+              />
               <Input
                 id="p2p-publish-comment"
                 label={t('p2p.publish.conditionsOptional')}
@@ -541,6 +597,8 @@ export function PublishP2PPage() {
                 ],
                 [t('p2p.publish.rateSource'), liveRate.source || 'Frankfurter'],
                 [t('p2p.publish.method'), form.method || '—'],
+                [t('p2p.publish.receivePhone'), form.receivePhone || '—'],
+                [t('p2p.publish.receiveName'), form.receiveName || '—'],
                 [
                   t('p2p.publish.estimatedFeesLabel'),
                   formatMoney(estimatedFee, form.fromCurrency),
