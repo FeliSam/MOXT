@@ -110,6 +110,8 @@ export function PublicSiteLayout({ children }) {
             <Link to="/faq">{t('public.footer.help')}</Link>
             <Link to="/legal/mentions">{t('legal.nav.mentions')}</Link>
             <Link to="/legal/cgu">{t('legal.nav.cgu')}</Link>
+            <Link to="/legal/entreprises">{t('legal.nav.entreprises')}</Link>
+            <Link to="/legal/annonces">{t('legal.nav.annonces')}</Link>
             <Link to="/legal/privacy">{t('legal.nav.privacy')}</Link>
           </div>
         </div>

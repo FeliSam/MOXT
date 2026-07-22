@@ -95,7 +95,9 @@ export function exchangerMatchesUserCountry(business, userCountry, fallbackOrigi
 export function isApprovedTransferBusiness(business) {
   return (
     ['approved', 'active', 'verified'].includes(business?.status) &&
-    business?.services?.includes('Transfert')
+    business?.services?.includes('Transfert') &&
+    !business?.deletedByUserAt &&
+    (business?.activityVisibility || 'public') === 'public'
   )
 }
 
@@ -211,7 +213,11 @@ export function resolveExchangerForDetail({
 }) {
   const partnerCountry = resolveUserPartnerCountry(user, originCountry)
   const business = businesses.find(
-    (item) => item.id === exchangerId && item.services?.includes('Transfert'),
+    (item) =>
+      item.id === exchangerId &&
+      item.services?.includes('Transfert') &&
+      !item.deletedByUserAt &&
+      (item.activityVisibility || 'public') === 'public',
   )
 
   if (business && isApprovedTransferBusiness(business)) {

@@ -78,6 +78,11 @@ export const es = {
         body: "El operador de este número no puede recibir el código SMS. Continúa con el correo ya indicado para crear tu cuenta.",
         emailLabel: "Correo",
         sendButton: "Recibir el código por correo",
+        switchedTitle: "Registro por correo",
+        switchedBody: "Se envió un código a {email}. Introdúcelo para crear tu cuenta.",
+        afterSmsResends:
+          "Demasiados reenvíos SMS. Se envió un código a {email} para terminar el registro por correo.",
+        smsResendLimitHint: "Ya reenviaste el SMS dos veces. Continúa con el código por correo.",
       },
       toasts: {
         alreadyExistsTitle: "La cuenta ya existe",
@@ -1768,6 +1773,8 @@ export const es = {
       disputesDesc: "Acompanhamento de contestaciones y resoluciones",
       support: "Soporte",
       supportDesc: "Ayuda y contacto con a equipo MOXT",
+      legal: "Información legal",
+      legalDesc: "Avisos, condiciones, empresas, anuncios y privacidad",
       localData: "Dados locais",
       localDataDesc: "Diagnóstico, cópia de seguridad y reposición"
     },
@@ -1973,33 +1980,79 @@ export const es = {
     copyright: "© {year} MOXT. Todos os direitos reservados.",
     footer: "Plataforma MOXT — diáspora afro-russa. Use os servicios con cautela y verifique os tus contactos.",
     nav: {
-      mentions: "Avisos legais",
-      cgu: "Termos de uso",
-      privacy: "Privaciudad"
+      mentions: "Avisos legales",
+      cgu: "Condiciones de uso",
+      entreprises: "Empresas",
+      annonces: "Anuncios",
+      privacy: "Privacidad",
     },
     sections: {
       mentions: {
-        title: "Avisos legais",
+        title: "Avisos legales",
         paragraphs: [
-          "MOXT es una plataforma digital de servicios para la diáspora afro-rusa (transferencias, envíos, mercado, empleos, eventos y mensajería).",
-          "Editor del servicio: MOXT. Contacto: support@moxtapp.ru.",
-          "Alojamiento y tratamiento de datos: infraestructura cloud segura conforme a los requisitos aplicables de protección de datos personales.",
-          "Para cualquier pregunta legal o reclamación, escribe a support@moxtapp.ru indicando el identificador de tu cuenta."
-        ]
+          "MOXT es una plataforma digital de puesta en relación destinada en particular a la diáspora afro-rusa. Ofrece herramientas para transferencias entre particulares y profesionales, envíos, marketplace, empleos, eventos, empresas y mensajería.",
+          "Sitio web: https://moxtapp.ru. Aplicaciones móviles: MOXT para Android e iOS (vía Capacitor).",
+          "Editor / explotador del servicio: MOXT. Contacto general y jurídico: support@moxtapp.ru. Incluye el identificador de cuenta, correo o teléfono verificado.",
+          "CEO: FANOU S. Feliciano — médico cardiólogo, desarrollador fullstack, certificación AI. Dirección general y responsabilidad técnica de la plataforma MOXT.",
+          "Cofundador y colaborador: Ricardo OKE — ingeniero en robótica, desarrollador fullstack y diseñador. Emisor de ideas, con aportaciones de producto, técnica y diseño en el equipo MOXT.",
+          "Equipo MOXT: el servicio es diseñado y operado por el equipo MOXT bajo la dirección del CEO, con la colaboración de los cofundadores y colaboradores técnicos.",
+          "Naturaleza del servicio: MOXT es una plataforma técnica de intermediación y comunicación. MOXT no es un banco, ni una entidad de dinero electrónico, ni un notario, ni un asegurador. MOXT no es parte de los contratos celebrados entre usuarios (transferencias, ventas, alquileres, servicios, viajes, empleos, etc.), salvo disposición escrita clara en el producto.",
+          "Alojamiento y tratamiento de datos: infraestructura cloud segura (incluido backend Supabase para autenticación, base de datos y almacenamiento de archivos), conforme a los requisitos aplicables de protección de datos personales. Proveedores técnicos (correo / SMS, notificaciones push) intervienen solo para operar el servicio.",
+          "Propiedad intelectual: la marca MOXT, el logo, la interfaz, el código y los contenidos editoriales están protegidos. Queda prohibida toda reproducción, extracción o uso comercial no autorizado. Los contenidos publicados por los usuarios siguen siendo su responsabilidad; al publicar, conceden a MOXT una licencia no exclusiva de visualización y difusión necesaria para el funcionamiento del servicio.",
+          "Denuncias y abusos: para reportar contenido ilícito, fraude, usurpación de identidad o conducta peligrosa, contacta support@moxtapp.ru o usa las herramientas de denuncia en la app. MOXT puede retirar contenidos, suspender cuentas y transmitir información a las autoridades competentes.",
+          "Limitación de responsabilidad del editor: en la medida permitida por la ley aplicable, MOXT no garantiza la exactitud de la información publicada por los usuarios, ni el buen desarrollo de intercambios fuera de la plataforma, ni la solvencia de los miembros. El uso de MOXT se realiza bajo la vigilancia de cada usuario.",
+          "Derecho aplicable: estos avisos y el uso del servicio se rigen por el derecho aplicable al lugar de explotación del servicio, sin perjuicio de las normas imperativas de protección del consumidor. Los litigios se tratarán, en la medida de lo posible, de forma amistosa; en su defecto, ante los tribunales competentes.",
+          "Para cualquier pregunta jurídica, reclamación o solicitud de información adicional sobre el editor, escribe a support@moxtapp.ru.",
+        ],
       },
       cgu: {
-        title: "Termos de uso",
+        title: "Condiciones de uso",
         paragraphs: [
-          "Al crear una cuenta MOXT, aceptas usar la plataforma de forma leal, proporcionar información exacta y respetar las reglas de verificación (teléfono, identidad, empresa cuando corresponda).",
-          "Te comprometes a no publicar contenido fraudulento, engañoso, ilícito o que vulnere derechos de terceros. MOXT puede suspender o eliminar una cuenta en caso de infracciones graves o reiteradas.",
+          "Al crear una cuenta MOXT, aceptas usar la plataforma de forma leal, proporcionar información exacta y respetar las reglas de verificación (teléfono, identidad, empresa cuando corresponda). Debes tener la edad y capacidad jurídica necesarias para contratar según la ley aplicable.",
+          "Eres responsable de la confidencialidad de tus credenciales, códigos OTP y sesiones. Toda acción realizada desde tu cuenta se presume efectuada por ti, salvo prueba creíble de compromiso reportada sin demora a MOXT.",
+          "Te comprometes a no publicar contenido fraudulento, engañoso, ilícito o que vulnere derechos de terceros. Quedan prohibidos, entre otros: estafas, usurpación de identidad, blanqueo, financiación de actividades ilegales, acoso, amenazas, contenido de odio, pornografía ilegal, venta de armas, drogas o bienes robados, y cualquier falsificación.",
           "Ningún usuario tiene derecho a estafar, engañar o intentar perjudicar de cualquier forma a otro miembro de la plataforma. Toda persona implicada en una actividad ilícita (fraude, estafa, usurpación de identidad, chantaje, etc.) a través de MOXT se expone a que su información sea transmitida a la justicia y a las autoridades competentes, para que la víctima o MOXT puedan presentar una denuncia en su contra.",
-          "Las operaciones sensibles (transferencias, cuentas profesionales, publicaciones de empresa) pueden exigir identidad verificada. Una declaración en la app no sustituye una confirmación oficial de pago o de estatus legal.",
-          "MOXT conecta a los miembros y facilita la comunicación; cada usuario sigue siendo responsable de sus compromisos, pagos e intercambios con otros miembros.",
-          "MOXT puede actualizar estos términos; la versión vigente está disponible en la app. El uso continuado tras una actualización implica la aceptación de los nuevos términos."
-        ]
+          "Las operaciones sensibles (transferencias, cuentas profesionales, publicaciones de empresa) pueden exigir identidad verificada. Una declaración en la app, un distintivo «verificado» o un estado mostrado no sustituyen una confirmación oficial de pago, entrega o estatus legal ante las autoridades.",
+          "MOXT conecta a los miembros y facilita la comunicación; cada usuario sigue siendo responsable de sus compromisos, pagos, entregas, condiciones contractuales e intercambios con otros miembros. MOXT no garantiza el resultado de las transacciones entre usuarios.",
+          "Autorizas a MOXT a moderar, ocultar, suspender o eliminar contenidos y cuentas para proteger la seguridad de la plataforma, hacer cumplir estas condiciones o cumplir una obligación legal. Las decisiones de moderación pueden impugnarse en support@moxtapp.ru.",
+          "MOXT puede actualizar estos términos; la versión vigente está disponible en la app y en https://moxtapp.ru/legal/cgu. El uso continuado tras una actualización implica la aceptación de los nuevos términos. En caso de desacuerdo, debes dejar de usar el servicio y puedes solicitar la eliminación de tu cuenta.",
+        ],
+      },
+      entreprises: {
+        title: "Empresas — normas y responsabilidades",
+        paragraphs: [
+          "Creación: toda persona que cree una ficha de empresa en MOXT declara actuar de buena fe, disponer de los derechos necesarios para representar esa actividad y aportar información exacta (nombre, contactos, servicios, documentos).",
+          "Estatus verificado: toda empresa que desee un estatus verificado en MOXT debe aportar pruebas de su actividad (documento de identidad del responsable, justificantes de existencia / actividad, y todo elemento solicitado por la moderación). Estos documentos pueden ser revisados por el equipo MOXT y, en su caso, transmitidos a las autoridades competentes.",
+          "Alcance del distintivo «verificado»: la verificación atestigua que se aportaron y controlaron elementos según los procedimientos MOXT. No constituye certificación de solvencia, licencia bancaria, garantía de calidad ni asociación oficial con MOXT, salvo mención escrita en contrario.",
+          "Responsabilidad del creador: la persona que crea una empresa asume la responsabilidad de toda actividad bajo esa enseña en MOXT (publicaciones, tarifas, mensajes, compromisos, litigios con clientes o socios). Debe asegurarse de que las personas autorizadas a publicar en nombre de la empresa cumplan estas normas.",
+          "Actividades ilícitas y estafas: si una empresa utiliza su notoriedad o la plataforma para actividades ilícitas, o estafa a otra persona, se expone al baneo de su cuenta de empresa, a la suspensión del estatus verificado y a la transmisión de la información facilitada a la justicia.",
+          "Cesión y cambio de control: una persona no puede ceder o «vender» su empresa a una persona desconocida cuyos datos no figuren en la base MOXT, bajo pena de acciones judiciales. Todo cambio de control debe ser trazable, realizarse mediante los procedimientos previstos (si existen) y conforme a las reglas de la plataforma. El creador sigue siendo responsable de los actos anteriores a una cesión irregular.",
+          "Visibilidad y cierre: ocultar la visibilidad pública, cerrar la actividad o soft-eliminar una ficha no elimina la responsabilidad jurídica de los actos ya realizados. MOXT puede conservar elementos necesarios para la seguridad, los litigios y las obligaciones legales.",
+          "Exactitud de la información: la empresa debe mantener actualizada su información (coordenadas, servicios, tarifas mostradas, documentos). Las declaraciones falsas, documentos falsificados o la usurpación de una enseña real exponen a sanciones y acciones judiciales.",
+          "Prohibición de actividades ilegales: una empresa no debe utilizar la plataforma para actividades ilícitas. Toda actividad ilegal está formalmente prohibida en MOXT, bajo pena de acciones judiciales y medidas inmediatas (suspensión, baneo, denuncia).",
+          "Cooperación con las autoridades: MOXT coopera con las autoridades competentes en caso de sospecha de fraude, blanqueo, estafa u otra infracción vinculada a una empresa presente en la plataforma, conforme al derecho aplicable.",
+          "Contacto empresas: para cualquier cuestión relativa a la verificación, una cesión, un litigio o una denuncia — support@moxtapp.ru.",
+        ],
+      },
+      annonces: {
+        title: "Anuncios — responsabilidades de los editores",
+        paragraphs: [
+          "Ámbito: toda persona que publique un anuncio en MOXT (marketplace, envíos / trayectos, empleo, evento, publicación social, oferta de transferencia, oferta P2P, oferta vinculada a empresa, etc.) se considera editor de ese contenido.",
+          "Responsabilidad del contenido: el editor es el único responsable de las descripciones, fotos, vídeos, precios, divisas, disponibilidad, condiciones, plazos, lugares de entrega y de todo compromiso con otros miembros. La información debe ser exacta, actualizada y no engañosa.",
+          "Papel de MOXT: MOXT no asume ninguna responsabilidad sobre la procedencia, conformidad legal, calidad, seguridad o conformidad normativa de los artículos o servicios publicados. Los anuncios son contenidos aportados por los usuarios; MOXT actúa como plataforma de puesta en relación y visualización.",
+          "Diligencia del comprador / contacto: antes de cualquier transacción, verifique la identidad del interlocutor, las pruebas disponibles, las valoraciones / el historial, y priorice los intercambios y pruebas a través de MOXT. Desconfíe de pagos exigidos fuera de un marco claro o de urgencias artificiales.",
+          "Prohibiciones: quedan prohibidos, entre otros, los anuncios de bienes robados, falsificados o peligrosos sin autorización, sustancias ilícitas, armas, servicios ilegales, ofertas de empleo falsas, estafas financieras, pirámides / inversiones fraudulentas, y cualquier publicación engañosa o discriminatoria.",
+          "Fotos y medios: las imágenes y archivos adjuntos deben representar fielmente el objeto o servicio. El uso de fotos robadas, medios generados para engañar o documentos falsificados está prohibido y puede conllevar baneo y denuncia.",
+          "Usurpación de identidad: si una persona usurpa la identidad de otra (persona física, marca o empresa), asume sola la responsabilidad de sus actos. La usurpación, el fraude y los anuncios falsos exponen a sus autores a sanciones en la plataforma y a acciones judiciales.",
+          "Transacciones y pagos: las condiciones de venta, entrega, pago y reembolso se acuerdan entre las partes. MOXT no garantiza los pagos realizados fuera de las herramientas claramente indicadas como proporcionadas por la plataforma. Conserve sus pruebas (capturas, recibos, mensajes).",
+          "Modificación y retirada: el editor debe corregir o retirar un anuncio que se vuelva inexacto, vendido, no disponible o ilícito. MOXT puede ocultar, suspender o eliminar un anuncio por propia iniciativa para proteger a los usuarios o cumplir la ley.",
+          "Denuncia: cualquier miembro puede denunciar un anuncio sospechoso. MOXT se compromete a colaborar estrechamente con las autoridades competentes en caso de sospecha, fraude o actividad ilegal cometida a través del sitio, y a transmitir los elementos útiles conforme al derecho aplicable.",
+          "Seguridad: MOXT pone un especial énfasis en la seguridad de los bienes y las personas que usan la plataforma: verificación, denuncias, moderación y cooperación con las autoridades forman parte de este compromiso. Reporte cualquier contenido sospechoso vía la app o support@moxtapp.ru.",
+          "Conservación: la eliminación de un anuncio no hace desaparecer automáticamente la responsabilidad de los actos ya realizados; MOXT puede conservar elementos necesarios para litigios, seguridad y obligaciones legales.",
+        ],
       },
       privacy: {
-        title: "Política de privaciudad",
+        title: "Política de privacidad",
         paragraphs: [
           "Esta política de privacidad describe cómo MOXT («nosotros») recopila, usa, almacena y protege tus datos personales cuando usas el sitio https://moxtapp.ru y la app móvil MOXT (Android / iOS vía Capacitor), destinada en particular a la diáspora afro-rusa (transferencias, envíos, mercado, empleos, empresas y mensajería).",
           "Responsable del tratamiento: MOXT. Privacidad y solicitudes de usuarios: support@moxtapp.ru. Incluye el correo o identificador de tu cuenta para que podamos responder en un plazo razonable.",
@@ -6311,7 +6364,8 @@ export const es = {
           created: "Paquete criada",
           waitingPayment: "A aguardar pagamento",
           completed: "Transación concluída",
-          cancelled: "Transación cancelada"
+          cancelled: "Transación cancelada",
+          disputed: "Disputa en curso",
         }
       },
       verification: {

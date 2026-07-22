@@ -7,6 +7,8 @@ export const PUBLIC_INDEXABLE_PATHS = [
   '/faq',
   '/legal/mentions',
   '/legal/cgu',
+  '/legal/entreprises',
+  '/legal/annonces',
   '/legal/privacy',
 ]
 

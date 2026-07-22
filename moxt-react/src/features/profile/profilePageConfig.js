@@ -113,6 +113,12 @@ export const accountSections = [
         path: '/support',
       },
       {
+        labelKey: 'profile.links.legal',
+        descriptionKey: 'profile.links.legalDesc',
+        icon: FiFileText,
+        path: '/legal/mentions',
+      },
+      {
         labelKey: 'profile.links.localData',
         descriptionKey: 'profile.links.localDataDesc',
         icon: FiDatabase,

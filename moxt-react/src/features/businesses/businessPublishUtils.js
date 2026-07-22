@@ -1,4 +1,5 @@
 import { isStaffRole } from '../auth/roleUtils'
+import { matchUserId, isBusinessDeletedByUser } from './businessVisibility'
 
 export const BUSINESS_VISIBLE_STATUSES = ['verified', 'approved', 'active']
 
@@ -30,10 +31,17 @@ export function canPublishAsBusinessFor(business, contentType) {
   return isBusinessPublishReady(business) && businessDeclaresService(business, serviceId)
 }
 
+/**
+ * Whether a business may appear in public directories / exchanger pickers.
+ * Soft-deleted and non-public activityVisibility are hidden (owner/staff excepted).
+ */
 export function isBusinessDirectoryVisible(business, viewer) {
-  if (!business || business.deletedByUserAt) return false
+  if (!business || isBusinessDeletedByUser(business)) return false
   if (isStaffRole(viewer)) return true
-  return isBusinessPublishReady(business)
+  if (viewer?.id && matchUserId(business.ownerId, viewer.id)) return true
+  if (!isBusinessPublishReady(business)) return false
+  const visibility = business.activityVisibility || 'public'
+  return visibility === 'public'
 }
 
 export function businessPublishBlockedMessageKey(business) {

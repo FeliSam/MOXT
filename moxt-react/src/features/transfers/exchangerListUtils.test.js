@@ -185,4 +185,25 @@ describe('exchangerListUtils', () => {
 
     expect(resolved).toBeNull()
   })
+
+  it('exclut les echangeurs a visibilite privee', () => {
+    const rows = listExchangersForTransfer({
+      businesses: [bjBusiness, { ...bjBusiness, id: 'BIZ-PRIVATE', activityVisibility: 'private' }],
+      user: { country: 'BJ', originCountry: 'BJ' },
+      originCountry: 'BJ',
+    })
+    expect(rows.map((row) => row.id)).toEqual(['BIZ-BJ'])
+  })
+
+  it('exclut les echangeurs soft-supprimes', () => {
+    const rows = listExchangersForTransfer({
+      businesses: [
+        bjBusiness,
+        { ...bjBusiness, id: 'BIZ-DEL', deletedByUserAt: '2026-01-01T00:00:00.000Z' },
+      ],
+      user: { country: 'BJ', originCountry: 'BJ' },
+      originCountry: 'BJ',
+    })
+    expect(rows.map((row) => row.id)).toEqual(['BIZ-BJ'])
+  })
 })

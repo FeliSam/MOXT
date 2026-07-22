@@ -3,7 +3,7 @@ import { Card } from '../components/ui/Card'
 import { useLanguage } from '../contexts/useLanguage'
 import { resolveLocale } from '../i18n/translate'
 
-const SECTION_IDS = ['mentions', 'cgu', 'privacy']
+const SECTION_IDS = ['mentions', 'cgu', 'entreprises', 'annonces', 'privacy']
 
 export function LegalPage() {
   const { sectionId } = useParams()

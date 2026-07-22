@@ -1398,11 +1398,13 @@ export function createAuthService(supabase, redirects = {}) {
           avatar_url: details.avatarUrl?.trim() || '',
           role: 'user',
           status: 'active',
-          registration_via: 'email_after_sms_denied',
+          registration_via: details.registrationVia || 'email_after_sms_denied',
         }
 
         await assertRegistrationIdentitiesEligible(
-          { phone: normalizedPhone, email },
+          details.skipPhoneEligibilityCheck
+            ? { email }
+            : { phone: normalizedPhone, email },
           { useCache: false },
         )
         guardOtpSend('email', email)

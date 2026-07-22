@@ -70,7 +70,7 @@ const STEPS = [
   { key: 'verification', labelKey: 'auth.register.steps.verification', icon: FiCheck },
 ]
 
-import { OTP_RESEND_COOLDOWN_SECONDS } from '@moxt/shared/auth/otpCooldown.js'
+import { OTP_RESEND_COOLDOWN_SECONDS, SMS_REGISTRATION_MAX_RESENDS } from '@moxt/shared/auth/otpCooldown.js'
 import {
   clearPendingRegistration,
   loadPendingRegistration,
@@ -144,6 +144,8 @@ export function RegisterPage() {
   const [formGateMessage, setFormGateMessage] = useState('')
   /** SMSC refused this MSISDN — offer e-mail OTP instead of SMS. */
   const [emailSmsFallback, setEmailSmsFallback] = useState(false)
+  /** Successful SMS resends during this signup (initial send excluded). */
+  const [phoneResendCount, setPhoneResendCount] = useState(0)
   // Blocks the "already logged-in" auto-landing effect while we navigate to Security after OTP.
   const completingPhoneOtpRef = useRef(false)
   // Sync locks — Formik does not prevent a second submit before React re-renders loading.
@@ -399,9 +401,11 @@ export function RegisterPage() {
             originCountry: values.originCountry,
             residenceCity: values.residenceCity,
             avatarUrl: values.avatarUrl,
+            phoneResendCount: 0,
             step: 4,
           }
           savePendingRegistration(pending)
+          setPhoneResendCount(0)
           setResendCooldown(OTP_RESEND_COOLDOWN_SECONDS)
           setPendingVerification({
             method: 'phone',
@@ -465,6 +469,7 @@ export function RegisterPage() {
           pendingUserId: pending.pendingUserId,
           identityChecked: true,
         })
+        setPhoneResendCount(Number(pending.phoneResendCount) || 0)
         setStep(pending.step || 4)
       } catch (error) {
         if (cancelled) return
@@ -513,13 +518,20 @@ export function RegisterPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- formik identity changes every render
   }, [authUser, formik.setValues, pendingVerification])
 
-  async function startEmailOtpFallback() {
+  async function startEmailOtpFallback({ reason } = {}) {
     if (registerSubmitLockRef.current || authBusy) return
     registerSubmitLockRef.current = true
     try {
       setOtpCapMessage('')
       setFormGateMessage('')
-      const result = await dispatch(registerWithEmailAfterSmsDenied(formik.values))
+      const result = await dispatch(
+        registerWithEmailAfterSmsDenied({
+          ...formik.values,
+          skipPhoneEligibilityCheck: reason === 'sms_resend_limit',
+          registrationVia:
+            reason === 'sms_resend_limit' ? 'email_after_sms_resend_limit' : 'email_after_sms_denied',
+        }),
+      )
       if (!registerWithEmailAfterSmsDenied.fulfilled.match(result)) {
         const payload = String(result.payload || '')
         if (/Limite atteinte|Patientez \d+ secondes/i.test(payload)) {
@@ -542,13 +554,26 @@ export function RegisterPage() {
         residenceCity: formik.values.residenceCity,
         avatarUrl: formik.values.avatarUrl,
         identityChecked: true,
+        phoneResendCount: 0,
         step: 4,
       }
       savePendingRegistration(pending)
+      setPhoneResendCount(0)
       setResendCooldown(OTP_RESEND_COOLDOWN_SECONDS)
       setEmailSmsFallback(false)
       setPendingVerification(pending)
       setStep(4)
+      setVerificationCode('')
+      dispatch(
+        addToast({
+          title: t('auth.register.emailFallback.switchedTitle'),
+          message:
+            reason === 'sms_resend_limit'
+              ? t('auth.register.emailFallback.afterSmsResends', { email: payload.email })
+              : t('auth.register.emailFallback.switchedBody', { email: payload.email }),
+          tone: 'info',
+        }),
+      )
     } finally {
       registerSubmitLockRef.current = false
     }
@@ -556,6 +581,16 @@ export function RegisterPage() {
 
   async function resendVerificationCode() {
     if (!pendingVerification || resendCooldown > 0 || authBusy || otpActionLockRef.current) return
+
+    // After 1 initial SMS + 2 resends, switch registration to e-mail OTP.
+    if (
+      pendingVerification.method === 'phone' &&
+      phoneResendCount >= SMS_REGISTRATION_MAX_RESENDS
+    ) {
+      await startEmailOtpFallback({ reason: 'sms_resend_limit' })
+      return
+    }
+
     otpActionLockRef.current = true
 
     // Preserve pending profile fields on every resend.
@@ -567,6 +602,7 @@ export function RegisterPage() {
       originCountry: formik.values.originCountry,
       residenceCity: formik.values.residenceCity,
       avatarUrl: formik.values.avatarUrl,
+      phoneResendCount,
       step: 4,
     })
 
@@ -582,6 +618,22 @@ export function RegisterPage() {
         dispatch(clearAuthError())
         setOtpCapMessage('')
         setResendCooldown(OTP_RESEND_COOLDOWN_SECONDS)
+        let nextPhoneResends = phoneResendCount
+        if (!isEmail) {
+          nextPhoneResends = phoneResendCount + 1
+          setPhoneResendCount(nextPhoneResends)
+          savePendingRegistration({
+            ...pendingVerification,
+            firstName: formik.values.firstName,
+            lastName: formik.values.lastName,
+            originPhone: formik.values.originPhone,
+            originCountry: formik.values.originCountry,
+            residenceCity: formik.values.residenceCity,
+            avatarUrl: formik.values.avatarUrl,
+            phoneResendCount: nextPhoneResends,
+            step: 4,
+          })
+        }
         dispatch(
           addToast({
             title: t('auth.register.codeResentTitle'),
@@ -1137,7 +1189,9 @@ export function RegisterPage() {
               <p className="text-sm text-[var(--app-text-muted)]">
                 {pendingVerification.method === 'email'
                   ? t('auth.register.codeNotReceivedEmail')
-                  : t('auth.register.codeNotReceivedSms')}
+                  : phoneResendCount >= SMS_REGISTRATION_MAX_RESENDS
+                    ? t('auth.register.emailFallback.smsResendLimitHint')
+                    : t('auth.register.codeNotReceivedSms')}
               </p>
               <Button
                 type="button"
@@ -1151,7 +1205,9 @@ export function RegisterPage() {
                   ? t('auth.register.resendCooldown', { seconds: resendCooldown })
                   : pendingVerification.method === 'email'
                     ? t('auth.register.resendEmail')
-                    : t('auth.register.resendSms')}
+                    : phoneResendCount >= SMS_REGISTRATION_MAX_RESENDS
+                      ? t('auth.register.emailFallback.sendButton')
+                      : t('auth.register.resendSms')}
               </Button>
               <button
                 type="button"
@@ -1162,6 +1218,7 @@ export function RegisterPage() {
                   setVerificationCode('')
                   setOtpCapMessage('')
                   setEmailSmsFallback(false)
+                  setPhoneResendCount(0)
                   setStep(3)
                   dispatch(clearAuthError())
                 }}
