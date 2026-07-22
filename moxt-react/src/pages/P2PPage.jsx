@@ -19,6 +19,7 @@ import { P2PNoEscrowBanner } from '../features/p2p/components/P2PNoEscrowBanner'
 import { P2PReputationBadge } from '../features/p2p/components/P2PReputationBadge'
 import { acceptOffer } from '../features/p2p/p2pSlice'
 import { calculateP2PFee } from '../features/p2p/p2pUtils'
+import { selectPlatformFees } from '../features/admin/platformRatesSlice'
 import { useSecurityGate } from '../features/security/useSecurityGate'
 import { transferCurrenciesForCountry } from '../features/transfers/transferConfig'
 import { formatMoney } from '../features/transfers/transferUtils'
@@ -38,6 +39,7 @@ export function P2PPage() {
   const navigate = useNavigate()
   const { requireP2PPublish, requireP2PAccept } = useSecurityGate()
   const user = useSelector((state) => state.auth.user)
+  const platformFees = useSelector(selectPlatformFees)
   const offers = useSelector((state) => state.p2p.offers)
   const orders = useSelector((state) => state.p2p.orders)
   const reviews = useSelector((state) => state.reviews.items)
@@ -87,7 +89,9 @@ export function P2PPage() {
 
   function confirmAccept() {
     if (!acceptOfferTarget) return
-    const action = dispatch(acceptOffer({ buyer: user, offer: acceptOfferTarget }))
+    const action = dispatch(
+      acceptOffer({ buyer: user, offer: acceptOfferTarget, feePercent: platformFees.p2pFeePercent }),
+    )
     setAcceptOfferTarget(null)
     if (action.payload?.id) navigate(`/p2p/orders/${action.payload.id}`)
   }

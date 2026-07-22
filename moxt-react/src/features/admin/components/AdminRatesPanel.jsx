@@ -8,7 +8,12 @@ import { Select } from '../../../components/ui/Select'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { adminText } from '../adminI18n'
 import { CARD } from '../adminConfig'
-import { clearPlatformRates, setPlatformRates } from '../platformRatesSlice'
+import {
+  clearPlatformRates,
+  selectPlatformFees,
+  setPlatformFees,
+  setPlatformRates,
+} from '../platformRatesSlice'
 import { addToast } from '../../ui/uiSlice'
 import { COUNTRY_CURRENCIES } from '../../transfers/transferConfig'
 import { useExchangeRate } from '../../transfers/useExchangeRate'
@@ -139,6 +144,94 @@ function RateKindEditor({
   )
 }
 
+function PlatformFeesEditor({ admin, t }) {
+  const dispatch = useDispatch()
+  const saved = useSelector(selectPlatformFees)
+  const [feePercent, setFeePercent] = useState(String(saved.feePercent))
+  const [transferFeePercent, setTransferFeePercent] = useState(String(saved.transferFeePercent))
+  const [p2pFeePercent, setP2pFeePercent] = useState(String(saved.p2pFeePercent))
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    setFeePercent(String(saved.feePercent))
+    setTransferFeePercent(String(saved.transferFeePercent))
+    setP2pFeePercent(String(saved.p2pFeePercent))
+  }, [saved.feePercent, saved.transferFeePercent, saved.p2pFeePercent])
+
+  function handleSave() {
+    setSaving(true)
+    dispatch(
+      setPlatformFees({
+        feePercent: feePercent === '' ? null : Number(feePercent),
+        transferFeePercent: transferFeePercent === '' ? null : Number(transferFeePercent),
+        p2pFeePercent: p2pFeePercent === '' ? null : Number(p2pFeePercent),
+        updatedBy: admin?.id || null,
+      }),
+    )
+    dispatch(
+      addToast({
+        title: adminText(t, 'admin.rates.feesToastSavedTitle'),
+        message: adminText(t, 'admin.rates.feesToastSavedBody'),
+        tone: 'success',
+      }),
+    )
+    setSaving(false)
+  }
+
+  return (
+    <Card className="grid gap-4">
+      <div>
+        <h3 className="font-black text-[var(--app-text)]">
+          {adminText(t, 'admin.rates.feesTitle')}
+        </h3>
+        <p className="mt-1 text-sm text-[var(--app-text-muted)]">
+          {adminText(t, 'admin.rates.feesDescription')}
+        </p>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Input
+          id="admin-fees-platform"
+          label={adminText(t, 'admin.rates.fees.platform')}
+          type="number"
+          step="0.1"
+          min="0"
+          max="100"
+          inputMode="decimal"
+          value={feePercent}
+          onChange={(event) => setFeePercent(event.target.value)}
+        />
+        <Input
+          id="admin-fees-transfer"
+          label={adminText(t, 'admin.rates.fees.transfer')}
+          type="number"
+          step="0.1"
+          min="0"
+          max="100"
+          inputMode="decimal"
+          value={transferFeePercent}
+          onChange={(event) => setTransferFeePercent(event.target.value)}
+        />
+        <Input
+          id="admin-fees-p2p"
+          label={adminText(t, 'admin.rates.fees.p2p')}
+          type="number"
+          step="0.1"
+          min="0"
+          max="100"
+          inputMode="decimal"
+          value={p2pFeePercent}
+          onChange={(event) => setP2pFeePercent(event.target.value)}
+        />
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Button icon={FiSave} loading={saving} disabled={saving} onClick={handleSave}>
+          {adminText(t, 'admin.rates.save')}
+        </Button>
+      </div>
+    </Card>
+  )
+}
+
 export function AdminRatesPanel({ admin }) {
   const { t } = useLanguage()
   const [currency, setCurrency] = useState('XOF')
@@ -179,6 +272,8 @@ export function AdminRatesPanel({ admin }) {
           ))}
         </Select>
       </div>
+
+      <PlatformFeesEditor admin={admin} t={t} />
 
       <RateKindEditor
         admin={admin}

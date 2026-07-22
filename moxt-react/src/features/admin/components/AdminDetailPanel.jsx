@@ -1,4 +1,4 @@
-import { createElement, useEffect, useState } from 'react'
+import { createElement, useMemo, useState } from 'react'
 import { FiArrowRight, FiEye } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
@@ -12,6 +12,7 @@ import {
   replySupportTicket,
   updateSupportStatus,
 } from '../../communications/communicationSlice'
+import { getPostImages } from '../../posts/postMediaUtils'
 import { addToast } from '../../ui/uiSlice'
 import { renderDetailActions } from '../adminActions'
 import { CARD } from '../adminConfig'
@@ -26,6 +27,44 @@ import { adminText } from '../adminI18n'
 import { AdminDocumentPreview } from './AdminDocumentPreview'
 import { Empty, SectionTitle } from './AdminShared'
 
+function useLiveSelectedItem(selected) {
+  return useSelector((state) => {
+    if (!selected?.item?.id) return selected?.item || null
+    const { kind, item } = selected
+    const id = item.id
+
+    switch (kind) {
+      case 'parcels':
+        return state.parcels.items.find((entry) => entry.id === id) || item
+      case 'verification':
+        return state.account.verificationRequests.find((entry) => entry.id === id) || item
+      case 'businessDocument':
+        return state.businesses.documents.find((entry) => entry.id === id) || item
+      case 'posts':
+        return state.posts.items.find((entry) => entry.id === id) || item
+      case 'listings':
+        return state.marketplace.items.find((entry) => entry.id === id) || item
+      case 'jobs':
+        return state.jobs.items.find((entry) => entry.id === id) || item
+      case 'events':
+        return state.events.items.find((entry) => entry.id === id) || item
+      case 'businesses':
+        return state.businesses.items.find((entry) => entry.id === id) || item
+      case 'user':
+        return state.administration.users.find((entry) => entry.id === id) || item
+      case 'support':
+        return state.communications.support.find((entry) => entry.id === id) || item
+      case 'dispute':
+        return state.disputes.items.find((entry) => entry.id === id) || item
+      case 'review':
+      case 'contestedReview':
+        return state.reviews.items.find((entry) => entry.id === id) || item
+      default:
+        return item
+    }
+  })
+}
+
 export function AdminDetailPanel({
   admin,
   dispatch,
@@ -37,21 +76,35 @@ export function AdminDetailPanel({
 }) {
   const { t } = useLanguage()
   const { countries } = useGeographyOptions()
-  const [originDraft, setOriginDraft] = useState('')
+  const [originOverride, setOriginOverride] = useState(null)
+  const liveItem = useLiveSelectedItem(selected)
   const p2pOrderForDispute = useSelector((state) => {
-    if (selected?.kind !== 'dispute' || selected.item?.relatedType !== 'p2p_order') return null
-    return state.p2p.orders.find((order) => order.id === selected.item.relatedId) || null
+    if (selected?.kind !== 'dispute' || liveItem?.relatedType !== 'p2p_order') return null
+    return state.p2p.orders.find((order) => order.id === liveItem.relatedId) || null
   })
 
-  useEffect(() => {
-    if (selected?.kind === 'user') {
-      setOriginDraft(selected.item?.originCountry || '')
-    }
-  }, [selected])
+  const kind = selected?.kind
+  const item = liveItem || selected?.item
+  const selectedUserId = kind === 'user' ? item?.id : null
+  const selectedUserOrigin = kind === 'user' ? item?.originCountry || '' : ''
+  const originDraft =
+    originOverride?.userId === selectedUserId ? originOverride.value : selectedUserOrigin
 
-  if (!selected) {
+  const detailImages = useMemo(() => {
+    if (!kind || !item) return []
+    if (kind === 'listings' && Array.isArray(item.images)) {
+      return item.images.filter(Boolean)
+    }
+    if (kind === 'posts') return getPostImages(item)
+    if (kind === 'events' && Array.isArray(item.images)) {
+      return item.images.filter(Boolean)
+    }
+    return []
+  }, [kind, item])
+
+  if (!selected || !item) {
     return (
-      <aside className={`${CARD} grid min-w-0 content-start gap-4 overflow-hidden p-5 xl:sticky xl:top-24 xl:self-start`}>
+      <aside className={`${CARD} grid min-w-0 content-start gap-4 overflow-x-hidden overflow-y-auto p-5 xl:sticky xl:top-24 xl:max-h-[calc(100vh-7rem)] xl:self-start`}>
         <SectionTitle icon={FiEye} label={adminText(t, 'admin.detail.title')} />
         <Empty
           label={adminText(t, 'admin.detail.emptyLabel')}
@@ -62,12 +115,11 @@ export function AdminDetailPanel({
     )
   }
 
-  const { kind, item } = selected
   const link = detailLinkFor(kind, item)
   const itemName = item.title || item.name || item.subject || item.userName || item.id
 
   return (
-    <aside className={`${CARD} grid min-w-0 content-start gap-4 overflow-hidden p-5 xl:sticky xl:top-24 xl:self-start`}>
+    <aside className={`${CARD} grid min-w-0 content-start gap-4 overflow-x-hidden overflow-y-auto p-5 xl:sticky xl:top-24 xl:max-h-[calc(100vh-7rem)] xl:self-start`}>
       <div className="flex min-w-0 items-start gap-3 border-b border-[var(--app-border)] pb-4">
         <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
           {createElement(detailIconFor(kind), { className: 'text-sm' })}
@@ -90,13 +142,13 @@ export function AdminDetailPanel({
         ))}
       </div>
 
-      {kind === 'listings' && Array.isArray(item.images) && item.images.filter(Boolean).length ? (
+      {detailImages.length ? (
         <div className="grid min-w-0 gap-2">
           <p className="text-[10px] font-black uppercase tracking-wider text-[var(--app-text-muted)]">
             {adminText(t, 'admin.detail.imagesTitle')}
           </p>
           <div className="flex flex-wrap gap-2">
-            {item.images.filter(Boolean).slice(0, 6).map((src) => (
+            {detailImages.slice(0, 6).map((src) => (
               <a
                 key={src}
                 href={src}
@@ -116,7 +168,10 @@ export function AdminDetailPanel({
           <p className="text-[10px] font-black uppercase tracking-wider text-[var(--app-text-muted)]">
             {t('verification.admin.documentsTitle')}
           </p>
-          <AdminDocumentPreview documentIds={item.documentIds || []} />
+          <AdminDocumentPreview
+            documentIds={item.documentIds || []}
+            userId={item.userId}
+          />
         </div>
       ) : null}
 
@@ -162,7 +217,9 @@ export function AdminDetailPanel({
             id="admin-user-origin"
             label={adminText(t, 'admin.users.editOrigin')}
             value={originDraft}
-            onChange={(event) => setOriginDraft(event.target.value)}
+            onChange={(event) =>
+              setOriginOverride({ userId: selectedUserId, value: event.target.value })
+            }
           >
             <option value="">{adminText(t, 'admin.filters.all')}</option>
             {countries.map((country) => (
@@ -177,6 +234,7 @@ export function AdminDetailPanel({
             onClick={() => {
               dispatch(updateUserOriginCountry({ id: item.id, originCountry: originDraft }))
               setSelected?.({ kind: 'user', item: { ...item, originCountry: originDraft } })
+              setOriginOverride(null)
               dispatch(
                 addToast({
                   title: adminText(t, 'admin.users.originSaved'),

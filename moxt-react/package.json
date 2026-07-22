@@ -1,7 +1,7 @@
 {
   "name": "moxt",
   "private": true,
-  "version": "1.2.0",
+  "version": "1.2.1",
   "type": "module",
   "scripts": {
     "dev": "node scripts/prepare-netlify-env.mjs && node ../node_modules/vite/bin/vite.js",
@@ -35,16 +35,16 @@
     "assets": "node scripts/generate-assets.mjs && node scripts/generate-pwa-icons.mjs"
   },
   "dependencies": {
-    "@capacitor/android": "^8.4.1",
-    "@capacitor/app": "^8.1.0",
+    "@capacitor/android": "^8.4.2",
+    "@capacitor/app": "^8.1.1",
     "@capacitor/camera": "^8.2.1",
-    "@capacitor/cli": "^8.4.1",
-    "@capacitor/core": "^8.4.1",
-    "@capacitor/ios": "^8.4.1",
+    "@capacitor/cli": "^8.4.2",
+    "@capacitor/core": "^8.4.2",
+    "@capacitor/ios": "^8.4.2",
     "@capacitor/keyboard": "^8.0.5",
-    "@capacitor/push-notifications": "^8.1.1",
-    "@capacitor/splash-screen": "^8.0.1",
-    "@capacitor/status-bar": "^8.0.2",
+    "@capacitor/push-notifications": "^8.1.2",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.3",
     "@moxt/shared": "*",
     "@reduxjs/toolkit": "^2.12.0",
     "@supabase/supabase-js": "^2.108.2",

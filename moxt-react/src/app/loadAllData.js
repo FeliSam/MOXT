@@ -730,6 +730,43 @@ export const loadAllData = createAsyncThunk(
       }
     })
 
+    // Admin: ensure verification documentIds are present even if the global docs limit omitted them.
+    if (isAdmin) {
+      const loadedDocs = fromRows(safeRows(personalDocumentsRes, 'des documents'))
+      const loadedIds = new Set(loadedDocs.map((doc) => String(doc.id)))
+      const neededIds = [
+        ...new Set(
+          fromRows(safeRows(verificationRequestsRes, 'des demandes de verification'))
+            .flatMap((item) => parseJsonField(item.documentIds, []))
+            .map((id) => String(id || '').trim())
+            .filter(Boolean),
+        ),
+      ].filter((id) => !loadedIds.has(id))
+      if (neededIds.length) {
+        const missingDocsRes = await supabase
+          .from('personal_documents')
+          .select('*')
+          .in('id', neededIds)
+        const missingDocs = fromRows(safeRows(missingDocsRes, 'des documents manquants')).map(
+          (doc) => ({
+            ...doc,
+            storagePath:
+              doc.storagePath ||
+              doc.storage_path ||
+              (typeof doc.url === 'string' && !doc.url.includes('://') ? doc.url : null) ||
+              null,
+          }),
+        )
+        if (missingDocs.length) {
+          dispatch(
+            mergeRemoteAccount({
+              documents: missingDocs,
+            }),
+          )
+        }
+      }
+    }
+
     const knownProfileIds = new Set(
       safeRows(adminProfilesRes, 'des profils utilisateurs').map((row) => String(row.id)),
     )

@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { FiDownload, FiExternalLink, FiFileText, FiImage } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
 import { useLanguage } from '../../../contexts/useLanguage'
+import { fromRow } from '../../../services/remoteRowMapper'
 import { storageService } from '../../../services/storageService'
+import { supabase } from '../../../services/supabaseClient'
 import { adminText } from '../adminI18n'
 
 function isImageType(doc) {
@@ -14,6 +16,50 @@ function isImageType(doc) {
 function isPdfType(doc) {
   if (doc?.type === 'application/pdf') return true
   return String(doc?.name || '').toLowerCase().endsWith('.pdf')
+}
+
+function normalizeDocumentIds(documentIds) {
+  if (Array.isArray(documentIds)) {
+    return documentIds.map((id) => String(id || '').trim()).filter(Boolean)
+  }
+  if (typeof documentIds === 'string' && documentIds.trim()) {
+    try {
+      const parsed = JSON.parse(documentIds)
+      if (Array.isArray(parsed)) {
+        return parsed.map((id) => String(id || '').trim()).filter(Boolean)
+      }
+    } catch {
+      return documentIds
+        .split(/[,;\s]+/)
+        .map((id) => id.trim())
+        .filter(Boolean)
+    }
+  }
+  return []
+}
+
+function normalizePersonalDocument(doc) {
+  if (!doc) return null
+  const storagePath =
+    doc.storagePath ||
+    doc.storage_path ||
+    (typeof doc.url === 'string' && !doc.url.includes('://') ? doc.url : null) ||
+    null
+  return {
+    ...doc,
+    id: doc.id,
+    userId: doc.userId || doc.user_id,
+    category: doc.category,
+    name: doc.name,
+    size: Number(doc.size) || 0,
+    type: doc.type || 'application/octet-stream',
+    url: doc.url || null,
+    storagePath,
+    status: doc.status || 'pending_review',
+    deletedAt: doc.deletedAt || doc.deleted_at || null,
+    deletedByUser: Boolean(doc.deletedByUser ?? doc.deleted_by_user),
+    createdAt: doc.createdAt || doc.created_at,
+  }
 }
 
 async function resolvePreviewUrl(doc) {
@@ -68,41 +114,93 @@ async function openDocument(doc) {
   }
 }
 
-export function AdminDocumentPreview({ documentIds = [], documents: documentsProp }) {
+async function fetchPersonalDocumentsByIds(ids) {
+  if (!ids.length) return []
+  const { data, error } = await supabase.from('personal_documents').select('*').in('id', ids)
+  if (error) throw error
+  return (data || []).map((row) => normalizePersonalDocument(fromRow(row))).filter(Boolean)
+}
+
+export function AdminDocumentPreview({ documentIds = [], documents: documentsProp, userId }) {
   const { t } = useLanguage()
   const personalDocuments = useSelector((state) => state.account.documents || [])
   const [previews, setPreviews] = useState([])
+  const [resolvedCount, setResolvedCount] = useState(0)
+
+  const idsKey = Array.isArray(documentIds)
+    ? documentIds.map((id) => String(id || '').trim()).filter(Boolean).join('|')
+    : String(documentIds || '')
+  const normalizedIds = useMemo(
+    () => normalizeDocumentIds(documentIds),
+    // idsKey captures documentIds content without unstable array identity
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [idsKey],
+  )
 
   useEffect(() => {
     let cancelled = false
 
-    const matched = Array.isArray(documentsProp)
-      ? documentsProp.filter(Boolean)
-      : (Array.isArray(documentIds) ? documentIds : [])
-          .map((id) => personalDocuments.find((doc) => doc.id === id))
-          .filter(Boolean)
-
     async function load() {
+      let matched = []
+
+      if (Array.isArray(documentsProp) && documentsProp.length) {
+        matched = documentsProp.map(normalizePersonalDocument).filter(Boolean)
+      } else if (normalizedIds.length) {
+        const byId = new Map(
+          (personalDocuments || [])
+            .map(normalizePersonalDocument)
+            .filter(Boolean)
+            .map((doc) => [String(doc.id), doc]),
+        )
+        matched = normalizedIds.map((id) => byId.get(String(id))).filter(Boolean)
+
+        const missing = normalizedIds.filter((id) => !byId.has(String(id)))
+        if (missing.length) {
+          try {
+            const remote = await fetchPersonalDocumentsByIds(missing)
+            for (const doc of remote) byId.set(String(doc.id), doc)
+            matched = normalizedIds.map((id) => byId.get(String(id))).filter(Boolean)
+          } catch {
+            /* keep local matches */
+          }
+        }
+
+        // Fallback: if IDs still unresolved, show this user's recent docs.
+        if (matched.length < normalizedIds.length && userId) {
+          const userDocs = (personalDocuments || [])
+            .map(normalizePersonalDocument)
+            .filter((doc) => doc && String(doc.userId) === String(userId))
+          const known = new Set(matched.map((doc) => String(doc.id)))
+          for (const doc of userDocs) {
+            if (!known.has(String(doc.id))) {
+              matched.push(doc)
+              known.add(String(doc.id))
+            }
+          }
+        }
+      }
+
       const next = await Promise.all(
         matched.map(async (doc) => ({
           doc,
           url: await resolvePreviewUrl(doc),
         })),
       )
-      if (!cancelled) setPreviews(next)
+      if (!cancelled) {
+        setResolvedCount(matched.length)
+        setPreviews(next)
+      }
     }
 
     load()
     return () => {
       cancelled = true
     }
-  }, [documentIds, documentsProp, personalDocuments])
+  }, [documentsProp, normalizedIds, personalDocuments, userId])
 
   const expectedCount = Array.isArray(documentsProp)
     ? documentsProp.filter(Boolean).length
-    : Array.isArray(documentIds)
-      ? documentIds.length
-      : 0
+    : normalizedIds.length || resolvedCount
 
   if (!expectedCount) {
     return (
@@ -121,14 +219,21 @@ export function AdminDocumentPreview({ documentIds = [], documents: documentsPro
   }
 
   return (
-    <div className="grid min-w-0 max-w-full gap-3 overflow-hidden">
-      {previews.map(({ doc, url }) => {
+    <div className="grid min-w-0 max-w-full gap-3">
+      {previews.length < expectedCount ? (
+        <p className="break-words text-xs text-[var(--app-text-muted)]">
+          {adminText(t, 'admin.documents.notFound', {
+            count: expectedCount - previews.length,
+          })}
+        </p>
+      ) : null}
+      {previews.map(({ doc, url }, index) => {
         const image = isImageType(doc)
         const pdf = isPdfType(doc)
         const displayName = doc.name || doc.id
         return (
           <div
-            key={doc.id}
+            key={doc.id || `doc-${index}`}
             className="min-w-0 max-w-full overflow-hidden rounded-xl border border-[color:rgb(148_163_184/0.14)] bg-[var(--app-surface-muted)]"
           >
             <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 border-b border-[color:rgb(148_163_184/0.12)] px-3 py-2">

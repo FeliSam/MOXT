@@ -62,7 +62,7 @@ const p2pSlice = createSlice({
         offer.status = 'accepted'
         state.orders.unshift(action.payload)
       },
-      prepare({ buyer, offer }) {
+      prepare({ buyer, offer, feePercent }) {
         const now = new Date().toISOString()
         return {
           payload: {
@@ -78,7 +78,7 @@ const p2pSlice = createSlice({
             rate: offer.rate,
             method: offer.method || '',
             comment: offer.comment || '',
-            fee: calculateP2PFee(offer.amount, offer.fromCurrency),
+            fee: calculateP2PFee(offer.amount, offer.fromCurrency, feePercent),
             status: 'created',
             proofs: [],
             ratings: [],
@@ -133,7 +133,7 @@ const p2pSlice = createSlice({
       const isStaff = ['admin', 'superadmin', 'moderator'].includes(action.payload.actorRole)
       if (!isStaff) return
       const next = action.payload.status
-      if (!['completed', 'cancelled', 'waiting_payment'].includes(next)) return
+      if (!['completed', 'cancelled', 'waiting_payment', 'disputed'].includes(next)) return
       if (order.status === next) return
       order.status = next
       order.timeline ||= []

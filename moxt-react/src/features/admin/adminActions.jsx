@@ -22,22 +22,31 @@ import { FiCheck } from 'react-icons/fi'
 import { normalizeAdminKind, normalizeReportType } from './adminLinkUtils'
 import { adminText } from './adminI18n'
 
-function ActionButton({ done, doneLabel, children, ...props }) {
+export function ActionButton({ done, doneLabel, children, variant, ...props }) {
   if (done) {
+    const danger = variant === 'danger'
     return (
       <Button
         type="button"
         variant="secondary"
         disabled
         icon={FiCheck}
-        className="!border-emerald-300 !bg-emerald-50 !text-emerald-800 opacity-100 dark:!border-emerald-800 dark:!bg-emerald-950/40 dark:!text-emerald-200"
+        className={
+          danger
+            ? '!border-rose-300 !bg-rose-50 !text-rose-800 opacity-100 dark:!border-rose-800 dark:!bg-rose-950/40 dark:!text-rose-200'
+            : '!border-emerald-300 !bg-emerald-50 !text-emerald-800 opacity-100 dark:!border-emerald-800 dark:!bg-emerald-950/40 dark:!text-emerald-200'
+        }
         {...props}
       >
         {doneLabel || children}
       </Button>
     )
   }
-  return <Button type="button" {...props}>{children}</Button>
+  return (
+    <Button type="button" variant={variant} {...props}>
+      {children}
+    </Button>
+  )
 }
 
 /** Resolve/close a dispute and unlock the linked P2P order when applicable. */
@@ -383,6 +392,24 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
               }
             >
               {adminText(t, 'admin.p2p.restoreOrder')}
+            </Button>
+          ) : null}
+          {!['completed', 'cancelled', 'disputed'].includes(item.status) ? (
+            <Button
+              variant="secondary"
+              onClick={() =>
+                dispatch(
+                  moderateOrder({
+                    id: item.id,
+                    status: 'disputed',
+                    actorId: reviewerId,
+                    actorRole: actorRole || 'admin',
+                    note: 'admin_dispute',
+                  }),
+                )
+              }
+            >
+              {adminText(t, 'admin.p2p.markDisputed')}
             </Button>
           ) : null}
           {!['completed', 'cancelled'].includes(item.status) ? (

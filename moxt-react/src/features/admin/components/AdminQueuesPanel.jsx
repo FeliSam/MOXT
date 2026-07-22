@@ -19,7 +19,7 @@ import { updateBusinessDocumentStatus } from '../../businesses/businessSlice'
 import { updateParcelProofStatus } from '../../parcels/parcelSlice'
 import { moderateReview } from '../../reviews/reviewSlice'
 import { REVIEW_DISPUTE_STATUS } from '@moxt/shared/utils/reviewUtils.js'
-import { contentActions, resolveDisputeAndUnlockOrder } from '../adminActions'
+import { ActionButton, contentActions, resolveDisputeAndUnlockOrder } from '../adminActions'
 import { CARD, ITEM } from '../adminConfig'
 import { adminText } from '../adminI18n'
 import { Empty, SectionTitle } from './AdminShared'
@@ -221,23 +221,27 @@ export function AdminQueuesPanel({
                 >
                   {adminText(t, 'admin.queues.examineProof')}
                 </Button>
-                <Button
+                <ActionButton
                   icon={FiCheckCircle}
+                  done={i.proofStatus === 'verified'}
+                  doneLabel={adminText(t, 'admin.queues.validateProof')}
                   onClick={() =>
                     dispatch(updateParcelProofStatus({ id: i.id, status: 'verified' }))
                   }
                 >
                   {adminText(t, 'admin.queues.validateProof')}
-                </Button>
-                <Button
+                </ActionButton>
+                <ActionButton
                   variant="danger"
                   icon={FiX}
+                  done={i.proofStatus === 'rejected'}
+                  doneLabel={adminText(t, 'admin.queues.rejectProof')}
                   onClick={() =>
                     dispatch(updateParcelProofStatus({ id: i.id, status: 'rejected' }))
                   }
                 >
                   {adminText(t, 'admin.queues.rejectProof')}
-                </Button>
+                </ActionButton>
               </>
             )}
           />

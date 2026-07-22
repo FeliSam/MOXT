@@ -20,6 +20,7 @@ import { P2PNoEscrowBanner } from '../features/p2p/components/P2PNoEscrowBanner'
 import { P2PReputationBadge } from '../features/p2p/components/P2PReputationBadge'
 import { acceptOffer } from '../features/p2p/p2pSlice'
 import { calculateP2PFee } from '../features/p2p/p2pUtils'
+import { selectPlatformFees } from '../features/admin/platformRatesSlice'
 import { useSecurityGate } from '../features/security/useSecurityGate'
 import { formatMoney } from '../features/transfers/transferUtils'
 
@@ -31,6 +32,7 @@ export function P2PDetailPage() {
   const { requireP2PAccept } = useSecurityGate()
   const [confirmOpen, setConfirmOpen] = useState(false)
   const user = useSelector((state) => state.auth.user)
+  const platformFees = useSelector(selectPlatformFees)
   const offer = useSelector((state) => state.p2p.offers.find((item) => item.id === offerId))
   const orders = useSelector((state) => state.p2p.orders)
   const reviews = useSelector((state) => state.reviews.items)
@@ -43,7 +45,9 @@ export function P2PDetailPage() {
   }
 
   function confirmAccept() {
-    const action = dispatch(acceptOffer({ buyer: user, offer }))
+    const action = dispatch(
+      acceptOffer({ buyer: user, offer, feePercent: platformFees.p2pFeePercent }),
+    )
     setConfirmOpen(false)
     if (action.payload?.id) navigate(`/p2p/orders/${action.payload.id}`)
   }

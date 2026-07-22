@@ -1321,10 +1321,16 @@ const handlers = {
       state.account.verificationRequests.find(
         (item) => item.userId === payload.userId && item.status === 'pending_review',
       ) || payload
+    const documentIds =
+      (Array.isArray(payload.documentIds) && payload.documentIds.length
+        ? payload.documentIds
+        : null) ||
+      request.documentIds ||
+      []
     const row = verificationRequestToRemoteRow({
       ...payload,
       ...request,
-      documentIds: request.documentIds || payload.documentIds || [],
+      documentIds,
       id: request.id || payload.id,
     })
 

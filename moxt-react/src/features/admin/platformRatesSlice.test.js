@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import reducer, {
   clearPlatformRates,
   resolveDirectedPlatformRate,
+  selectPlatformFees,
   selectPlatformPair,
+  setPlatformFees,
   setPlatformRates,
 } from './platformRatesSlice'
 
@@ -53,9 +55,27 @@ describe('platformRatesSlice', () => {
   })
 
   it('returns a stable empty pair for missing currencies', () => {
-    const state = { pairs: {}, updatedAt: null, updatedBy: null }
+    const state = { pairs: {}, fees: {}, updatedAt: null, updatedBy: null }
     const a = selectPlatformPair({ platformRates: state }, 'XOF', 'transfer')
     const b = selectPlatformPair({ platformRates: state }, 'XOF', 'transfer')
     expect(a).toBe(b)
+  })
+
+  it('stores platform fee percentages', () => {
+    let state = reducer(undefined, { type: '@@init' })
+    state = reducer(
+      state,
+      setPlatformFees({
+        feePercent: 3,
+        transferFeePercent: 1.5,
+        p2pFeePercent: 0.5,
+        updatedBy: 'admin-1',
+      }),
+    )
+    expect(selectPlatformFees({ platformRates: state })).toEqual({
+      feePercent: 3,
+      transferFeePercent: 1.5,
+      p2pFeePercent: 0.5,
+    })
   })
 })

@@ -95,16 +95,10 @@ export function AdminPage() {
 
       <HeroKpiRow metrics={metrics} queues={queues} onSelect={switchView} />
 
-      <div
-        className={`grid min-w-0 gap-5 ${
-          auditFullWidth
-            ? 'xl:grid-cols-[14rem_minmax(0,1fr)]'
-            : 'xl:grid-cols-[14rem_minmax(0,1fr)_minmax(0,22rem)]'
-        }`}
-      >
-        <aside className="grid min-w-0 content-start gap-2">
+      <div className="flex min-w-0 max-w-full flex-col gap-5 isolate xl:flex-row xl:items-start">
+        <aside className="grid w-full min-w-0 shrink-0 content-start gap-2 overflow-hidden xl:w-56 xl:max-w-56">
           <AdminIdentityCard admin={admin} />
-          <nav className={`${CARD} grid content-start gap-1 p-2`}>
+          <nav className={`${CARD} grid content-start gap-1 overflow-hidden p-2`}>
             {MAIN_VIEWS.map((item) => {
               const badge = badgeForView(item.id, metrics, queues)
               return (
@@ -119,12 +113,12 @@ export function AdminPage() {
               )
             })}
           </nav>
-          <nav className={`${CARD} grid content-start gap-1 p-2`}>
+          <nav className={`${CARD} grid content-start gap-1 overflow-hidden p-2`}>
             <SidebarLink to="/admin/guide" icon={FiBookOpen} label={adminText(t, 'admin.nav.guide')} />
           </nav>
         </aside>
 
-        <div className="grid min-w-0 gap-5 content-start">
+        <div className="grid min-w-0 flex-1 gap-5 content-start overflow-x-clip">
           <GlobalFilterBar
             query={query}
             setQuery={setQuery}
@@ -227,15 +221,17 @@ export function AdminPage() {
         </div>
 
         {showDetailPanel ? (
-          <AdminDetailPanel
-            admin={admin}
-            dispatch={dispatch}
-            onSuspendUser={setConfirmUser}
-            selected={selected}
-            setSelected={setSelected}
-            supportReply={supportReply}
-            setSupportReply={setSupportReply}
-          />
+          <div className="w-full min-w-0 shrink-0 xl:w-[22rem] xl:max-w-[22rem]">
+            <AdminDetailPanel
+              admin={admin}
+              dispatch={dispatch}
+              onSuspendUser={setConfirmUser}
+              selected={selected}
+              setSelected={setSelected}
+              supportReply={supportReply}
+              setSupportReply={setSupportReply}
+            />
+          </div>
         ) : null}
       </div>
 

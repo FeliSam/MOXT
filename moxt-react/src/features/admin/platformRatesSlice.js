@@ -1,5 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { createLocalStorage } from '../../services/createLocalStorage'
+import { TRANSFER_CONFIG } from '../transfers/transferConfig'
+import { P2P_CONFIG } from '../p2p/p2pUtils'
 
 const storage = createLocalStorage('moxt-platform-rates-v1')
 
@@ -13,6 +15,12 @@ const emptyPair = () => ({
   rubToOrigin: null,
 })
 
+const DEFAULT_FEES = Object.freeze({
+  feePercent: TRANSFER_CONFIG.feePercent,
+  transferFeePercent: TRANSFER_CONFIG.rateMarginPercent,
+  p2pFeePercent: P2P_CONFIG.platformFeePercent,
+})
+
 function normalizePair(raw = {}) {
   const originToRub = Number(raw.originToRub)
   const rubToOrigin = Number(raw.rubToOrigin)
@@ -22,10 +30,27 @@ function normalizePair(raw = {}) {
   }
 }
 
+function normalizeFeeValue(value, fallback) {
+  const n = Number(value)
+  if (!Number.isFinite(n) || n < 0) return fallback
+  return Math.min(100, n)
+}
+
+function normalizeFees(raw = {}) {
+  return {
+    feePercent: normalizeFeeValue(raw.feePercent, DEFAULT_FEES.feePercent),
+    transferFeePercent: normalizeFeeValue(
+      raw.transferFeePercent ?? raw.transferMarginPercent,
+      DEFAULT_FEES.transferFeePercent,
+    ),
+    p2pFeePercent: normalizeFeeValue(raw.p2pFeePercent, DEFAULT_FEES.p2pFeePercent),
+  }
+}
+
 function readInitial() {
   const saved = storage.read(null)
   if (!saved || typeof saved !== 'object') {
-    return { pairs: {}, updatedAt: null, updatedBy: null }
+    return { pairs: {}, fees: { ...DEFAULT_FEES }, updatedAt: null, updatedBy: null }
   }
   const pairs = {}
   for (const [currency, value] of Object.entries(saved.pairs || {})) {
@@ -36,6 +61,7 @@ function readInitial() {
   }
   return {
     pairs,
+    fees: normalizeFees(saved.fees),
     updatedAt: saved.updatedAt || null,
     updatedBy: saved.updatedBy || null,
   }
@@ -66,15 +92,29 @@ const platformRatesSlice = createSlice({
       state.updatedAt = new Date().toISOString()
       state.updatedBy = updatedBy || null
     },
+    setPlatformFees(state, action) {
+      const { feePercent, transferFeePercent, p2pFeePercent, updatedBy } = action.payload || {}
+      state.fees = normalizeFees({
+        feePercent: feePercent ?? state.fees?.feePercent,
+        transferFeePercent: transferFeePercent ?? state.fees?.transferFeePercent,
+        p2pFeePercent: p2pFeePercent ?? state.fees?.p2pFeePercent,
+      })
+      state.updatedAt = new Date().toISOString()
+      state.updatedBy = updatedBy || null
+    },
   },
 })
 
-export const { setPlatformRates, clearPlatformRates } = platformRatesSlice.actions
+export const { setPlatformRates, clearPlatformRates, setPlatformFees } = platformRatesSlice.actions
 export default platformRatesSlice.reducer
 
 /** @param {'transfer'|'p2p'} kind */
 export function selectPlatformPair(state, currency, kind = 'transfer') {
   return state.platformRates?.pairs?.[currency]?.[kind] || EMPTY_PAIR
+}
+
+export function selectPlatformFees(state) {
+  return normalizeFees(state.platformRates?.fees)
 }
 
 /**

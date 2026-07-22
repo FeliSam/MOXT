@@ -163,6 +163,25 @@ export function AdminP2PPanel({ dispatch, offers, orders, setSelected }) {
                     {adminText(t, 'admin.p2p.restoreOrder')}
                   </Button>
                 ) : null}
+                {!['completed', 'cancelled', 'disputed'].includes(order.status) ? (
+                  <Button
+                    variant="secondary"
+                    icon={FiAlertTriangle}
+                    onClick={() =>
+                      dispatch(
+                        moderateOrder({
+                          id: order.id,
+                          status: 'disputed',
+                          actorId: user?.id,
+                          actorRole: user?.role || 'admin',
+                          note: 'admin_dispute',
+                        }),
+                      )
+                    }
+                  >
+                    {adminText(t, 'admin.p2p.markDisputed')}
+                  </Button>
+                ) : null}
                 {!['completed', 'cancelled'].includes(order.status) ? (
                   <>
                     <Button
