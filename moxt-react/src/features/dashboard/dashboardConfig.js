@@ -23,7 +23,7 @@ export const quickActions = [
     image: '/assets/services/3d/quick-marketplace.png',
     imageLogo: '/assets/services/quick-marketplace.png',
     size: 'featured',
-    iconPos: 'tr',
+    iconPos: 'br',
     surface:
       'bg-[linear-gradient(160deg,color-mix(in_srgb,#0891b2_14.52%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(160deg,rgba(8,145,178,0.266)_0%,var(--app-surface-muted)_100%)]',
   },
@@ -47,7 +47,7 @@ export const quickActions = [
     image: '/assets/services/3d/quick-job.png',
     imageLogo: '/assets/services/quick-job.png',
     size: 'medium',
-    iconPos: 'bl',
+    iconPos: 'br',
     surface:
       'bg-[linear-gradient(145deg,color-mix(in_srgb,#b45309_10.89%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(180,83,9,0.218)_0%,var(--app-surface-muted)_100%)]',
   },
@@ -59,7 +59,7 @@ export const quickActions = [
     image: '/assets/services/3d/quick-event.png',
     imageLogo: '/assets/services/quick-event.png',
     size: 'compact',
-    iconPos: 'tr',
+    iconPos: 'br',
     surface:
       'bg-[linear-gradient(145deg,color-mix(in_srgb,#7c3aed_9.68%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(124,58,237,0.194)_0%,var(--app-surface-muted)_100%)]',
   },
