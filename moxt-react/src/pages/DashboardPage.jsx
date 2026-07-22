@@ -20,6 +20,7 @@ import {
 } from '../features/dashboard/dashboardBrowseUtils'
 import { useDashboardStats } from '../features/dashboard/hooks/useDashboardStats'
 import { MarketplaceListingCard } from '../features/marketplace/MarketplaceListingCard'
+import { StatusRail } from '../features/statuses/StatusRail'
 import { useExchangeRate } from '../features/transfers/useExchangeRate'
 import { useHorizontalScroll } from '../hooks/useHorizontalScroll'
 import { useLanguage } from '../contexts/useLanguage'
@@ -77,6 +78,10 @@ export function DashboardPage() {
 
       <div className="lg:hidden">
         <DashboardSearch />
+      </div>
+
+      <div className="min-w-0 overflow-x-clip">
+        <StatusRail />
       </div>
 
       <DashboardQuickActionsSection />
