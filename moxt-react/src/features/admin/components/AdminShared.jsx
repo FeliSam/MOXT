@@ -121,7 +121,7 @@ export function GlobalFilterBar({ query, setQuery, statusFilter, setStatusFilter
   )
 }
 
-export function SystemStatusBar({ metrics, queues }) {
+export function SystemStatusBar({ metrics, queues, onOpenQueues }) {
   const { t } = useLanguage()
   const hasAlert = queues.urgent > 0
   return (
@@ -141,7 +141,13 @@ export function SystemStatusBar({ metrics, queues }) {
       <span className="text-[var(--app-text-muted)]">|</span>
       <StatusChip label={adminText(t, 'admin.shell.kpi.transfersPending')} value={metrics.transfers.pending} />
       <StatusChip label={adminText(t, 'admin.shell.kpi.contentPending')} value={metrics.content.pending} />
-      <StatusChip label={adminText(t, 'admin.shell.kpi.urgentQueues')} value={queues.urgent} />
+      {onOpenQueues ? (
+        <button type="button" onClick={onOpenQueues} className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+          <StatusChip label={adminText(t, 'admin.shell.kpi.urgentQueues')} value={queues.urgent} />
+        </button>
+      ) : (
+        <StatusChip label={adminText(t, 'admin.shell.kpi.urgentQueues')} value={queues.urgent} />
+      )}
       <StatusChip label={adminText(t, 'admin.shell.kpi.auditLogs')} value={metrics.audit.total} />
       <span className="ml-auto text-[var(--app-text-muted)]">
         {new Date().toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' })}

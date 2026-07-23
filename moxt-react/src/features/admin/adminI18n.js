@@ -271,6 +271,7 @@ export const ADMIN_FR_SOURCES = {
   // ── empty states ────────────────────────────────────────────────────────
   'admin.empty.noElement': 'Aucun element.',
   'admin.empty.noUsers': 'Aucun utilisateur trouve.',
+  'admin.empty.noOnlineUsers': 'Aucun utilisateur connecte pour le moment.',
   'admin.empty.noAuditLog': "Aucun log d'audit.",
   'admin.empty.noTicket': 'Aucun ticket.',
   'admin.empty.allTicketsHandled': 'Tous les tickets ont ete traites.',
@@ -328,6 +329,8 @@ export const ADMIN_FR_SOURCES = {
   // ── users panel ─────────────────────────────────────────────────────────
   'admin.users.title': 'Utilisateurs et roles',
   'admin.users.pendingDeletion': 'suppression demandée',
+  'admin.users.online': 'En ligne',
+  'admin.users.onlineButton': 'Connectés · {count}',
   'admin.users.editOrigin': "Modifier le pays d'origine",
   'admin.users.originSaved': "Pays d'origine mis a jour",
   'admin.actions.save': 'Enregistrer',

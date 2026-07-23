@@ -20,6 +20,25 @@ function reactivateOffer(state, offerId) {
   offer.updatedAt = new Date().toISOString()
 }
 
+function archiveOffer(state, offerId) {
+  const offer = state.offers.find((item) => item.id === offerId)
+  if (!offer || offer.status === 'archived') return
+  offer.status = 'archived'
+  offer.updatedAt = new Date().toISOString()
+}
+
+/** Buyer cancel / expiry → reactivate. Seller or staff cancel → archive. */
+function resolveOfferAfterCancel(state, order, actionPayload = {}) {
+  const actorId = actionPayload.actorId
+  const actorRole = actionPayload.actorRole
+  const isStaff = ['admin', 'superadmin', 'moderator'].includes(actorRole)
+  if (isStaff || (actorId && actorId === order.sellerId)) {
+    archiveOffer(state, order.offerId)
+    return
+  }
+  reactivateOffer(state, order.offerId)
+}
+
 const p2pSlice = createSlice({
   name: 'p2p',
   initialState: { offers: offersStorage.read(), orders: ordersStorage.read() },
@@ -120,7 +139,7 @@ const p2pSlice = createSlice({
         order.confirmDueAt = addMs(at, P2P_CONFIG.confirmWindowMs)
       }
       if (next === 'cancelled') {
-        reactivateOffer(state, order.offerId)
+        resolveOfferAfterCancel(state, order, action.payload)
       }
     },
     expireOrder(state, action) {
@@ -158,7 +177,7 @@ const p2pSlice = createSlice({
         note: action.payload.note || 'admin_moderate',
       })
       if (next === 'cancelled') {
-        reactivateOffer(state, order.offerId)
+        resolveOfferAfterCancel(state, order, action.payload)
       }
     },
     addOrderProof(state, action) {

@@ -197,7 +197,14 @@ export function P2POrderPage() {
     } else if (confirmAction === 'confirmReceived') {
       dispatch(updateOrderStatus({ id: order.id, status: 'completed' }))
     } else if (confirmAction === 'cancel') {
-      dispatch(updateOrderStatus({ id: order.id, status: 'cancelled' }))
+      dispatch(
+        updateOrderStatus({
+          id: order.id,
+          status: 'cancelled',
+          actorId: user.id,
+          note: isBuyer ? 'buyer_cancel' : 'seller_cancel',
+        }),
+      )
     } else if (confirmAction === 'dispute') {
       dispatch(
         openDispute({
@@ -246,7 +253,7 @@ export function P2POrderPage() {
       : t('p2p.order.countdown.confirm')
 
   return (
-    <div className="grid gap-6">
+    <div className="grid min-w-0 max-w-full gap-6 overflow-x-clip">
       <PageHeader title={t('p2p.order.title')} actions={<BackButton fallback="/p2p" />} />
 
       <P2PNoEscrowBanner />

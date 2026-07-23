@@ -157,6 +157,11 @@ export function buildAdminMetrics(state) {
     users: {
       total: state.administration.users.length,
       suspended: state.administration.users.filter((i) => i.status === 'suspended').length,
+      newSignups: state.administration.users.filter((i) => {
+        const created = new Date(i.createdAt || i.created_at || 0).getTime()
+        if (!Number.isFinite(created) || created <= 0) return false
+        return Date.now() - created < 48 * 60 * 60 * 1000
+      }).length,
     },
     queues: {
       total:
@@ -200,11 +205,12 @@ export function buildContentCollections(state) {
 }
 
 export function badgeForView(view, metrics, queues) {
+  if (view === 'overview') return queues.urgent
   if (view === 'transfers') return metrics.transfers.pending
   if (view === 'p2p') return metrics.p2p.disputed || metrics.p2p.openOrders
   if (view === 'content') return metrics.content.pending
   if (view === 'publications') return metrics.posts.pending
-  if (view === 'users') return metrics.users.suspended
+  if (view === 'users') return (metrics.users.newSignups || 0) + (metrics.users.suspended || 0)
   if (view === 'verifications') return queues.verifications.length
   if (view === 'documents') return queues.businessDocuments.length
   if (view === 'support') return queues.support.length

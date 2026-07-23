@@ -36,7 +36,7 @@ export function P2POrderStatusBar({ status }) {
               {done || status === 'completed' ? <FiCheck /> : index + 1}
             </span>
             <span
-              className={`text-[10px] font-bold leading-tight sm:text-xs ${
+              className={`max-w-full truncate text-[10px] font-bold leading-tight sm:text-xs ${
                 current ? 'text-[var(--app-text)]' : 'text-[var(--app-text-muted)]'
               }`}
             >

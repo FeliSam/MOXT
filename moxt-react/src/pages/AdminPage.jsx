@@ -80,7 +80,7 @@ export function AdminPage() {
 
   return (
     <div className="grid min-w-0 max-w-full gap-6 overflow-x-clip">
-      <SystemStatusBar metrics={metrics} queues={queues} />
+      <SystemStatusBar metrics={metrics} queues={queues} onOpenQueues={() => switchView('queues')} />
 
       <PageHeader
         eyebrow={adminText(t, 'admin.page.eyebrow')}

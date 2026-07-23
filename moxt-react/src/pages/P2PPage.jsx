@@ -115,7 +115,7 @@ export function P2PPage() {
   }
 
   return (
-    <div className="grid gap-7">
+    <div className="grid min-w-0 max-w-full gap-7 overflow-x-clip">
       <PageHeader
         title={t('p2p.page.title')}
         stats={[{ label: t('p2p.page.activeOffers'), value: activeOffers.length }]}
@@ -128,7 +128,7 @@ export function P2PPage() {
 
       <P2PNoEscrowBanner />
 
-      <div className="grid gap-5">
+      <div className="grid min-w-0 gap-5">
         <CatalogSearch
           advancedOpen={advancedOpen}
           count={displayedOffers.length}
@@ -179,19 +179,19 @@ export function P2PPage() {
             { key: 'archived', label: t('p2p.page.archives'), count: archivedOffers.length },
           ]}
         />
-        <CatalogGrid lazy={false} columns="grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
+        <CatalogGrid lazy={false} columns="grid-cols-1 sm:grid-cols-2 xl:grid-cols-3" className="min-w-0">
           {displayedOffers.length ? (
             displayedOffers.map((offer, index) => (
-              <RevealListItem key={offer.id} index={index}>
+              <RevealListItem key={offer.id} index={index} className="min-w-0">
                 <Card
                   variant="interactive"
-                  className={`group flex h-full flex-col overflow-hidden !border-0 p-4 shadow-none ring-0 transition-shadow duration-300 sm:p-5 ${tab === 'archived' ? 'opacity-80' : ''}`}
+                  className={`group flex h-full min-w-0 flex-col overflow-hidden !border-0 p-4 shadow-none ring-0 transition-shadow duration-300 sm:p-5 ${tab === 'archived' ? 'opacity-80' : ''}`}
                 >
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex min-w-0 items-start justify-between gap-2">
                     <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand-700 dark:bg-brand-900 dark:text-brand-200">
                       <FiUsers />
                     </span>
-                    <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+                    <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
                       <Badge tone={offer.status === 'active' ? 'success' : 'warning'}>
                         {offer.status === 'active'
                           ? t('p2p.page.statusActive')

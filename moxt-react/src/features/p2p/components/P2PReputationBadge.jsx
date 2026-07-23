@@ -9,7 +9,7 @@ export function P2PReputationBadge({ userId, orders, reviews, className = '' }) 
 
   return (
     <div
-      className={`flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--app-text-muted)] ${className}`}
+      className={`flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--app-text-muted)] ${className}`}
     >
       {stats.avgRating != null ? (
         <span className="inline-flex items-center gap-1 font-bold text-[var(--app-text)]">

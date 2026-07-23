@@ -233,6 +233,7 @@ export const navigationGroups = [
         path: '/admin',
         icon: FiSettings,
         roles: ['admin', 'superadmin'],
+        badgeSelector: 'adminUrgent',
       },
       {
         id: 'feature-matrix',

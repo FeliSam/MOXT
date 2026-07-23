@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import reducer, { acceptOffer, createOffer, updateOfferStatus } from './p2pSlice'
+import reducer, {
+  acceptOffer,
+  createOffer,
+  updateOfferStatus,
+  updateOrderStatus,
+} from './p2pSlice'
 import { calculateP2PFee } from './p2pUtils'
 
 const offerValues = {
@@ -46,5 +51,48 @@ describe('P2P', () => {
 
     expect(archived.offers[0].status).toBe('archived')
     expect(republished.offers[0].status).toBe('active')
+  })
+
+  it('reactiver l offre si l acheteur annule', () => {
+    const offered = reducer({ offers: [], orders: [] }, createOffer(offerValues))
+    const accepted = reducer(
+      offered,
+      acceptOffer({
+        offer: offered.offers[0],
+        buyer: { id: 'buyer', firstName: 'Amina', lastName: 'Demo' },
+      }),
+    )
+    const cancelled = reducer(
+      accepted,
+      updateOrderStatus({
+        id: accepted.orders[0].id,
+        status: 'cancelled',
+        actorId: 'buyer',
+        note: 'buyer_cancel',
+      }),
+    )
+    expect(cancelled.orders[0].status).toBe('cancelled')
+    expect(cancelled.offers[0].status).toBe('active')
+  })
+
+  it('archive l offre si le vendeur annule', () => {
+    const offered = reducer({ offers: [], orders: [] }, createOffer(offerValues))
+    const accepted = reducer(
+      offered,
+      acceptOffer({
+        offer: offered.offers[0],
+        buyer: { id: 'buyer', firstName: 'Amina', lastName: 'Demo' },
+      }),
+    )
+    const cancelled = reducer(
+      accepted,
+      updateOrderStatus({
+        id: accepted.orders[0].id,
+        status: 'cancelled',
+        actorId: 'seller',
+        note: 'seller_cancel',
+      }),
+    )
+    expect(cancelled.offers[0].status).toBe('archived')
   })
 })
