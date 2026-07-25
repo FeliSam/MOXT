@@ -2,7 +2,7 @@
 // "regional indicator symbol" standard Unicode). Fonctionne pour tout pays
 // sans maintenance manuelle.
 export function flagEmoji(countryCode = '') {
-  const code = countryCode.trim().toUpperCase()
+  const code = String(countryCode || '').trim().toUpperCase()
   if (code.length !== 2) return '🏳️'
   const base = 0x1f1e6
   const chars = [...code].map((char) => base + (char.charCodeAt(0) - 65))

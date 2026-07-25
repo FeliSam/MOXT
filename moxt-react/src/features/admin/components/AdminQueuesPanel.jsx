@@ -22,6 +22,7 @@ import { REVIEW_DISPUTE_STATUS } from '@moxt/shared/utils/reviewUtils.js'
 import { ActionButton, contentActions, resolveDisputeAndUnlockOrder } from '../adminActions'
 import { CARD, ITEM } from '../adminConfig'
 import { adminText } from '../adminI18n'
+import { promptRejectReason } from '../promptRejectReason'
 import { Empty, SectionTitle } from './AdminShared'
 
 function QueueSection({ icon, items, kind, label, renderActions, renderMeta, setSelected, t }) {
@@ -131,15 +132,18 @@ export function AdminQueuesPanel({
                 <Button
                   variant="danger"
                   icon={FiX}
-                  onClick={() =>
+                  onClick={() => {
+                    const reviewNote = promptRejectReason(t)
+                    if (!reviewNote) return
                     dispatch(
                       updateVerificationStatus({
                         id: i.id,
                         status: 'rejected',
                         reviewedBy: adminId,
+                        reviewNote,
                       }),
                     )
-                  }
+                  }}
                 >
                   {t('verification.admin.reject')}
                 </Button>
@@ -185,15 +189,18 @@ export function AdminQueuesPanel({
                 <Button
                   variant="danger"
                   icon={FiX}
-                  onClick={() =>
+                  onClick={() => {
+                    const reviewNote = promptRejectReason(t)
+                    if (!reviewNote) return
                     dispatch(
                       updateBusinessDocumentStatus({
                         id: i.id,
                         status: 'rejected',
                         reviewedBy: adminId,
+                        reviewNote,
                       }),
                     )
-                  }
+                  }}
                 >
                   {adminText(t, 'admin.actions.reject')}
                 </Button>

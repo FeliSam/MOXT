@@ -236,6 +236,7 @@ export const PROFESSIONAL_FR_SOURCES = {
   'professional.documents.formatsHint':
     'Formats acceptés : PDF et images. Un justificatif suffit pour compléter la vérification.',
   'professional.documents.sizeKb': '{size} Ko',
+  'professional.documents.rejectedTitle': 'Document refusé',
   'professional.documents.rejectNote': 'Motif du refus : {note}',
   'professional.documents.empty': 'Aucun document professionnel',
   'professional.documents.types.registration': 'Enregistrement / statuts (ОГРН, ИНН)',

@@ -1803,7 +1803,7 @@ export const es = {
       approve: "Aprovar",
       reject: "Recusar",
       rejectConfirm: "Confirmar recusa",
-      rejectReasonLabel: "Motivo da recusa (opcional)",
+      rejectReasonLabel: "Motivo del rechazo (obligatorio)",
       rejectReasonPlaceholder: "Ex. foto ilegível, documento expirado…",
       documentsTitle: "Documentos enviados",
       empty: "Ningún pedido de verificación.",
@@ -1813,6 +1813,12 @@ export const es = {
       notifyMessage: "{name} enviou un processo ({level}).",
       statusVerified: "aprovada",
       statusRejected: "recusada"
+    },
+    rejected: {
+      title: "Solicitud rechazada",
+      reason: "Motivo del rechazo: {note}",
+      fallback: "Su solicitud fue rechazada. Corrija los documentos y vuelva a enviarla.",
+      hint: "Corrija los documentos a continuación y envíe una nueva solicitud."
     },
     eyebrow: "Cuenta",
     title: "Verificación",
@@ -1829,12 +1835,19 @@ export const es = {
       migration: "Cartão de migración / patente",
       consular: "Cartão consular"
     },
+    residenceTypes: {
+      visa: "Visa",
+      vnj: "ВНЖ (VNJ)",
+      rvp: "РВП (RVP)",
+      rvpo: "РВПО (RVPO)"
+    },
     steps: {
       level: "Nível",
       phone: "Teléfono",
       email: "E-mail",
       identity: "Identidad",
       selfie: "Selfie",
+      residence: "Estatus",
       address: "Morada",
       review: "Confirmación"
     },
@@ -1867,6 +1880,13 @@ export const es = {
       upload: "Adicionar una selfie",
       uploadHint: "Rosto y documento visíveis."
     },
+    residence: {
+      heading: "Visa, ВНЖ, РВП o РВПО",
+      hint: "Añada su documento de estancia en Rusia (visa, ВНЖ, РВП o РВПО).",
+      docType: "Tipo de documento",
+      upload: "Foto del documento",
+      uploadHint: "Imagen o PDF, frente legible con fechas visibles."
+    },
     address: {
       heading: "Comprobante de dirección",
       hint: "Registo migratório, contrato de arrendamento o fatura recente na Rusia.",
@@ -1878,6 +1898,7 @@ export const es = {
       level: "Nível pedido",
       idDoc: "Documento de identidad",
       selfie: "Selfie de verificación",
+      residence: "Visa / ВНЖ / РВП / РВПО",
       phone: "Teléfono russo",
       email: "E-mail",
       address: "Comprobante de dirección",
@@ -3680,6 +3701,14 @@ export const es = {
       successDescription: "Su declaración cierra la transferencia. Si hay un problema, abra una reclamación.",
       viewTransfer: "Ver transferencia",
       myTransfers: "As minhas transferencias",
+      reviewTitle: "Su opinión sobre {name}",
+      reviewDescription: "Esta transferencia ha terminado. Comparta su experiencia con esta empresa.",
+      reviewComment: "Su comentario",
+      reviewCommentPlaceholder: "Servicio, plazos, comunicación…",
+      reviewSubmit: "Publicar mi opinión",
+      reviewSkip: "Más tarde",
+      reviewSavedTitle: "Opinión guardada",
+      reviewSavedMessage: "Gracias por su comentario sobre {name}.",
       eyebrow: "Receción",
       title: "Declarar receción",
       description: "Transferencia {id}",
@@ -6082,7 +6111,8 @@ export const es = {
       promoteAdmin: "Tornar admin",
       reactivate: "Reactivar",
       suspend: "Suspender",
-      rejectPrompt: "Motivo da recusa (opcional):",
+      rejectPrompt: "Motivo del rechazo (obligatorio):",
+      rejectReasonRequired: "El motivo del rechazo es obligatorio.",
       resolve: "Resolver",
       close: "Encerrar",
       removeReview: "Remover a avaliación",

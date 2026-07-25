@@ -21,6 +21,7 @@ import { REVIEW_DISPUTE_STATUS } from '@moxt/shared/utils/reviewUtils.js'
 import { FiCheck } from 'react-icons/fi'
 import { normalizeAdminKind, normalizeReportType } from './adminLinkUtils'
 import { adminText } from './adminI18n'
+import { promptRejectReason } from './promptRejectReason'
 
 export function ActionButton({ done, doneLabel, children, variant, ...props }) {
   if (done) {
@@ -515,10 +516,8 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
             doneLabel={adminText(t, 'admin.actions.rejected')}
             variant="danger"
             onClick={() => {
-              const reviewNote =
-                typeof window !== 'undefined'
-                  ? window.prompt(adminText(t, 'admin.actions.rejectPrompt'), item.reviewNote || '') || ''
-                  : ''
+              const reviewNote = promptRejectReason(t, item.reviewNote || '')
+              if (!reviewNote) return
               dispatch(
                 updateVerificationStatus({
                   id: item.id,
@@ -558,10 +557,8 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
             doneLabel={adminText(t, 'admin.actions.rejected')}
             variant="danger"
             onClick={() => {
-              const reviewNote =
-                typeof window !== 'undefined'
-                  ? window.prompt(adminText(t, 'admin.actions.rejectPrompt'), item.reviewNote || '') || ''
-                  : ''
+              const reviewNote = promptRejectReason(t, item.reviewNote || '')
+              if (!reviewNote) return
               dispatch(
                 updateBusinessDocumentStatus({
                   id: item.id,

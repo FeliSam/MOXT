@@ -224,10 +224,15 @@ const businessSlice = createSlice({
     updateBusinessDocumentStatus(state, action) {
       const document = state.documents.find((item) => item.id === action.payload.id)
       if (!document) return
-      document.status = action.payload.status
+      const nextStatus = action.payload.status
+      const reviewNote = String(
+        action.payload.reviewNote ?? document.reviewNote ?? '',
+      ).trim()
+      if (nextStatus === 'rejected' && !reviewNote) return
+      document.status = nextStatus
       if (action.payload.reviewedBy !== undefined) document.reviewedBy = action.payload.reviewedBy
-      if (action.payload.reviewNote !== undefined) {
-        document.reviewNote = action.payload.reviewNote || ''
+      if (nextStatus === 'rejected' || action.payload.reviewNote !== undefined) {
+        document.reviewNote = nextStatus === 'verified' ? '' : reviewNote
       }
       document.reviewedAt = action.payload.reviewedAt || new Date().toISOString()
       document.updatedAt = new Date().toISOString()

@@ -17,6 +17,7 @@ import { archivePostsBySource } from '../features/posts/postsSlice'
 import { createNotificationDispatcher } from './notificationTriggers'
 import { hasReviewEligibility } from '@moxt/shared/utils/reviewEligibility.js'
 import { setUser } from '../features/auth/authSlice'
+import { setUserVerified } from '../features/administration/administrationSlice'
 import { sanitizeUserFacingMessage } from '../features/auth/authErrorMessages'
 import { appText } from '../i18n/appText'
 
@@ -160,9 +161,12 @@ export const interactionMiddleware = (store) => {
     triggers.handleVerificationStatus(before, after, action, actorId)
     if (action.payload.status === 'verified') {
       const request = after.account.verificationRequests.find((item) => item.id === action.payload.id)
-      const currentUser = store.getState().auth.user
-      if (request?.userId && currentUser?.id === request.userId) {
-        store.dispatch(setUser({ ...currentUser, verified: true, status: 'verified' }))
+      if (request?.userId) {
+        store.dispatch(setUserVerified({ id: request.userId, verified: true }))
+        const currentUser = store.getState().auth.user
+        if (currentUser?.id === request.userId) {
+          store.dispatch(setUser({ ...currentUser, verified: true, status: 'verified' }))
+        }
       }
     }
   }

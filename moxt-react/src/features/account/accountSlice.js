@@ -354,11 +354,17 @@ const accountSlice = createSlice({
     updateVerificationStatus(state, action) {
       const request = state.verificationRequests.find((item) => item.id === action.payload.id)
       if (!request) return
-      request.status = action.payload.status
+      const nextStatus = action.payload.status
+      const reviewNote = String(action.payload.reviewNote ?? request.reviewNote ?? '').trim()
+      if (nextStatus === 'rejected' && !reviewNote) return
+      request.status = nextStatus
       request.reviewedAt = new Date().toISOString()
       request.reviewedBy = action.payload.reviewedBy
-      if (action.payload.reviewNote !== undefined) {
-        request.reviewNote = String(action.payload.reviewNote || '').trim()
+      if (!Array.isArray(request.documentIds)) {
+        request.documentIds = []
+      }
+      if (nextStatus === 'rejected' || action.payload.reviewNote !== undefined) {
+        request.reviewNote = reviewNote
       }
     },
     updateAccountPreferences(state, action) {

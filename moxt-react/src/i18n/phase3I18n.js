@@ -359,19 +359,24 @@ export const PHASE3_FR_SOURCES = {
     'Trois niveaux : numéro russe (publication), identité MOXT (entreprise/transferts), renforcée (plafonds élevés).',
   'verification.levels.identity': 'Identité',
   'verification.levels.identityDesc':
-    'Pièce d’identité et selfie. Débloque la création d’entreprise et les transferts.',
+    'Pièce d’identité, selfie et visa / ВНЖ / РВП / РВПО. Débloque la création d’entreprise et les transferts.',
   'verification.levels.enhanced': 'Renforcée',
   'verification.levels.enhancedDesc':
-    'Identité + justificatif de domicile. Débloque les plafonds élevés.',
+    'Identité, statut de séjour et justificatif de domicile. Débloque les plafonds élevés.',
   'verification.idTypes.passport': 'Passeport',
   'verification.idTypes.residence': 'Carte de séjour russe (ВНЖ / РВП)',
   'verification.idTypes.migration': 'Carte de migration / patente',
   'verification.idTypes.consular': 'Carte consulaire',
+  'verification.residenceTypes.visa': 'Visa',
+  'verification.residenceTypes.vnj': 'ВНЖ (VNJ)',
+  'verification.residenceTypes.rvp': 'РВП (RVP)',
+  'verification.residenceTypes.rvpo': 'РВПО (RVPO)',
   'verification.steps.level': 'Niveau',
   'verification.steps.phone': 'Téléphone',
   'verification.steps.email': 'E-mail',
   'verification.steps.identity': 'Identité',
   'verification.steps.selfie': 'Selfie',
+  'verification.steps.residence': 'Statut',
   'verification.steps.address': 'Domicile',
   'verification.steps.review': 'Confirmation',
   'verification.toast.sentTitle': 'Dossier envoyé',
@@ -383,6 +388,11 @@ export const PHASE3_FR_SOURCES = {
   'verification.overdue.link': 'le support MOXT',
   'verification.request.heading': 'Demande {level}',
   'verification.request.docs': '{count} document(s) associé(s)',
+  'verification.rejected.title': 'Dossier refusé',
+  'verification.rejected.reason': 'Motif du refus : {note}',
+  'verification.rejected.fallback': 'Votre dossier a été refusé. Corrigez les documents puis renvoyez-le.',
+  'verification.rejected.hint':
+    'Corrigez les pièces concernées ci-dessous, puis renvoyez un nouveau dossier.',
   'verification.stepProgress': 'Étape {step}/{total} · {label}',
   'verification.chooseLevel': 'Choisissez votre niveau',
   'verification.chooseLevelHint':
@@ -397,6 +407,12 @@ export const PHASE3_FR_SOURCES = {
     'Une photo de vous tenant votre pièce, pour confirmer qu’elle vous appartient.',
   'verification.selfie.upload': 'Ajouter un selfie',
   'verification.selfie.uploadHint': 'Visage et document visibles.',
+  'verification.residence.heading': 'Visa, ВНЖ, РВП ou РВПО',
+  'verification.residence.hint':
+    'Ajoutez votre document de séjour en Russie (visa, ВНЖ, РВП ou РВПО).',
+  'verification.residence.docType': 'Type de document',
+  'verification.residence.upload': 'Photo du document',
+  'verification.residence.uploadHint': 'Image ou PDF, recto lisible et dates visibles.',
   'verification.address.heading': 'Justificatif de domicile',
   'verification.address.hint':
     'Enregistrement migratoire, bail ou facture récente en Russie.',
@@ -406,6 +422,7 @@ export const PHASE3_FR_SOURCES = {
   'verification.review.level': 'Niveau demandé',
   'verification.review.idDoc': 'Pièce d’identité',
   'verification.review.selfie': 'Selfie de vérification',
+  'verification.review.residence': 'Visa / ВНЖ / РВП / РВПО',
   'verification.review.phone': 'Téléphone russe',
   'verification.review.email': 'E-mail',
   'verification.review.address': 'Justificatif de domicile',
@@ -454,6 +471,24 @@ export const PHASE3_FR_SOURCES = {
   'verification.guide.selfie.rejected.selfieDark.title': 'Photo trop sombre',
   'verification.guide.selfie.rejected.selfieDark.desc':
     'On ne distingue ni le visage ni les informations du document.',
+  'verification.guide.residence.title': 'Visa, ВНЖ, РВП ou РВПО',
+  'verification.guide.residence.intro':
+    'Photographiez le document de séjour en entier, avec les dates de validité lisibles.',
+  'verification.guide.residence.accepted.docClear.title': 'Document entier et net',
+  'verification.guide.residence.accepted.docClear.desc':
+    'Les 4 coins sont visibles, le texte et les dates sont lisibles.',
+  'verification.guide.residence.accepted.docValid.title': 'Visa, ВНЖ, РВП ou РВПО',
+  'verification.guide.residence.accepted.docValid.desc':
+    'Page principale avec photo, nom et période de validité clairement visibles.',
+  'verification.guide.residence.rejected.docCrop.title': 'Document coupé',
+  'verification.guide.residence.rejected.docCrop.desc':
+    'Une partie du document est hors cadre ou un coin manque.',
+  'verification.guide.residence.rejected.docBlur.title': 'Photo floue ou sombre',
+  'verification.guide.residence.rejected.docBlur.desc':
+    'Le texte ou les dates ne sont pas lisibles.',
+  'verification.guide.residence.rejected.docScreen.title': 'Capture d’écran',
+  'verification.guide.residence.rejected.docScreen.desc':
+    'Photo d’un écran, scan de mauvaise qualité ou document avec reflets.',
   'verification.guide.address.title': 'Justificatif de domicile',
   'verification.guide.address.intro':
     'Joignez un document récent (moins de 3 mois) à votre nom, avec adresse en Russie.',

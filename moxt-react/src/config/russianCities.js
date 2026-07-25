@@ -304,14 +304,17 @@ export const EN_TO_FR = Object.fromEntries(
 
 /** Retrouve la ville principale parente d'une ville proche */
 export function findParentCity(apiCityName) {
+  const needle = String(apiCityName || '').toLowerCase()
+  if (!needle) return null
   return (
     MAIN_RUSSIAN_CITIES.find((m) =>
-      m.nearby.some((n) => n.toLowerCase() === apiCityName.toLowerCase()),
+      (m.nearby || []).some((n) => n.toLowerCase() === needle),
     ) || null
   )
 }
 
 /** Convertit un nom anglais API en nom français si connu, sinon retourne tel quel */
 export function toFrenchCityName(englishName) {
-  return EN_TO_FR[englishName.toLowerCase()] ?? englishName
+  if (englishName == null || englishName === '') return englishName
+  return EN_TO_FR[String(englishName).toLowerCase()] ?? englishName
 }

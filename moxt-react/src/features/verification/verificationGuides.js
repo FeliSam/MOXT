@@ -75,6 +75,44 @@ export const VERIFICATION_GUIDES = {
       },
     ],
   },
+  residence: {
+    titleKey: 'verification.guide.residence.title',
+    introKey: 'verification.guide.residence.intro',
+    accepted: [
+      {
+        id: 'residence-clear',
+        titleKey: 'verification.guide.residence.accepted.docClear.title',
+        descriptionKey: 'verification.guide.residence.accepted.docClear.desc',
+        illustration: 'id-good-full',
+      },
+      {
+        id: 'residence-valid',
+        titleKey: 'verification.guide.residence.accepted.docValid.title',
+        descriptionKey: 'verification.guide.residence.accepted.docValid.desc',
+        illustration: 'id-good-passport',
+      },
+    ],
+    rejected: [
+      {
+        id: 'residence-crop',
+        titleKey: 'verification.guide.residence.rejected.docCrop.title',
+        descriptionKey: 'verification.guide.residence.rejected.docCrop.desc',
+        illustration: 'id-bad-crop',
+      },
+      {
+        id: 'residence-blur',
+        titleKey: 'verification.guide.residence.rejected.docBlur.title',
+        descriptionKey: 'verification.guide.residence.rejected.docBlur.desc',
+        illustration: 'id-bad-blur',
+      },
+      {
+        id: 'residence-screen',
+        titleKey: 'verification.guide.residence.rejected.docScreen.title',
+        descriptionKey: 'verification.guide.residence.rejected.docScreen.desc',
+        illustration: 'id-bad-screen',
+      },
+    ],
+  },
   address: {
     titleKey: 'verification.guide.address.title',
     introKey: 'verification.guide.address.intro',

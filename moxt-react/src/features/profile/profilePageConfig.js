@@ -140,6 +140,7 @@ export function profileInitials(first = '', last = '') {
 }
 
 export function profileCompletionPercent(user) {
+  if (!user) return 0
   const fields = [user.firstName, user.lastName, user.email, user.phone, user.country, user.city]
   return Math.round((fields.filter((value) => String(value || '').trim()).length / fields.length) * 100)
 }

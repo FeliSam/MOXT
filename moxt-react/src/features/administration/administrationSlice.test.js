@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import reducer, {
+  setUserVerified,
   updateUserCity,
   updateUserRole,
   updateUserStatus,
@@ -22,5 +23,11 @@ describe('administrationSlice', () => {
     expect(updated.users[0].city).toBe('Koursk')
     const ignored = reducer(updated, updateUserCity({ id: 'u1', city: '   ' }))
     expect(ignored.users[0].city).toBe('Koursk')
+  })
+
+  it('marque un utilisateur comme vérifié', () => {
+    const initial = { users: [{ id: 'u1', role: 'user', status: 'active', verified: false }] }
+    const updated = reducer(initial, setUserVerified({ id: 'u1', verified: true }))
+    expect(updated.users[0].verified).toBe(true)
   })
 })

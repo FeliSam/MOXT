@@ -69,12 +69,14 @@ export function AdminVerificationsPanel({
   }
 
   function reject(item) {
+    const reviewNote = rejectReason.trim()
+    if (!reviewNote) return
     dispatch(
       updateVerificationStatus({
         id: item.id,
         status: 'rejected',
         reviewedBy: adminId,
-        reviewNote: rejectReason,
+        reviewNote,
       }),
     )
     setRejectId(null)
@@ -140,7 +142,12 @@ export function AdminVerificationsPanel({
                     className="w-full rounded-xl bg-[var(--app-surface-muted)] p-3 text-sm outline-none ring-1 ring-[var(--app-border)] focus:ring-brand-500"
                   />
                   <div className="flex flex-wrap gap-2">
-                    <Button variant="danger" icon={FiX} onClick={() => reject(item)}>
+                    <Button
+                      variant="danger"
+                      icon={FiX}
+                      disabled={!rejectReason.trim()}
+                      onClick={() => reject(item)}
+                    >
                       {t('verification.admin.rejectConfirm')}
                     </Button>
                     <Button

@@ -96,7 +96,14 @@ export function hasReviewEligibility(state, authorId, targetType, targetId) {
 
   if (targetType === REVIEW_TARGET_TYPES.BUSINESS) {
     const business = state.businesses?.items?.find((item) => item.id === targetId)
+    const completedWithBusiness = (state.transfers?.items || []).some(
+      (transfer) =>
+        transfer.status === 'completed' &&
+        transfer.userId === authorId &&
+        transfer.businessId === targetId,
+    )
     const eligible =
+      completedWithBusiness ||
       hasCompletedTransferBetween(state, authorId, business?.ownerId) ||
       hasUserProfileReviewEligibility(state, authorId, business?.ownerId)
     return eligible

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { FiExternalLink, FiFileText, FiImage, FiPlus } from 'react-icons/fi'
+import { Alert } from '../../components/ui/Alert'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
@@ -205,11 +206,6 @@ export function DocumentsPanel({ business, dispatch, documents, initialCategory 
                   {documentTypeLabel(document.category)} ·{' '}
                   {pt('professional.documents.sizeKb', { size: Math.ceil(document.size / 1024) })}
                 </span>
-                {document.reviewNote && document.status === 'rejected' ? (
-                  <p className="mt-1 text-xs text-rose-700 dark:text-rose-300">
-                    {pt('professional.documents.rejectNote', { note: document.reviewNote })}
-                  </p>
-                ) : null}
               </div>
               <Badge tone={statusMeta(document.status, t).tone}>
                 {statusMeta(document.status, t).label}
@@ -224,6 +220,13 @@ export function DocumentsPanel({ business, dispatch, documents, initialCategory 
                   ? pt('professional.documents.viewFile')
                   : pt('professional.documents.openFile')}
               </Button>
+              {document.status === 'rejected' && document.reviewNote ? (
+                <div className="w-full basis-full">
+                  <Alert variant="error" title={pt('professional.documents.rejectedTitle')}>
+                    {pt('professional.documents.rejectNote', { note: document.reviewNote })}
+                  </Alert>
+                </div>
+              ) : null}
             </Card>
           )
         })

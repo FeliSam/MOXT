@@ -4,7 +4,7 @@ import { getRussianCities } from '../services/geographyService'
 
 /** Normalise une chaîne pour la recherche : minuscule + sans accents + séparateurs unifiés */
 function normalize(str) {
-  return str
+  return String(str || '')
     .toLowerCase()
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
@@ -33,7 +33,7 @@ function searchCities(query, allApiCities) {
 
   // 2. Villes annexes connues — cherche dans les nearby
   for (const main of MAIN_RUSSIAN_CITIES) {
-    for (const nearby of main.nearby) {
+    for (const nearby of main.nearby || []) {
       if (normalize(nearby).includes(q)) {
         if (!results.find((r) => r.display === nearby)) {
           results.push({

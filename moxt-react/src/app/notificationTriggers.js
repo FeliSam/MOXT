@@ -410,12 +410,14 @@ export function createNotificationDispatcher(store) {
         (item) => item.id === action.payload.id,
       )
       if (!request || previous?.status === request.status) return
+      // Reject without a reason must not notify (admin must provide reviewNote).
+      if (request.status === 'rejected' && !String(request.reviewNote || '').trim()) return
 
       const statusText = verificationStatusLabel(request.status)
       const reason =
-        request.status === 'rejected' && request.reviewNote
+        request.status === 'rejected'
           ? notifyT('shared.notifications.verification.reasonPrefix', {
-              note: String(request.reviewNote).slice(0, 120),
+              note: String(request.reviewNote).trim().slice(0, 120),
             })
           : ''
       notifyUser(
@@ -459,15 +461,17 @@ export function createNotificationDispatcher(store) {
       const document = after.businesses.documents.find((item) => item.id === action.payload.id)
       if (!document || previous?.status === document.status) return
       if (!['verified', 'rejected'].includes(document.status)) return
+      // Reject without a reason must not notify (admin must provide reviewNote).
+      if (document.status === 'rejected' && !String(document.reviewNote || '').trim()) return
 
       const statusText =
         document.status === 'verified'
           ? notifyT('shared.notifications.businessDocument.statusVerified')
           : notifyT('shared.notifications.businessDocument.statusRejected')
       const reason =
-        document.status === 'rejected' && document.reviewNote
+        document.status === 'rejected'
           ? notifyT('shared.notifications.businessDocument.reasonPrefix', {
-              note: String(document.reviewNote).slice(0, 120),
+              note: String(document.reviewNote).trim().slice(0, 120),
             })
           : ''
 
