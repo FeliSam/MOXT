@@ -179,19 +179,23 @@ export function P2PPage() {
             { key: 'archived', label: t('p2p.page.archives'), count: archivedOffers.length },
           ]}
         />
-        <CatalogGrid lazy={false} columns="grid-cols-1 sm:grid-cols-2 xl:grid-cols-3" className="min-w-0">
+        <CatalogGrid
+          lazy={false}
+          columns="grid-cols-1 min-[480px]:grid-cols-2 xl:grid-cols-3"
+          className="min-w-0 w-full"
+        >
           {displayedOffers.length ? (
             displayedOffers.map((offer, index) => (
-              <RevealListItem key={offer.id} index={index} className="min-w-0">
+              <RevealListItem key={offer.id} index={index} className="min-w-0 max-w-full">
                 <Card
                   variant="interactive"
-                  className={`group flex h-full min-w-0 flex-col overflow-hidden !border-0 p-4 shadow-none ring-0 transition-shadow duration-300 sm:p-5 ${tab === 'archived' ? 'opacity-80' : ''}`}
+                  className={`group flex h-full min-w-0 max-w-full flex-col overflow-hidden !border-0 p-3 shadow-none ring-0 transition-shadow duration-300 xs:p-4 sm:p-5 ${tab === 'archived' ? 'opacity-80' : ''}`}
                 >
                   <div className="flex min-w-0 items-start justify-between gap-2">
-                    <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand-700 dark:bg-brand-900 dark:text-brand-200">
+                    <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand-700 sm:size-11 dark:bg-brand-900 dark:text-brand-200">
                       <FiUsers />
                     </span>
-                    <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
+                    <div className="flex min-w-0 max-w-[70%] flex-wrap items-center justify-end gap-1.5">
                       <Badge tone={offer.status === 'active' ? 'success' : 'warning'}>
                         {offer.status === 'active'
                           ? t('p2p.page.statusActive')
@@ -207,7 +211,7 @@ export function P2PPage() {
                     </div>
                   </div>
 
-                  <h2 className="mt-3.5 truncate text-sm font-black tabular-nums leading-snug sm:text-base">
+                  <h2 className="mt-3.5 break-words text-sm font-black tabular-nums leading-snug sm:text-base">
                     {t('p2p.page.amountTo', {
                       amount: formatMoney(offer.amount, offer.fromCurrency),
                       currency: offer.toCurrency,
@@ -269,11 +273,11 @@ export function P2PPage() {
                     </p>
                   ) : null}
 
-                  <div className="mt-4 flex items-center gap-2">
+                  <div className="mt-4 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-stretch">
                     {tab === 'active' && offer.status === 'active' && offer.ownerId !== user.id ? (
                       <Button
                         size="sm"
-                        className="min-h-10 flex-1 sm:min-h-11"
+                        className="min-h-10 w-full flex-1 sm:min-h-11"
                         onClick={() => requestAccept(offer)}
                       >
                         {t('p2p.page.accept')}
@@ -283,12 +287,12 @@ export function P2PPage() {
                       to={`/p2p/${offer.id}`}
                       className={
                         tab === 'active' && offer.status === 'active' && offer.ownerId !== user.id
-                          ? 'shrink-0'
-                          : 'flex-1'
+                          ? 'min-w-0 flex-1'
+                          : 'min-w-0 w-full flex-1'
                       }
                     >
-                      <span className="flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-brand-700 px-4 text-center text-xs font-black text-white transition group-hover:bg-brand-800 sm:min-h-11 sm:text-sm dark:bg-brand-600">
-                        {t('p2p.page.detail')} <FiArrowRight className="text-xs" />
+                      <span className="flex min-h-10 w-full items-center justify-center gap-2 rounded-2xl bg-brand-700 px-3 text-center text-xs font-black text-white transition group-hover:bg-brand-800 sm:min-h-11 sm:px-4 sm:text-sm dark:bg-brand-600">
+                        {t('p2p.page.detail')} <FiArrowRight className="shrink-0 text-xs" />
                       </span>
                     </Link>
                   </div>
@@ -325,8 +329,8 @@ export function P2PPage() {
                   const needsReview =
                     order.status === 'completed' && !userRatedOrder(order, user.id)
                   return (
-                    <Link key={order.id} to={`/p2p/orders/${order.id}`}>
-                      <Card className="flex items-center justify-between gap-4">
+                    <Link key={order.id} to={`/p2p/orders/${order.id}`} className="min-w-0">
+                      <Card className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                         <div className="min-w-0">
                           <strong className="block truncate">{order.id}</strong>
                           <p className="mt-1 text-xs text-slate-500">

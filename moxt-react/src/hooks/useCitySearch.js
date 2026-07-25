@@ -69,7 +69,7 @@ function searchCities(query, allApiCities) {
 
 /**
  * Hook de recherche intelligente de villes russes.
- * - Affiche les 28 grandes villes directement (mainCities)
+ * - Affiche les grandes villes directement (mainCities)
  * - Affiche les villes proches de la ville sélectionnée (nearbyOf)
  * - Recherche debounce dans toute la base API
  */

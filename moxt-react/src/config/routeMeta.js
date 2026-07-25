@@ -72,6 +72,13 @@ export const routeMetadata = [
     eyebrow: 'Plateforme',
     description: 'Tous les services MOXT : essentiels, actions rapides et compte.',
   },
+  {
+    pattern: /^\/contribute$/,
+    title: 'Contribuer',
+    eyebrow: 'Communauté',
+    description: 'Soutenir le développement de MOXT avec un don volontaire.',
+    back: '/moxt',
+  },
   { pattern: /^\/activities$/, title: 'Mes activités', eyebrow: 'Compte', back: '/profile' },
   { pattern: /^\/favorites$/, title: 'Mes favoris', eyebrow: 'Compte', back: '/profile' },
   {

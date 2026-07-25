@@ -1,22 +1,16 @@
 import { createAuthService, translateAuthError } from '@moxt/shared/auth/createAuthService.js'
 import { supabase } from '../../services/supabaseClient'
+import { getSiteUrl } from '../../utils/siteUrl'
 
 export { translateAuthError }
 
-function browserOrigin() {
-  if (typeof window === 'undefined' || !window.location?.origin) return ''
-  return window.location.origin
-}
-
+/**
+ * Redirections e-mail / magic link → URL publique (moxtapp.ru),
+ * pas https://localhost de la WebView Capacitor embarquée.
+ */
 export const authService = createAuthService(supabase, {
-  getEmailRedirectUrl: () => {
-    const origin = browserOrigin()
-    return origin ? `${origin}/auth/callback?next=/security` : ''
-  },
-  getPasswordResetRedirectUrl: () => {
-    const origin = browserOrigin()
-    return origin ? `${origin}/reset-password` : ''
-  },
+  getEmailRedirectUrl: () => `${getSiteUrl()}/auth/callback?next=/security`,
+  getPasswordResetRedirectUrl: () => `${getSiteUrl()}/reset-password`,
 })
 
 export const demoAccounts = []

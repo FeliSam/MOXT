@@ -27,6 +27,7 @@ import { P2PCountdown } from '../features/p2p/components/P2PCountdown'
 import { P2PNoEscrowBanner } from '../features/p2p/components/P2PNoEscrowBanner'
 import { P2POrderStatusBar } from '../features/p2p/components/P2POrderStatusBar'
 import { P2PReputationBadge } from '../features/p2p/components/P2PReputationBadge'
+import { P2PBuyerReceiveModal } from '../features/p2p/components/P2PBuyerReceiveModal'
 import {
   addOrderProof,
   expireOrder,
@@ -57,6 +58,7 @@ export function P2POrderPage() {
   const [comment, setComment] = useState('')
   const [uploading, setUploading] = useState(false)
   const [confirmAction, setConfirmAction] = useState(null)
+  const [buyerReceiveOpen, setBuyerReceiveOpen] = useState(false)
   const [previewUrl, setPreviewUrl] = useState(null)
   const { progress: proofProgress, track: trackProofUpload } = useUploadProgress()
   const { orderId } = useParams()
@@ -194,6 +196,9 @@ export function P2POrderPage() {
   function runConfirmedAction() {
     if (confirmAction === 'markPaid') {
       dispatch(updateOrderStatus({ id: order.id, status: 'waiting_payment' }))
+      setConfirmAction(null)
+      setBuyerReceiveOpen(true)
+      return
     } else if (confirmAction === 'confirmReceived') {
       dispatch(updateOrderStatus({ id: order.id, status: 'completed' }))
     } else if (confirmAction === 'cancel') {
@@ -343,6 +348,44 @@ export function P2POrderPage() {
               ) : null}
             </div>
           </div>
+        ) : null}
+
+        {(order.buyerReceivePhone || order.buyerReceiveName) && (isSeller || isBuyer) ? (
+          <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 text-sm">
+            <p className="font-bold">
+              {t('p2p.order.buyerPayToTitle', { currency: order.toCurrency })}
+            </p>
+            <div className="mt-2 grid gap-2">
+              {order.buyerReceiveMethod ? (
+                <Row label={t('p2p.detail.method')} value={order.buyerReceiveMethod} />
+              ) : null}
+              {order.buyerReceiveName ? (
+                <Row label={t('p2p.order.receiveName')} value={order.buyerReceiveName} />
+              ) : null}
+              {order.buyerReceivePhone ? (
+                <Row label={t('p2p.order.receivePhone')} value={order.buyerReceivePhone} />
+              ) : null}
+            </div>
+            {isBuyer && order.status === 'waiting_payment' ? (
+              <Button
+                className="mt-3"
+                size="sm"
+                variant="secondary"
+                onClick={() => setBuyerReceiveOpen(true)}
+              >
+                {t('common.edit')}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {isBuyer &&
+        order.status === 'waiting_payment' &&
+        !order.buyerReceivePhone &&
+        !order.buyerReceiveName ? (
+          <Button variant="secondary" onClick={() => setBuyerReceiveOpen(true)}>
+            {t('p2p.order.buyerReceive.title')}
+          </Button>
         ) : null}
 
         <P2PReputationBadge userId={otherPartyId} orders={orders} reviews={reviews} />
@@ -593,6 +636,13 @@ export function P2POrderPage() {
           </div>
         </div>
       </Modal>
+
+      <P2PBuyerReceiveModal
+        open={buyerReceiveOpen}
+        onClose={() => setBuyerReceiveOpen(false)}
+        order={order}
+        user={user}
+      />
 
       <Modal
         open={Boolean(previewUrl)}

@@ -36,6 +36,7 @@ export const moxtHubSecondaryGroups = [
     id: 'finance',
     titleKey: 'moxtHub.groups.finance',
     links: [
+      { id: 'contribute', labelKey: 'nav.contribute', path: '/contribute', icon: FiHeart },
       { id: 'receipts', labelKey: 'profile.links.receipts', path: '/receipts', icon: FiFileText },
       { id: 'documents', labelKey: 'profile.links.documents', path: '/documents', icon: FiFileText },
       { id: 'disputes', labelKey: 'profile.links.disputes', path: '/disputes', icon: FiAlertTriangle },

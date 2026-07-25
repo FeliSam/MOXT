@@ -1,5 +1,5 @@
 /**
- * 28 principales villes russes avec noms français / anglais (API) / russe.
+ * Principales villes russes avec noms français / anglais (API) / russe.
  * Le champ `en` correspond exactement au nom retourné par countriesnow.space.
  * Le champ `nearby` liste les villes proches telles que l'API les retourne.
  */
@@ -258,6 +258,42 @@ export const MAIN_RUSSIAN_CITIES = [
     region: 'Tatarstan',
     priority: 28,
     nearby: [],
+  },
+  {
+    id: 'kursk',
+    fr: 'Koursk',
+    en: 'Kursk',
+    ru: 'Курск',
+    region: 'Centre (Koursk)',
+    priority: 29,
+    nearby: ['Zheleznogorsk', 'Kurchatov', 'Lgov'],
+  },
+  {
+    id: 'oryol',
+    fr: 'Orel',
+    en: 'Oryol',
+    ru: 'Орёл',
+    region: 'Centre (Orel)',
+    priority: 30,
+    nearby: ['Livny', 'Mtsensk'],
+  },
+  {
+    id: 'belgorod',
+    fr: 'Belgorod',
+    en: 'Belgorod',
+    ru: 'Белгород',
+    region: 'Centre (Belgorod)',
+    priority: 31,
+    nearby: ['Stary Oskol', 'Gubkin', 'Shebekino'],
+  },
+  {
+    id: 'bryansk',
+    fr: 'Briansk',
+    en: 'Bryansk',
+    ru: 'Брянск',
+    region: 'Centre (Briansk)',
+    priority: 32,
+    nearby: ['Klintsy', 'Novozybkov'],
   },
 ]
 

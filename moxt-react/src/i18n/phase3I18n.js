@@ -749,6 +749,35 @@ export const PHASE3_FR_SOURCES = {
   'payments.confirm': 'Confirmer le paiement',
   'payments.empty': 'Aucun paiement enregistré',
 
+  // ── contribute ─────────────────────────────────────────────────────────
+  'contribute.eyebrow': 'Communauté',
+  'contribute.title': 'Contribuer au développement',
+  'contribute.description':
+    'Soutenez MOXT librement : chaque contribution aide à améliorer la plateforme pour tous.',
+  'contribute.heroTitle': 'Devenez volontaire du projet',
+  'contribute.heroBody':
+    'Choisissez n’importe quel montant. Votre geste finance le développement produit, la stabilité des serveurs et le support aux membres.',
+  'contribute.chooseAmount': 'Montant suggéré',
+  'contribute.customAmount': 'Autre montant',
+  'contribute.customPlaceholder': 'Ex. 750',
+  'contribute.currency': 'Devise',
+  'contribute.message': 'Message (optionnel)',
+  'contribute.messagePlaceholder': 'Un mot pour l’équipe MOXT…',
+  'contribute.howTitle': 'Comment ça se passe ?',
+  'contribute.howBody':
+    'Votre intention est enregistrée dans MOXT. Un membre de l’équipe vous contacte pour finaliser le versement (virement, carte ou canal local).',
+  'contribute.how1': 'Indiquez le montant et la devise',
+  'contribute.how2': 'Validez — une demande de contribution est créée',
+  'contribute.how3': 'Finalisez le paiement avec le support MOXT',
+  'contribute.submit': 'Contribuer {amount}',
+  'contribute.contactSupport': 'Parler au support',
+  'contribute.thanks':
+    'Merci ! Votre demande est enregistrée. Le support vous recontactera pour finaliser.',
+  'contribute.toastTitle': 'Contribution enregistrée',
+  'contribute.toastBody': 'Demande de {amount} créée. Merci pour votre soutien.',
+  'contribute.defaultNote': 'Contribution volontaire au développement MOXT',
+  'nav.contribute': 'Contribuer',
+
   // ── my publications ────────────────────────────────────────────────────
   'publications.mine.publish.listing': 'Publier une annonce',
   'publications.mine.publish.parcel': 'Publier un colis',

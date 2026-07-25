@@ -897,6 +897,12 @@ const handlers = {
     const offer = state.p2p.offers.find((item) => item.id === order.offerId)
     await syncP2pOrder(order, offer || null)
   },
+  'p2p/updateOrderReceiveDetails': async (payload, state) => {
+    const order = state.p2p.orders.find((item) => item.id === payload.id)
+    if (!order) return
+    const offer = state.p2p.offers.find((item) => item.id === order.offerId)
+    await syncP2pOrder(order, offer || null)
+  },
   'p2p/expireOrder': async (payload, state) => {
     const order = state.p2p.orders.find((item) => item.id === payload.id)
     if (!order) return
@@ -1182,15 +1188,26 @@ const handlers = {
 
   // ── Favoris ───────────────────────────────────────────────────────────────────
   'account/upsertPublisherSubscription': async (payload) => {
+    // Contrainte unique (subscriber_id, publisher_type, publisher_id) — pas seulement id.
+    // Un nouvel id local sur une abo déjà sync → 23505 « Synchronisation impossible ».
+    const { data: existing, error: lookupError } = await supabase
+      .from('publisher_subscriptions')
+      .select('id, created_at')
+      .eq('subscriber_id', payload.userId)
+      .eq('publisher_type', payload.publisherType)
+      .eq('publisher_id', payload.publisherId)
+      .maybeSingle()
+    if (lookupError) throw lookupError
+
     await upsert('publisher_subscriptions', {
-      id: payload.id,
+      id: existing?.id || payload.id,
       subscriber_id: payload.userId,
       publisher_type: payload.publisherType,
       publisher_id: payload.publisherId,
       notify_pref: payload.notifyPref,
       publisher_name: payload.publisherName,
       publisher_path: payload.publisherPath,
-      created_at: payload.createdAt,
+      created_at: existing?.created_at || payload.createdAt,
       updated_at: payload.updatedAt,
     })
   },
@@ -1202,15 +1219,24 @@ const handlers = {
         item.publisherId === payload.publisherId,
     )
     if (!subscription) return
+    const { data: existing, error: lookupError } = await supabase
+      .from('publisher_subscriptions')
+      .select('id, created_at')
+      .eq('subscriber_id', subscription.userId)
+      .eq('publisher_type', subscription.publisherType)
+      .eq('publisher_id', subscription.publisherId)
+      .maybeSingle()
+    if (lookupError) throw lookupError
+
     await upsert('publisher_subscriptions', {
-      id: subscription.id,
+      id: existing?.id || subscription.id,
       subscriber_id: subscription.userId,
       publisher_type: subscription.publisherType,
       publisher_id: subscription.publisherId,
       notify_pref: subscription.notifyPref,
       publisher_name: subscription.publisherName,
       publisher_path: subscription.publisherPath,
-      created_at: subscription.createdAt,
+      created_at: existing?.created_at || subscription.createdAt,
       updated_at: subscription.updatedAt,
     })
   },
@@ -1439,6 +1465,18 @@ const handlers = {
       .from('profiles')
       .update({
         origin_country: payload.originCountry,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', payload.id)
+    if (error) throw error
+  },
+  'administration/updateUserCity': async (payload) => {
+    const city = String(payload.city || '').trim()
+    if (!city) return
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        city,
         updated_at: new Date().toISOString(),
       })
       .eq('id', payload.id)

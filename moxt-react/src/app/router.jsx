@@ -129,6 +129,7 @@ const P2PDetailPage = lazyPage(() => import('../pages/P2PDetailPage'), 'P2PDetai
 const P2PPage = lazyPage(() => import('../pages/P2PPage'), 'P2PPage')
 const PublishP2PPage = lazyPage(() => import('../pages/PublishP2PPage'), 'PublishP2PPage')
 const PaymentsPage = lazyPage(() => import('../pages/PaymentsPage'), 'PaymentsPage')
+const ContributePage = lazyPage(() => import('../pages/ContributePage'), 'ContributePage')
 const ProfilePage = lazyPage(() => import('../pages/ProfilePage'), 'ProfilePage')
 const PersonalInformationPage = lazyPage(
   () => import('../pages/PersonalInformationPage'),
@@ -245,6 +246,7 @@ export function AppRouter() {
             <Route path="/wallet" element={<Navigate to="/receipts" replace />} />
             <Route path="/referral" element={<ReferralPage />} />
             <Route path="/payments" element={<PaymentsPage />} />
+            <Route path="/contribute" element={<ContributePage />} />
             <Route path="/receipts" element={<ReceiptsPage />} />
             <Route path="/receipts/:receiptId" element={<ReceiptDetailPage />} />
             <Route path="/disputes" element={<DisputesPage />} />

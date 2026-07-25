@@ -90,6 +90,7 @@ export function EditListingPage() {
       deliveryFee: listing?.deliveryFee || 0,
       deliveryDelay: listing?.deliveryDelay || '',
       deliveryOptions: Array.isArray(listing?.deliveryOptions) ? listing.deliveryOptions : [],
+      shippingCarriers: Array.isArray(listing?.shippingCarriers) ? listing.shippingCarriers : [],
       warranty: listing?.warranty || '',
       returnPolicy: listing?.returnPolicy || '',
       hasDiscount: Boolean(listing?.originalPrice && listing?.discountPercent),

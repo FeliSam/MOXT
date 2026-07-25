@@ -292,6 +292,28 @@ export function ListingDetailPage() {
                         })
                         .join(', '),
                     },
+                    ...(Array.isArray(listing.shippingCarriers) && listing.shippingCarriers.length
+                      ? [
+                          {
+                            label: mt('marketplace.detail.shippingCarriers'),
+                            value: listing.shippingCarriers
+                              .map((carrier) => {
+                                const id = typeof carrier === 'string' ? carrier : carrier.id
+                                const eta =
+                                  typeof carrier === 'object' && carrier?.etaHint
+                                    ? carrier.etaHint
+                                    : ''
+                                const label = mt(`marketplace.shipping.carriers.${id}`)
+                                const name =
+                                  label && label !== `marketplace.shipping.carriers.${id}`
+                                    ? label
+                                    : id
+                                return eta ? `${name} (${eta})` : name
+                              })
+                              .join(' · '),
+                          },
+                        ]
+                      : []),
                     {
                       label: mt('marketplace.detail.deliveryFee'),
                       value: listing.deliveryFee

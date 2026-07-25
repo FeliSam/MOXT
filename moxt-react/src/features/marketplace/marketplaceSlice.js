@@ -73,6 +73,11 @@ export const normalizeListing = (listing) => {
       return demoListingImages[listing.id] ? demoListingImages[listing.id] : []
     })(),
     deliveryOptions: Array.isArray(listing.deliveryOptions) ? listing.deliveryOptions : ['pickup'],
+    shippingCarriers: Array.isArray(listing.shippingCarriers)
+      ? listing.shippingCarriers
+      : Array.isArray(listing.payload?.shippingCarriers)
+        ? listing.payload.shippingCarriers
+        : [],
     paymentMethods: Array.isArray(listing.paymentMethods)
       ? listing.paymentMethods
       : ['À convenir dans la messagerie'],
@@ -130,6 +135,7 @@ const marketplaceSlice = createSlice({
             color: values.color || '',
             stock: sanitizedValues.stock,
             deliveryOptions: sanitizedValues.deliveryOptions,
+            shippingCarriers: Array.isArray(values.shippingCarriers) ? values.shippingCarriers : [],
             deliveryFee: Number(values.deliveryFee || 0),
             deliveryDelay: values.deliveryDelay || 'À confirmer',
             warranty: values.warranty || 'Aucune garantie annoncée',

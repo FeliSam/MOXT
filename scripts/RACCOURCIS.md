@@ -99,9 +99,9 @@ Safari : au retour d’onglet / bfcache, l’app re-sync `email_confirmed_at` vi
 
 | Commande | Description |
 |----------|-------------|
-| `npm run web:cap:prod:sync` | Build prod **sans localhost** + sync APK/IPA |
-| `npm run web:cap:prod:android` | Sync + ouvre Android Studio |
-| `npm run web:cap:dev:sync` | Dev live reload (IP LAN) |
+| `npm run web:cap:prod:sync` | Build prod + sync : **assets locaux dans l’APK** (pas de WebView moxtapp.ru) |
+| `npm run web:cap:prod:android` | Sync prod + ouvre Android Studio |
+| `npm run web:cap:dev:sync` | Dev live reload (`CAPACITOR_SERVER_URL` → Vite LAN) |
 | `npm run web:cap:doctor` | Diagnostic Capacitor |
 
 ---

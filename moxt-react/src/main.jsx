@@ -65,16 +65,15 @@ bootstrap()
 
 if (import.meta.env.PROD) {
   void import('./platform/capacitor').then(({ isNative }) => {
-    // La WebView native charge désormais le site live (voir capacitor.config.ts) :
-    // le service worker + le vérificateur de version doivent tourner là aussi pour
-    // que les déploiements web s'appliquent en silence, sans fermer/rouvrir l'app.
-    if (!isNative) {
-      void import('./pwa').then(({ registerServiceWorker, listenForInstallPrompt, listenForServiceWorkerMessages }) => {
-        registerServiceWorker()
-        listenForInstallPrompt()
-        listenForServiceWorkerMessages()
-      })
-    }
+    // Web / PWA : SW + mise à jour silencieuse via déploiement moxtapp.ru
+    // App native : UI embarquée dans l’APK — pas de SW ni de releaseWatcher
+    // (les updates UI passent par un nouveau build store).
+    if (isNative) return
+    void import('./pwa').then(({ registerServiceWorker, listenForInstallPrompt, listenForServiceWorkerMessages }) => {
+      registerServiceWorker()
+      listenForInstallPrompt()
+      listenForServiceWorkerMessages()
+    })
     void import('./services/releaseWatcher').then(({ startReleaseWatcher }) => {
       void import('./app/store').then(({ store }) => {
         startReleaseWatcher(store)

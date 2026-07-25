@@ -1,9 +1,15 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FiBell } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { useLanguage } from '../../contexts/useLanguage'
 import { selectAccountPreferences } from '../../features/account/accountSlice'
 import { addToast } from '../../features/ui/uiSlice'
+import { isNative } from '../../platform/capacitor'
+import {
+  initNativePushNotifications,
+  queryNativePushReceivePermission,
+  setNativePushUserId,
+} from '../../platform/pushNotifications'
 import {
   canPromptForPushPermission,
   ensureWebPushSubscription,
@@ -28,8 +34,7 @@ function isBannerDismissed() {
 }
 
 /**
- * Invite à activer les notifications push sur PWA (surtout Safari installé).
- * S’affiche si l’API est prête mais la permission n’a pas encore été accordée.
+ * Invite à activer les notifications push (PWA web + app Capacitor native).
  */
 export function PushPermissionBanner() {
   const dispatch = useDispatch()
@@ -40,25 +45,74 @@ export function PushPermissionBanner() {
   )
   const [dismissed, setDismissed] = useState(isBannerDismissed)
   const [loading, setLoading] = useState(false)
+  const [nativePermission, setNativePermission] = useState(null)
 
-  if (!user?.id || dismissed || preferences?.pushNotifications === false) return null
-  if (!canPromptForPushPermission()) return null
-  if (typeof Notification === 'undefined' || Notification.permission !== 'default') return null
-
-  async function enablePush() {
-    if (!getVapidPublicKey()) {
-      dispatch(
-        addToast({
-          tone: 'warning',
-          title: t('settings.push.unavailableTitle'),
-          message: getWebPushErrorMessage('missing_vapid', language),
-        }),
-      )
+  useEffect(() => {
+    if (!isNative || !user?.id) {
+      setNativePermission(null)
       return
     }
+    let cancelled = false
+    void queryNativePushReceivePermission().then((state) => {
+      if (!cancelled) setNativePermission(state)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [user?.id])
 
+  if (!user?.id || dismissed || preferences?.pushNotifications === false) return null
+
+  if (isNative) {
+    if (nativePermission !== 'prompt') return null
+  } else {
+    if (!canPromptForPushPermission()) return null
+    if (typeof Notification === 'undefined' || Notification.permission !== 'default') return null
+  }
+
+  async function enablePush() {
     setLoading(true)
     try {
+      if (isNative) {
+        setNativePushUserId(user.id)
+        const result = await initNativePushNotifications({ requestPermission: true })
+        if (result.enabled) {
+          dispatch(
+            addToast({
+              tone: 'success',
+              title: t('settings.push.enabledTitle'),
+              message: t('settings.push.enabledMessage'),
+            }),
+          )
+          setDismissed(true)
+          localStorage.setItem(DISMISS_KEY, String(Date.now()))
+          setNativePermission('granted')
+          return
+        }
+        if (result.reason === 'denied') {
+          dispatch(
+            addToast({
+              tone: 'warning',
+              title: t('settings.push.deniedTitle'),
+              message: t('settings.push.nativeDenied'),
+            }),
+          )
+          setNativePermission('denied')
+        }
+        return
+      }
+
+      if (!getVapidPublicKey()) {
+        dispatch(
+          addToast({
+            tone: 'warning',
+            title: t('settings.push.unavailableTitle'),
+            message: getWebPushErrorMessage('missing_vapid', language),
+          }),
+        )
+        return
+      }
+
       const result = await ensureWebPushSubscription(user.id, { prompt: true })
       if (result.enabled) {
         dispatch(

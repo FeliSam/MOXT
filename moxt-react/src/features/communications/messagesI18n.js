@@ -53,7 +53,13 @@ export const MESSAGES_FR_SOURCES = {
   'messages.assistant.preview': 'Comment puis-je vous aider aujourd’hui ?',
   'messages.assistant.subtitle': 'Assistant local contextuel',
   'messages.assistant.greeting':
-    'Bonjour, je peux rechercher dans vos données MOXT et vous guider vers la bonne action.',
+    'Bonjour — je vous guide sur les transferts, le P2P, le marketplace, les colis, la vérif et le support. Posez une question ou choisissez une suggestion.',
+  'messages.assistant.showAllQuestions': 'Voir toutes les questions préétablies',
+  'messages.assistant.hideAllQuestions': 'Masquer les questions préétablies',
+  'messages.assistant.suggestions.contribute': 'Comment contribuer au développement de MOXT ?',
+  'messages.assistant.suggestions.p2p': 'Comment fonctionne un échange P2P ?',
+  'messages.assistant.suggestions.shipping':
+    'Quels moyens d’expédition puis-je proposer en Russie ?',
   'messages.assistant.backAria': 'Retour aux conversations',
   'messages.assistant.clearHistoryAria': 'Effacer l’historique',
   'messages.assistant.removeDocAria': 'Retirer le document',
@@ -333,10 +339,13 @@ export function relatedOptionLabel(t, meta) {
 
 export const ASSISTANT_SUGGESTION_KEYS = [
   'messages.assistant.suggestions.transfer',
+  'messages.assistant.suggestions.p2p',
   'messages.assistant.suggestions.publishListing',
+  'messages.assistant.suggestions.shipping',
   'messages.assistant.suggestions.parcel',
   'messages.assistant.suggestions.verify',
   'messages.assistant.suggestions.dispute',
+  'messages.assistant.suggestions.contribute',
   'messages.assistant.suggestions.admin',
   'messages.assistant.suggestions.business',
 ]

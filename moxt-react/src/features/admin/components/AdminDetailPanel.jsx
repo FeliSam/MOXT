@@ -4,10 +4,14 @@ import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { Button } from '../../../components/ui/Button'
+import { CitySelector } from '../../../components/ui/CitySelector'
 import { Select } from '../../../components/ui/Select'
 import { flagEmoji } from '../../../config/flags'
 import { useGeographyOptions } from '../../../hooks/useGeographyOptions'
-import { updateUserOriginCountry } from '../../administration/administrationSlice'
+import {
+  updateUserCity,
+  updateUserOriginCountry,
+} from '../../administration/administrationSlice'
 import {
   replySupportTicket,
   updateSupportStatus,
@@ -77,6 +81,7 @@ export function AdminDetailPanel({
   const { t } = useLanguage()
   const { countries } = useGeographyOptions()
   const [originOverride, setOriginOverride] = useState(null)
+  const [cityOverride, setCityOverride] = useState(null)
   const liveItem = useLiveSelectedItem(selected)
   const p2pOrderForDispute = useSelector((state) => {
     if (selected?.kind !== 'dispute' || liveItem?.relatedType !== 'p2p_order') return null
@@ -87,8 +92,11 @@ export function AdminDetailPanel({
   const item = liveItem || selected?.item
   const selectedUserId = kind === 'user' ? item?.id : null
   const selectedUserOrigin = kind === 'user' ? item?.originCountry || '' : ''
+  const selectedUserCity = kind === 'user' ? item?.city || '' : ''
   const originDraft =
     originOverride?.userId === selectedUserId ? originOverride.value : selectedUserOrigin
+  const cityDraft =
+    cityOverride?.userId === selectedUserId ? cityOverride.value : selectedUserCity
 
   const detailImages = useMemo(() => {
     if (!kind || !item) return []
@@ -212,40 +220,71 @@ export function AdminDetailPanel({
       ) : null}
 
       {kind === 'user' ? (
-        <div className="grid min-w-0 gap-2 rounded-xl bg-[var(--app-surface-muted)] p-3">
-          <Select
-            id="admin-user-origin"
-            label={adminText(t, 'admin.users.editOrigin')}
-            value={originDraft}
-            onChange={(event) =>
-              setOriginOverride({ userId: selectedUserId, value: event.target.value })
-            }
-          >
-            <option value="">{adminText(t, 'admin.filters.all')}</option>
-            {countries.map((country) => (
-              <option key={country.code} value={country.code}>
-                {flagEmoji(country.code)} {country.name}
-              </option>
-            ))}
-          </Select>
-          <Button
-            variant="secondary"
-            disabled={!originDraft || originDraft === item.originCountry}
-            onClick={() => {
-              dispatch(updateUserOriginCountry({ id: item.id, originCountry: originDraft }))
-              setSelected?.({ kind: 'user', item: { ...item, originCountry: originDraft } })
-              setOriginOverride(null)
-              dispatch(
-                addToast({
-                  title: adminText(t, 'admin.users.originSaved'),
-                  message: `${item.firstName || ''} · ${originDraft}`,
-                  tone: 'success',
-                }),
-              )
-            }}
-          >
-            {adminText(t, 'admin.actions.save')}
-          </Button>
+        <div className="grid min-w-0 gap-4 rounded-xl bg-[var(--app-surface-muted)] p-3">
+          <div className="grid min-w-0 gap-2">
+            <Select
+              id="admin-user-origin"
+              label={adminText(t, 'admin.users.editOrigin')}
+              value={originDraft}
+              onChange={(event) =>
+                setOriginOverride({ userId: selectedUserId, value: event.target.value })
+              }
+            >
+              <option value="">{adminText(t, 'admin.filters.all')}</option>
+              {countries.map((country) => (
+                <option key={country.code} value={country.code}>
+                  {flagEmoji(country.code)} {country.name}
+                </option>
+              ))}
+            </Select>
+            <Button
+              variant="secondary"
+              disabled={!originDraft || originDraft === item.originCountry}
+              onClick={() => {
+                dispatch(updateUserOriginCountry({ id: item.id, originCountry: originDraft }))
+                setSelected?.({ kind: 'user', item: { ...item, originCountry: originDraft } })
+                setOriginOverride(null)
+                dispatch(
+                  addToast({
+                    title: adminText(t, 'admin.users.originSaved'),
+                    message: `${item.firstName || ''} · ${originDraft}`,
+                    tone: 'success',
+                  }),
+                )
+              }}
+            >
+              {adminText(t, 'admin.actions.save')}
+            </Button>
+          </div>
+
+          <div className="grid min-w-0 gap-2 border-t border-[var(--app-border)] pt-3">
+            <CitySelector
+              id="admin-user-city"
+              label={adminText(t, 'admin.users.editCity')}
+              value={cityDraft}
+              onChange={(city) => setCityOverride({ userId: selectedUserId, value: city })}
+              placeholder={adminText(t, 'admin.users.editCity')}
+            />
+            <Button
+              variant="secondary"
+              disabled={!cityDraft.trim() || cityDraft.trim() === (item.city || '')}
+              onClick={() => {
+                const city = cityDraft.trim()
+                dispatch(updateUserCity({ id: item.id, city }))
+                setSelected?.({ kind: 'user', item: { ...item, city } })
+                setCityOverride(null)
+                dispatch(
+                  addToast({
+                    title: adminText(t, 'admin.users.citySaved'),
+                    message: `${item.firstName || ''} · ${city}`,
+                    tone: 'success',
+                  }),
+                )
+              }}
+            >
+              {adminText(t, 'admin.actions.save')}
+            </Button>
+          </div>
         </div>
       ) : null}
 

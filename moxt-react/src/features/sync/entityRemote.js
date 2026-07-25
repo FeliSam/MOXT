@@ -34,6 +34,18 @@ export function p2pOrderFromRemoteRow(row) {
       createdMeta.receiveAccount ||
       '',
     receiveCountry: base.receiveCountry || createdMeta.receiveCountry || '',
+    buyerReceivePhone:
+      base.buyerReceivePhone ||
+      [...timeline].reverse().find((event) => event?.buyerReceivePhone)?.buyerReceivePhone ||
+      '',
+    buyerReceiveName:
+      base.buyerReceiveName ||
+      [...timeline].reverse().find((event) => event?.buyerReceiveName)?.buyerReceiveName ||
+      '',
+    buyerReceiveMethod:
+      base.buyerReceiveMethod ||
+      [...timeline].reverse().find((event) => event?.buyerReceiveMethod)?.buyerReceiveMethod ||
+      '',
   }
 }
 
@@ -57,6 +69,9 @@ export function p2pOrderToRemoteRow(order) {
     receivePhone: order.receivePhone || '',
     receiveName: order.receiveName || order.receiveAccount || '',
     receiveCountry: order.receiveCountry || '',
+    buyerReceivePhone: order.buyerReceivePhone || '',
+    buyerReceiveName: order.buyerReceiveName || '',
+    buyerReceiveMethod: order.buyerReceiveMethod || '',
   }
   if (createdIndex >= 0) {
     timeline[createdIndex] = { ...timeline[createdIndex], ...receiveMeta }
@@ -66,6 +81,22 @@ export function p2pOrderToRemoteRow(order) {
       at: order.createdAt || new Date().toISOString(),
       ...receiveMeta,
     })
+  }
+  if (order.buyerReceivePhone || order.buyerReceiveName) {
+    const hasBuyerMeta = timeline.some(
+      (event) =>
+        event?.status === 'buyer_receive_details' &&
+        event.buyerReceivePhone === order.buyerReceivePhone,
+    )
+    if (!hasBuyerMeta) {
+      timeline.push({
+        status: 'buyer_receive_details',
+        at: new Date().toISOString(),
+        buyerReceivePhone: order.buyerReceivePhone || '',
+        buyerReceiveName: order.buyerReceiveName || '',
+        buyerReceiveMethod: order.buyerReceiveMethod || '',
+      })
+    }
   }
   return {
     id: order.id,

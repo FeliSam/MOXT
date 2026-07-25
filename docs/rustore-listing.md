@@ -7,6 +7,23 @@ Ce fichier est prêt à coller dans la console. Les **captures d’écran** doiv
 
 ---
 
+## App autonome (exigence RuStore WebView)
+
+RuStore refuse les apps dont le seul but est d’ouvrir un site en WebView.
+
+**MOXT en production** embarque le front dans l’APK (`webDir: dist`, **pas** de `server.url` vers moxtapp.ru) :
+
+```bash
+npm run web:cap:prod:sync
+# Vérifie : android/.../assets/capacitor.config.json sans "url": "https://moxtapp.ru"
+```
+
+- Dev live-reload uniquement : `npm run web:cap:dev:sync` (utilise `CAPACITOR_SERVER_URL`)
+- Splash, status bar, push, caméra / QR, deep link `moxt://` restent natifs
+- Liens partagés / e-mails auth utilisent toujours `https://moxtapp.ru` (pas `localhost`)
+
+---
+
 ## URL de confidentialité (obligatoire)
 
 Utiliser **exactement** :
@@ -32,9 +49,9 @@ Transferts, colis, marketplace et emplois — diaspora Afrique ↔ Russie
 ### Long FR
 
 ```
-MOXT — la plateforme des services entre l’Afrique et la Russie.
+MOXT — l’application des services entre l’Afrique et la Russie.
 
-Envoyez et suivez des transferts, publiez ou réservez des colis voyageurs, achetez et vendez sur la marketplace, trouvez un emploi ou une entreprise de confiance — pensé pour la diaspora afro-russe (Bénin, Afrique de l’Ouest ↔ Russie).
+Envoyez et suivez des transferts, publiez ou réservez des colis voyageurs, achetez et vendez sur la marketplace, trouvez un emploi ou une entreprise de confiance — pensé pour la diaspora afro-russe (Bénin, Afrique de l’Ouest ↔ Russie). Application Android complète (navigation, messagerie, push), pas un simple accès web.
 
 FONCTIONNALITÉS
 • Transferts et suivi entre communautés
@@ -43,7 +60,7 @@ FONCTIONNALITÉS
 • Emplois et entreprises
 • Vérification d’identité et score de confiance
 • Notifications push (messages, transferts, abonnements)
-• Interface FR / RU / EN / PT
+• Interface FR / RU / EN / PT / ES
 
 SÉCURITÉ
 • Compte protégé, vérification optionnelle (KYC)
@@ -62,9 +79,9 @@ Téléchargez MOXT et rejoignez la communauté.
 ### Long RU
 
 ```
-MOXT — платформа сервисов между Африкой и Россией.
+MOXT — приложение сервисов между Африкой и Россией.
 
-Отправляйте и отслеживайте переводы, публикуйте или бронируйте посылки с попутчиками, покупайте и продавайте на маркетплейсе, ищите работу или проверенный бизнес — для афро-российской диаспоры (Бенин, Западная Африка ↔ Россия).
+Отправляйте и отслеживайте переводы, публикуйте или бронируйте посылки с попутчиками, покупайте и продавайте на маркетплейсе, ищите работу или проверенный бизнес — для афро-российской диаспоры (Бенин, Западная Африка ↔ Россия). Полноценное Android-приложение (навигация, сообщения, push), а не просто доступ к сайту.
 
 ВОЗМОЖНОСТИ
 • Переводы и отслеживание между сообществами
@@ -73,7 +90,7 @@ MOXT — платформа сервисов между Африкой и Рос
 • Вакансии и компании
 • Верификация личности и рейтинг доверия
 • Push-уведомления (сообщения, переводы, подписки)
-• Интерфейс FR / RU / EN / PT
+• Интерфейс FR / RU / EN / PT / ES
 
 БЕЗОПАСНОСТЬ
 • Защищённый аккаунт, опциональная верификация (KYC)

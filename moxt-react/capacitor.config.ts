@@ -1,18 +1,17 @@
 import type { CapacitorConfig } from '@capacitor/cli'
 
 /**
- * L'app native pointe TOUJOURS vers le site live (production ou live-reload dev) :
- * la WebView charge https://moxtapp.ru par défaut, ce qui permet aux déploiements
- * web (npm run cpd) de s'appliquer instantanément sur les appareils installés,
- * sans nouvelle build native ni resoumission RuStore/store.
+ * PRODUCTION (RuStore / APK) :
+ *   Pas de `server.url` → la WebView charge les assets locaux (`webDir: dist`).
+ *   L’app est autonome (pas un simple wrapper vers moxtapp.ru).
+ *   Rebuild + resoumission store requis pour chaque mise à jour UI embarquée.
  *
- * Live reload (dev) :
+ * DEV (live reload) :
  *   PowerShell: $env:CAPACITOR_SERVER_URL="http://192.168.x.x:5173"; npm run cap:sync
- *   Puis lancer `npm run dev` et ouvrir Android Studio / Xcode.
+ *   ou: npm run cap:dev:sync
  */
-const PRODUCTION_SERVER_URL = 'https://moxtapp.ru'
 const isDevServer = Boolean(process.env.CAPACITOR_SERVER_URL)
-const serverUrl = process.env.CAPACITOR_SERVER_URL || PRODUCTION_SERVER_URL
+const serverUrl = process.env.CAPACITOR_SERVER_URL || ''
 
 const config: CapacitorConfig = {
   appId: 'com.moxt.app',
@@ -21,16 +20,21 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: 'https',
     iosScheme: 'MOXT',
-    url: serverUrl,
-    cleartext: isDevServer,
+    // Uniquement en live-reload. En prod on omet `url` → assets embarqués.
+    ...(isDevServer && serverUrl
+      ? {
+          url: serverUrl,
+          cleartext: true,
+        }
+      : {}),
   },
   android: {
     allowMixedContent: isDevServer,
-    backgroundColor: '#f7f8fa',
+    backgroundColor: '#08705f',
     webContentsDebuggingEnabled: isDevServer,
   },
   ios: {
-    backgroundColor: '#f7f8fa',
+    backgroundColor: '#08705f',
     contentInset: 'automatic',
     scheme: 'MOXT',
     webContentsDebuggingEnabled: isDevServer,

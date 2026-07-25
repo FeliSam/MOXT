@@ -36,6 +36,7 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
   const [adminCompose, setAdminCompose] = useState(false)
   const [adminDraft, setAdminDraft] = useState('')
   const [adminSending, setAdminSending] = useState(false)
+  const [showAllQuestions, setShowAllQuestions] = useState(false)
 
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify(messages.slice(-30)))
@@ -151,9 +152,11 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
           text: response.text,
           actions: response.actions,
           sources: response.sources,
+          suggestions: response.suggestions,
           createdAt: new Date().toISOString(),
         },
       ])
+      setShowAllQuestions(false)
     } catch (err) {
       setError(
         messagesText(t, 'messages.assistant.error', {
@@ -213,7 +216,7 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
       >
         <div className="mx-auto flex max-w-3xl flex-col gap-4">
           <AssistantMessage text={messagesText(t, 'messages.assistant.greeting')} />
-          {!messages.length ? (
+          {!messages.length || showAllQuestions ? (
             <div className="ml-10 grid gap-2 sm:grid-cols-2">
               {ASSISTANT_SUGGESTION_KEYS.map((key) => {
                 const suggestion = messagesText(t, key)
@@ -221,7 +224,10 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
                   <button
                     key={key}
                     className="rounded-2xl bg-[var(--app-surface)] p-3 text-left text-sm font-bold shadow-[0_8px_24px_rgb(15_23_42/0.08)] hover:shadow-lg"
-                    onClick={() => ask(suggestion)}
+                    onClick={() => {
+                      setShowAllQuestions(false)
+                      ask(suggestion)
+                    }}
                   >
                     <FiZap className="mb-2 text-brand-500" />
                     {suggestion}
@@ -239,6 +245,21 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
                 sources={message.sources}
                 suggestions={index === messages.length - 1 ? message.suggestions : null}
                 onSuggestion={ask}
+                showAllQuestionsLabel={
+                  index === messages.length - 1
+                    ? messagesText(
+                        t,
+                        showAllQuestions
+                          ? 'messages.assistant.hideAllQuestions'
+                          : 'messages.assistant.showAllQuestions',
+                      )
+                    : null
+                }
+                onShowAllQuestions={
+                  index === messages.length - 1
+                    ? () => setShowAllQuestions((value) => !value)
+                    : null
+                }
                 sourcesLabel={messagesText(t, 'messages.assistant.sources', {
                   list: (message.sources || []).join(' · '),
                 })}
@@ -405,35 +426,46 @@ function inlineBold(text) {
   return parts.map((part, i) => (i % 2 === 1 ? <strong key={i}>{part}</strong> : part))
 }
 
-function AssistantMessage({ actions, sources, sourcesLabel, suggestions, onSuggestion, text }) {
+function AssistantMessage({
+  actions,
+  sources,
+  sourcesLabel,
+  suggestions,
+  onSuggestion,
+  showAllQuestionsLabel,
+  onShowAllQuestions,
+  text,
+}) {
   return (
-    <div className="flex max-w-[88%] gap-2">
-      <span className="mt-auto grid size-8 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-brand-500 to-cyan-500 text-white">
-        <FiCpu />
-      </span>
-      <div className="rounded-2xl rounded-bl-md bg-[var(--app-surface)] px-4 py-3 text-sm leading-6 shadow-[0_8px_24px_rgb(15_23_42/0.09)]">
-        <div className="prose-sm">{renderMarkdown(text)}</div>
-        {actions?.length ? (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {actions.map((action) => (
-              <Link
-                key={action.path}
-                to={action.path}
-                className="rounded-xl bg-[var(--app-accent-soft)] px-3 py-1.5 text-xs font-bold text-[var(--app-accent)]"
-              >
-                {action.label}
-              </Link>
-            ))}
-          </div>
-        ) : null}
-        {sources?.length ? (
-          <p className="mt-3 text-[10px] font-semibold uppercase tracking-wide text-[var(--app-text-muted)]">
-            {sourcesLabel || `Sources: ${sources.join(' · ')}`}
-          </p>
-        ) : null}
+    <div className="grid max-w-[min(100%,36rem)] gap-2">
+      <div className="flex gap-2">
+        <span className="mt-auto grid size-8 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-brand-500 to-cyan-500 text-white">
+          <FiCpu />
+        </span>
+        <div className="min-w-0 rounded-2xl rounded-bl-md bg-[var(--app-surface)] px-4 py-3 text-sm leading-6 shadow-[0_8px_24px_rgb(15_23_42/0.09)]">
+          <div className="prose-sm">{renderMarkdown(text)}</div>
+          {actions?.length ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {actions.map((action) => (
+                <Link
+                  key={action.path}
+                  to={action.path}
+                  className="rounded-xl bg-[var(--app-accent-soft)] px-3 py-1.5 text-xs font-bold text-[var(--app-accent)]"
+                >
+                  {action.label}
+                </Link>
+              ))}
+            </div>
+          ) : null}
+          {sources?.length ? (
+            <p className="mt-3 text-[10px] font-semibold uppercase tracking-wide text-[var(--app-text-muted)]">
+              {sourcesLabel || `Sources: ${sources.join(' · ')}`}
+            </p>
+          ) : null}
+        </div>
       </div>
       {suggestions?.length ? (
-        <div className="ml-10 mt-2 flex flex-wrap gap-2">
+        <div className="ml-10 flex flex-wrap gap-2">
           {suggestions.map((s) => (
             <button
               key={s}
@@ -444,6 +476,18 @@ function AssistantMessage({ actions, sources, sourcesLabel, suggestions, onSugge
               {s}
             </button>
           ))}
+        </div>
+      ) : null}
+      {showAllQuestionsLabel && onShowAllQuestions ? (
+        <div className="ml-10">
+          <button
+            type="button"
+            onClick={onShowAllQuestions}
+            className="rounded-xl border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-bold text-brand-800 transition hover:border-brand-400 dark:border-brand-800 dark:bg-brand-950/40 dark:text-brand-200"
+          >
+            <FiZap className="mr-1.5 inline text-brand-500" />
+            {showAllQuestionsLabel}
+          </button>
         </div>
       ) : null}
     </div>

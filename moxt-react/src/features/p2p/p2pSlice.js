@@ -100,6 +100,9 @@ const p2pSlice = createSlice({
             receivePhone: offer.receivePhone || '',
             receiveName: offer.receiveName || offer.receiveAccount || '',
             receiveCountry: offer.receiveCountry || '',
+            buyerReceivePhone: '',
+            buyerReceiveName: '',
+            buyerReceiveMethod: '',
             fee: calculateP2PFee(offer.amount, offer.fromCurrency, feePercent),
             status: 'created',
             proofs: [],
@@ -121,6 +124,27 @@ const p2pSlice = createSlice({
           },
         }
       },
+    },
+    updateOrderReceiveDetails(state, action) {
+      const order = state.orders.find((item) => item.id === action.payload.id)
+      if (!order) return
+      if (action.payload.buyerReceivePhone != null) {
+        order.buyerReceivePhone = String(action.payload.buyerReceivePhone).trim()
+      }
+      if (action.payload.buyerReceiveName != null) {
+        order.buyerReceiveName = String(action.payload.buyerReceiveName).trim()
+      }
+      if (action.payload.buyerReceiveMethod != null) {
+        order.buyerReceiveMethod = String(action.payload.buyerReceiveMethod).trim()
+      }
+      order.timeline ||= []
+      order.timeline.push({
+        status: 'buyer_receive_details',
+        at: new Date().toISOString(),
+        buyerReceivePhone: order.buyerReceivePhone || '',
+        buyerReceiveName: order.buyerReceiveName || '',
+        buyerReceiveMethod: order.buyerReceiveMethod || '',
+      })
     },
     updateOrderStatus(state, action) {
       const order = state.orders.find((item) => item.id === action.payload.id)
@@ -221,6 +245,7 @@ export const {
   rateOrder,
   setAll,
   updateOfferStatus,
+  updateOrderReceiveDetails,
   updateOrderStatus,
 } = p2pSlice.actions
 export default p2pSlice.reducer

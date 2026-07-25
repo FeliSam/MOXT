@@ -64,6 +64,13 @@ const administrationSlice = createSlice({
       user.originCountry = action.payload.originCountry
       user.updatedAt = new Date().toISOString()
     },
+    updateUserCity(state, action) {
+      const user = state.users.find((item) => item.id === action.payload.id)
+      const city = String(action.payload.city || '').trim()
+      if (!user || !city) return
+      user.city = city
+      user.updatedAt = new Date().toISOString()
+    },
   },
 })
 
@@ -74,5 +81,6 @@ export const {
   updateUserRole,
   updateUserStatus,
   updateUserOriginCountry,
+  updateUserCity,
 } = administrationSlice.actions
 export default administrationSlice.reducer

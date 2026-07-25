@@ -29,6 +29,7 @@ import { SOURCE_TYPE_LABELS } from '../../features/posts/postTemplates'
 import { formatDate } from '../../features/transfers/transferUtils'
 import { addToast } from '../../features/ui/uiSlice'
 import { phase3Text } from '../../i18n/phase3I18n'
+import { buildAbsoluteUrl } from '../../utils/siteUrl'
 import { FeedPostImages } from './FeedPostImages'
 import { EntityVerifiedName } from './EntityVerifiedName'
 
@@ -174,7 +175,7 @@ export function FeedPostCard({ post }) {
   }
 
   async function handleShare() {
-    const url = `${window.location.origin}/news`
+    const url = buildAbsoluteUrl('/news')
     const shareData = {
       title: post.title || post.authorName || 'MOXT',
       text: (post.message || '').trim().slice(0, 200),

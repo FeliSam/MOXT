@@ -1,6 +1,13 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const DEFAULT_ORIGINS = ['https://moxtapp.ru', 'https://www.moxtapp.ru']
+// https://localhost = origine Capacitor Android (androidScheme: https, assets locaux)
+const DEFAULT_ORIGINS = [
+  'https://moxtapp.ru',
+  'https://www.moxtapp.ru',
+  'https://localhost',
+  'capacitor://localhost',
+  'http://localhost',
+]
 const RATE_WINDOW_MS = 15 * 60 * 1000
 const RATE_MAX_PER_IP = 30
 const RATE_MAX_PER_PHONE = 8

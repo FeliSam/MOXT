@@ -63,6 +63,14 @@ export const searchablePages = [
     path: '/payments',
   },
   {
+    id: 'page-contribute',
+    title: 'Contribuer',
+    titleKey: 'nav.contribute',
+    subtitle: 'Communauté',
+    subtitleKey: 'shared.pages.groups.account',
+    path: '/contribute',
+  },
+  {
     id: 'page-receipts',
     title: 'Reçus',
     titleKey: 'shared.pages.receipts.title',

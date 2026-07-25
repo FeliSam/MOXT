@@ -333,6 +333,8 @@ export const ADMIN_FR_SOURCES = {
   'admin.users.onlineButton': 'Connectés · {count}',
   'admin.users.editOrigin': "Modifier le pays d'origine",
   'admin.users.originSaved': "Pays d'origine mis a jour",
+  'admin.users.editCity': 'Modifier la ville (Russie)',
+  'admin.users.citySaved': 'Ville mise à jour',
   'admin.actions.save': 'Enregistrer',
 
   // ── verifications panel ─────────────────────────────────────────────────

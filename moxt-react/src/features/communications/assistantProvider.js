@@ -47,7 +47,9 @@ const DOMAIN_META = {
   recu: { actionPaths: ['/transfers', '/finance'], actions: 2, suggestions: 3, texts: 1 },
   finance: { actionPaths: ['/finance'], actions: 1, suggestions: 3, texts: 1 },
   message: { actionPaths: ['/messages'], actions: 1, suggestions: 3, texts: 1 },
-  fallback: { actionPaths: ['/discover', '/support'], actions: 2, suggestions: 4, texts: 2 },
+  contribuer: { actionPaths: ['/contribute', '/support'], actions: 2, suggestions: 2, texts: 1 },
+  expedition: { actionPaths: ['/marketplace/publish', '/marketplace'], actions: 2, suggestions: 2, texts: 1 },
+  fallback: { actionPaths: ['/discover', '/support', '/contribute'], actions: 2, suggestions: 4, texts: 2 },
 }
 
 // ─── Detection keywords per language ──────────────────────────────────────────
@@ -62,6 +64,7 @@ const DOMAIN_KEYWORDS = {
     transfert: ['transfert', "envoyer de l'argent", 'envoyer argent', 'virement', 'mandat', 'envoyer de l'],
     colis: ['colis', 'trajet', 'bagage', 'voyageur', 'expédier', 'kilo', 'kg', 'transporter'],
     marketplace: ['annonce', 'marketplace', 'vendre', 'acheter', 'article', 'produit', 'vente'],
+    expedition: ['expédition', 'cdek', 'pochta', 'почта', 'livraison russie', 'transporteur', 'boxberry'],
     emploi: ['emploi', 'job', 'travail', 'poste', 'recruter', 'candidature', "offre d'emploi", 'recrut'],
     evenement: ['événement', 'evenement', 'soirée', 'conférence', 'atelier', 'rencontre', 'inscription'],
     entreprise: ['entreprise', 'société', 'prestataire', 'changeur', 'professionnel', 'annuaire', 'business'],
@@ -72,6 +75,7 @@ const DOMAIN_KEYWORDS = {
     compte: ['profil', 'compte', 'modifier', 'photo', 'avatar', 'paramètre', 'informations personnelles'],
     recu: ['reçu', 'historique', 'facture', 'preuve de transfert', 'archive'],
     finance: ['finance', 'portefeuille', 'wallet', 'solde', 'dépenses', 'bilan'],
+    contribuer: ['contribuer', 'donation', 'don', 'soutenir', 'volontaire', 'financer le projet', 'contribution'],
     message: ['message', 'messagerie', 'chat', 'conversation', 'contacter'],
   },
   en: {
@@ -83,6 +87,7 @@ const DOMAIN_KEYWORDS = {
     transfert: ['transfer', 'send money', 'sending money', 'wire', 'remittance', 'money transfer'],
     colis: ['parcel', 'package', 'trip', 'luggage', 'traveler', 'traveller', 'ship', 'kilo', 'kg', 'carry'],
     marketplace: ['listing', 'marketplace', 'sell', 'buy', 'item', 'product', 'sale'],
+    expedition: ['shipping', 'cdek', 'pochta', 'russian post', 'carrier', 'boxberry', 'delivery russia'],
     emploi: ['job', 'jobs', 'employment', 'work', 'position', 'hire', 'recruit', 'application', 'job offer'],
     evenement: ['event', 'events', 'party', 'conference', 'workshop', 'meetup', 'registration', 'rsvp'],
     entreprise: ['business', 'company', 'provider', 'exchanger', 'professional', 'directory', 'enterprise'],
@@ -93,6 +98,7 @@ const DOMAIN_KEYWORDS = {
     compte: ['profile', 'account', 'edit', 'photo', 'avatar', 'settings', 'personal information'],
     recu: ['receipt', 'history', 'invoice', 'transfer proof', 'archive'],
     finance: ['finance', 'wallet', 'balance', 'spending', 'expenses', 'statement'],
+    contribuer: ['contribute', 'donation', 'donate', 'support the project', 'volunteer', 'fund'],
     message: ['message', 'messaging', 'chat', 'conversation', 'contact'],
   },
   ru: {
@@ -148,6 +154,7 @@ const DOMAIN_ORDER = [
   'taux',
   'transfert',
   'colis',
+  'expedition',
   'marketplace',
   'emploi',
   'evenement',
@@ -155,6 +162,7 @@ const DOMAIN_ORDER = [
   'verification',
   'p2p',
   'litige',
+  'contribuer',
   'compte',
   'recu',
   'finance',

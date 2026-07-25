@@ -127,6 +127,17 @@ export const interactionMiddleware = (store) => {
     const user = after.auth.user
     if (user) store.dispatch(setUser({ ...user, status: action.payload.status }))
   }
+  if (action.type === 'administration/updateUserCity' && action.payload.id === actorId) {
+    const user = after.auth.user
+    const city = String(action.payload.city || '').trim()
+    if (user && city) store.dispatch(setUser({ ...user, city }))
+  }
+  if (action.type === 'administration/updateUserOriginCountry' && action.payload.id === actorId) {
+    const user = after.auth.user
+    if (user && action.payload.originCountry) {
+      store.dispatch(setUser({ ...user, originCountry: action.payload.originCountry }))
+    }
+  }
   if (action.type === 'posts/toggleLike') {
     triggers.handlePostLike(before, after, action)
   }

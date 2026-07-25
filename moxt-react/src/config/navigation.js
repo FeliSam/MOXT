@@ -50,6 +50,7 @@ export const routePreloaders = {
   '/p2p': () => import('../pages/P2PPage'),
   '/p2p/publish': () => import('../pages/PublishP2PPage'),
   '/payments': () => import('../pages/PaymentsPage'),
+  '/contribute': () => import('../pages/ContributePage'),
   '/parcels': () => import('../pages/ParcelsPage'),
   '/profile': () => import('../pages/ProfilePage'),
   '/profile/information': () => import('../pages/PersonalInformationPage'),

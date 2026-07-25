@@ -4123,6 +4123,23 @@ export const fr = {
       receivePhone: "Numéro de réception",
       receiveName: "Nom et prénoms",
       yourReceiveTitle: "Vos coordonnées de réception (affichées à l’acheteur)",
+      buyerPayToTitle: "Où l’acheteur reçoit {currency}",
+      buyerReceive: {
+        title: "Coordonnées de réception",
+        description:
+          "Indiquez où vous souhaitez recevoir {currency} (sens de l’échange). Utilisez votre numéro de profil ou un contact favori.",
+        useProfile: "Mon numéro de profil",
+        manual: "Saisie manuelle",
+        favorite: "Contact favori",
+        favoritePlaceholder: "Choisir un favori…",
+        saveFavorite: "Enregistrer aussi dans mes favoris transfert",
+        save: "Enregistrer les coordonnées",
+        later: "Plus tard",
+        missingPhoneTitle: "Numéro requis",
+        missingPhoneBody: "Indiquez un numéro de réception pour continuer.",
+        savedTitle: "Coordonnées enregistrées",
+        savedBody: "Le vendeur pourra vous envoyer {currency} sur ces coordonnées.",
+      },
       expiredTitle: "Délai de paiement dépassé",
       expiredBody: "La commande a été annulée automatiquement. L’offre peut être à nouveau disponible.",
       countdown: {
@@ -6537,12 +6554,38 @@ export const fr = {
         },
         suggestions: {
           "0": "Comment contacter un vendeur ?",
-          "1": "Comment gérer mes annonces ?",
-          "2": "Comment signaler une annonce ?",
+          "1": "Quels moyens d’expédition en Russie ?",
+          "2": "Comment gérer mes annonces ?",
         },
         texts: {
-          "0": "Le marketplace MOXT vous permet d'acheter et de vendre des articles au sein de la communauté afro-russe.\n\n**Pour publier une annonce :**\n- Allez dans **Marketplace** puis **Publier une annonce**\n- Renseignez le titre, la description, le prix et les photos\n- Précisez si vous livrez ou si c'est à retirer\n\nVos annonces restent actives jusqu'à ce que vous les clôturiez ou que l'article soit vendu.",
-          "1": "Depuis **Marketplace**, parcourez les annonces, filtrez par catégorie ou localisation, et contactez directement le vendeur via la messagerie intégrée.\n\nPour mettre un article en vente, utilisez **Publier une annonce**. Le formulaire vous guide : type de produit, état, prix et options de remise.",
+          "0": "Le marketplace MOXT vous permet d'acheter et de vendre des articles au sein de la communauté afro-russe.\n\n**Pour publier une annonce :**\n- Allez dans **Marketplace** puis **Publier une annonce**\n- Renseignez le titre, la description, le prix et les photos\n- Choisissez les options de remise : retrait, livraison locale ou **expédition**\n- Pour l’expédition, sélectionnez les transporteurs (CDEK, Почта России, Boxberry, etc.) et les délais approximatifs\n\nVos annonces restent actives jusqu'à ce que vous les clôturiez ou que l'article soit vendu.",
+          "1": "Depuis **Marketplace**, parcourez les annonces, filtrez par catégorie ou localisation, et contactez directement le vendeur via la messagerie intégrée.\n\nPour mettre un article en vente, utilisez **Publier une annonce**. Le formulaire vous guide : type de produit, état, prix et options de remise / expédition en Russie.",
+        },
+      },
+      expedition: {
+        actions: {
+          "0": "Publier une annonce",
+          "1": "Marketplace",
+        },
+        suggestions: {
+          "0": "Comment publier une annonce ?",
+          "1": "Quels transporteurs sont proposés ?",
+        },
+        texts: {
+          "0": "Lors de la publication d’une annonce, si vous activez **Expédition**, MOXT vous propose les moyens courants en Russie :\n- **CDEK** (~2–7 jours)\n- **Почта России** (~5–14 jours)\n- **Boxberry**, **Яндекс Доставка**, **Деловые Линии**, **ПЭК**\n- Autre transporteur (délai à convenir)\n\nVous pouvez en sélectionner **plusieurs** et préciser le délai approximatif. Ces infos apparaissent ensuite sur la fiche annonce (onglet Livraison).",
+        },
+      },
+      contribuer: {
+        actions: {
+          "0": "Contribuer",
+          "1": "Contacter le support",
+        },
+        suggestions: {
+          "0": "Où trouver la page Contribuer ?",
+          "1": "Comment contacter le support ?",
+        },
+        texts: {
+          "0": "Vous pouvez soutenir le développement de MOXT via **Contribuer** (hub MOXT → Finances).\n\nChoisissez n’importe quel montant et devise, laissez un message optionnel, puis validez. Une demande est enregistrée ; l’équipe vous contacte pour finaliser le versement.\n\nChaque contribution aide à améliorer le produit, l’infra et le support aux membres.",
         },
       },
       emploi: {

@@ -107,4 +107,8 @@ export const FALLBACK_RUSSIAN_CITIES = [
   'Volgograd',
   'Krasnodar',
   'Sotchi',
+  'Koursk',
+  'Orel',
+  'Belgorod',
+  'Briansk',
 ]
