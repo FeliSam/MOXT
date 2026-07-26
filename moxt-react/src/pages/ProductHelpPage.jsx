@@ -87,20 +87,30 @@ export function ProductHelpPage() {
                 <RevealListItem key={session.id} index={index}>
                   <Link
                     to={`/aide/${session.id}`}
-                    className="flex h-full flex-col gap-3 rounded-[var(--radius-card-lg)] bg-[var(--app-surface)] p-4 shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)] sm:p-5"
+                    className="flex h-full flex-col overflow-hidden rounded-[var(--radius-card-lg)] bg-[var(--app-surface)] shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)]"
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="grid size-8 place-items-center rounded-xl bg-brand-700 text-sm font-black text-white">
-                        {index + 1}
-                      </span>
-                      <span className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wide text-brand-700 dark:text-brand-300">
-                        <Icon className="text-sm" /> {t(meta.labelKey)}
-                      </span>
+                    {session.images?.[0] ? (
+                      <img
+                        src={session.images[0]}
+                        alt=""
+                        className="h-32 w-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : null}
+                    <div className="flex flex-1 flex-col gap-3 p-4 sm:p-5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="grid size-8 place-items-center rounded-xl bg-brand-700 text-sm font-black text-white">
+                          {index + 1}
+                        </span>
+                        <span className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wide text-brand-700 dark:text-brand-300">
+                          <Icon className="text-sm" /> {t(meta.labelKey)}
+                        </span>
+                      </div>
+                      <h3 className="font-black leading-snug">{session.title}</h3>
+                      <p className="line-clamp-3 flex-1 text-sm leading-6 text-[var(--app-text-muted)]">
+                        {session.summary}
+                      </p>
                     </div>
-                    <h3 className="font-black leading-snug">{session.title}</h3>
-                    <p className="line-clamp-3 flex-1 text-sm leading-6 text-[var(--app-text-muted)]">
-                      {session.summary}
-                    </p>
                   </Link>
                 </RevealListItem>
               )
@@ -154,11 +164,25 @@ export function ProductHelpSessionPage() {
       {session.summary ? (
         <p className="-mt-2 text-sm leading-6 text-[var(--app-text-muted)]">{session.summary}</p>
       ) : null}
+      {session.images?.[0] ? (
+        <img
+          src={session.images[0]}
+          alt=""
+          className="h-40 w-full rounded-[var(--radius-card-lg)] object-cover shadow-[var(--shadow-card)] sm:h-52"
+        />
+      ) : null}
       <div className="grid gap-4 rounded-[var(--radius-card-lg)] bg-[var(--app-surface)] p-5 shadow-[var(--shadow-card)] sm:p-6">
         <p className="whitespace-pre-line text-sm leading-7 text-[var(--app-text)]">
           {session.content}
         </p>
       </div>
+      <Link
+        to="/support"
+        className="flex items-center justify-between gap-3 rounded-[var(--radius-card-lg)] border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] p-4 text-sm font-bold text-brand-700 transition hover:bg-[var(--app-accent-soft)] dark:text-brand-300"
+      >
+        {t('productHelp.session.stillStuck')}
+        <span aria-hidden="true">→</span>
+      </Link>
       <div className="flex flex-wrap items-center justify-between gap-3">
         {previous ? (
           <Link

@@ -1144,6 +1144,7 @@ const handlers = {
       status: payload.status || 'published',
       author_id: payload.authorId,
       author_name: payload.authorName || '',
+      images: Array.isArray(payload.images) ? payload.images : [],
       created_at: payload.createdAt,
       updated_at: payload.updatedAt,
     }
@@ -1176,6 +1177,7 @@ const handlers = {
         verified_at: article.verifiedAt || null,
         pinned: article.pinned === true,
         status: article.status || 'published',
+        images: Array.isArray(article.images) ? article.images : [],
         ...(Number.isFinite(article.sortOrder) ? { sort_order: article.sortOrder } : {}),
         updated_at: article.updatedAt,
       })

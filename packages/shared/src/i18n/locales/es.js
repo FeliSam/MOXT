@@ -7092,7 +7092,9 @@ export const es = {
       sourceUrl: "Enlace de la fuente",
       pinned: "Fijar arriba",
       status: "Estado",
-      sortOrder: "Orden de visualización"
+      sortOrder: "Orden de visualización",
+      images: "Imágenes (una URL por línea)",
+      imagesHint: "Una ruta de imagen por línea, ej. /assets/help/mi-ilustracion.svg — compartida entre todos los idiomas."
     },
     copyFromFr: "Copiar FR",
     incompleteWarning: "Falta traducción para: {languages}. Los visitantes en esos idiomas verán la versión FR por defecto.",
@@ -7117,10 +7119,23 @@ export const es = {
       marketplace: "Marketplace",
       parcels: "Paquetes",
       messages: "Mensajes",
-      account: "Cuenta"
+      account: "Cuenta",
+      p2p: "Intercambios P2P",
+      exchangers: "Casas de cambio",
+      businesses: "Empresas",
+      professional: "Espacio profesional",
+      jobs: "Empleos",
+      events: "Eventos",
+      news: "Noticias",
+      verification: "Verificación",
+      security: "Seguridad",
+      disputes: "Disputas",
+      subscriptions: "Suscripciones",
+      referral: "Referidos"
     },
     session: {
-      notFound: "Esta sesión no se encuentra o ha sido eliminada."
+      notFound: "Esta sesión no se encuentra o ha sido eliminada.",
+      stillStuck: "¿Sigues atascado? Contactar con soporte"
     },
     sessions: {
       gettingStarted: {

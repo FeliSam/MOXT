@@ -8,7 +8,7 @@ import { supabase } from '../../services/supabaseClient'
 const storage = createLocalStorage('moxt-help-articles-v1')
 
 const HELP_ARTICLE_COLUMNS =
-  'id, translation_group_id, category, language, title, summary, content, source_name, source_url, verified_at, pinned, status, author_id, author_name, created_at, updated_at'
+  'id, translation_group_id, category, language, title, summary, content, source_name, source_url, verified_at, pinned, status, author_id, author_name, created_at, updated_at, images'
 
 async function fetchHelpArticles(includeSortOrder) {
   let query = supabase
@@ -70,6 +70,7 @@ const helpArticlesSlice = createSlice({
             pinned: values.pinned === true,
             status: values.status || 'published',
             sortOrder: Number.isFinite(values.sortOrder) ? values.sortOrder : 0,
+            images: Array.isArray(values.images) ? values.images : [],
             authorId: values.authorId,
             authorName: values.authorName || '',
             createdAt: now,
