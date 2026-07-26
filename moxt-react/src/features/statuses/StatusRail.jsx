@@ -35,7 +35,7 @@ function AuthorBubble({ group, onOpen }) {
  * le fil de posts. Ma bulle en premier (avec bouton "+" pour publier),
  * suivie des auteurs ayant des statuts non vus puis déjà vus.
  */
-export function StatusRail() {
+export function StatusRail({ hideWhenNoCommunity = false }) {
   const { t } = useLanguage()
   const user = useSelector((s) => s.auth.user)
   const statuses = useSelector((s) => s.statuses?.items ?? [])
@@ -51,8 +51,10 @@ export function StatusRail() {
     (g) => g.isOfficial && g.authorId !== user?.id,
   )
   const otherGroups = groups.filter((g) => g.authorId !== user?.id && !g.isOfficial)
+  const hasCommunity = officialGroups.length > 0 || otherGroups.length > 0
 
   if (!user) return null
+  if (hideWhenNoCommunity && !hasCommunity) return null
 
   return (
     <div className="scrollbar-hidden -mx-4 flex touch-pan-x gap-4 overflow-x-auto px-4 py-2 sm:gap-5">

@@ -1080,7 +1080,7 @@ html.messages-route-lock #root {
   position: absolute;
   top: 0.35rem;
   z-index: 3;
-  font-size: 1.3rem; /* −40% vs 2.16rem */
+  font-size: 2.16rem;
   line-height: 1;
   filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.35));
   animation: reaction-pop 0.34s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -1205,8 +1205,8 @@ html.messages-route-lock #root {
    bord bas) ne chevauche pas le message suivant. */
 .message-stack--reacted {
   z-index: 5;
-  padding-bottom: 0.45rem;
-  margin-bottom: 0.5rem;
+  padding-bottom: 0.65rem;
+  margin-bottom: 0.55rem;
 }
 
 .message-row--after-reaction {
@@ -1292,9 +1292,9 @@ html.messages-route-lock #root {
 }
 
 .message-action-menu-btn--emoji {
-  width: 0.975rem;
-  height: 0.975rem;
-  font-size: 0.5rem; /* −40% vs menu btn */
+  width: 1.625rem;
+  height: 1.625rem;
+  font-size: 0.8125rem;
 }
 
 .message-failed-banner {
@@ -1464,7 +1464,7 @@ html.messages-route-lock #root {
    sans bordure ni fond, pour ne pas modifier la taille du message. */
 .message-reactions {
   position: absolute;
-  bottom: -0.55rem;
+  bottom: -0.8rem;
   z-index: 2;
   display: flex;
   gap: 0.2rem;
@@ -1489,10 +1489,10 @@ html.messages-route-lock #root {
   border: 1px solid var(--app-border);
   border-radius: 9999px;
   background: var(--app-surface);
-  padding: 0.09rem;
-  min-width: 0.9rem;
-  min-height: 0.9rem;
-  font-size: 0.51rem; /* −40% vs 0.85rem */
+  padding: 0.15rem;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  font-size: 0.85rem;
   line-height: 1;
   cursor: pointer;
   box-shadow: var(--shadow-card);
@@ -1589,9 +1589,9 @@ html.messages-route-lock #root {
   }
 
   .message-action-menu-btn--emoji {
-    width: 1.65rem;
-    height: 1.65rem;
-    font-size: 0.6rem; /* −40% vs mobile menu btn */
+    width: 2.75rem;
+    height: 2.75rem;
+    font-size: 1rem;
   }
 
   .message-filter-chip {

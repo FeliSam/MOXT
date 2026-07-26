@@ -103,7 +103,12 @@ export const MESSAGES_FR_SOURCES = {
     'Aucun administrateur n’est disponible pour le moment. Réessayez un peu plus tard.',
   'messages.assistant.adminSendFailed':
     'Impossible d’ouvrir la conversation admin. Vérifiez votre connexion puis réessayez.',
-  'messages.filterSupport': 'Support admin',
+  'messages.filterSupport': 'Support',
+  'messages.filterTransfer': 'Transferts',
+  'messages.filterP2p': 'P2P',
+  'messages.noTransferChats': 'Aucune conversation liée à un transfert.',
+  'messages.noP2pChats': 'Aucune conversation liée à un échange P2P.',
+  'messages.noSupportChats': 'Aucune conversation support pour le moment.',
   'messages.statusSending': 'Envoi en cours',
   'messages.attachment.photo': '📷 Photo',
   'messages.attachment.photos': '📷 {count} photos',

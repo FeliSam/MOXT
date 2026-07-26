@@ -2,6 +2,7 @@ import { FiArrowRight, FiDownload } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { VerifiedBadge } from '../../../components/ui/Badge'
 import { useLanguage } from '../../../contexts/useLanguage'
+import { isNative } from '../../../platform/capacitor'
 import { isProfileVerified } from '../../profile/userProfileUtils'
 import { DashboardTransferCalculator } from '../../transfers/DashboardTransferCalculator'
 
@@ -32,12 +33,14 @@ export function DashboardHero({ user }) {
             >
               {t('dashboard.hero.createTransfer')} <FiArrowRight />
             </Link>
-            <Link
-              to="/install"
-              className={`${heroBtnBase} border border-white/45 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20`}
-            >
-              <FiDownload aria-hidden /> {t('dashboard.hero.install')}
-            </Link>
+            {!isNative ? (
+              <Link
+                to="/install"
+                className={`${heroBtnBase} border border-white/45 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20`}
+              >
+                <FiDownload aria-hidden /> {t('dashboard.hero.install')}
+              </Link>
+            ) : null}
             <Link
               to="/guide"
               className={`${heroBtnBase} border border-white/45 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20`}

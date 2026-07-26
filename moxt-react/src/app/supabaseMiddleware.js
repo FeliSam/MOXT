@@ -934,17 +934,15 @@ const handlers = {
   'communications/addNotification': async (payload, state) => {
     const currentUser = state.auth.user
     if (!currentUser || payload.userId === currentUser.id || payload.type === 'message') return
-    const { error } = await supabase.from('notifications').insert({
-      id: payload.id,
-      user_id: payload.userId,
-      title: payload.title,
-      message: payload.message,
-      type: payload.type || 'system',
-      link: payload.link || null,
-      priority: payload.priority || 'normal',
-      read: false,
-      archived: payload.archived === true,
-      created_at: payload.createdAt,
+    // SECURITY DEFINER RPC: peer inserts bypass "own notifications only" RLS.
+    const { error } = await supabase.rpc('moxt_create_notification', {
+      p_id: payload.id,
+      p_user_id: payload.userId,
+      p_title: payload.title,
+      p_message: payload.message,
+      p_type: payload.type || 'system',
+      p_link: payload.link || null,
+      p_priority: payload.priority || 'normal',
     })
     if (error) throw error
 

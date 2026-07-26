@@ -1,15 +1,12 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { FiArchive, FiCheck, FiFilter, FiStar } from 'react-icons/fi'
+import { FiArchive, FiCheck, FiFilter } from 'react-icons/fi'
 import { useLanguage } from '../../contexts/useLanguage'
 import { messagesText } from '../../features/communications/messagesI18n'
+import { MESSAGE_FILTER_IDS } from './messageFilters'
 import { countConversationsForFilter } from './messageUtils'
 
-const FILTER_OPTIONS = [
-  { id: 'all', labelKey: 'messages.filterAll' },
-  { id: 'unread', labelKey: 'messages.filterUnread' },
-  { id: 'pinned', labelKey: 'messages.filterPinned', icon: FiStar },
-]
+const FILTER_OPTIONS = MESSAGE_FILTER_IDS
 
 const MENU_ESTIMATED_HEIGHT = 280
 const VIEWPORT_GAP = 8

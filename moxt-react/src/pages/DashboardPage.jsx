@@ -6,7 +6,7 @@ import { DashboardHero } from '../features/dashboard/components/DashboardHero'
 import { DashboardOverviewPanels } from '../features/dashboard/components/DashboardOverviewPanels'
 import { DashboardQuickActionsSection } from '../features/dashboard/components/DashboardQuickActionsSection'
 import { DashboardSectionHeading } from '../features/dashboard/components/DashboardSectionHeading'
-import { DashboardServiceCarousels } from '../features/dashboard/components/DashboardServiceCarousels'
+import { DashboardTodoInbox } from '../features/dashboard/components/DashboardTodoInbox'
 import { ScrollArrows } from '../features/dashboard/components/ScrollArrows'
 import {
   dashboardListingItemClass,
@@ -72,8 +72,6 @@ export function DashboardPage() {
 
   return (
     <div className="grid min-w-0 gap-6 overflow-x-clip sm:gap-7">
-      <DashboardServiceCarousels />
-
       <DashboardHero user={user} />
 
       <div className="lg:hidden">
@@ -81,10 +79,12 @@ export function DashboardPage() {
       </div>
 
       <div className="min-w-0 overflow-x-clip">
-        <StatusRail />
+        <StatusRail hideWhenNoCommunity />
       </div>
 
       <DashboardQuickActionsSection />
+
+      <DashboardTodoInbox todoItems={stats.todoItems} />
 
       <DashboardOverviewPanels {...stats} rate={rate} user={user} />
 

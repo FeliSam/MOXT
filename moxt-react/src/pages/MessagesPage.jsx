@@ -1,10 +1,8 @@
 import { useFormik } from 'formik'
 import {
   FiArchive,
-  FiHeadphones,
   FiMessageSquare,
   FiSearch,
-  FiStar,
   FiX,
 } from 'react-icons/fi'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useDeferredValue } from 'react'
@@ -58,15 +56,9 @@ import {
 } from '../features/communications/attachmentUtils'
 import { messagesText } from '../features/communications/messagesI18n'
 import { useLanguage } from '../contexts/useLanguage'
+import { MESSAGE_FILTER_IDS, conversationMatchesFilter } from './messages/messageFilters'
 
 const ASSISTANT_ID = 'moxt-assistant'
-
-const MESSAGE_FILTER_IDS = [
-  { id: 'all', labelKey: 'messages.filterAll' },
-  { id: 'unread', labelKey: 'messages.filterUnread' },
-  { id: 'pinned', labelKey: 'messages.filterPinned', icon: FiStar },
-  { id: 'support', labelKey: 'messages.filterSupport', icon: FiHeadphones, adminOnly: true },
-]
 
 export function MessagesPage() {
   const dispatch = useDispatch()
@@ -147,9 +139,7 @@ export function MessagesPage() {
       .filter((item) => {
         const archived = item.archivedBy?.includes(user.id)
         if (showArchived !== Boolean(archived)) return false
-        if (filter === 'unread' && !(item.unreadBy?.[user.id] > 0)) return false
-        if (filter === 'pinned' && !item.pinnedBy?.includes(user.id)) return false
-        if (filter === 'support' && item.relatedType !== 'support') return false
+        if (!conversationMatchesFilter(item, filter, user.id)) return false
         if (!shouldShowConversationInList(item, user.id, activeId)) return false
         return conversationMatchesQuery(item, user.id, deferredQuery)
       })
@@ -648,9 +638,7 @@ export function MessagesPage() {
               role="toolbar"
               aria-label={t("messages.filterAria")}
             >
-              {MESSAGE_FILTER_IDS.filter(
-                (item) => !item.adminOnly || ['admin', 'superadmin'].includes(user?.role),
-              ).map((item) => {
+              {MESSAGE_FILTER_IDS.map((item) => {
                 const count = countConversationsForFilter(
                   conversations,
                   item.id,
@@ -715,8 +703,16 @@ export function MessagesPage() {
             ) : !visible.length && filter !== 'all' ? (
               <p className="p-6 text-center text-sm text-[var(--app-text-faint)]">
                 {filter === 'pinned'
-                  ? t("messages.noPinned")
-                  : t("messages.noUnread")}
+                  ? t('messages.noPinned')
+                  : filter === 'unread'
+                    ? t('messages.noUnread')
+                    : filter === 'transfer'
+                      ? messagesText(t, 'messages.noTransferChats')
+                      : filter === 'p2p'
+                        ? messagesText(t, 'messages.noP2pChats')
+                        : filter === 'support'
+                          ? messagesText(t, 'messages.noSupportChats')
+                          : t('messages.noUnread')}
               </p>
             ) : null}
           </div>

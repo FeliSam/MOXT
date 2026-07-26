@@ -50,13 +50,21 @@ export function ReferralPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const rawTab = searchParams.get('tab')
   const activeTab = resolveTab(rawTab)
-  const [network, setNetwork] = useState('instagram')
+  const networkParam = searchParams.get('network')
+  const [network, setNetwork] = useState(() => getMoxtSocialNetwork(networkParam).id)
 
   useEffect(() => {
     if (rawTab === 'instagram') {
-      setSearchParams({ tab: 'reseaux' }, { replace: true })
+      const next = { tab: 'reseaux' }
+      if (networkParam) next.network = networkParam
+      setSearchParams(next, { replace: true })
     }
-  }, [rawTab, setSearchParams])
+  }, [rawTab, networkParam, setSearchParams])
+
+  useEffect(() => {
+    if (!networkParam) return
+    setNetwork(getMoxtSocialNetwork(networkParam).id)
+  }, [networkParam])
 
   const tabs = useMemo(
     () => [
@@ -95,7 +103,16 @@ export function ReferralPage() {
       setSearchParams({}, { replace: true })
       return
     }
-    setSearchParams({ tab }, { replace: true })
+    const next = { tab }
+    if (tab === 'reseaux' && network) next.network = network
+    setSearchParams(next, { replace: true })
+  }
+
+  function selectNetwork(id) {
+    setNetwork(id)
+    if (activeTab === 'reseaux') {
+      setSearchParams({ tab: 'reseaux', network: id }, { replace: true })
+    }
   }
 
   return (
@@ -135,7 +152,7 @@ export function ReferralPage() {
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => setNetwork(item.id)}
+                  onClick={() => selectNetwork(item.id)}
                   className={`inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-black transition ${
                     active
                       ? 'bg-brand-700 text-white shadow-sm'

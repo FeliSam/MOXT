@@ -59,7 +59,7 @@ export function useDashboardStats(user) {
         icon: FiBriefcase,
         labelKey: 'dashboard.overview.todoApplications',
         count: receivedApplications.length,
-        to: `/jobs/${receivedApplications[0].jobId}`,
+        to: `/jobs/${applicationJobId(receivedApplications[0])}`,
       },
     ].filter(Boolean)
 
