@@ -36,7 +36,11 @@ const financeSlice = createSlice({
             currency: values.currency,
             provider: values.provider || 'MOXT Demo',
             status: values.status || 'pending',
-            simulation: true,
+            note: values.note || '',
+            channelId: values.channelId || '',
+            channelLabel: values.channelLabel || '',
+            channelNumber: values.channelNumber || '',
+            simulation: values.simulation !== false,
             createdAt: new Date().toISOString(),
           },
         }
@@ -46,6 +50,8 @@ const financeSlice = createSlice({
       const payment = state.payments.find((item) => item.id === action.payload.id)
       if (!payment) return
       payment.status = action.payload.status
+      if (action.payload.confirmedBy) payment.confirmedBy = action.payload.confirmedBy
+      if (action.payload.confirmNote) payment.confirmNote = action.payload.confirmNote
       payment.updatedAt = new Date().toISOString()
     },
     upsertTransferReceipt(state, action) {

@@ -50,7 +50,7 @@ export const MAIN_RUSSIAN_CITIES = [
     ru: 'Казань',
     region: 'Tatarstan',
     priority: 5,
-    nearby: ['Zelenodolsk', 'Nizhnekamsk', 'Naberezhnye Chelny'],
+    nearby: ['Zelenodolsk', 'Nizhnekamsk', 'Naberezhnye Chelny', 'Yelabuga', 'Elabuga'],
   },
   {
     id: 'nizhny_novgorod',
@@ -257,7 +257,16 @@ export const MAIN_RUSSIAN_CITIES = [
     ru: 'Набережные Челны',
     region: 'Tatarstan',
     priority: 28,
-    nearby: [],
+    nearby: ['Yelabuga', 'Elabuga', 'Nizhnekamsk'],
+  },
+  {
+    id: 'elabuga',
+    fr: 'Elabouga',
+    en: 'Yelabuga',
+    ru: 'Елабуга',
+    region: 'Tatarstan',
+    priority: 33,
+    nearby: ['Naberezhnye Chelny', 'Nizhnekamsk', 'Kazan'],
   },
   {
     id: 'kursk',
@@ -298,9 +307,11 @@ export const MAIN_RUSSIAN_CITIES = [
 ]
 
 /** Map: nom anglais API → nom français d'affichage */
-export const EN_TO_FR = Object.fromEntries(
-  MAIN_RUSSIAN_CITIES.map((c) => [c.en.toLowerCase(), c.fr]),
-)
+export const EN_TO_FR = {
+  ...Object.fromEntries(MAIN_RUSSIAN_CITIES.map((c) => [c.en.toLowerCase(), c.fr])),
+  elabuga: 'Elabouga',
+  yelabuga: 'Elabouga',
+}
 
 /** Retrouve la ville principale parente d'une ville proche */
 export function findParentCity(apiCityName) {

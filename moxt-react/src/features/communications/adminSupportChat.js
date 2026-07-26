@@ -41,7 +41,10 @@ function findOpenSupportConversation(conversations, userId) {
 
 export const openAdminSupportChat = createAsyncThunk(
   'communications/openAdminSupportChat',
-  async ({ message, subject }, { dispatch, getState, rejectWithValue }) => {
+  async (
+    { message, subject, category, contributionRef, paymentId },
+    { dispatch, getState, rejectWithValue },
+  ) => {
     const state = getState()
     const user = state.auth.user
     if (!user?.id) {
@@ -54,10 +57,15 @@ export const openAdminSupportChat = createAsyncThunk(
     }
 
     const existing = findOpenSupportConversation(state.communications.conversations, user.id)
-    const adminId =
+    let adminId =
       (existing &&
         (existing.participantIds || []).map(String).find((id) => id !== String(user.id))) ||
       (await resolveSupportAdminId(state, user.id))
+
+    // Page contribution admin-only : si aucun autre admin, ouvrir quand même un fil support.
+    if (!adminId && category === 'contribution') {
+      adminId = user.id
+    }
 
     if (!adminId) {
       return rejectWithValue('no_admin')
@@ -75,8 +83,10 @@ export const openAdminSupportChat = createAsyncThunk(
           userId: user.id,
           userName,
           subject: ticketSubject,
-          priority: 'normal',
-          category: 'assistant',
+          priority: category === 'contribution' ? 'medium' : 'normal',
+          category: category || 'assistant',
+          contributionRef: contributionRef || null,
+          paymentId: paymentId || null,
           message: text,
         }),
       )

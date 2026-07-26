@@ -251,7 +251,14 @@ export function AppRouter() {
             <Route path="/wallet" element={<Navigate to="/receipts" replace />} />
             <Route path="/referral" element={<ReferralPage />} />
             <Route path="/payments" element={<PaymentsPage />} />
-            <Route path="/contribute" element={<ContributePage />} />
+            <Route
+              path="/contribute"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+                  <ContributePage />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/receipts" element={<ReceiptsPage />} />
             <Route path="/receipts/:receiptId" element={<ReceiptDetailPage />} />
             <Route path="/disputes" element={<DisputesPage />} />

@@ -845,6 +845,8 @@ const communicationSlice = createSlice({
             subject: values.subject.trim(),
             priority: values.priority,
             category: values.category || 'question',
+            contributionRef: values.contributionRef || null,
+            paymentId: values.paymentId || null,
             status: 'waiting_agent',
             messages: [
               {

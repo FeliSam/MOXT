@@ -36,7 +36,13 @@ export const moxtHubSecondaryGroups = [
     id: 'finance',
     titleKey: 'moxtHub.groups.finance',
     links: [
-      { id: 'contribute', labelKey: 'nav.contribute', path: '/contribute', icon: FiHeart },
+      {
+        id: 'contribute',
+        labelKey: 'nav.contribute',
+        path: '/contribute',
+        icon: FiHeart,
+        roles: ['admin', 'superadmin'],
+      },
       { id: 'receipts', labelKey: 'profile.links.receipts', path: '/receipts', icon: FiFileText },
       { id: 'documents', labelKey: 'profile.links.documents', path: '/documents', icon: FiFileText },
       { id: 'disputes', labelKey: 'profile.links.disputes', path: '/disputes', icon: FiAlertTriangle },
@@ -69,6 +75,13 @@ export const moxtHubSecondaryLinks = moxtHubSecondaryGroups.flatMap((group) => g
 
 /** Liens réservés aux rôles staff / admin (alignés sur navigation.js). */
 export const moxtHubAdminLinks = [
+  {
+    id: 'contribute',
+    labelKey: 'nav.contribute',
+    path: '/contribute',
+    icon: FiHeart,
+    roles: ['admin', 'superadmin'],
+  },
   {
     id: 'guide-admin',
     labelKey: 'nav.guideAdmin',
@@ -107,6 +120,9 @@ export const moxtHubAdminLinks = [
 ]
 
 export function filterMoxtHubLinksByRole(links, role) {
-  if (!role) return []
-  return links.filter((link) => !link.roles || link.roles.includes(role))
+  const normalized = String(role || 'user').toLowerCase()
+  return links.filter((link) => {
+    if (!link.roles?.length) return true
+    return link.roles.some((allowed) => String(allowed).toLowerCase() === normalized)
+  })
 }

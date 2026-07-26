@@ -336,6 +336,7 @@ export const en = {
     moderationSpace: "Moderator space",
     guide: "Guide",
     productHelp: "Moxt help",
+    contribute: "Support MOXT",
     guideAdmin: "Guide management",
     p2p: "P2P exchanges",
     exchangers: "Exchangers",

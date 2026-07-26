@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FiBookOpen, FiDownload } from 'react-icons/fi'
+import { FiBookOpen, FiDownload, FiHeart } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { useSearchParams } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
@@ -114,6 +114,7 @@ export function AdminPage() {
             })}
           </nav>
           <nav className={`${CARD} grid content-start gap-1 overflow-hidden p-2`}>
+            <SidebarLink to="/contribute" icon={FiHeart} label={adminText(t, 'admin.nav.contribute')} />
             <SidebarLink to="/admin/guide" icon={FiBookOpen} label={adminText(t, 'admin.nav.guide')} />
           </nav>
         </aside>

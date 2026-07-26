@@ -57,6 +57,16 @@ export function MoxtHubPage() {
     () => filterMoxtHubLinksByRole(moxtHubAdminLinks, role),
     [role],
   )
+  const secondaryGroups = useMemo(
+    () =>
+      moxtHubSecondaryGroups
+        .map((group) => ({
+          ...group,
+          links: filterMoxtHubLinksByRole(group.links, role),
+        }))
+        .filter((group) => group.links.length > 0),
+    [role],
+  )
 
   return (
     <div className="grid min-w-0 gap-8 overflow-x-clip sm:gap-10">
@@ -116,7 +126,7 @@ export function MoxtHubPage() {
             title={t('moxtHub.secondary')}
           />
         </RevealOnScroll>
-        {moxtHubSecondaryGroups.map((group) => (
+        {secondaryGroups.map((group) => (
           <div key={group.id} className="grid min-w-0 gap-3">
             <h3 className="text-sm font-black uppercase tracking-[0.12em] text-[var(--app-text-faint)]">
               {t(group.titleKey)}

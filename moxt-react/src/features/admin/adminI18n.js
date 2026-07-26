@@ -56,6 +56,16 @@ export const ADMIN_FR_SOURCES = {
   'admin.nav.queues': "Files d'action",
   'admin.nav.audit': 'Audit',
   'admin.nav.guide': 'Guide (articles d’aide)',
+  'admin.nav.contribute': 'Soutenir MOXT',
+  'admin.support.contributionBadge': 'Contribution',
+  'admin.support.contributionRef': 'Ref. {ref}',
+  'admin.support.contributionReplyPlaceholder':
+    'Ex. Montant bien reçu, merci pour votre soutien…',
+  'admin.support.confirmContribution': 'Confirmer la réception',
+  'admin.support.contributionConfirmTitle': 'Réception confirmée',
+  'admin.support.contributionConfirmBody': 'Le contributeur a été informé ({amount}).',
+  'admin.support.contributionConfirmMessage':
+    'Confirmation MOXT : nous avons bien reçu {amount} (réf. {ref}). Merci pour votre soutien au maintien de la plateforme.',
 
   // ── rates ───────────────────────────────────────────────────────────────
   'admin.rates.title': 'Taux plateforme',

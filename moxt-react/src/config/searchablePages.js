@@ -64,11 +64,12 @@ export const searchablePages = [
   },
   {
     id: 'page-contribute',
-    title: 'Contribuer',
+    title: 'Soutenir MOXT',
     titleKey: 'nav.contribute',
     subtitle: 'Communauté',
     subtitleKey: 'shared.pages.groups.account',
     path: '/contribute',
+    roles: ['admin', 'superadmin'],
   },
   {
     id: 'page-receipts',

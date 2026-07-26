@@ -336,6 +336,7 @@ export const ru = {
     moderationSpace: "Пространство модератора",
     guide: "Гид",
     productHelp: "Справка Moxt",
+    contribute: "Поддержать MOXT",
     guideAdmin: "Управление гидом",
     p2p: "P2P-обмен",
     exchangers: "Обменники",

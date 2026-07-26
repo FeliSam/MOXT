@@ -1,4 +1,4 @@
-import { FiActivity, FiBookOpen, FiCheck, FiDatabase, FiShield, FiUsers, FiX } from 'react-icons/fi'
+import { FiActivity, FiBookOpen, FiCheck, FiDatabase, FiHeart, FiShield, FiUsers, FiX } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { Card } from '../components/ui/Card'
@@ -62,11 +62,18 @@ export function SuperAdminPage() {
         title={adminText(t, 'admin.super.title')}
         description={adminText(t, 'admin.super.description')}
         actions={
-          <Link to="/admin/guide">
-            <Button variant="secondary" icon={FiBookOpen}>
-              {adminText(t, 'admin.nav.guide')}
-            </Button>
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link to="/contribute">
+              <Button variant="secondary" icon={FiHeart}>
+                {adminText(t, 'admin.nav.contribute')}
+              </Button>
+            </Link>
+            <Link to="/admin/guide">
+              <Button variant="secondary" icon={FiBookOpen}>
+                {adminText(t, 'admin.nav.guide')}
+              </Button>
+            </Link>
+          </div>
         }
       />
       <div className="grid min-w-0 grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">

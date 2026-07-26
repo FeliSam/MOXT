@@ -197,6 +197,7 @@ export const pt = {
     moderationSpace: "Espaço moderador",
     guide: "Guia",
     productHelp: "Ajuda Moxt",
+    contribute: "Apoiar o MOXT",
     guideAdmin: "Gestão do guia",
     p2p: "Troca P2P",
     exchangers: "Câmbios",
