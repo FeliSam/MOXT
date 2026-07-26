@@ -7,6 +7,7 @@ import { DashboardOverviewPanels } from '../features/dashboard/components/Dashbo
 import { DashboardQuickActionsSection } from '../features/dashboard/components/DashboardQuickActionsSection'
 import { DashboardSectionHeading } from '../features/dashboard/components/DashboardSectionHeading'
 import { DashboardTodoInbox } from '../features/dashboard/components/DashboardTodoInbox'
+import { DashboardServiceCarousels } from '../features/dashboard/components/DashboardServiceCarousels'
 import { ScrollArrows } from '../features/dashboard/components/ScrollArrows'
 import {
   dashboardListingItemClass,
@@ -72,6 +73,8 @@ export function DashboardPage() {
 
   return (
     <div className="grid min-w-0 gap-6 overflow-x-clip sm:gap-7">
+      <DashboardServiceCarousels />
+
       <DashboardHero user={user} />
 
       <div className="lg:hidden">
