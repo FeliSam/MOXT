@@ -414,7 +414,7 @@ function drawFooter(ctx, copy) {
   ctx.fillText(copy.footerTagline, WIDTH / 2, HEIGHT - 70)
   ctx.textAlign = 'right'
   ctx.font = '28px "Segoe UI Emoji", "Noto Color Emoji", sans-serif'
-  ctx.fillText('✈️ 💬 🎵', WIDTH - 56, HEIGHT - 70)
+  ctx.fillText('💱 📦 🤝', WIDTH - 56, HEIGHT - 70)
 }
 
 export async function renderShareBadge({

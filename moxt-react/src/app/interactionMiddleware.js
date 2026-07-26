@@ -245,6 +245,293 @@ export const interactionMiddleware = (store) => {
     if (transfer) {
       syncTransferReceipt(store, transfer)
     }
+    if (transfer?.businessOwnerId && transfer.businessOwnerId !== actorId) {
+      notify(store, {
+        userId: transfer.businessOwnerId,
+        title: appText('notificationsFeed.transferCompleted'),
+        message: appText('notificationsFeed.transferCompletedBody', { id: transfer.id }),
+        type: 'transfer',
+        link: `/transfers/${transfer.id}`,
+        priority: 'high',
+      })
+    }
+  }
+
+  if (action.type === 'transfers/cancelTransfer') {
+    const transferId =
+      typeof action.payload === 'string' ? action.payload : action.payload?.id
+    const transfer = after.transfers.items.find((item) => item.id === transferId)
+    const previous = before.transfers.items.find((item) => item.id === transferId)
+    if (
+      transfer?.businessOwnerId &&
+      previous?.status !== 'cancelled' &&
+      transfer.status === 'cancelled' &&
+      transfer.businessOwnerId !== actorId
+    ) {
+      notify(store, {
+        userId: transfer.businessOwnerId,
+        title: appText('notificationsFeed.transferCancelled'),
+        message: appText('notificationsFeed.transferCancelledBody', { id: transfer.id }),
+        type: 'transfer',
+        link: `/transfers/${transfer.id}`,
+        priority: 'high',
+      })
+    }
+  }
+
+  if (action.type === 'transfers/expireOverdueTransfers') {
+    after.transfers.items.forEach((transfer) => {
+      const previous = before.transfers.items.find((item) => item.id === transfer.id)
+      if (!previous || previous.status === transfer.status || transfer.status !== 'expired') return
+      ;[transfer.userId, transfer.businessOwnerId]
+        .filter((id) => id && id !== actorId)
+        .forEach((userId) => {
+          notify(store, {
+            userId,
+            title: appText('notificationsFeed.transferExpired'),
+            message: appText('notificationsFeed.transferExpiredBody', { id: transfer.id }),
+            type: 'transfer',
+            link: `/transfers/${transfer.id}`,
+            priority: 'high',
+          })
+        })
+    })
+  }
+
+  if (action.type === 'jobs/applyToJob') {
+    const application = after.jobs.applications.find((item) => item.id === action.payload.id)
+    const job = after.jobs.items.find((item) => item.id === application?.jobId)
+    if (job?.ownerId && job.ownerId !== actorId) {
+      notify(store, {
+        userId: job.ownerId,
+        title: appText('notificationsFeed.newApplication'),
+        message: appText('notificationsFeed.newApplicationBody', {
+          name: application?.applicantName || appText('notificationsFeed.someone'),
+          title: job.title || appText('notificationsFeed.thisJob'),
+        }),
+        type: 'job',
+        link: `/jobs/${job.id}`,
+        priority: 'high',
+      })
+    }
+  }
+
+  if (action.type === 'jobs/withdrawApplication') {
+    const application = after.jobs.applications.find((item) => item.id === action.payload.id)
+    const previous = before.jobs.applications.find((item) => item.id === action.payload.id)
+    const job = after.jobs.items.find((item) => item.id === application?.jobId)
+    if (
+      job?.ownerId &&
+      previous?.status !== 'withdrawn' &&
+      application?.status === 'withdrawn' &&
+      job.ownerId !== actorId
+    ) {
+      notify(store, {
+        userId: job.ownerId,
+        title: appText('notificationsFeed.applicationWithdrawn'),
+        message: appText('notificationsFeed.applicationWithdrawnBody', {
+          title: job.title || appText('notificationsFeed.thisJob'),
+        }),
+        type: 'job',
+        link: `/jobs/${job.id}`,
+      })
+    }
+  }
+
+  if (action.type === 'events/registerForEvent') {
+    const registration = after.events.registrations.find((item) => item.id === action.payload.id)
+    const event = after.events.items.find((item) => item.id === registration?.eventId)
+    if (event?.ownerId && event.ownerId !== actorId) {
+      notify(store, {
+        userId: event.ownerId,
+        title: appText('notificationsFeed.newRegistration'),
+        message: appText('notificationsFeed.newRegistrationBody', {
+          name: registration?.participantName || appText('notificationsFeed.someone'),
+          title: event.title || appText('notificationsFeed.thisEvent'),
+        }),
+        type: 'event',
+        link: `/events/${event.id}`,
+        priority: 'high',
+      })
+    }
+  }
+
+  if (action.type === 'events/cancelRegistration') {
+    const registration = after.events.registrations.find((item) => item.id === action.payload.id)
+    const previous = before.events.registrations.find((item) => item.id === action.payload.id)
+    const event = after.events.items.find((item) => item.id === registration?.eventId)
+    if (
+      event?.ownerId &&
+      previous?.status !== 'cancelled' &&
+      registration?.status === 'cancelled' &&
+      event.ownerId !== actorId
+    ) {
+      notify(store, {
+        userId: event.ownerId,
+        title: appText('notificationsFeed.registrationCancelled'),
+        message: appText('notificationsFeed.registrationCancelledBody', {
+          title: event.title || appText('notificationsFeed.thisEvent'),
+        }),
+        type: 'event',
+        link: `/events/${event.id}`,
+      })
+    }
+  }
+
+  if (action.type === 'parcels/requestParcelReservation') {
+    const request = after.parcels.requests.find((item) => item.id === action.payload.id)
+    if (request?.ownerId && request.ownerId !== actorId) {
+      notify(store, {
+        userId: request.ownerId,
+        title: appText('notificationsFeed.newParcelRequest'),
+        message: appText('notificationsFeed.newParcelRequestBody', {
+          name: request.requesterName || appText('notificationsFeed.someone'),
+          kg: request.kg,
+        }),
+        type: 'parcel',
+        link: `/parcels/${request.parcelId}`,
+        priority: 'high',
+      })
+    }
+  }
+
+  if (action.type === 'parcels/cancelParcelRequest') {
+    const request = after.parcels.requests.find((item) => item.id === action.payload.id)
+    const previous = before.parcels.requests.find((item) => item.id === action.payload.id)
+    if (
+      request?.ownerId &&
+      previous?.status !== 'cancelled' &&
+      request.status === 'cancelled' &&
+      request.ownerId !== actorId
+    ) {
+      notify(store, {
+        userId: request.ownerId,
+        title: appText('notificationsFeed.parcelRequestCancelled'),
+        message: appText('notificationsFeed.parcelRequestCancelledBody', {
+          kg: request.kg,
+        }),
+        type: 'parcel',
+        link: `/parcels/${request.parcelId}`,
+      })
+    }
+  }
+
+  if (action.type === 'parcels/updateParcelProofStatus') {
+    const parcel = after.parcels.items.find((item) => item.id === action.payload.id)
+    const previous = before.parcels.items.find((item) => item.id === action.payload.id)
+    if (
+      parcel?.ownerId &&
+      previous?.proofStatus !== parcel.proofStatus &&
+      parcel.ownerId !== actorId
+    ) {
+      notify(store, {
+        userId: parcel.ownerId,
+        title: appText('notificationsFeed.parcelProofReviewed'),
+        message: appText('notificationsFeed.parcelProofReviewedBody', {
+          status: parcel.proofStatus,
+        }),
+        type: 'parcel',
+        link: `/parcels/${parcel.id}`,
+      })
+    }
+  }
+
+  if (action.type === 'businesses/createBusinessRequest') {
+    const request = after.businesses.requests.find((item) => item.id === action.payload.id)
+    const business = after.businesses.items.find((item) => item.id === request?.businessId)
+    const businessOwnerId = business?.ownerId
+    if (businessOwnerId && businessOwnerId !== actorId) {
+      notify(store, {
+        userId: businessOwnerId,
+        title: appText('notificationsFeed.businessRequestCreated'),
+        message: appText('notificationsFeed.businessRequestCreatedBody', {
+          name: request?.requesterName || appText('notificationsFeed.someone'),
+        }),
+        type: 'business',
+        link: '/professional?tab=requests',
+        priority: 'high',
+      })
+    }
+  }
+
+  if (action.type === 'businesses/addBusinessMember') {
+    const memberId = action.payload?.userId
+    if (memberId && memberId !== actorId) {
+      notify(store, {
+        userId: memberId,
+        title: appText('notificationsFeed.businessMemberAdded'),
+        message: appText('notificationsFeed.businessMemberAddedBody'),
+        type: 'business',
+        link: '/professional',
+      })
+    }
+  }
+
+  if (action.type === 'businesses/removeBusinessMember') {
+    const previous = before.businesses.members.find(
+      (item) => item.id === action.payload.id && item.businessId === action.payload.businessId,
+    )
+    const memberId = previous?.userId
+    if (memberId && memberId !== actorId) {
+      notify(store, {
+        userId: memberId,
+        title: appText('notificationsFeed.businessMemberRemoved'),
+        message: appText('notificationsFeed.businessMemberRemovedBody'),
+        type: 'business',
+        link: '/professional',
+      })
+    }
+  }
+
+  if (action.type === 'administration/updateUserStatus') {
+    const targetId = action.payload?.id
+    const status = action.payload?.status
+    if (
+      targetId &&
+      targetId !== actorId &&
+      ['suspended', 'banned', 'blocked', 'disabled'].includes(status)
+    ) {
+      notify(store, {
+        userId: targetId,
+        title: appText('notificationsFeed.accountStatusChanged'),
+        message: appText('notificationsFeed.accountStatusChangedBody', { status }),
+        type: 'system',
+        link: '/support',
+        priority: 'high',
+      })
+    }
+  }
+
+  if (action.type === 'p2p/moderateOffer') {
+    const offer = after.p2p.offers.find((item) => item.id === action.payload.id)
+    if (offer?.ownerId && offer.ownerId !== actorId) {
+      notify(store, {
+        userId: offer.ownerId,
+        title: appText('notificationsFeed.p2pOfferModerated'),
+        message: appText('notificationsFeed.p2pOfferModeratedBody', {
+          status: action.payload.status || offer.status,
+        }),
+        type: 'p2p',
+        link: `/p2p/${offer.id}`,
+        priority: 'high',
+      })
+    }
+  }
+
+  if (action.type === 'communications/updateSupportStatus') {
+    const ticket = after.communications.support.find((item) => item.id === action.payload.id)
+    const previous = before.communications.support.find((item) => item.id === action.payload.id)
+    if (ticket?.userId && previous?.status !== ticket.status && ticket.userId !== actorId) {
+      notify(store, {
+        userId: ticket.userId,
+        title: appText('notificationsFeed.supportStatusUpdated'),
+        message: appText('notificationsFeed.supportStatusUpdatedBody', {
+          status: ticket.status,
+        }),
+        type: 'support',
+        link: `/messages?relatedType=support&relatedId=${encodeURIComponent(`support-${ticket.userId}`)}`,
+      })
+    }
   }
 
   if (action.type === 'transfers/declarePayment') {

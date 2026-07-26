@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { FiBriefcase, FiCheck, FiCopy, FiMapPin, FiShare2 } from 'react-icons/fi'
+import { FiBriefcase, FiCheck, FiCopy, FiExternalLink, FiMapPin, FiShare2 } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { Alert } from '../../components/ui/Alert'
 import { VerifiedBadge } from '../../components/ui/Badge'
@@ -176,10 +176,10 @@ export function QrSharePanel({
           <img
             key={shareUrl}
             src={qrUrl}
-            alt=""
+            alt={hint}
             width={qrSize}
             height={qrSize}
-            className="block"
+            className="block object-contain"
             style={{ width: qrSize, height: qrSize }}
           />
         </div>
@@ -201,6 +201,16 @@ export function QrSharePanel({
               <span className="truncate">{shareUrl}</span>
             </button>
             <div className="mt-3 flex flex-wrap justify-center gap-2">
+              {socialVariants.includes(variant) ? (
+                <Button
+                  variant="secondary"
+                  className="!border-transparent !bg-white !text-slate-950 hover:!bg-slate-100"
+                  icon={FiExternalLink}
+                  onClick={() => window.open(shareUrl, '_blank', 'noopener,noreferrer')}
+                >
+                  {t(`share.openNetwork.${variant}`)}
+                </Button>
+              ) : null}
               <Button
                 className="border border-white/20 bg-white/10 text-white shadow-none hover:bg-white/20"
                 icon={copied ? FiCheck : FiCopy}

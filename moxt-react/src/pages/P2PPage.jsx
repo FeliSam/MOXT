@@ -17,6 +17,7 @@ import { Select } from '../components/ui/Select'
 import { useLanguage } from '../contexts/useLanguage'
 import { P2PNoEscrowBanner } from '../features/p2p/components/P2PNoEscrowBanner'
 import { P2PReputationBadge } from '../features/p2p/components/P2PReputationBadge'
+import { P2PTrustChecklist } from '../features/p2p/components/P2PTrustChecklist'
 import { acceptOffer } from '../features/p2p/p2pSlice'
 import { calculateP2PFee } from '../features/p2p/p2pUtils'
 import { selectPlatformFees } from '../features/admin/platformRatesSlice'
@@ -127,6 +128,7 @@ export function P2PPage() {
       />
 
       <P2PNoEscrowBanner />
+      <P2PTrustChecklist />
 
       <div className="grid min-w-0 gap-5">
         <CatalogSearch
@@ -371,6 +373,7 @@ export function P2PPage() {
           <p className="text-sm leading-6 text-[var(--app-text-muted)]">
             {t('p2p.acceptConfirm.body')}
           </p>
+          <P2PTrustChecklist />
           <div className="flex flex-wrap justify-end gap-2">
             <Button variant="secondary" onClick={() => setAcceptOfferTarget(null)}>
               {t('common.cancel')}

@@ -172,6 +172,7 @@ export const PHASE3_FR_SOURCES = {
   'support.replyPlaceholder': 'Répondre',
   'support.sendAria': 'Envoyer',
   'support.closedAlert': 'Cette demande est fermée.',
+  'support.openChat': 'Continuer dans Messages',
 
   // ── documents ──────────────────────────────────────────────────────────
   'documents.eyebrow': 'Compte',
@@ -811,6 +812,10 @@ export const PHASE3_FR_SOURCES = {
   'contribute.toastTitle': 'Contribution enregistrée',
   'contribute.toastBody': 'Demande de {amount} créée. Merci pour votre soutien.',
   'contribute.defaultNote': 'Contribution volontaire au développement MOXT',
+  'contribute.chatSubject': 'Contribution MOXT — {amount}',
+  'contribute.chatIntro': 'Je souhaite contribuer {amount} au développement de MOXT.',
+  'contribute.chatNote': 'Message : {note}',
+  'contribute.chatRef': 'Référence : {id}',
   'nav.contribute': 'Contribuer',
 
   // ── my publications ────────────────────────────────────────────────────

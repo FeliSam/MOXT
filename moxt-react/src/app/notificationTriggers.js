@@ -511,6 +511,16 @@ export function createNotificationDispatcher(store) {
         },
         'notifSysteme',
       )
+      notifyAdmins({
+        title: notifyT('shared.notifications.dispute.openedTitle'),
+        message: notifyT('shared.notifications.dispute.openedBody', {
+          type: dispute.relatedType,
+          id: dispute.relatedId,
+        }),
+        type: 'dispute',
+        link: '/admin?view=queues',
+        priority: 'high',
+      })
     },
     handleDisputeStatus(before, after, action, actorId) {
       const previous = before.disputes.items.find((item) => item.id === action.payload.id)
@@ -566,7 +576,7 @@ export function createNotificationDispatcher(store) {
             text: String(action.payload.text || '').slice(0, 120),
           }),
           type: 'support',
-          link: '/support',
+          link: `/messages?relatedType=support&relatedId=${encodeURIComponent(`support-${ticket.userId}`)}`,
           priority: 'high',
         },
         'notifSysteme',

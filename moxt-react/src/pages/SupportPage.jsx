@@ -1,7 +1,9 @@
 import { useFormik } from 'formik'
-import { FiAlertTriangle, FiHelpCircle, FiImage, FiPlus, FiSend, FiX } from 'react-icons/fi'
+import { FaInstagram, FaTelegramPlane, FaWhatsapp } from 'react-icons/fa'
+import { FiAlertTriangle, FiHelpCircle, FiImage, FiMessageCircle, FiPlus, FiSend, FiX } from 'react-icons/fi'
 import { useRef, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { Link, useNavigate } from 'react-router-dom'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
 import { EntityVerifiedName } from '../components/ui/EntityVerifiedName'
@@ -12,7 +14,9 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { PublicationModal } from '../components/ui/PublicationModal'
 import { Select } from '../components/ui/Select'
 import { SUPPORT_PRIORITIES } from '../config/options'
+import { MOXT_SOCIAL_NETWORKS } from '../config/socialLinks'
 import { useLanguage } from '../contexts/useLanguage'
+import { openAdminSupportChat } from '../features/communications/adminSupportChat'
 import { messageSchema, supportSchema } from '../features/communications/communicationSchemas'
 import {
   addNotification,
@@ -26,10 +30,45 @@ import { storageService } from '../services/storageService'
 import { UploadProgress } from '../components/ui/UploadProgress'
 import { useUploadProgress } from '../hooks/useUploadProgress'
 
+const SOCIAL_ICONS = {
+  instagram: FaInstagram,
+  telegram: FaTelegramPlane,
+  whatsapp: FaWhatsapp,
+}
+
+async function openSupportConversation(
+  dispatch,
+  navigate,
+  { userId, subject, message, ackTitle, ackMessage },
+) {
+  const result = await dispatch(openAdminSupportChat({ subject, message })).unwrap()
+  if (userId) {
+    dispatch(
+      addNotification({
+        userId,
+        title: ackTitle,
+        message: ackMessage,
+        type: 'support',
+        link: result?.conversationId
+          ? `/messages?c=${encodeURIComponent(result.conversationId)}`
+          : '/messages?relatedType=support',
+      }),
+    )
+  }
+  if (result?.conversationId) {
+    navigate(`/messages?c=${encodeURIComponent(result.conversationId)}`)
+  } else {
+    navigate('/messages?relatedType=support')
+  }
+  return result
+}
+
 export function SupportPage() {
   const [requestOpen, setRequestOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const { t } = useLanguage()
   const p3 = (key, vars) => phase3Text(t, key, vars)
   const user = useSelector((state) => state.auth.user)
@@ -39,25 +78,38 @@ export function SupportPage() {
   const formik = useFormik({
     initialValues: { subject: '', priority: 'normal', message: '' },
     validationSchema: supportSchema,
-    onSubmit: (values, helpers) => {
-      const action = dispatch(
-        createSupportTicket({
-          ...values,
+    onSubmit: async (values, helpers) => {
+      setSubmitting(true)
+      try {
+        await openSupportConversation(dispatch, navigate, {
           userId: user.id,
-          userName: `${user.firstName} ${user.lastName}`,
-        }),
-      )
-      dispatch(
-        addNotification({
-          userId: user.id,
-          title: p3('support.createdTitle'),
-          message: p3('support.createdMessage', { id: action.payload.id }),
-          type: 'support',
-          link: '/support',
-        }),
-      )
-      helpers.resetForm()
-      setRequestOpen(false)
+          subject: values.subject,
+          message: values.message,
+          ackTitle: p3('support.createdTitle'),
+          ackMessage: p3('support.createdMessage', { id: values.subject }),
+        })
+        helpers.resetForm()
+        setRequestOpen(false)
+      } catch {
+        dispatch(
+          createSupportTicket({
+            ...values,
+            userId: user.id,
+            userName: `${user.firstName} ${user.lastName}`,
+          }),
+        )
+        helpers.resetForm()
+        setRequestOpen(false)
+        dispatch(
+          addToast({
+            title: p3('support.createdTitle'),
+            message: p3('support.empty'),
+            tone: 'info',
+          }),
+        )
+      } finally {
+        setSubmitting(false)
+      }
     },
   })
   const errorFor = (field) => (formik.touched[field] ? formik.errors[field] : undefined)
@@ -77,10 +129,37 @@ export function SupportPage() {
           </div>
         }
       />
+      <Card className="grid gap-3">
+        <p className="text-sm font-black">{t('share.networksTab')}</p>
+        <div className="flex flex-wrap gap-2">
+          {MOXT_SOCIAL_NETWORKS.map((network) => {
+            const Icon = SOCIAL_ICONS[network.id]
+            return (
+              <a
+                key={network.id}
+                href={network.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[var(--app-surface-muted)] px-4 text-sm font-bold text-[var(--app-text)] transition hover:bg-[var(--app-accent-soft)] hover:text-[var(--app-accent)]"
+              >
+                {Icon ? <Icon aria-hidden /> : null}
+                {t(`share.networks.${network.id}`)}
+              </a>
+            )
+          })}
+          <Link
+            to="/referral?tab=reseaux"
+            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--app-border)] px-4 text-sm font-bold"
+          >
+            {t('share.qrToShare')}
+          </Link>
+        </div>
+      </Card>
       <ErrorReportModal
         open={reportOpen}
         onClose={() => setReportOpen(false)}
         dispatch={dispatch}
+        navigate={navigate}
         user={user}
       />
       <div>
@@ -119,7 +198,7 @@ export function SupportPage() {
                 <span className="text-xs text-red-600">{errorFor('message')}</span>
               ) : null}
             </label>
-            <Button type="submit" icon={FiSend}>
+            <Button type="submit" icon={FiSend} loading={submitting} disabled={submitting}>
               {p3('support.send')}
             </Button>
           </form>
@@ -127,7 +206,9 @@ export function SupportPage() {
         <section className="grid content-start gap-4 xl:grid-cols-2">
           <h2 className="text-lg font-black xl:col-span-2">{p3('support.myRequests')}</h2>
           {tickets.length ? (
-            tickets.map((ticket) => <TicketCard ticket={ticket} user={user} dispatch={dispatch} />)
+            tickets.map((ticket) => (
+              <TicketCard key={ticket.id} ticket={ticket} user={user} dispatch={dispatch} />
+            ))
           ) : (
             <Card className="border-dashed text-center text-sm text-slate-500">
               {p3('support.empty')}
@@ -139,7 +220,7 @@ export function SupportPage() {
   )
 }
 
-function ErrorReportModal({ open, onClose, dispatch, user }) {
+function ErrorReportModal({ open, onClose, dispatch, navigate, user }) {
   const { t } = useLanguage()
   const p3 = (key, vars) => phase3Text(t, key, vars)
   const fileInputRef = useRef(null)
@@ -200,26 +281,39 @@ function ErrorReportModal({ open, onClose, dispatch, user }) {
           storageService.uploadSupportScreenshot(user.id, file, { onProgress }),
         )
       }
-      const action = dispatch(
-        createSupportTicket({
+      const bugText = screenshotUrl
+        ? `${message.trim()}\n\n${screenshotUrl}`
+        : message.trim()
+      try {
+        await openSupportConversation(dispatch, navigate, {
           userId: user.id,
-          userName: `${user.firstName} ${user.lastName}`,
           subject: p3('support.bugSubject'),
-          priority: 'important',
-          category: 'bug',
-          message: message.trim(),
-          screenshotUrl,
-        }),
-      )
-      dispatch(
-        addNotification({
-          userId: user.id,
-          title: p3('support.bugSentTitle'),
-          message: p3('support.bugSentMessage', { id: action.payload.id }),
-          type: 'support',
-          link: '/support',
-        }),
-      )
+          message: bugText,
+          ackTitle: p3('support.bugSentTitle'),
+          ackMessage: p3('support.thanksMessage'),
+        })
+      } catch {
+        const action = dispatch(
+          createSupportTicket({
+            userId: user.id,
+            userName: `${user.firstName} ${user.lastName}`,
+            subject: p3('support.bugSubject'),
+            priority: 'important',
+            category: 'bug',
+            message: message.trim(),
+            screenshotUrl,
+          }),
+        )
+        dispatch(
+          addNotification({
+            userId: user.id,
+            title: p3('support.bugSentTitle'),
+            message: p3('support.bugSentMessage', { id: action.payload.id }),
+            type: 'support',
+            link: '/support',
+          }),
+        )
+      }
       dispatch(
         addToast({
           title: p3('support.thanksTitle'),
@@ -338,7 +432,16 @@ function TicketCard({ dispatch, ticket, user }) {
             {ticket.id} - {formatDate(ticket.createdAt)}
           </p>
         </div>
-        <Badge tone={ticket.status === 'resolved' ? 'success' : 'warning'}>{ticket.status}</Badge>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge tone={ticket.status === 'resolved' ? 'success' : 'warning'}>{ticket.status}</Badge>
+          <Link
+            to={`/messages?relatedType=support&relatedId=${encodeURIComponent(`support-${ticket.userId}`)}`}
+            className="inline-flex items-center gap-1 text-xs font-bold text-brand-700 dark:text-brand-300"
+          >
+            <FiMessageCircle />
+            {p3('support.openChat')}
+          </Link>
+        </div>
       </div>
       <div className="mt-4 grid gap-2">
         {ticket.messages.map((message) => (

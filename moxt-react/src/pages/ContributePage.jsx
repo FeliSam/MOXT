@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { FiHeart, FiSend } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { BackButton } from '../components/ui/BackButton'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
@@ -9,6 +9,7 @@ import { Input } from '../components/ui/Input'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Select } from '../components/ui/Select'
 import { useLanguage } from '../contexts/useLanguage'
+import { openAdminSupportChat } from '../features/communications/adminSupportChat'
 import { createSimulatedPayment } from '../features/finance/financeSlice'
 import { formatMoney } from '../features/transfers/transferUtils'
 import { addToast } from '../features/ui/uiSlice'
@@ -20,12 +21,14 @@ export function ContributePage() {
   const { t } = useLanguage()
   const p3 = (key, vars) => phase3Text(t, key, vars)
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const user = useSelector((state) => state.auth.user)
   const [amount, setAmount] = useState(500)
   const [customAmount, setCustomAmount] = useState('')
   const [currency, setCurrency] = useState('RUB')
   const [message, setMessage] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
   const effectiveAmount = useMemo(() => {
     const custom = Number(customAmount)
@@ -38,29 +41,62 @@ export function ContributePage() {
     setCustomAmount('')
   }
 
-  function submitContribution() {
-    if (!user?.id || effectiveAmount <= 0) return
+  async function submitContribution() {
+    if (!user?.id || effectiveAmount <= 0 || submitting) return
+    setSubmitting(true)
+    const relatedId = `MOXT-${Date.now().toString(36).toUpperCase()}`
+    const amountLabel = formatMoney(effectiveAmount, currency)
     dispatch(
       createSimulatedPayment({
         userId: user.id,
         relatedType: 'contribution',
-        relatedId: `MOXT-${Date.now().toString(36).toUpperCase()}`,
+        relatedId,
         amount: effectiveAmount,
         currency,
         status: 'pending',
         note: message.trim() || p3('contribute.defaultNote'),
       }),
     )
-    setSubmitted(true)
-    dispatch(
-      addToast({
-        tone: 'success',
-        title: p3('contribute.toastTitle'),
-        message: p3('contribute.toastBody', {
-          amount: formatMoney(effectiveAmount, currency),
+    const supportMessage = [
+      p3('contribute.chatIntro', { amount: amountLabel }),
+      message.trim() ? p3('contribute.chatNote', { note: message.trim() }) : null,
+      p3('contribute.chatRef', { id: relatedId }),
+    ]
+      .filter(Boolean)
+      .join('\n')
+    try {
+      const result = await dispatch(
+        openAdminSupportChat({
+          subject: p3('contribute.chatSubject', { amount: amountLabel }),
+          message: supportMessage,
         }),
-      }),
-    )
+      ).unwrap()
+      setSubmitted(true)
+      dispatch(
+        addToast({
+          tone: 'success',
+          title: p3('contribute.toastTitle'),
+          message: p3('contribute.toastBody', { amount: amountLabel }),
+        }),
+      )
+      if (result?.conversationId) {
+        navigate(`/messages?c=${encodeURIComponent(result.conversationId)}`)
+      } else {
+        navigate('/messages?relatedType=support')
+      }
+    } catch {
+      setSubmitted(true)
+      dispatch(
+        addToast({
+          tone: 'success',
+          title: p3('contribute.toastTitle'),
+          message: p3('contribute.toastBody', { amount: amountLabel }),
+        }),
+      )
+      navigate('/support')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -153,7 +189,8 @@ export function ContributePage() {
         <div className="flex flex-wrap items-center gap-3">
           <Button
             icon={FiSend}
-            disabled={!user?.id || effectiveAmount <= 0}
+            loading={submitting}
+            disabled={!user?.id || effectiveAmount <= 0 || submitting}
             onClick={submitContribution}
           >
             {p3('contribute.submit', { amount: formatMoney(effectiveAmount || 0, currency) })}

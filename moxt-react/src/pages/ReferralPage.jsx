@@ -120,7 +120,7 @@ export function ReferralPage() {
           avatarUrl={user.avatarUrl}
           verified={user.verified}
           city={user.city}
-          country={user.originCountry || user.country}
+          country={user.country || user.originCountry}
           shareUrl={referralLink}
           code={referralCode}
           inviteCount={inviteCount}
@@ -169,7 +169,7 @@ export function ReferralPage() {
           avatarUrl={user.avatarUrl || undefined}
           verified={user.verified}
           city={user.city}
-          country={user.originCountry || user.country}
+          country={user.country || user.originCountry}
           shareUrl={profileLink}
           shareTitle={t('share.shareTitles.publications', { name: displayName })}
           shareText={t('share.shareTexts.profile', { name: displayName })}

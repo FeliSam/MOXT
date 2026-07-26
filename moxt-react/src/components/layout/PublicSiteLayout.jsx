@@ -1,7 +1,7 @@
-import { FaInstagram } from 'react-icons/fa'
+import { FaInstagram, FaTelegramPlane, FaWhatsapp } from 'react-icons/fa'
 import { FiMoon, FiSearch, FiSun } from 'react-icons/fi'
 import { Link, NavLink, Outlet } from 'react-router-dom'
-import { MOXT_INSTAGRAM } from '../../config/socialLinks'
+import { MOXT_SOCIAL_NETWORKS } from '../../config/socialLinks'
 import { useTheme } from '../../contexts/useTheme'
 import { useLanguage } from '../../contexts/useLanguage'
 import { useSmartNavbar } from '../../hooks/useSmartNavbar'
@@ -16,6 +16,12 @@ const publicLinks = [
   { key: 'trust', path: '/trust' },
   { key: 'faq', path: '/faq' },
 ]
+
+const SOCIAL_ICONS = {
+  instagram: FaInstagram,
+  telegram: FaTelegramPlane,
+  whatsapp: FaWhatsapp,
+}
 
 export function PublicSiteLayout({ children }) {
   const { theme, toggleTheme } = useTheme()
@@ -97,15 +103,21 @@ export function PublicSiteLayout({ children }) {
           </div>
           <p>{t('public.footer.tagline')}</p>
           <div className="flex flex-wrap items-center gap-4">
-            <a
-              href={MOXT_INSTAGRAM.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 font-bold text-[var(--app-text)] hover:text-[var(--app-accent)]"
-            >
-              <FaInstagram aria-hidden />
-              {t('public.footer.instagram')}
-            </a>
+            {MOXT_SOCIAL_NETWORKS.map((network) => {
+              const Icon = SOCIAL_ICONS[network.id]
+              return (
+                <a
+                  key={network.id}
+                  href={network.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 font-bold text-[var(--app-text)] hover:text-[var(--app-accent)]"
+                >
+                  {Icon ? <Icon aria-hidden /> : null}
+                  {t(`share.networks.${network.id}`)}
+                </a>
+              )
+            })}
             <Link to="/trust">{t('public.footer.security')}</Link>
             <Link to="/faq">{t('public.footer.help')}</Link>
             <Link to="/legal/mentions">{t('legal.nav.mentions')}</Link>

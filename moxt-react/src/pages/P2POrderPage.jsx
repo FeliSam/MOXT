@@ -10,7 +10,7 @@ import {
   FiXCircle,
 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
 import { BackButton } from '../components/ui/BackButton'
 import { Button } from '../components/ui/Button'
@@ -20,12 +20,14 @@ import { Modal } from '../components/ui/Modal'
 import { PageHeader } from '../components/ui/PageHeader'
 import { UploadProgress } from '../components/ui/UploadProgress'
 import { useLanguage } from '../contexts/useLanguage'
+import { openAdminSupportChat } from '../features/communications/adminSupportChat'
 import { ContactButton } from '../features/communications/ContactButton'
 import { openDispute } from '../features/disputes/disputeSlice'
 import { createReceipt } from '../features/finance/financeSlice'
 import { P2PCountdown } from '../features/p2p/components/P2PCountdown'
 import { P2PNoEscrowBanner } from '../features/p2p/components/P2PNoEscrowBanner'
 import { P2POrderStatusBar } from '../features/p2p/components/P2POrderStatusBar'
+import { P2PTrustChecklist } from '../features/p2p/components/P2PTrustChecklist'
 import { P2PReputationBadge } from '../features/p2p/components/P2PReputationBadge'
 import { P2PBuyerReceiveModal } from '../features/p2p/components/P2PBuyerReceiveModal'
 import {
@@ -53,6 +55,7 @@ const ORDER_STATUS_KEYS = {
 export function P2POrderPage() {
   const { t } = useLanguage()
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const [disputeReason, setDisputeReason] = useState('')
   const [rating, setRating] = useState(5)
   const [comment, setComment] = useState('')
@@ -211,16 +214,34 @@ export function P2POrderPage() {
         }),
       )
     } else if (confirmAction === 'dispute') {
+      const reason = disputeReason.trim()
       dispatch(
         openDispute({
           openedBy: user.id,
           relatedType: 'p2p_order',
           relatedId: order.id,
-          reason: disputeReason,
+          reason,
         }),
       )
       dispatch(updateOrderStatus({ id: order.id, status: 'disputed' }))
       setDisputeReason('')
+      dispatch(
+        openAdminSupportChat({
+          subject: t('p2p.order.disputeSupportSubject', { id: order.id }),
+          message: t('p2p.order.disputeSupportMessage', { id: order.id, reason }),
+        }),
+      )
+        .unwrap()
+        .then((result) => {
+          if (result?.conversationId) {
+            navigate(`/messages?c=${encodeURIComponent(result.conversationId)}`)
+          } else {
+            navigate('/messages?relatedType=support')
+          }
+        })
+        .catch(() => {
+          navigate('/support')
+        })
     }
     setConfirmAction(null)
   }
@@ -262,6 +283,7 @@ export function P2POrderPage() {
       <PageHeader title={t('p2p.order.title')} actions={<BackButton fallback="/p2p" />} />
 
       <P2PNoEscrowBanner />
+      <P2PTrustChecklist />
 
       {isDisputed ? (
         <Card className="border border-amber-200 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/30">

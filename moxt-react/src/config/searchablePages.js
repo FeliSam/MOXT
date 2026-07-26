@@ -180,7 +180,7 @@ export const searchablePages = [
     subtitle: 'Communication',
     subtitleKey: 'shared.pages.groups.communication',
     path: '/support',
-    keywords: 'aide assistance contact instagram telegram moxtapp reseaux sociaux',
+    keywords: 'aide assistance contact instagram telegram whatsapp moxtapp reseaux sociaux',
   },
   {
     id: 'page-activities',
