@@ -4332,6 +4332,15 @@ export const pt = {
       toastTitle: "Oferta P2P publicada",
       toastMessage: "A sua oferta está visível nas trocas P2P.",
     },
+    edit: {
+      eyebrow: "Trocas P2P",
+      title: "Editar a oferta",
+      description: "Ajuste o montante, a taxa ou as condições da sua oferta.",
+      notFound: "Oferta P2P não encontrada.",
+      toastTitle: "Oferta atualizada",
+      toastMessage: "As alterações foram guardadas.",
+      saveChanges: "Guardar as alterações",
+    },
   },
   favorites: {
     eyebrow: "Conta",

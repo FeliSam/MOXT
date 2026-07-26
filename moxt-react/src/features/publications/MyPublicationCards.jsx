@@ -357,6 +357,11 @@ export function MyP2POfferPublicationCard({
       actions={
         readOnly ? null : (
           <>
+            <Link to={`/p2p/${offer.id}/edit`}>
+              <Button variant="secondary" icon={FiEdit2} size="sm">
+                {p3('publications.cards.edit')}
+              </Button>
+            </Link>
             {active ? (
               <Button variant="danger" icon={FiArchive} size="sm" onClick={onArchive}>
                 {p3('publications.cards.archive')}

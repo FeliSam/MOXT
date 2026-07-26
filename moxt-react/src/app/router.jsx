@@ -133,6 +133,7 @@ const P2POrderPage = lazyPage(() => import('../pages/P2POrderPage'), 'P2POrderPa
 const P2PDetailPage = lazyPage(() => import('../pages/P2PDetailPage'), 'P2PDetailPage')
 const P2PPage = lazyPage(() => import('../pages/P2PPage'), 'P2PPage')
 const PublishP2PPage = lazyPage(() => import('../pages/PublishP2PPage'), 'PublishP2PPage')
+const EditP2POfferPage = lazyPage(() => import('../pages/EditP2POfferPage'), 'EditP2POfferPage')
 const PaymentsPage = lazyPage(() => import('../pages/PaymentsPage'), 'PaymentsPage')
 const ContributePage = lazyPage(() => import('../pages/ContributePage'), 'ContributePage')
 const ProfilePage = lazyPage(() => import('../pages/ProfilePage'), 'ProfilePage')
@@ -289,6 +290,7 @@ export function AppRouter() {
             <Route path="/p2p" element={<P2PPage />} />
             <Route path="/p2p/publish" element={<PublishP2PPage />} />
             <Route path="/p2p/orders/:orderId" element={<P2POrderPage />} />
+            <Route path="/p2p/:offerId/edit" element={<EditP2POfferPage />} />
             <Route path="/p2p/:offerId" element={<P2PDetailPage />} />
             <Route
               path="/p2p-order-detail"

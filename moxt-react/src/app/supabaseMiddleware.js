@@ -899,6 +899,10 @@ const handlers = {
     const offer = state.p2p.offers.find((item) => item.id === payload.id)
     if (offer) await upsert('p2p_offers', p2pOfferToRemoteRow(offer))
   },
+  'p2p/updateOffer': async (payload, state) => {
+    const offer = state.p2p.offers.find((item) => item.id === payload.id)
+    if (offer) await upsert('p2p_offers', p2pOfferToRemoteRow(offer))
+  },
   'p2p/moderateOffer': async (payload, state) => {
     const offer = state.p2p.offers.find((item) => item.id === payload.id)
     if (offer) await upsert('p2p_offers', p2pOfferToRemoteRow(offer))

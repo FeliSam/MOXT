@@ -4334,6 +4334,15 @@ export const en = {
       toastTitle: "P2P offer published",
       toastMessage: "Your offer is visible in P2P exchanges.",
     },
+    edit: {
+      eyebrow: "P2P exchanges",
+      title: "Edit offer",
+      description: "Adjust the amount, rate, or terms of your offer.",
+      notFound: "P2P offer not found.",
+      toastTitle: "Offer updated",
+      toastMessage: "Your changes have been saved.",
+      saveChanges: "Save changes",
+    },
   },
   favorites: {
     eyebrow: "Account",

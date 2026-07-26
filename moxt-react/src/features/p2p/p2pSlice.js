@@ -74,6 +74,16 @@ const p2pSlice = createSlice({
       offer.status = action.payload.status
       offer.updatedAt = new Date().toISOString()
     },
+    updateOffer(state, action) {
+      const offer = state.offers.find((item) => item.id === action.payload.id)
+      if (!offer || offer.ownerId !== action.payload.ownerId) return
+      const { id: _id, ownerId: _o, createdAt: _c, status: _s, ...changes } = action.payload
+      Object.assign(offer, changes, {
+        amount: Number(changes.amount ?? offer.amount),
+        rate: Number(changes.rate ?? offer.rate),
+        updatedAt: new Date().toISOString(),
+      })
+    },
     deleteOffer(state, action) {
       const offer = state.offers.find((item) => item.id === action.payload.id)
       if (!offer || offer.ownerId !== action.payload.ownerId) return
@@ -250,6 +260,7 @@ export const {
   moderateOrder,
   rateOrder,
   setAll,
+  updateOffer,
   updateOfferStatus,
   updateOrderReceiveDetails,
   updateOrderStatus,
