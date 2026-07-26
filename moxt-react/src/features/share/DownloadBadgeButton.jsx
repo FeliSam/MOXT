@@ -15,7 +15,19 @@ function slugify(value = 'moxt') {
   )
 }
 
-export function DownloadBadgeButton({ variant, title, subtitle, city, verified, qrUrl, avatarUrl, className = '' }) {
+export function DownloadBadgeButton({
+  variant,
+  title,
+  firstName,
+  lastName,
+  subtitle,
+  city,
+  country,
+  verified,
+  qrUrl,
+  avatarUrl,
+  className = '',
+}) {
   const { t } = useLanguage()
   const [status, setStatus] = useState('idle')
 
@@ -26,15 +38,31 @@ export function DownloadBadgeButton({ variant, title, subtitle, city, verified, 
       const blob = await renderShareBadge({
         variant: variant === 'business' ? 'business' : 'personal',
         title,
+        firstName,
+        lastName,
         subtitle,
         city,
+        country,
         verified,
         qrUrl,
         avatarUrl,
-        tagline: {
-          line1: t('share.badge.taglineLine1'),
-          line2:
-            variant === 'business' ? t('share.badge.taglineLine2Business') : t('share.badge.taglineLine2Personal'),
+        copy: {
+          slogan: t('share.badge.slogan'),
+          verifiedChip: t('share.badge.verifiedChip'),
+          verifiedUser: t('share.badge.verifiedUser'),
+          scanHint: t('share.badge.scanHint'),
+          bridgeCaption: t('share.badge.bridgeCaption'),
+          cta:
+            variant === 'business' ? t('share.badge.ctaBusiness') : t('share.badge.ctaPersonal'),
+          footerTagline: t('share.badge.footerTagline'),
+          features: {
+            exchange: t('share.badge.features.exchange'),
+            parcels: t('share.badge.features.parcels'),
+            marketplace: t('share.badge.features.marketplace'),
+            community: t('share.badge.features.community'),
+            jobs: t('share.badge.features.jobs'),
+            events: t('share.badge.features.events'),
+          },
         },
       })
       const url = URL.createObjectURL(blob)

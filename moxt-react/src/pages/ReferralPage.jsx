@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { FiGift, FiShare2, FiUsers } from 'react-icons/fi'
+import { FaInstagram, FaTelegramPlane, FaWhatsapp } from 'react-icons/fa'
 import { useSelector } from 'react-redux'
 import { useSearchParams } from 'react-router-dom'
 import { Card } from '../components/ui/Card'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Tabs } from '../components/ui/Tabs'
-import { MOXT_INSTAGRAM } from '../config/socialLinks'
+import { getMoxtSocialNetwork, MOXT_SOCIAL_NETWORKS } from '../config/socialLinks'
 import { useLanguage } from '../contexts/useLanguage'
 import { selectAccountPreferences } from '../features/account/accountSlice'
 import { buildReferralCode, buildReferralLink } from '../features/referral/referralUtils'
@@ -20,7 +21,25 @@ const STEP_KEYS = [
   { icon: FiGift, titleKey: 'share.steps.step3Title', descKey: 'share.steps.step3Desc' },
 ]
 
-const TAB_VALUES = ['invite', 'profile', 'instagram', 'scan']
+const TAB_VALUES = ['invite', 'profile', 'reseaux', 'scan']
+
+const NETWORK_ICONS = {
+  instagram: FaInstagram,
+  telegram: FaTelegramPlane,
+  whatsapp: FaWhatsapp,
+}
+
+const NETWORK_SUBTITLE_KEYS = {
+  instagram: 'share.instagramSubtitle',
+  telegram: 'share.telegramSubtitle',
+  whatsapp: 'share.whatsappSubtitle',
+}
+
+function resolveTab(value) {
+  if (value === 'instagram') return 'reseaux'
+  if (TAB_VALUES.includes(value)) return value
+  return 'invite'
+}
 
 export function ReferralPage() {
   const { t } = useLanguage()
@@ -29,15 +48,21 @@ export function ReferralPage() {
     user ? selectAccountPreferences(state, user.id) : null,
   )
   const [searchParams, setSearchParams] = useSearchParams()
-  const activeTab = TAB_VALUES.includes(searchParams.get('tab'))
-    ? searchParams.get('tab')
-    : 'invite'
+  const rawTab = searchParams.get('tab')
+  const activeTab = resolveTab(rawTab)
+  const [network, setNetwork] = useState('instagram')
+
+  useEffect(() => {
+    if (rawTab === 'instagram') {
+      setSearchParams({ tab: 'reseaux' }, { replace: true })
+    }
+  }, [rawTab, setSearchParams])
 
   const tabs = useMemo(
     () => [
       { value: 'invite', label: t('share.inviteTab') },
       { value: 'profile', label: t('share.profileTab') },
-      { value: 'instagram', label: t('share.instagramTab') },
+      { value: 'reseaux', label: t('share.networksTab') },
       { value: 'scan', label: t('share.scanTab') },
     ],
     [t],
@@ -63,6 +88,7 @@ export function ReferralPage() {
     () => buildAbsoluteUrl(`/users/${user.id}/publications`),
     [user.id],
   )
+  const selectedNetwork = getMoxtSocialNetwork(network)
 
   function setActiveTab(tab) {
     if (tab === 'invite') {
@@ -88,39 +114,69 @@ export function ReferralPage() {
         <QrSharePanel
           variant="invite"
           title={displayName}
+          firstName={user.firstName}
+          lastName={user.lastName}
           subtitle={t('share.invitationSubtitle')}
           avatarUrl={user.avatarUrl}
           verified={user.verified}
           city={user.city}
+          country={user.originCountry || user.country}
           shareUrl={referralLink}
           code={referralCode}
           inviteCount={inviteCount}
         />
-      ) : activeTab === 'instagram' ? (
-        <QrSharePanel
-          variant="instagram"
-          title="MOXT"
-          subtitle={t('share.instagramSubtitle')}
-          avatarUrl="/assets/brand/mark.png?v=20260714e"
-          shareUrl={MOXT_INSTAGRAM.url}
-          qrImageSrc={MOXT_INSTAGRAM.qrSrc}
-        />
+      ) : activeTab === 'reseaux' ? (
+        <div className="grid gap-4">
+          <div className="flex flex-wrap justify-center gap-2">
+            {MOXT_SOCIAL_NETWORKS.map((item) => {
+              const Icon = NETWORK_ICONS[item.id]
+              const active = network === item.id
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setNetwork(item.id)}
+                  className={`inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-black transition ${
+                    active
+                      ? 'bg-brand-700 text-white shadow-sm'
+                      : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]'
+                  }`}
+                  aria-pressed={active}
+                >
+                  {Icon ? <Icon className="text-base" aria-hidden /> : null}
+                  {t(`share.networks.${item.id}`)}
+                </button>
+              )
+            })}
+          </div>
+          <QrSharePanel
+            variant={selectedNetwork.id}
+            title="MOXT"
+            subtitle={t(NETWORK_SUBTITLE_KEYS[selectedNetwork.id] || 'share.instagramSubtitle')}
+            avatarUrl="/assets/brand/mark.png?v=20260714e"
+            shareUrl={selectedNetwork.url}
+            qrImageSrc={selectedNetwork.qrSrc}
+          />
+        </div>
       ) : (
         <QrSharePanel
           variant="profile"
           activityVisibility={preferences?.activityVisibility}
           title={displayName}
+          firstName={user.firstName}
+          lastName={user.lastName}
           subtitle={user.email}
           avatarUrl={user.avatarUrl || undefined}
           verified={user.verified}
           city={user.city}
+          country={user.originCountry || user.country}
           shareUrl={profileLink}
           shareTitle={t('share.shareTitles.publications', { name: displayName })}
           shareText={t('share.shareTexts.profile', { name: displayName })}
         />
       )}
 
-      {activeTab === 'scan' || activeTab === 'instagram' ? null : (
+      {activeTab === 'scan' || activeTab === 'reseaux' ? null : (
         <section className="grid gap-3 sm:grid-cols-3">
           {STEP_KEYS.map(({ descKey, icon: Icon, titleKey }) => (
             <Card key={titleKey} className="!p-4">

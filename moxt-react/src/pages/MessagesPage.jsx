@@ -89,7 +89,6 @@ export function MessagesPage() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [filter, setFilter] = useState('all')
   const listRef = useRef(null)
-  const conversationListRef = useRef(null)
   const desktop = useMediaQuery('(min-width: 1024px)')
   const isFiltering = Boolean(deferredQuery.trim())
   const relatedConversation = conversations.find(
@@ -155,16 +154,13 @@ export function MessagesPage() {
         return conversationMatchesQuery(item, user.id, deferredQuery)
       })
       .sort((left, right) => {
-        if (desktop && activeId && !showArchived) {
-          if (left.id === activeId) return -1
-          if (right.id === activeId) return 1
-        }
+        // Opening a chat must not reorder the list; only new messages bump updatedAt.
         const pinDelta =
           Number(Boolean(right.pinnedBy?.includes(user.id))) -
           Number(Boolean(left.pinnedBy?.includes(user.id)))
         return pinDelta || new Date(right.updatedAt) - new Date(left.updatedAt)
       })
-  }, [activeId, conversations, deferredQuery, desktop, filter, showArchived, user.id])
+  }, [activeId, conversations, deferredQuery, filter, showArchived, user.id])
 
   const participantAvatarIds = useMemo(() => {
     const ids = new Set()
@@ -351,11 +347,6 @@ export function MessagesPage() {
     params.delete('replyContext')
     setSearchParams(params, { replace: true })
   }, [active?.id, requestedConversation, searchParams, setSearchParams])
-
-  useLayoutEffect(() => {
-    if (!desktop || !activeId || !conversationListRef.current) return
-    conversationListRef.current.scrollTop = 0
-  }, [activeId, desktop, active?.messages?.length, active?.updatedAt])
 
   useEffect(() => {
     if (!user?.id) return
@@ -698,10 +689,7 @@ export function MessagesPage() {
             </div>
           </div>
 
-          <div
-            ref={conversationListRef}
-            className="scrollbar-hidden min-h-0 flex-1 overscroll-contain overflow-y-auto bg-[var(--app-surface-muted)]/45 p-2 sm:p-3"
-          >
+          <div className="scrollbar-hidden min-h-0 flex-1 overscroll-contain overflow-y-auto bg-[var(--app-surface-muted)]/45 p-2 sm:p-3">
             <ConversationRow
               active={assistantActive}
               assistant
