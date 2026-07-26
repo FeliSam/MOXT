@@ -241,7 +241,7 @@ export function VerificationPage() {
             label: current.label,
           })}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="scrollbar-hidden flex items-center gap-2 overflow-x-auto">
           {steps.map((item, index) => {
             const number = index + 1
             const done = step > number

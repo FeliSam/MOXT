@@ -26,6 +26,12 @@ import { businessFromRemoteRow } from '../features/businesses/businessRemote'
 import { setOnlineUsers } from '../features/presence/presenceSlice'
 import { transferFromRemoteRow } from '../features/transfers/transferRemote'
 import { receiveRemoteTransfer } from '../features/transfers/transferSlice'
+import { p2pOfferFromRemoteRow, p2pOrderFromRemoteRow } from '../features/sync/entityRemote'
+import {
+  receiveRemoteOffer,
+  receiveRemoteOrder,
+  removeRemoteOffer,
+} from '../features/p2p/p2pSlice'
 import {
   isTransferRelevantToUser,
   ownedBusinessIdsForUser,
@@ -292,6 +298,16 @@ function bindChannel(userId, dispatch, getState) {
     dispatch(removeRemoteListing(listing.id))
   }
 
+  const handleP2POfferUpsert = (payload) => {
+    const offer = p2pOfferFromRemoteRow(payload.new)
+    if (offer?.id) dispatch(receiveRemoteOffer(offer))
+  }
+
+  const handleP2POrderChange = (payload) => {
+    const order = p2pOrderFromRemoteRow(payload.new)
+    if (order?.id) dispatch(receiveRemoteOrder(order))
+  }
+
   let nextChannel = supabase
     .channel('presence-online', { config: { presence: { key: userId } } })
 
@@ -429,6 +445,32 @@ function bindChannel(userId, dispatch, getState) {
       'postgres_changes',
       { event: 'DELETE', schema: 'public', table: 'listings' },
       (payload) => dispatch(removeRemoteListing(payload.old.id)),
+    )
+
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'p2p_offers' },
+      handleP2POfferUpsert,
+    )
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'p2p_offers' },
+      handleP2POfferUpsert,
+    )
+    .on(
+      'postgres_changes',
+      { event: 'DELETE', schema: 'public', table: 'p2p_offers' },
+      (payload) => dispatch(removeRemoteOffer(payload.old.id)),
+    )
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'p2p_orders', filter: `buyer_id=eq.${userId}` },
+      handleP2POrderChange,
+    )
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'p2p_orders', filter: `seller_id=eq.${userId}` },
+      handleP2POrderChange,
     )
 
     .on(

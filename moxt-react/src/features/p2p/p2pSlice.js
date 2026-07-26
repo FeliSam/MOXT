@@ -89,6 +89,26 @@ const p2pSlice = createSlice({
       if (!offer || offer.ownerId !== action.payload.ownerId) return
       state.offers = state.offers.filter((item) => item.id !== action.payload.id)
     },
+    /** Reçu via Supabase Realtime (INSERT/UPDATE distant) — remplace/insère l'offre locale. */
+    receiveRemoteOffer(state, action) {
+      const offer = action.payload
+      if (!offer?.id) return
+      const index = state.offers.findIndex((item) => item.id === offer.id)
+      if (index === -1) state.offers.unshift(offer)
+      else state.offers[index] = { ...state.offers[index], ...offer }
+    },
+    /** Reçu via Supabase Realtime (DELETE distant). */
+    removeRemoteOffer(state, action) {
+      state.offers = state.offers.filter((item) => item.id !== action.payload)
+    },
+    /** Reçu via Supabase Realtime (INSERT/UPDATE distant) — remplace/insère la commande locale. */
+    receiveRemoteOrder(state, action) {
+      const order = action.payload
+      if (!order?.id) return
+      const index = state.orders.findIndex((item) => item.id === order.id)
+      if (index === -1) state.orders.unshift(order)
+      else state.orders[index] = { ...state.orders[index], ...order }
+    },
     acceptOffer: {
       reducer(state, action) {
         const offer = state.offers.find((item) => item.id === action.payload.offerId)
@@ -259,6 +279,9 @@ export const {
   moderateOffer,
   moderateOrder,
   rateOrder,
+  receiveRemoteOffer,
+  receiveRemoteOrder,
+  removeRemoteOffer,
   setAll,
   updateOffer,
   updateOfferStatus,

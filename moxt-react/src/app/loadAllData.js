@@ -405,7 +405,7 @@ export const loadAllData = createAsyncThunk(
         ? supabase
             .from('profiles')
             .select(
-              'id, first_name, last_name, email, phone, city, origin_country, country, role, status, created_at, updated_at',
+              'id, first_name, last_name, email, phone, city, origin_country, country, role, status, phone_verified, phone_verified_at, created_at, updated_at',
             )
             .order('created_at', { ascending: false })
             .limit(USER_LIMIT)

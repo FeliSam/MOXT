@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components -- action helpers + local ActionButton */
 import { Button } from '../../components/ui/Button'
 import { dispatchUserRole } from './promoteAdminUtils'
+import { verifyUserEmailManually, verifyUserPhoneManually } from './adminVerifyContactUtils'
 import { updateVerificationStatus, updateSubscriberReportStatus } from '../account/accountSlice'
 import { moderateBusiness, updateBusinessDocumentStatus } from '../businesses/businessSlice'
 import { updateDisputeStatus } from '../disputes/disputeSlice'
@@ -527,6 +528,27 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
             {item.status === 'suspended'
               ? adminText(t, 'admin.actions.reactivate')
               : adminText(t, 'admin.actions.suspend')}
+          </Button>
+          <ActionButton
+            done={item.phoneVerified}
+            doneLabel={adminText(t, 'admin.actions.phoneVerified')}
+            onClick={() => {
+              if (window.confirm(adminText(t, 'admin.actions.verifyPhoneConfirm', { phone: item.phone }))) {
+                verifyUserPhoneManually(dispatch, { id: item.id, t })
+              }
+            }}
+          >
+            {adminText(t, 'admin.actions.verifyPhone')}
+          </ActionButton>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              if (window.confirm(adminText(t, 'admin.actions.verifyEmailConfirm', { email: item.email }))) {
+                verifyUserEmailManually(dispatch, { id: item.id, t })
+              }
+            }}
+          >
+            {adminText(t, 'admin.actions.verifyEmail')}
           </Button>
         </>
       )

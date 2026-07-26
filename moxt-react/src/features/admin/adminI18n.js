@@ -327,6 +327,19 @@ export const ADMIN_FR_SOURCES = {
   'admin.actions.deleteJobConfirm': 'Supprimer definitivement cette offre d’emploi ?',
   'admin.actions.deleteEventConfirm': 'Supprimer definitivement cet événement ?',
   'admin.actions.deleteParcelConfirm': 'Supprimer definitivement ce colis ?',
+  'admin.actions.verifyPhone': 'Valider le numéro',
+  'admin.actions.phoneVerified': 'Numéro validé',
+  'admin.actions.verifyPhoneConfirm':
+    'Valider manuellement le numéro {phone} ? À utiliser seulement si vous avez confirmé qu’il est fonctionnel (OTP jamais reçu après plusieurs essais).',
+  'admin.actions.verifyPhoneSuccessTitle': 'Numéro validé',
+  'admin.actions.verifyPhoneSuccessBody': 'Le numéro a été confirmé manuellement.',
+  'admin.actions.verifyEmail': 'Valider l’e-mail',
+  'admin.actions.verifyEmailConfirm':
+    'Valider manuellement l’adresse {email} ? À utiliser seulement si vous avez confirmé qu’elle est fonctionnelle.',
+  'admin.actions.verifyEmailSuccessTitle': 'E-mail validé',
+  'admin.actions.verifyEmailSuccessBody': 'L’adresse a été confirmée manuellement.',
+  'admin.actions.verifyFailedTitle': 'Validation impossible',
+  'admin.actions.verifyFailedBody': 'Réessayez dans un instant.',
   'admin.actions.archivePostConfirm': 'Archiver cette publication ? Elle ne sera plus visible dans le fil.',
 
   // ── promote ─────────────────────────────────────────────────────────────

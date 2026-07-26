@@ -226,11 +226,11 @@ export function EmailVerificationCard({
   const body = (
     <>
       {!embedded ? (
-        <div className="flex items-start gap-3">
-          <span className="grid size-11 place-items-center rounded-2xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
+        <div className="flex min-w-0 items-start gap-3">
+          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
             <FiMail />
           </span>
-          <div>
+          <div className="min-w-0">
             <h2 className="font-black">
               {verified ? t('security.email.changeTitle') : t('security.email.confirmTitle')}
             </h2>
@@ -319,5 +319,5 @@ export function EmailVerificationCard({
     return <div className={`grid gap-4 ${className}`}>{body}</div>
   }
 
-  return <Card className={`grid gap-4 ${className}`}>{body}</Card>
+  return <Card className={`grid min-w-0 gap-4 ${className}`}>{body}</Card>
 }
