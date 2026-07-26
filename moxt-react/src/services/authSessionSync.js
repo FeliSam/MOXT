@@ -359,7 +359,7 @@ async function refreshAuthUserIfNeeded(dispatch, getState, { force = false } = {
   if (!force && now - lastAuthUserRefresh < AUTH_USER_REFRESH_MS) return
   lastAuthUserRefresh = now
 
-  let payload = null
+  let payload
   try {
     payload = await authService.refreshAuthSession()
   } catch {

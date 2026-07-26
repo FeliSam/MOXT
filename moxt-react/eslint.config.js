@@ -22,14 +22,23 @@ export default defineConfig([
       reactRefresh.configs.vite,
     ],
     languageOptions: {
-      globals: globals.browser,
+      globals: { ...globals.browser, __MOXT_BUILD_ID__: 'readonly' },
       parserOptions: { ecmaFeatures: { jsx: true } },
+    },
+    rules: {
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', destructuredArrayIgnorePattern: '^_' }],
     },
   },
   {
-    files: ['playwright.config.js', 'scripts/**/*.js', 'scripts/**/*.mjs'],
+    files: ['playwright.config.js', 'scripts/**/*.js', 'scripts/**/*.mjs', 'vite.config.js', 'vite-plugin-*.mjs'],
     languageOptions: {
       globals: globals.node,
+    },
+  },
+  {
+    files: ['**/*.test.{js,jsx}'],
+    languageOptions: {
+      globals: { ...globals.browser, ...globals.vitest },
     },
   },
 ])
