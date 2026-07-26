@@ -4208,3 +4208,22 @@ body.moxt-tour-active .app-top-header {
     animation: none !important;
   }
 }
+
+/* Détection du remplissage automatique natif (mot de passe enregistré du navigateur) :
+   Chrome/Safari appliquent la pseudo-classe :-webkit-autofill sans déclencher d'événement
+   `input`. On lui associe une animation vide pour capter `onAnimationStart` côté React
+   (voir components/ui/Input.jsx) et resynchroniser la valeur du champ contrôlé. */
+@keyframes onAutoFillStart {
+  from {}
+  to {}
+}
+@keyframes onAutoFillCancel {
+  from {}
+  to {}
+}
+input:-webkit-autofill {
+  animation-name: onAutoFillStart;
+}
+input:not(:-webkit-autofill) {
+  animation-name: onAutoFillCancel;
+}

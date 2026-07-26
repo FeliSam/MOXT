@@ -26,11 +26,22 @@ export function Input({
   iconRight,
   success = false,
   wrapperClass = '',
+  onChange,
   ...props
 }) {
   const generatedId = useId()
   const inputId = id || generatedId
   const messageId = `${inputId}-message`
+
+  // Chrome/Safari remplissent parfois un champ via le menu "mot de passe enregistré"
+  // sans déclencher d'événement `input` — React (champ contrôlé) ne voit jamais la
+  // valeur. Le hack `:-webkit-autofill` + animation permet de détecter ce remplissage
+  // natif et de resynchroniser l'état contrôlé.
+  function handleAutofillAnimation(event) {
+    if (event.animationName === 'onAutoFillStart' && onChange) {
+      onChange({ target: event.target, currentTarget: event.target })
+    }
+  }
 
   const hasState = error || success
   const borderClass = error
@@ -73,6 +84,8 @@ export function Input({
             ${iconRight || hasState ? 'pr-10' : ''}
             ${className}
           `}
+          onChange={onChange}
+          onAnimationStart={handleAutofillAnimation}
           {...props}
         />
 
