@@ -428,12 +428,10 @@ html.capacitor-native .bottom-nav-shell {
   bottom: var(--bottom-nav-offset);
   padding: 0.25rem;
   padding-bottom: var(--bottom-nav-pad);
-  /* Force sa propre couche de composition : évite le décollement/"scroll"
-     visuel de la barre fixe pendant le défilement momentum sur iOS/Android
-     (le navigateur ne doit pas la repeindre avec le contenu de la page). */
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
-  will-change: transform;
+  /* Couche GPU légère sans will-change (évite les glitches de détachement
+     pendant le momentum scroll iOS). La barre est aussi portalisée sur body. */
+  transform: translate3d(0, 0, 0);
+  -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
 }
 
@@ -522,16 +520,19 @@ html.messages-route-lock #root {
   touch-action: pan-y;
 }
 
-/* Conversation mobile ouverte : pas de chrome app (header + bottom nav) */
+/* Conversation mobile ouverte : pas de chrome app (header + bottom nav).
+   `.messages-thread-immersive` est aussi posé sur <html> (nav portalisée). */
 @media (max-width: 1023px) {
   .messages-thread-immersive .app-top-header,
+  html.messages-thread-immersive .bottom-nav-shell,
   .messages-thread-immersive .bottom-nav-shell {
     display: none !important;
     pointer-events: none !important;
     visibility: hidden !important;
   }
 
-  .messages-thread-immersive main {
+  .messages-thread-immersive main,
+  html.messages-thread-immersive main {
     padding: 0 !important;
   }
 

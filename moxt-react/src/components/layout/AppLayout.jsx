@@ -61,6 +61,15 @@ export function AppLayout({ children }) {
     }
   }, [isMessagesRoute])
 
+  // Class on <html> so portaled bottom-nav (document.body) still hides in immersive chat.
+  useLayoutEffect(() => {
+    const root = document.documentElement
+    root.classList.toggle('messages-thread-immersive', hideAppChrome)
+    return () => {
+      root.classList.remove('messages-thread-immersive')
+    }
+  }, [hideAppChrome])
+
   return (
     <div
       className={`max-w-full min-w-0 overflow-x-clip text-[var(--app-text)] ${

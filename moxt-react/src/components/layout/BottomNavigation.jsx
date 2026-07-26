@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { FiGrid } from 'react-icons/fi'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useSelector } from 'react-redux'
@@ -129,52 +130,57 @@ export function BottomNavigation() {
     }
   }, [activeIndex, location.pathname])
 
-  return (
-    <>
-      <nav
-        ref={navRef}
-        data-tour="bottom-nav"
-        className="bottom-nav-shell z-[var(--z-nav)] grid grid-cols-5 gap-0.5 rounded-[1rem] border border-[var(--app-border)]/80 bg-[var(--app-surface)]/65 shadow-[var(--shadow-float)] backdrop-blur-xl lg:hidden"
-        aria-label={t('nav.mobileQuickAria')}
-      >
-        <span
-          aria-hidden="true"
-          className="bottom-nav-indicator pointer-events-none absolute rounded-xl bg-[var(--app-surface-muted)] transition-[transform,width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
-          style={{
-            width: indicator.width,
-            transform: `translateX(${indicator.left}px)`,
-            opacity: indicator.ready ? 1 : 0,
+  const nav = (
+    <nav
+      ref={navRef}
+      data-tour="bottom-nav"
+      className="bottom-nav-shell z-[var(--z-nav)] grid grid-cols-5 gap-0.5 rounded-[1rem] border border-[var(--app-border)]/80 bg-[var(--app-surface)]/65 shadow-[var(--shadow-float)] backdrop-blur-xl lg:hidden"
+      aria-label={t('nav.mobileQuickAria')}
+    >
+      <span
+        aria-hidden="true"
+        className="bottom-nav-indicator pointer-events-none absolute rounded-xl bg-[var(--app-surface-muted)] transition-[transform,width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+        style={{
+          width: indicator.width,
+          transform: `translateX(${indicator.left}px)`,
+          opacity: indicator.ready ? 1 : 0,
+        }}
+      />
+
+      {bottomNavigationItems.map((item, index) => (
+        <BottomNavItem
+          key={item.id}
+          item={item}
+          resolveLabel={resolveLabel}
+          itemRef={(node) => {
+            itemRefs.current[index] = node
           }}
         />
+      ))}
 
-        {bottomNavigationItems.map((item, index) => (
-          <BottomNavItem
-            key={item.id}
-            item={item}
-            resolveLabel={resolveLabel}
-            itemRef={(node) => {
-              itemRefs.current[index] = node
-            }}
-          />
-        ))}
+      <button
+        type="button"
+        data-tour="nav-more"
+        onClick={() => setMoreOpen(true)}
+        aria-label={
+          moreBadge > 0
+            ? t('nav.moreServicesUnreadAria', { count: moreBadge > 9 ? '9+' : moreBadge })
+            : t('nav.moreServicesAria')
+        }
+        aria-haspopup="dialog"
+        className={`${BOTTOM_NAV_SLOT} relative text-[var(--app-text)]/72`}
+      >
+        <BottomNavIcon active={false} icon={FiGrid} />
+        <BottomNavLabel>{t('nav.more')}</BottomNavLabel>
+      </button>
+    </nav>
+  )
 
-        <button
-          type="button"
-          data-tour="nav-more"
-          onClick={() => setMoreOpen(true)}
-          aria-label={
-            moreBadge > 0
-              ? t('nav.moreServicesUnreadAria', { count: moreBadge > 9 ? '9+' : moreBadge })
-              : t('nav.moreServicesAria')
-          }
-          aria-haspopup="dialog"
-          className={`${BOTTOM_NAV_SLOT} relative text-[var(--app-text)]/72`}
-        >
-          <BottomNavIcon active={false} icon={FiGrid} />
-          <BottomNavLabel>{t('nav.more')}</BottomNavLabel>
-        </button>
-      </nav>
-
+  return (
+    <>
+      {/* Portal hors du layout (overflow-x-clip / transforms) pour garder
+          position:fixed collé au viewport et hors du flux de scroll. */}
+      {typeof document !== 'undefined' ? createPortal(nav, document.body) : nav}
       <MobileMoreDrawer open={moreOpen} onClose={() => setMoreOpen(false)} />
     </>
   )
