@@ -7224,9 +7224,9 @@ export const es = {
       },
       marketplace: {
         title: "Marketplace: comprar y vender",
-        summary: "Publicar un anuncio, explorar el catálogo y contactar a un vendedor.",
+        summary: "Publicar un anuncio en 4 pasos, explorar el catálogo y contactar a un vendedor.",
         content:
-          "1. Abre Marketplace.\n\n2. Para vender: Publica un anuncio — fotos, título, precio, descripción y lugar.\n\n3. Para comprar: filtra por categoría o busca, luego abre el detalle.\n\n4. Contacta al vendedor desde la ficha: la conversación continúa en Mensajes.\n\n5. Encuentra tus anuncios en Mis publicaciones. Puedes editarlos o retirarlos.\n\n6. Usa Favoritos para guardar anuncios interesantes."
+          "1. Abre la pestaña Marketplace en la parte inferior, luego toca Publicar un anuncio.\n\n2. Paso 1/4 · Tipo: elige el tipo (Producto, Servicio, Alquiler, Vehículo, Digital, Inmobiliario, Alimentación, Otro), la categoría y el título.\n\n3. Paso 2/4 · Detalles: completa los campos propios de la categoría (precio, cantidad, descripción…).\n\n4. Paso 3/4 · Fotos: añade al menos una foto clara — los anuncios con foto reciben más contactos.\n\n5. Paso 4/4 · Ubicación: ciudad, dirección completa, teléfono ruso y WhatsApp (opcional), opciones de entrega (Recogida en el lugar / Entrega a domicilio), e indica si publicas como Particular o Empresa.\n\n6. Revisa el resumen y toca Publicar el anuncio.\n\n7. Para comprar: filtra por categoría o busca, luego abre el detalle y contacta al vendedor — la conversación continúa en Mensajes.\n\n8. Encuentra tus anuncios en Mis publicaciones (editar, retirar) y tus favoritos guardados en Favoritos."
       },
       parcels: {
         title: "Paquetes y trayectos",

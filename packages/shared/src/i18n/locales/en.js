@@ -7232,9 +7232,9 @@ export const en = {
       },
       marketplace: {
         title: "Marketplace: buy and sell",
-        summary: "Publish a listing, browse the catalog, and contact a seller.",
+        summary: "Publish a listing in 4 steps, browse the catalog, and contact a seller.",
         content:
-          "1. Open Marketplace.\n\n2. To sell: Publish a listing — photos, title, price, description and location.\n\n3. To buy: filter by category or search, then open a detail page.\n\n4. Contact the seller from the listing — the chat continues in Messages.\n\n5. Find your listings under My publications. You can edit or remove them.\n\n6. Use Favorites to keep interesting listings handy.",
+          "1. Open the Marketplace tab at the bottom of the screen, then tap Post a listing.\n\n2. Step 1/4 · Type: choose the type (Product, Service, Rental, Vehicle, Digital, Real estate, Food, Other), the category, then the title.\n\n3. Step 2/4 · Details: fill in the fields specific to the category (price, quantity, description…).\n\n4. Step 3/4 · Photos: add at least one clear photo — listings with a photo get more contacts.\n\n5. Step 4/4 · Location: city, full address, Russian phone number and WhatsApp (optional), delivery options (Pickup / Home delivery), then indicate whether you're posting as an Individual or a Business.\n\n6. Review the summary, then tap Publish listing.\n\n7. To buy: filter by category or search, then open a detail page and contact the seller — the chat continues in Messages.\n\n8. Find your listings under My publications (edit, remove) and your saved favorites under Favorites.",
       },
       parcels: {
         title: "Parcels and trips",
