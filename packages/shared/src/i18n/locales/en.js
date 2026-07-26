@@ -1038,13 +1038,13 @@ export const en = {
       latestListings: "Latest listings",
       viewMarket: "View marketplace",
       availableParcels: "Available parcels",
-      recentTrips: "",
+      recentTrips: "Recent trips offered by travellers",
       kgAvailable: "{kg} kg available",
       pricePerKg: "{price} {currency}/kg",
       recentJobs: "Recent jobs",
-      recentMissions: "",
+      recentMissions: "Recently posted openings",
       upcomingEvents: "Upcoming events",
-      upcomingMeetups: "",
+      upcomingMeetups: "Meetups and outings not to miss",
       online: "Online",
       newsTitle: "MOXT news",
       readAll: "Read all",
@@ -6671,6 +6671,32 @@ export const en = {
         texts: {
           "0": "The MOXT marketplace lets you buy and sell items within the Afro-Russian community.\n\n**To post a listing:**\n- Go to **Marketplace** then **Post a listing**\n- Enter the title, description, price, and photos\n- Specify whether you deliver or if it’s pickup only\n\nYour listings stay active until you close them or the item is sold.",
           "1": "From **Marketplace**, browse listings, filter by category or location, and contact the seller directly via built-in messaging.\n\nTo list an item for sale, use **Post a listing**. The form guides you: product type, condition, price, and handover options.",
+        },
+      },
+      expedition: {
+        actions: {
+          "0": "Post a listing",
+          "1": "Marketplace",
+        },
+        suggestions: {
+          "0": "How do I post a listing?",
+          "1": "Which carriers are available?",
+        },
+        texts: {
+          "0": "When posting a listing, if you enable **Shipping**, MOXT offers the common carriers used in Russia:\n- **CDEK** (~2–7 days)\n- **Russian Post** (~5–14 days)\n- **Boxberry**, **Yandex Delivery**, **Delovie Linii**, **PEK**\n- Another carrier (delay to be agreed)\n\nYou can select **several** and specify the approximate delay. This info then appears on the listing page (Delivery tab).",
+        },
+      },
+      contribuer: {
+        actions: {
+          "0": "Contribute",
+          "1": "Contact support",
+        },
+        suggestions: {
+          "0": "Where can I find the Contribute page?",
+          "1": "How do I contact support?",
+        },
+        texts: {
+          "0": "You can support MOXT's development via **Contribute** (MOXT hub → Finance).\n\nChoose any amount and currency, leave an optional message, then confirm. A request is recorded; the team contacts you to finalize the payment.\n\nEach contribution helps improve the product, infrastructure, and member support.",
         },
       },
       emploi: {

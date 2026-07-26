@@ -1037,13 +1037,13 @@ export const es = {
       latestListings: "Anuncios recentes",
       viewMarket: "Ver o mercado",
       availableParcels: "Paquetes disponibles",
-      recentTrips: "",
+      recentTrips: "Viajes recientes ofrecidos por viajeros",
       kgAvailable: "{kg} kg disponibles",
       pricePerKg: "{price} {currency}/kg",
       recentJobs: "Jobs recentes",
-      recentMissions: "",
+      recentMissions: "Ofertas publicadas recientemente",
       upcomingEvents: "Próximos eventos",
-      upcomingMeetups: "",
+      upcomingMeetups: "Encuentros y salidas que no te puedes perder",
       online: "En línea",
       newsTitle: "Actualidad MOXT",
       readAll: "Ler tudo",
@@ -2008,6 +2008,34 @@ export const es = {
           selfieDark: {
             title: "Foto demasiado escura",
             desc: "No se distingue o rosto nem as informaciones do documento."
+          }
+        }
+      },
+      residence: {
+        title: "Visado, ВНЖ, РВП o РВПО",
+        intro: "Fotografía el documento de residencia completo, con las fechas de validez legibles.",
+        accepted: {
+          docClear: {
+            title: "Documento completo y nítido",
+            desc: "Las 4 esquinas son visibles, el texto y las fechas son legibles."
+          },
+          docValid: {
+            title: "Visado, ВНЖ, РВП o РВПО",
+            desc: "Página principal con foto, nombre y período de validez claramente visibles."
+          }
+        },
+        rejected: {
+          docCrop: {
+            title: "Documento recortado",
+            desc: "Una parte del documento está fuera de cuadro o falta una esquina."
+          },
+          docBlur: {
+            title: "Foto borrosa u oscura",
+            desc: "El texto o las fechas no son legibles."
+          },
+          docScreen: {
+            title: "Captura de pantalla",
+            desc: "Foto de una pantalla, escaneo de mala calidad o documento con reflejos."
           }
         }
       },
@@ -4231,7 +4259,23 @@ export const es = {
       payToHint: "Paga solo a este número / cuenta, con el método indicado.",
       receivePhone: "Número de recepción",
       receiveName: "Nombre y apellidos",
-      yourReceiveTitle: "Tus datos de recepción (mostrados al comprador)"
+      yourReceiveTitle: "Tus datos de recepción (mostrados al comprador)",
+      buyerPayToTitle: "Dónde recibe {currency} el comprador",
+      buyerReceive: {
+        title: "Datos de recepción",
+        description: "Indica dónde deseas recibir {currency} (sentido del intercambio). Usa el número de tu perfil o un contacto favorito.",
+        useProfile: "Mi número de perfil",
+        manual: "Introducción manual",
+        favorite: "Contacto favorito",
+        favoritePlaceholder: "Elegir un favorito…",
+        saveFavorite: "Guardar también en mis favoritos de transferencia",
+        save: "Guardar los datos",
+        later: "Más tarde",
+        missingPhoneTitle: "Número requerido",
+        missingPhoneBody: "Indica un número de recepción para continuar.",
+        savedTitle: "Datos guardados",
+        savedBody: "El vendedor podrá enviarte {currency} a estos datos."
+      }
     },
     publish: {
       steps: {
@@ -5780,6 +5824,8 @@ export const es = {
       add: "Adicionar",
       formatsHint: "Formatos: PDF y imagens. Um comprobante basta para completar a verificación.",
       sizeKb: "{size} KB",
+      rejectedTitle: "Documento rechazado",
+      rejectNote: "Motivo del rechazo: {note}",
       empty: "Ningún documento profesional",
       types: {
         registration: "Registo / estatutos (ОГРН, ИНН)",
@@ -6620,6 +6666,32 @@ export const es = {
         texts: {
           "0": "O mercado MOXT permite comprar y vender artigos na comunidad afro-russa.\n\n**Para publicar um anúncio:**\n- Ve a **Marketplace** y después **Publicar um anúncio**\n- Completa o título, a descripción, o precio y as fotos\n- Indica se faz entrega o se é solo levantamento\n\nOs anuncios permanecen activos até os cerrar o até o artigo ser vendido.",
           "1": "Em **Marketplace**, navegue pelos anuncios, filtre por categoría o localización y contacte o vendedor diretamente pela mensajes integrada.\n\nPara pôr un artigo à venda, use **Publicar um anúncio**. O formulario orienta-o: tipo de produto, estado, precio y opciones de entrega."
+        }
+      },
+      expedition: {
+        actions: {
+          "0": "Publicar un anuncio",
+          "1": "Marketplace"
+        },
+        suggestions: {
+          "0": "Como publico un anuncio?",
+          "1": "Que transportadoras están disponibles?"
+        },
+        texts: {
+          "0": "Ao publicar un anuncio, si activas **Envío**, MOXT ofrece los medios habituais en Rusia:\n- **CDEK** (~2–7 días)\n- **Correos de Rusia** (~5–14 días)\n- **Boxberry**, **Yandex Delivery**, **Delovie Linii**, **PEK**\n- Otro transportista (plazo a convenir)\n\nPuedes seleccionar **varios** e indicar el plazo aproximado. Esta información aparece luego na ficha do anuncio (pestaña Entrega)."
+        }
+      },
+      contribuer: {
+        actions: {
+          "0": "Contribuir",
+          "1": "Contactar soporte"
+        },
+        suggestions: {
+          "0": "Dónde encuentro la página Contribuir?",
+          "1": "Cómo contacto con soporte?"
+        },
+        texts: {
+          "0": "Puedes apoyar el desarrollo de MOXT vía **Contribuir** (hub MOXT → Finanzas).\n\nElige cualquier importe y moneda, deja un mensaje opcional y confirma. Se registra una solicitud; el equipo te contacta para finalizar el pago.\n\nCada contribución ayuda a mejorar el producto, la infraestructura y el soporte a los miembros."
         }
       },
       emploi: {
