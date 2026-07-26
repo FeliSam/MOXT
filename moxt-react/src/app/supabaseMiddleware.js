@@ -1106,23 +1106,22 @@ const handlers = {
     const { error } = await supabase.from('statuses').insert(row)
     if (error) throw error
   },
-  'statuses/markStatusViewed': async (payload, state) => {
-    const status = state.statuses?.items?.find((item) => item.id === payload.statusId)
-    const { error } = await supabase
-      .from('statuses')
-      .update({
-        viewed_by: status?.viewedBy ?? [payload.userId],
-        viewers: status?.viewers ?? {},
-      })
-      .eq('id', payload.statusId)
+  'statuses/markStatusViewed': async (payload) => {
+    // RPC security definer : la vue d'un tiers ne peut plus écrire directement
+    // sur la ligne (RLS UPDATE restreinte à l'auteur, cf. moxt_status_mark_viewed).
+    const { error } = await supabase.rpc('moxt_status_mark_viewed', {
+      p_status_id: payload.statusId,
+      p_user_name: payload.userName || '',
+      p_user_avatar_url: payload.userAvatarUrl || null,
+    })
     if (error) throw error
   },
-  'statuses/reactToStatus': async (payload, state) => {
-    const status = state.statuses?.items?.find((item) => item.id === payload.statusId)
-    const { error } = await supabase
-      .from('statuses')
-      .update({ reactions: status?.reactions ?? {} })
-      .eq('id', payload.statusId)
+  'statuses/reactToStatus': async (payload) => {
+    const { error } = await supabase.rpc('moxt_status_react', {
+      p_status_id: payload.statusId,
+      p_image_key: payload.imageKey,
+      p_emoji: payload.emoji || null,
+    })
     if (error) throw error
   },
   'statuses/removeStatusImage': async (payload, state) => {
