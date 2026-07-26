@@ -324,6 +324,9 @@ export const ADMIN_FR_SOURCES = {
   'admin.actions.delete': 'Supprimer',
   'admin.actions.deletePostConfirm': 'Supprimer definitivement cette publication ?',
   'admin.actions.deleteListingConfirm': 'Supprimer definitivement cette annonce ?',
+  'admin.actions.deleteJobConfirm': 'Supprimer definitivement cette offre d’emploi ?',
+  'admin.actions.deleteEventConfirm': 'Supprimer definitivement cet événement ?',
+  'admin.actions.deleteParcelConfirm': 'Supprimer definitivement ce colis ?',
   'admin.actions.archivePostConfirm': 'Archiver cette publication ? Elle ne sera plus visible dans le fil.',
 
   // ── promote ─────────────────────────────────────────────────────────────

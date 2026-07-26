@@ -79,6 +79,31 @@ const jobSlice = createSlice({
       const { id: _id, ownerId: _o, createdAt: _c, ...changes } = action.payload
       Object.assign(job, changes, { updatedAt: new Date().toISOString() })
     },
+    deleteJob(state, action) {
+      const job = state.items.find((item) => item.id === action.payload.id)
+      if (!job || job.ownerId !== action.payload.ownerId) return
+      state.items = state.items.filter((item) => item.id !== action.payload.id)
+    },
+    duplicateJob: {
+      reducer(state, action) {
+        state.items.unshift(action.payload)
+      },
+      prepare({ job, ownerId }) {
+        const now = new Date().toISOString()
+        return {
+          payload: {
+            ...job,
+            id: `JOB-${Date.now().toString(36).toUpperCase()}`,
+            ownerId,
+            title: `Copie de ${job.title}`,
+            status: 'draft',
+            createdAt: now,
+            updatedAt: now,
+            expiresAt: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
+          },
+        }
+      },
+    },
     moderateJob(state, action) {
       const job = state.items.find((item) => item.id === action.payload.id)
       if (!job) return
@@ -137,6 +162,8 @@ const jobSlice = createSlice({
 export const {
   applyToJob,
   createJob,
+  deleteJob,
+  duplicateJob,
   expireJobs,
   moderateJob,
   updateJob,

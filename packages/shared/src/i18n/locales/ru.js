@@ -1475,6 +1475,9 @@ export const ru = {
       likes: "{count} лайков",
       comments: "{count} комментариев",
       delete: "Удалить",
+      duplicate: "Дублировать",
+      deleteConfirmTitle: "Удалить этот элемент?",
+      deleteConfirmDescription: "Это удаление необратимо.",
     },
   },
   settings: {

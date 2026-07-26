@@ -1,13 +1,6 @@
-import { isParcelBrowseArchived } from '../parcels/parcelUtils'
+import { LIVE_SOURCE_STATUSES, isSourceItemLive } from '@moxt/shared/utils/sourceLiveStatus.js'
 
-/** Live statuses that keep linked feed posts visible (aligned with RLS). */
-export const LIVE_SOURCE_STATUSES = {
-  listing: new Set(['active']),
-  parcel: new Set(['active', 'full']),
-  job: new Set(['active']),
-  event: new Set(['published']),
-  business: new Set(['verified', 'approved', 'active']),
-}
+export { LIVE_SOURCE_STATUSES }
 
 export function shouldArchiveLinkedPosts(sourceType, status, { deletedByUserAt } = {}) {
   if (!sourceType || !(sourceType in LIVE_SOURCE_STATUSES)) return false
@@ -36,10 +29,7 @@ export function isFeedPostSourceAvailable(post, catalogs = {}) {
   if (!Array.isArray(items)) return true
 
   const item = items.find((entry) => entry.id === sourceId)
-  if (!item) return false
-  if (sourceType === 'business' && item.deletedByUserAt) return false
-  if (sourceType === 'parcel' && isParcelBrowseArchived(item)) return false
-  return LIVE_SOURCE_STATUSES[sourceType].has(item.status)
+  return isSourceItemLive(sourceType, item)
 }
 
 /**

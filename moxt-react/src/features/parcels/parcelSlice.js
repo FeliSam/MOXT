@@ -138,12 +138,40 @@ const parcelSlice = createSlice({
         updatedAt: new Date().toISOString(),
       })
     },
+    deleteParcel(state, action) {
+      const parcel = state.items.find((item) => item.id === action.payload.id)
+      if (!parcel || parcel.ownerId !== action.payload.ownerId) return
+      state.items = state.items.filter((item) => item.id !== action.payload.id)
+    },
+    duplicateParcel: {
+      reducer(state, action) {
+        state.items.unshift(action.payload)
+      },
+      prepare({ parcel, ownerId }) {
+        const now = new Date().toISOString()
+        return {
+          payload: {
+            ...parcel,
+            id: createId('COL'),
+            ownerId,
+            status: 'draft',
+            remainingKg: Number(parcel.capacityKg),
+            proofStatus: 'pending_review',
+            reservations: [],
+            createdAt: now,
+            updatedAt: now,
+          },
+        }
+      },
+    },
   },
 })
 
 export const {
   createParcel,
   cancelParcelRequest,
+  deleteParcel,
+  duplicateParcel,
   requestParcelReservation,
   reserveParcel,
   updateParcel,

@@ -1466,14 +1466,17 @@ export const es = {
     cards: {
       open: "Abrir",
       edit: "Editar",
-      archive: "Arquivar",
+      archive: "Archivar",
       republish: "Republicar",
-      free: "Grátis",
+      free: "Gratis",
       badge: "Publicación",
       fallbackTitle: "Publicación",
-      likes: "{count} gostos",
-      comments: "{count} comentários",
-      delete: "Eliminar"
+      likes: "{count} me gusta",
+      comments: "{count} comentarios",
+      delete: "Eliminar",
+      duplicate: "Duplicar",
+      deleteConfirmTitle: "¿Eliminar este elemento?",
+      deleteConfirmDescription: "Esta eliminación es definitiva.",
     }
   },
   settings: {

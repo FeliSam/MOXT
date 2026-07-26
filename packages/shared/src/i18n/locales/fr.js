@@ -1474,6 +1474,9 @@ export const fr = {
       likes: "{count} j'aime",
       comments: "{count} commentaires",
       delete: "Supprimer",
+      duplicate: "Dupliquer",
+      deleteConfirmTitle: "Supprimer cet élément ?",
+      deleteConfirmDescription: "Cette suppression est définitive.",
     },
   },
   settings: {

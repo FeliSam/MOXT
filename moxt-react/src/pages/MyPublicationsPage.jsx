@@ -18,11 +18,11 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { PillBadge } from '../components/ui/Badge'
-import { moderatePost } from '../features/posts/postsSlice'
-import { moderateEvent } from '../features/events/eventSlice'
-import { moderateJob } from '../features/jobs/jobSlice'
-import { updateParcelStatus } from '../features/parcels/parcelSlice'
-import { updateOfferStatus } from '../features/p2p/p2pSlice'
+import { deletePost, moderatePost } from '../features/posts/postsSlice'
+import { deleteEvent, duplicateEvent, moderateEvent } from '../features/events/eventSlice'
+import { deleteJob, duplicateJob, moderateJob } from '../features/jobs/jobSlice'
+import { deleteParcel, duplicateParcel, updateParcelStatus } from '../features/parcels/parcelSlice'
+import { deleteOffer, updateOfferStatus } from '../features/p2p/p2pSlice'
 import { MyListingCard } from '../features/marketplace/MyListingCard'
 import {
   deleteListing,
@@ -77,6 +77,7 @@ export function MyPublicationsPage() {
   const dispatch = useDispatch()
   const [searchParams, setSearchParams] = useSearchParams()
   const [deletingListing, setDeletingListing] = useState(null)
+  const [deletingItem, setDeletingItem] = useState(null)
   const user = useSelector((state) => state.auth.user)
   const appState = useSelector((state) => state)
   const ownBusiness = useSelector((state) =>
@@ -292,6 +293,8 @@ export function MyPublicationsPage() {
                     if (!guardBusinessRepublish(parcel)) return
                     dispatch(updateParcelStatus({ id: parcel.id, status: 'active' }))
                   }}
+                  onDuplicate={() => dispatch(duplicateParcel({ parcel, ownerId: user.id }))}
+                  onDelete={() => setDeletingItem({ type: 'parcel', item: parcel })}
                 />
               ))}
               {visible.job.map((job) => (
@@ -303,6 +306,8 @@ export function MyPublicationsPage() {
                     if (!guardBusinessRepublish(job)) return
                     dispatch(moderateJob({ id: job.id, status: 'active' }))
                   }}
+                  onDuplicate={() => dispatch(duplicateJob({ job, ownerId: user.id }))}
+                  onDelete={() => setDeletingItem({ type: 'job', item: job })}
                 />
               ))}
               {visible.event.map((event) => (
@@ -314,6 +319,8 @@ export function MyPublicationsPage() {
                     if (!guardBusinessRepublish(event)) return
                     dispatch(moderateEvent({ id: event.id, status: 'published' }))
                   }}
+                  onDuplicate={() => dispatch(duplicateEvent({ event, ownerId: user.id }))}
+                  onDelete={() => setDeletingItem({ type: 'event', item: event })}
                 />
               ))}
               {visible.post.map((post) => (
@@ -322,6 +329,7 @@ export function MyPublicationsPage() {
                   post={post}
                   onArchive={() => dispatch(moderatePost({ id: post.id, status: 'archived' }))}
                   onReactivate={() => dispatch(moderatePost({ id: post.id, status: 'published' }))}
+                  onDelete={() => setDeletingItem({ type: 'post', item: post })}
                 />
               ))}
               {visible.other.map((offer) => (
@@ -335,6 +343,7 @@ export function MyPublicationsPage() {
                     if (!guardBusinessRepublish(offer)) return
                     dispatch(updateOfferStatus({ id: offer.id, status: 'active' }))
                   }}
+                  onDelete={() => setDeletingItem({ type: 'other', item: offer })}
                 />
               ))}
             </div>
@@ -371,6 +380,22 @@ export function MyPublicationsPage() {
         onConfirm={() => {
           dispatch(deleteListing({ id: deletingListing.id, ownerId: user.id }))
           setDeletingListing(null)
+        }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(deletingItem)}
+        title={p3('publications.cards.deleteConfirmTitle')}
+        description={p3('publications.cards.deleteConfirmDescription')}
+        onCancel={() => setDeletingItem(null)}
+        onConfirm={() => {
+          const { type, item } = deletingItem
+          if (type === 'parcel') dispatch(deleteParcel({ id: item.id, ownerId: user.id }))
+          else if (type === 'job') dispatch(deleteJob({ id: item.id, ownerId: user.id }))
+          else if (type === 'event') dispatch(deleteEvent({ id: item.id, ownerId: user.id }))
+          else if (type === 'post') dispatch(deletePost(item.id))
+          else if (type === 'other') dispatch(deleteOffer({ id: item.id, ownerId: user.id }))
+          setDeletingItem(null)
         }}
       />
     </div>

@@ -4,14 +4,14 @@ import { dispatchUserRole } from './promoteAdminUtils'
 import { updateVerificationStatus, updateSubscriberReportStatus } from '../account/accountSlice'
 import { moderateBusiness, updateBusinessDocumentStatus } from '../businesses/businessSlice'
 import { updateDisputeStatus } from '../disputes/disputeSlice'
-import { moderateEvent, updateEventReportStatus } from '../events/eventSlice'
-import { moderateJob, updateJobReportStatus } from '../jobs/jobSlice'
+import { deleteEvent, moderateEvent, updateEventReportStatus } from '../events/eventSlice'
+import { deleteJob, moderateJob, updateJobReportStatus } from '../jobs/jobSlice'
 import {
   deleteListing,
   updateListingReportStatus,
   updateListingStatus,
 } from '../marketplace/marketplaceSlice'
-import { updateParcelProofStatus, updateParcelStatus } from '../parcels/parcelSlice'
+import { deleteParcel, updateParcelProofStatus, updateParcelStatus } from '../parcels/parcelSlice'
 import { deletePost, moderatePost } from '../posts/postsSlice'
 import { moderateReview } from '../reviews/reviewSlice'
 import { TRANSFER_TRANSITIONS } from '../transfers/transferConfig'
@@ -195,6 +195,16 @@ export function contentActions(contentView, dispatch, item, t) {
           >
             {adminText(t, 'admin.actions.reject')}
           </ActionButton>
+          <ActionButton
+            variant="danger"
+            onClick={() => {
+              if (window.confirm(adminText(t, 'admin.actions.deleteJobConfirm'))) {
+                dispatch(deleteJob({ id: item.id, ownerId: item.ownerId }))
+              }
+            }}
+          >
+            {adminText(t, 'admin.actions.delete')}
+          </ActionButton>
         </>
       )
     case 'events':
@@ -223,6 +233,16 @@ export function contentActions(contentView, dispatch, item, t) {
           >
             {adminText(t, 'admin.actions.reject')}
           </ActionButton>
+          <ActionButton
+            variant="danger"
+            onClick={() => {
+              if (window.confirm(adminText(t, 'admin.actions.deleteEventConfirm'))) {
+                dispatch(deleteEvent({ id: item.id, ownerId: item.ownerId }))
+              }
+            }}
+          >
+            {adminText(t, 'admin.actions.delete')}
+          </ActionButton>
         </>
       )
     case 'parcels':
@@ -242,6 +262,24 @@ export function contentActions(contentView, dispatch, item, t) {
             onClick={() => dispatch(updateParcelStatus({ id: item.id, status: 'archived' }))}
           >
             {adminText(t, 'admin.actions.archive')}
+          </ActionButton>
+          <ActionButton
+            done={status === 'rejected'}
+            doneLabel={adminText(t, 'admin.actions.rejectedMasc')}
+            variant="danger"
+            onClick={() => dispatch(updateParcelStatus({ id: item.id, status: 'rejected' }))}
+          >
+            {adminText(t, 'admin.actions.reject')}
+          </ActionButton>
+          <ActionButton
+            variant="danger"
+            onClick={() => {
+              if (window.confirm(adminText(t, 'admin.actions.deleteParcelConfirm'))) {
+                dispatch(deleteParcel({ id: item.id, ownerId: item.ownerId }))
+              }
+            }}
+          >
+            {adminText(t, 'admin.actions.delete')}
           </ActionButton>
           {item.travelProofUrl || item.proofStatus === 'pending_review' ? (
             <>

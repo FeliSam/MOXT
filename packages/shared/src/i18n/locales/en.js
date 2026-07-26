@@ -1475,6 +1475,9 @@ export const en = {
       likes: "{count} likes",
       comments: "{count} comments",
       delete: "Delete",
+      duplicate: "Duplicate",
+      deleteConfirmTitle: "Delete this item?",
+      deleteConfirmDescription: "This deletion is permanent.",
     },
   },
   settings: {

@@ -1336,6 +1336,9 @@ export const pt = {
       likes: "{count} gostos",
       comments: "{count} comentários",
       delete: "Eliminar",
+      duplicate: "Duplicar",
+      deleteConfirmTitle: "Eliminar este elemento?",
+      deleteConfirmDescription: "Esta eliminação é definitiva.",
     },
   },
   settings: {

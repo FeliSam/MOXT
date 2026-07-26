@@ -71,6 +71,30 @@ const eventSlice = createSlice({
       const { id: _id, ownerId: _o, createdAt: _c, ...changes } = action.payload
       Object.assign(event, changes, { updatedAt: new Date().toISOString() })
     },
+    deleteEvent(state, action) {
+      const event = state.items.find((item) => item.id === action.payload.id)
+      if (!event || event.ownerId !== action.payload.ownerId) return
+      state.items = state.items.filter((item) => item.id !== action.payload.id)
+    },
+    duplicateEvent: {
+      reducer(state, action) {
+        state.items.unshift(action.payload)
+      },
+      prepare({ event, ownerId }) {
+        const now = new Date().toISOString()
+        return {
+          payload: {
+            ...event,
+            id: `EVT-${Date.now().toString(36).toUpperCase()}`,
+            ownerId,
+            title: `Copie de ${event.title}`,
+            status: 'draft',
+            createdAt: now,
+            updatedAt: now,
+          },
+        }
+      },
+    },
     moderateEvent(state, action) {
       const event = state.items.find((item) => item.id === action.payload.id)
       if (!event) return
@@ -129,6 +153,8 @@ const eventSlice = createSlice({
 export const {
   createEvent,
   cancelRegistration,
+  deleteEvent,
+  duplicateEvent,
   expireEvents,
   moderateEvent,
   updateEvent,

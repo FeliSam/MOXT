@@ -497,6 +497,10 @@ const handlers = {
   'parcels/cancelParcelRequest': async (payload) => {
     await update('parcel_requests', payload.id, { status: 'cancelled' })
   },
+  'parcels/deleteParcel': async (payload) => {
+    const { error } = await supabase.from('parcels').delete().eq('id', payload.id)
+    if (error) throw error
+  },
 
   // ── Litiges ───────────────────────────────────────────────────────────────────
   'disputes/openDispute': async (payload, state) => {
@@ -533,6 +537,10 @@ const handlers = {
   'jobs/moderateJob': async (payload) => {
     await update('jobs', payload.id, { status: payload.status })
   },
+  'jobs/deleteJob': async (payload) => {
+    const { error } = await supabase.from('jobs').delete().eq('id', payload.id)
+    if (error) throw error
+  },
   'jobs/reportJob': async (payload, state) => {
     await syncActiveContentReport(state, 'jobs', payload, 'jobId', 'job_reports')
   },
@@ -559,6 +567,10 @@ const handlers = {
   },
   'events/moderateEvent': async (payload) => {
     await update('events', payload.id, { status: payload.status })
+  },
+  'events/deleteEvent': async (payload) => {
+    const { error } = await supabase.from('events').delete().eq('id', payload.id)
+    if (error) throw error
   },
   'events/reportEvent': async (payload, state) => {
     await syncActiveContentReport(state, 'events', payload, 'eventId', 'event_reports')
@@ -890,6 +902,10 @@ const handlers = {
   'p2p/moderateOffer': async (payload, state) => {
     const offer = state.p2p.offers.find((item) => item.id === payload.id)
     if (offer) await upsert('p2p_offers', p2pOfferToRemoteRow(offer))
+  },
+  'p2p/deleteOffer': async (payload) => {
+    const { error } = await supabase.from('p2p_offers').delete().eq('id', payload.id)
+    if (error) throw error
   },
   'p2p/updateOrderStatus': async (payload, state) => {
     const order = state.p2p.orders.find((item) => item.id === payload.id)
