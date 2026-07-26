@@ -64,6 +64,7 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
         ),
     )
     appendAssistantMessage({
+      // eslint-disable-next-line react-hooks/purity -- gestionnaire d'événement (clic), jamais appelé pendant le rendu
       id: `AI-${Date.now()}`,
       role: 'assistant',
       text: messagesText(t, 'messages.assistant.adminComposePrompt'),
@@ -113,6 +114,7 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
     const nextMessages = [
       ...messages,
       {
+        // eslint-disable-next-line react-hooks/purity -- gestionnaire d'événement (envoi), jamais appelé pendant le rendu
         id: `ASK-${Date.now()}`,
         role: 'user',
         text,

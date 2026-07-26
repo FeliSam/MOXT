@@ -24,6 +24,7 @@ export function useConversationTyping(conversationId, userId) {
 
   useEffect(() => {
     if (!conversationId || !userId || !supabase) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset avant abonnement au canal realtime
       setPeerTyping(false)
       return undefined
     }

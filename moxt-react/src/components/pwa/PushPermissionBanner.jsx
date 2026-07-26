@@ -49,6 +49,7 @@ export function PushPermissionBanner() {
 
   useEffect(() => {
     if (!isNative || !user?.id) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset avant une requête asynchrone (permission native)
       setNativePermission(null)
       return
     }

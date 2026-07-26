@@ -1,5 +1,10 @@
-import { describe, expect, it } from 'vitest'
-import { translate } from './translate'
+import { beforeAll, describe, expect, it } from 'vitest'
+import { ensureLocaleLoaded, translate } from './translate'
+
+// en/es/pt/ru sont chargées à la demande (voir i18n/translate.js) : on les
+// précharge ici pour tester les traductions réellement chargées plutôt que
+// le repli français.
+beforeAll(() => Promise.all(['en', 'es', 'pt', 'ru'].map(ensureLocaleLoaded)))
 
 describe('translate', () => {
   it('traduit en anglais via clés pointées', () => {

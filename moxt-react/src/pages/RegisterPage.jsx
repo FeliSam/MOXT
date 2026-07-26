@@ -183,6 +183,7 @@ export function RegisterPage() {
     if (!error) return
     const errorText = String(error || '')
     if (errorText === SMS_NUMBER_PROVIDER_DENIED) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- réaction à une erreur d'un système externe (Supabase auth)
       setEmailSmsFallback(true)
       setFormGateMessage('')
       setPendingVerification(null)
@@ -211,7 +212,6 @@ export function RegisterPage() {
       )
     } else if (otpLimited) {
       // 90s / 4-par-3h : message explicite, jamais le toast opaque « Inscription impossible ».
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- surface OTP cap beside toast
       setOtpCapMessage(localizedError)
       setFormGateMessage('')
       dispatch(
@@ -455,6 +455,7 @@ export function RegisterPage() {
     if (!pending?.phone && !pending?.email) return
 
     let cancelled = false
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- restaure une session en attente depuis sessionStorage (système externe)
     setRestoringOtpGate(true)
     setStep(3)
 

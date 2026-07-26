@@ -331,6 +331,7 @@ export function MessagesPage() {
   useEffect(() => {
     const replyContext = searchParams.get('replyContext')
     if (!replyContext || !active?.id || active.id !== requestedConversation) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- consomme un paramètre d'URL (système externe : le routeur)
     setReplyToContextId(replyContext)
     setReplyToId(null)
     const params = new URLSearchParams(searchParams)

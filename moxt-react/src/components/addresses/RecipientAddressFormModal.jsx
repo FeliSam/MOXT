@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { Modal } from '../ui/Modal'
@@ -77,21 +77,28 @@ export function RecipientAddressFormModal({
     [identityProfiles, form.ownerType],
   )
 
-  useEffect(() => {
-    if (!open) return
-    if (initial) {
-      setForm({
-        ...emptyForm(),
-        ...initial,
-        identity: { ...emptyIdentity(), ...(initial.identity || {}) },
-      })
-      setSelectedProfileId(initial.identityProfileId || null)
-    } else {
-      setForm(emptyForm())
-      setSelectedProfileId(null)
+  // Réinitialise le formulaire à l'ouverture ou quand l'entrée éditée change —
+  // calculé pendant le rendu plutôt que dans un effet.
+  const [prevOpen, setPrevOpen] = useState(open)
+  const [prevInitial, setPrevInitial] = useState(initial)
+  if (open !== prevOpen || initial !== prevInitial) {
+    setPrevOpen(open)
+    setPrevInitial(initial)
+    if (open) {
+      if (initial) {
+        setForm({
+          ...emptyForm(),
+          ...initial,
+          identity: { ...emptyIdentity(), ...(initial.identity || {}) },
+        })
+        setSelectedProfileId(initial.identityProfileId || null)
+      } else {
+        setForm(emptyForm())
+        setSelectedProfileId(null)
+      }
+      setErrors({})
     }
-    setErrors({})
-  }, [open, initial])
+  }
 
   function setField(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }))

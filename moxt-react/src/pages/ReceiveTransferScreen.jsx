@@ -70,6 +70,7 @@ export function ReceiveTransferScreen() {
   )
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- ouvre l'invite une fois (l'utilisateur peut ensuite la fermer indépendamment)
     if (canPromptReview) setReviewOpen(true)
   }, [canPromptReview])
 

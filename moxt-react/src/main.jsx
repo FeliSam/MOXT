@@ -11,7 +11,7 @@ async function bootstrap() {
   cleanupLocalStorage()
   clearDemoContent()
 
-  const [{ initCapacitor, isNative }, { AppProviders }, { AppRouter }, { AppErrorBoundary }, { ToastViewport }, { store }] =
+  const [{ initCapacitor }, { AppProviders }, { AppRouter }, { AppErrorBoundary }, { ToastViewport }, { store }, { ensureLocaleLoaded }, { resolveInitialLanguage }] =
     await Promise.all([
     import('./platform/capacitor'),
     import('./app/providers'),
@@ -19,7 +19,14 @@ async function bootstrap() {
     import('./components/feedback/AppErrorBoundary'),
     import('./components/ui/Toast'),
     import('./app/store'),
+    import('./i18n/translate'),
+    import('./config/uiTranslations'),
   ])
+
+  // Ne bloque le premier rendu que sur la langue réellement active de
+  // l'appareil (les autres langues restent chargées à la demande — voir
+  // i18n/translate.js) : évite un flash "français" pour un visiteur non-FR.
+  await ensureLocaleLoaded(resolveInitialLanguage(localStorage.getItem('moxt-language')))
 
   createRoot(document.getElementById('root')).render(
     <StrictMode>

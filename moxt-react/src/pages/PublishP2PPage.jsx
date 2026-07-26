@@ -157,6 +157,7 @@ export function PublishP2PPage() {
 
   useEffect(() => {
     if (!methodOptions.length) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- retire la méthode si elle devient invalide pour le pays (options chargées async)
     setForm((prev) => {
       if (prev.method && methodOptions.includes(prev.method)) return prev
       return { ...prev, method: '' }
@@ -164,6 +165,7 @@ export function PublishP2PPage() {
   }, [methodOptions])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- adapte le préfixe téléphonique au pays de la méthode sélectionnée
     setForm((prev) => ({
       ...prev,
       receivePhone: ensurePhoneCountry(prev.receivePhone, methodCountry),
@@ -189,6 +191,7 @@ export function PublishP2PPage() {
 
   useEffect(() => {
     if (!rateFormatted) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reflète le taux de change externe (marché/plateforme) dans le formulaire
     setForm((prev) => (prev.rate === rateFormatted ? prev : { ...prev, rate: rateFormatted }))
   }, [rateFormatted])
 

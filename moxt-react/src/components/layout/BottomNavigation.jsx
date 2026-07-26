@@ -83,6 +83,7 @@ export function BottomNavigation() {
   })
 
   useLayoutEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- ferme le tiroir suite à une navigation (système externe : le routeur)
     setMoreOpen(false)
   }, [location.pathname])
 

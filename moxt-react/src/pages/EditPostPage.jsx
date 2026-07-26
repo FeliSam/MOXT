@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { FiArrowLeft, FiSave } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
@@ -35,8 +35,9 @@ export function EditPostPage() {
   const [submitting, setSubmitting] = useState(false)
   const { progress: uploadProgress, track: trackUpload } = useUploadProgress()
 
-  useEffect(() => {
-    if (!post || initializedFor === post.id) return
+  // Précharge le formulaire une fois le post chargé — calculé pendant le rendu
+  // plutôt que dans un effet (évite un rendu de flash avec les champs vides).
+  if (post && initializedFor !== post.id) {
     setMessage(resolvePostMessage(post))
     setImageItems(
       getPostImages(post).map((url) => ({
@@ -46,7 +47,7 @@ export function EditPostPage() {
       })),
     )
     setInitializedFor(post.id)
-  }, [post, initializedFor])
+  }
 
   if (!post) return <Card>{p3('news.edit.notFound')}</Card>
   if (!user || post.authorId !== user.id) return <Navigate to="/news" replace />

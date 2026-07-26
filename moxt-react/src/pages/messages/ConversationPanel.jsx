@@ -108,6 +108,9 @@ export function ConversationPanel({
   const relatedPreview = useSelector((state) => resolveRelatedSnapshot(state, active))
   const relatedMeta = RELATED_CONTENT_META[relatedPreview?.type || active.relatedType] || RELATED_CONTENT_META.general
   const RelatedIcon = relatedMeta.icon
+  // Horodatage de secours stable (calculé une seule fois, pas à chaque rendu)
+  // pour l'entrée de contexte synthétique quand ni createdAt ni updatedAt n'existent.
+  const [fallbackTimelineAt] = useState(() => Date.now())
   const timeline = useMemo(() => {
     const items = buildConversationTimeline(active, user.id)
     if (items.some((item) => item.kind === 'related')) return items
@@ -116,12 +119,12 @@ export function ConversationPanel({
       {
         kind: 'related',
         id: `CTX-resolved-${active.relatedId || active.id}`,
-        at: new Date(active.createdAt || active.updatedAt || Date.now()),
+        at: new Date(active.createdAt || active.updatedAt || fallbackTimelineAt),
         preview: relatedPreview,
       },
       ...items,
     ]
-  }, [active, relatedPreview, user.id])
+  }, [active, relatedPreview, user.id, fallbackTimelineAt])
   const messageListRef = useRef(null)
   const composerRef = useRef(null)
   const stickToBottomRef = useRef(true)
@@ -213,6 +216,7 @@ export function ConversationPanel({
     const urls = (attachments || []).map((file) =>
       file?.type?.startsWith('image/') ? URL.createObjectURL(file) : null,
     )
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- gestion de ressource externe (URLs d'objets, nettoyées au retour)
     setAttachmentPreviewUrls(urls)
     return () => {
       urls.forEach((url) => {

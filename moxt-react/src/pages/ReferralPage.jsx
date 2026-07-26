@@ -63,6 +63,7 @@ export function ReferralPage() {
 
   useEffect(() => {
     if (!networkParam) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronise le réseau sélectionné avec l'URL (système externe : le routeur)
     setNetwork(getMoxtSocialNetwork(networkParam).id)
   }, [networkParam])
 

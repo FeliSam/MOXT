@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { FiPercent, FiSave, FiTrash2 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Button } from '../../../components/ui/Button'
@@ -44,11 +44,15 @@ function RateKindEditor({
   )
   const [saving, setSaving] = useState(false)
 
-  // Keep form in sync when currency/kind or saved values change
-  useEffect(() => {
+  // Garde le formulaire synchronisé quand la devise/le type ou les valeurs
+  // enregistrées changent — calculé pendant le rendu plutôt que dans un effet.
+  const syncKey = `${currency}|${kind}|${saved.originToRub}|${saved.rubToOrigin}`
+  const [prevSyncKey, setPrevSyncKey] = useState(syncKey)
+  if (syncKey !== prevSyncKey) {
+    setPrevSyncKey(syncKey)
     setOriginToRub(saved.originToRub != null ? String(saved.originToRub) : '')
     setRubToOrigin(saved.rubToOrigin != null ? String(saved.rubToOrigin) : '')
-  }, [currency, kind, saved.originToRub, saved.rubToOrigin])
+  }
 
   function handleSave() {
     setSaving(true)
@@ -152,11 +156,16 @@ function PlatformFeesEditor({ admin, t }) {
   const [p2pFeePercent, setP2pFeePercent] = useState(String(saved.p2pFeePercent))
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
+  // Garde le formulaire synchronisé quand les valeurs enregistrées changent —
+  // calculé pendant le rendu plutôt que dans un effet.
+  const syncKey = `${saved.feePercent}|${saved.transferFeePercent}|${saved.p2pFeePercent}`
+  const [prevSyncKey, setPrevSyncKey] = useState(syncKey)
+  if (syncKey !== prevSyncKey) {
+    setPrevSyncKey(syncKey)
     setFeePercent(String(saved.feePercent))
     setTransferFeePercent(String(saved.transferFeePercent))
     setP2pFeePercent(String(saved.p2pFeePercent))
-  }, [saved.feePercent, saved.transferFeePercent, saved.p2pFeePercent])
+  }
 
   function handleSave() {
     setSaving(true)

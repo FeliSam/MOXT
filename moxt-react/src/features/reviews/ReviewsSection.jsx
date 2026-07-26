@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { FiMessageCircle, FiStar } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Card } from '../../components/ui/Card'
@@ -50,11 +50,16 @@ export function ReviewsSection({
     ? t(eligibility.reasonKey)
     : eligibility.reason
 
-  useEffect(() => {
-    if (!existingReview) return
-    setRating(existingReview.rating)
-    setComment(existingReview.comment || '')
-  }, [existingReview])
+  // Précharge le formulaire avec l'avis existant (calculé pendant le rendu, pas
+  // dans un effet, pour éviter un rendu de flash avec les valeurs par défaut).
+  const [prevExistingReview, setPrevExistingReview] = useState(existingReview)
+  if (existingReview !== prevExistingReview) {
+    setPrevExistingReview(existingReview)
+    if (existingReview) {
+      setRating(existingReview.rating)
+      setComment(existingReview.comment || '')
+    }
+  }
 
   function handleSubmit(event) {
     event.preventDefault()

@@ -15,13 +15,12 @@ function MessageImageLightbox({ images, initialIndex = 0, onClose }) {
   const [index, setIndex] = useState(() =>
     Math.min(Math.max(0, initialIndex), Math.max(0, safeImages.length - 1)),
   )
-  const src = safeImages[index]
   const count = safeImages.length
+  // Recadre l'index affiché si le nombre d'images change (ex. suppression) sans
+  // stocker de copie dans un effet séparé — calculé directement à chaque rendu.
+  const safeIndex = count ? Math.min(Math.max(0, index), count - 1) : 0
+  const src = safeImages[safeIndex]
   const canNavigate = count > 1
-
-  useEffect(() => {
-    setIndex((current) => Math.min(Math.max(0, current), Math.max(0, count - 1)))
-  }, [count, initialIndex])
 
   useEffect(() => {
     if (!src) return undefined
@@ -35,11 +34,17 @@ function MessageImageLightbox({ images, initialIndex = 0, onClose }) {
       if (!canNavigate) return
       if (event.key === 'ArrowLeft') {
         event.preventDefault()
-        setIndex((current) => (current - 1 + count) % count)
+        setIndex((current) => {
+          const base = Math.min(Math.max(0, current), count - 1)
+          return (base - 1 + count) % count
+        })
       }
       if (event.key === 'ArrowRight') {
         event.preventDefault()
-        setIndex((current) => (current + 1) % count)
+        setIndex((current) => {
+          const base = Math.min(Math.max(0, current), count - 1)
+          return (base + 1) % count
+        })
       }
     }
     document.addEventListener('keydown', handleKeyDown)
@@ -93,13 +98,13 @@ function MessageImageLightbox({ images, initialIndex = 0, onClose }) {
             <FiChevronRight className="text-2xl" />
           </button>
           <span className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1.5 text-xs font-semibold tabular-nums text-white">
-            {index + 1} / {count}
+            {safeIndex + 1} / {count}
           </span>
         </>
       ) : null}
       <img
         src={src}
-        alt={`Image ${index + 1}`}
+        alt={`Image ${safeIndex + 1}`}
         className="max-h-[min(90dvh,56rem)] max-w-[min(92vw,56rem)] rounded-2xl object-contain shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       />

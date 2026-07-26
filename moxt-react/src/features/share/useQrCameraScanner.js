@@ -106,6 +106,7 @@ export function useQrCameraScanner({ enabled, videoRef, onDecode }) {
   useEffect(() => {
     if (!enabled) {
       handledRef.current = false
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- arrête la caméra (ressource externe), pas un état dérivé
       stop()
       return undefined
     }

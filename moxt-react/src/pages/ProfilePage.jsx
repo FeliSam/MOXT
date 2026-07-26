@@ -38,8 +38,6 @@ export function ProfilePage() {
   )
   const favoritesCount = useSelector((state) => state.account.favorites.length)
 
-  if (!user) return null
-
   const countsByKey = useMemo(
     () => ({
       transfers: transfersCount,
@@ -49,6 +47,8 @@ export function ProfilePage() {
     }),
     [favoritesCount, listingsCount, parcelsCount, transfersCount],
   )
+
+  if (!user) return null
 
   const quickStats = quickStatsConfig.map((stat) => ({
     ...stat,

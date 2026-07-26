@@ -48,7 +48,6 @@ import { useScrollToTopOnStep } from '../hooks/useScrollToTopOnStep'
 import { createId } from '../services/createId'
 import { addToast } from '../features/ui/uiSlice'
 import { SecurityGatePanel } from '../features/security/SecurityGatePanel'
-import { useSecurityGate } from '../features/security/useSecurityGate'
 import { ShareToFeedModal } from '../components/ui/ShareToFeedModal'
 import { useActionBurst } from '../components/ui/ActionBurst'
 import {
@@ -359,7 +358,6 @@ export function BusinessSetupPage() {
   useScrollToTopOnStep(step)
   const { t } = useLanguage()
   const bt = (key, vars) => businessesText(t, key, vars)
-  const { requireBusiness } = useSecurityGate()
   const [shareModal, setShareModal] = useState(null)
   const [createdBusiness, setCreatedBusiness] = useState(null)
   const dispatch = useDispatch()

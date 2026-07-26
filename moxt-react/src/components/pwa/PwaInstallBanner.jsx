@@ -1,19 +1,18 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { FiShare, FiX } from 'react-icons/fi'
 import { isStandalone } from '../../pwa'
 import { canUseWebPushApi, isIosDevice } from '../../platform/webPush'
 
 const DISMISS_KEY = 'moxt-pwa-install-banner-dismissed'
 
-export function PwaInstallBanner() {
-  const [visible, setVisible] = useState(false)
+function computeInitialVisibility() {
+  if (typeof window === 'undefined') return false
+  if (!isIosDevice() || isStandalone() || !canUseWebPushApi()) return false
+  return localStorage.getItem(DISMISS_KEY) !== '1'
+}
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    if (!isIosDevice() || isStandalone() || !canUseWebPushApi()) return
-    if (localStorage.getItem(DISMISS_KEY) === '1') return
-    setVisible(true)
-  }, [])
+export function PwaInstallBanner() {
+  const [visible, setVisible] = useState(computeInitialVisibility)
 
   if (!visible) return null
 

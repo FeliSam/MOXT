@@ -32,11 +32,15 @@ export function PhoneVerificationCard({ className = '' }) {
   const [phone, setPhone] = useState(user?.phone || '+7')
   const [resendCooldown, setResendCooldown] = useState(0)
 
-  useEffect(() => {
+  // Reprend le téléphone du profil dès qu'il arrive (chargement async), calculé
+  // pendant le rendu plutôt que dans un effet.
+  const [prevUserPhone, setPrevUserPhone] = useState(user?.phone)
+  if (user?.phone !== prevUserPhone) {
+    setPrevUserPhone(user?.phone)
     if (user?.phone && user.phone !== '+7') {
       setPhone(user.phone)
     }
-  }, [user?.phone])
+  }
 
   useEffect(() => {
     if (!authError) return

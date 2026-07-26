@@ -127,6 +127,7 @@ export function MessageBubble({
   // (dernier message, bord du conteneur scrollable) pour éviter qu'il soit coupé.
   useLayoutEffect(() => {
     if (!showActions) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset avant mesure DOM (positionnement du menu)
       setPlaceAbove(false)
       return
     }

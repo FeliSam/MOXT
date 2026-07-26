@@ -16,6 +16,7 @@ export function usePaymentMethodOptions(countryCode) {
 
   useEffect(() => {
     if (!isRussia) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronise avec le pays sélectionné (pas d'appel réseau nécessaire)
       setOptions(paymentMethodsForCountry(countryCode))
       setLoading(false)
       return undefined

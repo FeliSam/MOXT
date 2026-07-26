@@ -70,6 +70,7 @@ export function useExchangeRate(currency = 'XOF', options = {}) {
   const [loading, setLoading] = useState(() => getExchangeRateSnapshot('RUB', currency).loading)
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset avant abonnement au flux de taux externe
     setMarketRate(initialRate(currency))
     setLoading(true)
     return subscribeExchangeRate('RUB', currency, ({ rate: next, loading: nextLoading }) => {
