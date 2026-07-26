@@ -1,9 +1,9 @@
 import type { CapacitorConfig } from '@capacitor/cli'
 
 /**
- * PRODUCTION (RuStore / APK) :
+ * PRODUCTION (RuStore / Google Play / APK) :
  *   Pas de `server.url` → la WebView charge les assets locaux (`webDir: dist`).
- *   L’app est autonome (pas un simple wrapper vers moxtapp.ru).
+ *   Produit autonome avec contenu original (pas un wrapper qui redirige vers moxtapp.ru).
  *   Rebuild + resoumission store requis pour chaque mise à jour UI embarquée.
  *
  * DEV (live reload) :

@@ -196,6 +196,7 @@ export const pt = {
     moderation: "Moderação",
     moderationSpace: "Espaço moderador",
     guide: "Guia",
+    productHelp: "Ajuda Moxt",
     guideAdmin: "Gestão do guia",
     p2p: "Troca P2P",
     exchangers: "Câmbios",
@@ -1816,7 +1817,7 @@ export const pt = {
           "Site: https://moxtapp.ru. Aplicações móveis: MOXT para Android e iOS (via Capacitor).",
           "Editor / operador do serviço: MOXT. Contacto geral e jurídico: support@moxtapp.ru. Indique o identificador da conta, e-mail ou número verificado.",
           "CEO: FANOU S. Feliciano — médico cardiologista, programador fullstack, certificação AI. Direção geral e responsabilidade técnica da plataforma MOXT.",
-          "Cofundador e colaborador: Ricardo OKE — engenheiro de robótica, programador fullstack e designer. Fundador da sociedade Ro2Services, especializada em transferências de dinheiro. Emissor de ideias, com contribuições de produto, técnica e design na equipa MOXT.",
+          "Cofundador e colaborador: Ricardo O. OKE — engenheiro de robótica, programador fullstack e designer. Fundador da sociedade Ro2Services, especializada em transferências de dinheiro. Emissor de ideias, com contribuições de produto, técnica e design na equipa MOXT.",
           "Colaboradora: TCHIBOZO Judice A. S. — estudante do 6.º ano de Medicina, CEO da empresa Alleluia Food. Apoia o desenvolvimento e a implantação do site ao enriquecer a ideia base do MOXT, as suas diferentes funcionalidades, e ao trazer ideias de melhoria para o projeto.",
           "Equipa MOXT: o serviço é concebido e operado pela equipa MOXT sob a direção do CEO, com a colaboração dos cofundadores e contribuidores técnicos.",
           "Natureza do serviço: o MOXT é uma plataforma técnica de intermediação e comunicação. O MOXT não é um banco, nem uma instituição de dinheiro eletrónico, nem um notário, nem uma seguradora. O MOXT não é parte dos contratos celebrados entre utilizadores (transferências, vendas, alugueres, prestações, viagens, empregos, etc.), salvo disposição escrita clara no produto.",
@@ -7093,10 +7094,74 @@ export const pt = {
       sourceUrl: "Link da fonte",
       pinned: "Fixar no topo",
       status: "Status",
+      sortOrder: "Ordem de exibição",
     },
     copyFromFr: "Copiar FR",
     incompleteWarning: "Tradução ausente para: {languages}. Visitantes nesses idiomas verão a versão FR por padrão.",
     sourceHint: "Sempre indique uma fonte oficial verificável (governo, embaixada, universidade) para manter a confiança dos leitores.",
+  },
+  productHelp: {
+    page: {
+      title: "Como usar o Moxt",
+      description: "Sessões passo a passo para dominar os serviços essenciais da plataforma.",
+      searchPlaceholder: "Pesquisar uma sessão…",
+      emptyTitle: "Nenhuma sessão encontrada",
+      emptyDescription: "Tente outra categoria ou outra palavra-chave.",
+      stats: {
+        session: "Sessão",
+        sessions: "Sessões",
+      },
+    },
+    categories: {
+      all: "Tudo",
+      gettingStarted: "Primeiros passos",
+      transfers: "Transferências",
+      marketplace: "Marketplace",
+      parcels: "Encomendas",
+      messages: "Mensagens",
+      account: "Conta",
+    },
+    session: {
+      notFound: "Esta sessão não foi encontrada ou foi removida.",
+    },
+    sessions: {
+      gettingStarted: {
+        title: "Primeiros passos no MOXT",
+        summary: "Conta, perfil, painel e navegação para começar em poucos minutos.",
+        content:
+          "1. Crie uma conta ou inicie sessão (e-mail ou telemóvel).\n\n2. Complete o perfil: foto, nome, país de residência e de origem. Um perfil claro inspira confiança.\n\n3. No painel, explore os serviços essenciais: transferências, marketplace, encomendas, mensagens.\n\n4. Use a barra inferior (móvel) ou o menu para navegar. O hub MOXT agrupa o resto (ajuda, suporte, definições).\n\n5. Ative as notificações para não perder mensagens nem etapas das operações.\n\n6. Precisa de ajuda humana? Abra Suporte no hub — abre uma conversa em Mensagens.",
+      },
+      transfers: {
+        title: "Enviar e receber uma transferência",
+        summary: "Publicar ou aceitar uma transferência, seguir o estado e falar com a outra parte.",
+        content:
+          "1. Abra Transferências no menu ou no painel.\n\n2. Para enviar: crie uma transferência (montante, moedas, países, destinatário / cambista).\n\n3. Para receber ou processar: veja os pedidos que lhe dizem respeito.\n\n4. Siga cada etapa na ficha: pendente, pagamento declarado, comprovativos, conclusão.\n\n5. Anexe os comprovativos pedidos (captura, recibo) quando a app solicitar.\n\n6. Fale em Mensagens se precisar de esclarecer algo. Em litígio, use o fluxo da ficha.",
+      },
+      marketplace: {
+        title: "Marketplace: comprar e vender",
+        summary: "Publicar um anúncio, explorar o catálogo e contactar um vendedor.",
+        content:
+          "1. Abra Marketplace.\n\n2. Para vender: Publique um anúncio — fotos, título, preço, descrição e local.\n\n3. Para comprar: filtre por categoria ou pesquise, depois abra o detalhe.\n\n4. Contacte o vendedor a partir da ficha — a conversa continua em Mensagens.\n\n5. Encontre os seus anúncios em As minhas publicações. Pode editar ou remover.\n\n6. Use Favoritos para guardar anúncios interessantes.",
+      },
+      parcels: {
+        title: "Encomendas e trajetos",
+        summary: "Publicar uma encomenda ou um trajeto e combinar um encontro com um viajante.",
+        content:
+          "1. Abra Encomendas.\n\n2. Publique uma encomenda a enviar (origem, destino, peso, datas) ou um trajeto disponível.\n\n3. Explore as ofertas que correspondem e abra o detalhe.\n\n4. Contacte a outra pessoa por Mensagens para combinar local, hora e preço.\n\n5. Siga o estado até à entrega. Guarde comprovativos úteis na conversa.\n\n6. Se houver um problema, contacte o suporte MOXT em Mensagens.",
+      },
+      messages: {
+        title: "Mensagens e suporte",
+        summary: "Falar com membros, filtrar conversas e contactar a equipa MOXT.",
+        content:
+          "1. Abra Mensagens na barra de navegação.\n\n2. Use os filtros (transferências, P2P, suporte…) para encontrar uma conversa depressa.\n\n3. Envie texto, fotos ou documentos conforme necessário.\n\n4. Conversas ligadas a uma transferência, encomenda ou anúncio mantêm o contexto.\n\n5. Para a equipa MOXT: Suporte (ou Contribute) abre uma conversa dedicada.\n\n6. As notificações alertam para novas mensagens — autorize-as no dispositivo.",
+      },
+      account: {
+        title: "Conta, segurança e definições",
+        summary: "Perfil, verificação, segurança da conta e preferências do dia a dia.",
+        content:
+          "1. Abra Perfil ou Conta no hub MOXT.\n\n2. Atualize as informações pessoais e a foto — aparecem aos outros membros.\n\n3. Passe pela Verificação para reforçar a confiança (documentos e passos na app).\n\n4. Em Segurança: palavra-passe, sessões e boas práticas.\n\n5. Definições: idioma, tema e preferências de uso.\n\n6. Documentos e recibos: encontre ficheiros úteis das suas operações no hub.",
+      },
+    },
   },
   guest: {
     previewBanner: {

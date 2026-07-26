@@ -1129,7 +1129,7 @@ const handlers = {
 
   // ── Guide d'aide (étudiants / étrangers en Russie) ─────────────────────────────
   'helpArticles/createHelpArticle': async (payload) => {
-    const row = {
+    const baseRow = {
       id: payload.id,
       translation_group_id: payload.translationGroupId,
       category: payload.category,
@@ -1147,8 +1147,18 @@ const handlers = {
       created_at: payload.createdAt,
       updated_at: payload.updatedAt,
     }
-    const { error } = await supabase.from('help_articles').insert(row)
-    if (error) throw error
+    const withSort = {
+      ...baseRow,
+      ...(Number.isFinite(payload.sortOrder) ? { sort_order: payload.sortOrder } : {}),
+    }
+    const { error } = await supabase.from('help_articles').insert(withSort)
+    if (!error) return
+    if (String(error.message || '').toLowerCase().includes('sort_order')) {
+      const { error: retryError } = await supabase.from('help_articles').insert(baseRow)
+      if (retryError) throw retryError
+      return
+    }
+    throw error
   },
   'helpArticles/updateHelpArticle': async (payload, state) => {
     const article = state.helpArticles?.items?.find((item) => item.id === payload.id)
@@ -1166,10 +1176,35 @@ const handlers = {
         verified_at: article.verifiedAt || null,
         pinned: article.pinned === true,
         status: article.status || 'published',
+        ...(Number.isFinite(article.sortOrder) ? { sort_order: article.sortOrder } : {}),
         updated_at: article.updatedAt,
       })
       .eq('id', payload.id)
-    if (error) throw error
+    if (error) {
+      // Colonne absente tant que la migration n’est pas appliquée : réessayer sans sort_order.
+      const message = String(error.message || '').toLowerCase()
+      if (message.includes('sort_order')) {
+        const { error: retryError } = await supabase
+          .from('help_articles')
+          .update({
+            category: article.category,
+            language: article.language,
+            title: article.title,
+            summary: article.summary,
+            content: article.content,
+            source_name: article.sourceName || null,
+            source_url: article.sourceUrl || null,
+            verified_at: article.verifiedAt || null,
+            pinned: article.pinned === true,
+            status: article.status || 'published',
+            updated_at: article.updatedAt,
+          })
+          .eq('id', payload.id)
+        if (retryError) throw retryError
+        return
+      }
+      throw error
+    }
   },
   'helpArticles/deleteHelpArticle': async (payload) => {
     const { error } = await supabase.from('help_articles').delete().eq('id', payload)

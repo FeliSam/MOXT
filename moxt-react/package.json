@@ -1,7 +1,7 @@
 {
   "name": "moxt",
   "private": true,
-  "version": "1.2.2",
+  "version": "1.2.3",
   "type": "module",
   "scripts": {
     "dev": "node scripts/prepare-netlify-env.mjs && node ../node_modules/vite/bin/vite.js",
@@ -22,6 +22,8 @@
     "cap:dev:sync": "node scripts/cap-dev.mjs --sync",
     "cap:prod:sync": "node scripts/cap-prod.mjs",
     "cap:prod:android": "node scripts/cap-prod.mjs && cap open android",
+    "android:apk": "node scripts/cap-prod.mjs && npm run cap:gradle:ensure && cd android && gradlew.bat assembleRelease",
+    "android:aab": "node scripts/cap-prod.mjs && npm run cap:gradle:ensure && cd android && gradlew.bat bundleRelease",
     "android:keystore": "node scripts/android-keystore.mjs",
     "lint": "eslint .",
     "test": "node ../node_modules/vitest/vitest.mjs run",

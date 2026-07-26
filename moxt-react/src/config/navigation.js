@@ -8,6 +8,7 @@ import {
   FiGift,
   FiGrid,
   FiHeart,
+  FiHelpCircle,
   FiHome,
   FiLayers,
   FiList,
@@ -34,6 +35,7 @@ export const routePreloaders = {
   '/documents': () => import('../pages/DocumentsPage'),
   '/events': () => import('../pages/EventsPage'),
   '/guide': () => import('../pages/HelpGuidePage'),
+  '/aide': () => import('../pages/ProductHelpPage'),
   '/favorites': () => import('../pages/FavoritesPage'),
   '/referral': () => import('../pages/ReferralPage'),
   '/feature-matrix': () => import('../pages/FeatureMatrixPage'),
@@ -136,6 +138,7 @@ export const navigationGroups = [
       { id: 'jobs', label: 'Jobs', labelKey: 'nav.jobs', path: '/jobs', icon: FiBriefcase },
       { id: 'events', label: 'Evenements', labelKey: 'nav.events', path: '/events', icon: FiCalendar },
       { id: 'guide', label: 'Guide', labelKey: 'nav.guide', path: '/guide', icon: FiBookOpen },
+      { id: 'product-help', label: 'Aide Moxt', labelKey: 'nav.productHelp', path: '/aide', icon: FiHelpCircle },
     ],
   },
   {

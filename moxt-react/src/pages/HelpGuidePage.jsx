@@ -9,7 +9,7 @@ import { CatalogSearch } from '../components/ui/CatalogSearch'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { RevealListItem } from '../components/ui/RevealListItem'
-import { HELP_CATEGORIES, helpCategoryMeta } from '../config/helpCategories'
+import { HELP_CATEGORIES, helpCategoryMeta, isProductHelpCategory } from '../config/helpCategories'
 import { useLanguage } from '../contexts/useLanguage'
 import { loadHelpArticles } from '../features/help/helpArticlesSlice'
 import { formatDate } from '../features/transfers/transferUtils'
@@ -29,6 +29,7 @@ export function HelpGuidePage() {
     const q = query.trim().toLowerCase()
     return articles
       .filter((article) => article.status === 'published')
+      .filter((article) => !isProductHelpCategory(article.category))
       .filter((article) => article.language === language || article.language === 'fr')
       .filter((article) => !category || article.category === category)
       .filter(

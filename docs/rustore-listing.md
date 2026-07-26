@@ -7,11 +7,15 @@ Ce fichier est prêt à coller dans la console. Les **captures d’écran** doiv
 
 ---
 
-## App autonome (exigence RuStore WebView)
+## App autonome (exigence RuStore / Google Play — WebView)
 
-RuStore refuse les apps dont le seul but est d’ouvrir un site en WebView.
+Les boutiques refusent les apps dont le **seul but** est d’ouvrir un site en WebView / de rediriger vers un site.
 
-**MOXT en production** embarque le front dans l’APK (`webDir: dist`, **pas** de `server.url` vers moxtapp.ru) :
+**MOXT en production** est un produit complet et indépendant :
+
+- UI embarquée dans l’APK (`webDir: dist`, **pas** de `server.url` vers moxtapp.ru)
+- Fonctionnalités originales in-app : transferts, colis, marketplace, emplois, messagerie, KYC, aide « Comment utiliser Moxt »
+- Couche native : splash, status bar, clavier, retour Android, push, caméra / QR, deep links `moxt://`
 
 ```bash
 npm run web:cap:prod:sync
@@ -19,8 +23,7 @@ npm run web:cap:prod:sync
 ```
 
 - Dev live-reload uniquement : `npm run web:cap:dev:sync` (utilise `CAPACITOR_SERVER_URL`)
-- Splash, status bar, push, caméra / QR, deep link `moxt://` restent natifs
-- Liens partagés / e-mails auth utilisent toujours `https://moxtapp.ru` (pas `localhost`)
+- Liens partagés / e-mails auth utilisent toujours `https://moxtapp.ru` (pas `localhost`) — le shell app, lui, reste local
 
 ---
 
@@ -51,13 +54,14 @@ Transferts, colis, marketplace et emplois — diaspora Afrique ↔ Russie
 ```
 MOXT — l’application des services entre l’Afrique et la Russie.
 
-Envoyez et suivez des transferts, publiez ou réservez des colis voyageurs, achetez et vendez sur la marketplace, trouvez un emploi ou une entreprise de confiance — pensé pour la diaspora afro-russe (Bénin, Afrique de l’Ouest ↔ Russie). Application Android complète (navigation, messagerie, push), pas un simple accès web.
+Envoyez et suivez des transferts, publiez ou réservez des colis voyageurs, achetez et vendez sur la marketplace, trouvez un emploi ou une entreprise de confiance — pensé pour la diaspora afro-russe (Bénin, Afrique de l’Ouest ↔ Russie). Application Android complète et autonome (contenu embarqué, navigation, messagerie, push, aide intégrée), pas un simple accès web ni une redirection vers un site.
 
 FONCTIONNALITÉS
 • Transferts et suivi entre communautés
 • Colis voyageurs avec messagerie
 • Marketplace (annonces, favoris, recherche)
 • Emplois et entreprises
+• Aide intégrée « Comment utiliser Moxt » (sessions pas à pas)
 • Vérification d’identité et score de confiance
 • Notifications push (messages, transferts, abonnements)
 • Interface FR / RU / EN / PT / ES
@@ -81,13 +85,14 @@ Téléchargez MOXT et rejoignez la communauté.
 ```
 MOXT — приложение сервисов между Африкой и Россией.
 
-Отправляйте и отслеживайте переводы, публикуйте или бронируйте посылки с попутчиками, покупайте и продавайте на маркетплейсе, ищите работу или проверенный бизнес — для афро-российской диаспоры (Бенин, Западная Африка ↔ Россия). Полноценное Android-приложение (навигация, сообщения, push), а не просто доступ к сайту.
+Отправляйте и отслеживайте переводы, публикуйте или бронируйте посылки с попутчиками, покупайте и продавайте на маркетплейсе, ищите работу или проверенный бизнес — для афро-российской диаспоры (Бенин, Западная Африка ↔ Россия). Полноценное автономное Android-приложение (встроенный контент, навигация, сообщения, push, встроенная справка), а не просто доступ к сайту и не редирект в браузер.
 
 ВОЗМОЖНОСТИ
 • Переводы и отслеживание между сообществами
 • Посылки с попутчиками и переписка
 • Маркетплейс (объявления, избранное, поиск)
 • Вакансии и компании
+• Встроенная справка «Как пользоваться Moxt» (пошаговые сессии)
 • Верификация личности и рейтинг доверия
 • Push-уведомления (сообщения, переводы, подписки)
 • Интерфейс FR / RU / EN / PT / ES
@@ -139,7 +144,8 @@ Exigences usuelles (vérifier la console au moment du dépôt) :
 4. Marketplace (grille d’annonces)
 5. Emplois ou détail annonce
 6. Messagerie
-7. Profil / vérification (confiance)
+7. Aide Moxt (sessions « Comment utiliser ») — montre le contenu original in-app
+8. Profil / vérification (confiance)
 
 ### Comment capturer
 

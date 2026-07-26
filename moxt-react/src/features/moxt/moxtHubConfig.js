@@ -50,6 +50,7 @@ export const moxtHubSecondaryGroups = [
       { id: 'notifications', labelKey: 'nav.notifications', path: '/notifications', icon: FiBell },
       { id: 'support', labelKey: 'profile.links.support', path: '/support', icon: FiHelpCircle },
       { id: 'guide', labelKey: 'nav.guide', path: '/guide', icon: FiBookOpen },
+      { id: 'product-help', labelKey: 'nav.productHelp', path: '/aide', icon: FiHelpCircle },
     ],
   },
   {
