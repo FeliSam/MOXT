@@ -311,6 +311,52 @@ export const storageService = {
     return { url: null, path }
   },
 
+  /**
+   * Supprime un fichier du bucket privé `documents`.
+   * Sert de compensation quand l'enregistrement en base échoue après un upload
+   * réussi : sans ça le fichier resterait orphelin dans le stockage, invisible
+   * pour l'app (donc jamais purgé, et non supprimé à la clôture du compte).
+   */
+  async removeDocument(path) {
+    if (!path) return false
+    const { error } = await supabase.storage.from('documents').remove([path])
+    if (error) {
+      console.warn('[Storage] cleanup failed:', error.message)
+      return false
+    }
+    return true
+  },
+
+  /**
+   * Liste les fichiers du bucket `documents` que plus aucune ligne ne
+   * référence (upload réussi + enregistrement échoué, ou compte supprimé).
+   * La détection est faite en base (RPC admin) ; la suppression doit passer
+   * par l'API Storage — Postgres interdit `delete from storage.objects`.
+   */
+  async listOrphanDocuments(graceHours = 24) {
+    const { data, error } = await supabase.rpc('moxt_orphan_document_objects', {
+      p_grace_hours: graceHours,
+    })
+    if (error) throw new Error(error.message)
+    return (data || []).map((row) => ({
+      path: row.object_name,
+      uploadedAt: row.uploaded_at,
+    }))
+  },
+
+  /** Supprime les orphelins listés ci-dessus. Renvoie {removed, failed}. */
+  async purgeOrphanDocuments(graceHours = 24) {
+    const orphans = await this.listOrphanDocuments(graceHours)
+    if (!orphans.length) return { removed: 0, failed: 0 }
+
+    const paths = orphans.map((item) => item.path)
+    const { data, error } = await supabase.storage.from('documents').remove(paths)
+    if (error) throw new Error(error.message)
+
+    const removed = Array.isArray(data) ? data.length : 0
+    return { removed, failed: paths.length - removed }
+  },
+
   extractDocumentsPath(urlOrPath) {
     if (!urlOrPath || typeof urlOrPath !== 'string') return null
     const raw = urlOrPath.trim()

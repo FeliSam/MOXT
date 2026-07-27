@@ -400,6 +400,21 @@ export const ADMIN_FR_SOURCES = {
   // ── documents ───────────────────────────────────────────────────────────
   'admin.documents.none': 'Aucun document associé à cette demande.',
   'admin.documents.notFound': 'Documents introuvables ({count}). Vérifiez le chargement admin.',
+  'admin.documents.maintenanceTitle': 'Maintenance du stockage documents',
+  'admin.documents.maintenanceDescription':
+    'Détecte les fichiers du bucket privé qu’aucune fiche ne référence (upload interrompu, compte supprimé). Les documents rattachés à une vérification sont protégés par la rétention légale de 5 ans (115-ФЗ) et ne sont jamais listés ici.',
+  'admin.documents.scanAction': 'Analyser',
+  'admin.documents.purgeAction': 'Purger les orphelins',
+  'admin.documents.noOrphans': 'Aucun fichier orphelin — le stockage est propre.',
+  'admin.documents.scanDoneTitle': 'Analyse terminée',
+  'admin.documents.scanDoneBody': '{count} fichier(s) orphelin(s) détecté(s).',
+  'admin.documents.scanFailedTitle': 'Analyse impossible',
+  'admin.documents.purgeDoneTitle': 'Purge terminée',
+  'admin.documents.purgeDoneBody': '{count} fichier(s) supprimé(s), {failed} échec(s).',
+  'admin.documents.purgeFailedTitle': 'Purge impossible',
+  'admin.documents.purgeConfirmTitle': 'Supprimer les fichiers orphelins ?',
+  'admin.documents.purgeConfirmBody':
+    'Supprimer définitivement {count} fichier(s) non référencé(s) ? Action irréversible. Les documents sous rétention légale ne sont pas concernés.',
   'admin.documents.previewUnavailable': 'Aperçu non disponible pour ce type — utilisez Ouvrir.',
   'admin.documents.noSignedUrl': 'Impossible de générer un lien signé pour ce document.',
   'admin.documents.download': 'Télécharger',

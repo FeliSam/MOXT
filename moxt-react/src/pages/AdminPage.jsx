@@ -20,6 +20,7 @@ import { AdminTransfersPanel } from '../features/admin/components/AdminTransfers
 import { AdminP2PPanel } from '../features/admin/components/AdminP2PPanel'
 import { AdminUsersPanel } from '../features/admin/components/AdminUsersPanel'
 import { AdminBusinessDocumentsPanel } from '../features/admin/components/AdminBusinessDocumentsPanel'
+import { AdminDocumentMaintenanceCard } from '../features/admin/components/AdminDocumentMaintenanceCard'
 import { AdminVerificationsPanel } from '../features/admin/components/AdminVerificationsPanel'
 import { GlobalFilterBar, SystemStatusBar } from '../features/admin/components/AdminShared'
 import { AdminIdentityCard, HeroKpiRow, SidebarBtn, SidebarLink } from '../features/admin/components/AdminShell'
@@ -194,14 +195,17 @@ export function AdminPage() {
             />
           )}
           {view === 'documents' && (
-            <AdminBusinessDocumentsPanel
-              adminId={admin?.id}
-              dispatch={dispatch}
-              documents={allBusinessDocuments}
-              query={query}
-              setSelected={setSelected}
-              statusFilter={statusFilter}
-            />
+            <>
+              <AdminBusinessDocumentsPanel
+                adminId={admin?.id}
+                dispatch={dispatch}
+                documents={allBusinessDocuments}
+                query={query}
+                setSelected={setSelected}
+                statusFilter={statusFilter}
+              />
+              <AdminDocumentMaintenanceCard />
+            </>
           )}
           {view === 'queues' && (
             <AdminQueuesPanel

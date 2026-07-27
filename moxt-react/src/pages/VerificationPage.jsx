@@ -137,8 +137,9 @@ export function VerificationPage() {
     const documentIds = []
     const persist = async (doc, category) => {
       if (!doc?.file) return
+      let uploaded = null
       try {
-        const uploaded = await trackUpload((onProgress) =>
+        uploaded = await trackUpload((onProgress) =>
           storageService.uploadDocument(user.id, category, doc.file, { onProgress }),
         )
         const action = dispatch(
@@ -155,6 +156,9 @@ export function VerificationPage() {
         documentIds.push(action.payload.id)
       } catch (err) {
         console.warn('[Storage] doc upload failed:', err.message)
+        // Le fichier est déjà déposé mais ne sera référencé nulle part :
+        // on le retire pour ne pas laisser une pièce d'identité orpheline.
+        if (uploaded?.path) await storageService.removeDocument(uploaded.path)
       }
     }
     if (!privacyConsent) return
