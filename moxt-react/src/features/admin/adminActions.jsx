@@ -506,21 +506,25 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
       if (actorRole === 'moderator') return null
       return (
         <>
-          <Button
+          <ActionButton
+            done={item.role === 'moderator'}
+            doneLabel={adminText(t, 'admin.actions.moderatorPromoted')}
             variant="secondary"
             onClick={() =>
               dispatchUserRole(dispatch, { actorRole, id: item.id, role: 'moderator', t })
             }
           >
             {adminText(t, 'admin.actions.promoteModerator')}
-          </Button>
-          <Button
+          </ActionButton>
+          <ActionButton
+            done={item.role === 'admin'}
+            doneLabel={adminText(t, 'admin.actions.adminPromoted')}
             variant="secondary"
             disabled={actorRole !== 'superadmin'}
             onClick={() => dispatchUserRole(dispatch, { actorRole, id: item.id, role: 'admin', t })}
           >
             {adminText(t, 'admin.actions.promoteAdmin')}
-          </Button>
+          </ActionButton>
           <Button
             variant={item.status === 'suspended' ? 'secondary' : 'danger'}
             onClick={() => onSuspendUser(item)}
@@ -540,7 +544,9 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
           >
             {adminText(t, 'admin.actions.verifyPhone')}
           </ActionButton>
-          <Button
+          <ActionButton
+            done={item.emailVerified}
+            doneLabel={adminText(t, 'admin.actions.emailVerified')}
             variant="secondary"
             onClick={() => {
               if (window.confirm(adminText(t, 'admin.actions.verifyEmailConfirm', { email: item.email }))) {
@@ -549,7 +555,7 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
             }}
           >
             {adminText(t, 'admin.actions.verifyEmail')}
-          </Button>
+          </ActionButton>
         </>
       )
     case 'verification':

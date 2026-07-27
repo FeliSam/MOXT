@@ -561,6 +561,7 @@ export const PHASE3_FR_SOURCES = {
   'errors.display.body':
     "Une erreur inattendue empêche l'affichage. Réessayez ou retournez à l'accueil.",
   'errors.display.home': 'Retour au tableau de bord',
+  'errors.display.detailToggle': 'Détail technique de l’erreur',
 
   'news.eyebrow': 'Communauté',
   'news.title': "Fil d'actualité",

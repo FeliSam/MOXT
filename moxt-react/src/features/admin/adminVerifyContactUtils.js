@@ -1,5 +1,5 @@
 import { supabase } from '../../services/supabaseClient'
-import { updateUserPhoneVerified } from '../administration/administrationSlice'
+import { updateUserEmailVerified, updateUserPhoneVerified } from '../administration/administrationSlice'
 import { addToast } from '../ui/uiSlice'
 import { adminText } from './adminI18n'
 
@@ -50,6 +50,7 @@ export async function verifyUserEmailManually(dispatch, { id, t }) {
     if (error) throw new Error(await edgeFunctionErrorDetail(error))
     if (data?.error) throw new Error(String(data.error))
 
+    dispatch(updateUserEmailVerified({ id, emailVerified: true }))
     dispatch(
       addToast({
         title: adminText(t, 'admin.actions.verifyEmailSuccessTitle'),

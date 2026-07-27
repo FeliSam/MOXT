@@ -24,6 +24,8 @@ function profileRowToAdminUser(row) {
     verified: row.status === 'verified',
     phoneVerified: row.phone_verified === true || row.phoneVerified === true,
     phoneVerifiedAt: row.phone_verified_at || row.phoneVerifiedAt || null,
+    emailVerified: row.email_verified === true || row.emailVerified === true,
+    emailVerifiedAt: row.email_verified_at || row.emailVerifiedAt || null,
     createdAt: row.created_at || row.createdAt || null,
     updatedAt: row.updated_at || row.updatedAt || null,
   }
@@ -86,6 +88,13 @@ const administrationSlice = createSlice({
       user.phoneVerifiedAt = user.phoneVerifiedAt || new Date().toISOString()
       user.updatedAt = new Date().toISOString()
     },
+    updateUserEmailVerified(state, action) {
+      const user = state.users.find((item) => item.id === action.payload.id)
+      if (!user) return
+      user.emailVerified = action.payload.emailVerified !== false
+      user.emailVerifiedAt = user.emailVerifiedAt || new Date().toISOString()
+      user.updatedAt = new Date().toISOString()
+    },
   },
 })
 
@@ -99,5 +108,6 @@ export const {
   updateUserCity,
   setUserVerified,
   updateUserPhoneVerified,
+  updateUserEmailVerified,
 } = administrationSlice.actions
 export default administrationSlice.reducer

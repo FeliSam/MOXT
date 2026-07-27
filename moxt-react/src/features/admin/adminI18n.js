@@ -312,6 +312,8 @@ export const ADMIN_FR_SOURCES = {
   'admin.actions.advanceTo': 'Passer a {next}',
   'admin.actions.promoteAdmin': 'Passer admin',
   'admin.actions.promoteModerator': 'Passer modérateur',
+  'admin.actions.adminPromoted': 'Admin',
+  'admin.actions.moderatorPromoted': 'Modérateur',
   'admin.actions.reactivate': 'Reactiver',
   'admin.actions.suspend': 'Suspendre',
   'admin.actions.rejectPrompt': 'Motif du refus (obligatoire) :',
@@ -334,6 +336,7 @@ export const ADMIN_FR_SOURCES = {
   'admin.actions.verifyPhoneSuccessTitle': 'Numéro validé',
   'admin.actions.verifyPhoneSuccessBody': 'Le numéro a été confirmé manuellement.',
   'admin.actions.verifyEmail': 'Valider l’e-mail',
+  'admin.actions.emailVerified': 'E-mail validé',
   'admin.actions.verifyEmailConfirm':
     'Valider manuellement l’adresse {email} ? À utiliser seulement si vous avez confirmé qu’elle est fonctionnelle.',
   'admin.actions.verifyEmailSuccessTitle': 'E-mail validé',
