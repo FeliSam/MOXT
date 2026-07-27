@@ -100,6 +100,11 @@ const eventSlice = createSlice({
       if (!event) return
       event.status = action.payload.status
     },
+    incrementEventView(state, action) {
+      const event = state.items.find((item) => item.id === action.payload)
+      if (!event) return
+      event.views = Number(event.views || 0) + 1
+    },
     updateRegistrationStatus(state, action) {
       const registration = state.registrations.find((item) => item.id === action.payload.id)
       if (!registration) return
@@ -156,6 +161,7 @@ export const {
   deleteEvent,
   duplicateEvent,
   expireEvents,
+  incrementEventView,
   moderateEvent,
   updateEvent,
   registerForEvent,

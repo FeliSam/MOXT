@@ -8,18 +8,24 @@ import {
 import {
   selectPlatformPair,
 } from '../admin/platformRatesSlice'
-import { FALLBACK_RATES } from './transferConfig'
+import { FALLBACK_RUB_TO_CURRENCY } from './transferConfig'
 
-const XOF_FALLBACK = {
-  rubToOrigin: FALLBACK_RATES.RU_TO_BJ.rawRate,
-  originToRub: FALLBACK_RATES.BJ_TO_RU.rawRate,
-}
-
+/**
+ * Repli quand l'API de change est injoignable. Couvre désormais toutes les
+ * devises des corridors ouverts (et plus seulement le XOF) : sans cela, un
+ * utilisateur nigérian ou kényan se retrouvait sans aucun taux affiché.
+ */
 function fallbackFor(currency) {
-  if (currency === 'XOF') {
-    return { ...XOF_FALLBACK, date: null, source: 'Taux local de secours' }
+  const rubToOrigin = FALLBACK_RUB_TO_CURRENCY[currency]
+  if (!rubToOrigin) {
+    return { rubToOrigin: null, originToRub: null, date: null, source: null }
   }
-  return { rubToOrigin: null, originToRub: null, date: null, source: null }
+  return {
+    rubToOrigin,
+    originToRub: Number((1 / rubToOrigin).toFixed(6)),
+    date: null,
+    source: 'Taux local de secours',
+  }
 }
 
 function toShape(pairResult, currency) {

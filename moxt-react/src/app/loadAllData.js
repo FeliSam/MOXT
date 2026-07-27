@@ -189,7 +189,7 @@ export const loadAllData = createAsyncThunk(
       notificationsRes,
       postsRes,
       statusesRes,
-      helpArticlesRes,
+      _helpArticlesRes,
       supportTicketsRes,
       recipientAddressesRes,
     ] = await Promise.all([

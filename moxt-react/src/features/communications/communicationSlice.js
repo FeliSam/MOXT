@@ -17,7 +17,6 @@ import { attachmentPreviewLabel } from './attachmentUtils'
 import { messagesText } from './messagesI18n'
 
 const PENDING_MESSAGE_MS = 15000
-const PERSISTED_MESSAGES_LIMIT = 200
 const MESSAGE_FETCH_LIMIT = 200
 const MESSAGE_INCREMENTAL_LIMIT = 100
 const MESSAGE_OLDER_LIMIT = 100

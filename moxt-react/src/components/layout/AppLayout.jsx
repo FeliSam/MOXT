@@ -26,7 +26,6 @@ export function AppLayout({ children }) {
   const dispatch = useDispatch()
   const location = useLocation()
   const [searchParams] = useSearchParams()
-  const user = useSelector((state) => state.auth.user)
   const sidebarOpen = useSelector((state) => state.ui.sidebarOpen)
   /** Set by MessagesPage when a thread is open on a small viewport */
   const messageThreadImmersive = useSelector((state) => state.ui.messageThreadImmersive)

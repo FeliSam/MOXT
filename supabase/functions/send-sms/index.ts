@@ -16,6 +16,42 @@ function json(body: Record<string, unknown>, status = 200) {
   })
 }
 
+/** Plafond serveur : nb max de SMS par numéro sur 24 h (coût facturé). */
+const SMS_MAX_PER_DAY = Number(Deno.env.get('SMS_MAX_PER_DAY') || '10')
+
+/**
+ * Garde-fou de coût, côté serveur. Le plafond client (localStorage) se
+ * contourne en vidant le cache ou en changeant de navigateur ; celui-ci est
+ * tenu en base et s'applique quoi qu'il arrive.
+ *
+ * En cas d'indisponibilité de la base, on laisse passer : mieux vaut un SMS de
+ * trop qu'un utilisateur légitime bloqué hors de son compte.
+ */
+async function smsSendAllowed(phone: string): Promise<boolean> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  if (!supabaseUrl || !serviceRoleKey) return true
+
+  try {
+    const admin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
+    const { data, error } = await admin.rpc('moxt_sms_send_allowed', {
+      p_phone: phone,
+      p_max: SMS_MAX_PER_DAY,
+      p_window_hours: 24,
+    })
+    if (error) {
+      console.error('[send-sms] cap check failed:', error.message)
+      return true
+    }
+    return data !== false
+  } catch (error) {
+    console.error('[send-sms] cap check error:', error)
+    return true
+  }
+}
+
 function normalizeE164(phone = '') {
   const digits = String(phone).replace(/\D/g, '')
   if (!digits) return ''
@@ -780,6 +816,20 @@ Deno.serve(async (req) => {
   const otp = sms?.otp
   if (!phone || !otp) {
     return json({ error: 'Payload SMS incomplet.' }, 400)
+  }
+
+  if (!(await smsSendAllowed(phone))) {
+    console.warn('[send-sms] plafond journalier atteint pour ce numéro')
+    return json(
+      {
+        error: {
+          http_code: 429,
+          message:
+            'Trop de SMS demandés pour ce numéro aujourd’hui. Réessayez demain ou connectez-vous par e-mail.',
+        },
+      },
+      200,
+    )
   }
 
   try {

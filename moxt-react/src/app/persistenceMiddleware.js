@@ -107,7 +107,9 @@ function clearAllPersistedKeys() {
       delete timers[key]
       try {
         localStorage.removeItem(key)
-      } catch {}
+      } catch {
+        // Quota/mode privé : la clé disparaîtra au prochain nettoyage.
+      }
     })
 }
 

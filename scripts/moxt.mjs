@@ -80,6 +80,25 @@ async function ship() {
   console.log('  MOXT ship — commit · push · deploy')
   console.log('══════════════════════════════════════')
 
+  // Garde-fou : rien ne part en production sans lint + tests au vert.
+  // `--skip-checks` reste possible pour un correctif d'urgence assumé.
+  if (!argv.includes('--skip-checks')) {
+    log('Vérifications', 'lint + tests (bloquant)')
+    if (run('npm', ['run', 'web:lint']) !== 0) {
+      console.error('\n✗ ESLint a échoué — déploiement annulé.')
+      console.error('  Corrigez les erreurs, ou forcez avec --skip-checks.')
+      process.exit(1)
+    }
+    if (run('npm', ['run', 'test']) !== 0) {
+      console.error('\n✗ Tests en échec — déploiement annulé.')
+      console.error('  Corrigez les tests, ou forcez avec --skip-checks.')
+      process.exit(1)
+    }
+    console.log('  ✓ lint + tests au vert')
+  } else {
+    console.log('\n⚠ Vérifications ignorées (--skip-checks)')
+  }
+
   if (!skipCommit && dirty) {
     if (!message) {
       console.error('\n✗ Changements non commités. Ajoutez -m "message" ou MOXT_COMMIT_MSG.')

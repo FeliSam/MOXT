@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ImageLightbox } from '../components/ui/ImageLightbox'
 import {
   FiAlertTriangle,
@@ -28,7 +28,12 @@ import { DetailFloatingActions } from '../components/ui/DetailFloatingActions'
 import { FavoriteButton } from '../features/account/FavoriteButton'
 import { ContactButton } from '../features/communications/ContactButton'
 import { openRelatedConversation } from '../features/communications/openRelatedConversation'
-import { cancelRegistration, registerForEvent, reportEvent } from '../features/events/eventSlice'
+import {
+  cancelRegistration,
+  incrementEventView,
+  registerForEvent,
+  reportEvent,
+} from '../features/events/eventSlice'
 import { EventParticipantsSection } from '../features/events/EventParticipantsSection'
 import {
   eventPublisherTypeKey,
@@ -55,6 +60,11 @@ export function EventDetailPage() {
   const { eventId } = useParams()
   const user = useSelector((state) => state.auth.user)
   const event = useSelector((state) => state.events.items.find((item) => item.id === eventId))
+
+  useEffect(() => {
+    if (eventId) dispatch(incrementEventView(eventId))
+  }, [dispatch, eventId])
+
   const registrations = useSelector((state) =>
     state.events.registrations.filter((item) => item.eventId === eventId),
   )

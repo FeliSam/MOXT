@@ -119,6 +119,7 @@ export function MyParcelPublicationCard({
       meta={[
         parcel.departureDate ? t('parcels.my.departure', { date: parcel.departureDate }) : null,
         parcel.remainingKg != null ? t('parcels.my.remainingKg', { kg: parcel.remainingKg }) : null,
+        readOnly ? null : t('marketplace.common.views', { count: parcel.views || 0 }),
       ].filter(Boolean)}
       path={`/parcels/${parcel.id}`}
       guestMode={guestMode}
@@ -180,6 +181,7 @@ export function MyJobPublicationCard({
         ownerDisplayName || job.publisherName,
         job.location,
         job.contractType ? jobContractLabel(t, job.contractType) : null,
+        readOnly ? null : t('marketplace.common.views', { count: job.views || 0 }),
       ].filter(Boolean)}
       path={`/jobs/${job.id}`}
       guestMode={guestMode}
@@ -238,7 +240,11 @@ export function MyEventPublicationCard({
       subtitle={
         event.price > 0 ? formatMoney(event.price, event.currency) : p3('publications.cards.free')
       }
-      meta={[event.city, event.startAt || event.date].filter(Boolean)}
+      meta={[
+        event.city,
+        event.startAt || event.date,
+        readOnly ? null : t('marketplace.common.views', { count: event.views || 0 }),
+      ].filter(Boolean)}
       path={`/events/${event.id}`}
       guestMode={guestMode}
       onGuestInteract={onGuestInteract}

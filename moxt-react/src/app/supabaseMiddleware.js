@@ -154,7 +154,6 @@ function toSnake(obj) {
     documentIds: 'document_ids',
     deletedAt: 'deleted_at',
     deletedByUser: 'deleted_by_user',
-    receivedAmount: 'received_amount',
     receivedMethod: 'received_method',
     receivedProof: 'received_proof',
     receivedAt: 'received_at',
@@ -502,6 +501,25 @@ const handlers = {
     if (error) throw error
   },
 
+  // ── Compteurs de vues ─────────────────────────────────────────────────────
+  // Incrément atomique côté serveur (RPC) : un simple update lu-puis-écrit
+  // perdrait des vues concurrentes. Le RPC ignore aussi les vues de l'auteur.
+  'marketplace/incrementListingView': async (payload) => {
+    await supabase.rpc('moxt_increment_view', {
+      p_entity_type: 'listing',
+      p_entity_id: payload,
+    })
+  },
+  'jobs/incrementJobView': async (payload) => {
+    await supabase.rpc('moxt_increment_view', { p_entity_type: 'job', p_entity_id: payload })
+  },
+  'parcels/incrementParcelView': async (payload) => {
+    await supabase.rpc('moxt_increment_view', { p_entity_type: 'parcel', p_entity_id: payload })
+  },
+  'events/incrementEventView': async (payload) => {
+    await supabase.rpc('moxt_increment_view', { p_entity_type: 'event', p_entity_id: payload })
+  },
+
   // ── Litiges ───────────────────────────────────────────────────────────────────
   'disputes/openDispute': async (payload, state) => {
     await syncActiveDispute(state, payload)
@@ -638,7 +656,7 @@ const handlers = {
 
   // ── Messagerie ────────────────────────────────────────────────────────────────
   'communications/createConversation': async (payload) => {
-    const { messages, messagesLoaded, drafts: _drafts, ...conv } = payload
+    const { messages, messagesLoaded: _messagesLoaded, drafts: _drafts, ...conv } = payload
     const canonicalId = await persistConversationRemote(conv)
     if (messages?.length) {
       for (const msg of messages) {
@@ -811,6 +829,7 @@ const handlers = {
       if (/could not find.*['"]payload['"].*transfers|payload.*transfers.*schema cache/i.test(message)) {
         throw new Error(
           "La colonne transfers.payload manque encore dans Supabase. Appliquez la migration Transferts, puis réessayez.",
+          { cause: error },
         )
       }
       throw error
@@ -1493,7 +1512,7 @@ const handlers = {
     await authService.cancelAccountDeletion(payload)
     return payload
   },
-  'administration/updateUserRole': async (payload, state) => {
+  'administration/updateUserRole': async (payload, _state) => {
     const privileged = payload.role === 'admin' || payload.role === 'superadmin'
     // Privileged promotions are persisted in promoteAdminUtils (edge) before Redux updates.
     if (privileged) {

@@ -37,7 +37,7 @@ const { authService, translateAuthError } = await import('./authService')
 const { __resetOtpSendCooldownForTests, __resetIdentityAvailabilityCacheForTests } = await import(
   '@moxt/shared/auth/createAuthService.js'
 )
-const { OTP_SEND_CAP_ENABLED, OTP_RESEND_COOLDOWN_SECONDS } = await import(
+const { OTP_SEND_CAP_ENABLED } = await import(
   '@moxt/shared/auth/otpCooldown.js',
 )
 

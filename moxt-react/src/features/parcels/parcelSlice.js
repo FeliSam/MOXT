@@ -128,6 +128,11 @@ const parcelSlice = createSlice({
       parcel.status = action.payload.status
       parcel.updatedAt = new Date().toISOString()
     },
+    incrementParcelView(state, action) {
+      const parcel = state.items.find((item) => item.id === action.payload)
+      if (!parcel) return
+      parcel.views = Number(parcel.views || 0) + 1
+    },
     updateParcel(state, action) {
       const parcel = state.items.find((item) => item.id === action.payload.id)
       if (!parcel || parcel.ownerId !== action.payload.ownerId) return
@@ -172,6 +177,7 @@ export const {
   cancelParcelRequest,
   deleteParcel,
   duplicateParcel,
+  incrementParcelView,
   requestParcelReservation,
   reserveParcel,
   updateParcel,

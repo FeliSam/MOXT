@@ -109,6 +109,11 @@ const jobSlice = createSlice({
       if (!job) return
       job.status = action.payload.status
     },
+    incrementJobView(state, action) {
+      const job = state.items.find((item) => item.id === action.payload)
+      if (!job) return
+      job.views = Number(job.views || 0) + 1
+    },
     updateApplicationStatus(state, action) {
       const application = state.applications.find((item) => item.id === action.payload.id)
       if (!application) return
@@ -165,6 +170,7 @@ export const {
   deleteJob,
   duplicateJob,
   expireJobs,
+  incrementJobView,
   moderateJob,
   updateJob,
   reportJob,

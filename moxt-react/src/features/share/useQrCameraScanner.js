@@ -20,7 +20,12 @@ export function useQrCameraScanner({ enabled, videoRef, onDecode }) {
   const onDecodeRef = useRef(onDecode)
   const [status, setStatus] = useState('idle')
 
-  onDecodeRef.current = onDecode
+  // Synchronisé après commit plutôt que pendant le rendu : muter une ref en
+  // cours de rendu est incompatible avec le rendu concurrent. Le callback
+  // n'est lu que depuis le décodeur, jamais pendant le rendu.
+  useEffect(() => {
+    onDecodeRef.current = onDecode
+  }, [onDecode])
 
   const stop = useCallback(() => {
     sessionRef.current += 1

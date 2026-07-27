@@ -5,7 +5,7 @@ import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { searchTypeMeta } from '../../config/searchTypes'
 import { useLanguage } from '../../contexts/useLanguage'
-import { filterSearchIndex, searchGlobalResults, selectSearchIndex, selectSubscriptionNetworkProfiles } from '../../features/searchSelectors'
+import { searchGlobalResults, selectSearchIndex, selectSubscriptionNetworkProfiles } from '../../features/searchSelectors'
 import { Badge } from '../ui/Badge'
 
 export function GlobalSearch() {

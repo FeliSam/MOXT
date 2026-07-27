@@ -19,7 +19,11 @@ const SPLASH_LOCK_CLASS = 'moxt-splash-lock'
 export function MoxtLoadingScreen({ autoRetry = true, onStuck } = {}) {
   const { t } = useLanguage()
   const onStuckRef = useRef(onStuck)
-  onStuckRef.current = onStuck
+  // Muter une ref pendant le rendu n'est pas sûr (rendu concurrent) : on
+  // synchronise après commit. Le callback n'est lu que dans un timeout.
+  useEffect(() => {
+    onStuckRef.current = onStuck
+  }, [onStuck])
   const firedRef = useRef(false)
 
   useEffect(() => {

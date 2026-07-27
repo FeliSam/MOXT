@@ -20,8 +20,9 @@ export function parseMoxtScanTarget(raw) {
     }
   }
 
-  let pathname = value
-  let search = ''
+  // Toujours affectées dans les deux branches ci-dessous.
+  let pathname
+  let search
 
   if (value.startsWith('/')) {
     const split = value.split('?')

@@ -14,8 +14,3 @@ export function avatarDisplayUrl(url, { width = 96, height } = {}) {
   return url
 }
 
-const SIZE_PX = {
-  sm: 72,
-  md: 96,
-  lg: 128,
-}

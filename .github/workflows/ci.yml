@@ -2,9 +2,11 @@ name: CI — MOXT
 
 on:
   push:
-    branches: [main, develop]
+    # Les branches de travail sont couvertes : le déploiement se fait souvent
+    # depuis une branche `fix/**` ou `feat/**`, pas seulement depuis main.
+    branches: [main, develop, 'fix/**', 'feat/**', 'chore/**']
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 permissions:
   contents: read
@@ -19,11 +21,25 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: ESLint — Web
+        run: npm run web:lint
       - name: TypeScript — Web
         run: npm run web:build
       - name: TypeScript — Mobile
         working-directory: apps/mobile
         run: npx tsc --noEmit
+
+  test-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Tests web (Vitest)
+        run: npm run web:test
 
   test-shared:
     runs-on: ubuntu-latest
