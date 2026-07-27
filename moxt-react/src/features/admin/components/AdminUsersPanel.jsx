@@ -25,6 +25,7 @@ export function AdminUsersPanel({ actorRole, dispatch, onSuspendUser, setSelecte
   const onlineMap = useSelector((state) => state.presence?.online || {})
   const [onlineOnly, setOnlineOnly] = useState(false)
   const [countryFilter, setCountryFilter] = useState('all')
+  const [cityFilter, setCityFilter] = useState('all')
   const [sortBy, setSortBy] = useState('newest')
   const [pendingRoleChange, setPendingRoleChange] = useState(null)
   const [confirmingPassword, setConfirmingPassword] = useState(false)
@@ -40,10 +41,16 @@ export function AdminUsersPanel({ actorRole, dispatch, onSuspendUser, setSelecte
     return countries.filter((country) => codes.has(country.code))
   }, [countries, users])
 
+  const citiesInUse = useMemo(
+    () => [...new Set(users.map((user) => user.city).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
+    [users],
+  )
+
   const visibleUsers = useMemo(() => {
     let items = users
     if (onlineOnly) items = items.filter((user) => Boolean(onlineMap[user.id]))
     if (countryFilter !== 'all') items = items.filter((user) => user.originCountry === countryFilter)
+    if (cityFilter !== 'all') items = items.filter((user) => user.city === cityFilter)
     items = [...items].sort((a, b) => {
       if (sortBy === 'name') {
         return `${a.firstName || ''} ${a.lastName || ''}`.localeCompare(
@@ -55,7 +62,7 @@ export function AdminUsersPanel({ actorRole, dispatch, onSuspendUser, setSelecte
       return sortBy === 'oldest' ? at - bt : bt - at
     })
     return items
-  }, [countryFilter, onlineMap, onlineOnly, sortBy, users])
+  }, [cityFilter, countryFilter, onlineMap, onlineOnly, sortBy, users])
 
   function requestRoleChange(user, role) {
     if (role === user.role) return
@@ -121,6 +128,19 @@ export function AdminUsersPanel({ actorRole, dispatch, onSuspendUser, setSelecte
           {countriesInUse.map((country) => (
             <option key={country.code} value={country.code}>
               {flagEmoji(country.code)} {country.name}
+            </option>
+          ))}
+        </Select>
+        <Select
+          id="admin-users-city-filter"
+          wrapperClass="min-w-0 flex-1 sm:max-w-56"
+          value={cityFilter}
+          onChange={(event) => setCityFilter(event.target.value)}
+        >
+          <option value="all">{adminText(t, 'admin.users.cityFilterAll')}</option>
+          {citiesInUse.map((city) => (
+            <option key={city} value={city}>
+              {city}
             </option>
           ))}
         </Select>

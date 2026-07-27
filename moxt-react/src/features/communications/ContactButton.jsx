@@ -23,6 +23,7 @@ export function ContactButton({
   initialMessage,
   children,
   showIcon = true,
+  iconOnly = false,
   asLink = false,
   variant = 'primary',
   onContact,
@@ -99,6 +100,25 @@ export function ContactButton({
         >
           {contactLabel}
         </button>
+      </>
+    )
+  }
+
+  // Mode icône seule : le libellé passe en aria-label/title pour rester
+  // accessible malgré l'absence de texte visible.
+  if (iconOnly) {
+    return (
+      <>
+        {burstNode}
+        <Button
+          className={className}
+          disabled={loading}
+          icon={FiMessageSquare}
+          variant={variant}
+          aria-label={contactLabel}
+          title={contactLabel}
+          onClick={handleContact}
+        />
       </>
     )
   }

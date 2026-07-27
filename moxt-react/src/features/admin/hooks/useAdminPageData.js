@@ -82,7 +82,13 @@ export function useAdminPageData(query, statusFilter, contentView) {
     if (statusFilter !== 'all') items = items.filter((i) => i.role === statusFilter || i.status === statusFilter)
     if (query) {
       const q = query.toLowerCase()
-      items = items.filter((i) => `${i.firstName} ${i.lastName} ${i.email} ${i.role}`.toLowerCase().includes(q))
+      // Ville et pays d'origine inclus : l'admin cherche souvent « Moscou »
+      // ou « Kazan » plutôt qu'un nom précis.
+      items = items.filter((i) =>
+        `${i.firstName} ${i.lastName} ${i.email} ${i.role} ${i.city || ''} ${i.originCountry || ''}`
+          .toLowerCase()
+          .includes(q),
+      )
     }
     return items
   }, [query, statusFilter, state.administration.users])

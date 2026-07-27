@@ -428,9 +428,12 @@ html.capacitor-native .bottom-nav-shell {
   bottom: var(--bottom-nav-offset);
   padding: 0.25rem;
   padding-bottom: var(--bottom-nav-pad);
-  /* Couche GPU légère sans will-change (évite les glitches de détachement
-     pendant le momentum scroll iOS). La barre est aussi portalisée sur body. */
-  transform: translate3d(0, 0, 0);
+  /* `position: fixed` se cale sur le LAYOUT viewport, pas sur la zone visible.
+     Quand la barre d'URL mobile se rétracte/réapparaît, l'écart entre les deux
+     fait « décoller » la barre. `--viewport-bottom-gap` (mesuré via l'API
+     VisualViewport dans useKeyboardInset) le compense en temps réel.
+     Le translate3d garde en prime la couche GPU contre le momentum scroll iOS. */
+  transform: translate3d(0, calc(-1 * var(--viewport-bottom-gap, 0px)), 0);
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
 }

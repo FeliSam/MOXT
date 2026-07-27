@@ -10,7 +10,6 @@ import {
   FiMaximize2,
   FiPackage,
   FiPercent,
-  FiShare2,
   FiShield,
   FiShoppingBag,
 } from 'react-icons/fi'
@@ -172,30 +171,6 @@ export function ListingDetailPage() {
     setSelectedImage(images[bounded])
   }
 
-  async function shareListing() {
-    const shareData = { title: listing.title, url: window.location.href }
-    try {
-      if (navigator.share) await navigator.share(shareData)
-      else await navigator.clipboard?.writeText(window.location.href)
-      dispatch(incrementListingShare(listing.id))
-      dispatch(
-        addToast({
-          title: mt('marketplace.detail.shareSuccessTitle'),
-          message: mt('marketplace.detail.shareSuccessBody'),
-          tone: 'success',
-        }),
-      )
-    } catch {
-      dispatch(
-        addToast({
-          title: mt('marketplace.detail.shareCancelledTitle'),
-          message: mt('marketplace.detail.shareCancelledBody'),
-          tone: 'info',
-        }),
-      )
-    }
-  }
-
   function submitQuestion(event) {
     event.preventDefault()
     if (question.trim().length < 5) return
@@ -225,9 +200,6 @@ export function ListingDetailPage() {
         actions={
           <>
             <ReshareButton sourceType="listing" sourceId={listing.id} sourceData={listing} />
-            <Button variant="secondary" icon={FiShare2} onClick={shareListing}>
-              {mt('marketplace.detail.share')}
-            </Button>
             <BackButton fallback="/marketplace" />
           </>
         }
@@ -529,6 +501,7 @@ export function ListingDetailPage() {
         title={listing.title}
         floatBottomClass={mobileFloatBottom}
         onContact={() => dispatch(incrementListingContact(listing.id))}
+        onShared={() => dispatch(incrementListingShare(listing.id))}
       />
 
       <Modal open={imageOpen} onClose={() => setImageOpen(false)} title={mt('marketplace.detail.gallery')} size="wide">

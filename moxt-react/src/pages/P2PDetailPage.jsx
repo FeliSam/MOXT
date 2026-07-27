@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
 import { BackButton } from '../components/ui/BackButton'
+import { DetailFloatingActions } from '../components/ui/DetailFloatingActions'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import {
@@ -179,6 +180,19 @@ export function P2PDetailPage() {
           </div>
         </div>
       </Modal>
+
+      <DetailFloatingActions
+        isOwner={offer.ownerId === user.id}
+        ownerId={offer.ownerId}
+        entity={offer}
+        relatedId={offer.id}
+        relatedPath={`/p2p/${offer.id}`}
+        relatedType="p2p"
+        title={t('p2p.detail.relatedTitle', {
+          from: offer.fromCurrency,
+          to: offer.toCurrency,
+        })}
+      />
     </div>
   )
 }

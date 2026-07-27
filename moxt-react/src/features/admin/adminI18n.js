@@ -367,6 +367,7 @@ export const ADMIN_FR_SOURCES = {
   'admin.users.citySaved': 'Ville mise à jour',
   'admin.users.countryFilterLabel': "Filtrer par pays d'origine",
   'admin.users.countryFilterAll': 'Tous les pays',
+  'admin.users.cityFilterAll': 'Toutes les villes',
   'admin.users.createdAt': 'Inscrit le {date}',
   'admin.users.sortNewest': 'Plus récents',
   'admin.users.sortOldest': 'Plus anciens',
