@@ -1223,6 +1223,9 @@ export const ru = {
     confirm: "Подтвердить",
     continue: "Продолжить",
     loading: "Загрузка…",
+    passwordConfirm: {
+      label: "Подтвердите паролем",
+    },
     pullToRefresh: {
       pull: "Потяните для обновления",
       release: "Отпустите для обновления",

@@ -362,6 +362,17 @@ export const ADMIN_FR_SOURCES = {
   'admin.users.originSaved': "Pays d'origine mis a jour",
   'admin.users.editCity': 'Modifier la ville (Russie)',
   'admin.users.citySaved': 'Ville mise à jour',
+  'admin.users.countryFilterLabel': "Filtrer par pays d'origine",
+  'admin.users.countryFilterAll': 'Tous les pays',
+  'admin.users.createdAt': 'Inscrit le {date}',
+  'admin.users.sortNewest': 'Plus récents',
+  'admin.users.sortOldest': 'Plus anciens',
+  'admin.users.sortNameAZ': 'Nom (A→Z)',
+  'admin.users.roleChange.title': 'Confirmer le changement de rôle',
+  'admin.users.roleChange.description':
+    'Vous êtes sur le point de changer le rôle de {name} de « {fromRole} » à « {toRole} ». Confirmez avec votre mot de passe.',
+  'admin.users.roleChange.confirmLabel': 'Changer le rôle',
+  'admin.users.roleChange.wrongPassword': 'Mot de passe incorrect.',
   'admin.actions.save': 'Enregistrer',
 
   // ── verifications panel ─────────────────────────────────────────────────

@@ -1222,6 +1222,9 @@ export const es = {
     confirm: "Confirmar",
     continue: "Continuar",
     loading: "Cargando…",
+    passwordConfirm: {
+      label: "Confirma con tu contraseña",
+    },
     pullToRefresh: {
       pull: "Puxe para atualizar",
       release: "Solte para atualizar",

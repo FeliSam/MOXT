@@ -1115,6 +1115,9 @@ export const pt = {
     confirm: "Confirmar",
     continue: "Continuar",
     loading: "A carregar…",
+    passwordConfirm: {
+      label: "Confirme com a sua palavra-passe",
+    },
     edit: "Editar",
     delete: "Eliminar",
     add: "Adicionar",

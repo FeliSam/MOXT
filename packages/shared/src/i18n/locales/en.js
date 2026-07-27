@@ -1223,6 +1223,9 @@ export const en = {
     confirm: "Confirm",
     continue: "Continue",
     loading: "Loading…",
+    passwordConfirm: {
+      label: "Confirm with your password",
+    },
     pullToRefresh: {
       pull: "Pull to refresh",
       release: "Release to refresh",
