@@ -940,7 +940,7 @@ export const interactionMiddleware = (store) => {
       action.payload,
       'post',
       appText('notificationsFeed.fanOutPost'),
-      () => '/news',
+      (id) => `/news?post=${id}`,
       'high',
     )
   }

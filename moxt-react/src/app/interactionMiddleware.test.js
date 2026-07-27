@@ -5,7 +5,7 @@ import communicationsReducer, { sendMessage } from '../features/communications/c
 import financeReducer from '../features/finance/financeSlice'
 import jobsReducer, { updateApplicationStatus } from '../features/jobs/jobSlice'
 import parcelsReducer, { updateParcelRequestStatus } from '../features/parcels/parcelSlice'
-import postsReducer from '../features/posts/postsSlice'
+import postsReducer, { createPost } from '../features/posts/postsSlice'
 import transfersReducer, {
   createTransfer,
   declarePayment,
@@ -64,6 +64,46 @@ describe('interactionMiddleware', () => {
     )
 
     expect(store.getState().communications.notifications).toHaveLength(0)
+  })
+
+  it('notifie les abonnés d’un nouveau post avec un lien précis vers ce post', () => {
+    const store = configureStore({
+      reducer: {
+        auth: () => ({ user: { id: 'author1' } }),
+        communications: communicationsReducer,
+        ui: uiReducer,
+        posts: postsReducer,
+        jobs: () => ({ applications: [], items: [] }),
+        events: () => ({ registrations: [], items: [] }),
+        parcels: () => ({ items: [] }),
+        businesses: () => ({ items: [] }),
+        marketplace: () => ({ items: [] }),
+        finance: () => ({ payments: [], receipts: [], walletEntries: [] }),
+        account: () => ({
+          subscriptions: [
+            { userId: 'sub1', publisherType: 'user', publisherId: 'author1', notifyPref: 'all' },
+          ],
+        }),
+      },
+      preloadedState: {
+        communications: { conversations: [], notifications: [], support: [] },
+      },
+      middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(interactionMiddleware),
+    })
+
+    store.dispatch(
+      createPost({
+        id: 'POST-1',
+        authorId: 'author1',
+        authorName: 'Amina',
+        message: 'Nouvelle publication',
+      }),
+    )
+
+    const notifications = store.getState().communications.notifications
+    expect(notifications).toHaveLength(1)
+    expect(notifications[0].userId).toBe('sub1')
+    expect(notifications[0].link).toBe('/news?post=POST-1')
   })
 
   it('notifie le candidat quand son statut change', () => {

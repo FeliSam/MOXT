@@ -4227,3 +4227,17 @@ input:-webkit-autofill {
 input:not(:-webkit-autofill) {
   animation-name: onAutoFillCancel;
 }
+
+/* Mise en évidence temporaire d'une publication ciblée depuis une notification
+   (?post=id) : anneau qui s'estompe, pour repérer visuellement l'élément visé. */
+@keyframes news-post-highlight-pulse {
+  0% {
+    box-shadow: 0 0 0 3px var(--app-teal, #12bfa3);
+  }
+  100% {
+    box-shadow: 0 0 0 3px transparent;
+  }
+}
+.news-post-highlight {
+  animation: news-post-highlight-pulse 2.4s ease-out;
+}

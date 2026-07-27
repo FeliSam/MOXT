@@ -26,7 +26,9 @@ import { getConversationPeer } from '../../features/communications/conversationD
 import {
   buildConversationTimeline,
   buildContextPreview,
+  contextHasMessages,
   findRelatedContextById,
+  normalizeRelatedContexts,
 } from '../../features/communications/conversationTimeline'
 import { messagesText, relatedOptionLabel } from '../../features/communications/messagesI18n'
 import { resolveRelatedSnapshot } from '../../features/communications/relatedSnapshot'
@@ -108,13 +110,28 @@ export function ConversationPanel({
   const relatedPreview = useSelector((state) => resolveRelatedSnapshot(state, active))
   const relatedMeta = RELATED_CONTENT_META[relatedPreview?.type || active.relatedType] || RELATED_CONTENT_META.general
   const RelatedIcon = relatedMeta.icon
+  // Le bandeau "pourquoi cette conversation" ne doit apparaître que si un
+  // message a effectivement été échangé à propos du contexte le plus récent
+  // — sinon un simple clic sur "Contacter" (sans rien écrire) l'affiche à tort.
+  const latestContext = useMemo(() => {
+    const contexts = normalizeRelatedContexts(active)
+    if (!contexts.length) return null
+    return contexts.slice().sort((a, b) => new Date(a.introducedAt) - new Date(b.introducedAt)).at(-1)
+  }, [active])
+  const showRelatedContext =
+    Boolean(relatedPreview?.path) &&
+    (latestContext ? contextHasMessages(latestContext, active) : active.messages?.length > 0)
   // Horodatage de secours stable (calculé une seule fois, pas à chaque rendu)
   // pour l'entrée de contexte synthétique quand ni createdAt ni updatedAt n'existent.
   const [fallbackTimelineAt] = useState(() => Date.now())
   const timeline = useMemo(() => {
     const items = buildConversationTimeline(active, user.id)
-    if (items.some((item) => item.kind === 'related')) return items
+    // Repli légitime uniquement quand aucune donnée de contexte n'existe du tout
+    // (ni relatedContexts, ni champs legacy) mais que le résolveur live en trouve
+    // une — jamais pour recontourner le filtre "a des messages" ci-dessus.
+    if (normalizeRelatedContexts(active).length > 0) return items
     if (!relatedPreview?.path) return items
+    if (!(active.messages?.length > 0)) return items
     return [
       {
         kind: 'related',
@@ -319,7 +336,7 @@ export function ConversationPanel({
         >
           <FiSearch />
         </button>
-        {(active.relatedPath || relatedPreview?.path) ? (
+        {showRelatedContext ? (
           <>
             <Link
               className="message-touch-target grid size-9 shrink-0 place-items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-brand-700 transition hover:border-brand-200 hover:bg-[var(--app-accent-soft)] lg:hidden dark:text-brand-300"
@@ -426,7 +443,7 @@ export function ConversationPanel({
         </div>
       ) : null}
 
-      {relatedPreview?.path ? (
+      {showRelatedContext ? (
         <div className="message-related-sticky shrink-0 border-b border-[var(--app-border)]/60 bg-[var(--app-surface)]/95 px-3 py-2 backdrop-blur-xl sm:px-4">
           <Link
             to={relatedPreview.path}
