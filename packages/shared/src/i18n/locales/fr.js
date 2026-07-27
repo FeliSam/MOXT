@@ -4887,6 +4887,9 @@ export const fr = {
     composer: {
       title: "Nouveau statut",
       description: "Visible 7 jours par la communauté.",
+      officialTitle: "Nouveau statut officiel",
+      officialDescription: "Publié au nom de MOXT, visible 7 jours par la communauté.",
+      postAsPersonal: "Personnel",
       captionPlaceholder: "Ajouter une légende (optionnel)…",
       publish: "Publier le statut",
       publishing: "Publication…",

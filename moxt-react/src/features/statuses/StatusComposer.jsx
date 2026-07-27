@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { FiX } from 'react-icons/fi'
+import { HiOutlineBuildingOffice2, HiOutlineUser } from 'react-icons/hi2'
 import { useDispatch, useSelector } from 'react-redux'
 import { Button } from '../../components/ui/Button'
 import { PosterUploader } from '../../components/ui/PosterUploader'
@@ -19,10 +20,16 @@ export function StatusComposer({ onClose, officialIdentity }) {
   const dispatch = useDispatch()
   const { t } = useLanguage()
   const user = useSelector((s) => s.auth.user)
+  const ownBusiness = useSelector((s) =>
+    (s.businesses?.items ?? []).find((item) => item.ownerId === user.id),
+  )
   const [caption, setCaption] = useState('')
   const [photos, setPhotos] = useState([])
   const [submitting, setSubmitting] = useState(false)
+  const [postAs, setPostAs] = useState('personal')
   const { progress: uploadProgress, track: trackUpload } = useUploadProgress()
+  const canPostAsBusiness = Boolean(ownBusiness) && !officialIdentity
+  const postingAsBusiness = canPostAsBusiness && postAs === 'business'
 
   function addPhotos(files) {
     const added = Array.from(files)
@@ -55,10 +62,17 @@ export function StatusComposer({ onClose, officialIdentity }) {
         createStatus({
           id: statusId,
           authorId: user.id,
-          authorName: officialIdentity ? officialIdentity.name : `${user.firstName} ${user.lastName}`,
+          authorName: officialIdentity
+            ? officialIdentity.name
+            : postingAsBusiness
+              ? ownBusiness.name
+              : `${user.firstName} ${user.lastName}`,
           authorAvatarUrl: officialIdentity
             ? officialIdentity.avatarUrl || null
-            : user.avatarUrl || null,
+            : postingAsBusiness
+              ? ownBusiness.logoUrl || null
+              : user.avatarUrl || null,
+          businessId: postingAsBusiness ? ownBusiness.id : null,
           images: urls,
           caption: caption.trim(),
           isOfficial: officialIdentity ? true : user.role === 'admin' || user.role === 'superadmin',
@@ -119,6 +133,35 @@ export function StatusComposer({ onClose, officialIdentity }) {
             <FiX />
           </button>
         </div>
+
+        {canPostAsBusiness ? (
+          <div className="grid grid-cols-2 gap-2 rounded-2xl bg-[var(--app-surface-muted)] p-1">
+            <button
+              type="button"
+              onClick={() => setPostAs('personal')}
+              className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition ${
+                postAs === 'personal'
+                  ? 'bg-[var(--app-surface)] text-[var(--app-text)] shadow-sm'
+                  : 'text-[var(--app-text-muted)]'
+              }`}
+            >
+              <HiOutlineUser className="shrink-0" />
+              <span className="truncate">{t('status.composer.postAsPersonal')}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPostAs('business')}
+              className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition ${
+                postAs === 'business'
+                  ? 'bg-[var(--app-surface)] text-[var(--app-text)] shadow-sm'
+                  : 'text-[var(--app-text-muted)]'
+              }`}
+            >
+              <HiOutlineBuildingOffice2 className="shrink-0" />
+              <span className="truncate">{ownBusiness.name}</span>
+            </button>
+          </div>
+        ) : null}
 
         <PosterUploader
           photos={photos}

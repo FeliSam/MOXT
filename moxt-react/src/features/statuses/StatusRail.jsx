@@ -8,6 +8,7 @@ import { groupActiveStatusesByAuthor } from './statusSelectors'
 import { useLanguage } from '../../contexts/useLanguage'
 
 function AuthorBubble({ group, onOpen }) {
+  const shapeClass = group.businessId ? 'rounded-2xl' : 'rounded-full'
   return (
     <button
       type="button"
@@ -16,9 +17,15 @@ function AuthorBubble({ group, onOpen }) {
     >
       <StatusRing hasStatus hasUnseen={group.hasUnseen} size={14}>
         {group.authorAvatarUrl ? (
-          <img src={group.authorAvatarUrl} alt="" className="size-12 rounded-full object-cover" />
+          <img
+            src={group.authorAvatarUrl}
+            alt=""
+            className={`size-12 object-cover ${shapeClass}`}
+          />
         ) : (
-          <span className="grid size-12 place-items-center rounded-full bg-brand-600 text-sm font-black text-white">
+          <span
+            className={`grid size-12 place-items-center bg-brand-600 text-sm font-black text-white ${shapeClass}`}
+          >
             {group.authorName?.charAt(0)}
           </span>
         )}
@@ -38,6 +45,9 @@ function AuthorBubble({ group, onOpen }) {
 export function StatusRail({ hideWhenNoCommunity = false }) {
   const { t } = useLanguage()
   const user = useSelector((s) => s.auth.user)
+  const ownBusiness = useSelector((s) =>
+    (s.businesses?.items ?? []).find((item) => item.ownerId === user?.id),
+  )
   const statuses = useSelector((s) => s.statuses?.items ?? [])
   const [viewerIndex, setViewerIndex] = useState(null)
   const [composerOpen, setComposerOpen] = useState(false)
@@ -46,11 +56,15 @@ export function StatusRail({ hideWhenNoCommunity = false }) {
     () => groupActiveStatusesByAuthor(statuses, user?.id),
     [statuses, user?.id],
   )
-  const myGroup = groups.find((g) => g.authorId === user?.id)
-  const officialGroups = groups.filter(
-    (g) => g.isOfficial && g.authorId !== user?.id,
-  )
-  const otherGroups = groups.filter((g) => g.authorId !== user?.id && !g.isOfficial)
+  const myGroup = groups.find((g) => g.authorId === user?.id && !g.businessId)
+  const myBusinessGroup = ownBusiness
+    ? groups.find((g) => g.businessId === ownBusiness.id)
+    : null
+  const isMine = (g) =>
+    (g.authorId === user?.id && !g.businessId) ||
+    (ownBusiness && g.businessId === ownBusiness.id)
+  const officialGroups = groups.filter((g) => g.isOfficial && !isMine(g))
+  const otherGroups = groups.filter((g) => !isMine(g) && !g.isOfficial)
   const hasCommunity = officialGroups.length > 0 || otherGroups.length > 0
 
   if (!user) return null
@@ -60,7 +74,7 @@ export function StatusRail({ hideWhenNoCommunity = false }) {
     <div className="scrollbar-hidden -mx-4 flex touch-pan-x gap-4 overflow-x-auto px-4 py-2 sm:gap-5">
       {officialGroups.map((group) => (
         <AuthorBubble
-          key={group.authorId}
+          key={`${group.authorId}:${group.businessId || ""}`}
           group={group}
           onOpen={() => setViewerIndex(groups.indexOf(group))}
         />
@@ -106,9 +120,16 @@ export function StatusRail({ hideWhenNoCommunity = false }) {
         </span>
       </div>
 
+      {myBusinessGroup ? (
+        <AuthorBubble
+          group={myBusinessGroup}
+          onOpen={() => setViewerIndex(groups.indexOf(myBusinessGroup))}
+        />
+      ) : null}
+
       {otherGroups.map((group) => (
         <AuthorBubble
-          key={group.authorId}
+          key={`${group.authorId}:${group.businessId || ""}`}
           group={group}
           onOpen={() => setViewerIndex(groups.indexOf(group))}
         />

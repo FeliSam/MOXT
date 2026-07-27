@@ -11,14 +11,18 @@ export function groupActiveStatusesByAuthor(statuses, viewerId) {
   const now = Date.now()
   const active = statuses.filter((s) => new Date(s.expiresAt).getTime() > now)
 
+  // Une entreprise publie sous sa propre identité : un même auteur (personne
+  // réelle) peut donc avoir un groupe personnel ET un groupe entreprise
+  // distincts — d'où une clé composée plutôt que le seul authorId.
   const byAuthor = new Map()
   for (const status of active) {
-    const key = status.authorId
+    const key = `${status.authorId}:${status.businessId || ''}`
     if (!byAuthor.has(key)) {
       byAuthor.set(key, {
         authorId: status.authorId,
         authorName: status.authorName,
         authorAvatarUrl: status.authorAvatarUrl,
+        businessId: status.businessId || null,
         items: [],
       })
     }
@@ -37,8 +41,9 @@ export function groupActiveStatusesByAuthor(statuses, viewerId) {
 
   groups.sort((a, b) => {
     if (a.isOfficial !== b.isOfficial) return a.isOfficial ? -1 : 1
-    if (a.authorId === viewerId) return -1
-    if (b.authorId === viewerId) return 1
+    const aMine = a.authorId === viewerId && !a.businessId
+    const bMine = b.authorId === viewerId && !b.businessId
+    if (aMine !== bMine) return aMine ? -1 : 1
     if (a.hasUnseen !== b.hasUnseen) return a.hasUnseen ? -1 : 1
     return new Date(b.latestCreatedAt).getTime() - new Date(a.latestCreatedAt).getTime()
   })

@@ -4911,6 +4911,9 @@ export const en = {
     composer: {
       title: "New status",
       description: "Visible to the community for 7 days.",
+      officialTitle: "New official status",
+      officialDescription: "Published on behalf of MOXT, visible to the community for 7 days.",
+      postAsPersonal: "Personal",
       captionPlaceholder: "Add a caption (optional)…",
       publish: "Post status",
       publishing: "Posting…",

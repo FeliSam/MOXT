@@ -4910,6 +4910,9 @@ export const ru = {
     composer: {
       title: "Новый статус",
       description: "Виден сообществу в течение 7 дней.",
+      officialTitle: "Новый официальный статус",
+      officialDescription: "Опубликовано от имени MOXT, видно сообществу в течение 7 дней.",
+      postAsPersonal: "Личный",
       captionPlaceholder: "Добавить подпись (необязательно)…",
       publish: "Опубликовать статус",
       publishing: "Публикация…",

@@ -198,14 +198,14 @@ export function VerificationPage() {
 
       {request ? (
         <Card className="grid gap-4">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <FiCheckCircle
-              className={`text-2xl ${
+              className={`shrink-0 text-2xl ${
                 request.status === 'rejected' ? 'text-red-600' : 'text-brand-600'
               }`}
             />
-            <div className="flex-1">
-              <strong>
+            <div className="min-w-0 flex-1">
+              <strong className="break-words">
                 {p3('verification.request.heading', {
                   level: p3(`verification.levels.${request.level}`),
                 })}
@@ -563,11 +563,11 @@ function UploadField({ doc, hint, icon: Icon, kbLabel, label, onFile }) {
 
 function Row({ label, ok, value }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-xl bg-[var(--app-surface-muted)] p-3">
-      <span className="text-sm text-[var(--app-text-muted)]">{label}</span>
-      <span className="flex items-center gap-2 text-sm font-bold">
-        {value}
-        {ok ? <FiCheckCircle className="text-emerald-500" /> : null}
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[var(--app-surface-muted)] p-3 sm:gap-4 sm:flex-nowrap">
+      <span className="min-w-0 text-sm text-[var(--app-text-muted)]">{label}</span>
+      <span className="flex min-w-0 items-center gap-2 text-right text-sm font-bold">
+        <span className="min-w-0 truncate">{value}</span>
+        {ok ? <FiCheckCircle className="shrink-0 text-emerald-500" /> : null}
       </span>
     </div>
   )

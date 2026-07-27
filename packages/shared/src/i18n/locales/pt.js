@@ -4909,6 +4909,9 @@ export const pt = {
     composer: {
       title: "Novo estado",
       description: "Visível para a comunidade durante 7 dias.",
+      officialTitle: "Novo estado oficial",
+      officialDescription: "Publicado em nome da MOXT, visível para a comunidade durante 7 dias.",
+      postAsPersonal: "Pessoal",
       captionPlaceholder: "Adicionar uma legenda (opcional)…",
       publish: "Publicar estado",
       publishing: "A publicar…",

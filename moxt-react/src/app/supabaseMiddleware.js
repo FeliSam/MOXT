@@ -1094,6 +1094,7 @@ const handlers = {
       author_id: payload.authorId,
       author_name: payload.authorName,
       author_avatar_url: payload.authorAvatarUrl || null,
+      business_id: payload.businessId || null,
       images: payload.images || [],
       caption: payload.caption || '',
       is_official: payload.isOfficial === true,
