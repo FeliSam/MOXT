@@ -198,7 +198,8 @@ body {
   #main-content .touch-pan-x,
   #main-content .overflow-x-auto,
   #main-content .overflow-x-scroll {
-    touch-action: pan-x;
+    /* pan-y aussi : sinon le doigt sur un carrousel horizontal bloque le scroll de page */
+    touch-action: pan-x pan-y;
     overscroll-behavior-x: contain;
   }
 }
@@ -1650,6 +1651,28 @@ html.messages-route-lock #root {
   35%  { transform: scale(1.28); }
   65%  { transform: scale(0.92); }
   100% { transform: scale(1); }
+}
+
+/* Menu flottant détail (+ partage / favori / contact) — ouverture & fermeture */
+.detail-action-item {
+  display: block;
+  opacity: 0;
+  transform: translate3d(0, 0.55rem, 0) scale(0.82);
+  pointer-events: none;
+  transition:
+    opacity 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.detail-action-item.is-open {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  pointer-events: auto;
+}
+
+.detail-action-fab.is-open {
+  transform: scale(1.06);
 }
 
 @keyframes favorite-shrink {

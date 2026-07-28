@@ -51,6 +51,7 @@ import { useExchangeRate } from '../features/transfers/useExchangeRate'
 import { PartnerDirectionalRate } from '../features/transfers/ExchangeRateChips'
 import { BusinessRatingBadge } from '../features/reviews/BusinessRatingBadge'
 import { useLanguage } from '../contexts/useLanguage'
+import { useHorizontalScroll } from '../hooks/useHorizontalScroll'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 import {
   calculateTransfer,
@@ -70,6 +71,7 @@ import {
 export function NewTransferPage() {
   const { t } = useLanguage()
   useScrollToSecondSection()
+  const partnerScrollRef = useHorizontalScroll()
   const [step, setStep] = useState(1)
   const [calculatorOpen, setCalculatorOpen] = useState(false)
   const dispatch = useDispatch()
@@ -453,7 +455,10 @@ export function NewTransferPage() {
                   {t('transfers.new.noPartnerBody', { flag: flagEmoji(resolveUserPartnerCountry(user, originCountry)) })}
                 </Alert>
               ) : null}
-              <div className="w-full min-w-0 max-w-full overflow-x-auto xl:overflow-visible">
+              <div
+                ref={partnerScrollRef}
+                className="w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain xl:overflow-visible"
+              >
                 <div className="flex w-max gap-3 xl:grid xl:w-full xl:grid-cols-4 xl:gap-3">
                   {ownTransferBusiness && isBusinessPublishReady(ownTransferBusiness) ? (
                     <div

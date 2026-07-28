@@ -10,8 +10,7 @@ import { marketplaceText } from '../../features/marketplace/marketplaceI18n'
  * Menu d'actions flottant des pages détail (annonce, colis, job, événement,
  * P2P). Identique partout : icônes seules, sans libellé, même disposition.
  *
- * Le déclencheur utilise un « + » qui pivote en « × » à l'ouverture — plus
- * parlant que trois points, et l'animation rend l'état courant évident.
+ * Le déclencheur utilise un « + » qui pivote en « × » à l'ouverture.
  * Les entrées apparaissent en cascade et se replient dans l'ordre inverse.
  */
 export function DetailFloatingActions({
@@ -74,25 +73,22 @@ export function DetailFloatingActions({
     )
   }
 
+  const actionCount = actions.length
+
   return (
     <div
       className={`fixed ${floatBottomClass} right-4 z-[var(--z-page-float)] flex flex-col items-end gap-2 xl:hidden`}
     >
-      <div
-        className={`flex flex-col items-end gap-2 transition-[opacity,transform] duration-200 ease-out ${
-          open
-            ? 'pointer-events-auto translate-y-0 opacity-100'
-            : 'pointer-events-none translate-y-2 opacity-0'
-        }`}
-        aria-hidden={!open}
-      >
+      <div className="flex flex-col items-end gap-2" aria-hidden={!open}>
         {actions.map((action, index) => (
           <span
             key={action.key}
-            className="detail-action-item"
+            className={`detail-action-item${open ? ' is-open' : ''}`}
             style={{
-              // Cascade à l'ouverture, repli instantané à la fermeture.
-              transitionDelay: open ? `${index * 45}ms` : '0ms',
+              // Ouverture bas → haut ; fermeture haut → bas (ordre inverse).
+              transitionDelay: open
+                ? `${index * 50}ms`
+                : `${(actionCount - 1 - index) * 40}ms`,
             }}
           >
             {action}
@@ -102,7 +98,9 @@ export function DetailFloatingActions({
 
       <button
         type="button"
-        className="btn-press grid size-14 place-items-center rounded-full bg-brand-700 text-2xl text-white shadow-[0_12px_28px_rgb(8_112_95/0.35)] transition-transform duration-200 ease-out hover:bg-brand-800"
+        className={`btn-press detail-action-fab grid size-14 place-items-center rounded-full bg-brand-700 text-2xl text-white shadow-[0_12px_28px_rgb(8_112_95/0.35)] transition-[transform,background-color] duration-200 ease-out hover:bg-brand-800${
+          open ? ' is-open' : ''
+        }`}
         aria-expanded={open}
         aria-label={
           open
