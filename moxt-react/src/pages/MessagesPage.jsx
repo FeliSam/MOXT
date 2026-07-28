@@ -776,19 +776,9 @@ export function MessagesPage() {
                   setReplyToId(null)
                   setReplyToContextId(null)
                 }}
-                onShare={async (message) => {
+                onCopy={async (message) => {
                   const text = message.text?.trim()
                   if (!text) return
-                  // 1) Partage natif si dispo (mobile / contexte sécurisé).
-                  if (navigator.share) {
-                    try {
-                      await navigator.share({ text })
-                      return
-                    } catch {
-                      /* partage annulé — on retombe sur la copie */
-                    }
-                  }
-                  // 2) Presse-papiers moderne (HTTPS uniquement).
                   let copied = false
                   if (navigator.clipboard?.writeText) {
                     try {
@@ -798,7 +788,6 @@ export function MessagesPage() {
                       copied = false
                     }
                   }
-                  // 3) Repli execCommand (fonctionne sur http LAN, contexte non sécurisé).
                   if (!copied) {
                     try {
                       const area = document.createElement('textarea')
@@ -818,13 +807,13 @@ export function MessagesPage() {
                     addToast(
                       copied
                         ? {
-                            title: t("messages.copiedTitle"),
-                            message: t("messages.copied"),
+                            title: t('messages.copiedTitle'),
+                            message: t('messages.copied'),
                             tone: 'success',
                           }
                         : {
-                            title: t("messages.copyFailedTitle"),
-                            message: t("messages.copyFailed"),
+                            title: t('messages.copyFailedTitle'),
+                            message: t('messages.copyFailed'),
                             tone: 'error',
                           },
                     ),

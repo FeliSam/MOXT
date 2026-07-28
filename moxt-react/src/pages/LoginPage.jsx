@@ -5,6 +5,7 @@ import { FiHelpCircle, FiLock, FiMail, FiPhone } from 'react-icons/fi'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { AuthCard } from '../components/auth/AuthCard'
+import { AuthLoginHelpModal } from '../components/auth/AuthLoginHelpModal'
 import { Alert } from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
@@ -48,6 +49,7 @@ export function LoginPage() {
   const { error } = useSelector((state) => state.auth)
 
   const [mode, setMode] = useState('phone-password')
+  const [helpOpen, setHelpOpen] = useState(false)
   const { loginEmailSchema, loginPhonePasswordSchema } = createAuthSchemas(t)
 
   useEffect(() => () => dispatch(clearAuthError()), [dispatch])
@@ -148,9 +150,13 @@ export function LoginPage() {
             error={phoneError('password')}
           />
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <Link className="auth-flow-link inline-flex items-center gap-1 text-xs" to="/support">
+            <button
+              type="button"
+              className="auth-flow-link inline-flex items-center gap-1 text-xs"
+              onClick={() => setHelpOpen(true)}
+            >
               <FiHelpCircle className="text-sm" /> {t('auth.login.needHelp')}
-            </Link>
+            </button>
             <Link className="auth-flow-link text-xs" to="/forgot-password?mode=phone">
               {t('auth.login.forgot')}
             </Link>
@@ -185,9 +191,13 @@ export function LoginPage() {
             error={emailError('password')}
           />
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <Link className="auth-flow-link inline-flex items-center gap-1 text-xs" to="/support">
+            <button
+              type="button"
+              className="auth-flow-link inline-flex items-center gap-1 text-xs"
+              onClick={() => setHelpOpen(true)}
+            >
               <FiHelpCircle className="text-sm" /> {t('auth.login.needHelp')}
-            </Link>
+            </button>
             <Link className="auth-flow-link text-xs" to="/forgot-password">
               {t('auth.login.forgot')}
             </Link>
@@ -204,6 +214,8 @@ export function LoginPage() {
           {t('auth.login.createAccount')}
         </Link>
       </p>
+
+      <AuthLoginHelpModal open={helpOpen} onClose={() => setHelpOpen(false)} t={t} />
     </AuthCard>
   )
 }

@@ -14,6 +14,13 @@ export const en = {
       phoneHint: "Use your +7 number and your password.",
       forgot: "Forgot your password?",
       needHelp: "Need help?",
+      helpTitle: "Sign-in help",
+      helpIntro: "A few quick checks if you cannot sign in.",
+      helpTipPhone: "Use your Russian number in +7 format followed by 10 digits.",
+      helpTipPassword: "If you forgot your password, use “Forgot your password?” (email or SMS).",
+      helpTipEmail: "You can also sign in with the email linked to the account.",
+      helpContactTitle: "Contact us",
+      helpFaq: "FAQ",
       submit: "Sign in",
       submitting: "Signing in…",
       demoAccounts: "Demo accounts",
@@ -62,15 +69,15 @@ export const en = {
       haveAccount: "Already have an account?",
       loginLink: "Sign in",
       helpButton: "Help",
-      helpTitle: "Sign-up help",
-      helpIntro:
-        "Only essential fields appear in the form. Secondary options and detailed tips are here.",
-      helpEssentialsTitle: "Key points",
-      helpEssentialPhone: "Your Russian +7 number confirms the account by SMS.",
-      helpEssentialPassword: "Choose a strong password (8 characters minimum).",
-      helpEssentialOtp: "Wait {seconds} seconds between code sends.",
+      helpTitle: "Help with the confirmation code",
+      helpIntro: "If the SMS code is slow to arrive, follow these steps:",
+      helpStep1:
+        "If you do not receive the code after the first attempt, wait 60 seconds. Then tap “Resend code”, or use “Receive code by email”.",
+      helpStep2:
+        "If the code still does not arrive, use “Receive code by email”. A code will be sent to the email you already entered so you can sign in.",
+      helpStep3:
+        "Once signed in, contact us via “Need help?”. After verification, we can confirm your phone number manually so you unlock every feature.",
       helpOriginPhoneHint: "Optional — useful for contacts in your country of origin.",
-      helpSupport: "Still stuck? Contact MOXT support from the help page.",
       verify: {
         title: "Confirm your number",
         body: "A 6-digit code was sent to {phone} by SMS. It can take 1–2 minutes to arrive. Only one code at a time — the account is created after confirmation.",
@@ -95,9 +102,11 @@ export const en = {
         switchedTitle: "Sign up by email",
         switchedBody: "A code was sent to {email}. Enter it to create your account.",
         afterSmsResends:
-          "Too many SMS resends. A code was sent to {email} to finish sign-up by email.",
+          "A code was sent to {email} to finish sign-up by email.",
         smsResendLimitHint:
-          "SMS already resent once. You can still enter the code if it arrives, or receive it by email now (automatic switch after 60s).",
+          "You can resend the SMS once, or receive the code by email as soon as the 60-second wait ends.",
+        afterCooldownHint:
+          "Wait over: resend the SMS or receive the code by email.",
       },
       toasts: {
         alreadyExistsTitle: "Account already exists",

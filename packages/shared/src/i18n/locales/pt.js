@@ -8,6 +8,13 @@ export const pt = {
       password: "Palavra-passe",
       forgot: "Esqueceu a palavra-passe?",
       needHelp: "Precisa de ajuda?",
+      helpTitle: "Ajuda para iniciar sessão",
+      helpIntro: "Algumas verificações rápidas se não conseguir entrar.",
+      helpTipPhone: "Utilize o número russo no formato +7 seguido de 10 dígitos.",
+      helpTipPassword: "Se esqueceu a palavra-passe, use «Esqueceu a palavra-passe?» (e-mail ou SMS).",
+      helpTipEmail: "Também pode entrar com o e-mail associado à conta.",
+      helpContactTitle: "Contactar-nos",
+      helpFaq: "FAQ",
       submit: "Entrar",
       submitting: "A entrar…",
       demoAccounts: "Contas de demonstração",
@@ -72,14 +79,15 @@ export const pt = {
       haveAccount: "Já tem conta?",
       loginLink: "Entrar",
       helpButton: "Ajuda",
-      helpTitle: "Ajuda no registo",
-      helpIntro: "Só aparecem os campos essenciais no formulário. Opções secundárias e dicas detalhadas estão aqui.",
-      helpEssentialsTitle: "Pontos-chave",
-      helpEssentialPhone: "O número russo +7 confirma a conta por SMS.",
-      helpEssentialPassword: "Escolha uma palavra-passe forte (mínimo 8 caracteres).",
-      helpEssentialOtp: "Aguarde {seconds} segundos entre envios de código.",
+      helpTitle: "Ajuda com o código de confirmação",
+      helpIntro: "Se o código SMS demorar a chegar, siga estes passos:",
+      helpStep1:
+        "Se não receber o código após a primeira tentativa, aguarde 60 segundos. Depois toque em «Reenviar o código» ou em «Receber o código por e-mail».",
+      helpStep2:
+        "Se o código ainda não chegar, use «Receber o código por e-mail». Um código será enviado para o e-mail já indicado, para poder iniciar sessão.",
+      helpStep3:
+        "Depois de entrar, contacte-nos em «Precisa de ajuda?». Após verificação, podemos confirmar manualmente o seu número para desbloquear todas as funcionalidades.",
       helpOriginPhoneHint: "Opcional — útil para contactos no país de origem.",
-      helpSupport: "Ainda com problemas? Contacte o suporte MOXT na página de ajuda.",
       loginNoticePendingOtp: "Se o registo estiver concluído, entre com o número +7 e a palavra-passe escolhida. Caso contrário, introduza primeiro o código SMS recebido acima.",
       verify: {
         title: "Confirme o seu número",
@@ -105,9 +113,11 @@ export const pt = {
         switchedTitle: "Registo por e-mail",
         switchedBody: "Foi enviado um código para {email}. Introduza-o para criar a sua conta.",
         afterSmsResends:
-          "Demasiados reenvios de SMS. Foi enviado um código para {email} para concluir o registo por e-mail.",
+          "Foi enviado um código para {email} para concluir o registo por e-mail.",
         smsResendLimitHint:
-          "SMS já reenviado uma vez. Pode introduzir o código se chegar, ou recebê-lo por e-mail agora (mudança automática após 60 s).",
+          "Pode reenviar o SMS uma vez, ou receber o código por e-mail assim que terminarem os 60 segundos.",
+        afterCooldownHint:
+          "Tempo esgotado: reenvie o SMS ou receba o código por e-mail.",
       },
       toasts: {
         alreadyExistsTitle: "Conta já existente",

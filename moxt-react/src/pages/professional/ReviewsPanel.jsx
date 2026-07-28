@@ -1,4 +1,7 @@
+import { Link } from 'react-router-dom'
 import { FiStar } from 'react-icons/fi'
+import { EntityAvatar } from '../../features/account/EntityAvatar'
+import { useProfileAvatarMap } from '../../features/account/useProfileAvatarMap'
 import { Badge } from '../../components/ui/Badge'
 import { EntityVerifiedName } from '../../components/ui/EntityVerifiedName'
 import { Card } from '../../components/ui/Card'
@@ -19,6 +22,8 @@ export function ReviewsPanel({ reviews, rating = null, transferMode = false }) {
   const { t } = useLanguage()
   const pt = (key, vars) => professionalText(t, key, vars)
   const visible = reviews.filter((item) => item.status === 'published')
+  const authorIds = visible.map((review) => review.authorId).filter(Boolean)
+  const avatarMap = useProfileAvatarMap(authorIds)
   const distribution = ratingDistribution(visible)
   const maxDist = Math.max(...distribution.map((item) => item.count), 1)
   const average =
@@ -82,19 +87,48 @@ export function ReviewsPanel({ reviews, rating = null, transferMode = false }) {
       </Card>
 
       <div className="grid gap-3 md:grid-cols-2">
-        {visible.map((review) => (
-          <Card key={review.id}>
-            <div className="flex items-center justify-between gap-3">
+        {visible.map((review) => {
+          const authorProfile = avatarMap[review.authorId]
+          const authorHref = review.authorId ? `/users/${review.authorId}/publications` : null
+          const authorName = authorProfile?.name || review.authorName || 'Membre MOXT'
+          const authorInner = (
+            <>
+              <EntityAvatar
+                name={authorName}
+                src={authorProfile?.avatarUrl}
+                size="sm"
+                shape="user"
+                ring={false}
+                alt={authorName}
+              />
               <EntityVerifiedName
                 as="strong"
-                name={review.authorName}
+                name={authorName}
                 userId={review.authorId}
+                className={authorHref ? 'min-w-0 hover:underline' : 'min-w-0'}
+                nameClassName="truncate"
               />
-              <Badge tone="warning">{review.rating}/5</Badge>
-            </div>
-            <p className="mt-3 text-sm leading-6 text-[var(--app-text-muted)]">{review.comment}</p>
-          </Card>
-        ))}
+            </>
+          )
+          return (
+            <Card key={review.id}>
+              <div className="flex items-center justify-between gap-3">
+                {authorHref ? (
+                  <Link
+                    to={authorHref}
+                    className="flex min-w-0 items-center gap-2.5 rounded-lg outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-brand-500/40"
+                  >
+                    {authorInner}
+                  </Link>
+                ) : (
+                  <div className="flex min-w-0 items-center gap-2.5">{authorInner}</div>
+                )}
+                <Badge tone="warning">{review.rating}/5</Badge>
+              </div>
+              <p className="mt-3 text-sm leading-6 text-[var(--app-text-muted)]">{review.comment}</p>
+            </Card>
+          )
+        })}
       </div>
     </div>
   )

@@ -112,7 +112,8 @@ export function BusinessDetailPage() {
   const activity = activityByValue(business.primaryActivity)
   const experience = businessExperienceForActivity(business.primaryActivity)
   const hasTransfer = business.services?.includes('Transfert')
-  const ratingValue = rating.count ? rating.average : business.rating || 0
+  // Note agrégée réelle uniquement (alignée BusinessRatingBadge / échangeurs).
+  const ratingDisplay = rating.count ? `${Number(rating.average || 0).toFixed(1)}/5` : '—'
   const serviceSections = SERVICE_SECTION_DEFS.map((section) => ({
     ...section,
     label: bt(section.labelKey),
@@ -128,7 +129,7 @@ export function BusinessDetailPage() {
     {
       icon: FiStar,
       label: bt('businesses.detail.reviewsCount', { count: rating.count }),
-      value: `${ratingValue}/5`,
+      value: ratingDisplay,
     },
     { icon: FiShield, label: bt('businesses.common.status'), value: statusMeta(business.status, t).label },
     { icon: FiMapPin, label: bt('businesses.common.location'), value: business.city },

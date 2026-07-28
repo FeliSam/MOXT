@@ -11,6 +11,7 @@ import {
 } from '@moxt/shared/utils/reviewUtils.js'
 import { hasReviewEligibility } from '@moxt/shared/utils/reviewEligibility.js'
 import { useLanguage } from '../../contexts/useLanguage'
+import { useProfileAvatarMap } from '../account/useProfileAvatarMap'
 import { createReview } from './reviewSlice'
 import { selectProfileReview } from './reviewSelectors'
 import { ReviewCard, ReviewSummary } from './ReviewPanel'
@@ -30,6 +31,11 @@ export function ReviewsSection({
   const [comment, setComment] = useState('')
 
   const aggregate = useMemo(() => calculateAggregateRating(reviews), [reviews])
+  const authorIds = useMemo(
+    () => [...new Set((reviews || []).map((item) => item.authorId).filter(Boolean))],
+    [reviews],
+  )
+  const avatarMap = useProfileAvatarMap(authorIds)
   const existingReview = useSelector((state) =>
     selectProfileReview(state, currentUser?.id, profileTargetType, profileTargetId),
   )
@@ -169,6 +175,10 @@ export function ReviewsSection({
                   ownerId={ownerId}
                   ownerName={ownerName}
                   isOwner={isOwner}
+                  authorProfile={
+                    avatarMap[review.authorId] ||
+                    (review.authorName ? { name: review.authorName } : null)
+                  }
                 />
               ))}
             </div>

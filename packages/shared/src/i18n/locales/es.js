@@ -14,6 +14,13 @@ export const es = {
       phoneHint: "Usa tu número +7 y tu contraseña.",
       forgot: "¿Olvidaste tu contraseña?",
       needHelp: "¿Necesitas ayuda?",
+      helpTitle: "Ayuda para iniciar sesión",
+      helpIntro: "Algunas comprobaciones rápidas si no puedes iniciar sesión.",
+      helpTipPhone: "Usa tu número ruso en formato +7 seguido de 10 dígitos.",
+      helpTipPassword: "Si olvidaste la contraseña, usa «¿Olvidaste tu contraseña?» (e-mail o SMS).",
+      helpTipEmail: "También puedes iniciar sesión con el correo vinculado a la cuenta.",
+      helpContactTitle: "Contactarnos",
+      helpFaq: "FAQ",
       submit: "Iniciar sesión",
       submitting: "Iniciando sesión…",
       demoAccounts: "Cuentas demo",
@@ -62,14 +69,15 @@ export const es = {
       haveAccount: "¿Ya tienes una cuenta?",
       loginLink: "Iniciar sesión",
       helpButton: "Ayuda",
-      helpTitle: "Ayuda para registrarse",
-      helpIntro: "Solo aparecen los campos esenciales en el formulario. Las opciones secundarias y consejos detallados están aquí.",
-      helpEssentialsTitle: "Puntos clave",
-      helpEssentialPhone: "El número ruso +7 confirma la cuenta por SMS.",
-      helpEssentialPassword: "Elige una contraseña segura (mínimo 8 caracteres).",
-      helpEssentialOtp: "Espera {seconds} segundos entre envíos de código.",
+      helpTitle: "Ayuda con el código de confirmación",
+      helpIntro: "Si el código SMS tarda en llegar, sigue estos pasos:",
+      helpStep1:
+        "Si no recibes el código tras el primer intento, espera 60 segundos. Luego pulsa «Reenviar el código» o «Recibir el código por e-mail».",
+      helpStep2:
+        "Si el código sigue sin llegar, usa «Recibir el código por e-mail». Se enviará un código al correo ya indicado para que puedas iniciar sesión.",
+      helpStep3:
+        "Una vez conectado, contáctanos en «¿Necesitas ayuda?». Tras la verificación, podremos confirmar manualmente tu número para darte acceso a todas las funciones.",
       helpOriginPhoneHint: "Opcional: útil para contactos en el país de origen.",
-      helpSupport: "¿Sigues bloqueado? Contacta con el soporte MOXT desde la página de ayuda.",
       verify: {
         title: "Confirma tu número",
         body: "Se envió un código de 6 dígitos a {phone} por SMS. Puede tardar 1–2 minutos. Solo un código a la vez: la cuenta se crea tras la confirmación.",
@@ -94,9 +102,11 @@ export const es = {
         switchedTitle: "Registro por correo",
         switchedBody: "Se envió un código a {email}. Introdúcelo para crear tu cuenta.",
         afterSmsResends:
-          "Demasiados reenvíos SMS. Se envió un código a {email} para terminar el registro por correo.",
+          "Se envió un código a {email} para terminar el registro por correo.",
         smsResendLimitHint:
-          "SMS ya reenviado una vez. Puedes introducir el código si llega, o recibirlo por correo ahora (cambio automático tras 60 s).",
+          "Puedes reenviar el SMS una vez, o recibir el código por correo al terminar la espera de 60 segundos.",
+        afterCooldownHint:
+          "Tiempo terminado: reenvía el SMS o recibe el código por correo.",
       },
       toasts: {
         alreadyExistsTitle: "La cuenta ya existe",

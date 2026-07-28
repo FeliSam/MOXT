@@ -6,6 +6,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { OTP_RESEND_COOLDOWN_SECONDS } from '@moxt/shared/auth/otpCooldown.js'
 import { isValidRussianPhone } from '@moxt/shared/auth/userSecurity.js'
 import { AuthCard } from '../components/auth/AuthCard'
+import { AuthLoginHelpModal } from '../components/auth/AuthLoginHelpModal'
 import { Alert } from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
@@ -33,6 +34,7 @@ export function ForgotPasswordPage() {
   const [phoneStep, setPhoneStep] = useState('request') // request | confirm | done
   const [cooldown, setCooldown] = useState(0)
   const [pendingPhone, setPendingPhone] = useState('')
+  const [helpOpen, setHelpOpen] = useState(false)
   const { forgotPasswordSchema } = createAuthSchemas(t)
 
   useEffect(() => {
@@ -246,9 +248,13 @@ export function ForgotPasswordPage() {
               error={emailFormik.touched.email ? emailFormik.errors.email : undefined}
             />
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <Link className="auth-flow-link inline-flex items-center gap-1 text-xs" to="/support">
+              <button
+                type="button"
+                className="auth-flow-link inline-flex items-center gap-1 text-xs"
+                onClick={() => setHelpOpen(true)}
+              >
                 <FiHelpCircle className="text-sm" /> {t('auth.login.needHelp')}
-              </Link>
+              </button>
             </div>
             <Button className="w-full" type="submit" disabled={emailFormik.isSubmitting}>
               {emailFormik.isSubmitting ? t('auth.forgot.submitting') : t('auth.forgot.submit')}
@@ -298,9 +304,13 @@ export function ForgotPasswordPage() {
             {t('auth.forgot.phoneHint')}
           </p>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <Link className="auth-flow-link inline-flex items-center gap-1 text-xs" to="/support">
+            <button
+              type="button"
+              className="auth-flow-link inline-flex items-center gap-1 text-xs"
+              onClick={() => setHelpOpen(true)}
+            >
               <FiHelpCircle className="text-sm" /> {t('auth.login.needHelp')}
-            </Link>
+            </button>
           </div>
           <Button className="w-full" type="submit" loading={phoneRequestFormik.isSubmitting}>
             {phoneRequestFormik.isSubmitting
@@ -391,6 +401,8 @@ export function ForgotPasswordPage() {
           </button>
         </form>
       ) : null}
+
+      <AuthLoginHelpModal open={helpOpen} onClose={() => setHelpOpen(false)} t={t} />
     </AuthCard>
   )
 }

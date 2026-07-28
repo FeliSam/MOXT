@@ -93,7 +93,7 @@ export function MessageBubble({
   onReact,
   onReply,
   onRetry,
-  onShare,
+  onCopy,
   onToggleActions,
   openActions,
   repliedMessage,
@@ -382,7 +382,7 @@ export function MessageBubble({
           </button>
           <button
             type="button"
-            onClick={(event) => runAction(event, onShare)}
+            onClick={(event) => runAction(event, onCopy)}
             aria-label={t("messages.copy")}
             className="message-action-menu-btn"
           >

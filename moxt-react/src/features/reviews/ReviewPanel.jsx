@@ -7,6 +7,7 @@ import { PillBadge } from '../../components/ui/Badge'
 import { EntityVerifiedName } from '../../components/ui/EntityVerifiedName'
 import { Button } from '../../components/ui/Button'
 import { StarRating } from '../../components/ui/StarRating'
+import { EntityAvatar } from '../account/EntityAvatar'
 import {
   REVIEW_DISPUTE_LABELS,
   REVIEW_DISPUTE_STATUS,
@@ -26,7 +27,7 @@ const PUBLICATION_ICONS = {
   business: HiOutlineBuildingOffice2,
 }
 
-export function ReviewCard({ review, ownerId, ownerName, isOwner }) {
+export function ReviewCard({ review, ownerId, ownerName, isOwner, authorProfile }) {
   const dispatch = useDispatch()
   const publication = useReviewPublication(review)
   const [replyOpen, setReplyOpen] = useState(false)
@@ -38,6 +39,29 @@ export function ReviewCard({ review, ownerId, ownerName, isOwner }) {
   const disputeLabel = REVIEW_DISPUTE_LABELS[review.disputeStatus]
   const PublicationIcon = PUBLICATION_ICONS[review.targetType] || FiShoppingBag
   const isProfileReview = review.targetType === REVIEW_TARGET_TYPES.USER_PROFILE
+  const authorName =
+    authorProfile?.name || review.authorName || 'Membre MOXT'
+  const authorAvatarUrl = authorProfile?.avatarUrl || null
+  const authorHref = review.authorId ? `/users/${review.authorId}/publications` : null
+  const authorBlock = (
+    <>
+      <EntityAvatar
+        name={authorName}
+        src={authorAvatarUrl}
+        size="sm"
+        shape="user"
+        ring={false}
+        alt={authorName}
+      />
+      <EntityVerifiedName
+        as="strong"
+        name={authorName}
+        userId={review.authorId}
+        className={`min-w-0 ${authorHref ? 'hover:underline' : ''}`}
+        nameClassName="truncate"
+      />
+    </>
+  )
 
   function submitReply(event) {
     event.preventDefault()
@@ -69,15 +93,18 @@ export function ReviewCard({ review, ownerId, ownerName, isOwner }) {
   return (
     <article className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--shadow-card)]">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <EntityVerifiedName
-              as="strong"
-              name={review.authorName || 'Membre MOXT'}
-              userId={review.authorId}
-              className="min-w-0"
-              nameClassName="truncate"
-            />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2.5">
+            {authorHref ? (
+              <Link
+                to={authorHref}
+                className="flex min-w-0 items-center gap-2.5 rounded-xl outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-brand-500/40"
+              >
+                {authorBlock}
+              </Link>
+            ) : (
+              <div className="flex min-w-0 items-center gap-2.5">{authorBlock}</div>
+            )}
             <PillBadge tone="neutral">{sourceLabel}</PillBadge>
             {disputeLabel ? (
               <PillBadge tone={review.disputeStatus === 'pending' ? 'warning' : 'info'}>

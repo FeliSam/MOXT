@@ -13,6 +13,7 @@ import { useDispatch, useSelector, useStore } from 'react-redux'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { needsOAuthProfileCompletion, needsRegisterProfileCompletion, isProfileComplete } from '@moxt/shared/auth/profileCompletion.js'
 import { AuthCard } from '../components/auth/AuthCard'
+import { AuthLoginHelpModal } from '../components/auth/AuthLoginHelpModal'
 import { Alert } from '../components/ui/Alert'
 import { useActionBurst } from '../components/ui/ActionBurst'
 import { Button } from '../components/ui/Button'
@@ -149,6 +150,7 @@ export function RegisterPage() {
   /** Successful SMS resends during this signup (initial send excluded). */
   const [phoneResendCount, setPhoneResendCount] = useState(0)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [loginHelpOpen, setLoginHelpOpen] = useState(false)
   // Blocks the "already logged-in" auto-landing effect while we navigate to Security after OTP.
   const completingPhoneOtpRef = useRef(false)
   // Sync locks — Formik does not prevent a second submit before React re-renders loading.
@@ -434,23 +436,8 @@ export function RegisterPage() {
 
   const authBusy = status === 'loading' || formik.isSubmitting
 
-  // After the only SMS resend + 90s wait without verification → switch to e-mail automatically.
-  useEffect(() => {
-    if (
-      !pendingVerification ||
-      pendingVerification.method !== 'phone' ||
-      phoneResendCount < SMS_REGISTRATION_MAX_RESENDS ||
-      resendCooldown > 0 ||
-      authBusy ||
-      autoEmailFallbackStartedRef.current
-    ) {
-      return
-    }
-    autoEmailFallbackStartedRef.current = true
-    void startEmailOtpFallback({ reason: 'sms_resend_limit' })
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional gate on cooldown/resend count
-  }, [authBusy, pendingVerification, phoneResendCount, resendCooldown])
-
+  // Ne plus forcer l’e-mail automatiquement : après 60 s l’utilisateur choisit
+  // « Renvoyer le SMS » ou « Recevoir le code par e-mail ».
   // Restore pending OTP signup after failed code / refresh (sessionStorage, no password).
   // Never show the OTP step until the phone is re-checked as still eligible.
   useEffect(() => {
@@ -612,7 +599,7 @@ export function RegisterPage() {
   async function resendVerificationCode() {
     if (!pendingVerification || authBusy || otpActionLockRef.current) return
 
-    // After 1 initial SMS + 1 resend: offer e-mail immediately (no extra 90s wait).
+    // Quota SMS déjà utilisé : bascule e-mail (le bouton e-mail est aussi dispo dès 60 s).
     const switchToEmail =
       pendingVerification.method === 'phone' &&
       phoneResendCount >= SMS_REGISTRATION_MAX_RESENDS
@@ -1010,29 +997,50 @@ export function RegisterPage() {
               onChange={(city) => formik.setFieldValue('residenceCity', city)}
               error={errorFor('residenceCity')}
             />
-            <Input
-              id="russianPhone"
-              label={t('auth.register.russianPhone')}
-              type="tel"
-              autoComplete="tel"
-              placeholder="+7XXXXXXXXXX"
-              iconLeft={<span className="text-base leading-none">{flagEmoji('RU')}</span>}
-              {...formik.getFieldProps('russianPhone')}
-              onChange={(event) =>
-                formik.setFieldValue('russianPhone', constrainPhone(event.target.value, '+7', 10))
-              }
-              onBlur={(event) => {
-                formik.handleBlur(event)
-                const phone = constrainPhone(event.target.value, '+7', 10)
-                if (isValidRussianPhone(phone)) {
-                  prefetchIdentities({
-                    phone,
-                    email: formik.values.email,
-                  })
+            <div className="grid min-w-0 gap-3">
+              <Input
+                id="russianPhone"
+                label={t('auth.register.russianPhone')}
+                type="tel"
+                autoComplete="tel"
+                placeholder="+7XXXXXXXXXX"
+                iconLeft={<span className="text-base leading-none">{flagEmoji('RU')}</span>}
+                {...formik.getFieldProps('russianPhone')}
+                onChange={(event) =>
+                  formik.setFieldValue('russianPhone', constrainPhone(event.target.value, '+7', 10))
                 }
-              }}
-              error={errorFor('russianPhone')}
-            />
+                onBlur={(event) => {
+                  formik.handleBlur(event)
+                  const phone = constrainPhone(event.target.value, '+7', 10)
+                  if (isValidRussianPhone(phone)) {
+                    prefetchIdentities({
+                      phone,
+                      email: formik.values.email,
+                    })
+                  }
+                }}
+                error={errorFor('russianPhone')}
+              />
+              <Input
+                id="originPhone"
+                label={t('auth.register.originPhone')}
+                type="tel"
+                placeholder={`${selectedCountry?.callingCode || ''}...`}
+                iconLeft={
+                  <span className="text-base leading-none">
+                    {flagEmoji(selectedCountry?.code || formik.values.originCountry)}
+                  </span>
+                }
+                {...formik.getFieldProps('originPhone')}
+                onChange={(event) =>
+                  formik.setFieldValue(
+                    'originPhone',
+                    constrainPhone(event.target.value, selectedCountry?.callingCode || '', 12),
+                  )
+                }
+                error={errorFor('originPhone')}
+              />
+            </div>
             {!oauthCompletion ? (
               <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-3">
                 <PasswordInput
@@ -1213,24 +1221,42 @@ export function RegisterPage() {
               <p className="text-sm text-[var(--app-text-muted)]">
                 {pendingVerification.method === 'email'
                   ? t('auth.register.codeNotReceivedEmail')
-                  : phoneResendCount >= SMS_REGISTRATION_MAX_RESENDS
-                    ? t('auth.register.emailFallback.smsResendLimitHint')
-                    : t('auth.register.codeNotReceivedSms')}
+                  : resendCooldown > 0
+                    ? t('auth.register.codeNotReceivedSms')
+                    : t('auth.register.emailFallback.afterCooldownHint')}
               </p>
-              {pendingVerification.method === 'phone' &&
-              phoneResendCount >= SMS_REGISTRATION_MAX_RESENDS ? (
-                <Button
-                  type="button"
-                  className="w-full"
-                  loading={authBusy}
-                  disabled={authBusy || pendingVerification.sendingSms}
-                  onClick={() => {
-                    autoEmailFallbackStartedRef.current = true
-                    void startEmailOtpFallback({ reason: 'sms_resend_limit' })
-                  }}
-                >
-                  {t('auth.register.emailFallback.sendButton')}
-                </Button>
+              {pendingVerification.method === 'phone' ? (
+                <div className="grid gap-2">
+                  {phoneResendCount < SMS_REGISTRATION_MAX_RESENDS ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="w-full"
+                      loading={authBusy && resendCooldown <= 0}
+                      disabled={resendCooldown > 0 || authBusy || pendingVerification.sendingSms}
+                      onClick={resendVerificationCode}
+                    >
+                      {resendCooldown > 0
+                        ? t('auth.register.resendCooldown', { seconds: resendCooldown })
+                        : t('auth.register.resendSms')}
+                    </Button>
+                  ) : null}
+                  {resendCooldown <= 0 ? (
+                    <Button
+                      type="button"
+                      className="w-full"
+                      variant={phoneResendCount >= SMS_REGISTRATION_MAX_RESENDS ? undefined : 'secondary'}
+                      loading={authBusy}
+                      disabled={authBusy || pendingVerification.sendingSms}
+                      onClick={() => {
+                        autoEmailFallbackStartedRef.current = true
+                        void startEmailOtpFallback({ reason: 'sms_resend_limit' })
+                      }}
+                    >
+                      {t('auth.register.emailFallback.sendButton')}
+                    </Button>
+                  ) : null}
+                </div>
               ) : (
                 <Button
                   type="button"
@@ -1242,9 +1268,7 @@ export function RegisterPage() {
                 >
                   {resendCooldown > 0
                     ? t('auth.register.resendCooldown', { seconds: resendCooldown })
-                    : pendingVerification.method === 'email'
-                      ? t('auth.register.resendEmail')
-                      : t('auth.register.resendSms')}
+                    : t('auth.register.resendEmail')}
                 </Button>
               )}
               <button
@@ -1286,54 +1310,33 @@ export function RegisterPage() {
       >
         <div className="grid gap-4 text-sm text-[var(--app-text-muted)]">
           <p>{t('auth.register.helpIntro')}</p>
-          <div className="grid gap-2 rounded-2xl bg-[var(--app-surface-muted)] p-4">
-            <p className="text-xs font-black uppercase tracking-[0.08em] text-[var(--app-text)]">
-              {t('auth.register.helpEssentialsTitle')}
-            </p>
-            <ul className="list-disc space-y-1.5 pl-4">
-              <li>{t('auth.register.helpEssentialPhone')}</li>
-              <li>{t('auth.register.helpEssentialPassword')}</li>
-              <li>{t('auth.register.helpEssentialOtp', { seconds: OTP_RESEND_COOLDOWN_SECONDS })}</li>
-            </ul>
-          </div>
-          <Input
-            id="help-originPhone"
-            label={t('auth.register.originPhone')}
-            type="tel"
-            placeholder={`${selectedCountry?.callingCode || ''}...`}
-            hint={t('auth.register.helpOriginPhoneHint')}
-            iconLeft={
-              <span className="text-base leading-none">
-                {flagEmoji(selectedCountry?.code || formik.values.originCountry)}
-              </span>
-            }
-            {...formik.getFieldProps('originPhone')}
-            onChange={(event) =>
-              formik.setFieldValue(
-                'originPhone',
-                constrainPhone(event.target.value, selectedCountry?.callingCode || '', 12),
-              )
-            }
-            error={errorFor('originPhone')}
-          />
-          <div className="flex items-center gap-1.5 rounded-2xl border border-[var(--app-border)] px-4 py-2.5 text-sm font-bold text-[var(--app-text)]">
-            <span className="text-base leading-none">{flagEmoji(formik.values.originCountry)}</span>
-            {selectedCountry?.name || t('auth.register.fallbackCountry')}
-            <FiArrowRight className="text-xs text-[var(--app-text-faint)]" />
-            <span className="text-base leading-none">{flagEmoji('RU')}</span>
-            {formik.values.residenceCity || t('auth.register.fallbackRussia')}
-          </div>
-          <p>{t('auth.register.helpSupport')}</p>
+          <ol className="grid list-decimal gap-3 pl-5 marker:font-black marker:text-[var(--app-text)]">
+            <li className="pl-1">{t('auth.register.helpStep1')}</li>
+            <li className="pl-1">{t('auth.register.helpStep2')}</li>
+            <li className="pl-1">{t('auth.register.helpStep3')}</li>
+          </ol>
           <div className="flex flex-wrap gap-2">
-            <Link to="/support" className="auth-flow-link text-sm font-bold">
+            <Button
+              type="button"
+              icon={FiHelpCircle}
+              onClick={() => {
+                setHelpOpen(false)
+                setLoginHelpOpen(true)
+              }}
+            >
               {t('auth.login.needHelp')}
-            </Link>
+            </Button>
             <Button type="button" variant="secondary" onClick={() => setHelpOpen(false)}>
               {t('common.close')}
             </Button>
           </div>
         </div>
       </Modal>
+      <AuthLoginHelpModal
+        open={loginHelpOpen}
+        onClose={() => setLoginHelpOpen(false)}
+        t={t}
+      />
     </AuthCard>
   )
 }

@@ -84,7 +84,7 @@ export function ConversationPanel({
   onReply,
   onReplyToContext,
   onRetry,
-  onShare,
+  onCopy,
   editingId,
   onCancelEdit,
   replyToId,
@@ -620,7 +620,7 @@ export function ConversationPanel({
                           onReact={onReact}
                           onReply={onReply}
                           onRetry={onRetry}
-                          onShare={onShare}
+                          onCopy={onCopy}
                           onToggleActions={() =>
                             setOpenActionsId((current) =>
                               current === message.id ? null : message.id,
@@ -850,7 +850,21 @@ export function ConversationPanel({
               }
             }}
             onKeyDown={(event) => {
-              if (event.key === 'Enter' && !event.shiftKey) {
+              // Entrée / Tab = nouvelle ligne. Envoi uniquement via le bouton (ou Ctrl/Cmd+Entrée).
+              if (event.key === 'Tab') {
+                event.preventDefault()
+                const el = event.currentTarget
+                const start = el.selectionStart ?? el.value.length
+                const end = el.selectionEnd ?? el.value.length
+                const next = `${el.value.slice(0, start)}\n${el.value.slice(end)}`
+                formik.setFieldValue('text', next)
+                onDraft(next)
+                requestAnimationFrame(() => {
+                  el.selectionStart = el.selectionEnd = start + 1
+                })
+                return
+              }
+              if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
                 event.preventDefault()
                 if (
                   !blocked &&
@@ -859,6 +873,11 @@ export function ConversationPanel({
                 ) {
                   formik.handleSubmit()
                 }
+                return
+              }
+              if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
+                // Nouvelle ligne (comportement textarea natif) — ne pas envoyer.
+                return
               }
             }}
           />

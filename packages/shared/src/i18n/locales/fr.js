@@ -14,6 +14,14 @@ export const fr = {
       phoneHint: "Utilisez le numéro +7 et votre mot de passe.",
       forgot: "Mot de passe oublié ?",
       needHelp: "Besoin d’aide ?",
+      helpTitle: "Aide à la connexion",
+      helpIntro:
+        "Quelques vérifications rapides si vous n’arrivez pas à vous connecter.",
+      helpTipPhone: "Utilisez votre numéro russe au format +7 suivi de 10 chiffres.",
+      helpTipPassword: "Si le mot de passe est oublié, utilisez « Mot de passe oublié » (e-mail ou SMS).",
+      helpTipEmail: "Vous pouvez aussi vous connecter avec l’adresse e-mail liée au compte.",
+      helpContactTitle: "Nous contacter",
+      helpFaq: "FAQ",
       submit: "Se connecter",
       submitting: "Connexion…",
       demoAccounts: "Comptes de démo",
@@ -62,15 +70,15 @@ export const fr = {
       haveAccount: "Vous avez déjà un compte ?",
       loginLink: "Se connecter",
       helpButton: "Aide",
-      helpTitle: "Aide à l’inscription",
-      helpIntro:
-        "Seuls les champs essentiels apparaissent dans le formulaire. Les options secondaires et conseils détaillés sont ici.",
-      helpEssentialsTitle: "À retenir",
-      helpEssentialPhone: "Le numéro russe +7 sert à confirmer le compte par SMS.",
-      helpEssentialPassword: "Choisissez un mot de passe solide (8 caractères minimum).",
-      helpEssentialOtp: "Entre deux envois de code, comptez {seconds} secondes.",
+      helpTitle: "Aide au code de confirmation",
+      helpIntro: "Si le code SMS tarde à arriver, suivez ces étapes :",
+      helpStep1:
+        "Si vous ne recevez pas le code après une première tentative, attendez 60 secondes. Ensuite, cliquez sur « Renvoyer le code », ou utilisez « Recevoir le code par e-mail ».",
+      helpStep2:
+        "Si le code n’arrive toujours pas, utilisez « Recevoir le code par e-mail ». Un code sera envoyé à l’adresse e-mail déjà saisie, ce qui vous permettra de vous connecter.",
+      helpStep3:
+        "Une fois connecté, contactez-nous via « Besoin d’aide ? ». Après vérification, nous pourrons confirmer manuellement votre numéro de téléphone afin de vous donner accès à toutes les fonctionnalités.",
       helpOriginPhoneHint: "Optionnel — utile pour vos contacts Afrique / pays d’origine.",
-      helpSupport: "Toujours bloqué ? Contactez le support MOXT depuis la page d’aide.",
       verify: {
         title: "Confirmez votre numéro",
         body: "Un code à 6 chiffres a été envoyé au {phone} par SMS. L’arrivée peut prendre 1–2 minutes. Un seul code à la fois — le compte est créé après confirmation.",
@@ -95,9 +103,11 @@ export const fr = {
         switchedTitle: "Inscription par e-mail",
         switchedBody: "Un code a été envoyé à {email}. Saisissez-le pour créer votre compte.",
         afterSmsResends:
-          "Trop de renvois SMS. Un code a été envoyé à {email} pour finaliser l’inscription par e-mail.",
+          "Un code a été envoyé à {email} pour finaliser l’inscription par e-mail.",
         smsResendLimitHint:
-          "SMS déjà renvoyé une fois. Vous pouvez saisir le code s’il arrive, ou recevoir le code par e-mail maintenant (bascule automatique après 60 s).",
+          "Vous pouvez renvoyer le SMS une fois, ou recevoir le code par e-mail dès la fin du délai de 60 secondes.",
+        afterCooldownHint:
+          "Délai écoulé : renvoyez le SMS ou recevez le code par e-mail.",
       },
       toasts: {
         alreadyExistsTitle: "Compte déjà existant",
