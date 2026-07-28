@@ -257,7 +257,7 @@ export function BusinessesPage() {
                       <BusinessRatingBadge business={business} />
                     </div>
 
-                    <p className="mt-3 hidden text-sm leading-6 text-[var(--app-text-muted)] sm:block">
+                    <p className="mt-3 hidden text-sm leading-6 text-[var(--app-text-muted)] sm:line-clamp-5 sm:block sm:min-h-[7.5rem]">
                       {business.description}
                     </p>
                     <div className="mt-4 flex flex-wrap gap-2">

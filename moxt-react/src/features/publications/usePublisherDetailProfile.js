@@ -7,7 +7,7 @@ import {
   REVIEW_TARGET_TYPES,
 } from '@moxt/shared/utils/reviewUtils.js'
 import { useLanguage } from '../../contexts/useLanguage'
-import { calculateBusinessRating } from '../businesses/businessSelectors'
+import { selectBusinessReviewsBundle } from '../reviews/reviewSelectors'
 import { isActiveListing } from '../marketplace/listingCatalogUtils'
 import {
   collectUserPublications,
@@ -85,13 +85,8 @@ export function usePublisherDetailProfile(entity, kind) {
       ? state.businesses.items.find((item) => item.ownerId === ownerId)
       : null,
   )
-  const businessReviews = useSelector((state) =>
-    state.reviews.items.filter(
-      (item) =>
-        item.targetType === 'business' &&
-        item.targetId === businessId &&
-        item.status === 'published',
-    ),
+  const businessRatingBundle = useSelector((state) =>
+    business ? selectBusinessReviewsBundle(state, business) : null,
   )
   const allReviews = useSelector((state) => state.reviews.items)
   const currentUser = useSelector((state) => state.auth.user)
@@ -109,7 +104,8 @@ export function usePublisherDetailProfile(entity, kind) {
   }, [entity, meta, publications])
 
   const rating = useMemo(() => {
-    if (businessId) return calculateBusinessRating(businessReviews)
+    // Même agrégat que fiches entreprise / échangeurs (profil + publications).
+    if (businessId && businessRatingBundle) return businessRatingBundle.rating
     if (!ownerId) return { average: 0, count: 0 }
     const aggregateReviews = filterAggregateReviews(allReviews, {
       profileTargetType: REVIEW_TARGET_TYPES.USER_PROFILE,
@@ -117,7 +113,7 @@ export function usePublisherDetailProfile(entity, kind) {
       publicationIds: collectPublicationTargetIds(publications),
     })
     return calculateAggregateRating(aggregateReviews)
-  }, [allReviews, businessId, businessReviews, ownerId, publications])
+  }, [allReviews, businessId, businessRatingBundle, ownerId, publications])
 
   if (!entity || !meta) {
     return null
