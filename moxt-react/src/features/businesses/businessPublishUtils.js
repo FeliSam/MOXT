@@ -50,7 +50,7 @@ export function businessPublishBlockedMessageKey(business) {
   if (business.status === 'pending_review') {
     return 'publish.common.business.pendingReview'
   }
-  if (business.status === 'rejected' || business.status === 'suspended') {
+  if (business.status === 'rejected' || business.status === 'suspended' || business.status === 'unavailable') {
     return 'publish.common.business.rejected'
   }
   return 'publish.common.business.needsVerification'

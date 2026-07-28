@@ -1,13 +1,10 @@
-/* eslint-disable react-refresh/only-export-components -- action helpers + local ActionButton */
+/* eslint-disable react-refresh/only-export-components -- action helpers */
 import { Button } from '../../components/ui/Button'
 import { dispatchUserRole } from './promoteAdminUtils'
 import { verifyUserEmailManually, verifyUserPhoneManually } from './adminVerifyContactUtils'
 import { updateVerificationStatus, updateSubscriberReportStatus } from '../account/accountSlice'
-import {
-  moderateBusiness,
-  setBusinessPinned,
-  updateBusinessDocumentStatus,
-} from '../businesses/businessSlice'
+import { updateBusinessDocumentStatus } from '../businesses/businessSlice'
+import { BusinessAdminActions } from '../businesses/BusinessAdminActions'
 import { updateDisputeStatus } from '../disputes/disputeSlice'
 import { deleteEvent, moderateEvent, updateEventReportStatus } from '../events/eventSlice'
 import { deleteJob, moderateJob, updateJobReportStatus } from '../jobs/jobSlice'
@@ -23,37 +20,12 @@ import { TRANSFER_TRANSITIONS } from '../transfers/transferConfig'
 import { moderateTransfer } from '../transfers/transferSlice'
 import { moderateOffer, moderateOrder } from '../p2p/p2pSlice'
 import { REVIEW_DISPUTE_STATUS } from '@moxt/shared/utils/reviewUtils.js'
-import { FiCheck } from 'react-icons/fi'
 import { normalizeAdminKind, normalizeReportType } from './adminLinkUtils'
 import { adminText } from './adminI18n'
 import { promptRejectReason } from './promptRejectReason'
+import { ActionButton } from './AdminActionButton'
 
-export function ActionButton({ done, doneLabel, children, variant, ...props }) {
-  if (done) {
-    const danger = variant === 'danger'
-    return (
-      <Button
-        type="button"
-        variant="secondary"
-        disabled
-        icon={FiCheck}
-        className={
-          danger
-            ? '!border-rose-300 !bg-rose-50 !text-rose-800 opacity-100 dark:!border-rose-800 dark:!bg-rose-950/40 dark:!text-rose-200'
-            : '!border-emerald-300 !bg-emerald-50 !text-emerald-800 opacity-100 dark:!border-emerald-800 dark:!bg-emerald-950/40 dark:!text-emerald-200'
-        }
-        {...props}
-      >
-        {doneLabel || children}
-      </Button>
-    )
-  }
-  return (
-    <Button type="button" variant={variant} {...props}>
-      {children}
-    </Button>
-  )
-}
+export { ActionButton }
 
 /** Resolve/close a dispute and unlock the linked P2P order when applicable. */
 export function resolveDisputeAndUnlockOrder(dispatch, dispute, { status, actorId, actorRole }) {
@@ -126,33 +98,7 @@ export function contentActions(contentView, dispatch, item, t) {
   switch (contentView) {
     case 'businesses':
       return (
-        <>
-          <ActionButton
-            done={status === 'verified'}
-            doneLabel={adminText(t, 'admin.actions.approved')}
-            onClick={() => dispatch(moderateBusiness({ id: item.id, status: 'verified' }))}
-          >
-            {adminText(t, 'admin.actions.approve')}
-          </ActionButton>
-          <ActionButton
-            done={status === 'rejected'}
-            doneLabel={adminText(t, 'admin.actions.rejected')}
-            variant="danger"
-            onClick={() => dispatch(moderateBusiness({ id: item.id, status: 'rejected' }))}
-          >
-            {adminText(t, 'admin.actions.reject')}
-          </ActionButton>
-          <ActionButton
-            done={Boolean(item.pinnedAt)}
-            doneLabel={adminText(t, 'admin.actions.pinned')}
-            variant="secondary"
-            onClick={() =>
-              dispatch(setBusinessPinned({ id: item.id, pinned: !item.pinnedAt }))
-            }
-          >
-            {adminText(t, 'admin.actions.pin')}
-          </ActionButton>
-        </>
+        <BusinessAdminActions business={item} dispatch={dispatch} t={t} />
       )
     case 'listings':
       return (

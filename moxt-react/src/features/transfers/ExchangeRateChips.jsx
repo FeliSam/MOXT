@@ -4,24 +4,34 @@ import { useExchangeRate } from './useExchangeRate'
 
 function formatRate(value) {
   if (!Number.isFinite(value) || value <= 0) return null
-  // Les taux vont de ~0,1 (XOF→RUB) à ~45 (RUB→UGX) : on adapte la précision
-  // pour ne jamais afficher « 0,00 » ni une précision absurde.
   if (value >= 100) return value.toFixed(0)
   if (value >= 1) return value.toFixed(2)
   return value.toFixed(4)
 }
 
+/** Applique la réduction configurée par l’entreprise dans son dashboard. */
+function applyBusinessReduction(rawRate, reductionPercent) {
+  const raw = Number(rawRate)
+  if (!Number.isFinite(raw) || raw <= 0) return null
+  const reduction = Math.min(15, Math.max(0, Number(reductionPercent) || 0))
+  return raw * (1 - reduction / 100)
+}
+
 /**
- * Taux du jour pour UN sens de transfert — utilisé sur la carte partenaire du
- * formulaire de transfert, où le sens est déjà choisi par l'utilisateur.
+ * Taux du partenaire pour UN sens — utilise le taux entreprise (réduction dashboard),
+ * pas le taux Google/Frankfurter brut.
  */
-export function PartnerDirectionalRate({ direction, originCountry, className = '' }) {
+export function PartnerDirectionalRate({ direction, originCountry, exchanger, className = '' }) {
   const { t } = useLanguage()
   const currency = currencyForCountry(originCountry)
   const rate = useExchangeRate(currency)
 
   const outbound = direction === DIRECTIONS.BJ_TO_RU
-  const value = outbound ? rate.originToRub : rate.rubToOrigin
+  const raw = outbound ? rate.originToRub : rate.rubToOrigin
+  const reduction = outbound
+    ? exchanger?.rateReductionToRu
+    : exchanger?.rateReductionFromRu
+  const value = applyBusinessReduction(raw, reduction)
   const formatted = formatRate(value)
   if (!formatted) return null
 
@@ -31,7 +41,7 @@ export function PartnerDirectionalRate({ direction, originCountry, className = '
   return (
     <span
       className={`rounded-full bg-[var(--app-surface-muted)] px-2 py-0.5 text-[10px] font-bold text-[var(--app-text-muted)] ${className}`}
-      title={t('transfers.rate.todayTitle')}
+      title={t('transfers.rate.partnerTitle')}
     >
       1 {from} = {formatted} {to}
     </span>
@@ -39,20 +49,23 @@ export function PartnerDirectionalRate({ direction, originCountry, className = '
 }
 
 /**
- * Taux dans LES DEUX SENS — utilisé dans l'annuaire des échangeurs, où aucun
- * sens n'est encore choisi : l'utilisateur compare avant de se décider.
+ * Taux dans LES DEUX SENS pour une entreprise — réductions dashboard appliquées.
  */
-export function BothWayExchangeRates({ originCountry, className = '' }) {
+export function BothWayExchangeRates({ originCountry, exchanger, className = '' }) {
   const { t } = useLanguage()
   const currency = currencyForCountry(originCountry)
   const rate = useExchangeRate(currency)
 
-  const toRub = formatRate(rate.originToRub)
-  const fromRub = formatRate(rate.rubToOrigin)
+  const toRub = formatRate(
+    applyBusinessReduction(rate.originToRub, exchanger?.rateReductionToRu),
+  )
+  const fromRub = formatRate(
+    applyBusinessReduction(rate.rubToOrigin, exchanger?.rateReductionFromRu),
+  )
   if (!toRub && !fromRub) return null
 
   return (
-    <div className={`flex flex-wrap gap-1.5 ${className}`} title={t('transfers.rate.todayTitle')}>
+    <div className={`flex flex-wrap gap-1.5 ${className}`} title={t('transfers.rate.partnerTitle')}>
       {toRub ? (
         <span className="rounded-full bg-[var(--app-surface-muted)] px-2 py-0.5 text-[10px] font-bold text-[var(--app-text-muted)]">
           1 {currency} = {toRub} RUB

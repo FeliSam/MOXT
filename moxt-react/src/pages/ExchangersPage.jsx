@@ -182,6 +182,7 @@ export function ExchangersPage() {
 
                 <BothWayExchangeRates
                   originCountry={exchanger.country}
+                  exchanger={exchanger}
                   className="mt-3 justify-center"
                 />
 

@@ -44,6 +44,8 @@ export function Input({
   }
 
   const hasState = error || success
+  const hasRightAccessory = Boolean(iconRight) || hasState
+  const dualRight = Boolean(error && iconRight)
   const borderClass = error
     ? 'border-red-400 focus:border-red-400 focus:shadow-[0_0_0_3px_rgba(220,38,38,0.12)]'
     : success
@@ -81,7 +83,7 @@ export function Input({
             disabled:cursor-not-allowed disabled:opacity-50
             ${borderClass}
             ${iconLeft ? 'pl-10' : ''}
-            ${iconRight || hasState ? 'pr-10' : ''}
+            ${dualRight ? 'pr-[4.25rem]' : hasRightAccessory ? 'pr-11' : ''}
             ${className}
           `}
           onChange={onChange}
@@ -89,17 +91,22 @@ export function Input({
           {...props}
         />
 
-        {/* Icone droite : priorite a etat, puis iconRight */}
         {error ? (
-          <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-red-500">
+          <span
+            className={`pointer-events-none absolute top-1/2 -translate-y-1/2 text-red-500 ${
+              iconRight ? 'right-11' : 'right-3.5'
+            }`}
+          >
             <FiAlertCircle className="text-base" aria-hidden="true" />
           </span>
-        ) : success ? (
+        ) : success && !iconRight ? (
           <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-500">
             <FiCheckCircle className="text-base" aria-hidden="true" />
           </span>
-        ) : iconRight ? (
-          <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--app-text-faint)] [&>svg]:text-base">
+        ) : null}
+
+        {iconRight ? (
+          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--app-text-faint)] [&>svg]:text-base">
             {iconRight}
           </span>
         ) : null}

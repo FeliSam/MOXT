@@ -35,7 +35,13 @@ export function BusinessesPage() {
   const { t } = useLanguage()
   const bt = (key, vars) => businessesText(t, key, vars)
   const [advancedOpen, setAdvancedOpen] = useState(false)
-  const [filters, setFilters] = useState({ query: '', city: '', sector: '', service: '' })
+  const [filters, setFilters] = useState({
+    query: '',
+    city: '',
+    sector: '',
+    service: '',
+    country: '',
+  })
   const user = useSelector((state) => state.auth.user)
   const businesses = useSelector((state) => state.businesses.items)
   const ownBusiness = selectActiveBusinessForOwner(businesses, user?.id)
@@ -59,7 +65,11 @@ export function BusinessesPage() {
           (!filters.query || haystack.includes(filters.query.toLowerCase())) &&
           (!filters.city || business.city.toLowerCase().includes(filters.city.toLowerCase())) &&
           (!filters.sector || business.primaryActivity === filters.sector) &&
-          (!filters.service || business.services?.includes(filters.service))
+          (!filters.service || business.services?.includes(filters.service)) &&
+          (!filters.country ||
+            String(business.originCountry || business.country || '')
+              .toLowerCase()
+              .includes(filters.country.toLowerCase()))
         )
       })
         // Entreprises épinglées par un admin en tête de l'annuaire.
@@ -75,7 +85,7 @@ export function BusinessesPage() {
   )
 
   function clearFilters() {
-    setFilters({ query: '', city: '', sector: '', service: '' })
+    setFilters({ query: '', city: '', sector: '', service: '', country: '' })
   }
 
   return (
@@ -151,7 +161,7 @@ export function BusinessesPage() {
           onClear={clearFilters}
           placeholder={bt('businesses.page.searchPlaceholder')}
         >
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Input
               id="business-filter-city"
               label={bt('businesses.common.city')}
@@ -159,6 +169,15 @@ export function BusinessesPage() {
               onChange={(event) =>
                 setFilters((current) => ({ ...current, city: event.target.value }))
               }
+            />
+            <Input
+              id="business-filter-country"
+              label={bt('businesses.page.filter.country')}
+              value={filters.country}
+              onChange={(event) =>
+                setFilters((current) => ({ ...current, country: event.target.value }))
+              }
+              placeholder={bt('businesses.page.filter.countryPlaceholder')}
             />
             <Select
               id="business-filter-sector"
@@ -177,13 +196,13 @@ export function BusinessesPage() {
             </Select>
             <Select
               id="business-filter-service"
-              label={bt('businesses.common.service')}
+              label={bt('businesses.page.filter.role')}
               value={filters.service}
               onChange={(event) =>
                 setFilters((current) => ({ ...current, service: event.target.value }))
               }
             >
-              <option value="">{bt('businesses.page.filter.allServices')}</option>
+              <option value="">{bt('businesses.page.filter.allRoles')}</option>
               {DIRECTORY_SERVICES.map((service) => (
                 <option key={service} value={service}>
                   {businessesServiceLabel(t, service)}

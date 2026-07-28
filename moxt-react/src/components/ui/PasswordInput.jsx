@@ -3,28 +3,29 @@ import { FiEye, FiEyeOff } from 'react-icons/fi'
 import { Input } from './Input'
 
 /**
- * Champ mot de passe avec bouton afficher/masquer.
- * Accepte les mêmes props qu'Input — juste `type` est géré en interne.
+ * Champ mot de passe avec œil ancré dans le champ (via iconRight),
+ * sans chevaucher l’icône d’erreur ni dériver quand le message d’erreur apparaît.
  */
 export function PasswordInput({ className = '', ...props }) {
   const [visible, setVisible] = useState(false)
 
+  const eye = (
+    <button
+      type="button"
+      onClick={() => setVisible((v) => !v)}
+      aria-label={visible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+      className="grid size-8 place-items-center rounded-lg text-[var(--app-text-faint)] transition hover:bg-[var(--app-surface)] hover:text-[var(--app-text-muted)]"
+    >
+      {visible ? <FiEyeOff className="text-base" aria-hidden="true" /> : <FiEye className="text-base" aria-hidden="true" />}
+    </button>
+  )
+
   return (
-    <div className="relative">
-      <Input
-        {...props}
-        type={visible ? 'text' : 'password'}
-        className={`pr-11 ${className}`}
-      />
-      <button
-        type="button"
-        tabIndex={-1}
-        onClick={() => setVisible((v) => !v)}
-        aria-label={visible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
-        className="absolute bottom-0 right-3 top-0 mt-[1.65rem] flex items-center text-[var(--app-text-faint)] transition hover:text-[var(--app-text-muted)]"
-      >
-        {visible ? <FiEyeOff className="text-base" /> : <FiEye className="text-base" />}
-      </button>
-    </div>
+    <Input
+      {...props}
+      type={visible ? 'text' : 'password'}
+      iconRight={eye}
+      className={className}
+    />
   )
 }

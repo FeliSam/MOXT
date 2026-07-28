@@ -237,6 +237,10 @@ export const BUSINESSES_FR_SOURCES = {
   'businesses.page.filter.domain': 'Domaine',
   'businesses.page.filter.allDomains': 'Tous les domaines',
   'businesses.page.filter.allServices': 'Tous les services',
+  'businesses.page.filter.role': 'Rôle / module',
+  'businesses.page.filter.allRoles': 'Tous les rôles',
+  'businesses.page.filter.country': 'Pays',
+  'businesses.page.filter.countryPlaceholder': 'Ex. BJ, RU, SN…',
   'businesses.page.directoryTitle': 'Annuaire professionnel',
   'businesses.page.directoryDescription':
     'L’annuaire affiche uniquement les entreprises vérifiées. Le pays du compte membre n’influe pas sur cette liste : seul le statut de validation compte.',

@@ -20,6 +20,7 @@ export const STATUS_META = {
   sold: { label: 'Vendu', tone: 'info' },
   submitted: { label: 'Envoyé', tone: 'success' },
   suspended: { label: 'Suspendu', tone: 'warning' },
+  unavailable: { label: 'Indisponible', tone: 'warning' },
   verified: { label: 'Vérifié', tone: 'success' },
   waiting_agent: { label: 'Attente support', tone: 'warning' },
   waiting_user: { label: 'Votre réponse attendue', tone: 'info' },

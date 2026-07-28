@@ -2140,6 +2140,72 @@ export function createAuthService(supabase, redirects = {}) {
       return true
     },
 
+    /** Envoie un OTP SMS pour réinitialiser le mot de passe d’un compte lié au +7. */
+    async requestPhonePasswordReset(phone) {
+      if (!supabase) throw new Error('Supabase non configuré.')
+      const normalizedPhone = normalizeRussianAuthPhone(phone)
+      if (!/^\+7\d{10}$/.test(normalizedPhone)) {
+        throw new Error('Numéro de téléphone invalide. Vérifiez le format (+7XXXXXXXXXX).')
+      }
+      return withOtpInFlight('phone', normalizedPhone, async () => {
+        guardOtpSend('phone', normalizedPhone)
+        const { error } = await supabase.auth.signInWithOtp({
+          phone: normalizedPhone,
+          options: { channel: 'sms', shouldCreateUser: false },
+        })
+        if (error) {
+          throw new Error(translateAuthError(error, { channel: 'phone', intent: 'password_reset' }))
+        }
+        trackOtpSend('phone', normalizedPhone)
+        return { phone: normalizedPhone }
+      })
+    },
+
+    /**
+     * Vérifie l’OTP SMS puis définit le nouveau mot de passe.
+     * Déconnecte ensuite pour forcer une connexion propre.
+     */
+    async confirmPhonePasswordReset({ phone, token, password }) {
+      if (!supabase) throw new Error('Supabase non configuré.')
+      const normalizedPhone = normalizeRussianAuthPhone(phone)
+      const otp = String(token || '').trim()
+      const nextPassword = String(password || '').trim()
+      if (!/^\+7\d{10}$/.test(normalizedPhone)) {
+        throw new Error('Numéro de téléphone invalide. Vérifiez le format (+7XXXXXXXXXX).')
+      }
+      if (!/^\d{6}$/.test(otp)) {
+        throw new Error('Saisissez le code à 6 chiffres reçu par SMS.')
+      }
+      if (nextPassword.length < 8) {
+        throw new Error('Le mot de passe doit contenir au moins 8 caractères.')
+      }
+
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        phone: normalizedPhone,
+        token: otp,
+        type: 'sms',
+      })
+      if (verifyError) {
+        throw new Error(
+          translateAuthError(verifyError, { channel: 'phone', intent: 'otp_verify' }),
+        )
+      }
+
+      const { error: passwordError } = await supabase.auth.updateUser({ password: nextPassword })
+      if (passwordError) {
+        throw new Error(
+          translateAuthError(passwordError, { channel: 'phone', intent: 'password_change' }),
+        )
+      }
+
+      try {
+        await supabase.auth.signOut()
+      } catch {
+        // Session déjà absente — OK.
+      }
+      return true
+    },
+
     async listMfaFactors() {
       if (!supabase) return { totp: [] }
       const { data, error } = await supabase.auth.mfa.listFactors()

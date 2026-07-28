@@ -5,6 +5,7 @@ import {
   FiArrowRight,
   FiCheck,
   FiGlobe,
+  FiHelpCircle,
   FiShield,
   FiUser,
 } from 'react-icons/fi'
@@ -20,6 +21,7 @@ import { LanguageSegment } from '../components/ui/LanguageSegment'
 import { PasswordInput } from '../components/ui/PasswordInput'
 import { Select } from '../components/ui/Select'
 import { CitySelector } from '../components/ui/CitySelector'
+import { Modal } from '../components/ui/Modal'
 import { flagEmoji } from '../config/flags'
 import { constrainPhone, phonePrefixForCallingCode } from '../config/phone'
 import { useLanguage } from '../contexts/useLanguage'
@@ -146,6 +148,7 @@ export function RegisterPage() {
   const [emailSmsFallback, setEmailSmsFallback] = useState(false)
   /** Successful SMS resends during this signup (initial send excluded). */
   const [phoneResendCount, setPhoneResendCount] = useState(0)
+  const [helpOpen, setHelpOpen] = useState(false)
   // Blocks the "already logged-in" auto-landing effect while we navigate to Security after OTP.
   const completingPhoneOtpRef = useRef(false)
   // Sync locks — Formik does not prevent a second submit before React re-renders loading.
@@ -1007,50 +1010,29 @@ export function RegisterPage() {
               onChange={(city) => formik.setFieldValue('residenceCity', city)}
               error={errorFor('residenceCity')}
             />
-            <div className="grid min-w-0 gap-3">
-              <Input
-                id="russianPhone"
-                label={t('auth.register.russianPhone')}
-                type="tel"
-                autoComplete="tel"
-                placeholder="+7XXXXXXXXXX"
-                iconLeft={<span className="text-base leading-none">{flagEmoji('RU')}</span>}
-                {...formik.getFieldProps('russianPhone')}
-                onChange={(event) =>
-                  formik.setFieldValue('russianPhone', constrainPhone(event.target.value, '+7', 10))
+            <Input
+              id="russianPhone"
+              label={t('auth.register.russianPhone')}
+              type="tel"
+              autoComplete="tel"
+              placeholder="+7XXXXXXXXXX"
+              iconLeft={<span className="text-base leading-none">{flagEmoji('RU')}</span>}
+              {...formik.getFieldProps('russianPhone')}
+              onChange={(event) =>
+                formik.setFieldValue('russianPhone', constrainPhone(event.target.value, '+7', 10))
+              }
+              onBlur={(event) => {
+                formik.handleBlur(event)
+                const phone = constrainPhone(event.target.value, '+7', 10)
+                if (isValidRussianPhone(phone)) {
+                  prefetchIdentities({
+                    phone,
+                    email: formik.values.email,
+                  })
                 }
-                onBlur={(event) => {
-                  formik.handleBlur(event)
-                  const phone = constrainPhone(event.target.value, '+7', 10)
-                  if (isValidRussianPhone(phone)) {
-                    prefetchIdentities({
-                      phone,
-                      email: formik.values.email,
-                    })
-                  }
-                }}
-                error={errorFor('russianPhone')}
-              />
-              <Input
-                id="originPhone"
-                label={t('auth.register.originPhone')}
-                type="tel"
-                placeholder={`${selectedCountry?.callingCode || ''}...`}
-                iconLeft={
-                  <span className="text-base leading-none">
-                    {flagEmoji(selectedCountry?.code || formik.values.originCountry)}
-                  </span>
-                }
-                {...formik.getFieldProps('originPhone')}
-                onChange={(event) =>
-                  formik.setFieldValue(
-                    'originPhone',
-                    constrainPhone(event.target.value, selectedCountry?.callingCode || '', 12),
-                  )
-                }
-                error={errorFor('originPhone')}
-              />
-            </div>
+              }}
+              error={errorFor('russianPhone')}
+            />
             {!oauthCompletion ? (
               <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-3">
                 <PasswordInput
@@ -1124,13 +1106,14 @@ export function RegisterPage() {
               </Alert>
             ) : null}
 
-            <div className="hidden items-center gap-1.5 rounded-2xl bg-[var(--app-surface-muted)] px-4 py-2 text-sm font-bold sm:flex">
-              <span className="text-base leading-none">{flagEmoji(formik.values.originCountry)}</span>
-              {selectedCountry?.name || t('auth.register.fallbackCountry')}
-              <FiArrowRight className="text-xs text-[var(--app-text-faint)]" />
-              <span className="text-base leading-none">{flagEmoji('RU')}</span>
-              {formik.values.residenceCity || t('auth.register.fallbackRussia')}
-            </div>
+            <button
+              type="button"
+              onClick={() => setHelpOpen(true)}
+              className="inline-flex items-center justify-center gap-1.5 text-xs font-bold text-[var(--app-text-muted)] underline-offset-2 hover:text-brand-700 hover:underline"
+            >
+              <FiHelpCircle className="text-sm" />
+              {t('auth.register.helpButton')}
+            </button>
 
             <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-3">
               <Button type="button" variant="secondary" icon={FiArrowLeft} onClick={() => setStep(2)}>
@@ -1172,10 +1155,14 @@ export function RegisterPage() {
               variant="info"
             >
               {pendingVerification.method === 'email'
-                ? t('auth.register.verify.emailBody', { email: pendingVerification.email })
+                ? t('auth.register.verify.emailBodyShort', {
+                    email: pendingVerification.email,
+                  })
                 : pendingVerification.sendingSms
-                  ? t('auth.register.verify.sendingBody', { phone: pendingVerification.phone })
-                  : t('auth.register.verify.body', { phone: pendingVerification.phone })}
+                  ? t('auth.register.verify.sendingBodyShort', {
+                      phone: pendingVerification.phone,
+                    })
+                  : t('auth.register.verify.bodyShort', { phone: pendingVerification.phone })}
             </Alert>
             {otpCapMessage ? (
               <Alert title={t('auth.register.otpCapTitle')} variant="warning">
@@ -1215,6 +1202,14 @@ export function RegisterPage() {
                 : t('auth.register.verify.confirm')}
             </Button>
             <div className="grid gap-2 text-center">
+              <button
+                type="button"
+                onClick={() => setHelpOpen(true)}
+                className="inline-flex items-center justify-center gap-1.5 text-xs font-bold text-[var(--app-text-muted)] underline-offset-2 hover:text-brand-700 hover:underline"
+              >
+                <FiHelpCircle className="text-sm" />
+                {t('auth.register.helpButton')}
+              </button>
               <p className="text-sm text-[var(--app-text-muted)]">
                 {pendingVerification.method === 'email'
                   ? t('auth.register.codeNotReceivedEmail')
@@ -1283,6 +1278,62 @@ export function RegisterPage() {
           {t('auth.register.loginLink')}
         </Link>
       </p>
+
+      <Modal
+        open={helpOpen}
+        onClose={() => setHelpOpen(false)}
+        title={t('auth.register.helpTitle')}
+      >
+        <div className="grid gap-4 text-sm text-[var(--app-text-muted)]">
+          <p>{t('auth.register.helpIntro')}</p>
+          <div className="grid gap-2 rounded-2xl bg-[var(--app-surface-muted)] p-4">
+            <p className="text-xs font-black uppercase tracking-[0.08em] text-[var(--app-text)]">
+              {t('auth.register.helpEssentialsTitle')}
+            </p>
+            <ul className="list-disc space-y-1.5 pl-4">
+              <li>{t('auth.register.helpEssentialPhone')}</li>
+              <li>{t('auth.register.helpEssentialPassword')}</li>
+              <li>{t('auth.register.helpEssentialOtp', { seconds: OTP_RESEND_COOLDOWN_SECONDS })}</li>
+            </ul>
+          </div>
+          <Input
+            id="help-originPhone"
+            label={t('auth.register.originPhone')}
+            type="tel"
+            placeholder={`${selectedCountry?.callingCode || ''}...`}
+            hint={t('auth.register.helpOriginPhoneHint')}
+            iconLeft={
+              <span className="text-base leading-none">
+                {flagEmoji(selectedCountry?.code || formik.values.originCountry)}
+              </span>
+            }
+            {...formik.getFieldProps('originPhone')}
+            onChange={(event) =>
+              formik.setFieldValue(
+                'originPhone',
+                constrainPhone(event.target.value, selectedCountry?.callingCode || '', 12),
+              )
+            }
+            error={errorFor('originPhone')}
+          />
+          <div className="flex items-center gap-1.5 rounded-2xl border border-[var(--app-border)] px-4 py-2.5 text-sm font-bold text-[var(--app-text)]">
+            <span className="text-base leading-none">{flagEmoji(formik.values.originCountry)}</span>
+            {selectedCountry?.name || t('auth.register.fallbackCountry')}
+            <FiArrowRight className="text-xs text-[var(--app-text-faint)]" />
+            <span className="text-base leading-none">{flagEmoji('RU')}</span>
+            {formik.values.residenceCity || t('auth.register.fallbackRussia')}
+          </div>
+          <p>{t('auth.register.helpSupport')}</p>
+          <div className="flex flex-wrap gap-2">
+            <Link to="/support" className="auth-flow-link text-sm font-bold">
+              {t('auth.login.needHelp')}
+            </Link>
+            <Button type="button" variant="secondary" onClick={() => setHelpOpen(false)}>
+              {t('common.close')}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </AuthCard>
   )
 }

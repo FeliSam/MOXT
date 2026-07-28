@@ -1,7 +1,7 @@
 import { clearPendingRegistration } from '@moxt/shared/auth/pendingRegistration.js'
 import { useFormik } from 'formik'
 import { useEffect, useState } from 'react'
-import { FiLock, FiMail, FiPhone } from 'react-icons/fi'
+import { FiHelpCircle, FiLock, FiMail, FiPhone } from 'react-icons/fi'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { AuthCard } from '../components/auth/AuthCard'
@@ -147,6 +147,14 @@ export function LoginPage() {
             {...phoneFormik.getFieldProps('password')}
             error={phoneError('password')}
           />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Link className="auth-flow-link inline-flex items-center gap-1 text-xs" to="/support">
+              <FiHelpCircle className="text-sm" /> {t('auth.login.needHelp')}
+            </Link>
+            <Link className="auth-flow-link text-xs" to="/forgot-password?mode=phone">
+              {t('auth.login.forgot')}
+            </Link>
+          </div>
           <p className="auth-flow-hint text-xs text-[var(--app-text-muted)]">
             {t('auth.login.phoneHint')}
           </p>
@@ -176,8 +184,11 @@ export function LoginPage() {
             {...emailFormik.getFieldProps('password')}
             error={emailError('password')}
           />
-          <div className="flex justify-end">
-            <Link className="auth-flow-link" to="/forgot-password">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Link className="auth-flow-link inline-flex items-center gap-1 text-xs" to="/support">
+              <FiHelpCircle className="text-sm" /> {t('auth.login.needHelp')}
+            </Link>
+            <Link className="auth-flow-link text-xs" to="/forgot-password">
               {t('auth.login.forgot')}
             </Link>
           </div>

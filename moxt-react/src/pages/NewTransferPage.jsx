@@ -492,12 +492,20 @@ export function NewTransferPage() {
                         key={exchanger.id}
                         type="button"
                         onClick={() => formik.setFieldValue('exchangerId', exchanger.id)}
-                        className={`flex w-[9.25rem] shrink-0 flex-col items-center gap-2 rounded-2xl border-2 p-4 text-center transition-all duration-200 sm:w-[10.5rem] xl:w-auto xl:shrink ${
+                        className={`relative flex w-[9.25rem] shrink-0 flex-col items-center gap-2 rounded-2xl border-2 p-4 pt-5 text-center transition-all duration-200 sm:w-[10.5rem] xl:w-auto xl:shrink ${
                           active
-                            ? 'border-brand-500 bg-[var(--app-accent-soft)] shadow-md'
+                            ? 'border-emerald-500 bg-emerald-50/80 shadow-md dark:border-emerald-400 dark:bg-emerald-950/30'
                             : 'border-[var(--app-border)] hover:border-brand-400 hover:shadow-sm'
                         }`}
                       >
+                        {active ? (
+                          <span
+                            className="absolute right-2 top-2 grid size-6 place-items-center rounded-full bg-emerald-500 text-white shadow-sm"
+                            aria-label={t('transfers.new.selected')}
+                          >
+                            <FiCheck className="text-xs" strokeWidth={3} />
+                          </span>
+                        ) : null}
                         <ExchangerPickerAvatar exchanger={exchanger} active={active} />
                         <VerifiedDisplayName
                           as="p"
@@ -510,9 +518,6 @@ export function NewTransferPage() {
                         <span className="text-[10px] font-semibold text-[var(--app-text-muted)]">
                           {flagEmoji(exchanger.country)} {exchanger.city || exchanger.country}
                         </span>
-                        {/* Note réelle issue des avis (profil entreprise + ses
-                            publications), et non le champ statique `rating`
-                            qui restait vide pour les vraies entreprises. */}
                         <BusinessRatingBadge business={exchanger} />
                         <PartnerDirectionalRate
                           exchanger={exchanger}
@@ -520,18 +525,13 @@ export function NewTransferPage() {
                           originCountry={originCountry}
                         />
                         <div className="flex w-full flex-col gap-1">
-                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${active ? 'bg-brand-700 text-white' : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'}`}>
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${active ? 'bg-emerald-600 text-white' : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'}`}>
                             {exchanger.feePercent}% {t('transfers.new.fees')}
                           </span>
-                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${active ? 'bg-brand-600 text-white' : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'}`}>
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${active ? 'bg-emerald-500 text-white' : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'}`}>
                             <FiClock className="mr-0.5 inline text-[9px]" />{exchanger.averageDelay}
                           </span>
                         </div>
-                        {active ? (
-                          <span className="flex items-center gap-1 text-[10px] font-bold text-brand-600">
-                            <FiCheck className="text-[10px]" /> {t('transfers.new.selected')}
-                          </span>
-                        ) : null}
                       </button>
                     )
                   })}
