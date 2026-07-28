@@ -310,6 +310,8 @@ export const ADMIN_FR_SOURCES = {
   'admin.actions.dismiss': 'Ignorer',
   'admin.actions.dismissed': 'Ignoré',
   'admin.actions.advanceTo': 'Passer a {next}',
+  'admin.actions.pin': 'Épingler',
+  'admin.actions.pinned': 'Épinglé',
   'admin.actions.promoteAdmin': 'Passer admin',
   'admin.actions.promoteModerator': 'Passer modérateur',
   'admin.actions.adminPromoted': 'Admin',

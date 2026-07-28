@@ -48,6 +48,8 @@ import {
 import { ExchangerPickerAvatar } from '../features/transfers/ExchangerPickerAvatar'
 import { listExchangersForTransfer, resolveUserPartnerCountry } from '../features/transfers/exchangerListUtils'
 import { useExchangeRate } from '../features/transfers/useExchangeRate'
+import { PartnerDirectionalRate } from '../features/transfers/ExchangeRateChips'
+import { BusinessRatingBadge } from '../features/reviews/BusinessRatingBadge'
 import { useLanguage } from '../contexts/useLanguage'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 import {
@@ -508,11 +510,15 @@ export function NewTransferPage() {
                         <span className="text-[10px] font-semibold text-[var(--app-text-muted)]">
                           {flagEmoji(exchanger.country)} {exchanger.city || exchanger.country}
                         </span>
-                        {exchanger.rating > 0 ? (
-                          <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600">
-                            <FiStar className="text-[9px]" /> {exchanger.rating.toFixed(1)}
-                          </span>
-                        ) : null}
+                        {/* Note réelle issue des avis (profil entreprise + ses
+                            publications), et non le champ statique `rating`
+                            qui restait vide pour les vraies entreprises. */}
+                        <BusinessRatingBadge business={exchanger} />
+                        <PartnerDirectionalRate
+                          exchanger={exchanger}
+                          direction={formik.values.direction}
+                          originCountry={originCountry}
+                        />
                         <div className="flex w-full flex-col gap-1">
                           <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${active ? 'bg-brand-700 text-white' : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'}`}>
                             {exchanger.feePercent}% {t('transfers.new.fees')}

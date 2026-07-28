@@ -77,6 +77,7 @@ const camelMap = {
   unread_by: 'unreadBy',
   archived_by: 'archivedBy',
   pinned_by: 'pinnedBy',
+  pinned_at: 'pinnedAt',
   muted_by: 'mutedBy',
   blocked_by: 'blockedBy',
   reply_to_id: 'replyToId',

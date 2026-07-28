@@ -3570,6 +3570,9 @@ export const fr = {
     addressCompleteRequired: "Adresse complete obligatoire.",
   },
   transfers: {
+    rate: {
+      todayTitle: "Taux du jour",
+    },
     direction: {
       bjToRu: "Benin vers Russie",
       ruToBj: "Russie vers Benin",

@@ -3,7 +3,11 @@ import { Button } from '../../components/ui/Button'
 import { dispatchUserRole } from './promoteAdminUtils'
 import { verifyUserEmailManually, verifyUserPhoneManually } from './adminVerifyContactUtils'
 import { updateVerificationStatus, updateSubscriberReportStatus } from '../account/accountSlice'
-import { moderateBusiness, updateBusinessDocumentStatus } from '../businesses/businessSlice'
+import {
+  moderateBusiness,
+  setBusinessPinned,
+  updateBusinessDocumentStatus,
+} from '../businesses/businessSlice'
 import { updateDisputeStatus } from '../disputes/disputeSlice'
 import { deleteEvent, moderateEvent, updateEventReportStatus } from '../events/eventSlice'
 import { deleteJob, moderateJob, updateJobReportStatus } from '../jobs/jobSlice'
@@ -137,6 +141,16 @@ export function contentActions(contentView, dispatch, item, t) {
             onClick={() => dispatch(moderateBusiness({ id: item.id, status: 'rejected' }))}
           >
             {adminText(t, 'admin.actions.reject')}
+          </ActionButton>
+          <ActionButton
+            done={Boolean(item.pinnedAt)}
+            doneLabel={adminText(t, 'admin.actions.pinned')}
+            variant="secondary"
+            onClick={() =>
+              dispatch(setBusinessPinned({ id: item.id, pinned: !item.pinnedAt }))
+            }
+          >
+            {adminText(t, 'admin.actions.pin')}
           </ActionButton>
         </>
       )

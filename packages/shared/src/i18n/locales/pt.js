@@ -3570,6 +3570,9 @@ export const pt = {
     addressCompleteRequired: "Endereço completo obrigatório.",
   },
   transfers: {
+    rate: {
+      todayTitle: "Taxa do dia",
+    },
     direction: {
       bjToRu: "Benim para Rússia",
       ruToBj: "Rússia para Benim",

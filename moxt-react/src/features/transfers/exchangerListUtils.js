@@ -152,6 +152,7 @@ export function businessToExchangerOption(
     ownerId: business.ownerId,
     name: business.name,
     rating: Number(business.rating) || 0,
+    pinnedAt: business.pinnedAt || null,
     feePercent: Number(business.feePercent || 0),
     rateReductionToRu: Math.min(15, Math.max(0, Number(business.rateReductionToRu) || 0)),
     rateReductionFromRu: Math.min(15, Math.max(0, Number(business.rateReductionFromRu) || 0)),
@@ -193,6 +194,13 @@ export function listExchangersForTransfer({
       businessToExchangerOption(business, partnerCountry, originCountry, { toConfirmLabel }),
     )
     .sort((left, right) => {
+      // Épinglés par un admin d'abord (le plus récemment épinglé en tête),
+      // puis le classement naturel par note.
+      const pinDelta = Number(Boolean(right.pinnedAt)) - Number(Boolean(left.pinnedAt))
+      if (pinDelta !== 0) return pinDelta
+      if (left.pinnedAt && right.pinnedAt) {
+        return String(right.pinnedAt).localeCompare(String(left.pinnedAt))
+      }
       if (right.rating !== left.rating) return right.rating - left.rating
       return left.name.localeCompare(right.name, 'fr')
     })

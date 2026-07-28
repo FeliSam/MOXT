@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { Badge, VerifiedDisplayName } from '../components/ui/Badge'
+import { BusinessRatingBadge } from '../features/reviews/BusinessRatingBadge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
@@ -60,7 +61,16 @@ export function BusinessesPage() {
           (!filters.sector || business.primaryActivity === filters.sector) &&
           (!filters.service || business.services?.includes(filters.service))
         )
-      }),
+      })
+        // Entreprises épinglées par un admin en tête de l'annuaire.
+        .sort((left, right) => {
+          const pinDelta = Number(Boolean(right.pinnedAt)) - Number(Boolean(left.pinnedAt))
+          if (pinDelta !== 0) return pinDelta
+          if (left.pinnedAt && right.pinnedAt) {
+            return String(right.pinnedAt).localeCompare(String(left.pinnedAt))
+          }
+          return 0
+        }),
     [businesses, filters, ownBusiness, t, user],
   )
 
@@ -225,6 +235,7 @@ export function BusinessesPage() {
                       <Badge tone={statusMeta(business.status, t).tone}>
                         {statusMeta(business.status, t).label}
                       </Badge>
+                      <BusinessRatingBadge business={business} />
                     </div>
 
                     <p className="mt-3 hidden text-sm leading-6 text-[var(--app-text-muted)] sm:block">

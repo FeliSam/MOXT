@@ -3571,6 +3571,9 @@ export const ru = {
     addressCompleteRequired: "Укажите полный адрес.",
   },
   transfers: {
+    rate: {
+      todayTitle: "Курс дня",
+    },
     direction: {
       bjToRu: "Бенин → Россия",
       ruToBj: "Россия → Бенин",

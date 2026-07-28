@@ -10,8 +10,31 @@ import {
   shouldSendNotification,
 } from '@moxt/shared/utils/notificationUtils.js'
 import { filterPublisherSubscribers } from '@moxt/shared/utils/subscriptionUtils.js'
+import { supabase } from '../services/supabaseClient'
 import { translate } from '../i18n/translate'
 import { sharedText } from '../i18n/sharedI18n'
+
+/**
+ * Notifie tous les administrateurs via le serveur (RPC security definer).
+ * Indispensable quand l'auteur n'est pas admin : il n'a pas la liste des
+ * admins en local et n'alerterait donc personne.
+ */
+async function notifyAdminsRemote({ title, message, type, link, priority }, dedupeKey) {
+  if (!supabase) return
+  try {
+    const { error } = await supabase.rpc('moxt_notify_admins', {
+      p_title: String(title || '').slice(0, 200),
+      p_message: String(message || '').slice(0, 500),
+      p_type: type || 'moderation',
+      p_link: link || '/admin',
+      p_priority: priority || 'high',
+      p_dedupe_key: dedupeKey || null,
+    })
+    if (error) console.warn('[notifications] alerte admin distante:', error.message)
+  } catch (error) {
+    console.warn('[notifications] alerte admin distante:', error?.message || error)
+  }
+}
 
 const P2P_STATUS_KEYS = {
   created: 'shared.notifications.p2p.status.created',
@@ -87,8 +110,20 @@ export function createNotificationDispatcher(store) {
 
   function notifyAdmins(payload) {
     const state = store.getState()
-    for (const adminId of getAdminUserIds(state)) {
+    const adminIds = getAdminUserIds(state)
+
+    // Chemin local : l'auteur est admin, il connaît donc la liste et voit la
+    // notification immédiatement (pas d'aller-retour réseau).
+    for (const adminId of adminIds) {
       notifyUser(adminId, payload, 'notifSysteme')
+    }
+
+    // `state.administration.users` n'est chargé que pour les admins
+    // (loadAllData). Un utilisateur ordinaire — une entreprise qui envoie un
+    // document, par exemple — a donc une liste vide et n'alertait personne.
+    // On délègue au serveur, qui résout les admins lui-même.
+    if (adminIds.length === 0) {
+      void notifyAdminsRemote(payload)
     }
   }
 

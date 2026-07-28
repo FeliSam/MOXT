@@ -644,6 +644,15 @@ const handlers = {
   'businesses/moderateBusiness': async (payload) => {
     await update('businesses', payload.id, { status: payload.status })
   },
+  'businesses/setBusinessPinned': async (payload) => {
+    // RPC plutôt qu'un update direct : la colonne ne doit pas être modifiable
+    // par le propriétaire de l'entreprise, seulement par un admin.
+    const { error } = await supabase.rpc('moxt_set_business_pinned', {
+      p_business_id: payload.id,
+      p_pinned: Boolean(payload.pinned),
+    })
+    if (error) throw error
+  },
   'businesses/updateBusinessActivityVisibility': async (payload) => {
     await update('businesses', payload.businessId, {
       activity_visibility: payload.activityVisibility,

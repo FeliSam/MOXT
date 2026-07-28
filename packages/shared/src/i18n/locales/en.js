@@ -3571,6 +3571,9 @@ export const en = {
     addressCompleteRequired: "Complete address required.",
   },
   transfers: {
+    rate: {
+      todayTitle: "Today's rate",
+    },
     direction: {
       bjToRu: "Benin to Russia",
       ruToBj: "Russia to Benin",

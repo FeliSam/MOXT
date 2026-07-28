@@ -118,6 +118,12 @@ const businessSlice = createSlice({
       business.status = action.payload.status
       business.updatedAt = new Date().toISOString()
     },
+    setBusinessPinned(state, action) {
+      const business = state.items.find((item) => item.id === action.payload.id)
+      if (!business) return
+      business.pinnedAt = action.payload.pinned ? new Date().toISOString() : null
+      business.updatedAt = new Date().toISOString()
+    },
     updateBusinessActivityVisibility(state, action) {
       const business = state.items.find(
         (item) =>
@@ -289,6 +295,7 @@ export const {
   createBusinessRequest,
   deleteBusinessByUser,
   moderateBusiness,
+  setBusinessPinned,
   patchBusiness,
   removeBusinessMember,
   saveBusiness,
