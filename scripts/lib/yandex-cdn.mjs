@@ -163,29 +163,39 @@ export const MOXT_SECURITY_HEADERS = {
 
 /**
  * Pose les en-têtes de sécurité HTTP sur la ressource CDN Yandex (Vague 2).
- * Best-effort : si la CLI ne supporte pas l’option, on log et on continue.
+ * Best-effort : la CLI yc ne propose pas toujours `--header` ; on n’interrompt jamais le déploiement.
  */
 export function ensureCdnSecurityHeaders(resourceId) {
   if (!resourceId) return false
-  try {
+  // Tentatives compatibles selon versions yc (aucune ne doit faire échouer le CPD).
+  const attempts = [
+    ['--header'],
+    ['--response-header'],
+    ['--custom-header'],
+  ]
+  for (const [flag] of attempts) {
+    let allOk = true
     for (const [name, value] of Object.entries(MOXT_SECURITY_HEADERS)) {
-      ycInherit(
+      const { code, stderr, stdout } = ycRun([
         'cdn',
         'resource',
         'update',
         String(resourceId),
-        '--header',
+        flag,
         `${name}:${value}`,
-      )
+      ])
+      if (code !== 0) {
+        allOk = false
+        const msg = `${stderr}\n${stdout}`.trim()
+        if (/unknown flag|unknown argument/i.test(msg)) break
+      }
     }
-    return true
-  } catch (error) {
-    console.warn(
-      '[cdn] Impossible de poser les en-têtes HTTP de sécurité via yc:',
-      error instanceof Error ? error.message : error,
-    )
-    return false
+    if (allOk) return true
   }
+  console.warn(
+    '[cdn] En-têtes HTTP de sécurité non posés via yc (flag non supporté). CSP meta HTML + netlify.toml restent actifs.',
+  )
+  return false
 }
 
 export function purgeCdnCache(resourceId) {
