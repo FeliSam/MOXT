@@ -3,22 +3,34 @@ import webpush from 'npm:web-push@3'
 import {
   buildWebPushPayload,
   isAuthorizedDispatch,
-  isRecentNotification,
   parseJsonField,
   shouldDispatchWebPush,
 } from '../_shared/pushDispatch.ts'
 import { isStaleFcmError, sendFcmToDevice } from '../_shared/fcmPush.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type, x-moxt-push-secret',
+const ALLOWED_ORIGINS = new Set([
+  'https://moxtapp.ru',
+  'https://www.moxtapp.ru',
+  'https://moxtapp-web.website.yandexcloud.net',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+])
+
+function corsHeadersFor(req: Request) {
+  const origin = req.headers.get('origin') || ''
+  const allow = ALLOWED_ORIGINS.has(origin) ? origin : 'https://moxtapp.ru'
+  return {
+    'Access-Control-Allow-Origin': allow,
+    'Access-Control-Allow-Headers':
+      'authorization, x-client-info, apikey, content-type, x-moxt-push-secret',
+    'Vary': 'Origin',
+  }
 }
 
-function json(body: Record<string, unknown>, status = 200) {
+function json(body: Record<string, unknown>, status = 200, req?: Request) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: { ...(req ? corsHeadersFor(req) : corsHeadersFor(new Request('https://moxtapp.ru'))), 'Content-Type': 'application/json' },
   })
 }
 
@@ -149,26 +161,31 @@ async function dispatchNativePush(
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeadersFor(req) })
   }
 
   if (req.method !== 'POST') {
-    return json({ error: 'Method not allowed' }, 405)
+    return json({ error: 'Method not allowed' }, 405, req)
   }
 
   const dispatchSecret = Deno.env.get('PUSH_DISPATCH_SECRET') || ''
   const hasSecretAuth = isAuthorizedDispatch(req, dispatchSecret)
 
+  // Secret obligatoire — plus de bypass « notification récente »
+  if (!hasSecretAuth) {
+    return json({ error: 'Unauthorized' }, 401, req)
+  }
+
   let body: { notificationId?: string }
   try {
     body = await req.json()
   } catch {
-    return json({ error: 'JSON invalide.' }, 400)
+    return json({ error: 'JSON invalide.' }, 400, req)
   }
 
   const notificationId = body.notificationId?.trim()
   if (!notificationId) {
-    return json({ error: 'notificationId requis.' }, 400)
+    return json({ error: 'notificationId requis.' }, 400, req)
   }
 
   const supabase = createServiceClient()
@@ -180,22 +197,18 @@ Deno.serve(async (req) => {
     .maybeSingle()
 
   if (notificationError) {
-    return json({ error: notificationError.message }, 500)
+    return json({ error: notificationError.message }, 500, req)
   }
 
   // Ne claim pas tant que la notif n'existe pas — sinon les retries client
   // restent bloqués sur already_dispatched.
   if (!notification) {
-    return json({ error: 'Notification introuvable.', retryable: true }, 404)
-  }
-
-  if (!hasSecretAuth && !isRecentNotification(notification.created_at)) {
-    return json({ error: 'Unauthorized' }, 401)
+    return json({ error: 'Notification introuvable.', retryable: true }, 404, req)
   }
 
   const claimed = await claimDispatch(supabase, notificationId)
   if (!claimed) {
-    return json({ ok: true, skipped: 'already_dispatched' })
+    return json({ ok: true, skipped: 'already_dispatched' }, 200, req)
   }
 
   const { data: profile } = await supabase
@@ -207,7 +220,7 @@ Deno.serve(async (req) => {
   const preferences = parseJsonField(profile?.preferences, {})
   if (!shouldDispatchWebPush(preferences, notification)) {
     await finalizeDispatch(supabase, notificationId, { deliveredCount: 0 })
-    return json({ ok: true, skipped: 'preferences' })
+    return json({ ok: true, skipped: 'preferences' }, 200, req)
   }
 
   const { data: subscriptions, error: subscriptionsError } = await supabase
@@ -218,12 +231,12 @@ Deno.serve(async (req) => {
 
   if (subscriptionsError) {
     await finalizeDispatch(supabase, notificationId, { deliveredCount: 0, error: subscriptionsError.message })
-    return json({ error: subscriptionsError.message }, 500)
+    return json({ error: subscriptionsError.message }, 500, req)
   }
 
   if (!subscriptions?.length) {
     await finalizeDispatch(supabase, notificationId, { deliveredCount: 0 })
-    return json({ ok: true, delivered: 0, skipped: 'no_subscriptions' })
+    return json({ ok: true, delivered: 0, skipped: 'no_subscriptions' }, 200, req)
   }
 
   const payload = buildWebPushPayload(notification)
@@ -247,11 +260,15 @@ Deno.serve(async (req) => {
     nativeDelivered: nativeResult.delivered,
   })
 
-  return json({
-    ok: true,
-    delivered: deliveredCount,
-    web: webResult.delivered,
-    native: nativeResult.delivered,
-    staleRemoved: staleIds.length,
-  })
+  return json(
+    {
+      ok: true,
+      delivered: deliveredCount,
+      web: webResult.delivered,
+      native: nativeResult.delivered,
+      staleRemoved: staleIds.length,
+    },
+    200,
+    req,
+  )
 })

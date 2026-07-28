@@ -9,6 +9,16 @@ import {
 import { useLanguage } from '../../contexts/useLanguage'
 import { messagesText } from '../../features/communications/messagesI18n'
 
+/** Liens pièces jointes : https/http ou chemins relatifs — jamais javascript:/data: */
+function safeAttachmentHref(url) {
+  if (!url || typeof url !== 'string') return null
+  const trimmed = url.trim()
+  if (!trimmed) return null
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) return trimmed
+  return null
+}
+
 function MessageImageLightbox({ images, initialIndex = 0, onClose }) {
   const { t } = useLanguage()
   const safeImages = images.filter(Boolean)
@@ -207,11 +217,22 @@ export function MessageAttachment({ attachment, mine }) {
   }
 
   if (attachment.url) {
+    const href = safeAttachmentHref(attachment.url)
+    if (!href) {
+      return (
+        <span
+          className={`message-attachment ${mine ? 'message-attachment--sent' : 'message-attachment--received'}`}
+        >
+          <FiPaperclip className="shrink-0" aria-hidden="true" />
+          <span className="min-w-0 truncate">{attachment.name}</span>
+        </span>
+      )
+    }
     return (
       <a
-        href={attachment.url}
+        href={href}
         target="_blank"
-        rel="noreferrer"
+        rel="noopener noreferrer"
         className={`message-attachment ${mine ? 'message-attachment--sent' : 'message-attachment--received'}`}
         onClick={(event) => event.stopPropagation()}
       >

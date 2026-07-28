@@ -484,12 +484,16 @@ export const interactionMiddleware = (store) => {
   }
 
   if (action.type === 'administration/updateUserStatus') {
+    const actor = store.getState().auth?.user
+    const actorIsAdmin = ['admin', 'superadmin'].includes(actor?.role)
     const targetId = action.payload?.id
     const status = action.payload?.status
+    // Uniquement après une vraie action admin (anti-spoof via Redux/devtools).
     if (
+      actorIsAdmin &&
       targetId &&
       targetId !== actorId &&
-      ['suspended', 'banned', 'blocked', 'disabled'].includes(status)
+      ['suspended', 'banned', 'blocked', 'disabled', 'pending_deletion'].includes(status)
     ) {
       notify(store, {
         userId: targetId,
@@ -503,8 +507,10 @@ export const interactionMiddleware = (store) => {
   }
 
   if (action.type === 'p2p/moderateOffer') {
+    const actor = store.getState().auth?.user
+    const actorIsStaff = ['admin', 'superadmin', 'moderator'].includes(actor?.role)
     const offer = after.p2p.offers.find((item) => item.id === action.payload.id)
-    if (offer?.ownerId && offer.ownerId !== actorId) {
+    if (actorIsStaff && offer?.ownerId && offer.ownerId !== actorId) {
       notify(store, {
         userId: offer.ownerId,
         title: appText('notificationsFeed.p2pOfferModerated'),
