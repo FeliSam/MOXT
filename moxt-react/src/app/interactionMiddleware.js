@@ -691,36 +691,40 @@ export const interactionMiddleware = (store) => {
   }
 
   if (action.type === 'businesses/moderateBusiness') {
-    const previous = before.businesses.items.find((item) => item.id === action.payload.id)
-    const business = after.businesses.items.find((item) => item.id === action.payload.id)
-    const { status } = action.payload
-    if (business?.ownerId && business.ownerId !== actorId && previous?.status !== status) {
-      const wasPublishReady = BUSINESS_VISIBLE_STATUSES.includes(previous?.status)
-      const isPublishReady = BUSINESS_VISIBLE_STATUSES.includes(status)
-      if (isPublishReady && !wasPublishReady) {
-        notify(store, {
-          userId: business.ownerId,
-          title: appText('notificationsFeed.businessVerified'),
-          message: appText('notificationsFeed.businessVerifiedBody', { name: business.name }),
-          type: 'business',
-          link: `/businesses/${business.id}`,
-        })
-      } else if (status === 'rejected') {
-        notify(store, {
-          userId: business.ownerId,
-          title: appText('notificationsFeed.businessRejected'),
-          message: appText('notificationsFeed.businessRejectedBody', { name: business.name }),
-          type: 'moderation',
-          link: `/businesses/${business.id}`,
-        })
-      } else if (!isPublishReady) {
-        notify(store, {
-          userId: business.ownerId,
-          title: appText('notificationsFeed.businessUpdated'),
-          message: appText('notificationsFeed.businessUpdatedBody', { status }),
-          type: 'moderation',
-          link: `/businesses/${business.id}`,
-        })
+    const actor = store.getState().auth?.user
+    const actorIsStaff = ['admin', 'superadmin', 'moderator'].includes(actor?.role)
+    if (actorIsStaff) {
+      const previous = before.businesses.items.find((item) => item.id === action.payload.id)
+      const business = after.businesses.items.find((item) => item.id === action.payload.id)
+      const { status } = action.payload
+      if (business?.ownerId && business.ownerId !== actorId && previous?.status !== status) {
+        const wasPublishReady = BUSINESS_VISIBLE_STATUSES.includes(previous?.status)
+        const isPublishReady = BUSINESS_VISIBLE_STATUSES.includes(status)
+        if (isPublishReady && !wasPublishReady) {
+          notify(store, {
+            userId: business.ownerId,
+            title: appText('notificationsFeed.businessVerified'),
+            message: appText('notificationsFeed.businessVerifiedBody', { name: business.name }),
+            type: 'business',
+            link: `/businesses/${business.id}`,
+          })
+        } else if (status === 'rejected') {
+          notify(store, {
+            userId: business.ownerId,
+            title: appText('notificationsFeed.businessRejected'),
+            message: appText('notificationsFeed.businessRejectedBody', { name: business.name }),
+            type: 'moderation',
+            link: `/businesses/${business.id}`,
+          })
+        } else if (!isPublishReady) {
+          notify(store, {
+            userId: business.ownerId,
+            title: appText('notificationsFeed.businessUpdated'),
+            message: appText('notificationsFeed.businessUpdatedBody', { status }),
+            type: 'moderation',
+            link: `/businesses/${business.id}`,
+          })
+        }
       }
     }
   }
@@ -736,16 +740,20 @@ export const interactionMiddleware = (store) => {
   }
   const moderation = moderationDomains[action.type]
   if (moderation) {
-    const [domain, path, label] = moderation
-    const resource = after[domain].items.find((item) => item.id === action.payload.id)
-    if (resource?.ownerId && resource.ownerId !== actorId) {
-      notify(store, {
-        userId: resource.ownerId,
-        title: appText('notificationsFeed.resourceUpdated', { label }),
-        message: appText('notificationsFeed.newStatus', { status: action.payload.status }),
-        type: 'moderation',
-        link: `${path}${resource.id}`,
-      })
+    const actor = store.getState().auth?.user
+    const actorIsStaff = ['admin', 'superadmin', 'moderator'].includes(actor?.role)
+    if (actorIsStaff) {
+      const [domain, path, label] = moderation
+      const resource = after[domain].items.find((item) => item.id === action.payload.id)
+      if (resource?.ownerId && resource.ownerId !== actorId) {
+        notify(store, {
+          userId: resource.ownerId,
+          title: appText('notificationsFeed.resourceUpdated', { label }),
+          message: appText('notificationsFeed.newStatus', { status: action.payload.status }),
+          type: 'moderation',
+          link: `${path}${resource.id}`,
+        })
+      }
     }
   }
 

@@ -24,6 +24,7 @@ export function AdminUsersPanel({ actorRole, dispatch, onSuspendUser, setSelecte
   const { countries } = useGeographyOptions()
   const onlineMap = useSelector((state) => state.presence?.online || {})
   const [onlineOnly, setOnlineOnly] = useState(false)
+  const [presenceFilter, setPresenceFilter] = useState('all')
   const [countryFilter, setCountryFilter] = useState('all')
   const [cityFilter, setCityFilter] = useState('all')
   const [sortBy, setSortBy] = useState('newest')
@@ -48,13 +49,16 @@ export function AdminUsersPanel({ actorRole, dispatch, onSuspendUser, setSelecte
 
   const visibleUsers = useMemo(() => {
     let items = users
-    if (onlineOnly) items = items.filter((user) => Boolean(onlineMap[user.id]))
+    const wantOnline = onlineOnly || presenceFilter === 'online'
+    const wantOffline = presenceFilter === 'offline'
+    if (wantOnline) items = items.filter((user) => Boolean(onlineMap[user.id]))
+    if (wantOffline) items = items.filter((user) => !onlineMap[user.id])
     if (countryFilter !== 'all') items = items.filter((user) => user.originCountry === countryFilter)
     if (cityFilter !== 'all') items = items.filter((user) => user.city === cityFilter)
     items = [...items].sort((a, b) => {
       if (sortBy === 'name') {
-        return `${a.firstName || ''} ${a.lastName || ''}`.localeCompare(
-          `${b.firstName || ''} ${b.lastName || ''}`,
+        return `${a.firstName || ''} ${a.lastName || ''}`.trim().localeCompare(
+          `${b.firstName || ''} ${b.lastName || ''}`.trim(),
         )
       }
       const at = new Date(a.createdAt || 0).getTime()
@@ -62,7 +66,7 @@ export function AdminUsersPanel({ actorRole, dispatch, onSuspendUser, setSelecte
       return sortBy === 'oldest' ? at - bt : bt - at
     })
     return items
-  }, [cityFilter, countryFilter, onlineMap, onlineOnly, sortBy, users])
+  }, [cityFilter, countryFilter, onlineMap, onlineOnly, presenceFilter, sortBy, users])
 
   function requestRoleChange(user, role) {
     if (role === user.role) return
@@ -102,13 +106,19 @@ export function AdminUsersPanel({ actorRole, dispatch, onSuspendUser, setSelecte
         <SectionTitle icon={FiUsers} label={adminText(t, 'admin.users.title')} count={users.length} />
         <button
           type="button"
-          onClick={() => setOnlineOnly((current) => !current)}
+          onClick={() => {
+            setOnlineOnly((current) => {
+              const next = !current
+              setPresenceFilter(next ? 'online' : 'all')
+              return next
+            })
+          }}
           className={`inline-flex min-h-10 items-center gap-2 rounded-full px-3.5 text-xs font-black transition ${
-            onlineOnly
+            onlineOnly || presenceFilter === 'online'
               ? 'bg-emerald-600 text-white shadow-sm'
               : 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200'
           }`}
-          aria-pressed={onlineOnly}
+          aria-pressed={onlineOnly || presenceFilter === 'online'}
         >
           <span className="relative inline-flex size-2.5 rounded-full bg-emerald-400">
             <span className="absolute inset-0 animate-ping rounded-full bg-emerald-300 opacity-75" />
@@ -118,6 +128,20 @@ export function AdminUsersPanel({ actorRole, dispatch, onSuspendUser, setSelecte
       </div>
 
       <div className="flex min-w-0 flex-wrap gap-3">
+        <Select
+          id="admin-users-presence-filter"
+          wrapperClass="min-w-0 flex-1 sm:max-w-48"
+          value={presenceFilter}
+          onChange={(event) => {
+            const next = event.target.value
+            setPresenceFilter(next)
+            setOnlineOnly(next === 'online')
+          }}
+        >
+          <option value="all">{adminText(t, 'admin.users.presenceFilterAll')}</option>
+          <option value="online">{adminText(t, 'admin.users.presenceFilterOnline')}</option>
+          <option value="offline">{adminText(t, 'admin.users.presenceFilterOffline')}</option>
+        </Select>
         <Select
           id="admin-users-country-filter"
           wrapperClass="min-w-0 flex-1 sm:max-w-64"

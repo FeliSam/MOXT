@@ -65,6 +65,7 @@ export function MessagesPage() {
   const store = useStore()
   const { t } = useLanguage()
   const user = useSelector((state) => state.auth.user)
+  const isStaff = user?.role === 'admin' || user?.role === 'superadmin'
   const conversations = useSelector(selectUserConversations)
   const unreadMessagesCount = useSelector(selectUnreadMessageCount)
   const [searchParams, setSearchParams] = useSearchParams()
@@ -364,8 +365,12 @@ export function MessagesPage() {
 
   useEffect(() => {
     const participantIds = conversations.flatMap((item) => item.participantIds || [])
-    if (!participantIds.length) return
+    if (!participantIds.length) return undefined
     dispatch(loadParticipantProfiles(participantIds))
+    const timer = setInterval(() => {
+      dispatch(loadParticipantProfiles(participantIds))
+    }, 60_000)
+    return () => clearInterval(timer)
   }, [conversations, dispatch])
 
   useEffect(() => {
@@ -574,6 +579,7 @@ export function MessagesPage() {
                       active={active?.id === conversation.id}
                       avatarMap={avatarMap}
                       conversation={conversation}
+                      showOnlineDot={isStaff}
                       userId={user.id}
                       onClick={() => selectConversation(conversation.id)}
                     />
@@ -695,6 +701,7 @@ export function MessagesPage() {
                 active={active?.id === conversation.id}
                 avatarMap={avatarMap}
                 conversation={conversation}
+                showOnlineDot={isStaff}
                 userId={user.id}
                 onClick={() => selectConversation(conversation.id)}
               />

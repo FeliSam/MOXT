@@ -40,7 +40,8 @@ const statusesSlice = createSlice({
     markStatusViewed(state, action) {
       const { statusId, userId, userName, userAvatarUrl } = action.payload
       const status = state.items.find((s) => s.id === statusId)
-      if (!status) return
+      if (!status || !userId) return
+      if (String(status.authorId) === String(userId)) return
       status.viewedBy ||= []
       if (!status.viewedBy.includes(userId)) status.viewedBy.push(userId)
       status.viewers ||= {}
@@ -105,6 +106,31 @@ const statusesSlice = createSlice({
       const now = Date.now()
       state.items = state.items.filter((s) => new Date(s.expiresAt).getTime() > now)
     },
+
+    receiveRemoteStatus(state, action) {
+      const remote = action.payload
+      if (!remote?.id) return
+      const index = state.items.findIndex((item) => item.id === remote.id)
+      if (index === -1) {
+        state.items.unshift(remote)
+        return
+      }
+      const local = state.items[index]
+      const viewedBy = Array.from(
+        new Set([...(remote.viewedBy || []), ...(local.viewedBy || [])]),
+      )
+      state.items[index] = {
+        ...local,
+        ...remote,
+        viewedBy,
+        viewers: { ...(remote.viewers || {}), ...(local.viewers || {}) },
+        reactions: remote.reactions || local.reactions || {},
+      }
+    },
+
+    removeRemoteStatus(state, action) {
+      state.items = state.items.filter((item) => item.id !== action.payload)
+    },
   },
 })
 
@@ -116,6 +142,8 @@ export const {
   deleteStatus,
   removeStatusImage,
   pruneExpiredStatuses,
+  receiveRemoteStatus,
+  removeRemoteStatus,
 } = statusesSlice.actions
 
 export default statusesSlice.reducer

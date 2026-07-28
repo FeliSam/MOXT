@@ -4945,6 +4945,7 @@ export const fr = {
       publishedTitle: "Statut publié",
       publishedMessage: "Votre statut est visible pendant 7 jours.",
       imagesRequired: "Ajoutez au moins une image.",
+      imagesOrText: "Ajoutez une image et/ou un texte.",
     },
     viewer: {
       justNow: "À l'instant",

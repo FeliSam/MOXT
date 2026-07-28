@@ -268,7 +268,7 @@ describe('interactionMiddleware', () => {
   it('notifie le proprietaire quand son entreprise est verifiee', () => {
     const store = configureStore({
       reducer: {
-        auth: () => ({ user: { id: 'admin' } }),
+        auth: () => ({ user: { id: 'admin', role: 'admin' } }),
         communications: communicationsReducer,
         ui: uiReducer,
         jobs: () => ({ applications: [], items: [] }),
@@ -308,7 +308,7 @@ describe('interactionMiddleware', () => {
   it('ne renvoie pas de notification de verification si deja verifiee', () => {
     const store = configureStore({
       reducer: {
-        auth: () => ({ user: { id: 'admin' } }),
+        auth: () => ({ user: { id: 'admin', role: 'admin' } }),
         communications: communicationsReducer,
         ui: uiReducer,
         jobs: () => ({ applications: [], items: [] }),

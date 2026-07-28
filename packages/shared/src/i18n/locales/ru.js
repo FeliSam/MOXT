@@ -4967,6 +4967,7 @@ export const ru = {
       publishedTitle: "Статус опубликован",
       publishedMessage: "Ваш статус будет виден 7 дней.",
       imagesRequired: "Добавьте хотя бы одно изображение.",
+      imagesOrText: "Добавьте изображение и/или текст.",
     },
     viewer: {
       justNow: "Только что",

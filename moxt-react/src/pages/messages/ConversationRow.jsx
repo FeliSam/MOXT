@@ -1,4 +1,5 @@
 import { FiBellOff, FiCpu, FiStar } from 'react-icons/fi'
+import { useSelector } from 'react-redux'
 import { RELATED_CONTENT_META } from '../../config/communications'
 import { VerifiedDisplayName } from '../../components/ui/Badge'
 import { useLanguage } from '../../contexts/useLanguage'
@@ -17,6 +18,7 @@ export function ConversationRow({
   avatarMap = {},
   conversation,
   onClick,
+  showOnlineDot = false,
   userId,
 }) {
   const { t } = useLanguage()
@@ -24,6 +26,9 @@ export function ConversationRow({
   const liveEntry = peer?.id ? avatarMap[peer.id] : undefined
   const avatarSrc =
     liveEntry !== undefined ? liveEntry.avatarUrl || null : peer?.avatarUrl || null
+  const peerOnline = useSelector((state) =>
+    showOnlineDot && peer?.id ? Boolean(state.presence?.online?.[peer.id]) : false,
+  )
   const lastMessage = assistant
     ? messagesText(t, 'messages.assistant.preview')
     : conversationPreview(conversation, userId, t)
@@ -61,9 +66,23 @@ export function ConversationRow({
             className={LIST_AVATAR_CLASS}
             alt={peer?.name || ''}
           />
-          {RelatedIcon ? (
+          {peerOnline ? (
+            <span
+              className="absolute bottom-0.5 right-0.5 size-3 rounded-full bg-emerald-500 ring-2 ring-[var(--app-surface)]"
+              title={messagesText(t, 'messages.activity.online')}
+              aria-label={messagesText(t, 'messages.activity.online')}
+            />
+          ) : RelatedIcon ? (
             <span
               className={`absolute -bottom-0.5 -right-0.5 grid size-5 place-items-center rounded-md text-[10px] text-white shadow-sm ${relatedMeta.tone}`}
+              aria-hidden="true"
+            >
+              <RelatedIcon />
+            </span>
+          ) : null}
+          {peerOnline && RelatedIcon ? (
+            <span
+              className={`absolute -bottom-0.5 -left-0.5 grid size-5 place-items-center rounded-md text-[10px] text-white shadow-sm ${relatedMeta.tone}`}
               aria-hidden="true"
             >
               <RelatedIcon />

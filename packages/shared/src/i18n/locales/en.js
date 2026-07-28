@@ -4969,6 +4969,7 @@ export const en = {
       publishedTitle: "Status posted",
       publishedMessage: "Your status is visible for 7 days.",
       imagesRequired: "Add at least one image.",
+      imagesOrText: "Add an image and/or text.",
     },
     viewer: {
       justNow: "Just now",

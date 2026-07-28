@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { corsHeadersFor } from '../_shared/cors.ts'
 
 /**
  * Vérifie le mot de passe du compte actuellement connecté, sans jamais faire
@@ -8,51 +9,59 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
  * rôle) — un simple `supabase.auth.signInWithPassword` côté client
  * déclencherait un évènement SIGNED_IN qui recharge toutes les données.
  */
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type, x-supabase-api-version',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
+const ALLOW_HEADERS =
+  'authorization, x-client-info, apikey, content-type, x-supabase-api-version'
 
-function json(body: Record<string, unknown>, status = 200) {
+function json(body: Record<string, unknown>, status = 200, req?: Request) {
+  const cors = corsHeadersFor(req || new Request('https://moxtapp.ru'), ALLOW_HEADERS)
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: {
+      ...cors,
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Content-Type': 'application/json',
+    },
   })
 }
 
 Deno.serve(async (req) => {
+  const respond = (body: Record<string, unknown>, status = 200) => json(body, status, req)
+
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', {
+      headers: {
+        ...corsHeadersFor(req, ALLOW_HEADERS),
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      },
+    })
   }
   if (req.method !== 'POST') {
-    return json({ error: 'Method not allowed' }, 405)
+    return respond({ error: 'Method not allowed' }, 405)
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
   if (!supabaseUrl || !serviceRoleKey || !anonKey) {
-    return json({ error: 'Configuration Supabase incomplète.' }, 503)
+    return respond({ error: 'Configuration Supabase incomplète.' }, 503)
   }
 
   const authHeader = req.headers.get('authorization') || ''
   const token = authHeader.replace(/^Bearer\s+/i, '').trim()
   if (!token) {
-    return json({ error: 'Session expirée.' }, 401)
+    return respond({ error: 'Session expirée.' }, 401)
   }
 
   let body: { password?: string }
   try {
     body = await req.json()
   } catch {
-    return json({ error: 'Corps JSON invalide.' }, 400)
+    return respond({ error: 'Corps JSON invalide.' }, 400)
   }
 
   const password = String(body.password || '')
   if (!password) {
-    return json({ error: 'Mot de passe requis.' }, 400)
+    return respond({ error: 'Mot de passe requis.' }, 400)
   }
 
   const admin = createClient(supabaseUrl, serviceRoleKey, {
@@ -61,7 +70,7 @@ Deno.serve(async (req) => {
 
   const { data: authData, error: authError } = await admin.auth.getUser(token)
   if (authError || !authData?.user?.email) {
-    return json({ error: 'Session invalide.' }, 401)
+    return respond({ error: 'Session invalide.' }, 401)
   }
 
   const { data: callerProfile } = await admin
@@ -71,7 +80,7 @@ Deno.serve(async (req) => {
     .maybeSingle()
 
   if (!callerProfile || !['admin', 'superadmin'].includes(callerProfile.role)) {
-    return json({ error: 'Accès réservé aux administrateurs.' }, 403)
+    return respond({ error: 'Accès réservé aux administrateurs.' }, 403)
   }
 
   const verifier = createClient(supabaseUrl, anonKey, {
@@ -83,8 +92,8 @@ Deno.serve(async (req) => {
   })
 
   if (verifyError) {
-    return json({ error: 'Mot de passe incorrect.' }, 403)
+    return respond({ error: 'Mot de passe incorrect.' }, 403)
   }
 
-  return json({ ok: true }, 200)
+  return respond({ ok: true }, 200)
 })

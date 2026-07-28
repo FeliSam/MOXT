@@ -37,10 +37,15 @@ export function peerActivityLabel(updatedAt, t) {
   if (!updatedAt) return messagesText(t, 'messages.activity.new')
   const date = new Date(updatedAt)
   const diff = Date.now() - date.getTime()
+  if (Number.isNaN(date.getTime())) return messagesText(t, 'messages.activity.new')
   if (diff < 5 * 60 * 1000) return messagesText(t, 'messages.activity.recent')
   if (diff < 60 * 60 * 1000) {
     const minutes = Math.max(1, Math.floor(diff / 60000))
     return messagesText(t, 'messages.activity.seenMinutes', { minutes })
+  }
+  if (diff < 24 * 60 * 60 * 1000) {
+    const hours = Math.max(1, Math.floor(diff / (60 * 60 * 1000)))
+    return messagesText(t, 'messages.activity.seenHours', { hours })
   }
   if (date.toDateString() === new Date().toDateString()) {
     return messagesText(t, 'messages.activity.activeToday', { time: shortTime(updatedAt) })
@@ -48,7 +53,7 @@ export function peerActivityLabel(updatedAt, t) {
   const yesterday = new Date()
   yesterday.setDate(yesterday.getDate() - 1)
   if (date.toDateString() === yesterday.toDateString()) {
-    return messagesText(t, 'messages.activity.activeYesterday')
+    return messagesText(t, 'messages.activity.activeYesterday', { time: shortTime(updatedAt) })
   }
   return messagesText(t, 'messages.activity.last', { time: shortTime(updatedAt) })
 }

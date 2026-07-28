@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { parseSmscWebhookPayload, readSmscRequestBody } from '../_shared/parseSmscWebhook.ts'
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  // Webhook serveur SMSC — pas d’appel navigateur ; pas de CORS permissif.
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 

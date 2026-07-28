@@ -8,11 +8,13 @@ import {
 } from './uploadProgress'
 
 async function upload(bucket, path, file, { onProgress } = {}) {
+  assertAllowedUpload(file)
   reportProgress(onProgress, { phase: UPLOAD_PHASES.uploading, percent: 32 })
   await runWithUploadProgress(onProgress, async () => {
     const { error } = await supabase.storage.from(bucket).upload(path, file, {
       upsert: true,
       cacheControl: '3600',
+      contentType: file.type || undefined,
     })
     if (error) throw new Error(error.message)
   })
@@ -23,11 +25,13 @@ async function upload(bucket, path, file, { onProgress } = {}) {
 }
 
 async function uploadPrivate(bucket, path, file, { onProgress } = {}) {
+  assertAllowedUpload(file)
   reportProgress(onProgress, { phase: UPLOAD_PHASES.uploading, percent: 32 })
   await runWithUploadProgress(onProgress, async () => {
     const { error } = await supabase.storage.from(bucket).upload(path, file, {
       upsert: true,
       cacheControl: '3600',
+      contentType: file.type || undefined,
     })
     if (error) throw new Error(error.message)
   })
@@ -41,6 +45,52 @@ function isImageFile(file) {
     file?.type?.startsWith('image/') ||
       /\.(jpe?g|png|gif|webp|heic|heif|avif)$/i.test(file?.name || ''),
   )
+}
+
+const ALLOWED_UPLOAD_MIME = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+  'image/avif',
+  'application/pdf',
+])
+
+const ALLOWED_UPLOAD_EXT = new Set([
+  'jpg',
+  'jpeg',
+  'png',
+  'gif',
+  'webp',
+  'heic',
+  'heif',
+  'avif',
+  'pdf',
+])
+
+function assertAllowedUpload(file, { imagesOnly = false } = {}) {
+  if (!file) throw new Error('Fichier manquant.')
+  const extension = String(file.name || '')
+    .split('.')
+    .pop()
+    ?.toLowerCase()
+  const mime = String(file.type || '').toLowerCase()
+  const mimeOk = mime ? ALLOWED_UPLOAD_MIME.has(mime) : false
+  const extOk = extension ? ALLOWED_UPLOAD_EXT.has(extension) : false
+  if (!mimeOk && !extOk) {
+    throw new Error('Type de fichier non autorisé.')
+  }
+  if (imagesOnly && !isImageFile(file)) {
+    throw new Error('Seules les images sont autorisées.')
+  }
+  if (mime.startsWith('image/') && extension === 'pdf') {
+    throw new Error('Type de fichier incohérent.')
+  }
+  if (mime === 'application/pdf' && !/\.pdf$/i.test(file.name || '')) {
+    throw new Error('Type de fichier incohérent.')
+  }
 }
 
 /** Compresse les images de preuve ; laisse PDF / autres fichiers intacts. */

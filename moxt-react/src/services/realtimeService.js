@@ -196,8 +196,10 @@ let channel = null
 let activeUserId = null
 let reconnectTimer = null
 let onlineHandler = null
+let visibilityHandler = null
 let connectionStatus = 'idle'
 let heartbeatTimer = null
+let presenceDispatch = null
 
 const HEARTBEAT_INTERVAL_MS = 4 * 60 * 1000
 
@@ -214,12 +216,27 @@ function startHeartbeat(userId) {
   stopHeartbeat()
   void sendActivityHeartbeat(userId)
   heartbeatTimer = setInterval(() => void sendActivityHeartbeat(userId), HEARTBEAT_INTERVAL_MS)
+  if (typeof document !== 'undefined' && !visibilityHandler) {
+    visibilityHandler = () => {
+      if (document.visibilityState === 'visible' && activeUserId === userId) {
+        void sendActivityHeartbeat(userId)
+        if (channel) {
+          void channel.track({ online_at: new Date().toISOString() })
+        }
+      }
+    }
+    document.addEventListener('visibilitychange', visibilityHandler)
+  }
 }
 
 function stopHeartbeat() {
   if (heartbeatTimer) {
     clearInterval(heartbeatTimer)
     heartbeatTimer = null
+  }
+  if (visibilityHandler && typeof document !== 'undefined') {
+    document.removeEventListener('visibilitychange', visibilityHandler)
+    visibilityHandler = null
   }
 }
 
@@ -242,7 +259,7 @@ function clearReconnectTimer() {
   }
 }
 
-function teardownChannel() {
+function teardownChannel(dispatch) {
   stopHeartbeat()
   if (channel) {
     supabase.removeChannel(channel)
@@ -250,6 +267,11 @@ function teardownChannel() {
   }
   activeUserId = null
   setConnectionStatus('idle')
+  if (dispatch) {
+    dispatch(setOnlineUsers([]))
+  } else if (presenceDispatch) {
+    presenceDispatch(setOnlineUsers([]))
+  }
 }
 
 function scheduleReconnect(userId, dispatch, getState) {
@@ -574,9 +596,10 @@ export async function startRealtimeSubscription(userId, dispatch, getState, opti
   }
 
   clearReconnectTimer()
-  teardownChannel()
+  teardownChannel(dispatch)
 
   activeUserId = userId
+  presenceDispatch = dispatch
   enableEngagementAlerts()
   ensureOnlineReconnect(userId, dispatch, getState)
   bindChannel(userId, dispatch, getState)
@@ -590,5 +613,6 @@ export function stopRealtimeSubscription() {
   disableEngagementAlerts()
   removeOnlineReconnect()
   clearReconnectTimer()
-  teardownChannel()
+  teardownChannel(presenceDispatch)
+  presenceDispatch = null
 }

@@ -4965,7 +4965,8 @@ export const es = {
       publishing: "Publicando…",
       publishedTitle: "Estado publicado",
       publishedMessage: "Tu estado es visible durante 7 días.",
-      imagesRequired: "Añade al menos una imagen."
+      imagesRequired: "Añade al menos una imagen.",
+      imagesOrText: "Añade una imagen y/o un texto.",
     },
     viewer: {
       justNow: "Ahora mismo",

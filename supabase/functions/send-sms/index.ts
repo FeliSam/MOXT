@@ -2,17 +2,18 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { SNSClient, PublishCommand } from 'npm:@aws-sdk/client-sns@3'
 import { Webhook } from 'https://esm.sh/standardwebhooks@1.0.0'
 import { phoneToSmsc } from '../_shared/smscPhone.ts'
+import { corsHeadersFor } from '../_shared/cors.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type, webhook-id, webhook-timestamp, webhook-signature',
-}
+const ALLOW_HEADERS =
+  'authorization, x-client-info, apikey, content-type, webhook-id, webhook-timestamp, webhook-signature'
 
-function json(body: Record<string, unknown>, status = 200) {
+function json(body: Record<string, unknown>, status = 200, req?: Request) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: {
+      ...corsHeadersFor(req || new Request('https://moxtapp.ru'), ALLOW_HEADERS),
+      'Content-Type': 'application/json',
+    },
   })
 }
 
@@ -771,17 +772,19 @@ async function sendOtpSms(phone: string, otp: string) {
 }
 
 Deno.serve(async (req) => {
+  const respond = (body: Record<string, unknown>, status = 200) => json(body, status, req)
+
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeadersFor(req, ALLOW_HEADERS) })
   }
 
   if (req.method !== 'POST') {
-    return json({ error: 'Method not allowed' }, 405)
+    return respond({ error: 'Method not allowed' }, 405)
   }
 
   const hookSecret = Deno.env.get('SEND_SMS_HOOK_SECRET')
   if (!hookSecret) {
-    return json({ error: 'SEND_SMS_HOOK_SECRET manquant.' }, 503)
+    return respond({ error: 'SEND_SMS_HOOK_SECRET manquant.' }, 503)
   }
 
   const payload = await req.text()

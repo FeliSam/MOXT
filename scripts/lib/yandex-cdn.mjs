@@ -149,6 +149,45 @@ export function attachCertificate(resourceId, certId) {
   )
 }
 
+export const MOXT_CSP =
+  "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; connect-src 'self' https://restcountries.com https://countriesnow.space https://api.frankfurter.dev https://*.supabase.co wss://*.supabase.co http://localhost:* ws://localhost:*; font-src 'self' data: https://fonts.gstatic.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+
+export const MOXT_SECURITY_HEADERS = {
+  'Content-Security-Policy': MOXT_CSP,
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+}
+
+/**
+ * Pose les en-têtes de sécurité HTTP sur la ressource CDN Yandex (Vague 2).
+ * Best-effort : si la CLI ne supporte pas l’option, on log et on continue.
+ */
+export function ensureCdnSecurityHeaders(resourceId) {
+  if (!resourceId) return false
+  try {
+    for (const [name, value] of Object.entries(MOXT_SECURITY_HEADERS)) {
+      ycInherit(
+        'cdn',
+        'resource',
+        'update',
+        String(resourceId),
+        '--header',
+        `${name}:${value}`,
+      )
+    }
+    return true
+  } catch (error) {
+    console.warn(
+      '[cdn] Impossible de poser les en-têtes HTTP de sécurité via yc:',
+      error instanceof Error ? error.message : error,
+    )
+    return false
+  }
+}
+
 export function purgeCdnCache(resourceId) {
   // Inclure logos / icônes : le shell seul ne suffit pas (CDN garde les PNG/SVG 1h).
   const paths = [

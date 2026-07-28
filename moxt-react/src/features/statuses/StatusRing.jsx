@@ -9,14 +9,20 @@ export function StatusRing({ children, hasStatus = false, hasUnseen = false, siz
 
   return (
     <span
-      className={`inline-grid shrink-0 place-items-center rounded-full p-[2px] ${
+      className={`relative inline-grid shrink-0 place-items-center rounded-full p-[2px] ${
         hasUnseen
           ? 'bg-gradient-to-tr from-brand-500 via-brand-600 to-[var(--app-cobalt)]'
           : 'bg-[var(--app-border)]'
       } ${className}`}
       style={{ width: `calc(${size / 4}rem + 4px)`, height: `calc(${size / 4}rem + 4px)` }}
     >
-      <span className="grid size-full place-items-center rounded-full bg-[var(--app-surface)] p-[2px]">
+      {hasUnseen ? (
+        <span
+          className="pointer-events-none absolute inset-0 animate-ping rounded-full bg-brand-500/35"
+          aria-hidden="true"
+        />
+      ) : null}
+      <span className="relative grid size-full place-items-center rounded-full bg-[var(--app-surface)] p-[2px]">
         {children}
       </span>
     </span>

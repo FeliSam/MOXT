@@ -324,9 +324,15 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
       >
         {page.url ? (
           <img src={page.url} alt="" className="mx-auto size-full max-w-2xl object-contain" />
-        ) : null}
+        ) : (
+          <div className="flex size-full items-center justify-center bg-gradient-to-br from-brand-800 via-brand-600 to-[var(--app-cobalt)] px-8">
+            <p className="max-w-xl text-center text-xl font-black leading-snug text-white sm:text-2xl">
+              {page.caption || group?.authorName}
+            </p>
+          </div>
+        )}
 
-        {page.caption ? (
+        {page.url && page.caption ? (
           <p className="pointer-events-none absolute inset-x-0 bottom-6 mx-auto max-w-xl px-6 text-center text-sm font-semibold text-white drop-shadow-lg sm:text-base">
             {page.caption}
           </p>

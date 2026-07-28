@@ -1,13 +1,21 @@
-import { useMemo, useState } from 'react'
+/**
+ * Bandeau horizontal des statuts actifs, à placer entre l'en-tête/filtres et
+ * le fil de posts. Ma bulle en premier (avec bouton "+" pour publier),
+ * suivie des auteurs ayant des statuts non vus puis déjà vus.
+ */
+import { useEffect, useMemo, useState } from 'react'
 import { FiPlus } from 'react-icons/fi'
-import { useSelector } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { StatusRing } from './StatusRing'
 import { StatusViewer } from './StatusViewer'
 import { StatusComposer } from './StatusComposer'
 import { groupActiveStatusesByAuthor } from './statusSelectors'
 import { useLanguage } from '../../contexts/useLanguage'
+import { supabase } from '../../services/supabaseClient'
+import { receiveRemoteStatus, removeRemoteStatus } from './statusesSlice'
+import { statusFromRemoteRow } from './statusRemote'
 
-function AuthorBubble({ group, onOpen }) {
+function AuthorBubble({ group, onOpen, badge }) {
   const shapeClass = group.businessId ? 'rounded-2xl' : 'rounded-full'
   return (
     <button
@@ -33,17 +41,18 @@ function AuthorBubble({ group, onOpen }) {
       <span className="w-full truncate text-[11px] font-semibold text-[var(--app-text-muted)]">
         {group.authorName}
       </span>
+      {badge ? (
+        <span className="rounded-full bg-brand-700/15 px-1.5 text-[9px] font-black uppercase tracking-wide text-brand-800 dark:text-brand-200">
+          {badge}
+        </span>
+      ) : null}
     </button>
   )
 }
 
-/**
- * Bandeau horizontal des statuts actifs, à placer entre l'en-tête/filtres et
- * le fil de posts. Ma bulle en premier (avec bouton "+" pour publier),
- * suivie des auteurs ayant des statuts non vus puis déjà vus.
- */
-export function StatusRail({ hideWhenNoCommunity = false }) {
+export function StatusRail({ hideWhenNoCommunity: _hideWhenNoCommunity = false }) {
   const { t } = useLanguage()
+  const dispatch = useDispatch()
   const user = useSelector((s) => s.auth.user)
   const ownBusiness = useSelector((s) =>
     (s.businesses?.items ?? []).find((item) => item.ownerId === user?.id),
@@ -65,85 +74,133 @@ export function StatusRail({ hideWhenNoCommunity = false }) {
     (ownBusiness && g.businessId === ownBusiness.id)
   const officialGroups = groups.filter((g) => g.isOfficial && !isMine(g))
   const otherGroups = groups.filter((g) => !isMine(g) && !g.isOfficial)
-  const hasCommunity = officialGroups.length > 0 || otherGroups.length > 0
+  const unseenCount = useMemo(
+    () => [...officialGroups, ...otherGroups].filter((g) => g.hasUnseen).length,
+    [officialGroups, otherGroups],
+  )
+
+  useEffect(() => {
+    if (!supabase || !user?.id) return undefined
+    const channel = supabase
+      .channel('statuses-live')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'statuses' },
+        (payload) => {
+          const remote = statusFromRemoteRow(payload.new)
+          if (remote?.id) dispatch(receiveRemoteStatus(remote))
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'statuses' },
+        (payload) => {
+          const remote = statusFromRemoteRow(payload.new)
+          if (remote?.id) dispatch(receiveRemoteStatus(remote))
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'statuses' },
+        (payload) => {
+          if (payload.old?.id) dispatch(removeRemoteStatus(payload.old.id))
+        },
+      )
+      .subscribe()
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [dispatch, user?.id])
 
   if (!user) return null
-  if (hideWhenNoCommunity && !hasCommunity) return null
 
   return (
-    <div className="scrollbar-hidden -mx-4 flex touch-pan-x gap-4 overflow-x-auto px-4 py-2 sm:gap-5">
-      {officialGroups.map((group) => (
-        <AuthorBubble
-          key={`${group.authorId}:${group.businessId || ""}`}
-          group={group}
-          onOpen={() => setViewerIndex(groups.indexOf(group))}
-        />
-      ))}
-
-      <div className="flex w-16 shrink-0 flex-col items-center gap-1.5 text-center">
-        <button
-          type="button"
-          onClick={() => (myGroup ? setViewerIndex(groups.indexOf(myGroup)) : setComposerOpen(true))}
-          className="relative"
-        >
-          {myGroup ? (
-            <StatusRing hasStatus hasUnseen={myGroup.hasUnseen} size={14}>
-              {user.avatarUrl ? (
-                <img src={user.avatarUrl} alt="" className="size-12 rounded-full object-cover" />
-              ) : (
-                <span className="grid size-12 place-items-center rounded-full bg-brand-600 text-sm font-black text-white">
-                  {user.firstName?.charAt(0)}
-                </span>
-              )}
-            </StatusRing>
-          ) : user.avatarUrl ? (
-            <img src={user.avatarUrl} alt="" className="size-12 rounded-full object-cover" />
-          ) : (
-            <span className="grid size-12 place-items-center rounded-full bg-[var(--app-surface-muted)] text-sm font-black text-[var(--app-text-muted)]">
-              {user.firstName?.charAt(0)}
+    <div className="min-w-0">
+      <div className="mb-1 flex items-center justify-between gap-2 px-4 sm:px-0">
+        <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[var(--app-text-faint)]">
+          {t('status.rail.title')}
+          {unseenCount > 0 ? (
+            <span className="ml-2 rounded-full bg-brand-600 px-1.5 py-0.5 text-[10px] font-black normal-case tracking-normal text-white">
+              {unseenCount}
             </span>
-          )}
-          <span
-            role="button"
-            aria-label={t('status.rail.addYours')}
-            onClick={(e) => {
-              e.stopPropagation()
-              setComposerOpen(true)
-            }}
-            className="absolute -bottom-0.5 -right-0.5 grid size-5 place-items-center rounded-full bg-brand-700 text-white shadow-sm ring-2 ring-[var(--app-surface)] dark:bg-brand-600"
-          >
-            <FiPlus className="text-[11px]" />
-          </span>
-        </button>
-        <span className="w-full truncate text-[11px] font-semibold text-[var(--app-text-muted)]">
-          {t('status.rail.you')}
-        </span>
+          ) : null}
+        </p>
       </div>
+      <div className="scrollbar-hidden -mx-4 flex touch-pan-x gap-4 overflow-x-auto px-4 py-2 sm:gap-5">
+        <div className="flex w-16 shrink-0 flex-col items-center gap-1.5 text-center">
+          <button
+            type="button"
+            onClick={() => (myGroup ? setViewerIndex(groups.indexOf(myGroup)) : setComposerOpen(true))}
+            className="relative"
+          >
+            {myGroup ? (
+              <StatusRing hasStatus hasUnseen={myGroup.hasUnseen} size={14}>
+                {user.avatarUrl ? (
+                  <img src={user.avatarUrl} alt="" className="size-12 rounded-full object-cover" />
+                ) : (
+                  <span className="grid size-12 place-items-center rounded-full bg-brand-600 text-sm font-black text-white">
+                    {user.firstName?.charAt(0)}
+                  </span>
+                )}
+              </StatusRing>
+            ) : user.avatarUrl ? (
+              <img src={user.avatarUrl} alt="" className="size-12 rounded-full object-cover" />
+            ) : (
+              <span className="grid size-12 place-items-center rounded-full bg-[var(--app-surface-muted)] text-sm font-black text-[var(--app-text-muted)]">
+                {user.firstName?.charAt(0)}
+              </span>
+            )}
+            <span
+              role="button"
+              aria-label={t('status.rail.addYours')}
+              onClick={(e) => {
+                e.stopPropagation()
+                setComposerOpen(true)
+              }}
+              className="absolute -bottom-0.5 -right-0.5 grid size-5 place-items-center rounded-full bg-brand-700 text-white shadow-sm ring-2 ring-[var(--app-surface)] dark:bg-brand-600"
+            >
+              <FiPlus className="text-[11px]" />
+            </span>
+          </button>
+          <span className="w-full truncate text-[11px] font-semibold text-[var(--app-text-muted)]">
+            {t('status.rail.you')}
+          </span>
+        </div>
 
-      {myBusinessGroup ? (
-        <AuthorBubble
-          group={myBusinessGroup}
-          onOpen={() => setViewerIndex(groups.indexOf(myBusinessGroup))}
-        />
-      ) : null}
+        {myBusinessGroup ? (
+          <AuthorBubble
+            group={myBusinessGroup}
+            onOpen={() => setViewerIndex(groups.indexOf(myBusinessGroup))}
+          />
+        ) : null}
 
-      {otherGroups.map((group) => (
-        <AuthorBubble
-          key={`${group.authorId}:${group.businessId || ""}`}
-          group={group}
-          onOpen={() => setViewerIndex(groups.indexOf(group))}
-        />
-      ))}
+        {officialGroups.map((group) => (
+          <AuthorBubble
+            key={`${group.authorId}:${group.businessId || ''}`}
+            group={group}
+            badge="MOXT"
+            onOpen={() => setViewerIndex(groups.indexOf(group))}
+          />
+        ))}
 
-      {viewerIndex !== null ? (
-        <StatusViewer
-          groups={groups}
-          initialGroupIndex={viewerIndex}
-          onClose={() => setViewerIndex(null)}
-        />
-      ) : null}
+        {otherGroups.map((group) => (
+          <AuthorBubble
+            key={`${group.authorId}:${group.businessId || ''}`}
+            group={group}
+            onOpen={() => setViewerIndex(groups.indexOf(group))}
+          />
+        ))}
 
-      {composerOpen ? <StatusComposer onClose={() => setComposerOpen(false)} /> : null}
+        {viewerIndex !== null ? (
+          <StatusViewer
+            groups={groups}
+            initialGroupIndex={viewerIndex}
+            onClose={() => setViewerIndex(null)}
+          />
+        ) : null}
+
+        {composerOpen ? <StatusComposer onClose={() => setComposerOpen(false)} /> : null}
+      </div>
     </div>
   )
 }
