@@ -81,6 +81,9 @@ export const refreshVisibleTransfers = createAsyncThunk(
         ? new Date(Math.max(0, new Date(lastTransferRefreshAt).getTime() - 120000)).toISOString()
         : null
 
+    const role = getState().auth?.user?.role
+    const isStaff = ['moderator', 'admin', 'superadmin'].includes(role)
+
     const buildQuery = (column, value) => {
       let query = supabase
         .from('transfers')
@@ -91,8 +94,20 @@ export const refreshVisibleTransfers = createAsyncThunk(
       return applySinceFilter(query, sinceIso)
     }
 
-    const queries = [buildQuery('user_id', userId), buildQuery('business_owner_id', userId)]
-    if (businessId) {
+    const queries = isStaff
+      ? [
+          applySinceFilter(
+            supabase
+              .from('transfers')
+              .select(TRANSFER_SELECT_COLUMNS)
+              .order('created_at', { ascending: false })
+              .limit(200),
+            sinceIso,
+          ),
+        ]
+      : [buildQuery('user_id', userId), buildQuery('business_owner_id', userId)]
+
+    if (!isStaff && businessId) {
       queries.push(buildQuery('business_id', businessId))
     }
 

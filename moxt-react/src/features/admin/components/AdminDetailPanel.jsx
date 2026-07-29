@@ -22,6 +22,7 @@ import { renderDetailActions } from '../adminActions'
 import { CARD } from '../adminConfig'
 import {
   buildDetailFacts,
+  countBusinessActivity,
   detailDescriptionFor,
   detailIconFor,
   detailLabelFor,
@@ -54,6 +55,8 @@ function useLiveSelectedItem(selected) {
         return state.events.items.find((entry) => entry.id === id) || item
       case 'businesses':
         return state.businesses.items.find((entry) => entry.id === id) || item
+      case 'transfer':
+        return state.transfers.items.find((entry) => entry.id === id) || item
       case 'user':
         return state.administration.users.find((entry) => entry.id === id) || item
       case 'support':
@@ -83,13 +86,21 @@ export function AdminDetailPanel({
   const [originOverride, setOriginOverride] = useState(null)
   const [cityOverride, setCityOverride] = useState(null)
   const liveItem = useLiveSelectedItem(selected)
+  const kind = selected?.kind
+  const item = liveItem || selected?.item
   const p2pOrderForDispute = useSelector((state) => {
     if (selected?.kind !== 'dispute' || liveItem?.relatedType !== 'p2p_order') return null
     return state.p2p.orders.find((order) => order.id === liveItem.relatedId) || null
   })
+  const businessActivity = useSelector((state) => {
+    if (kind !== 'businesses' || !item?.id) return null
+    return countBusinessActivity(state, item.id)
+  })
+  const detailItem =
+    kind === 'businesses' && businessActivity
+      ? { ...item, activity: businessActivity }
+      : item
 
-  const kind = selected?.kind
-  const item = liveItem || selected?.item
   const selectedUserId = kind === 'user' ? item?.id : null
   const selectedUserOrigin = kind === 'user' ? item?.originCountry || '' : ''
   const selectedUserCity = kind === 'user' ? item?.city || '' : ''
@@ -140,7 +151,7 @@ export function AdminDetailPanel({
       </div>
 
       <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
-        {buildDetailFacts(kind, item, t, { p2pOrder: p2pOrderForDispute }).map(([label, value]) => (
+        {buildDetailFacts(kind, detailItem, t, { p2pOrder: p2pOrderForDispute }).map(([label, value]) => (
           <div key={label} className="min-w-0 overflow-hidden rounded-xl bg-[var(--app-surface-muted)] px-3 py-2.5">
             <p className="text-[9px] font-black uppercase tracking-wider text-[var(--app-text-muted)]">{label}</p>
             <strong className="mt-0.5 block break-words text-sm leading-snug [overflow-wrap:anywhere]">
@@ -286,6 +297,14 @@ export function AdminDetailPanel({
             </Button>
           </div>
         </div>
+      ) : null}
+
+      {kind === 'businesses' && item?.id ? (
+        <Link to={`/admin?view=transfers&businessId=${item.id}`}>
+          <Button variant="secondary" icon={FiArrowRight}>
+            {adminText(t, 'admin.business.viewTransfers')}
+          </Button>
+        </Link>
       ) : null}
 
       <div className="min-w-0">

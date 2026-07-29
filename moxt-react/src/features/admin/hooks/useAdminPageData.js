@@ -4,6 +4,8 @@ import {
   buildAdminMetrics,
   buildContentCollections,
   buildQueues,
+  buildBusinessTransferRollups,
+  matchesTransferStatusFilter,
 } from '../adminData'
 import { isActiveParcel, isArchivedParcel, isActivePost, isArchivedPost } from '../../publications/publicationCatalogUtils'
 import { isActiveListing, isArchivedListing } from '../../marketplace/listingCatalogUtils'
@@ -53,8 +55,10 @@ function matchesContentFilter(section, item, statusFilter) {
   return effective === statusFilter || item.status === statusFilter
 }
 
-export function useAdminPageData(query, statusFilter, contentView) {
+export function useAdminPageData(query, statusFilter, contentView, businessIdFilter = '') {
   const state = useSelector((v) => v)
+  const businesses = state.businesses.items || []
+  const transferItems = state.transfers.items
 
   const metrics = useMemo(() => buildAdminMetrics(state), [state])
   const queues = useMemo(() => buildQueues(state), [state])
@@ -94,16 +98,32 @@ export function useAdminPageData(query, statusFilter, contentView) {
   }, [query, statusFilter, state.administration.users])
 
   const transfers = useMemo(() => {
-    let items = state.transfers.items
-    if (statusFilter !== 'all') items = items.filter((i) => i.status === statusFilter)
+    let items = transferItems.map((transfer) => {
+      const business = businesses.find((entry) => entry.id === transfer.businessId)
+      return {
+        ...transfer,
+        businessName: business?.name || transfer.exchanger?.name || transfer.businessId || '',
+      }
+    })
+    if (businessIdFilter) {
+      items = items.filter((i) => String(i.businessId || '') === String(businessIdFilter))
+    }
+    if (statusFilter !== 'all') {
+      items = items.filter((i) => matchesTransferStatusFilter(i.status, statusFilter))
+    }
     if (query) {
       const q = query.toLowerCase()
       items = items.filter((i) =>
-        `${i.id} ${i.exchanger?.name || ''} ${i.sender?.firstName || ''} ${i.recipient?.firstName || ''}`.toLowerCase().includes(q)
+        `${i.id} ${i.exchanger?.name || ''} ${i.businessName || ''} ${i.businessId || ''} ${i.sender?.firstName || ''} ${i.recipient?.firstName || ''}`.toLowerCase().includes(q)
       )
     }
     return items
-  }, [query, statusFilter, state.transfers.items])
+  }, [query, statusFilter, businessIdFilter, transferItems, businesses])
+
+  const businessTransferRollups = useMemo(
+    () => buildBusinessTransferRollups(transferItems, businesses),
+    [transferItems, businesses],
+  )
 
   const p2pOffers = useMemo(() => {
     let items = state.p2p.offers
@@ -178,11 +198,18 @@ export function useAdminPageData(query, statusFilter, contentView) {
     supportTickets,
     users,
     transfers,
+    businessTransferRollups,
     p2pOffers,
     p2pOrders,
     auditItems,
     activeContentItems,
-    allTransfers: state.transfers.items,
+    allTransfers: transferItems.map((transfer) => {
+      const business = businesses.find((entry) => entry.id === transfer.businessId)
+      return {
+        ...transfer,
+        businessName: business?.name || transfer.exchanger?.name || transfer.businessId || '',
+      }
+    }),
     allVerifications: state.account.verificationRequests.map((item) => {
       const user = state.administration.users.find((entry) => entry.id === item.userId)
       const userName = user

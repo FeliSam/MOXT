@@ -369,6 +369,16 @@ export const loadAllData = createAsyncThunk(
           .limit(USER_LIMIT),
       )
     }
+    // Staff : catalogue plateforme (RLS autorise déjà admin/moderator).
+    if (isStaff) {
+      transferFetchQueries.push(
+        supabase
+          .from('transfers')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(USER_LIMIT),
+      )
+    }
     const transferFetchResults = await Promise.all(transferFetchQueries)
     const mergedTransferRows = mergeRemoteRowsById(
       ...transferFetchResults.map((result) => safeRows(result, 'des transferts')),

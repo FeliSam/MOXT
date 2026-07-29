@@ -101,7 +101,15 @@ export function GlobalFilterBar({ query, setQuery, statusFilter, setStatusFilter
       {filters.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5">
           <FiFilter className="text-xs text-[var(--app-text-muted)]" />
-          {filters.map((f) => (
+          {filters.map((f) => {
+            const labelKey = `admin.filters.${f}`
+            const label =
+              f === 'all'
+                ? adminText(t, 'admin.filters.all')
+                : adminText(t, labelKey) === labelKey
+                  ? f
+                  : adminText(t, labelKey)
+            return (
             <button
               key={f}
               type="button"
@@ -112,9 +120,10 @@ export function GlobalFilterBar({ query, setQuery, statusFilter, setStatusFilter
                   : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)] hover:bg-[var(--app-surface)]'
               }`}
             >
-              {f === 'all' ? adminText(t, 'admin.filters.all') : f}
+              {label}
             </button>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>

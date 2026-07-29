@@ -302,11 +302,14 @@ function removeOnlineReconnect() {
 function bindChannel(userId, dispatch, getState) {
   setConnectionStatus('connecting')
 
+  const staffRole = getState().auth?.user?.role
+  const isStaff = ['moderator', 'admin', 'superadmin'].includes(staffRole)
+
   const handleTransferChange = (payload) => {
     const transfer = transferFromRemoteRow(payload.new)
     if (!transfer?.id) return
     const ownedIds = ownedBusinessIdsForUser(getState().businesses?.items, userId)
-    if (!isTransferRelevantToUser(transfer, userId, ownedIds)) return
+    if (!isTransferRelevantToUser(transfer, userId, ownedIds, { isStaff })) return
     dispatch(receiveRemoteTransfer(transfer))
   }
 
@@ -414,42 +417,51 @@ function bindChannel(userId, dispatch, getState) {
       },
     )
 
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'transfers',
-        filter: `user_id=eq.${userId}`,
-      },
-      handleTransferChange,
-    )
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'transfers',
-        filter: `business_owner_id=eq.${userId}`,
-      },
-      handleTransferChange,
-    )
-
-  const ownedBusinessIds = ownedBusinessIdsForUser(
-    getState().businesses?.items,
-    userId,
-  ).slice(0, MAX_TRANSFER_BUSINESS_FILTERS)
-  for (const businessId of ownedBusinessIds) {
+  if (isStaff) {
     nextChannel = nextChannel.on(
       'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'transfers',
-        filter: `business_id=eq.${businessId}`,
-      },
+      { event: '*', schema: 'public', table: 'transfers' },
       handleTransferChange,
     )
+  } else {
+    nextChannel = nextChannel
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transfers',
+          filter: `user_id=eq.${userId}`,
+        },
+        handleTransferChange,
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transfers',
+          filter: `business_owner_id=eq.${userId}`,
+        },
+        handleTransferChange,
+      )
+
+    const ownedBusinessIds = ownedBusinessIdsForUser(
+      getState().businesses?.items,
+      userId,
+    ).slice(0, MAX_TRANSFER_BUSINESS_FILTERS)
+    for (const businessId of ownedBusinessIds) {
+      nextChannel = nextChannel.on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transfers',
+          filter: `business_id=eq.${businessId}`,
+        },
+        handleTransferChange,
+      )
+    }
   }
 
   channel = nextChannel

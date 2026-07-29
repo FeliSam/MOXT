@@ -38,6 +38,7 @@ export function AdminPage() {
   const admin = useSelector((v) => v.auth.user)
   const [searchParams, setSearchParams] = useSearchParams()
   const view = resolveAdminView(searchParams.get('view'))
+  const businessIdFilter = searchParams.get('businessId') || ''
   const [contentView, setContentView] = useState('businesses')
   const effectiveContentView = view === 'publications' ? 'posts' : contentView
   const filterView = view === 'publications' ? 'publications' : view
@@ -55,6 +56,7 @@ export function AdminPage() {
     supportTickets,
     users,
     transfers,
+    businessTransferRollups,
     p2pOffers,
     p2pOrders,
     auditItems,
@@ -62,7 +64,14 @@ export function AdminPage() {
     allTransfers,
     allVerifications,
     allBusinessDocuments,
-  } = useAdminPageData(query, statusFilter, effectiveContentView)
+  } = useAdminPageData(query, statusFilter, effectiveContentView, businessIdFilter)
+
+  function setBusinessIdFilter(nextBusinessId) {
+    const params = new URLSearchParams(searchParams)
+    if (nextBusinessId) params.set('businessId', nextBusinessId)
+    else params.delete('businessId')
+    setSearchParams(params, { replace: true })
+  }
 
   function switchView(next) {
     const resolved = resolveAdminView(next)
@@ -72,6 +81,7 @@ export function AdminPage() {
     const params = new URLSearchParams(searchParams)
     if (resolved === 'overview') params.delete('view')
     else params.set('view', resolved)
+    if (resolved !== 'transfers') params.delete('businessId')
     setSearchParams(params, { replace: true })
   }
 
@@ -144,7 +154,14 @@ export function AdminPage() {
             />
           )}
           {view === 'transfers' && (
-            <AdminTransfersPanel dispatch={dispatch} setSelected={setSelected} transfers={transfers} />
+            <AdminTransfersPanel
+              businessIdFilter={businessIdFilter}
+              businessTransferRollups={businessTransferRollups}
+              dispatch={dispatch}
+              setBusinessIdFilter={setBusinessIdFilter}
+              setSelected={setSelected}
+              transfers={transfers}
+            />
           )}
           {view === 'p2p' && (
             <AdminP2PPanel

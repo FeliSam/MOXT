@@ -1,20 +1,42 @@
 import { FiClock, FiDollarSign, FiEye, FiRepeat } from 'react-icons/fi'
+import { useMemo } from 'react'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { Button } from '../../../components/ui/Button'
+import { Select } from '../../../components/ui/Select'
 import { TransferStatusBadge } from '../../transfers/TransferStatusBadge'
 import { TRANSFER_STATUS, TRANSFER_TRANSITIONS } from '../../transfers/transferConfig'
 import { moderateTransfer } from '../../transfers/transferSlice'
 import { formatMoney } from '../../transfers/transferUtils'
 import { CARD, ITEM } from '../adminConfig'
 import { adminText } from '../adminI18n'
+import { countTransferProofs, lastTransferTimelineEvent } from '../adminData'
 import { statusDotColor } from '../adminUtils'
 import { Empty, MetricCard, SectionTitle } from './AdminShared'
 
-export function AdminTransfersPanel({ dispatch, setSelected, transfers }) {
+export function AdminTransfersPanel({
+  businessIdFilter,
+  businessTransferRollups = [],
+  dispatch,
+  setBusinessIdFilter,
+  setSelected,
+  transfers,
+}) {
   const { t } = useLanguage()
   const user = useSelector((state) => state.auth.user)
+  const businesses = useSelector((state) => state.businesses.items || [])
+
+  const businessOptions = useMemo(
+    () =>
+      businesses
+        .filter((business) =>
+          businessTransferRollups.some((rollup) => rollup.businessId === business.id),
+        )
+        .map((business) => ({ value: business.id, label: business.name || business.id })),
+    [businesses, businessTransferRollups],
+  )
+
   const completedVolume = transfers
     .filter((i) => i.status === 'completed')
     .reduce((sum, i) => sum + Number(i.amountSent || 0), 0)
@@ -29,10 +51,55 @@ export function AdminTransfersPanel({ dispatch, setSelected, transfers }) {
       </div>
 
       <div className={`${CARD} p-5 grid gap-3`}>
-        <SectionTitle icon={FiRepeat} label={adminText(t, 'admin.transfers.listTitle')} count={transfers.length} />
+        <SectionTitle icon={FiRepeat} label={adminText(t, 'admin.transfers.byBusinessTitle')} count={businessTransferRollups.length} />
+        {businessTransferRollups.length ? (
+          businessTransferRollups.slice(0, 12).map((rollup) => (
+            <div key={rollup.businessId || rollup.name} className={`${ITEM} flex flex-wrap items-center gap-3`}>
+              <div className="min-w-0 flex-1">
+                <strong className="block text-sm">{rollup.name}</strong>
+                <p className="text-xs text-[var(--app-text-muted)]">
+                  {adminText(t, 'admin.transfers.rollupSummary', {
+                    total: rollup.count,
+                    pending: rollup.pending,
+                  })}
+                </p>
+              </div>
+              {rollup.businessId ? (
+                <Link to={`/admin?view=transfers&businessId=${rollup.businessId}`}>
+                  <Button variant="secondary" icon={FiEye}>
+                    {adminText(t, 'admin.transfers.viewBusiness')}
+                  </Button>
+                </Link>
+              ) : null}
+            </div>
+          ))
+        ) : (
+          <Empty label={adminText(t, 'admin.transfers.noBusinessActivity')} icon={FiRepeat} />
+        )}
+      </div>
+
+      <div className={`${CARD} p-5 grid gap-3`}>
+        <div className="flex flex-wrap items-end gap-3">
+          <SectionTitle icon={FiRepeat} label={adminText(t, 'admin.transfers.listTitle')} count={transfers.length} />
+          <div className="ml-auto w-full sm:w-64">
+            <Select
+              label={adminText(t, 'admin.transfers.filterBusiness')}
+              value={businessIdFilter || ''}
+              onChange={(event) => setBusinessIdFilter(event.target.value)}
+            >
+              <option value="">{adminText(t, 'admin.filters.all')}</option>
+              {businessOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+        </div>
         {transfers.length ? (
           transfers.map((transfer) => {
             const next = TRANSFER_TRANSITIONS[transfer.status]
+            const lastEvent = lastTransferTimelineEvent(transfer)
             return (
               <div key={transfer.id} className={`${ITEM} grid gap-3`}>
                 <div className="flex flex-wrap items-center gap-3">
@@ -45,8 +112,19 @@ export function AdminTransfersPanel({ dispatch, setSelected, transfers }) {
                     <strong className="block text-sm">{transfer.id}</strong>
                     <p className="text-xs text-[var(--app-text-muted)]">
                       {transfer.sender?.firstName} {transfer.sender?.lastName}
-                      {transfer.exchanger?.name ? ` · ${transfer.exchanger.name}` : ''}
+                      {transfer.businessName ? ` · ${transfer.businessName}` : ''}
+                      {transfer.exchanger?.name && transfer.exchanger.name !== transfer.businessName
+                        ? ` · ${transfer.exchanger.name}`
+                        : ''}
                     </p>
+                    {lastEvent ? (
+                      <p className="text-[10px] text-[var(--app-text-muted)]">
+                        {lastEvent.status || lastEvent.label}
+                        {countTransferProofs(transfer) > 0
+                          ? ` · ${adminText(t, 'admin.transfers.proofCount', { count: countTransferProofs(transfer) })}`
+                          : ''}
+                      </p>
+                    ) : null}
                   </button>
                   <TransferStatusBadge status={transfer.status} />
                   <div className="ml-auto text-right">
