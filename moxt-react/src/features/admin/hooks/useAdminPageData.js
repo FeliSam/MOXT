@@ -160,13 +160,31 @@ export function useAdminPageData(query, statusFilter, contentView, businessIdFil
   }, [query, statusFilter, state.p2p.orders])
 
   const auditItems = useMemo(() => {
-    let items = state.audit.items
+    // Fusion des events locaux (middleware) et des events distants (moxt_audit_log)
+    const remoteNormalized = (state.audit.remoteItems || []).map((row) => ({
+      id: `remote-${row.id}`,
+      action: row.action,
+      actorId: row.actor_id || row.actorId || null,
+      actorRole: row.actor_role || row.actorRole || 'system',
+      targetId: row.target_id || row.targetId || null,
+      targetType: row.target_type || row.targetType || null,
+      payload: row.payload || {},
+      createdAt: row.created_at || row.createdAt || null,
+      source: 'remote',
+    }))
+    const merged = [...remoteNormalized, ...state.audit.items].sort((a, b) => {
+      const ta = a.createdAt || ''
+      const tb = b.createdAt || ''
+      return tb < ta ? -1 : tb > ta ? 1 : 0
+    })
     if (query) {
       const q = query.toLowerCase()
-      items = items.filter((i) => `${i.action} ${i.actorRole || ''} ${i.targetId || ''}`.toLowerCase().includes(q))
+      return merged.filter((i) =>
+        `${i.action} ${i.actorRole || ''} ${i.targetId || ''} ${i.targetType || ''}`.toLowerCase().includes(q),
+      )
     }
-    return items
-  }, [query, state.audit.items])
+    return merged
+  }, [query, state.audit.items, state.audit.remoteItems])
 
   const activeContentItems = useMemo(() => {
     let items = content[contentView] || []

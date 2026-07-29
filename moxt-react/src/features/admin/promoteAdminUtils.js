@@ -2,6 +2,7 @@ import { supabase } from '../../services/supabaseClient'
 import { updateUserRole } from '../administration/administrationSlice'
 import { addToast } from '../ui/uiSlice'
 import { adminText } from './adminI18n'
+import { writeAuditEvent } from '../../services/auditService'
 
 const PRIVILEGED_ROLES = new Set(['admin', 'superadmin'])
 
@@ -75,6 +76,12 @@ export async function dispatchUserRole(dispatch, { actorRole, id, role, t }) {
           tone: 'success',
         }),
       )
+      void writeAuditEvent({
+        action: 'user.role_changed',
+        targetId: id,
+        targetType: 'user',
+        payload: { role },
+      })
       return true
     } catch (err) {
       dispatch(

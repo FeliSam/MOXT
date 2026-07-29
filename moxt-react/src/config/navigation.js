@@ -30,6 +30,7 @@ export const routePreloaders = {
   '/activities': () => import('../pages/ActivitiesPage'),
   '/businesses': () => import('../pages/BusinessesPage'),
   '/professional': () => import('../pages/ProfessionalPage'),
+  '/exchanger': () => import('../pages/ExchangerDashboardPage'),
   '/dashboard': () => import('../pages/DashboardPage'),
   '/moxt': () => import('../pages/MoxtHubPage'),
   '/documents': () => import('../pages/DocumentsPage'),
@@ -94,6 +95,14 @@ export const navigationGroups = [
       { id: 'transfers', label: 'Transfert', labelKey: 'nav.transfer', path: '/transfers', icon: FiRepeat },
       { id: 'p2p', label: 'Echanges P2P', labelKey: 'nav.p2p', path: '/p2p', icon: FiUsers },
       { id: 'exchangers', label: 'Échangeurs', labelKey: 'nav.exchangers', path: '/exchangers', icon: FiRepeat },
+      {
+        id: 'exchanger-dashboard',
+        label: 'Mon dashboard échangeur',
+        labelKey: 'nav.exchangerDashboard',
+        path: '/exchanger',
+        icon: FiRepeat,
+        roles: ['professional', 'admin', 'superadmin'],
+      },
     ],
   },
   {

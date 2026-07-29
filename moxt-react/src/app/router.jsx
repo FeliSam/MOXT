@@ -163,6 +163,10 @@ const TransferDetailPage = lazyPage(
   'TransferDetailPage',
 )
 const TransfersPage = lazyPage(() => import('../pages/TransfersPage'), 'TransfersPage')
+const ExchangerDashboardPage = lazyPage(
+  () => import('../pages/ExchangerDashboardPage'),
+  'ExchangerDashboardPage',
+)
 const ReferralPage = lazyPage(() => import('../pages/ReferralPage'), 'ReferralPage')
 const PublicationShell = lazyPage(
   () => import('../components/routing/PublicationShell'),
@@ -275,6 +279,7 @@ export function AppRouter() {
             <Route path="/businesses/setup" element={<BusinessSetupPage />} />
             <Route path="/businesses/:businessId" element={<BusinessDetailPage />} />
             <Route path="/professional" element={<ProfessionalPage />} />
+            <Route path="/exchanger" element={<ExchangerDashboardPage />} />
             <Route
               path="/business-detail"
               element={<LegacyDetailRedirect fallback="/businesses" target="/businesses" />}

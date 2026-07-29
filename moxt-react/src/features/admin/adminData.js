@@ -253,7 +253,9 @@ export function buildAdminMetrics(state) {
         queues.reports.length,
       urgent: queues.urgent,
     },
-    audit: { total: state.audit.items.length },
+    audit: {
+      total: state.audit.items.length + (state.audit.remoteItems || []).length,
+    },
     posts: {
       total: posts.length,
       pending: posts.filter((i) => i.status === 'pending_review').length,

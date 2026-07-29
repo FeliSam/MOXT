@@ -23,6 +23,7 @@ import {
 import { setRecipientAddresses } from '../features/addresses/recipientAddressesSlice'
 import { hydrateAccountPreferences, mergeRemoteAccount, updateAccountPreferences } from '../features/account/accountSlice'
 import { profileRowToAdminUser, setAdminUsers } from '../features/administration/administrationSlice'
+import { setRemoteAuditItems } from '../features/audit/auditSlice'
 import {
   setProfileDirectory,
   upsertProfileDirectoryEntries,
@@ -279,6 +280,15 @@ export const loadAllData = createAsyncThunk(
             .limit(50),
       supabase.from('recipient_addresses').select('*').eq('user_id', uid).order('updated_at', { ascending: false }).limit(USER_LIMIT),
     ])
+
+    let auditLogRes = { data: [], error: null }
+    if (isAdmin) {
+      auditLogRes = await supabase
+        .from('moxt_audit_log')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(200)
+    }
 
     let adminBusinessesRes = { data: [], error: null }
     if (isStaff) {
@@ -717,6 +727,9 @@ export const loadAllData = createAsyncThunk(
       }
       dispatch(setRecipientAddresses(fromRows(safeRows(recipientAddressesRes, 'des adresses'))))
       dispatch(setIdentityProfiles(mergedIdentity))
+      if (isAdmin) {
+        dispatch(setRemoteAuditItems(safeRows(auditLogRes, 'du journal d\'audit')))
+      }
       const profilePreferences = parseJsonField(profileRes.data?.preferences, {})
       if (profileRes.data) {
         dispatch(
