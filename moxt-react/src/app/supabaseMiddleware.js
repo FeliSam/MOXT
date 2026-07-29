@@ -726,22 +726,24 @@ const handlers = {
       }
     }
   },
-  'communications/markConversationRead': async (payload, state, dispatch) => {
+  'communications/markConversationRead': async (payload, state) => {
     const conversation = state.communications.conversations.find(
       (c) => c.id === payload.conversationId,
     )
     if (!conversation) return
 
-    await syncConversationRow(state, payload.conversationId)
-
-    const readerId = String(payload.userId)
-    const peerMessages = conversation.messages.filter(
-      (message) => String(message.senderId) !== readerId,
-    )
-    for (const message of peerMessages) {
-      const readBy = (message.readBy || []).map(String)
-      if (!readBy.includes(readerId)) continue
-      await syncMessageRow(message, conversation, dispatch)
+    // RPC dédiée : évite l'upsert massif des messages (source du uuid = text).
+    const { error } = await supabase.rpc('moxt_mark_conversation_read', {
+      p_conversation_id: payload.conversationId,
+    })
+    if (error) {
+      // Fallback soft : ne pas toaster à chaque ouverture de chat.
+      console.warn('[Supabase] markConversationRead RPC:', error.message)
+      try {
+        await syncConversationRow(state, payload.conversationId)
+      } catch (fallbackError) {
+        console.warn('[Supabase] markConversationRead fallback:', fallbackError?.message)
+      }
     }
   },
   'communications/updateConversationContext': async (payload, state) => {
