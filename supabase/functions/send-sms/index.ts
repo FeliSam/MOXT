@@ -25,13 +25,13 @@ const SMS_MAX_PER_DAY = Number(Deno.env.get('SMS_MAX_PER_DAY') || '10')
  * contourne en vidant le cache ou en changeant de navigateur ; celui-ci est
  * tenu en base et s'applique quoi qu'il arrive.
  *
- * En cas d'indisponibilité de la base, on laisse passer : mieux vaut un SMS de
- * trop qu'un utilisateur légitime bloqué hors de son compte.
+ * En cas d'indisponibilité de la base : fail-closed (Vague 3) — un SMS bloqué
+ * vaut mieux qu'une facture SMS vidée par un abus.
  */
 async function smsSendAllowed(phone: string): Promise<boolean> {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-  if (!supabaseUrl || !serviceRoleKey) return true
+  if (!supabaseUrl || !serviceRoleKey) return false
 
   try {
     const admin = createClient(supabaseUrl, serviceRoleKey, {
@@ -44,12 +44,33 @@ async function smsSendAllowed(phone: string): Promise<boolean> {
     })
     if (error) {
       console.error('[send-sms] cap check failed:', error.message)
-      return true
+      try {
+        await admin.rpc('moxt_log_security_event', {
+          p_kind: 'sms_cap_unavailable',
+          p_subject: phone,
+          p_meta: { error: error.message },
+        })
+      } catch {
+        /* ignore */
+      }
+      return false
     }
-    return data !== false
+    if (data === false) {
+      try {
+        await admin.rpc('moxt_log_security_event', {
+          p_kind: 'sms_cap_denied',
+          p_subject: phone,
+          p_meta: {},
+        })
+      } catch {
+        /* ignore */
+      }
+      return false
+    }
+    return true
   } catch (error) {
     console.error('[send-sms] cap check error:', error)
-    return true
+    return false
   }
 }
 

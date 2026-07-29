@@ -1,8 +1,17 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeadersFor } from '../_shared/cors.ts'
+import {
+  checkRateLimit,
+  clientIp,
+  logSecurityEvent,
+  timingSafeEqualString,
+} from '../_shared/rateLimit.ts'
 
 const ALLOW_HEADERS =
   'authorization, x-client-info, apikey, content-type, x-supabase-api-version'
+
+const RATE_WINDOW_SEC = 15 * 60
+const RATE_MAX = 20
 
 function json(body: Record<string, unknown>, status = 200, req?: Request) {
   const cors = corsHeadersFor(req || new Request('https://moxtapp.ru'), ALLOW_HEADERS)
@@ -73,13 +82,21 @@ Deno.serve(async (req) => {
     return respond({ error: 'Promotion admin invalide.' }, 400)
   }
 
-  if (!promotePassword || promotePassword !== promoteSecret) {
-    return respond({ error: 'Mot de passe de promotion administrateur incorrect.' }, 403)
-  }
-
   const admin = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   })
+
+  const ip = clientIp(req)
+  const ipOk = await checkRateLimit(admin, `admin-promote:ip:${ip}`, RATE_MAX, RATE_WINDOW_SEC)
+  if (!ipOk) {
+    await logSecurityEvent(admin, 'admin_promote_rate_limited', userId, { ip })
+    return respond({ error: 'Trop de tentatives. Réessayez dans quelques minutes.' }, 429)
+  }
+
+  if (!promotePassword || !timingSafeEqualString(promotePassword, promoteSecret)) {
+    await logSecurityEvent(admin, 'admin_promote_bad_secret', userId, { ip })
+    return respond({ error: 'Mot de passe de promotion administrateur incorrect.' }, 403)
+  }
 
   const { data: authData, error: authError } = await admin.auth.getUser(token)
   if (authError || !authData?.user) {
@@ -87,6 +104,17 @@ Deno.serve(async (req) => {
   }
 
   const callerId = authData.user.id
+  const userOk = await checkRateLimit(
+    admin,
+    `admin-promote:user:${callerId}`,
+    RATE_MAX,
+    RATE_WINDOW_SEC,
+  )
+  if (!userOk) {
+    await logSecurityEvent(admin, 'admin_promote_rate_limited', callerId, { ip })
+    return respond({ error: 'Trop de tentatives. Réessayez dans quelques minutes.' }, 429)
+  }
+
   const { data: callerProfile, error: callerError } = await admin
     .from('profiles')
     .select('role')
@@ -98,6 +126,7 @@ Deno.serve(async (req) => {
   }
 
   if (callerProfile?.role !== 'superadmin') {
+    await logSecurityEvent(admin, 'admin_promote_forbidden', callerId, { ip, target: userId })
     return respond({ error: 'Seul un superadmin peut créer un administrateur.' }, 403)
   }
 
@@ -114,5 +143,6 @@ Deno.serve(async (req) => {
     return respond({ error: updateError.message }, 500)
   }
 
+  await logSecurityEvent(admin, 'admin_promote_ok', callerId, { ip, target: userId, role })
   return respond({ ok: true, userId, role }, 200)
 })

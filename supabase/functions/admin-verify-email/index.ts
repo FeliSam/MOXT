@@ -1,5 +1,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeadersFor } from '../_shared/cors.ts'
+import {
+  checkRateLimit,
+  clientIp,
+  logSecurityEvent,
+} from '../_shared/rateLimit.ts'
 
 /**
  * Valide manuellement l'e-mail d'un utilisateur (auth.users.email_confirmed_at).
@@ -10,6 +15,9 @@ import { corsHeadersFor } from '../_shared/cors.ts'
  */
 const ALLOW_HEADERS =
   'authorization, x-client-info, apikey, content-type, x-supabase-api-version'
+
+const RATE_WINDOW_SEC = 15 * 60
+const RATE_MAX = 20
 
 function json(body: Record<string, unknown>, status = 200, req?: Request) {
   const cors = corsHeadersFor(req || new Request('https://moxtapp.ru'), ALLOW_HEADERS)
@@ -73,10 +81,24 @@ Deno.serve(async (req) => {
     return respond({ error: 'Session invalide.' }, 401)
   }
 
+  const ip = clientIp(req)
+  const callerId = authData.user.id
+  const ipOk = await checkRateLimit(admin, `admin-verify-email:ip:${ip}`, RATE_MAX, RATE_WINDOW_SEC)
+  const userOk = await checkRateLimit(
+    admin,
+    `admin-verify-email:user:${callerId}`,
+    RATE_MAX,
+    RATE_WINDOW_SEC,
+  )
+  if (!ipOk || !userOk) {
+    await logSecurityEvent(admin, 'admin_verify_email_rate_limited', callerId, { ip, target: userId })
+    return respond({ error: 'Trop de tentatives. Réessayez dans quelques minutes.' }, 429)
+  }
+
   const { data: callerProfile, error: callerError } = await admin
     .from('profiles')
     .select('role')
-    .eq('id', authData.user.id)
+    .eq('id', callerId)
     .maybeSingle()
 
   if (callerError) {
@@ -84,6 +106,7 @@ Deno.serve(async (req) => {
   }
 
   if (!callerProfile || !['admin', 'superadmin'].includes(callerProfile.role)) {
+    await logSecurityEvent(admin, 'admin_verify_email_forbidden', callerId, { ip })
     return respond({ error: 'Réservé aux administrateurs.' }, 403)
   }
 
@@ -107,5 +130,6 @@ Deno.serve(async (req) => {
     return respond({ error: profileError.message }, 500)
   }
 
+  await logSecurityEvent(admin, 'admin_verify_email_ok', callerId, { ip, target: userId })
   return respond({ ok: true, userId }, 200)
 })

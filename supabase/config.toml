@@ -34,6 +34,8 @@ sender_name = "MOXT"
 email_sent = 30
 # Aligné sur le délai client (90 s) : plafond horaire conservateur pour les OTP SMS.
 sms_sent = 30
+# Vague 3 : plafonds Auth (email/sms) + rate durable DB via moxt_edge_rate_check
+# sur phone-login / admin edges / send-sms (voir migration security_hardening_wave3).
 
 [auth.email.template.confirmation]
 subject = "Подтвердите email — MOXT"
