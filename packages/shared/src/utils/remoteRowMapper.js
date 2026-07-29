@@ -154,6 +154,8 @@ const camelMap = {
   last_active_at: 'lastActiveAt',
   payment_due_at: 'paymentDueAt',
   confirm_due_at: 'confirmDueAt',
+  viewed_by: 'viewedBy',
+  is_official: 'isOfficial',
 }
 
 export function fromRow(row) {

@@ -1,12 +1,15 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { createId } from '../../services/createId'
-import { createLocalStorage } from '../../services/createLocalStorage'
-
-const storage = createLocalStorage('moxt-statuses-v1')
+import {
+  mergeStatusViewers,
+  mergeViewedByLists,
+  rememberSeenStatus,
+  statusHasBeenViewedBy,
+} from './statusViewUtils'
 
 const statusesSlice = createSlice({
   name: 'statuses',
-  initialState: { items: storage.read() ?? [] },
+  initialState: { items: [] },
   reducers: {
     setAll(state, action) {
       Object.assign(state, action.payload)
@@ -30,6 +33,7 @@ const statusesSlice = createSlice({
             caption: values.caption || '',
             isOfficial: values.isOfficial === true,
             viewedBy: [],
+            viewers: {},
             createdAt: now,
             expiresAt: values.expiresAt || expiresAt,
           },
@@ -42,13 +46,24 @@ const statusesSlice = createSlice({
       const status = state.items.find((s) => s.id === statusId)
       if (!status || !userId) return
       if (String(status.authorId) === String(userId)) return
-      status.viewedBy ||= []
-      if (!status.viewedBy.includes(userId)) status.viewedBy.push(userId)
+
+      rememberSeenStatus(userId, statusId)
+
+      const already = statusHasBeenViewedBy(status, userId)
+      status.viewedBy = mergeViewedByLists(status.viewedBy, [userId])
       status.viewers ||= {}
+      if (already && status.viewers[userId]?.viewedAt) {
+        status.viewers[userId] = {
+          ...status.viewers[userId],
+          name: userName || status.viewers[userId].name || '',
+          avatarUrl: userAvatarUrl ?? status.viewers[userId].avatarUrl ?? null,
+        }
+        return
+      }
       status.viewers[userId] = {
         name: userName || '',
         avatarUrl: userAvatarUrl || null,
-        viewedAt: new Date().toISOString(),
+        viewedAt: status.viewers[userId]?.viewedAt || new Date().toISOString(),
       }
     },
 
@@ -116,14 +131,11 @@ const statusesSlice = createSlice({
         return
       }
       const local = state.items[index]
-      const viewedBy = Array.from(
-        new Set([...(remote.viewedBy || []), ...(local.viewedBy || [])]),
-      )
       state.items[index] = {
         ...local,
         ...remote,
-        viewedBy,
-        viewers: { ...(remote.viewers || {}), ...(local.viewers || {}) },
+        viewedBy: mergeViewedByLists(remote.viewedBy, local.viewedBy),
+        viewers: mergeStatusViewers(remote.viewers, local.viewers),
         reactions: remote.reactions || local.reactions || {},
       }
     },

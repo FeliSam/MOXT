@@ -94,7 +94,8 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
   }
 
   useEffect(() => {
-    if (!page || !viewer?.id) return
+    if (!page?.statusId || !viewer?.id) return
+    // Le reducer + RPC figent la 1re date ; les revues sont des no-op.
     dispatch(
       markStatusViewed({
         statusId: page.statusId,
@@ -103,7 +104,7 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
         userAvatarUrl: viewer.avatarUrl || null,
       }),
     )
-  }, [page?.statusId, viewer?.id, dispatch])
+  }, [page?.statusId, viewer?.id, viewer?.firstName, viewer?.lastName, viewer?.avatarUrl, dispatch])
 
   useEffect(() => () => window.clearTimeout(animTimerRef.current), [])
 

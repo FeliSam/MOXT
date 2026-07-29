@@ -15,6 +15,11 @@ import { setAll as setDisputes } from '../features/disputes/disputeSlice'
 import { setAll as setFinance } from '../features/finance/financeSlice'
 import { setAll as setPosts } from '../features/posts/postsSlice'
 import { setAll as setStatuses } from '../features/statuses/statusesSlice'
+import {
+  applySeenLedgerToStatuses,
+  mergeStatusViewers,
+  mergeViewedByLists,
+} from '../features/statuses/statusViewUtils'
 import { setRecipientAddresses } from '../features/addresses/recipientAddressesSlice'
 import { hydrateAccountPreferences, mergeRemoteAccount, updateAccountPreferences } from '../features/account/accountSlice'
 import { profileRowToAdminUser, setAdminUsers } from '../features/administration/administrationSlice'
@@ -637,26 +642,22 @@ export const loadAllData = createAsyncThunk(
       }) }))
       // Le marquage "vu" (viewedBy/viewers) est écrit en fire-and-forget côté serveur ;
       // si ce rechargement arrive avant que l'écriture précédente n'ait abouti, on
-      // fusionne avec l'état local pour ne jamais faire "regresser" un statut déjà vu
-      // (la bordure ne doit pas redevenir non-vue après un simple refresh).
+      // fusionne avec l'état local + ledger pour ne jamais faire "regresser" un statut déjà vu.
       const localStatusesById = new Map((getState().statuses?.items || []).map((item) => [item.id, item]))
-      dispatch(setStatuses({ items: fromRows(safeRows(statusesRes, 'des statuts')).map((s) => {
-        const remoteViewedBy = parseJsonField(s.viewedBy, [])
+      const mappedStatuses = fromRows(safeRows(statusesRes, 'des statuts')).map((s) => {
+        const remoteViewedBy = parseJsonField(s.viewedBy ?? s.viewed_by, [])
         const remoteViewers = parseJsonField(s.viewers, {})
         const local = localStatusesById.get(s.id)
-        const viewedBy = local?.viewedBy?.length
-          ? Array.from(new Set([...remoteViewedBy, ...local.viewedBy]))
-          : remoteViewedBy
-        const viewers = local?.viewers ? { ...remoteViewers, ...local.viewers } : remoteViewers
         return {
           ...s,
           images: parseJsonField(s.images, []).filter((url) => typeof url === 'string' && url).slice(0, 4),
-          viewedBy,
-          viewers,
+          viewedBy: mergeViewedByLists(remoteViewedBy, local?.viewedBy),
+          viewers: mergeStatusViewers(remoteViewers, local?.viewers),
           reactions: parseJsonField(s.reactions, {}),
-          isOfficial: s.isOfficial === true,
+          isOfficial: s.isOfficial === true || s.is_official === true,
         }
-      }) }))
+      })
+      dispatch(setStatuses({ items: applySeenLedgerToStatuses(mappedStatuses, uid) }))
       dispatch(mergeRemoteAccount({
         favorites: fromRows(safeRows(favoritesRes, 'des favoris')),
         subscriptions: fromRows(safeRows(subscriptionsRes, 'des abonnements')).map((item) => ({

@@ -1136,8 +1136,7 @@ const handlers = {
     if (error) throw error
   },
   'statuses/markStatusViewed': async (payload) => {
-    // RPC security definer : la vue d'un tiers ne peut plus écrire directement
-    // sur la ligne (RLS UPDATE restreinte à l'auteur, cf. moxt_status_mark_viewed).
+    // RPC security definer : no-op serveur si déjà vu (1re date figée).
     const { error } = await supabase.rpc('moxt_status_mark_viewed', {
       p_status_id: payload.statusId,
       p_user_name: payload.userName || '',
