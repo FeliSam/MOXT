@@ -203,11 +203,11 @@ export function TransferDetailPage() {
   }
 
   return (
-    <div className="finance-hero-glow grid gap-7 rounded-[var(--radius-card-lg)]">
+    <div className="finance-hero-glow grid min-w-0 max-w-full gap-7 overflow-x-clip rounded-[var(--radius-card-lg)]">
       <PageHeader
         title={t('transfers.detail.title')}
         actions={
-          <div className="flex flex-wrap gap-2">
+          <div className="flex max-w-full flex-wrap gap-2">
             <ContactButton
               ownerId={access.contactId}
               relatedEntity={transfer}

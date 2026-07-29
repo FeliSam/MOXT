@@ -90,7 +90,7 @@ export function AdminPage() {
   const showDetailPanel = !auditFullWidth || selected
 
   return (
-    <div className="grid min-w-0 max-w-full gap-6 overflow-x-clip">
+    <div className="grid min-w-0 max-w-full gap-6 overflow-x-clip" translate="no">
       <SystemStatusBar metrics={metrics} queues={queues} onOpenQueues={() => switchView('queues')} />
 
       <PageHeader

@@ -1237,6 +1237,16 @@ export function createAuthService(supabase, redirects = {}) {
         throw new Error("L'e-mail est obligatoire.")
       }
 
+      // Choix explicite à l'inscription (web + mobile) : 'email' | 'phone' | 'sms'
+      const methodRaw = String(details.verificationMethod || 'phone').toLowerCase()
+      const wantsEmail = methodRaw === 'email' || methodRaw === 'mail'
+      if (wantsEmail) {
+        return this.registerWithEmailAfterSmsDenied({
+          ...details,
+          registrationVia: details.registrationVia || 'email_chosen_at_signup',
+        })
+      }
+
       const normalizedPhone = normalizeRussianAuthPhone(details.russianPhone)
 
       // Collapse double-click / double-dispatch into one SMS send.
@@ -1387,8 +1397,8 @@ export function createAuthService(supabase, redirects = {}) {
 
       return withOtpInFlight('email', email, async () => {
         const profileFields = {
-          first_name: details.firstName.trim(),
-          last_name: details.lastName.trim(),
+          first_name: String(details.firstName || '').trim(),
+          last_name: String(details.lastName || '').trim(),
           email,
           phone: normalizedPhone,
           origin_phone: details.originPhone?.trim() || '',

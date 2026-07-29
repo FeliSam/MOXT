@@ -108,6 +108,19 @@ export const en = {
         afterCooldownHint:
           "Wait over: resend the SMS or receive the code by email.",
       },
+      channel: {
+        title: "How do you want to receive your code?",
+        subtitle:
+          "Choose SMS or email. The other identifier can be confirmed later in Security before publishing.",
+        smsTitle: "By SMS",
+        smsHint: "6-digit code, usually within a few seconds.",
+        emailTitle: "By email",
+        emailHint: "Check spam/junk if you don’t see it.",
+        sendCode: "Send code",
+        sending: "Sending code…",
+        backToForm: "Edit my details",
+      },
+      continueToVerify: "Continue",
       toasts: {
         alreadyExistsTitle: "Account already exists",
         alreadyExistsBody: "This number or email is already linked to a confirmed account. Sign in with your password. If you never received the SMS code, retry signup in a few minutes after automatic cleanup of unfinished signups.",

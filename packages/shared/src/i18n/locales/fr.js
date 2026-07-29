@@ -109,6 +109,19 @@ export const fr = {
         afterCooldownHint:
           "Délai écoulé : renvoyez le SMS ou recevez le code par e-mail.",
       },
+      channel: {
+        title: "Comment recevoir votre code ?",
+        subtitle:
+          "Choisissez SMS ou e-mail. L’autre identifiant restera à confirmer dans Sécurité pour publier.",
+        smsTitle: "Par SMS",
+        smsHint: "Code à 6 chiffres, en général en quelques secondes.",
+        emailTitle: "Par e-mail",
+        emailHint: "Vérifiez aussi vos courriers indésirables (spam).",
+        sendCode: "Recevoir le code",
+        sending: "Envoi du code…",
+        backToForm: "Modifier mes informations",
+      },
+      continueToVerify: "Continuer",
       toasts: {
         alreadyExistsTitle: "Compte déjà existant",
         alreadyExistsBody: "Ce numéro ou e-mail est déjà lié à un compte confirmé. Connectez-vous avec votre mot de passe. Si vous n’avez jamais reçu le code SMS, réessayez l’inscription dans quelques minutes après nettoyage automatique des inscriptions inachevées.",

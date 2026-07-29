@@ -1050,6 +1050,33 @@ describe('authService', () => {
     expect(result.phone).toBe('+79000000010')
   })
 
+  it('register avec verificationMethod email utilise le canal e-mail dès le premier envoi', async () => {
+    auth.signUp.mockResolvedValue({
+      data: {
+        user: { id: 'user-email-first', identities: [{ id: 'identity-email' }] },
+        session: null,
+      },
+      error: null,
+    })
+
+    const result = await authService.register({
+      ...registrationDetails(),
+      verificationMethod: 'email',
+    })
+
+    expect(auth.signUp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: 'personne@example.com',
+      }),
+    )
+    const signUpArg = auth.signUp.mock.calls[0][0]
+    expect(signUpArg.phone).toBeUndefined()
+    expect(signUpArg.options?.channel).not.toBe('sms')
+    expect(signUpArg.options?.data?.registration_via).toBe('email_chosen_at_signup')
+    expect(result.verificationMethod).toBe('email')
+    expect(result.requiresEmailConfirmation).toBe(true)
+  })
+
   it('verifyEmailRegistration finalise le profil avec téléphone non vérifié', async () => {
     const user = {
       id: 'user-email-fallback',

@@ -66,6 +66,8 @@ export function AdminVerificationsPanel({
         reviewedBy: adminId,
       }),
     )
+    // Évite un panneau détail obsolète / collision DOM après changement de statut.
+    setSelected?.({ kind: 'verification', item: { ...item, status: 'verified' } })
   }
 
   function reject(item) {
@@ -81,6 +83,10 @@ export function AdminVerificationsPanel({
     )
     setRejectId(null)
     setRejectReason('')
+    setSelected?.({
+      kind: 'verification',
+      item: { ...item, status: 'rejected', reviewNote },
+    })
   }
 
   return (

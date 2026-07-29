@@ -143,6 +143,15 @@ export const MAIN_RUSSIAN_CITIES = [
     nearby: ['Liski', 'Borisoglebsk'],
   },
   {
+    id: 'yaroslavl',
+    fr: 'Iaroslavl',
+    en: 'Yaroslavl',
+    ru: 'Ярославль',
+    region: 'Oblast de Iaroslavl',
+    priority: 17,
+    nearby: ['Rybinsk', 'Tutayev', 'Pereslavl-Zalessky', 'Rostov'],
+  },
+  {
     id: 'krasnodar',
     fr: 'Krasnodar',
     en: 'Krasnodar',

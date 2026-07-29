@@ -4,15 +4,15 @@ import { Card } from './Card'
 
 export function DetailMetrics({ items }) {
   return (
-    <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+    <section className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 xl:grid-cols-4">
       {items.map(({ icon: Icon = FiInfo, label, tone = 'brand', value }) => (
-        <Card key={label} className="p-4 sm:p-5">
+        <Card key={label} className="min-w-0 overflow-hidden p-4 sm:p-5">
           <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
             <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-[var(--app-accent-soft)] text-[var(--app-accent)] sm:size-11">
               <Icon />
             </span>
             <div className="min-w-0">
-              <strong className="block break-words text-sm tabular-nums sm:truncate sm:text-lg">
+              <strong className="block break-words text-sm tabular-nums [overflow-wrap:anywhere] sm:truncate sm:text-lg">
                 {value}
               </strong>
               <span className="text-xs text-[var(--app-text-faint)]">{label}</span>

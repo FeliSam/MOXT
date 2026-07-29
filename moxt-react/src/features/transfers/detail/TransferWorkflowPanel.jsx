@@ -46,10 +46,10 @@ export function TransferWorkflowPanel({
     : currentAction?.description
 
   return (
-    <Card className="grid gap-0 overflow-hidden p-0">
-      <div className="grid gap-3 border-b border-[var(--app-border)] bg-[var(--app-surface-muted)]/40 px-4 py-4 sm:px-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
+    <Card className="grid min-w-0 gap-0 overflow-hidden p-0">
+      <div className="grid min-w-0 gap-3 border-b border-[var(--app-border)] bg-[var(--app-surface-muted)]/40 px-4 py-4 sm:px-5">
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
             <p className="text-[11px] font-black uppercase tracking-[0.14em] text-brand-700 dark:text-brand-300">
               {t('transfers.workflow.journeyTitle')}
             </p>
@@ -62,10 +62,12 @@ export function TransferWorkflowPanel({
           </div>
           <TransferStatusBadge status={transfer.status} />
         </div>
-        <TransferProgressStepper steps={workflow.steps} activeIndex={workflow.activeIndex} />
+        <div className="min-w-0 overflow-x-auto">
+          <TransferProgressStepper steps={workflow.steps} activeIndex={workflow.activeIndex} />
+        </div>
       </div>
 
-      <div className="grid gap-4 px-4 py-5 sm:px-5">
+      <div className="grid min-w-0 gap-4 px-4 py-5 sm:px-5">
         {currentAction?.type === 'claim' ? (
           <ActionZone
             description={t('transfers.workflow.claimOnlyDescription')}
