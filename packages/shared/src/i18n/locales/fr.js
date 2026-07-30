@@ -7172,6 +7172,7 @@ export const fr = {
     fanOutJob: "Nouveau job",
     fanOutEvent: "Nouvel événement",
     fanOutParcel: "Nouveau colis",
+    fanOutP2p: "Nouvelle offre P2P",
     fanOutPost: "Nouvelle publication",
     someone: "Quelqu’un",
     transferCompleted: "Transfert terminé",

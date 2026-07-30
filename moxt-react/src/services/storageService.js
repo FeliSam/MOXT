@@ -174,24 +174,42 @@ export const storageService = {
   },
 
   async uploadBusinessLogo(userId, businessId, file, { onProgress } = {}) {
+    const ownerId = String(userId || '').trim()
+    if (!ownerId) throw new Error('Utilisateur requis pour envoyer le logo.')
     return compressThenUpload(file, { maxPx: 512, quality: 0.88, onProgress }, async (compressed) => {
       const extension = compressed.type === 'image/png' ? 'png' : 'jpg'
+      const typed =
+        compressed.type && compressed.type.startsWith('image/')
+          ? compressed
+          : new File([compressed], `logo.${extension}`, {
+              type: extension === 'png' ? 'image/png' : 'image/jpeg',
+              lastModified: Date.now(),
+            })
       return upload(
         'businesses',
-        `${userId}/${businessId}/logo.${extension}`,
-        compressed,
+        `${ownerId}/${businessId}/logo.${extension}`,
+        typed,
         { onProgress },
       )
     })
   },
 
   async uploadBusinessBanner(userId, businessId, file, { onProgress } = {}) {
+    const ownerId = String(userId || '').trim()
+    if (!ownerId) throw new Error('Utilisateur requis pour envoyer la bannière.')
     return compressThenUpload(file, { maxPx: 1920, quality: 0.82, onProgress }, async (compressed) => {
       const extension = compressed.type === 'image/png' ? 'png' : 'jpg'
+      const typed =
+        compressed.type && compressed.type.startsWith('image/')
+          ? compressed
+          : new File([compressed], `banner.${extension}`, {
+              type: extension === 'png' ? 'image/png' : 'image/jpeg',
+              lastModified: Date.now(),
+            })
       return upload(
         'businesses',
-        `${userId}/${businessId}/banner.${extension}`,
-        compressed,
+        `${ownerId}/${businessId}/banner.${extension}`,
+        typed,
         { onProgress },
       )
     })

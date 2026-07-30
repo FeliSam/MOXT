@@ -65,6 +65,24 @@ describe('exchangerListUtils', () => {
     expect(resolveUserTransferCountry({ country: 'RU', originCountry: 'TG' }, 'BJ')).toBe('RU')
   })
 
+  it('masque les comptes origin avec country corrompu jusqu a normalisation', () => {
+    const corrupted = {
+      ...bjBusiness,
+      name: "Flick’sExchange",
+      transferAccounts: [
+        { slot: 'ru', country: 'RU', active: true },
+        { slot: 'origin', country: 1, active: true, isDefault: true },
+      ],
+      ownerOriginCountry: 'BJ',
+    }
+    const rows = listExchangersForTransfer({
+      businesses: [corrupted],
+      user: { id: 'u1', country: 'RU', originCountry: 'BJ' },
+      originCountry: 'BJ',
+    })
+    expect(rows.map((item) => item.name)).toEqual(["Flick’sExchange"])
+  })
+
   it('ignore business.country (localisation RU) pour le pays partenaire', () => {
     expect(resolveExchangerOriginCountry(bjBusiness, 'BJ')).toBe('BJ')
     expect(resolveExchangerCountry(ruBusiness, 'RU', 'BJ')).toBe('RU')

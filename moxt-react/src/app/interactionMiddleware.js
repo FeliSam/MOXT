@@ -20,11 +20,49 @@ import { setUser } from '../features/auth/authSlice'
 import { setUserVerified } from '../features/administration/administrationSlice'
 import { sanitizeUserFacingMessage } from '../features/auth/authErrorMessages'
 import { appText } from '../i18n/appText'
+import { supabase } from '../services/supabaseClient'
 
 function notify(store, payload) {
   if (payload.userId) store.dispatch(addNotification(payload))
 }
 
+/** Notifie tous les comptes actifs (RPC serveur) — marketplace / jobs / colis / events / P2P. */
+function notifyAllUsersPublication({ title, message, type, link, priority, dedupeKey }) {
+  if (!supabase) return
+  void supabase
+    .rpc('moxt_notify_all_users', {
+      p_title: String(title || '').slice(0, 200),
+      p_message: String(message || '').slice(0, 500),
+      p_type: type || 'publication',
+      p_link: link || '/',
+      p_priority: priority || 'normal',
+      p_dedupe_key: dedupeKey || null,
+    })
+    .then(({ error }) => {
+      if (error) console.warn('[notifications] fan-out global:', error.message)
+    })
+}
+
+function fanOutPublicationToEveryone(store, state, item, contentType, title, linkBuilder, priority = 'normal') {
+  const publisher = resolvePublisherFromContent(state, item)
+  if (!publisher.publisherId || !item?.id) return
+  const link = linkBuilder(item.id)
+  const label = item.title
+    ? `« ${item.title} »`
+    : item.body
+      ? String(item.body).slice(0, 120)
+      : appText('notificationsFeed.newContentPublished')
+  notifyAllUsersPublication({
+    title: `${publisher.publisherName} — ${title}`,
+    message: label,
+    type: contentType || 'publication',
+    link,
+    priority,
+    dedupeKey: `${contentType || 'pub'}-${item.id}`,
+  })
+}
+
+/** Posts / fil : abonnés uniquement (pas de flood global). */
 function fanOutPublication(store, state, item, contentType, title, linkBuilder, priority = 'normal') {
   const publisher = resolvePublisherFromContent(state, item)
   if (!publisher.publisherId) return
@@ -903,7 +941,7 @@ export const interactionMiddleware = (store) => {
   }
 
   if (action.type === 'marketplace/publishListing/fulfilled') {
-    fanOutPublication(
+    fanOutPublicationToEveryone(
       store,
       after,
       action.payload,
@@ -915,35 +953,50 @@ export const interactionMiddleware = (store) => {
   }
 
   if (action.type === 'jobs/createJob') {
-    fanOutPublication(
+    fanOutPublicationToEveryone(
       store,
       after,
       action.payload,
       'job',
       appText('notificationsFeed.fanOutJob'),
       (id) => `/jobs/${id}`,
+      'high',
     )
   }
 
   if (action.type === 'events/createEvent') {
-    fanOutPublication(
+    fanOutPublicationToEveryone(
       store,
       after,
       action.payload,
       'event',
       appText('notificationsFeed.fanOutEvent'),
       (id) => `/events/${id}`,
+      'high',
     )
   }
 
   if (action.type === 'parcels/createParcel') {
-    fanOutPublication(
+    fanOutPublicationToEveryone(
       store,
       after,
       action.payload,
       'parcel',
       appText('notificationsFeed.fanOutParcel'),
       (id) => `/parcels/${id}`,
+      'high',
+    )
+  }
+
+  if (action.type === 'p2p/createOffer') {
+    fanOutPublicationToEveryone(
+      store,
+      after,
+      action.payload,
+      'p2p',
+      appText('notificationsFeed.fanOutP2p'),
+      (id) => `/p2p/${id}`,
+      'high',
     )
   }
 

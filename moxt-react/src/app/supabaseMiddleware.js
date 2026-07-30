@@ -985,6 +985,7 @@ const handlers = {
     const currentUser = state.auth.user
     if (!currentUser || payload.userId === currentUser.id || payload.type === 'message') return
     // SECURITY DEFINER RPC: peer inserts bypass "own notifications only" RLS.
+    // Soft-fail: une notif manquée ne doit jamais bloquer le flux métier / toast spam.
     const { error } = await supabase.rpc('moxt_create_notification', {
       p_id: payload.id,
       p_user_id: payload.userId,
@@ -994,7 +995,10 @@ const handlers = {
       p_link: payload.link || null,
       p_priority: payload.priority || 'normal',
     })
-    if (error) throw error
+    if (error) {
+      console.warn('[Supabase] notification:', error.message)
+      return
+    }
 
     const { dispatchPushNotification } = await import('../services/pushDispatch')
     void dispatchPushNotification(payload.id)

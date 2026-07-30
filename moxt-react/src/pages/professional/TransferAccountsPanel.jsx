@@ -15,6 +15,7 @@ import {
   accountsForSlot,
   addTransferAccount,
   countryLabel,
+  normalizeTransferCountryCode,
   setDefaultTransferAccount,
   TRANSFER_ACCOUNT_SLOTS,
   transferAccountSlotMeta,
@@ -40,7 +41,7 @@ const emptyForm = {
 export function TransferAccountsPanel({ business, dispatch, user }) {
   const { t } = useLanguage()
   const pt = (key, vars) => professionalText(t, key, vars)
-  const originCountry = user.originCountry || 'BJ'
+  const originCountry = normalizeTransferCountryCode(user.originCountry || 'BJ', 'BJ')
   const accounts = business.transferAccounts || []
   const [panelTab, setPanelTab] = useState('defaults')
   const [modalMode, setModalMode] = useState(null)

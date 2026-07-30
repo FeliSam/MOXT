@@ -7146,6 +7146,7 @@ export const es = {
     fanOutJob: "Nuevo empleo",
     fanOutEvent: "Nuevo evento",
     fanOutParcel: "Nueva paquete",
+    fanOutP2p: "Nueva oferta P2P",
     fanOutPost: "Nueva publicación",
     someone: "Alguien",
     transferCompleted: "Transferencia completada",

@@ -41,8 +41,9 @@ export function PublisherDetailCard({
   const profilePath =
     publicationsPath || (ownerId ? `/users/${ownerId}/publications` : null)
   const ratingDisplay =
-    rating?.count > 0 ? `${Number(rating.average || 0).toFixed(1)}/5` : '—'
-
+    rating?.count > 0
+      ? `${Number(rating.average || 0).toFixed(1)} (${rating.count})`
+      : '—'
   return (
     <Card className={`min-w-0 overflow-hidden ${className}`}>
       <div className="flex items-center gap-3">

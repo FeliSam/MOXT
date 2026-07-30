@@ -413,9 +413,19 @@ export const loadAllData = createAsyncThunk(
             .select('*')
             .order('created_at', { ascending: false })
             .limit(USER_LIMIT)
-        : ownedBusinessIds.length
-          ? supabase.from('business_documents').select('*').in('business_id', ownedBusinessIds).limit(USER_LIMIT)
-          : Promise.resolve({ data: [] }),
+        : Promise.all([
+            supabase.from('business_documents').select('*').eq('owner_id', uid).limit(USER_LIMIT),
+            ownedBusinessIds.length
+              ? supabase
+                  .from('business_documents')
+                  .select('*')
+                  .in('business_id', ownedBusinessIds)
+                  .limit(USER_LIMIT)
+              : Promise.resolve({ data: [], error: null }),
+          ]).then(([byOwner, byBusiness]) => ({
+            data: mergeRemoteRowsById(byOwner.data || [], byBusiness.data || []),
+            error: byOwner.error || byBusiness.error || null,
+          })),
       supabase.from('identity_profiles').select('*').eq('user_id', uid).limit(USER_LIMIT),
       isStaff
         ? supabase.from('listing_reports').select('*').order('created_at', { ascending: false }).limit(USER_LIMIT)

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { DIRECTIONS } from './transferConfig'
 import {
   buildExchangerPaymentView,
+  normalizeTransferCountryCode,
   receivingCountryForDirection,
   receivingSlotForDirection,
   resolveBusinessReceivingAccount,
@@ -9,6 +10,13 @@ import {
 } from './transferAccountUtils'
 
 describe('transferAccountUtils', () => {
+  it('normalise les codes pays invalides (index numerique, vide)', () => {
+    expect(normalizeTransferCountryCode(1, 'BJ')).toBe('BJ')
+    expect(normalizeTransferCountryCode('1', 'TG')).toBe('TG')
+    expect(normalizeTransferCountryCode('bj', 'TG')).toBe('BJ')
+    expect(normalizeTransferCountryCode('RU', 'BJ')).toBe('RU')
+  })
+
   const accounts = [
     {
       id: 'ru-1',

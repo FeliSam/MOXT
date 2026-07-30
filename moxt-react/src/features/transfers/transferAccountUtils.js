@@ -6,8 +6,35 @@ export const TRANSFER_ACCOUNT_SLOTS = {
   ORIGIN: 'origin',
 }
 
+const KNOWN_ORIGIN_CODES = new Set(FALLBACK_AFRICAN_COUNTRIES.map((country) => country.code))
+
+/** Codes ISO 2 lettres uniquement — évite country: 1 / index Select / valeurs corrompues. */
+export function normalizeTransferCountryCode(value, fallback = 'BJ') {
+  const raw = String(value ?? '')
+    .trim()
+    .toUpperCase()
+  if (raw === 'RU') return 'RU'
+  if (/^[A-Z]{2}$/.test(raw) && (KNOWN_ORIGIN_CODES.has(raw) || raw === fallback)) {
+    return raw
+  }
+  if (/^[A-Z]{2}$/.test(raw)) return raw
+  const safeFallback = String(fallback || 'BJ')
+    .trim()
+    .toUpperCase()
+  return /^[A-Z]{2}$/.test(safeFallback) ? safeFallback : 'BJ'
+}
+
+export function isValidTransferCountryCode(value) {
+  const raw = String(value ?? '')
+    .trim()
+    .toUpperCase()
+  return raw === 'RU' || /^[A-Z]{2}$/.test(raw)
+}
+
 export function inferTransferAccountSlot(country) {
-  return country === 'RU' ? TRANSFER_ACCOUNT_SLOTS.RU : TRANSFER_ACCOUNT_SLOTS.ORIGIN
+  return normalizeTransferCountryCode(country, 'BJ') === 'RU'
+    ? TRANSFER_ACCOUNT_SLOTS.RU
+    : TRANSFER_ACCOUNT_SLOTS.ORIGIN
 }
 
 export function receivingSlotForDirection(direction) {
@@ -17,15 +44,19 @@ export function receivingSlotForDirection(direction) {
 }
 
 export function receivingCountryForDirection(direction, originCountry = 'BJ') {
-  return direction === DIRECTIONS.RU_TO_BJ ? 'RU' : originCountry
+  return direction === DIRECTIONS.RU_TO_BJ
+    ? 'RU'
+    : normalizeTransferCountryCode(originCountry, 'BJ')
 }
 
 export function countryLabel(code) {
-  if (code === 'RU') return RUSSIA.name
-  return FALLBACK_AFRICAN_COUNTRIES.find((country) => country.code === code)?.name || code
+  const normalized = normalizeTransferCountryCode(code, code)
+  if (normalized === 'RU') return RUSSIA.name
+  return FALLBACK_AFRICAN_COUNTRIES.find((country) => country.code === normalized)?.name || normalized
 }
 
 export function transferAccountSlotMeta(slot, originCountry = 'BJ') {
+  const safeOrigin = normalizeTransferCountryCode(originCountry, 'BJ')
   if (slot === TRANSFER_ACCOUNT_SLOTS.RU) {
     return {
       slot,
@@ -35,10 +66,10 @@ export function transferAccountSlotMeta(slot, originCountry = 'BJ') {
       activeForDirection: DIRECTIONS.RU_TO_BJ,
     }
   }
-  const countryName = countryLabel(originCountry)
+  const countryName = countryLabel(safeOrigin)
   return {
     slot: TRANSFER_ACCOUNT_SLOTS.ORIGIN,
-    country: originCountry,
+    country: safeOrigin,
     title: `Compte ${countryName}`,
     directionHint: 'Afrique → Russie',
     activeForDirection: DIRECTIONS.BJ_TO_RU,

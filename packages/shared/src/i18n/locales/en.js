@@ -7168,6 +7168,7 @@ export const en = {
     fanOutJob: "New job",
     fanOutEvent: "New event",
     fanOutParcel: "New parcel",
+    fanOutP2p: "New P2P offer",
     fanOutPost: "New post",
     someone: "Someone",
     transferCompleted: "Transfer completed",

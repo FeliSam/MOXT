@@ -60,7 +60,7 @@ export function MobileMoreDrawer({ open, onClose }) {
         type="button"
         aria-label={t('nav.closeServices')}
         onClick={requestClose}
-        className={`absolute inset-0 bg-slate-950/40 backdrop-blur-[2px] ${
+        className={`absolute inset-0 bg-slate-950/[0.82] backdrop-blur-[2px] ${
           closing ? 'animate-[fadeOut_200ms_ease-in_forwards]' : 'animate-[fadeIn_200ms_ease-out_forwards]'
         }`}
       />

@@ -2,18 +2,20 @@ import { createSlice } from '@reduxjs/toolkit'
 import { createId } from '../../services/createId'
 import { createLocalStorage } from '../../services/createLocalStorage'
 import { matchUserId } from './businessVisibility'
+import { normalizeTransferCountryCode } from '../transfers/transferAccountUtils'
 const storage = createLocalStorage('moxt-businesses-v1')
 const membersStorage = createLocalStorage('moxt-business-members-v1')
 const documentsStorage = createLocalStorage('moxt-business-documents-v1')
 const requestsStorage = createLocalStorage('moxt-business-requests-v1')
 
 function normalizeTransferAccount(account = {}, originCountry = 'BJ') {
-  const country = account.country || 'RU'
-  const slot = account.slot || (country === 'RU' ? 'ru' : 'origin')
+  const safeOrigin = normalizeTransferCountryCode(originCountry, 'BJ')
+  const incoming = normalizeTransferCountryCode(account.country, safeOrigin)
+  const slot = account.slot || (incoming === 'RU' ? 'ru' : 'origin')
   return {
     id: account.id || createId('BACC'),
     slot,
-    country: slot === 'ru' ? 'RU' : originCountry,
+    country: slot === 'ru' ? 'RU' : safeOrigin,
     label: account.label?.trim() || account.method || 'Compte de reception',
     method: account.method?.trim() || '',
     recipientName: account.recipientName?.trim() || '',

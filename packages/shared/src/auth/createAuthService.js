@@ -126,6 +126,8 @@ function profileToUser(profile) {
     status: profile.status || 'active',
     phoneVerified: profile.phone_verified === true,
     phoneVerifiedAt: profile.phone_verified_at || null,
+    emailVerified: profile.email_verified === true,
+    emailVerifiedAt: profile.email_verified_at || null,
     createdAt: profile.created_at || profile.updated_at || null,
   }
 }
@@ -933,13 +935,19 @@ export function createAuthService(supabase, redirects = {}) {
     if (!email.includes('@')) return null
 
     const existing = await fetchProfile(userId)
-    if (existing && String(existing.email || '').toLowerCase() === email) {
+    const emailMatches =
+      existing && String(existing.email || '').toLowerCase() === email
+    if (emailMatches && existing.emailVerified === true) {
       return enrichUserFromAuth(existing, authUser)
     }
 
     await patchProfileFields(
       userId,
-      { email },
+      {
+        email,
+        email_verified: true,
+        email_verified_at: authUser.email_confirmed_at,
+      },
       { authUser },
     )
     const refreshed = await fetchProfile(userId)

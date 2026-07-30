@@ -7150,6 +7150,7 @@ export const ru = {
     fanOutJob: "Новая вакансия",
     fanOutEvent: "Новое мероприятие",
     fanOutParcel: "Новая посылка",
+    fanOutP2p: "Новое предложение P2P",
     fanOutPost: "Новая публикация",
     someone: "Кто-то",
     transferCompleted: "Перевод завершён",
