@@ -306,6 +306,24 @@ function TrendBanner({ trend, t }) {
   )
 }
 
+function StatusBarsSkeleton() {
+  // 5 pastilles rondes : réserve clairement la place du bloc « Répartition par statut »
+  return (
+    <div
+      className="mt-5 flex min-h-[5.5rem] items-center justify-between gap-2 px-1 sm:min-h-[6.5rem] sm:gap-3"
+      aria-hidden="true"
+    >
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Skeleton
+          key={i}
+          className="aspect-square w-full max-w-[3.25rem] sm:max-w-[3.75rem]"
+          rounded="rounded-full"
+        />
+      ))}
+    </div>
+  )
+}
+
 function ChartsSkeleton() {
   return (
     <div className="grid min-w-0 gap-4 sm:gap-5 xl:grid-cols-2" aria-busy="true" aria-label="…">
@@ -315,18 +333,8 @@ function ChartsSkeleton() {
         <Skeleton className="mt-3 h-3 w-3/4" />
       </Card>
       <Card className="min-w-0 !p-4 sm:!p-6">
-        <Skeleton className="h-3 w-36" />
-        <div className="mt-4 grid gap-3">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="grid gap-1.5">
-              <div className="flex justify-between gap-2">
-                <Skeleton className="h-3 w-24" />
-                <Skeleton className="h-3 w-8" />
-              </div>
-              <Skeleton className="h-2 w-full rounded-full" />
-            </div>
-          ))}
-        </div>
+        <Skeleton className="h-3 w-36" rounded="rounded-full" />
+        <StatusBarsSkeleton />
       </Card>
       <div className="grid gap-3 xl:col-span-2 sm:grid-cols-2">
         <SkeletonStat />

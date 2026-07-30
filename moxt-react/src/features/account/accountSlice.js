@@ -26,7 +26,7 @@ const defaultPreferences = {
   messageSuggestionsEnabled: true,
 }
 
-const initialState = storage.read({
+const ACCOUNT_DEFAULTS = {
   favorites: [],
   subscriptions: [],
   subscriberBans: [],
@@ -37,7 +37,20 @@ const initialState = storage.read({
   preferences: {},
   deletionRequests: [],
   viewedListings: [],
-})
+}
+
+const VIEWED_LISTINGS_LIMIT = 200
+
+const storedAccount = storage.read(ACCOUNT_DEFAULTS)
+const initialState = {
+  ...ACCOUNT_DEFAULTS,
+  ...(storedAccount && typeof storedAccount === 'object' ? storedAccount : {}),
+  // Anciens caches sans la clé → undefined ferait disparaître l’étiquette « Vu »
+  viewedListings: Array.isArray(storedAccount?.viewedListings)
+    ? storedAccount.viewedListings.slice(0, VIEWED_LISTINGS_LIMIT)
+    : [],
+  favorites: Array.isArray(storedAccount?.favorites) ? storedAccount.favorites : [],
+}
 
 const accountSlice = createSlice({
   name: 'account',
@@ -106,12 +119,17 @@ const accountSlice = createSlice({
     },
     markListingViewed: {
       reducer(state, action) {
-        state.viewedListings ||= []
+        state.viewedListings = Array.isArray(state.viewedListings) ? state.viewedListings : []
         const exists = state.viewedListings.some(
           (item) =>
             item.userId === action.payload.userId && item.listingId === action.payload.listingId,
         )
-        if (!exists) state.viewedListings.unshift(action.payload)
+        if (!exists) {
+          state.viewedListings.unshift(action.payload)
+          if (state.viewedListings.length > VIEWED_LISTINGS_LIMIT) {
+            state.viewedListings.length = VIEWED_LISTINGS_LIMIT
+          }
+        }
       },
       prepare(values) {
         return {

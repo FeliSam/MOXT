@@ -159,6 +159,9 @@ export function ExchangerDashboardPage() {
     }
 
     let cancelled = false
+    let delayTimer
+    const startedAt = Date.now()
+    const MIN_SKELETON_MS = 600
     setBootstrapping(true)
 
     dispatch(
@@ -173,13 +176,22 @@ export function ExchangerDashboardPage() {
       .unwrap()
       .catch(() => {})
       .finally(() => {
-        if (!cancelled) setBootstrapping(false)
+        const remaining = Math.max(0, MIN_SKELETON_MS - (Date.now() - startedAt))
+        const finish = () => {
+          if (!cancelled) setBootstrapping(false)
+        }
+        if (remaining > 0) {
+          delayTimer = setTimeout(finish, remaining)
+        } else {
+          finish()
+        }
       })
 
     dispatch(expireOverdueTransfers())
 
     return () => {
       cancelled = true
+      if (delayTimer) clearTimeout(delayTimer)
     }
   }, [business?.id, dispatch, user?.id])
 

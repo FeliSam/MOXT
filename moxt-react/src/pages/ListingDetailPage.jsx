@@ -47,7 +47,7 @@ import {
   reportListing,
   updateListingStatus,
 } from '../features/marketplace/marketplaceSlice'
-import { toggleAccountFavorite } from '../features/account/accountSlice'
+import { markListingViewed, toggleAccountFavorite } from '../features/account/accountSlice'
 import { buildListingFavoriteSnapshot } from '../features/account/favoriteUtils'
 import { addToast } from '../features/ui/uiSlice'
 import { formatMoney } from '../features/transfers/transferUtils'
@@ -100,8 +100,12 @@ export function ListingDetailPage() {
   const publisherProfile = usePublisherDetailProfile(listing, 'listing')
 
   useEffect(() => {
-    if (listingId) dispatch(incrementListingView(listingId))
-  }, [dispatch, listingId])
+    if (!listingId) return
+    dispatch(incrementListingView(listingId))
+    if (user?.id) {
+      dispatch(markListingViewed({ userId: user.id, listingId }))
+    }
+  }, [dispatch, listingId, user?.id])
 
   const similar = useMemo(
     () =>
