@@ -16,8 +16,10 @@ import {
   resolveCanonicalConversationId,
 } from '../features/communications/conversationPersist'
 import { normalizeConversation, replaceConversationId } from '../features/communications/communicationSlice'
+import { attachmentPreviewLabel } from '../features/communications/attachmentUtils'
 import { fromRow } from '../services/remoteRowMapper'
 import { addToast } from '../features/ui/uiSlice'
+import { sanitizeUserFacingMessage } from '../features/auth/authErrorMessages'
 import { authService } from '../features/auth/authService'
 import { selectAccountPreferences } from '../features/account/accountSlice'
 import { buildTransferRemotePayload } from '../features/transfers/transferRemote'
@@ -690,6 +692,10 @@ const handlers = {
     if (!conversation) {
       throw new Error('Conversation introuvable.')
     }
+    const senderId = String(payload.message?.senderId || payload.senderId || '')
+    if ((conversation.blockedBy || []).map(String).includes(senderId)) {
+      throw new Error('Conversation bloquée.')
+    }
 
     const canonicalId = await persistMessageForConversation(
       payload.message,
@@ -702,11 +708,16 @@ const handlers = {
       conversation.unreadBy && typeof conversation.unreadBy === 'object'
         ? { ...conversation.unreadBy }
         : {}
+    const previewText = msg.text?.trim()
+      ? msg.text
+      : msg.attachment
+        ? attachmentPreviewLabel(msg.attachment)
+        : ''
     const conversationPatch = {
       updated_at: msg.createdAt,
       message_count: conversation.messageCount ?? null,
       unread_by: unreadBy,
-      last_message_text: msg.text,
+      last_message_text: previewText,
       last_message_sender_id: msg.senderId,
       last_message_at: msg.createdAt,
     }
@@ -716,7 +727,6 @@ const handlers = {
     await supabase.from('conversations').update(conversationPatch).eq('id', canonicalId)
 
     // Le trigger DB crée les lignes notifications ; on pousse ensuite vers les appareils.
-    const senderId = String(msg.senderId || '')
     const muted = new Set((conversation.mutedBy || []).map(String))
     const blocked = new Set((conversation.blockedBy || []).map(String))
     const recipients = (conversation.participantIds || [])
@@ -733,6 +743,49 @@ const handlers = {
           await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)))
         }
       }
+    }
+  },
+  'communications/resendMessage': async (payload, state, dispatch) => {
+    const conversation = state.communications.conversations.find(
+      (c) => c.id === payload.conversationId,
+    )
+    const message = conversation?.messages.find((m) => m.id === payload.messageId)
+    if (!conversation || !message) return
+    try {
+      await persistMessageForConversation(message, conversation, ({ remoteRow }) =>
+        reconcileConversation(dispatch, conversation, remoteRow),
+      )
+      dispatch({
+        type: 'communications/setMessagePending',
+        payload: { conversationId: conversation.id, messageId: message.id, pending: false },
+      })
+    } catch (error) {
+      dispatch({
+        type: 'communications/setMessageSyncFailed',
+        payload: { conversationId: conversation.id, messageId: message.id, failed: true },
+      })
+      throw error
+    }
+  },
+  'communications/editMessage': async (payload, state, dispatch) => {
+    const conversation = state.communications.conversations.find(
+      (c) => c.id === payload.conversationId,
+    )
+    const message = conversation?.messages.find((m) => m.id === payload.messageId)
+    if (!message || !conversation) return
+    await syncMessageRow(message, conversation, dispatch)
+    const previewText = message.text?.trim()
+      ? message.text
+      : message.attachment
+        ? attachmentPreviewLabel(message.attachment)
+        : conversation.lastMessageText
+    if (conversation.messages[conversation.messages.length - 1]?.id === message.id) {
+      await supabase
+        .from('conversations')
+        .update({
+          last_message_text: previewText,
+        })
+        .eq('id', conversation.id)
     }
   },
   'communications/markConversationRead': async (payload, state) => {
@@ -1097,8 +1150,9 @@ const handlers = {
       direct_link: payload.directLink || null,
       language: payload.language || null,
       pinned: payload.pinned === true,
-      likes: JSON.stringify(payload.likes ?? []),
-      comments: JSON.stringify(payload.comments ?? []),
+      // jsonb columns: send arrays, never JSON.stringify (stores a scalar string → RPC breaks)
+      likes: Array.isArray(payload.likes) ? payload.likes : [],
+      comments: Array.isArray(payload.comments) ? payload.comments : [],
       last_shared_at: payload.lastSharedAt || payload.createdAt,
       status: payload.status || 'published',
       created_at: payload.createdAt,
@@ -1317,12 +1371,43 @@ const handlers = {
     if (error) throw error
   },
 
-  'posts/deleteComment': async (payload) => {
-    const { error } = await supabase.rpc('moxt_post_delete_comment', {
-      p_post_id: payload.postId,
-      p_comment_id: payload.commentId,
+  'posts/deleteComment': async (payload, state) => {
+    const postId = payload?.postId
+    const commentId = typeof payload?.commentId === 'string' ? payload.commentId.trim() : ''
+    if (!postId) throw new Error('Publication introuvable')
+
+    // Les ids `legacy-…` n'existent pas en base (normalisation locale au chargement).
+    const canUseDeleteRpc = commentId && !commentId.startsWith('legacy-')
+
+    if (canUseDeleteRpc) {
+      const { error } = await supabase.rpc('moxt_post_delete_comment', {
+        p_post_id: postId,
+        p_comment_id: commentId,
+      })
+      if (!error) return
+      const msg = String(error.message || '')
+      // Fallback si RPC absente / comments stockés en string jsonb
+      if (!/schema cache|could not find the function|pgrst202|extract elements from a scalar|22023/i.test(msg)) {
+        throw error
+      }
+    }
+
+    const post = state.posts?.items?.find((item) => item.id === postId)
+    const comments = Array.isArray(post?.comments)
+      ? post.comments.filter((item) => item && typeof item === 'object')
+      : []
+    const { error: setError } = await supabase.rpc('moxt_post_set_comments', {
+      p_post_id: postId,
+      p_comments: comments,
     })
-    if (error) throw error
+    if (setError) {
+      // Dernier recours : UPDATE direct (auteur / modo seulement via RLS)
+      const { error: updateError } = await supabase
+        .from('posts')
+        .update({ comments, updated_at: new Date().toISOString() })
+        .eq('id', postId)
+      if (updateError) throw setError
+    }
   },
 
   // ── Favoris ───────────────────────────────────────────────────────────────────
@@ -1834,10 +1919,24 @@ export const supabaseMiddleware = (store) => (next) => (action) => {
           })
         }
       }
+      if (action.type === 'posts/deleteComment') {
+        const beforePost = beforeState.posts?.items?.find(
+          (item) => item.id === action.payload?.postId,
+        )
+        const comment = beforePost?.comments?.find((item) => item.id === action.payload?.commentId)
+        if (comment) {
+          store.dispatch({
+            type: 'posts/restoreComment',
+            payload: { postId: action.payload.postId, comment },
+          })
+        }
+      }
       store.dispatch(
         addToast({
           title: 'Synchronisation impossible',
-          message: err?.message || "L'enregistrement distant a échoué.",
+          message: sanitizeUserFacingMessage(
+            err?.message || "L'enregistrement distant a échoué.",
+          ),
           tone: 'error',
         }),
       )

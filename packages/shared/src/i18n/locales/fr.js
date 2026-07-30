@@ -4,7 +4,7 @@ export const fr = {
     login: {
       eyebrow: "MOXT · Connexion",
       title: "Connexion",
-      description: "Accédez à votre espace par numéro russe (+7) et mot de passe, ou par e-mail.",
+      description: "",
       modePhonePassword: "Tél. + mot de passe",
       modeEmail: "E-mail",
       errorTitle: "Connexion impossible",
@@ -42,7 +42,7 @@ export const fr = {
       oauthEyebrow: "MOXT · Profil",
       title: "Créer votre compte MOXT",
       oauthTitle: "Complétez votre profil",
-      description: "E-mail obligatoire, confirmation du compte par SMS sur votre numéro +7.",
+      description: "",
       oauthDescription: "Ajoutez votre pays, ville et numéro russe pour utiliser MOXT.",
       firstName: "Prénom",
       lastName: "Nom",
@@ -71,13 +71,13 @@ export const fr = {
       loginLink: "Se connecter",
       helpButton: "Aide",
       helpTitle: "Aide au code de confirmation",
-      helpIntro: "Si le code SMS tarde à arriver, suivez ces étapes :",
+      helpIntro: "Le code à 6 chiffres finalise la création du compte. Voici le processus actuel :",
       helpStep1:
-        "Si vous ne recevez pas le code après une première tentative, attendez 60 secondes. Ensuite, cliquez sur « Renvoyer le code », ou utilisez « Recevoir le code par e-mail ».",
+        "À l’étape Vérification, choisissez SMS (numéro +7) ou e-mail. Le code arrive en général en quelques secondes ; pour un SMS, laissez jusqu’à 1–2 minutes avant de vous inquiéter.",
       helpStep2:
-        "Si le code n’arrive toujours pas, utilisez « Recevoir le code par e-mail ». Un code sera envoyé à l’adresse e-mail déjà saisie, ce qui vous permettra de vous connecter.",
+        "Pas de SMS ? Utilisez tout de suite « Recevoir le code par e-mail » — aucun délai d’attente n’est requis pour l’e-mail. « Renvoyer le SMS » n’est disponible qu’après le compteur affiché (un seul renvoi SMS).",
       helpStep3:
-        "Une fois connecté, contactez-nous via « Besoin d’aide ? ». Après vérification, nous pourrons confirmer manuellement votre numéro de téléphone afin de vous donner accès à toutes les fonctionnalités.",
+        "Après confirmation, l’autre identifiant (e-mail ou +7) reste à valider dans Sécurité pour publier. Si rien n’arrive, contactez-nous via « Besoin d’aide ? » sur la page de connexion.",
       helpOriginPhoneHint: "Optionnel — utile pour vos contacts Afrique / pays d’origine.",
       verify: {
         title: "Confirmez votre numéro",
@@ -105,9 +105,9 @@ export const fr = {
         afterSmsResends:
           "Un code a été envoyé à {email} pour finaliser l’inscription par e-mail.",
         smsResendLimitHint:
-          "Vous pouvez renvoyer le SMS une fois, ou recevoir le code par e-mail dès la fin du délai de 60 secondes.",
+          "Vous pouvez renvoyer le SMS une fois (après le compteur), ou recevoir le code par e-mail immédiatement.",
         afterCooldownHint:
-          "Délai écoulé : renvoyez le SMS ou recevez le code par e-mail.",
+          "Renvoyez le SMS ou recevez le code par e-mail dès maintenant.",
       },
       channel: {
         title: "Comment recevoir votre code ?",
@@ -772,6 +772,7 @@ export const fr = {
     sendFailedBanner: "Échec d’envoi",
     retryAction: "Réessayer",
     notSynced: "Non synchronisé",
+    edited: "modifié",
     deleteConfirmDescription: "Le message sera retiré de votre conversation. Cette action est définitive.",
     threadEmptyTitle: "Aucun message pour l’instant",
     threadEmptyDescription: "Écrivez le premier message pour démarrer l’échange.",

@@ -173,8 +173,24 @@ async function ingestRemoteMessage(conversationId, row, userId, dispatch, getSta
   if (!userParticipatesInConversation(conversation, userId)) return
 
   const message = normalizeMessage(fromRow(row))
+  // Blocage : le bloqueur n'ingère pas les messages du pair.
+  if (
+    (conversation.blockedBy || []).map(String).includes(String(userId)) &&
+    String(message.senderId) !== String(userId)
+  ) {
+    return
+  }
+
   const alreadyExists = conversation.messages.some((m) => m.id === message.id)
-  if (alreadyExists) return
+  if (alreadyExists) {
+    dispatch(
+      syncRemoteMessage({
+        ...message,
+        conversationId: conversation.id,
+      }),
+    )
+    return
+  }
   dispatch(receiveRemoteMessage({ conversationId: conversation.id, message }))
 }
 

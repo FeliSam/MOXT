@@ -145,6 +145,8 @@ export function ConversationPanel({
   const messageListRef = useRef(null)
   const composerRef = useRef(null)
   const stickToBottomRef = useRef(true)
+  const loadOlderAnchorRef = useRef(null)
+  const loadingOlderRequestedRef = useRef(false)
   const [attachmentPreviewUrls, setAttachmentPreviewUrls] = useState([])
   const replyTarget = active.messages.find((item) => item.id === replyToId)
   const replyContextEntry = findRelatedContextById(active, replyToContextId)
@@ -189,12 +191,58 @@ export function ConversationPanel({
     messageList.scrollTop = top
   }
 
+  // Force bottom when opening a conversation (before paint). Must not wait for the
+  // later useEffect — otherwise a prior "scrolled up" stick=false skips the open stick
+  // and the reused scroll node keeps a stale offset.
   useLayoutEffect(() => {
+    stickToBottomRef.current = true
+    stickToBottom('auto')
+    const frame = requestAnimationFrame(() => stickToBottom('auto'))
+    return () => cancelAnimationFrame(frame)
+  }, [active.id])
+
+  // Stay pinned while content height changes (messages, draft, loading ↔ empty).
+  useLayoutEffect(() => {
+    if (loadOlderAnchorRef.current) return
     if (!stickToBottomRef.current) return
     stickToBottom('auto')
     const frame = requestAnimationFrame(() => stickToBottom('auto'))
     return () => cancelAnimationFrame(frame)
-  }, [active.id, active.messages.length, active.relatedContexts?.length, formik.values.text])
+  }, [
+    active.messages.length,
+    active.relatedContexts?.length,
+    formik.values.text,
+    messagesLoading,
+  ])
+
+  // Preserve viewport when older messages are prepended.
+  useLayoutEffect(() => {
+    const snapshot = loadOlderAnchorRef.current
+    const messageList = messageListRef.current
+    if (!snapshot || !messageList || messagesLoadingOlder) return
+    messageList.scrollTop = snapshot.top + (messageList.scrollHeight - snapshot.height)
+    loadOlderAnchorRef.current = null
+    loadingOlderRequestedRef.current = false
+  }, [active.messages.length, messagesLoadingOlder])
+
+  useEffect(() => {
+    if (!messagesLoadingOlder) {
+      loadingOlderRequestedRef.current = false
+    }
+  }, [messagesLoadingOlder])
+
+  function requestLoadOlder() {
+    if (!hasOlderMessages || messagesLoadingOlder || loadingOlderRequestedRef.current) return
+    const messageList = messageListRef.current
+    if (!messageList) return
+    loadingOlderRequestedRef.current = true
+    stickToBottomRef.current = false
+    loadOlderAnchorRef.current = {
+      height: messageList.scrollHeight,
+      top: messageList.scrollTop,
+    }
+    onLoadOlder?.()
+  }
 
   useLayoutEffect(() => {
     const el = composerRef.current
@@ -212,10 +260,6 @@ export function ConversationPanel({
   }, [formik.isSubmitting, blocked])
 
   useEffect(() => {
-    stickToBottomRef.current = true
-  }, [active.id])
-
-  useEffect(() => {
     const messageList = messageListRef.current
     if (!messageList) return
     function handleScroll() {
@@ -223,11 +267,16 @@ export function ConversationPanel({
         messageList.scrollHeight - messageList.scrollTop - messageList.clientHeight
       stickToBottomRef.current = distanceFromBottom < 120
       setShowScrollFab(distanceFromBottom > 120)
+      if (messageList.scrollTop < 80) {
+        requestLoadOlder()
+      }
     }
     handleScroll()
     messageList.addEventListener('scroll', handleScroll, { passive: true })
     return () => messageList.removeEventListener('scroll', handleScroll)
-  }, [active.id])
+    // requestLoadOlder is stable enough for this scroll subscription (deps cover its gates).
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- scroll listener rebinds on conversation / load flags
+  }, [active.id, hasOlderMessages, messagesLoadingOlder])
 
   useEffect(() => {
     const urls = (attachments || []).map((file) =>
@@ -492,7 +541,7 @@ export function ConversationPanel({
                 {t('messages.syncing')}
               </p>
             ) : null}
-            {messagesLoading && !active.messages?.length ? (
+            {messagesLoading && !active.messages?.length && messageCount > 0 ? (
               <div className="flex flex-col gap-4 py-6">
                 {[...Array(4)].map((_, i) => (
                   <div
@@ -512,7 +561,7 @@ export function ConversationPanel({
                       type="button"
                       className="rounded-full border border-[var(--app-border)] bg-[var(--app-surface)] px-4 py-1.5 text-xs font-semibold text-[var(--app-text-muted)] transition hover:border-brand-200 hover:text-[var(--app-text)] disabled:opacity-60"
                       disabled={messagesLoadingOlder}
-                      onClick={onLoadOlder}
+                      onClick={requestLoadOlder}
                     >
                       {messagesLoadingOlder ? t('messages.loadingOlder') : t('messages.loadOlder')}
                     </button>
@@ -520,6 +569,11 @@ export function ConversationPanel({
                 ) : null}
                 <MessageThreadStart />
                 <MessageSecurityNotice />
+                {messagesLoading && !active.messages?.length ? (
+                  <p className="py-6 text-center text-xs font-medium text-[var(--app-text-faint)]">
+                    {t('messages.syncing')}
+                  </p>
+                ) : null}
                 {threadQuery.trim() && !filteredTimeline.length ? (
                   <p className="py-8 text-center text-sm text-[var(--app-text-faint)]">
                     {messagesText(t, 'messages.searchNoMatch')}
@@ -602,9 +656,18 @@ export function ConversationPanel({
                               : 'message-row--grouped'
                             : 'message-row--spaced'
                         }`}
+                        style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 72px' }}
                       >
                         {!mine ? (
-                          <MessageAvatar name={message.senderName} hidden={groupedWithPrevious} />
+                          <MessageAvatar
+                            name={message.senderName}
+                            avatarUrl={
+                              peer?.id && String(message.senderId) === String(peer.id)
+                                ? peerAvatarSrc
+                                : undefined
+                            }
+                            hidden={groupedWithPrevious}
+                          />
                         ) : null}
                         <MessageBubble
                           animateEnter={sentAnimationIds.includes(message.id)}
@@ -850,7 +913,18 @@ export function ConversationPanel({
               }
             }}
             onKeyDown={(event) => {
-              // Entrée / Tab = nouvelle ligne. Envoi uniquement via le bouton (ou Ctrl/Cmd+Entrée).
+              // Enter = send ; Shift+Enter = nouvelle ligne.
+              if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
+                event.preventDefault()
+                if (
+                  !blocked &&
+                  (formik.values.text.trim() || attachments.length) &&
+                  !formik.isSubmitting
+                ) {
+                  formik.handleSubmit()
+                }
+                return
+              }
               if (event.key === 'Tab') {
                 event.preventDefault()
                 const el = event.currentTarget
@@ -862,22 +936,6 @@ export function ConversationPanel({
                 requestAnimationFrame(() => {
                   el.selectionStart = el.selectionEnd = start + 1
                 })
-                return
-              }
-              if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-                event.preventDefault()
-                if (
-                  !blocked &&
-                  (formik.values.text.trim() || attachments.length) &&
-                  !formik.isSubmitting
-                ) {
-                  formik.handleSubmit()
-                }
-                return
-              }
-              if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
-                // Nouvelle ligne (comportement textarea natif) — ne pas envoyer.
-                return
               }
             }}
           />

@@ -49,7 +49,7 @@ const DOMAIN_META = {
   message: { actionPaths: ['/messages'], actions: 1, suggestions: 3, texts: 1 },
   contribuer: { actionPaths: ['/contribute', '/support'], actions: 2, suggestions: 2, texts: 1 },
   expedition: { actionPaths: ['/marketplace/publish', '/marketplace'], actions: 2, suggestions: 2, texts: 1 },
-  fallback: { actionPaths: ['/discover', '/support', '/contribute'], actions: 2, suggestions: 4, texts: 2 },
+  fallback: { actionPaths: ['/discover', '/support'], actions: 2, suggestions: 4, texts: 2 },
 }
 
 // ─── Detection keywords per language ──────────────────────────────────────────
@@ -187,13 +187,16 @@ function resolveDomainContent(domain, t, language) {
   const meta = DOMAIN_META[domain] || DOMAIN_META.fallback
   const base = `assistant.responses.${domain}`
   const texts = listKeys(`${base}.texts`, meta.texts).map((key) => assistantText(t, language, key))
-  const suggestions = listKeys(`${base}.suggestions`, meta.suggestions).map((key) =>
-    assistantText(t, language, key),
-  )
-  const actions = meta.actionPaths.map((path, index) => ({
-    label: assistantText(t, language, `${base}.actions.${index}`),
-    path,
-  }))
+  const suggestions = listKeys(`${base}.suggestions`, meta.suggestions)
+    .map((key) => assistantText(t, language, key))
+    .filter((label, index, arr) => label && label !== `${base}.suggestions.${index}` && arr.indexOf(label) === index)
+  const actionCount = Math.min(meta.actions ?? meta.actionPaths.length, meta.actionPaths.length)
+  const actions = meta.actionPaths.slice(0, actionCount).map((path, index) => {
+    const key = `${base}.actions.${index}`
+    const label = assistantText(t, language, key)
+    return { label, path, key }
+  }).filter((action) => action.label && action.label !== action.key)
+    .map(({ label, path }) => ({ label, path }))
   return { texts, actions, suggestions }
 }
 

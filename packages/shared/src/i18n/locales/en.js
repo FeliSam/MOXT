@@ -4,7 +4,7 @@ export const en = {
     login: {
       eyebrow: "MOXT · Sign in",
       title: "Sign in",
-      description: "Access your space with a Russian number (+7) and password, or with email.",
+      description: "",
       modePhonePassword: "Phone + password",
       modeEmail: "Email",
       errorTitle: "Sign-in failed",
@@ -41,7 +41,7 @@ export const en = {
       oauthEyebrow: "MOXT · Profile",
       title: "Create your MOXT account",
       oauthTitle: "Complete your profile",
-      description: "Email required, account confirmed by SMS to your +7 number.",
+      description: "",
       oauthDescription: "Add your country, city and Russian number to use MOXT.",
       firstName: "First name",
       lastName: "Last name",
@@ -70,13 +70,13 @@ export const en = {
       loginLink: "Sign in",
       helpButton: "Help",
       helpTitle: "Help with the confirmation code",
-      helpIntro: "If the SMS code is slow to arrive, follow these steps:",
+      helpIntro: "The 6-digit code finishes creating your account. Here is the current process:",
       helpStep1:
-        "If you do not receive the code after the first attempt, wait 60 seconds. Then tap “Resend code”, or use “Receive code by email”.",
+        "At the Verification step, choose SMS (+7 number) or email. The code usually arrives within a few seconds; for SMS, wait up to 1–2 minutes before worrying.",
       helpStep2:
-        "If the code still does not arrive, use “Receive code by email”. A code will be sent to the email you already entered so you can sign in.",
+        "No SMS? Use “Receive code by email” right away — no wait is required for email. “Resend SMS” is only available after the on-screen timer (one SMS resend).",
       helpStep3:
-        "Once signed in, contact us via “Need help?”. After verification, we can confirm your phone number manually so you unlock every feature.",
+        "After confirmation, the other identifier (email or +7) still needs to be verified in Security before publishing. If nothing arrives, contact us via “Need help?” on the sign-in page.",
       helpOriginPhoneHint: "Optional — useful for contacts in your country of origin.",
       verify: {
         title: "Confirm your number",
@@ -104,9 +104,9 @@ export const en = {
         afterSmsResends:
           "A code was sent to {email} to finish sign-up by email.",
         smsResendLimitHint:
-          "You can resend the SMS once, or receive the code by email as soon as the 60-second wait ends.",
+          "You can resend the SMS once (after the timer), or receive the code by email immediately.",
         afterCooldownHint:
-          "Wait over: resend the SMS or receive the code by email.",
+          "Resend the SMS or receive the code by email now.",
       },
       channel: {
         title: "How do you want to receive your code?",
@@ -772,6 +772,7 @@ export const en = {
     sendFailedBanner: "Send failed",
     retryAction: "Retry",
     notSynced: "Not synced",
+    edited: "edited",
     deleteConfirmDescription: "The message will be removed from your conversation. This cannot be undone.",
     threadEmptyTitle: "No messages yet",
     threadEmptyDescription: "Write the first message to start the exchange.",

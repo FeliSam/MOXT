@@ -378,6 +378,25 @@ export const storageService = {
     })
   },
 
+  async uploadMessageFile(userId, conversationId, file, { onProgress } = {}) {
+    reportProgress(onProgress, {
+      phase: UPLOAD_PHASES.preparing,
+      percent: 6,
+      fileName: file?.name,
+    })
+    const extension = ext(file) || 'bin'
+    const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const safeName = String(file?.name || 'file')
+      .replace(/[^a-zA-Z0-9._-]+/g, '_')
+      .slice(0, 80)
+    return upload(
+      'listings',
+      `${userId}/messages/${conversationId}/files/${stamp}-${safeName || `file.${extension}`}`,
+      file,
+      { onProgress },
+    )
+  },
+
   async uploadDocument(userId, category, file, { onProgress } = {}) {
     reportProgress(onProgress, {
       phase: UPLOAD_PHASES.preparing,

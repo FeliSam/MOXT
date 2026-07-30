@@ -93,6 +93,7 @@ const camelMap = {
   share_count: 'shareCount',
   created_at: 'createdAt',
   updated_at: 'updatedAt',
+  edited_at: 'editedAt',
   avatar_url: 'avatarUrl',
   activity_visibility: 'activityVisibility',
   document_ids: 'documentIds',

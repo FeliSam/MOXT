@@ -12,6 +12,7 @@ import {
 } from './assistantAdminUtils'
 import { ASSISTANT_SUGGESTION_KEYS, messagesText } from './messagesI18n'
 import { llmAssistantProvider } from './llmAssistantProvider'
+import { moxtiAssistantProvider } from './moxtiAssistantProvider'
 import { shortenFileName } from '../../services/uploadProgress'
 
 export function AiAssistantPanel({ onBack, showBack = true, userId }) {
@@ -137,14 +138,28 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
     try {
       let response
       try {
-        response = await llmAssistantProvider.respond({
+        response = await moxtiAssistantProvider.respond({
           question: text,
-          searchIndex,
+          user,
           history: messages,
           language,
         })
       } catch {
-        response = await localAssistantProvider.respond({ question: text, searchIndex, language, t })
+        try {
+          response = await llmAssistantProvider.respond({
+            question: text,
+            searchIndex,
+            history: messages,
+            language,
+          })
+        } catch {
+          response = await localAssistantProvider.respond({
+            question: text,
+            searchIndex,
+            language,
+            t,
+          })
+        }
       }
       setMessages((current) => [
         ...current,

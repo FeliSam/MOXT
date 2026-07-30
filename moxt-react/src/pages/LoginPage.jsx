@@ -100,7 +100,6 @@ export function LoginPage() {
       eyebrow={t('auth.login.eyebrow')}
       title={t('auth.login.title')}
       titleClassName="max-sm:hidden"
-      description={t('auth.login.description')}
     >
       <div className="grid gap-2 sm:grid-cols-2">
         {LOGIN_MODES.map((item) => {

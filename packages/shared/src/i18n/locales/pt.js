@@ -3,7 +3,7 @@ export const pt = {
   auth: {
     login: {
       title: "Entrar",
-      description: "Aceda ao seu espaço com número russo (+7) e palavra-passe, ou por e-mail.",
+      description: "",
       email: "Endereço de e-mail",
       password: "Palavra-passe",
       forgot: "Esqueceu a palavra-passe?",
@@ -51,7 +51,7 @@ export const pt = {
       oauthEyebrow: "MOXT · Perfil",
       title: "Crie a sua conta MOXT",
       oauthTitle: "Complete o seu perfil",
-      description: "E-mail obrigatório; confirmação da conta por SMS no número +7.",
+      description: "",
       oauthDescription: "Adicione o país, a cidade e o número russo para usar o MOXT.",
       firstName: "Nome próprio",
       lastName: "Apelido",
@@ -80,13 +80,13 @@ export const pt = {
       loginLink: "Entrar",
       helpButton: "Ajuda",
       helpTitle: "Ajuda com o código de confirmação",
-      helpIntro: "Se o código SMS demorar a chegar, siga estes passos:",
+      helpIntro: "O código de 6 dígitos conclui a criação da conta. Processo atual:",
       helpStep1:
-        "Se não receber o código após a primeira tentativa, aguarde 60 segundos. Depois toque em «Reenviar o código» ou em «Receber o código por e-mail».",
+        "No passo Verificação, escolha SMS (número +7) ou e-mail. O código chega geralmente em poucos segundos; para SMS, aguarde até 1–2 minutos antes de se preocupar.",
       helpStep2:
-        "Se o código ainda não chegar, use «Receber o código por e-mail». Um código será enviado para o e-mail já indicado, para poder iniciar sessão.",
+        "Sem SMS? Use de imediato «Receber o código por e-mail» — não é preciso esperar o temporizador. «Reenviar SMS» só fica disponível após o contador (um único reenvio SMS).",
       helpStep3:
-        "Depois de entrar, contacte-nos em «Precisa de ajuda?». Após verificação, podemos confirmar manualmente o seu número para desbloquear todas as funcionalidades.",
+        "Após a confirmação, o outro identificador (e-mail ou +7) deve ser validado em Segurança para publicar. Se nada chegar, contacte-nos em «Precisa de ajuda?» na página de entrada.",
       helpOriginPhoneHint: "Opcional — útil para contactos no país de origem.",
       loginNoticePendingOtp: "Se o registo estiver concluído, entre com o número +7 e a palavra-passe escolhida. Caso contrário, introduza primeiro o código SMS recebido acima.",
       verify: {
@@ -115,9 +115,9 @@ export const pt = {
         afterSmsResends:
           "Foi enviado um código para {email} para concluir o registo por e-mail.",
         smsResendLimitHint:
-          "Pode reenviar o SMS uma vez, ou receber o código por e-mail assim que terminarem os 60 segundos.",
+          "Pode reenviar o SMS uma vez (após o contador), ou receber o código por e-mail de imediato.",
         afterCooldownHint:
-          "Tempo esgotado: reenvie o SMS ou receba o código por e-mail.",
+          "Reenvie o SMS ou receba o código por e-mail agora.",
       },
       channel: {
         title: "Como deseja receber o código?",
@@ -631,6 +631,7 @@ export const pt = {
     sendFailedBanner: "Falha de envio",
     retryAction: "Tentar novamente",
     notSynced: "Não sincronizado",
+    edited: "editado",
     deleteConfirmDescription: "A mensagem será removida da sua conversa. Esta ação é definitiva.",
     threadEmptyTitle: "Ainda sem mensagens",
     threadEmptyDescription: "Escreva a primeira mensagem para iniciar a troca.",

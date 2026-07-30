@@ -4,7 +4,7 @@ export const es = {
     login: {
       eyebrow: "MOXT · Iniciar sesión",
       title: "Iniciar sesión",
-      description: "Accede a tu espacio con un número ruso (+7) y contraseña, o con correo electrónico.",
+      description: "",
       modePhonePassword: "Teléfono + contraseña",
       modeEmail: "Correo",
       errorTitle: "Error al iniciar sesión",
@@ -41,7 +41,7 @@ export const es = {
       oauthEyebrow: "MOXT · Perfil",
       title: "Crea tu cuenta MOXT",
       oauthTitle: "Completa tu perfil",
-      description: "Correo obligatorio; la cuenta se confirma por SMS a tu número +7.",
+      description: "",
       oauthDescription: "Añade tu país, ciudad y número ruso para usar MOXT.",
       firstName: "Nombre",
       lastName: "Apellidos",
@@ -70,13 +70,13 @@ export const es = {
       loginLink: "Iniciar sesión",
       helpButton: "Ayuda",
       helpTitle: "Ayuda con el código de confirmación",
-      helpIntro: "Si el código SMS tarda en llegar, sigue estos pasos:",
+      helpIntro: "El código de 6 dígitos finaliza la creación de la cuenta. Proceso actual:",
       helpStep1:
-        "Si no recibes el código tras el primer intento, espera 60 segundos. Luego pulsa «Reenviar el código» o «Recibir el código por e-mail».",
+        "En el paso Verificación, elige SMS (número +7) o correo. El código suele llegar en unos segundos; para SMS, espera hasta 1–2 minutos antes de preocuparte.",
       helpStep2:
-        "Si el código sigue sin llegar, usa «Recibir el código por e-mail». Se enviará un código al correo ya indicado para que puedas iniciar sesión.",
+        "¿Sin SMS? Usa de inmediato «Recibir el código por correo» — no hace falta esperar el temporizador. «Reenviar SMS» solo está disponible tras el contador (un solo reenvío SMS).",
       helpStep3:
-        "Una vez conectado, contáctanos en «¿Necesitas ayuda?». Tras la verificación, podremos confirmar manualmente tu número para darte acceso a todas las funciones.",
+        "Tras la confirmación, el otro identificador (correo o +7) debe validarse en Seguridad para publicar. Si no llega nada, contáctanos en «¿Necesitas ayuda?» en la página de inicio de sesión.",
       helpOriginPhoneHint: "Opcional: útil para contactos en el país de origen.",
       verify: {
         title: "Confirma tu número",
@@ -104,9 +104,9 @@ export const es = {
         afterSmsResends:
           "Se envió un código a {email} para terminar el registro por correo.",
         smsResendLimitHint:
-          "Puedes reenviar el SMS una vez, o recibir el código por correo al terminar la espera de 60 segundos.",
+          "Puedes reenviar el SMS una vez (tras el contador), o recibir el código por correo de inmediato.",
         afterCooldownHint:
-          "Tiempo terminado: reenvía el SMS o recibe el código por correo.",
+          "Reenvía el SMS o recibe el código por correo ahora.",
       },
       channel: {
         title: "¿Cómo quieres recibir tu código?",
@@ -770,6 +770,7 @@ export const es = {
     sendFailedBanner: "Falha de envio",
     retryAction: "Tentar nuevamente",
     notSynced: "No sincronizado",
+    edited: "editado",
     deleteConfirmDescription: "A mensaje será removida da tu conversación. Esta ación é definitiva.",
     threadEmptyTitle: "Aún sin mensajes",
     threadEmptyDescription: "Escreva a primeira mensaje para iniciar a troca.",

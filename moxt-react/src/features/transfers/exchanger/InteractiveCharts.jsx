@@ -12,7 +12,9 @@ import {
 import { statusLabelKey } from './statusLabels'
 
 const STATUS_TONES = {
+  [TRANSFER_STATUS.PENDING_ACCEPTANCE]: 'bg-orange-500',
   [TRANSFER_STATUS.PENDING]: 'bg-amber-500',
+  [TRANSFER_STATUS.DECLINED]: 'bg-rose-600',
   [TRANSFER_STATUS.DECLARED]: 'bg-brand-500',
   [TRANSFER_STATUS.RECEIVED]: 'bg-teal-500',
   [TRANSFER_STATUS.PROCESSING]: 'bg-violet-500',

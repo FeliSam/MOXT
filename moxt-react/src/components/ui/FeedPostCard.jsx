@@ -434,7 +434,7 @@ export function FeedPostCard({ post }) {
                     </Link>
                     <p className="text-sm mt-0.5">{comment.text}</p>
                   </div>
-                  {(user?.id === comment.authorId || isAuthor || isModerator) && (
+                  {(user?.id === comment.authorId || isAuthor || isModerator) && comment.id ? (
                     <button
                       type="button"
                       onClick={() => dispatch(deleteComment({ postId: post.id, commentId: comment.id }))}
@@ -443,7 +443,7 @@ export function FeedPostCard({ post }) {
                     >
                       <FiTrash2 className="text-xs" />
                     </button>
-                  )}
+                  ) : null}
                 </div>
               ))}
             </div>

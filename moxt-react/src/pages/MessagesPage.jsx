@@ -25,8 +25,9 @@ import {
   refreshConversations,
   restoreConversation,
   saveConversationDraft,
+  searchMessagesRemote,
   sendMessage,
-  setMessageSyncFailed,
+  resendMessage,
   toggleConversationBlock,
   toggleConversationMute,
   toggleConversationPin,
@@ -65,13 +66,12 @@ export function MessagesPage() {
   const store = useStore()
   const { t } = useLanguage()
   const user = useSelector((state) => state.auth.user)
-  const isStaff = user?.role === 'admin' || user?.role === 'superadmin'
   const conversations = useSelector(selectUserConversations)
   const unreadMessagesCount = useSelector(selectUnreadMessageCount)
   const [searchParams, setSearchParams] = useSearchParams()
   const [query, setQuery] = useState('')
   const deferredQuery = useDeferredValue(query)
-  const [attachments, setAttachments] = useState([])
+  const [attachmentsByConversation, setAttachmentsByConversation] = useState({})
   const { progress: uploadProgress, track: trackUpload } = useUploadProgress()
   const [replyToId, setReplyToId] = useState(null)
   const [replyToContextId, setReplyToContextId] = useState(null)
@@ -135,13 +135,42 @@ export function MessagesPage() {
     user.id,
   )
 
+  const [remoteSearchHits, setRemoteSearchHits] = useState([])
+
+  useEffect(() => {
+    const q = deferredQuery.trim()
+    if (!searchOpen || q.length < 2) return undefined
+    let cancelled = false
+    const timer = window.setTimeout(() => {
+      void dispatch(searchMessagesRemote(q))
+        .unwrap()
+        .then((hits) => {
+          if (!cancelled) setRemoteSearchHits(hits || [])
+        })
+        .catch(() => {
+          if (!cancelled) setRemoteSearchHits([])
+        })
+    }, 280)
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [deferredQuery, dispatch, searchOpen])
+
+  const remoteSearchConversationIds = useMemo(() => {
+    if (!searchOpen || deferredQuery.trim().length < 2) return []
+    return [...new Set(remoteSearchHits.map((hit) => hit.conversationId).filter(Boolean))]
+  }, [deferredQuery, remoteSearchHits, searchOpen])
+
   const visible = useMemo(() => {
+    const remoteIds = new Set(remoteSearchConversationIds)
     return conversations
       .filter((item) => {
         const archived = item.archivedBy?.includes(user.id)
         if (showArchived !== Boolean(archived)) return false
         if (!conversationMatchesFilter(item, filter, user.id)) return false
         if (!shouldShowConversationInList(item, user.id, activeId)) return false
+        if (remoteIds.has(item.id)) return true
         return conversationMatchesQuery(item, user.id, deferredQuery)
       })
       .sort((left, right) => {
@@ -149,9 +178,17 @@ export function MessagesPage() {
         const pinDelta =
           Number(Boolean(right.pinnedBy?.includes(user.id))) -
           Number(Boolean(left.pinnedBy?.includes(user.id)))
-        return pinDelta || new Date(right.updatedAt) - new Date(left.updatedAt)
+        return pinDelta || new Date(right.lastMessageAt || right.updatedAt) - new Date(left.lastMessageAt || left.updatedAt)
       })
-  }, [activeId, conversations, deferredQuery, filter, showArchived, user.id])
+  }, [
+    activeId,
+    conversations,
+    deferredQuery,
+    filter,
+    remoteSearchConversationIds,
+    showArchived,
+    user.id,
+  ])
 
   const participantAvatarIds = useMemo(() => {
     const ids = new Set()
@@ -165,6 +202,15 @@ export function MessagesPage() {
   const avatarMap = useProfileAvatarMap(participantAvatarIds)
 
   const active = conversations.find((item) => item.id === activeId)
+  const attachments =
+    activeId && activeId !== ASSISTANT_ID ? attachmentsByConversation[activeId] || [] : []
+  function setAttachments(next) {
+    if (!activeId || activeId === ASSISTANT_ID) return
+    setAttachmentsByConversation((current) => ({
+      ...current,
+      [activeId]: typeof next === 'function' ? next(current[activeId] || []) : next || [],
+    }))
+  }
   const assistantActive = activeId === ASSISTANT_ID
   const integratedAssistant = assistantActive && defaultAssistant
   const blocked = active?.blockedBy?.includes(user.id)
@@ -258,10 +304,14 @@ export function MessagesPage() {
               ...(urls.length > 1 ? { urls } : {}),
             }
           } else if (otherFile) {
+            const uploaded = await trackUpload(async (onProgress) =>
+              storageService.uploadMessageFile(user.id, active.id, otherFile, { onProgress }),
+            )
             attachmentPayload = {
               name: otherFile.name,
               size: otherFile.size,
-              type: otherFile.type,
+              type: otherFile.type || 'application/octet-stream',
+              url: uploaded,
             }
           }
         }
@@ -409,7 +459,6 @@ export function MessagesPage() {
 
   function selectConversation(id) {
     setSearchParams({ conversation: id })
-    setAttachments([])
     setReplyToId(null)
     setReplyToContextId(null)
     composerConversationIdRef.current = null
@@ -468,45 +517,13 @@ export function MessagesPage() {
   }
 
   function retryMessage(message) {
-    if (!active || blocked) return
+    if (!active || blocked || !message?.id) return
     dispatch(
-      setMessageSyncFailed({
+      resendMessage({
         conversationId: active.id,
         messageId: message.id,
-        failed: false,
       }),
     )
-    dispatch(
-      deleteMessageLocally({
-        conversationId: active.id,
-        messageId: message.id,
-        userId: user.id,
-      }),
-    )
-    const previousCount = active.messages.length - 1
-    dispatch(
-      sendMessage({
-        conversationId: active.id,
-        senderId: user.id,
-        senderName: `${user.firstName} ${user.lastName}`,
-        text: message.text,
-        attachment: message.attachment,
-        replyToId: message.replyToId,
-        relatedContextId: message.relatedContextId,
-      }),
-    )
-    const updated = store
-      .getState()
-      .communications.conversations.find((item) => item.id === active.id)
-    if (!updated || updated.messages.length <= previousCount) {
-      dispatch(
-        addToast({
-          title: t('messages.sendFailedTitle'),
-          message: t('messages.retryFailed'),
-          tone: 'error',
-        }),
-      )
-    }
   }
 
   return (
@@ -579,7 +596,7 @@ export function MessagesPage() {
                       active={active?.id === conversation.id}
                       avatarMap={avatarMap}
                       conversation={conversation}
-                      showOnlineDot={isStaff}
+                      showOnlineDot
                       userId={user.id}
                       onClick={() => selectConversation(conversation.id)}
                     />
@@ -701,7 +718,7 @@ export function MessagesPage() {
                 active={active?.id === conversation.id}
                 avatarMap={avatarMap}
                 conversation={conversation}
-                showOnlineDot={isStaff}
+                showOnlineDot
                 userId={user.id}
                 onClick={() => selectConversation(conversation.id)}
               />

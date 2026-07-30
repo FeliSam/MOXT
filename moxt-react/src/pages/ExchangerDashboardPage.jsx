@@ -228,7 +228,9 @@ export function ExchangerDashboardPage() {
     return allTransfers.find((item) => item.id === manageTransfer.id) || manageTransfer
   }, [allTransfers, manageTransfer])
 
-  const showPlaceholders = bootstrapping && allTransfers.length === 0
+  // Skeletons pendant le premier refresh — même si Redux a déjà des données
+  // en cache (sinon les placeholders ne s'affichent jamais en prod).
+  const showPlaceholders = bootstrapping
 
   if (!hasAccess) {
     return (

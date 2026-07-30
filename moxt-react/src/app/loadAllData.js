@@ -667,7 +667,21 @@ export const loadAllData = createAsyncThunk(
           images: normalizedImages.length ? normalizedImages : imageUrl ? [imageUrl] : [],
           imageUrl,
           likes: parseJsonField(p.likes, []),
-          comments: parseJsonField(p.comments, []),
+          comments: parseJsonField(p.comments, []).map((comment, index) => {
+            if (!comment || typeof comment !== 'object') return comment
+            const id =
+              (typeof comment.id === 'string' && comment.id) ||
+              (typeof comment.Id === 'string' && comment.Id) ||
+              `legacy-${p.id}-${index}-${comment.createdAt || comment.created_at || index}`
+            return {
+              ...comment,
+              id,
+              authorId: comment.authorId || comment.author_id,
+              authorName: comment.authorName || comment.author_name,
+              authorAvatarUrl: comment.authorAvatarUrl || comment.author_avatar_url || null,
+              createdAt: comment.createdAt || comment.created_at,
+            }
+          }),
         }
       }) }))
       // Le marquage "vu" (viewedBy/viewers) est écrit en fire-and-forget côté serveur ;

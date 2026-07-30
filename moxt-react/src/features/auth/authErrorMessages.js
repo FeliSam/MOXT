@@ -152,11 +152,17 @@ export function sanitizeUserFacingMessage(message = '', t) {
     return translated(t, 'errors.app.timeout', 'Le serveur met trop longtemps à répondre. Réessayez dans un instant.')
   }
   if (
-    /pgrst|postgres|sqlstate|column|relation |schema cache|undefined column|npm run|edge function|vapid|supabase/.test(
+    /pgrst|postgres|sqlstate|column|relation |schema cache|undefined column|npm run|edge function|vapid|supabase|extract elements from a scalar/.test(
       lower,
     )
   ) {
     return translated(t, 'errors.app.technical', 'Une erreur technique est survenue. Réessayez ou contactez le support.')
+  }
+  if (/suppression non autoris/.test(lower)) {
+    return translated(t, 'errors.app.permissionDenied', "Vous n’avez pas l’autorisation pour cette action.")
+  }
+  if (/commentaire introuvable|publication introuvable/.test(lower)) {
+    return translated(t, 'errors.app.notFound', 'Élément introuvable ou déjà supprimé.')
   }
 
   return authSanitized

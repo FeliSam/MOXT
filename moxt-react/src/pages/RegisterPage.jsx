@@ -47,7 +47,7 @@ import {
   verifyEmailRegistration,
   verifyPhoneRegistration,
 } from '../features/auth/authSlice'
-import { SMS_NUMBER_PROVIDER_DENIED } from '@moxt/shared/auth/translateAuthError.js'
+import { SMS_NUMBER_PROVIDER_DENIED, isSmsTemporarilyBlocked } from '@moxt/shared/auth/translateAuthError.js'
 import { addToast } from '../features/ui/uiSlice'
 import {
   authErrorToast,
@@ -191,7 +191,7 @@ export function RegisterPage() {
   useEffect(() => {
     if (!error) return
     const errorText = String(error || '')
-    if (errorText === SMS_NUMBER_PROVIDER_DENIED) {
+    if (errorText === SMS_NUMBER_PROVIDER_DENIED || isSmsTemporarilyBlocked(errorText)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- réaction à une erreur d'un système externe (Supabase auth)
       setEmailSmsFallback(true)
       setFormGateMessage('')
@@ -458,10 +458,12 @@ export function RegisterPage() {
       )
       if (!register.fulfilled.match(result)) {
         const payload = String(result.payload || '')
-        if (payload === SMS_NUMBER_PROVIDER_DENIED) {
-          // SMS refusé → bascule e-mail immédiate (reste en étape 4).
+        if (payload === SMS_NUMBER_PROVIDER_DENIED || isSmsTemporarilyBlocked(payload)) {
+          // SMS refusé / plafond temporaire → bascule e-mail immédiate (reste en étape 4).
           registerSubmitLockRef.current = false
-          await startEmailOtpFallback({ reason: 'provider_denied' })
+          await startEmailOtpFallback({
+            reason: payload === SMS_NUMBER_PROVIDER_DENIED ? 'provider_denied' : 'sms_temporarily_blocked',
+          })
           return
         }
         if (/Limite atteinte|Patientez \d+ secondes/i.test(payload)) {
@@ -497,8 +499,8 @@ export function RegisterPage() {
     }
   }
 
-  // Ne plus forcer l’e-mail automatiquement : après 60 s l’utilisateur choisit
-  // « Renvoyer le SMS » ou « Recevoir le code par e-mail ».
+  // Après envoi SMS : l’utilisateur peut renvoyer le SMS (après cooldown) ou
+  // basculer sur e-mail immédiatement (sans attendre le compteur).
   // Restore pending OTP signup after failed code / refresh (sessionStorage, no password).
   // Never show the OTP step until the phone is re-checked as still eligible.
   useEffect(() => {
@@ -614,13 +616,17 @@ export function RegisterPage() {
         registerWithEmailAfterSmsDenied({
           ...formik.values,
           skipPhoneEligibilityCheck:
-            reason === 'sms_resend_limit' || reason === 'provider_denied',
+            reason === 'sms_resend_limit' ||
+            reason === 'provider_denied' ||
+            reason === 'sms_temporarily_blocked',
           registrationVia:
             reason === 'sms_resend_limit'
               ? 'email_after_sms_resend_limit'
-              : reason === 'provider_denied'
-                ? 'email_after_sms_denied'
-                : 'email_after_sms_denied',
+              : reason === 'sms_temporarily_blocked'
+                ? 'email_after_sms_blocked'
+                : reason === 'provider_denied'
+                  ? 'email_after_sms_denied'
+                  : 'email_after_sms_denied',
         }),
       )
       if (!registerWithEmailAfterSmsDenied.fulfilled.match(result)) {
@@ -925,9 +931,7 @@ export function RegisterPage() {
       compact
       eyebrow={oauthCompletion ? t('auth.register.oauthEyebrow') : t('auth.register.eyebrow')}
       title={oauthCompletion ? t('auth.register.oauthTitle') : t('auth.register.title')}
-      description={
-        oauthCompletion ? t('auth.register.oauthDescription') : t('auth.register.description')
-      }
+      description={oauthCompletion ? t('auth.register.oauthDescription') : undefined}
     >
       {burstNode}
       <Stepper step={step} oauthCompletion={oauthCompletion} />

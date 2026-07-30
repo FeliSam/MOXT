@@ -106,7 +106,7 @@ export function messageToRemoteRow(message, conversationId) {
   if (!senderId) {
     throw new Error('Expéditeur du message invalide.')
   }
-  return {
+  const row = {
     id: message.id,
     conversation_id: conversationId,
     sender_id: senderId,
@@ -121,4 +121,7 @@ export function messageToRemoteRow(message, conversationId) {
     read_by: jsonbValue(message.readBy, []),
     created_at: message.createdAt,
   }
+  // Do not send edited_at until the remote column exists (migration 20260730180000).
+  // Text content still syncs via `text`; local UI keeps `editedAt` in memory.
+  return row
 }
