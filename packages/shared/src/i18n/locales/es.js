@@ -2146,7 +2146,8 @@ export const es = {
         title: "Avisos legales",
         paragraphs: [
           "MOXT es una plataforma digital de puesta en relación destinada en particular a la diáspora afro-rusa. Ofrece herramientas para transferencias entre particulares y profesionales, envíos, marketplace, empleos, eventos, empresas y mensajería.",
-          "Sitio web: https://moxtapp.ru. Aplicaciones móviles: MOXT para Android e iOS (vía Capacitor).",
+          "Sitio web: https://moxtapp.ru. Aplicaciones móviles: MOXT para Android e iOS (vía Capacitor). La app en las tiendas incluye la interfaz completa del producto (assets locales): no es un simple navegador que redirige al sitio.",
+          "Versión documental: estos avisos, términos y política corresponden al producto MOXT 1.2.4 (actualización del 30 de julio de 2026). La versión vigente está siempre en https://moxtapp.ru/legal y en la aplicación.",
           "Editor / explotador del servicio: MOXT. Contacto general y jurídico: support@moxtapp.ru. Incluye el identificador de cuenta, correo o teléfono verificado.",
           "CEO: FANOU S. Feliciano — médico cardiólogo, desarrollador fullstack, certificación AI. Dirección general y responsabilidad técnica de la plataforma MOXT.",
           "Cofundador y colaborador: Ricardo O. OKE — ingeniero en robótica, desarrollador fullstack y diseñador. Fundador de la sociedad Ro2Services, especializada en transferencias de dinero. Emisor de ideas, con aportaciones de producto, técnica y diseño en el equipo MOXT.",
@@ -2164,14 +2165,15 @@ export const es = {
       cgu: {
         title: "Condiciones de uso",
         paragraphs: [
-          "Al crear una cuenta MOXT, aceptas usar la plataforma de forma leal, proporcionar información exacta y respetar las reglas de verificación (teléfono, identidad, empresa cuando corresponda). Debes tener la edad y capacidad jurídica necesarias para contratar según la ley aplicable.",
+          "Al crear una cuenta MOXT, aceptas usar la plataforma de forma leal, proporcionar información exacta y respetar las reglas de verificación (teléfono ruso +7, identidad, empresa cuando corresponda). El número del país de origen puede indicarse en el registro de forma opcional. Debes tener la edad y capacidad jurídica necesarias para contratar según la ley aplicable.",
           "Eres responsable de la confidencialidad de tus credenciales, códigos OTP y sesiones. Toda acción realizada desde tu cuenta se presume efectuada por ti, salvo prueba creíble de compromiso reportada sin demora a MOXT.",
           "Te comprometes a no publicar contenido fraudulento, engañoso, ilícito o que vulnere derechos de terceros. Quedan prohibidos, entre otros: estafas, usurpación de identidad, blanqueo, financiación de actividades ilegales, acoso, amenazas, contenido de odio, pornografía ilegal, venta de armas, drogas o bienes robados, y cualquier falsificación.",
           "Ningún usuario tiene derecho a estafar, engañar o intentar perjudicar de cualquier forma a otro miembro de la plataforma. Toda persona implicada en una actividad ilícita (fraude, estafa, usurpación de identidad, chantaje, etc.) a través de MOXT se expone a que su información sea transmitida a la justicia y a las autoridades competentes, para que la víctima o MOXT puedan presentar una denuncia en su contra.",
           "Las operaciones sensibles (transferencias, cuentas profesionales, publicaciones de empresa) pueden exigir identidad verificada. Una declaración en la app, un distintivo «verificado» o un estado mostrado no sustituyen una confirmación oficial de pago, entrega o estatus legal ante las autoridades.",
-          "MOXT conecta a los miembros y facilita la comunicación; cada usuario sigue siendo responsable de sus compromisos, pagos, entregas, condiciones contractuales e intercambios con otros miembros. MOXT no garantiza el resultado de las transacciones entre usuarios.",
+          "Transferencias: algunas empresas pueden activar una preaceptación breve antes del pago. Si se rechaza o caduca, el cliente puede reasignar la transferencia a otro cambista o cancelarla en la app. MOXT conecta a los miembros y facilita la comunicación; cada usuario sigue siendo responsable de sus compromisos, pagos, entregas, condiciones contractuales e intercambios con otros miembros. MOXT no garantiza el resultado de las transacciones entre usuarios.",
+          "Aplicación móvil: la app MOXT es un producto autónomo con contenido y funciones propias (transferencias, P2P, mensajería, espacio pro, notificaciones, cámara para QR, etc.). Su único fin no es redirigir a un sitio web.",
           "Autorizas a MOXT a moderar, ocultar, suspender o eliminar contenidos y cuentas para proteger la seguridad de la plataforma, hacer cumplir estas condiciones o cumplir una obligación legal. Las decisiones de moderación pueden impugnarse en support@moxtapp.ru.",
-          "MOXT puede actualizar estos términos; la versión vigente está disponible en la app y en https://moxtapp.ru/legal/cgu. El uso continuado tras una actualización implica la aceptación de los nuevos términos. En caso de desacuerdo, debes dejar de usar el servicio y puedes solicitar la eliminación de tu cuenta.",
+          "MOXT puede actualizar estos términos; la versión vigente (ref. producto 1.2.4 — 30 de julio de 2026) está disponible en la app y en https://moxtapp.ru/legal/cgu. El uso continuado tras una actualización implica la aceptación de los nuevos términos. En caso de desacuerdo, debes dejar de usar el servicio y puedes solicitar la eliminación de tu cuenta.",
         ],
       },
       entreprises: {
@@ -2210,10 +2212,10 @@ export const es = {
       privacy: {
         title: "Política de privacidad",
         paragraphs: [
-          "Esta política de privacidad describe cómo MOXT («nosotros») recopila, usa, almacena y protege tus datos personales cuando usas el sitio https://moxtapp.ru y la app móvil MOXT (Android / iOS vía Capacitor), destinada en particular a la diáspora afro-rusa (transferencias, envíos, mercado, empleos, empresas y mensajería).",
+          "Esta política de privacidad describe cómo MOXT («nosotros») recopila, usa, almacena y protege tus datos personales cuando usas el sitio https://moxtapp.ru y la app móvil MOXT (Android / iOS vía Capacitor — producto autónomo con la interfaz completa, y no un simple acceso web), destinada en particular a la diáspora afro-rusa (transferencias, envíos, mercado, empleos, empresas y mensajería).",
           "Responsable del tratamiento: MOXT. Privacidad y solicitudes de usuarios: support@moxtapp.ru. Incluye el correo o identificador de tu cuenta para que podamos responder en un plazo razonable.",
-          "Finalidades: crear y administrar tu cuenta; habilitar las funciones de la plataforma (perfiles, anuncios, mensajería, transferencias, envíos, verificación de identidad o de empresa); garantizar la seguridad, la prevención del fraude y el cumplimiento de nuestras reglas; enviar avisos técnicos o, si das tu consentimiento, alertas push; cumplir obligaciones legales.",
-          "Datos de cuenta: identidad (nombre cuando corresponda), correo, número de teléfono, foto de perfil, preferencias de idioma y privacidad, historial de actividad en la plataforma, documentos de verificación de identidad o de empresa cuando los proporciones voluntariamente.",
+          "Finalidades: crear y administrar tu cuenta; habilitar las funciones de la plataforma (perfiles, anuncios, mensajería, transferencias — incluida la preaceptación del cambista cuando esté activada —, envíos, verificación de identidad o de empresa); garantizar la seguridad, la prevención del fraude y el cumplimiento de nuestras reglas; enviar avisos técnicos o, si das tu consentimiento, alertas push; cumplir obligaciones legales.",
+          "Datos de cuenta: identidad (nombre cuando corresponda), correo, número de teléfono ruso (+7) requerido para ciertas funciones, número del país de origen si se facilita voluntariamente (opcional en el registro), foto de perfil, preferencias de idioma y privacidad, historial de actividad en la plataforma, documentos de verificación de identidad o de empresa cuando los proporciones voluntariamente.",
           "Datos técnicos: identificadores de sesión, registros de acceso, tipo de dispositivo / navegador, tokens de notificaciones push (FCM / APNs) si los activas, y metadatos necesarios para operar y asegurar el servicio.",
           "Infraestructura y encargados: los datos de cuenta y el contenido de la app se procesan mediante nuestro backend Supabase (autenticación, base de datos, almacenamiento de archivos). Proveedores técnicos (hosting cloud, entrega de correo / SMS, push Firebase / Apple) actúan solo para operar el servicio. No vendemos tus datos personales.",
           "Cámara: se usa solo para escanear códigos QR MOXT (perfiles, empresas, invitaciones) cuando abres la pestaña Escáner. La cámara no se activa en segundo plano y no se usa para geolocalización.",
@@ -2225,7 +2227,7 @@ export const es = {
           "Conservación y eliminación: un correo o teléfono verificado puede usarse como máximo en dos cuentas. Puedes solicitar la eliminación de la cuenta desde la configuración; algunos datos pueden conservarse el tiempo exigido por ley, por seguridad de la plataforma o para resolver disputas.",
           "Tus derechos: según la ley aplicable, puedes solicitar acceso a tus datos, rectificación, eliminación, limitación del tratamiento u oponerte a ciertos tratamientos. Contacta a support@moxtapp.ru. También puedes solicitar la eliminación de la cuenta desde la app.",
           "Menores: el servicio está destinado a usuarios mayores de edad o con capacidad conforme a la ley aplicable. Si crees que un menor proporcionó datos sin autorización, contáctanos para eliminarlos.",
-          "Actualizaciones: podemos actualizar esta política; la versión vigente siempre está disponible en https://moxtapp.ru/legal/privacy. El uso continuado tras una actualización implica que has sido informado de la nueva versión.",
+          "Actualizaciones: podemos actualizar esta política; la versión vigente (ref. producto 1.2.4 — 30 de julio de 2026) siempre está disponible en https://moxtapp.ru/legal/privacy. El uso continuado tras una actualización implica que has sido informado de la nueva versión.",
           "Contacto: para cualquier pregunta sobre esta política o tus datos personales — support@moxtapp.ru."
         ]
       }
@@ -6527,6 +6529,18 @@ export const es = {
     eyebrow: "Aplicación",
     title: "Instalar MOXT",
     description: "Descarga el APK Android o añade MOXT a la pantalla de inicio en iPhone.",
+    native: {
+      title: "Estás en la app MOXT",
+      description:
+        "Esta versión incluye la interfaz completa. No hace falta redirigir al sitio web.",
+      heading: "Producto autónomo",
+      body: "Ya usas la aplicación instalada: transferencias, marketplace, mensajería y herramientas pro están disponibles aquí.",
+      featureTransfers: "Transferencias y seguimiento en tiempo real",
+      featureP2p: "Intercambios P2P",
+      featureMessages: "Mensajería y notificaciones",
+      featurePro: "Espacio profesional y paneles",
+      openDashboard: "Abrir mi panel",
+    },
     tabs: { android: "Android", iphone: "iPhone" },
     android: {
       title: "Descargar para Android",
@@ -7152,6 +7166,14 @@ export const es = {
       channel: "Canal"
     },
     changelog: {
+      v124: {
+        date: "30 de julio de 2026",
+        h0: "Registro: teléfono del país de origen justo bajo el país (opcional)",
+        h1: "App nativa: pantalla Install como producto autónomo (no una simple WebView)",
+        h2: "Preaceptación del cambista, toggle admin y reasignación de transferencia",
+        h3: "Avisos legales, términos y privacidad actualizados (v1.2.4)",
+        h4: "i18n FR / EN / RU / PT / ES alineadas",
+      },
       v120: {
         date: "Julio 2026",
         h0: "Barra superior móvil: atajos contextuales, etiquetas al pasar el cursor y tamaños armonizados",

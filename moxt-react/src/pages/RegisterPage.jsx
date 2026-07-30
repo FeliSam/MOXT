@@ -1051,6 +1051,27 @@ export function RegisterPage() {
               ))}
             </Select>
 
+            <Input
+              id="originPhone"
+              label={t('auth.register.originPhone')}
+              type="tel"
+              placeholder={`${selectedCountry?.callingCode || ''}...`}
+              hint={t('auth.register.helpOriginPhoneHint')}
+              iconLeft={
+                <span className="text-base leading-none">
+                  {flagEmoji(selectedCountry?.code || formik.values.originCountry)}
+                </span>
+              }
+              {...formik.getFieldProps('originPhone')}
+              onChange={(event) =>
+                formik.setFieldValue(
+                  'originPhone',
+                  constrainPhone(event.target.value, selectedCountry?.callingCode || '', 12),
+                )
+              }
+              error={errorFor('originPhone')}
+            />
+
             <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-3">
               {!oauthCompletion ? (
                 <Button type="button" variant="secondary" icon={FiArrowLeft} onClick={() => setStep(1)}>
@@ -1078,50 +1099,29 @@ export function RegisterPage() {
               onChange={(city) => formik.setFieldValue('residenceCity', city)}
               error={errorFor('residenceCity')}
             />
-            <div className="grid min-w-0 gap-3">
-              <Input
-                id="russianPhone"
-                label={t('auth.register.russianPhone')}
-                type="tel"
-                autoComplete="tel"
-                placeholder="+7XXXXXXXXXX"
-                iconLeft={<span className="text-base leading-none">{flagEmoji('RU')}</span>}
-                {...formik.getFieldProps('russianPhone')}
-                onChange={(event) =>
-                  formik.setFieldValue('russianPhone', constrainPhone(event.target.value, '+7', 10))
+            <Input
+              id="russianPhone"
+              label={t('auth.register.russianPhone')}
+              type="tel"
+              autoComplete="tel"
+              placeholder="+7XXXXXXXXXX"
+              iconLeft={<span className="text-base leading-none">{flagEmoji('RU')}</span>}
+              {...formik.getFieldProps('russianPhone')}
+              onChange={(event) =>
+                formik.setFieldValue('russianPhone', constrainPhone(event.target.value, '+7', 10))
+              }
+              onBlur={(event) => {
+                formik.handleBlur(event)
+                const phone = constrainPhone(event.target.value, '+7', 10)
+                if (isValidRussianPhone(phone)) {
+                  prefetchIdentities({
+                    phone,
+                    email: formik.values.email,
+                  })
                 }
-                onBlur={(event) => {
-                  formik.handleBlur(event)
-                  const phone = constrainPhone(event.target.value, '+7', 10)
-                  if (isValidRussianPhone(phone)) {
-                    prefetchIdentities({
-                      phone,
-                      email: formik.values.email,
-                    })
-                  }
-                }}
-                error={errorFor('russianPhone')}
-              />
-              <Input
-                id="originPhone"
-                label={t('auth.register.originPhone')}
-                type="tel"
-                placeholder={`${selectedCountry?.callingCode || ''}...`}
-                iconLeft={
-                  <span className="text-base leading-none">
-                    {flagEmoji(selectedCountry?.code || formik.values.originCountry)}
-                  </span>
-                }
-                {...formik.getFieldProps('originPhone')}
-                onChange={(event) =>
-                  formik.setFieldValue(
-                    'originPhone',
-                    constrainPhone(event.target.value, selectedCountry?.callingCode || '', 12),
-                  )
-                }
-                error={errorFor('originPhone')}
-              />
-            </div>
+              }}
+              error={errorFor('russianPhone')}
+            />
             {!oauthCompletion ? (
               <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-3">
                 <PasswordInput

@@ -2148,7 +2148,8 @@ export const en = {
         title: "Legal notice",
         paragraphs: [
           "MOXT is a digital matching platform intended in particular for the Afro-Russian diaspora. It provides tools for peer-to-peer and professional transfers, parcel shipping, marketplace, jobs, events, businesses and messaging.",
-          "Website: https://moxtapp.ru. Mobile apps: MOXT for Android and iOS (via Capacitor).",
+          "Website: https://moxtapp.ru. Mobile apps: MOXT for Android and iOS (via Capacitor). The store app embeds the full product UI (local assets): it is not a mere browser that redirects to the website.",
+          "Documentary version: these notices, terms and privacy policy correspond to MOXT product version 1.2.4 (updated 30 July 2026). The version in force is always the one shown at https://moxtapp.ru/legal and in the app.",
           "Publisher / operator: MOXT. General and legal contact: support@moxtapp.ru. Please include your account ID, email or verified phone number.",
           "CEO: FANOU S. Feliciano — cardiologist, fullstack developer, AI certification. General management and technical responsibility for the MOXT platform.",
           "Co-founder and collaborator: Ricardo O. OKE — robotics engineer, fullstack developer and designer. Founder of Ro2Services, a company specialized in money transfers. Idea contributor, with product, technical and design contributions within the MOXT team.",
@@ -2166,14 +2167,15 @@ export const en = {
       cgu: {
         title: "Terms of use",
         paragraphs: [
-          "By creating a MOXT account, you agree to use the platform fairly, provide accurate information and comply with verification rules (phone, identity, business where applicable). You must have the legal age and capacity to contract under applicable law.",
+          "By creating a MOXT account, you agree to use the platform fairly, provide accurate information and comply with verification rules (Russian phone +7, identity, business where applicable). The origin-country phone number may be provided at sign-up on an optional basis. You must have the legal age and capacity to contract under applicable law.",
           "You are responsible for keeping your credentials, OTP codes and sessions confidential. Any action from your account is presumed to be yours unless credible evidence of compromise is promptly reported to MOXT.",
           "You agree not to publish fraudulent, misleading, unlawful content or content that infringes third-party rights. Prohibited activities include, without limitation: scams, identity theft, money laundering, financing illegal activities, harassment, threats, hate content, illegal pornography, sale of weapons, drugs or stolen goods, and any counterfeiting.",
           "No user is permitted to scam, defraud or otherwise attempt to harm another member of the platform. Anyone involved in unlawful activity (fraud, scamming, identity theft, blackmail, etc.) carried out through MOXT risks having their information passed on to the courts and competent authorities, so the victim or MOXT can file a complaint against them.",
           "Sensitive operations (transfers, professional accounts, business publications) may require verified identity. An in-app declaration, a “verified” badge or displayed status does not replace official confirmation of payment, delivery or legal status with the authorities.",
-          "MOXT connects members and facilitates communication; each user remains responsible for their commitments, payments, handovers, contractual terms and exchanges with other members. MOXT does not guarantee the outcome of transactions between users.",
+          "Transfers: some businesses may enable a short pre-acceptance window before the client can pay. If declined or expired, the client may reassign the transfer to another exchanger or cancel it using the options in the app. MOXT connects members and facilitates communication; each user remains responsible for their commitments, payments, handovers, contractual terms and exchanges with other members. MOXT does not guarantee the outcome of transactions between users.",
+          "Mobile app: the MOXT app is a standalone product with its own content and features (transfers, P2P, messaging, pro space, notifications, camera for QR, etc.). Its sole purpose is not to redirect to a website.",
           "You authorize MOXT to moderate, hide, suspend or delete content and accounts to protect platform security, enforce these terms or comply with legal obligations. Moderation decisions may be challenged via support@moxtapp.ru.",
-          "MOXT may update these terms; the current version is available in the app and at https://moxtapp.ru/legal/cgu. Continued use after an update constitutes acceptance of the new terms. If you disagree, you must stop using the service and may request account deletion.",
+          "MOXT may update these terms; the current version (product ref. 1.2.4 — 30 July 2026) is available in the app and at https://moxtapp.ru/legal/cgu. Continued use after an update constitutes acceptance of the new terms. If you disagree, you must stop using the service and may request account deletion.",
         ],
       },
       entreprises: {
@@ -2212,10 +2214,10 @@ export const en = {
       privacy: {
         title: "Privacy policy",
         paragraphs: [
-          "This privacy policy describes how MOXT (“we”) collects, uses, stores and protects your personal data when you use the website https://moxtapp.ru and the MOXT mobile app (Android / iOS via Capacitor), intended in particular for the Afro-Russian diaspora (transfers, parcels, marketplace, jobs, businesses and messaging).",
+          "This privacy policy describes how MOXT (“we”) collects, uses, stores and protects your personal data when you use the website https://moxtapp.ru and the MOXT mobile app (Android / iOS via Capacitor — a standalone product embedding the full UI, not a mere website shortcut), intended in particular for the Afro-Russian diaspora (transfers, parcels, marketplace, jobs, businesses and messaging).",
           "Data controller: MOXT. Privacy and user requests: support@moxtapp.ru. Please include your account email or identifier so we can respond within a reasonable time.",
-          "Purposes: create and manage your account; enable platform features (profiles, listings, messaging, transfers, parcels, identity or business verification); ensure security, fraud prevention and compliance with our rules; send technical notices or, if you consent, push alerts; comply with legal obligations.",
-          "Account data: identity (name where applicable), email, phone number, profile photo, language and privacy preferences, platform activity history, identity or business verification documents when you voluntarily provide them.",
+          "Purposes: create and manage your account; enable platform features (profiles, listings, messaging, transfers — including exchanger pre-acceptance where enabled —, parcels, identity or business verification); ensure security, fraud prevention and compliance with our rules; send technical notices or, if you consent, push alerts; comply with legal obligations.",
+          "Account data: identity (name where applicable), email, Russian phone number (+7) required for certain features, origin-country phone number if voluntarily provided (optional at registration), profile photo, language and privacy preferences, platform activity history, identity or business verification documents when you voluntarily provide them.",
           "Technical data: session identifiers, access logs, device / browser type, push notification tokens (FCM / APNs) if you enable them, and metadata needed to operate and secure the service.",
           "Infrastructure and processors: account data and app content are processed via our Supabase backend (authentication, database, file storage). Technical providers (cloud hosting, email / SMS delivery, Firebase / Apple push) act only to operate the service. We do not sell your personal data.",
           "Camera: used only to scan MOXT QR codes (profiles, businesses, invitations) when you open the Scanner tab. The camera is not activated in the background and is not used for geolocation.",
@@ -2227,7 +2229,7 @@ export const en = {
           "Retention and deletion: a verified email or phone number may be used for at most two accounts. You may request account deletion from settings; some data may be retained as required by law, for platform security or dispute resolution.",
           "Your rights: depending on applicable law, you may request access to your data, rectification, erasure, restriction of processing, or object to certain processing. Contact support@moxtapp.ru. You may also request account deletion from the app.",
           "Minors: the service is intended for users of legal age or capacity under applicable law. If you believe a minor provided data without authorization, contact us for deletion.",
-          "Updates: we may update this policy; the current version is always available at https://moxtapp.ru/legal/privacy. Continued use after an update means you have been informed of the new version.",
+          "Updates: we may update this policy; the current version (product ref. 1.2.4 — 30 July 2026) is always available at https://moxtapp.ru/legal/privacy. Continued use after an update means you have been informed of the new version.",
           "Contact: for any question about this policy or your personal data — support@moxtapp.ru.",
         ],
       },
@@ -6529,6 +6531,18 @@ export const en = {
     eyebrow: "App",
     title: "Install MOXT",
     description: "Download the Android APK or add MOXT to your iPhone home screen.",
+    native: {
+      title: "You are in the MOXT app",
+      description:
+        "This build embeds the full interface. No redirect to the website is required.",
+      heading: "Standalone product",
+      body: "You are already using the installed app: transfers, marketplace, messaging and pro tools are available here.",
+      featureTransfers: "Transfers and real-time tracking",
+      featureP2p: "P2P exchanges",
+      featureMessages: "Messaging and notifications",
+      featurePro: "Professional space and dashboards",
+      openDashboard: "Open my dashboard",
+    },
     tabs: {
       android: "Android",
       iphone: "iPhone",
@@ -7157,6 +7171,14 @@ export const en = {
       channel: "Channel",
     },
     changelog: {
+      v124: {
+        date: "30 July 2026",
+        h0: "Sign-up: origin-country phone just under country (optional)",
+        h1: "Native app: Install screen as standalone product (not a mere WebView)",
+        h2: "Exchanger pre-acceptance, admin toggle and transfer reassignment",
+        h3: "Legal notices, terms and privacy updated (v1.2.4)",
+        h4: "i18n FR / EN / RU / PT / ES aligned",
+      },
       v120: {
         date: "July 2026",
         h0: "Mobile top bar: contextual shortcuts, hover labels, and balanced sizes",

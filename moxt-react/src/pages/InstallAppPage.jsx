@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { FiDownload, FiSmartphone, FiUpload } from 'react-icons/fi'
+import { FiCheckCircle, FiDownload, FiSmartphone, FiUpload } from 'react-icons/fi'
 import { MdPhoneIphone } from 'react-icons/md'
+import { Link } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
@@ -8,6 +9,7 @@ import { Card } from '../components/ui/Card'
 import { PageHeader } from '../components/ui/PageHeader'
 import { BackButton } from '../components/ui/BackButton'
 import { useLanguage } from '../contexts/useLanguage'
+import { isNative } from '../platform/capacitor'
 import { appReleaseService } from '../services/appReleaseService'
 import { addToast } from '../features/ui/uiSlice'
 
@@ -24,6 +26,13 @@ const IPHONE_GUIDE_BY_LANG = {
   es: '/assets/install/iphone-add-home-fr.png',
   pt: '/assets/install/iphone-add-home-fr.png',
 }
+
+const NATIVE_FEATURES = [
+  'install.native.featureTransfers',
+  'install.native.featureP2p',
+  'install.native.featureMessages',
+  'install.native.featurePro',
+]
 
 function formatBytes(size) {
   const n = Number(size) || 0
@@ -44,12 +53,13 @@ export function InstallAppPage() {
   const isStaff = ['admin', 'superadmin', 'moderator'].includes(user?.role)
   const [tab, setTab] = useState('android')
   const [release, setRelease] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!isNative)
   const [uploading, setUploading] = useState(false)
   const [versionDraft, setVersionDraft] = useState('')
   const guideSrc = iphoneGuideSrc(language)
 
   useEffect(() => {
+    if (isNative) return undefined
     let cancelled = false
     ;(async () => {
       setLoading(true)
@@ -104,6 +114,46 @@ export function InstallAppPage() {
     } finally {
       setUploading(false)
     }
+  }
+
+  if (isNative) {
+    return (
+      <div className="grid gap-6">
+        <PageHeader
+          eyebrow={t('install.eyebrow')}
+          title={t('install.native.title')}
+          description={t('install.native.description')}
+          actions={<BackButton fallback="/dashboard" />}
+        />
+        <Card className="grid gap-4 p-5">
+          <div className="flex items-start gap-3">
+            <div className="grid size-12 place-items-center rounded-2xl bg-emerald-600 text-white">
+              <FiCheckCircle className="text-xl" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="font-black">{t('install.native.heading')}</h2>
+              <p className="mt-1 text-sm leading-6 text-[var(--app-text-muted)]">
+                {t('install.native.body')}
+              </p>
+            </div>
+          </div>
+          <ul className="grid gap-2">
+            {NATIVE_FEATURES.map((key) => (
+              <li
+                key={key}
+                className="flex items-center gap-2 rounded-xl bg-[var(--app-surface-muted)] px-3 py-2 text-sm font-medium"
+              >
+                <FiCheckCircle className="shrink-0 text-emerald-600" aria-hidden />
+                {t(key)}
+              </li>
+            ))}
+          </ul>
+          <Link to="/dashboard">
+            <Button icon={FiSmartphone}>{t('install.native.openDashboard')}</Button>
+          </Link>
+        </Card>
+      </div>
+    )
   }
 
   return (
