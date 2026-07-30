@@ -28,6 +28,7 @@ const transferSlice = createSlice({
         amount,
         direction,
         exchanger,
+        noteToExchanger,
         originCountry,
         rateDate,
         rateOverride,
@@ -69,6 +70,9 @@ const transferSlice = createSlice({
             rateSource: rateSource || calculation.rateSource,
             sender,
             recipient,
+            noteToExchanger: String(noteToExchanger || '')
+              .trim()
+              .slice(0, 300) || null,
             exchanger: {
               id: exchanger.id,
               name: exchanger.name,

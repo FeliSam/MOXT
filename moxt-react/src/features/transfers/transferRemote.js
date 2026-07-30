@@ -13,6 +13,10 @@ function parseJsonField(value, fallback) {
 }
 
 export function buildTransferRemotePayload(transfer) {
+  const note =
+    String(transfer.noteToExchanger ?? transfer.payload?.noteToExchanger ?? '')
+      .trim()
+      .slice(0, 300) || null
   return {
     amountSent: transfer.amountSent,
     amountReceived: transfer.amountReceived,
@@ -26,6 +30,7 @@ export function buildTransferRemotePayload(transfer) {
     receivedAt: transfer.receivedAt,
     receivedMethod: transfer.receivedMethod,
     receivedProof: transfer.receivedProof,
+    noteToExchanger: note,
   }
 }
 
@@ -58,6 +63,11 @@ export function transferFromRemoteRow(row) {
     totalToPay: base.totalToPay ?? nested.totalToPay,
   })
 
+  const noteToExchanger =
+    String(base.noteToExchanger ?? nested.noteToExchanger ?? '')
+      .trim()
+      .slice(0, 300) || null
+
   return {
     ...base,
     ...nested,
@@ -75,6 +85,7 @@ export function transferFromRemoteRow(row) {
     receivedAt: base.receivedAt ?? nested.receivedAt ?? null,
     receivedMethod: base.receivedMethod ?? nested.receivedMethod ?? null,
     receivedProof: base.receivedProof ?? nested.receivedProof ?? null,
+    noteToExchanger,
     paymentProof: parseJsonField(base.paymentProof, base.paymentProof),
     businessProof: parseJsonField(base.businessProof, base.businessProof),
     timeline: parseJsonField(base.timeline, []),

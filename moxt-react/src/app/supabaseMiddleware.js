@@ -20,6 +20,7 @@ import { fromRow } from '../services/remoteRowMapper'
 import { addToast } from '../features/ui/uiSlice'
 import { authService } from '../features/auth/authService'
 import { selectAccountPreferences } from '../features/account/accountSlice'
+import { buildTransferRemotePayload } from '../features/transfers/transferRemote'
 
 async function triggerEmail(transferId, event) {
   await supabase.functions.invoke('send-email', {
@@ -800,17 +801,7 @@ const handlers = {
         "Impossible de créer le transfert : propriétaire de l'entreprise introuvable. Réessayez ou choisissez un autre changeur.",
       )
     }
-    const remotePayload = {
-      amountSent: payload.amountSent,
-      amountReceived: payload.amountReceived,
-      fees: payload.fees,
-      totalToPay: payload.totalToPay,
-      currencyFrom: payload.currencyFrom,
-      currencyTo: payload.currencyTo,
-      feePercent: payload.feePercent,
-      rateMarginPercent: payload.rateMarginPercent,
-      rawRate: payload.rawRate,
-    }
+    const remotePayload = buildTransferRemotePayload(payload)
     try {
       await upsert('transfers', {
         id: payload.id,
@@ -887,26 +878,12 @@ const handlers = {
     const transfer = state.transfers.items.find((t) => t.id === payload.id)
     if (!transfer) return
 
-    const mergedPayload = {
-      ...(typeof transfer.payload === 'object' && transfer.payload ? transfer.payload : {}),
-      amountSent: transfer.amountSent,
-      amountReceived: transfer.amountReceived,
-      fees: transfer.fees,
-      totalToPay: transfer.totalToPay,
-      currencyFrom: transfer.currencyFrom,
-      currencyTo: transfer.currencyTo,
-      feePercent: transfer.feePercent,
-      receivedAt: transfer.receivedAt,
-      receivedMethod: transfer.receivedMethod,
-      receivedProof: transfer.receivedProof,
-    }
-
     await update('transfers', transfer.id, {
       status: transfer.status,
       receivedAmount: transfer.receivedAmount,
       timeline: transfer.timeline,
       updatedAt: transfer.updatedAt,
-      payload: mergedPayload,
+      payload: buildTransferRemotePayload(transfer),
     })
   },
 

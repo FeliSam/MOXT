@@ -101,6 +101,16 @@ export function TransferDetailParticipantsSection({ transfer }) {
           onToggleFavorite={() => toggleFavorite(transfer.recipient, destinationCountry)}
         />
       </div>
+      {String(transfer.noteToExchanger || '').trim() ? (
+        <div className="mt-4 rounded-xl bg-[var(--app-surface-muted)] px-4 py-3">
+          <p className="text-xs font-bold uppercase tracking-wide text-[var(--app-text-muted)]">
+            {t('transfers.detail.noteToExchanger')}
+          </p>
+          <p className="mt-1 whitespace-pre-wrap text-sm text-[var(--app-text)]">
+            {String(transfer.noteToExchanger).trim()}
+          </p>
+        </div>
+      ) : null}
     </Card>
   )
 }

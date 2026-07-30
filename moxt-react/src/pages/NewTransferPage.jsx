@@ -21,7 +21,7 @@ import { Alert } from '../components/ui/Alert'
 import { VerifiedDisplayName } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
-import { Input } from '../components/ui/Input'
+import { Input, Textarea } from '../components/ui/Input'
 import { Modal } from '../components/ui/Modal'
 import { PageHeader } from '../components/ui/PageHeader'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
@@ -107,6 +107,7 @@ export function NewTransferPage() {
       recipientLastName: '',
       recipientPhone: ensurePhoneCountry('', initialInfo.destinationCountry),
       recipientMethod: '',
+      noteToExchanger: '',
       acceptTerms: false,
       ...(draft?.userId === user.id ? draft.values : {}),
     },
@@ -170,6 +171,7 @@ export function NewTransferPage() {
             phone: values.recipientPhone,
             method: values.recipientMethod,
           },
+          noteToExchanger: values.noteToExchanger,
         }),
       )
       if (action.payload?.blocked || !action.payload?.id) {
@@ -261,7 +263,13 @@ export function NewTransferPage() {
   const stepFields = {
     1: ['direction', 'amount', 'exchangerId'],
     2: ['senderFirstName', 'senderLastName', 'senderPhone', 'senderMethod'],
-    3: ['recipientFirstName', 'recipientLastName', 'recipientPhone', 'recipientMethod'],
+    3: [
+      'recipientFirstName',
+      'recipientLastName',
+      'recipientPhone',
+      'recipientMethod',
+      'noteToExchanger',
+    ],
     4: ['acceptTerms'],
   }
 
@@ -632,16 +640,32 @@ export function NewTransferPage() {
           />
         ) : null}
         {step === 3 ? (
-          <PartyCard
-            title={t('transfers.new.stepRecipient')}
-            prefix="recipient"
-            profiles={recipientProfiles}
-            formik={formik}
-            methods={destinationMethods}
-            errorFor={errorFor}
-            userId={user.id}
-            onProfile={(profile) => applyProfile('recipient', profile)}
-          />
+          <div className="grid gap-5">
+            <PartyCard
+              title={t('transfers.new.stepRecipient')}
+              prefix="recipient"
+              profiles={recipientProfiles}
+              formik={formik}
+              methods={destinationMethods}
+              errorFor={errorFor}
+              userId={user.id}
+              onProfile={(profile) => applyProfile('recipient', profile)}
+            />
+            <Card className="grid gap-3">
+              <Textarea
+                label={t('transfers.new.noteToExchangerLabel')}
+                placeholder={t('transfers.new.noteToExchangerPlaceholder')}
+                hint={t('transfers.new.noteToExchangerHint', {
+                  count: formik.values.noteToExchanger?.length || 0,
+                  max: 300,
+                })}
+                rows={3}
+                maxLength={300}
+                error={errorFor('noteToExchanger')}
+                {...formik.getFieldProps('noteToExchanger')}
+              />
+            </Card>
+          </div>
         ) : null}
 
         {step === 4 ? (
@@ -671,6 +695,16 @@ export function NewTransferPage() {
                   <strong className="text-right text-sm">{value || '—'}</strong>
                 </div>
               ))}
+              {String(formik.values.noteToExchanger || '').trim() ? (
+                <div className="rounded-xl bg-[var(--app-surface-muted)] px-4 py-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-[var(--app-text-muted)]">
+                    {t('transfers.new.noteToExchangerLabel')}
+                  </p>
+                  <p className="mt-1 whitespace-pre-wrap text-sm text-[var(--app-text)]">
+                    {formik.values.noteToExchanger.trim()}
+                  </p>
+                </div>
+              ) : null}
               <label className="flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-[var(--app-border)] p-4 transition hover:border-brand-400">
                 <input
                   className="mt-0.5 size-4 accent-brand-700"

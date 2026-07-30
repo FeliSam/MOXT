@@ -108,6 +108,19 @@ export const es = {
         afterCooldownHint:
           "Tiempo terminado: reenvía el SMS o recibe el código por correo.",
       },
+      channel: {
+        title: "¿Cómo quieres recibir tu código?",
+        subtitle:
+          "Elige SMS o correo. El otro identificador se podrá confirmar más tarde en Seguridad para publicar.",
+        smsTitle: "Por SMS",
+        smsHint: "Código de 6 dígitos, normalmente en unos segundos.",
+        emailTitle: "Por correo",
+        emailHint: "Revisa también la carpeta de spam.",
+        sendCode: "Recibir el código",
+        sending: "Enviando el código…",
+        backToForm: "editar mis datos",
+      },
+      continueToVerify: "Continuar",
       toasts: {
         alreadyExistsTitle: "La cuenta ya existe",
         alreadyExistsBody: "Este número o correo ya está vinculado a una cuenta confirmada. Inicia sesión con tu contraseña. Si nunca recibiste el SMS, vuelve a registrarte en unos minutos tras la limpieza automática de registros incompletos.",
@@ -311,6 +324,7 @@ export const es = {
       phoneRequired: "O teléfono é obligatorio.",
       paymentMethodRequired: "O meio de pagamento é obligatorio.",
       receiveMethodRequired: "O meio de receción é obligatorio.",
+      noteToExchangerMax: "Mensaje demasiado largo (máx. 300 caracteres).",
       receivedAmountRequired: "O importe recebido é obligatorio.",
       receiveMethodChoose: "Elige un método de receción.",
       receiveMethodInvalid: "Método inválido."
@@ -3609,6 +3623,94 @@ export const es = {
     addressCompleteMin: "Adicione un dirección completo.",
     addressCompleteRequired: "Dirección completo obligatorio."
   },
+  exchanger: {
+    page: {
+      eyebrow: "Panel del cambista",
+      title: "Transferencias entrantes",
+      description:
+        "Opera, ajusta tarifas, gestiona cuentas y avanza el pipeline en un solo lugar.",
+    },
+    tabs: {
+      aria: "Secciones del panel del cambista",
+      ops: "Operaciones",
+      rates: "Tarifas",
+      accounts: "Cuentas",
+      stats: "Stats",
+    },
+    kpi: {
+      awaiting: "Por tratar",
+      active: "Pipeline activo",
+      volume: "Volumen del mes",
+      completion: "Tasa de finalización",
+      rating: "Nota media",
+      avgDelay: "Retraso medio",
+      avgDelaySub: "Recepción → pago",
+    },
+    charts: {
+      activityTitle: "Actividad · 30 días",
+      statusTitle: "Por estado",
+      monthlyTitle: "Volúmenes · 6 meses",
+      created: "Creadas",
+      completed: "Completadas",
+      dayDetail: "Detalle del {date}",
+      daySummary: "{count} transferencia(s) · volumen ~ {volume}",
+      noTransfers: "Ninguna transferencia en este período.",
+    },
+    queue: {
+      actionTitle: "Cola de acciones",
+      actionEmpty: "Nada pendiente de tu lado.",
+      client: "Cliente",
+      deadline: "Plazo de pago: {date}",
+    },
+    pipeline: {
+      title: "Pipeline por estado",
+      empty: "Ninguna transferencia",
+      clearFilter: "Quitar filtro · {status}",
+    },
+    actions: {
+      viewAll: "Ver todo",
+      rates: "Ajustes de tarifa",
+      manage: "Gestionar",
+      detail: "Detalle",
+    },
+    manage: {
+      title: "Gestionar {id}",
+      youReceive: "Recibes",
+      recipientGets: "El destinatario recibe",
+      clientNote: "Mensaje del cliente",
+      stepReceptionTitle: "Paso 1 · Confirmar recepción",
+      stepReceptionBody: "Verifica el pago del cliente en tu cuenta y confirma.",
+      stepPayoutTitle: "Paso 2 · Confirmar pago",
+      stepPayoutBody: "Añade la prueba de pago al destinatario y valida.",
+      confirmReception: "Confirmar recepción",
+      confirmPayout: "Confirmar pago",
+      proofLabel: "Prueba de pago",
+      uploading: "Enviando…",
+      noAction: "No hay acción requerida en este paso.",
+      openDetail: "Abrir ficha completa",
+      proofReadyTitle: "Prueba añadida",
+      proofReadyBody: "El justificante está listo.",
+      uploadFailedTitle: "Envío imposible",
+      uploadFailedBody: "No se pudo enviar el justificante.",
+      errorTitle: "Acción imposible",
+      receptionBlocked: "La recepción ya fue confirmada o el estado cambió.",
+      proofRequired: "Añade una prueba de pago antes de confirmar.",
+      receptionTitle: "Recepción confirmada",
+      receptionBody: "Continúa con la prueba y el pago.",
+      payoutTitle: "Pago confirmado",
+      payoutBody: "El cliente puede validar la recepción de fondos.",
+    },
+    noAccess: {
+      title: "Acceso reservado a cambistas",
+      description:
+        "Necesitas el rol professional o una empresa de transferencia para acceder.",
+    },
+    noBusiness: {
+      title: "Empresa de transferencia requerida",
+      description: "Activa el servicio Transferencia en tu espacio pro para usar este panel.",
+      cta: "Abrir espacio pro",
+    },
+  },
   transfers: {
     rate: {
       todayTitle: "Tasa del día",
@@ -3952,6 +4054,9 @@ export const es = {
       recipient: "Destinatário",
       acceptTerms: "Confirmo estas informaciones y autorizo a tu transmissão à empresa selecionada para o tratamento desta operación.",
       createAndSubmit: "Crear y enviar a transferencia",
+      noteToExchangerLabel: "Mensaje para el cambista",
+      noteToExchangerPlaceholder: "Detalles útiles para el socio (opcional)…",
+      noteToExchangerHint: "{count}/{max} caracteres",
       favoriteProfiles: "Perfis favoritos",
       firstName: "Nome",
       lastName: "Apelido",
@@ -4092,6 +4197,7 @@ export const es = {
         favoriteErrorTitle: "No se pudo guardar",
         favoriteIncomplete: "Nombre, apellido y teléfono son obligatorios para un favorito.",
       },
+      noteToExchanger: "Mensaje para el cambista",
       timeline: {
         title: "Cronologia"
       },
