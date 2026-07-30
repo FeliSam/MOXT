@@ -18,7 +18,10 @@ describe('businessRemote', () => {
     expect(row.owner_id).toBe('user-1')
     expect(row.primary_activity).toBe('commerce')
     expect(row.schedule_summary).toBe('Semaine')
-    expect(row.payload).toEqual({ hours: 'Lun-Ven 9h-18h' })
+    expect(row.payload).toEqual({
+      hours: 'Lun-Ven 9h-18h',
+      transferAcceptanceRequired: false,
+    })
     expect(row).not.toHaveProperty('hours')
     expect(row).not.toHaveProperty('deleted_by_user_at')
   })
@@ -35,6 +38,7 @@ describe('businessRemote', () => {
 
     expect(row.payload).toEqual({
       hours: '',
+      transferAcceptanceRequired: false,
       deletedByUserAt: '2026-07-11T12:00:00.000Z',
     })
     expect(row).not.toHaveProperty('deleted_by_user_at')

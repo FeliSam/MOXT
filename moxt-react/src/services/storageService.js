@@ -104,7 +104,32 @@ async function maybeCompressProof(file, onProgress) {
 }
 
 function ext(file) {
-  return file.name.split('.').pop().toLowerCase()
+  return String(file?.name || '')
+    .split('.')
+    .pop()
+    ?.toLowerCase()
+}
+
+/** Aligne extension du nom et MIME après compression (évite .heic + contentType jpeg). */
+function alignProofFileExtension(file) {
+  if (!file) return file
+  const mime = String(file.type || '').toLowerCase()
+  let extension = ext(file)
+  if (mime === 'image/jpeg' || mime === 'image/jpg') {
+    if (!['jpg', 'jpeg'].includes(extension)) extension = 'jpg'
+  } else if (mime === 'image/png' && extension !== 'png') {
+    extension = 'png'
+  } else if (mime === 'image/webp' && extension !== 'webp') {
+    extension = 'webp'
+  } else if (mime === 'application/pdf' && extension !== 'pdf') {
+    extension = 'pdf'
+  }
+  if (!extension || extension === ext(file)) return file
+  const base = String(file.name || 'proof').replace(/\.[^.]+$/, '') || 'proof'
+  return new File([file], `${base}.${extension}`, {
+    type: file.type,
+    lastModified: file.lastModified || Date.now(),
+  })
 }
 
 function wrapFileProgress(onProgress, fileIndex, fileCount, fileName) {
@@ -471,37 +496,45 @@ export const storageService = {
   },
 
   async uploadTransferProof(userId, transferId, file, { onProgress } = {}) {
+    const ownerId = String(userId || '').trim()
+    if (!ownerId) throw new Error('Utilisateur requis pour envoyer la preuve.')
+    if (!transferId) throw new Error('Référence de transfert manquante.')
     reportProgress(onProgress, {
       phase: UPLOAD_PHASES.preparing,
       percent: 6,
       fileName: file?.name,
     })
-    const path = `${userId}/${transferId}/proof.${ext(file)}`
-    const uploadFile = await maybeCompressProof(file, onProgress)
+    const uploadFile = alignProofFileExtension(await maybeCompressProof(file, onProgress))
+    const path = `${ownerId}/${transferId}/proof.${ext(uploadFile) || 'bin'}`
     await uploadPrivate('transfers', path, uploadFile, { onProgress })
     return { url: null, path }
   },
 
   async uploadBusinessTransferProof(userId, transferId, file, { onProgress } = {}) {
+    const ownerId = String(userId || '').trim()
+    if (!ownerId) throw new Error('Utilisateur requis pour envoyer la preuve.')
+    if (!transferId) throw new Error('Référence de transfert manquante.')
     reportProgress(onProgress, {
       phase: UPLOAD_PHASES.preparing,
       percent: 6,
       fileName: file?.name,
     })
-    const path = `${userId}/${transferId}/business.${ext(file)}`
-    const uploadFile = await maybeCompressProof(file, onProgress)
+    const uploadFile = alignProofFileExtension(await maybeCompressProof(file, onProgress))
+    const path = `${ownerId}/${transferId}/business.${ext(uploadFile) || 'bin'}`
     await uploadPrivate('transfers', path, uploadFile, { onProgress })
     return { url: null, path }
   },
 
   async uploadP2POrderProof(userId, orderId, file, { onProgress } = {}) {
+    const ownerId = String(userId || '').trim()
+    if (!ownerId) throw new Error('Utilisateur requis pour envoyer la preuve.')
     reportProgress(onProgress, {
       phase: UPLOAD_PHASES.preparing,
       percent: 6,
       fileName: file?.name,
     })
-    const path = `${userId}/p2p/${orderId}/${Date.now()}.${ext(file)}`
-    const uploadFile = await maybeCompressProof(file, onProgress)
+    const uploadFile = alignProofFileExtension(await maybeCompressProof(file, onProgress))
+    const path = `${ownerId}/p2p/${orderId}/${Date.now()}.${ext(uploadFile) || 'bin'}`
     await uploadPrivate('transfers', path, uploadFile, { onProgress })
     return { url: null, path }
   },

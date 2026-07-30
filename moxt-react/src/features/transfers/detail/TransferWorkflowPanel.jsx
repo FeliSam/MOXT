@@ -11,6 +11,7 @@ import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { ContactButton } from '../../communications/ContactButton'
+import { TransferClientNote } from '../TransferClientNote'
 import { TransferRecipientAccountCard } from '../TransferRecipientAccountCard'
 import { TransferStatusBadge } from '../TransferStatusBadge'
 import { TRANSFER_STATUS } from '../transferConfig'
@@ -29,6 +30,10 @@ export function TransferWorkflowPanel({
   contactOwnerId,
   contactTitle,
   countdown,
+  acceptanceCountdown,
+  onAcceptRequest,
+  onDeclineRequest,
+  onReassignClick,
   onBusinessProofSelected,
   onCancel,
   onCompleteBusinessStep,
@@ -44,6 +49,7 @@ export function TransferWorkflowPanel({
   const actionDescription = currentAction?.descriptionKey
     ? t(currentAction.descriptionKey)
     : currentAction?.description
+  const clientNote = transfer.noteToExchanger
 
   return (
     <Card className="grid min-w-0 gap-0 overflow-hidden p-0">
@@ -75,8 +81,63 @@ export function TransferWorkflowPanel({
           />
         ) : null}
 
+        {currentAction?.type === 'wait_acceptance' ? (
+          <ActionZone description={actionDescription} title={actionTitle}>
+            <div className="rounded-xl bg-[var(--app-surface)] px-4 py-3 text-center">
+              <p className="text-xs font-black uppercase tracking-wide text-[var(--app-text-faint)]">
+                {t('transfers.acceptance.countdownLabel')}
+              </p>
+              <p className="mt-1 font-mono text-3xl font-black tabular-nums text-brand-700 dark:text-brand-300">
+                {acceptanceCountdown?.label || '--:--'}
+              </p>
+              <p className="mt-2 text-sm text-[var(--app-text-muted)]">
+                {t('transfers.acceptance.waitingHint', {
+                  name: transfer.exchanger?.name || t('transfers.acceptance.exchangerFallback'),
+                })}
+              </p>
+            </div>
+          </ActionZone>
+        ) : null}
+
+        {currentAction?.type === 'resolve_acceptance' ? (
+          <ActionZone description={actionDescription} title={actionTitle}>
+            <div className="flex flex-wrap gap-2">
+              <Button icon={FiCheckCircle} onClick={onReassignClick}>
+                {t('transfers.acceptance.chooseAnother')}
+              </Button>
+              {canCancel ? (
+                <Button variant="danger" icon={FiXCircle} onClick={onCancel}>
+                  {t('transfers.workflow.cancelTransfer')}
+                </Button>
+              ) : null}
+            </div>
+          </ActionZone>
+        ) : null}
+
+        {currentAction?.type === 'accept_request' ? (
+          <ActionZone description={actionDescription} title={actionTitle}>
+            <TransferClientNote note={clientNote} />
+            {acceptanceCountdown?.label ? (
+              <p className="text-xs text-amber-700 dark:text-amber-300">
+                {t('transfers.acceptance.businessCountdown', {
+                  countdown: acceptanceCountdown.label,
+                })}
+              </p>
+            ) : null}
+            <div className="flex flex-wrap gap-2">
+              <Button icon={FiCheckCircle} onClick={onAcceptRequest}>
+                {t('transfers.acceptance.accept')}
+              </Button>
+              <Button variant="danger" icon={FiXCircle} onClick={onDeclineRequest}>
+                {t('transfers.acceptance.decline')}
+              </Button>
+            </div>
+          </ActionZone>
+        ) : null}
+
         {currentAction?.type === 'confirm_payment_reception' ? (
           <ActionZone description={actionDescription} title={actionTitle}>
+            <TransferClientNote note={clientNote} />
             <Button
               icon={FiCheckCircle}
               onClick={() => onCompleteBusinessStep(TRANSFER_STATUS.RECEIVED)}
@@ -88,6 +149,7 @@ export function TransferWorkflowPanel({
 
         {currentAction?.type === 'confirm_payout' ? (
           <ActionZone description={actionDescription} title={actionTitle}>
+            <TransferClientNote note={clientNote} />
             <TransferRecipientAccountCard transfer={transfer} />
             <label className="grid cursor-pointer gap-2 rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3">
               <span className="flex items-center gap-2 text-sm font-bold">
@@ -192,7 +254,7 @@ export function TransferWorkflowPanel({
           </div>
         ) : null}
 
-        {canCancel ? (
+        {canCancel && currentAction?.type !== 'resolve_acceptance' ? (
           <Button className="justify-self-start" variant="danger" icon={FiXCircle} onClick={onCancel}>
             {t('transfers.workflow.cancelTransfer')}
           </Button>

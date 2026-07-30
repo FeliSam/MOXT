@@ -9,9 +9,11 @@ import { ImageLightbox } from '../../components/ui/ImageLightbox'
 import { useLanguage } from '../../contexts/useLanguage'
 import { professionalText } from '../../features/businesses/professionalI18n'
 import { addToast } from '../../features/ui/uiSlice'
+import { TransferClientNote } from '../../features/transfers/TransferClientNote'
 import { TransferRecipientAccountCard } from '../../features/transfers/TransferRecipientAccountCard'
 import { moderateTransfer } from '../../features/transfers/transferSlice'
 import { TRANSFER_STATUS } from '../../features/transfers/transferConfig'
+import { sortTransfersByNewest } from '../../features/transfers/transferSelectors'
 import {
   canActorPerformBusinessTransferAction,
   canApplyModerateTransfer,
@@ -56,12 +58,14 @@ export function TransfersPanel({ business, dispatch, transfers, user }) {
     )
   }
 
+  const orderedTransfers = sortTransfersByNewest(transfers)
+
   return (
     <div className="grid gap-3">
       {business.services?.includes('Transfert') ? (
         <TransferAccountsPanel business={business} dispatch={dispatch} user={user} />
       ) : null}
-      {transfers.map((transfer) => {
+      {orderedTransfers.map((transfer) => {
         const claimOnly = isClaimOnlyPhase(transfer)
         const canActAsBusiness = canActorPerformBusinessTransferAction(
           transfer,
@@ -128,6 +132,7 @@ export function TransfersPanel({ business, dispatch, transfers, user }) {
             </div>
 
             <TransferRecipientAccountCard transfer={transfer} compact />
+            <TransferClientNote note={transfer.noteToExchanger} compact />
 
             {!claimOnly && awaitingPaymentReception ? (
               <div className="rounded-2xl border border-brand-200 bg-brand-50/40 p-4 dark:border-brand-800 dark:bg-brand-950/20">

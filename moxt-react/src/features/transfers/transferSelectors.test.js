@@ -22,6 +22,24 @@ describe('transferSelectors', () => {
     expect(selectTransfersVisibleToUser(state, 'owner-1').map((item) => item.id)).toEqual(['MXT-1'])
   })
 
+  it('trie les transferts du plus recent au plus ancien', () => {
+    const orderedState = {
+      businesses: { items: [] },
+      transfers: {
+        items: [
+          { id: 'OLD', userId: 'u1', createdAt: '2026-01-01T10:00:00.000Z' },
+          { id: 'NEW', userId: 'u1', createdAt: '2026-07-01T10:00:00.000Z' },
+          { id: 'MID', userId: 'u1', createdAt: '2026-03-01T10:00:00.000Z' },
+        ],
+      },
+    }
+    expect(selectTransfersVisibleToUser(orderedState, 'u1').map((item) => item.id)).toEqual([
+      'NEW',
+      'MID',
+      'OLD',
+    ])
+  })
+
   it('autorise le proprietaire a ouvrir le detail', () => {
     const transfer = state.transfers.items[0]
     expect(canUserAccessTransfer(transfer, { id: 'owner-1' }, ['BIZ-1'])).toBe(true)

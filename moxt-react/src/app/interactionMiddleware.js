@@ -228,16 +228,102 @@ export const interactionMiddleware = (store) => {
   }
 
   if (action.type === 'transfers/createTransfer' && !action.payload?.blocked) {
+    const needsAcceptance = action.payload.status === 'pending_business_acceptance'
     notify(store, {
       userId: action.payload.businessOwnerId,
-      title: appText('notificationsFeed.newTransferReceived'),
-      message: appText('notificationsFeed.newTransferReceivedBody', {
-        name: action.payload.sender?.firstName,
-        id: action.payload.id,
-      }),
+      title: needsAcceptance
+        ? appText('notificationsFeed.transferAcceptanceRequested')
+        : appText('notificationsFeed.newTransferReceived'),
+      message: needsAcceptance
+        ? appText('notificationsFeed.transferAcceptanceRequestedBody', {
+            name: action.payload.sender?.firstName,
+            id: action.payload.id,
+          })
+        : appText('notificationsFeed.newTransferReceivedBody', {
+            name: action.payload.sender?.firstName,
+            id: action.payload.id,
+          }),
       type: 'transfer',
       link: `/transfers/${action.payload.id}`,
+      priority: needsAcceptance ? 'high' : 'normal',
     })
+  }
+
+  if (action.type === 'transfers/acceptTransferRequest') {
+    const transfer = after.transfers.items.find((item) => item.id === action.payload.id)
+    const previous = before.transfers.items.find((item) => item.id === action.payload.id)
+    if (
+      transfer?.userId &&
+      previous?.status !== transfer.status &&
+      transfer.status === 'pending_payment' &&
+      transfer.userId !== actorId
+    ) {
+      notify(store, {
+        userId: transfer.userId,
+        title: appText('notificationsFeed.transferAccepted'),
+        message: appText('notificationsFeed.transferAcceptedBody', { id: transfer.id }),
+        type: 'transfer',
+        link: `/transfers/${transfer.id}`,
+        priority: 'high',
+      })
+    }
+  }
+
+  if (action.type === 'transfers/declineTransferRequest') {
+    const transfer = after.transfers.items.find((item) => item.id === action.payload.id)
+    const previous = before.transfers.items.find((item) => item.id === action.payload.id)
+    if (
+      transfer?.userId &&
+      previous?.status !== transfer.status &&
+      transfer.status === 'business_declined' &&
+      transfer.userId !== actorId
+    ) {
+      notify(store, {
+        userId: transfer.userId,
+        title: appText('notificationsFeed.transferDeclined'),
+        message: appText('notificationsFeed.transferDeclinedBody', { id: transfer.id }),
+        type: 'transfer',
+        link: `/transfers/${transfer.id}`,
+        priority: 'high',
+      })
+    }
+  }
+
+  if (action.type === 'transfers/reassignTransferExchanger') {
+    const transfer = after.transfers.items.find((item) => item.id === action.payload.id)
+    const previous = before.transfers.items.find((item) => item.id === action.payload.id)
+    if (transfer && previous && transfer.businessId !== previous.businessId) {
+      if (previous.businessOwnerId && previous.businessOwnerId !== actorId) {
+        notify(store, {
+          userId: previous.businessOwnerId,
+          title: appText('notificationsFeed.transferReassignedAway'),
+          message: appText('notificationsFeed.transferReassignedAwayBody', { id: transfer.id }),
+          type: 'transfer',
+          link: `/transfers/${transfer.id}`,
+        })
+      }
+      if (transfer.businessOwnerId && transfer.businessOwnerId !== actorId) {
+        const needsAcceptance = transfer.status === 'pending_business_acceptance'
+        notify(store, {
+          userId: transfer.businessOwnerId,
+          title: needsAcceptance
+            ? appText('notificationsFeed.transferAcceptanceRequested')
+            : appText('notificationsFeed.newTransferReceived'),
+          message: needsAcceptance
+            ? appText('notificationsFeed.transferAcceptanceRequestedBody', {
+                name: transfer.sender?.firstName,
+                id: transfer.id,
+              })
+            : appText('notificationsFeed.newTransferReceivedBody', {
+                name: transfer.sender?.firstName,
+                id: transfer.id,
+              }),
+          type: 'transfer',
+          link: `/transfers/${transfer.id}`,
+          priority: 'high',
+        })
+      }
+    }
   }
 
   // Fusion des deux blocs moderateTransfer qui étaient dupliqués
@@ -320,19 +406,39 @@ export const interactionMiddleware = (store) => {
   if (action.type === 'transfers/expireOverdueTransfers') {
     after.transfers.items.forEach((transfer) => {
       const previous = before.transfers.items.find((item) => item.id === transfer.id)
-      if (!previous || previous.status === transfer.status || transfer.status !== 'expired') return
-      ;[transfer.userId, transfer.businessOwnerId]
-        .filter((id) => id && id !== actorId)
-        .forEach((userId) => {
+      if (!previous || previous.status === transfer.status) return
+      if (transfer.status === 'expired') {
+        ;[transfer.userId, transfer.businessOwnerId]
+          .filter((id) => id && id !== actorId)
+          .forEach((userId) => {
+            notify(store, {
+              userId,
+              title: appText('notificationsFeed.transferExpired'),
+              message: appText('notificationsFeed.transferExpiredBody', { id: transfer.id }),
+              type: 'transfer',
+              link: `/transfers/${transfer.id}`,
+              priority: 'high',
+            })
+          })
+        return
+      }
+      if (
+        transfer.status === 'business_declined' &&
+        previous.status === 'pending_business_acceptance'
+      ) {
+        if (transfer.userId && transfer.userId !== actorId) {
           notify(store, {
-            userId,
-            title: appText('notificationsFeed.transferExpired'),
-            message: appText('notificationsFeed.transferExpiredBody', { id: transfer.id }),
+            userId: transfer.userId,
+            title: appText('notificationsFeed.transferAcceptanceExpired'),
+            message: appText('notificationsFeed.transferAcceptanceExpiredBody', {
+              id: transfer.id,
+            }),
             type: 'transfer',
             link: `/transfers/${transfer.id}`,
             priority: 'high',
           })
-        })
+        }
+      }
     })
   }
 
@@ -1021,10 +1127,20 @@ export const interactionMiddleware = (store) => {
       'auth/verifyEmailRegistration/rejected',
     ].includes(action.type)
   ) {
-    const message =
+    const rawMessage =
       typeof action.payload === 'string'
         ? action.payload
         : action.error?.message || appText('toasts.actionCouldNotComplete')
+    // Annulations volontaires (navigation, Strict Mode) — pas une vraie erreur métier.
+    const abortedMessage = String(rawMessage || '').trim()
+    const aborted =
+      action.error?.name === 'AbortError' ||
+      action.meta?.aborted === true ||
+      /abort(ed|error)?/i.test(abortedMessage)
+    if (aborted) {
+      return result
+    }
+    const message = sanitizeUserFacingMessage(rawMessage, appText)
     const rejectedTitles = {
       'auth/requestPhoneVerificationOtp/rejected': appText('toasts.smsSendFailed'),
       'auth/confirmPhoneVerification/rejected': appText('toasts.verificationFailed'),
@@ -1032,7 +1148,7 @@ export const interactionMiddleware = (store) => {
     store.dispatch(
       addToast({
         title: rejectedTitles[action.type] || appText('toasts.genericError'),
-        message: sanitizeUserFacingMessage(message, appText),
+        message,
         tone: 'error',
       }),
     )

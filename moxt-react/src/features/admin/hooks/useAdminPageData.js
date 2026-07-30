@@ -117,7 +117,11 @@ export function useAdminPageData(query, statusFilter, contentView, businessIdFil
         `${i.id} ${i.exchanger?.name || ''} ${i.businessName || ''} ${i.businessId || ''} ${i.sender?.firstName || ''} ${i.recipient?.firstName || ''}`.toLowerCase().includes(q)
       )
     }
-    return items
+    return [...items].sort(
+      (a, b) =>
+        new Date(b.createdAt || b.updatedAt || 0).getTime() -
+        new Date(a.createdAt || a.updatedAt || 0).getTime(),
+    )
   }, [query, statusFilter, businessIdFilter, transferItems, businesses])
 
   const businessTransferRollups = useMemo(

@@ -88,6 +88,8 @@ export function NewTransferPage() {
     (state.account.transferProfiles || []).filter((item) => item.userId === user.id),
   )
   const draft = useMemo(() => readTransferDraft(), [])
+  const requestedExchangerId = searchParams.get('exchangerId') || ''
+  const draftValues = draft?.userId === user.id ? draft.values || {} : {}
   const originCountry = user.originCountry || (user.country !== 'RU' ? user.country : 'BJ')
   const liveRate = useExchangeRate(currencyForCountry(originCountry))
   const initialDirection = user.country === 'RU' ? DIRECTIONS.RU_TO_BJ : DIRECTIONS.BJ_TO_RU
@@ -98,7 +100,6 @@ export function NewTransferPage() {
       sourceCountry: initialInfo.sourceCountry,
       destinationCountry: initialInfo.destinationCountry,
       amount: '',
-      exchangerId: searchParams.get('exchangerId') || '',
       senderFirstName: user.firstName || '',
       senderLastName: user.lastName || '',
       senderPhone: ensurePhoneCountry(user.phone, initialInfo.sourceCountry),
@@ -109,7 +110,8 @@ export function NewTransferPage() {
       recipientMethod: '',
       noteToExchanger: '',
       acceptTerms: false,
-      ...(draft?.userId === user.id ? draft.values : {}),
+      ...draftValues,
+      exchangerId: requestedExchangerId || draftValues.exchangerId || '',
     },
     validationSchema: createTransferSchemas(t).transferSchema,
     onSubmit: (values) => {
@@ -152,6 +154,7 @@ export function NewTransferPage() {
           user,
           exchanger: {
             ...exchanger,
+            transferAcceptanceRequired: business.transferAcceptanceRequired === true,
             paymentAccount: paymentView.paymentAccount,
             paymentDetails: paymentView.paymentDetails,
           },
@@ -212,6 +215,12 @@ export function NewTransferPage() {
     }, 250)
     return () => window.clearTimeout(timeout)
   }, [formik.values, step, user.id])
+
+  useEffect(() => {
+    if (!requestedExchangerId) return
+    if (formik.values.exchangerId === requestedExchangerId) return
+    formik.setFieldValue('exchangerId', requestedExchangerId)
+  }, [formik, formik.values.exchangerId, requestedExchangerId])
 
   useEffect(() => {
     if (!formik.values.exchangerId) return
@@ -557,6 +566,7 @@ export function NewTransferPage() {
                 account={selectedReceivingAccount}
                 direction={formik.values.direction}
                 originCountry={originCountry}
+                clientNote={formik.values.noteToExchanger}
               />
             ) : null}
 

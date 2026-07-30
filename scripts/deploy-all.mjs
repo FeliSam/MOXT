@@ -106,6 +106,9 @@ function maybeGitPush() {
 }
 
 async function deploySupabaseParallel(phase2) {
+  /** Échecs connus / non bloquants pour le site (GUC managé, FCM optionnel). */
+  const softFailIds = new Set(['push', 'push-native'])
+
   const tasks = [
     {
       id: 'smsc',
@@ -151,10 +154,19 @@ async function deploySupabaseParallel(phase2) {
   }
 
   log('2/5', `Supabase (${tasks.length} tâches en parallèle)`)
-  const queue = new TaskQueue({ concurrency: tasks.length, stopOnError: true })
-  const { ok, errors } = await queue.runAll(tasks)
-  if (!ok) {
-    for (const err of errors) console.error(`  ✗ ${err.label}: ${err.message}`)
+  // Ne pas stopper le lot : push/FCM soft-fail ne doit pas empêcher le site.
+  const queue = new TaskQueue({ concurrency: tasks.length, stopOnError: false })
+  const { errors } = await queue.runAll(tasks)
+
+  const hard = errors.filter((err) => !softFailIds.has(err.id))
+  const soft = errors.filter((err) => softFailIds.has(err.id))
+
+  for (const err of soft) {
+    console.warn(`  ⚠ ${err.label} (non bloquant) — ${err.message}`)
+    console.warn('    → le déploiement du site continue')
+  }
+  if (hard.length) {
+    for (const err of hard) console.error(`  ✗ ${err.label}: ${err.message}`)
     return false
   }
   return true
@@ -170,7 +182,19 @@ async function deploySupabaseSequential(phase2) {
     (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY)
   if (hasVapid) {
     log('4/5', 'Push', 'npm run setup:push')
-    if (runNpm('setup:push') !== 0) return false
+    if (runNpm('setup:push') !== 0) {
+      console.warn('  ⚠ setup:push en échec (non bloquant) — le site sera quand même déployé')
+    }
+  }
+  const hasFcm =
+    phase2.FCM_SERVICE_ACCOUNT_PATH ||
+    phase2.FCM_SERVICE_ACCOUNT_JSON ||
+    process.env.FCM_SERVICE_ACCOUNT_PATH
+  if (hasFcm) {
+    log('4b/5', 'FCM', 'npm run setup:push:native')
+    if (runNpm('setup:push:native') !== 0) {
+      console.warn('  ⚠ setup:push:native en échec (non bloquant)')
+    }
   }
   return true
 }

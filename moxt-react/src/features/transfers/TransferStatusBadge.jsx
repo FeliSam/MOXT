@@ -3,7 +3,12 @@ import { useLanguage } from '../../contexts/useLanguage'
 import { TRANSFER_STATUS } from './transferConfig'
 
 const statusConfig = {
+  [TRANSFER_STATUS.PENDING_ACCEPTANCE]: {
+    labelKey: 'transfers.status.pendingAcceptance',
+    tone: 'info',
+  },
   [TRANSFER_STATUS.PENDING]: { labelKey: 'transfers.status.pending', tone: 'warning' },
+  [TRANSFER_STATUS.DECLINED]: { labelKey: 'transfers.status.businessDeclined', tone: 'danger' },
   [TRANSFER_STATUS.DECLARED]: { labelKey: 'transfers.status.declared', tone: 'info' },
   [TRANSFER_STATUS.RECEIVED]: { labelKey: 'transfers.status.received', tone: 'success' },
   [TRANSFER_STATUS.PROCESSING]: { labelKey: 'transfers.status.processing', tone: 'violet' },

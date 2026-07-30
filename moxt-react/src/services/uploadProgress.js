@@ -7,6 +7,7 @@ export const UPLOAD_PHASES = {
   preparing: 'preparing',
   compressing: 'compressing',
   uploading: 'uploading',
+  downloading: 'downloading',
   finalizing: 'finalizing',
   done: 'done',
   error: 'error',

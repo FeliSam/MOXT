@@ -9,7 +9,9 @@ export const TRANSFER_PROGRESS_STEPS = [
 ]
 
 export const transferTimelineLabelKeys = {
+  [TRANSFER_STATUS.PENDING_ACCEPTANCE]: 'transfers.timeline.pendingAcceptance',
   [TRANSFER_STATUS.PENDING]: 'transfers.timeline.pending',
+  [TRANSFER_STATUS.DECLINED]: 'transfers.timeline.businessDeclined',
   [TRANSFER_STATUS.DECLARED]: 'transfers.timeline.declared',
   [TRANSFER_STATUS.RECEIVED]: 'transfers.timeline.received',
   [TRANSFER_STATUS.PROCESSING]: 'transfers.timeline.processing',
@@ -32,9 +34,17 @@ export const transferTimelineLabels = {
 }
 
 export const transferNextStepConfigKeys = {
+  [TRANSFER_STATUS.PENDING_ACCEPTANCE]: {
+    titleKey: 'transfers.nextStep.pendingAcceptance.title',
+    descriptionKey: 'transfers.nextStep.pendingAcceptance.description',
+  },
   [TRANSFER_STATUS.PENDING]: {
     titleKey: 'transfers.nextStep.pending.title',
     descriptionKey: 'transfers.nextStep.pending.description',
+  },
+  [TRANSFER_STATUS.DECLINED]: {
+    titleKey: 'transfers.nextStep.businessDeclined.title',
+    descriptionKey: 'transfers.nextStep.businessDeclined.description',
   },
   [TRANSFER_STATUS.DECLARED]: {
     titleKey: 'transfers.nextStep.declared.title',
@@ -64,10 +74,19 @@ export const transferNextStepConfigKeys = {
 
 /** @deprecated Prefer transferNextStepConfigKeys + t() */
 export const transferNextStepConfig = {
+  [TRANSFER_STATUS.PENDING_ACCEPTANCE]: {
+    title: 'En attente d’acceptation',
+    description:
+      'L’échangeur doit accepter la demande sous 10 minutes avant que le paiement soit possible.',
+  },
   [TRANSFER_STATUS.PENDING]: {
     title: 'Action attendue du client',
     description:
       'Ajoutez une preuve puis déclarez le paiement. L’entreprise sera notifiée automatiquement.',
+  },
+  [TRANSFER_STATUS.DECLINED]: {
+    title: 'Échangeur indisponible',
+    description: 'Choisissez un autre échangeur ou annulez ce transfert.',
   },
   [TRANSFER_STATUS.DECLARED]: {
     title: 'Action attendue de l’entreprise',

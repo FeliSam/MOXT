@@ -13,6 +13,7 @@ import { Modal } from '../components/ui/Modal'
 import { useLanguage } from '../contexts/useLanguage'
 import { TransferCalculator } from '../features/transfers/TransferCalculator'
 import { TransferStatusBadge } from '../features/transfers/TransferStatusBadge'
+import { statusLabelKey } from '../features/transfers/exchanger/statusLabels'
 import { expireOverdueTransfers } from '../features/transfers/transferSlice'
 import { selectTransfersVisibleToUser } from '../features/transfers/transferSelectors'
 import { refreshVisibleTransfers } from '../features/transfers/transferSync'
@@ -44,15 +45,17 @@ export function TransfersPage() {
   const p2pOrders = useSelector((state) => state.p2p.orders)
   const visibleTransfers = useMemo(
     () =>
-      transfers.filter(
-        (transfer) =>
-          (!status || transfer.status === status) &&
-          (!query ||
-            transfer.id.toLowerCase().includes(query.toLowerCase()) ||
-            transfer.recipient.firstName.toLowerCase().includes(query.toLowerCase()) ||
-            transfer.recipient.lastName.toLowerCase().includes(query.toLowerCase()) ||
-            transfer.exchanger?.name?.toLowerCase().includes(query.toLowerCase())),
-      ),
+      transfers
+        .filter(
+          (transfer) =>
+            (!status || transfer.status === status) &&
+            (!query ||
+              transfer.id.toLowerCase().includes(query.toLowerCase()) ||
+              transfer.recipient.firstName.toLowerCase().includes(query.toLowerCase()) ||
+              transfer.recipient.lastName.toLowerCase().includes(query.toLowerCase()) ||
+              transfer.exchanger?.name?.toLowerCase().includes(query.toLowerCase())),
+        )
+        .sort((a, b) => new Date(b.createdAt || b.updatedAt || 0) - new Date(a.createdAt || a.updatedAt || 0)),
     [query, status, transfers],
   )
   const myP2pOrders = useMemo(
@@ -144,7 +147,7 @@ export function TransfersPage() {
                 <option value="">{t('transfers.history.allStatuses')}</option>
                 {[...new Set(transfers.map((transfer) => transfer.status))].map((value) => (
                   <option key={value} value={value}>
-                    {value}
+                    {t(statusLabelKey(value))}
                   </option>
                 ))}
               </Select>

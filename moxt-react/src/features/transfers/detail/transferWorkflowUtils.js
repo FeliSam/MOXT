@@ -3,6 +3,7 @@ import { getTransferProgressState } from '../transferProgressUtils'
 import { isClaimOnlyPhase } from '../transferActionUtils'
 
 const CLIENT_WAITING_KEYS = {
+  [TRANSFER_STATUS.PENDING_ACCEPTANCE]: 'transfers.workflow.clientWaiting.pendingAcceptance',
   [TRANSFER_STATUS.DECLARED]: 'transfers.workflow.clientWaiting.declared',
   [TRANSFER_STATUS.RECEIVED]: 'transfers.workflow.clientWaiting.received',
   [TRANSFER_STATUS.PAID_OUT]: 'transfers.workflow.clientWaiting.paidOut',
@@ -31,6 +32,20 @@ export function getTransferWorkflowForView(transfer, actionView, access) {
   }
 
   if (actionView === 'business' || (actionView === 'admin' && access.isBusinessViewer)) {
+    if (access.canAcceptRequest) {
+      return {
+        steps,
+        activeIndex,
+        completedCount,
+        activeStep,
+        currentAction: {
+          type: 'accept_request',
+          titleKey: 'transfers.workflow.actions.acceptRequest.title',
+          descriptionKey: 'transfers.workflow.actions.acceptRequest.description',
+        },
+        waitingMessageKey: null,
+      }
+    }
     if (access.canConfirmPaymentReception) {
       return {
         steps,
@@ -71,6 +86,34 @@ export function getTransferWorkflowForView(transfer, actionView, access) {
   }
 
   if (actionView === 'client' || (actionView === 'admin' && access.isSender)) {
+    if (access.canReassignExchanger || transfer.status === TRANSFER_STATUS.DECLINED) {
+      return {
+        steps,
+        activeIndex,
+        completedCount,
+        activeStep,
+        currentAction: {
+          type: 'resolve_acceptance',
+          titleKey: 'transfers.workflow.actions.resolveAcceptance.title',
+          descriptionKey: 'transfers.workflow.actions.resolveAcceptance.description',
+        },
+        waitingMessageKey: null,
+      }
+    }
+    if (transfer.status === TRANSFER_STATUS.PENDING_ACCEPTANCE) {
+      return {
+        steps,
+        activeIndex,
+        completedCount,
+        activeStep,
+        currentAction: {
+          type: 'wait_acceptance',
+          titleKey: 'transfers.workflow.actions.waitAcceptance.title',
+          descriptionKey: 'transfers.workflow.actions.waitAcceptance.description',
+        },
+        waitingMessageKey: null,
+      }
+    }
     if (access.canDeclare) {
       return {
         steps,

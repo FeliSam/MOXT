@@ -175,6 +175,7 @@ export function businessToExchangerOption(
     feePercent: Number(business.feePercent || 0),
     rateReductionToRu: Math.min(15, Math.max(0, Number(business.rateReductionToRu) || 0)),
     rateReductionFromRu: Math.min(15, Math.max(0, Number(business.rateReductionFromRu) || 0)),
+    transferAcceptanceRequired: business.transferAcceptanceRequired === true,
     averageDelay: business.averageDelay || toConfirmLabel,
     methods: business.exchangeMethods || business.paymentMethods || [],
     logoUrl: business.logoUrl || '',

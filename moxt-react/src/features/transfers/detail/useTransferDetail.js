@@ -29,10 +29,10 @@ export function useTransferDetail(transferId, user) {
 
   useEffect(() => {
     if (!transferId || !user?.id) return undefined
-    const promise = dispatch(ensureTransferFromRemote(transferId))
-    return () => {
-      promise.abort?.()
-    }
+    // Ne pas abort() au cleanup : React Strict Mode / navigation annulait le thunk
+    // et déclenchait un toast « Aborted » via interactionMiddleware.
+    void dispatch(ensureTransferFromRemote(transferId))
+    return undefined
   }, [dispatch, transferId, user?.id])
 
   // Rafraîchissement périodique + focus : les actions de l'autre partie

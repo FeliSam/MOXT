@@ -30,7 +30,9 @@ function countByMonth(items, key = 'createdAt', monthsBack = 6) {
 }
 
 const STATUS_LABEL_KEYS = {
+  [TRANSFER_STATUS.PENDING_ACCEPTANCE]: 'transfers.status.pendingAcceptance',
   [TRANSFER_STATUS.PENDING]: 'transfers.status.pending',
+  [TRANSFER_STATUS.DECLINED]: 'transfers.status.businessDeclined',
   [TRANSFER_STATUS.DECLARED]: 'transfers.status.declared',
   [TRANSFER_STATUS.RECEIVED]: 'transfers.status.received',
   [TRANSFER_STATUS.PROCESSING]: 'transfers.status.processing',
@@ -41,7 +43,9 @@ const STATUS_LABEL_KEYS = {
 }
 
 const STATUS_TONES = {
+  [TRANSFER_STATUS.PENDING_ACCEPTANCE]: 'brand',
   [TRANSFER_STATUS.PENDING]: 'amber',
+  [TRANSFER_STATUS.DECLINED]: 'rose',
   [TRANSFER_STATUS.DECLARED]: 'brand',
   [TRANSFER_STATUS.RECEIVED]: 'teal',
   [TRANSFER_STATUS.PROCESSING]: 'violet',

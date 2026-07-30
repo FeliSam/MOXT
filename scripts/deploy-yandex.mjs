@@ -233,18 +233,28 @@ async function main() {
     }
   } else {
     const maxAttempts = Number(process.env.MOXT_DEPLOY_MAX_ATTEMPTS || 3)
-    const result = await runSafeDistUpload(ycPath(), bucket, plan.toUpload, {
+    let result = await runSafeDistUpload(ycPath(), bucket, plan.toUpload, {
       concurrency: uploadConcurrency,
       transport: uploadTransport,
       s3Client,
       maxAttempts,
     })
+
+    // Réseau S3 instable → bascule automatique sur yc (évite un 2e lancement manuel).
+    if (!result.ok && uploadTransport === 's3' && !forceYc) {
+      console.warn('\n  ⚠ Upload S3 incomplet — nouvelle tentative via yc CLI…')
+      result = await runSafeDistUpload(ycPath(), bucket, plan.toUpload, {
+        concurrency: 12,
+        transport: 'yc',
+        s3Client: null,
+        maxAttempts,
+      })
+    }
+
     console.log(`  ✓ ${result.uploaded} envoyés${result.failed ? ` — ✗ ${result.failed} échec(s)` : ''}`)
     if (!result.ok) {
       console.error('\n  ✗ Déploiement interrompu — version précédente conservée (shell non basculé ou restauré)')
-      if (uploadTransport === 's3') {
-        console.error('  Astuce : npm run deploy:yandex -- --transport=yc --purge-cdn')
-      }
+      console.error('  Astuce : npm run deploy:web:yc')
       process.exit(1)
     }
 

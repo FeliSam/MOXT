@@ -2,6 +2,7 @@ import { TRANSFER_STATUS } from './transferConfig'
 import { directionInfo, getTransferPricing } from './transferUtils'
 
 const PIPELINE_STATUSES = [
+  TRANSFER_STATUS.PENDING_ACCEPTANCE,
   TRANSFER_STATUS.PENDING,
   TRANSFER_STATUS.DECLARED,
   TRANSFER_STATUS.RECEIVED,
@@ -10,7 +11,9 @@ const PIPELINE_STATUSES = [
 ]
 
 const STATUS_ORDER = [
+  TRANSFER_STATUS.PENDING_ACCEPTANCE,
   TRANSFER_STATUS.PENDING,
+  TRANSFER_STATUS.DECLINED,
   TRANSFER_STATUS.DECLARED,
   TRANSFER_STATUS.RECEIVED,
   TRANSFER_STATUS.PROCESSING,
@@ -52,6 +55,8 @@ function monthBuckets(monthsBack = 6) {
       key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
       created: 0,
       completed: 0,
+      volumeCreated: 0,
+      volumeCompleted: 0,
     }
   })
 }
@@ -82,6 +87,7 @@ export function computeBusinessTransferStats(transfers = [], rating = {}) {
     else byStatus[status] = 1
 
     if (
+      status === TRANSFER_STATUS.PENDING_ACCEPTANCE ||
       status === TRANSFER_STATUS.DECLARED ||
       status === TRANSFER_STATUS.RECEIVED
     ) {
@@ -105,7 +111,10 @@ export function computeBusinessTransferStats(transfers = [], rating = {}) {
     if (createdAt) {
       const monthKey = `${createdAt.getFullYear()}-${String(createdAt.getMonth() + 1).padStart(2, '0')}`
       const bucket = createdByMonth.find((m) => m.key === monthKey)
-      if (bucket) bucket.created += 1
+      if (bucket) {
+        bucket.created += 1
+        bucket.volumeCreated += Number(pricing.totalToPay) || 0
+      }
     }
 
     if (status === TRANSFER_STATUS.COMPLETED) {
@@ -114,7 +123,12 @@ export function computeBusinessTransferStats(transfers = [], rating = {}) {
       if (completedAt) {
         const monthKey = `${completedAt.getFullYear()}-${String(completedAt.getMonth() + 1).padStart(2, '0')}`
         const bucket = createdByMonth.find((m) => m.key === monthKey)
-        if (bucket) bucket.completed += 1
+        if (bucket) {
+          bucket.completed += 1
+          const received =
+            Number(transfer.amountReceived) || Number(pricing.amountReceived) || 0
+          bucket.volumeCompleted += received
+        }
       }
     }
 
@@ -156,6 +170,13 @@ export function computeBusinessTransferStats(transfers = [], rating = {}) {
       }))
       .sort((a, b) => b.amount - a.amount)
 
+  const monthly = createdByMonth.map((bucket) => ({
+    ...bucket,
+    count: bucket.created,
+    volumeCreated: Math.round(bucket.volumeCreated * 100) / 100,
+    volumeCompleted: Math.round(bucket.volumeCompleted * 100) / 100,
+  }))
+
   return {
     total: list.length,
     inPipeline,
@@ -176,10 +197,7 @@ export function computeBusinessTransferStats(transfers = [], rating = {}) {
       receivedToPayoutHours: avgHours(receiveToPayoutMs),
       payoutToCompletedHours: avgHours(payoutToCompletedMs),
     },
-    monthly: createdByMonth.map((bucket) => ({
-      ...bucket,
-      count: bucket.created,
-    })),
+    monthly,
     rating: {
       average: rating?.average ?? null,
       count: rating?.count ?? 0,

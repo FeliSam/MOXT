@@ -117,7 +117,10 @@ async function ship() {
   const deployArgs = ['--parallel', '--purge-cdn']
   if (argv.includes('--purge-cdn')) deployArgs.push('--purge-cdn')
   if (argv.includes('--skip-web')) deployArgs.push('--skip-web')
-  if (argv.includes('--skip-supabase')) deployArgs.push('--skip-supabase')
+  if (argv.includes('--skip-supabase')) {
+    deployArgs.push('--skip-supabase')
+    console.log('\n  ℹ Mode rapide : Supabase (SMSC/push) ignoré — site seulement')
+  }
 
   if (runNode('deploy-all.mjs', deployArgs) !== 0) process.exit(1)
 
@@ -180,24 +183,30 @@ MOXT CLI — npm run moxt -- <commande>
 Documentation complète : scripts/RACCOURCIS.md
 
 Raccourcis npm :
-  npm run tout -- -m "message"   TOUT : commit + push + deploy parallèle + CDN
-  npm run ship -- -m "message"   idem tout
-  npm run fix                    tests + checks en parallèle
-  npm run check:push             vérif notifications push
+  npm run cpd -- -m "message"       Quotidien : commit + push + site (sans SMSC/push)
+  npm run cpd:full -- -m "message"  Complet : + migrations + Supabase
+  npm run deploy:web                Site seul (+ purge CDN)
+  npm run deploy:web:yc             Site via yc (si S3 instable)
+  npm run preflight                 lint + i18n + tests web
+  npm run i18n:check                Clés FR/EN/RU/ES/PT alignées
+  npm run tout -- -m "message"      Alias cpd:full
+  npm run fix                       tests + checks en parallèle
+  npm run check:push                vérif notifications push
 
 Commandes :
-  ship | go | cpd | tout   Commit (si -m), push, deploy parallèle
+  ship | go | cpd | tout   Commit (si -m), push, deploy
   deploy                   Deploy sans git
   fix                      Tests + site + SMSC en parallèle
   check-push               Web VAPID + Capacitor + FCM
   help                     Cette aide
 
 Flags :
-  -m "message"    Message de commit
-  --no-commit    Push + deploy sans commit
-  --purge-cdn     Purge CDN Yandex (défaut sur ship/tout/cpd/go)
-  --skip-web      Sauter le site
-  --skip-supabase Sauter Supabase
+  -m "message"     Message de commit
+  --no-commit     Push + deploy sans commit
+  --purge-cdn      Purge CDN Yandex (défaut sur ship/tout/cpd/go)
+  --skip-web       Sauter le site
+  --skip-supabase  Sauter Supabase (défaut de npm run cpd)
+  --skip-checks    Sauter lint + tests (urgence seulement)
 `)
 }
 

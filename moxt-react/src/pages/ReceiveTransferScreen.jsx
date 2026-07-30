@@ -16,6 +16,7 @@ import { useTransferReceiveForm } from '../features/transfers/useTransferReceive
 import { canClientDeclareReception } from '../features/transfers/transferActionUtils'
 import { formatMoney } from '../features/transfers/transferUtils'
 import { ReceiveTransferForm } from '../features/transfers/ReceiveTransferForm'
+import { TransferClientNote } from '../features/transfers/TransferClientNote'
 
 function copyText(text, dispatch, label, t) {
   if (!text || !navigator.clipboard) return
@@ -299,6 +300,7 @@ export function ReceiveTransferScreen() {
           >
             {t('transfers.receive.copyCoordinates')}
           </Button>
+          <TransferClientNote note={transfer.noteToExchanger} />
         </Card>
       ) : null}
 

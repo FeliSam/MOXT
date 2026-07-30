@@ -6,28 +6,50 @@ Commandes pour aller vite au quotidien. Toutes s’exécutent à la racine du d�
 
 | Commande | Action |
 |----------|--------|
-| `npm run tout -- -m "message"` | **Tout en une fois** : commit + push + migrations + Supabase (parallèle) + site Yandex + purge CDN |
-| `npm run ship -- -m "message"` | Identique à `tout` |
+| `npm run cpd -- -m "message"` | **Quotidien** : commit + push + site Yandex (+ lint/tests). **Sans** SMSC/push |
+| `npm run cpd:web -- -m "message"` | Identique à `cpd` |
+| `npm run cpd:full -- -m "message"` | Complet : + migrations + Supabase (push soft-fail si GUC managé) |
+| `npm run tout -- -m "message"` | Identique à `cpd:full` |
+| `npm run ship -- -m "message"` | Identique à `cpd:full` |
 | `npm run go -- -m "message"` | Identique (message via `MOXT_COMMIT_MSG` possible) |
-| `npm run cpd -- -m "message"` | Identique (commit · push · deploy) |
 
-**Exemple :**
+**Exemple quotidien (UI / front) :**
 ```bash
-npm run tout -- -m "fix inscription SMS"
+npm run cpd -- -m "fix dashboard echangeur responsive"
+```
+
+**Exemple release / infra :**
+```bash
+npm run cpd:full -- -m "chore: migrations + sms"
 ```
 
 Sans `-m` si rien à committer (push + deploy seulement) :
 ```bash
-npm run tout -- --no-commit
+npm run cpd -- --no-commit
 ```
 
-### Détail du pipeline `tout` / `ship`
+### Détail du pipeline
 
-1. **Git commit** — si fichiers modifiés et `-m "message"` fourni  
-2. **Git push** — `origin HEAD`  
-3. **Migrations** — `npm run db:push`  
-4. **Supabase en parallèle** — `setup:smsc`, `setup:admin-promote`, `setup:push` (+ natif si FCM configuré)  
-5. **Site Yandex** — build prod + upload + purge CDN  
+**`cpd` / `cpd:web`**
+1. Lint + tests (bloquant)
+2. Git commit + push
+3. Site Yandex (build + upload + purge CDN)
+
+**`cpd:full` / `tout` / `ship`**
+1. Lint + tests
+2. Git commit + push
+3. Migrations Supabase
+4. Supabase parallèle (SMSC, admin ; push/FCM **non bloquants** si échec GUC)
+5. Site Yandex
+
+### Éviter les erreurs fréquentes
+
+| Problème | Réflexe |
+|----------|---------|
+| Clés i18n manquantes | `npm run i18n:check` avant commit |
+| Avant un gros ship | `npm run preflight` |
+| Upload S3 `ECONNRESET` | retry auto via yc ; sinon `npm run deploy:web:yc` |
+| `setup:push` / secret GUC | non bloquant désormais ; site continue |
 
 ---
 
@@ -35,9 +57,11 @@ npm run tout -- --no-commit
 
 | Commande | Description |
 |----------|-------------|
+| `npm run deploy:web` | Site uniquement (build + upload + purge CDN) |
+| `npm run deploy:web:yc` | Site via transport `yc` (réseau S3 instable) |
 | `npm run deploy:all` | Migrations + Supabase parallèle + Yandex (sans git) |
 | `npm run deploy:all -- --purge-cdn` | + invalidation cache CDN |
-| `npm run web:deploy:yandex` | Site uniquement (build + upload) |
+| `npm run web:deploy:yandex` | Site (sans purge CDN forcée) |
 | `npm run db:push` | Migrations Supabase uniquement |
 
 ---
@@ -85,6 +109,8 @@ Safari : au retour d’onglet / bfcache, l’app re-sync `email_confirmed_at` vi
 
 | Commande | Description |
 |----------|-------------|
+| `npm run preflight` | Lint + i18n + tests web (avant un gros deploy) |
+| `npm run i18n:check` | Même clés FR / EN / RU / ES / PT |
 | `npm run fix` | Tests + `check:site` + `check:smsc` **en parallèle** |
 | `npm run check:push` | État push web + Capacitor Android/iOS |
 | `npm run check:rustore` | Auth RuStore (keyId + PEM ou Base64 modal) |

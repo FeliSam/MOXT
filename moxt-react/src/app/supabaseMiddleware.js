@@ -103,6 +103,13 @@ function toSnake(obj) {
     averageDelay: 'average_delay',
     exchangeMethods: 'exchange_methods',
     transferAccounts: 'transfer_accounts',
+    transferAcceptanceRequired: 'transfer_acceptance_required',
+    // acceptance_* : optionnels (migration) — le sync écrit surtout dans payload jsonb
+    acceptanceRequired: 'acceptance_required',
+    acceptanceRequestedAt: 'acceptance_requested_at',
+    acceptanceExpiresAt: 'acceptance_expires_at',
+    acceptanceResolvedAt: 'acceptance_resolved_at',
+    previousBusinessId: 'previous_business_id',
     serviceZones: 'service_zones',
     scheduleType: 'schedule_type',
     scheduleSummary: 'schedule_summary',
@@ -299,6 +306,7 @@ async function syncActiveDispute(state, payload) {
   if (!dispute) return
   await insertRow('disputes', {
     id: dispute.id,
+    opened_by: dispute.openedBy || dispute.reporterId,
     reporter_id: dispute.reporterId || dispute.openedBy,
     business_id: dispute.businessId || null,
     related_type: dispute.relatedType,
@@ -834,6 +842,12 @@ const handlers = {
           { cause: error },
         )
       }
+      if (/acceptance_expires_at|acceptance_required|acceptance_requested_at|acceptance_resolved_at|previous_business_id/i.test(message)) {
+        throw new Error(
+          "Schéma transferts obsolète (colonnes d’acceptation). Les champs sont désormais dans payload — rechargez l’app après déploiement.",
+          { cause: error },
+        )
+      }
       throw error
     }
     triggerEmail(payload.id, 'created').catch(() => {})
@@ -885,6 +899,66 @@ const handlers = {
       updatedAt: transfer.updatedAt,
       payload: buildTransferRemotePayload(transfer),
     })
+  },
+  'transfers/acceptTransferRequest': async (payload, state) => {
+    const transfer = state.transfers.items.find((t) => t.id === payload.id)
+    if (!transfer) return
+    await update('transfers', transfer.id, {
+      status: transfer.status,
+      timeline: transfer.timeline,
+      paymentDeadlineAt: transfer.paymentDeadlineAt,
+      exchanger: transfer.exchanger,
+      updatedAt: transfer.updatedAt,
+      payload: buildTransferRemotePayload(transfer),
+    })
+  },
+  'transfers/declineTransferRequest': async (payload, state) => {
+    const transfer = state.transfers.items.find((t) => t.id === payload.id)
+    if (!transfer) return
+    await update('transfers', transfer.id, {
+      status: transfer.status,
+      timeline: transfer.timeline,
+      updatedAt: transfer.updatedAt,
+      payload: buildTransferRemotePayload(transfer),
+    })
+  },
+  'transfers/reassignTransferExchanger': async (payload, state) => {
+    const transfer = state.transfers.items.find((t) => t.id === payload.id)
+    if (!transfer) return
+    await update('transfers', transfer.id, {
+      status: transfer.status,
+      businessId: transfer.businessId,
+      businessOwnerId: transfer.businessOwnerId,
+      exchanger: transfer.exchanger,
+      timeline: transfer.timeline,
+      paymentDeadlineAt: transfer.paymentDeadlineAt,
+      amount: transfer.amountSent,
+      fee: transfer.fees ?? transfer.fee ?? 0,
+      receivedAmount: transfer.amountReceived,
+      rate: transfer.rate,
+      rateDate: transfer.rateDate,
+      rateSource: transfer.rateSource,
+      updatedAt: transfer.updatedAt,
+      payload: buildTransferRemotePayload(transfer),
+    })
+  },
+  'transfers/expireOverdueTransfers': async (_payload, state, _dispatch, beforeState) => {
+    const beforeItems = beforeState?.transfers?.items || []
+    const afterItems = state.transfers.items || []
+    const changed = afterItems.filter((transfer) => {
+      const previous = beforeItems.find((item) => item.id === transfer.id)
+      return previous && previous.status !== transfer.status
+    })
+    await Promise.all(
+      changed.map((transfer) =>
+        update('transfers', transfer.id, {
+          status: transfer.status,
+          timeline: transfer.timeline,
+          updatedAt: transfer.updatedAt,
+          payload: buildTransferRemotePayload(transfer),
+        }),
+      ),
+    )
   },
 
   // ── P2P ───────────────────────────────────────────────────────────────────────
@@ -1664,8 +1738,10 @@ const handlers = {
     }
   },
   'businesses/updateBusinessTransferPricing': async (payload, state) => {
+    const isStaff = ['admin', 'superadmin', 'moderator'].includes(payload.actorRole)
     const business = state.businesses.items.find(
-      (item) => item.id === payload.businessId && item.ownerId === payload.ownerId,
+      (item) =>
+        item.id === payload.businessId && (isStaff || item.ownerId === payload.ownerId),
     )
     if (business) await saveBusinessRemote(business)
   },
@@ -1719,11 +1795,12 @@ const handlers = {
 // ─── Middleware ────────────────────────────────────────────────────────────────
 
 export const supabaseMiddleware = (store) => (next) => (action) => {
+  const beforeState = store.getState()
   const result = next(action)
 
   const handler = handlers[action.type]
   if (handler && supabase) {
-    withRetry(() => handler(action.payload, store.getState(), store.dispatch))
+    withRetry(() => handler(action.payload, store.getState(), store.dispatch, beforeState))
       .then(() => {
         if (action.type === 'communications/sendMessage') {
           const messageId = action.payload?.message?.id
@@ -1741,6 +1818,9 @@ export const supabaseMiddleware = (store) => (next) => (action) => {
       })
       .catch((err) => {
       console.warn('[Supabase]', action.type, err?.message || err)
+      const aborted =
+        err?.name === 'AbortError' || /^aborted$/i.test(String(err?.message || '').trim())
+      if (aborted) return
       if (action.type === 'communications/sendMessage') {
         const messageId = action.payload?.message?.id
         if (messageId) {

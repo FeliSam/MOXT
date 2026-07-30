@@ -93,6 +93,8 @@ const businessSlice = createSlice({
             transferAccounts: values.services?.includes('Transfert')
               ? (values.transferAccounts || []).map(normalizeTransferAccount)
               : [],
+            transferAcceptanceRequired:
+              values.services?.includes('Transfert') && values.transferAcceptanceRequired === true,
             services: values.services || [],
             status: values.status || 'pending_review',
             activityVisibility: values.activityVisibility || 'public',
@@ -155,10 +157,14 @@ const businessSlice = createSlice({
       business.updatedAt = new Date().toISOString()
     },
     updateBusinessTransferPricing(state, action) {
+      const isStaff = ['admin', 'superadmin', 'moderator'].includes(action.payload.actorRole)
       const business = state.items.find(
-        (item) => item.id === action.payload.businessId && item.ownerId === action.payload.ownerId,
+        (item) =>
+          item.id === action.payload.businessId &&
+          (isStaff || item.ownerId === action.payload.ownerId),
       )
-      if (!business || !business.services?.includes('Transfert')) return
+      if (!business) return
+      if (!isStaff && !business.services?.includes('Transfert')) return
       if (action.payload.feePercent != null) {
         business.feePercent = Math.max(0, Number(action.payload.feePercent) || 0)
       }
@@ -173,6 +179,9 @@ const businessSlice = createSlice({
           15,
           Math.max(0, Number(action.payload.rateReductionFromRu) || 0),
         )
+      }
+      if (action.payload.transferAcceptanceRequired != null) {
+        business.transferAcceptanceRequired = action.payload.transferAcceptanceRequired === true
       }
       business.updatedAt = new Date().toISOString()
     },

@@ -46,6 +46,8 @@ export function businessFromRemoteRow(row, { ownerOriginCountry } = {}) {
     deletedByUserAt: base.deletedByUserAt || payload.deletedByUserAt || null,
     hours: base.hours || payload.hours || base.scheduleSummary || '',
     transferAccounts: sanitizeTransferAccounts(base.transferAccounts || payload.transferAccounts, originHint),
+    transferAcceptanceRequired:
+      base.transferAcceptanceRequired === true || payload.transferAcceptanceRequired === true,
     ownerOriginCountry: normalizeTransferCountryCode(originHint, 'BJ'),
   }
 }
@@ -88,6 +90,7 @@ export function businessToRemoteRow(business) {
     schedule: business.schedule || [],
     payload: {
       hours: business.hours?.trim() || business.scheduleSummary || '',
+      transferAcceptanceRequired: business.transferAcceptanceRequired === true,
       ...(business.deletedByUserAt ? { deletedByUserAt: business.deletedByUserAt } : {}),
     },
     rating: Number(business.rating) || 0,

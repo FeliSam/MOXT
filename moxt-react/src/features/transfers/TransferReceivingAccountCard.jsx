@@ -3,6 +3,7 @@ import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { useLanguage } from '../../contexts/useLanguage'
+import { TransferClientNote } from './TransferClientNote'
 import {
   countryLabel,
   receivingSlotForDirection,
@@ -17,6 +18,7 @@ export function TransferReceivingAccountCard({
   onCopy,
   className = '',
   compact = false,
+  clientNote = null,
 }) {
   const { t } = useLanguage()
   const slotMeta = transferAccountSlotMeta(receivingSlotForDirection(direction), originCountry)
@@ -41,6 +43,7 @@ export function TransferReceivingAccountCard({
             </p>
           </div>
         </div>
+        <TransferClientNote note={clientNote} className="mt-4" compact={compact} />
       </Card>
     )
   }
@@ -104,6 +107,8 @@ export function TransferReceivingAccountCard({
           {t('transfers.receivingAccount.copyDetails')}
         </Button>
       ) : null}
+
+      <TransferClientNote note={clientNote} className="mt-4" compact={compact} />
     </Card>
   )
 }

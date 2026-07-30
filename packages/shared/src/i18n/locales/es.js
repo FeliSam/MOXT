@@ -1295,6 +1295,7 @@ export const es = {
         preparing: "Preparación",
         compressing: "Optimización",
         uploading: "Envío",
+        downloading: "Descarga",
         finalizing: "Finalización",
         done: "Listo",
         error: "Error de envío",
@@ -3641,6 +3642,8 @@ export const es = {
       awaiting: "Por tratar",
       active: "Pipeline activo",
       volume: "Volumen del mes",
+      volumeRub: "Volumen RUB · mes",
+      volumeLocal: "Volumen {currency} · mes",
       completion: "Tasa de finalización",
       rating: "Nota media",
       avgDelay: "Retraso medio",
@@ -3652,15 +3655,25 @@ export const es = {
       monthlyTitle: "Volúmenes · 6 meses",
       created: "Creadas",
       completed: "Completadas",
+      countSeries: "Tendencia · creadas / completadas",
+      volumeSeries: "Volúmenes monetarios · creadas / completadas",
+      volumeCreated: "Volumen creado",
+      volumeCompleted: "Volumen completado",
+      trendTitle: "Tendencia · mes actual",
+      trendCompare: "{current} vs {previous}",
       dayDetail: "Detalle del {date}",
-      daySummary: "{count} transferencia(s) · volumen ~ {volume}",
+      daySummary:
+        "{count} creadas · {completed} completadas · volumen ~ {volume}",
       noTransfers: "Ninguna transferencia en este período.",
+      scrollHint: "Desliza horizontalmente para ver todo el período",
     },
     queue: {
       actionTitle: "Cola de acciones",
       actionEmpty: "Nada pendiente de tu lado.",
       client: "Cliente",
       deadline: "Plazo de pago: {date}",
+      showMore: "Ver {count} más",
+      showLess: "Mostrar menos",
     },
     pipeline: {
       title: "Pipeline por estado",
@@ -3692,6 +3705,7 @@ export const es = {
       proofReadyBody: "El justificante está listo.",
       uploadFailedTitle: "Envío imposible",
       uploadFailedBody: "No se pudo enviar el justificante.",
+      uploadAuthRequired: "Sign in again to upload the proof.",
       errorTitle: "Acción imposible",
       receptionBlocked: "La recepción ya fue confirmada o el estado cambió.",
       proofRequired: "Añade una prueba de pago antes de confirmar.",
@@ -3723,6 +3737,8 @@ export const es = {
       ruToAfrica: "Rusia → África"
     },
     status: {
+      pendingAcceptance: "Awaiting acceptance",
+      businessDeclined: "Exchanger unavailable",
       pending: "Pagamento pendiente",
       declared: "Pagamento declarado",
       received: "Pagamento recebido",
@@ -3741,6 +3757,8 @@ export const es = {
       completed: "Concluído"
     },
     timeline: {
+      pendingAcceptance: "Request sent to exchanger",
+      businessDeclined: "Exchanger unavailable (declined or timed out)",
       pending: "Transferencia criada, pagamento pendiente",
       declared: "Pagamento declarado pelo cliente",
       received: "Pagamento recebido pelo parceiro",
@@ -3751,6 +3769,14 @@ export const es = {
       expired: "Prazo de pagamento expirado"
     },
     nextStep: {
+      pendingAcceptance: {
+        title: "Awaiting acceptance",
+        description: "The exchanger must accept within 10 minutes before payment is allowed.",
+      },
+      businessDeclined: {
+        title: "Exchanger unavailable",
+        description: "Choose another exchanger or cancel this transfer.",
+      },
       pending: {
         title: "Ación do cliente necessária",
         description: "Adicione un comprobante y declare o pagamento. A empresa será notificada automaticamente."
@@ -3948,6 +3974,33 @@ export const es = {
       walletTitle: "Saldo da carteira",
       walletBalance: "Saldo atual: {balance} — a confirmación de receción aún no ajusta automaticamente este saldo."
     },
+    acceptance: {
+      countdownLabel: "Time remaining",
+      waitingHint: "{name} must accept your request before payment.",
+      exchangerFallback: "The exchanger",
+      chooseAnother: "Choose another exchanger",
+      accept: "Accept",
+      decline: "Decline",
+      businessCountdown: "Response expected within {countdown}.",
+      paymentHidden: "Payment details will be shown after the exchanger accepts.",
+      reassignTitle: "Choose another exchanger",
+      reassignDescription: "The same transfer will be reassigned. A new acceptance window may start.",
+      noOtherExchanger: "No other compatible exchanger right now.",
+      confirmReassign: "Reassign transfer",
+      requiresAcceptanceShort: "pre-acceptance",
+      queueDeadline: "Accept before {date}",
+      businessActionTitle: "New request",
+      businessActionBody: "Accept to unlock client payment, or decline if unavailable.",
+      toasts: {
+        acceptedTitle: "Request accepted",
+        acceptedBody: "The client can now make the payment.",
+        declinedTitle: "Request declined",
+        declinedBody: "The client can choose another exchanger.",
+        reassignedTitle: "Transfer reassigned",
+        reassignedBody: "New partner: {name}.",
+      },
+    },
+
     workflow: {
       journeyTitle: "Percurso da transferencia",
       stepsValidated: "{completed}/{total} etapas validadas",
@@ -3980,6 +4033,7 @@ export const es = {
         none: "Ninguna ación necessária de momento."
       },
       clientWaiting: {
+        pendingAcceptance: "Your request was sent. Waiting for the exchanger to accept.",
         declared: "Su declaración fue enviada. Espere a que la empresa confirme la recepción del pago.",
         received: "La empresa recibió su pago. Espere a que confirme el envío con comprobante — solo entonces podrá declarar la recepción.",
         paidOut: "Espere el comprobante de envío de la empresa antes de declarar la recepción de los fondos.",
@@ -3991,6 +4045,18 @@ export const es = {
         completed: "Transferencia encerrada."
       },
       actions: {
+        acceptRequest: {
+          title: "Accept the request",
+          description: "Confirm you are available to process this transfer.",
+        },
+        waitAcceptance: {
+          title: "Waiting for exchanger",
+          description: "Payment details will appear once the exchanger accepts.",
+        },
+        resolveAcceptance: {
+          title: "Exchanger unavailable",
+          description: "The request timed out or was declined. Choose another partner or cancel.",
+        },
         confirmPaymentReception: {
           title: "Confirmar receción do pagamento",
           description: "Verifique a tu cuenta y valide esta etapa para avançar para o envio."
@@ -7206,7 +7272,17 @@ export const es = {
     actionCouldNotComplete: "A ación no pôde ser concluída."
   },
   notificationsFeed: {
-    newContentPublished: "Nuevo conteúdo publicado",
+    newContentPublished: "New content published",
+    transferAcceptanceRequested: "Acceptance requested",
+    transferAcceptanceRequestedBody: "{name} is waiting for your acceptance on {id}.",
+    transferAccepted: "Transfer accepted",
+    transferAcceptedBody: "The exchanger accepted {id}. You can pay now.",
+    transferDeclined: "Transfer declined",
+    transferDeclinedBody: "The exchanger declined {id}. Choose another partner or cancel.",
+    transferAcceptanceExpired: "Acceptance window expired",
+    transferAcceptanceExpiredBody: "No response for {id}. Choose another exchanger or cancel.",
+    transferReassignedAway: "Transfer reassigned",
+    transferReassignedAwayBody: "Transfer {id} was assigned to another exchanger.",
     newTransferReceived: "Nueva transferencia recebida",
     newTransferReceivedBody: "{name} escolheu a tu empresa para {id}.",
     transferUpdated: "Transferencia atualizada",

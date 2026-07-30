@@ -163,6 +163,9 @@ export const PROFESSIONAL_FR_SOURCES = {
   'professional.rateSettings.exampleTotal':
     'Exemple total à payer : {total} (dont frais {fees})',
   'professional.rateSettings.save': 'Enregistrer les réglages',
+  'professional.rateSettings.acceptanceRequired': 'Pré-acceptation des transferts',
+  'professional.rateSettings.acceptanceRequiredHint':
+    'Si activé, le client attend votre acceptation (10 min) avant de pouvoir payer. En cas de refus ou délai dépassé, il peut choisir un autre échangeur.',
   'professional.rateSettings.toastSavedTitle': 'Réglages enregistrés',
   'professional.rateSettings.toastSavedBody':
     'Vos réductions de taux et frais s’appliquent aux prochaines estimations.',

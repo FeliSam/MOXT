@@ -6,6 +6,7 @@ const PHASE_KEYS = {
   [UPLOAD_PHASES.preparing]: 'common.upload.phases.preparing',
   [UPLOAD_PHASES.compressing]: 'common.upload.phases.compressing',
   [UPLOAD_PHASES.uploading]: 'common.upload.phases.uploading',
+  [UPLOAD_PHASES.downloading]: 'common.upload.phases.downloading',
   [UPLOAD_PHASES.finalizing]: 'common.upload.phases.finalizing',
   [UPLOAD_PHASES.done]: 'common.upload.phases.done',
   [UPLOAD_PHASES.error]: 'common.upload.phases.error',

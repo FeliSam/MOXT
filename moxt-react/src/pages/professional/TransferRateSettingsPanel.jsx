@@ -35,6 +35,9 @@ export function TransferRateSettingsPanel({ business, dispatch, user }) {
   const [reductionFromRu, setReductionFromRu] = useState(
     String(business.rateReductionFromRu ?? 0),
   )
+  const [acceptanceRequired, setAcceptanceRequired] = useState(
+    business.transferAcceptanceRequired === true,
+  )
   const [saving, setSaving] = useState(false)
 
   const previewToRu = useMemo(
@@ -72,6 +75,7 @@ export function TransferRateSettingsPanel({ business, dispatch, user }) {
         feePercent: Math.max(0, Number(feePercent) || 0),
         rateReductionToRu: clampReduction(reductionToRu),
         rateReductionFromRu: clampReduction(reductionFromRu),
+        transferAcceptanceRequired: acceptanceRequired,
       }),
     )
     dispatch(
@@ -141,6 +145,23 @@ export function TransferRateSettingsPanel({ business, dispatch, user }) {
           pt={pt}
         />
       </div>
+
+      <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-muted)]/50 p-4">
+        <input
+          type="checkbox"
+          className="mt-1 size-4 accent-[var(--app-accent)]"
+          checked={acceptanceRequired}
+          onChange={(event) => setAcceptanceRequired(event.target.checked)}
+        />
+        <span>
+          <span className="block text-sm font-bold">
+            {pt('professional.rateSettings.acceptanceRequired')}
+          </span>
+          <span className="mt-1 block text-xs text-[var(--app-text-muted)]">
+            {pt('professional.rateSettings.acceptanceRequiredHint')}
+          </span>
+        </span>
+      </label>
 
       <div className="flex justify-end">
         <Button type="button" icon={FiSave} loading={saving} onClick={handleSave}>

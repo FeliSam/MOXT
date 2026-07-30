@@ -4,7 +4,9 @@ export const DIRECTIONS = {
 }
 
 export const TRANSFER_STATUS = {
+  PENDING_ACCEPTANCE: 'pending_business_acceptance',
   PENDING: 'pending_payment',
+  DECLINED: 'business_declined',
   DECLARED: 'payment_declared',
   RECEIVED: 'payment_received',
   PROCESSING: 'processing',
@@ -24,6 +26,7 @@ export const TRANSFER_TRANSITIONS = {
 export const TRANSFER_CONFIG = {
   feePercent: 2.5,
   rateMarginPercent: 1,
+  acceptanceWindowMinutes: 10,
   paymentWindowMinutes: 30,
   minimums: { XOF: 1000, RUB: 500 },
   limits: {

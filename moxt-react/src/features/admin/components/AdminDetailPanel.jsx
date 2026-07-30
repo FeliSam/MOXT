@@ -16,6 +16,7 @@ import {
   replySupportTicket,
   updateSupportStatus,
 } from '../../communications/communicationSlice'
+import { updateBusinessTransferPricing } from '../../businesses/businessSlice'
 import { getPostImages } from '../../posts/postMediaUtils'
 import { addToast } from '../../ui/uiSlice'
 import { renderDetailActions } from '../adminActions'
@@ -300,11 +301,62 @@ export function AdminDetailPanel({
       ) : null}
 
       {kind === 'businesses' && item?.id ? (
-        <Link to={`/admin?view=transfers&businessId=${item.id}`}>
-          <Button variant="secondary" icon={FiArrowRight}>
-            {adminText(t, 'admin.business.viewTransfers')}
-          </Button>
-        </Link>
+        <div className="grid min-w-0 gap-3 border-t border-[var(--app-border)] pt-3">
+          <div className="grid gap-2">
+            <p className="text-[10px] font-black uppercase tracking-wider text-[var(--app-text-muted)]">
+              {adminText(t, 'admin.business.acceptanceTitle')}
+            </p>
+            <p className="text-xs text-[var(--app-text-muted)]">
+              {adminText(t, 'admin.business.acceptanceHint')}
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-semibold">
+                {item.transferAcceptanceRequired === true
+                  ? adminText(t, 'admin.business.acceptanceOn')
+                  : adminText(t, 'admin.business.acceptanceOff')}
+              </span>
+              <Button
+                variant={item.transferAcceptanceRequired === true ? 'danger' : 'primary'}
+                onClick={() => {
+                  const enabled = item.transferAcceptanceRequired === true
+                  dispatch(
+                    updateBusinessTransferPricing({
+                      businessId: item.id,
+                      ownerId: item.ownerId,
+                      actorRole: admin?.role || 'admin',
+                      transferAcceptanceRequired: !enabled,
+                    }),
+                  )
+                  setSelected?.({
+                    kind: 'businesses',
+                    item: { ...item, transferAcceptanceRequired: !enabled },
+                  })
+                  dispatch(
+                    addToast({
+                      title: adminText(t, 'admin.transfers.acceptanceUpdatedTitle'),
+                      message: adminText(t, 'admin.transfers.acceptanceUpdatedBody', {
+                        name: item.name,
+                        state: !enabled
+                          ? adminText(t, 'admin.transfers.acceptanceOn')
+                          : adminText(t, 'admin.transfers.acceptanceOff'),
+                      }),
+                      tone: 'success',
+                    }),
+                  )
+                }}
+              >
+                {item.transferAcceptanceRequired === true
+                  ? adminText(t, 'admin.business.acceptanceDisable')
+                  : adminText(t, 'admin.business.acceptanceEnable')}
+              </Button>
+            </div>
+          </div>
+          <Link to={`/admin?view=transfers&businessId=${item.id}`}>
+            <Button variant="secondary" icon={FiArrowRight}>
+              {adminText(t, 'admin.business.viewTransfers')}
+            </Button>
+          </Link>
+        </div>
       ) : null}
 
       <div className="min-w-0">

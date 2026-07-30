@@ -4,12 +4,100 @@ import {
   canActorPerformBusinessTransferAction,
   canActorPerformClientTransferAction,
 } from './transferActionUtils'
-import { DIRECTIONS, TRANSFER_CONFIG, TRANSFER_STATUS, TRANSFER_TRANSITIONS } from './transferConfig'
+import {
+  buildAcceptanceWindow,
+  buildPaymentDeadline,
+  stripPaymentDetailsFromExchanger,
+} from './transferAcceptanceUtils'
+import { DIRECTIONS, TRANSFER_STATUS, TRANSFER_TRANSITIONS } from './transferConfig'
 import { transferStorage } from './transferStorage'
 import { calculateTransfer } from './transferUtils'
 
 const initialState = {
   items: transferStorage.read(),
+}
+
+/** Fusionne un transfert distant sans écraser les champs locaux avec `undefined`. */
+function mergeTransferRecord(prev, next) {
+  const merged = { ...prev }
+  for (const [key, value] of Object.entries(next || {})) {
+    if (value !== undefined) merged[key] = value
+  }
+  // Conserver les preuves locales si le refresh « light » ne les renvoie pas.
+  if (next?.paymentProof == null && prev?.paymentProof != null) {
+    merged.paymentProof = prev.paymentProof
+  }
+  if (next?.businessProof == null && prev?.businessProof != null) {
+    merged.businessProof = prev.businessProof
+  }
+  if (next?.receivedProof == null && prev?.receivedProof != null) {
+    merged.receivedProof = prev.receivedProof
+  }
+  if (next?.noteToExchanger == null && prev?.noteToExchanger != null) {
+    merged.noteToExchanger = prev.noteToExchanger
+  }
+  return merged
+}
+
+function pushTimeline(transfer, entry) {
+  transfer.timeline ||= []
+  transfer.timeline.push(entry)
+}
+
+function applyExchangerAssignment(transfer, exchanger, { nowIso, preserveAmounts = true }) {
+  const previousBusinessId = transfer.businessId
+  transfer.previousBusinessId = previousBusinessId || null
+  transfer.reassignmentHistory = [
+    ...(transfer.reassignmentHistory || []),
+    {
+      businessId: previousBusinessId,
+      businessOwnerId: transfer.businessOwnerId,
+      exchangerName: transfer.exchanger?.name || null,
+      at: nowIso,
+    },
+  ].slice(-20)
+
+  transfer.businessId = exchanger.id
+  transfer.businessOwnerId = exchanger.ownerId || null
+
+  const acceptanceRequired = exchanger.transferAcceptanceRequired === true
+  const exchangerSnapshot = {
+    id: exchanger.id,
+    name: exchanger.name,
+    rating: exchanger.rating,
+    averageDelay: exchanger.averageDelay,
+    paymentAccount: acceptanceRequired ? null : exchanger.paymentAccount || null,
+    paymentDetails: acceptanceRequired ? null : exchanger.paymentDetails || null,
+  }
+
+  if (!acceptanceRequired) {
+    exchangerSnapshot.paymentAccount = exchanger.paymentAccount || null
+    exchangerSnapshot.paymentDetails = exchanger.paymentDetails || null
+  }
+
+  transfer.exchanger = exchangerSnapshot
+  transfer.acceptanceRequired = acceptanceRequired
+
+  if (acceptanceRequired) {
+    Object.assign(transfer, buildAcceptanceWindow(new Date(nowIso).getTime()))
+    transfer.status = TRANSFER_STATUS.PENDING_ACCEPTANCE
+    transfer.paymentDeadlineAt = null
+  } else {
+    transfer.acceptanceRequired = false
+    transfer.acceptanceRequestedAt = null
+    transfer.acceptanceExpiresAt = null
+    transfer.acceptanceResolvedAt = nowIso
+    transfer.status = TRANSFER_STATUS.PENDING
+    transfer.paymentDeadlineAt = buildPaymentDeadline(new Date(nowIso).getTime())
+    if (!preserveAmounts) {
+      // no-op: amounts stay from original transfer
+    }
+  }
+
+  // Mettre à jour le snapshot frais si le nouvel échangeur a un % différent.
+  if (exchanger.feePercent != null && Number.isFinite(Number(exchanger.feePercent))) {
+    transfer.feePercent = Number(exchanger.feePercent)
+  }
 }
 
 const transferSlice = createSlice({
@@ -56,6 +144,30 @@ const transferSlice = createSlice({
             : exchanger.rateReductionFromRu,
         )
         const createdAt = new Date().toISOString()
+        const acceptanceRequired = exchanger.transferAcceptanceRequired === true
+        const acceptanceMeta = acceptanceRequired
+          ? buildAcceptanceWindow(new Date(createdAt).getTime())
+          : {
+              acceptanceRequired: false,
+              acceptanceRequestedAt: null,
+              acceptanceExpiresAt: null,
+              acceptanceResolvedAt: null,
+            }
+        const status = acceptanceRequired
+          ? TRANSFER_STATUS.PENDING_ACCEPTANCE
+          : TRANSFER_STATUS.PENDING
+        const exchangerSnapshot = {
+          id: exchanger.id,
+          name: exchanger.name,
+          rating: exchanger.rating,
+          averageDelay: exchanger.averageDelay,
+          paymentAccount: acceptanceRequired ? null : exchanger.paymentAccount,
+          paymentDetails: acceptanceRequired ? null : exchanger.paymentDetails || null,
+        }
+        // Conservés hors snapshot client pour restauration après acceptation.
+        const pendingPaymentAccount = exchanger.paymentAccount || null
+        const pendingPaymentDetails = exchanger.paymentDetails || null
+
         return {
           payload: {
             id: `MXT-${Date.now().toString(36).toUpperCase()}`,
@@ -63,7 +175,7 @@ const transferSlice = createSlice({
             originCountry: originCountry || user.originCountry || user.country || 'BJ',
             businessId: exchanger.id,
             businessOwnerId: exchanger.ownerId || null,
-            status: TRANSFER_STATUS.PENDING,
+            status,
             direction,
             ...calculation,
             rateDate: rateDate || null,
@@ -73,24 +185,149 @@ const transferSlice = createSlice({
             noteToExchanger: String(noteToExchanger || '')
               .trim()
               .slice(0, 300) || null,
-            exchanger: {
-              id: exchanger.id,
-              name: exchanger.name,
-              rating: exchanger.rating,
-              averageDelay: exchanger.averageDelay,
-              paymentAccount: exchanger.paymentAccount,
-              paymentDetails: exchanger.paymentDetails || null,
-            },
+            exchanger: exchangerSnapshot,
+            pendingPaymentAccount: acceptanceRequired ? pendingPaymentAccount : null,
+            pendingPaymentDetails: acceptanceRequired ? pendingPaymentDetails : null,
             paymentProof: null,
             createdAt,
             updatedAt: createdAt,
-            paymentDeadlineAt: new Date(
-              Date.now() + TRANSFER_CONFIG.paymentWindowMinutes * 60000,
-            ).toISOString(),
-            timeline: [{ status: TRANSFER_STATUS.PENDING, at: createdAt }],
+            paymentDeadlineAt: acceptanceRequired
+              ? null
+              : buildPaymentDeadline(new Date(createdAt).getTime()),
+            reassignmentHistory: [],
+            previousBusinessId: null,
+            ...acceptanceMeta,
+            timeline: [{ status, at: createdAt }],
           },
         }
       },
+    },
+    acceptTransferRequest(state, action) {
+      const transfer = state.items.find((item) => item.id === action.payload.id)
+      if (!transfer || transfer.status !== TRANSFER_STATUS.PENDING_ACCEPTANCE) return
+      if (
+        !canActorPerformBusinessTransferAction(
+          transfer,
+          action.payload.actorId,
+          action.payload.actorRole,
+        )
+      ) {
+        return
+      }
+      const now = Date.now()
+      if (
+        transfer.acceptanceExpiresAt &&
+        new Date(transfer.acceptanceExpiresAt).getTime() <= now
+      ) {
+        return
+      }
+      const nowIso = new Date(now).toISOString()
+      transfer.status = TRANSFER_STATUS.PENDING
+      transfer.acceptanceResolvedAt = nowIso
+      transfer.paymentDeadlineAt = buildPaymentDeadline(now)
+      if (transfer.pendingPaymentDetails || transfer.pendingPaymentAccount) {
+        transfer.exchanger = {
+          ...transfer.exchanger,
+          paymentAccount: transfer.pendingPaymentAccount || transfer.exchanger?.paymentAccount,
+          paymentDetails: transfer.pendingPaymentDetails || transfer.exchanger?.paymentDetails,
+        }
+        transfer.pendingPaymentAccount = null
+        transfer.pendingPaymentDetails = null
+      }
+      transfer.updatedAt = nowIso
+      pushTimeline(transfer, {
+        status: TRANSFER_STATUS.PENDING,
+        at: nowIso,
+        actorType: 'business',
+        actorId: action.payload.actorId,
+        note: 'business_accepted',
+      })
+    },
+    declineTransferRequest(state, action) {
+      const transfer = state.items.find((item) => item.id === action.payload.id)
+      if (!transfer || transfer.status !== TRANSFER_STATUS.PENDING_ACCEPTANCE) return
+      if (
+        !canActorPerformBusinessTransferAction(
+          transfer,
+          action.payload.actorId,
+          action.payload.actorRole,
+        )
+      ) {
+        return
+      }
+      const nowIso = new Date().toISOString()
+      transfer.status = TRANSFER_STATUS.DECLINED
+      transfer.acceptanceResolvedAt = nowIso
+      transfer.updatedAt = nowIso
+      pushTimeline(transfer, {
+        status: TRANSFER_STATUS.DECLINED,
+        at: nowIso,
+        actorType: 'business',
+        actorId: action.payload.actorId,
+        note: action.payload.note || 'business_declined',
+      })
+    },
+    reassignTransferExchanger(state, action) {
+      const transfer = state.items.find((item) => item.id === action.payload.id)
+      if (!transfer) return
+      if (
+        ![TRANSFER_STATUS.DECLINED, TRANSFER_STATUS.PENDING_ACCEPTANCE].includes(transfer.status)
+      ) {
+        return
+      }
+      // Réassignation client uniquement après refus/timeout (DECLINED),
+      // sauf timeout local déjà passé en PENDING_ACCEPTANCE expiré.
+      if (transfer.status === TRANSFER_STATUS.PENDING_ACCEPTANCE) {
+        const expired =
+          transfer.acceptanceExpiresAt &&
+          new Date(transfer.acceptanceExpiresAt).getTime() <= Date.now()
+        if (!expired) return
+      }
+      if (!canActorPerformClientTransferAction(transfer, action.payload.actorId)) return
+
+      const exchanger = action.payload.exchanger
+      if (!exchanger?.id || !exchanger.ownerId) return
+      if (matchUserId(exchanger.ownerId, transfer.userId)) return
+      if (exchanger.id === transfer.businessId) return
+
+      const nowIso = new Date().toISOString()
+      applyExchangerAssignment(transfer, exchanger, { nowIso })
+
+      if (action.payload.amount != null && exchanger.feePercent != null) {
+        const calculation = calculateTransfer(
+          action.payload.amount,
+          transfer.direction,
+          exchanger.feePercent,
+          action.payload.rateOverride,
+          transfer.originCountry,
+          transfer.direction === DIRECTIONS.BJ_TO_RU
+            ? exchanger.rateReductionToRu
+            : exchanger.rateReductionFromRu,
+        )
+        Object.assign(transfer, calculation)
+        if (action.payload.rateSource) transfer.rateSource = action.payload.rateSource
+        if (action.payload.rateDate) transfer.rateDate = action.payload.rateDate
+      }
+
+      if (exchanger.transferAcceptanceRequired) {
+        transfer.pendingPaymentAccount = exchanger.paymentAccount || null
+        transfer.pendingPaymentDetails = exchanger.paymentDetails || null
+        transfer.exchanger = stripPaymentDetailsFromExchanger(transfer.exchanger)
+      } else {
+        transfer.pendingPaymentAccount = null
+        transfer.pendingPaymentDetails = null
+      }
+
+      transfer.updatedAt = nowIso
+      pushTimeline(transfer, {
+        status: transfer.status,
+        at: nowIso,
+        actorType: 'client',
+        actorId: action.payload.actorId,
+        note: 'reassigned_exchanger',
+        previousBusinessId: transfer.previousBusinessId,
+        businessId: transfer.businessId,
+      })
     },
     declarePayment(state, action) {
       const payload =
@@ -115,7 +352,12 @@ const transferSlice = createSlice({
       const transfer = state.items.find((item) => item.id === payload.id)
       if (
         !transfer ||
-        ![TRANSFER_STATUS.PENDING, TRANSFER_STATUS.DECLARED].includes(transfer.status)
+        ![
+          TRANSFER_STATUS.PENDING,
+          TRANSFER_STATUS.DECLARED,
+          TRANSFER_STATUS.PENDING_ACCEPTANCE,
+          TRANSFER_STATUS.DECLINED,
+        ].includes(transfer.status)
       )
         return
       if (!canActorPerformClientTransferAction(transfer, payload.actorId)) return
@@ -211,7 +453,23 @@ const transferSlice = createSlice({
       const now = new Date(action.payload || Date.now()).getTime()
       state.items.forEach((transfer) => {
         if (
+          transfer.status === TRANSFER_STATUS.PENDING_ACCEPTANCE &&
+          transfer.acceptanceExpiresAt &&
+          new Date(transfer.acceptanceExpiresAt).getTime() <= now
+        ) {
+          transfer.status = TRANSFER_STATUS.DECLINED
+          transfer.acceptanceResolvedAt = new Date(now).toISOString()
+          transfer.updatedAt = transfer.acceptanceResolvedAt
+          pushTimeline(transfer, {
+            status: TRANSFER_STATUS.DECLINED,
+            at: transfer.updatedAt,
+            note: 'acceptance_timeout',
+          })
+          return
+        }
+        if (
           transfer.status === TRANSFER_STATUS.PENDING &&
+          transfer.paymentDeadlineAt &&
           new Date(transfer.paymentDeadlineAt).getTime() <= now
         ) {
           transfer.status = TRANSFER_STATUS.EXPIRED
@@ -225,18 +483,37 @@ const transferSlice = createSlice({
       if (!transfer?.id || transfer.blocked) return
       const index = state.items.findIndex((item) => item.id === transfer.id)
       if (index === -1) state.items.unshift(transfer)
-      else state.items[index] = { ...state.items[index], ...transfer }
+      else state.items[index] = mergeTransferRecord(state.items[index], transfer)
+    },
+    receiveRemoteTransfers(state, action) {
+      const list = Array.isArray(action.payload) ? action.payload : []
+      if (!list.length) return
+      const byId = new Map(state.items.map((item) => [item.id, item]))
+      for (const transfer of list) {
+        if (!transfer?.id || transfer.blocked) continue
+        const prev = byId.get(transfer.id)
+        byId.set(transfer.id, prev ? mergeTransferRecord(prev, transfer) : transfer)
+      }
+      const next = [...byId.values()]
+      next.sort((a, b) =>
+        String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || '')),
+      )
+      state.items = next
     },
   },
 })
 
 export const {
+  acceptTransferRequest,
   cancelTransfer,
   createTransfer,
   declarePayment,
+  declineTransferRequest,
   expireOverdueTransfers,
   moderateTransfer,
+  reassignTransferExchanger,
   receiveRemoteTransfer,
+  receiveRemoteTransfers,
   receiveTransfer,
   setAll,
 } = transferSlice.actions

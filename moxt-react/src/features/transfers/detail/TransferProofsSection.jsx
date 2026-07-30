@@ -2,12 +2,13 @@ import { useState } from 'react'
 import { FiCheck, FiDownload, FiFileText } from 'react-icons/fi'
 import { useDispatch } from 'react-redux'
 import { Button } from '../../../components/ui/Button'
+import { UploadProgress } from '../../../components/ui/UploadProgress'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { addToast } from '../../ui/uiSlice'
 import { formatDate } from '../transferUtils'
 import { downloadTransferProofFile } from '../transferProofDownload'
 import { getReceiptProofEntries, getTransferProofEntries } from '../transferProofUtils'
-import { shortenFileName } from '../../../services/uploadProgress'
+import { shortenFileName, startProgressTicker, UPLOAD_PHASES } from '../../../services/uploadProgress'
 
 export function TransferProofsSection({ className = '', compact = false, receipt, transfer }) {
   const { t } = useLanguage()
@@ -49,12 +50,31 @@ function ProofDownloadRow({ compact, entry, transfer, transferId }) {
   const { t } = useLanguage()
   const dispatch = useDispatch()
   const [downloading, setDownloading] = useState(false)
+  const [downloadProgress, setDownloadProgress] = useState(null)
   const { proof } = entry
   const label = entry.labelKey ? t(entry.labelKey) : entry.label
   const shortLabel = entry.shortLabelKey ? t(entry.shortLabelKey) : entry.shortLabel
 
   async function handleDownload() {
+    if (downloading) return
     setDownloading(true)
+    setDownloadProgress({
+      active: true,
+      phase: UPLOAD_PHASES.downloading,
+      percent: 8,
+      fileName: proof?.name || '',
+    })
+    const stop = startProgressTicker(
+      (update) => {
+        setDownloadProgress({
+          active: true,
+          phase: UPLOAD_PHASES.downloading,
+          percent: update.percent,
+          fileName: proof?.name || '',
+        })
+      },
+      { from: 12, to: 88, intervalMs: 140 },
+    )
     try {
       await downloadTransferProofFile({
         proof,
@@ -63,7 +83,20 @@ function ProofDownloadRow({ compact, entry, transfer, transferId }) {
         transferId,
         kind: entry.kind,
       })
+      setDownloadProgress({
+        active: false,
+        phase: UPLOAD_PHASES.done,
+        percent: 100,
+        fileName: proof?.name || '',
+      })
+      window.setTimeout(() => setDownloadProgress(null), 700)
     } catch {
+      setDownloadProgress({
+        active: false,
+        phase: UPLOAD_PHASES.error,
+        percent: 0,
+        fileName: proof?.name || '',
+      })
       dispatch(
         addToast({
           title: t('transfers.proof.downloadFailedTitle'),
@@ -71,53 +104,61 @@ function ProofDownloadRow({ compact, entry, transfer, transferId }) {
           tone: 'error',
         }),
       )
+      window.setTimeout(() => setDownloadProgress(null), 1200)
     } finally {
+      stop()
       setDownloading(false)
     }
   }
 
   if (compact) {
     return (
-      <button
-        type="button"
-        className="inline-flex max-w-full items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-300 dark:hover:bg-emerald-950/50"
-        onClick={handleDownload}
-        disabled={downloading}
-      >
-        <FiCheck className="shrink-0" />
-        <span className="truncate">{shortLabel}</span>
-        <FiDownload className="shrink-0 opacity-70" />
-      </button>
+      <div className="grid gap-1.5">
+        <button
+          type="button"
+          className="inline-flex max-w-full items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-300 dark:hover:bg-emerald-950/50"
+          onClick={handleDownload}
+          disabled={downloading}
+        >
+          <FiCheck className="shrink-0" />
+          <span className="truncate">{shortLabel}</span>
+          <FiDownload className="shrink-0 opacity-70" />
+        </button>
+        {downloadProgress ? <UploadProgress compact progress={downloadProgress} /> : null}
+      </div>
     )
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3">
-      <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden">
-        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700 dark:bg-brand-900 dark:text-brand-200">
-          <FiFileText />
-        </span>
-        <div className="min-w-0 flex-1 overflow-hidden">
-          <p className="truncate text-sm font-bold">{label}</p>
-          <p className="truncate text-xs text-[var(--app-text-muted)]" title={proof.name}>
-            {shortenFileName(proof.name, 36)}
-          </p>
-          {proof.uploadedAt ? (
-            <p className="text-[11px] text-[var(--app-text-faint)]">
-              {t('transfers.proof.addedOn', { date: formatDate(proof.uploadedAt) })}
+    <div className="grid gap-2 overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700 dark:bg-brand-900 dark:text-brand-200">
+            <FiFileText />
+          </span>
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <p className="truncate text-sm font-bold">{label}</p>
+            <p className="truncate text-xs text-[var(--app-text-muted)]" title={proof.name}>
+              {shortenFileName(proof.name, 36)}
             </p>
-          ) : null}
+            {proof.uploadedAt ? (
+              <p className="text-[11px] text-[var(--app-text-faint)]">
+                {t('transfers.proof.addedOn', { date: formatDate(proof.uploadedAt) })}
+              </p>
+            ) : null}
+          </div>
         </div>
+        <Button
+          className="shrink-0"
+          variant="secondary"
+          icon={FiDownload}
+          loading={downloading}
+          onClick={handleDownload}
+        >
+          {t('transfers.proof.download')}
+        </Button>
       </div>
-      <Button
-        className="shrink-0"
-        variant="secondary"
-        icon={FiDownload}
-        loading={downloading}
-        onClick={handleDownload}
-      >
-        {t('transfers.proof.download')}
-      </Button>
+      {downloadProgress ? <UploadProgress compact progress={downloadProgress} /> : null}
     </div>
   )
 }
