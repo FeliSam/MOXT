@@ -65,6 +65,22 @@ async function refreshConversationsIfNeeded(dispatch, getState) {
   dispatch(refreshConversations())
 }
 
+let lastNotificationRefresh = 0
+const NOTIFICATION_REFRESH_MS = 15_000
+const NOTIFICATION_REFRESH_WHEN_LIVE_MS = 45_000
+
+async function refreshNotificationsIfNeeded(dispatch, getState) {
+  if (!getState().auth.user) return
+  const now = Date.now()
+  const minGap = isRealtimeConnected()
+    ? NOTIFICATION_REFRESH_WHEN_LIVE_MS
+    : NOTIFICATION_REFRESH_MS
+  if (now - lastNotificationRefresh < minGap) return
+  lastNotificationRefresh = now
+  const { refreshNotifications } = await import('../features/communications/communicationSlice')
+  dispatch(refreshNotifications())
+}
+
 /** Focus : delta ciblé (transferts incrémentaux) — plus de mega loadAllData. */
 async function refreshDataIfNeeded(dispatch, getState) {
   if (!getState().auth.user) return
@@ -452,6 +468,7 @@ async function onForeground(dispatch, getState, { forceAuth = false } = {}) {
       await refreshAuthUserIfNeeded(dispatch, getState, { force: forceAuth })
       await refreshDataIfNeeded(dispatch, getState)
       await refreshConversationsIfNeeded(dispatch, getState)
+      await refreshNotificationsIfNeeded(dispatch, getState)
       return
     }
 

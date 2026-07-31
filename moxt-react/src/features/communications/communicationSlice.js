@@ -392,10 +392,12 @@ const communicationSlice = createSlice({
         payload.conversations = payload.conversations.map(normalizeConversation)
       }
       if (payload.notifications) {
-        // Source of truth = remote (post-wipe = liste vide). On conserve seulement
-        // les flags locaux read/archived pour les IDs encore présents côté DB.
+        // Remote = source de vérité, mais on conserve les inserts realtime arrivés
+        // après le début du fetch (sinon la liste paraît figée jusqu'au reload).
+        const KEEP_LOCAL_MS = 5 * 60 * 1000
+        const now = Date.now()
         const localById = Object.fromEntries(state.notifications.map((item) => [item.id, item]))
-        payload.notifications = payload.notifications.map((remote) => {
+        const remoteMapped = payload.notifications.map((remote) => {
           const local = localById[remote.id]
           const normalized = normalizeNotification(remote)
           if (!local) return normalized
@@ -405,6 +407,15 @@ const communicationSlice = createSlice({
             archived: normalized.archived || local.archived === true,
           })
         })
+        const remoteIds = new Set(remoteMapped.map((item) => item.id))
+        const localOnly = state.notifications.filter((item) => {
+          if (remoteIds.has(item.id) || item.type === 'message') return false
+          const created = new Date(item.createdAt || 0).getTime()
+          return Number.isFinite(created) && now - created < KEEP_LOCAL_MS
+        })
+        payload.notifications = [...remoteMapped, ...localOnly].sort(
+          (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0),
+        )
       }
       if (payload.support) {
         // Comme les notifications : la liste remote (ou vide au wipe/logout) fait foi.
@@ -970,8 +981,20 @@ const communicationSlice = createSlice({
     },
     receiveRemoteNotification(state, action) {
       if (action.payload.type === 'message') return
-      const exists = state.notifications.some((n) => n.id === action.payload.id)
-      if (!exists) state.notifications.unshift(normalizeNotification(action.payload))
+      const normalized = normalizeNotification(action.payload)
+      const index = state.notifications.findIndex((n) => n.id === normalized.id)
+      if (index >= 0) {
+        state.notifications[index] = normalizeNotification({
+          ...state.notifications[index],
+          ...normalized,
+        })
+        if (normalized.read === false) {
+          const [item] = state.notifications.splice(index, 1)
+          state.notifications.unshift(item)
+        }
+        return
+      }
+      state.notifications.unshift(normalized)
     },
     setConversationMessages(state, action) {
       const conversation =
@@ -1442,6 +1465,35 @@ export const refreshConversations = createAsyncThunk(
     )
     dispatch(setAll({ conversations }))
     return conversations.length
+  },
+)
+
+export const refreshNotifications = createAsyncThunk(
+  'communications/refreshNotifications',
+  async (_, { getState, dispatch }) => {
+    const uid = getState().auth.user?.id
+    if (!uid || !supabase) return 0
+
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', uid)
+      .order('created_at', { ascending: false })
+      .limit(50)
+    if (error) throw error
+
+    dispatch(
+      setAll({
+        notifications: fromRows(data || [])
+          .filter((item) => item.type !== 'message')
+          .map((item) => ({
+            ...item,
+            priority: item.priority || 'normal',
+            archived: item.archived === true,
+          })),
+      }),
+    )
+    return data?.length || 0
   },
 )
 

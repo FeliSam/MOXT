@@ -75,6 +75,12 @@ const skipPersistence = new Set([
   'communications/refreshConversations/pending',
   'communications/refreshConversations/fulfilled',
   'communications/refreshConversations/rejected',
+  'communications/refreshNotifications/pending',
+  'communications/refreshNotifications/fulfilled',
+  'communications/refreshNotifications/rejected',
+  'statuses/refreshStatusesData/pending',
+  'statuses/refreshStatusesData/fulfilled',
+  'statuses/refreshStatusesData/rejected',
   'app/loadAllData/fulfilled',
   'account/mergeRemoteAccount',
 ])

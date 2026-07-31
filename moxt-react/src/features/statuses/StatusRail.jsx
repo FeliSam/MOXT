@@ -14,6 +14,7 @@ import { useLanguage } from '../../contexts/useLanguage'
 import { supabase } from '../../services/supabaseClient'
 import { receiveRemoteStatus, removeRemoteStatus } from './statusesSlice'
 import { statusFromRemoteRow } from './statusRemote'
+import { refreshStatusesData } from './statusSync'
 
 function AuthorBubble({ group, onOpen, badge }) {
   const shapeClass = group.businessId ? 'rounded-2xl' : 'rounded-full'
@@ -110,6 +111,12 @@ export function StatusRail({ hideWhenNoCommunity: _hideWhenNoCommunity = false }
     return () => {
       supabase.removeChannel(channel)
     }
+  }, [dispatch, user?.id])
+
+  useEffect(() => {
+    if (!user?.id) return undefined
+    dispatch(refreshStatusesData())
+    return undefined
   }, [dispatch, user?.id])
 
   if (!user) return null

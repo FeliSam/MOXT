@@ -355,6 +355,25 @@ function bindChannel(userId, dispatch, getState) {
     if (order?.id) dispatch(receiveRemoteOrder(order))
   }
 
+  const handleNotificationUpsert = (payload) => {
+    const row = payload.new
+    if (!row || String(row.user_id) !== String(userId) || row.type === 'message') return
+    dispatch(
+      receiveRemoteNotification({
+        id: row.id,
+        userId: row.user_id,
+        title: row.title,
+        message: row.message,
+        type: row.type || 'system',
+        link: row.link || null,
+        priority: row.priority || 'normal',
+        read: row.read ?? false,
+        archived: row.archived ?? false,
+        createdAt: row.created_at,
+      }),
+    )
+  }
+
   let nextChannel = supabase
     .channel('presence-online', { config: { presence: { key: userId } } })
 
@@ -420,23 +439,17 @@ function bindChannel(userId, dispatch, getState) {
         table: 'notifications',
         filter: `user_id=eq.${userId}`,
       },
-      (payload) => {
-        const row = payload.new
-        if (String(row.user_id) !== String(userId) || row.type === 'message') return
-        dispatch(
-          receiveRemoteNotification({
-            id: row.id,
-            userId: row.user_id,
-            title: row.title,
-            message: row.message,
-            type: row.type || 'system',
-            link: row.link || null,
-            read: row.read ?? false,
-            archived: row.archived ?? false,
-            createdAt: row.created_at,
-          }),
-        )
+      handleNotificationUpsert,
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${userId}`,
       },
+      handleNotificationUpsert,
     )
 
   if (isStaff) {

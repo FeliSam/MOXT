@@ -281,6 +281,25 @@ export const loadAllData = createAsyncThunk(
       supabase.from('recipient_addresses').select('*').eq('user_id', uid).order('updated_at', { ascending: false }).limit(USER_LIMIT),
     ])
 
+    // Afficher les statuts dès que la query est prête — ne pas attendre transferts/conversations.
+    {
+      const localStatusesById = new Map((getState().statuses?.items || []).map((item) => [item.id, item]))
+      const mappedStatuses = fromRows(safeRows(statusesRes, 'des statuts')).map((s) => {
+        const remoteViewedBy = parseJsonField(s.viewedBy ?? s.viewed_by, [])
+        const remoteViewers = parseJsonField(s.viewers, {})
+        const local = localStatusesById.get(s.id)
+        return {
+          ...s,
+          images: parseJsonField(s.images, []).filter((url) => typeof url === 'string' && url).slice(0, 4),
+          viewedBy: mergeViewedByLists(remoteViewedBy, local?.viewedBy),
+          viewers: mergeStatusViewers(remoteViewers, local?.viewers),
+          reactions: parseJsonField(s.reactions, {}),
+          isOfficial: s.isOfficial === true || s.is_official === true,
+        }
+      })
+      dispatch(setStatuses({ items: applySeenLedgerToStatuses(mappedStatuses, uid) }))
+    }
+
     let auditLogRes = { data: [], error: null }
     if (isAdmin) {
       auditLogRes = await supabase
