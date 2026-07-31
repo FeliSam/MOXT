@@ -25,6 +25,7 @@ import { useSecurityGate } from '../features/security/useSecurityGate'
 import { transferCurrenciesForCountry } from '../features/transfers/transferConfig'
 import { formatDate, formatMoney } from '../features/transfers/transferUtils'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
+import { useP2pCatalogRealtime } from '../features/p2p/useP2pRealtime'
 
 function byCreatedAtDesc(a, b) {
   return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
@@ -37,6 +38,7 @@ function userRatedOrder(order, userId) {
 export function P2PPage() {
   const { t } = useLanguage()
   useScrollToSecondSection()
+  useP2pCatalogRealtime()
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [tab, setTab] = useState('active')
   const [filters, setFilters] = useState({

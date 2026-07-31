@@ -90,7 +90,7 @@ export function TransferWorkflowPanel({
               <p className="mt-1 font-mono text-3xl font-black tabular-nums text-brand-700 dark:text-brand-300">
                 {acceptanceCountdown?.label || '--:--'}
               </p>
-              <p className="mt-2 text-sm text-[var(--app-text-muted)]">
+              <p className="mt-2 break-words text-sm text-[var(--app-text-muted)] [overflow-wrap:anywhere]">
                 {t('transfers.acceptance.waitingHint', {
                   name: transfer.exchanger?.name || t('transfers.acceptance.exchangerFallback'),
                 })}
@@ -288,13 +288,15 @@ export function TransferWorkflowPanel({
 function ActionZone({ children, description, title }) {
   const { t } = useLanguage()
   return (
-    <div className="rounded-2xl border-2 border-brand-300 bg-brand-50/30 p-4 dark:border-brand-700 dark:bg-brand-950/20">
+    <div className="min-w-0 overflow-hidden rounded-2xl border-2 border-brand-300 bg-brand-50/30 p-4 dark:border-brand-700 dark:bg-brand-950/20">
       <p className="text-xs font-black uppercase tracking-wide text-brand-700 dark:text-brand-300">
         {t('transfers.workflow.actionRequired')}
       </p>
-      <h3 className="mt-1 font-black">{title}</h3>
-      <p className="mt-2 text-sm leading-6 text-[var(--app-text-muted)]">{description}</p>
-      {children ? <div className="mt-4 grid gap-3">{children}</div> : null}
+      <h3 className="mt-1 break-words font-black [overflow-wrap:anywhere]">{title}</h3>
+      <p className="mt-2 break-words text-sm leading-6 text-[var(--app-text-muted)] [overflow-wrap:anywhere]">
+        {description}
+      </p>
+      {children ? <div className="mt-4 grid min-w-0 gap-3">{children}</div> : null}
     </div>
   )
 }

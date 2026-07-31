@@ -109,6 +109,10 @@ const p2pSlice = createSlice({
       if (index === -1) state.orders.unshift(order)
       else state.orders[index] = { ...state.orders[index], ...order }
     },
+    /** Reçu via Supabase Realtime (DELETE distant). */
+    removeRemoteOrder(state, action) {
+      state.orders = state.orders.filter((item) => item.id !== action.payload)
+    },
     acceptOffer: {
       reducer(state, action) {
         const offer = state.offers.find((item) => item.id === action.payload.offerId)
@@ -186,6 +190,11 @@ const p2pSlice = createSlice({
       if (!order) return
       const next = action.payload.status
       if (order.status === next) return
+      // L'initiateur (vendeur) doit joindre une preuve avant de finaliser.
+      if (next === 'completed') {
+        const sellerProof = (order.proofs || []).some((proof) => proof.userId === order.sellerId)
+        if (!sellerProof) return
+      }
       order.status = next
       const at = new Date().toISOString()
       order.timeline ||= []
@@ -282,6 +291,7 @@ export const {
   receiveRemoteOffer,
   receiveRemoteOrder,
   removeRemoteOffer,
+  removeRemoteOrder,
   setAll,
   updateOffer,
   updateOfferStatus,

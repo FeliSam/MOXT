@@ -31,6 +31,7 @@ import {
   receiveRemoteOffer,
   receiveRemoteOrder,
   removeRemoteOffer,
+  removeRemoteOrder,
 } from '../features/p2p/p2pSlice'
 import {
   isTransferRelevantToUser,
@@ -345,6 +346,11 @@ function bindChannel(userId, dispatch, getState) {
   }
 
   const handleP2POrderChange = (payload) => {
+    if (payload.eventType === 'DELETE') {
+      const id = payload.old?.id
+      if (id) dispatch(removeRemoteOrder(id))
+      return
+    }
     const order = p2pOrderFromRemoteRow(payload.new)
     if (order?.id) dispatch(receiveRemoteOrder(order))
   }
@@ -496,7 +502,6 @@ function bindChannel(userId, dispatch, getState) {
       { event: 'DELETE', schema: 'public', table: 'listings' },
       (payload) => dispatch(removeRemoteListing(payload.old.id)),
     )
-
     .on(
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'p2p_offers' },
@@ -512,17 +517,28 @@ function bindChannel(userId, dispatch, getState) {
       { event: 'DELETE', schema: 'public', table: 'p2p_offers' },
       (payload) => dispatch(removeRemoteOffer(payload.old.id)),
     )
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'p2p_orders', filter: `buyer_id=eq.${userId}` },
-      handleP2POrderChange,
-    )
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'p2p_orders', filter: `seller_id=eq.${userId}` },
-      handleP2POrderChange,
-    )
 
+  if (isStaff) {
+    channel = channel.on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'p2p_orders' },
+      handleP2POrderChange,
+    )
+  } else {
+    channel = channel
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'p2p_orders', filter: `buyer_id=eq.${userId}` },
+        handleP2POrderChange,
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'p2p_orders', filter: `seller_id=eq.${userId}` },
+        handleP2POrderChange,
+      )
+  }
+
+  channel = channel
     .on(
       'postgres_changes',
       {

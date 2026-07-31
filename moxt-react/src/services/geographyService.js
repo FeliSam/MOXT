@@ -85,9 +85,10 @@ export async function getAfricanOriginCountries() {
 }
 
 export async function getRussianCities() {
+  // Cache réseau si déjà peuplé, sinon snapshot embarqué (~5k villes) — jamais une mini-liste.
   const local = readCache(CITIES_CACHE) || FALLBACK_RUSSIAN_CITIES
   void refreshRussianCities().catch(() => {
-    /* VPN / filtrage : garder le fallback local */
+    /* VPN / filtrage : garder le fallback local complet */
   })
   return local
 }

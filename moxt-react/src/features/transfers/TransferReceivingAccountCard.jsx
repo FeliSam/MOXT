@@ -58,25 +58,30 @@ export function TransferReceivingAccountCard({
     <Card
       className={`ring-1 ring-brand-200/70 transition-shadow duration-300 hover:shadow-[var(--shadow-card-hover)] dark:ring-brand-800/70 ${className}`}
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-start gap-3">
+      <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-1 items-start gap-3">
           <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300">
             <FiCreditCard />
           </span>
-          <div>
+          <div className="min-w-0 flex-1 overflow-hidden">
             <p className="text-[11px] font-black uppercase tracking-[0.16em] text-brand-700 dark:text-brand-300">
               {t('transfers.receivingAccount.activeTitle')}
             </p>
-            <h3 className="mt-1 font-black">
+            <h3
+              className="mt-1 break-words font-black [overflow-wrap:anywhere]"
+              title={
+                account.label || account.method || t('transfers.receivingAccount.businessDetails')
+              }
+            >
               {account.label || account.method || t('transfers.receivingAccount.businessDetails')}
             </h3>
-            <p className="mt-1 text-sm text-[var(--app-text-muted)]">
+            <p className="mt-1 break-words text-sm text-[var(--app-text-muted)]">
               {direction ? directionLabel(direction, t) : directionHint} ·{' '}
               {countryLabel(account.country)}
             </p>
           </div>
         </div>
-        <Badge tone="success">
+        <Badge tone="success" className="shrink-0">
           <FiCheck className="mr-1 inline text-xs" />
           {t('transfers.receivingAccount.active')}
         </Badge>
@@ -116,11 +121,16 @@ export function TransferReceivingAccountCard({
 function InfoRow({ label, value }) {
   if (!value) return null
   return (
-    <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-[var(--app-border)] py-2 last:border-0">
-      <span className="text-xs font-bold uppercase tracking-wide text-[var(--app-text-faint)]">
+    <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-2 border-b border-[var(--app-border)] py-2 last:border-0">
+      <span className="shrink-0 text-xs font-bold uppercase tracking-wide text-[var(--app-text-faint)]">
         {label}
       </span>
-      <strong className="text-right text-sm">{value}</strong>
+      <strong
+        className="min-w-0 max-w-full break-words text-right text-sm [overflow-wrap:anywhere]"
+        title={String(value)}
+      >
+        {value}
+      </strong>
     </div>
   )
 }

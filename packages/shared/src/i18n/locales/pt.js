@@ -4408,6 +4408,7 @@ export const pt = {
       markPaid: "Enviei o pagamento",
       markPaidHint: "Adicione um comprovativo de pagamento antes de continuar.",
       confirmReceived: "Confirmar receção e finalizar",
+      confirmReceivedHint: "Adicione um comprovativo de transferência antes de finalizar a transação.",
       waitingSellerConfirmation: "A aguardar a confirmação do vendedor.",
       waitingBuyerPayment: "A aguardar o envio do pagamento pelo comprador.",
       disputedBanner: "Existe um litígio aberto nesta transação. Um moderador MOXT vai intervir — os estados ficam bloqueados até à resolução.",

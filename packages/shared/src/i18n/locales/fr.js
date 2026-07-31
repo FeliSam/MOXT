@@ -4420,6 +4420,8 @@ export const fr = {
       markPaid: "J’ai envoyé le paiement",
       markPaidHint: "Ajoutez une preuve de paiement avant de continuer.",
       confirmReceived: "Confirmer la réception et finaliser",
+      confirmReceivedHint:
+        "Ajoutez une preuve de transfert avant de finaliser la transaction.",
       waitingSellerConfirmation: "En attente de la confirmation du vendeur.",
       waitingBuyerPayment: "En attente de l’envoi du paiement par l’acheteur.",
       disputedBanner:

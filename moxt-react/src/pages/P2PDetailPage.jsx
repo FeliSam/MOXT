@@ -24,12 +24,14 @@ import { calculateP2PFee } from '../features/p2p/p2pUtils'
 import { selectPlatformFees } from '../features/admin/platformRatesSlice'
 import { useSecurityGate } from '../features/security/useSecurityGate'
 import { formatMoney } from '../features/transfers/transferUtils'
+import { useP2pCatalogRealtime } from '../features/p2p/useP2pRealtime'
 
 export function P2PDetailPage() {
   const { t } = useLanguage()
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const { offerId } = useParams()
+  useP2pCatalogRealtime()
   const { requireP2PAccept } = useSecurityGate()
   const [confirmOpen, setConfirmOpen] = useState(false)
   const user = useSelector((state) => state.auth.user)

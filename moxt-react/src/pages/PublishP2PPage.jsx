@@ -14,7 +14,7 @@ import { useNavigate } from 'react-router-dom'
 import { Alert } from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
-import { Input } from '../components/ui/Input'
+import { Input, Textarea } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
 import {
   ensurePhoneCountry,
@@ -575,13 +575,14 @@ export function PublishP2PPage() {
                 onChange={(event) => set('receiveName', event.target.value)}
                 error={errors.receiveName}
               />
-              <Input
+              <Textarea
                 id="p2p-publish-comment"
                 label={t('p2p.publish.conditionsOptional')}
                 placeholder={t('p2p.publish.conditionsPlaceholder')}
                 value={form.comment}
                 onChange={(event) => set('comment', event.target.value)}
                 error={errors.comment}
+                rows={4}
               />
             </Card>
             <Card className="grid gap-4">

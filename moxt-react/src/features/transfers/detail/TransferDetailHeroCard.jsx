@@ -37,11 +37,14 @@ export function TransferDetailHeroCard({ transfer }) {
         </div>
       </div>
       {transfer.exchanger?.name ? (
-        <div className="mt-5 flex items-center gap-2 border-t border-white/15 pt-4">
-          <span className="text-sm text-white/75">
+        <div className="mt-5 flex min-w-0 items-start gap-2 border-t border-white/15 pt-4">
+          <span
+            className="min-w-0 flex-1 break-words text-sm text-white/75 [overflow-wrap:anywhere]"
+            title={t('transfers.detail.hero.processedBy', { name: transfer.exchanger.name })}
+          >
             {t('transfers.detail.hero.processedBy', { name: transfer.exchanger.name })}
           </span>
-          <VerifiedBadge size="sm" className="!text-emerald-200" />
+          <VerifiedBadge size="sm" className="!shrink-0 !text-emerald-200" />
         </div>
       ) : null}
     </Card>

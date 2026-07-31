@@ -18,7 +18,10 @@ describe('geographyService', () => {
   it('utilise les villes russes locales lorsque le reseau est indisponible', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
     const cities = await getRussianCities()
-    expect(cities).toContain('Moscou')
+    expect(cities.length).toBeGreaterThan(1000)
+    expect(cities).toContain('Moscow')
     expect(cities).toContain('Kazan')
+    expect(cities).toContain('Kaliningrad')
+    expect(cities).toContain('Tomsk')
   })
 })

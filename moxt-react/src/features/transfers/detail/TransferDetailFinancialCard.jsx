@@ -13,7 +13,7 @@ export function TransferDetailFinancialCard({ onCopyReference, onDownloadReceipt
   return (
     <Card
       variant="finance"
-      className="transition-shadow duration-300 hover:shadow-[var(--shadow-card-hover)]"
+      className="min-w-0 overflow-hidden transition-shadow duration-300 hover:shadow-[var(--shadow-card-hover)]"
     >
       <h2 className="flex items-center gap-2 font-black">
         <span className="grid size-9 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand-700 dark:bg-brand-900 dark:text-brand-200">

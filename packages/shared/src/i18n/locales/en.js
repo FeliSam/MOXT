@@ -4426,6 +4426,7 @@ export const en = {
         savedBody: "The seller can send {currency} to these details.",
       },
       confirmReceived: "Confirm receipt and finalize",
+      confirmReceivedHint: "Add a transfer proof before finalizing the transaction.",
       waitingSellerConfirmation: "Waiting for the seller's confirmation.",
       waitingBuyerPayment: "Waiting for the buyer to send the payment.",
       disputedBanner: "A dispute is open on this transaction. A MOXT moderator will step in — statuses are locked until it's resolved.",

@@ -5,7 +5,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { Alert } from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
-import { Input } from '../components/ui/Input'
+import { Input, Textarea } from '../components/ui/Input'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Select } from '../components/ui/Select'
 import { ensurePhoneCountry, phoneError, phonePlaceholder, validatePhone } from '../config/phone'
@@ -339,13 +339,14 @@ export function EditP2POfferPage() {
             onChange={(event) => set('receiveName', event.target.value)}
             error={errors.receiveName}
           />
-          <Input
+          <Textarea
             id="p2p-edit-comment"
             label={t('p2p.publish.conditionsOptional')}
             placeholder={t('p2p.publish.conditionsPlaceholder')}
             value={values.comment}
             onChange={(event) => set('comment', event.target.value)}
             error={errors.comment}
+            rows={4}
           />
         </Card>
 

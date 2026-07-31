@@ -37,6 +37,11 @@ function isViewingConversation(conversationId) {
   )
 }
 
+function isViewingP2pOrder(orderId) {
+  if (typeof window === 'undefined' || !orderId) return false
+  return window.location.pathname === `/p2p/orders/${orderId}`
+}
+
 function previewMessage(message) {
   const text = message.text?.trim()
   if (text) {
@@ -49,6 +54,7 @@ function previewMessage(message) {
 }
 
 export const engagementToastMiddleware = (store) => (next) => (action) => {
+  const before = store.getState()
   const result = next(action)
 
   if (!alertsEnabled) return result
@@ -57,6 +63,61 @@ export const engagementToastMiddleware = (store) => (next) => (action) => {
   const state = store.getState()
   const userId = state.auth.user?.id
   if (!userId) return result
+
+  if (action.type === 'p2p/receiveRemoteOrder') {
+    const order = action.payload
+    if (!order?.id) return result
+    if (order.buyerId !== userId && order.sellerId !== userId) return result
+    if (isViewingP2pOrder(order.id)) return result
+
+    const previous = before.p2p?.orders?.find((item) => item.id === order.id)
+    if (!previous) {
+      store.dispatch(
+        addToast({
+          id: `ENG-P2P-NEW-${order.id}`,
+          title: 'Nouvelle commande P2P',
+          message: `${order.buyerName || 'Un acheteur'} a accepté une offre.`,
+          tone: 'engagement',
+          link: `/p2p/orders/${order.id}`,
+          engagement: true,
+        }),
+      )
+      return result
+    }
+
+    if (previous.status !== order.status) {
+      store.dispatch(
+        addToast({
+          id: `ENG-P2P-STATUS-${order.id}-${order.status}`,
+          title: 'Commande P2P mise à jour',
+          message: `Statut : ${order.status}`,
+          tone: order.status === 'completed' ? 'success' : 'engagement',
+          link: `/p2p/orders/${order.id}`,
+          engagement: true,
+        }),
+      )
+    }
+    return result
+  }
+
+  if (action.type === 'p2p/receiveRemoteOffer') {
+    const offer = action.payload
+    if (!offer?.id || offer.ownerId === userId) return result
+    const previous = before.p2p?.offers?.find((item) => item.id === offer.id)
+    if (!previous && offer.status === 'active') {
+      store.dispatch(
+        addToast({
+          id: `ENG-P2P-OFFER-${offer.id}`,
+          title: 'Nouvelle offre P2P',
+          message: `${offer.ownerName || 'Un vendeur'} propose ${offer.amount || ''} ${offer.fromCurrency || ''}`.trim(),
+          tone: 'engagement',
+          link: `/p2p/${offer.id}`,
+          engagement: true,
+        }),
+      )
+    }
+    return result
+  }
 
   if (action.type === 'communications/receiveRemoteMessage') {
     const { conversationId, message } = action.payload

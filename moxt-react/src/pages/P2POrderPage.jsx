@@ -43,6 +43,7 @@ import { formatDate, formatMoney } from '../features/transfers/transferUtils'
 import { addToast } from '../features/ui/uiSlice'
 import { useUploadProgress } from '../hooks/useUploadProgress'
 import { storageService } from '../services/storageService'
+import { useP2pOrderRealtime } from '../features/p2p/useP2pRealtime'
 
 const ORDER_STATUS_KEYS = {
   created: { labelKey: 'p2p.order.status.created', tone: 'info' },
@@ -65,6 +66,7 @@ export function P2POrderPage() {
   const [previewUrl, setPreviewUrl] = useState(null)
   const { progress: proofProgress, track: trackProofUpload } = useUploadProgress()
   const { orderId } = useParams()
+  useP2pOrderRealtime(orderId)
   const user = useSelector((state) => state.auth.user)
   const order = useSelector((state) => state.p2p.orders.find((item) => item.id === orderId))
   const linkedOffer = useSelector((state) =>
@@ -144,6 +146,7 @@ export function P2POrderPage() {
     return <Card>{t('p2p.order.notFound')}</Card>
 
   const myProofUploaded = order.proofs?.some((proof) => proof.userId === user.id)
+  const sellerProofUploaded = order.proofs?.some((proof) => proof.userId === order.sellerId)
   const buyerProofs = order.proofs?.filter((proof) => proof.userId === order.buyerId) || []
   const isTerminal = ['completed', 'cancelled'].includes(order.status)
   const isDisputed = order.status === 'disputed' || Boolean(dispute)
@@ -203,6 +206,17 @@ export function P2POrderPage() {
       setBuyerReceiveOpen(true)
       return
     } else if (confirmAction === 'confirmReceived') {
+      if (!sellerProofUploaded) {
+        dispatch(
+          addToast({
+            title: t('common.error'),
+            message: t('p2p.order.confirmReceivedHint'),
+            tone: 'warning',
+          }),
+        )
+        setConfirmAction(null)
+        return
+      }
       dispatch(updateOrderStatus({ id: order.id, status: 'completed' }))
     } else if (confirmAction === 'cancel') {
       dispatch(
@@ -436,12 +450,19 @@ export function P2POrderPage() {
               </Button>
             ) : null}
             {order.status === 'waiting_payment' && isSeller ? (
-              <Button icon={FiCheckCircle} onClick={() => setConfirmAction('confirmReceived')}>
+              <Button
+                icon={FiCheckCircle}
+                disabled={!sellerProofUploaded}
+                onClick={() => setConfirmAction('confirmReceived')}
+              >
                 {t('p2p.order.confirmReceived')}
               </Button>
             ) : null}
             {order.status === 'created' && isBuyer && !myProofUploaded ? (
               <p className="text-xs text-[var(--app-text-muted)]">{t('p2p.order.markPaidHint')}</p>
+            ) : null}
+            {order.status === 'waiting_payment' && isSeller && !sellerProofUploaded ? (
+              <p className="text-xs text-[var(--app-text-muted)]">{t('p2p.order.confirmReceivedHint')}</p>
             ) : null}
           </div>
         ) : null}

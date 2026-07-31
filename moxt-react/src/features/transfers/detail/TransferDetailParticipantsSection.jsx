@@ -80,14 +80,14 @@ export function TransferDetailParticipantsSection({ transfer }) {
   )
 
   return (
-    <Card className="ring-1 ring-transparent transition-shadow duration-300 hover:ring-brand-200 dark:hover:ring-brand-800">
-      <h2 className="flex items-center gap-2 font-black">
+    <Card className="min-w-0 overflow-hidden ring-1 ring-transparent transition-shadow duration-300 hover:ring-brand-200 dark:hover:ring-brand-800">
+      <h2 className="flex min-w-0 items-center gap-2 font-black">
         <span className="grid size-9 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand-700 dark:bg-brand-900 dark:text-brand-200">
           <FiUsers className="text-sm" />
         </span>
-        {t('transfers.detail.participants.title')}
+        <span className="min-w-0 truncate">{t('transfers.detail.participants.title')}</span>
       </h2>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+      <div className="mt-4 grid min-w-0 gap-4 sm:grid-cols-2">
         <TransferParticipantCard
           title={t('transfers.detail.participants.sender')}
           party={transfer.sender}
@@ -102,11 +102,11 @@ export function TransferDetailParticipantsSection({ transfer }) {
         />
       </div>
       {String(transfer.noteToExchanger || '').trim() ? (
-        <div className="mt-4 rounded-xl bg-[var(--app-surface-muted)] px-4 py-3">
+        <div className="mt-4 min-w-0 overflow-hidden rounded-xl bg-[var(--app-surface-muted)] px-4 py-3">
           <p className="text-xs font-bold uppercase tracking-wide text-[var(--app-text-muted)]">
             {t('transfers.detail.noteToExchanger')}
           </p>
-          <p className="mt-1 whitespace-pre-wrap text-sm text-[var(--app-text)]">
+          <p className="mt-1 whitespace-pre-wrap break-words text-sm text-[var(--app-text)] [overflow-wrap:anywhere]">
             {String(transfer.noteToExchanger).trim()}
           </p>
         </div>

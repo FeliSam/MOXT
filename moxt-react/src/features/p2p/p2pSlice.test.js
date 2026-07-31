@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import reducer, {
   acceptOffer,
+  addOrderProof,
   createOffer,
   updateOfferStatus,
   updateOrderStatus,
@@ -94,5 +95,34 @@ describe('P2P', () => {
       }),
     )
     expect(cancelled.offers[0].status).toBe('archived')
+  })
+
+  it('refuse de finaliser sans preuve du vendeur', () => {
+    const offered = reducer({ offers: [], orders: [] }, createOffer(offerValues))
+    const accepted = reducer(
+      offered,
+      acceptOffer({
+        offer: offered.offers[0],
+        buyer: { id: 'buyer', firstName: 'Amina', lastName: 'Demo' },
+      }),
+    )
+    const orderId = accepted.orders[0].id
+    const paid = reducer(accepted, updateOrderStatus({ id: orderId, status: 'waiting_payment' }))
+    const blocked = reducer(paid, updateOrderStatus({ id: orderId, status: 'completed' }))
+    expect(blocked.orders[0].status).toBe('waiting_payment')
+
+    const withProof = reducer(
+      paid,
+      addOrderProof({
+        id: orderId,
+        userId: 'seller',
+        name: 'preuve.pdf',
+        size: 12,
+        type: 'application/pdf',
+        path: 'p2p/preuve.pdf',
+      }),
+    )
+    const completed = reducer(withProof, updateOrderStatus({ id: orderId, status: 'completed' }))
+    expect(completed.orders[0].status).toBe('completed')
   })
 })
