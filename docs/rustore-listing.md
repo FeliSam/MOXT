@@ -5,6 +5,9 @@ Console : [https://console.rustore.ru](https://console.rustore.ru)
 
 Ce fichier est prêt à coller dans la console. Les **captures d’écran** doivent être prises sur l’app reale (émulateur / appareil) — elles ne sont pas générées ici.
 
+Pour **Apple App Store** (Capacitor iOS) : voir [`docs/appstore-listing.md`](./appstore-listing.md) et `npm run check:ios-store`.  
+Pour **Google Play** (même package Android) : voir [`docs/google-play-listing.md`](./google-play-listing.md) et `npm run check:play-store`.
+
 ---
 
 ## App autonome (exigence RuStore / Google Play — WebView)

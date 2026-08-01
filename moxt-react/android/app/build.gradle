@@ -13,7 +13,8 @@ android {
         applicationId "com.moxt.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 6
+        // Aligner versionCode avec iOS CURRENT_PROJECT_VERSION (docs/google-play-listing.md).
+        versionCode 7
         versionName "1.2.4"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {

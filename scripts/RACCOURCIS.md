@@ -113,6 +113,9 @@ Safari : au retour d’onglet / bfcache, l’app re-sync `email_confirmed_at` vi
 | `npm run i18n:check` | Même clés FR / EN / RU / ES / PT |
 | `npm run fix` | Tests + `check:site` + `check:smsc` **en parallèle** |
 | `npm run check:push` | État push web + Capacitor Android/iOS |
+| `npm run check:ios-store` | Checklist fichiers App Store (sans Mac) |
+| `npm run check:play-store` | Checklist fichiers Google Play (sans compte) |
+| `npm run check:stores` | App Store + Google Play (les deux checklists) |
 | `npm run check:rustore` | Auth RuStore (keyId + PEM ou Base64 modal) |
 | `npm run rustore:wrap-key` | Enveloppe Base64 RuStore → `scripts/rustore-private-key.pem` |
 | `npm run check:site` | Smoke test moxtapp.ru |
@@ -125,10 +128,20 @@ Safari : au retour d’onglet / bfcache, l’app re-sync `email_confirmed_at` vi
 
 | Commande | Description |
 |----------|-------------|
-| `npm run web:cap:prod:sync` | Build prod + sync : **assets locaux dans l’APK** (pas de WebView moxtapp.ru) |
+| `npm run web:cap:prod:sync` | Build prod + sync : **assets locaux** Android/iOS (pas de WebView moxtapp.ru) |
 | `npm run web:cap:prod:android` | Sync prod + ouvre Android Studio |
+| `npm run web:cap:prod:ios` | Sync prod + ouvre Xcode (**Mac requis**) |
+| `npm run android:aab` | Sync prod + AAB signé (Google Play / RuStore) |
+| `npm run android:keystore` | Génère keystore release (une fois, gitignoré) |
+| `npm run check:ios-store` | Checklist App Store côté repo (sans Mac) |
+| `npm run check:play-store` | Checklist Google Play côté repo |
+| `npm run check:stores` | Les deux checklists stores |
 | `npm run web:cap:dev:sync` | Dev live reload (`CAPACITOR_SERVER_URL` → Vite LAN) |
 | `npm run web:cap:doctor` | Diagnostic Capacitor |
+
+Guide Google Play : [`docs/google-play-listing.md`](../docs/google-play-listing.md)  
+Guide iOS / App Store : [`docs/appstore-listing.md`](../docs/appstore-listing.md)  
+Guide RuStore : [`docs/rustore-listing.md`](../docs/rustore-listing.md)
 
 ---
 

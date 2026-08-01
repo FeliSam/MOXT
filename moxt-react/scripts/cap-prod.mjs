@@ -60,11 +60,32 @@ if (existsSync(androidCapConfig)) {
   console.warn('⚠ capacitor.config.json Android introuvable après sync.')
 }
 
+// Garde-fou iOS (même règle App Store / pas de wrapper).
+const iosCapConfig = path.join(root, 'ios', 'App', 'App', 'capacitor.config.json')
+if (existsSync(iosCapConfig)) {
+  const parsed = JSON.parse(readFileSync(iosCapConfig, 'utf8'))
+  const remoteUrl = parsed?.server?.url
+  if (remoteUrl && /moxtapp\.ru/i.test(String(remoteUrl))) {
+    console.error(`
+✗ ERREUR : capacitor.config.json iOS pointe encore vers ${remoteUrl}
+  L’IPA serait un wrapper WebView — refusé App Store.
+`)
+    process.exit(1)
+  }
+  if (remoteUrl) {
+    console.warn(`⚠ iOS server.url présent (${remoteUrl}) — OK seulement pour le live-reload.`)
+  } else {
+    console.log('✓ Config iOS : pas de server.url — assets locaux embarqués.')
+  }
+} else {
+  console.warn('⚠ capacitor.config.json iOS introuvable après sync.')
+}
+
 console.log(`
 Prochaines étapes :
-  1. npm run cap:open:android   → Run sur émulateur / appareil
-  2. Captures d’écran natives (UI russe recommandée pour RuStore)
-  3. cd android && .\\gradlew.bat bundleRelease   → AAB signé
+  Android / Play : npm run check:play-store && npm run android:aab
+  iOS (Mac)      : npm run check:ios-store && npm run cap:prod:ios → Archive
+  Guides         : docs/google-play-listing.md · docs/appstore-listing.md
 `)
 
 process.exit(0)

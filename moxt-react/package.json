@@ -22,6 +22,7 @@
     "cap:dev:sync": "node scripts/cap-dev.mjs --sync",
     "cap:prod:sync": "node scripts/cap-prod.mjs",
     "cap:prod:android": "node scripts/cap-prod.mjs && cap open android",
+    "cap:prod:ios": "node scripts/cap-prod.mjs && cap open ios",
     "android:apk": "node scripts/cap-prod.mjs && npm run cap:gradle:ensure && cd android && gradlew.bat assembleRelease",
     "android:aab": "node scripts/cap-prod.mjs && npm run cap:gradle:ensure && cd android && gradlew.bat bundleRelease",
     "android:keystore": "node scripts/android-keystore.mjs",
