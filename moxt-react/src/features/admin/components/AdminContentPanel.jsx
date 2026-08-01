@@ -11,8 +11,10 @@ import { Empty, SectionTitle } from './AdminShared'
 
 function contentDisplayTitle(contentView, item) {
   if (contentView === 'posts') {
-    const text = (item.message || item.title || item.body || item.content || '').trim()
-    if (text) return text.length > 96 ? `${text.slice(0, 96)}…` : text
+    const text = (item.message || item.title || item.body || item.content || '')
+      .trim()
+      .replace(/\s+/g, ' ')
+    if (text) return text.length > 48 ? `${text.slice(0, 48)}…` : text
   }
   return (
     item.name ||
@@ -38,7 +40,7 @@ function ContentRow({ contentView, dispatch, item, setSelected, t }) {
   const thumb = contentView === 'listings' ? listingThumb(item) : null
   return (
     <div className={`${ITEM} grid gap-3 ${isPending ? 'border-amber-200 dark:border-amber-800/40' : ''} ${isArchived ? 'opacity-80' : ''}`}>
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex min-w-0 items-center gap-3">
         {thumb ? (
           <button
             type="button"
@@ -62,34 +64,36 @@ function ContentRow({ contentView, dispatch, item, setSelected, t }) {
             {contentSubtitle(contentView, item, t)}
           </p>
         </button>
-        <span
-          className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
-            isPending
-              ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'
-              : isArchived
-                ? 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
-          }`}
-        >
-          {status}
-        </span>
-        {proofStatus ? (
+        <div className="flex shrink-0 flex-col items-end gap-1">
           <span
             className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
-              proofStatus === 'verified'
-                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
-                : proofStatus === 'rejected'
-                  ? 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300'
-                  : proofStatus === 'pending_review'
-                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'
-                    : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+              isPending
+                ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'
+                : isArchived
+                  ? 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                  : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
             }`}
           >
-            {proofStatus === 'missing'
-              ? adminText(t, 'admin.facts.proofMissing')
-              : `${adminText(t, 'admin.facts.proofStatus')}: ${proofStatus}`}
+            {status}
           </span>
-        ) : null}
+          {proofStatus ? (
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+                proofStatus === 'verified'
+                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
+                  : proofStatus === 'rejected'
+                    ? 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300'
+                    : proofStatus === 'pending_review'
+                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'
+                      : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+              }`}
+            >
+              {proofStatus === 'missing'
+                ? adminText(t, 'admin.facts.proofMissing')
+                : `${adminText(t, 'admin.facts.proofStatus')}: ${proofStatus}`}
+            </span>
+          ) : null}
+        </div>
       </div>
       <div className="flex flex-wrap gap-2">
         {contentActions(contentView, dispatch, item, t)}

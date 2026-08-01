@@ -55,11 +55,6 @@ const FIELD_MAP = {
   readBy: 'read_by',
 }
 
-function jsonOrNull(value) {
-  if (value === undefined || value === null) return null
-  return typeof value === 'string' ? value : JSON.stringify(value)
-}
-
 function isUuid(value) {
   return (
     typeof value === 'string' &&
@@ -111,19 +106,22 @@ export function messageToRemoteRow(message, conversationId) {
   if (!senderId) {
     throw new Error('Expéditeur du message invalide.')
   }
-  return {
+  const row = {
     id: message.id,
     conversation_id: conversationId,
     sender_id: senderId,
     sender_name: message.senderName,
     text: message.text,
-    attachment: jsonOrNull(message.attachment),
+    attachment: message.attachment ?? null,
     reply_to_id: message.replyToId || null,
     related_context_id: message.relatedContextId || null,
-    reactions: jsonOrNull(message.reactions ?? {}),
-    deleted_by: jsonOrNull(message.deletedBy ?? []),
-    delivered_to: jsonOrNull(message.deliveredTo ?? []),
-    read_by: jsonOrNull(message.readBy ?? []),
+    reactions: jsonbValue(message.reactions, {}),
+    deleted_by: jsonbValue(message.deletedBy, []),
+    delivered_to: jsonbValue(message.deliveredTo, []),
+    read_by: jsonbValue(message.readBy, []),
     created_at: message.createdAt,
   }
+  // Do not send edited_at until the remote column exists (migration 20260730180000).
+  // Text content still syncs via `text`; local UI keeps `editedAt` in memory.
+  return row
 }

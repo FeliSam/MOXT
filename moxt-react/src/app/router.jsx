@@ -29,6 +29,12 @@ function lazyPage(loader, exportName) {
 const AdminPage = lazyPage(() => import('../pages/AdminPage'), 'AdminPage')
 const ModerationPage = lazyPage(() => import('../pages/ModerationPage'), 'ModerationPage')
 const HelpGuidePage = lazyPage(() => import('../pages/HelpGuidePage'), 'HelpGuidePage')
+const ProductHelpPage = lazyPage(() => import('../pages/ProductHelpPage'), 'ProductHelpPage')
+const ProductHelpSessionPage = lazyPage(
+  () => import('../pages/ProductHelpPage'),
+  'ProductHelpSessionPage',
+)
+const InstallAppPage = lazyPage(() => import('../pages/InstallAppPage'), 'InstallAppPage')
 const HelpArticleDetailPage = lazyPage(
   () => import('../pages/HelpGuidePage'),
   'HelpArticleDetailPage',
@@ -127,7 +133,9 @@ const P2POrderPage = lazyPage(() => import('../pages/P2POrderPage'), 'P2POrderPa
 const P2PDetailPage = lazyPage(() => import('../pages/P2PDetailPage'), 'P2PDetailPage')
 const P2PPage = lazyPage(() => import('../pages/P2PPage'), 'P2PPage')
 const PublishP2PPage = lazyPage(() => import('../pages/PublishP2PPage'), 'PublishP2PPage')
+const EditP2POfferPage = lazyPage(() => import('../pages/EditP2POfferPage'), 'EditP2POfferPage')
 const PaymentsPage = lazyPage(() => import('../pages/PaymentsPage'), 'PaymentsPage')
+const ContributePage = lazyPage(() => import('../pages/ContributePage'), 'ContributePage')
 const ProfilePage = lazyPage(() => import('../pages/ProfilePage'), 'ProfilePage')
 const PersonalInformationPage = lazyPage(
   () => import('../pages/PersonalInformationPage'),
@@ -155,6 +163,10 @@ const TransferDetailPage = lazyPage(
   'TransferDetailPage',
 )
 const TransfersPage = lazyPage(() => import('../pages/TransfersPage'), 'TransfersPage')
+const ExchangerDashboardPage = lazyPage(
+  () => import('../pages/ExchangerDashboardPage'),
+  'ExchangerDashboardPage',
+)
 const ReferralPage = lazyPage(() => import('../pages/ReferralPage'), 'ReferralPage')
 const PublicationShell = lazyPage(
   () => import('../components/routing/PublicationShell'),
@@ -244,6 +256,14 @@ export function AppRouter() {
             <Route path="/wallet" element={<Navigate to="/receipts" replace />} />
             <Route path="/referral" element={<ReferralPage />} />
             <Route path="/payments" element={<PaymentsPage />} />
+            <Route
+              path="/contribute"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+                  <ContributePage />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/receipts" element={<ReceiptsPage />} />
             <Route path="/receipts/:receiptId" element={<ReceiptDetailPage />} />
             <Route path="/disputes" element={<DisputesPage />} />
@@ -259,6 +279,7 @@ export function AppRouter() {
             <Route path="/businesses/setup" element={<BusinessSetupPage />} />
             <Route path="/businesses/:businessId" element={<BusinessDetailPage />} />
             <Route path="/professional" element={<ProfessionalPage />} />
+            <Route path="/exchanger" element={<ExchangerDashboardPage />} />
             <Route
               path="/business-detail"
               element={<LegacyDetailRedirect fallback="/businesses" target="/businesses" />}
@@ -274,6 +295,7 @@ export function AppRouter() {
             <Route path="/p2p" element={<P2PPage />} />
             <Route path="/p2p/publish" element={<PublishP2PPage />} />
             <Route path="/p2p/orders/:orderId" element={<P2POrderPage />} />
+            <Route path="/p2p/:offerId/edit" element={<EditP2POfferPage />} />
             <Route path="/p2p/:offerId" element={<P2PDetailPage />} />
             <Route
               path="/p2p-order-detail"
@@ -346,6 +368,9 @@ export function AppRouter() {
             />
             <Route path="/guide" element={<HelpGuidePage />} />
             <Route path="/guide/:articleId" element={<HelpArticleDetailPage />} />
+            <Route path="/aide" element={<ProductHelpPage />} />
+            <Route path="/aide/:sessionId" element={<ProductHelpSessionPage />} />
+            <Route path="/install" element={<InstallAppPage />} />
             <Route
               path="/admin/guide"
               element={

@@ -1,4 +1,4 @@
-import { FiBox, FiBriefcase, FiFileText, FiGrid, FiHome, FiMessageSquare, FiRepeat, FiShoppingBag } from 'react-icons/fi'
+import { FiBox, FiBriefcase, FiFileText, FiGrid, FiHome, FiMessageSquare, FiRepeat, FiShoppingBag, FiTrendingUp } from 'react-icons/fi'
 
 /** Sidebar — ordre complet (messagerie + entreprise owner + actualité en fin desktop) */
 export const primaryNavigationItems = [
@@ -21,6 +21,15 @@ export const primaryNavigationItems = [
     labelKey: 'nav.professional',
     path: '/professional',
     icon: FiGrid,
+    desktopOnly: true,
+    requiresOwnedBusiness: true,
+  },
+  {
+    id: 'exchanger-dashboard',
+    label: 'Dashboard échangeur',
+    labelKey: 'nav.exchangerDashboard',
+    path: '/exchanger',
+    icon: FiTrendingUp,
     desktopOnly: true,
     requiresOwnedBusiness: true,
   },

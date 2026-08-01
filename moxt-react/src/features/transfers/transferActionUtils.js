@@ -59,12 +59,17 @@ export function canClientDeclareReception(transfer, isSender) {
 
 export function transferNeedsBusinessAction(transfer) {
   if (!transfer || isClaimOnlyPhase(transfer)) return false
-  return [TRANSFER_STATUS.DECLARED, TRANSFER_STATUS.RECEIVED].includes(transfer.status)
+  return [
+    TRANSFER_STATUS.PENDING_ACCEPTANCE,
+    TRANSFER_STATUS.DECLARED,
+    TRANSFER_STATUS.RECEIVED,
+  ].includes(transfer.status)
 }
 
 export function transferNeedsClientAction(transfer) {
   if (!transfer || isClaimOnlyPhase(transfer)) return false
   if (transfer.status === TRANSFER_STATUS.PENDING) return true
+  if (transfer.status === TRANSFER_STATUS.DECLINED) return true
   return (
     transfer.status === TRANSFER_STATUS.PAID_OUT &&
     hasBusinessPayoutWithProof(transfer) &&

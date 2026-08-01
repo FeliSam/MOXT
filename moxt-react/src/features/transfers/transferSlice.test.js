@@ -1,12 +1,16 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import reducer, {
+  acceptTransferRequest,
   cancelTransfer,
   createTransfer,
   declarePayment,
+  declineTransferRequest,
   expireOverdueTransfers,
   moderateTransfer,
+  reassignTransferExchanger,
   receiveRemoteTransfer,
 } from './transferSlice'
+import { canRevealPaymentDetails } from './transferAcceptanceUtils'
 import { DIRECTIONS, TRANSFER_STATUS } from './transferConfig'
 
 const payload = {
@@ -34,6 +38,7 @@ describe('transferSlice', () => {
 
     expect(state.items[0].id).toMatch(/^MXT-/)
     expect(state.items[0].status).toBe(TRANSFER_STATUS.PENDING)
+    expect(state.items[0].acceptanceRequired).toBe(false)
     expect(state.items[0]).toMatchObject({
       businessId: 'EXC-1',
       businessOwnerId: 'business-owner',
@@ -42,6 +47,110 @@ describe('transferSlice', () => {
     expect(new Date(state.items[0].paymentDeadlineAt).getTime()).toBeGreaterThan(
       new Date(state.items[0].createdAt).getTime(),
     )
+    expect(canRevealPaymentDetails(state.items[0])).toBe(true)
+  })
+
+  it('cree un transfert en attente d acceptation quand l option est active', () => {
+    const action = createTransfer({
+      ...payload,
+      exchanger: {
+        ...payload.exchanger,
+        transferAcceptanceRequired: true,
+        paymentAccount: 'MTN 97000000',
+        paymentDetails: { phone: '97000000', method: 'MTN MoMo' },
+      },
+    })
+    const state = reducer({ items: [] }, action)
+    const transfer = state.items[0]
+
+    expect(transfer.status).toBe(TRANSFER_STATUS.PENDING_ACCEPTANCE)
+    expect(transfer.acceptanceRequired).toBe(true)
+    expect(transfer.paymentDeadlineAt).toBeNull()
+    expect(transfer.acceptanceExpiresAt).toBeTruthy()
+    expect(transfer.exchanger.paymentDetails).toBeNull()
+    expect(transfer.pendingPaymentDetails?.phone).toBe('97000000')
+    expect(canRevealPaymentDetails(transfer)).toBe(false)
+  })
+
+  it('accepte une demande et debloque le paiement', () => {
+    const created = reducer(
+      { items: [] },
+      createTransfer({
+        ...payload,
+        exchanger: {
+          ...payload.exchanger,
+          transferAcceptanceRequired: true,
+          paymentDetails: { phone: '97000000' },
+        },
+      }),
+    )
+    const id = created.items[0].id
+    const accepted = reducer(
+      created,
+      acceptTransferRequest({ id, actorId: 'business-owner', actorRole: 'user' }),
+    )
+    expect(accepted.items[0].status).toBe(TRANSFER_STATUS.PENDING)
+    expect(accepted.items[0].paymentDeadlineAt).toBeTruthy()
+    expect(accepted.items[0].exchanger.paymentDetails?.phone).toBe('97000000')
+    expect(canRevealPaymentDetails(accepted.items[0])).toBe(true)
+  })
+
+  it('refuse puis permet la reassignation du meme transfert', () => {
+    const created = reducer(
+      { items: [] },
+      createTransfer({
+        ...payload,
+        exchanger: { ...payload.exchanger, transferAcceptanceRequired: true },
+      }),
+    )
+    const id = created.items[0].id
+    const declined = reducer(
+      created,
+      declineTransferRequest({ id, actorId: 'business-owner', actorRole: 'user' }),
+    )
+    expect(declined.items[0].status).toBe(TRANSFER_STATUS.DECLINED)
+    expect(canRevealPaymentDetails(declined.items[0])).toBe(false)
+
+    const reassigned = reducer(
+      declined,
+      reassignTransferExchanger({
+        id,
+        actorId: 'u1',
+        exchanger: {
+          id: 'EXC-2',
+          ownerId: 'other-owner',
+          name: 'Pont Change',
+          feePercent: 2.5,
+          transferAcceptanceRequired: true,
+          paymentDetails: { phone: '96000000' },
+        },
+      }),
+    )
+    expect(reassigned.items[0].businessId).toBe('EXC-2')
+    expect(reassigned.items[0].previousBusinessId).toBe('EXC-1')
+    expect(reassigned.items[0].status).toBe(TRANSFER_STATUS.PENDING_ACCEPTANCE)
+    expect(reassigned.items[0].id).toBe(id)
+  })
+
+  it('expire automatiquement une acceptation depassee', () => {
+    const created = reducer(
+      { items: [] },
+      createTransfer({
+        ...payload,
+        exchanger: { ...payload.exchanger, transferAcceptanceRequired: true },
+      }),
+    )
+    const pending = {
+      items: [
+        {
+          ...created.items[0],
+          acceptanceExpiresAt: '2020-01-01T00:00:00.000Z',
+        },
+      ],
+    }
+    const expired = reducer(pending, expireOverdueTransfers('2020-01-02T00:00:00.000Z'))
+    expect(expired.items[0].status).toBe(TRANSFER_STATUS.DECLINED)
+    expect(expired.items[0].timeline.at(-1).note).toBe('acceptance_timeout')
   })
 
   it('refuse un transfert cree avec sa propre entreprise', () => {

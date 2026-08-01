@@ -24,8 +24,8 @@ describe('otpCooldown', () => {
   })
 
   it('exposes a 90 second resend window and 4 / 3h cap constants', () => {
-    expect(OTP_RESEND_COOLDOWN_SECONDS).toBe(90)
-    expect(OTP_RESEND_COOLDOWN_MS).toBe(90_000)
+    expect(OTP_RESEND_COOLDOWN_SECONDS).toBe(60)
+    expect(OTP_RESEND_COOLDOWN_MS).toBe(60_000)
     expect(OTP_MAX_SENDS_PER_WINDOW).toBe(4)
     expect(OTP_SEND_CAP_ENABLED).toBe(true)
     expect(OTP_SEND_WINDOW_MS).toBe(3 * 60 * 60 * 1000)

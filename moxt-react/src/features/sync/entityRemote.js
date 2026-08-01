@@ -15,11 +15,37 @@ function parseJson(value, fallback) {
 export function p2pOrderFromRemoteRow(row) {
   if (!row) return null
   const base = fromRow(row)
+  const timeline = parseJson(row.timeline ?? base.timeline, [])
+  const createdMeta = timeline.find((event) => event?.status === 'created') || {}
   return {
     ...base,
     proofs: parseJson(row.proofs ?? base.proofs, []),
     ratings: parseJson(row.ratings ?? base.ratings, []),
-    timeline: parseJson(row.timeline ?? base.timeline, []),
+    timeline,
+    paymentDueAt: base.paymentDueAt || row.payment_due_at || null,
+    confirmDueAt: base.confirmDueAt || row.confirm_due_at || null,
+    method: base.method || createdMeta.method || '',
+    comment: base.comment || createdMeta.comment || '',
+    receivePhone: base.receivePhone || createdMeta.receivePhone || '',
+    receiveName:
+      base.receiveName ||
+      createdMeta.receiveName ||
+      base.receiveAccount ||
+      createdMeta.receiveAccount ||
+      '',
+    receiveCountry: base.receiveCountry || createdMeta.receiveCountry || '',
+    buyerReceivePhone:
+      base.buyerReceivePhone ||
+      [...timeline].reverse().find((event) => event?.buyerReceivePhone)?.buyerReceivePhone ||
+      '',
+    buyerReceiveName:
+      base.buyerReceiveName ||
+      [...timeline].reverse().find((event) => event?.buyerReceiveName)?.buyerReceiveName ||
+      '',
+    buyerReceiveMethod:
+      base.buyerReceiveMethod ||
+      [...timeline].reverse().find((event) => event?.buyerReceiveMethod)?.buyerReceiveMethod ||
+      '',
   }
 }
 
@@ -35,6 +61,43 @@ export function p2pOfferFromRemoteRow(row) {
 }
 
 export function p2pOrderToRemoteRow(order) {
+  const timeline = Array.isArray(order.timeline) ? [...order.timeline] : []
+  const createdIndex = timeline.findIndex((event) => event?.status === 'created')
+  const receiveMeta = {
+    method: order.method || '',
+    comment: order.comment || '',
+    receivePhone: order.receivePhone || '',
+    receiveName: order.receiveName || order.receiveAccount || '',
+    receiveCountry: order.receiveCountry || '',
+    buyerReceivePhone: order.buyerReceivePhone || '',
+    buyerReceiveName: order.buyerReceiveName || '',
+    buyerReceiveMethod: order.buyerReceiveMethod || '',
+  }
+  if (createdIndex >= 0) {
+    timeline[createdIndex] = { ...timeline[createdIndex], ...receiveMeta }
+  } else {
+    timeline.unshift({
+      status: 'created',
+      at: order.createdAt || new Date().toISOString(),
+      ...receiveMeta,
+    })
+  }
+  if (order.buyerReceivePhone || order.buyerReceiveName) {
+    const hasBuyerMeta = timeline.some(
+      (event) =>
+        event?.status === 'buyer_receive_details' &&
+        event.buyerReceivePhone === order.buyerReceivePhone,
+    )
+    if (!hasBuyerMeta) {
+      timeline.push({
+        status: 'buyer_receive_details',
+        at: new Date().toISOString(),
+        buyerReceivePhone: order.buyerReceivePhone || '',
+        buyerReceiveName: order.buyerReceiveName || '',
+        buyerReceiveMethod: order.buyerReceiveMethod || '',
+      })
+    }
+  }
   return {
     id: order.id,
     offer_id: order.offerId,
@@ -50,7 +113,9 @@ export function p2pOrderToRemoteRow(order) {
     status: order.status || 'created',
     proofs: order.proofs || [],
     ratings: order.ratings || [],
-    timeline: order.timeline || [],
+    timeline,
+    payment_due_at: order.paymentDueAt || null,
+    confirm_due_at: order.confirmDueAt || null,
     created_at: order.createdAt || new Date().toISOString(),
   }
 }

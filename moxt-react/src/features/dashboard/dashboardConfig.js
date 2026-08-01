@@ -1,113 +1,192 @@
+/**
+ * Actions rapides — disposition bento (même modèle que Services essentiels).
+ * size: hero | featured | medium | compact
+ */
 export const quickActions = [
   {
+    id: 'qa-transfer',
     labelKey: 'dashboard.config.quickActions.transfer.label',
     descriptionKey: 'dashboard.config.quickActions.transfer.description',
     path: '/transfers',
     image: '/assets/services/3d/service-transfer.png',
     imageLogo: '/assets/services/service-transfer.png',
+    size: 'hero',
+    iconPos: 'br',
+    surface:
+      'bg-[linear-gradient(135deg,color-mix(in_srgb,var(--app-teal)_16.94%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(135deg,rgba(8,112,95,0.339)_0%,var(--app-surface-muted)_100%)]',
   },
   {
+    id: 'qa-listing',
     labelKey: 'dashboard.config.quickActions.listing.label',
     descriptionKey: 'dashboard.config.quickActions.listing.description',
     path: '/marketplace/publish',
     image: '/assets/services/3d/quick-marketplace.png',
     imageLogo: '/assets/services/quick-marketplace.png',
+    size: 'featured',
+    iconPos: 'br',
+    surface:
+      'bg-[linear-gradient(160deg,color-mix(in_srgb,#0891b2_14.52%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(160deg,rgba(8,145,178,0.266)_0%,var(--app-surface-muted)_100%)]',
   },
   {
+    id: 'qa-parcel',
     labelKey: 'dashboard.config.quickActions.parcel.label',
     descriptionKey: 'dashboard.config.quickActions.parcel.description',
     path: '/parcels/publish',
     image: '/assets/services/3d/quick-parcel.png',
     imageLogo: '/assets/services/quick-parcel.png',
+    size: 'medium',
+    iconPos: 'br',
+    surface:
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#245de8_10.89%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(36,93,232,0.218)_0%,var(--app-surface-muted)_100%)]',
   },
   {
+    id: 'qa-job',
     labelKey: 'dashboard.config.quickActions.job.label',
     descriptionKey: 'dashboard.config.quickActions.job.description',
     path: '/jobs/publish',
     image: '/assets/services/3d/quick-job.png',
     imageLogo: '/assets/services/quick-job.png',
+    size: 'medium',
+    iconPos: 'br',
+    surface:
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#b45309_10.89%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(180,83,9,0.218)_0%,var(--app-surface-muted)_100%)]',
   },
   {
+    id: 'qa-event',
     labelKey: 'dashboard.config.quickActions.event.label',
     descriptionKey: 'dashboard.config.quickActions.event.description',
     path: '/events/publish',
     image: '/assets/services/3d/quick-event.png',
     imageLogo: '/assets/services/quick-event.png',
+    size: 'compact',
+    iconPos: 'br',
+    surface:
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#7c3aed_9.68%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(124,58,237,0.194)_0%,var(--app-surface-muted)_100%)]',
   },
 ]
 
+/**
+ * Services essentiels — disposition bento (hiérarchie UX).
+ * size: hero | featured | medium | compact
+ * iconPos: coin de débordement de l’illustration 3D
+ */
 export const coreServices = [
   {
+    id: 'transfers',
     titleKey: 'dashboard.config.services.transfers.title',
     descriptionKey: 'dashboard.config.services.transfers.description',
     path: '/transfers',
     image: '/assets/services/3d/service-transfer.png',
     imageLogo: '/assets/services/service-transfer.png',
     tagKey: 'dashboard.config.services.transfers.tag',
+    size: 'hero',
+    iconPos: 'br',
+    surface:
+      'bg-[linear-gradient(135deg,color-mix(in_srgb,var(--app-teal)_16.94%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(135deg,rgba(8,112,95,0.339)_0%,var(--app-surface-muted)_100%)]',
   },
   {
+    id: 'marketplace',
     titleKey: 'dashboard.config.services.marketplace.title',
     descriptionKey: 'dashboard.config.services.marketplace.description',
     path: '/marketplace',
     image: '/assets/services/3d/service-marketplace.png',
     imageLogo: '/assets/services/service-marketplace.png',
     tagKey: 'dashboard.config.services.marketplace.tag',
+    size: 'featured',
+    iconPos: 'br',
+    surface:
+      'bg-[linear-gradient(160deg,color-mix(in_srgb,#0ea5e9_14.52%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(160deg,rgba(14,165,233,0.266)_0%,var(--app-surface-muted)_100%)]',
   },
   {
+    id: 'parcels',
     titleKey: 'dashboard.config.services.parcels.title',
     descriptionKey: 'dashboard.config.services.parcels.description',
     path: '/parcels',
     image: '/assets/services/3d/service-parcel.png',
     imageLogo: '/assets/services/service-parcel.png',
     tagKey: 'dashboard.config.services.parcels.tag',
+    size: 'medium',
+    iconPos: 'br',
+    surface:
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#d97706_10.89%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(217,119,6,0.218)_0%,var(--app-surface-muted)_100%)]',
   },
   {
+    id: 'jobs',
     titleKey: 'dashboard.config.services.jobs.title',
     descriptionKey: 'dashboard.config.services.jobs.description',
     path: '/jobs',
     image: '/assets/services/3d/service-job.png',
     imageLogo: '/assets/services/quick-job.png',
     tagKey: 'dashboard.config.services.jobs.tag',
+    size: 'medium',
+    iconPos: 'br',
+    surface:
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#7c3aed_10.89%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(124,58,237,0.218)_0%,var(--app-surface-muted)_100%)]',
   },
   {
-    titleKey: 'dashboard.config.services.exchangers.title',
-    descriptionKey: 'dashboard.config.services.exchangers.description',
-    path: '/exchangers',
-    image: '/assets/services/3d/service-exchangers.png',
-    imageLogo: '/assets/services/service-exchangers.png',
-    tagKey: 'dashboard.config.services.exchangers.tag',
-  },
-  {
+    id: 'p2p',
     titleKey: 'dashboard.config.services.p2p.title',
     descriptionKey: 'dashboard.config.services.p2p.description',
     path: '/p2p',
     image: '/assets/services/3d/service-p2p.png',
     imageLogo: '/assets/services/service-p2p.png',
     tagKey: 'dashboard.config.services.p2p.tag',
+    size: 'compact',
+    iconPos: 'br',
+    surface:
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#0891b2_9.68%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(8,145,178,0.194)_0%,var(--app-surface-muted)_100%)]',
   },
   {
+    id: 'exchangers',
+    titleKey: 'dashboard.config.services.exchangers.title',
+    descriptionKey: 'dashboard.config.services.exchangers.description',
+    path: '/exchangers',
+    image: '/assets/services/3d/service-exchangers.png',
+    imageLogo: '/assets/services/service-exchangers.png',
+    tagKey: 'dashboard.config.services.exchangers.tag',
+    size: 'compact',
+    iconPos: 'br',
+    surface:
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#08705f_9.68%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(8,112,95,0.194)_0%,var(--app-surface-muted)_100%)]',
+  },
+  {
+    id: 'businesses',
     titleKey: 'dashboard.config.services.businesses.title',
     descriptionKey: 'dashboard.config.services.businesses.description',
     path: '/businesses',
     image: '/assets/services/3d/service-businesses.png',
     imageLogo: '/assets/services/service-businesses.png',
     tagKey: 'dashboard.config.services.businesses.tag',
+    size: 'compact',
+    iconPos: 'br',
+    surface:
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#245de8_9.68%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(36,93,232,0.194)_0%,var(--app-surface-muted)_100%)]',
   },
   {
+    id: 'events',
     titleKey: 'dashboard.config.services.events.title',
     descriptionKey: 'dashboard.config.services.events.description',
     path: '/events',
     image: '/assets/services/3d/service-events.png',
     imageLogo: '/assets/services/quick-event.png',
     tagKey: 'dashboard.config.services.events.tag',
+    size: 'compact',
+    iconPos: 'br',
+    surface:
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#ea580c_9.68%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(234,88,12,0.194)_0%,var(--app-surface-muted)_100%)]',
   },
   {
+    id: 'news',
     titleKey: 'dashboard.config.services.news.title',
     descriptionKey: 'dashboard.config.services.news.description',
     path: '/news',
     image: '/assets/services/3d/service-news.png',
     imageLogo: '/assets/services/service-community.png',
     tagKey: 'dashboard.config.services.news.tag',
+    size: 'compact',
+    iconPos: 'br',
+    surface:
+      'bg-[linear-gradient(145deg,color-mix(in_srgb,#db2777_9.68%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(219,39,119,0.194)_0%,var(--app-surface-muted)_100%)]',
   },
 ]
 
@@ -155,30 +234,30 @@ export const dashboardTrackBase =
   'horizontal-track scrollbar-hidden flex gap-3 px-4 py-2 sm:gap-4'
 
 /** Carrousel horizontal — mobile & tablette (< lg), débordement bord à bord. */
-export const dashboardCarouselTrackClass = `${dashboardTrackBase} -mx-4`
+export const dashboardCarouselTrackClass = `${dashboardTrackBase} dashboard-h-bleed`
 
 /** Actions rapides — carrousel horizontal sur tous les écrans. */
-export const dashboardQuickActionsTrackClass = `${dashboardTrackBase} -mx-4 lg:mx-0`
+export const dashboardQuickActionsTrackClass = `${dashboardTrackBase} dashboard-h-bleed lg:mx-0`
 
 export const dashboardQuickActionsItemClass =
   'w-[clamp(12rem,68vw,16rem)] shrink-0 sm:w-[clamp(11rem,28vw,15rem)] lg:w-[clamp(13rem,18vw,16.5rem)]'
 
 /** Grille 4 colonnes à partir de lg — cartes confiance, annonces. */
 export const dashboardFourUpTrackClass =
-  `${dashboardTrackBase} horizontal-track--lg-grid -mx-4 lg:mx-0 lg:grid lg:grid-cols-4 lg:gap-4 lg:px-0`
+  `${dashboardTrackBase} horizontal-track--lg-grid dashboard-h-bleed lg:mx-0 lg:grid lg:grid-cols-4 lg:gap-4 lg:px-0`
 
 export const dashboardFourUpItemClass =
   'w-[clamp(10.5rem,22vw,14rem)] shrink-0 lg:w-auto lg:min-w-0 lg:shrink'
 
 /** Annonces — carrousel puis grille 4 colonnes (lg). */
 export const dashboardListingTrackClass =
-  `${dashboardTrackBase} horizontal-track--lg-grid -mx-4 lg:mx-0 lg:grid lg:grid-cols-4 lg:gap-4 lg:px-0`
+  `${dashboardTrackBase} horizontal-track--lg-grid dashboard-h-bleed lg:mx-0 lg:grid lg:grid-cols-4 lg:gap-4 lg:px-0`
 
 export const dashboardListingItemClass =
-  'w-[clamp(12rem,25vw,16rem)] shrink-0 overflow-visible lg:w-auto lg:min-w-0 lg:shrink'
+  'w-[clamp(12rem,25vw,16rem)] shrink-0 overflow-hidden lg:w-auto lg:min-w-0 lg:shrink'
 
 /** Services essentiels — carrousel horizontal sur tous les écrans. */
-export const dashboardServicesTrackClass = `${dashboardTrackBase} -mx-4`
+export const dashboardServicesTrackClass = `${dashboardTrackBase} dashboard-h-bleed`
 
 export const dashboardServiceItemClass =
   'w-[clamp(13.5rem,62vw,17.5rem)] shrink-0 sm:w-[clamp(12.5rem,44vw,16rem)] lg:w-[clamp(14rem,20vw,18rem)]'
@@ -191,7 +270,7 @@ export const dashboardLiveItemClass =
 export const dashboardLiveTrackClass =
   'horizontal-track scrollbar-hidden flex w-full max-w-full min-w-0 gap-3 py-1 sm:gap-4'
 
-export const dashboardLiveCardClass = 'min-w-0 overflow-hidden !p-0'
+export const dashboardLiveCardClass = 'min-w-0 overflow-hidden !border-0 !p-0 shadow-none'
 
 /** Accents visuels par type de liste live. */
 export const dashboardLiveAccents = {

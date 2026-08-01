@@ -32,11 +32,15 @@ export function PhoneVerificationCard({ className = '' }) {
   const [phone, setPhone] = useState(user?.phone || '+7')
   const [resendCooldown, setResendCooldown] = useState(0)
 
-  useEffect(() => {
+  // Reprend le téléphone du profil dès qu'il arrive (chargement async), calculé
+  // pendant le rendu plutôt que dans un effet.
+  const [prevUserPhone, setPrevUserPhone] = useState(user?.phone)
+  if (user?.phone !== prevUserPhone) {
+    setPrevUserPhone(user?.phone)
     if (user?.phone && user.phone !== '+7') {
       setPhone(user.phone)
     }
-  }, [user?.phone])
+  }
 
   useEffect(() => {
     if (!authError) return
@@ -129,12 +133,12 @@ export function PhoneVerificationCard({ className = '' }) {
   const sentAlertPhoneIndex = sentAlertText.indexOf(phone)
 
   return (
-    <Card className={`grid gap-4 ${className}`}>
-      <div className="flex items-start gap-3">
-        <span className="grid size-11 place-items-center rounded-2xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
+    <Card className={`grid min-w-0 gap-4 ${className}`}>
+      <div className="flex min-w-0 items-start gap-3">
+        <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
           <FiSmartphone />
         </span>
-        <div>
+        <div className="min-w-0">
           <h2 className="font-black">{t('security.phone.title')}</h2>
           <p className="mt-1 text-sm text-[var(--app-text-muted)]">{t('security.phone.description')}</p>
         </div>

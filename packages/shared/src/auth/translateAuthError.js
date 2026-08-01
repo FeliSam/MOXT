@@ -66,6 +66,24 @@ export function isSmsNumberProviderDenied(errorOrMessage) {
 
 export const SMS_NUMBER_PROVIDER_DENIED = 'SMS_NUMBER_PROVIDER_DENIED'
 
+/**
+ * Hook SMS / plafond temporaire — basculer vers l’OTP e-mail comme pour un refus opérateur.
+ */
+export function isSmsTemporarilyBlocked(errorOrMessage) {
+  const message = String(
+    typeof errorOrMessage === 'string'
+      ? errorOrMessage
+      : errorOrMessage?.message || errorOrMessage?.error_description || '',
+  )
+  const lower = message.toLowerCase()
+  return (
+    lower.includes('temporairement bloqué') ||
+    lower.includes('unexpected status code returned from hook') ||
+    lower.includes('over_sms_send_rate_limit') ||
+    (lower.includes('sms') && lower.includes('rate limit'))
+  )
+}
+
 export function translateAuthError(error, context = {}) {
   const code = typeof error === 'object' && error !== null ? error.code : undefined
   const name = typeof error === 'object' && error !== null ? error.name : undefined
@@ -93,7 +111,9 @@ export function translateAuthError(error, context = {}) {
   }
   if (message.includes('MOXT_FINALIZE_FAILED')) {
     return verifyingOtp
-      ? 'La finalisation du profil a échoué. Réessayez « Confirmer » sans renvoyer de SMS.'
+      ? channel === 'email'
+        ? 'La finalisation du profil a échoué. Réessayez « Confirmer » sans renvoyer de code.'
+        : 'La finalisation du profil a échoué. Réessayez « Confirmer » sans renvoyer de SMS.'
       : 'La finalisation du compte a échoué. Réessayez dans un instant.'
   }
   if (
@@ -103,7 +123,9 @@ export function translateAuthError(error, context = {}) {
     )
   ) {
     return verifyingOtp
-      ? 'Session perdue après le code SMS. Réessayez « Confirmer » sans renvoyer de SMS.'
+      ? channel === 'email'
+        ? 'Session perdue après le code e-mail. Réessayez « Confirmer » sans renvoyer de code.'
+        : 'Session perdue après le code SMS. Réessayez « Confirmer » sans renvoyer de SMS.'
       : 'Session expirée. Reconnectez-vous ou renvoyez un code.'
   }
   if (message.includes('MOXT_PHONE_NOT_CONFIRMED')) {
@@ -142,7 +164,9 @@ export function translateAuthError(error, context = {}) {
       return 'Ce numéro est déjà lié à un autre compte. Connectez-vous ou contactez le support.'
     }
     if (/profil est momentanément|profil indisponible/i.test(message)) {
-      return 'La finalisation du profil a échoué. Réessayez « Confirmer » sans renvoyer de SMS.'
+      return channel === 'email'
+        ? 'La finalisation du profil a échoué. Réessayez « Confirmer » sans renvoyer de code.'
+        : 'La finalisation du profil a échoué. Réessayez « Confirmer » sans renvoyer de SMS.'
     }
     return `Impossible de confirmer ce code. Vérifiez les 6 chiffres, ${otpResendHint()}.`
   }
@@ -165,6 +189,9 @@ export function translateAuthError(error, context = {}) {
     return 'La connexion par numéro est temporairement indisponible. Réessayez plus tard ou contactez le support.'
   }
   if (code === 'sms_send_failed' || code === 'over_sms_send_rate_limit') {
+    if (channel === 'email') {
+      return "L'envoi du code e-mail a échoué. Réessayez dans quelques instants ou vérifiez vos spams."
+    }
     return "L'envoi du code SMS a échoué. Réessayez dans quelques instants ou choisissez la connexion par e-mail."
   }
   if (
@@ -173,14 +200,20 @@ export function translateAuthError(error, context = {}) {
     message.toLowerCase().includes('failed to reach hook') ||
     message.toLowerCase().includes('hook_timeout')
   ) {
+    if (channel === 'email') {
+      return "L'envoi du code e-mail a pris trop de temps. Réessayez dans quelques instants."
+    }
     return "L'envoi SMS a pris trop de temps. Réessayez dans quelques instants."
   }
   if (message === 'IDENTITY_CHECK_UNAVAILABLE' || message.includes('IDENTITY_CHECK_UNAVAILABLE')) {
     return 'Vérification des identifiants indisponible. Réessayez dans un instant.'
   }
   // Auth maps a broken send_sms hook (HTTP ≠ 200) to AuthRetryableFetchError + "{}" / 500.
-  // That is an SMS provider/hook failure — not a client VPN/network outage.
+  // Never show SMS wording when the user explicitly chose e-mail OTP.
   if (isAuthHookOpaqueFailure({ message, name, status, code })) {
+    if (channel === 'email') {
+      return "L'envoi du code e-mail est temporairement indisponible. Réessayez dans quelques minutes et vérifiez vos spams."
+    }
     return translateSmsHookFailure(
       message && message !== '{}'
         ? message
@@ -188,6 +221,9 @@ export function translateAuthError(error, context = {}) {
     )
   }
   if (code === 'unexpected_failure' && message.toLowerCase().includes('hook')) {
+    if (channel === 'email') {
+      return "L'envoi du code e-mail est temporairement indisponible. Réessayez dans quelques minutes et vérifiez vos spams."
+    }
     return translateSmsHookFailure(message)
   }
   // Undici/Chrome/Supabase often surface transient network as "TypeError: fetch failed".
@@ -380,12 +416,16 @@ function translateSupabaseError(message, meta = {}, context = {}) {
   const m = String(message || '').toLowerCase()
   const { code, status, name } = meta
   const channel = context.channel
-  const phoneContext = channel === 'phone' || isSmsRelated(message, meta)
+  // Canal e-mail explicite : ne jamais dériver « SMS » depuis des heuristiques (hook / 500).
+  const phoneContext =
+    channel === 'phone' || (channel !== 'email' && isSmsRelated(message, meta))
 
   if (!message) {
     return phoneContext
       ? "L'envoi du code SMS a échoué. Réessayez dans quelques instants."
-      : 'Une erreur est survenue. Veuillez réessayer.'
+      : channel === 'email'
+        ? "L'envoi du code e-mail a échoué. Réessayez dans quelques instants."
+        : 'Une erreur est survenue. Veuillez réessayer.'
   }
 
   if (
@@ -447,6 +487,9 @@ function translateSupabaseError(message, meta = {}, context = {}) {
     m.includes('error creating user') ||
     m.includes('database error saving')
   ) {
+    if (channel === 'email') {
+      return "L'envoi du code e-mail est temporairement indisponible. Réessayez dans quelques minutes et vérifiez vos spams."
+    }
     if (phoneContext || m.includes('sms') || m.includes('hook') || m.includes('smsc')) {
       return translateSmsHookFailure(message)
     }

@@ -17,6 +17,7 @@ import {
   isImageAttachment,
 } from '../../features/communications/attachmentUtils'
 import { MessageAttachment } from './MessageAttachment'
+import { linkifyParts } from './linkify'
 import { useLanguage } from '../../contexts/useLanguage'
 import { messagesText } from '../../features/communications/messagesI18n'
 import { EntityVerifiedName } from '../../components/ui/EntityVerifiedName'
@@ -93,7 +94,7 @@ export function MessageBubble({
   onReact,
   onReply,
   onRetry,
-  onShare,
+  onCopy,
   onToggleActions,
   openActions,
   repliedMessage,
@@ -127,6 +128,7 @@ export function MessageBubble({
   // (dernier message, bord du conteneur scrollable) pour éviter qu'il soit coupé.
   useLayoutEffect(() => {
     if (!showActions) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset avant mesure DOM (positionnement du menu)
       setPlaceAbove(false)
       return
     }
@@ -275,7 +277,21 @@ export function MessageBubble({
               hasImageAttachment ? 'message-bubble-text--caption' : ''
             }`}
           >
-            {message.text}
+            {linkifyParts(message.text).map((part, index) =>
+              part.type === 'link' ? (
+                <a
+                  key={`${part.href}-${index}`}
+                  href={part.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline underline-offset-2"
+                >
+                  {part.value}
+                </a>
+              ) : (
+                <span key={`t-${index}`}>{part.value}</span>
+              ),
+            )}
           </p>
         ) : null}
 
@@ -381,7 +397,7 @@ export function MessageBubble({
           </button>
           <button
             type="button"
-            onClick={(event) => runAction(event, onShare)}
+            onClick={(event) => runAction(event, onCopy)}
             aria-label={t("messages.copy")}
             className="message-action-menu-btn"
           >
@@ -426,6 +442,9 @@ export function MessageBubble({
 
       {!groupedWithNext ? (
         <div className={`message-meta ${mine ? 'message-meta--sent' : ''}`}>
+          {message.editedAt ? (
+            <span className="opacity-70">{t('messages.edited')}</span>
+          ) : null}
           <time dateTime={message.createdAt}>{shortTime(message.createdAt)}</time>
           {mine && !failed ? (
             <MessageReadStatus

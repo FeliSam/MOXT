@@ -100,6 +100,7 @@ export default function DashboardHomeScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerClassName={cnScroll()}>
+        <DashboardServiceSection />
         <DashboardHeroSection
           firstName={user?.firstName}
           sendAmount={sendAmount}
@@ -120,7 +121,6 @@ export default function DashboardHomeScreen() {
           onboardingSteps={onboardingSteps}
           onboardingDone={onboardingDone}
         />
-        <DashboardServiceSection />
         <DashboardDiscoverySection
           listings={listings}
           parcels={parcels}

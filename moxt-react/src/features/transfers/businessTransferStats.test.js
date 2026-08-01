@@ -69,6 +69,36 @@ describe('computeBusinessTransferStats', () => {
     expect(stats.rating.count).toBe(2)
   })
 
+  it('compte les demandes d acceptation comme actions entreprise', () => {
+    const stats = computeBusinessTransferStats([
+      {
+        id: 'a1',
+        status: TRANSFER_STATUS.PENDING_ACCEPTANCE,
+        direction: 'BJ_TO_RU',
+        amountSent: 1000,
+        fees: 25,
+        totalToPay: 1025,
+        currencyFrom: 'XOF',
+        currencyTo: 'RUB',
+        createdAt: '2026-07-01T10:00:00.000Z',
+      },
+      {
+        id: 'a2',
+        status: TRANSFER_STATUS.PENDING,
+        direction: 'BJ_TO_RU',
+        amountSent: 2000,
+        fees: 50,
+        totalToPay: 2050,
+        currencyFrom: 'XOF',
+        currencyTo: 'RUB',
+        createdAt: '2026-07-01T11:00:00.000Z',
+      },
+    ])
+    expect(stats.awaitingBusinessAction).toBe(1)
+    expect(stats.byStatus[TRANSFER_STATUS.PENDING_ACCEPTANCE]).toBe(1)
+    expect(stats.inPipeline).toBe(2)
+  })
+
   it('gère une liste vide', () => {
     const stats = computeBusinessTransferStats([])
     expect(stats.total).toBe(0)

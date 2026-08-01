@@ -14,6 +14,7 @@ import {
   createSimulatedPayment,
   updateSimulatedPaymentStatus,
 } from '../features/finance/financeSlice'
+import { sortTransfersByNewest } from '../features/transfers/transferSelectors'
 import { formatDate, formatMoney } from '../features/transfers/transferUtils'
 import { phase3Text } from '../i18n/phase3I18n'
 
@@ -24,7 +25,7 @@ export function PaymentsPage() {
   const dispatch = useDispatch()
   const user = useSelector((state) => state.auth.user)
   const transfers = useSelector((state) =>
-    state.transfers.items.filter((item) => item.userId === user.id),
+    sortTransfersByNewest(state.transfers.items.filter((item) => item.userId === user.id)),
   )
   const payments = useSelector((state) =>
     state.finance.payments.filter((item) => item.userId === user.id),

@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import reducer, { acceptOffer, createOffer, updateOfferStatus } from './p2pSlice'
+import reducer, {
+  acceptOffer,
+  addOrderProof,
+  createOffer,
+  updateOfferStatus,
+  updateOrderStatus,
+} from './p2pSlice'
 import { calculateP2PFee } from './p2pUtils'
 
 const offerValues = {
@@ -15,9 +21,9 @@ const offerValues = {
 describe('P2P', () => {
   beforeEach(() => localStorage.clear())
 
-  it('applique les frais minimums', () => {
-    expect(calculateP2PFee(1000, 'XOF')).toBe(250)
-    expect(calculateP2PFee(1000, 'RUB')).toBe(25)
+  it('applique 0 % de frais plateforme', () => {
+    expect(calculateP2PFee(1000, 'XOF')).toBe(0)
+    expect(calculateP2PFee(1000, 'RUB')).toBe(0)
   })
 
   it('cree une transaction et ferme l offre acceptee', () => {
@@ -33,7 +39,9 @@ describe('P2P', () => {
 
     expect(accepted.offers[0].status).toBe('accepted')
     expect(accepted.orders[0].offerId).toBe(offer.id)
-    expect(accepted.orders[0].fee).toBe(250)
+    expect(accepted.orders[0].fee).toBe(0)
+    expect(accepted.orders[0].paymentDueAt).toBeTruthy()
+    expect(accepted.orders[0].status).toBe('created')
   })
 
   it('archive puis republie une offre', () => {
@@ -44,5 +52,77 @@ describe('P2P', () => {
 
     expect(archived.offers[0].status).toBe('archived')
     expect(republished.offers[0].status).toBe('active')
+  })
+
+  it('reactiver l offre si l acheteur annule', () => {
+    const offered = reducer({ offers: [], orders: [] }, createOffer(offerValues))
+    const accepted = reducer(
+      offered,
+      acceptOffer({
+        offer: offered.offers[0],
+        buyer: { id: 'buyer', firstName: 'Amina', lastName: 'Demo' },
+      }),
+    )
+    const cancelled = reducer(
+      accepted,
+      updateOrderStatus({
+        id: accepted.orders[0].id,
+        status: 'cancelled',
+        actorId: 'buyer',
+        note: 'buyer_cancel',
+      }),
+    )
+    expect(cancelled.orders[0].status).toBe('cancelled')
+    expect(cancelled.offers[0].status).toBe('active')
+  })
+
+  it('archive l offre si le vendeur annule', () => {
+    const offered = reducer({ offers: [], orders: [] }, createOffer(offerValues))
+    const accepted = reducer(
+      offered,
+      acceptOffer({
+        offer: offered.offers[0],
+        buyer: { id: 'buyer', firstName: 'Amina', lastName: 'Demo' },
+      }),
+    )
+    const cancelled = reducer(
+      accepted,
+      updateOrderStatus({
+        id: accepted.orders[0].id,
+        status: 'cancelled',
+        actorId: 'seller',
+        note: 'seller_cancel',
+      }),
+    )
+    expect(cancelled.offers[0].status).toBe('archived')
+  })
+
+  it('refuse de finaliser sans preuve du vendeur', () => {
+    const offered = reducer({ offers: [], orders: [] }, createOffer(offerValues))
+    const accepted = reducer(
+      offered,
+      acceptOffer({
+        offer: offered.offers[0],
+        buyer: { id: 'buyer', firstName: 'Amina', lastName: 'Demo' },
+      }),
+    )
+    const orderId = accepted.orders[0].id
+    const paid = reducer(accepted, updateOrderStatus({ id: orderId, status: 'waiting_payment' }))
+    const blocked = reducer(paid, updateOrderStatus({ id: orderId, status: 'completed' }))
+    expect(blocked.orders[0].status).toBe('waiting_payment')
+
+    const withProof = reducer(
+      paid,
+      addOrderProof({
+        id: orderId,
+        userId: 'seller',
+        name: 'preuve.pdf',
+        size: 12,
+        type: 'application/pdf',
+        path: 'p2p/preuve.pdf',
+      }),
+    )
+    const completed = reducer(withProof, updateOrderStatus({ id: orderId, status: 'completed' }))
+    expect(completed.orders[0].status).toBe('completed')
   })
 })

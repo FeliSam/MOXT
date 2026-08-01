@@ -1,4 +1,4 @@
-import { FiArrowRight, FiPlus, FiUsers } from 'react-icons/fi'
+import { FiArrowRight, FiPlus, FiStar, FiUsers } from 'react-icons/fi'
 import { useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
@@ -10,20 +10,35 @@ import { CatalogArchiveTabs } from '../components/ui/CatalogArchiveTabs'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { CatalogSearch } from '../components/ui/CatalogSearch'
 import { EmptyState } from '../components/ui/EmptyState'
+import { Modal } from '../components/ui/Modal'
 import { PageHeader } from '../components/ui/PageHeader'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { Select } from '../components/ui/Select'
 import { useLanguage } from '../contexts/useLanguage'
+import { P2PNoEscrowBanner } from '../features/p2p/components/P2PNoEscrowBanner'
+import { P2PReputationBadge } from '../features/p2p/components/P2PReputationBadge'
+import { P2PTrustChecklist } from '../features/p2p/components/P2PTrustChecklist'
 import { acceptOffer } from '../features/p2p/p2pSlice'
 import { calculateP2PFee } from '../features/p2p/p2pUtils'
-import { transferCurrenciesForCountry } from '../features/transfers/transferConfig'
-import { formatMoney } from '../features/transfers/transferUtils'
-import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
+import { selectPlatformFees } from '../features/admin/platformRatesSlice'
 import { useSecurityGate } from '../features/security/useSecurityGate'
+import { transferCurrenciesForCountry } from '../features/transfers/transferConfig'
+import { formatDate, formatMoney } from '../features/transfers/transferUtils'
+import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
+import { useP2pCatalogRealtime } from '../features/p2p/useP2pRealtime'
+
+function byCreatedAtDesc(a, b) {
+  return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+}
+
+function userRatedOrder(order, userId) {
+  return Boolean(order?.ratings?.some((entry) => entry.userId === userId))
+}
 
 export function P2PPage() {
   const { t } = useLanguage()
   useScrollToSecondSection()
+  useP2pCatalogRealtime()
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [tab, setTab] = useState('active')
   const [filters, setFilters] = useState({
@@ -33,25 +48,30 @@ export function P2PPage() {
   })
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const { requireP2PPublish } = useSecurityGate()
+  const { requireP2PPublish, requireP2PAccept } = useSecurityGate()
   const user = useSelector((state) => state.auth.user)
+  const platformFees = useSelector(selectPlatformFees)
   const offers = useSelector((state) => state.p2p.offers)
   const orders = useSelector((state) => state.p2p.orders)
+  const reviews = useSelector((state) => state.reviews.items)
+  const [acceptOfferTarget, setAcceptOfferTarget] = useState(null)
   const originCountry = user.originCountry || (user.country !== 'RU' ? user.country : 'BJ')
   const availableCurrencies = transferCurrenciesForCountry(originCountry)
   const filteredOffers = useMemo(
     () =>
-      offers.filter((offer) => {
-        const haystack =
-          `${offer.ownerName} ${offer.method} ${offer.comment} ${offer.fromCurrency} ${offer.toCurrency}`.toLowerCase()
-        return (
-          availableCurrencies.includes(offer.fromCurrency) &&
-          availableCurrencies.includes(offer.toCurrency) &&
-          (!filters.query || haystack.includes(filters.query.toLowerCase())) &&
-          (!filters.fromCurrency || offer.fromCurrency === filters.fromCurrency) &&
-          (!filters.toCurrency || offer.toCurrency === filters.toCurrency)
-        )
-      }),
+      offers
+        .filter((offer) => {
+          const haystack =
+            `${offer.ownerName} ${offer.method} ${offer.comment} ${offer.fromCurrency} ${offer.toCurrency}`.toLowerCase()
+          return (
+            availableCurrencies.includes(offer.fromCurrency) &&
+            availableCurrencies.includes(offer.toCurrency) &&
+            (!filters.query || haystack.includes(filters.query.toLowerCase())) &&
+            (!filters.fromCurrency || offer.fromCurrency === filters.fromCurrency) &&
+            (!filters.toCurrency || offer.toCurrency === filters.toCurrency)
+          )
+        })
+        .sort(byCreatedAtDesc),
     [availableCurrencies, filters, offers],
   )
 
@@ -67,6 +87,14 @@ export function P2PPage() {
 
   const displayedOffers = tab === 'active' ? activeOffers : archivedOffers
 
+  const myOrders = useMemo(
+    () =>
+      orders
+        .filter((order) => [order.buyerId, order.sellerId].includes(user.id))
+        .sort(byCreatedAtDesc),
+    [orders, user.id],
+  )
+
   function clearFilters() {
     setFilters({ query: '', fromCurrency: '', toCurrency: '' })
   }
@@ -75,13 +103,22 @@ export function P2PPage() {
     if (requireP2PPublish()) navigate('/p2p/publish')
   }
 
-  function handleAccept(offer) {
-    const action = dispatch(acceptOffer({ buyer: user, offer }))
+  function requestAccept(offer) {
+    if (!requireP2PAccept()) return
+    setAcceptOfferTarget(offer)
+  }
+
+  function confirmAccept() {
+    if (!acceptOfferTarget) return
+    const action = dispatch(
+      acceptOffer({ buyer: user, offer: acceptOfferTarget, feePercent: platformFees.p2pFeePercent }),
+    )
+    setAcceptOfferTarget(null)
     if (action.payload?.id) navigate(`/p2p/orders/${action.payload.id}`)
   }
 
   return (
-    <div className="grid gap-7">
+    <div className="grid min-w-0 max-w-full gap-7 overflow-x-clip">
       <PageHeader
         title={t('p2p.page.title')}
         stats={[{ label: t('p2p.page.activeOffers'), value: activeOffers.length }]}
@@ -92,7 +129,10 @@ export function P2PPage() {
         }
       />
 
-      <div className="grid gap-5">
+      <P2PNoEscrowBanner />
+      <P2PTrustChecklist />
+
+      <div className="grid min-w-0 gap-5">
         <CatalogSearch
           advancedOpen={advancedOpen}
           count={displayedOffers.length}
@@ -143,19 +183,23 @@ export function P2PPage() {
             { key: 'archived', label: t('p2p.page.archives'), count: archivedOffers.length },
           ]}
         />
-        <CatalogGrid lazy={false} columns="grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
+        <CatalogGrid
+          lazy={false}
+          columns="grid-cols-1 min-[480px]:grid-cols-2 xl:grid-cols-3"
+          className="min-w-0 w-full"
+        >
           {displayedOffers.length ? (
             displayedOffers.map((offer, index) => (
-              <RevealListItem key={offer.id} index={index}>
+              <RevealListItem key={offer.id} index={index} className="min-w-0 max-w-full">
                 <Card
                   variant="interactive"
-                  className={`group flex h-full flex-col overflow-hidden p-4 ring-1 ring-transparent transition-shadow duration-300 hover:ring-brand-200 sm:p-5 dark:hover:ring-brand-800 ${tab === 'archived' ? 'opacity-80' : ''}`}
+                  className={`group flex h-full min-w-0 max-w-full flex-col overflow-hidden !border-0 p-3 shadow-none ring-0 transition-shadow duration-300 xs:p-4 sm:p-5 ${tab === 'archived' ? 'opacity-80' : ''}`}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand-700 dark:bg-brand-900 dark:text-brand-200">
+                  <div className="flex min-w-0 items-start justify-between gap-2">
+                    <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand-700 sm:size-11 dark:bg-brand-900 dark:text-brand-200">
                       <FiUsers />
                     </span>
-                    <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+                    <div className="flex min-w-0 max-w-[70%] flex-wrap items-center justify-end gap-1.5">
                       <Badge tone={offer.status === 'active' ? 'success' : 'warning'}>
                         {offer.status === 'active'
                           ? t('p2p.page.statusActive')
@@ -171,7 +215,7 @@ export function P2PPage() {
                     </div>
                   </div>
 
-                  <h2 className="mt-3.5 truncate text-sm font-black tabular-nums leading-snug sm:text-base">
+                  <h2 className="mt-3.5 break-words text-sm font-black tabular-nums leading-snug sm:text-base">
                     {t('p2p.page.amountTo', {
                       amount: formatMoney(offer.amount, offer.fromCurrency),
                       currency: offer.toCurrency,
@@ -184,6 +228,17 @@ export function P2PPage() {
                     businessId={offer.businessId}
                     className="mt-1.5 text-xs text-[var(--app-text-faint)]"
                     nameClassName="truncate"
+                  />
+                  {offer.createdAt ? (
+                    <p className="mt-1 text-[11px] text-[var(--app-text-faint)]">
+                      {t('p2p.page.publishedOn', { date: formatDate(offer.createdAt) })}
+                    </p>
+                  ) : null}
+                  <P2PReputationBadge
+                    userId={offer.ownerId}
+                    orders={orders}
+                    reviews={reviews}
+                    className="mt-1.5"
                   />
 
                   <div className="mt-4 flex items-center gap-2 rounded-2xl bg-[var(--app-surface-muted)] p-3">
@@ -222,12 +277,12 @@ export function P2PPage() {
                     </p>
                   ) : null}
 
-                  <div className="mt-4 flex items-center gap-2">
+                  <div className="mt-4 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-stretch">
                     {tab === 'active' && offer.status === 'active' && offer.ownerId !== user.id ? (
                       <Button
                         size="sm"
-                        className="min-h-10 flex-1 sm:min-h-11"
-                        onClick={() => handleAccept(offer)}
+                        className="min-h-10 w-full flex-1 sm:min-h-11"
+                        onClick={() => requestAccept(offer)}
                       >
                         {t('p2p.page.accept')}
                       </Button>
@@ -236,12 +291,12 @@ export function P2PPage() {
                       to={`/p2p/${offer.id}`}
                       className={
                         tab === 'active' && offer.status === 'active' && offer.ownerId !== user.id
-                          ? 'shrink-0'
-                          : 'flex-1'
+                          ? 'min-w-0 flex-1'
+                          : 'min-w-0 w-full flex-1'
                       }
                     >
-                      <span className="flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-brand-700 px-4 text-center text-xs font-black text-white transition group-hover:bg-brand-800 sm:min-h-11 sm:text-sm dark:bg-brand-600">
-                        {t('p2p.page.detail')} <FiArrowRight className="text-xs" />
+                      <span className="flex min-h-10 w-full items-center justify-center gap-2 rounded-2xl bg-brand-700 px-3 text-center text-xs font-black text-white transition group-hover:bg-brand-800 sm:min-h-11 sm:px-4 sm:text-sm dark:bg-brand-600">
+                        {t('p2p.page.detail')} <FiArrowRight className="shrink-0 text-xs" />
                       </span>
                     </Link>
                   </div>
@@ -270,33 +325,65 @@ export function P2PPage() {
               }
             />
           )}
-          {orders.length ? (
-            <div className="mt-3">
+          {myOrders.length ? (
+            <div className="col-span-full mt-3">
               <h2 className="mb-3 text-lg font-black">{t('p2p.page.recentOrders')}</h2>
               <div className="grid gap-3">
-                {orders
-                  .filter((order) => [order.buyerId, order.sellerId].includes(user.id))
-                  .map((order) => (
-                    <Link key={order.id} to={`/p2p/orders/${order.id}`}>
-                      <Card className="flex items-center justify-between gap-4">
-                        <div>
-                          <strong>{order.id}</strong>
+                {myOrders.map((order) => {
+                  const needsReview =
+                    order.status === 'completed' && !userRatedOrder(order, user.id)
+                  return (
+                    <Link key={order.id} to={`/p2p/orders/${order.id}`} className="min-w-0">
+                      <Card className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                        <div className="min-w-0">
+                          <strong className="block truncate">{order.id}</strong>
                           <p className="mt-1 text-xs text-slate-500">
                             {t('p2p.page.orderDirection', {
                               seller: order.sellerName,
                               buyer: order.buyerName,
                             })}
                           </p>
+                          {order.createdAt ? (
+                            <p className="mt-1 text-[11px] text-[var(--app-text-faint)]">
+                              {formatDate(order.createdAt)}
+                            </p>
+                          ) : null}
+                          {needsReview ? (
+                            <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                              <FiStar className="text-xs" />
+                              {t('p2p.page.leaveReview')}
+                            </p>
+                          ) : null}
                         </div>
-                        <FiArrowRight className="text-brand-700" />
+                        <FiArrowRight className="shrink-0 text-brand-700" />
                       </Card>
                     </Link>
-                  ))}
+                  )
+                })}
               </div>
             </div>
           ) : null}
         </CatalogGrid>
       </div>
+
+      <Modal
+        open={Boolean(acceptOfferTarget)}
+        onClose={() => setAcceptOfferTarget(null)}
+        title={t('p2p.acceptConfirm.title')}
+      >
+        <div className="grid gap-4">
+          <p className="text-sm leading-6 text-[var(--app-text-muted)]">
+            {t('p2p.acceptConfirm.body')}
+          </p>
+          <P2PTrustChecklist />
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button variant="secondary" onClick={() => setAcceptOfferTarget(null)}>
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={confirmAccept}>{t('p2p.acceptConfirm.cta')}</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

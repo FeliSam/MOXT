@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import reducer, {
   addPersonalDocument,
   hydrateAccountPreferences,
+  markListingViewed,
   removeTransferProfile,
   requestAccountDeletion,
   saveTransferProfile,
@@ -17,6 +18,7 @@ const emptyState = {
   verificationRequests: [],
   preferences: {},
   deletionRequests: [],
+  viewedListings: [],
 }
 
 describe('account', () => {
@@ -120,5 +122,16 @@ describe('account', () => {
     )
     expect(second.verificationRequests).toHaveLength(1)
     expect(second.verificationRequests[0].level).toBe('enhanced')
+  })
+
+  it('mémorise une annonce vue sans doublon', () => {
+    const first = reducer(
+      emptyState,
+      markListingViewed({ userId: 'u1', listingId: 'lst-1' }),
+    )
+    expect(first.viewedListings).toHaveLength(1)
+    expect(first.viewedListings[0]).toMatchObject({ userId: 'u1', listingId: 'lst-1' })
+    const again = reducer(first, markListingViewed({ userId: 'u1', listingId: 'lst-1' }))
+    expect(again.viewedListings).toHaveLength(1)
   })
 })

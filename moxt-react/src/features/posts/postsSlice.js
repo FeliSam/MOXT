@@ -123,8 +123,19 @@ const postsSlice = createSlice({
     deleteComment(state, action) {
       const { postId, commentId } = action.payload
       const post = state.items.find((p) => p.id === postId)
-      if (!post) return
-      post.comments = post.comments.filter((c) => c.id !== commentId)
+      if (!post || !commentId) return
+      post.comments = (post.comments || []).filter((c) => c.id !== commentId)
+      post.updatedAt = new Date().toISOString()
+    },
+
+    restoreComment(state, action) {
+      const { postId, comment } = action.payload
+      const post = state.items.find((p) => p.id === postId)
+      if (!post || !comment?.id) return
+      if ((post.comments || []).some((c) => c.id === comment.id)) return
+      post.comments = [...(post.comments || []), comment].sort(
+        (a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0),
+      )
       post.updatedAt = new Date().toISOString()
     },
   },
@@ -141,6 +152,7 @@ export const {
   toggleLike,
   addComment,
   deleteComment,
+  restoreComment,
 } = postsSlice.actions
 
 export default postsSlice.reducer

@@ -46,7 +46,10 @@ export function TransferRecipientAccountCard({ transfer, className = '', compact
             <span className="text-xs font-bold uppercase tracking-wide text-[var(--app-text-faint)]">
               {row.label}
             </span>
-            <strong className="min-w-0 max-w-full truncate text-right" title={row.value}>
+            <strong
+              className="min-w-0 max-w-full break-words text-right [overflow-wrap:anywhere]"
+              title={row.value}
+            >
               {row.value}
             </strong>
           </div>

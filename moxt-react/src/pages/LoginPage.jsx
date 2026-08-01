@@ -1,10 +1,11 @@
 import { clearPendingRegistration } from '@moxt/shared/auth/pendingRegistration.js'
 import { useFormik } from 'formik'
 import { useEffect, useState } from 'react'
-import { FiLock, FiMail, FiPhone } from 'react-icons/fi'
+import { FiHelpCircle, FiLock, FiMail, FiPhone } from 'react-icons/fi'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { AuthCard } from '../components/auth/AuthCard'
+import { AuthLoginHelpModal } from '../components/auth/AuthLoginHelpModal'
 import { Alert } from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
@@ -48,6 +49,7 @@ export function LoginPage() {
   const { error } = useSelector((state) => state.auth)
 
   const [mode, setMode] = useState('phone-password')
+  const [helpOpen, setHelpOpen] = useState(false)
   const { loginEmailSchema, loginPhonePasswordSchema } = createAuthSchemas(t)
 
   useEffect(() => () => dispatch(clearAuthError()), [dispatch])
@@ -98,7 +100,6 @@ export function LoginPage() {
       eyebrow={t('auth.login.eyebrow')}
       title={t('auth.login.title')}
       titleClassName="max-sm:hidden"
-      description={t('auth.login.description')}
     >
       <div className="grid gap-2 sm:grid-cols-2">
         {LOGIN_MODES.map((item) => {
@@ -147,6 +148,18 @@ export function LoginPage() {
             {...phoneFormik.getFieldProps('password')}
             error={phoneError('password')}
           />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <button
+              type="button"
+              className="auth-flow-link inline-flex items-center gap-1 text-xs"
+              onClick={() => setHelpOpen(true)}
+            >
+              <FiHelpCircle className="text-sm" /> {t('auth.login.needHelp')}
+            </button>
+            <Link className="auth-flow-link text-xs" to="/forgot-password?mode=phone">
+              {t('auth.login.forgot')}
+            </Link>
+          </div>
           <p className="auth-flow-hint text-xs text-[var(--app-text-muted)]">
             {t('auth.login.phoneHint')}
           </p>
@@ -176,8 +189,15 @@ export function LoginPage() {
             {...emailFormik.getFieldProps('password')}
             error={emailError('password')}
           />
-          <div className="flex justify-end">
-            <Link className="auth-flow-link" to="/forgot-password">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <button
+              type="button"
+              className="auth-flow-link inline-flex items-center gap-1 text-xs"
+              onClick={() => setHelpOpen(true)}
+            >
+              <FiHelpCircle className="text-sm" /> {t('auth.login.needHelp')}
+            </button>
+            <Link className="auth-flow-link text-xs" to="/forgot-password">
               {t('auth.login.forgot')}
             </Link>
           </div>
@@ -193,6 +213,8 @@ export function LoginPage() {
           {t('auth.login.createAccount')}
         </Link>
       </p>
+
+      <AuthLoginHelpModal open={helpOpen} onClose={() => setHelpOpen(false)} t={t} />
     </AuthCard>
   )
 }

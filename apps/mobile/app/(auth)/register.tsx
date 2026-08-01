@@ -15,6 +15,7 @@ import { router } from 'expo-router';
 
 import { useLanguage } from '@/providers/LanguageProvider';
 import { clearAuthError, register } from '@/store/auth';
+import { stashSignupCredentials } from '@/store/pendingSignupCredentials';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, radii, shadows, spacing } from '@/theme/colors';
@@ -80,12 +81,22 @@ export default function RegisterScreen() {
 
   useEffect(() => {
     if (registrationEmail) {
-      router.push(`/verify?method=${verificationMethod}&email=${encodeURIComponent(registrationEmail)}&phone=${encodeURIComponent(russianPhone)}` as any);
+      const methodParam = verificationMethod === 'email' ? 'email' : 'sms';
+      router.push(
+        `/verify?method=${methodParam}&email=${encodeURIComponent(registrationEmail)}&phone=${encodeURIComponent(russianPhone)}` as any,
+      );
     }
   }, [registrationEmail]);
 
   const handleSubmit = () => {
     dispatch(clearAuthError());
+    stashSignupCredentials({
+      password,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      originCountry,
+      residenceCity: city,
+    });
     dispatch(
       register({
         firstName: firstName.trim(),
@@ -94,9 +105,10 @@ export default function RegisterScreen() {
         russianPhone: russianPhone.trim(),
         password,
         originCountry,
-        verificationMethod,
+        verificationMethod: verificationMethod === 'email' ? 'email' : 'phone',
         language,
         city,
+        residenceCity: city,
       } as any),
     );
   };
@@ -374,10 +386,10 @@ export default function RegisterScreen() {
   const renderStep4 = () => (
     <>
       <Text style={[styles.sectionNote, { color: colors.textSecondary }]}>
-        Comment souhaitez-vous confirmer votre compte ?
+        Comment recevoir votre code ?
       </Text>
       <Text style={[styles.sectionSub, { color: colors.textMuted }]}>
-        Le téléphone russe est recommandé. L'autre identifiant pourra être confirmé ensuite dans Sécurité.
+        Choisissez SMS ou e-mail. L’autre identifiant restera à confirmer dans Sécurité pour publier.
       </Text>
 
       {/* SMS option */}
@@ -392,7 +404,10 @@ export default function RegisterScreen() {
         <View style={{ flex: 1 }}>
           <Text style={[styles.verifyTitle, { color: colors.text }]}>Par SMS</Text>
           <Text style={[styles.verifySub, { color: colors.textMuted }]}>
-            +7{russianPhone || '9800692924'}
+            {russianPhone ? (russianPhone.startsWith('+') ? russianPhone : `+7${russianPhone}`) : '+7…'}
+          </Text>
+          <Text style={[styles.verifySub, { color: colors.textMuted, marginTop: 2 }]}>
+            Code à 6 chiffres, en général en quelques secondes.
           </Text>
         </View>
       </Pressable>
@@ -410,6 +425,9 @@ export default function RegisterScreen() {
           <Text style={[styles.verifyTitle, { color: colors.text }]}>Par e-mail</Text>
           <Text style={[styles.verifySub, { color: colors.textMuted }]}>
             {email || 'votre@email.com'}
+          </Text>
+          <Text style={[styles.verifySub, { color: colors.textMuted, marginTop: 2 }]}>
+            Vérifiez aussi vos courriers indésirables (spam).
           </Text>
         </View>
       </Pressable>
@@ -476,7 +494,7 @@ export default function RegisterScreen() {
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <Text style={styles.nextButtonText}>
-                    {step === 3 ? '✓ Créer et confirmer' : '→ Continuer'}
+                    {step === 3 ? 'Recevoir le code' : '→ Continuer'}
                   </Text>
                 )}
               </Pressable>

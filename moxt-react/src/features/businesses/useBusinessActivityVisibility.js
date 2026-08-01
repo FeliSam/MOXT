@@ -10,6 +10,7 @@ export function useBusinessActivityVisibility(business, currentUserId) {
 
   useEffect(() => {
     if (!businessId || isOwner) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset avant une requête réseau (fetch Supabase)
       setRemoteVisibility(null)
       setLoading(false)
       return undefined

@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { FiEdit3, FiRss } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   canPublishContent,
   isEmailVerified,
@@ -23,10 +23,17 @@ const FILTER_KEYS = ['all', 'listing', 'job', 'parcel', 'event', 'business', 'fr
 
 export function NewsPage() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const highlightPostId = searchParams.get('post')
   const { language, t } = useLanguage()
   const p3 = (key, vars) => phase3Text(t, key, vars)
   const user = useSelector((s) => s.auth.user)
   const posts = useSelector((s) => s.posts?.items ?? [])
+  const listings = useSelector((s) => s.marketplace?.items ?? [])
+  const parcels = useSelector((s) => s.parcels?.items ?? [])
+  const jobs = useSelector((s) => s.jobs?.items ?? [])
+  const events = useSelector((s) => s.events?.items ?? [])
+  const businesses = useSelector((s) => s.businesses?.items ?? [])
   const { requirePublish } = useSecurityGate()
 
   const [activeFilter, setActiveFilter] = useState('all')
@@ -47,15 +54,39 @@ export function NewsPage() {
     }
   }
 
+  const catalogs = useMemo(
+    () => ({ listings, parcels, jobs, events, businesses }),
+    [businesses, events, jobs, listings, parcels],
+  )
+
   const publishedPosts = useMemo(
-    () => posts.filter((p) => p.status === 'published'),
-    [posts],
+    () => buildNewsFeed(posts, { language, catalogs }),
+    [catalogs, language, posts],
   )
 
   const filtered = useMemo(
-    () => buildNewsFeed(publishedPosts, { language, sourceTypeFilter: activeFilter }),
-    [activeFilter, language, publishedPosts],
+    () =>
+      activeFilter === 'all'
+        ? publishedPosts
+        : buildNewsFeed(posts, { language, sourceTypeFilter: activeFilter, catalogs }),
+    [activeFilter, catalogs, language, posts, publishedPosts],
   )
+
+  // Cible une publication précise depuis une notification (?post=id) : on
+  // défile jusqu'à elle et on l'entoure brièvement, plutôt que de renvoyer
+  // vers le fil général sans indication.
+  useEffect(() => {
+    if (!highlightPostId) return undefined
+    const el = document.getElementById(`news-post-${highlightPostId}`)
+    if (!el) return undefined
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    const timer = window.setTimeout(() => {
+      const params = new URLSearchParams(searchParams)
+      params.delete('post')
+      setSearchParams(params, { replace: true })
+    }, 2400)
+    return () => window.clearTimeout(timer)
+  }, [highlightPostId, filtered, searchParams, setSearchParams])
 
   return (
     <div className="grid gap-7">
@@ -98,7 +129,15 @@ export function NewsPage() {
         {filtered.length > 0 ? (
           <div className="flex flex-col gap-5 sm:gap-6">
             {filtered.map((post) => (
-              <FeedPostCard key={post.id} post={post} />
+              <div
+                key={post.id}
+                id={`news-post-${post.id}`}
+                className={
+                  highlightPostId === post.id ? 'news-post-highlight rounded-2xl' : undefined
+                }
+              >
+                <FeedPostCard post={post} />
+              </div>
             ))}
           </div>
         ) : (

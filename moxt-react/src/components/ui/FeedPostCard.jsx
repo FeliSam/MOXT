@@ -29,6 +29,7 @@ import { SOURCE_TYPE_LABELS } from '../../features/posts/postTemplates'
 import { formatDate } from '../../features/transfers/transferUtils'
 import { addToast } from '../../features/ui/uiSlice'
 import { phase3Text } from '../../i18n/phase3I18n'
+import { buildAbsoluteUrl } from '../../utils/siteUrl'
 import { FeedPostImages } from './FeedPostImages'
 import { EntityVerifiedName } from './EntityVerifiedName'
 
@@ -174,7 +175,7 @@ export function FeedPostCard({ post }) {
   }
 
   async function handleShare() {
-    const url = `${window.location.origin}/news`
+    const url = buildAbsoluteUrl('/news')
     const shareData = {
       title: post.title || post.authorName || 'MOXT',
       text: (post.message || '').trim().slice(0, 200),
@@ -433,7 +434,7 @@ export function FeedPostCard({ post }) {
                     </Link>
                     <p className="text-sm mt-0.5">{comment.text}</p>
                   </div>
-                  {(user?.id === comment.authorId || isAuthor || isModerator) && (
+                  {(user?.id === comment.authorId || isAuthor || isModerator) && comment.id ? (
                     <button
                       type="button"
                       onClick={() => dispatch(deleteComment({ postId: post.id, commentId: comment.id }))}
@@ -442,7 +443,7 @@ export function FeedPostCard({ post }) {
                     >
                       <FiTrash2 className="text-xs" />
                     </button>
-                  )}
+                  ) : null}
                 </div>
               ))}
             </div>

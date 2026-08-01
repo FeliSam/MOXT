@@ -26,7 +26,9 @@ import { getConversationPeer } from '../../features/communications/conversationD
 import {
   buildConversationTimeline,
   buildContextPreview,
+  contextHasMessages,
   findRelatedContextById,
+  normalizeRelatedContexts,
 } from '../../features/communications/conversationTimeline'
 import { messagesText, relatedOptionLabel } from '../../features/communications/messagesI18n'
 import { resolveRelatedSnapshot } from '../../features/communications/relatedSnapshot'
@@ -82,7 +84,7 @@ export function ConversationPanel({
   onReply,
   onReplyToContext,
   onRetry,
-  onShare,
+  onCopy,
   editingId,
   onCancelEdit,
   replyToId,
@@ -108,23 +110,43 @@ export function ConversationPanel({
   const relatedPreview = useSelector((state) => resolveRelatedSnapshot(state, active))
   const relatedMeta = RELATED_CONTENT_META[relatedPreview?.type || active.relatedType] || RELATED_CONTENT_META.general
   const RelatedIcon = relatedMeta.icon
+  // Le bandeau "pourquoi cette conversation" ne doit apparaître que si un
+  // message a effectivement été échangé à propos du contexte le plus récent
+  // — sinon un simple clic sur "Contacter" (sans rien écrire) l'affiche à tort.
+  const latestContext = useMemo(() => {
+    const contexts = normalizeRelatedContexts(active)
+    if (!contexts.length) return null
+    return contexts.slice().sort((a, b) => new Date(a.introducedAt) - new Date(b.introducedAt)).at(-1)
+  }, [active])
+  const showRelatedContext =
+    Boolean(relatedPreview?.path) &&
+    (latestContext ? contextHasMessages(latestContext, active) : active.messages?.length > 0)
+  // Horodatage de secours stable (calculé une seule fois, pas à chaque rendu)
+  // pour l'entrée de contexte synthétique quand ni createdAt ni updatedAt n'existent.
+  const [fallbackTimelineAt] = useState(() => Date.now())
   const timeline = useMemo(() => {
     const items = buildConversationTimeline(active, user.id)
-    if (items.some((item) => item.kind === 'related')) return items
+    // Repli légitime uniquement quand aucune donnée de contexte n'existe du tout
+    // (ni relatedContexts, ni champs legacy) mais que le résolveur live en trouve
+    // une — jamais pour recontourner le filtre "a des messages" ci-dessus.
+    if (normalizeRelatedContexts(active).length > 0) return items
     if (!relatedPreview?.path) return items
+    if (!(active.messages?.length > 0)) return items
     return [
       {
         kind: 'related',
         id: `CTX-resolved-${active.relatedId || active.id}`,
-        at: new Date(active.createdAt || active.updatedAt || Date.now()),
+        at: new Date(active.createdAt || active.updatedAt || fallbackTimelineAt),
         preview: relatedPreview,
       },
       ...items,
     ]
-  }, [active, relatedPreview, user.id])
+  }, [active, relatedPreview, user.id, fallbackTimelineAt])
   const messageListRef = useRef(null)
   const composerRef = useRef(null)
   const stickToBottomRef = useRef(true)
+  const loadOlderAnchorRef = useRef(null)
+  const loadingOlderRequestedRef = useRef(false)
   const [attachmentPreviewUrls, setAttachmentPreviewUrls] = useState([])
   const replyTarget = active.messages.find((item) => item.id === replyToId)
   const replyContextEntry = findRelatedContextById(active, replyToContextId)
@@ -169,12 +191,58 @@ export function ConversationPanel({
     messageList.scrollTop = top
   }
 
+  // Force bottom when opening a conversation (before paint). Must not wait for the
+  // later useEffect — otherwise a prior "scrolled up" stick=false skips the open stick
+  // and the reused scroll node keeps a stale offset.
   useLayoutEffect(() => {
+    stickToBottomRef.current = true
+    stickToBottom('auto')
+    const frame = requestAnimationFrame(() => stickToBottom('auto'))
+    return () => cancelAnimationFrame(frame)
+  }, [active.id])
+
+  // Stay pinned while content height changes (messages, draft, loading ↔ empty).
+  useLayoutEffect(() => {
+    if (loadOlderAnchorRef.current) return
     if (!stickToBottomRef.current) return
     stickToBottom('auto')
     const frame = requestAnimationFrame(() => stickToBottom('auto'))
     return () => cancelAnimationFrame(frame)
-  }, [active.id, active.messages.length, active.relatedContexts?.length, formik.values.text])
+  }, [
+    active.messages.length,
+    active.relatedContexts?.length,
+    formik.values.text,
+    messagesLoading,
+  ])
+
+  // Preserve viewport when older messages are prepended.
+  useLayoutEffect(() => {
+    const snapshot = loadOlderAnchorRef.current
+    const messageList = messageListRef.current
+    if (!snapshot || !messageList || messagesLoadingOlder) return
+    messageList.scrollTop = snapshot.top + (messageList.scrollHeight - snapshot.height)
+    loadOlderAnchorRef.current = null
+    loadingOlderRequestedRef.current = false
+  }, [active.messages.length, messagesLoadingOlder])
+
+  useEffect(() => {
+    if (!messagesLoadingOlder) {
+      loadingOlderRequestedRef.current = false
+    }
+  }, [messagesLoadingOlder])
+
+  function requestLoadOlder() {
+    if (!hasOlderMessages || messagesLoadingOlder || loadingOlderRequestedRef.current) return
+    const messageList = messageListRef.current
+    if (!messageList) return
+    loadingOlderRequestedRef.current = true
+    stickToBottomRef.current = false
+    loadOlderAnchorRef.current = {
+      height: messageList.scrollHeight,
+      top: messageList.scrollTop,
+    }
+    onLoadOlder?.()
+  }
 
   useLayoutEffect(() => {
     const el = composerRef.current
@@ -192,10 +260,6 @@ export function ConversationPanel({
   }, [formik.isSubmitting, blocked])
 
   useEffect(() => {
-    stickToBottomRef.current = true
-  }, [active.id])
-
-  useEffect(() => {
     const messageList = messageListRef.current
     if (!messageList) return
     function handleScroll() {
@@ -203,16 +267,22 @@ export function ConversationPanel({
         messageList.scrollHeight - messageList.scrollTop - messageList.clientHeight
       stickToBottomRef.current = distanceFromBottom < 120
       setShowScrollFab(distanceFromBottom > 120)
+      if (messageList.scrollTop < 80) {
+        requestLoadOlder()
+      }
     }
     handleScroll()
     messageList.addEventListener('scroll', handleScroll, { passive: true })
     return () => messageList.removeEventListener('scroll', handleScroll)
-  }, [active.id])
+    // requestLoadOlder is stable enough for this scroll subscription (deps cover its gates).
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- scroll listener rebinds on conversation / load flags
+  }, [active.id, hasOlderMessages, messagesLoadingOlder])
 
   useEffect(() => {
     const urls = (attachments || []).map((file) =>
       file?.type?.startsWith('image/') ? URL.createObjectURL(file) : null,
     )
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- gestion de ressource externe (URLs d'objets, nettoyées au retour)
     setAttachmentPreviewUrls(urls)
     return () => {
       urls.forEach((url) => {
@@ -315,7 +385,7 @@ export function ConversationPanel({
         >
           <FiSearch />
         </button>
-        {(active.relatedPath || relatedPreview?.path) ? (
+        {showRelatedContext ? (
           <>
             <Link
               className="message-touch-target grid size-9 shrink-0 place-items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-brand-700 transition hover:border-brand-200 hover:bg-[var(--app-accent-soft)] lg:hidden dark:text-brand-300"
@@ -422,7 +492,7 @@ export function ConversationPanel({
         </div>
       ) : null}
 
-      {relatedPreview?.path ? (
+      {showRelatedContext ? (
         <div className="message-related-sticky shrink-0 border-b border-[var(--app-border)]/60 bg-[var(--app-surface)]/95 px-3 py-2 backdrop-blur-xl sm:px-4">
           <Link
             to={relatedPreview.path}
@@ -471,7 +541,7 @@ export function ConversationPanel({
                 {t('messages.syncing')}
               </p>
             ) : null}
-            {messagesLoading && !active.messages?.length ? (
+            {messagesLoading && !active.messages?.length && messageCount > 0 ? (
               <div className="flex flex-col gap-4 py-6">
                 {[...Array(4)].map((_, i) => (
                   <div
@@ -491,7 +561,7 @@ export function ConversationPanel({
                       type="button"
                       className="rounded-full border border-[var(--app-border)] bg-[var(--app-surface)] px-4 py-1.5 text-xs font-semibold text-[var(--app-text-muted)] transition hover:border-brand-200 hover:text-[var(--app-text)] disabled:opacity-60"
                       disabled={messagesLoadingOlder}
-                      onClick={onLoadOlder}
+                      onClick={requestLoadOlder}
                     >
                       {messagesLoadingOlder ? t('messages.loadingOlder') : t('messages.loadOlder')}
                     </button>
@@ -499,6 +569,11 @@ export function ConversationPanel({
                 ) : null}
                 <MessageThreadStart />
                 <MessageSecurityNotice />
+                {messagesLoading && !active.messages?.length ? (
+                  <p className="py-6 text-center text-xs font-medium text-[var(--app-text-faint)]">
+                    {t('messages.syncing')}
+                  </p>
+                ) : null}
                 {threadQuery.trim() && !filteredTimeline.length ? (
                   <p className="py-8 text-center text-sm text-[var(--app-text-faint)]">
                     {messagesText(t, 'messages.searchNoMatch')}
@@ -581,9 +656,18 @@ export function ConversationPanel({
                               : 'message-row--grouped'
                             : 'message-row--spaced'
                         }`}
+                        style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 72px' }}
                       >
                         {!mine ? (
-                          <MessageAvatar name={message.senderName} hidden={groupedWithPrevious} />
+                          <MessageAvatar
+                            name={message.senderName}
+                            avatarUrl={
+                              peer?.id && String(message.senderId) === String(peer.id)
+                                ? peerAvatarSrc
+                                : undefined
+                            }
+                            hidden={groupedWithPrevious}
+                          />
                         ) : null}
                         <MessageBubble
                           animateEnter={sentAnimationIds.includes(message.id)}
@@ -599,7 +683,7 @@ export function ConversationPanel({
                           onReact={onReact}
                           onReply={onReply}
                           onRetry={onRetry}
-                          onShare={onShare}
+                          onCopy={onCopy}
                           onToggleActions={() =>
                             setOpenActionsId((current) =>
                               current === message.id ? null : message.id,
@@ -829,7 +913,8 @@ export function ConversationPanel({
               }
             }}
             onKeyDown={(event) => {
-              if (event.key === 'Enter' && !event.shiftKey) {
+              // Enter = send ; Shift+Enter = nouvelle ligne.
+              if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
                 event.preventDefault()
                 if (
                   !blocked &&
@@ -838,6 +923,19 @@ export function ConversationPanel({
                 ) {
                   formik.handleSubmit()
                 }
+                return
+              }
+              if (event.key === 'Tab') {
+                event.preventDefault()
+                const el = event.currentTarget
+                const start = el.selectionStart ?? el.value.length
+                const end = el.selectionEnd ?? el.value.length
+                const next = `${el.value.slice(0, start)}\n${el.value.slice(end)}`
+                formik.setFieldValue('text', next)
+                onDraft(next)
+                requestAnimationFrame(() => {
+                  el.selectionStart = el.selectionEnd = start + 1
+                })
               }
             }}
           />

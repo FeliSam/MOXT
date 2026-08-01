@@ -3,6 +3,11 @@ import { FiClock, FiRepeat, FiStar } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { Badge, VerifiedDisplayName } from '../components/ui/Badge'
+import {
+  BusinessRatingBadge,
+  BusinessRatingValue,
+} from '../features/reviews/BusinessRatingBadge'
+import { BothWayExchangeRates } from '../features/transfers/ExchangeRateChips'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { CatalogSearch } from '../components/ui/CatalogSearch'
@@ -143,8 +148,11 @@ export function ExchangersPage() {
                       className="block"
                       nameClassName="truncate"
                     />
-                    <p className="mt-1 text-xs text-[var(--app-text-muted)]">
-                      {flagEmoji(exchanger.country)} {exchanger.city || exchanger.country}
+                    <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-[var(--app-text-muted)]">
+                      <span>
+                        {flagEmoji(exchanger.country)} {exchanger.city || exchanger.country}
+                      </span>
+                      <BusinessRatingBadge business={exchanger} />
                     </p>
                   </div>
                   <Badge tone="success" className="shrink-0">{p3('exchangers.available')}</Badge>
@@ -153,7 +161,8 @@ export function ExchangersPage() {
                 <div className="mt-4 grid grid-cols-3 gap-2 rounded-2xl bg-[var(--app-surface-muted)] p-3">
                   <div className="text-center">
                     <p className="flex items-center justify-center gap-1 text-sm font-black tabular-nums">
-                      <FiStar className="text-amber-500" /> {exchanger.rating || 0}
+                      <FiStar className="text-amber-500" />{' '}
+                      <BusinessRatingValue business={exchanger} />
                     </p>
                     <span className="text-[10px] text-[var(--app-text-faint)]">{p3('exchangers.rating')}</span>
                   </div>
@@ -170,6 +179,12 @@ export function ExchangersPage() {
                     </span>
                   </div>
                 </div>
+
+                <BothWayExchangeRates
+                  originCountry={exchanger.country}
+                  exchanger={exchanger}
+                  className="mt-3 justify-center"
+                />
 
                 <Link
                   className="mt-5 inline-flex items-center justify-center gap-1.5 rounded-2xl border border-[var(--app-border-md)] py-2.5 text-sm font-bold text-brand-700 transition hover:bg-[var(--app-surface-muted)] dark:text-brand-300"

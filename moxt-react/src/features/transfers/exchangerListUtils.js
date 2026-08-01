@@ -1,5 +1,6 @@
 import {
   inferTransferAccountSlot,
+  normalizeTransferCountryCode,
   receivingCountryForDirection,
 } from './transferAccountUtils'
 
@@ -8,14 +9,16 @@ export const EXCHANGER_DELAY_TO_CONFIRM = 'À confirmer'
 
 export function resolveUserTransferCountry(user, originCountry = 'BJ') {
   if (user?.country === 'RU') return 'RU'
-  return user?.originCountry || user?.country || originCountry
+  return normalizeTransferCountryCode(user?.originCountry || user?.country || originCountry, 'BJ')
 }
 
 /** Pays d'origine pour lister les partenaires (Bénin, Togo, Cameroun…), jamais la résidence en Russie. */
 export function resolveUserPartnerCountry(user, originCountry = 'BJ') {
-  if (user?.originCountry) return user.originCountry
-  if (user?.country && user.country !== 'RU') return user.country
-  return originCountry
+  if (user?.originCountry) return normalizeTransferCountryCode(user.originCountry, 'BJ')
+  if (user?.country && user.country !== 'RU') {
+    return normalizeTransferCountryCode(user.country, 'BJ')
+  }
+  return normalizeTransferCountryCode(originCountry, 'BJ')
 }
 
 /** Pays partenaire à filtrer — toujours le pays d'origine du membre, quel que soit le sens. */
@@ -28,20 +31,26 @@ function activeTransferAccounts(business) {
 }
 
 export function resolveExchangerOriginCountry(business, fallbackOriginCountry = 'BJ') {
-  if (!business) return fallbackOriginCountry
+  if (!business) return normalizeTransferCountryCode(fallbackOriginCountry, 'BJ')
+  const fallback = normalizeTransferCountryCode(
+    business.ownerOriginCountry || business.originCountry || fallbackOriginCountry,
+    'BJ',
+  )
 
   const accounts = activeTransferAccounts(business)
   const originAccounts = accounts.filter(
     (account) =>
-      (account.slot || inferTransferAccountSlot(account.country, fallbackOriginCountry)) === 'origin',
+      (account.slot || inferTransferAccountSlot(account.country)) === 'origin',
   )
 
   if (originAccounts.length) {
-    const explicit = originAccounts.map((account) => account.country).find(Boolean)
+    const explicit = originAccounts
+      .map((account) => String(account.country ?? '').trim().toUpperCase())
+      .find((code) => code !== 'RU' && /^[A-Z]{2}$/.test(code))
     if (explicit) return explicit
   }
 
-  return business.ownerOriginCountry || business.originCountry || fallbackOriginCountry
+  return fallback
 }
 
 /**
@@ -53,7 +62,7 @@ export function resolveExchangerCountry(business, userCountry, fallbackOriginCou
 
   const accounts = activeTransferAccounts(business)
   const slots = accounts.map(
-    (account) => account.slot || inferTransferAccountSlot(account.country, fallbackOriginCountry),
+    (account) => account.slot || inferTransferAccountSlot(account.country),
   )
   const hasRu = slots.includes('ru')
   const hasOrigin = slots.includes('origin')
@@ -68,26 +77,31 @@ export function exchangerMatchesUserCountry(business, userCountry, fallbackOrigi
   if (!business) return false
 
   const accounts = activeTransferAccounts(business)
+  const targetOrigin = normalizeTransferCountryCode(userCountry, fallbackOriginCountry)
 
-  if (userCountry === 'RU') {
+  if (targetOrigin === 'RU' || userCountry === 'RU') {
     if (!accounts.length) return false
     return accounts.some(
-      (account) =>
-        (account.slot || inferTransferAccountSlot(account.country, fallbackOriginCountry)) === 'ru',
+      (account) => (account.slot || inferTransferAccountSlot(account.country)) === 'ru',
     )
   }
 
-  const targetOrigin = userCountry
   const businessOrigin = resolveExchangerOriginCountry(business, fallbackOriginCountry)
   if (!accounts.length) {
-    const declared = business.ownerOriginCountry || business.originCountry
+    const declared = normalizeTransferCountryCode(
+      business.ownerOriginCountry || business.originCountry,
+      businessOrigin,
+    )
     return declared === targetOrigin
   }
 
   return accounts.some((account) => {
-    const slot = account.slot || inferTransferAccountSlot(account.country, fallbackOriginCountry)
+    const slot = account.slot || inferTransferAccountSlot(account.country)
     if (slot !== 'origin') return false
-    const accountCountry = account.country || businessOrigin
+    const accountCountry = normalizeTransferCountryCode(
+      account.country,
+      businessOrigin,
+    )
     return accountCountry === targetOrigin
   })
 }
@@ -95,7 +109,9 @@ export function exchangerMatchesUserCountry(business, userCountry, fallbackOrigi
 export function isApprovedTransferBusiness(business) {
   return (
     ['approved', 'active', 'verified'].includes(business?.status) &&
-    business?.services?.includes('Transfert')
+    business?.services?.includes('Transfert') &&
+    !business?.deletedByUserAt &&
+    (business?.activityVisibility || 'public') === 'public'
   )
 }
 
@@ -107,9 +123,11 @@ export function exchangerSupportsDirection(business, direction, originCountry = 
   const businessOrigin = resolveExchangerOriginCountry(business, originCountry)
 
   return accounts.some((account) => {
-    const slot = account.slot || inferTransferAccountSlot(account.country, originCountry)
-    const accountCountry =
-      account.country || (slot === 'ru' ? 'RU' : businessOrigin)
+    const slot = account.slot || inferTransferAccountSlot(account.country)
+    const accountCountry = normalizeTransferCountryCode(
+      account.country,
+      slot === 'ru' ? 'RU' : businessOrigin,
+    )
     return accountCountry === paymentCountry
   })
 }
@@ -121,11 +139,14 @@ export function exchangerSupportsDirection(business, direction, originCountry = 
 export function resolveExchangerDisplayCountry(business, fallbackOriginCountry = 'BJ') {
   const accounts = activeTransferAccounts(business)
   if (!accounts.length) {
-    return business.ownerOriginCountry || business.originCountry || fallbackOriginCountry
+    return normalizeTransferCountryCode(
+      business.ownerOriginCountry || business.originCountry || fallbackOriginCountry,
+      'BJ',
+    )
   }
 
   const slots = accounts.map(
-    (account) => account.slot || inferTransferAccountSlot(account.country, fallbackOriginCountry),
+    (account) => account.slot || inferTransferAccountSlot(account.country),
   )
 
   if (slots.includes('origin')) {
@@ -150,9 +171,11 @@ export function businessToExchangerOption(
     ownerId: business.ownerId,
     name: business.name,
     rating: Number(business.rating) || 0,
+    pinnedAt: business.pinnedAt || null,
     feePercent: Number(business.feePercent || 0),
     rateReductionToRu: Math.min(15, Math.max(0, Number(business.rateReductionToRu) || 0)),
     rateReductionFromRu: Math.min(15, Math.max(0, Number(business.rateReductionFromRu) || 0)),
+    transferAcceptanceRequired: business.transferAcceptanceRequired === true,
     averageDelay: business.averageDelay || toConfirmLabel,
     methods: business.exchangeMethods || business.paymentMethods || [],
     logoUrl: business.logoUrl || '',
@@ -191,6 +214,13 @@ export function listExchangersForTransfer({
       businessToExchangerOption(business, partnerCountry, originCountry, { toConfirmLabel }),
     )
     .sort((left, right) => {
+      // Épinglés par un admin d'abord (le plus récemment épinglé en tête),
+      // puis le classement naturel par note.
+      const pinDelta = Number(Boolean(right.pinnedAt)) - Number(Boolean(left.pinnedAt))
+      if (pinDelta !== 0) return pinDelta
+      if (left.pinnedAt && right.pinnedAt) {
+        return String(right.pinnedAt).localeCompare(String(left.pinnedAt))
+      }
       if (right.rating !== left.rating) return right.rating - left.rating
       return left.name.localeCompare(right.name, 'fr')
     })
@@ -211,7 +241,11 @@ export function resolveExchangerForDetail({
 }) {
   const partnerCountry = resolveUserPartnerCountry(user, originCountry)
   const business = businesses.find(
-    (item) => item.id === exchangerId && item.services?.includes('Transfert'),
+    (item) =>
+      item.id === exchangerId &&
+      item.services?.includes('Transfert') &&
+      !item.deletedByUserAt &&
+      (item.activityVisibility || 'public') === 'public',
   )
 
   if (business && isApprovedTransferBusiness(business)) {

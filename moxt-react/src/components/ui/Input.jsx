@@ -26,13 +26,26 @@ export function Input({
   iconRight,
   success = false,
   wrapperClass = '',
+  onChange,
   ...props
 }) {
   const generatedId = useId()
   const inputId = id || generatedId
   const messageId = `${inputId}-message`
 
+  // Chrome/Safari remplissent parfois un champ via le menu "mot de passe enregistré"
+  // sans déclencher d'événement `input` — React (champ contrôlé) ne voit jamais la
+  // valeur. Le hack `:-webkit-autofill` + animation permet de détecter ce remplissage
+  // natif et de resynchroniser l'état contrôlé.
+  function handleAutofillAnimation(event) {
+    if (event.animationName === 'onAutoFillStart' && onChange) {
+      onChange({ target: event.target, currentTarget: event.target })
+    }
+  }
+
   const hasState = error || success
+  const hasRightAccessory = Boolean(iconRight) || hasState
+  const dualRight = Boolean(error && iconRight)
   const borderClass = error
     ? 'border-red-400 focus:border-red-400 focus:shadow-[0_0_0_3px_rgba(220,38,38,0.12)]'
     : success
@@ -70,23 +83,30 @@ export function Input({
             disabled:cursor-not-allowed disabled:opacity-50
             ${borderClass}
             ${iconLeft ? 'pl-10' : ''}
-            ${iconRight || hasState ? 'pr-10' : ''}
+            ${dualRight ? 'pr-[4.25rem]' : hasRightAccessory ? 'pr-11' : ''}
             ${className}
           `}
+          onChange={onChange}
+          onAnimationStart={handleAutofillAnimation}
           {...props}
         />
 
-        {/* Icone droite : priorite a etat, puis iconRight */}
         {error ? (
-          <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-red-500">
+          <span
+            className={`pointer-events-none absolute top-1/2 -translate-y-1/2 text-red-500 ${
+              iconRight ? 'right-11' : 'right-3.5'
+            }`}
+          >
             <FiAlertCircle className="text-base" aria-hidden="true" />
           </span>
-        ) : success ? (
+        ) : success && !iconRight ? (
           <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-500">
             <FiCheckCircle className="text-base" aria-hidden="true" />
           </span>
-        ) : iconRight ? (
-          <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--app-text-faint)] [&>svg]:text-base">
+        ) : null}
+
+        {iconRight ? (
+          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--app-text-faint)] [&>svg]:text-base">
             {iconRight}
           </span>
         ) : null}

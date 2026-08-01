@@ -10,7 +10,6 @@ import {
   FiMaximize2,
   FiPackage,
   FiPercent,
-  FiShare2,
   FiShield,
   FiShoppingBag,
 } from 'react-icons/fi'
@@ -48,7 +47,7 @@ import {
   reportListing,
   updateListingStatus,
 } from '../features/marketplace/marketplaceSlice'
-import { toggleAccountFavorite } from '../features/account/accountSlice'
+import { markListingViewed, toggleAccountFavorite } from '../features/account/accountSlice'
 import { buildListingFavoriteSnapshot } from '../features/account/favoriteUtils'
 import { addToast } from '../features/ui/uiSlice'
 import { formatMoney } from '../features/transfers/transferUtils'
@@ -101,8 +100,12 @@ export function ListingDetailPage() {
   const publisherProfile = usePublisherDetailProfile(listing, 'listing')
 
   useEffect(() => {
-    if (listingId) dispatch(incrementListingView(listingId))
-  }, [dispatch, listingId])
+    if (!listingId) return
+    dispatch(incrementListingView(listingId))
+    if (user?.id) {
+      dispatch(markListingViewed({ userId: user.id, listingId }))
+    }
+  }, [dispatch, listingId, user?.id])
 
   const similar = useMemo(
     () =>
@@ -172,30 +175,6 @@ export function ListingDetailPage() {
     setSelectedImage(images[bounded])
   }
 
-  async function shareListing() {
-    const shareData = { title: listing.title, url: window.location.href }
-    try {
-      if (navigator.share) await navigator.share(shareData)
-      else await navigator.clipboard?.writeText(window.location.href)
-      dispatch(incrementListingShare(listing.id))
-      dispatch(
-        addToast({
-          title: mt('marketplace.detail.shareSuccessTitle'),
-          message: mt('marketplace.detail.shareSuccessBody'),
-          tone: 'success',
-        }),
-      )
-    } catch {
-      dispatch(
-        addToast({
-          title: mt('marketplace.detail.shareCancelledTitle'),
-          message: mt('marketplace.detail.shareCancelledBody'),
-          tone: 'info',
-        }),
-      )
-    }
-  }
-
   function submitQuestion(event) {
     event.preventDefault()
     if (question.trim().length < 5) return
@@ -225,9 +204,6 @@ export function ListingDetailPage() {
         actions={
           <>
             <ReshareButton sourceType="listing" sourceId={listing.id} sourceData={listing} />
-            <Button variant="secondary" icon={FiShare2} onClick={shareListing}>
-              {mt('marketplace.detail.share')}
-            </Button>
             <BackButton fallback="/marketplace" />
           </>
         }
@@ -292,6 +268,28 @@ export function ListingDetailPage() {
                         })
                         .join(', '),
                     },
+                    ...(Array.isArray(listing.shippingCarriers) && listing.shippingCarriers.length
+                      ? [
+                          {
+                            label: mt('marketplace.detail.shippingCarriers'),
+                            value: listing.shippingCarriers
+                              .map((carrier) => {
+                                const id = typeof carrier === 'string' ? carrier : carrier.id
+                                const eta =
+                                  typeof carrier === 'object' && carrier?.etaHint
+                                    ? carrier.etaHint
+                                    : ''
+                                const label = mt(`marketplace.shipping.carriers.${id}`)
+                                const name =
+                                  label && label !== `marketplace.shipping.carriers.${id}`
+                                    ? label
+                                    : id
+                                return eta ? `${name} (${eta})` : name
+                              })
+                              .join(' · '),
+                          },
+                        ]
+                      : []),
                     {
                       label: mt('marketplace.detail.deliveryFee'),
                       value: listing.deliveryFee
@@ -507,6 +505,7 @@ export function ListingDetailPage() {
         title={listing.title}
         floatBottomClass={mobileFloatBottom}
         onContact={() => dispatch(incrementListingContact(listing.id))}
+        onShared={() => dispatch(incrementListingShare(listing.id))}
       />
 
       <Modal open={imageOpen} onClose={() => setImageOpen(false)} title={mt('marketplace.detail.gallery')} size="wide">

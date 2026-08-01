@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { FiBriefcase, FiCheck, FiCopy, FiMapPin, FiShare2 } from 'react-icons/fi'
+import { FiBriefcase, FiCheck, FiCopy, FiExternalLink, FiMapPin, FiShare2 } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { Alert } from '../../components/ui/Alert'
 import { VerifiedBadge } from '../../components/ui/Badge'
@@ -18,10 +18,13 @@ export function QrSharePanel({
   variant = 'profile',
   activityVisibility,
   title,
+  firstName,
+  lastName,
   subtitle,
   avatarUrl,
   verified = false,
   city,
+  country,
   sector,
   shareUrl,
   shareTitle,
@@ -43,19 +46,20 @@ export function QrSharePanel({
     (variant === 'profile' || variant === 'business') && activityVisibility === 'private'
 
   const hint = t(`share.hints.${variant}`)
+  const socialVariants = ['instagram', 'telegram', 'whatsapp']
   const resolvedShareTitle =
     shareTitle ||
     (variant === 'invite'
       ? t('share.shareTitles.invite')
-      : variant === 'instagram'
-        ? t('share.shareTitles.instagram')
+      : socialVariants.includes(variant)
+        ? t(`share.shareTitles.${variant}`)
         : t('share.shareTitles.onMoxt', { name: title }))
   const resolvedShareText =
     shareText ||
     (variant === 'invite'
       ? t('share.shareTexts.invite')
-      : variant === 'instagram'
-        ? t('share.shareTexts.instagram')
+      : socialVariants.includes(variant)
+        ? t(`share.shareTexts.${variant}`)
         : variant === 'business'
           ? t('share.shareTexts.business', { name: title })
           : t('share.shareTexts.profile', { name: title }))
@@ -103,13 +107,9 @@ export function QrSharePanel({
         className="relative overflow-hidden rounded-[2rem] text-white shadow-[0_24px_60px_-20px_rgba(15,118,110,0.55)]"
       style={{
         background:
-          variant === 'invite'
-            ? 'linear-gradient(165deg, #0f766e 0%, #0d9488 38%, #155e75 72%, #1e293b 100%)'
-            : variant === 'business'
-              ? 'linear-gradient(165deg, #020617 0%, #0f172a 32%, #1e293b 58%, #0f766e 100%)'
-              : variant === 'instagram'
-                ? 'linear-gradient(165deg, #0f766e 0%, #0d9488 36%, #155e75 68%, #1e293b 100%)'
-                : 'linear-gradient(165deg, #0f766e 0%, #0d9488 42%, #134e4a 78%, #0f172a 100%)',
+          variant === 'business'
+            ? 'linear-gradient(165deg, #04141c 0%, #0a2430 40%, #0f172a 72%, #134e4a 100%)'
+            : 'linear-gradient(165deg, #04141c 0%, #0a2430 38%, #0d3a42 68%, #0f766e 100%)',
       }}
     >
       <div
@@ -176,10 +176,10 @@ export function QrSharePanel({
           <img
             key={shareUrl}
             src={qrUrl}
-            alt=""
+            alt={hint}
             width={qrSize}
             height={qrSize}
-            className="block"
+            className="block object-contain"
             style={{ width: qrSize, height: qrSize }}
           />
         </div>
@@ -201,6 +201,16 @@ export function QrSharePanel({
               <span className="truncate">{shareUrl}</span>
             </button>
             <div className="mt-3 flex flex-wrap justify-center gap-2">
+              {socialVariants.includes(variant) ? (
+                <Button
+                  variant="secondary"
+                  className="!border-transparent !bg-white !text-slate-950 hover:!bg-slate-100"
+                  icon={FiExternalLink}
+                  onClick={() => window.open(shareUrl, '_blank', 'noopener,noreferrer')}
+                >
+                  {t(`share.openNetwork.${variant}`)}
+                </Button>
+              ) : null}
               <Button
                 className="border border-white/20 bg-white/10 text-white shadow-none hover:bg-white/20"
                 icon={copied ? FiCheck : FiCopy}
@@ -222,8 +232,11 @@ export function QrSharePanel({
                 <DownloadBadgeButton
                   variant={variant}
                   title={title}
+                  firstName={firstName}
+                  lastName={lastName}
                   subtitle={variant === 'business' ? sector : undefined}
                   city={city}
+                  country={country}
                   verified={verified}
                   qrUrl={qrUrl}
                   avatarUrl={avatarUrl}

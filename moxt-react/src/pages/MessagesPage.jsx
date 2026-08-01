@@ -1,10 +1,8 @@
 import { useFormik } from 'formik'
 import {
   FiArchive,
-  FiHeadphones,
   FiMessageSquare,
   FiSearch,
-  FiStar,
   FiX,
 } from 'react-icons/fi'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useDeferredValue } from 'react'
@@ -27,8 +25,9 @@ import {
   refreshConversations,
   restoreConversation,
   saveConversationDraft,
+  searchMessagesRemote,
   sendMessage,
-  setMessageSyncFailed,
+  resendMessage,
   toggleConversationBlock,
   toggleConversationMute,
   toggleConversationPin,
@@ -58,15 +57,9 @@ import {
 } from '../features/communications/attachmentUtils'
 import { messagesText } from '../features/communications/messagesI18n'
 import { useLanguage } from '../contexts/useLanguage'
+import { MESSAGE_FILTER_IDS, conversationMatchesFilter } from './messages/messageFilters'
 
 const ASSISTANT_ID = 'moxt-assistant'
-
-const MESSAGE_FILTER_IDS = [
-  { id: 'all', labelKey: 'messages.filterAll' },
-  { id: 'unread', labelKey: 'messages.filterUnread' },
-  { id: 'pinned', labelKey: 'messages.filterPinned', icon: FiStar },
-  { id: 'support', labelKey: 'messages.filterSupport', icon: FiHeadphones, adminOnly: true },
-]
 
 export function MessagesPage() {
   const dispatch = useDispatch()
@@ -78,7 +71,7 @@ export function MessagesPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [query, setQuery] = useState('')
   const deferredQuery = useDeferredValue(query)
-  const [attachments, setAttachments] = useState([])
+  const [attachmentsByConversation, setAttachmentsByConversation] = useState({})
   const { progress: uploadProgress, track: trackUpload } = useUploadProgress()
   const [replyToId, setReplyToId] = useState(null)
   const [replyToContextId, setReplyToContextId] = useState(null)
@@ -89,7 +82,6 @@ export function MessagesPage() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [filter, setFilter] = useState('all')
   const listRef = useRef(null)
-  const conversationListRef = useRef(null)
   const desktop = useMediaQuery('(min-width: 1024px)')
   const isFiltering = Boolean(deferredQuery.trim())
   const relatedConversation = conversations.find(
@@ -143,28 +135,60 @@ export function MessagesPage() {
     user.id,
   )
 
+  const [remoteSearchHits, setRemoteSearchHits] = useState([])
+
+  useEffect(() => {
+    const q = deferredQuery.trim()
+    if (!searchOpen || q.length < 2) return undefined
+    let cancelled = false
+    const timer = window.setTimeout(() => {
+      void dispatch(searchMessagesRemote(q))
+        .unwrap()
+        .then((hits) => {
+          if (!cancelled) setRemoteSearchHits(hits || [])
+        })
+        .catch(() => {
+          if (!cancelled) setRemoteSearchHits([])
+        })
+    }, 280)
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [deferredQuery, dispatch, searchOpen])
+
+  const remoteSearchConversationIds = useMemo(() => {
+    if (!searchOpen || deferredQuery.trim().length < 2) return []
+    return [...new Set(remoteSearchHits.map((hit) => hit.conversationId).filter(Boolean))]
+  }, [deferredQuery, remoteSearchHits, searchOpen])
+
   const visible = useMemo(() => {
+    const remoteIds = new Set(remoteSearchConversationIds)
     return conversations
       .filter((item) => {
         const archived = item.archivedBy?.includes(user.id)
         if (showArchived !== Boolean(archived)) return false
-        if (filter === 'unread' && !(item.unreadBy?.[user.id] > 0)) return false
-        if (filter === 'pinned' && !item.pinnedBy?.includes(user.id)) return false
-        if (filter === 'support' && item.relatedType !== 'support') return false
+        if (!conversationMatchesFilter(item, filter, user.id)) return false
         if (!shouldShowConversationInList(item, user.id, activeId)) return false
+        if (remoteIds.has(item.id)) return true
         return conversationMatchesQuery(item, user.id, deferredQuery)
       })
       .sort((left, right) => {
-        if (desktop && activeId && !showArchived) {
-          if (left.id === activeId) return -1
-          if (right.id === activeId) return 1
-        }
+        // Opening a chat must not reorder the list; only new messages bump updatedAt.
         const pinDelta =
           Number(Boolean(right.pinnedBy?.includes(user.id))) -
           Number(Boolean(left.pinnedBy?.includes(user.id)))
-        return pinDelta || new Date(right.updatedAt) - new Date(left.updatedAt)
+        return pinDelta || new Date(right.lastMessageAt || right.updatedAt) - new Date(left.lastMessageAt || left.updatedAt)
       })
-  }, [activeId, conversations, deferredQuery, desktop, filter, showArchived, user.id])
+  }, [
+    activeId,
+    conversations,
+    deferredQuery,
+    filter,
+    remoteSearchConversationIds,
+    showArchived,
+    user.id,
+  ])
 
   const participantAvatarIds = useMemo(() => {
     const ids = new Set()
@@ -178,6 +202,15 @@ export function MessagesPage() {
   const avatarMap = useProfileAvatarMap(participantAvatarIds)
 
   const active = conversations.find((item) => item.id === activeId)
+  const attachments =
+    activeId && activeId !== ASSISTANT_ID ? attachmentsByConversation[activeId] || [] : []
+  function setAttachments(next) {
+    if (!activeId || activeId === ASSISTANT_ID) return
+    setAttachmentsByConversation((current) => ({
+      ...current,
+      [activeId]: typeof next === 'function' ? next(current[activeId] || []) : next || [],
+    }))
+  }
   const assistantActive = activeId === ASSISTANT_ID
   const integratedAssistant = assistantActive && defaultAssistant
   const blocked = active?.blockedBy?.includes(user.id)
@@ -271,10 +304,14 @@ export function MessagesPage() {
               ...(urls.length > 1 ? { urls } : {}),
             }
           } else if (otherFile) {
+            const uploaded = await trackUpload(async (onProgress) =>
+              storageService.uploadMessageFile(user.id, active.id, otherFile, { onProgress }),
+            )
             attachmentPayload = {
               name: otherFile.name,
               size: otherFile.size,
-              type: otherFile.type,
+              type: otherFile.type || 'application/octet-stream',
+              url: uploaded,
             }
           }
         }
@@ -345,17 +382,13 @@ export function MessagesPage() {
   useEffect(() => {
     const replyContext = searchParams.get('replyContext')
     if (!replyContext || !active?.id || active.id !== requestedConversation) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- consomme un paramètre d'URL (système externe : le routeur)
     setReplyToContextId(replyContext)
     setReplyToId(null)
     const params = new URLSearchParams(searchParams)
     params.delete('replyContext')
     setSearchParams(params, { replace: true })
   }, [active?.id, requestedConversation, searchParams, setSearchParams])
-
-  useLayoutEffect(() => {
-    if (!desktop || !activeId || !conversationListRef.current) return
-    conversationListRef.current.scrollTop = 0
-  }, [activeId, desktop, active?.messages?.length, active?.updatedAt])
 
   useEffect(() => {
     if (!user?.id) return
@@ -382,8 +415,12 @@ export function MessagesPage() {
 
   useEffect(() => {
     const participantIds = conversations.flatMap((item) => item.participantIds || [])
-    if (!participantIds.length) return
+    if (!participantIds.length) return undefined
     dispatch(loadParticipantProfiles(participantIds))
+    const timer = setInterval(() => {
+      dispatch(loadParticipantProfiles(participantIds))
+    }, 60_000)
+    return () => clearInterval(timer)
   }, [conversations, dispatch])
 
   useEffect(() => {
@@ -422,7 +459,6 @@ export function MessagesPage() {
 
   function selectConversation(id) {
     setSearchParams({ conversation: id })
-    setAttachments([])
     setReplyToId(null)
     setReplyToContextId(null)
     composerConversationIdRef.current = null
@@ -481,45 +517,13 @@ export function MessagesPage() {
   }
 
   function retryMessage(message) {
-    if (!active || blocked) return
+    if (!active || blocked || !message?.id) return
     dispatch(
-      setMessageSyncFailed({
+      resendMessage({
         conversationId: active.id,
         messageId: message.id,
-        failed: false,
       }),
     )
-    dispatch(
-      deleteMessageLocally({
-        conversationId: active.id,
-        messageId: message.id,
-        userId: user.id,
-      }),
-    )
-    const previousCount = active.messages.length - 1
-    dispatch(
-      sendMessage({
-        conversationId: active.id,
-        senderId: user.id,
-        senderName: `${user.firstName} ${user.lastName}`,
-        text: message.text,
-        attachment: message.attachment,
-        replyToId: message.replyToId,
-        relatedContextId: message.relatedContextId,
-      }),
-    )
-    const updated = store
-      .getState()
-      .communications.conversations.find((item) => item.id === active.id)
-    if (!updated || updated.messages.length <= previousCount) {
-      dispatch(
-        addToast({
-          title: t('messages.sendFailedTitle'),
-          message: t('messages.retryFailed'),
-          tone: 'error',
-        }),
-      )
-    }
   }
 
   return (
@@ -592,6 +596,7 @@ export function MessagesPage() {
                       active={active?.id === conversation.id}
                       avatarMap={avatarMap}
                       conversation={conversation}
+                      showOnlineDot
                       userId={user.id}
                       onClick={() => selectConversation(conversation.id)}
                     />
@@ -657,9 +662,7 @@ export function MessagesPage() {
               role="toolbar"
               aria-label={t("messages.filterAria")}
             >
-              {MESSAGE_FILTER_IDS.filter(
-                (item) => !item.adminOnly || ['admin', 'superadmin'].includes(user?.role),
-              ).map((item) => {
+              {MESSAGE_FILTER_IDS.map((item) => {
                 const count = countConversationsForFilter(
                   conversations,
                   item.id,
@@ -698,10 +701,7 @@ export function MessagesPage() {
             </div>
           </div>
 
-          <div
-            ref={conversationListRef}
-            className="scrollbar-hidden min-h-0 flex-1 overscroll-contain overflow-y-auto bg-[var(--app-surface-muted)]/45 p-2 sm:p-3"
-          >
+          <div className="scrollbar-hidden min-h-0 flex-1 overscroll-contain overflow-y-auto bg-[var(--app-surface-muted)]/45 p-2 sm:p-3">
             <ConversationRow
               active={assistantActive}
               assistant
@@ -718,6 +718,7 @@ export function MessagesPage() {
                 active={active?.id === conversation.id}
                 avatarMap={avatarMap}
                 conversation={conversation}
+                showOnlineDot
                 userId={user.id}
                 onClick={() => selectConversation(conversation.id)}
               />
@@ -727,8 +728,16 @@ export function MessagesPage() {
             ) : !visible.length && filter !== 'all' ? (
               <p className="p-6 text-center text-sm text-[var(--app-text-faint)]">
                 {filter === 'pinned'
-                  ? t("messages.noPinned")
-                  : t("messages.noUnread")}
+                  ? t('messages.noPinned')
+                  : filter === 'unread'
+                    ? t('messages.noUnread')
+                    : filter === 'transfer'
+                      ? messagesText(t, 'messages.noTransferChats')
+                      : filter === 'p2p'
+                        ? messagesText(t, 'messages.noP2pChats')
+                        : filter === 'support'
+                          ? messagesText(t, 'messages.noSupportChats')
+                          : t('messages.noUnread')}
               </p>
             ) : null}
           </div>
@@ -791,19 +800,9 @@ export function MessagesPage() {
                   setReplyToId(null)
                   setReplyToContextId(null)
                 }}
-                onShare={async (message) => {
+                onCopy={async (message) => {
                   const text = message.text?.trim()
                   if (!text) return
-                  // 1) Partage natif si dispo (mobile / contexte sécurisé).
-                  if (navigator.share) {
-                    try {
-                      await navigator.share({ text })
-                      return
-                    } catch {
-                      /* partage annulé — on retombe sur la copie */
-                    }
-                  }
-                  // 2) Presse-papiers moderne (HTTPS uniquement).
                   let copied = false
                   if (navigator.clipboard?.writeText) {
                     try {
@@ -813,7 +812,6 @@ export function MessagesPage() {
                       copied = false
                     }
                   }
-                  // 3) Repli execCommand (fonctionne sur http LAN, contexte non sécurisé).
                   if (!copied) {
                     try {
                       const area = document.createElement('textarea')
@@ -833,13 +831,13 @@ export function MessagesPage() {
                     addToast(
                       copied
                         ? {
-                            title: t("messages.copiedTitle"),
-                            message: t("messages.copied"),
+                            title: t('messages.copiedTitle'),
+                            message: t('messages.copied'),
                             tone: 'success',
                           }
                         : {
-                            title: t("messages.copyFailedTitle"),
-                            message: t("messages.copyFailed"),
+                            title: t('messages.copyFailedTitle'),
+                            message: t('messages.copyFailed'),
                             tone: 'error',
                           },
                     ),

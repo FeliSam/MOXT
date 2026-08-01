@@ -126,6 +126,8 @@ function profileToUser(profile) {
     status: profile.status || 'active',
     phoneVerified: profile.phone_verified === true,
     phoneVerifiedAt: profile.phone_verified_at || null,
+    emailVerified: profile.email_verified === true,
+    emailVerifiedAt: profile.email_verified_at || null,
     createdAt: profile.created_at || profile.updated_at || null,
   }
 }
@@ -933,13 +935,19 @@ export function createAuthService(supabase, redirects = {}) {
     if (!email.includes('@')) return null
 
     const existing = await fetchProfile(userId)
-    if (existing && String(existing.email || '').toLowerCase() === email) {
+    const emailMatches =
+      existing && String(existing.email || '').toLowerCase() === email
+    if (emailMatches && existing.emailVerified === true) {
       return enrichUserFromAuth(existing, authUser)
     }
 
     await patchProfileFields(
       userId,
-      { email },
+      {
+        email,
+        email_verified: true,
+        email_verified_at: authUser.email_confirmed_at,
+      },
       { authUser },
     )
     const refreshed = await fetchProfile(userId)
@@ -1237,6 +1245,16 @@ export function createAuthService(supabase, redirects = {}) {
         throw new Error("L'e-mail est obligatoire.")
       }
 
+      // Choix explicite à l'inscription (web + mobile) : 'email' | 'phone' | 'sms'
+      const methodRaw = String(details.verificationMethod || 'phone').toLowerCase()
+      const wantsEmail = methodRaw === 'email' || methodRaw === 'mail'
+      if (wantsEmail) {
+        return this.registerWithEmailAfterSmsDenied({
+          ...details,
+          registrationVia: details.registrationVia || 'email_chosen_at_signup',
+        })
+      }
+
       const normalizedPhone = normalizeRussianAuthPhone(details.russianPhone)
 
       // Collapse double-click / double-dispatch into one SMS send.
@@ -1387,8 +1405,8 @@ export function createAuthService(supabase, redirects = {}) {
 
       return withOtpInFlight('email', email, async () => {
         const profileFields = {
-          first_name: details.firstName.trim(),
-          last_name: details.lastName.trim(),
+          first_name: String(details.firstName || '').trim(),
+          last_name: String(details.lastName || '').trim(),
           email,
           phone: normalizedPhone,
           origin_phone: details.originPhone?.trim() || '',
@@ -1398,11 +1416,13 @@ export function createAuthService(supabase, redirects = {}) {
           avatar_url: details.avatarUrl?.trim() || '',
           role: 'user',
           status: 'active',
-          registration_via: 'email_after_sms_denied',
+          registration_via: details.registrationVia || 'email_after_sms_denied',
         }
 
         await assertRegistrationIdentitiesEligible(
-          { phone: normalizedPhone, email },
+          details.skipPhoneEligibilityCheck
+            ? { email }
+            : { phone: normalizedPhone, email },
           { useCache: false },
         )
         guardOtpSend('email', email)
@@ -2134,6 +2154,72 @@ export function createAuthService(supabase, redirects = {}) {
       if (error) throw new Error(translateAuthError(error, { channel: 'email' }))
       if (normalizedEmail.includes('@')) {
         trackOtpSend('email', normalizedEmail)
+      }
+      return true
+    },
+
+    /** Envoie un OTP SMS pour réinitialiser le mot de passe d’un compte lié au +7. */
+    async requestPhonePasswordReset(phone) {
+      if (!supabase) throw new Error('Supabase non configuré.')
+      const normalizedPhone = normalizeRussianAuthPhone(phone)
+      if (!/^\+7\d{10}$/.test(normalizedPhone)) {
+        throw new Error('Numéro de téléphone invalide. Vérifiez le format (+7XXXXXXXXXX).')
+      }
+      return withOtpInFlight('phone', normalizedPhone, async () => {
+        guardOtpSend('phone', normalizedPhone)
+        const { error } = await supabase.auth.signInWithOtp({
+          phone: normalizedPhone,
+          options: { channel: 'sms', shouldCreateUser: false },
+        })
+        if (error) {
+          throw new Error(translateAuthError(error, { channel: 'phone', intent: 'password_reset' }))
+        }
+        trackOtpSend('phone', normalizedPhone)
+        return { phone: normalizedPhone }
+      })
+    },
+
+    /**
+     * Vérifie l’OTP SMS puis définit le nouveau mot de passe.
+     * Déconnecte ensuite pour forcer une connexion propre.
+     */
+    async confirmPhonePasswordReset({ phone, token, password }) {
+      if (!supabase) throw new Error('Supabase non configuré.')
+      const normalizedPhone = normalizeRussianAuthPhone(phone)
+      const otp = String(token || '').trim()
+      const nextPassword = String(password || '').trim()
+      if (!/^\+7\d{10}$/.test(normalizedPhone)) {
+        throw new Error('Numéro de téléphone invalide. Vérifiez le format (+7XXXXXXXXXX).')
+      }
+      if (!/^\d{6}$/.test(otp)) {
+        throw new Error('Saisissez le code à 6 chiffres reçu par SMS.')
+      }
+      if (nextPassword.length < 8) {
+        throw new Error('Le mot de passe doit contenir au moins 8 caractères.')
+      }
+
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        phone: normalizedPhone,
+        token: otp,
+        type: 'sms',
+      })
+      if (verifyError) {
+        throw new Error(
+          translateAuthError(verifyError, { channel: 'phone', intent: 'otp_verify' }),
+        )
+      }
+
+      const { error: passwordError } = await supabase.auth.updateUser({ password: nextPassword })
+      if (passwordError) {
+        throw new Error(
+          translateAuthError(passwordError, { channel: 'phone', intent: 'password_change' }),
+        )
+      }
+
+      try {
+        await supabase.auth.signOut()
+      } catch {
+        // Session déjà absente — OK.
       }
       return true
     },

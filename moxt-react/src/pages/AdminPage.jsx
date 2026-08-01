@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FiBookOpen, FiDownload } from 'react-icons/fi'
+import { FiBookOpen, FiDownload, FiHeart } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { useSearchParams } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
@@ -14,10 +14,13 @@ import { AdminContentPanel } from '../features/admin/components/AdminContentPane
 import { AdminDetailPanel } from '../features/admin/components/AdminDetailPanel'
 import { AdminOverviewPanel } from '../features/admin/components/AdminOverviewPanel'
 import { AdminQueuesPanel } from '../features/admin/components/AdminQueuesPanel'
+import { AdminRatesPanel } from '../features/admin/components/AdminRatesPanel'
 import { AdminSupportPanel } from '../features/admin/components/AdminSupportPanel'
 import { AdminTransfersPanel } from '../features/admin/components/AdminTransfersPanel'
+import { AdminP2PPanel } from '../features/admin/components/AdminP2PPanel'
 import { AdminUsersPanel } from '../features/admin/components/AdminUsersPanel'
 import { AdminBusinessDocumentsPanel } from '../features/admin/components/AdminBusinessDocumentsPanel'
+import { AdminDocumentMaintenanceCard } from '../features/admin/components/AdminDocumentMaintenanceCard'
 import { AdminVerificationsPanel } from '../features/admin/components/AdminVerificationsPanel'
 import { GlobalFilterBar, SystemStatusBar } from '../features/admin/components/AdminShared'
 import { AdminIdentityCard, HeroKpiRow, SidebarBtn, SidebarLink } from '../features/admin/components/AdminShell'
@@ -35,6 +38,7 @@ export function AdminPage() {
   const admin = useSelector((v) => v.auth.user)
   const [searchParams, setSearchParams] = useSearchParams()
   const view = resolveAdminView(searchParams.get('view'))
+  const businessIdFilter = searchParams.get('businessId') || ''
   const [contentView, setContentView] = useState('businesses')
   const effectiveContentView = view === 'publications' ? 'posts' : contentView
   const filterView = view === 'publications' ? 'publications' : view
@@ -52,12 +56,22 @@ export function AdminPage() {
     supportTickets,
     users,
     transfers,
+    businessTransferRollups,
+    p2pOffers,
+    p2pOrders,
     auditItems,
     activeContentItems,
     allTransfers,
     allVerifications,
     allBusinessDocuments,
-  } = useAdminPageData(query, statusFilter, effectiveContentView)
+  } = useAdminPageData(query, statusFilter, effectiveContentView, businessIdFilter)
+
+  function setBusinessIdFilter(nextBusinessId) {
+    const params = new URLSearchParams(searchParams)
+    if (nextBusinessId) params.set('businessId', nextBusinessId)
+    else params.delete('businessId')
+    setSearchParams(params, { replace: true })
+  }
 
   function switchView(next) {
     const resolved = resolveAdminView(next)
@@ -67,6 +81,7 @@ export function AdminPage() {
     const params = new URLSearchParams(searchParams)
     if (resolved === 'overview') params.delete('view')
     else params.set('view', resolved)
+    if (resolved !== 'transfers') params.delete('businessId')
     setSearchParams(params, { replace: true })
   }
 
@@ -75,8 +90,8 @@ export function AdminPage() {
   const showDetailPanel = !auditFullWidth || selected
 
   return (
-    <div className="grid min-w-0 max-w-full gap-6 overflow-x-clip">
-      <SystemStatusBar metrics={metrics} queues={queues} />
+    <div className="grid min-w-0 max-w-full gap-6 overflow-x-clip" translate="no">
+      <SystemStatusBar metrics={metrics} queues={queues} onOpenQueues={() => switchView('queues')} />
 
       <PageHeader
         eyebrow={adminText(t, 'admin.page.eyebrow')}
@@ -91,16 +106,10 @@ export function AdminPage() {
 
       <HeroKpiRow metrics={metrics} queues={queues} onSelect={switchView} />
 
-      <div
-        className={`grid min-w-0 gap-5 ${
-          auditFullWidth
-            ? 'xl:grid-cols-[14rem_minmax(0,1fr)]'
-            : 'xl:grid-cols-[14rem_minmax(0,1fr)_minmax(0,22rem)]'
-        }`}
-      >
-        <aside className="grid min-w-0 content-start gap-2">
+      <div className="flex min-w-0 max-w-full flex-col gap-5 isolate xl:flex-row xl:items-start">
+        <aside className="grid w-full min-w-0 shrink-0 content-start gap-2 overflow-hidden xl:w-56 xl:max-w-56">
           <AdminIdentityCard admin={admin} />
-          <nav className={`${CARD} grid content-start gap-1 p-2`}>
+          <nav className={`${CARD} grid content-start gap-1 overflow-hidden p-2`}>
             {MAIN_VIEWS.map((item) => {
               const badge = badgeForView(item.id, metrics, queues)
               return (
@@ -115,12 +124,13 @@ export function AdminPage() {
               )
             })}
           </nav>
-          <nav className={`${CARD} grid content-start gap-1 p-2`}>
+          <nav className={`${CARD} grid content-start gap-1 overflow-hidden p-2`}>
+            <SidebarLink to="/contribute" icon={FiHeart} label={adminText(t, 'admin.nav.contribute')} />
             <SidebarLink to="/admin/guide" icon={FiBookOpen} label={adminText(t, 'admin.nav.guide')} />
           </nav>
         </aside>
 
-        <div className="grid min-w-0 gap-5 content-start">
+        <div className="grid min-w-0 flex-1 gap-5 content-start overflow-x-clip">
           <GlobalFilterBar
             query={query}
             setQuery={setQuery}
@@ -144,8 +154,24 @@ export function AdminPage() {
             />
           )}
           {view === 'transfers' && (
-            <AdminTransfersPanel dispatch={dispatch} setSelected={setSelected} transfers={transfers} />
+            <AdminTransfersPanel
+              businessIdFilter={businessIdFilter}
+              businessTransferRollups={businessTransferRollups}
+              dispatch={dispatch}
+              setBusinessIdFilter={setBusinessIdFilter}
+              setSelected={setSelected}
+              transfers={transfers}
+            />
           )}
+          {view === 'p2p' && (
+            <AdminP2PPanel
+              dispatch={dispatch}
+              setSelected={setSelected}
+              offers={p2pOffers}
+              orders={p2pOrders}
+            />
+          )}
+          {view === 'rates' && <AdminRatesPanel admin={admin} />}
           {(view === 'content' || view === 'publications') && (
             <AdminContentPanel
               contentView={effectiveContentView}
@@ -186,18 +212,22 @@ export function AdminPage() {
             />
           )}
           {view === 'documents' && (
-            <AdminBusinessDocumentsPanel
-              adminId={admin?.id}
-              dispatch={dispatch}
-              documents={allBusinessDocuments}
-              query={query}
-              setSelected={setSelected}
-              statusFilter={statusFilter}
-            />
+            <>
+              <AdminBusinessDocumentsPanel
+                adminId={admin?.id}
+                dispatch={dispatch}
+                documents={allBusinessDocuments}
+                query={query}
+                setSelected={setSelected}
+                statusFilter={statusFilter}
+              />
+              <AdminDocumentMaintenanceCard />
+            </>
           )}
           {view === 'queues' && (
             <AdminQueuesPanel
               adminId={admin?.id}
+              actorRole={admin?.role || 'admin'}
               dispatch={dispatch}
               queues={queues}
               setSelected={setSelected}
@@ -213,15 +243,17 @@ export function AdminPage() {
         </div>
 
         {showDetailPanel ? (
-          <AdminDetailPanel
-            admin={admin}
-            dispatch={dispatch}
-            onSuspendUser={setConfirmUser}
-            selected={selected}
-            setSelected={setSelected}
-            supportReply={supportReply}
-            setSupportReply={setSupportReply}
-          />
+          <div className="w-full min-w-0 shrink-0 xl:w-[22rem] xl:max-w-[22rem]">
+            <AdminDetailPanel
+              admin={admin}
+              dispatch={dispatch}
+              onSuspendUser={setConfirmUser}
+              selected={selected}
+              setSelected={setSelected}
+              supportReply={supportReply}
+              setSupportReply={setSupportReply}
+            />
+          </div>
         ) : null}
       </div>
 

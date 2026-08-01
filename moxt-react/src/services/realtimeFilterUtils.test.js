@@ -32,6 +32,17 @@ describe('isTransferRelevantToUser', () => {
       ),
     ).toBe(false)
   })
+
+  it('accepte tout transfert pour le staff', () => {
+    expect(
+      isTransferRelevantToUser(
+        { userId: 'x', businessOwnerId: 'y', businessId: 'biz-1' },
+        'admin',
+        [],
+        { isStaff: true },
+      ),
+    ).toBe(true)
+  })
 })
 
 describe('shouldAcceptRealtimeListing', () => {

@@ -40,7 +40,10 @@ export function PublisherDetailCard({
   const publisherVerified = business ? isBusinessPublishReady(business) : verified
   const profilePath =
     publicationsPath || (ownerId ? `/users/${ownerId}/publications` : null)
-
+  const ratingDisplay =
+    rating?.count > 0
+      ? `${Number(rating.average || 0).toFixed(1)} (${rating.count})`
+      : '—'
   return (
     <Card className={`min-w-0 overflow-hidden ${className}`}>
       <div className="flex items-center gap-3">
@@ -64,7 +67,7 @@ export function PublisherDetailCard({
       <div className="mt-5 grid grid-cols-3 gap-2 text-center">
         <PublisherStat
           icon={FiStar}
-          value={`${rating?.average || business?.rating || 0}/5`}
+          value={ratingDisplay}
           label={t('publications.publisher.stats.rating')}
         />
         <PublisherStat icon={FiShoppingBag} value={publicationCount} label={resolvedCountLabel} />

@@ -1,0 +1,20 @@
+MOXT — l’application des services entre l’Afrique et la Russie.
+
+Envoyez et suivez des transferts, publiez ou réservez des colis voyageurs, achetez et vendez sur la marketplace, trouvez un emploi ou une entreprise de confiance — pensé pour la diaspora afro-russe (Bénin, Afrique de l’Ouest ↔ Russie). Application Android complète et autonome (contenu embarqué, navigation, messagerie, push, aide intégrée), pas un simple accès web ni une redirection vers un site.
+
+FONCTIONNALITÉS
+• Transferts et suivi entre communautés
+• Colis voyageurs avec messagerie
+• Marketplace (annonces, favoris, recherche)
+• Emplois et entreprises
+• Aide intégrée « Comment utiliser Moxt » (sessions pas à pas)
+• Vérification d’identité et score de confiance
+• Notifications push (messages, transferts, abonnements)
+• Interface FR / RU / EN / PT / ES
+
+SÉCURITÉ
+• Compte protégé, vérification optionnelle (KYC)
+• Pas de lecture SMS ni de géolocalisation GPS requise
+• Politique de confidentialité : https://moxtapp.ru/legal/privacy
+
+Téléchargez MOXT et rejoignez la communauté.

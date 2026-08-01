@@ -1,5 +1,5 @@
 import { useFormik } from 'formik'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ImageLightbox } from '../components/ui/ImageLightbox'
 import {
   FiAlertTriangle,
@@ -29,7 +29,12 @@ import { FavoriteButton } from '../features/account/FavoriteButton'
 import { ContactButton } from '../features/communications/ContactButton'
 import { openRelatedConversation } from '../features/communications/openRelatedConversation'
 import { createJobSchemas } from '../features/jobs/jobSchemas'
-import { applyToJob, reportJob, withdrawApplication } from '../features/jobs/jobSlice'
+import {
+  applyToJob,
+  incrementJobView,
+  reportJob,
+  withdrawApplication,
+} from '../features/jobs/jobSlice'
 import { applicationsForJob, applicationJobId, applicationUserId } from '../features/jobs/jobUtils'
 import {
   displayJobField,
@@ -70,6 +75,10 @@ export function JobDetailPage() {
   const { jobId } = useParams()
   const user = useSelector((state) => state.auth.user)
   const job = useSelector((state) => state.jobs.items.find((item) => item.id === jobId))
+
+  useEffect(() => {
+    if (jobId) dispatch(incrementJobView(jobId))
+  }, [dispatch, jobId])
   const applications = useSelector((state) => state.jobs.applications)
   const jobApplications = applicationsForJob(applications, jobId)
   const existing = applications.find(

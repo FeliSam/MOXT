@@ -13,7 +13,6 @@ import { useDispatch, useSelector } from 'react-redux'
 import { Link, useParams } from 'react-router-dom'
 import { Badge, VerifiedDisplayName } from '../components/ui/Badge'
 import { BackButton } from '../components/ui/BackButton'
-import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { CatalogArchiveTabs } from '../components/ui/CatalogArchiveTabs'
 import {
@@ -41,7 +40,7 @@ import { BusinessSubscriptionSection } from '../features/businesses/BusinessSubs
 import { BusinessVerificationProgress } from '../features/businesses/BusinessVerificationProgress'
 import { isBusinessVisibleToViewer } from '../features/businesses/businessVisibility'
 import { isStaffRole } from '../features/auth/roleUtils'
-import { moderateBusiness } from '../features/businesses/businessSlice'
+import { BusinessAdminActions } from '../features/businesses/BusinessAdminActions'
 import { ContactButton } from '../features/communications/ContactButton'
 import { BusinessActivityVisibilitySection } from '../features/businesses/BusinessActivityVisibilitySection'
 import {
@@ -113,7 +112,8 @@ export function BusinessDetailPage() {
   const activity = activityByValue(business.primaryActivity)
   const experience = businessExperienceForActivity(business.primaryActivity)
   const hasTransfer = business.services?.includes('Transfert')
-  const ratingValue = rating.count ? rating.average : business.rating || 0
+  // Note agrégée réelle uniquement (alignée BusinessRatingBadge / échangeurs).
+  const ratingDisplay = rating.count ? `${Number(rating.average || 0).toFixed(1)}/5` : '—'
   const serviceSections = SERVICE_SECTION_DEFS.map((section) => ({
     ...section,
     label: bt(section.labelKey),
@@ -129,7 +129,7 @@ export function BusinessDetailPage() {
     {
       icon: FiStar,
       label: bt('businesses.detail.reviewsCount', { count: rating.count }),
-      value: `${ratingValue}/5`,
+      value: ratingDisplay,
     },
     { icon: FiShield, label: bt('businesses.common.status'), value: statusMeta(business.status, t).label },
     { icon: FiMapPin, label: bt('businesses.common.location'), value: business.city },
@@ -351,15 +351,7 @@ export function BusinessDetailPage() {
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button onClick={() => dispatch(moderateBusiness({ id: business.id, status: 'verified' }))}>
-                    {bt('businesses.detail.validate')}
-                  </Button>
-                  <Button variant="secondary" onClick={() => dispatch(moderateBusiness({ id: business.id, status: 'active' }))}>
-                    {bt('businesses.detail.activate')}
-                  </Button>
-                  <Button variant="danger" onClick={() => dispatch(moderateBusiness({ id: business.id, status: 'rejected' }))}>
-                    {bt('businesses.detail.reject')}
-                  </Button>
+                  <BusinessAdminActions business={business} dispatch={dispatch} t={t} />
                 </div>
               </div>
             </Card>

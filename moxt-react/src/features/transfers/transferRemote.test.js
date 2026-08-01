@@ -45,4 +45,21 @@ describe('transferRemote', () => {
     expect(transfer.totalToPay).toBe(51000)
     expect(transfer.currencyFrom).toBe('XOF')
   })
+
+  it('lit noteToExchanger depuis payload', () => {
+    const transfer = transferFromRemoteRow({
+      id: 'MXT-3',
+      direction: 'BJ_TO_RU',
+      amount: 20000,
+      fee: 500,
+      status: 'pending',
+      payload: {
+        noteToExchanger: '  Appeler avant envoi  ',
+        totalToPay: 20500,
+      },
+      timeline: [],
+    })
+
+    expect(transfer.noteToExchanger).toBe('Appeler avant envoi')
+  })
 })

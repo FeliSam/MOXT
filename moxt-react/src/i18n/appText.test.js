@@ -1,5 +1,8 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { ensureLocaleLoaded } from './translate'
 import { appText, resolveAppLanguage } from './appText'
+
+beforeAll(() => Promise.all(['en', 'ru'].map(ensureLocaleLoaded)))
 
 describe('appText', () => {
   beforeEach(() => {

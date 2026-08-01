@@ -4,7 +4,7 @@ export const es = {
     login: {
       eyebrow: "MOXT · Iniciar sesión",
       title: "Iniciar sesión",
-      description: "Accede a tu espacio con un número ruso (+7) y contraseña, o con correo electrónico.",
+      description: "",
       modePhonePassword: "Teléfono + contraseña",
       modeEmail: "Correo",
       errorTitle: "Error al iniciar sesión",
@@ -13,6 +13,14 @@ export const es = {
       phoneLabel: "Número ruso",
       phoneHint: "Usa tu número +7 y tu contraseña.",
       forgot: "¿Olvidaste tu contraseña?",
+      needHelp: "¿Necesitas ayuda?",
+      helpTitle: "Ayuda para iniciar sesión",
+      helpIntro: "Algunas comprobaciones rápidas si no puedes iniciar sesión.",
+      helpTipPhone: "Usa tu número ruso en formato +7 seguido de 10 dígitos.",
+      helpTipPassword: "Si olvidaste la contraseña, usa «¿Olvidaste tu contraseña?» (e-mail o SMS).",
+      helpTipEmail: "También puedes iniciar sesión con el correo vinculado a la cuenta.",
+      helpContactTitle: "Contactarnos",
+      helpFaq: "FAQ",
       submit: "Iniciar sesión",
       submitting: "Iniciando sesión…",
       demoAccounts: "Cuentas demo",
@@ -33,7 +41,7 @@ export const es = {
       oauthEyebrow: "MOXT · Perfil",
       title: "Crea tu cuenta MOXT",
       oauthTitle: "Completa tu perfil",
-      description: "Correo obligatorio; la cuenta se confirma por SMS a tu número +7.",
+      description: "",
       oauthDescription: "Añade tu país, ciudad y número ruso para usar MOXT.",
       firstName: "Nombre",
       lastName: "Apellidos",
@@ -60,17 +68,30 @@ export const es = {
       oauthSubmitting: "Guardando...",
       haveAccount: "¿Ya tienes una cuenta?",
       loginLink: "Iniciar sesión",
+      helpButton: "Ayuda",
+      helpTitle: "Ayuda con el código de confirmación",
+      helpIntro: "El código de 6 dígitos finaliza la creación de la cuenta. Proceso actual:",
+      helpStep1:
+        "En el paso Verificación, elige SMS (número +7) o correo. El código suele llegar en unos segundos; para SMS, espera hasta 1–2 minutos antes de preocuparte.",
+      helpStep2:
+        "¿Sin SMS? Usa de inmediato «Recibir el código por correo» — no hace falta esperar el temporizador. «Reenviar SMS» solo está disponible tras el contador (un solo reenvío SMS).",
+      helpStep3:
+        "Tras la confirmación, el otro identificador (correo o +7) debe validarse en Seguridad para publicar. Si no llega nada, contáctanos en «¿Necesitas ayuda?» en la página de inicio de sesión.",
+      helpOriginPhoneHint: "Opcional: útil para contactos en el país de origen.",
       verify: {
         title: "Confirma tu número",
         body: "Se envió un código de 6 dígitos a {phone} por SMS. Puede tardar 1–2 minutos. Solo un código a la vez: la cuenta se crea tras la confirmación.",
+        bodyShort: "Código SMS enviado a {phone}.",
         sendingTitle: "Enviando SMS…",
         sendingBody:
           "Preparando el código para {phone}. Puede tardar unos segundos según la red o un VPN.",
+        sendingBodyShort: "Enviando código a {phone}…",
         sendingAction: "Enviando…",
         codeLabel: "Código recibido por SMS",
         confirm: "Confirmar y acceder a MOXT",
         emailTitle: "Confirma tu correo",
         emailBody: "Se envió un código de 6 dígitos a {email}. Introdúcelo para crear tu cuenta.",
+        emailBodyShort: "Código de e-mail enviado a {email}.",
         emailCodeLabel: "Código recibido por correo",
       },
       emailFallback: {
@@ -78,7 +99,28 @@ export const es = {
         body: "El operador de este número no puede recibir el código SMS. Continúa con el correo ya indicado para crear tu cuenta.",
         emailLabel: "Correo",
         sendButton: "Recibir el código por correo",
+        switchedTitle: "Registro por correo",
+        switchedBody: "Se envió un código a {email}. Introdúcelo para crear tu cuenta.",
+        afterSmsResends:
+          "Se envió un código a {email} para terminar el registro por correo.",
+        smsResendLimitHint:
+          "Puedes reenviar el SMS una vez (tras el contador), o recibir el código por correo de inmediato.",
+        afterCooldownHint:
+          "Reenvía el SMS o recibe el código por correo ahora.",
       },
+      channel: {
+        title: "¿Cómo quieres recibir tu código?",
+        subtitle:
+          "Elige SMS o correo. El otro identificador se podrá confirmar más tarde en Seguridad para publicar.",
+        smsTitle: "Por SMS",
+        smsHint: "Código de 6 dígitos, normalmente en unos segundos.",
+        emailTitle: "Por correo",
+        emailHint: "Revisa también la carpeta de spam.",
+        sendCode: "Recibir el código",
+        sending: "Enviando el código…",
+        backToForm: "editar mis datos",
+      },
+      continueToVerify: "Continuar",
       toasts: {
         alreadyExistsTitle: "La cuenta ya existe",
         alreadyExistsBody: "Este número o correo ya está vinculado a una cuenta confirmada. Inicia sesión con tu contraseña. Si nunca recibiste el SMS, vuelve a registrarte en unos minutos tras la limpieza automática de registros incompletos.",
@@ -117,8 +159,25 @@ export const es = {
       eyebrow: "MOXT · Contraseña olvidada",
       title: "Contraseña olvidada",
       description: "Introduce tu correo: te enviaremos un enlace para crear una nueva contraseña.",
+      modeEmail: "Por e-mail",
+      modePhone: "Por número +7",
       email: "Correo electrónico",
       phoneAccountHint: "¿Cuenta creada con un número ruso? Inicia sesión con tu número y contraseña; esta página es solo para cuentas vinculadas a un correo.",
+      phoneDescription: "Recibe un código SMS en tu número ruso (+7) y elige una nueva contraseña.",
+      phoneLabel: "Número ruso",
+      phoneHint: "El SMS solo se envía si este número ya está vinculado a una cuenta MOXT.",
+      phoneInvalid: "Usa un número ruso válido (+7 y 10 dígitos).",
+      phoneSubmit: "Enviar código SMS",
+      phoneSending: "Enviando…",
+      phoneCodeSentTitle: "Código enviado",
+      phoneCodeSentBody: "Introduce el código recibido en {phone} y tu nueva contraseña.",
+      phoneCodeLabel: "Código SMS",
+      phoneCodeInvalid: "El código debe tener 6 dígitos.",
+      phoneConfirmSubmit: "Guardar contraseña",
+      phoneResend: "Reenviar SMS",
+      phoneChangeNumber: "Cambiar número",
+      phoneDoneBody: "Contraseña actualizada. Inicia sesión con tu número +7.",
+      passwordMismatch: "Las contraseñas no coinciden.",
       submit: "Enviar enlace",
       submitting: "Enviando…",
       sentTitle: "Correo enviado",
@@ -265,6 +324,7 @@ export const es = {
       phoneRequired: "O teléfono é obligatorio.",
       paymentMethodRequired: "O meio de pagamento é obligatorio.",
       receiveMethodRequired: "O meio de receción é obligatorio.",
+      noteToExchangerMax: "Mensaje demasiado largo (máx. 300 caracteres).",
       receivedAmountRequired: "O importe recebido é obligatorio.",
       receiveMethodChoose: "Elige un método de receción.",
       receiveMethodInvalid: "Método inválido."
@@ -274,10 +334,14 @@ export const es = {
       fromCurrencyRequired: "A moneda proposta é obrigatória.",
       toCurrencyRequired: "A moneda pretendida é obrigatória.",
       differentCurrency: "Elige otra moneda.",
+      originRubPair: "El par debe ser {currency} ↔ RUB.",
       amountRequired: "O importe é obligatorio.",
       amountCeiling: "O tu limite é {amount}.",
       rateRequired: "A tarifa é obrigatória.",
-      commentMax: "Máximo de 300 caracteres."
+      marginInvalid: "Margen no válido.",
+      marginRange: "El margen debe estar entre −{max} % y +{max} %.",
+      commentMax: "Máximo de 300 caracteres.",
+      receiveNameRequired: "Indica el nombre y apellido(s) del beneficiario."
     },
     address: {
       labelRequired: "A etiqueta é obrigatória.",
@@ -324,6 +388,8 @@ export const es = {
     moderation: "Moderación",
     moderationSpace: "Espacio moderador",
     guide: "Guía",
+    productHelp: "Ayuda Moxt",
+    contribute: "Apoyar MOXT",
     guideAdmin: "Gestión de la guía",
     p2p: "Intercambio P2P",
     exchangers: "Cambiadores",
@@ -380,13 +446,26 @@ export const es = {
   share: {
     title: "QR code y invitación",
     eyebrow: "Partilha",
-    description: "Un solo lugar para invitar amigos, compartir tu perfil o seguir a MOXT en Instagram.",
+    description: "Un solo lugar para invitar amigos, compartir tu perfil o seguir a MOXT en sus redes.",
     tabTypeLabel: "Tipo de partilha",
     inviteTab: "Convidar",
     profileTab: "O meu perfil",
-    instagramTab: "Instagram",
+    networksTab: "Redes",
+    instagramTab: "Redes",
     invitationSubtitle: "Invitación MOXT",
     instagramSubtitle: "@MOXTAPP · Cuenta oficial",
+    telegramSubtitle: "MOXT · Grupo oficial de Telegram",
+    whatsappSubtitle: "MOXT · Grupo oficial de WhatsApp",
+    networks: {
+      instagram: "Instagram",
+      telegram: "Telegram",
+      whatsapp: "WhatsApp",
+    },
+    openNetwork: {
+      instagram: "Abrir Instagram",
+      telegram: "Abrir Telegram",
+      whatsapp: "Abrir WhatsApp",
+    },
     inviteCountOne: "pessoa convidada",
     inviteCountMany: "pessoas convidadas",
     copyLink: "Copiar ligación",
@@ -405,24 +484,46 @@ export const es = {
       taglineLine1: "Uso MOXT",
       taglineLine2Personal: "Únete a mí en MOXT",
       taglineLine2Business: "Únete a nosotros en MOXT",
+      slogan: "Puente digital entre Rusia y África",
+      verifiedChip: "MOXT VERIFICADO",
+      verifiedUser: "Usuario verificado",
+      scanHint: "Escanee el código QR para contactarme en MOXT",
+      bridgeCaption: "Conectamos Rusia y África",
+      ctaPersonal: "Uso MOXT. Únase a la comunidad digital Rusia–África",
+      ctaBusiness: "Usamos MOXT. Únase a la comunidad digital Rusia–África",
+      footerTagline: "Su puente hacia nuevas oportunidades",
+      features: {
+        exchange: "Cambio",
+        parcels: "Paquetes",
+        marketplace: "Marketplace",
+        community: "Comunidad",
+        jobs: "Empleos",
+        events: "Eventos",
+      },
     },
     hints: {
       invite: "Digitalize para entrar no MOXT",
       profile: "Digitalize para ver as minhas publicaciones",
       business: "Digitalize para descobrir esta empresa",
-      instagram: "Escanea para seguir a MOXT en Instagram"
+      instagram: "Escanea para seguir a MOXT en Instagram",
+      telegram: "Escanea para unirte al grupo de Telegram de MOXT",
+      whatsapp: "Escanea para unirte al grupo de WhatsApp de MOXT",
     },
     shareTitles: {
       invite: "Junte-se ao MOXT",
       onMoxt: "{name} no MOXT",
       publications: "Publicaciones de {name}",
-      instagram: "MOXT en Instagram"
+      instagram: "MOXT en Instagram",
+      telegram: "MOXT en Telegram",
+      whatsapp: "MOXT en WhatsApp",
     },
     shareTexts: {
       invite: "Transferencias, paquetes y servicios entre África y Rusia. Junte-se a mim no MOXT:",
       profile: "Veja as publicaciones de {name} no MOXT.",
       business: "Descubra {name} no MOXT.",
-      instagram: "Sigue la cuenta oficial de MOXT en Instagram:"
+      instagram: "Sigue la cuenta oficial de MOXT en Instagram:",
+      telegram: "Únete al grupo oficial de MOXT en Telegram:",
+      whatsapp: "Únete al grupo oficial de MOXT en WhatsApp:",
     },
     steps: {
       step1Title: "Partilhe o tu QR",
@@ -489,6 +590,12 @@ export const es = {
     filterAll: "Todas",
     filterUnread: "No leídas",
     filterPinned: "Fixadas",
+    filterTransfer: "Transferencias",
+    filterP2p: "P2P",
+    filterSupport: "Soporte",
+    noTransferChats: "Ninguna conversación vinculada a una transferencia.",
+    noP2pChats: "Ninguna conversación vinculada a un intercambio P2P.",
+    noSupportChats: "Ninguna conversación de soporte por ahora.",
     filterAria: "Filtrar conversaciones",
     filterShow: "Mostrar",
     searchPlaceholder: "Buscar conversaciones y mensajes",
@@ -663,6 +770,7 @@ export const es = {
     sendFailedBanner: "Falha de envio",
     retryAction: "Tentar nuevamente",
     notSynced: "No sincronizado",
+    edited: "editado",
     deleteConfirmDescription: "A mensaje será removida da tu conversación. Esta ación é definitiva.",
     threadEmptyTitle: "Aún sin mensajes",
     threadEmptyDescription: "Escreva a primeira mensaje para iniciar a troca.",
@@ -976,6 +1084,7 @@ export const es = {
       subtitleShort: "Envía dinero, encuentra un paquete o un anuncio.",
       createTransfer: "Crear una transferencia",
       news: "Actualidad",
+      install: "Instalar la App",
       guide: "Guía",
     },
     discovery: {
@@ -983,13 +1092,13 @@ export const es = {
       latestListings: "Anuncios recentes",
       viewMarket: "Ver o mercado",
       availableParcels: "Paquetes disponibles",
-      recentTrips: "",
+      recentTrips: "Viajes recientes ofrecidos por viajeros",
       kgAvailable: "{kg} kg disponibles",
       pricePerKg: "{price} {currency}/kg",
       recentJobs: "Jobs recentes",
-      recentMissions: "",
+      recentMissions: "Ofertas publicadas recientemente",
       upcomingEvents: "Próximos eventos",
-      upcomingMeetups: "",
+      upcomingMeetups: "Encuentros y salidas que no te puedes perder",
       online: "En línea",
       newsTitle: "Actualidad MOXT",
       readAll: "Ler tudo",
@@ -1168,6 +1277,9 @@ export const es = {
     confirm: "Confirmar",
     continue: "Continuar",
     loading: "Cargando…",
+    passwordConfirm: {
+      label: "Confirma con tu contraseña",
+    },
     pullToRefresh: {
       pull: "Puxe para atualizar",
       release: "Solte para atualizar",
@@ -1184,6 +1296,7 @@ export const es = {
         preparing: "Preparación",
         compressing: "Optimización",
         uploading: "Envío",
+        downloading: "Descarga",
         finalizing: "Finalización",
         done: "Listo",
         error: "Error de envío",
@@ -1412,14 +1525,17 @@ export const es = {
     cards: {
       open: "Abrir",
       edit: "Editar",
-      archive: "Arquivar",
+      archive: "Archivar",
       republish: "Republicar",
-      free: "Grátis",
+      free: "Gratis",
       badge: "Publicación",
       fallbackTitle: "Publicación",
-      likes: "{count} gostos",
-      comments: "{count} comentários",
-      delete: "Eliminar"
+      likes: "{count} me gusta",
+      comments: "{count} comentarios",
+      delete: "Eliminar",
+      duplicate: "Duplicar",
+      deleteConfirmTitle: "¿Eliminar este elemento?",
+      deleteConfirmDescription: "Esta eliminación es definitiva.",
     }
   },
   settings: {
@@ -1612,7 +1728,7 @@ export const es = {
       alreadyConfirmedTitle: "Número confirmado",
       alreadyConfirmedBody: "O tu número russo já está verificado na tu cuenta.",
       codeSentTitle: "Código enviado",
-      codeSentBody: "Foi enviado un código de 6 dígitos para {phone}. A entrega pode demorar 1–2 minutos; caso contrário, reenvie após 90 segundos.",
+      codeSentBody: "Foi enviado un código de 6 dígitos para {phone}. A entrega pode demorar 1–2 minutos; caso contrário, reenvie após 60 segundos.",
       confirmedTitle: "Número confirmado",
       confirmedBody: "O tu número russo está verificado. Pode publicar no MOXT.",
       title: "Confirme o tu número russo",
@@ -1764,6 +1880,8 @@ export const es = {
       disputesDesc: "Acompanhamento de contestaciones y resoluciones",
       support: "Soporte",
       supportDesc: "Ayuda y contacto con a equipo MOXT",
+      legal: "Información legal",
+      legalDesc: "Avisos, condiciones, empresas, anuncios y privacidad",
       localData: "Dados locais",
       localDataDesc: "Diagnóstico, cópia de seguridad y reposición"
     },
@@ -1790,7 +1908,7 @@ export const es = {
       approve: "Aprovar",
       reject: "Recusar",
       rejectConfirm: "Confirmar recusa",
-      rejectReasonLabel: "Motivo da recusa (opcional)",
+      rejectReasonLabel: "Motivo del rechazo (obligatorio)",
       rejectReasonPlaceholder: "Ex. foto ilegível, documento expirado…",
       documentsTitle: "Documentos enviados",
       empty: "Ningún pedido de verificación.",
@@ -1800,6 +1918,12 @@ export const es = {
       notifyMessage: "{name} enviou un processo ({level}).",
       statusVerified: "aprovada",
       statusRejected: "recusada"
+    },
+    rejected: {
+      title: "Solicitud rechazada",
+      reason: "Motivo del rechazo: {note}",
+      fallback: "Su solicitud fue rechazada. Corrija los documentos y vuelva a enviarla.",
+      hint: "Corrija los documentos a continuación y envíe una nueva solicitud."
     },
     eyebrow: "Cuenta",
     title: "Verificación",
@@ -1816,12 +1940,19 @@ export const es = {
       migration: "Cartão de migración / patente",
       consular: "Cartão consular"
     },
+    residenceTypes: {
+      visa: "Visa",
+      vnj: "ВНЖ (VNJ)",
+      rvp: "РВП (RVP)",
+      rvpo: "РВПО (RVPO)"
+    },
     steps: {
       level: "Nível",
       phone: "Teléfono",
       email: "E-mail",
       identity: "Identidad",
       selfie: "Selfie",
+      residence: "Estatus",
       address: "Morada",
       review: "Confirmación"
     },
@@ -1854,6 +1985,13 @@ export const es = {
       upload: "Adicionar una selfie",
       uploadHint: "Rosto y documento visíveis."
     },
+    residence: {
+      heading: "Visa, ВНЖ, РВП o РВПО",
+      hint: "Añada su documento de estancia en Rusia (visa, ВНЖ, РВП o РВПО).",
+      docType: "Tipo de documento",
+      upload: "Foto del documento",
+      uploadHint: "Imagen o PDF, frente legible con fechas visibles."
+    },
     address: {
       heading: "Comprobante de dirección",
       hint: "Registo migratório, contrato de arrendamento o fatura recente na Rusia.",
@@ -1865,6 +2003,7 @@ export const es = {
       level: "Nível pedido",
       idDoc: "Documento de identidad",
       selfie: "Selfie de verificación",
+      residence: "Visa / ВНЖ / РВП / РВПО",
       phone: "Teléfono russo",
       email: "E-mail",
       address: "Comprobante de dirección",
@@ -1934,6 +2073,34 @@ export const es = {
           }
         }
       },
+      residence: {
+        title: "Visado, ВНЖ, РВП o РВПО",
+        intro: "Fotografía el documento de residencia completo, con las fechas de validez legibles.",
+        accepted: {
+          docClear: {
+            title: "Documento completo y nítido",
+            desc: "Las 4 esquinas son visibles, el texto y las fechas son legibles."
+          },
+          docValid: {
+            title: "Visado, ВНЖ, РВП o РВПО",
+            desc: "Página principal con foto, nombre y período de validez claramente visibles."
+          }
+        },
+        rejected: {
+          docCrop: {
+            title: "Documento recortado",
+            desc: "Una parte del documento está fuera de cuadro o falta una esquina."
+          },
+          docBlur: {
+            title: "Foto borrosa u oscura",
+            desc: "El texto o las fechas no son legibles."
+          },
+          docScreen: {
+            title: "Captura de pantalla",
+            desc: "Foto de una pantalla, escaneo de mala calidad o documento con reflejos."
+          }
+        }
+      },
       address: {
         title: "Comprobante de dirección",
         intro: "Anexe un documento recente (menos de 3 meses) em tu nome, con dirección na Rusia.",
@@ -1969,38 +2136,87 @@ export const es = {
     copyright: "© {year} MOXT. Todos os direitos reservados.",
     footer: "Plataforma MOXT — diáspora afro-russa. Use os servicios con cautela y verifique os tus contactos.",
     nav: {
-      mentions: "Avisos legais",
-      cgu: "Termos de uso",
-      privacy: "Privaciudad"
+      mentions: "Avisos legales",
+      cgu: "Condiciones de uso",
+      entreprises: "Empresas",
+      annonces: "Anuncios",
+      privacy: "Privacidad",
     },
     sections: {
       mentions: {
-        title: "Avisos legais",
+        title: "Avisos legales",
         paragraphs: [
-          "MOXT es una plataforma digital de servicios para la diáspora afro-rusa (transferencias, envíos, mercado, empleos, eventos y mensajería).",
-          "Editor del servicio: MOXT. Contacto: support@moxtapp.ru.",
-          "Alojamiento y tratamiento de datos: infraestructura cloud segura conforme a los requisitos aplicables de protección de datos personales.",
-          "Para cualquier pregunta legal o reclamación, escribe a support@moxtapp.ru indicando el identificador de tu cuenta."
-        ]
+          "MOXT es una plataforma digital de puesta en relación destinada en particular a la diáspora afro-rusa. Ofrece herramientas para transferencias entre particulares y profesionales, envíos, marketplace, empleos, eventos, empresas y mensajería.",
+          "Sitio web: https://moxtapp.ru. Aplicaciones móviles: MOXT para Android e iOS (vía Capacitor). La app en las tiendas incluye la interfaz completa del producto (assets locales): no es un simple navegador que redirige al sitio.",
+          "Versión documental: estos avisos, términos y política corresponden al producto MOXT 1.2.4 (actualización del 30 de julio de 2026). La versión vigente está siempre en https://moxtapp.ru/legal y en la aplicación.",
+          "Editor / explotador del servicio: MOXT. Contacto general y jurídico: support@moxtapp.ru. Incluye el identificador de cuenta, correo o teléfono verificado.",
+          "CEO: FANOU S. Feliciano — médico cardiólogo, desarrollador fullstack, certificación AI. Dirección general y responsabilidad técnica de la plataforma MOXT.",
+          "Cofundador y colaborador: Ricardo O. OKE — ingeniero en robótica, desarrollador fullstack y diseñador. Fundador de la sociedad Ro2Services, especializada en transferencias de dinero. Emisor de ideas, con aportaciones de producto, técnica y diseño en el equipo MOXT.",
+          "Colaboradora: TCHIBOZO Judice A. S. — estudiante de 6.º año de medicina, CEO de la empresa Alleluia Food. Apoya el desarrollo y el establecimiento del sitio enriqueciendo la idea base de MOXT, sus distintas funcionalidades, y aportando ideas de mejora al proyecto.",
+          "Equipo MOXT: el servicio es diseñado y operado por el equipo MOXT bajo la dirección del CEO, con la colaboración de los cofundadores y colaboradores técnicos.",
+          "Naturaleza del servicio: MOXT es una plataforma técnica de intermediación y comunicación. MOXT no es un banco, ni una entidad de dinero electrónico, ni un notario, ni un asegurador. MOXT no es parte de los contratos celebrados entre usuarios (transferencias, ventas, alquileres, servicios, viajes, empleos, etc.), salvo disposición escrita clara en el producto.",
+          "Alojamiento y tratamiento de datos: infraestructura cloud segura (incluido backend Supabase para autenticación, base de datos y almacenamiento de archivos), conforme a los requisitos aplicables de protección de datos personales. Proveedores técnicos (correo / SMS, notificaciones push) intervienen solo para operar el servicio.",
+          "Propiedad intelectual: la marca MOXT, el logo, la interfaz, el código y los contenidos editoriales están protegidos. Queda prohibida toda reproducción, extracción o uso comercial no autorizado. Los contenidos publicados por los usuarios siguen siendo su responsabilidad; al publicar, conceden a MOXT una licencia no exclusiva de visualización y difusión necesaria para el funcionamiento del servicio.",
+          "Denuncias y abusos: para reportar contenido ilícito, fraude, usurpación de identidad o conducta peligrosa, contacta support@moxtapp.ru o usa las herramientas de denuncia en la app. MOXT puede retirar contenidos, suspender cuentas y transmitir información a las autoridades competentes.",
+          "Limitación de responsabilidad del editor: en la medida permitida por la ley aplicable, MOXT no garantiza la exactitud de la información publicada por los usuarios, ni el buen desarrollo de intercambios fuera de la plataforma, ni la solvencia de los miembros. El uso de MOXT se realiza bajo la vigilancia de cada usuario.",
+          "Derecho aplicable: estos avisos y el uso del servicio se rigen por el derecho aplicable al lugar de explotación del servicio, sin perjuicio de las normas imperativas de protección del consumidor. Los litigios se tratarán, en la medida de lo posible, de forma amistosa; en su defecto, ante los tribunales competentes.",
+          "Para cualquier pregunta jurídica, reclamación o solicitud de información adicional sobre el editor, escribe a support@moxtapp.ru.",
+        ],
       },
       cgu: {
-        title: "Termos de uso",
+        title: "Condiciones de uso",
         paragraphs: [
-          "Al crear una cuenta MOXT, aceptas usar la plataforma de forma leal, proporcionar información exacta y respetar las reglas de verificación (teléfono, identidad, empresa cuando corresponda).",
-          "Te comprometes a no publicar contenido fraudulento, engañoso, ilícito o que vulnere derechos de terceros. MOXT puede suspender o eliminar una cuenta en caso de infracciones graves o reiteradas.",
+          "Al crear una cuenta MOXT, aceptas usar la plataforma de forma leal, proporcionar información exacta y respetar las reglas de verificación (teléfono ruso +7, identidad, empresa cuando corresponda). El número del país de origen puede indicarse en el registro de forma opcional. Debes tener la edad y capacidad jurídica necesarias para contratar según la ley aplicable.",
+          "Eres responsable de la confidencialidad de tus credenciales, códigos OTP y sesiones. Toda acción realizada desde tu cuenta se presume efectuada por ti, salvo prueba creíble de compromiso reportada sin demora a MOXT.",
+          "Te comprometes a no publicar contenido fraudulento, engañoso, ilícito o que vulnere derechos de terceros. Quedan prohibidos, entre otros: estafas, usurpación de identidad, blanqueo, financiación de actividades ilegales, acoso, amenazas, contenido de odio, pornografía ilegal, venta de armas, drogas o bienes robados, y cualquier falsificación.",
           "Ningún usuario tiene derecho a estafar, engañar o intentar perjudicar de cualquier forma a otro miembro de la plataforma. Toda persona implicada en una actividad ilícita (fraude, estafa, usurpación de identidad, chantaje, etc.) a través de MOXT se expone a que su información sea transmitida a la justicia y a las autoridades competentes, para que la víctima o MOXT puedan presentar una denuncia en su contra.",
-          "Las operaciones sensibles (transferencias, cuentas profesionales, publicaciones de empresa) pueden exigir identidad verificada. Una declaración en la app no sustituye una confirmación oficial de pago o de estatus legal.",
-          "MOXT conecta a los miembros y facilita la comunicación; cada usuario sigue siendo responsable de sus compromisos, pagos e intercambios con otros miembros.",
-          "MOXT puede actualizar estos términos; la versión vigente está disponible en la app. El uso continuado tras una actualización implica la aceptación de los nuevos términos."
-        ]
+          "Las operaciones sensibles (transferencias, cuentas profesionales, publicaciones de empresa) pueden exigir identidad verificada. Una declaración en la app, un distintivo «verificado» o un estado mostrado no sustituyen una confirmación oficial de pago, entrega o estatus legal ante las autoridades.",
+          "Transferencias: algunas empresas pueden activar una preaceptación breve antes del pago. Si se rechaza o caduca, el cliente puede reasignar la transferencia a otro cambista o cancelarla en la app. MOXT conecta a los miembros y facilita la comunicación; cada usuario sigue siendo responsable de sus compromisos, pagos, entregas, condiciones contractuales e intercambios con otros miembros. MOXT no garantiza el resultado de las transacciones entre usuarios.",
+          "Aplicación móvil: la app MOXT es un producto autónomo con contenido y funciones propias (transferencias, P2P, mensajería, espacio pro, notificaciones, cámara para QR, etc.). Su único fin no es redirigir a un sitio web.",
+          "Autorizas a MOXT a moderar, ocultar, suspender o eliminar contenidos y cuentas para proteger la seguridad de la plataforma, hacer cumplir estas condiciones o cumplir una obligación legal. Las decisiones de moderación pueden impugnarse en support@moxtapp.ru.",
+          "MOXT puede actualizar estos términos; la versión vigente (ref. producto 1.2.4 — 30 de julio de 2026) está disponible en la app y en https://moxtapp.ru/legal/cgu. El uso continuado tras una actualización implica la aceptación de los nuevos términos. En caso de desacuerdo, debes dejar de usar el servicio y puedes solicitar la eliminación de tu cuenta.",
+        ],
+      },
+      entreprises: {
+        title: "Empresas — normas y responsabilidades",
+        paragraphs: [
+          "Creación: toda persona que cree una ficha de empresa en MOXT declara actuar de buena fe, disponer de los derechos necesarios para representar esa actividad y aportar información exacta (nombre, contactos, servicios, documentos).",
+          "Estatus verificado: toda empresa que desee un estatus verificado en MOXT debe aportar pruebas de su actividad (documento de identidad del responsable, justificantes de existencia / actividad, y todo elemento solicitado por la moderación). Estos documentos pueden ser revisados por el equipo MOXT y, en su caso, transmitidos a las autoridades competentes.",
+          "Alcance del distintivo «verificado»: la verificación atestigua que se aportaron y controlaron elementos según los procedimientos MOXT. No constituye certificación de solvencia, licencia bancaria, garantía de calidad ni asociación oficial con MOXT, salvo mención escrita en contrario.",
+          "Responsabilidad del creador: la persona que crea una empresa asume la responsabilidad de toda actividad bajo esa enseña en MOXT (publicaciones, tarifas, mensajes, compromisos, litigios con clientes o socios). Debe asegurarse de que las personas autorizadas a publicar en nombre de la empresa cumplan estas normas.",
+          "Actividades ilícitas y estafas: si una empresa utiliza su notoriedad o la plataforma para actividades ilícitas, o estafa a otra persona, se expone al baneo de su cuenta de empresa, a la suspensión del estatus verificado y a la transmisión de la información facilitada a la justicia.",
+          "Cesión y cambio de control: una persona no puede ceder o «vender» su empresa a una persona desconocida cuyos datos no figuren en la base MOXT, bajo pena de acciones judiciales. Todo cambio de control debe ser trazable, realizarse mediante los procedimientos previstos (si existen) y conforme a las reglas de la plataforma. El creador sigue siendo responsable de los actos anteriores a una cesión irregular.",
+          "Visibilidad y cierre: ocultar la visibilidad pública, cerrar la actividad o soft-eliminar una ficha no elimina la responsabilidad jurídica de los actos ya realizados. MOXT puede conservar elementos necesarios para la seguridad, los litigios y las obligaciones legales.",
+          "Exactitud de la información: la empresa debe mantener actualizada su información (coordenadas, servicios, tarifas mostradas, documentos). Las declaraciones falsas, documentos falsificados o la usurpación de una enseña real exponen a sanciones y acciones judiciales.",
+          "Prohibición de actividades ilegales: una empresa no debe utilizar la plataforma para actividades ilícitas. Toda actividad ilegal está formalmente prohibida en MOXT, bajo pena de acciones judiciales y medidas inmediatas (suspensión, baneo, denuncia).",
+          "Cooperación con las autoridades: MOXT coopera con las autoridades competentes en caso de sospecha de fraude, blanqueo, estafa u otra infracción vinculada a una empresa presente en la plataforma, conforme al derecho aplicable.",
+          "Contacto empresas: para cualquier cuestión relativa a la verificación, una cesión, un litigio o una denuncia — support@moxtapp.ru.",
+        ],
+      },
+      annonces: {
+        title: "Anuncios — responsabilidades de los editores",
+        paragraphs: [
+          "Ámbito: toda persona que publique un anuncio en MOXT (marketplace, envíos / trayectos, empleo, evento, publicación social, oferta de transferencia, oferta P2P, oferta vinculada a empresa, etc.) se considera editor de ese contenido.",
+          "Responsabilidad del contenido: el editor es el único responsable de las descripciones, fotos, vídeos, precios, divisas, disponibilidad, condiciones, plazos, lugares de entrega y de todo compromiso con otros miembros. La información debe ser exacta, actualizada y no engañosa.",
+          "Papel de MOXT: MOXT no asume ninguna responsabilidad sobre la procedencia, conformidad legal, calidad, seguridad o conformidad normativa de los artículos o servicios publicados. Los anuncios son contenidos aportados por los usuarios; MOXT actúa como plataforma de puesta en relación y visualización.",
+          "Diligencia del comprador / contacto: antes de cualquier transacción, verifique la identidad del interlocutor, las pruebas disponibles, las valoraciones / el historial, y priorice los intercambios y pruebas a través de MOXT. Desconfíe de pagos exigidos fuera de un marco claro o de urgencias artificiales.",
+          "Prohibiciones: quedan prohibidos, entre otros, los anuncios de bienes robados, falsificados o peligrosos sin autorización, sustancias ilícitas, armas, servicios ilegales, ofertas de empleo falsas, estafas financieras, pirámides / inversiones fraudulentas, y cualquier publicación engañosa o discriminatoria.",
+          "Fotos y medios: las imágenes y archivos adjuntos deben representar fielmente el objeto o servicio. El uso de fotos robadas, medios generados para engañar o documentos falsificados está prohibido y puede conllevar baneo y denuncia.",
+          "Usurpación de identidad: si una persona usurpa la identidad de otra (persona física, marca o empresa), asume sola la responsabilidad de sus actos. La usurpación, el fraude y los anuncios falsos exponen a sus autores a sanciones en la plataforma y a acciones judiciales.",
+          "Transacciones y pagos: las condiciones de venta, entrega, pago y reembolso se acuerdan entre las partes. MOXT no garantiza los pagos realizados fuera de las herramientas claramente indicadas como proporcionadas por la plataforma. Conserve sus pruebas (capturas, recibos, mensajes).",
+          "Modificación y retirada: el editor debe corregir o retirar un anuncio que se vuelva inexacto, vendido, no disponible o ilícito. MOXT puede ocultar, suspender o eliminar un anuncio por propia iniciativa para proteger a los usuarios o cumplir la ley.",
+          "Denuncia: cualquier miembro puede denunciar un anuncio sospechoso. MOXT se compromete a colaborar estrechamente con las autoridades competentes en caso de sospecha, fraude o actividad ilegal cometida a través del sitio, y a transmitir los elementos útiles conforme al derecho aplicable.",
+          "Seguridad: MOXT pone un especial énfasis en la seguridad de los bienes y las personas que usan la plataforma: verificación, denuncias, moderación y cooperación con las autoridades forman parte de este compromiso. Reporte cualquier contenido sospechoso vía la app o support@moxtapp.ru.",
+          "Conservación: la eliminación de un anuncio no hace desaparecer automáticamente la responsabilidad de los actos ya realizados; MOXT puede conservar elementos necesarios para litigios, seguridad y obligaciones legales.",
+        ],
       },
       privacy: {
-        title: "Política de privaciudad",
+        title: "Política de privacidad",
         paragraphs: [
-          "Esta política de privacidad describe cómo MOXT («nosotros») recopila, usa, almacena y protege tus datos personales cuando usas el sitio https://moxtapp.ru y la app móvil MOXT (Android / iOS vía Capacitor), destinada en particular a la diáspora afro-rusa (transferencias, envíos, mercado, empleos, empresas y mensajería).",
+          "Esta política de privacidad describe cómo MOXT («nosotros») recopila, usa, almacena y protege tus datos personales cuando usas el sitio https://moxtapp.ru y la app móvil MOXT (Android / iOS vía Capacitor — producto autónomo con la interfaz completa, y no un simple acceso web), destinada en particular a la diáspora afro-rusa (transferencias, envíos, mercado, empleos, empresas y mensajería).",
           "Responsable del tratamiento: MOXT. Privacidad y solicitudes de usuarios: support@moxtapp.ru. Incluye el correo o identificador de tu cuenta para que podamos responder en un plazo razonable.",
-          "Finalidades: crear y administrar tu cuenta; habilitar las funciones de la plataforma (perfiles, anuncios, mensajería, transferencias, envíos, verificación de identidad o de empresa); garantizar la seguridad, la prevención del fraude y el cumplimiento de nuestras reglas; enviar avisos técnicos o, si das tu consentimiento, alertas push; cumplir obligaciones legales.",
-          "Datos de cuenta: identidad (nombre cuando corresponda), correo, número de teléfono, foto de perfil, preferencias de idioma y privacidad, historial de actividad en la plataforma, documentos de verificación de identidad o de empresa cuando los proporciones voluntariamente.",
+          "Finalidades: crear y administrar tu cuenta; habilitar las funciones de la plataforma (perfiles, anuncios, mensajería, transferencias — incluida la preaceptación del cambista cuando esté activada —, envíos, verificación de identidad o de empresa); garantizar la seguridad, la prevención del fraude y el cumplimiento de nuestras reglas; enviar avisos técnicos o, si das tu consentimiento, alertas push; cumplir obligaciones legales.",
+          "Datos de cuenta: identidad (nombre cuando corresponda), correo, número de teléfono ruso (+7) requerido para ciertas funciones, número del país de origen si se facilita voluntariamente (opcional en el registro), foto de perfil, preferencias de idioma y privacidad, historial de actividad en la plataforma, documentos de verificación de identidad o de empresa cuando los proporciones voluntariamente.",
           "Datos técnicos: identificadores de sesión, registros de acceso, tipo de dispositivo / navegador, tokens de notificaciones push (FCM / APNs) si los activas, y metadatos necesarios para operar y asegurar el servicio.",
           "Infraestructura y encargados: los datos de cuenta y el contenido de la app se procesan mediante nuestro backend Supabase (autenticación, base de datos, almacenamiento de archivos). Proveedores técnicos (hosting cloud, entrega de correo / SMS, push Firebase / Apple) actúan solo para operar el servicio. No vendemos tus datos personales.",
           "Cámara: se usa solo para escanear códigos QR MOXT (perfiles, empresas, invitaciones) cuando abres la pestaña Escáner. La cámara no se activa en segundo plano y no se usa para geolocalización.",
@@ -2012,7 +2228,7 @@ export const es = {
           "Conservación y eliminación: un correo o teléfono verificado puede usarse como máximo en dos cuentas. Puedes solicitar la eliminación de la cuenta desde la configuración; algunos datos pueden conservarse el tiempo exigido por ley, por seguridad de la plataforma o para resolver disputas.",
           "Tus derechos: según la ley aplicable, puedes solicitar acceso a tus datos, rectificación, eliminación, limitación del tratamiento u oponerte a ciertos tratamientos. Contacta a support@moxtapp.ru. También puedes solicitar la eliminación de la cuenta desde la app.",
           "Menores: el servicio está destinado a usuarios mayores de edad o con capacidad conforme a la ley aplicable. Si crees que un menor proporcionó datos sin autorización, contáctanos para eliminarlos.",
-          "Actualizaciones: podemos actualizar esta política; la versión vigente siempre está disponible en https://moxtapp.ru/legal/privacy. El uso continuado tras una actualización implica que has sido informado de la nueva versión.",
+          "Actualizaciones: podemos actualizar esta política; la versión vigente (ref. producto 1.2.4 — 30 de julio de 2026) siempre está disponible en https://moxtapp.ru/legal/privacy. El uso continuado tras una actualización implica que has sido informado de la nueva versión.",
           "Contacto: para cualquier pregunta sobre esta política o tus datos personales — support@moxtapp.ru."
         ]
       }
@@ -3411,7 +3627,112 @@ export const es = {
     addressCompleteMin: "Adicione un dirección completo.",
     addressCompleteRequired: "Dirección completo obligatorio."
   },
+  exchanger: {
+    page: {
+      eyebrow: "Panel del cambista",
+      title: "Transferencias entrantes",
+      description:
+        "Opera, ajusta tarifas, gestiona cuentas y avanza el pipeline en un solo lugar.",
+    },
+    tabs: {
+      aria: "Secciones del panel del cambista",
+      ops: "Operaciones",
+      rates: "Tarifas",
+      accounts: "Cuentas",
+      stats: "Stats",
+    },
+    kpi: {
+      awaiting: "Por tratar",
+      active: "Pipeline activo",
+      volume: "Volumen del mes",
+      volumeRub: "Volumen RUB · mes",
+      volumeLocal: "Volumen {currency} · mes",
+      completion: "Tasa de finalización",
+      rating: "Nota media",
+      avgDelay: "Retraso medio",
+      avgDelaySub: "Recepción → pago",
+    },
+    charts: {
+      activityTitle: "Actividad · 30 días",
+      statusTitle: "Por estado",
+      monthlyTitle: "Volúmenes · 6 meses",
+      created: "Creadas",
+      completed: "Completadas",
+      countSeries: "Tendencia · creadas / completadas",
+      volumeSeries: "Volúmenes monetarios · creadas / completadas",
+      volumeCreated: "Volumen creado",
+      volumeCompleted: "Volumen completado",
+      trendTitle: "Tendencia · mes actual",
+      trendCompare: "{current} vs {previous}",
+      dayDetail: "Detalle del {date}",
+      daySummary:
+        "{count} creadas · {completed} completadas · volumen ~ {volume}",
+      noTransfers: "Ninguna transferencia en este período.",
+      scrollHint: "Desliza horizontalmente para ver todo el período",
+    },
+    queue: {
+      actionTitle: "Cola de acciones",
+      actionEmpty: "Nada pendiente de tu lado.",
+      client: "Cliente",
+      deadline: "Plazo de pago: {date}",
+      showMore: "Ver {count} más",
+      showLess: "Mostrar menos",
+    },
+    pipeline: {
+      title: "Pipeline por estado",
+      empty: "Ninguna transferencia",
+      clearFilter: "Quitar filtro · {status}",
+    },
+    actions: {
+      viewAll: "Ver todo",
+      rates: "Ajustes de tarifa",
+      manage: "Gestionar",
+      detail: "Detalle",
+    },
+    manage: {
+      title: "Gestionar {id}",
+      youReceive: "Recibes",
+      recipientGets: "El destinatario recibe",
+      clientNote: "Mensaje del cliente",
+      stepReceptionTitle: "Paso 1 · Confirmar recepción",
+      stepReceptionBody: "Verifica el pago del cliente en tu cuenta y confirma.",
+      stepPayoutTitle: "Paso 2 · Confirmar pago",
+      stepPayoutBody: "Añade la prueba de pago al destinatario y valida.",
+      confirmReception: "Confirmar recepción",
+      confirmPayout: "Confirmar pago",
+      proofLabel: "Prueba de pago",
+      uploading: "Enviando…",
+      noAction: "No hay acción requerida en este paso.",
+      openDetail: "Abrir ficha completa",
+      proofReadyTitle: "Prueba añadida",
+      proofReadyBody: "El justificante está listo.",
+      uploadFailedTitle: "Envío imposible",
+      uploadFailedBody: "No se pudo enviar el justificante.",
+      uploadAuthRequired: "Vuelve a iniciar sesión para enviar el justificante.",
+      errorTitle: "Acción imposible",
+      receptionBlocked: "La recepción ya fue confirmada o el estado cambió.",
+      proofRequired: "Añade una prueba de pago antes de confirmar.",
+      receptionTitle: "Recepción confirmada",
+      receptionBody: "Continúa con la prueba y el pago.",
+      payoutTitle: "Pago confirmado",
+      payoutBody: "El cliente puede validar la recepción de fondos.",
+    },
+    noAccess: {
+      title: "Acceso reservado a cambistas",
+      description:
+        "Necesitas el rol professional o una empresa de transferencia para acceder.",
+    },
+    noBusiness: {
+      title: "Empresa de transferencia requerida",
+      description: "Activa el servicio Transferencia en tu espacio pro para usar este panel.",
+      cta: "Abrir espacio pro",
+    },
+  },
   transfers: {
+    rate: {
+      todayTitle: "Tasa del día",
+      partnerTitle: "Tipo de la empresa (de su dashboard)",
+    },
     direction: {
       bjToRu: "Benim para Rusia",
       ruToBj: "Rusia para Benim",
@@ -3419,6 +3740,8 @@ export const es = {
       ruToAfrica: "Rusia → África"
     },
     status: {
+      pendingAcceptance: "Esperando aceptación",
+      businessDeclined: "Cambista no disponible",
       pending: "Pagamento pendiente",
       declared: "Pagamento declarado",
       received: "Pagamento recebido",
@@ -3437,6 +3760,8 @@ export const es = {
       completed: "Concluído"
     },
     timeline: {
+      pendingAcceptance: "Solicitud enviada al cambista",
+      businessDeclined: "Cambista no disponible (rechazo o plazo vencido)",
       pending: "Transferencia criada, pagamento pendiente",
       declared: "Pagamento declarado pelo cliente",
       received: "Pagamento recebido pelo parceiro",
@@ -3447,6 +3772,14 @@ export const es = {
       expired: "Prazo de pagamento expirado"
     },
     nextStep: {
+      pendingAcceptance: {
+        title: "Esperando aceptación",
+        description: "El cambista debe aceptar en 10 minutos antes del pago.",
+      },
+      businessDeclined: {
+        title: "Cambista no disponible",
+        description: "Elige otro cambista o cancela esta transferencia.",
+      },
       pending: {
         title: "Ación do cliente necessária",
         description: "Adicione un comprobante y declare o pagamento. A empresa será notificada automaticamente."
@@ -3501,7 +3834,16 @@ export const es = {
       emptyTitle: "Ninguna transferencia",
       emptySearch: "Ningún resultado corresponde à búsqueda.",
       emptyDefault: "Crie a tu primeira operación.",
-      calculatorModalTitle: "Calculadora de transferencia"
+      calculatorModalTitle: "Calculadora de transferencia",
+      tabTransfers: "Transferencias",
+      tabP2p: "Intercambios P2P",
+      p2pSearchPlaceholder: "Referencia, contraparte o moneda…",
+      p2pSectionTitle: "Intercambios P2P",
+      p2pOperationsCount: "{count} intercambio(s) P2P",
+      p2pWith: "Con {name}",
+      p2pEmptyTitle: "Ningún intercambio P2P",
+      p2pEmptyDefault: "Tus pedidos P2P aparecerán aquí tras aceptar una oferta.",
+      p2pBrowse: "Ver ofertas P2P"
     },
     calculator: {
       title: "Calculadora",
@@ -3612,6 +3954,14 @@ export const es = {
       successDescription: "Su declaración cierra la transferencia. Si hay un problema, abra una reclamación.",
       viewTransfer: "Ver transferencia",
       myTransfers: "As minhas transferencias",
+      reviewTitle: "Su opinión sobre {name}",
+      reviewDescription: "Esta transferencia ha terminado. Comparta su experiencia con esta empresa.",
+      reviewComment: "Su comentario",
+      reviewCommentPlaceholder: "Servicio, plazos, comunicación…",
+      reviewSubmit: "Publicar mi opinión",
+      reviewSkip: "Más tarde",
+      reviewSavedTitle: "Opinión guardada",
+      reviewSavedMessage: "Gracias por su comentario sobre {name}.",
       eyebrow: "Receción",
       title: "Declarar receción",
       description: "Transferencia {id}",
@@ -3627,6 +3977,33 @@ export const es = {
       walletTitle: "Saldo da carteira",
       walletBalance: "Saldo atual: {balance} — a confirmación de receción aún no ajusta automaticamente este saldo."
     },
+    acceptance: {
+      countdownLabel: "Tiempo restante",
+      waitingHint: "{name} debe aceptar tu solicitud antes del pago.",
+      exchangerFallback: "El cambista",
+      chooseAnother: "Elegir otro cambista",
+      accept: "Aceptar",
+      decline: "Rechazar",
+      businessCountdown: "Respuesta esperada en {countdown}.",
+      paymentHidden: "Los datos de pago aparecerán tras la aceptación del cambista.",
+      reassignTitle: "Elegir otro cambista",
+      reassignDescription: "La misma transferencia se reasignará. Puede comenzar una nueva ventana de aceptación.",
+      noOtherExchanger: "No hay otro cambista compatible ahora.",
+      confirmReassign: "Reasignar transferencia",
+      requiresAcceptanceShort: "preaceptación",
+      queueDeadline: "Aceptar antes de {date}",
+      businessActionTitle: "Nueva solicitud",
+      businessActionBody: "Acepta para desbloquear el pago del cliente, o rechaza si no estás disponible.",
+      toasts: {
+        acceptedTitle: "Solicitud aceptada",
+        acceptedBody: "El cliente ya puede realizar el pago.",
+        declinedTitle: "Solicitud rechazada",
+        declinedBody: "El cliente puede elegir otro cambista.",
+        reassignedTitle: "Transferencia reasignada",
+        reassignedBody: "Nuevo socio: {name}.",
+      },
+    },
+
     workflow: {
       journeyTitle: "Percurso da transferencia",
       stepsValidated: "{completed}/{total} etapas validadas",
@@ -3659,6 +4036,7 @@ export const es = {
         none: "Ninguna ación necessária de momento."
       },
       clientWaiting: {
+        pendingAcceptance: "Tu solicitud fue enviada. Espera la aceptación del cambista.",
         declared: "Su declaración fue enviada. Espere a que la empresa confirme la recepción del pago.",
         received: "La empresa recibió su pago. Espere a que confirme el envío con comprobante — solo entonces podrá declarar la recepción.",
         paidOut: "Espere el comprobante de envío de la empresa antes de declarar la recepción de los fondos.",
@@ -3670,6 +4048,18 @@ export const es = {
         completed: "Transferencia encerrada."
       },
       actions: {
+        acceptRequest: {
+          title: "Aceptar la solicitud",
+          description: "Confirma que puedes procesar esta transferencia.",
+        },
+        waitAcceptance: {
+          title: "Esperando al cambista",
+          description: "Los datos de pago aparecerán cuando el cambista acepte.",
+        },
+        resolveAcceptance: {
+          title: "Cambista no disponible",
+          description: "El plazo venció o se rechazó. Elige otro socio o cancela.",
+        },
         confirmPaymentReception: {
           title: "Confirmar receción do pagamento",
           description: "Verifique a tu cuenta y valide esta etapa para avançar para o envio."
@@ -3733,6 +4123,9 @@ export const es = {
       recipient: "Destinatário",
       acceptTerms: "Confirmo estas informaciones y autorizo a tu transmissão à empresa selecionada para o tratamento desta operación.",
       createAndSubmit: "Crear y enviar a transferencia",
+      noteToExchangerLabel: "Mensaje para el cambista",
+      noteToExchangerPlaceholder: "Detalles útiles para el socio (opcional)…",
+      noteToExchangerHint: "{count}/{max} caracteres",
       favoriteProfiles: "Perfis favoritos",
       firstName: "Nome",
       lastName: "Apelido",
@@ -3750,6 +4143,7 @@ export const es = {
         },
       },
       errors: {
+        createFailedTitle: "Transferencia no creada",
         chooseAvailableBusiness: "Elige una empresa disponible.",
         cannotUseOwnBusiness: "No pode utilizar a tu própria empresa.",
         businessMissingReceivingAccount: "Esta empresa aún no configurou a cuenta de receción para este sentido de transferencia.",
@@ -3872,6 +4266,7 @@ export const es = {
         favoriteErrorTitle: "No se pudo guardar",
         favoriteIncomplete: "Nombre, apellido y teléfono son obligatorios para un favorito.",
       },
+      noteToExchanger: "Mensaje para el cambista",
       timeline: {
         title: "Cronologia"
       },
@@ -3912,6 +4307,25 @@ export const es = {
     }
   },
   p2p: {
+    noEscrowBanner:
+      "MOXT nunca retiene tus fondos. Sigue los pasos, guarda tus pruebas y paga solo a los datos mostrados en el pedido.",
+    trustChecklist: {
+      title: "Lista de confianza",
+      verifyIdentity: "Verifica el perfil y la reputación de la contraparte antes de aceptar.",
+      useInAppDetails: "Paga solo a los datos mostrados en el pedido MOXT.",
+      keepProofs: "Guarda todas las pruebas (capturas, recibos) en MOXT.",
+      openDispute: "Si hay un problema, abre un litigio para contactar al soporte.",
+    },
+    acceptConfirm: {
+      title: "¿Iniciar el intercambio?",
+      body: "Vas a iniciar un intercambio. MOXT no retiene el dinero. Pago fuera de la app + prueba obligatorios. ¿Continuar?",
+      cta: "Confirmar",
+    },
+    reputation: {
+      noRating: "Sin valoración aún",
+      completed: "{count} intercambios exitosos",
+      successRate: "{rate} % de éxito",
+    },
     page: {
       eyebrow: "Trocas comunitárias",
       title: "Trocas P2P",
@@ -3939,7 +4353,9 @@ export const es = {
       emptyActiveDescription: "Proponha a primeira oferta o ajuste os filtros.",
       emptyArchiveDescription: "As ofertas aceites o encerradas aparecerão aquí.",
       recentOrders: "As minhas transaciones recentes",
-      orderDirection: "{seller} para {buyer}"
+      orderDirection: "{seller} para {buyer}",
+      publishedOn: "Publicada el {date}",
+      leaveReview: "Deja tu valoración"
     },
     detail: {
       notFound: "Oferta P2P no encontrada",
@@ -3973,7 +4389,7 @@ export const es = {
     order: {
       status: {
         created: "Criada",
-        waitingPayment: "Pagamento em curso",
+        waitingPayment: "Pagamento enviado",
         completed: "Concluída",
         cancelled: "Cancelada",
         disputed: "Disputa em curso"
@@ -3986,12 +4402,13 @@ export const es = {
       receivedCurrency: "Moneda recebida",
       rate: "Taxa",
       fees: "Taxas",
-      waitingPayment: "Pagamento em curso",
+      waitingPayment: "Pagamento enviado",
       complete: "Concluir",
       cancel: "Cancelar",
       markPaid: "Envié el pago",
       markPaidHint: "Añade un comprobante de pago antes de continuar.",
       confirmReceived: "Confirmar recepción y finalizar",
+      confirmReceivedHint: "Añade un comprobante de transferencia antes de finalizar la transacción.",
       waitingSellerConfirmation: "Esperando la confirmación del vendedor.",
       waitingBuyerPayment: "Esperando que el comprador envíe el pago.",
       disputedBanner: "Hay una disputa abierta en esta transacción. Un moderador MOXT intervendrá — los estados quedan bloqueados hasta su resolución.",
@@ -4007,13 +4424,84 @@ export const es = {
       disputeOpen: "Disputa {status}: {reason}",
       disputePlaceholder: "Describe el problema con precisión",
       openDispute: "Abrir un disputa",
+      disputeSupportSubject: "Litigio P2P {id}",
+      disputeSupportMessage:
+        "Abro un litigio sobre el pedido P2P {id}.\n\nMotivo: {reason}\n\nPor favor, intervengan.",
+      stepsLabel: "Pasos del intercambio",
+      steps: {
+        engagement: "Compromiso",
+        payment: "Pago",
+        confirmation: "Confirmación",
+        done: "Hecho",
+      },
+      buyer: "Comprador",
+      seller: "Vendedor",
+      proofsTitle: "Pruebas",
+      proofPreview: "Prueba de pago",
+      openProofTab: "Abrir en una pestaña",
+      noBuyerProofYet: "Aún no hay prueba del comprador.",
+      disputeHelp: "Abre un litigio si el pago o la recepción es problemática.",
+      disputeFrozen: "Litigio en curso — espera la resolución de MOXT.",
+      disputeUnavailable: "Litigio no disponible en este pedido.",
+      openDisputeNoReceive: "No lo recibí — Abrir litigio",
+      expiredTitle: "Plazo de pago vencido",
+      expiredBody: "El pedido se canceló automáticamente. La oferta puede volver a estar disponible.",
+      countdown: {
+        payment: "Tiempo restante para pagar",
+        confirm: "Tiempo restante para confirmar",
+      },
+      hint: {
+        disputed: "Hay un litigio abierto. Espera — MOXT revisa el caso.",
+        cancelled: "Este pedido está cancelado.",
+        completed: "Intercambio terminado. Puedes valorar a tu interlocutor.",
+        buyerPay: "Paga a {name} con el método acordado y añade una prueba.",
+        sellerWait: "Esperando el pago de {name}.",
+        sellerConfirm: "{name} declaró haber pagado. Verifica y confirma.",
+        buyerWait: "{name} está comprobando tu pago…",
+      },
+      confirm: {
+        markPaidTitle: "¿Confirmar el envío del pago?",
+        markPaidBody: "Confirma solo si la transferencia ya salió. Se requiere una prueba.",
+        markPaidCta: "Sí, pagué",
+        finalizeTitle: "¿Finalizar el intercambio?",
+        finalizeBody: "Irreversible. El intercambio se marcará como terminado.",
+        finalizeCta: "Confirmar recepción",
+        cancelTitle: "¿Cancelar este intercambio?",
+        cancelBody: "La cancelación solo es posible antes de enviar el pago.",
+        cancelCta: "Cancelar intercambio",
+        disputeTitle: "¿Abrir un litigio?",
+        disputeBody: "Las acciones se congelarán hasta la decisión de un moderador.",
+      },
       rateTitle: "Avaliar a transación",
+      rateIntro: "¿Cómo fue el intercambio con {name}?",
       commentPlaceholder: "O tu comentário",
       saveRating: "Guardar avaliación",
       updateRating: "Actualizar evaluación",
       ratingVisibleHint: "Esta evaluación aparecerá en el perfil público de tu contraparte.",
       ratingSavedTitle: "Evaluación guardada",
-      ratingSavedBody: "Gracias por evaluar a {name}."
+      ratingSavedBody: "Gracias por evaluar a {name}.",
+      createdAt: "Fecha",
+      payToTitle: "Datos de pago",
+      payToHint: "Paga solo a este número / cuenta, con el método indicado.",
+      receivePhone: "Número de recepción",
+      receiveName: "Nombre y apellidos",
+      yourReceiveTitle: "Tus datos de recepción (mostrados al comprador)",
+      buyerPayToTitle: "Dónde recibe {currency} el comprador",
+      buyerReceive: {
+        title: "Datos de recepción",
+        description: "Indica dónde deseas recibir {currency} (sentido del intercambio). Usa el número de tu perfil o un contacto favorito.",
+        useProfile: "Mi número de perfil",
+        manual: "Introducción manual",
+        favorite: "Contacto favorito",
+        favoritePlaceholder: "Elegir un favorito…",
+        saveFavorite: "Guardar también en mis favoritos de transferencia",
+        save: "Guardar los datos",
+        later: "Más tarde",
+        missingPhoneTitle: "Número requerido",
+        missingPhoneBody: "Indica un número de recepción para continuar.",
+        savedTitle: "Datos guardados",
+        savedBody: "El vendedor podrá enviarte {currency} a estos datos."
+      }
     },
     publish: {
       steps: {
@@ -4022,29 +4510,60 @@ export const es = {
         terms: "Modalidades"
       },
       backLabel: "P2P",
-      title: "Propor una oferta P2P",
+      title: "Proponer una oferta P2P",
       currencyPair: "Par de monedas",
-      currencyLimit: "As tus trocas P2P estão limitadas às monedas do tu perfil: {currencies}.",
-      iOffer: "Proponho",
-      iSeek: "Procuro",
-      safetyNote: "Nunca pague fora do MOXT y verifique a identidad do interlocutor antes de cuálquer transación.",
-      amountAndRate: "Importe y tarifa",
-      currentCeiling: "Limite atual: {amount}",
+      swapCurrencies: "Invertir el par de monedas",
+      currencyLimit: "Par fijo: {origin} ↔ RUB (monedas del perfil: {currencies}).",
+      iOffer: "Ofrezco",
+      iSeek: "Busco",
+      safetyNote: "Nunca pague fuera de MOXT y verifique la identidad de su interlocutor antes de cualquier transacción.",
+      amountAndRate: "Importe y tasa",
+      currentCeiling: "Límite actual: {amount}",
       amountLabel: "Importe ({currency})",
-      rateLabel: "Taxa proposta ({from} → {to})",
-      estimatedFees: "Taxas estimadas: {amount}",
-      exchangeTerms: "Modalidades da troca",
+      rateLabel: "Tasa propuesta ({from} → {to})",
+      rateMarginLabel: "Margen sobre la tasa (−{max} % a +{max} %)",
+      rateMarginHint:
+        "La tasa Frankfurter se aplica directamente. Un margen positivo la sube, uno negativo la baja — en ambos sentidos del par.",
+      rateMarginRecap: "Margen sobre la tasa",
+      frankfurterRateHint:
+        "Frankfurter: {rate} → aplicado {applied} ({from} → {to}) · margen {margin} % · {source} · {date}",
+      receivedLabel: "Importe recibido estimado",
+      receivedHint: "{amount} × {rate} = conversión a {to}",
+      rateSource: "Fuente de la tasa",
+      frankfurterRateLoading: "Cargando la tasa…",
+      estimatedFees: "Comisión de plataforma ({percent} %): {amount}",
+      exchangeTerms: "Modalidades del intercambio",
       method: "Método",
-      methodPlaceholder: "Mobile Money, banco…",
+      methodAfrica: "Red / medio ({country})",
+      methodRussia: "Banco ruso",
+      methodLoading: "Cargando bancos…",
+      methodPlaceholder: "Elegir un método",
+      receiveSection: "Número de recepción",
+      receiveHintAfrica:
+        "Indica el número Mobile Money ({country}) al que el comprador debe enviar la transferencia.",
+      receiveHintRussia:
+        "Indica el número SBP / teléfono ruso y el nombre y apellido(s) del beneficiario.",
+      receivePhone: "Número de recepción",
+      receiveName: "Información (nombre y apellidos)",
+      receiveNamePlaceholder: "Nombre y apellido(s) del beneficiario",
       conditionsOptional: "Condiciones (opcional)",
-      conditionsPlaceholder: "Horários, plazos, detalhes…",
-      recap: "Resumo",
-      rate: "Taxa",
-      estimatedFeesLabel: "Taxas estimadas",
-      publishOffer: "Publicar a oferta",
+      conditionsPlaceholder: "Horarios, plazos, detalles…",
+      recap: "Resumen",
+      rate: "Tasa",
+      estimatedFeesLabel: "Comisiones estimadas",
+      publishOffer: "Publicar la oferta",
       toastTitle: "Oferta P2P publicada",
-      toastMessage: "A tu oferta está visível nas trocas P2P."
-    }
+      toastMessage: "Su oferta es visible en los intercambios P2P."
+    },
+    edit: {
+      eyebrow: "Intercambios P2P",
+      title: "Editar la oferta",
+      description: "Ajuste el importe, la tasa o las condiciones de su oferta.",
+      notFound: "Oferta P2P no encontrada.",
+      toastTitle: "Oferta actualizada",
+      toastMessage: "Los cambios se han guardado.",
+      saveChanges: "Guardar los cambios",
+    },
   },
   favorites: {
     eyebrow: "Cuenta",
@@ -4368,6 +4887,7 @@ export const es = {
     sold: "Vendido",
     submitted: "Enviado",
     suspended: "Suspenso",
+    unavailable: "No disponible",
     verified: "Verificado",
     waitingAgent: "À espera do soporte",
     waitingUser: "A tu resposta é esperada"
@@ -4613,12 +5133,16 @@ export const es = {
     composer: {
       title: "Nuevo estado",
       description: "Visible para la comunidad durante 7 días.",
+      officialTitle: "Nuevo estado oficial",
+      officialDescription: "Publicado en nombre de MOXT, visible para la comunidad durante 7 días.",
+      postAsPersonal: "Personal",
       captionPlaceholder: "Añadir una leyenda (opcional)…",
       publish: "Publicar estado",
       publishing: "Publicando…",
       publishedTitle: "Estado publicado",
       publishedMessage: "Tu estado es visible durante 7 días.",
-      imagesRequired: "Añade al menos una imagen."
+      imagesRequired: "Añade al menos una imagen.",
+      imagesOrText: "Añade una imagen y/o un texto.",
     },
     viewer: {
       justNow: "Ahora mismo",
@@ -5077,7 +5601,11 @@ export const es = {
       filter: {
         domain: "Domínio",
         allDomains: "Todos os domínios",
-        allServices: "Todos os servicios"
+        allServices: "Todos os servicios",
+        role: "Rol / módulo",
+        allRoles: "Todos los roles",
+        country: "País",
+        countryPlaceholder: "Ej. BJ, RU, SN…",
       },
       directoryTitle: "Diretório profesional",
       directoryDescription: "O diretório mostra solo empresas verificadas. O país da cuenta do membro no influencia esta lista: só cuenta o estado de validación.",
@@ -5540,6 +6068,8 @@ export const es = {
       add: "Adicionar",
       formatsHint: "Formatos: PDF y imagens. Um comprobante basta para completar a verificación.",
       sizeKb: "{size} KB",
+      rejectedTitle: "Documento rechazado",
+      rejectNote: "Motivo del rechazo: {note}",
       empty: "Ningún documento profesional",
       types: {
         registration: "Registo / estatutos (ОГРН, ИНН)",
@@ -5696,6 +6226,8 @@ export const es = {
     nav: {
       overview: "Vista geral",
       transfers: "Transferencias",
+      p2p: "P2P",
+      rates: "Tipos de cambio",
       content: "Conteúdos",
       publications: "Publicaciones",
       support: "Soporte",
@@ -5923,7 +6455,8 @@ export const es = {
       promoteAdmin: "Tornar admin",
       reactivate: "Reactivar",
       suspend: "Suspender",
-      rejectPrompt: "Motivo da recusa (opcional):",
+      rejectPrompt: "Motivo del rechazo (obligatorio):",
+      rejectReasonRequired: "El motivo del rechazo es obligatorio.",
       resolve: "Resolver",
       close: "Encerrar",
       removeReview: "Remover a avaliación",
@@ -5967,6 +6500,22 @@ export const es = {
       listTitle: "Lista de transferencias",
       receivedSuffix: "{amount} recebido"
     },
+    p2p: {
+      metric: {
+        activeOffers: "Ofertas activas",
+        openOrders: "Pedidos abiertos",
+        disputed: "Disputas"
+      },
+      offersTitle: "Ofertas P2P",
+      ordersTitle: "Pedidos P2P",
+      emptyOffers: "Ninguna oferta encontrada.",
+      emptyOrders: "Ningún pedido encontrado.",
+      proofsCount: "{count} prueba(s)",
+      noProofs: "Sin pruebas",
+      restoreOrder: "Restaurar",
+      completeOrder: "Completar",
+      cancelOrder: "Cancelar"
+    },
     queues: {
       disputesLabel: "Disputas",
       contestedReviewsLabel: "Avaliaciones contestadas",
@@ -5977,6 +6526,49 @@ export const es = {
       title: "Diário de auditoria",
       globalFallback: "global"
     }
+  },
+  install: {
+    eyebrow: "Aplicación",
+    title: "Instalar MOXT",
+    description: "Descarga el APK Android o añade MOXT a la pantalla de inicio en iPhone.",
+    native: {
+      title: "Estás en la app MOXT",
+      description:
+        "Esta versión incluye la interfaz completa. No hace falta redirigir al sitio web.",
+      heading: "Producto autónomo",
+      body: "Ya usas la aplicación instalada: transferencias, marketplace, mensajería y herramientas pro están disponibles aquí.",
+      featureTransfers: "Transferencias y seguimiento en tiempo real",
+      featureP2p: "Intercambios P2P",
+      featureMessages: "Mensajería y notificaciones",
+      featurePro: "Espacio profesional y paneles",
+      openDashboard: "Abrir mi panel",
+    },
+    tabs: { android: "Android", iphone: "iPhone" },
+    android: {
+      title: "Descargar para Android",
+      body: "Instala el archivo APK directamente en tu teléfono Android.",
+      loading: "Cargando la versión disponible…",
+      available: "Disponible",
+      download: "Descargar APK",
+      hint: "Si Android bloquea la instalación, permite orígenes desconocidos para el navegador o el gestor de archivos.",
+      unavailable: "Aún no hay versión Android publicada. Vuelve pronto.",
+      rustoreLater: "El enlace de RuStore se añadirá más adelante.",
+      loadError: "No se pudo cargar la versión Android.",
+      staffTitle: "Publicación staff",
+      staffBody: "Sube un archivo .apk para reemplazar la versión activa.",
+      versionPlaceholder: "Versión (ej. 1.0.3)",
+      upload: "Subir APK",
+      uploading: "Subiendo…",
+      uploadOkTitle: "APK publicado",
+      uploadOkBody: "{name} ya se puede descargar.",
+      uploadError: "Error al subir el APK.",
+    },
+    iphone: {
+      title: "Cómo añadir MOXT en iPhone",
+      body: "Añade MOXT a la pantalla de inicio desde Safari en unos pasos.",
+      guideAlt: "Guía ilustrada: añadir MOXT a la pantalla de inicio desde Safari",
+      note: "Las notificaciones push en iPhone requieren esta instalación.",
+    },
   },
   shared: {
     contact: "Contactar",
@@ -6186,7 +6778,8 @@ export const es = {
           created: "Paquete criada",
           waitingPayment: "A aguardar pagamento",
           completed: "Transación concluída",
-          cancelled: "Transación cancelada"
+          cancelled: "Transación cancelada",
+          disputed: "Disputa en curso",
         }
       },
       verification: {
@@ -6329,6 +6922,32 @@ export const es = {
         texts: {
           "0": "O mercado MOXT permite comprar y vender artigos na comunidad afro-russa.\n\n**Para publicar um anúncio:**\n- Ve a **Marketplace** y después **Publicar um anúncio**\n- Completa o título, a descripción, o precio y as fotos\n- Indica se faz entrega o se é solo levantamento\n\nOs anuncios permanecen activos até os cerrar o até o artigo ser vendido.",
           "1": "Em **Marketplace**, navegue pelos anuncios, filtre por categoría o localización y contacte o vendedor diretamente pela mensajes integrada.\n\nPara pôr un artigo à venda, use **Publicar um anúncio**. O formulario orienta-o: tipo de produto, estado, precio y opciones de entrega."
+        }
+      },
+      expedition: {
+        actions: {
+          "0": "Publicar un anuncio",
+          "1": "Marketplace"
+        },
+        suggestions: {
+          "0": "Como publico un anuncio?",
+          "1": "Que transportadoras están disponibles?"
+        },
+        texts: {
+          "0": "Ao publicar un anuncio, si activas **Envío**, MOXT ofrece los medios habituais en Rusia:\n- **CDEK** (~2–7 días)\n- **Correos de Rusia** (~5–14 días)\n- **Boxberry**, **Yandex Delivery**, **Delovie Linii**, **PEK**\n- Otro transportista (plazo a convenir)\n\nPuedes seleccionar **varios** e indicar el plazo aproximado. Esta información aparece luego na ficha do anuncio (pestaña Entrega)."
+        }
+      },
+      contribuer: {
+        actions: {
+          "0": "Contribuir",
+          "1": "Contactar soporte"
+        },
+        suggestions: {
+          "0": "Dónde encuentro la página Contribuir?",
+          "1": "Cómo contacto con soporte?"
+        },
+        texts: {
+          "0": "Puedes apoyar el desarrollo de MOXT vía **Contribuir** (hub MOXT → Finanzas).\n\nElige cualquier importe y moneda, deja un mensaje opcional y confirma. Se registra una solicitud; el equipo te contacta para finalizar el pago.\n\nCada contribución ayuda a mejorar el producto, la infraestructura y el soporte a los miembros."
         }
       },
       emploi: {
@@ -6549,6 +7168,14 @@ export const es = {
       channel: "Canal"
     },
     changelog: {
+      v124: {
+        date: "30 de julio de 2026",
+        h0: "Registro: teléfono del país de origen justo bajo el país (opcional)",
+        h1: "App nativa: pantalla Install como producto autónomo (no una simple WebView)",
+        h2: "Preaceptación del cambista, toggle admin y reasignación de transferencia",
+        h3: "Avisos legales, términos y privacidad actualizados (v1.2.4)",
+        h4: "i18n FR / EN / RU / PT / ES alineadas",
+      },
       v120: {
         date: "Julio 2026",
         h0: "Barra superior móvil: atajos contextuales, etiquetas al pasar el cursor y tamaños armonizados",
@@ -6669,7 +7296,17 @@ export const es = {
     actionCouldNotComplete: "A ación no pôde ser concluída."
   },
   notificationsFeed: {
-    newContentPublished: "Nuevo conteúdo publicado",
+    newContentPublished: "Nuevo contenido publicado",
+    transferAcceptanceRequested: "Solicitud de aceptación",
+    transferAcceptanceRequestedBody: "{name} espera tu aceptación para {id}.",
+    transferAccepted: "Transferencia aceptada",
+    transferAcceptedBody: "El cambista aceptó {id}. Ya puedes pagar.",
+    transferDeclined: "Transferencia rechazada",
+    transferDeclinedBody: "El cambista rechazó {id}. Elige otro socio o cancela.",
+    transferAcceptanceExpired: "Plazo de aceptación vencido",
+    transferAcceptanceExpiredBody: "Sin respuesta para {id}. Elige otro cambista o cancela.",
+    transferReassignedAway: "Transferencia reasignada",
+    transferReassignedAwayBody: "La transferencia {id} se asignó a otro cambista.",
     newTransferReceived: "Nueva transferencia recebida",
     newTransferReceivedBody: "{name} escolheu a tu empresa para {id}.",
     transferUpdated: "Transferencia atualizada",
@@ -6715,7 +7352,35 @@ export const es = {
     fanOutJob: "Nuevo empleo",
     fanOutEvent: "Nuevo evento",
     fanOutParcel: "Nueva paquete",
-    fanOutPost: "Nueva publicación"
+    fanOutP2p: "Nueva oferta P2P",
+    fanOutPost: "Nueva publicación",
+    someone: "Alguien",
+    transferCompleted: "Transferencia completada",
+    transferCompletedBody: "El cliente confirmó la recepción de {id}.",
+    transferCancelled: "Transferencia cancelada",
+    transferCancelledBody: "La transferencia {id} fue cancelada.",
+    transferExpired: "Transferencia caducada",
+    transferExpiredBody: "La transferencia {id} caducó por falta de pago.",
+    applicationWithdrawn: "Candidatura retirada",
+    applicationWithdrawnBody: "Se retiró una candidatura para {title}.",
+    registrationCancelled: "Inscripción cancelada",
+    registrationCancelledBody: "Se canceló una inscripción a {title}.",
+    parcelRequestCancelled: "Solicitud de paquete cancelada",
+    parcelRequestCancelledBody: "Se canceló una solicitud de {kg} kg.",
+    parcelProofReviewed: "Prueba de viaje revisada",
+    parcelProofReviewedBody: "Estado de la prueba: {status}.",
+    businessRequestCreated: "Nueva solicitud a la empresa",
+    businessRequestCreatedBody: "{name} envió una solicitud a tu empresa.",
+    businessMemberAdded: "Añadido a un equipo",
+    businessMemberAddedBody: "Te añadieron a una empresa en MOXT.",
+    businessMemberRemoved: "Retirado de un equipo",
+    businessMemberRemovedBody: "Te retiraron de una empresa en MOXT.",
+    accountStatusChanged: "Estado de cuenta actualizado",
+    accountStatusChangedBody: "Tu cuenta está ahora {status}.",
+    p2pOfferModerated: "Oferta P2P moderada",
+    p2pOfferModeratedBody: "Tu oferta está ahora {status}.",
+    supportStatusUpdated: "Ticket de soporte actualizado",
+    supportStatusUpdatedBody: "Tu solicitud está ahora {status}.",
   },
   help: {
     page: {
@@ -6773,11 +7438,90 @@ export const es = {
       sourceName: "Nombre de la fuente",
       sourceUrl: "Enlace de la fuente",
       pinned: "Fijar arriba",
-      status: "Estado"
+      status: "Estado",
+      sortOrder: "Orden de visualización",
+      images: "Imágenes (una URL por línea)",
+      imagesHint: "Una ruta de imagen por línea, ej. /assets/help/mi-ilustracion.svg — compartida entre todos los idiomas."
     },
     copyFromFr: "Copiar FR",
     incompleteWarning: "Falta traducción para: {languages}. Los visitantes en esos idiomas verán la versión FR por defecto.",
     sourceHint: "Indica siempre una fuente oficial verificable (gobierno, embajada, universidad) para mantener la confianza de los lectores."
+  },
+  productHelp: {
+    page: {
+      title: "Cómo usar Moxt",
+      description: "Sesiones paso a paso para dominar los servicios esenciales de la plataforma.",
+      searchPlaceholder: "Buscar una sesión…",
+      emptyTitle: "Ninguna sesión encontrada",
+      emptyDescription: "Prueba otra categoría u otra palabra clave.",
+      stats: {
+        session: "Sesión",
+        sessions: "Sesiones"
+      }
+    },
+    categories: {
+      all: "Todo",
+      gettingStarted: "Primeros pasos",
+      transfers: "Transferencias",
+      marketplace: "Marketplace",
+      parcels: "Paquetes",
+      messages: "Mensajes",
+      account: "Cuenta",
+      p2p: "Intercambios P2P",
+      exchangers: "Casas de cambio",
+      businesses: "Empresas",
+      professional: "Espacio profesional",
+      jobs: "Empleos",
+      events: "Eventos",
+      news: "Noticias",
+      verification: "Verificación",
+      security: "Seguridad",
+      disputes: "Disputas",
+      subscriptions: "Suscripciones",
+      referral: "Referidos"
+    },
+    session: {
+      notFound: "Esta sesión no se encuentra o ha sido eliminada.",
+      stillStuck: "¿Sigues atascado? Contactar con soporte"
+    },
+    sessions: {
+      gettingStarted: {
+        title: "Primeros pasos en MOXT",
+        summary: "Cuenta, perfil, panel y navegación para empezar en pocos minutos.",
+        content:
+          "1. Crea una cuenta o inicia sesión (correo o teléfono).\n\n2. Completa tu perfil: foto, nombre, país de residencia y de origen. Un perfil claro genera confianza.\n\n3. En el panel, explora los servicios esenciales: transferencias, marketplace, paquetes, mensajes.\n\n4. Usa la barra inferior (móvil) o el menú para navegar. El hub MOXT agrupa el resto (ayuda, soporte, ajustes).\n\n5. Activa las notificaciones para no perder mensajes ni pasos de tus operaciones.\n\n6. ¿Necesitas ayuda humana? Abre Soporte desde el hub: se abre una conversación en Mensajes."
+      },
+      transfers: {
+        title: "Enviar y recibir una transferencia",
+        summary: "Publicar o aceptar una transferencia, seguir el estado y hablar con la otra parte.",
+        content:
+          "1. Abre Transferencias desde el menú o el panel.\n\n2. Para enviar: crea una transferencia (monto, monedas, países, destinatario / cambista).\n\n3. Para recibir o procesar: revisa las solicitudes que te conciernen.\n\n4. Sigue cada paso en la ficha: pendiente, pago declarado, pruebas, cierre.\n\n5. Adjunta las pruebas pedidas (captura, recibo) cuando la app lo solicite.\n\n6. Habla en Mensajes si hay que aclarar un detalle. En caso de disputa, usa el flujo de la ficha."
+      },
+      marketplace: {
+        title: "Marketplace: comprar y vender",
+        summary: "Publicar un anuncio en 4 pasos, explorar el catálogo y contactar a un vendedor.",
+        content:
+          "1. Abre la pestaña Marketplace en la parte inferior, luego toca Publicar un anuncio.\n\n2. Paso 1/4 · Tipo: elige el tipo (Producto, Servicio, Alquiler, Vehículo, Digital, Inmobiliario, Alimentación, Otro), la categoría y el título.\n\n3. Paso 2/4 · Detalles: completa los campos propios de la categoría (precio, cantidad, descripción…).\n\n4. Paso 3/4 · Fotos: añade al menos una foto clara — los anuncios con foto reciben más contactos.\n\n5. Paso 4/4 · Ubicación: ciudad, dirección completa, teléfono ruso y WhatsApp (opcional), opciones de entrega (Recogida en el lugar / Entrega a domicilio), e indica si publicas como Particular o Empresa.\n\n6. Revisa el resumen y toca Publicar el anuncio.\n\n7. Para comprar: filtra por categoría o busca, luego abre el detalle y contacta al vendedor — la conversación continúa en Mensajes.\n\n8. Encuentra tus anuncios en Mis publicaciones (editar, retirar) y tus favoritos guardados en Favoritos."
+      },
+      parcels: {
+        title: "Paquetes y trayectos",
+        summary: "Publicar un paquete o un viaje y acordar un encuentro con un viajero.",
+        content:
+          "1. Abre Paquetes.\n\n2. Publica un paquete a enviar (origen, destino, peso, fechas) o un trayecto disponible.\n\n3. Explora las ofertas que coinciden y abre el detalle.\n\n4. Contacta a la otra persona por Mensajes para acordar lugar, hora y precio.\n\n5. Sigue el estado hasta la entrega. Conserva las pruebas útiles en la conversación.\n\n6. Si hay un problema, contacta al soporte MOXT desde Mensajes."
+      },
+      messages: {
+        title: "Mensajería y soporte",
+        summary: "Hablar con miembros, filtrar conversaciones y contactar al equipo MOXT.",
+        content:
+          "1. Abre Mensajes desde la barra de navegación.\n\n2. Usa los filtros (transferencias, P2P, soporte…) para encontrar una conversación rápido.\n\n3. Envía texto, fotos o documentos según necesites.\n\n4. Las conversaciones ligadas a una transferencia, paquete o anuncio mantienen el contexto.\n\n5. Para el equipo MOXT: Soporte (o Contribute) abre una conversación dedicada.\n\n6. Las notificaciones te avisan de mensajes nuevos: autorízalas en tu dispositivo."
+      },
+      account: {
+        title: "Cuenta, seguridad y ajustes",
+        summary: "Perfil, verificación, seguridad de la cuenta y preferencias diarias.",
+        content:
+          "1. Abre Perfil o Cuenta desde el hub MOXT.\n\n2. Actualiza tu información personal y tu foto: aparecen ante otros miembros.\n\n3. Pasa por Verificación para reforzar la confianza (documentos y pasos en la app).\n\n4. En Seguridad: contraseña, sesiones y buenas prácticas.\n\n5. Ajustes: idioma, tema y preferencias de uso.\n\n6. Documentos y recibos: encuentra archivos útiles de tus operaciones en el hub."
+      }
+    }
   },
   guest: {
     previewBanner: {

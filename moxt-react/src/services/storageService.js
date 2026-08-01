@@ -8,11 +8,13 @@ import {
 } from './uploadProgress'
 
 async function upload(bucket, path, file, { onProgress } = {}) {
+  assertAllowedUpload(file)
   reportProgress(onProgress, { phase: UPLOAD_PHASES.uploading, percent: 32 })
   await runWithUploadProgress(onProgress, async () => {
     const { error } = await supabase.storage.from(bucket).upload(path, file, {
       upsert: true,
       cacheControl: '3600',
+      contentType: file.type || undefined,
     })
     if (error) throw new Error(error.message)
   })
@@ -23,11 +25,13 @@ async function upload(bucket, path, file, { onProgress } = {}) {
 }
 
 async function uploadPrivate(bucket, path, file, { onProgress } = {}) {
+  assertAllowedUpload(file)
   reportProgress(onProgress, { phase: UPLOAD_PHASES.uploading, percent: 32 })
   await runWithUploadProgress(onProgress, async () => {
     const { error } = await supabase.storage.from(bucket).upload(path, file, {
       upsert: true,
       cacheControl: '3600',
+      contentType: file.type || undefined,
     })
     if (error) throw new Error(error.message)
   })
@@ -43,6 +47,52 @@ function isImageFile(file) {
   )
 }
 
+const ALLOWED_UPLOAD_MIME = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+  'image/avif',
+  'application/pdf',
+])
+
+const ALLOWED_UPLOAD_EXT = new Set([
+  'jpg',
+  'jpeg',
+  'png',
+  'gif',
+  'webp',
+  'heic',
+  'heif',
+  'avif',
+  'pdf',
+])
+
+function assertAllowedUpload(file, { imagesOnly = false } = {}) {
+  if (!file) throw new Error('Fichier manquant.')
+  const extension = String(file.name || '')
+    .split('.')
+    .pop()
+    ?.toLowerCase()
+  const mime = String(file.type || '').toLowerCase()
+  const mimeOk = mime ? ALLOWED_UPLOAD_MIME.has(mime) : false
+  const extOk = extension ? ALLOWED_UPLOAD_EXT.has(extension) : false
+  if (!mimeOk && !extOk) {
+    throw new Error('Type de fichier non autorisé.')
+  }
+  if (imagesOnly && !isImageFile(file)) {
+    throw new Error('Seules les images sont autorisées.')
+  }
+  if (mime.startsWith('image/') && extension === 'pdf') {
+    throw new Error('Type de fichier incohérent.')
+  }
+  if (mime === 'application/pdf' && !/\.pdf$/i.test(file.name || '')) {
+    throw new Error('Type de fichier incohérent.')
+  }
+}
+
 /** Compresse les images de preuve ; laisse PDF / autres fichiers intacts. */
 async function maybeCompressProof(file, onProgress) {
   if (!isImageFile(file)) return file
@@ -54,7 +104,32 @@ async function maybeCompressProof(file, onProgress) {
 }
 
 function ext(file) {
-  return file.name.split('.').pop().toLowerCase()
+  return String(file?.name || '')
+    .split('.')
+    .pop()
+    ?.toLowerCase()
+}
+
+/** Aligne extension du nom et MIME après compression (évite .heic + contentType jpeg). */
+function alignProofFileExtension(file) {
+  if (!file) return file
+  const mime = String(file.type || '').toLowerCase()
+  let extension = ext(file)
+  if (mime === 'image/jpeg' || mime === 'image/jpg') {
+    if (!['jpg', 'jpeg'].includes(extension)) extension = 'jpg'
+  } else if (mime === 'image/png' && extension !== 'png') {
+    extension = 'png'
+  } else if (mime === 'image/webp' && extension !== 'webp') {
+    extension = 'webp'
+  } else if (mime === 'application/pdf' && extension !== 'pdf') {
+    extension = 'pdf'
+  }
+  if (!extension || extension === ext(file)) return file
+  const base = String(file.name || 'proof').replace(/\.[^.]+$/, '') || 'proof'
+  return new File([file], `${base}.${extension}`, {
+    type: file.type,
+    lastModified: file.lastModified || Date.now(),
+  })
 }
 
 function wrapFileProgress(onProgress, fileIndex, fileCount, fileName) {
@@ -124,24 +199,42 @@ export const storageService = {
   },
 
   async uploadBusinessLogo(userId, businessId, file, { onProgress } = {}) {
+    const ownerId = String(userId || '').trim()
+    if (!ownerId) throw new Error('Utilisateur requis pour envoyer le logo.')
     return compressThenUpload(file, { maxPx: 512, quality: 0.88, onProgress }, async (compressed) => {
       const extension = compressed.type === 'image/png' ? 'png' : 'jpg'
+      const typed =
+        compressed.type && compressed.type.startsWith('image/')
+          ? compressed
+          : new File([compressed], `logo.${extension}`, {
+              type: extension === 'png' ? 'image/png' : 'image/jpeg',
+              lastModified: Date.now(),
+            })
       return upload(
         'businesses',
-        `${userId}/${businessId}/logo.${extension}`,
-        compressed,
+        `${ownerId}/${businessId}/logo.${extension}`,
+        typed,
         { onProgress },
       )
     })
   },
 
   async uploadBusinessBanner(userId, businessId, file, { onProgress } = {}) {
+    const ownerId = String(userId || '').trim()
+    if (!ownerId) throw new Error('Utilisateur requis pour envoyer la bannière.')
     return compressThenUpload(file, { maxPx: 1920, quality: 0.82, onProgress }, async (compressed) => {
       const extension = compressed.type === 'image/png' ? 'png' : 'jpg'
+      const typed =
+        compressed.type && compressed.type.startsWith('image/')
+          ? compressed
+          : new File([compressed], `banner.${extension}`, {
+              type: extension === 'png' ? 'image/png' : 'image/jpeg',
+              lastModified: Date.now(),
+            })
       return upload(
         'businesses',
-        `${userId}/${businessId}/banner.${extension}`,
-        compressed,
+        `${ownerId}/${businessId}/banner.${extension}`,
+        typed,
         { onProgress },
       )
     })
@@ -285,6 +378,25 @@ export const storageService = {
     })
   },
 
+  async uploadMessageFile(userId, conversationId, file, { onProgress } = {}) {
+    reportProgress(onProgress, {
+      phase: UPLOAD_PHASES.preparing,
+      percent: 6,
+      fileName: file?.name,
+    })
+    const extension = ext(file) || 'bin'
+    const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const safeName = String(file?.name || 'file')
+      .replace(/[^a-zA-Z0-9._-]+/g, '_')
+      .slice(0, 80)
+    return upload(
+      'listings',
+      `${userId}/messages/${conversationId}/files/${stamp}-${safeName || `file.${extension}`}`,
+      file,
+      { onProgress },
+    )
+  },
+
   async uploadDocument(userId, category, file, { onProgress } = {}) {
     reportProgress(onProgress, {
       phase: UPLOAD_PHASES.preparing,
@@ -309,6 +421,52 @@ export const storageService = {
     const uploadFile = await maybeCompressProof(file, onProgress)
     await uploadPrivate('documents', path, uploadFile, { onProgress })
     return { url: null, path }
+  },
+
+  /**
+   * Supprime un fichier du bucket privé `documents`.
+   * Sert de compensation quand l'enregistrement en base échoue après un upload
+   * réussi : sans ça le fichier resterait orphelin dans le stockage, invisible
+   * pour l'app (donc jamais purgé, et non supprimé à la clôture du compte).
+   */
+  async removeDocument(path) {
+    if (!path) return false
+    const { error } = await supabase.storage.from('documents').remove([path])
+    if (error) {
+      console.warn('[Storage] cleanup failed:', error.message)
+      return false
+    }
+    return true
+  },
+
+  /**
+   * Liste les fichiers du bucket `documents` que plus aucune ligne ne
+   * référence (upload réussi + enregistrement échoué, ou compte supprimé).
+   * La détection est faite en base (RPC admin) ; la suppression doit passer
+   * par l'API Storage — Postgres interdit `delete from storage.objects`.
+   */
+  async listOrphanDocuments(graceHours = 24) {
+    const { data, error } = await supabase.rpc('moxt_orphan_document_objects', {
+      p_grace_hours: graceHours,
+    })
+    if (error) throw new Error(error.message)
+    return (data || []).map((row) => ({
+      path: row.object_name,
+      uploadedAt: row.uploaded_at,
+    }))
+  },
+
+  /** Supprime les orphelins listés ci-dessus. Renvoie {removed, failed}. */
+  async purgeOrphanDocuments(graceHours = 24) {
+    const orphans = await this.listOrphanDocuments(graceHours)
+    if (!orphans.length) return { removed: 0, failed: 0 }
+
+    const paths = orphans.map((item) => item.path)
+    const { data, error } = await supabase.storage.from('documents').remove(paths)
+    if (error) throw new Error(error.message)
+
+    const removed = Array.isArray(data) ? data.length : 0
+    return { removed, failed: paths.length - removed }
   },
 
   extractDocumentsPath(urlOrPath) {
@@ -357,37 +515,45 @@ export const storageService = {
   },
 
   async uploadTransferProof(userId, transferId, file, { onProgress } = {}) {
+    const ownerId = String(userId || '').trim()
+    if (!ownerId) throw new Error('Utilisateur requis pour envoyer la preuve.')
+    if (!transferId) throw new Error('Référence de transfert manquante.')
     reportProgress(onProgress, {
       phase: UPLOAD_PHASES.preparing,
       percent: 6,
       fileName: file?.name,
     })
-    const path = `${userId}/${transferId}/proof.${ext(file)}`
-    const uploadFile = await maybeCompressProof(file, onProgress)
+    const uploadFile = alignProofFileExtension(await maybeCompressProof(file, onProgress))
+    const path = `${ownerId}/${transferId}/proof.${ext(uploadFile) || 'bin'}`
     await uploadPrivate('transfers', path, uploadFile, { onProgress })
     return { url: null, path }
   },
 
   async uploadBusinessTransferProof(userId, transferId, file, { onProgress } = {}) {
+    const ownerId = String(userId || '').trim()
+    if (!ownerId) throw new Error('Utilisateur requis pour envoyer la preuve.')
+    if (!transferId) throw new Error('Référence de transfert manquante.')
     reportProgress(onProgress, {
       phase: UPLOAD_PHASES.preparing,
       percent: 6,
       fileName: file?.name,
     })
-    const path = `${userId}/${transferId}/business.${ext(file)}`
-    const uploadFile = await maybeCompressProof(file, onProgress)
+    const uploadFile = alignProofFileExtension(await maybeCompressProof(file, onProgress))
+    const path = `${ownerId}/${transferId}/business.${ext(uploadFile) || 'bin'}`
     await uploadPrivate('transfers', path, uploadFile, { onProgress })
     return { url: null, path }
   },
 
   async uploadP2POrderProof(userId, orderId, file, { onProgress } = {}) {
+    const ownerId = String(userId || '').trim()
+    if (!ownerId) throw new Error('Utilisateur requis pour envoyer la preuve.')
     reportProgress(onProgress, {
       phase: UPLOAD_PHASES.preparing,
       percent: 6,
       fileName: file?.name,
     })
-    const path = `${userId}/p2p/${orderId}/${Date.now()}.${ext(file)}`
-    const uploadFile = await maybeCompressProof(file, onProgress)
+    const uploadFile = alignProofFileExtension(await maybeCompressProof(file, onProgress))
+    const path = `${ownerId}/p2p/${orderId}/${Date.now()}.${ext(uploadFile) || 'bin'}`
     await uploadPrivate('transfers', path, uploadFile, { onProgress })
     return { url: null, path }
   },

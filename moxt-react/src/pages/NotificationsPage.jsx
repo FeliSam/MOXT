@@ -1,4 +1,5 @@
 import { FiArchive, FiBell, FiCheck, FiMessageSquare, FiStar, FiZap } from 'react-icons/fi'
+import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
@@ -10,6 +11,7 @@ import {
   archiveNotification,
   markAllNotificationsRead,
   markNotificationRead,
+  refreshNotifications,
 } from '../features/communications/communicationSlice'
 import { selectUserConversations, selectVisibleNotifications } from '../features/selectors'
 import { formatDate } from '../features/transfers/transferUtils'
@@ -63,6 +65,12 @@ export function NotificationsPage() {
   const conversations = useSelector(selectUserConversations)
   const notifications = useSelector(selectVisibleNotifications)
   const unreadCount = notifications.filter((item) => !item.read).length
+
+  useEffect(() => {
+    if (!user?.id) return undefined
+    dispatch(refreshNotifications())
+    return undefined
+  }, [dispatch, user?.id])
 
   function openNotification(notification) {
     if (!notification.read) {

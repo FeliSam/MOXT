@@ -1,7 +1,7 @@
 import { FiArrowRight, FiBox, FiCalendar, FiDownload, FiEdit2, FiMapPin, FiSend, FiShield } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Badge, VerifiedBadge } from '../components/ui/Badge'
 import { EntityVerifiedName } from '../components/ui/EntityVerifiedName'
 import { BackButton } from '../components/ui/BackButton'
@@ -24,6 +24,7 @@ import {
   requestParcelReservation,
   updateParcelProofStatus,
   updateParcelRequestStatus,
+  incrementParcelView,
 } from '../features/parcels/parcelSlice'
 import {
   parcelProofLabelKey,
@@ -44,6 +45,11 @@ export function ParcelDetailPage() {
   const { parcelId } = useParams()
   const user = useSelector((state) => state.auth.user)
   const parcel = useSelector((state) => state.parcels.items.find((item) => item.id === parcelId))
+
+  useEffect(() => {
+    if (parcelId) dispatch(incrementParcelView(parcelId))
+  }, [dispatch, parcelId])
+
   const requests = useSelector((state) =>
     state.parcels.requests.filter((item) => item.parcelId === parcelId),
   )

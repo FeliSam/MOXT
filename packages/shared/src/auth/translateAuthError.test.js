@@ -193,4 +193,27 @@ describe('translateAuthError', () => {
       ),
     ).not.toMatch(/confirmer ce code/i)
   })
+
+  it('never mentions SMS when channel is email', () => {
+    expect(
+      translateAuthError(
+        { name: 'AuthRetryableFetchError', status: 500, message: '{}', code: 'unexpected_failure' },
+        { channel: 'email', intent: 'register' },
+      ),
+    ).toMatch(/e-mail/i)
+
+    expect(
+      translateAuthError(
+        { name: 'AuthRetryableFetchError', status: 500, message: '{}', code: 'unexpected_failure' },
+        { channel: 'email', intent: 'register' },
+      ),
+    ).not.toMatch(/SMS/i)
+
+    expect(
+      translateAuthError(
+        { code: 'unexpected_failure', message: 'Unexpected status code returned from hook: 500' },
+        { channel: 'email', intent: 'register' },
+      ),
+    ).not.toMatch(/SMS/i)
+  })
 })

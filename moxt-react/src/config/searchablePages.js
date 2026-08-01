@@ -63,6 +63,15 @@ export const searchablePages = [
     path: '/payments',
   },
   {
+    id: 'page-contribute',
+    title: 'Soutenir MOXT',
+    titleKey: 'nav.contribute',
+    subtitle: 'Communauté',
+    subtitleKey: 'shared.pages.groups.account',
+    path: '/contribute',
+    roles: ['admin', 'superadmin'],
+  },
+  {
     id: 'page-receipts',
     title: 'Reçus',
     titleKey: 'shared.pages.receipts.title',
@@ -172,7 +181,7 @@ export const searchablePages = [
     subtitle: 'Communication',
     subtitleKey: 'shared.pages.groups.communication',
     path: '/support',
-    keywords: 'aide assistance contact instagram moxtapp reseaux sociaux',
+    keywords: 'aide assistance contact instagram telegram whatsapp moxtapp reseaux sociaux',
   },
   {
     id: 'page-activities',

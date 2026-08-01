@@ -149,6 +149,55 @@ export function attachCertificate(resourceId, certId) {
   )
 }
 
+export const MOXT_CSP =
+  "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; connect-src 'self' https://restcountries.com https://countriesnow.space https://api.frankfurter.dev https://*.supabase.co wss://*.supabase.co http://localhost:* ws://localhost:*; font-src 'self' data: https://fonts.gstatic.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+
+export const MOXT_SECURITY_HEADERS = {
+  'Content-Security-Policy': MOXT_CSP,
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+}
+
+/**
+ * Pose les en-têtes de sécurité HTTP sur la ressource CDN Yandex (Vague 2).
+ * Best-effort : la CLI yc ne propose pas toujours `--header` ; on n’interrompt jamais le déploiement.
+ */
+export function ensureCdnSecurityHeaders(resourceId) {
+  if (!resourceId) return false
+  // Tentatives compatibles selon versions yc (aucune ne doit faire échouer le CPD).
+  const attempts = [
+    ['--header'],
+    ['--response-header'],
+    ['--custom-header'],
+  ]
+  for (const [flag] of attempts) {
+    let allOk = true
+    for (const [name, value] of Object.entries(MOXT_SECURITY_HEADERS)) {
+      const { code, stderr, stdout } = ycRun([
+        'cdn',
+        'resource',
+        'update',
+        String(resourceId),
+        flag,
+        `${name}:${value}`,
+      ])
+      if (code !== 0) {
+        allOk = false
+        const msg = `${stderr}\n${stdout}`.trim()
+        if (/unknown flag|unknown argument/i.test(msg)) break
+      }
+    }
+    if (allOk) return true
+  }
+  console.warn(
+    '[cdn] En-têtes HTTP de sécurité non posés via yc (flag non supporté). CSP meta HTML + netlify.toml restent actifs.',
+  )
+  return false
+}
+
 export function purgeCdnCache(resourceId) {
   // Inclure logos / icônes : le shell seul ne suffit pas (CDN garde les PNG/SVG 1h).
   const paths = [

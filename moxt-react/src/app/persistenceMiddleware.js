@@ -7,6 +7,7 @@ import { markIntentionalSignOut } from '../services/authSessionSync'
 const persistenceMap = {
   account: [{ key: 'moxt-account-v1', select: (state) => state.account }],
   administration: [{ key: 'moxt-administration-v1', select: (state) => state.administration }],
+  platformRates: [{ key: 'moxt-platform-rates-v1', select: (state) => state.platformRates }],
   // audit: retiré volontairement — données sensibles ne doivent pas être en localStorage en clair
   businesses: [
     { key: 'moxt-businesses-v1', select: (state) => state.businesses.items },
@@ -68,13 +69,18 @@ const skipPersistence = new Set([
   'marketplace/incrementListingContact',
   'marketplace/incrementListingShare',
   'communications/markConversationRead',
-  'communications/saveConversationDraft',
   'communications/loadConversationMessages/pending',
   'communications/loadConversationMessages/fulfilled',
   'communications/loadConversationMessages/rejected',
   'communications/refreshConversations/pending',
   'communications/refreshConversations/fulfilled',
   'communications/refreshConversations/rejected',
+  'communications/refreshNotifications/pending',
+  'communications/refreshNotifications/fulfilled',
+  'communications/refreshNotifications/rejected',
+  'statuses/refreshStatusesData/pending',
+  'statuses/refreshStatusesData/fulfilled',
+  'statuses/refreshStatusesData/rejected',
   'app/loadAllData/fulfilled',
   'account/mergeRemoteAccount',
 ])
@@ -106,7 +112,9 @@ function clearAllPersistedKeys() {
       delete timers[key]
       try {
         localStorage.removeItem(key)
-      } catch {}
+      } catch {
+        // Quota/mode privé : la clé disparaîtra au prochain nettoyage.
+      }
     })
 }
 

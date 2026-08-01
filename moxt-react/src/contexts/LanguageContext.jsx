@@ -7,7 +7,7 @@ import {
   resolveInitialLanguage,
   translateUiText,
 } from '../config/uiTranslations'
-import { translate } from '../i18n/translate'
+import { ensureLocaleLoaded, isLocaleLoaded, translate } from '../i18n/translate'
 import { LanguageContext } from './language-context'
 
 const STORAGE_KEY = 'moxt-language'
@@ -18,6 +18,20 @@ function initialLanguage() {
 
 export function LanguageProvider({ children }) {
   const [language, setLanguageState] = useState(initialLanguage)
+  // Les langues autres que le français sont chargées à la demande (voir
+  // i18n/translate.js) : ce compteur force un re-rendu une fois le
+  // dictionnaire arrivé, sans quoi `t()` resterait replié sur le français.
+  const [localeVersion, setLocaleVersion] = useState(0)
+  useEffect(() => {
+    if (isLocaleLoaded(language)) return
+    let cancelled = false
+    ensureLocaleLoaded(language).then(() => {
+      if (!cancelled) setLocaleVersion((n) => n + 1)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [language])
   const textOriginalsRef = useRef(new WeakMap())
   const attributeOriginalsRef = useRef(new WeakMap())
   const userId = useSelector((state) => state.auth.user?.id)
@@ -29,12 +43,18 @@ export function LanguageProvider({ children }) {
     setLanguageState(normalizeStoredLanguage(next))
   }
 
-  // Langue du compte (profil Supabase) prime sur le localStorage appareil
-  useEffect(() => {
-    if (!userId || !accountLanguage) return
-    const normalized = normalizeStoredLanguage(accountLanguage)
-    setLanguageState((current) => (current === normalized ? current : normalized))
-  }, [userId, accountLanguage])
+  // Langue du compte (profil Supabase) prime sur le localStorage appareil —
+  // calculé pendant le rendu plutôt que dans un effet.
+  const [prevUserId, setPrevUserId] = useState(userId)
+  const [prevAccountLanguage, setPrevAccountLanguage] = useState(accountLanguage)
+  if (userId !== prevUserId || accountLanguage !== prevAccountLanguage) {
+    setPrevUserId(userId)
+    setPrevAccountLanguage(accountLanguage)
+    if (userId && accountLanguage) {
+      const normalized = normalizeStoredLanguage(accountLanguage)
+      setLanguageState((current) => (current === normalized ? current : normalized))
+    }
+  }
 
   useEffect(() => {
     document.documentElement.lang = language
@@ -142,7 +162,7 @@ export function LanguageProvider({ children }) {
       translateLabel: (label) =>
         language === SOURCE_LANGUAGE ? label : translateUiText(label, language),
     }),
-    [language],
+    [language, localeVersion],
   )
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>

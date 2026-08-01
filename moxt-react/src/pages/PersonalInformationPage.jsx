@@ -41,7 +41,7 @@ export function PersonalInformationPage() {
   const dispatch = useDispatch()
   const { language, t } = useLanguage()
   const { profileSchema } = createAuthSchemas(t)
-  const { error, status, user } = useSelector((state) => state.auth)
+  const { error, user } = useSelector((state) => state.auth)
   const { countries } = useGeographyOptions()
   const avatarInputRef = useRef(null)
   const [avatarUploading, setAvatarUploading] = React.useState(false)
@@ -50,14 +50,14 @@ export function PersonalInformationPage() {
   const formik = useFormik({
     enableReinitialize: true,
     initialValues: {
-      firstName: user.firstName || '',
-      lastName: user.lastName || '',
-      avatarUrl: user.avatarUrl || '',
-      phone: user.phone || '+7',
-      secondaryPhone: user.secondaryPhone || '',
+      firstName: user?.firstName || '',
+      lastName: user?.lastName || '',
+      avatarUrl: user?.avatarUrl || '',
+      phone: user?.phone || '+7',
+      secondaryPhone: user?.secondaryPhone || '',
       country: 'RU',
-      originCountry: user.originCountry || 'BJ',
-      city: user.city || 'Moscou',
+      originCountry: user?.originCountry || 'BJ',
+      city: user?.city || 'Moscou',
     },
     validationSchema: profileSchema,
     onSubmit: async (values, helpers) => {
@@ -77,11 +77,13 @@ export function PersonalInformationPage() {
 
   const origin = countries.find((item) => item.code === formik.values.originCountry)
   const errorFor = (field) => (formik.touched[field] ? formik.errors[field] : undefined)
-  const canEditOrigin = ['admin', 'superadmin'].includes(user.role)
+  const canEditOrigin = ['admin', 'superadmin'].includes(user?.role)
   const originCountryName =
     (language === 'en' ? origin?.englishName : origin?.name) || ''
 
-  const initials = `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase()
+  const initials = `${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`.toUpperCase()
+
+  if (!user) return null
 
   async function handleAvatarFile(event) {
     const file = event.target.files?.[0]
@@ -315,10 +317,11 @@ export function PersonalInformationPage() {
             <div className="flex justify-end">
               <Button
                 type="submit"
-                disabled={!formik.dirty || status === 'loading'}
+                disabled={!formik.dirty || formik.isSubmitting}
                 icon={FiCheckCircle}
+                loading={formik.isSubmitting}
               >
-                {status === 'loading' ? t('profile.personal.saving') : t('profile.personal.save')}
+                {formik.isSubmitting ? t('profile.personal.saving') : t('profile.personal.save')}
               </Button>
             </div>
           </div>

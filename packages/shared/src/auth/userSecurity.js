@@ -84,6 +84,11 @@ export function canPublishP2POffer(user) {
   )
 }
 
+/** Accepter une offre P2P : mêmes prérequis KYC que la publication. */
+export function canAcceptP2POffer(user) {
+  return canPublishP2POffer(user)
+}
+
 /** Voyage / colis : mêmes garde-fous que le P2P (téléphone + e-mail + KYC identité). */
 export function canPublishVoyage(user) {
   return canPublishP2POffer(user)
@@ -132,6 +137,17 @@ export function securityGateMessage(kind, user) {
         return 'Votre identité doit être vérifiée (documents validés) avant de publier une offre P2P.'
       }
       return 'Vérifiez votre identité avant de publier une offre P2P.'
+    case 'p2pAccept':
+      if (!isPhoneVerified(user) || !isValidRussianPhone(user?.phone)) {
+        return 'Confirmez votre numéro russe (+7) avant d’accepter une offre P2P.'
+      }
+      if (!isEmailVerified(user)) {
+        return 'Confirmez votre e-mail dans Sécurité avant d’accepter une offre P2P.'
+      }
+      if (!isIdentityVerified(user)) {
+        return 'Votre identité doit être vérifiée avant d’échanger en P2P.'
+      }
+      return 'Vérifiez votre identité pour échanger en P2P.'
     case 'business':
       if (!isPersonallyRegistered(user)) {
         return 'Complétez vos informations personnelles avant de créer une entreprise.'

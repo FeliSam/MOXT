@@ -26,7 +26,6 @@ export function AppLayout({ children }) {
   const dispatch = useDispatch()
   const location = useLocation()
   const [searchParams] = useSearchParams()
-  const user = useSelector((state) => state.auth.user)
   const sidebarOpen = useSelector((state) => state.ui.sidebarOpen)
   /** Set by MessagesPage when a thread is open on a small viewport */
   const messageThreadImmersive = useSelector((state) => state.ui.messageThreadImmersive)
@@ -61,9 +60,18 @@ export function AppLayout({ children }) {
     }
   }, [isMessagesRoute])
 
+  // Class on <html> so portaled bottom-nav (document.body) still hides in immersive chat.
+  useLayoutEffect(() => {
+    const root = document.documentElement
+    root.classList.toggle('messages-thread-immersive', hideAppChrome)
+    return () => {
+      root.classList.remove('messages-thread-immersive')
+    }
+  }, [hideAppChrome])
+
   return (
     <div
-      className={`text-[var(--app-text)] ${
+      className={`max-w-full min-w-0 overflow-x-clip text-[var(--app-text)] ${
         isMessagesRoute
           ? 'messages-shell h-dvh max-h-dvh overflow-hidden overscroll-none'
           : 'min-h-screen'

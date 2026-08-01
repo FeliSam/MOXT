@@ -45,13 +45,7 @@ export function DashboardHeroSection({
             <Text className={tw.heroChipText}>Bienvenue {firstName || ''}</Text>
           </View>
 
-          <Text className={tw.heroTitle}>Tous vos services essentiels, réunis.</Text>
-          <Text className={tw.heroSubtitle}>
-            Transferts, colis, ventes, jobs et événements dans une expérience simple, instantanée
-            et pensée pour vos échanges entre l'Afrique et la Russie.
-          </Text>
-
-          <View className="mt-8 flex-row flex-wrap gap-3">
+          <View className="mt-6 flex-row flex-wrap gap-3">
             <Pressable className={cn(tw.heroCtaPrimary, 'flex-row items-center gap-2')} onPress={() => router.push('/transfer/wizard' as any)}>
               <Text className={tw.heroCtaPrimaryText}>Créer un transfert</Text>
               <ArrowRight size={16} color="#020617" strokeWidth={2.6} />

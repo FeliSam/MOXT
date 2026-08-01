@@ -51,21 +51,25 @@ describe('pendingRegistration', () => {
     expect(loadPendingRegistration()).toBeNull()
   })
 
-  it('does not wipe when saving again with the same profile (resend)', () => {
+  it('stores verificationPhase for choose/otp resume', () => {
     savePendingRegistration({
-      method: 'phone',
+      method: 'email',
+      verificationPhase: 'choose',
       phone: '+79000000010',
       email: 'a@example.com',
       firstName: 'Nova',
-      lastName: 'Test',
+    })
+    expect(loadPendingRegistration()).toMatchObject({
+      method: 'email',
+      verificationPhase: 'choose',
+      firstName: 'Nova',
     })
     savePendingRegistration({
       method: 'phone',
+      verificationPhase: 'otp',
       phone: '+79000000010',
       email: 'a@example.com',
-      firstName: 'Nova',
-      lastName: 'Test',
     })
-    expect(loadPendingRegistration()?.firstName).toBe('Nova')
+    expect(loadPendingRegistration()?.verificationPhase).toBe('otp')
   })
 })

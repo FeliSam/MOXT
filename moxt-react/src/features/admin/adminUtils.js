@@ -13,7 +13,7 @@ export function avatarColor(name = '') {
 
 export function statusDotColor(status) {
   if (['completed', 'active', 'published', 'resolved', 'verified'].includes(status)) return 'bg-emerald-500'
-  if (['pending', 'pending_review', 'open', 'new'].includes(status)) return 'bg-amber-400'
-  if (['cancelled', 'rejected', 'suspended', 'hidden'].includes(status)) return 'bg-red-500'
+  if (['pending', 'pending_review', 'open', 'new', 'waiting_payment', 'created', 'accepted'].includes(status)) return 'bg-amber-400'
+  if (['cancelled', 'rejected', 'suspended', 'hidden', 'disputed'].includes(status)) return 'bg-red-500'
   return 'bg-slate-400'
 }

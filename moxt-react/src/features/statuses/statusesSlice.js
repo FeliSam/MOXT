@@ -1,12 +1,15 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { createId } from '../../services/createId'
-import { createLocalStorage } from '../../services/createLocalStorage'
-
-const storage = createLocalStorage('moxt-statuses-v1')
+import {
+  mergeStatusViewers,
+  mergeViewedByLists,
+  rememberSeenStatus,
+  statusHasBeenViewedBy,
+} from './statusViewUtils'
 
 const statusesSlice = createSlice({
   name: 'statuses',
-  initialState: { items: storage.read() ?? [] },
+  initialState: { items: [] },
   reducers: {
     setAll(state, action) {
       Object.assign(state, action.payload)
@@ -30,6 +33,7 @@ const statusesSlice = createSlice({
             caption: values.caption || '',
             isOfficial: values.isOfficial === true,
             viewedBy: [],
+            viewers: {},
             createdAt: now,
             expiresAt: values.expiresAt || expiresAt,
           },
@@ -40,14 +44,26 @@ const statusesSlice = createSlice({
     markStatusViewed(state, action) {
       const { statusId, userId, userName, userAvatarUrl } = action.payload
       const status = state.items.find((s) => s.id === statusId)
-      if (!status) return
-      status.viewedBy ||= []
-      if (!status.viewedBy.includes(userId)) status.viewedBy.push(userId)
+      if (!status || !userId) return
+      if (String(status.authorId) === String(userId)) return
+
+      rememberSeenStatus(userId, statusId)
+
+      const already = statusHasBeenViewedBy(status, userId)
+      status.viewedBy = mergeViewedByLists(status.viewedBy, [userId])
       status.viewers ||= {}
+      if (already && status.viewers[userId]?.viewedAt) {
+        status.viewers[userId] = {
+          ...status.viewers[userId],
+          name: userName || status.viewers[userId].name || '',
+          avatarUrl: userAvatarUrl ?? status.viewers[userId].avatarUrl ?? null,
+        }
+        return
+      }
       status.viewers[userId] = {
         name: userName || '',
         avatarUrl: userAvatarUrl || null,
-        viewedAt: new Date().toISOString(),
+        viewedAt: status.viewers[userId]?.viewedAt || new Date().toISOString(),
       }
     },
 
@@ -105,6 +121,28 @@ const statusesSlice = createSlice({
       const now = Date.now()
       state.items = state.items.filter((s) => new Date(s.expiresAt).getTime() > now)
     },
+
+    receiveRemoteStatus(state, action) {
+      const remote = action.payload
+      if (!remote?.id) return
+      const index = state.items.findIndex((item) => item.id === remote.id)
+      if (index === -1) {
+        state.items.unshift(remote)
+        return
+      }
+      const local = state.items[index]
+      state.items[index] = {
+        ...local,
+        ...remote,
+        viewedBy: mergeViewedByLists(remote.viewedBy, local.viewedBy),
+        viewers: mergeStatusViewers(remote.viewers, local.viewers),
+        reactions: remote.reactions || local.reactions || {},
+      }
+    },
+
+    removeRemoteStatus(state, action) {
+      state.items = state.items.filter((item) => item.id !== action.payload)
+    },
   },
 })
 
@@ -116,6 +154,8 @@ export const {
   deleteStatus,
   removeStatusImage,
   pruneExpiredStatuses,
+  receiveRemoteStatus,
+  removeRemoteStatus,
 } = statusesSlice.actions
 
 export default statusesSlice.reducer

@@ -16,13 +16,13 @@ import { Button } from '../../../components/ui/Button'
 import { Badge } from '../../../components/ui/Badge'
 import { updateVerificationStatus } from '../../account/accountSlice'
 import { updateBusinessDocumentStatus } from '../../businesses/businessSlice'
-import { updateDisputeStatus } from '../../disputes/disputeSlice'
 import { updateParcelProofStatus } from '../../parcels/parcelSlice'
 import { moderateReview } from '../../reviews/reviewSlice'
 import { REVIEW_DISPUTE_STATUS } from '@moxt/shared/utils/reviewUtils.js'
-import { contentActions } from '../adminActions'
+import { ActionButton, contentActions, resolveDisputeAndUnlockOrder } from '../adminActions'
 import { CARD, ITEM } from '../adminConfig'
 import { adminText } from '../adminI18n'
+import { promptRejectReason } from '../promptRejectReason'
 import { Empty, SectionTitle } from './AdminShared'
 
 function QueueSection({ icon, items, kind, label, renderActions, renderMeta, setSelected, t }) {
@@ -57,6 +57,7 @@ function QueueSection({ icon, items, kind, label, renderActions, renderMeta, set
 
 export function AdminQueuesPanel({
   adminId,
+  actorRole = 'admin',
   dispatch,
   queues,
   setSelected,
@@ -131,15 +132,18 @@ export function AdminQueuesPanel({
                 <Button
                   variant="danger"
                   icon={FiX}
-                  onClick={() =>
+                  onClick={() => {
+                    const reviewNote = promptRejectReason(t)
+                    if (!reviewNote) return
                     dispatch(
                       updateVerificationStatus({
                         id: i.id,
                         status: 'rejected',
                         reviewedBy: adminId,
+                        reviewNote,
                       }),
                     )
-                  }
+                  }}
                 >
                   {t('verification.admin.reject')}
                 </Button>
@@ -185,15 +189,18 @@ export function AdminQueuesPanel({
                 <Button
                   variant="danger"
                   icon={FiX}
-                  onClick={() =>
+                  onClick={() => {
+                    const reviewNote = promptRejectReason(t)
+                    if (!reviewNote) return
                     dispatch(
                       updateBusinessDocumentStatus({
                         id: i.id,
                         status: 'rejected',
                         reviewedBy: adminId,
+                        reviewNote,
                       }),
                     )
-                  }
+                  }}
                 >
                   {adminText(t, 'admin.actions.reject')}
                 </Button>
@@ -221,23 +228,27 @@ export function AdminQueuesPanel({
                 >
                   {adminText(t, 'admin.queues.examineProof')}
                 </Button>
-                <Button
+                <ActionButton
                   icon={FiCheckCircle}
+                  done={i.proofStatus === 'verified'}
+                  doneLabel={adminText(t, 'admin.queues.validateProof')}
                   onClick={() =>
                     dispatch(updateParcelProofStatus({ id: i.id, status: 'verified' }))
                   }
                 >
                   {adminText(t, 'admin.queues.validateProof')}
-                </Button>
-                <Button
+                </ActionButton>
+                <ActionButton
                   variant="danger"
                   icon={FiX}
+                  done={i.proofStatus === 'rejected'}
+                  doneLabel={adminText(t, 'admin.queues.rejectProof')}
                   onClick={() =>
                     dispatch(updateParcelProofStatus({ id: i.id, status: 'rejected' }))
                   }
                 >
                   {adminText(t, 'admin.queues.rejectProof')}
-                </Button>
+                </ActionButton>
               </>
             )}
           />
@@ -272,10 +283,27 @@ export function AdminQueuesPanel({
         renderMeta={(i) => `${i.relatedType} · ${i.relatedId}`}
         renderActions={(i) => (
           <>
-            <Button onClick={() => dispatch(updateDisputeStatus({ id: i.id, status: 'resolved', updatedBy: 'admin' }))}>
+            <Button
+              onClick={() =>
+                resolveDisputeAndUnlockOrder(dispatch, i, {
+                  status: 'resolved',
+                  actorId: adminId,
+                  actorRole,
+                })
+              }
+            >
               {adminText(t, 'admin.actions.resolve')}
             </Button>
-            <Button variant="secondary" onClick={() => dispatch(updateDisputeStatus({ id: i.id, status: 'closed', updatedBy: 'admin' }))}>
+            <Button
+              variant="secondary"
+              onClick={() =>
+                resolveDisputeAndUnlockOrder(dispatch, i, {
+                  status: 'closed',
+                  actorId: adminId,
+                  actorRole,
+                })
+              }
+            >
               {adminText(t, 'admin.actions.close')}
             </Button>
           </>

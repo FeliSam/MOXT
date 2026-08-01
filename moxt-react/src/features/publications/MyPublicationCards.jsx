@@ -1,6 +1,7 @@
 import {
   FiBriefcase,
   FiCalendar,
+  FiCopy,
   FiEdit2,
   FiExternalLink,
   FiFileText,
@@ -8,6 +9,7 @@ import {
   FiArchive,
   FiRepeat,
   FiRotateCcw,
+  FiTrash2,
 } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { Badge } from '../../components/ui/Badge'
@@ -94,6 +96,8 @@ export function MyParcelPublicationCard({
   onGuestInteract,
   onArchive,
   onReactivate,
+  onDuplicate,
+  onDelete,
 }) {
   const { t } = useLanguage()
   const status = statusMeta(parcel.status, t)
@@ -115,6 +119,7 @@ export function MyParcelPublicationCard({
       meta={[
         parcel.departureDate ? t('parcels.my.departure', { date: parcel.departureDate }) : null,
         parcel.remainingKg != null ? t('parcels.my.remainingKg', { kg: parcel.remainingKg }) : null,
+        readOnly ? null : t('marketplace.common.views', { count: parcel.views || 0 }),
       ].filter(Boolean)}
       path={`/parcels/${parcel.id}`}
       guestMode={guestMode}
@@ -127,6 +132,9 @@ export function MyParcelPublicationCard({
                 {t('parcels.my.edit')}
               </Button>
             </Link>
+            <Button variant="secondary" icon={FiCopy} size="sm" onClick={onDuplicate}>
+              {phase3Text(t, 'publications.cards.duplicate')}
+            </Button>
             {active ? (
               <Button variant="danger" icon={FiArchive} size="sm" onClick={onArchive}>
                 {phase3Text(t, 'publications.cards.archive')}
@@ -136,6 +144,9 @@ export function MyParcelPublicationCard({
                 {t('parcels.my.reactivate')}
               </Button>
             )}
+            <Button variant="danger" icon={FiTrash2} size="sm" onClick={onDelete}>
+              {phase3Text(t, 'publications.cards.delete')}
+            </Button>
           </>
         )
       }
@@ -151,6 +162,8 @@ export function MyJobPublicationCard({
   ownerDisplayName,
   onArchive,
   onReactivate,
+  onDuplicate,
+  onDelete,
 }) {
   const { t } = useLanguage()
   const p3 = (key) => phase3Text(t, key)
@@ -168,6 +181,7 @@ export function MyJobPublicationCard({
         ownerDisplayName || job.publisherName,
         job.location,
         job.contractType ? jobContractLabel(t, job.contractType) : null,
+        readOnly ? null : t('marketplace.common.views', { count: job.views || 0 }),
       ].filter(Boolean)}
       path={`/jobs/${job.id}`}
       guestMode={guestMode}
@@ -180,6 +194,9 @@ export function MyJobPublicationCard({
                 {p3('publications.cards.edit')}
               </Button>
             </Link>
+            <Button variant="secondary" icon={FiCopy} size="sm" onClick={onDuplicate}>
+              {p3('publications.cards.duplicate')}
+            </Button>
             {active ? (
               <Button variant="danger" size="sm" onClick={onArchive}>
                 {p3('publications.cards.archive')}
@@ -189,6 +206,9 @@ export function MyJobPublicationCard({
                 {p3('publications.cards.republish')}
               </Button>
             )}
+            <Button variant="danger" icon={FiTrash2} size="sm" onClick={onDelete}>
+              {p3('publications.cards.delete')}
+            </Button>
           </>
         )
       }
@@ -203,6 +223,8 @@ export function MyEventPublicationCard({
   onGuestInteract,
   onArchive,
   onReactivate,
+  onDuplicate,
+  onDelete,
 }) {
   const { t } = useLanguage()
   const p3 = (key) => phase3Text(t, key)
@@ -218,7 +240,11 @@ export function MyEventPublicationCard({
       subtitle={
         event.price > 0 ? formatMoney(event.price, event.currency) : p3('publications.cards.free')
       }
-      meta={[event.city, event.startAt || event.date].filter(Boolean)}
+      meta={[
+        event.city,
+        event.startAt || event.date,
+        readOnly ? null : t('marketplace.common.views', { count: event.views || 0 }),
+      ].filter(Boolean)}
       path={`/events/${event.id}`}
       guestMode={guestMode}
       onGuestInteract={onGuestInteract}
@@ -230,6 +256,9 @@ export function MyEventPublicationCard({
                 {p3('publications.cards.edit')}
               </Button>
             </Link>
+            <Button variant="secondary" icon={FiCopy} size="sm" onClick={onDuplicate}>
+              {p3('publications.cards.duplicate')}
+            </Button>
             {active ? (
               <Button variant="danger" size="sm" onClick={onArchive}>
                 {p3('publications.cards.archive')}
@@ -239,6 +268,9 @@ export function MyEventPublicationCard({
                 {p3('publications.cards.republish')}
               </Button>
             )}
+            <Button variant="danger" icon={FiTrash2} size="sm" onClick={onDelete}>
+              {p3('publications.cards.delete')}
+            </Button>
           </>
         )
       }
@@ -253,6 +285,7 @@ export function MyPostPublicationCard({
   onGuestInteract,
   onArchive,
   onReactivate,
+  onDelete,
 }) {
   const { t } = useLanguage()
   const p3 = (key, vars) => phase3Text(t, key, vars)
@@ -289,6 +322,9 @@ export function MyPostPublicationCard({
                 {p3('publications.cards.republish')}
               </Button>
             )}
+            <Button variant="danger" icon={FiTrash2} size="sm" onClick={onDelete}>
+              {p3('publications.cards.delete')}
+            </Button>
           </>
         )
       }
@@ -303,6 +339,7 @@ export function MyP2POfferPublicationCard({
   onGuestInteract,
   onArchive,
   onReactivate,
+  onDelete,
 }) {
   const { t } = useLanguage()
   const p3 = (key) => phase3Text(t, key)
@@ -326,6 +363,11 @@ export function MyP2POfferPublicationCard({
       actions={
         readOnly ? null : (
           <>
+            <Link to={`/p2p/${offer.id}/edit`}>
+              <Button variant="secondary" icon={FiEdit2} size="sm">
+                {p3('publications.cards.edit')}
+              </Button>
+            </Link>
             {active ? (
               <Button variant="danger" icon={FiArchive} size="sm" onClick={onArchive}>
                 {p3('publications.cards.archive')}
@@ -335,6 +377,9 @@ export function MyP2POfferPublicationCard({
                 {p3('publications.cards.republish')}
               </Button>
             ) : null}
+            <Button variant="danger" icon={FiTrash2} size="sm" onClick={onDelete}>
+              {p3('publications.cards.delete')}
+            </Button>
           </>
         )
       }

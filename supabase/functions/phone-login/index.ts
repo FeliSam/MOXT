@@ -1,57 +1,26 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { corsHeadersFor } from '../_shared/cors.ts'
+import {
+  checkRateLimit,
+  clientIp,
+  logSecurityEvent,
+} from '../_shared/rateLimit.ts'
 
-const DEFAULT_ORIGINS = ['https://moxtapp.ru', 'https://www.moxtapp.ru']
-const RATE_WINDOW_MS = 15 * 60 * 1000
+const RATE_WINDOW_SEC = 15 * 60
 const RATE_MAX_PER_IP = 30
 const RATE_MAX_PER_PHONE = 8
 
-const rateBuckets = new Map<string, { count: number; resetAt: number }>()
+const GENERIC_AUTH_ERROR = 'Identifiants incorrects. Vérifiez votre numéro et mot de passe.'
 
-function allowedOrigins() {
-  const raw = Deno.env.get('MOXT_ALLOWED_ORIGINS') || ''
-  const fromEnv = raw
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean)
-  return fromEnv.length ? fromEnv : DEFAULT_ORIGINS
-}
-
-function corsHeaders(origin: string | null) {
-  const allowed = allowedOrigins()
-  const resolved =
-    origin && allowed.includes(origin) ? origin : allowed[0] || DEFAULT_ORIGINS[0]
-  return {
-    'Access-Control-Allow-Origin': resolved,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    Vary: 'Origin',
-  }
-}
-
-function json(body: Record<string, unknown>, status = 200, origin: string | null = null) {
+function json(body: Record<string, unknown>, status = 200, req?: Request) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' },
+    headers: {
+      ...corsHeadersFor(req || new Request('https://moxtapp.ru')),
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Content-Type': 'application/json',
+    },
   })
-}
-
-function clientIp(req: Request) {
-  return (
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    req.headers.get('x-real-ip') ||
-    'unknown'
-  )
-}
-
-function rateLimit(key: string, max: number) {
-  const now = Date.now()
-  const bucket = rateBuckets.get(key)
-  if (!bucket || bucket.resetAt <= now) {
-    rateBuckets.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS })
-    return false
-  }
-  bucket.count += 1
-  if (bucket.count > max) return true
-  return false
 }
 
 function digitsOnly(phone = '') {
@@ -98,22 +67,28 @@ function sessionPayload(session: {
   }
 }
 
-const GENERIC_AUTH_ERROR = 'Identifiants incorrects. Vérifiez votre numéro et mot de passe.'
-
 Deno.serve(async (req) => {
-  const origin = req.headers.get('Origin')
+  const respond = (body: Record<string, unknown>, status = 200) => json(body, status, req)
 
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders(origin) })
+    return new Response('ok', {
+      headers: {
+        ...corsHeadersFor(req),
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      },
+    })
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
   if (!supabaseUrl || !serviceRoleKey || !anonKey) {
-    return json({ error: 'Configuration Supabase incomplète.' }, 503, origin)
+    return respond({ error: 'Configuration Supabase incomplète.' }, 503)
   }
 
+  const admin = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
   const ip = clientIp(req)
 
   try {
@@ -121,16 +96,21 @@ Deno.serve(async (req) => {
     const phone = normalizeE164(body?.phone)
     const password = String(body?.password || '')
     if (!phone || !password) {
-      return json({ error: 'Numéro et mot de passe obligatoires.' }, 400, origin)
+      return respond({ error: 'Numéro et mot de passe obligatoires.' }, 400)
     }
 
-    if (rateLimit(`ip:${ip}`, RATE_MAX_PER_IP) || rateLimit(`phone:${phone}`, RATE_MAX_PER_PHONE)) {
-      return json({ error: 'Trop de tentatives. Réessayez dans quelques minutes.' }, 429, origin)
+    const ipOk = await checkRateLimit(admin, `phone-login:ip:${ip}`, RATE_MAX_PER_IP, RATE_WINDOW_SEC)
+    const phoneOk = await checkRateLimit(
+      admin,
+      `phone-login:phone:${phone}`,
+      RATE_MAX_PER_PHONE,
+      RATE_WINDOW_SEC,
+    )
+    if (!ipOk || !phoneOk) {
+      await logSecurityEvent(admin, 'phone_login_rate_limited', phone, { ip })
+      return respond({ error: 'Trop de tentatives. Réessayez dans quelques minutes.' }, 429)
     }
 
-    const admin = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    })
     const variants = phoneVariants(phone)
 
     const { data: profiles, error: profileError } = await admin
@@ -140,7 +120,8 @@ Deno.serve(async (req) => {
       .limit(5)
 
     if (profileError) {
-      return json({ error: GENERIC_AUTH_ERROR }, 401, origin)
+      await logSecurityEvent(admin, 'phone_login_denied', phone, { ip, reason: 'profile_lookup' })
+      return respond({ error: GENERIC_AUTH_ERROR }, 401)
     }
 
     let profile = profiles?.[0] || null
@@ -157,12 +138,14 @@ Deno.serve(async (req) => {
     }
 
     if (!profile?.id) {
-      return json({ error: GENERIC_AUTH_ERROR }, 401, origin)
+      await logSecurityEvent(admin, 'phone_login_denied', phone, { ip, reason: 'unknown_phone' })
+      return respond({ error: GENERIC_AUTH_ERROR }, 401)
     }
 
     const { data: userData, error: userError } = await admin.auth.admin.getUserById(profile.id)
     if (userError || !userData.user) {
-      return json({ error: GENERIC_AUTH_ERROR }, 401, origin)
+      await logSecurityEvent(admin, 'phone_login_denied', phone, { ip, reason: 'auth_user' })
+      return respond({ error: GENERIC_AUTH_ERROR }, 401)
     }
 
     const authUser = userData.user
@@ -170,7 +153,8 @@ Deno.serve(async (req) => {
     const phoneConfirmed = Boolean(authUser.phone_confirmed_at || profile.phone_verified)
 
     if (authPhone && !phoneConfirmed) {
-      return json({ error: GENERIC_AUTH_ERROR }, 401, origin)
+      await logSecurityEvent(admin, 'phone_login_denied', phone, { ip, reason: 'unconfirmed' })
+      return respond({ error: GENERIC_AUTH_ERROR }, 401)
     }
 
     if (authPhone) {
@@ -179,20 +163,20 @@ Deno.serve(async (req) => {
         password,
       })
       if (phoneSignIn.data?.session && phoneSignIn.data.user) {
-        return json(
+        return respond(
           {
             ...sessionPayload(phoneSignIn.data.session),
             user: phoneSignIn.data.user,
           },
           200,
-          origin,
         )
       }
     }
 
     const email = (authUser.email || profile.email || '').trim().toLowerCase()
     if (!email) {
-      return json({ error: GENERIC_AUTH_ERROR }, 401, origin)
+      await logSecurityEvent(admin, 'phone_login_denied', phone, { ip, reason: 'no_email' })
+      return respond({ error: GENERIC_AUTH_ERROR }, 401)
     }
 
     const authClient = createClient(supabaseUrl, anonKey, {
@@ -200,18 +184,19 @@ Deno.serve(async (req) => {
     })
     const { data, error } = await authClient.auth.signInWithPassword({ email, password })
     if (error || !data.session || !data.user) {
-      return json({ error: GENERIC_AUTH_ERROR }, 401, origin)
+      await logSecurityEvent(admin, 'phone_login_denied', phone, { ip, reason: 'bad_password' })
+      return respond({ error: GENERIC_AUTH_ERROR }, 401)
     }
 
-    return json(
+    return respond(
       {
         ...sessionPayload(data.session),
         user: data.user,
       },
       200,
-      origin,
     )
   } catch {
-    return json({ error: GENERIC_AUTH_ERROR }, 401, origin)
+    await logSecurityEvent(admin, 'phone_login_denied', '', { ip, reason: 'exception' })
+    return respond({ error: GENERIC_AUTH_ERROR }, 401)
   }
 })

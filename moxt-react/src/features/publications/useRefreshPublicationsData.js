@@ -11,7 +11,8 @@ import { setAll as setMarketplace } from '../marketplace/marketplaceSlice'
 import { setAll as setParcels } from '../parcels/parcelSlice'
 import { setAll as setJobs } from '../jobs/jobSlice'
 import { setAll as setEvents } from '../events/eventSlice'
-import { setAll as setP2P } from '../p2p/p2pSlice'
+import { receiveRemoteOffer } from '../p2p/p2pSlice'
+import { p2pOfferFromRemoteRow } from '../sync/entityRemote'
 import { jobsFromRemoteRows } from '../jobs/jobRemote'
 
 const PUBLIC_LIMIT = 50
@@ -91,7 +92,10 @@ export const refreshPublicationsData = createAsyncThunk(
       )
     }
     if (!offersRes.error) {
-      dispatch(setP2P({ offers: fromRows(offersRes.data || []) }))
+      for (const row of offersRes.data || []) {
+        const offer = p2pOfferFromRemoteRow(row)
+        if (offer?.id) dispatch(receiveRemoteOffer(offer))
+      }
     }
     return true
   },

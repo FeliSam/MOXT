@@ -13,6 +13,7 @@ export function useGuestUserPreview(userId) {
 
   useEffect(() => {
     if (!userId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset avant une requête réseau (preview invité)
       setState({
         loading: false,
         error: 'not_found',
@@ -69,6 +70,7 @@ export function useGuestBusinessPreview(businessId) {
 
   useEffect(() => {
     if (!businessId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset avant une requête réseau (preview invité)
       setState({
         loading: false,
         error: 'not_found',

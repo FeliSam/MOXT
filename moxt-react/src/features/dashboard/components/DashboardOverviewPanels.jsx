@@ -1,14 +1,20 @@
-import { FiArrowRight, FiArrowUpRight, FiBriefcase, FiRepeat, FiShield, FiTrendingUp } from 'react-icons/fi'
+import { FiArrowRight, FiArrowUpRight, FiBriefcase, FiShield, FiTrendingUp } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { statusMeta } from '../../../config/statuses'
+import { transferNeedsClientAction } from '../../transfers/transferActionUtils'
 import { TransferStatusBadge } from '../../transfers/TransferStatusBadge'
 import { formatMoney } from '../../transfers/transferUtils'
 
 export function DashboardOverviewPanels({ activeTransfers, rate, user, business }) {
   const { t } = useLanguage()
+  const sortedTransfers = [...activeTransfers].sort((left, right) => {
+    const leftTurn = Number(transferNeedsClientAction(left))
+    const rightTurn = Number(transferNeedsClientAction(right))
+    return rightTurn - leftTurn
+  })
 
   return (
     <>
@@ -27,7 +33,7 @@ export function DashboardOverviewPanels({ activeTransfers, rate, user, business 
       ) : null}
 
       <section className="grid gap-5 lg:grid-cols-2">
-        <Card>
+        <Card className="!border-0 shadow-none">
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-black">{t('dashboard.overview.transfersTitle')}</h2>
             <Link
@@ -39,24 +45,34 @@ export function DashboardOverviewPanels({ activeTransfers, rate, user, business 
             </Link>
           </div>
           <div className="mt-4 grid gap-2">
-            {activeTransfers.length ? (
-              activeTransfers.slice(0, 3).map((transfer) => {
+            {sortedTransfers.length ? (
+              sortedTransfers.slice(0, 3).map((transfer) => {
                 const amount = transfer.amountSent ?? transfer.amount ?? transfer.totalToPay
                 const currency = transfer.currencyFrom ?? transfer.currency ?? 'XOF'
+                const yourTurn = transferNeedsClientAction(transfer)
                 return (
                   <Link
                     key={transfer.id}
                     to={`/transfers/${transfer.id}`}
                     state={{ transferView: 'client' }}
-                    className="relative rounded-2xl bg-[var(--app-surface-muted)] p-3 transition hover:bg-[var(--app-accent-soft)]"
+                    className={`relative rounded-2xl p-3 transition hover:bg-[var(--app-accent-soft)] ${
+                      yourTurn
+                        ? 'border border-amber-300/80 bg-amber-50/90 dark:border-amber-800/60 dark:bg-amber-950/30'
+                        : 'bg-[var(--app-surface-muted)]'
+                    }`}
                   >
                     <span className="absolute top-0 right-2">
                       <TransferStatusBadge status={transfer.status} />
                     </span>
-                    <strong className="block truncate text-sm">
+                    <strong className="block truncate pr-20 text-sm">
                       {formatMoney(amount, currency)} ·{' '}
                       {transfer.exchanger?.name || t('dashboard.overview.transfer')}
                     </strong>
+                    {yourTurn ? (
+                      <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-black uppercase tracking-wide text-amber-800 dark:text-amber-200">
+                        {t('transfers.detail.nextStep.yourTurn')}
+                      </span>
+                    ) : null}
                   </Link>
                 )
               })
@@ -71,7 +87,7 @@ export function DashboardOverviewPanels({ activeTransfers, rate, user, business 
           </div>
         </Card>
 
-        <Card>
+        <Card className="!border-0 shadow-none">
           <div className="flex items-center gap-3">
             <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
               <FiTrendingUp />

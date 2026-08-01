@@ -31,6 +31,7 @@ export const ROUTES = {
   referral: '/referral',
   notifications: '/notifications',
   support: '/support',
+  contribute: '/contribute',
   admin: '/admin',
   featureMatrix: '/feature-matrix',
   superadmin: '/superadmin',

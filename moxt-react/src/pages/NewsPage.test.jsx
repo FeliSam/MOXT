@@ -69,4 +69,37 @@ describe('NewsPage', () => {
     ])
     expect(screen.getAllByTestId('feed-post')).toHaveLength(2)
   })
+
+  it('met en évidence la publication ciblée par ?post= (lien de notification)', () => {
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+
+    const store = configureStore({
+      reducer: {
+        auth: () => ({ user: { id: 'u1', role: 'user', firstName: 'A', lastName: 'B' } }),
+        posts: () => ({
+          items: [
+            {
+              id: 'p2',
+              status: 'published',
+              sourceType: 'free',
+              language: 'fr',
+              message: 'Salut',
+              createdAt: '2026-07-01T00:00:00.000Z',
+            },
+          ],
+        }),
+      },
+    })
+    render(
+      <Provider store={store}>
+        <MemoryRouter initialEntries={['/news?post=p2']}>
+          <NewsPage />
+        </MemoryRouter>
+      </Provider>,
+    )
+
+    expect(document.getElementById('news-post-p2')).toHaveClass('news-post-highlight')
+    expect(scrollIntoView).toHaveBeenCalled()
+  })
 })

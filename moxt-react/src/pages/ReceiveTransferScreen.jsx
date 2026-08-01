@@ -1,16 +1,22 @@
-import { useState } from 'react'
-import { FiArrowLeft, FiCheckCircle, FiClock, FiCopy } from 'react-icons/fi'
+﻿import { useEffect, useState } from 'react'
+import { FiArrowLeft, FiCheckCircle, FiClock, FiCopy, FiStar } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { REVIEW_TARGET_TYPES } from '@moxt/shared/utils/reviewUtils.js'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
+import { Modal } from '../components/ui/Modal'
 import { PageHeader } from '../components/ui/PageHeader'
+import { StarRating } from '../components/ui/StarRating'
 import { useLanguage } from '../contexts/useLanguage'
+import { createReview } from '../features/reviews/reviewSlice'
+import { selectProfileReview } from '../features/reviews/reviewSelectors'
 import { addToast } from '../features/ui/uiSlice'
 import { useTransferReceiveForm } from '../features/transfers/useTransferReceiveForm'
 import { canClientDeclareReception } from '../features/transfers/transferActionUtils'
 import { formatMoney } from '../features/transfers/transferUtils'
 import { ReceiveTransferForm } from '../features/transfers/ReceiveTransferForm'
+import { TransferClientNote } from '../features/transfers/TransferClientNote'
 
 function copyText(text, dispatch, label, t) {
   if (!text || !navigator.clipboard) return
@@ -36,17 +42,69 @@ export function ReceiveTransferScreen() {
   const transfer = useSelector((state) =>
     state.transfers.items.find((item) => item.id === transferId),
   )
+  const business = useSelector((state) =>
+    transfer?.businessId
+      ? state.businesses.items.find((item) => item.id === transfer.businessId)
+      : null,
+  )
+  const existingReview = useSelector((state) =>
+    selectProfileReview(
+      state,
+      user?.id,
+      REVIEW_TARGET_TYPES.BUSINESS,
+      transfer?.businessId,
+    ),
+  )
 
   const [submitted, setSubmitted] = useState(false)
+  const [reviewOpen, setReviewOpen] = useState(false)
+  const [rating, setRating] = useState(5)
+  const [comment, setComment] = useState('')
+  const [reviewSaved, setReviewSaved] = useState(false)
 
   const isSender = Boolean(user?.id && transfer?.userId === user.id)
   const canDeclare = canClientDeclareReception(transfer, isSender)
+  const businessName =
+    business?.name || transfer?.exchanger?.name || t('transfers.receive.exchanger')
+  const canPromptReview = Boolean(
+    submitted && transfer?.businessId && isSender && !existingReview && !reviewSaved,
+  )
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- ouvre l'invite une fois (l'utilisateur peut ensuite la fermer indépendamment)
+    if (canPromptReview) setReviewOpen(true)
+  }, [canPromptReview])
 
   const form = useTransferReceiveForm({
     transfer,
     user,
     onSuccess: () => setSubmitted(true),
   })
+
+  function handleSaveReview(event) {
+    event.preventDefault()
+    if (!user?.id || !transfer?.businessId || comment.trim().length < 5) return
+    dispatch(
+      createReview({
+        targetType: REVIEW_TARGET_TYPES.BUSINESS,
+        targetId: transfer.businessId,
+        authorId: user.id,
+        authorName:
+          `${user.firstName || ''} ${user.lastName || ''}`.trim() || t('reviews.memberFallback'),
+        rating,
+        comment: comment.trim(),
+      }),
+    )
+    setReviewSaved(true)
+    setReviewOpen(false)
+    dispatch(
+      addToast({
+        title: t('transfers.receive.reviewSavedTitle'),
+        message: t('transfers.receive.reviewSavedMessage', { name: businessName }),
+        tone: 'success',
+      }),
+    )
+  }
 
   if (!transfer) {
     return (
@@ -75,6 +133,11 @@ export function ReceiveTransferScreen() {
           <p className="text-sm text-[var(--app-text-muted)]">
             {t('transfers.receive.successDescription')}
           </p>
+          {canPromptReview && !reviewOpen ? (
+            <Button variant="secondary" icon={FiStar} onClick={() => setReviewOpen(true)}>
+              {t('transfers.receive.reviewTitle', { name: businessName })}
+            </Button>
+          ) : null}
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
             <Button variant="secondary" onClick={() => navigate(`/transfers/${transfer.id}`)}>
               {t('transfers.receive.viewTransfer')}
@@ -82,6 +145,41 @@ export function ReceiveTransferScreen() {
             <Button onClick={() => navigate('/transfers')}>{t('transfers.receive.myTransfers')}</Button>
           </div>
         </Card>
+
+        <Modal
+          open={reviewOpen}
+          onClose={() => setReviewOpen(false)}
+          title={t('transfers.receive.reviewTitle', { name: businessName })}
+        >
+          <form className="grid gap-4" onSubmit={handleSaveReview}>
+            <p className="text-sm text-[var(--app-text-muted)]">
+              {t('transfers.receive.reviewDescription')}
+            </p>
+            <div className="grid gap-2">
+              <span className="text-sm font-semibold">{t('reviews.yourRating')}</span>
+              <StarRating value={rating} onChange={setRating} size="lg" />
+            </div>
+            <label className="grid gap-2 text-sm font-semibold">
+              {t('transfers.receive.reviewComment')}
+              <textarea
+                className="min-h-28 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 text-sm font-normal"
+                placeholder={t('transfers.receive.reviewCommentPlaceholder')}
+                value={comment}
+                onChange={(event) => setComment(event.target.value)}
+                minLength={5}
+                required
+              />
+            </label>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button type="button" variant="secondary" onClick={() => setReviewOpen(false)}>
+                {t('transfers.receive.reviewSkip')}
+              </Button>
+              <Button type="submit" icon={FiStar} disabled={comment.trim().length < 5}>
+                {t('transfers.receive.reviewSubmit')}
+              </Button>
+            </div>
+          </form>
+        </Modal>
       </div>
     )
   }
@@ -156,7 +254,7 @@ export function ReceiveTransferScreen() {
           </div>
           <div>
             <span className="text-[var(--app-text-muted)]">{t('transfers.receive.exchanger')}</span>
-            <p className="font-bold">{transfer.exchanger?.name || '—'}</p>
+            <p className="font-bold">{transfer.exchanger?.name || 'ÔÇö'}</p>
           </div>
         </div>
       </Card>
@@ -185,7 +283,7 @@ export function ReceiveTransferScreen() {
                 <div>
                   <dt className="inline font-bold">{t('transfers.receive.method')}: </dt>
                   <dd className="inline">
-                    {[paymentDetails.method, paymentDetails.bankName].filter(Boolean).join(' · ')}
+                    {[paymentDetails.method, paymentDetails.bankName].filter(Boolean).join(' ┬À ')}
                   </dd>
                 </div>
               ) : null}
@@ -202,6 +300,7 @@ export function ReceiveTransferScreen() {
           >
             {t('transfers.receive.copyCoordinates')}
           </Button>
+          <TransferClientNote note={transfer.noteToExchanger} />
         </Card>
       ) : null}
 

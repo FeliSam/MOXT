@@ -197,8 +197,8 @@ export function EmailVerificationCard({
   if (verified && !showOtpFlow) {
     if (embedded) {
       return (
-        <div className={`grid gap-2 ${className}`}>
-          <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+        <div className={`grid min-w-0 gap-2 ${className}`}>
+          <p className="min-w-0 break-words text-xs font-semibold text-emerald-700 [overflow-wrap:anywhere] dark:text-emerald-300">
             {t('security.email.verifiedInline', { email: user.email })}
           </p>
           {allowChangeWhenVerified ? (
@@ -211,8 +211,10 @@ export function EmailVerificationCard({
     }
     return (
       <Alert variant="success" title={t('security.email.verifiedTitle')} className={className}>
-        <div className="grid gap-3">
-          <p>{t('security.email.verifiedBody', { email: user.email })}</p>
+        <div className="grid min-w-0 gap-3">
+          <p className="min-w-0 break-words [overflow-wrap:anywhere]">
+            {t('security.email.verifiedBody', { email: user.email })}
+          </p>
           {allowChangeWhenVerified ? (
             <Button type="button" variant="secondary" onClick={() => setChangeMode(true)}>
               {t('security.email.changeButton')}
@@ -226,11 +228,11 @@ export function EmailVerificationCard({
   const body = (
     <>
       {!embedded ? (
-        <div className="flex items-start gap-3">
-          <span className="grid size-11 place-items-center rounded-2xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
+        <div className="flex min-w-0 items-start gap-3">
+          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
             <FiMail />
           </span>
-          <div>
+          <div className="min-w-0">
             <h2 className="font-black">
               {verified ? t('security.email.changeTitle') : t('security.email.confirmTitle')}
             </h2>
@@ -287,7 +289,11 @@ export function EmailVerificationCard({
       </div>
       {otpSent ? (
         <Alert variant="info">
-          {t('security.email.codeSentBody', { email: draftEmail || email })}
+          {/* Une adresse e-mail est une chaîne sans espace : sans coupure
+              explicite elle élargit le conteneur et déforme la page. */}
+          <span className="block min-w-0 break-words [overflow-wrap:anywhere]">
+            {t('security.email.codeSentBody', { email: draftEmail || email })}
+          </span>
         </Alert>
       ) : null}
       <Input
@@ -316,8 +322,10 @@ export function EmailVerificationCard({
   )
 
   if (embedded) {
-    return <div className={`grid gap-4 ${className}`}>{body}</div>
+    // `min-w-0` indispensable : sans lui les enfants de la grille refusent de
+    // rétrécir sous leur largeur de contenu et débordent de la page.
+    return <div className={`grid min-w-0 gap-4 ${className}`}>{body}</div>
   }
 
-  return <Card className={`grid gap-4 ${className}`}>{body}</Card>
+  return <Card className={`grid min-w-0 gap-4 ${className}`}>{body}</Card>
 }

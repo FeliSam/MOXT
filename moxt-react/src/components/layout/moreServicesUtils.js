@@ -1,3 +1,5 @@
+import { buildQueues } from '../../features/admin/adminData'
+
 export { bottomNavigationPaths } from '../../config/primaryNavigation'
 
 function filterGroupItems(group, role, excludePaths) {
@@ -32,6 +34,11 @@ export function countNavigationBadge(state, userId, selector) {
     return state.communications.conversations
       .filter((c) => c.participantIds.includes(userId))
       .reduce((total, c) => total + (c.unreadBy?.[userId] || 0), 0)
+  }
+  if (selector === 'adminUrgent') {
+    const role = state.auth?.user?.role
+    if (!['admin', 'superadmin', 'moderator'].includes(role)) return 0
+    return buildQueues(state).urgent
   }
   return 0
 }

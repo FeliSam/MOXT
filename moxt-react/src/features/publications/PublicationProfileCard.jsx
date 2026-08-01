@@ -62,6 +62,13 @@ export function PublicationProfileCard({
             className="size-16 rounded-2xl object-cover"
             loading="lazy"
           />
+        ) : !isBusinessScope && avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt=""
+            className="size-16 rounded-2xl object-cover"
+            loading="lazy"
+          />
         ) : (
           <span className="grid size-16 place-items-center rounded-2xl bg-[var(--app-accent-soft)] text-2xl font-black text-[var(--app-accent)]">
             {headlineName.slice(0, 2).toUpperCase()}

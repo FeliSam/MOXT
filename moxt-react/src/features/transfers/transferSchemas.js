@@ -60,6 +60,10 @@ export const createTransferSchemas = (t) => {
     recipientMethod: Yup.string().required(
       m('validation.transfer.receiveMethodRequired', 'Moyen de reception obligatoire.'),
     ),
+    noteToExchanger: Yup.string()
+      .trim()
+      .max(300, m('validation.transfer.noteToExchangerMax', 'Message trop long (300 caractères max).'))
+      .optional(),
     acceptTerms: Yup.boolean().oneOf(
       [true],
       m('validation.terms.required', 'Vous devez accepter les conditions.'),

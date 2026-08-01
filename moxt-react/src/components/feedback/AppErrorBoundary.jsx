@@ -6,7 +6,7 @@ import { isNetworkError } from '../../utils/networkError'
 import { Button } from '../ui/Button'
 import { NetworkReconnectModal } from './NetworkReconnectModal'
 
-function ErrorFallback({ network, onRetry, onHome }) {
+function ErrorFallback({ network, onRetry, onHome, detail }) {
   const { t } = useLanguage()
   const p3 = (key) => phase3Text(t, key)
 
@@ -46,27 +46,46 @@ function ErrorFallback({ network, onRetry, onHome }) {
             {p3('errors.display.home')}
           </Button>
         </div>
+        {detail ? (
+          <details className="mt-6 text-left">
+            <summary className="cursor-pointer text-xs font-bold text-[var(--app-text-muted)]">
+              {p3('errors.display.detailToggle')}
+            </summary>
+            <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-xl bg-[var(--app-surface-muted)] p-3 text-left text-[11px] leading-5 text-[var(--app-text-muted)]">
+              {detail}
+            </pre>
+          </details>
+        ) : null}
       </div>
     </main>
   )
 }
 
 export class AppErrorBoundary extends Component {
-  state = { hasError: false, network: false }
+  state = { hasError: false, network: false, detail: '' }
 
   static getDerivedStateFromError(error) {
     return {
       hasError: true,
       network: isNetworkError(error),
+      // Message + pile conservés : sans eux, l'écran d'erreur ne dit rien et un
+      // bug reproductible reste indiagnosticable sans accès à la console.
+      detail: [error?.message, error?.stack].filter(Boolean).join('\n\n').slice(0, 4000),
     }
   }
 
   componentDidCatch(error, info) {
     console.error('MOXT render error', error, info)
+    const componentStack = info?.componentStack
+    if (componentStack) {
+      this.setState((current) => ({
+        detail: `${current.detail}\n\n${componentStack}`.trim().slice(0, 6000),
+      }))
+    }
   }
 
   handleRetry = () => {
-    this.setState({ hasError: false, network: false })
+    this.setState({ hasError: false, network: false, detail: '' })
     window.location.reload()
   }
 
@@ -79,6 +98,7 @@ export class AppErrorBoundary extends Component {
       return (
         <ErrorFallback
           network={this.state.network}
+          detail={this.state.detail}
           onRetry={this.handleRetry}
           onHome={this.handleHome}
         />

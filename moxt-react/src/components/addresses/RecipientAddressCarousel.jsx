@@ -1,5 +1,5 @@
 import { FiChevronLeft, FiChevronRight, FiEdit2, FiMapPin, FiPlus, FiTrash2 } from 'react-icons/fi'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Button } from '../ui/Button'
 import { useLanguage } from '../../contexts/useLanguage'
 import { phase3Text } from '../../i18n/phase3I18n'
@@ -21,14 +21,19 @@ export function RecipientAddressCarousel({
   const p3 = (key, vars) => phase3Text(t, key, vars)
   const [index, setIndex] = useState(0)
 
+  // Resynchronise l'index affiché quand `selectedId` change (sélection externe),
+  // calculé pendant le rendu plutôt que dans un effet (évite un rendu supplémentaire).
+  const [prevSelectedId, setPrevSelectedId] = useState(selectedId)
+  if (selectedId !== prevSelectedId) {
+    setPrevSelectedId(selectedId)
+    if (selectedId && items.length) {
+      const found = items.findIndex((item) => item.id === selectedId)
+      if (found >= 0) setIndex(found)
+    }
+  }
+
   const clampedIndex = items.length ? Math.min(index, items.length - 1) : 0
   const current = items[clampedIndex]
-
-  useEffect(() => {
-    if (!selectedId || !items.length) return
-    const found = items.findIndex((item) => item.id === selectedId)
-    if (found >= 0) setIndex(found)
-  }, [selectedId, items])
 
   const go = useCallback(
     (delta) => {

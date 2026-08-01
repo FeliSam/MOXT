@@ -1,12 +1,17 @@
 import { FiCheckCircle, FiHeadphones, FiMessageSquare } from 'react-icons/fi'
+import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { Button } from '../../../components/ui/Button'
 import { Badge } from '../../../components/ui/Badge'
 import {
   replySupportTicket,
+  sendMessage,
   updateSupportStatus,
 } from '../../communications/communicationSlice'
+import { updateSimulatedPaymentStatus } from '../../finance/financeSlice'
+import { formatMoney } from '../../transfers/transferUtils'
+import { addToast } from '../../ui/uiSlice'
 import { CARD, ITEM } from '../adminConfig'
 import { adminText } from '../adminI18n'
 import { Empty, SectionTitle } from './AdminShared'
@@ -23,8 +28,94 @@ const PRIORITY_BADGE = {
   low: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
 }
 
+function findContributionPayment(payments, ticket) {
+  if (!ticket) return null
+  if (ticket.paymentId) {
+    const byId = payments.find((item) => item.id === ticket.paymentId)
+    if (byId) return byId
+  }
+  if (ticket.contributionRef) {
+    return (
+      payments.find(
+        (item) =>
+          item.relatedType === 'contribution' && item.relatedId === ticket.contributionRef,
+      ) || null
+    )
+  }
+  return null
+}
+
+function findSupportConversation(conversations, userId) {
+  const relatedId = `support-${userId}`
+  return (conversations || []).find(
+    (item) => item.relatedType === 'support' && item.relatedId === relatedId,
+  )
+}
+
 export function AdminSupportPanel({ admin, dispatch, reply, setReply, setSelected, tickets }) {
   const { t } = useLanguage()
+  const payments = useSelector((state) => state.finance?.payments || [])
+  const conversations = useSelector((state) => state.communications?.conversations || [])
+
+  function sendAgentReply(ticket, text) {
+    const trimmed = String(text || '').trim()
+    if (!trimmed) return
+    dispatch(
+      replySupportTicket({
+        ticketId: ticket.id,
+        senderId: admin.id,
+        senderName: `${admin.firstName} ${admin.lastName} - Support`,
+        role: 'agent',
+        text: trimmed,
+      }),
+    )
+    const conversation = findSupportConversation(conversations, ticket.userId)
+    if (conversation?.id) {
+      dispatch(
+        sendMessage({
+          conversationId: conversation.id,
+          senderId: admin.id,
+          senderName: `${admin.firstName} ${admin.lastName}`,
+          text: trimmed,
+        }),
+      )
+    }
+    setReply('')
+  }
+
+  function confirmContributionReceipt(ticket) {
+    const payment = findContributionPayment(payments, ticket)
+    const amountLabel = payment
+      ? formatMoney(payment.amount, payment.currency)
+      : ticket.contributionRef || ''
+    const confirmText = adminText(t, 'admin.support.contributionConfirmMessage', {
+      amount: amountLabel || '—',
+      ref: ticket.contributionRef || payment?.relatedId || '—',
+    })
+
+    if (payment && payment.status !== 'confirmed') {
+      dispatch(
+        updateSimulatedPaymentStatus({
+          id: payment.id,
+          status: 'confirmed',
+          confirmedBy: admin.id,
+          confirmNote: confirmText,
+        }),
+      )
+    }
+
+    sendAgentReply(ticket, confirmText)
+    dispatch(updateSupportStatus({ id: ticket.id, status: 'resolved' }))
+    dispatch(
+      addToast({
+        tone: 'success',
+        title: adminText(t, 'admin.support.contributionConfirmTitle'),
+        message: adminText(t, 'admin.support.contributionConfirmBody', {
+          amount: amountLabel || ticket.contributionRef || '',
+        }),
+      }),
+    )
+  }
 
   return (
     <div className={`${CARD} p-5 grid gap-4`}>
@@ -35,71 +126,111 @@ export function AdminSupportPanel({ admin, dispatch, reply, setReply, setSelecte
         tone={tickets.length ? 'warning' : 'success'}
       />
       {tickets.length ? (
-        tickets.map((ticket) => (
-          <div
-            key={ticket.id}
-            className={`${ITEM} grid gap-3 ${PRIORITY_STYLES[ticket.priority] || ''}`}
-          >
-            <div className="flex flex-wrap items-start gap-3">
-              <div className="min-w-0 flex-1">
-                <button
-                  type="button"
-                  onClick={() => setSelected({ kind: 'support', item: ticket })}
-                  className="text-left hover:text-brand-700"
-                >
-                  <strong className="block text-sm">{ticket.subject}</strong>
-                  <p className="mt-0.5 text-xs text-[var(--app-text-muted)]">
-                    {adminText(t, 'admin.support.meta', {
-                      name: ticket.userName,
-                      count: ticket.messages?.length || 0,
-                    })}
-                  </p>
-                </button>
+        tickets.map((ticket) => {
+          const isContribution = ticket.category === 'contribution'
+          const payment = findContributionPayment(payments, ticket)
+          const alreadyConfirmed = payment?.status === 'confirmed' || ticket.status === 'resolved'
+
+          return (
+            <div
+              key={ticket.id}
+              className={`${ITEM} grid gap-3 ${PRIORITY_STYLES[ticket.priority] || ''}`}
+            >
+              <div className="flex flex-wrap items-start gap-3">
+                <div className="min-w-0 flex-1">
+                  <button
+                    type="button"
+                    onClick={() => setSelected({ kind: 'support', item: ticket })}
+                    className="text-left hover:text-brand-700"
+                  >
+                    <strong className="block text-sm">{ticket.subject}</strong>
+                    <p className="mt-0.5 text-xs text-[var(--app-text-muted)]">
+                      {adminText(t, 'admin.support.meta', {
+                        name: ticket.userName,
+                        count: ticket.messages?.length || 0,
+                      })}
+                    </p>
+                    {isContribution && ticket.contributionRef ? (
+                      <p className="mt-1 text-xs font-bold text-brand-700 dark:text-brand-300">
+                        {adminText(t, 'admin.support.contributionRef', {
+                          ref: ticket.contributionRef,
+                        })}
+                        {payment
+                          ? ` · ${formatMoney(payment.amount, payment.currency)} · ${payment.status}`
+                          : ''}
+                      </p>
+                    ) : null}
+                  </button>
+                </div>
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  {isContribution ? (
+                    <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-black text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">
+                      {adminText(t, 'admin.support.contributionBadge')}
+                    </span>
+                  ) : null}
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-black ${PRIORITY_BADGE[ticket.priority] || PRIORITY_BADGE.low}`}
+                  >
+                    {ticket.priority || 'normal'}
+                  </span>
+                  <Badge>{ticket.status}</Badge>
+                </div>
               </div>
-              <div className="flex shrink-0 gap-2">
-                <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${PRIORITY_BADGE[ticket.priority] || PRIORITY_BADGE.low}`}>
-                  {ticket.priority || 'normal'}
-                </span>
-                <Badge>{ticket.status}</Badge>
-              </div>
-            </div>
-            <textarea
-              value={reply}
-              onChange={(e) => { setSelected({ kind: 'support', item: ticket }); setReply(e.target.value) }}
-              placeholder={adminText(t, 'admin.support.replyPlaceholder')}
-              rows={3}
-              className="w-full rounded-xl bg-[var(--app-surface)] p-3 text-sm outline-none ring-1 ring-[var(--app-border)] focus:ring-brand-500"
-            />
-            <div className="flex flex-wrap gap-2">
-              <Link
-                to={`/messages?relatedType=support&relatedId=${encodeURIComponent(`support-${ticket.userId}`)}`}
-              >
-                <Button variant="secondary" icon={FiHeadphones}>
-                  {adminText(t, 'admin.support.openChat')}
-                </Button>
-              </Link>
-              <Button
-                icon={FiMessageSquare}
-                onClick={() => {
-                  if (!reply.trim()) return
-                  dispatch(replySupportTicket({
-                    ticketId: ticket.id,
-                    senderId: admin.id,
-                    senderName: `${admin.firstName} ${admin.lastName} - Support`,
-                    role: 'agent',
-                    text: reply,
-                  }))
-                  setReply('')
+              <textarea
+                value={reply}
+                onChange={(e) => {
+                  setSelected({ kind: 'support', item: ticket })
+                  setReply(e.target.value)
                 }}
-              >
-                {adminText(t, 'admin.support.reply')}
-              </Button>
-              <Button variant="secondary" icon={FiCheckCircle} onClick={() => dispatch(updateSupportStatus({ id: ticket.id, status: 'resolved' }))}>
-                {adminText(t, 'admin.actions.resolve')}
-              </Button>
+                placeholder={
+                  isContribution
+                    ? adminText(t, 'admin.support.contributionReplyPlaceholder')
+                    : adminText(t, 'admin.support.replyPlaceholder')
+                }
+                rows={3}
+                className="w-full rounded-xl bg-[var(--app-surface)] p-3 text-sm outline-none ring-1 ring-[var(--app-border)] focus:ring-brand-500"
+              />
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  to={`/messages?relatedType=support&relatedId=${encodeURIComponent(`support-${ticket.userId}`)}`}
+                >
+                  <Button variant="secondary" icon={FiHeadphones}>
+                    {adminText(t, 'admin.support.openChat')}
+                  </Button>
+                </Link>
+                <Button
+                  icon={FiMessageSquare}
+                  onClick={() => {
+                    setSelected({ kind: 'support', item: ticket })
+                    sendAgentReply(ticket, reply)
+                  }}
+                >
+                  {adminText(t, 'admin.support.reply')}
+                </Button>
+                {isContribution ? (
+                  <Button
+                    icon={FiCheckCircle}
+                    disabled={alreadyConfirmed && payment?.status === 'confirmed'}
+                    onClick={() => {
+                      setSelected({ kind: 'support', item: ticket })
+                      confirmContributionReceipt(ticket)
+                    }}
+                  >
+                    {adminText(t, 'admin.support.confirmContribution')}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    icon={FiCheckCircle}
+                    onClick={() => dispatch(updateSupportStatus({ id: ticket.id, status: 'resolved' }))}
+                  >
+                    {adminText(t, 'admin.actions.resolve')}
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
-        ))
+          )
+        })
       ) : (
         <Empty
           label={adminText(t, 'admin.empty.noTicket')}

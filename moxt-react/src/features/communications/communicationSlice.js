@@ -16,8 +16,8 @@ import { appendRelatedContext, findRelatedContext, hasRelatedContext, mergeRelat
 import { attachmentPreviewLabel } from './attachmentUtils'
 import { messagesText } from './messagesI18n'
 
-const PENDING_MESSAGE_MS = 15000
-const PERSISTED_MESSAGES_LIMIT = 200
+/** Keep pending/failed optimistic messages across reloads for a full day. */
+const PENDING_MESSAGE_MS = 24 * 60 * 60 * 1000
 const MESSAGE_FETCH_LIMIT = 200
 const MESSAGE_INCREMENTAL_LIMIT = 100
 const MESSAGE_OLDER_LIMIT = 100
@@ -36,7 +36,28 @@ const MESSAGE_SELECT_COLUMNS = [
   'delivered_to',
   'read_by',
   'created_at',
+  // edited_at: only after migration 20260730180000 is applied on the remote DB.
 ].join(',')
+
+function bumpMessageCount(conversation, delta = 1) {
+  conversation.messageCount = Math.max(
+    (Number(conversation.messageCount) || 0) + delta,
+    conversation.messages?.length || 0,
+  )
+}
+
+function shouldBumpInboxOrder(existing, incoming) {
+  if (!existing) return true
+  if (incoming.lastMessageAt && incoming.lastMessageAt !== existing.lastMessageAt) return true
+  if ((Number(incoming.messageCount) || 0) > (Number(existing.messageCount) || 0)) return true
+  return false
+}
+
+function createMessageId() {
+  const stamp = Date.now().toString(36).toUpperCase()
+  const entropy = Math.random().toString(36).slice(2, 10).toUpperCase()
+  return `MSG-${stamp}-${entropy}`
+}
 
 const CONVERSATION_SELECT_COLUMNS = [
   'id',
@@ -182,6 +203,7 @@ export function normalizeMessage(message) {
     deliveredTo: parseIdList(message.deliveredTo ?? message.delivered_to),
     readBy: parseIdList(message.readBy ?? message.read_by),
     relatedContextId: message.relatedContextId ?? message.related_context_id ?? null,
+    editedAt: message.editedAt ?? message.edited_at ?? null,
   }
 }
 
@@ -370,10 +392,12 @@ const communicationSlice = createSlice({
         payload.conversations = payload.conversations.map(normalizeConversation)
       }
       if (payload.notifications) {
-        // Source of truth = remote (post-wipe = liste vide). On conserve seulement
-        // les flags locaux read/archived pour les IDs encore présents côté DB.
+        // Remote = source de vérité, mais on conserve les inserts realtime arrivés
+        // après le début du fetch (sinon la liste paraît figée jusqu'au reload).
+        const KEEP_LOCAL_MS = 5 * 60 * 1000
+        const now = Date.now()
         const localById = Object.fromEntries(state.notifications.map((item) => [item.id, item]))
-        payload.notifications = payload.notifications.map((remote) => {
+        const remoteMapped = payload.notifications.map((remote) => {
           const local = localById[remote.id]
           const normalized = normalizeNotification(remote)
           if (!local) return normalized
@@ -383,6 +407,15 @@ const communicationSlice = createSlice({
             archived: normalized.archived || local.archived === true,
           })
         })
+        const remoteIds = new Set(remoteMapped.map((item) => item.id))
+        const localOnly = state.notifications.filter((item) => {
+          if (remoteIds.has(item.id) || item.type === 'message') return false
+          const created = new Date(item.createdAt || 0).getTime()
+          return Number.isFinite(created) && now - created < KEEP_LOCAL_MS
+        })
+        payload.notifications = [...remoteMapped, ...localOnly].sort(
+          (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0),
+        )
       }
       if (payload.support) {
         // Comme les notifications : la liste remote (ou vide au wipe/logout) fait foi.
@@ -412,7 +445,7 @@ const communicationSlice = createSlice({
       }
       conversation.messages.push(normalizedMessage)
       conversation.messagesLoaded = true
-      conversation.messageCount = conversation.messages.length
+      bumpMessageCount(conversation, 1)
       conversation.updatedAt = normalizedMessage.createdAt
       conversation.participantIds = parseIdList(conversation.participantIds)
       conversation.unreadBy ||= {}
@@ -495,7 +528,9 @@ const communicationSlice = createSlice({
             ),
             drafts: { ...incoming.drafts, ...existing.drafts },
           }
-          bumpConversationToTop(state, existing.id)
+          if (shouldBumpInboxOrder(existing, incoming)) {
+            bumpConversationToTop(state, existing.id)
+          }
           return
         }
         state.conversations.unshift(incoming)
@@ -515,7 +550,9 @@ const communicationSlice = createSlice({
         ),
         drafts: { ...incoming.drafts, ...existing.drafts },
       }
-      bumpConversationToTop(state, incoming.id)
+      if (shouldBumpInboxOrder(existing, incoming)) {
+        bumpConversationToTop(state, incoming.id)
+      }
     },
     replaceConversationId(state, action) {
       const { fromId, conversation } = action.payload
@@ -658,20 +695,22 @@ const communicationSlice = createSlice({
           (item) => item.id === action.payload.conversationId,
         )
         if (!conversation) return
-        let participantIds = parseIdList(conversation.participantIds).map(String)
         const senderId = String(action.payload.senderId)
+        if ((conversation.blockedBy || []).map(String).includes(senderId)) return
+        let participantIds = parseIdList(conversation.participantIds).map(String)
         if (!participantIds.includes(senderId)) {
           // Admins may join a support thread on first reply.
           if (conversation.relatedType !== 'support') return
           participantIds = [...participantIds, senderId]
         }
         conversation.participantIds = participantIds
+        if ((conversation.blockedBy || []).map(String).includes(senderId)) return
         conversation.messages.push({
           ...action.payload.message,
           senderId: String(action.payload.message.senderId ?? senderId),
         })
         conversation.messagesLoaded = true
-        conversation.messageCount = conversation.messages.length
+        bumpMessageCount(conversation, 1)
         conversation.updatedAt = action.payload.message.createdAt
         conversation.participantIds
           .filter((participantId) => participantId !== senderId)
@@ -682,13 +721,13 @@ const communicationSlice = createSlice({
         applyLastMessagePreview(conversation, action.payload.message)
         bumpConversationToTop(state, action.payload.conversationId)
       },
-      prepare({ attachment, conversationId, relatedContextId, replyToId, senderId, senderName, text }) {
+      prepare({ attachment, conversationId, relatedContextId, replyToId, senderId, senderName, text, id }) {
         return {
           payload: {
             conversationId,
             senderId,
             message: {
-              id: `MSG-${Date.now().toString(36).toUpperCase()}`,
+              id: id || createMessageId(),
               senderId,
               senderName,
               text: text.trim(),
@@ -706,6 +745,15 @@ const communicationSlice = createSlice({
           },
         }
       },
+    },
+    resendMessage(state, action) {
+      const conversation = state.conversations.find(
+        (item) => item.id === action.payload.conversationId,
+      )
+      const message = conversation?.messages.find((item) => item.id === action.payload.messageId)
+      if (!message) return
+      message.syncFailed = false
+      message.pending = true
     },
     setMessageSyncFailed(state, action) {
       const conversation = state.conversations.find(
@@ -739,9 +787,6 @@ const communicationSlice = createSlice({
         message.readBy ||= []
         const senderId = String(message.senderId)
         if (senderId === readerId) return
-        if (!message.readBy.map(String).includes(senderId)) {
-          message.readBy.push(senderId)
-        }
         if (!message.deliveredTo.map(String).includes(readerId)) {
           message.deliveredTo.push(readerId)
         }
@@ -811,6 +856,9 @@ const communicationSlice = createSlice({
       if (!text) return
       message.text = text
       message.editedAt = new Date().toISOString()
+      if (conversation.messages[conversation.messages.length - 1]?.id === message.id) {
+        applyLastMessagePreview(conversation, message)
+      }
     },
     deleteMessageLocally(state, action) {
       const conversation = state.conversations.find(
@@ -819,8 +867,16 @@ const communicationSlice = createSlice({
       const message = conversation?.messages.find((item) => item.id === action.payload.messageId)
       if (!message || !conversation.participantIds.includes(action.payload.userId)) return
       message.deletedBy ||= []
-      if (!message.deletedBy.includes(action.payload.userId)) {
-        message.deletedBy.push(action.payload.userId)
+      const userId = String(action.payload.userId)
+      const isAuthor = String(message.senderId) === userId
+      // Auteur : suppression pour tous les participants. Sinon : soft-delete personnel.
+      const targets = isAuthor
+        ? parseIdList(conversation.participantIds).map(String)
+        : [userId]
+      for (const target of targets) {
+        if (!message.deletedBy.map(String).includes(target)) {
+          message.deletedBy.push(target)
+        }
       }
     },
     toggleConversationBlock(state, action) {
@@ -845,6 +901,8 @@ const communicationSlice = createSlice({
             subject: values.subject.trim(),
             priority: values.priority,
             category: values.category || 'question',
+            contributionRef: values.contributionRef || null,
+            paymentId: values.paymentId || null,
             status: 'waiting_agent',
             messages: [
               {
@@ -923,8 +981,20 @@ const communicationSlice = createSlice({
     },
     receiveRemoteNotification(state, action) {
       if (action.payload.type === 'message') return
-      const exists = state.notifications.some((n) => n.id === action.payload.id)
-      if (!exists) state.notifications.unshift(normalizeNotification(action.payload))
+      const normalized = normalizeNotification(action.payload)
+      const index = state.notifications.findIndex((n) => n.id === normalized.id)
+      if (index >= 0) {
+        state.notifications[index] = normalizeNotification({
+          ...state.notifications[index],
+          ...normalized,
+        })
+        if (normalized.read === false) {
+          const [item] = state.notifications.splice(index, 1)
+          state.notifications.unshift(item)
+        }
+        return
+      }
+      state.notifications.unshift(normalized)
     },
     setConversationMessages(state, action) {
       const conversation =
@@ -940,7 +1010,9 @@ const communicationSlice = createSlice({
       const localOnly = conversation.messages.filter(
         (message) =>
           !remoteIds.has(message.id) &&
-          now - new Date(message.createdAt).getTime() < PENDING_MESSAGE_MS,
+          (message.syncFailed === true ||
+            message.pending === true ||
+            now - new Date(message.createdAt).getTime() < PENDING_MESSAGE_MS),
       )
       conversation.messages = [...remoteMessages, ...localOnly].sort(
         (left, right) => new Date(left.createdAt) - new Date(right.createdAt),
@@ -1159,6 +1231,31 @@ export const loadOlderConversationMessages = createAsyncThunk(
   },
 )
 
+/** Recherche serveur sur le texte des messages accessibles (RLS). */
+export const searchMessagesRemote = createAsyncThunk(
+  'communications/searchMessagesRemote',
+  async (rawQuery) => {
+    const query = String(rawQuery || '').trim()
+    if (query.length < 2) return []
+    const safe = query.replace(/[%_]/g, '').slice(0, 80)
+    if (!safe) return []
+    const { data, error } = await supabase
+      .from('messages')
+      .select('id, conversation_id, text, created_at, sender_name')
+      .ilike('text', `%${safe}%`)
+      .order('created_at', { ascending: false })
+      .limit(40)
+    if (error) throw error
+    return (data || []).map((row) => ({
+      messageId: row.id,
+      conversationId: row.conversation_id,
+      text: row.text,
+      createdAt: row.created_at,
+      senderName: row.sender_name,
+    }))
+  },
+)
+
 function buildContactOpenResult(conversation, relatedType, relatedId, contextAlreadyLinked) {
   const normalized = normalizeConversation(conversation)
   const context = findRelatedContext(normalized, relatedType, relatedId)
@@ -1371,6 +1468,35 @@ export const refreshConversations = createAsyncThunk(
   },
 )
 
+export const refreshNotifications = createAsyncThunk(
+  'communications/refreshNotifications',
+  async (_, { getState, dispatch }) => {
+    const uid = getState().auth.user?.id
+    if (!uid || !supabase) return 0
+
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', uid)
+      .order('created_at', { ascending: false })
+      .limit(50)
+    if (error) throw error
+
+    dispatch(
+      setAll({
+        notifications: fromRows(data || [])
+          .filter((item) => item.type !== 'message')
+          .map((item) => ({
+            ...item,
+            priority: item.priority || 'normal',
+            archived: item.archived === true,
+          })),
+      }),
+    )
+    return data?.length || 0
+  },
+)
+
 export const ensureConversationFromRemote = createAsyncThunk(
   'communications/ensureConversationFromRemote',
   async (conversationId, { dispatch, getState }) => {
@@ -1407,6 +1533,7 @@ export const {
   restoreConversation,
   saveConversationDraft,
   sendMessage,
+  resendMessage,
   setMessageSyncFailed,
   setMessagePending,
   toggleConversationBlock,

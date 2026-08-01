@@ -29,6 +29,7 @@ export function usePublicationProfile(userId, currentUser) {
 
   useEffect(() => {
     if (!userId || isOwner) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset avant une requête réseau (fetch Supabase)
       setRemoteProfile(null)
       setLoading(false)
       return undefined

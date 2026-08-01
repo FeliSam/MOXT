@@ -36,6 +36,13 @@ export const moxtHubSecondaryGroups = [
     id: 'finance',
     titleKey: 'moxtHub.groups.finance',
     links: [
+      {
+        id: 'contribute',
+        labelKey: 'nav.contribute',
+        path: '/contribute',
+        icon: FiHeart,
+        roles: ['admin', 'superadmin'],
+      },
       { id: 'receipts', labelKey: 'profile.links.receipts', path: '/receipts', icon: FiFileText },
       { id: 'documents', labelKey: 'profile.links.documents', path: '/documents', icon: FiFileText },
       { id: 'disputes', labelKey: 'profile.links.disputes', path: '/disputes', icon: FiAlertTriangle },
@@ -49,6 +56,7 @@ export const moxtHubSecondaryGroups = [
       { id: 'notifications', labelKey: 'nav.notifications', path: '/notifications', icon: FiBell },
       { id: 'support', labelKey: 'profile.links.support', path: '/support', icon: FiHelpCircle },
       { id: 'guide', labelKey: 'nav.guide', path: '/guide', icon: FiBookOpen },
+      { id: 'product-help', labelKey: 'nav.productHelp', path: '/aide', icon: FiHelpCircle },
     ],
   },
   {
@@ -67,6 +75,13 @@ export const moxtHubSecondaryLinks = moxtHubSecondaryGroups.flatMap((group) => g
 
 /** Liens réservés aux rôles staff / admin (alignés sur navigation.js). */
 export const moxtHubAdminLinks = [
+  {
+    id: 'contribute',
+    labelKey: 'nav.contribute',
+    path: '/contribute',
+    icon: FiHeart,
+    roles: ['admin', 'superadmin'],
+  },
   {
     id: 'guide-admin',
     labelKey: 'nav.guideAdmin',
@@ -105,6 +120,9 @@ export const moxtHubAdminLinks = [
 ]
 
 export function filterMoxtHubLinksByRole(links, role) {
-  if (!role) return []
-  return links.filter((link) => !link.roles || link.roles.includes(role))
+  const normalized = String(role || 'user').toLowerCase()
+  return links.filter((link) => {
+    if (!link.roles?.length) return true
+    return link.roles.some((allowed) => String(allowed).toLowerCase() === normalized)
+  })
 }

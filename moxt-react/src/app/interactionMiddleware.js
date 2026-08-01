@@ -17,13 +17,52 @@ import { archivePostsBySource } from '../features/posts/postsSlice'
 import { createNotificationDispatcher } from './notificationTriggers'
 import { hasReviewEligibility } from '@moxt/shared/utils/reviewEligibility.js'
 import { setUser } from '../features/auth/authSlice'
+import { setUserVerified } from '../features/administration/administrationSlice'
 import { sanitizeUserFacingMessage } from '../features/auth/authErrorMessages'
 import { appText } from '../i18n/appText'
+import { supabase } from '../services/supabaseClient'
 
 function notify(store, payload) {
   if (payload.userId) store.dispatch(addNotification(payload))
 }
 
+/** Notifie tous les comptes actifs (RPC serveur) — marketplace / jobs / colis / events / P2P. */
+function notifyAllUsersPublication({ title, message, type, link, priority, dedupeKey }) {
+  if (!supabase) return
+  void supabase
+    .rpc('moxt_notify_all_users', {
+      p_title: String(title || '').slice(0, 200),
+      p_message: String(message || '').slice(0, 500),
+      p_type: type || 'publication',
+      p_link: link || '/',
+      p_priority: priority || 'normal',
+      p_dedupe_key: dedupeKey || null,
+    })
+    .then(({ error }) => {
+      if (error) console.warn('[notifications] fan-out global:', error.message)
+    })
+}
+
+function fanOutPublicationToEveryone(store, state, item, contentType, title, linkBuilder, priority = 'normal') {
+  const publisher = resolvePublisherFromContent(state, item)
+  if (!publisher.publisherId || !item?.id) return
+  const link = linkBuilder(item.id)
+  const label = item.title
+    ? `« ${item.title} »`
+    : item.body
+      ? String(item.body).slice(0, 120)
+      : appText('notificationsFeed.newContentPublished')
+  notifyAllUsersPublication({
+    title: `${publisher.publisherName} — ${title}`,
+    message: label,
+    type: contentType || 'publication',
+    link,
+    priority,
+    dedupeKey: `${contentType || 'pub'}-${item.id}`,
+  })
+}
+
+/** Posts / fil : abonnés uniquement (pas de flood global). */
 function fanOutPublication(store, state, item, contentType, title, linkBuilder, priority = 'normal') {
   const publisher = resolvePublisherFromContent(state, item)
   if (!publisher.publisherId) return
@@ -127,6 +166,17 @@ export const interactionMiddleware = (store) => {
     const user = after.auth.user
     if (user) store.dispatch(setUser({ ...user, status: action.payload.status }))
   }
+  if (action.type === 'administration/updateUserCity' && action.payload.id === actorId) {
+    const user = after.auth.user
+    const city = String(action.payload.city || '').trim()
+    if (user && city) store.dispatch(setUser({ ...user, city }))
+  }
+  if (action.type === 'administration/updateUserOriginCountry' && action.payload.id === actorId) {
+    const user = after.auth.user
+    if (user && action.payload.originCountry) {
+      store.dispatch(setUser({ ...user, originCountry: action.payload.originCountry }))
+    }
+  }
   if (action.type === 'posts/toggleLike') {
     triggers.handlePostLike(before, after, action)
   }
@@ -136,7 +186,7 @@ export const interactionMiddleware = (store) => {
   if (action.type === 'p2p/acceptOffer') {
     triggers.handleP2PAcceptOffer(after, action)
   }
-  if (action.type === 'p2p/updateOrderStatus') {
+  if (action.type === 'p2p/updateOrderStatus' || action.type === 'p2p/expireOrder') {
     triggers.handleP2POrderStatus(before, after, action, actorId)
   }
   if (action.type === 'p2p/addOrderProof') {
@@ -149,9 +199,12 @@ export const interactionMiddleware = (store) => {
     triggers.handleVerificationStatus(before, after, action, actorId)
     if (action.payload.status === 'verified') {
       const request = after.account.verificationRequests.find((item) => item.id === action.payload.id)
-      const currentUser = store.getState().auth.user
-      if (request?.userId && currentUser?.id === request.userId) {
-        store.dispatch(setUser({ ...currentUser, verified: true, status: 'verified' }))
+      if (request?.userId) {
+        store.dispatch(setUserVerified({ id: request.userId, verified: true }))
+        const currentUser = store.getState().auth.user
+        if (currentUser?.id === request.userId) {
+          store.dispatch(setUser({ ...currentUser, verified: true, status: 'verified' }))
+        }
       }
     }
   }
@@ -175,16 +228,102 @@ export const interactionMiddleware = (store) => {
   }
 
   if (action.type === 'transfers/createTransfer' && !action.payload?.blocked) {
+    const needsAcceptance = action.payload.status === 'pending_business_acceptance'
     notify(store, {
       userId: action.payload.businessOwnerId,
-      title: appText('notificationsFeed.newTransferReceived'),
-      message: appText('notificationsFeed.newTransferReceivedBody', {
-        name: action.payload.sender?.firstName,
-        id: action.payload.id,
-      }),
+      title: needsAcceptance
+        ? appText('notificationsFeed.transferAcceptanceRequested')
+        : appText('notificationsFeed.newTransferReceived'),
+      message: needsAcceptance
+        ? appText('notificationsFeed.transferAcceptanceRequestedBody', {
+            name: action.payload.sender?.firstName,
+            id: action.payload.id,
+          })
+        : appText('notificationsFeed.newTransferReceivedBody', {
+            name: action.payload.sender?.firstName,
+            id: action.payload.id,
+          }),
       type: 'transfer',
       link: `/transfers/${action.payload.id}`,
+      priority: needsAcceptance ? 'high' : 'normal',
     })
+  }
+
+  if (action.type === 'transfers/acceptTransferRequest') {
+    const transfer = after.transfers.items.find((item) => item.id === action.payload.id)
+    const previous = before.transfers.items.find((item) => item.id === action.payload.id)
+    if (
+      transfer?.userId &&
+      previous?.status !== transfer.status &&
+      transfer.status === 'pending_payment' &&
+      transfer.userId !== actorId
+    ) {
+      notify(store, {
+        userId: transfer.userId,
+        title: appText('notificationsFeed.transferAccepted'),
+        message: appText('notificationsFeed.transferAcceptedBody', { id: transfer.id }),
+        type: 'transfer',
+        link: `/transfers/${transfer.id}`,
+        priority: 'high',
+      })
+    }
+  }
+
+  if (action.type === 'transfers/declineTransferRequest') {
+    const transfer = after.transfers.items.find((item) => item.id === action.payload.id)
+    const previous = before.transfers.items.find((item) => item.id === action.payload.id)
+    if (
+      transfer?.userId &&
+      previous?.status !== transfer.status &&
+      transfer.status === 'business_declined' &&
+      transfer.userId !== actorId
+    ) {
+      notify(store, {
+        userId: transfer.userId,
+        title: appText('notificationsFeed.transferDeclined'),
+        message: appText('notificationsFeed.transferDeclinedBody', { id: transfer.id }),
+        type: 'transfer',
+        link: `/transfers/${transfer.id}`,
+        priority: 'high',
+      })
+    }
+  }
+
+  if (action.type === 'transfers/reassignTransferExchanger') {
+    const transfer = after.transfers.items.find((item) => item.id === action.payload.id)
+    const previous = before.transfers.items.find((item) => item.id === action.payload.id)
+    if (transfer && previous && transfer.businessId !== previous.businessId) {
+      if (previous.businessOwnerId && previous.businessOwnerId !== actorId) {
+        notify(store, {
+          userId: previous.businessOwnerId,
+          title: appText('notificationsFeed.transferReassignedAway'),
+          message: appText('notificationsFeed.transferReassignedAwayBody', { id: transfer.id }),
+          type: 'transfer',
+          link: `/transfers/${transfer.id}`,
+        })
+      }
+      if (transfer.businessOwnerId && transfer.businessOwnerId !== actorId) {
+        const needsAcceptance = transfer.status === 'pending_business_acceptance'
+        notify(store, {
+          userId: transfer.businessOwnerId,
+          title: needsAcceptance
+            ? appText('notificationsFeed.transferAcceptanceRequested')
+            : appText('notificationsFeed.newTransferReceived'),
+          message: needsAcceptance
+            ? appText('notificationsFeed.transferAcceptanceRequestedBody', {
+                name: transfer.sender?.firstName,
+                id: transfer.id,
+              })
+            : appText('notificationsFeed.newTransferReceivedBody', {
+                name: transfer.sender?.firstName,
+                id: transfer.id,
+              }),
+          type: 'transfer',
+          link: `/transfers/${transfer.id}`,
+          priority: 'high',
+        })
+      }
+    }
   }
 
   // Fusion des deux blocs moderateTransfer qui étaient dupliqués
@@ -229,6 +368,319 @@ export const interactionMiddleware = (store) => {
     const transfer = after.transfers.items.find((item) => item.id === action.payload.id)
     if (transfer) {
       syncTransferReceipt(store, transfer)
+    }
+    if (transfer?.businessOwnerId && transfer.businessOwnerId !== actorId) {
+      notify(store, {
+        userId: transfer.businessOwnerId,
+        title: appText('notificationsFeed.transferCompleted'),
+        message: appText('notificationsFeed.transferCompletedBody', { id: transfer.id }),
+        type: 'transfer',
+        link: `/transfers/${transfer.id}`,
+        priority: 'high',
+      })
+    }
+  }
+
+  if (action.type === 'transfers/cancelTransfer') {
+    const transferId =
+      typeof action.payload === 'string' ? action.payload : action.payload?.id
+    const transfer = after.transfers.items.find((item) => item.id === transferId)
+    const previous = before.transfers.items.find((item) => item.id === transferId)
+    if (
+      transfer?.businessOwnerId &&
+      previous?.status !== 'cancelled' &&
+      transfer.status === 'cancelled' &&
+      transfer.businessOwnerId !== actorId
+    ) {
+      notify(store, {
+        userId: transfer.businessOwnerId,
+        title: appText('notificationsFeed.transferCancelled'),
+        message: appText('notificationsFeed.transferCancelledBody', { id: transfer.id }),
+        type: 'transfer',
+        link: `/transfers/${transfer.id}`,
+        priority: 'high',
+      })
+    }
+  }
+
+  if (action.type === 'transfers/expireOverdueTransfers') {
+    after.transfers.items.forEach((transfer) => {
+      const previous = before.transfers.items.find((item) => item.id === transfer.id)
+      if (!previous || previous.status === transfer.status) return
+      if (transfer.status === 'expired') {
+        ;[transfer.userId, transfer.businessOwnerId]
+          .filter((id) => id && id !== actorId)
+          .forEach((userId) => {
+            notify(store, {
+              userId,
+              title: appText('notificationsFeed.transferExpired'),
+              message: appText('notificationsFeed.transferExpiredBody', { id: transfer.id }),
+              type: 'transfer',
+              link: `/transfers/${transfer.id}`,
+              priority: 'high',
+            })
+          })
+        return
+      }
+      if (
+        transfer.status === 'business_declined' &&
+        previous.status === 'pending_business_acceptance'
+      ) {
+        if (transfer.userId && transfer.userId !== actorId) {
+          notify(store, {
+            userId: transfer.userId,
+            title: appText('notificationsFeed.transferAcceptanceExpired'),
+            message: appText('notificationsFeed.transferAcceptanceExpiredBody', {
+              id: transfer.id,
+            }),
+            type: 'transfer',
+            link: `/transfers/${transfer.id}`,
+            priority: 'high',
+          })
+        }
+      }
+    })
+  }
+
+  if (action.type === 'jobs/applyToJob') {
+    const application = after.jobs.applications.find((item) => item.id === action.payload.id)
+    const job = after.jobs.items.find((item) => item.id === application?.jobId)
+    if (job?.ownerId && job.ownerId !== actorId) {
+      notify(store, {
+        userId: job.ownerId,
+        title: appText('notificationsFeed.newApplication'),
+        message: appText('notificationsFeed.newApplicationBody', {
+          name: application?.applicantName || appText('notificationsFeed.someone'),
+          title: job.title || appText('notificationsFeed.thisJob'),
+        }),
+        type: 'job',
+        link: `/jobs/${job.id}`,
+        priority: 'high',
+      })
+    }
+  }
+
+  if (action.type === 'jobs/withdrawApplication') {
+    const application = after.jobs.applications.find((item) => item.id === action.payload.id)
+    const previous = before.jobs.applications.find((item) => item.id === action.payload.id)
+    const job = after.jobs.items.find((item) => item.id === application?.jobId)
+    if (
+      job?.ownerId &&
+      previous?.status !== 'withdrawn' &&
+      application?.status === 'withdrawn' &&
+      job.ownerId !== actorId
+    ) {
+      notify(store, {
+        userId: job.ownerId,
+        title: appText('notificationsFeed.applicationWithdrawn'),
+        message: appText('notificationsFeed.applicationWithdrawnBody', {
+          title: job.title || appText('notificationsFeed.thisJob'),
+        }),
+        type: 'job',
+        link: `/jobs/${job.id}`,
+      })
+    }
+  }
+
+  if (action.type === 'events/registerForEvent') {
+    const registration = after.events.registrations.find((item) => item.id === action.payload.id)
+    const event = after.events.items.find((item) => item.id === registration?.eventId)
+    if (event?.ownerId && event.ownerId !== actorId) {
+      notify(store, {
+        userId: event.ownerId,
+        title: appText('notificationsFeed.newRegistration'),
+        message: appText('notificationsFeed.newRegistrationBody', {
+          name: registration?.participantName || appText('notificationsFeed.someone'),
+          title: event.title || appText('notificationsFeed.thisEvent'),
+        }),
+        type: 'event',
+        link: `/events/${event.id}`,
+        priority: 'high',
+      })
+    }
+  }
+
+  if (action.type === 'events/cancelRegistration') {
+    const registration = after.events.registrations.find((item) => item.id === action.payload.id)
+    const previous = before.events.registrations.find((item) => item.id === action.payload.id)
+    const event = after.events.items.find((item) => item.id === registration?.eventId)
+    if (
+      event?.ownerId &&
+      previous?.status !== 'cancelled' &&
+      registration?.status === 'cancelled' &&
+      event.ownerId !== actorId
+    ) {
+      notify(store, {
+        userId: event.ownerId,
+        title: appText('notificationsFeed.registrationCancelled'),
+        message: appText('notificationsFeed.registrationCancelledBody', {
+          title: event.title || appText('notificationsFeed.thisEvent'),
+        }),
+        type: 'event',
+        link: `/events/${event.id}`,
+      })
+    }
+  }
+
+  if (action.type === 'parcels/requestParcelReservation') {
+    const request = after.parcels.requests.find((item) => item.id === action.payload.id)
+    if (request?.ownerId && request.ownerId !== actorId) {
+      notify(store, {
+        userId: request.ownerId,
+        title: appText('notificationsFeed.newParcelRequest'),
+        message: appText('notificationsFeed.newParcelRequestBody', {
+          name: request.requesterName || appText('notificationsFeed.someone'),
+          kg: request.kg,
+        }),
+        type: 'parcel',
+        link: `/parcels/${request.parcelId}`,
+        priority: 'high',
+      })
+    }
+  }
+
+  if (action.type === 'parcels/cancelParcelRequest') {
+    const request = after.parcels.requests.find((item) => item.id === action.payload.id)
+    const previous = before.parcels.requests.find((item) => item.id === action.payload.id)
+    if (
+      request?.ownerId &&
+      previous?.status !== 'cancelled' &&
+      request.status === 'cancelled' &&
+      request.ownerId !== actorId
+    ) {
+      notify(store, {
+        userId: request.ownerId,
+        title: appText('notificationsFeed.parcelRequestCancelled'),
+        message: appText('notificationsFeed.parcelRequestCancelledBody', {
+          kg: request.kg,
+        }),
+        type: 'parcel',
+        link: `/parcels/${request.parcelId}`,
+      })
+    }
+  }
+
+  if (action.type === 'parcels/updateParcelProofStatus') {
+    const parcel = after.parcels.items.find((item) => item.id === action.payload.id)
+    const previous = before.parcels.items.find((item) => item.id === action.payload.id)
+    if (
+      parcel?.ownerId &&
+      previous?.proofStatus !== parcel.proofStatus &&
+      parcel.ownerId !== actorId
+    ) {
+      notify(store, {
+        userId: parcel.ownerId,
+        title: appText('notificationsFeed.parcelProofReviewed'),
+        message: appText('notificationsFeed.parcelProofReviewedBody', {
+          status: parcel.proofStatus,
+        }),
+        type: 'parcel',
+        link: `/parcels/${parcel.id}`,
+      })
+    }
+  }
+
+  if (action.type === 'businesses/createBusinessRequest') {
+    const request = after.businesses.requests.find((item) => item.id === action.payload.id)
+    const business = after.businesses.items.find((item) => item.id === request?.businessId)
+    const businessOwnerId = business?.ownerId
+    if (businessOwnerId && businessOwnerId !== actorId) {
+      notify(store, {
+        userId: businessOwnerId,
+        title: appText('notificationsFeed.businessRequestCreated'),
+        message: appText('notificationsFeed.businessRequestCreatedBody', {
+          name: request?.requesterName || appText('notificationsFeed.someone'),
+        }),
+        type: 'business',
+        link: '/professional?tab=requests',
+        priority: 'high',
+      })
+    }
+  }
+
+  if (action.type === 'businesses/addBusinessMember') {
+    const memberId = action.payload?.userId
+    if (memberId && memberId !== actorId) {
+      notify(store, {
+        userId: memberId,
+        title: appText('notificationsFeed.businessMemberAdded'),
+        message: appText('notificationsFeed.businessMemberAddedBody'),
+        type: 'business',
+        link: '/professional',
+      })
+    }
+  }
+
+  if (action.type === 'businesses/removeBusinessMember') {
+    const previous = before.businesses.members.find(
+      (item) => item.id === action.payload.id && item.businessId === action.payload.businessId,
+    )
+    const memberId = previous?.userId
+    if (memberId && memberId !== actorId) {
+      notify(store, {
+        userId: memberId,
+        title: appText('notificationsFeed.businessMemberRemoved'),
+        message: appText('notificationsFeed.businessMemberRemovedBody'),
+        type: 'business',
+        link: '/professional',
+      })
+    }
+  }
+
+  if (action.type === 'administration/updateUserStatus') {
+    const actor = store.getState().auth?.user
+    const actorIsAdmin = ['admin', 'superadmin'].includes(actor?.role)
+    const targetId = action.payload?.id
+    const status = action.payload?.status
+    // Uniquement après une vraie action admin (anti-spoof via Redux/devtools).
+    if (
+      actorIsAdmin &&
+      targetId &&
+      targetId !== actorId &&
+      ['suspended', 'banned', 'blocked', 'disabled', 'pending_deletion'].includes(status)
+    ) {
+      notify(store, {
+        userId: targetId,
+        title: appText('notificationsFeed.accountStatusChanged'),
+        message: appText('notificationsFeed.accountStatusChangedBody', { status }),
+        type: 'system',
+        link: '/support',
+        priority: 'high',
+      })
+    }
+  }
+
+  if (action.type === 'p2p/moderateOffer') {
+    const actor = store.getState().auth?.user
+    const actorIsStaff = ['admin', 'superadmin', 'moderator'].includes(actor?.role)
+    const offer = after.p2p.offers.find((item) => item.id === action.payload.id)
+    if (actorIsStaff && offer?.ownerId && offer.ownerId !== actorId) {
+      notify(store, {
+        userId: offer.ownerId,
+        title: appText('notificationsFeed.p2pOfferModerated'),
+        message: appText('notificationsFeed.p2pOfferModeratedBody', {
+          status: action.payload.status || offer.status,
+        }),
+        type: 'p2p',
+        link: `/p2p/${offer.id}`,
+        priority: 'high',
+      })
+    }
+  }
+
+  if (action.type === 'communications/updateSupportStatus') {
+    const ticket = after.communications.support.find((item) => item.id === action.payload.id)
+    const previous = before.communications.support.find((item) => item.id === action.payload.id)
+    if (ticket?.userId && previous?.status !== ticket.status && ticket.userId !== actorId) {
+      notify(store, {
+        userId: ticket.userId,
+        title: appText('notificationsFeed.supportStatusUpdated'),
+        message: appText('notificationsFeed.supportStatusUpdatedBody', {
+          status: ticket.status,
+        }),
+        type: 'support',
+        link: `/messages?relatedType=support&relatedId=${encodeURIComponent(`support-${ticket.userId}`)}`,
+      })
     }
   }
 
@@ -383,36 +835,40 @@ export const interactionMiddleware = (store) => {
   }
 
   if (action.type === 'businesses/moderateBusiness') {
-    const previous = before.businesses.items.find((item) => item.id === action.payload.id)
-    const business = after.businesses.items.find((item) => item.id === action.payload.id)
-    const { status } = action.payload
-    if (business?.ownerId && business.ownerId !== actorId && previous?.status !== status) {
-      const wasPublishReady = BUSINESS_VISIBLE_STATUSES.includes(previous?.status)
-      const isPublishReady = BUSINESS_VISIBLE_STATUSES.includes(status)
-      if (isPublishReady && !wasPublishReady) {
-        notify(store, {
-          userId: business.ownerId,
-          title: appText('notificationsFeed.businessVerified'),
-          message: appText('notificationsFeed.businessVerifiedBody', { name: business.name }),
-          type: 'business',
-          link: `/businesses/${business.id}`,
-        })
-      } else if (status === 'rejected') {
-        notify(store, {
-          userId: business.ownerId,
-          title: appText('notificationsFeed.businessRejected'),
-          message: appText('notificationsFeed.businessRejectedBody', { name: business.name }),
-          type: 'moderation',
-          link: `/businesses/${business.id}`,
-        })
-      } else if (!isPublishReady) {
-        notify(store, {
-          userId: business.ownerId,
-          title: appText('notificationsFeed.businessUpdated'),
-          message: appText('notificationsFeed.businessUpdatedBody', { status }),
-          type: 'moderation',
-          link: `/businesses/${business.id}`,
-        })
+    const actor = store.getState().auth?.user
+    const actorIsStaff = ['admin', 'superadmin', 'moderator'].includes(actor?.role)
+    if (actorIsStaff) {
+      const previous = before.businesses.items.find((item) => item.id === action.payload.id)
+      const business = after.businesses.items.find((item) => item.id === action.payload.id)
+      const { status } = action.payload
+      if (business?.ownerId && business.ownerId !== actorId && previous?.status !== status) {
+        const wasPublishReady = BUSINESS_VISIBLE_STATUSES.includes(previous?.status)
+        const isPublishReady = BUSINESS_VISIBLE_STATUSES.includes(status)
+        if (isPublishReady && !wasPublishReady) {
+          notify(store, {
+            userId: business.ownerId,
+            title: appText('notificationsFeed.businessVerified'),
+            message: appText('notificationsFeed.businessVerifiedBody', { name: business.name }),
+            type: 'business',
+            link: `/businesses/${business.id}`,
+          })
+        } else if (status === 'rejected') {
+          notify(store, {
+            userId: business.ownerId,
+            title: appText('notificationsFeed.businessRejected'),
+            message: appText('notificationsFeed.businessRejectedBody', { name: business.name }),
+            type: 'moderation',
+            link: `/businesses/${business.id}`,
+          })
+        } else if (!isPublishReady) {
+          notify(store, {
+            userId: business.ownerId,
+            title: appText('notificationsFeed.businessUpdated'),
+            message: appText('notificationsFeed.businessUpdatedBody', { status }),
+            type: 'moderation',
+            link: `/businesses/${business.id}`,
+          })
+        }
       }
     }
   }
@@ -428,16 +884,20 @@ export const interactionMiddleware = (store) => {
   }
   const moderation = moderationDomains[action.type]
   if (moderation) {
-    const [domain, path, label] = moderation
-    const resource = after[domain].items.find((item) => item.id === action.payload.id)
-    if (resource?.ownerId && resource.ownerId !== actorId) {
-      notify(store, {
-        userId: resource.ownerId,
-        title: appText('notificationsFeed.resourceUpdated', { label }),
-        message: appText('notificationsFeed.newStatus', { status: action.payload.status }),
-        type: 'moderation',
-        link: `${path}${resource.id}`,
-      })
+    const actor = store.getState().auth?.user
+    const actorIsStaff = ['admin', 'superadmin', 'moderator'].includes(actor?.role)
+    if (actorIsStaff) {
+      const [domain, path, label] = moderation
+      const resource = after[domain].items.find((item) => item.id === action.payload.id)
+      if (resource?.ownerId && resource.ownerId !== actorId) {
+        notify(store, {
+          userId: resource.ownerId,
+          title: appText('notificationsFeed.resourceUpdated', { label }),
+          message: appText('notificationsFeed.newStatus', { status: action.payload.status }),
+          type: 'moderation',
+          link: `${path}${resource.id}`,
+        })
+      }
     }
   }
 
@@ -587,7 +1047,7 @@ export const interactionMiddleware = (store) => {
   }
 
   if (action.type === 'marketplace/publishListing/fulfilled') {
-    fanOutPublication(
+    fanOutPublicationToEveryone(
       store,
       after,
       action.payload,
@@ -599,35 +1059,50 @@ export const interactionMiddleware = (store) => {
   }
 
   if (action.type === 'jobs/createJob') {
-    fanOutPublication(
+    fanOutPublicationToEveryone(
       store,
       after,
       action.payload,
       'job',
       appText('notificationsFeed.fanOutJob'),
       (id) => `/jobs/${id}`,
+      'high',
     )
   }
 
   if (action.type === 'events/createEvent') {
-    fanOutPublication(
+    fanOutPublicationToEveryone(
       store,
       after,
       action.payload,
       'event',
       appText('notificationsFeed.fanOutEvent'),
       (id) => `/events/${id}`,
+      'high',
     )
   }
 
   if (action.type === 'parcels/createParcel') {
-    fanOutPublication(
+    fanOutPublicationToEveryone(
       store,
       after,
       action.payload,
       'parcel',
       appText('notificationsFeed.fanOutParcel'),
       (id) => `/parcels/${id}`,
+      'high',
+    )
+  }
+
+  if (action.type === 'p2p/createOffer') {
+    fanOutPublicationToEveryone(
+      store,
+      after,
+      action.payload,
+      'p2p',
+      appText('notificationsFeed.fanOutP2p'),
+      (id) => `/p2p/${id}`,
+      'high',
     )
   }
 
@@ -638,7 +1113,7 @@ export const interactionMiddleware = (store) => {
       action.payload,
       'post',
       appText('notificationsFeed.fanOutPost'),
-      () => '/news',
+      (id) => `/news?post=${id}`,
       'high',
     )
   }
@@ -652,10 +1127,20 @@ export const interactionMiddleware = (store) => {
       'auth/verifyEmailRegistration/rejected',
     ].includes(action.type)
   ) {
-    const message =
+    const rawMessage =
       typeof action.payload === 'string'
         ? action.payload
         : action.error?.message || appText('toasts.actionCouldNotComplete')
+    // Annulations volontaires (navigation, Strict Mode) — pas une vraie erreur métier.
+    const abortedMessage = String(rawMessage || '').trim()
+    const aborted =
+      action.error?.name === 'AbortError' ||
+      action.meta?.aborted === true ||
+      /abort(ed|error)?/i.test(abortedMessage)
+    if (aborted) {
+      return result
+    }
+    const message = sanitizeUserFacingMessage(rawMessage, appText)
     const rejectedTitles = {
       'auth/requestPhoneVerificationOtp/rejected': appText('toasts.smsSendFailed'),
       'auth/confirmPhoneVerification/rejected': appText('toasts.verificationFailed'),
@@ -663,7 +1148,7 @@ export const interactionMiddleware = (store) => {
     store.dispatch(
       addToast({
         title: rejectedTitles[action.type] || appText('toasts.genericError'),
-        message: sanitizeUserFacingMessage(message, appText),
+        message,
         tone: 'error',
       }),
     )

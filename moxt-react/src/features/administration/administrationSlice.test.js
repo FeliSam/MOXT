@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import reducer, { updateUserRole, updateUserStatus } from './administrationSlice'
+import reducer, {
+  setUserVerified,
+  updateUserCity,
+  updateUserRole,
+  updateUserStatus,
+} from './administrationSlice'
 
 describe('administrationSlice', () => {
   beforeEach(() => localStorage.clear())
@@ -10,5 +15,19 @@ describe('administrationSlice', () => {
     const suspended = reducer(promoted, updateUserStatus({ id: 'u1', status: 'suspended' }))
     const invalid = reducer(suspended, updateUserRole({ id: 'u1', role: 'root' }))
     expect(invalid.users[0]).toMatchObject({ role: 'professional', status: 'suspended' })
+  })
+
+  it('permet de modifier la ville', () => {
+    const initial = { users: [{ id: 'u1', role: 'user', status: 'active', city: 'Moscou' }] }
+    const updated = reducer(initial, updateUserCity({ id: 'u1', city: '  Koursk  ' }))
+    expect(updated.users[0].city).toBe('Koursk')
+    const ignored = reducer(updated, updateUserCity({ id: 'u1', city: '   ' }))
+    expect(ignored.users[0].city).toBe('Koursk')
+  })
+
+  it('marque un utilisateur comme vérifié', () => {
+    const initial = { users: [{ id: 'u1', role: 'user', status: 'active', verified: false }] }
+    const updated = reducer(initial, setUserVerified({ id: 'u1', verified: true }))
+    expect(updated.users[0].verified).toBe(true)
   })
 })

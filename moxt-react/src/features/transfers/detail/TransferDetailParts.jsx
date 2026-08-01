@@ -75,19 +75,21 @@ export function TransferParticipantCard({
   const initials = `${party.firstName?.[0] || ''}${party.lastName?.[0] || ''}`.toUpperCase()
   const canFavorite = typeof onToggleFavorite === 'function'
 
+  const fullName = `${party.firstName || ''} ${party.lastName || ''}`.trim()
+
   return (
-    <div className="rounded-2xl bg-[var(--app-surface-muted)] p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-3">
+    <div className="min-w-0 overflow-hidden rounded-2xl bg-[var(--app-surface-muted)] p-4">
+      <div className="flex min-w-0 items-start justify-between gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
           <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand-700 text-sm font-black text-white dark:bg-brand-600">
             {initials || <FiUser />}
           </span>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1 overflow-hidden">
             <span className="block text-xs font-black uppercase tracking-wider text-brand-700 dark:text-brand-300">
               {title}
             </span>
-            <strong className="block truncate">
-              {party.firstName} {party.lastName}
+            <strong className="block truncate" title={fullName}>
+              {fullName}
             </strong>
           </div>
         </div>
@@ -111,8 +113,12 @@ export function TransferParticipantCard({
           </button>
         ) : null}
       </div>
-      <span className="mt-3 block text-xs text-[var(--app-text-muted)]">{party.phone}</span>
-      <span className="mt-1 block text-xs text-[var(--app-text-muted)]">{party.method}</span>
+      <span className="mt-3 block truncate text-xs text-[var(--app-text-muted)]" title={party.phone}>
+        {party.phone}
+      </span>
+      <span className="mt-1 block truncate text-xs text-[var(--app-text-muted)]" title={party.method}>
+        {party.method}
+      </span>
     </div>
   )
 }

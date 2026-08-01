@@ -104,9 +104,9 @@ function withTimeout(promise, timeoutMs, reason) {
 async function ensureServiceWorkerRegistration() {
   if (!('serviceWorker' in navigator)) return null
 
-  let registration = await navigator.serviceWorker.getRegistration()
+  const registration = await navigator.serviceWorker.getRegistration()
   if (!registration) {
-    registration = await navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
+    await navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
   }
 
   return withTimeout(navigator.serviceWorker.ready, SW_READY_TIMEOUT_MS, 'service_worker_timeout')

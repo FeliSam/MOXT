@@ -15,6 +15,7 @@ const PRESERVED_LOCAL_KEYS = new Set([
   'moxt-african-countries-v1',
   'moxt-russian-cities-v1',
   'moxt-rub-xof-rate-v1',
+  'moxt-platform-rates-v1',
   'moxt-legacy-migration-v1',
   'moxt-storage-manifest-v2',
   'moxt-business-sync-v1',

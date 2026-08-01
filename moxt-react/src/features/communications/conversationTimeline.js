@@ -145,8 +145,40 @@ export function appendRelatedContext(
   }
 }
 
+/**
+ * True if at least one message is genuinely "about" this context: either
+ * explicitly tied to it (user replied on the context card) or sent while it
+ * was the active context (after it was introduced, before a newer one
+ * replaced it). A context nobody ever wrote about should stay invisible —
+ * otherwise every "Contacter" click would permanently reveal a reason even
+ * when the person backed out without saying anything.
+ */
+export function contextHasMessages(context, conversation) {
+  if (!context?.id) return false
+  const messages = conversation?.messages || []
+  if (messages.some((m) => m.relatedContextId === context.id)) return true
+
+  const sortedContexts = normalizeRelatedContexts(conversation)
+    .slice()
+    .sort((a, b) => new Date(a.introducedAt) - new Date(b.introducedAt))
+  const index = sortedContexts.findIndex((entry) => entry.id === context.id)
+  if (index === -1) return false
+
+  const introducedAt = new Date(context.introducedAt).getTime()
+  const nextIntroducedAt = sortedContexts[index + 1]
+    ? new Date(sortedContexts[index + 1].introducedAt).getTime()
+    : Infinity
+
+  return messages.some((message) => {
+    if (message.relatedContextId) return false // tagged to a different context explicitly
+    const at = new Date(message.createdAt).getTime()
+    return at >= introducedAt && at < nextIntroducedAt
+  })
+}
+
 export function buildConversationTimeline(conversation, userId) {
   const relatedItems = normalizeRelatedContexts(conversation)
+    .filter((entry) => contextHasMessages(entry, conversation))
     .map((entry) => {
       const preview = buildContextPreview(entry, conversation)
       if (!preview?.path) return null

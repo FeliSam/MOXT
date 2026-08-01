@@ -4,7 +4,9 @@ export const DIRECTIONS = {
 }
 
 export const TRANSFER_STATUS = {
+  PENDING_ACCEPTANCE: 'pending_business_acceptance',
   PENDING: 'pending_payment',
+  DECLINED: 'business_declined',
   DECLARED: 'payment_declared',
   RECEIVED: 'payment_received',
   PROCESSING: 'processing',
@@ -24,6 +26,7 @@ export const TRANSFER_TRANSITIONS = {
 export const TRANSFER_CONFIG = {
   feePercent: 2.5,
   rateMarginPercent: 1,
+  acceptanceWindowMinutes: 10,
   paymentWindowMinutes: 30,
   minimums: { XOF: 1000, RUB: 500 },
   limits: {
@@ -43,6 +46,25 @@ export const FALLBACK_RATES = {
     to: 'XOF',
     rawRate: 9.85,
   },
+}
+
+/**
+ * Taux de secours RUB → devise locale, utilisés uniquement si l'API de change
+ * est injoignable. Ordres de grandeur relevés en juillet 2026 : ils servent à
+ * ne pas afficher un écran vide, jamais à valider une opération réelle —
+ * l'interface signale explicitement qu'il s'agit d'un taux de secours.
+ *
+ * Ne couvre que les corridors réellement ouverts (cf. DEFAULT_LIMITS).
+ */
+export const FALLBACK_RUB_TO_CURRENCY = {
+  XOF: 9.85,
+  XAF: 9.85,
+  GHS: 0.13,
+  NGN: 18.5,
+  KES: 1.55,
+  UGX: 44.0,
+  TZS: 31.0,
+  RWF: 15.5,
 }
 
 export const PAYMENT_METHODS = {

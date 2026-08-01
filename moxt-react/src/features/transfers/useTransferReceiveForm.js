@@ -28,6 +28,7 @@ export function useTransferReceiveForm({ transfer, user, onSuccess }) {
 
   useEffect(() => {
     if (!transfer) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- comble le montant par défaut si `transfer` arrive après le montage (chargement async)
     setValues((prev) => {
       if (prev.receivedAmount) return prev
       const nextAmount = defaultReceivedAmountInput(transfer)

@@ -6,6 +6,7 @@ import { Card } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
 import { Select } from '../../components/ui/Select'
 import { useLanguage } from '../../contexts/useLanguage'
+import { selectPlatformFees } from '../admin/platformRatesSlice'
 import { currencyForCountry, DIRECTIONS } from './transferConfig'
 import { calculateTransfer, formatMoney, validateTransferAmount } from './transferUtils'
 import { useExchangeRate } from './useExchangeRate'
@@ -13,6 +14,7 @@ import { useExchangeRate } from './useExchangeRate'
 export function TransferCalculator({ originCountry: originCountryProp, verified = false }) {
   const { t } = useLanguage()
   const user = useSelector((state) => state.auth.user)
+  const platformFees = useSelector(selectPlatformFees)
   const originCountry =
     originCountryProp || user?.originCountry || (user?.country !== 'RU' ? user?.country : 'BJ')
   const originCurrency = currencyForCountry(originCountry)
@@ -21,8 +23,16 @@ export function TransferCalculator({ originCountry: originCountryProp, verified 
   const liveRate = useExchangeRate(originCurrency)
   const selectedRate = direction === DIRECTIONS.BJ_TO_RU ? liveRate.originToRub : liveRate.rubToOrigin
   const calculation = useMemo(
-    () => calculateTransfer(amount, direction, undefined, selectedRate, originCountry),
-    [amount, direction, selectedRate, originCountry],
+    () =>
+      calculateTransfer(
+        amount,
+        direction,
+        platformFees.feePercent,
+        selectedRate,
+        originCountry,
+        platformFees.transferFeePercent,
+      ),
+    [amount, direction, selectedRate, originCountry, platformFees.feePercent, platformFees.transferFeePercent],
   )
   const amountError = validateTransferAmount(amount, direction, verified, 0, originCountry, t)
 

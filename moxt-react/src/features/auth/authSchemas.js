@@ -259,18 +259,17 @@ export const resetPasswordSchema = defaultSchemas.resetPasswordSchema
 export const profileSchema = defaultSchemas.profileSchema
 
 export const oauthProfileStepFields = {
-  2: ['firstName', 'lastName', 'email', 'originCountry'],
-  3: ['residenceCountry', 'residenceCity', 'russianPhone', 'originPhone', 'acceptTerms'],
+  2: ['firstName', 'lastName', 'email', 'originCountry', 'originPhone'],
+  3: ['residenceCountry', 'residenceCity', 'russianPhone', 'acceptTerms'],
 }
 
 export const registerStepFields = {
   1: ['firstName', 'lastName', 'email'],
-  2: ['originCountry'],
+  2: ['originCountry', 'originPhone'],
   3: [
     'residenceCountry',
     'residenceCity',
     'russianPhone',
-    'originPhone',
     'password',
     'confirmPassword',
     'acceptTerms',

@@ -1,16 +1,54 @@
 import { supabase } from '../../services/supabaseClient'
 import { fromRow } from '../../services/remoteRowMapper'
+import {
+  normalizeTransferCountryCode,
+  TRANSFER_ACCOUNT_SLOTS,
+} from '../transfers/transferAccountUtils'
 
-export function businessFromRemoteRow(row) {
+function sanitizeTransferAccounts(accounts, ownerOriginCountry = 'BJ') {
+  const safeOrigin = normalizeTransferCountryCode(ownerOriginCountry, 'BJ')
+  if (!Array.isArray(accounts)) return []
+  return accounts.map((account) => {
+    const slot =
+      account?.slot === TRANSFER_ACCOUNT_SLOTS.RU || account?.slot === TRANSFER_ACCOUNT_SLOTS.ORIGIN
+        ? account.slot
+        : normalizeTransferCountryCode(account?.country, safeOrigin) === 'RU'
+          ? TRANSFER_ACCOUNT_SLOTS.RU
+          : TRANSFER_ACCOUNT_SLOTS.ORIGIN
+    const raw = String(account?.country ?? '').trim().toUpperCase()
+    const countryValid = raw === 'RU' || /^[A-Z]{2}$/.test(raw)
+    return {
+      ...account,
+      slot,
+      country: slot === TRANSFER_ACCOUNT_SLOTS.RU
+        ? 'RU'
+        : countryValid && raw !== 'RU'
+          ? raw
+          : safeOrigin,
+    }
+  })
+}
+
+export function businessFromRemoteRow(row, { ownerOriginCountry } = {}) {
   if (!row) return null
   const base = fromRow(row)
   const payload = row.payload && typeof row.payload === 'object' ? row.payload : {}
+  const originHint =
+    ownerOriginCountry ||
+    payload.ownerOriginCountry ||
+    base.ownerOriginCountry ||
+    payload.originCountry ||
+    'BJ'
   return {
     ...payload,
     ...base,
     ownerId: base.ownerId != null ? String(base.ownerId) : base.ownerId,
     deletedByUserAt: base.deletedByUserAt || payload.deletedByUserAt || null,
     hours: base.hours || payload.hours || base.scheduleSummary || '',
+    transferAccounts: sanitizeTransferAccounts(base.transferAccounts || payload.transferAccounts, originHint),
+    transferAcceptanceRequired:
+      base.transferAcceptanceRequired === true || payload.transferAcceptanceRequired === true,
+    ownerOriginCountry: normalizeTransferCountryCode(originHint, 'BJ'),
   }
 }
 
@@ -52,6 +90,7 @@ export function businessToRemoteRow(business) {
     schedule: business.schedule || [],
     payload: {
       hours: business.hours?.trim() || business.scheduleSummary || '',
+      transferAcceptanceRequired: business.transferAcceptanceRequired === true,
       ...(business.deletedByUserAt ? { deletedByUserAt: business.deletedByUserAt } : {}),
     },
     rating: Number(business.rating) || 0,

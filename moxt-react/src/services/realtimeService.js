@@ -26,6 +26,13 @@ import { businessFromRemoteRow } from '../features/businesses/businessRemote'
 import { setOnlineUsers } from '../features/presence/presenceSlice'
 import { transferFromRemoteRow } from '../features/transfers/transferRemote'
 import { receiveRemoteTransfer } from '../features/transfers/transferSlice'
+import { p2pOfferFromRemoteRow, p2pOrderFromRemoteRow } from '../features/sync/entityRemote'
+import {
+  receiveRemoteOffer,
+  receiveRemoteOrder,
+  removeRemoteOffer,
+  removeRemoteOrder,
+} from '../features/p2p/p2pSlice'
 import {
   isTransferRelevantToUser,
   ownedBusinessIdsForUser,
@@ -167,8 +174,24 @@ async function ingestRemoteMessage(conversationId, row, userId, dispatch, getSta
   if (!userParticipatesInConversation(conversation, userId)) return
 
   const message = normalizeMessage(fromRow(row))
+  // Blocage : le bloqueur n'ingère pas les messages du pair.
+  if (
+    (conversation.blockedBy || []).map(String).includes(String(userId)) &&
+    String(message.senderId) !== String(userId)
+  ) {
+    return
+  }
+
   const alreadyExists = conversation.messages.some((m) => m.id === message.id)
-  if (alreadyExists) return
+  if (alreadyExists) {
+    dispatch(
+      syncRemoteMessage({
+        ...message,
+        conversationId: conversation.id,
+      }),
+    )
+    return
+  }
   dispatch(receiveRemoteMessage({ conversationId: conversation.id, message }))
 }
 
@@ -190,8 +213,10 @@ let channel = null
 let activeUserId = null
 let reconnectTimer = null
 let onlineHandler = null
+let visibilityHandler = null
 let connectionStatus = 'idle'
 let heartbeatTimer = null
+let presenceDispatch = null
 
 const HEARTBEAT_INTERVAL_MS = 4 * 60 * 1000
 
@@ -208,12 +233,27 @@ function startHeartbeat(userId) {
   stopHeartbeat()
   void sendActivityHeartbeat(userId)
   heartbeatTimer = setInterval(() => void sendActivityHeartbeat(userId), HEARTBEAT_INTERVAL_MS)
+  if (typeof document !== 'undefined' && !visibilityHandler) {
+    visibilityHandler = () => {
+      if (document.visibilityState === 'visible' && activeUserId === userId) {
+        void sendActivityHeartbeat(userId)
+        if (channel) {
+          void channel.track({ online_at: new Date().toISOString() })
+        }
+      }
+    }
+    document.addEventListener('visibilitychange', visibilityHandler)
+  }
 }
 
 function stopHeartbeat() {
   if (heartbeatTimer) {
     clearInterval(heartbeatTimer)
     heartbeatTimer = null
+  }
+  if (visibilityHandler && typeof document !== 'undefined') {
+    document.removeEventListener('visibilitychange', visibilityHandler)
+    visibilityHandler = null
   }
 }
 
@@ -236,7 +276,7 @@ function clearReconnectTimer() {
   }
 }
 
-function teardownChannel() {
+function teardownChannel(dispatch) {
   stopHeartbeat()
   if (channel) {
     supabase.removeChannel(channel)
@@ -244,6 +284,11 @@ function teardownChannel() {
   }
   activeUserId = null
   setConnectionStatus('idle')
+  if (dispatch) {
+    dispatch(setOnlineUsers([]))
+  } else if (presenceDispatch) {
+    presenceDispatch(setOnlineUsers([]))
+  }
 }
 
 function scheduleReconnect(userId, dispatch, getState) {
@@ -274,11 +319,14 @@ function removeOnlineReconnect() {
 function bindChannel(userId, dispatch, getState) {
   setConnectionStatus('connecting')
 
+  const staffRole = getState().auth?.user?.role
+  const isStaff = ['moderator', 'admin', 'superadmin'].includes(staffRole)
+
   const handleTransferChange = (payload) => {
     const transfer = transferFromRemoteRow(payload.new)
     if (!transfer?.id) return
     const ownedIds = ownedBusinessIdsForUser(getState().businesses?.items, userId)
-    if (!isTransferRelevantToUser(transfer, userId, ownedIds)) return
+    if (!isTransferRelevantToUser(transfer, userId, ownedIds, { isStaff })) return
     dispatch(receiveRemoteTransfer(transfer))
   }
 
@@ -290,6 +338,40 @@ function bindChannel(userId, dispatch, getState) {
       return
     }
     dispatch(removeRemoteListing(listing.id))
+  }
+
+  const handleP2POfferUpsert = (payload) => {
+    const offer = p2pOfferFromRemoteRow(payload.new)
+    if (offer?.id) dispatch(receiveRemoteOffer(offer))
+  }
+
+  const handleP2POrderChange = (payload) => {
+    if (payload.eventType === 'DELETE') {
+      const id = payload.old?.id
+      if (id) dispatch(removeRemoteOrder(id))
+      return
+    }
+    const order = p2pOrderFromRemoteRow(payload.new)
+    if (order?.id) dispatch(receiveRemoteOrder(order))
+  }
+
+  const handleNotificationUpsert = (payload) => {
+    const row = payload.new
+    if (!row || String(row.user_id) !== String(userId) || row.type === 'message') return
+    dispatch(
+      receiveRemoteNotification({
+        id: row.id,
+        userId: row.user_id,
+        title: row.title,
+        message: row.message,
+        type: row.type || 'system',
+        link: row.link || null,
+        priority: row.priority || 'normal',
+        read: row.read ?? false,
+        archived: row.archived ?? false,
+        createdAt: row.created_at,
+      }),
+    )
   }
 
   let nextChannel = supabase
@@ -357,61 +439,64 @@ function bindChannel(userId, dispatch, getState) {
         table: 'notifications',
         filter: `user_id=eq.${userId}`,
       },
-      (payload) => {
-        const row = payload.new
-        if (String(row.user_id) !== String(userId) || row.type === 'message') return
-        dispatch(
-          receiveRemoteNotification({
-            id: row.id,
-            userId: row.user_id,
-            title: row.title,
-            message: row.message,
-            type: row.type || 'system',
-            link: row.link || null,
-            read: row.read ?? false,
-            archived: row.archived ?? false,
-            createdAt: row.created_at,
-          }),
-        )
-      },
+      handleNotificationUpsert,
     )
-
     .on(
       'postgres_changes',
       {
-        event: '*',
+        event: 'UPDATE',
         schema: 'public',
-        table: 'transfers',
+        table: 'notifications',
         filter: `user_id=eq.${userId}`,
       },
-      handleTransferChange,
-    )
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'transfers',
-        filter: `business_owner_id=eq.${userId}`,
-      },
-      handleTransferChange,
+      handleNotificationUpsert,
     )
 
-  const ownedBusinessIds = ownedBusinessIdsForUser(
-    getState().businesses?.items,
-    userId,
-  ).slice(0, MAX_TRANSFER_BUSINESS_FILTERS)
-  for (const businessId of ownedBusinessIds) {
+  if (isStaff) {
     nextChannel = nextChannel.on(
       'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'transfers',
-        filter: `business_id=eq.${businessId}`,
-      },
+      { event: '*', schema: 'public', table: 'transfers' },
       handleTransferChange,
     )
+  } else {
+    nextChannel = nextChannel
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transfers',
+          filter: `user_id=eq.${userId}`,
+        },
+        handleTransferChange,
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transfers',
+          filter: `business_owner_id=eq.${userId}`,
+        },
+        handleTransferChange,
+      )
+
+    const ownedBusinessIds = ownedBusinessIdsForUser(
+      getState().businesses?.items,
+      userId,
+    ).slice(0, MAX_TRANSFER_BUSINESS_FILTERS)
+    for (const businessId of ownedBusinessIds) {
+      nextChannel = nextChannel.on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transfers',
+          filter: `business_id=eq.${businessId}`,
+        },
+        handleTransferChange,
+      )
+    }
   }
 
   channel = nextChannel
@@ -430,7 +515,43 @@ function bindChannel(userId, dispatch, getState) {
       { event: 'DELETE', schema: 'public', table: 'listings' },
       (payload) => dispatch(removeRemoteListing(payload.old.id)),
     )
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'p2p_offers' },
+      handleP2POfferUpsert,
+    )
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'p2p_offers' },
+      handleP2POfferUpsert,
+    )
+    .on(
+      'postgres_changes',
+      { event: 'DELETE', schema: 'public', table: 'p2p_offers' },
+      (payload) => dispatch(removeRemoteOffer(payload.old.id)),
+    )
 
+  if (isStaff) {
+    channel = channel.on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'p2p_orders' },
+      handleP2POrderChange,
+    )
+  } else {
+    channel = channel
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'p2p_orders', filter: `buyer_id=eq.${userId}` },
+        handleP2POrderChange,
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'p2p_orders', filter: `seller_id=eq.${userId}` },
+        handleP2POrderChange,
+      )
+  }
+
+  channel = channel
     .on(
       'postgres_changes',
       {
@@ -532,9 +653,10 @@ export async function startRealtimeSubscription(userId, dispatch, getState, opti
   }
 
   clearReconnectTimer()
-  teardownChannel()
+  teardownChannel(dispatch)
 
   activeUserId = userId
+  presenceDispatch = dispatch
   enableEngagementAlerts()
   ensureOnlineReconnect(userId, dispatch, getState)
   bindChannel(userId, dispatch, getState)
@@ -548,5 +670,6 @@ export function stopRealtimeSubscription() {
   disableEngagementAlerts()
   removeOnlineReconnect()
   clearReconnectTimer()
-  teardownChannel()
+  teardownChannel(presenceDispatch)
+  presenceDispatch = null
 }

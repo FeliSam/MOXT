@@ -1,3 +1,5 @@
+import { statusHasBeenViewedBy } from './statusViewUtils'
+
 /**
  * Regroupe les statuts actifs (non expirés) par auteur, triés :
  * - les groupes "officiels MOXT" en premier (même avant mon propre statut)
@@ -10,15 +12,20 @@
 export function groupActiveStatusesByAuthor(statuses, viewerId) {
   const now = Date.now()
   const active = statuses.filter((s) => new Date(s.expiresAt).getTime() > now)
+  const viewerKey = viewerId == null ? '' : String(viewerId)
 
+  // Une entreprise publie sous sa propre identité : un même auteur (personne
+  // réelle) peut donc avoir un groupe personnel ET un groupe entreprise
+  // distincts — d'où une clé composée plutôt que le seul authorId.
   const byAuthor = new Map()
   for (const status of active) {
-    const key = status.authorId
+    const key = `${status.authorId}:${status.businessId || ''}`
     if (!byAuthor.has(key)) {
       byAuthor.set(key, {
         authorId: status.authorId,
         authorName: status.authorName,
         authorAvatarUrl: status.authorAvatarUrl,
+        businessId: status.businessId || null,
         items: [],
       })
     }
@@ -29,7 +36,7 @@ export function groupActiveStatusesByAuthor(statuses, viewerId) {
     const items = [...group.items].sort(
       (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     )
-    const hasUnseen = items.some((s) => !(s.viewedBy || []).includes(viewerId))
+    const hasUnseen = items.some((s) => !statusHasBeenViewedBy(s, viewerKey))
     const isOfficial = items.some((s) => s.isOfficial === true)
     const latestCreatedAt = items[items.length - 1]?.createdAt
     return { ...group, items, hasUnseen, isOfficial, latestCreatedAt }
@@ -37,8 +44,9 @@ export function groupActiveStatusesByAuthor(statuses, viewerId) {
 
   groups.sort((a, b) => {
     if (a.isOfficial !== b.isOfficial) return a.isOfficial ? -1 : 1
-    if (a.authorId === viewerId) return -1
-    if (b.authorId === viewerId) return 1
+    const aMine = String(a.authorId) === viewerKey && !a.businessId
+    const bMine = String(b.authorId) === viewerKey && !b.businessId
+    if (aMine !== bMine) return aMine ? -1 : 1
     if (a.hasUnseen !== b.hasUnseen) return a.hasUnseen ? -1 : 1
     return new Date(b.latestCreatedAt).getTime() - new Date(a.latestCreatedAt).getTime()
   })

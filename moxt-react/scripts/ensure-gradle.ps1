@@ -1,4 +1,4 @@
-# Télécharge Gradle dans le cache wrapper (connexion lente / reprise BITS).
+# Download Gradle into the wrapper cache (slow connection / BITS resume).
 $ErrorActionPreference = 'Stop'
 
 $studioJbr = 'C:\Program Files\Android\Android Studio\jbr'
@@ -10,12 +10,11 @@ if (Test-Path $studioJbr) {
 $version = '8.14.3'
 $flavor = 'bin'
 $zipName = "gradle-$version-$flavor.zip"
-$url = "https://services.gradle.org/distributions/$zipName"
 $cacheRoot = Join-Path $env:USERPROFILE '.gradle\wrapper\dists'
 $flavorRoot = Join-Path $cacheRoot "gradle-$version-$flavor"
 $androidDir = Join-Path $PSScriptRoot '..\android'
 
-Write-Host ">> Gradle $zipName — verification du cache..."
+Write-Host ">> Gradle $zipName - checking cache..."
 
 Get-ChildItem $flavorRoot -Recurse -Filter '*.lck' -ErrorAction SilentlyContinue | Remove-Item -Force
 
@@ -24,18 +23,18 @@ $installed = Get-ChildItem $flavorRoot -Recurse -Filter 'gradle.bat' -ErrorActio
   Select-Object -First 1
 
 if ($installed) {
-  Write-Host ">> Gradle deja installe : $($installed.FullName)"
+  Write-Host ">> Gradle already installed: $($installed.FullName)"
   exit 0
 }
 
 Push-Location $androidDir
 try {
-  Write-Host ">> Telechargement via Gradle wrapper (timeout 10 min)..."
+  Write-Host ">> Downloading via Gradle wrapper (timeout 10 min)..."
   & .\gradlew.bat --version
   if ($LASTEXITCODE -ne 0) {
-    throw "gradlew --version a echoue (code $LASTEXITCODE)."
+    throw "gradlew --version failed (code $LASTEXITCODE)."
   }
-  Write-Host ">> Gradle pret."
+  Write-Host ">> Gradle ready."
 } finally {
   Pop-Location
 }

@@ -103,6 +103,7 @@ export function Sidebar({ open }) {
   }, [])
 
   useLayoutEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- réinitialise le panneau suite à une navigation (système externe : le routeur)
     setMoreOpen(false)
     setHoveredRailKey(null)
     const active = document.activeElement

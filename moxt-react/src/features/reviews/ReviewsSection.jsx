@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { FiMessageCircle, FiStar } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Card } from '../../components/ui/Card'
@@ -11,6 +11,7 @@ import {
 } from '@moxt/shared/utils/reviewUtils.js'
 import { hasReviewEligibility } from '@moxt/shared/utils/reviewEligibility.js'
 import { useLanguage } from '../../contexts/useLanguage'
+import { useProfileAvatarMap } from '../account/useProfileAvatarMap'
 import { createReview } from './reviewSlice'
 import { selectProfileReview } from './reviewSelectors'
 import { ReviewCard, ReviewSummary } from './ReviewPanel'
@@ -30,6 +31,11 @@ export function ReviewsSection({
   const [comment, setComment] = useState('')
 
   const aggregate = useMemo(() => calculateAggregateRating(reviews), [reviews])
+  const authorIds = useMemo(
+    () => [...new Set((reviews || []).map((item) => item.authorId).filter(Boolean))],
+    [reviews],
+  )
+  const avatarMap = useProfileAvatarMap(authorIds)
   const existingReview = useSelector((state) =>
     selectProfileReview(state, currentUser?.id, profileTargetType, profileTargetId),
   )
@@ -50,11 +56,16 @@ export function ReviewsSection({
     ? t(eligibility.reasonKey)
     : eligibility.reason
 
-  useEffect(() => {
-    if (!existingReview) return
-    setRating(existingReview.rating)
-    setComment(existingReview.comment || '')
-  }, [existingReview])
+  // Précharge le formulaire avec l'avis existant (calculé pendant le rendu, pas
+  // dans un effet, pour éviter un rendu de flash avec les valeurs par défaut).
+  const [prevExistingReview, setPrevExistingReview] = useState(existingReview)
+  if (existingReview !== prevExistingReview) {
+    setPrevExistingReview(existingReview)
+    if (existingReview) {
+      setRating(existingReview.rating)
+      setComment(existingReview.comment || '')
+    }
+  }
 
   function handleSubmit(event) {
     event.preventDefault()
@@ -164,6 +175,10 @@ export function ReviewsSection({
                   ownerId={ownerId}
                   ownerName={ownerName}
                   isOwner={isOwner}
+                  authorProfile={
+                    avatarMap[review.authorId] ||
+                    (review.authorName ? { name: review.authorName } : null)
+                  }
                 />
               ))}
             </div>

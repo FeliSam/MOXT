@@ -19,9 +19,10 @@ const tones = {
 export function Badge({ children, className = '', tone = 'brand' }) {
   return (
     <span
+      translate="no"
       className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.06em] ${tones[tone] ?? tones.brand} ${className}`}
     >
-      {children}
+      <span className="inline-flex items-center gap-1">{children}</span>
     </span>
   )
 }

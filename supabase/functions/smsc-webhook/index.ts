@@ -1,8 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { parseSmscWebhookPayload, readSmscRequestBody } from '../_shared/parseSmscWebhook.ts'
+import { timingSafeEqualString } from '../_shared/rateLimit.ts'
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  // Webhook serveur SMSC — pas d’appel navigateur ; pas de CORS permissif.
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
@@ -26,13 +27,19 @@ function parseEventTime(value: string | null) {
   return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString()
 }
 
+/** Bearer (preferé) ou ?secret= (compat panneau SMSC). */
 function verifySecret(req: Request) {
   const expected = Deno.env.get('SMSC_WEBHOOK_SECRET')
   if (!expected) return false
   const auth = req.headers.get('authorization') || ''
-  if (auth === `Bearer ${expected}` || auth === expected) return true
+  if (auth.toLowerCase().startsWith('bearer ')) {
+    const token = auth.slice(7).trim()
+    if (timingSafeEqualString(token, expected)) return true
+  }
+  if (timingSafeEqualString(auth, expected)) return true
   const url = new URL(req.url)
-  return url.searchParams.get('secret') === expected
+  const querySecret = url.searchParams.get('secret') || ''
+  return querySecret.length > 0 && timingSafeEqualString(querySecret, expected)
 }
 
 Deno.serve(async (req) => {

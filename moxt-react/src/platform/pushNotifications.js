@@ -60,6 +60,20 @@ async function bindPushListeners(PushNotifications) {
   })
 }
 
+/** @returns {'granted'|'denied'|'prompt'|'unsupported'} */
+export async function queryNativePushReceivePermission() {
+  if (!isNative || Capacitor.getPlatform() === 'web') return 'unsupported'
+  try {
+    const { PushNotifications } = await import('@capacitor/push-notifications')
+    const permission = await PushNotifications.checkPermissions()
+    if (permission.receive === 'granted') return 'granted'
+    if (permission.receive === 'denied') return 'denied'
+    return 'prompt'
+  } catch {
+    return 'unsupported'
+  }
+}
+
 /**
  * Initialise les notifications push natives (FCM / APNs via Capacitor).
  * Nécessite `google-services.json` (Android) et la config Firebase côté projet.

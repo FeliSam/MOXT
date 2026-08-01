@@ -1,14 +1,19 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   FiAlertCircle,
   FiAlertTriangle,
   FiArrowRight,
   FiCheckCircle,
+  FiEdit3,
   FiLayers,
   FiMap,
   FiRepeat,
+  FiShoppingBag,
+  FiTrendingUp,
+  FiUsers,
   FiZap,
 } from 'react-icons/fi'
+import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 import { useNavigate } from 'react-router-dom'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { TransferStatusBadge } from '../../transfers/TransferStatusBadge'
@@ -30,10 +35,134 @@ export function AdminOverviewPanel({ content, metrics, onOpenContent, onOpenView
   const navigate = useNavigate()
   const [officialComposerOpen, setOfficialComposerOpen] = useState(false)
 
+  const exchangerCount = useMemo(
+    () =>
+      (content.businesses || []).filter((item) =>
+        Array.isArray(item.services) ? item.services.includes('Transfert') : false,
+      ).length,
+    [content.businesses],
+  )
+
   function handlePreviewTour() {
     markTourPreview()
     navigate('/dashboard')
   }
+
+  const quickActions = [
+    {
+      key: 'transfers',
+      icon: FiRepeat,
+      label: adminText(t, 'admin.overview.actions.transfers.label'),
+      value: adminText(t, 'admin.overview.actions.transfers.value', { count: metrics.transfers.pending }),
+      color: 'from-teal-600 to-cyan-500',
+    },
+    {
+      key: 'p2p',
+      icon: FiUsers,
+      label: adminText(t, 'admin.overview.actions.p2p.label'),
+      value: adminText(t, 'admin.overview.actions.p2p.value', {
+        count: (metrics.p2p?.disputed || 0) + (metrics.p2p?.openOrders || 0),
+      }),
+      color: 'from-cyan-600 to-sky-500',
+    },
+    {
+      key: 'content',
+      icon: FiLayers,
+      label: adminText(t, 'admin.overview.actions.content.label'),
+      value: adminText(t, 'admin.overview.actions.content.value', { count: metrics.content.pending }),
+      color: 'from-violet-600 to-purple-500',
+    },
+    {
+      key: 'publications',
+      icon: FiEdit3,
+      label: adminText(t, 'admin.overview.actions.publications.label'),
+      value: adminText(t, 'admin.overview.actions.publications.value', {
+        count: metrics.posts?.pending || 0,
+      }),
+      color: 'from-sky-600 to-blue-500',
+    },
+    {
+      key: 'rates',
+      icon: FiTrendingUp,
+      label: adminText(t, 'admin.overview.actions.rates.label'),
+      value: adminText(t, 'admin.overview.actions.rates.value'),
+      color: 'from-emerald-600 to-teal-500',
+    },
+    {
+      key: 'queues',
+      icon: FiAlertTriangle,
+      label: adminText(t, 'admin.overview.actions.queues.label'),
+      value: adminText(t, 'admin.overview.actions.queues.value', { count: queues.urgent }),
+      color: 'from-amber-500 to-orange-500',
+    },
+  ]
+
+  const shortcuts = [
+    {
+      key: 'transfers',
+      label: adminText(t, 'admin.overview.shortcut.transfers'),
+      icon: FiRepeat,
+      color: 'bg-teal-50 text-teal-700 dark:bg-teal-950/40 dark:text-teal-300',
+      count: metrics.transfers.total,
+      onClick: () => onOpenView('transfers'),
+    },
+    {
+      key: 'p2p',
+      label: adminText(t, 'admin.overview.shortcut.p2p'),
+      icon: FiUsers,
+      color: 'bg-cyan-50 text-cyan-700 dark:bg-cyan-950/40 dark:text-cyan-300',
+      count: metrics.p2p?.total || 0,
+      onClick: () => onOpenView('p2p'),
+    },
+    {
+      key: 'marketplace',
+      label: adminText(t, 'admin.overview.shortcut.marketplace'),
+      icon: FiShoppingBag,
+      color: 'bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300',
+      count: content.listings?.length || 0,
+      onClick: () => onOpenContent('listings'),
+    },
+    {
+      key: 'exchangers',
+      label: adminText(t, 'admin.overview.shortcut.exchangers'),
+      icon: HiOutlineBuildingOffice2,
+      color: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300',
+      count: exchangerCount,
+      onClick: () => onOpenContent('businesses'),
+    },
+    {
+      key: 'rates',
+      label: adminText(t, 'admin.overview.shortcut.rates'),
+      icon: FiTrendingUp,
+      color: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300',
+      count: null,
+      onClick: () => onOpenView('rates'),
+    },
+    {
+      key: 'publications',
+      label: adminText(t, 'admin.overview.shortcut.publications'),
+      icon: FiEdit3,
+      color: 'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300',
+      count: metrics.posts?.total || 0,
+      onClick: () => onOpenView('publications'),
+    },
+    {
+      key: 'users',
+      label: adminText(t, 'admin.overview.shortcut.users'),
+      icon: FiUsers,
+      color: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300',
+      count: metrics.users.total,
+      onClick: () => onOpenView('users'),
+    },
+    {
+      key: 'support',
+      label: adminText(t, 'admin.overview.shortcut.support'),
+      icon: FiAlertCircle,
+      color: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
+      count: queues.support.length,
+      onClick: () => onOpenView('support'),
+    },
+  ]
 
   return (
     <div className="grid gap-5">
@@ -90,30 +219,8 @@ export function AdminOverviewPanel({ content, metrics, onOpenContent, onOpenView
         </button>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        {[
-          {
-            key: 'transfers',
-            icon: FiRepeat,
-            label: adminText(t, 'admin.overview.actions.transfers.label'),
-            value: adminText(t, 'admin.overview.actions.transfers.value', { count: metrics.transfers.pending }),
-            color: 'from-teal-600 to-cyan-500',
-          },
-          {
-            key: 'content',
-            icon: FiLayers,
-            label: adminText(t, 'admin.overview.actions.content.label'),
-            value: adminText(t, 'admin.overview.actions.content.value', { count: metrics.content.pending }),
-            color: 'from-violet-600 to-purple-500',
-          },
-          {
-            key: 'queues',
-            icon: FiAlertTriangle,
-            label: adminText(t, 'admin.overview.actions.queues.label'),
-            value: adminText(t, 'admin.overview.actions.queues.value', { count: queues.urgent }),
-            color: 'from-amber-500 to-orange-500',
-          },
-        ].map((action) => (
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {quickActions.map((action) => (
           <button key={action.key} type="button" onClick={() => onOpenView(action.key)} className="text-left">
             <div className={`${CARD} group relative h-full overflow-hidden p-5 transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgb(15_23_42/0.1)]`}>
               <div className={`absolute inset-0 bg-gradient-to-br ${action.color} opacity-[0.06] transition-opacity group-hover:opacity-[0.10]`} />
@@ -129,6 +236,30 @@ export function AdminOverviewPanel({ content, metrics, onOpenContent, onOpenView
             </div>
           </button>
         ))}
+      </div>
+
+      <div className={`${CARD} p-5 grid gap-4`}>
+        <SectionTitle icon={FiZap} label={adminText(t, 'admin.overview.shortcutsTitle')} />
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          {shortcuts.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              onClick={item.onClick}
+              className={`${ITEM} text-left`}
+            >
+              <span className={`inline-grid size-9 place-items-center rounded-xl ${item.color}`}>
+                <item.icon className="text-sm" />
+              </span>
+              <strong className="mt-2.5 block truncate text-sm">{item.label}</strong>
+              {item.count != null ? (
+                <p className="mt-0.5 text-xs text-[var(--app-text-muted)]">
+                  {adminText(t, 'admin.overview.elementCount', { count: item.count })}
+                </p>
+              ) : null}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className={`${CARD} p-5 grid gap-4`}>

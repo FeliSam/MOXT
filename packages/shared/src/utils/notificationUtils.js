@@ -10,11 +10,11 @@ export const DEFAULT_NOTIFICATION_PREFERENCES = {
   marketingConsent: false,
   notifMessages: 'high',
   notifTransfers: 'high',
-  notifParcels: 'normal',
-  notifJobs: 'normal',
-  notifEvents: 'normal',
-  notifMarketplace: 'normal',
-  notifActualites: 'low',
+  notifParcels: 'high',
+  notifJobs: 'high',
+  notifEvents: 'high',
+  notifMarketplace: 'high',
+  notifActualites: 'high',
   notifSysteme: 'high',
   notifNewSubscribers: true,
   messageSuggestionsEnabled: true,
@@ -130,7 +130,8 @@ export function resolveDisputePartyIds(state, dispute) {
 
 export const P2P_STATUS_LABELS = {
   created: 'Commande créée',
-  waiting_payment: 'En attente de paiement',
+  waiting_payment: 'Paiement envoyé',
   completed: 'Transaction terminée',
   cancelled: 'Transaction annulée',
+  disputed: 'Litige en cours',
 }

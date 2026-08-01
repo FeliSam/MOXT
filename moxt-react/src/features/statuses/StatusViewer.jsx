@@ -64,29 +64,38 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
     )
   }, [group])
 
-  const page = pages[pageIndex]
+  // Après suppression d'une seule image, `pageIndex` peut dépasser la nouvelle
+  // taille de `pages` : on recadre à la lecture plutôt que dans un effet séparé.
+  const safePageIndex = pages.length ? Math.min(pageIndex, pages.length - 1) : 0
+  const page = pages[safePageIndex]
   const isMine = group?.authorId === viewer?.id
   const effectivePaused = paused || reactionPickerOpen || replyOpen || confirmDeleteOpen
 
   const currentStatusItem = group?.items.find((item) => item.id === page?.statusId)
   const myReaction = page ? currentStatusItem?.reactions?.[page.imageKey]?.[viewer?.id] : null
 
-  useEffect(() => {
+  // Réinitialise la navigation/les panneaux quand on change de groupe ou de page
+  // (calculé pendant le rendu : évite un passage de rendu supplémentaire).
+  const [prevGroupIndex, setPrevGroupIndex] = useState(groupIndex)
+  const [prevPageIndex, setPrevPageIndex] = useState(pageIndex)
+  if (groupIndex !== prevGroupIndex) {
+    setPrevGroupIndex(groupIndex)
+    setPrevPageIndex(0)
     setPageIndex(0)
     setViewersOpen(false)
     setReactionPickerOpen(false)
     setReplyOpen(false)
     setReplyText('')
-  }, [groupIndex])
-
-  useEffect(() => {
+  } else if (pageIndex !== prevPageIndex) {
+    setPrevPageIndex(pageIndex)
     setReactionPickerOpen(false)
     setReplyOpen(false)
     setReplyText('')
-  }, [pageIndex])
+  }
 
   useEffect(() => {
-    if (!page || !viewer?.id) return
+    if (!page?.statusId || !viewer?.id) return
+    // Le reducer + RPC figent la 1re date ; les revues sont des no-op.
     dispatch(
       markStatusViewed({
         statusId: page.statusId,
@@ -95,16 +104,9 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
         userAvatarUrl: viewer.avatarUrl || null,
       }),
     )
-  }, [page?.statusId, viewer?.id, dispatch])
+  }, [page?.statusId, viewer?.id, viewer?.firstName, viewer?.lastName, viewer?.avatarUrl, dispatch])
 
   useEffect(() => () => window.clearTimeout(animTimerRef.current), [])
-
-  // Après suppression d'une seule image, l'index courant peut dépasser la
-  // nouvelle taille de la liste : on le ramène sur la dernière page restante.
-  useEffect(() => {
-    if (!pages.length) return
-    if (pageIndex > pages.length - 1) setPageIndex(pages.length - 1)
-  }, [pages.length, pageIndex])
 
   // Le groupe disparaît de `groups` si son dernier statut/image vient d'être supprimé.
   useEffect(() => {
@@ -124,12 +126,12 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
   }
 
   function goNextPage() {
-    if (pageIndex < pages.length - 1) setPageIndex((i) => i + 1)
+    if (safePageIndex < pages.length - 1) setPageIndex(safePageIndex + 1)
     else goNextGroup()
   }
 
   function goPrevPage() {
-    if (pageIndex > 0) setPageIndex((i) => i - 1)
+    if (safePageIndex > 0) setPageIndex(safePageIndex - 1)
     else goPrevGroup()
   }
 
@@ -138,7 +140,7 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
     timerRef.current = window.setTimeout(goNextPage, IMAGE_DURATION_MS)
     return () => window.clearTimeout(timerRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageIndex, groupIndex, effectivePaused, pages.length])
+  }, [safePageIndex, groupIndex, effectivePaused, pages.length])
 
   useEffect(() => {
     function onKey(e) {
@@ -149,7 +151,7 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageIndex, groupIndex])
+  }, [safePageIndex, groupIndex])
 
   function confirmDelete() {
     if (!page) return
@@ -262,9 +264,9 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
             <div
               className="h-full bg-white transition-[width] ease-linear"
               style={{
-                width: i < pageIndex ? '100%' : i > pageIndex ? '0%' : undefined,
+                width: i < safePageIndex ? '100%' : i > safePageIndex ? '0%' : undefined,
                 animation:
-                  i === pageIndex && !effectivePaused
+                  i === safePageIndex && !effectivePaused
                     ? `status-progress ${IMAGE_DURATION_MS}ms linear forwards`
                     : undefined,
               }}
@@ -323,9 +325,15 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
       >
         {page.url ? (
           <img src={page.url} alt="" className="mx-auto size-full max-w-2xl object-contain" />
-        ) : null}
+        ) : (
+          <div className="flex size-full items-center justify-center bg-gradient-to-br from-brand-800 via-brand-600 to-[var(--app-cobalt)] px-8">
+            <p className="max-w-xl text-center text-xl font-black leading-snug text-white sm:text-2xl">
+              {page.caption || group?.authorName}
+            </p>
+          </div>
+        )}
 
-        {page.caption ? (
+        {page.url && page.caption ? (
           <p className="pointer-events-none absolute inset-x-0 bottom-6 mx-auto max-w-xl px-6 text-center text-sm font-semibold text-white drop-shadow-lg sm:text-base">
             {page.caption}
           </p>

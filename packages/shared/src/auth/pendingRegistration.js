@@ -9,6 +9,7 @@ const memoryStore = new Map()
  *
  * @typedef {{
  *   method: 'phone' | 'email',
+ *   verificationPhase?: 'choose' | 'otp',
  *   phone?: string,
  *   email?: string,
  *   pendingUserId?: string,
@@ -18,6 +19,7 @@ const memoryStore = new Map()
  *   originCountry?: string,
  *   residenceCity?: string,
  *   avatarUrl?: string,
+ *   phoneResendCount?: number,
  *   step?: number,
  *   savedAt?: number,
  * }} PendingRegistration
@@ -39,8 +41,13 @@ function getSessionStorage() {
  */
 export function savePendingRegistration(payload) {
   if (!payload?.method) return
+  const phase =
+    payload.verificationPhase === 'choose' || payload.verificationPhase === 'otp'
+      ? payload.verificationPhase
+      : 'otp'
   const safe = {
     method: payload.method === 'email' ? 'email' : 'phone',
+    verificationPhase: phase,
     phone: payload.phone || '',
     email: String(payload.email || '')
       .trim()
@@ -52,6 +59,7 @@ export function savePendingRegistration(payload) {
     originCountry: payload.originCountry || '',
     residenceCity: payload.residenceCity || '',
     avatarUrl: payload.avatarUrl || '',
+    phoneResendCount: Number(payload.phoneResendCount) || 0,
     step: payload.step || 4,
     savedAt: Date.now(),
   }

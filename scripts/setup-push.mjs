@@ -145,17 +145,35 @@ async function main() {
     console.warn('  supabase/migrations/20260713100000_device_subscriptions_push.sql')
   }
 
-  console.log('\n▸ Trigger pg_net (URL + secret GUC)')
+  console.log('\n▸ Trigger pg_net (secret runtime + GUC optionnel)')
+  // Managed Supabase often denies ALTER DATABASE ... SET for custom GUCs.
+  // Persist the secret in private.moxt_runtime_settings (read by the trigger).
+  const secret = String(vars.PUSH_DISPATCH_SECRET || '')
+  const dollarTag = `moxt${Date.now().toString(36)}`
+  const settingsSql = [
+    `insert into private.moxt_runtime_settings (key, value, updated_at)`,
+    `values ('push_dispatch_secret', $${dollarTag}$${secret}$${dollarTag}$, now())`,
+    `on conflict (key) do update`,
+    `set value = excluded.value, updated_at = now();`,
+  ].join('\n')
+  const settingsCode = runSupabase(['db', 'query', '--linked', settingsSql], supabaseEnv)
+  if (settingsCode !== 0) {
+    console.error('\n✗ Impossible d’écrire private.moxt_runtime_settings.push_dispatch_secret')
+    console.error('  Vérifiez que la migration 20260729200000_push_dispatch_secret_settings.sql est appliquée.')
+    process.exit(1)
+  }
+  console.log('  ✓ private.moxt_runtime_settings.push_dispatch_secret')
+
+  // Best-effort GUCs (ignored when permission denied).
   const alterSql = [
     `ALTER DATABASE postgres SET moxt.send_push_url = '${dispatchUrl}';`,
-    `ALTER DATABASE postgres SET moxt.push_dispatch_secret = '${vars.PUSH_DISPATCH_SECRET}';`,
+    `ALTER DATABASE postgres SET moxt.push_dispatch_secret = '${secret}';`,
   ].join('\n')
   const sqlCode = runSupabase(['db', 'query', '--linked', alterSql], supabaseEnv)
   if (sqlCode !== 0) {
-    console.warn('\n⚠ Impossible d’appliquer les GUC automatiquement — SQL Editor :')
-    console.warn(`  ${alterSql.split('\n').join('\n  ')}`)
+    console.warn('  ⚠ GUC ALTER DATABASE refusé (attendu sur Supabase managé) — settings table utilisée.')
   } else {
-    console.log('  ✓ moxt.send_push_url + moxt.push_dispatch_secret')
+    console.log('  ✓ moxt.send_push_url + moxt.push_dispatch_secret (GUC)')
   }
 
   console.log('\n══════════════════════════════════════')

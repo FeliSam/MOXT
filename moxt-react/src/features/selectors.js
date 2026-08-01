@@ -14,7 +14,10 @@ export const selectVisibleNotifications = createSelector(
   [(state) => state.communications.notifications, selectCurrentUser],
   (notifications, user) =>
     notifications.filter(
-      (item) => item.userId === user?.id && item.type !== 'message' && !item.archived,
+      (item) =>
+        String(item.userId) === String(user?.id) &&
+        item.type !== 'message' &&
+        !item.archived,
     ),
 )
 

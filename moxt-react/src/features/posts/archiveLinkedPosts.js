@@ -1,16 +1,35 @@
-/** Live statuses that keep linked feed posts visible (aligned with RLS). */
-export const LIVE_SOURCE_STATUSES = {
-  listing: new Set(['active']),
-  parcel: new Set(['active', 'full']),
-  job: new Set(['active']),
-  event: new Set(['published']),
-  business: new Set(['verified', 'approved', 'active']),
-}
+import { LIVE_SOURCE_STATUSES, isSourceItemLive } from '@moxt/shared/utils/sourceLiveStatus.js'
+
+export { LIVE_SOURCE_STATUSES }
 
 export function shouldArchiveLinkedPosts(sourceType, status, { deletedByUserAt } = {}) {
   if (!sourceType || !(sourceType in LIVE_SOURCE_STATUSES)) return false
   if (sourceType === 'business' && deletedByUserAt) return true
   return !LIVE_SOURCE_STATUSES[sourceType].has(status)
+}
+
+/**
+ * True if a published feed post may stay visible: free posts always,
+ * linked posts only while the catalog source still exists and is live.
+ */
+export function isFeedPostSourceAvailable(post, catalogs = {}) {
+  const sourceType = post?.sourceType
+  const sourceId = post?.sourceId
+  if (!sourceType || sourceType === 'free' || !sourceId) return true
+  if (!(sourceType in LIVE_SOURCE_STATUSES)) return true
+
+  const collections = {
+    listing: catalogs.listings,
+    parcel: catalogs.parcels,
+    job: catalogs.jobs,
+    event: catalogs.events,
+    business: catalogs.businesses,
+  }
+  const items = collections[sourceType]
+  if (!Array.isArray(items)) return true
+
+  const item = items.find((entry) => entry.id === sourceId)
+  return isSourceItemLive(sourceType, item)
 }
 
 /**

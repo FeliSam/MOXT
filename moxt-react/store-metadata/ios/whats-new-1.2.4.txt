@@ -1,0 +1,3 @@
+• Statuts plus rapides au chargement
+• Notifications temps réel (plus besoin de recharger la liste)
+• Correctifs stabilité et performance

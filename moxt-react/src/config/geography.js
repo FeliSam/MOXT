@@ -1,3 +1,6 @@
+import { MAIN_RUSSIAN_CITIES } from './russianCities'
+import RUSSIAN_CITIES_ALL from './russianCitiesAll.json'
+
 export const RUSSIA = {
   code: 'RU',
   name: 'Russie',
@@ -90,21 +93,21 @@ export const FALLBACK_AFRICAN_COUNTRIES = [
   callingCode,
 }))
 
-export const FALLBACK_RUSSIAN_CITIES = [
-  'Moscou',
-  'Saint-Pétersbourg',
-  'Kazan',
-  'Novossibirsk',
-  'Ekaterinbourg',
-  'Nijni Novgorod',
-  'Samara',
-  'Omsk',
-  'Rostov-sur-le-Don',
-  'Oufa',
-  'Krasnoïarsk',
-  'Perm',
-  'Voronej',
-  'Volgograd',
-  'Krasnodar',
-  'Sotchi',
-]
+/**
+ * Liste complète des villes russes embarquée (hors ligne).
+ * Snapshot countriesnow.space (~5k) + libellés FR/EN/RU des villes principales.
+ */
+function buildOfflineRussianCities() {
+  const set = new Set(Array.isArray(RUSSIAN_CITIES_ALL) ? RUSSIAN_CITIES_ALL : [])
+  for (const city of MAIN_RUSSIAN_CITIES) {
+    if (city.en) set.add(city.en)
+    if (city.fr) set.add(city.fr)
+    if (city.ru) set.add(city.ru)
+    for (const nearby of city.nearby || []) {
+      if (nearby) set.add(nearby)
+    }
+  }
+  return [...set].sort((left, right) => left.localeCompare(right, 'en'))
+}
+
+export const FALLBACK_RUSSIAN_CITIES = buildOfflineRussianCities()

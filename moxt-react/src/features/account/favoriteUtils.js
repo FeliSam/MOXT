@@ -2,6 +2,7 @@ import { categoriesForType, LISTING_TYPES_META } from '../../config/listingConfi
 import { activityByValue } from '../../config/businessActivities'
 import { phase3Text } from '../../i18n/phase3I18n'
 import { formatMoney } from '../transfers/transferUtils'
+import { isSourceItemLive } from '@moxt/shared/utils/sourceLiveStatus.js'
 
 export const FAVORITE_CATEGORIES = [
   { id: 'listing', labelKey: 'favorites.categories.listing', types: ['listing'] },
@@ -238,9 +239,11 @@ export function mergeUserFavorites(state, userId) {
       snapshot: buildListingFavoriteSnapshot(item),
     }))
 
-  return [...accountFavorites, ...legacyListingFavorites].map((item) =>
-    resolveFavoriteItem(item, state),
-  )
+  return [...accountFavorites, ...legacyListingFavorites]
+    // Un favori dont la source a été supprimée ou n'est plus active/publiée ne doit
+    // plus apparaître — sinon le snapshot mis en cache continuerait de l'afficher.
+    .filter((item) => isSourceItemLive(item.relatedType, lookupEntity(item, state)))
+    .map((item) => resolveFavoriteItem(item, state))
 }
 
 export function formatListingPrice(price, currency, t) {

@@ -2,7 +2,6 @@ import { memo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FiEye, FiMapPin, FiShoppingBag } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
-import { Badge } from '../../components/ui/Badge'
 import { FavoriteButton } from '../../components/ui/FavoriteButton'
 import { categoriesForType, LISTING_TYPES_META } from '../../config/listingConfig'
 import { useLanguage } from '../../contexts/useLanguage'
@@ -81,10 +80,10 @@ function MarketplaceListingCardComponent({ listing, linked = true, showFavorite 
 
       {viewed ? (
         <span className="pointer-events-none absolute left-2.5 top-2.5 z-[1]">
-          <Badge tone="slate" className="bg-black/40 text-white backdrop-blur-sm">
-            <FiEye className="text-[10px]" aria-hidden="true" />
+          <span className="inline-flex items-center gap-1 rounded-full bg-brand-700 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.06em] text-white shadow-md">
+            <FiEye className="text-[10px] text-white" aria-hidden="true" />
             {mt('marketplace.common.viewed')}
-          </Badge>
+          </span>
         </span>
       ) : null}
 

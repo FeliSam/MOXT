@@ -18,6 +18,7 @@ export const authReducer = authModule.reducer as unknown as import('@reduxjs/too
 export const {
   login,
   register,
+  registerWithEmailAfterSmsDenied,
   verifyEmailRegistration,
   verifyPhoneRegistration,
   updateProfile,

@@ -11,6 +11,17 @@ import { formatDateTime } from '../utils/formatters'
 
 const CHANGELOG = [
   {
+    version: '1.2.4',
+    dateKey: 'version.changelog.v124.date',
+    highlightKeys: [
+      'version.changelog.v124.h0',
+      'version.changelog.v124.h1',
+      'version.changelog.v124.h2',
+      'version.changelog.v124.h3',
+      'version.changelog.v124.h4',
+    ],
+  },
+  {
     version: '1.2.0',
     dateKey: 'version.changelog.v120.date',
     highlightKeys: [
@@ -106,7 +117,7 @@ export function VersionPage() {
         </div>
         <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label={t('version.stats.pages')} value="30+" />
-          <Stat label={t('version.stats.languages')} value="4" />
+          <Stat label={t('version.stats.languages')} value="5" />
           <Stat label={t('version.stats.build')} value={release.buildId || '—'} />
           <Stat label={t('version.stats.channel')} value={release.channel} />
         </div>

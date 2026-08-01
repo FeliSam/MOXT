@@ -1,19 +1,21 @@
-import { FiBriefcase, FiMapPin, FiPhone, FiPlus } from 'react-icons/fi'
+import { FiBriefcase, FiMapPin, FiPhone, FiPlus, FiX } from 'react-icons/fi'
 import { useMemo, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
-import { Badge, VerifiedDisplayName } from '../components/ui/Badge'
+import { Badge, PillBadge, VerifiedDisplayName } from '../components/ui/Badge'
+import { BusinessRatingBadge } from '../features/reviews/BusinessRatingBadge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { CatalogSearch } from '../components/ui/CatalogSearch'
 import { EmptyState } from '../components/ui/EmptyState'
-import { Input } from '../components/ui/Input'
 import { PageHeader } from '../components/ui/PageHeader'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { Select } from '../components/ui/Select'
-import { BUSINESS_ACTIVITIES, activityByValue } from '../config/businessActivities'
+import { activityByValue } from '../config/businessActivities'
+import { flagEmoji } from '../config/flags'
+import { FALLBACK_AFRICAN_COUNTRIES, RUSSIA } from '../config/geography'
 import { Alert } from '../components/ui/Alert'
 import { statusMeta } from '../config/statuses'
 import { useLanguage } from '../contexts/useLanguage'
@@ -29,12 +31,35 @@ import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 
 const DIRECTORY_SERVICES = ['Transfert', 'Colis', 'Marketplace', 'Jobs', 'Events']
 
+const COUNTRY_NAME_BY_CODE = Object.fromEntries(
+  [...FALLBACK_AFRICAN_COUNTRIES, RUSSIA].map((country) => [country.code, country.name]),
+)
+
+function businessCountryCode(business) {
+  return String(business.originCountry || business.country || '')
+    .trim()
+    .toUpperCase()
+}
+
+function countryDisplayName(code) {
+  if (!code) return ''
+  return COUNTRY_NAME_BY_CODE[code] || code
+}
+
+const EMPTY_FILTERS = {
+  query: '',
+  city: '',
+  sector: '',
+  service: '',
+  country: '',
+}
+
 export function BusinessesPage() {
   useScrollToSecondSection()
   const { t } = useLanguage()
   const bt = (key, vars) => businessesText(t, key, vars)
   const [advancedOpen, setAdvancedOpen] = useState(false)
-  const [filters, setFilters] = useState({ query: '', city: '', sector: '', service: '' })
+  const [filters, setFilters] = useState(EMPTY_FILTERS)
   const user = useSelector((state) => state.auth.user)
   const businesses = useSelector((state) => state.businesses.items)
   const ownBusiness = selectActiveBusinessForOwner(businesses, user?.id)
@@ -45,27 +70,115 @@ export function BusinessesPage() {
   )
   const ownBusinessInDirectory = ownBusiness && isBusinessDirectoryVisible(ownBusiness)
 
-  const visibleBusinesses = useMemo(
+  const directoryPool = useMemo(
     () =>
       filterDirectoryBusinesses(businesses).filter((business) => {
         if (!isBusinessDirectoryVisible(business, user)) return false
         if (ownBusiness && business.id === ownBusiness.id) return false
-        const activity = activityByValue(business.primaryActivity)
-        const activityLabel = businessesOptionLabel(t, activity) || business.sector
-        const haystack =
-          `${business.name} ${activityLabel} ${business.city} ${business.description} ${business.services?.join(' ')}`.toLowerCase()
-        return (
-          (!filters.query || haystack.includes(filters.query.toLowerCase())) &&
-          (!filters.city || business.city.toLowerCase().includes(filters.city.toLowerCase())) &&
-          (!filters.sector || business.primaryActivity === filters.sector) &&
-          (!filters.service || business.services?.includes(filters.service))
-        )
+        return true
       }),
-    [businesses, filters, ownBusiness, t, user],
+    [businesses, ownBusiness, user],
   )
 
+  const countryOptions = useMemo(() => {
+    const codes = new Set()
+    for (const business of directoryPool) {
+      const code = businessCountryCode(business)
+      if (code) codes.add(code)
+    }
+    return [...codes].sort((a, b) =>
+      countryDisplayName(a).localeCompare(countryDisplayName(b), 'fr'),
+    )
+  }, [directoryPool])
+
+  const cityOptions = useMemo(() => {
+    const cities = new Set()
+    for (const business of directoryPool) {
+      if (filters.country && businessCountryCode(business) !== filters.country) continue
+      const city = String(business.city || '').trim()
+      if (city) cities.add(city)
+    }
+    return [...cities].sort((a, b) => a.localeCompare(b, 'fr'))
+  }, [directoryPool, filters.country])
+
+  const sectorOptions = useMemo(() => {
+    const values = new Set()
+    for (const business of directoryPool) {
+      if (business.primaryActivity) values.add(business.primaryActivity)
+    }
+    return [...values]
+      .map((value) => activityByValue(value))
+      .filter(Boolean)
+      .sort((a, b) =>
+        businessesOptionLabel(t, a).localeCompare(businessesOptionLabel(t, b), 'fr'),
+      )
+  }, [directoryPool, t])
+
+  const visibleBusinesses = useMemo(() => {
+    const query = filters.query.trim().toLowerCase()
+    return directoryPool
+      .filter((business) => {
+        if (filters.service && !business.services?.includes(filters.service)) return false
+        if (filters.country && businessCountryCode(business) !== filters.country) return false
+        if (filters.city && business.city !== filters.city) return false
+        if (filters.sector && business.primaryActivity !== filters.sector) return false
+        if (!query) return true
+        const activity = activityByValue(business.primaryActivity)
+        const activityLabel = businessesOptionLabel(t, activity) || business.sector || ''
+        const haystack =
+          `${business.name} ${activityLabel} ${business.city} ${business.description} ${business.services?.join(' ')}`.toLowerCase()
+        return haystack.includes(query)
+      })
+      .sort((left, right) => {
+        const pinDelta = Number(Boolean(right.pinnedAt)) - Number(Boolean(left.pinnedAt))
+        if (pinDelta !== 0) return pinDelta
+        if (left.pinnedAt && right.pinnedAt) {
+          return String(right.pinnedAt).localeCompare(String(left.pinnedAt))
+        }
+        return 0
+      })
+  }, [directoryPool, filters, t])
+
+  const activeAdvancedFilters = useMemo(() => {
+    const items = []
+    if (filters.country) {
+      items.push({
+        key: 'country',
+        label: `${flagEmoji(filters.country)} ${countryDisplayName(filters.country)}`,
+      })
+    }
+    if (filters.city) {
+      items.push({ key: 'city', label: filters.city })
+    }
+    if (filters.sector) {
+      const activity = activityByValue(filters.sector)
+      items.push({
+        key: 'sector',
+        label: businessesOptionLabel(t, activity) || filters.sector,
+      })
+    }
+    return items
+  }, [filters.city, filters.country, filters.sector, t])
+
+  const activeFilterCount = activeAdvancedFilters.length
+
+  function setFilter(patch) {
+    setFilters((current) => {
+      const next = { ...current, ...patch }
+      if (Object.prototype.hasOwnProperty.call(patch, 'country') && patch.country !== current.country) {
+        next.city = ''
+      }
+      return next
+    })
+  }
+
   function clearFilters() {
-    setFilters({ query: '', city: '', sector: '', service: '' })
+    setFilters(EMPTY_FILTERS)
+  }
+
+  function clearAdvancedFilter(key) {
+    if (key === 'country') setFilter({ country: '', city: '' })
+    else setFilter({ [key]: '' })
   }
 
   return (
@@ -132,56 +245,130 @@ export function BusinessesPage() {
       ) : null}
 
       <ScrollSectionAnchor className="scroll-mt-24 grid gap-5 lg:scroll-mt-28">
+        <div className="scrollbar-hidden -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+          <PillBadge
+            active={!filters.service}
+            onClick={() => setFilter({ service: '' })}
+            className="shrink-0"
+          >
+            {bt('businesses.page.filter.allServices')}
+          </PillBadge>
+          {DIRECTORY_SERVICES.map((service) => (
+            <PillBadge
+              key={service}
+              active={filters.service === service}
+              onClick={() => setFilter({ service })}
+              className="shrink-0"
+            >
+              {businessesServiceLabel(t, service)}
+            </PillBadge>
+          ))}
+        </div>
+
         <CatalogSearch
           advancedOpen={advancedOpen}
           count={visibleBusinesses.length}
+          activeFilterCount={activeFilterCount}
           query={filters.query}
-          onQueryChange={(query) => setFilters((current) => ({ ...current, query }))}
+          onQueryChange={(query) => setFilter({ query })}
           onToggleAdvanced={() => setAdvancedOpen((value) => !value)}
           onClear={clearFilters}
           placeholder={bt('businesses.page.searchPlaceholder')}
         >
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Input
-              id="business-filter-city"
-              label={bt('businesses.common.city')}
-              value={filters.city}
-              onChange={(event) =>
-                setFilters((current) => ({ ...current, city: event.target.value }))
-              }
-            />
-            <Select
-              id="business-filter-sector"
-              label={bt('businesses.page.filter.domain')}
-              value={filters.sector}
-              onChange={(event) =>
-                setFilters((current) => ({ ...current, sector: event.target.value }))
-              }
-            >
-              <option value="">{bt('businesses.page.filter.allDomains')}</option>
-              {BUSINESS_ACTIVITIES.map((activity) => (
-                <option key={activity.value} value={activity.value}>
-                  {businessesOptionLabel(t, activity)}
-                </option>
-              ))}
-            </Select>
-            <Select
-              id="business-filter-service"
-              label={bt('businesses.common.service')}
-              value={filters.service}
-              onChange={(event) =>
-                setFilters((current) => ({ ...current, service: event.target.value }))
-              }
-            >
-              <option value="">{bt('businesses.page.filter.allServices')}</option>
-              {DIRECTORY_SERVICES.map((service) => (
-                <option key={service} value={service}>
-                  {businessesServiceLabel(t, service)}
-                </option>
-              ))}
-            </Select>
+          <div className="grid gap-5">
+            <section className="grid gap-3">
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.14em] text-brand-700 dark:text-brand-300">
+                  {bt('businesses.page.filter.sectionLocation')}
+                </p>
+                <p className="mt-0.5 text-xs text-[var(--app-text-faint)]">
+                  {bt('businesses.page.filter.sectionLocationHint')}
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Select
+                  id="business-filter-country"
+                  label={bt('businesses.page.filter.country')}
+                  value={filters.country}
+                  onChange={(event) => setFilter({ country: event.target.value })}
+                >
+                  <option value="">{bt('businesses.page.filter.allCountries')}</option>
+                  {countryOptions.map((code) => (
+                    <option key={code} value={code}>
+                      {flagEmoji(code)} {countryDisplayName(code)}
+                    </option>
+                  ))}
+                </Select>
+                <Select
+                  id="business-filter-city"
+                  label={bt('businesses.common.city')}
+                  value={filters.city}
+                  disabled={!filters.country}
+                  onChange={(event) => setFilter({ city: event.target.value })}
+                >
+                  <option value="">
+                    {filters.country
+                      ? bt('businesses.page.filter.allCities')
+                      : bt('businesses.page.filter.chooseCountryFirst')}
+                  </option>
+                  {cityOptions.map((city) => (
+                    <option key={city} value={city}>
+                      {city}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            </section>
+
+            <section className="grid gap-3 border-t border-[var(--app-border)] pt-5">
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.14em] text-brand-700 dark:text-brand-300">
+                  {bt('businesses.page.filter.sectionDomain')}
+                </p>
+                <p className="mt-0.5 text-xs text-[var(--app-text-faint)]">
+                  {bt('businesses.page.filter.sectionDomainHint')}
+                </p>
+              </div>
+              <Select
+                id="business-filter-sector"
+                label={bt('businesses.page.filter.domain')}
+                value={filters.sector}
+                onChange={(event) => setFilter({ sector: event.target.value })}
+              >
+                <option value="">{bt('businesses.page.filter.allDomains')}</option>
+                {sectorOptions.map((activity) => (
+                  <option key={activity.value} value={activity.value}>
+                    {businessesOptionLabel(t, activity)}
+                  </option>
+                ))}
+              </Select>
+            </section>
           </div>
         </CatalogSearch>
+
+        {!advancedOpen && activeAdvancedFilters.length ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {activeAdvancedFilters.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => clearAdvancedFilter(item.key)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--app-text)] shadow-sm transition hover:border-brand-300 hover:text-brand-700"
+                aria-label={bt('businesses.page.filter.removeFilter', { label: item.label })}
+              >
+                {item.label}
+                <FiX className="text-[var(--app-text-faint)]" />
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setFilter({ country: '', city: '', sector: '' })}
+              className="text-xs font-black text-brand-700 transition hover:text-brand-800 dark:text-brand-300"
+            >
+              {bt('businesses.page.filter.clearAdvanced')}
+            </button>
+          </div>
+        ) : null}
 
         <div>
           <h2 className="text-xl font-black">{bt('businesses.page.directoryTitle')}</h2>
@@ -225,9 +412,10 @@ export function BusinessesPage() {
                       <Badge tone={statusMeta(business.status, t).tone}>
                         {statusMeta(business.status, t).label}
                       </Badge>
+                      <BusinessRatingBadge business={business} />
                     </div>
 
-                    <p className="mt-3 hidden text-sm leading-6 text-[var(--app-text-muted)] sm:block">
+                    <p className="mt-3 max-sm:hidden line-clamp-5 min-h-[7.5rem] text-sm leading-6 text-[var(--app-text-muted)]">
                       {business.description}
                     </p>
                     <div className="mt-4 flex flex-wrap gap-2">

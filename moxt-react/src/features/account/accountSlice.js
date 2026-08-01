@@ -16,17 +16,17 @@ const defaultPreferences = {
   marketingConsent: false,
   notifMessages: 'high',
   notifTransfers: 'high',
-  notifParcels: 'normal',
-  notifJobs: 'normal',
-  notifEvents: 'normal',
-  notifMarketplace: 'normal',
-  notifActualites: 'low',
+  notifParcels: 'high',
+  notifJobs: 'high',
+  notifEvents: 'high',
+  notifMarketplace: 'high',
+  notifActualites: 'high',
   notifSysteme: 'high',
   notifNewSubscribers: true,
   messageSuggestionsEnabled: true,
 }
 
-const initialState = storage.read({
+const ACCOUNT_DEFAULTS = {
   favorites: [],
   subscriptions: [],
   subscriberBans: [],
@@ -37,7 +37,20 @@ const initialState = storage.read({
   preferences: {},
   deletionRequests: [],
   viewedListings: [],
-})
+}
+
+const VIEWED_LISTINGS_LIMIT = 200
+
+const storedAccount = storage.read(ACCOUNT_DEFAULTS)
+const initialState = {
+  ...ACCOUNT_DEFAULTS,
+  ...(storedAccount && typeof storedAccount === 'object' ? storedAccount : {}),
+  // Anciens caches sans la clé → undefined ferait disparaître l’étiquette « Vu »
+  viewedListings: Array.isArray(storedAccount?.viewedListings)
+    ? storedAccount.viewedListings.slice(0, VIEWED_LISTINGS_LIMIT)
+    : [],
+  favorites: Array.isArray(storedAccount?.favorites) ? storedAccount.favorites : [],
+}
 
 const accountSlice = createSlice({
   name: 'account',
@@ -106,12 +119,17 @@ const accountSlice = createSlice({
     },
     markListingViewed: {
       reducer(state, action) {
-        state.viewedListings ||= []
+        state.viewedListings = Array.isArray(state.viewedListings) ? state.viewedListings : []
         const exists = state.viewedListings.some(
           (item) =>
             item.userId === action.payload.userId && item.listingId === action.payload.listingId,
         )
-        if (!exists) state.viewedListings.unshift(action.payload)
+        if (!exists) {
+          state.viewedListings.unshift(action.payload)
+          if (state.viewedListings.length > VIEWED_LISTINGS_LIMIT) {
+            state.viewedListings.length = VIEWED_LISTINGS_LIMIT
+          }
+        }
       },
       prepare(values) {
         return {
@@ -354,11 +372,17 @@ const accountSlice = createSlice({
     updateVerificationStatus(state, action) {
       const request = state.verificationRequests.find((item) => item.id === action.payload.id)
       if (!request) return
-      request.status = action.payload.status
+      const nextStatus = action.payload.status
+      const reviewNote = String(action.payload.reviewNote ?? request.reviewNote ?? '').trim()
+      if (nextStatus === 'rejected' && !reviewNote) return
+      request.status = nextStatus
       request.reviewedAt = new Date().toISOString()
       request.reviewedBy = action.payload.reviewedBy
-      if (action.payload.reviewNote !== undefined) {
-        request.reviewNote = String(action.payload.reviewNote || '').trim()
+      if (!Array.isArray(request.documentIds)) {
+        request.documentIds = []
+      }
+      if (nextStatus === 'rejected' || action.payload.reviewNote !== undefined) {
+        request.reviewNote = reviewNote
       }
     },
     updateAccountPreferences(state, action) {

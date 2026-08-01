@@ -28,6 +28,10 @@ import {
   sanitizeListingByType,
   validateListingBusinessRules,
 } from '../config/listingConfig'
+import {
+  normalizeShippingCarriers,
+  RUSSIA_SHIPPING_CARRIERS,
+} from '../config/russiaShippingCarriers'
 import { LISTING_CONDITIONS } from '../config/options'
 import {
   constrainRussianPhone,
@@ -96,6 +100,7 @@ export function PublishListingPage() {
     whatsapp: ensurePhoneCountry(user.phone, 'RU'),
     sellerType: 'person',
     deliveryOptions: [],
+    shippingCarriers: [],
     deliveryFee: 0,
     // Réduction
     hasDiscount: false,
@@ -891,6 +896,7 @@ export function PublishListingPage() {
                           ? form.deliveryOptions.filter((v) => v !== opt.value)
                           : [...form.deliveryOptions, opt.value]
                         setField('deliveryOptions', next)
+                        if (!next.includes('shipping')) setField('shippingCarriers', [])
                       }}
                       className={`rounded-2xl border px-4 py-2 text-sm font-bold transition ${
                         selected
@@ -900,6 +906,78 @@ export function PublishListingPage() {
                     >
                       {listingOptionLabel(t, opt)}
                     </button>
+                  )
+                })}
+              </div>
+            </div>
+          ) : null}
+
+          {form.deliveryOptions.includes('shipping') ? (
+            <div className="grid gap-3 rounded-2xl border border-[var(--app-border)] p-4">
+              <div>
+                <p className="text-sm font-bold">{mt('marketplace.shipping.title')}</p>
+                <p className="mt-1 text-xs leading-5 text-[var(--app-text-muted)]">
+                  {mt('marketplace.shipping.hint')}
+                </p>
+              </div>
+              <div className="grid gap-2">
+                {RUSSIA_SHIPPING_CARRIERS.map((carrier) => {
+                  const selected = normalizeShippingCarriers(form.shippingCarriers).find(
+                    (item) => item.id === carrier.id,
+                  )
+                  return (
+                    <div
+                      key={carrier.id}
+                      className={`rounded-xl border p-3 transition ${
+                        selected
+                          ? 'border-brand-400 bg-brand-50/60 dark:border-brand-700 dark:bg-brand-950/30'
+                          : 'border-[var(--app-border)]'
+                      }`}
+                    >
+                      <label className="flex cursor-pointer items-start gap-3">
+                        <input
+                          type="checkbox"
+                          className="mt-1"
+                          checked={Boolean(selected)}
+                          onChange={() => {
+                            const current = normalizeShippingCarriers(form.shippingCarriers)
+                            const next = selected
+                              ? current.filter((item) => item.id !== carrier.id)
+                              : [
+                                  ...current,
+                                  {
+                                    id: carrier.id,
+                                    etaHint: mt(carrier.etaKey) || carrier.etaHint,
+                                  },
+                                ]
+                            setField('shippingCarriers', next)
+                          }}
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-bold">{mt(carrier.labelKey)}</span>
+                          <span className="mt-0.5 block text-xs text-[var(--app-text-muted)]">
+                            {mt(carrier.etaKey)}
+                          </span>
+                        </span>
+                      </label>
+                      {selected ? (
+                        <Input
+                          id={`ship-eta-${carrier.id}`}
+                          className="mt-2"
+                          label={mt('marketplace.shipping.etaLabel')}
+                          value={selected.etaHint}
+                          onChange={(event) => {
+                            const next = normalizeShippingCarriers(form.shippingCarriers).map(
+                              (item) =>
+                                item.id === carrier.id
+                                  ? { ...item, etaHint: event.target.value }
+                                  : item,
+                            )
+                            setField('shippingCarriers', next)
+                          }}
+                        />
+                      ) : null}
+                    </div>
                   )
                 })}
               </div>

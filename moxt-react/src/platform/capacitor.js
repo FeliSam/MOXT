@@ -4,9 +4,13 @@ import { navigateDeepLink } from './deepLinks'
 export const isNative = Capacitor.isNativePlatform()
 export const nativePlatform = Capacitor.getPlatform()
 
+/** Appliquer dès le chargement du module — avant le 1er paint React. */
 function markNativeShell() {
+  if (!isNative || typeof document === 'undefined') return
   document.documentElement.classList.add('capacitor-native', `capacitor-${nativePlatform}`)
 }
+
+markNativeShell()
 
 async function bindDeepLinks(App) {
   App.addListener('appUrlOpen', ({ url }) => {

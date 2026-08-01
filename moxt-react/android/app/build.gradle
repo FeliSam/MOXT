@@ -13,8 +13,9 @@ android {
         applicationId "com.moxt.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 2
-        versionName "1.2.0"
+        // Aligner versionCode avec iOS CURRENT_PROJECT_VERSION (docs/google-play-listing.md).
+        versionCode 7
+        versionName "1.2.4"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

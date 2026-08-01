@@ -198,7 +198,8 @@ body {
   #main-content .touch-pan-x,
   #main-content .overflow-x-auto,
   #main-content .overflow-x-scroll {
-    touch-action: pan-x;
+    /* pan-y aussi : sinon le doigt sur un carrousel horizontal bloque le scroll de page */
+    touch-action: pan-x pan-y;
     overscroll-behavior-x: contain;
   }
 }
@@ -257,9 +258,9 @@ html.moxt-splash-lock body {
   display: block;
   width: auto;
   height: auto;
-  /* Réduit de 40% par rapport à la taille d'origine (min(92vw, 28rem) / min(88dvh, 42rem)). */
-  max-width: min(55.2vw, 16.8rem);
-  max-height: min(52.8dvh, 25.2rem);
+  /* −40% puis −20% par rapport à l’origine (min(92vw, 28rem) / min(88dvh, 42rem)). */
+  max-width: min(44.16vw, 13.44rem);
+  max-height: min(42.24dvh, 20.16rem);
   object-fit: contain;
   pointer-events: none;
 }
@@ -338,10 +339,72 @@ textarea:focus-visible {
 html.capacitor-native header,
 html.capacitor-native .app-top-header {
   padding-top: max(1.25rem, calc(env(safe-area-inset-top) + 0.35rem));
+  padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+  padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
 }
 
 html.capacitor-native .capacitor-safe-bottom {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+/* Android WebView : éviter le zoom texte / largeur forcée qui coupe les bords */
+html.capacitor-native,
+html.capacitor-native body {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html.capacitor-android,
+html.capacitor-android body {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html.capacitor-native #root {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+/* Padding horizontal = max(gutters, safe-area) — évite le clip sous encoche / gesture */
+html.capacitor-native #main-content {
+  padding-left: max(1rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1rem, env(safe-area-inset-right, 0px));
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+@media (min-width: 640px) {
+  html.capacitor-native #main-content {
+    padding-left: max(1.5rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1.5rem, env(safe-area-inset-right, 0px));
+  }
+}
+
+@media (min-width: 1024px) {
+  html.capacitor-native #main-content {
+    padding-left: max(2rem, env(safe-area-inset-left, 0px));
+    padding-right: max(2rem, env(safe-area-inset-right, 0px));
+  }
+}
+
+/*
+  Les pistes dashboard-h-bleed débordent volontairement sur le web mobile.
+  Sur Capacitor, le bleed élargit la page (mx-auto) → clip des deux côtés.
+*/
+html.capacitor-native #main-content .dashboard-h-bleed,
+html.capacitor-native #main-content .\-mx-4 {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+html.capacitor-native .bottom-nav-shell {
+  left: max(0.75rem, env(safe-area-inset-left, 0px));
+  right: max(0.75rem, env(safe-area-inset-right, 0px));
 }
 
 /* ─── Bottom nav — modèle unique Chrome + Safari (+ Capacitor) ─────────────
@@ -366,12 +429,13 @@ html.capacitor-native .capacitor-safe-bottom {
   bottom: var(--bottom-nav-offset);
   padding: 0.25rem;
   padding-bottom: var(--bottom-nav-pad);
-  /* Force sa propre couche de composition : évite le décollement/"scroll"
-     visuel de la barre fixe pendant le défilement momentum sur iOS/Android
-     (le navigateur ne doit pas la repeindre avec le contenu de la page). */
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
-  will-change: transform;
+  /* `position: fixed` se cale sur le LAYOUT viewport, pas sur la zone visible.
+     Quand la barre d'URL mobile se rétracte/réapparaît, l'écart entre les deux
+     fait « décoller » la barre. `--viewport-bottom-gap` (mesuré via l'API
+     VisualViewport dans useKeyboardInset) le compense en temps réel.
+     Le translate3d garde en prime la couche GPU contre le momentum scroll iOS. */
+  transform: translate3d(0, calc(-1 * var(--viewport-bottom-gap, 0px)), 0);
+  -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
 }
 
@@ -384,7 +448,7 @@ html.keyboard-open .bottom-nav-shell {
 
 .message-composer-shell {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
-  margin-bottom: var(--keyboard-inset, 0px);
+  margin-bottom: 0;
 }
 
 @media (min-width: 640px) {
@@ -394,6 +458,7 @@ html.keyboard-open .bottom-nav-shell {
 }
 
 html.keyboard-open .message-composer-shell {
+  margin-bottom: var(--keyboard-inset, 0px);
   /* Avoid safe-area gap stacked above the keyboard. */
   padding-bottom: 0.75rem;
 }
@@ -459,16 +524,19 @@ html.messages-route-lock #root {
   touch-action: pan-y;
 }
 
-/* Conversation mobile ouverte : pas de chrome app (header + bottom nav) */
+/* Conversation mobile ouverte : pas de chrome app (header + bottom nav).
+   `.messages-thread-immersive` est aussi posé sur <html> (nav portalisée). */
 @media (max-width: 1023px) {
   .messages-thread-immersive .app-top-header,
+  html.messages-thread-immersive .bottom-nav-shell,
   .messages-thread-immersive .bottom-nav-shell {
     display: none !important;
     pointer-events: none !important;
     visibility: hidden !important;
   }
 
-  .messages-thread-immersive main {
+  .messages-thread-immersive main,
+  html.messages-thread-immersive main {
     padding: 0 !important;
   }
 
@@ -1142,8 +1210,8 @@ html.messages-route-lock #root {
    bord bas) ne chevauche pas le message suivant. */
 .message-stack--reacted {
   z-index: 5;
-  padding-bottom: 0.45rem;
-  margin-bottom: 0.5rem;
+  padding-bottom: 0.65rem;
+  margin-bottom: 0.55rem;
 }
 
 .message-row--after-reaction {
@@ -1226,6 +1294,12 @@ html.messages-route-lock #root {
 .message-action-menu-btn--danger:hover {
   background: rgb(239 68 68 / 12%);
   color: rgb(220 38 38);
+}
+
+.message-action-menu-btn--emoji {
+  width: 1.625rem;
+  height: 1.625rem;
+  font-size: 0.8125rem;
 }
 
 .message-failed-banner {
@@ -1395,7 +1469,7 @@ html.messages-route-lock #root {
    sans bordure ni fond, pour ne pas modifier la taille du message. */
 .message-reactions {
   position: absolute;
-  bottom: -0.55rem;
+  bottom: -0.8rem;
   z-index: 2;
   display: flex;
   gap: 0.2rem;
@@ -1519,6 +1593,12 @@ html.messages-route-lock #root {
     font-size: 1rem;
   }
 
+  .message-action-menu-btn--emoji {
+    width: 2.75rem;
+    height: 2.75rem;
+    font-size: 1rem;
+  }
+
   .message-filter-chip {
     min-height: 2.75rem;
     padding-inline: 0.875rem;
@@ -1571,6 +1651,28 @@ html.messages-route-lock #root {
   35%  { transform: scale(1.28); }
   65%  { transform: scale(0.92); }
   100% { transform: scale(1); }
+}
+
+/* Menu flottant détail (+ partage / favori / contact) — ouverture & fermeture */
+.detail-action-item {
+  display: block;
+  opacity: 0;
+  transform: translate3d(0, 0.55rem, 0) scale(0.82);
+  pointer-events: none;
+  transition:
+    opacity 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.detail-action-item.is-open {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  pointer-events: auto;
+}
+
+.detail-action-fab.is-open {
+  transform: scale(1.06);
 }
 
 @keyframes favorite-shrink {
@@ -2637,23 +2739,24 @@ input[type='file'] {
   }
 }
 
-/* Mobile / tablet: prior size +10% (profile avatar excluded). */
+/* Mobile / tablet: barre −5 %, glyphes −10 % (avatar profil exclu des glyphes). */
 @media (max-width: 1023px) {
   .header-action-btn {
     @apply rounded-full border border-[var(--app-border)]/80 bg-[var(--app-surface)]/65 backdrop-blur-md hover:bg-[var(--app-surface)]/80;
-    width: 3.1625rem;
-    height: 3.1625rem;
+    width: 3.004375rem;
+    height: 3.004375rem;
+    border-width: 0.8px;
   }
 
   @media (min-width: 640px) {
     .header-action-btn {
-      width: 3.47875rem;
-      height: 3.47875rem;
+      width: 3.3048125rem;
+      height: 3.3048125rem;
     }
   }
 
   .header-action-icon {
-    font-size: 1.423125rem; /* prior glyph +10% */
+    font-size: 1.2808125rem;
     opacity: 0.72;
   }
 
@@ -2829,6 +2932,9 @@ input[type='file'] {
 
 /* Carrousels horizontaux — pan-x + pan-y pour ne pas bloquer le scroll vertical de page */
 .horizontal-track {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
   overscroll-behavior-x: contain;
@@ -2840,6 +2946,19 @@ input[type='file'] {
   touch-action: pan-x pan-y pinch-zoom;
   -webkit-mask-image: linear-gradient(to right, transparent 0, #000 0.65rem, #000 calc(100% - 0.65rem), transparent 100%);
   mask-image: linear-gradient(to right, transparent 0, #000 0.65rem, #000 calc(100% - 0.65rem), transparent 100%);
+}
+
+/* Bleed horizontal des carrousels dashboard (compense px-4 du main). */
+.dashboard-h-bleed {
+  margin-left: -1rem;
+  margin-right: -1rem;
+}
+
+@media (min-width: 640px) {
+  .dashboard-h-bleed {
+    margin-left: -1.5rem;
+    margin-right: -1.5rem;
+  }
 }
 
 .horizontal-track > * {
@@ -2870,6 +2989,70 @@ input[type='file'] {
 }
 
 /* Icônes services dashboard — effet 3D (perspective + ombre portée) */
+/* ─── Services essentiels — grille bento asymétrique ─────────────────────── */
+.dashboard-services-bento {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+@media (min-width: 640px) {
+  .dashboard-services-bento {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.9rem;
+  }
+}
+
+.dashboard-bento-tile {
+  position: relative;
+  display: block;
+  overflow: visible;
+  border-radius: 1.35rem;
+  padding: 1rem 1rem 1.1rem;
+  min-width: 0;
+  /* +21 % saturation cumulée (×1.1 ×1.1) des teintes bento */
+  filter: saturate(1.21);
+  transition:
+    transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 280ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dashboard-bento-tile:active {
+  transform: scale(0.985);
+}
+
+@media (hover: hover) {
+  .dashboard-bento-tile:hover {
+    transform: translateY(-2px);
+    filter: saturate(1.21) brightness(1.02);
+  }
+}
+
+.dashboard-bento-tile--hero {
+  grid-column: 1 / -1;
+}
+
+.dashboard-bento-tile--featured {
+  grid-row: span 2;
+}
+
+@media (min-width: 640px) {
+  .dashboard-bento-tile--hero {
+    grid-column: span 2;
+  }
+
+  .dashboard-bento-tile--featured {
+    grid-column: span 2;
+    grid-row: span 2;
+  }
+
+  .dashboard-bento-tile--medium {
+    grid-column: span 1;
+  }
+}
+
 .dashboard-icon-3d {
   perspective: 900px;
   transform-style: preserve-3d;
@@ -4050,4 +4233,37 @@ body.moxt-tour-active .app-top-header {
   .moxt-tour-spotlight-ring {
     animation: none !important;
   }
+}
+
+/* Détection du remplissage automatique natif (mot de passe enregistré du navigateur) :
+   Chrome/Safari appliquent la pseudo-classe :-webkit-autofill sans déclencher d'événement
+   `input`. On lui associe une animation vide pour capter `onAnimationStart` côté React
+   (voir components/ui/Input.jsx) et resynchroniser la valeur du champ contrôlé. */
+@keyframes onAutoFillStart {
+  from {}
+  to {}
+}
+@keyframes onAutoFillCancel {
+  from {}
+  to {}
+}
+input:-webkit-autofill {
+  animation-name: onAutoFillStart;
+}
+input:not(:-webkit-autofill) {
+  animation-name: onAutoFillCancel;
+}
+
+/* Mise en évidence temporaire d'une publication ciblée depuis une notification
+   (?post=id) : anneau qui s'estompe, pour repérer visuellement l'élément visé. */
+@keyframes news-post-highlight-pulse {
+  0% {
+    box-shadow: 0 0 0 3px var(--app-teal, #12bfa3);
+  }
+  100% {
+    box-shadow: 0 0 0 3px transparent;
+  }
+}
+.news-post-highlight {
+  animation: news-post-highlight-pulse 2.4s ease-out;
 }

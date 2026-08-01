@@ -3,9 +3,16 @@
  * Les filtres server-side scalaires (eq) sont appliqués dans realtimeService.
  */
 
-/** Transfert visible pour l’utilisateur (client / propriétaire entreprise / businessId). */
-export function isTransferRelevantToUser(transfer, userId, ownedBusinessIds = []) {
-  if (!transfer || !userId) return false
+/** Transfert visible pour l’utilisateur (client / propriétaire entreprise / businessId / staff). */
+export function isTransferRelevantToUser(
+  transfer,
+  userId,
+  ownedBusinessIds = [],
+  { isStaff = false } = {},
+) {
+  if (!transfer) return false
+  if (isStaff) return true
+  if (!userId) return false
   const uid = String(userId)
   if (String(transfer.userId ?? '') === uid) return true
   if (String(transfer.businessOwnerId ?? '') === uid) return true

@@ -59,7 +59,15 @@ export function profileFromRemoteRow(row) {
 }
 
 export async function fetchParticipantProfilesFromRemote(participantIds) {
-  const unique = [...new Set(participantIds)].filter(Boolean)
+  const unique = [
+    ...new Set(
+      (participantIds || [])
+        .map((id) => String(id || '').trim())
+        .filter((id) =>
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id),
+        ),
+    ),
+  ]
   if (!unique.length || !supabase) return {}
 
   const { data, error } = await supabase

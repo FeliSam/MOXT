@@ -14,17 +14,27 @@ import {
 
 export function ProfilePage() {
   const user = useSelector((state) => state.auth.user)
+  const userId = user?.id
 
   const profileCompletion = profileCompletionPercent(user)
 
   const transfersCount = useSelector(
-    (state) => state.transfers.items.filter((item) => item.userId === user.id).length,
+    (state) =>
+      userId
+        ? state.transfers.items.filter((item) => item.userId === userId).length
+        : 0,
   )
   const listingsCount = useSelector(
-    (state) => state.marketplace.items.filter((item) => item.ownerId === user.id).length,
+    (state) =>
+      userId
+        ? state.marketplace.items.filter((item) => item.ownerId === userId).length
+        : 0,
   )
   const parcelsCount = useSelector(
-    (state) => state.parcels.items.filter((item) => item.ownerId === user.id).length,
+    (state) =>
+      userId
+        ? state.parcels.items.filter((item) => item.ownerId === userId).length
+        : 0,
   )
   const favoritesCount = useSelector((state) => state.account.favorites.length)
 
@@ -37,6 +47,8 @@ export function ProfilePage() {
     }),
     [favoritesCount, listingsCount, parcelsCount, transfersCount],
   )
+
+  if (!user) return null
 
   const quickStats = quickStatsConfig.map((stat) => ({
     ...stat,

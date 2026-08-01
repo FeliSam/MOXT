@@ -7,18 +7,35 @@ import { supabase } from '../../services/supabaseClient'
 
 const storage = createLocalStorage('moxt-help-articles-v1')
 
+const HELP_ARTICLE_COLUMNS =
+  'id, translation_group_id, category, language, title, summary, content, source_name, source_url, verified_at, pinned, status, author_id, author_name, created_at, updated_at, images'
+
+async function fetchHelpArticles(includeSortOrder) {
+  let query = supabase
+    .from('help_articles')
+    .select(includeSortOrder ? `${HELP_ARTICLE_COLUMNS}, sort_order` : HELP_ARTICLE_COLUMNS)
+  if (includeSortOrder) query = query.order('sort_order', { ascending: true })
+  return query.order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(200)
+}
+
+function isMissingSortOrderColumn(error) {
+  const message = String(error?.message || error?.details || error?.hint || '').toLowerCase()
+  return message.includes('sort_order') || (message.includes('column') && message.includes('does not exist'))
+}
+
 export const loadHelpArticles = createAsyncThunk('helpArticles/loadHelpArticles', async () => {
   if (!supabase) return []
-  const { data, error } = await supabase
-    .from('help_articles')
-    .select(
-      'id, translation_group_id, category, language, title, summary, content, source_name, source_url, verified_at, pinned, status, author_id, author_name, created_at, updated_at',
-    )
-    .order('pinned', { ascending: false })
-    .order('created_at', { ascending: false })
-    .limit(200)
-  if (error) throw error
-  return fromRows(data || [])
+  const primary = await fetchHelpArticles(true)
+  if (!primary.error) return fromRows(primary.data || [])
+
+  // Migration sort_order pas encore appliquée : fallback sans planter la page.
+  if (isMissingSortOrderColumn(primary.error)) {
+    const fallback = await fetchHelpArticles(false)
+    if (fallback.error) throw fallback.error
+    return fromRows(fallback.data || [])
+  }
+
+  throw primary.error
 })
 
 const helpArticlesSlice = createSlice({
@@ -52,6 +69,8 @@ const helpArticlesSlice = createSlice({
             verifiedAt: values.verifiedAt || now,
             pinned: values.pinned === true,
             status: values.status || 'published',
+            sortOrder: Number.isFinite(values.sortOrder) ? values.sortOrder : 0,
+            images: Array.isArray(values.images) ? values.images : [],
             authorId: values.authorId,
             authorName: values.authorName || '',
             createdAt: now,

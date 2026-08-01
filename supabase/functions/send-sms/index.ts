@@ -2,18 +2,76 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { SNSClient, PublishCommand } from 'npm:@aws-sdk/client-sns@3'
 import { Webhook } from 'https://esm.sh/standardwebhooks@1.0.0'
 import { phoneToSmsc } from '../_shared/smscPhone.ts'
+import { corsHeadersFor } from '../_shared/cors.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type, webhook-id, webhook-timestamp, webhook-signature',
-}
+const ALLOW_HEADERS =
+  'authorization, x-client-info, apikey, content-type, webhook-id, webhook-timestamp, webhook-signature'
 
-function json(body: Record<string, unknown>, status = 200) {
+function json(body: Record<string, unknown>, status = 200, req?: Request) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: {
+      ...corsHeadersFor(req || new Request('https://moxtapp.ru'), ALLOW_HEADERS),
+      'Content-Type': 'application/json',
+    },
   })
+}
+
+/** Plafond serveur : nb max de SMS par numéro sur 24 h (coût facturé). */
+const SMS_MAX_PER_DAY = Number(Deno.env.get('SMS_MAX_PER_DAY') || '10')
+
+/**
+ * Garde-fou de coût, côté serveur. Le plafond client (localStorage) se
+ * contourne en vidant le cache ou en changeant de navigateur ; celui-ci est
+ * tenu en base et s'applique quoi qu'il arrive.
+ *
+ * En cas d'indisponibilité de la base : fail-closed (Vague 3) — un SMS bloqué
+ * vaut mieux qu'une facture SMS vidée par un abus.
+ */
+async function smsSendAllowed(phone: string): Promise<boolean> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  if (!supabaseUrl || !serviceRoleKey) return false
+
+  try {
+    const admin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
+    const { data, error } = await admin.rpc('moxt_sms_send_allowed', {
+      p_phone: phone,
+      p_max: SMS_MAX_PER_DAY,
+      p_window_hours: 24,
+    })
+    if (error) {
+      console.error('[send-sms] cap check failed:', error.message)
+      try {
+        await admin.rpc('moxt_log_security_event', {
+          p_kind: 'sms_cap_unavailable',
+          p_subject: phone,
+          p_meta: { error: error.message },
+        })
+      } catch {
+        /* ignore */
+      }
+      return false
+    }
+    if (data === false) {
+      try {
+        await admin.rpc('moxt_log_security_event', {
+          p_kind: 'sms_cap_denied',
+          p_subject: phone,
+          p_meta: {},
+        })
+      } catch {
+        /* ignore */
+      }
+      return false
+    }
+    return true
+  } catch (error) {
+    console.error('[send-sms] cap check error:', error)
+    return false
+  }
 }
 
 function normalizeE164(phone = '') {
@@ -735,17 +793,19 @@ async function sendOtpSms(phone: string, otp: string) {
 }
 
 Deno.serve(async (req) => {
+  const respond = (body: Record<string, unknown>, status = 200) => json(body, status, req)
+
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeadersFor(req, ALLOW_HEADERS) })
   }
 
   if (req.method !== 'POST') {
-    return json({ error: 'Method not allowed' }, 405)
+    return respond({ error: 'Method not allowed' }, 405)
   }
 
   const hookSecret = Deno.env.get('SEND_SMS_HOOK_SECRET')
   if (!hookSecret) {
-    return json({ error: 'SEND_SMS_HOOK_SECRET manquant.' }, 503)
+    return respond({ error: 'SEND_SMS_HOOK_SECRET manquant.' }, 503)
   }
 
   const payload = await req.text()
@@ -780,6 +840,20 @@ Deno.serve(async (req) => {
   const otp = sms?.otp
   if (!phone || !otp) {
     return json({ error: 'Payload SMS incomplet.' }, 400)
+  }
+
+  if (!(await smsSendAllowed(phone))) {
+    console.warn('[send-sms] plafond journalier atteint pour ce numéro')
+    return json(
+      {
+        error: {
+          http_code: 429,
+          message:
+            'Trop de SMS demandés pour ce numéro aujourd’hui. Réessayez demain ou connectez-vous par e-mail.',
+        },
+      },
+      200,
+    )
   }
 
   try {

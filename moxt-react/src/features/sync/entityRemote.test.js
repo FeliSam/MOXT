@@ -26,9 +26,12 @@ describe('entityRemote', () => {
       proofs: [{ id: 'P1' }],
       ratings: [{ userId: 'b1', rating: 5 }],
       timeline: [{ status: 'created', at: '2026-01-01' }],
+      paymentDueAt: '2026-01-01T12:30:00.000Z',
+      confirmDueAt: null,
     })
     expect(row.proofs).toHaveLength(1)
     expect(row.ratings[0].rating).toBe(5)
+    expect(row.payment_due_at).toBe('2026-01-01T12:30:00.000Z')
   })
 
   it("restaure les détails métier d'une offre P2P distante", () => {

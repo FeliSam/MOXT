@@ -207,6 +207,7 @@ export function ProfessionalPage() {
   useEffect(() => {
     const tab = searchParams.get('tab')
     if (tab && tabs.some((item) => item.value === tab)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronise l'onglet actif avec l'URL (système externe : le routeur)
       setActive(tab)
     }
   }, [searchParams, tabs])

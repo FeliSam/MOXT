@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import { useDispatch } from 'react-redux'
 import { useSelector } from 'react-redux'
 import {
+  canAcceptP2POffer,
   canCreateBusiness,
   canPublishContent,
   canPublishP2POffer,
@@ -49,6 +50,12 @@ export function useSecurityGate() {
     return false
   }, [notifyBlocked, user])
 
+  const requireP2PAccept = useCallback(() => {
+    if (canAcceptP2POffer(user)) return true
+    notifyBlocked('p2pAccept')
+    return false
+  }, [notifyBlocked, user])
+
   const requireBusiness = useCallback(() => {
     if (canCreateBusiness(user)) return true
     notifyBlocked('business')
@@ -66,6 +73,7 @@ export function useSecurityGate() {
     requirePublish,
     requireVoyagePublish,
     requireP2PPublish,
+    requireP2PAccept,
     requireBusiness,
     requireTransfer,
   }

@@ -158,7 +158,7 @@ export const tw = {
   listingPrice: 'text-sm font-black tabular-nums text-white sm:text-base',
   listingCity: 'text-[11px] text-white/75',
 
-  liveListCard: 'mx-4 min-w-0 overflow-hidden !p-0 rounded-2xl bg-white shadow-sm dark:bg-zinc-900',
+  liveListCard: 'mx-4 min-w-0 overflow-hidden !p-0 rounded-2xl bg-transparent shadow-none',
   liveListHeader: 'p-5 pb-4 sm:p-6 sm:pb-4',
   liveListTitle: 'font-display text-lg font-extrabold tracking-[-0.02em] text-app-text dark:text-zinc-50 sm:text-xl',
   liveListDesc: 'mt-0.5 text-xs text-app-text-muted dark:text-zinc-400 sm:text-sm',
@@ -186,13 +186,65 @@ export const badgeTones: Record<string, string> = {
 };
 
 export const QUICK_ACTIONS: {
-  Icon: LucideIcon; tint: string; label: string; description: string; route: string;
+  id: string;
+  Icon: LucideIcon;
+  tint: string;
+  label: string;
+  description: string;
+  route: string;
+  size: 'hero' | 'featured' | 'medium' | 'compact';
+  iconPos: 'br' | 'bl' | 'tr';
 }[] = [
-  { Icon: Send, tint: '#0b8975', label: 'Créer un transfert', description: 'Envoyer de l’argent en quelques étapes', route: '/transfer/wizard' },
-  { Icon: Megaphone, tint: '#08705f', label: 'Publier une annonce', description: 'Produit, service ou location', route: '/listing/create' },
-  { Icon: PackagePlus, tint: '#245de8', label: 'Envoyer un colis', description: 'Trouver ou proposer un trajet', route: '/parcels' },
-  { Icon: Briefcase, tint: '#b45309', label: 'Publier un job', description: 'Mission ou opportunité', route: '/jobs' },
-  { Icon: CalendarPlus, tint: '#7c3aed', label: 'Créer un événement', description: 'Rencontre, atelier ou formation', route: '/search' },
+  {
+    id: 'qa-transfer',
+    Icon: Send,
+    tint: '#0b8975',
+    label: 'Créer un transfert',
+    description: 'Envoyer de l’argent en quelques étapes',
+    route: '/transfer/wizard',
+    size: 'hero',
+    iconPos: 'br',
+  },
+  {
+    id: 'qa-listing',
+    Icon: Megaphone,
+    tint: '#0891b2',
+    label: 'Publier une annonce',
+    description: 'Produit, service ou location',
+    route: '/listing/create',
+    size: 'featured',
+    iconPos: 'tr',
+  },
+  {
+    id: 'qa-parcel',
+    Icon: PackagePlus,
+    tint: '#245de8',
+    label: 'Envoyer un colis',
+    description: 'Trouver ou proposer un trajet',
+    route: '/parcels',
+    size: 'medium',
+    iconPos: 'br',
+  },
+  {
+    id: 'qa-job',
+    Icon: Briefcase,
+    tint: '#b45309',
+    label: 'Publier un job',
+    description: 'Mission ou opportunité',
+    route: '/jobs',
+    size: 'medium',
+    iconPos: 'bl',
+  },
+  {
+    id: 'qa-event',
+    Icon: CalendarPlus,
+    tint: '#7c3aed',
+    label: 'Créer un événement',
+    description: 'Rencontre, atelier ou formation',
+    route: '/search',
+    size: 'compact',
+    iconPos: 'tr',
+  },
 ];
 
 export const QUICK_ACCENTS_LIGHT: [string, string][] = [
@@ -219,17 +271,115 @@ export const TRUST_HIGHLIGHTS: [string, string][] = [
 ];
 
 export const CORE_SERVICES: {
-  Icon: LucideIcon; title: string; description: string; route: string; tag: string; tone: string;
+  id: string;
+  Icon: LucideIcon;
+  title: string;
+  description: string;
+  route: string;
+  tag: string;
+  tone: string;
+  size: 'hero' | 'featured' | 'medium' | 'compact';
+  iconPos: 'br' | 'bl' | 'tr';
 }[] = [
-  { Icon: ArrowLeftRight, title: 'Transferts', description: 'Envoyez, suivez et gérez vos opérations simplement.', route: '/transfers', tag: 'Essentiel', tone: 'success' },
-  { Icon: ShoppingBag, title: 'Marketplace', description: 'Achetez et vendez entre particuliers et entreprises.', route: '/marketplace', tag: 'Découvrir', tone: 'info' },
-  { Icon: Package, title: 'Colis', description: 'Publiez, trouvez et réservez des kilos disponibles.', route: '/parcels', tag: 'Voyages', tone: 'warning' },
-  { Icon: Briefcase, title: 'Jobs', description: 'Découvrez des missions, jobs et opportunités professionnelles.', route: '/jobs', tag: 'Carrière', tone: 'success' },
-  { Icon: Handshake, title: 'Échangeurs', description: 'Trouvez des partenaires fiables et vérifiés.', route: '/organization', tag: 'Vérifiés', tone: 'violet' },
-  { Icon: Repeat, title: 'P2P', description: 'Publiez et trouvez des offres entre utilisateurs vérifiés.', route: '/marketplace', tag: 'Échanges', tone: 'rose' },
-  { Icon: Building2, title: 'Entreprises', description: 'Explorez les services des professionnels MOXT.', route: '/organization', tag: 'Professionnel', tone: 'info' },
-  { Icon: CalendarDays, title: 'Événements', description: 'Participez aux rencontres, ateliers et activités de la communauté.', route: '/search', tag: 'Agenda', tone: 'warning' },
-  { Icon: Newspaper, title: 'Actualité', description: 'Jobs, événements, actualités et opportunités.', route: '/search', tag: 'En direct', tone: 'violet' },
+  {
+    id: 'transfers',
+    Icon: ArrowLeftRight,
+    title: 'Transferts',
+    description: 'Envoyez, suivez et gérez vos opérations simplement.',
+    route: '/transfers',
+    tag: 'Essentiel',
+    tone: 'success',
+    size: 'hero',
+    iconPos: 'br',
+  },
+  {
+    id: 'marketplace',
+    Icon: ShoppingBag,
+    title: 'Marketplace',
+    description: 'Achetez et vendez entre particuliers et entreprises.',
+    route: '/marketplace',
+    tag: 'Découvrir',
+    tone: 'info',
+    size: 'featured',
+    iconPos: 'br',
+  },
+  {
+    id: 'parcels',
+    Icon: Package,
+    title: 'Colis',
+    description: 'Publiez, trouvez et réservez des kilos disponibles.',
+    route: '/parcels',
+    tag: 'Voyages',
+    tone: 'warning',
+    size: 'medium',
+    iconPos: 'br',
+  },
+  {
+    id: 'jobs',
+    Icon: Briefcase,
+    title: 'Jobs',
+    description: 'Découvrez des missions, jobs et opportunités professionnelles.',
+    route: '/jobs',
+    tag: 'Carrière',
+    tone: 'success',
+    size: 'medium',
+    iconPos: 'br',
+  },
+  {
+    id: 'p2p',
+    Icon: Repeat,
+    title: 'P2P',
+    description: 'Publiez et trouvez des offres entre utilisateurs vérifiés.',
+    route: '/p2p',
+    tag: 'Échanges',
+    tone: 'rose',
+    size: 'compact',
+    iconPos: 'br',
+  },
+  {
+    id: 'exchangers',
+    Icon: Handshake,
+    title: 'Échangeurs',
+    description: 'Trouvez des partenaires fiables et vérifiés.',
+    route: '/organization',
+    tag: 'Vérifiés',
+    tone: 'violet',
+    size: 'compact',
+    iconPos: 'br',
+  },
+  {
+    id: 'businesses',
+    Icon: Building2,
+    title: 'Entreprises',
+    description: 'Explorez les services des professionnels MOXT.',
+    route: '/organization',
+    tag: 'Professionnel',
+    tone: 'info',
+    size: 'compact',
+    iconPos: 'br',
+  },
+  {
+    id: 'events',
+    Icon: CalendarDays,
+    title: 'Événements',
+    description: 'Participez aux rencontres, ateliers et activités de la communauté.',
+    route: '/search',
+    tag: 'Agenda',
+    tone: 'warning',
+    size: 'compact',
+    iconPos: 'br',
+  },
+  {
+    id: 'news',
+    Icon: Newspaper,
+    title: 'Actualité',
+    description: 'Jobs, événements, actualités et opportunités.',
+    route: '/search',
+    tag: 'En direct',
+    tone: 'violet',
+    size: 'compact',
+    iconPos: 'br',
+  },
 ];
 
 export const LISTING_TYPES: Record<string, string> = {

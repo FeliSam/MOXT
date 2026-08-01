@@ -7,6 +7,8 @@ export const PUBLIC_INDEXABLE_PATHS = [
   '/faq',
   '/legal/mentions',
   '/legal/cgu',
+  '/legal/entreprises',
+  '/legal/annonces',
   '/legal/privacy',
 ]
 
@@ -58,10 +60,24 @@ export const routeMetadata = [
   },
   { pattern: /^\/dashboard$/, title: 'Accueil', eyebrow: 'MOXT' },
   {
+    pattern: /^\/install$/,
+    title: 'Installer l’application',
+    eyebrow: 'MOXT',
+    description: 'Télécharger MOXT sur Android ou ajouter l’app sur iPhone.',
+    back: '/dashboard',
+  },
+  {
     pattern: /^\/moxt$/,
     title: 'MOXT',
     eyebrow: 'Plateforme',
     description: 'Tous les services MOXT : essentiels, actions rapides et compte.',
+  },
+  {
+    pattern: /^\/contribute$/,
+    title: 'Soutenir MOXT',
+    eyebrow: 'Maintien du projet',
+    description: 'Contribution volontaire pour le maintien et le développement de MOXT.',
+    back: '/moxt',
   },
   { pattern: /^\/activities$/, title: 'Mes activités', eyebrow: 'Compte', back: '/profile' },
   { pattern: /^\/favorites$/, title: 'Mes favoris', eyebrow: 'Compte', back: '/profile' },

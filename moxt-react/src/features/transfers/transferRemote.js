@@ -13,6 +13,10 @@ function parseJsonField(value, fallback) {
 }
 
 export function buildTransferRemotePayload(transfer) {
+  const note =
+    String(transfer.noteToExchanger ?? transfer.payload?.noteToExchanger ?? '')
+      .trim()
+      .slice(0, 300) || null
   return {
     amountSent: transfer.amountSent,
     amountReceived: transfer.amountReceived,
@@ -26,6 +30,15 @@ export function buildTransferRemotePayload(transfer) {
     receivedAt: transfer.receivedAt,
     receivedMethod: transfer.receivedMethod,
     receivedProof: transfer.receivedProof,
+    noteToExchanger: note,
+    acceptanceRequired: transfer.acceptanceRequired === true,
+    acceptanceRequestedAt: transfer.acceptanceRequestedAt || null,
+    acceptanceExpiresAt: transfer.acceptanceExpiresAt || null,
+    acceptanceResolvedAt: transfer.acceptanceResolvedAt || null,
+    previousBusinessId: transfer.previousBusinessId || null,
+    reassignmentHistory: transfer.reassignmentHistory || [],
+    pendingPaymentAccount: transfer.pendingPaymentAccount || null,
+    pendingPaymentDetails: transfer.pendingPaymentDetails || null,
   }
 }
 
@@ -58,6 +71,11 @@ export function transferFromRemoteRow(row) {
     totalToPay: base.totalToPay ?? nested.totalToPay,
   })
 
+  const noteToExchanger =
+    String(base.noteToExchanger ?? nested.noteToExchanger ?? '')
+      .trim()
+      .slice(0, 300) || null
+
   return {
     ...base,
     ...nested,
@@ -75,6 +93,22 @@ export function transferFromRemoteRow(row) {
     receivedAt: base.receivedAt ?? nested.receivedAt ?? null,
     receivedMethod: base.receivedMethod ?? nested.receivedMethod ?? null,
     receivedProof: base.receivedProof ?? nested.receivedProof ?? null,
+    noteToExchanger,
+    acceptanceRequired:
+      base.acceptanceRequired === true || nested.acceptanceRequired === true,
+    acceptanceRequestedAt:
+      base.acceptanceRequestedAt ?? nested.acceptanceRequestedAt ?? null,
+    acceptanceExpiresAt: base.acceptanceExpiresAt ?? nested.acceptanceExpiresAt ?? null,
+    acceptanceResolvedAt: base.acceptanceResolvedAt ?? nested.acceptanceResolvedAt ?? null,
+    previousBusinessId: base.previousBusinessId ?? nested.previousBusinessId ?? null,
+    reassignmentHistory: parseJsonField(
+      base.reassignmentHistory ?? nested.reassignmentHistory,
+      [],
+    ),
+    pendingPaymentAccount:
+      nested.pendingPaymentAccount ?? base.pendingPaymentAccount ?? null,
+    pendingPaymentDetails:
+      nested.pendingPaymentDetails ?? base.pendingPaymentDetails ?? null,
     paymentProof: parseJsonField(base.paymentProof, base.paymentProof),
     businessProof: parseJsonField(base.businessProof, base.businessProof),
     timeline: parseJsonField(base.timeline, []),

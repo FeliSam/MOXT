@@ -2,18 +2,20 @@ import { createSlice } from '@reduxjs/toolkit'
 import { createId } from '../../services/createId'
 import { createLocalStorage } from '../../services/createLocalStorage'
 import { matchUserId } from './businessVisibility'
+import { normalizeTransferCountryCode } from '../transfers/transferAccountUtils'
 const storage = createLocalStorage('moxt-businesses-v1')
 const membersStorage = createLocalStorage('moxt-business-members-v1')
 const documentsStorage = createLocalStorage('moxt-business-documents-v1')
 const requestsStorage = createLocalStorage('moxt-business-requests-v1')
 
 function normalizeTransferAccount(account = {}, originCountry = 'BJ') {
-  const country = account.country || 'RU'
-  const slot = account.slot || (country === 'RU' ? 'ru' : 'origin')
+  const safeOrigin = normalizeTransferCountryCode(originCountry, 'BJ')
+  const incoming = normalizeTransferCountryCode(account.country, safeOrigin)
+  const slot = account.slot || (incoming === 'RU' ? 'ru' : 'origin')
   return {
     id: account.id || createId('BACC'),
     slot,
-    country: slot === 'ru' ? 'RU' : originCountry,
+    country: slot === 'ru' ? 'RU' : safeOrigin,
     label: account.label?.trim() || account.method || 'Compte de reception',
     method: account.method?.trim() || '',
     recipientName: account.recipientName?.trim() || '',
@@ -91,6 +93,8 @@ const businessSlice = createSlice({
             transferAccounts: values.services?.includes('Transfert')
               ? (values.transferAccounts || []).map(normalizeTransferAccount)
               : [],
+            transferAcceptanceRequired:
+              values.services?.includes('Transfert') && values.transferAcceptanceRequired === true,
             services: values.services || [],
             status: values.status || 'pending_review',
             activityVisibility: values.activityVisibility || 'public',
@@ -116,6 +120,12 @@ const businessSlice = createSlice({
       const business = state.items.find((item) => item.id === action.payload.id)
       if (!business) return
       business.status = action.payload.status
+      business.updatedAt = new Date().toISOString()
+    },
+    setBusinessPinned(state, action) {
+      const business = state.items.find((item) => item.id === action.payload.id)
+      if (!business) return
+      business.pinnedAt = action.payload.pinned ? new Date().toISOString() : null
       business.updatedAt = new Date().toISOString()
     },
     updateBusinessActivityVisibility(state, action) {
@@ -147,10 +157,14 @@ const businessSlice = createSlice({
       business.updatedAt = new Date().toISOString()
     },
     updateBusinessTransferPricing(state, action) {
+      const isStaff = ['admin', 'superadmin', 'moderator'].includes(action.payload.actorRole)
       const business = state.items.find(
-        (item) => item.id === action.payload.businessId && item.ownerId === action.payload.ownerId,
+        (item) =>
+          item.id === action.payload.businessId &&
+          (isStaff || item.ownerId === action.payload.ownerId),
       )
-      if (!business || !business.services?.includes('Transfert')) return
+      if (!business) return
+      if (!isStaff && !business.services?.includes('Transfert')) return
       if (action.payload.feePercent != null) {
         business.feePercent = Math.max(0, Number(action.payload.feePercent) || 0)
       }
@@ -165,6 +179,9 @@ const businessSlice = createSlice({
           15,
           Math.max(0, Number(action.payload.rateReductionFromRu) || 0),
         )
+      }
+      if (action.payload.transferAcceptanceRequired != null) {
+        business.transferAcceptanceRequired = action.payload.transferAcceptanceRequired === true
       }
       business.updatedAt = new Date().toISOString()
     },
@@ -224,10 +241,15 @@ const businessSlice = createSlice({
     updateBusinessDocumentStatus(state, action) {
       const document = state.documents.find((item) => item.id === action.payload.id)
       if (!document) return
-      document.status = action.payload.status
+      const nextStatus = action.payload.status
+      const reviewNote = String(
+        action.payload.reviewNote ?? document.reviewNote ?? '',
+      ).trim()
+      if (nextStatus === 'rejected' && !reviewNote) return
+      document.status = nextStatus
       if (action.payload.reviewedBy !== undefined) document.reviewedBy = action.payload.reviewedBy
-      if (action.payload.reviewNote !== undefined) {
-        document.reviewNote = action.payload.reviewNote || ''
+      if (nextStatus === 'rejected' || action.payload.reviewNote !== undefined) {
+        document.reviewNote = nextStatus === 'verified' ? '' : reviewNote
       }
       document.reviewedAt = action.payload.reviewedAt || new Date().toISOString()
       document.updatedAt = new Date().toISOString()
@@ -284,6 +306,7 @@ export const {
   createBusinessRequest,
   deleteBusinessByUser,
   moderateBusiness,
+  setBusinessPinned,
   patchBusiness,
   removeBusinessMember,
   saveBusiness,

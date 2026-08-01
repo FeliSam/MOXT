@@ -65,6 +65,24 @@ describe('exchangerListUtils', () => {
     expect(resolveUserTransferCountry({ country: 'RU', originCountry: 'TG' }, 'BJ')).toBe('RU')
   })
 
+  it('masque les comptes origin avec country corrompu jusqu a normalisation', () => {
+    const corrupted = {
+      ...bjBusiness,
+      name: "Flick’sExchange",
+      transferAccounts: [
+        { slot: 'ru', country: 'RU', active: true },
+        { slot: 'origin', country: 1, active: true, isDefault: true },
+      ],
+      ownerOriginCountry: 'BJ',
+    }
+    const rows = listExchangersForTransfer({
+      businesses: [corrupted],
+      user: { id: 'u1', country: 'RU', originCountry: 'BJ' },
+      originCountry: 'BJ',
+    })
+    expect(rows.map((item) => item.name)).toEqual(["Flick’sExchange"])
+  })
+
   it('ignore business.country (localisation RU) pour le pays partenaire', () => {
     expect(resolveExchangerOriginCountry(bjBusiness, 'BJ')).toBe('BJ')
     expect(resolveExchangerCountry(ruBusiness, 'RU', 'BJ')).toBe('RU')
@@ -184,5 +202,26 @@ describe('exchangerListUtils', () => {
     })
 
     expect(resolved).toBeNull()
+  })
+
+  it('exclut les echangeurs a visibilite privee', () => {
+    const rows = listExchangersForTransfer({
+      businesses: [bjBusiness, { ...bjBusiness, id: 'BIZ-PRIVATE', activityVisibility: 'private' }],
+      user: { country: 'BJ', originCountry: 'BJ' },
+      originCountry: 'BJ',
+    })
+    expect(rows.map((row) => row.id)).toEqual(['BIZ-BJ'])
+  })
+
+  it('exclut les echangeurs soft-supprimes', () => {
+    const rows = listExchangersForTransfer({
+      businesses: [
+        bjBusiness,
+        { ...bjBusiness, id: 'BIZ-DEL', deletedByUserAt: '2026-01-01T00:00:00.000Z' },
+      ],
+      user: { country: 'BJ', originCountry: 'BJ' },
+      originCountry: 'BJ',
+    })
+    expect(rows.map((row) => row.id)).toEqual(['BIZ-BJ'])
   })
 })

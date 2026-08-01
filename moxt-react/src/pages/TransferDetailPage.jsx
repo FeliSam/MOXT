@@ -1,5 +1,5 @@
 import { FiClock, FiFlag, FiRepeat, FiShield, FiUser } from 'react-icons/fi'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useLocation, useParams } from 'react-router-dom'
 import { Card } from '../components/ui/Card'
@@ -33,6 +33,8 @@ import { TransferDetailParticipantsSection } from '../features/transfers/detail/
 import { TransferDetailTimelineCard } from '../features/transfers/detail/TransferDetailTimelineCard'
 import { TransferReceivingAccountCard } from '../features/transfers/TransferReceivingAccountCard'
 import { TransferRecipientAccountCard } from '../features/transfers/TransferRecipientAccountCard'
+import { ReassignExchangerPicker } from '../features/transfers/ReassignExchangerPicker'
+import { canRevealPaymentDetails } from '../features/transfers/transferAcceptanceUtils'
 import { TRANSFER_STATUS } from '../features/transfers/transferConfig'
 import {
   getTransferDetailAccess,
@@ -46,7 +48,15 @@ import { useTransferDetail } from '../features/transfers/detail/useTransferDetai
 import { selectOwnedBusinessIds } from '../features/transfers/transferSelectors'
 import { canApplyModerateTransfer } from '../features/transfers/transferActionUtils'
 import { printReceipt } from '../features/transfers/receiptExport'
-import { cancelTransfer, declarePayment, moderateTransfer } from '../features/transfers/transferSlice'
+import {
+  acceptTransferRequest,
+  cancelTransfer,
+  declarePayment,
+  declineTransferRequest,
+  expireOverdueTransfers,
+  moderateTransfer,
+  reassignTransferExchanger,
+} from '../features/transfers/transferSlice'
 import {
   directionLabel,
   formatDate,
@@ -69,14 +79,33 @@ export function TransferDetailPage() {
   const [claimMotive, setClaimMotive] = useState('')
   const [claimMessage, setClaimMessage] = useState('')
   const [cancelOpen, setCancelOpen] = useState(false)
+  const [reassignOpen, setReassignOpen] = useState(false)
   const [detailTab, setDetailTab] = useState('suivi')
   const dispatch = useDispatch()
   const location = useLocation()
   const { transferId } = useParams()
   const user = useSelector((state) => state.auth.user)
+  const businesses = useSelector((state) => state.businesses.items || [])
   const ownedBusinessIds = useSelector((state) => selectOwnedBusinessIds(state, user?.id))
   const { business, transfer } = useTransferDetail(transferId, user)
-  const countdown = usePaymentCountdown(transfer?.paymentDeadlineAt)
+  const countdown = usePaymentCountdown(
+    transfer?.status === TRANSFER_STATUS.PENDING ? transfer?.paymentDeadlineAt : null,
+  )
+  const acceptanceCountdown = usePaymentCountdown(
+    transfer?.status === TRANSFER_STATUS.PENDING_ACCEPTANCE
+      ? transfer?.acceptanceExpiresAt
+      : null,
+  )
+
+  useEffect(() => {
+    if (!transfer) return
+    if (
+      transfer.status === TRANSFER_STATUS.PENDING_ACCEPTANCE ||
+      transfer.status === TRANSFER_STATUS.PENDING
+    ) {
+      dispatch(expireOverdueTransfers())
+    }
+  }, [dispatch, transfer, acceptanceCountdown.expired, countdown.expired])
 
   if (!transfer) {
     return <TransferDetailNotFound />
@@ -87,7 +116,10 @@ export function TransferDetailPage() {
   const currTo = transfer.currencyTo || 'RUB'
   const access = getTransferDetailAccess(transfer, user, business, ownedBusinessIds)
   const actionView = resolveTransferActionView(access, location.state || {}, transfer)
-  const receivingAccount = transfer.exchanger?.paymentDetails || null
+  const receivingAccount = canRevealPaymentDetails(transfer)
+    ? transfer.exchanger?.paymentDetails || null
+    : null
+  const showPaymentCoords = canRevealPaymentDetails(transfer)
   const originCountry = transfer.originCountry || user.originCountry || 'BJ'
 
   function downloadReceipt() {
@@ -203,11 +235,11 @@ export function TransferDetailPage() {
   }
 
   return (
-    <div className="finance-hero-glow grid gap-7 rounded-[var(--radius-card-lg)]">
+    <div className="finance-hero-glow grid min-w-0 max-w-full gap-7 overflow-x-clip rounded-[var(--radius-card-lg)]">
       <PageHeader
         title={t('transfers.detail.title')}
         actions={
-          <div className="flex flex-wrap gap-2">
+          <div className="flex max-w-full flex-wrap gap-2">
             <ContactButton
               ownerId={access.contactId}
               relatedEntity={transfer}
@@ -265,10 +297,44 @@ export function TransferDetailPage() {
               contactOwnerId={access.contactId}
               contactTitle={access.contactTitle}
               countdown={countdown}
+              acceptanceCountdown={acceptanceCountdown}
               proof={proof}
               transfer={transfer}
               onProofSelected={handleProofSelected}
               onBusinessProofSelected={handleBusinessProofSelected}
+              onAcceptRequest={() => {
+                dispatch(
+                  acceptTransferRequest({
+                    id: transfer.id,
+                    actorId: user.id,
+                    actorRole: user.role,
+                  }),
+                )
+                dispatch(
+                  addToast({
+                    title: t('transfers.acceptance.toasts.acceptedTitle'),
+                    message: t('transfers.acceptance.toasts.acceptedBody'),
+                    tone: 'success',
+                  }),
+                )
+              }}
+              onDeclineRequest={() => {
+                dispatch(
+                  declineTransferRequest({
+                    id: transfer.id,
+                    actorId: user.id,
+                    actorRole: user.role,
+                  }),
+                )
+                dispatch(
+                  addToast({
+                    title: t('transfers.acceptance.toasts.declinedTitle'),
+                    message: t('transfers.acceptance.toasts.declinedBody'),
+                    tone: 'info',
+                  }),
+                )
+              }}
+              onReassignClick={() => setReassignOpen(true)}
               onDeclarePayment={() => {
                 if (!access.canDeclare) return
                 dispatch(
@@ -367,13 +433,20 @@ export function TransferDetailPage() {
             </>
           )}
           {access.isSender ? (
-            <TransferReceivingAccountCard
-              account={receivingAccount}
-              direction={transfer.direction}
-              originCountry={originCountry}
-              compact
-              onCopy={(value) => copyValue(value, t('transfers.detail.copy.coordinates'))}
-            />
+            showPaymentCoords ? (
+              <TransferReceivingAccountCard
+                account={receivingAccount}
+                direction={transfer.direction}
+                originCountry={originCountry}
+                compact
+                clientNote={transfer.noteToExchanger}
+                onCopy={(value) => copyValue(value, t('transfers.detail.copy.coordinates'))}
+              />
+            ) : (
+              <Card className="p-5 text-sm text-[var(--app-text-muted)]">
+                {t('transfers.acceptance.paymentHidden')}
+              </Card>
+            )
           ) : null}
           {access.isBusinessViewer ? (
             <TransferRecipientAccountCard transfer={transfer} />
@@ -391,12 +464,19 @@ export function TransferDetailPage() {
 
       {detailTab === 'paiement' ? (
         <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
-          <TransferReceivingAccountCard
-            account={receivingAccount}
-            direction={transfer.direction}
-            originCountry={originCountry}
-            onCopy={(value) => copyValue(value, t('transfers.detail.copy.coordinates'))}
-          />
+          {showPaymentCoords ? (
+            <TransferReceivingAccountCard
+              account={receivingAccount}
+              direction={transfer.direction}
+              originCountry={originCountry}
+              clientNote={transfer.noteToExchanger}
+              onCopy={(value) => copyValue(value, t('transfers.detail.copy.coordinates'))}
+            />
+          ) : (
+            <Card className="p-5 text-sm text-[var(--app-text-muted)]">
+              {t('transfers.acceptance.paymentHidden')}
+            </Card>
+          )}
           <TransferDetailFinancialCard
             transfer={transfer}
             onCopyReference={() => copyValue(transfer.id, t('transfers.detail.copy.reference'))}
@@ -536,6 +616,45 @@ export function TransferDetailPage() {
           setCancelOpen(false)
         }}
       />
+
+      <Modal
+        open={reassignOpen}
+        onClose={() => setReassignOpen(false)}
+        title={t('transfers.acceptance.reassignTitle')}
+        size="large"
+      >
+        <div className="grid gap-4">
+          <p className="text-sm text-[var(--app-text-muted)]">
+            {t('transfers.acceptance.reassignDescription')}
+          </p>
+          <ReassignExchangerPicker
+            businesses={businesses}
+            user={user}
+            transfer={transfer}
+            excludeBusinessId={transfer.businessId}
+            onSelect={(exchanger) => {
+              dispatch(
+                reassignTransferExchanger({
+                  id: transfer.id,
+                  actorId: user.id,
+                  exchanger,
+                  amount: transfer.amountSent,
+                }),
+              )
+              dispatch(
+                addToast({
+                  title: t('transfers.acceptance.toasts.reassignedTitle'),
+                  message: t('transfers.acceptance.toasts.reassignedBody', {
+                    name: exchanger.name,
+                  }),
+                  tone: 'success',
+                }),
+              )
+              setReassignOpen(false)
+            }}
+          />
+        </div>
+      </Modal>
     </div>
   )
 }

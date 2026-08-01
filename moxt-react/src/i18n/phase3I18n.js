@@ -172,6 +172,7 @@ export const PHASE3_FR_SOURCES = {
   'support.replyPlaceholder': 'Répondre',
   'support.sendAria': 'Envoyer',
   'support.closedAlert': 'Cette demande est fermée.',
+  'support.openChat': 'Continuer dans Messages',
 
   // ── documents ──────────────────────────────────────────────────────────
   'documents.eyebrow': 'Compte',
@@ -359,19 +360,24 @@ export const PHASE3_FR_SOURCES = {
     'Trois niveaux : numéro russe (publication), identité MOXT (entreprise/transferts), renforcée (plafonds élevés).',
   'verification.levels.identity': 'Identité',
   'verification.levels.identityDesc':
-    'Pièce d’identité et selfie. Débloque la création d’entreprise et les transferts.',
+    'Pièce d’identité, selfie et visa / ВНЖ / РВП / РВПО. Débloque la création d’entreprise et les transferts.',
   'verification.levels.enhanced': 'Renforcée',
   'verification.levels.enhancedDesc':
-    'Identité + justificatif de domicile. Débloque les plafonds élevés.',
+    'Identité, statut de séjour et justificatif de domicile. Débloque les plafonds élevés.',
   'verification.idTypes.passport': 'Passeport',
   'verification.idTypes.residence': 'Carte de séjour russe (ВНЖ / РВП)',
   'verification.idTypes.migration': 'Carte de migration / patente',
   'verification.idTypes.consular': 'Carte consulaire',
+  'verification.residenceTypes.visa': 'Visa',
+  'verification.residenceTypes.vnj': 'ВНЖ (VNJ)',
+  'verification.residenceTypes.rvp': 'РВП (RVP)',
+  'verification.residenceTypes.rvpo': 'РВПО (RVPO)',
   'verification.steps.level': 'Niveau',
   'verification.steps.phone': 'Téléphone',
   'verification.steps.email': 'E-mail',
   'verification.steps.identity': 'Identité',
   'verification.steps.selfie': 'Selfie',
+  'verification.steps.residence': 'Statut',
   'verification.steps.address': 'Domicile',
   'verification.steps.review': 'Confirmation',
   'verification.toast.sentTitle': 'Dossier envoyé',
@@ -383,6 +389,11 @@ export const PHASE3_FR_SOURCES = {
   'verification.overdue.link': 'le support MOXT',
   'verification.request.heading': 'Demande {level}',
   'verification.request.docs': '{count} document(s) associé(s)',
+  'verification.rejected.title': 'Dossier refusé',
+  'verification.rejected.reason': 'Motif du refus : {note}',
+  'verification.rejected.fallback': 'Votre dossier a été refusé. Corrigez les documents puis renvoyez-le.',
+  'verification.rejected.hint':
+    'Corrigez les pièces concernées ci-dessous, puis renvoyez un nouveau dossier.',
   'verification.stepProgress': 'Étape {step}/{total} · {label}',
   'verification.chooseLevel': 'Choisissez votre niveau',
   'verification.chooseLevelHint':
@@ -397,6 +408,12 @@ export const PHASE3_FR_SOURCES = {
     'Une photo de vous tenant votre pièce, pour confirmer qu’elle vous appartient.',
   'verification.selfie.upload': 'Ajouter un selfie',
   'verification.selfie.uploadHint': 'Visage et document visibles.',
+  'verification.residence.heading': 'Visa, ВНЖ, РВП ou РВПО',
+  'verification.residence.hint':
+    'Ajoutez votre document de séjour en Russie (visa, ВНЖ, РВП ou РВПО).',
+  'verification.residence.docType': 'Type de document',
+  'verification.residence.upload': 'Photo du document',
+  'verification.residence.uploadHint': 'Image ou PDF, recto lisible et dates visibles.',
   'verification.address.heading': 'Justificatif de domicile',
   'verification.address.hint':
     'Enregistrement migratoire, bail ou facture récente en Russie.',
@@ -406,6 +423,7 @@ export const PHASE3_FR_SOURCES = {
   'verification.review.level': 'Niveau demandé',
   'verification.review.idDoc': 'Pièce d’identité',
   'verification.review.selfie': 'Selfie de vérification',
+  'verification.review.residence': 'Visa / ВНЖ / РВП / РВПО',
   'verification.review.phone': 'Téléphone russe',
   'verification.review.email': 'E-mail',
   'verification.review.address': 'Justificatif de domicile',
@@ -454,6 +472,24 @@ export const PHASE3_FR_SOURCES = {
   'verification.guide.selfie.rejected.selfieDark.title': 'Photo trop sombre',
   'verification.guide.selfie.rejected.selfieDark.desc':
     'On ne distingue ni le visage ni les informations du document.',
+  'verification.guide.residence.title': 'Visa, ВНЖ, РВП ou РВПО',
+  'verification.guide.residence.intro':
+    'Photographiez le document de séjour en entier, avec les dates de validité lisibles.',
+  'verification.guide.residence.accepted.docClear.title': 'Document entier et net',
+  'verification.guide.residence.accepted.docClear.desc':
+    'Les 4 coins sont visibles, le texte et les dates sont lisibles.',
+  'verification.guide.residence.accepted.docValid.title': 'Visa, ВНЖ, РВП ou РВПО',
+  'verification.guide.residence.accepted.docValid.desc':
+    'Page principale avec photo, nom et période de validité clairement visibles.',
+  'verification.guide.residence.rejected.docCrop.title': 'Document coupé',
+  'verification.guide.residence.rejected.docCrop.desc':
+    'Une partie du document est hors cadre ou un coin manque.',
+  'verification.guide.residence.rejected.docBlur.title': 'Photo floue ou sombre',
+  'verification.guide.residence.rejected.docBlur.desc':
+    'Le texte ou les dates ne sont pas lisibles.',
+  'verification.guide.residence.rejected.docScreen.title': 'Capture d’écran',
+  'verification.guide.residence.rejected.docScreen.desc':
+    'Photo d’un écran, scan de mauvaise qualité ou document avec reflets.',
   'verification.guide.address.title': 'Justificatif de domicile',
   'verification.guide.address.intro':
     'Joignez un document récent (moins de 3 mois) à votre nom, avec adresse en Russie.',
@@ -525,6 +561,7 @@ export const PHASE3_FR_SOURCES = {
   'errors.display.body':
     "Une erreur inattendue empêche l'affichage. Réessayez ou retournez à l'accueil.",
   'errors.display.home': 'Retour au tableau de bord',
+  'errors.display.detailToggle': 'Détail technique de l’erreur',
 
   'news.eyebrow': 'Communauté',
   'news.title': "Fil d'actualité",
@@ -748,6 +785,67 @@ export const PHASE3_FR_SOURCES = {
   'payments.badge': 'Paiement',
   'payments.confirm': 'Confirmer le paiement',
   'payments.empty': 'Aucun paiement enregistré',
+
+  // ── contribute ─────────────────────────────────────────────────────────
+  'contribute.eyebrow': 'Maintien du projet',
+  'contribute.title': 'Soutenir MOXT',
+  'contribute.description':
+    'Aidez au maintien et au développement de la plateforme. Contribution volontaire, sans contrepartie financière.',
+  'contribute.heroTitle': 'Participer au maintien de MOXT',
+  'contribute.heroBody':
+    'Serveurs, développement produit, support aux membres : chaque geste aide à garder MOXT stable et utile pour la communauté.',
+  'contribute.use1': 'Hébergement & stabilité',
+  'contribute.use2': 'Nouvelles fonctionnalités',
+  'contribute.use3': 'Support communautaire',
+  'contribute.payTitle': 'Envoyer sur un numéro',
+  'contribute.payBody': 'Choisissez un canal, copiez le numéro, puis confirmez après l’envoi.',
+  'contribute.channels.ru.region': 'Russie · RUB',
+  'contribute.channels.ru.title': 'Sberbank · VTB · Tinkoff',
+  'contribute.channels.ru.hint': 'Envoyez en RUB vers ce numéro (SBP / Mobile Bank).',
+  'contribute.channels.bj.region': 'Bénin · XOF',
+  'contribute.channels.bj.title': 'MTN Mobile Money',
+  'contribute.channels.bj.hint': 'Envoyez en XOF via MTN Mobile Money vers ce numéro.',
+  'contribute.copyNumber': 'Copier le numéro',
+  'contribute.copyRef': 'Copier la ref.',
+  'contribute.copiedShort': 'Copié',
+  'contribute.copiedTitle': 'Copié',
+  'contribute.copiedBody': 'Collable dans votre app bancaire ou Mobile Money.',
+  'contribute.copyFailed': 'Impossible de copier. Sélectionnez le texte manuellement.',
+  'contribute.referenceLabel': 'Référence à indiquer',
+  'contribute.referenceHint': 'Ajoutez cette référence dans le motif du transfert si possible.',
+  'contribute.chooseAmount': 'Montant suggéré',
+  'contribute.customAmount': 'Autre montant',
+  'contribute.customPlaceholder': 'Ex. 750',
+  'contribute.currency': 'Devise',
+  'contribute.message': 'Message (optionnel)',
+  'contribute.messagePlaceholder': 'Un mot pour l’équipe MOXT…',
+  'contribute.howTitle': 'Comment ça se passe ?',
+  'contribute.howBody':
+    'Envoyez d’abord l’argent sur le numéro choisi, puis confirmez ici pour ouvrir une conversation avec l’équipe.',
+  'contribute.how1': 'Copiez le numéro et envoyez le montant',
+  'contribute.how2': 'Indiquez la référence si votre app le permet',
+  'contribute.how3': 'Confirmez ici — l’équipe vérifie avec vous dans Messages',
+  'contribute.submit': 'J’ai envoyé {amount}',
+  'contribute.contactSupport': 'Parler au support',
+  'contribute.thanks':
+    'Merci ! Votre confirmation est enregistrée. Le support vous recontacte pour valider.',
+  'contribute.toastTitle': 'Merci pour votre soutien',
+  'contribute.toastBody': 'Confirmation {amount} enregistrée. Poursuivez dans Messages.',
+  'contribute.defaultNote': 'Contribution volontaire au maintien de MOXT',
+  'contribute.chatSubject': 'Contribution MOXT — {amount}',
+  'contribute.chatIntro': 'Je souhaite contribuer {amount} au maintien / développement de MOXT.',
+  'contribute.chatChannel': 'Canal : {channel} — {number}',
+  'contribute.chatHolder': 'Titulaire : {name}',
+  'contribute.chatBanks': 'Réseaux : {banks}',
+  'contribute.chatNote': 'Message : {note}',
+  'contribute.chatRef': 'Référence : {id}',
+  'contribute.chatProofHint': 'Je peux joindre une capture de preuve dans cette conversation.',
+  'contribute.chatAdminConfirmHint':
+    'Admin : après vérification, répondez dans Support ou utilisez « Confirmer la réception ».',
+  'contribute.legal':
+    'Contribution volontaire au projet MOXT. Devises acceptées : RUB et XOF uniquement. Ce n’est pas un investissement ni un produit financier.',
+  'contribute.adminOnlyBadge': 'Admin uniquement',
+  'nav.contribute': 'Soutenir MOXT',
 
   // ── my publications ────────────────────────────────────────────────────
   'publications.mine.publish.listing': 'Publier une annonce',

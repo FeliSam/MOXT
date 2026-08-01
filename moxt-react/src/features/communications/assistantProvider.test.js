@@ -1,6 +1,8 @@
-import { describe, expect, it } from 'vitest'
-import { translate } from '@moxt/shared/i18n/translate.js'
+import { beforeAll, describe, expect, it } from 'vitest'
+import { ensureLocaleLoaded, translate } from '@moxt/shared/i18n/translate.js'
 import { localAssistantProvider } from './assistantProvider'
+
+beforeAll(() => ensureLocaleLoaded('en'))
 
 describe('localAssistantProvider', () => {
   it('retourne des liens issus des données locales', async () => {

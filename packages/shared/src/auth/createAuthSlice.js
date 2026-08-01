@@ -289,10 +289,13 @@ export function createAuthSlice(authService) {
           state.error = null
         })
         .addCase(confirmEmailVerification.rejected, setFailure)
-        .addCase(updateProfile.pending, setLoading)
+        // Ne pas passer par setLoading : ProtectedRoute remonte AuthLoadingScreen
+        // et peut déclencher un retry session si l’update dure > 5s.
+        .addCase(updateProfile.pending, clearAuthErrorOnly)
         .addCase(updateProfile.fulfilled, (state, action) => {
-          state.user = action.payload
+          if (action.payload) state.user = action.payload
           state.status = 'authenticated'
+          state.error = null
         })
         .addCase(updateProfile.rejected, setFailure)
         .addCase(logout.fulfilled, (state) => {

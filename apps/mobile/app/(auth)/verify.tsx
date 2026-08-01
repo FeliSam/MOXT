@@ -13,7 +13,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { useLanguage } from '@/providers/LanguageProvider';
-import { clearAuthError, verifyEmailRegistration, verifyPhoneRegistration } from '@/store/auth';
+import {
+  clearAuthError,
+  registerWithEmailAfterSmsDenied,
+  verifyEmailRegistration,
+  verifyPhoneRegistration,
+} from '@/store/auth';
+import { clearSignupCredentials, peekSignupCredentials } from '@/store/pendingSignupCredentials';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, radii, shadows, spacing } from '@/theme/colors';
@@ -29,9 +35,12 @@ export default function VerifyScreen() {
   }>();
   const { error, status } = useAppSelector((state) => state.auth);
   const [code, setCode] = useState('');
+  const [activeMethod, setActiveMethod] = useState(
+    method === 'email' || method === 'mail' ? 'email' : 'sms',
+  );
 
   const isLoading = status === 'loading';
-  const isEmail = method === 'email';
+  const isEmail = activeMethod === 'email';
   const identifier = isEmail ? email : phone;
 
   const handleVerify = () => {
@@ -41,6 +50,34 @@ export default function VerifyScreen() {
     } else {
       dispatch(verifyPhoneRegistration({ phone: phone || '', token: code, email: email || '' } as any));
     }
+    clearSignupCredentials();
+  };
+
+  const switchToEmail = () => {
+    const draft = peekSignupCredentials();
+    if (!draft.password || !email) {
+      dispatch(clearAuthError());
+      setActiveMethod('email');
+      router.setParams({ method: 'email' } as any);
+      return;
+    }
+    dispatch(clearAuthError());
+    setCode('');
+    dispatch(
+      registerWithEmailAfterSmsDenied({
+        email: String(email),
+        russianPhone: String(phone || ''),
+        password: draft.password,
+        firstName: draft.firstName,
+        lastName: draft.lastName,
+        originCountry: draft.originCountry,
+        residenceCity: draft.residenceCity,
+        skipPhoneEligibilityCheck: true,
+        registrationVia: 'email_after_sms_resend_limit',
+      } as any),
+    );
+    setActiveMethod('email');
+    router.setParams({ method: 'email' } as any);
   };
 
   return (
@@ -114,6 +151,17 @@ export default function VerifyScreen() {
           <Pressable style={[styles.backButton, { borderColor: colors.border }]} onPress={() => router.back()}>
             <Text style={[styles.backButtonText, { color: colors.text }]}>← Retour</Text>
           </Pressable>
+
+          {!isEmail ? (
+            <Pressable
+              disabled={isLoading}
+              style={[styles.backButton, { borderColor: brand[300], marginTop: spacing.sm }]}
+              onPress={switchToEmail}>
+              <Text style={[styles.backButtonText, { color: brand[700] }]}>
+                Je n’ai pas reçu le SMS — recevoir par e-mail
+              </Text>
+            </Pressable>
+          ) : null}
 
           {/* Resend */}
           <Pressable style={styles.resendRow}>

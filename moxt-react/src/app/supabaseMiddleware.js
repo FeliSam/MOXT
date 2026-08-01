@@ -16,10 +16,13 @@ import {
   resolveCanonicalConversationId,
 } from '../features/communications/conversationPersist'
 import { normalizeConversation, replaceConversationId } from '../features/communications/communicationSlice'
+import { attachmentPreviewLabel } from '../features/communications/attachmentUtils'
 import { fromRow } from '../services/remoteRowMapper'
 import { addToast } from '../features/ui/uiSlice'
+import { sanitizeUserFacingMessage } from '../features/auth/authErrorMessages'
 import { authService } from '../features/auth/authService'
 import { selectAccountPreferences } from '../features/account/accountSlice'
+import { buildTransferRemotePayload } from '../features/transfers/transferRemote'
 
 async function triggerEmail(transferId, event) {
   await supabase.functions.invoke('send-email', {
@@ -102,6 +105,13 @@ function toSnake(obj) {
     averageDelay: 'average_delay',
     exchangeMethods: 'exchange_methods',
     transferAccounts: 'transfer_accounts',
+    transferAcceptanceRequired: 'transfer_acceptance_required',
+    // acceptance_* : optionnels (migration) — le sync écrit surtout dans payload jsonb
+    acceptanceRequired: 'acceptance_required',
+    acceptanceRequestedAt: 'acceptance_requested_at',
+    acceptanceExpiresAt: 'acceptance_expires_at',
+    acceptanceResolvedAt: 'acceptance_resolved_at',
+    previousBusinessId: 'previous_business_id',
     serviceZones: 'service_zones',
     scheduleType: 'schedule_type',
     scheduleSummary: 'schedule_summary',
@@ -154,7 +164,6 @@ function toSnake(obj) {
     documentIds: 'document_ids',
     deletedAt: 'deleted_at',
     deletedByUser: 'deleted_by_user',
-    receivedAmount: 'received_amount',
     receivedMethod: 'received_method',
     receivedProof: 'received_proof',
     receivedAt: 'received_at',
@@ -186,6 +195,10 @@ const TABLES_WITHOUT_UPDATED_AT = new Set([
   'personal_documents',
   'receipts',
   'wallet_entries',
+  // Guard until 20260721180000_p2p_offers_orders_updated_at is applied everywhere.
+  // Safe to keep: full offer/order state lives in payload / client store.
+  'p2p_offers',
+  'p2p_orders',
 ])
 
 function receiptToRemoteRow(receipt) {
@@ -217,6 +230,34 @@ async function upsert(table, data) {
   const payload = stripUnsupportedColumns(table, toSnake(data))
   const { error } = await supabase.from(table).upsert(payload, { onConflict: 'id' })
   if (error) throw error
+}
+
+/** Upsert offre (si fournie) + commande via RPC — respecte la FK offer_id. */
+async function syncP2pOrder(order, offer = null) {
+  const { error } = await supabase.rpc('moxt_sync_p2p_order', {
+    p_order: p2pOrderToRemoteRow(order),
+    p_offer: offer ? p2pOfferToRemoteRow(offer) : null,
+  })
+  if (!error) return
+
+  // Fallback si la migration RPC n'est pas encore appliquée.
+  const missingRpc =
+    error.code === 'PGRST202' ||
+    /moxt_sync_p2p_order|Could not find the function/i.test(error.message || '')
+  if (!missingRpc) throw error
+
+  if (offer) {
+    try {
+      await upsert('p2p_offers', p2pOfferToRemoteRow(offer))
+    } catch (offerError) {
+      // RLS acheteur : l'upsert offre peut échouer si l'offre existe déjà — OK pour la FK.
+      const isRls =
+        offerError?.code === '42501' ||
+        /row-level security|permission denied/i.test(offerError?.message || '')
+      if (!isRls) throw offerError
+    }
+  }
+  await upsert('p2p_orders', p2pOrderToRemoteRow(order))
 }
 
 async function insertRow(table, data) {
@@ -267,6 +308,7 @@ async function syncActiveDispute(state, payload) {
   if (!dispute) return
   await insertRow('disputes', {
     id: dispute.id,
+    opened_by: dispute.openedBy || dispute.reporterId,
     reporter_id: dispute.reporterId || dispute.openedBy,
     business_id: dispute.businessId || null,
     related_type: dispute.relatedType,
@@ -465,6 +507,29 @@ const handlers = {
   'parcels/cancelParcelRequest': async (payload) => {
     await update('parcel_requests', payload.id, { status: 'cancelled' })
   },
+  'parcels/deleteParcel': async (payload) => {
+    const { error } = await supabase.from('parcels').delete().eq('id', payload.id)
+    if (error) throw error
+  },
+
+  // ── Compteurs de vues ─────────────────────────────────────────────────────
+  // Incrément atomique côté serveur (RPC) : un simple update lu-puis-écrit
+  // perdrait des vues concurrentes. Le RPC ignore aussi les vues de l'auteur.
+  'marketplace/incrementListingView': async (payload) => {
+    await supabase.rpc('moxt_increment_view', {
+      p_entity_type: 'listing',
+      p_entity_id: payload,
+    })
+  },
+  'jobs/incrementJobView': async (payload) => {
+    await supabase.rpc('moxt_increment_view', { p_entity_type: 'job', p_entity_id: payload })
+  },
+  'parcels/incrementParcelView': async (payload) => {
+    await supabase.rpc('moxt_increment_view', { p_entity_type: 'parcel', p_entity_id: payload })
+  },
+  'events/incrementEventView': async (payload) => {
+    await supabase.rpc('moxt_increment_view', { p_entity_type: 'event', p_entity_id: payload })
+  },
 
   // ── Litiges ───────────────────────────────────────────────────────────────────
   'disputes/openDispute': async (payload, state) => {
@@ -501,6 +566,10 @@ const handlers = {
   'jobs/moderateJob': async (payload) => {
     await update('jobs', payload.id, { status: payload.status })
   },
+  'jobs/deleteJob': async (payload) => {
+    const { error } = await supabase.from('jobs').delete().eq('id', payload.id)
+    if (error) throw error
+  },
   'jobs/reportJob': async (payload, state) => {
     await syncActiveContentReport(state, 'jobs', payload, 'jobId', 'job_reports')
   },
@@ -527,6 +596,10 @@ const handlers = {
   },
   'events/moderateEvent': async (payload) => {
     await update('events', payload.id, { status: payload.status })
+  },
+  'events/deleteEvent': async (payload) => {
+    const { error } = await supabase.from('events').delete().eq('id', payload.id)
+    if (error) throw error
   },
   'events/reportEvent': async (payload, state) => {
     await syncActiveContentReport(state, 'events', payload, 'eventId', 'event_reports')
@@ -582,6 +655,15 @@ const handlers = {
   'businesses/moderateBusiness': async (payload) => {
     await update('businesses', payload.id, { status: payload.status })
   },
+  'businesses/setBusinessPinned': async (payload) => {
+    // RPC plutôt qu'un update direct : la colonne ne doit pas être modifiable
+    // par le propriétaire de l'entreprise, seulement par un admin.
+    const { error } = await supabase.rpc('moxt_set_business_pinned', {
+      p_business_id: payload.id,
+      p_pinned: Boolean(payload.pinned),
+    })
+    if (error) throw error
+  },
   'businesses/updateBusinessActivityVisibility': async (payload) => {
     await update('businesses', payload.businessId, {
       activity_visibility: payload.activityVisibility,
@@ -594,7 +676,7 @@ const handlers = {
 
   // ── Messagerie ────────────────────────────────────────────────────────────────
   'communications/createConversation': async (payload) => {
-    const { messages, messagesLoaded, drafts: _drafts, ...conv } = payload
+    const { messages, messagesLoaded: _messagesLoaded, drafts: _drafts, ...conv } = payload
     const canonicalId = await persistConversationRemote(conv)
     if (messages?.length) {
       for (const msg of messages) {
@@ -610,6 +692,10 @@ const handlers = {
     if (!conversation) {
       throw new Error('Conversation introuvable.')
     }
+    const senderId = String(payload.message?.senderId || payload.senderId || '')
+    if ((conversation.blockedBy || []).map(String).includes(senderId)) {
+      throw new Error('Conversation bloquée.')
+    }
 
     const canonicalId = await persistMessageForConversation(
       payload.message,
@@ -622,11 +708,16 @@ const handlers = {
       conversation.unreadBy && typeof conversation.unreadBy === 'object'
         ? { ...conversation.unreadBy }
         : {}
+    const previewText = msg.text?.trim()
+      ? msg.text
+      : msg.attachment
+        ? attachmentPreviewLabel(msg.attachment)
+        : ''
     const conversationPatch = {
       updated_at: msg.createdAt,
       message_count: conversation.messageCount ?? null,
       unread_by: unreadBy,
-      last_message_text: msg.text,
+      last_message_text: previewText,
       last_message_sender_id: msg.senderId,
       last_message_at: msg.createdAt,
     }
@@ -636,7 +727,6 @@ const handlers = {
     await supabase.from('conversations').update(conversationPatch).eq('id', canonicalId)
 
     // Le trigger DB crée les lignes notifications ; on pousse ensuite vers les appareils.
-    const senderId = String(msg.senderId || '')
     const muted = new Set((conversation.mutedBy || []).map(String))
     const blocked = new Set((conversation.blockedBy || []).map(String))
     const recipients = (conversation.participantIds || [])
@@ -655,22 +745,67 @@ const handlers = {
       }
     }
   },
-  'communications/markConversationRead': async (payload, state, dispatch) => {
+  'communications/resendMessage': async (payload, state, dispatch) => {
+    const conversation = state.communications.conversations.find(
+      (c) => c.id === payload.conversationId,
+    )
+    const message = conversation?.messages.find((m) => m.id === payload.messageId)
+    if (!conversation || !message) return
+    try {
+      await persistMessageForConversation(message, conversation, ({ remoteRow }) =>
+        reconcileConversation(dispatch, conversation, remoteRow),
+      )
+      dispatch({
+        type: 'communications/setMessagePending',
+        payload: { conversationId: conversation.id, messageId: message.id, pending: false },
+      })
+    } catch (error) {
+      dispatch({
+        type: 'communications/setMessageSyncFailed',
+        payload: { conversationId: conversation.id, messageId: message.id, failed: true },
+      })
+      throw error
+    }
+  },
+  'communications/editMessage': async (payload, state, dispatch) => {
+    const conversation = state.communications.conversations.find(
+      (c) => c.id === payload.conversationId,
+    )
+    const message = conversation?.messages.find((m) => m.id === payload.messageId)
+    if (!message || !conversation) return
+    await syncMessageRow(message, conversation, dispatch)
+    const previewText = message.text?.trim()
+      ? message.text
+      : message.attachment
+        ? attachmentPreviewLabel(message.attachment)
+        : conversation.lastMessageText
+    if (conversation.messages[conversation.messages.length - 1]?.id === message.id) {
+      await supabase
+        .from('conversations')
+        .update({
+          last_message_text: previewText,
+        })
+        .eq('id', conversation.id)
+    }
+  },
+  'communications/markConversationRead': async (payload, state) => {
     const conversation = state.communications.conversations.find(
       (c) => c.id === payload.conversationId,
     )
     if (!conversation) return
 
-    await syncConversationRow(state, payload.conversationId)
-
-    const readerId = String(payload.userId)
-    const peerMessages = conversation.messages.filter(
-      (message) => String(message.senderId) !== readerId,
-    )
-    for (const message of peerMessages) {
-      const readBy = (message.readBy || []).map(String)
-      if (!readBy.includes(readerId)) continue
-      await syncMessageRow(message, conversation, dispatch)
+    // RPC dédiée : évite l'upsert massif des messages (source du uuid = text).
+    const { error } = await supabase.rpc('moxt_mark_conversation_read', {
+      p_conversation_id: payload.conversationId,
+    })
+    if (error) {
+      // Fallback soft : ne pas toaster à chaque ouverture de chat.
+      console.warn('[Supabase] markConversationRead RPC:', error.message)
+      try {
+        await syncConversationRow(state, payload.conversationId)
+      } catch (fallbackError) {
+        console.warn('[Supabase] markConversationRead fallback:', fallbackError?.message)
+      }
     }
   },
   'communications/updateConversationContext': async (payload, state) => {
@@ -727,17 +862,7 @@ const handlers = {
         "Impossible de créer le transfert : propriétaire de l'entreprise introuvable. Réessayez ou choisissez un autre changeur.",
       )
     }
-    const remotePayload = {
-      amountSent: payload.amountSent,
-      amountReceived: payload.amountReceived,
-      fees: payload.fees,
-      totalToPay: payload.totalToPay,
-      currencyFrom: payload.currencyFrom,
-      currencyTo: payload.currencyTo,
-      feePercent: payload.feePercent,
-      rateMarginPercent: payload.rateMarginPercent,
-      rawRate: payload.rawRate,
-    }
+    const remotePayload = buildTransferRemotePayload(payload)
     try {
       await upsert('transfers', {
         id: payload.id,
@@ -767,6 +892,13 @@ const handlers = {
       if (/could not find.*['"]payload['"].*transfers|payload.*transfers.*schema cache/i.test(message)) {
         throw new Error(
           "La colonne transfers.payload manque encore dans Supabase. Appliquez la migration Transferts, puis réessayez.",
+          { cause: error },
+        )
+      }
+      if (/acceptance_expires_at|acceptance_required|acceptance_requested_at|acceptance_resolved_at|previous_business_id/i.test(message)) {
+        throw new Error(
+          "Schéma transferts obsolète (colonnes d’acceptation). Les champs sont désormais dans payload — rechargez l’app après déploiement.",
+          { cause: error },
         )
       }
       throw error
@@ -813,30 +945,87 @@ const handlers = {
     const transfer = state.transfers.items.find((t) => t.id === payload.id)
     if (!transfer) return
 
-    const mergedPayload = {
-      ...(typeof transfer.payload === 'object' && transfer.payload ? transfer.payload : {}),
-      amountSent: transfer.amountSent,
-      amountReceived: transfer.amountReceived,
-      fees: transfer.fees,
-      totalToPay: transfer.totalToPay,
-      currencyFrom: transfer.currencyFrom,
-      currencyTo: transfer.currencyTo,
-      feePercent: transfer.feePercent,
-      receivedAt: transfer.receivedAt,
-      receivedMethod: transfer.receivedMethod,
-      receivedProof: transfer.receivedProof,
-    }
-
     await update('transfers', transfer.id, {
       status: transfer.status,
       receivedAmount: transfer.receivedAmount,
       timeline: transfer.timeline,
       updatedAt: transfer.updatedAt,
-      payload: mergedPayload,
+      payload: buildTransferRemotePayload(transfer),
     })
+  },
+  'transfers/acceptTransferRequest': async (payload, state) => {
+    const transfer = state.transfers.items.find((t) => t.id === payload.id)
+    if (!transfer) return
+    await update('transfers', transfer.id, {
+      status: transfer.status,
+      timeline: transfer.timeline,
+      paymentDeadlineAt: transfer.paymentDeadlineAt,
+      exchanger: transfer.exchanger,
+      updatedAt: transfer.updatedAt,
+      payload: buildTransferRemotePayload(transfer),
+    })
+  },
+  'transfers/declineTransferRequest': async (payload, state) => {
+    const transfer = state.transfers.items.find((t) => t.id === payload.id)
+    if (!transfer) return
+    await update('transfers', transfer.id, {
+      status: transfer.status,
+      timeline: transfer.timeline,
+      updatedAt: transfer.updatedAt,
+      payload: buildTransferRemotePayload(transfer),
+    })
+  },
+  'transfers/reassignTransferExchanger': async (payload, state) => {
+    const transfer = state.transfers.items.find((t) => t.id === payload.id)
+    if (!transfer) return
+    await update('transfers', transfer.id, {
+      status: transfer.status,
+      businessId: transfer.businessId,
+      businessOwnerId: transfer.businessOwnerId,
+      exchanger: transfer.exchanger,
+      timeline: transfer.timeline,
+      paymentDeadlineAt: transfer.paymentDeadlineAt,
+      amount: transfer.amountSent,
+      fee: transfer.fees ?? transfer.fee ?? 0,
+      receivedAmount: transfer.amountReceived,
+      rate: transfer.rate,
+      rateDate: transfer.rateDate,
+      rateSource: transfer.rateSource,
+      updatedAt: transfer.updatedAt,
+      payload: buildTransferRemotePayload(transfer),
+    })
+  },
+  'transfers/expireOverdueTransfers': async (_payload, state, _dispatch, beforeState) => {
+    const beforeItems = beforeState?.transfers?.items || []
+    const afterItems = state.transfers.items || []
+    const changed = afterItems.filter((transfer) => {
+      const previous = beforeItems.find((item) => item.id === transfer.id)
+      return previous && previous.status !== transfer.status
+    })
+    await Promise.all(
+      changed.map((transfer) =>
+        update('transfers', transfer.id, {
+          status: transfer.status,
+          timeline: transfer.timeline,
+          updatedAt: transfer.updatedAt,
+          payload: buildTransferRemotePayload(transfer),
+        }),
+      ),
+    )
   },
 
   // ── P2P ───────────────────────────────────────────────────────────────────────
+  'p2p/acceptOffer': async (payload, state) => {
+    const offer = state.p2p.offers.find((item) => item.id === payload.offerId)
+    if (!offer) {
+      throw new Error(
+        `Offre P2P introuvable (${payload.offerId}). Republiez l’offre puis réessayez.`,
+      )
+    }
+    // RPC security definer : crée l'offre parente si absente (FK) puis la commande.
+    // Contourne le RLS « own offers » qui empêche l'acheteur d'upsert l'offre.
+    await syncP2pOrder(payload, { ...offer, status: 'accepted' })
+  },
   'p2p/createOffer': async (payload) => {
     await upsert('p2p_offers', p2pOfferToRemoteRow(payload))
   },
@@ -844,23 +1033,53 @@ const handlers = {
     const offer = state.p2p.offers.find((item) => item.id === payload.id)
     if (offer) await upsert('p2p_offers', p2pOfferToRemoteRow(offer))
   },
-  'p2p/acceptOffer': async (payload) => {
-    await upsert('p2p_orders', p2pOrderToRemoteRow(payload))
-    await update('p2p_offers', payload.offerId, { status: 'accepted' })
+  'p2p/updateOffer': async (payload, state) => {
+    const offer = state.p2p.offers.find((item) => item.id === payload.id)
+    if (offer) await upsert('p2p_offers', p2pOfferToRemoteRow(offer))
+  },
+  'p2p/moderateOffer': async (payload, state) => {
+    const offer = state.p2p.offers.find((item) => item.id === payload.id)
+    if (offer) await upsert('p2p_offers', p2pOfferToRemoteRow(offer))
+  },
+  'p2p/deleteOffer': async (payload) => {
+    const { error } = await supabase.from('p2p_offers').delete().eq('id', payload.id)
+    if (error) throw error
   },
   'p2p/updateOrderStatus': async (payload, state) => {
     const order = state.p2p.orders.find((item) => item.id === payload.id)
-    if (order) {
-      await upsert('p2p_orders', p2pOrderToRemoteRow(order))
-    }
+    if (!order) return
+    const offer = state.p2p.offers.find((item) => item.id === order.offerId)
+    await syncP2pOrder(order, offer || null)
+  },
+  'p2p/updateOrderReceiveDetails': async (payload, state) => {
+    const order = state.p2p.orders.find((item) => item.id === payload.id)
+    if (!order) return
+    const offer = state.p2p.offers.find((item) => item.id === order.offerId)
+    await syncP2pOrder(order, offer || null)
+  },
+  'p2p/expireOrder': async (payload, state) => {
+    const order = state.p2p.orders.find((item) => item.id === payload.id)
+    if (!order) return
+    const offer = state.p2p.offers.find((item) => item.id === order.offerId)
+    await syncP2pOrder(order, offer || null)
+  },
+  'p2p/moderateOrder': async (payload, state) => {
+    const order = state.p2p.orders.find((item) => item.id === payload.id)
+    if (!order) return
+    const offer = state.p2p.offers.find((item) => item.id === order.offerId)
+    await syncP2pOrder(order, offer || null)
   },
   'p2p/addOrderProof': async (payload, state) => {
     const order = state.p2p.orders.find((item) => item.id === payload.id)
-    if (order) await upsert('p2p_orders', p2pOrderToRemoteRow(order))
+    if (!order) return
+    const offer = state.p2p.offers.find((item) => item.id === order.offerId)
+    await syncP2pOrder(order, offer || null)
   },
   'p2p/rateOrder': async (payload, state) => {
     const order = state.p2p.orders.find((item) => item.id === payload.id)
-    if (order) await upsert('p2p_orders', p2pOrderToRemoteRow(order))
+    if (!order) return
+    const offer = state.p2p.offers.find((item) => item.id === order.offerId)
+    await syncP2pOrder(order, offer || null)
   },
 
   // ── Notifications ─────────────────────────────────────────────────────────────
@@ -869,19 +1088,21 @@ const handlers = {
   'communications/addNotification': async (payload, state) => {
     const currentUser = state.auth.user
     if (!currentUser || payload.userId === currentUser.id || payload.type === 'message') return
-    const { error } = await supabase.from('notifications').insert({
-      id: payload.id,
-      user_id: payload.userId,
-      title: payload.title,
-      message: payload.message,
-      type: payload.type || 'system',
-      link: payload.link || null,
-      priority: payload.priority || 'normal',
-      read: false,
-      archived: payload.archived === true,
-      created_at: payload.createdAt,
+    // SECURITY DEFINER RPC: peer inserts bypass "own notifications only" RLS.
+    // Soft-fail: une notif manquée ne doit jamais bloquer le flux métier / toast spam.
+    const { error } = await supabase.rpc('moxt_create_notification', {
+      p_id: payload.id,
+      p_user_id: payload.userId,
+      p_title: payload.title,
+      p_message: payload.message,
+      p_type: payload.type || 'system',
+      p_link: payload.link || null,
+      p_priority: payload.priority || 'normal',
     })
-    if (error) throw error
+    if (error) {
+      console.warn('[Supabase] notification:', error.message)
+      return
+    }
 
     const { dispatchPushNotification } = await import('../services/pushDispatch')
     void dispatchPushNotification(payload.id)
@@ -929,8 +1150,9 @@ const handlers = {
       direct_link: payload.directLink || null,
       language: payload.language || null,
       pinned: payload.pinned === true,
-      likes: JSON.stringify(payload.likes ?? []),
-      comments: JSON.stringify(payload.comments ?? []),
+      // jsonb columns: send arrays, never JSON.stringify (stores a scalar string → RPC breaks)
+      likes: Array.isArray(payload.likes) ? payload.likes : [],
+      comments: Array.isArray(payload.comments) ? payload.comments : [],
       last_shared_at: payload.lastSharedAt || payload.createdAt,
       status: payload.status || 'published',
       created_at: payload.createdAt,
@@ -1011,6 +1233,7 @@ const handlers = {
       author_id: payload.authorId,
       author_name: payload.authorName,
       author_avatar_url: payload.authorAvatarUrl || null,
+      business_id: payload.businessId || null,
       images: payload.images || [],
       caption: payload.caption || '',
       is_official: payload.isOfficial === true,
@@ -1023,23 +1246,21 @@ const handlers = {
     const { error } = await supabase.from('statuses').insert(row)
     if (error) throw error
   },
-  'statuses/markStatusViewed': async (payload, state) => {
-    const status = state.statuses?.items?.find((item) => item.id === payload.statusId)
-    const { error } = await supabase
-      .from('statuses')
-      .update({
-        viewed_by: status?.viewedBy ?? [payload.userId],
-        viewers: status?.viewers ?? {},
-      })
-      .eq('id', payload.statusId)
+  'statuses/markStatusViewed': async (payload) => {
+    // RPC security definer : no-op serveur si déjà vu (1re date figée).
+    const { error } = await supabase.rpc('moxt_status_mark_viewed', {
+      p_status_id: payload.statusId,
+      p_user_name: payload.userName || '',
+      p_user_avatar_url: payload.userAvatarUrl || null,
+    })
     if (error) throw error
   },
-  'statuses/reactToStatus': async (payload, state) => {
-    const status = state.statuses?.items?.find((item) => item.id === payload.statusId)
-    const { error } = await supabase
-      .from('statuses')
-      .update({ reactions: status?.reactions ?? {} })
-      .eq('id', payload.statusId)
+  'statuses/reactToStatus': async (payload) => {
+    const { error } = await supabase.rpc('moxt_status_react', {
+      p_status_id: payload.statusId,
+      p_image_key: payload.imageKey,
+      p_emoji: payload.emoji || null,
+    })
     if (error) throw error
   },
   'statuses/removeStatusImage': async (payload, state) => {
@@ -1066,7 +1287,7 @@ const handlers = {
 
   // ── Guide d'aide (étudiants / étrangers en Russie) ─────────────────────────────
   'helpArticles/createHelpArticle': async (payload) => {
-    const row = {
+    const baseRow = {
       id: payload.id,
       translation_group_id: payload.translationGroupId,
       category: payload.category,
@@ -1081,11 +1302,22 @@ const handlers = {
       status: payload.status || 'published',
       author_id: payload.authorId,
       author_name: payload.authorName || '',
+      images: Array.isArray(payload.images) ? payload.images : [],
       created_at: payload.createdAt,
       updated_at: payload.updatedAt,
     }
-    const { error } = await supabase.from('help_articles').insert(row)
-    if (error) throw error
+    const withSort = {
+      ...baseRow,
+      ...(Number.isFinite(payload.sortOrder) ? { sort_order: payload.sortOrder } : {}),
+    }
+    const { error } = await supabase.from('help_articles').insert(withSort)
+    if (!error) return
+    if (String(error.message || '').toLowerCase().includes('sort_order')) {
+      const { error: retryError } = await supabase.from('help_articles').insert(baseRow)
+      if (retryError) throw retryError
+      return
+    }
+    throw error
   },
   'helpArticles/updateHelpArticle': async (payload, state) => {
     const article = state.helpArticles?.items?.find((item) => item.id === payload.id)
@@ -1103,35 +1335,103 @@ const handlers = {
         verified_at: article.verifiedAt || null,
         pinned: article.pinned === true,
         status: article.status || 'published',
+        images: Array.isArray(article.images) ? article.images : [],
+        ...(Number.isFinite(article.sortOrder) ? { sort_order: article.sortOrder } : {}),
         updated_at: article.updatedAt,
       })
       .eq('id', payload.id)
-    if (error) throw error
+    if (error) {
+      // Colonne absente tant que la migration n’est pas appliquée : réessayer sans sort_order.
+      const message = String(error.message || '').toLowerCase()
+      if (message.includes('sort_order')) {
+        const { error: retryError } = await supabase
+          .from('help_articles')
+          .update({
+            category: article.category,
+            language: article.language,
+            title: article.title,
+            summary: article.summary,
+            content: article.content,
+            source_name: article.sourceName || null,
+            source_url: article.sourceUrl || null,
+            verified_at: article.verifiedAt || null,
+            pinned: article.pinned === true,
+            status: article.status || 'published',
+            updated_at: article.updatedAt,
+          })
+          .eq('id', payload.id)
+        if (retryError) throw retryError
+        return
+      }
+      throw error
+    }
   },
   'helpArticles/deleteHelpArticle': async (payload) => {
     const { error } = await supabase.from('help_articles').delete().eq('id', payload)
     if (error) throw error
   },
 
-  'posts/deleteComment': async (payload) => {
-    const { error } = await supabase.rpc('moxt_post_delete_comment', {
-      p_post_id: payload.postId,
-      p_comment_id: payload.commentId,
+  'posts/deleteComment': async (payload, state) => {
+    const postId = payload?.postId
+    const commentId = typeof payload?.commentId === 'string' ? payload.commentId.trim() : ''
+    if (!postId) throw new Error('Publication introuvable')
+
+    // Les ids `legacy-…` n'existent pas en base (normalisation locale au chargement).
+    const canUseDeleteRpc = commentId && !commentId.startsWith('legacy-')
+
+    if (canUseDeleteRpc) {
+      const { error } = await supabase.rpc('moxt_post_delete_comment', {
+        p_post_id: postId,
+        p_comment_id: commentId,
+      })
+      if (!error) return
+      const msg = String(error.message || '')
+      // Fallback si RPC absente / comments stockés en string jsonb
+      if (!/schema cache|could not find the function|pgrst202|extract elements from a scalar|22023/i.test(msg)) {
+        throw error
+      }
+    }
+
+    const post = state.posts?.items?.find((item) => item.id === postId)
+    const comments = Array.isArray(post?.comments)
+      ? post.comments.filter((item) => item && typeof item === 'object')
+      : []
+    const { error: setError } = await supabase.rpc('moxt_post_set_comments', {
+      p_post_id: postId,
+      p_comments: comments,
     })
-    if (error) throw error
+    if (setError) {
+      // Dernier recours : UPDATE direct (auteur / modo seulement via RLS)
+      const { error: updateError } = await supabase
+        .from('posts')
+        .update({ comments, updated_at: new Date().toISOString() })
+        .eq('id', postId)
+      if (updateError) throw setError
+    }
   },
 
   // ── Favoris ───────────────────────────────────────────────────────────────────
   'account/upsertPublisherSubscription': async (payload) => {
+    // Contrainte unique (subscriber_id, publisher_type, publisher_id) — pas seulement id.
+    // Un nouvel id local sur une abo déjà sync → 23505 « Synchronisation impossible ».
+    const { data: existing, error: lookupError } = await supabase
+      .from('publisher_subscriptions')
+      .select('id, created_at')
+      .eq('subscriber_id', payload.userId)
+      .eq('publisher_type', payload.publisherType)
+      .eq('publisher_id', payload.publisherId)
+      .maybeSingle()
+    if (lookupError) throw lookupError
+
     await upsert('publisher_subscriptions', {
-      id: payload.id,
+      id: existing?.id || payload.id,
       subscriber_id: payload.userId,
       publisher_type: payload.publisherType,
       publisher_id: payload.publisherId,
       notify_pref: payload.notifyPref,
       publisher_name: payload.publisherName,
       publisher_path: payload.publisherPath,
-      created_at: payload.createdAt,
+      created_at: existing?.created_at || payload.createdAt,
       updated_at: payload.updatedAt,
     })
   },
@@ -1143,15 +1443,24 @@ const handlers = {
         item.publisherId === payload.publisherId,
     )
     if (!subscription) return
+    const { data: existing, error: lookupError } = await supabase
+      .from('publisher_subscriptions')
+      .select('id, created_at')
+      .eq('subscriber_id', subscription.userId)
+      .eq('publisher_type', subscription.publisherType)
+      .eq('publisher_id', subscription.publisherId)
+      .maybeSingle()
+    if (lookupError) throw lookupError
+
     await upsert('publisher_subscriptions', {
-      id: subscription.id,
+      id: existing?.id || subscription.id,
       subscriber_id: subscription.userId,
       publisher_type: subscription.publisherType,
       publisher_id: subscription.publisherId,
       notify_pref: subscription.notifyPref,
       publisher_name: subscription.publisherName,
       publisher_path: subscription.publisherPath,
-      created_at: subscription.createdAt,
+      created_at: existing?.created_at || subscription.createdAt,
       updated_at: subscription.updatedAt,
     })
   },
@@ -1262,10 +1571,16 @@ const handlers = {
       state.account.verificationRequests.find(
         (item) => item.userId === payload.userId && item.status === 'pending_review',
       ) || payload
+    const documentIds =
+      (Array.isArray(payload.documentIds) && payload.documentIds.length
+        ? payload.documentIds
+        : null) ||
+      request.documentIds ||
+      []
     const row = verificationRequestToRemoteRow({
       ...payload,
       ...request,
-      documentIds: request.documentIds || payload.documentIds || [],
+      documentIds,
       id: request.id || payload.id,
     })
 
@@ -1347,7 +1662,7 @@ const handlers = {
     await authService.cancelAccountDeletion(payload)
     return payload
   },
-  'administration/updateUserRole': async (payload, state) => {
+  'administration/updateUserRole': async (payload, _state) => {
     const privileged = payload.role === 'admin' || payload.role === 'superadmin'
     // Privileged promotions are persisted in promoteAdminUtils (edge) before Redux updates.
     if (privileged) {
@@ -1374,6 +1689,18 @@ const handlers = {
       .from('profiles')
       .update({
         origin_country: payload.originCountry,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', payload.id)
+    if (error) throw error
+  },
+  'administration/updateUserCity': async (payload) => {
+    const city = String(payload.city || '').trim()
+    if (!city) return
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        city,
         updated_at: new Date().toISOString(),
       })
       .eq('id', payload.id)
@@ -1496,8 +1823,10 @@ const handlers = {
     }
   },
   'businesses/updateBusinessTransferPricing': async (payload, state) => {
+    const isStaff = ['admin', 'superadmin', 'moderator'].includes(payload.actorRole)
     const business = state.businesses.items.find(
-      (item) => item.id === payload.businessId && item.ownerId === payload.ownerId,
+      (item) =>
+        item.id === payload.businessId && (isStaff || item.ownerId === payload.ownerId),
     )
     if (business) await saveBusinessRemote(business)
   },
@@ -1551,11 +1880,12 @@ const handlers = {
 // ─── Middleware ────────────────────────────────────────────────────────────────
 
 export const supabaseMiddleware = (store) => (next) => (action) => {
+  const beforeState = store.getState()
   const result = next(action)
 
   const handler = handlers[action.type]
   if (handler && supabase) {
-    withRetry(() => handler(action.payload, store.getState(), store.dispatch))
+    withRetry(() => handler(action.payload, store.getState(), store.dispatch, beforeState))
       .then(() => {
         if (action.type === 'communications/sendMessage') {
           const messageId = action.payload?.message?.id
@@ -1573,6 +1903,9 @@ export const supabaseMiddleware = (store) => (next) => (action) => {
       })
       .catch((err) => {
       console.warn('[Supabase]', action.type, err?.message || err)
+      const aborted =
+        err?.name === 'AbortError' || /^aborted$/i.test(String(err?.message || '').trim())
+      if (aborted) return
       if (action.type === 'communications/sendMessage') {
         const messageId = action.payload?.message?.id
         if (messageId) {
@@ -1586,10 +1919,24 @@ export const supabaseMiddleware = (store) => (next) => (action) => {
           })
         }
       }
+      if (action.type === 'posts/deleteComment') {
+        const beforePost = beforeState.posts?.items?.find(
+          (item) => item.id === action.payload?.postId,
+        )
+        const comment = beforePost?.comments?.find((item) => item.id === action.payload?.commentId)
+        if (comment) {
+          store.dispatch({
+            type: 'posts/restoreComment',
+            payload: { postId: action.payload.postId, comment },
+          })
+        }
+      }
       store.dispatch(
         addToast({
           title: 'Synchronisation impossible',
-          message: err?.message || "L'enregistrement distant a échoué.",
+          message: sanitizeUserFacingMessage(
+            err?.message || "L'enregistrement distant a échoué.",
+          ),
           tone: 'error',
         }),
       )

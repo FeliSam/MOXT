@@ -18,7 +18,86 @@ import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 import { REVIEW_DISPUTE_STATUS } from '@moxt/shared/utils/reviewUtils.js'
 import { adminDetailLink, normalizeAdminKind } from './adminLinkUtils'
 import { formatDate, formatMoney } from '../transfers/transferUtils'
+import { computeBusinessTransferStats } from '../transfers/businessTransferStats'
 import { adminText } from './adminI18n'
+
+const TRANSFER_TERMINAL = new Set(['completed', 'cancelled', 'expired'])
+
+export function matchesTransferStatusFilter(status, filter) {
+  if (!filter || filter === 'all') return true
+  if (filter === 'pending') return !TRANSFER_TERMINAL.has(status)
+  return status === filter
+}
+
+export function countTransferProofs(transfer) {
+  if (!transfer) return 0
+  let n = 0
+  if (transfer.paymentProof) n += 1
+  if (transfer.businessProof) n += 1
+  if (transfer.receivedProof) n += 1
+  return n
+}
+
+export function lastTransferTimelineEvent(transfer) {
+  const timeline = Array.isArray(transfer?.timeline) ? transfer.timeline : []
+  if (!timeline.length) return null
+  return timeline.reduce((best, event) => {
+    const at = event?.at || event?.createdAt || ''
+    if (!best) return event
+    const bestAt = best.at || best.createdAt || ''
+    return at > bestAt ? event : best
+  }, null)
+}
+
+/** Compteurs d'activité liés à une entreprise (store déjà chargé). */
+export function countBusinessActivity(state, businessId) {
+  const bid = String(businessId || '')
+  if (!bid) {
+    return { transfers: 0, listings: 0, parcels: 0, jobs: 0, events: 0, posts: 0 }
+  }
+  const byBusiness = (items) =>
+    (items || []).filter((item) => String(item.businessId || '') === bid).length
+  return {
+    transfers: byBusiness(state.transfers?.items),
+    listings: byBusiness(state.marketplace?.items),
+    parcels: byBusiness(state.parcels?.items),
+    jobs: byBusiness(state.jobs?.items),
+    events: byBusiness(state.events?.items),
+    posts: (state.posts?.items || []).filter((item) => {
+      if (String(item.businessId || '') === bid) return true
+      return item.publisherType === 'business' && String(item.publisherId || '') === bid
+    }).length,
+  }
+}
+
+/** Rollup transferts par entreprise pour l’admin. */
+export function buildBusinessTransferRollups(transfers = [], businesses = []) {
+  const groups = new Map()
+  for (const transfer of transfers) {
+    const key = transfer.businessId || '_none'
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key).push(transfer)
+  }
+  return [...groups.entries()]
+    .map(([businessId, list]) => {
+      const business = businesses.find((entry) => entry.id === businessId)
+      const stats = computeBusinessTransferStats(list)
+      return {
+        businessId: businessId === '_none' ? null : businessId,
+        name:
+          business?.name ||
+          list[0]?.exchanger?.name ||
+          (businessId === '_none' ? '—' : businessId),
+        count: list.length,
+        pending: list.filter((item) => !TRANSFER_TERMINAL.has(item.status)).length,
+        completedVolume: list
+          .filter((item) => item.status === 'completed')
+          .reduce((sum, item) => sum + Number(item.amountSent || 0), 0),
+        stats,
+      }
+    })
+    .sort((a, b) => b.count - a.count)
+}
 
 export function buildQueues(state) {
   const accountDeletions = (state.account.deletionRequests || [])
@@ -117,6 +196,8 @@ export function buildQueues(state) {
 
 export function buildAdminMetrics(state) {
   const transfers = state.transfers.items
+  const p2pOffers = state.p2p.offers
+  const p2pOrders = state.p2p.orders
   const businesses = state.businesses.items
   const listings = state.marketplace.items
   const jobs = state.jobs.items
@@ -135,6 +216,12 @@ export function buildAdminMetrics(state) {
       total: transfers.length,
       pending: transfers.filter((i) => !['completed', 'cancelled', 'expired'].includes(i.status)).length,
     },
+    p2p: {
+      total: p2pOffers.length + p2pOrders.length,
+      activeOffers: p2pOffers.filter((i) => i.status === 'active').length,
+      openOrders: p2pOrders.filter((i) => !['completed', 'cancelled'].includes(i.status)).length,
+      disputed: p2pOrders.filter((i) => i.status === 'disputed').length,
+    },
     content: {
       total: businesses.length + listings.length + jobs.length + events.length + parcels.length + posts.length,
       pending:
@@ -149,6 +236,11 @@ export function buildAdminMetrics(state) {
     users: {
       total: state.administration.users.length,
       suspended: state.administration.users.filter((i) => i.status === 'suspended').length,
+      newSignups: state.administration.users.filter((i) => {
+        const created = new Date(i.createdAt || i.created_at || 0).getTime()
+        if (!Number.isFinite(created) || created <= 0) return false
+        return Date.now() - created < 48 * 60 * 60 * 1000
+      }).length,
     },
     queues: {
       total:
@@ -161,7 +253,9 @@ export function buildAdminMetrics(state) {
         queues.reports.length,
       urgent: queues.urgent,
     },
-    audit: { total: state.audit.items.length },
+    audit: {
+      total: state.audit.items.length + (state.audit.remoteItems || []).length,
+    },
     posts: {
       total: posts.length,
       pending: posts.filter((i) => i.status === 'pending_review').length,
@@ -192,10 +286,12 @@ export function buildContentCollections(state) {
 }
 
 export function badgeForView(view, metrics, queues) {
+  if (view === 'overview') return queues.urgent
   if (view === 'transfers') return metrics.transfers.pending
+  if (view === 'p2p') return metrics.p2p.disputed || metrics.p2p.openOrders
   if (view === 'content') return metrics.content.pending
   if (view === 'publications') return metrics.posts.pending
-  if (view === 'users') return metrics.users.suspended
+  if (view === 'users') return (metrics.users.newSignups || 0) + (metrics.users.suspended || 0)
   if (view === 'verifications') return queues.verifications.length
   if (view === 'documents') return queues.businessDocuments.length
   if (view === 'support') return queues.support.length
@@ -209,6 +305,8 @@ export function detailLinkFor(kind, item) {
 
 const DETAIL_ICONS = {
   transfer: FiRepeat,
+  p2p_offer: FiUsers,
+  p2p_order: FiUsers,
   support: FiHeadphones,
   user: FiUsers,
   verification: FiUserCheck,
@@ -231,6 +329,8 @@ export function detailIconFor(kind) {
 
 const DETAIL_KIND_KEYS = {
   transfer: 'admin.detail.kind.transfer',
+  p2p_offer: 'admin.detail.kind.p2p_offer',
+  p2p_order: 'admin.detail.kind.p2p_order',
   support: 'admin.detail.kind.support',
   user: 'admin.detail.kind.user',
   verification: 'admin.detail.kind.verification',
@@ -257,6 +357,17 @@ export function detailDescriptionFor(kind, item, t) {
     case 'transfer':
       return adminText(t, 'admin.detail.desc.transfer', {
         partner: item.exchanger?.name || adminText(t, 'admin.common.partnerFallback'),
+        status: item.status,
+      })
+    case 'p2p_offer':
+      return adminText(t, 'admin.detail.desc.p2p_offer', {
+        owner: item.ownerName || item.ownerId || '—',
+        status: item.status,
+      })
+    case 'p2p_order':
+      return adminText(t, 'admin.detail.desc.p2p_order', {
+        buyer: item.buyerName || item.buyerId || '—',
+        seller: item.sellerName || item.sellerId || '—',
         status: item.status,
       })
     case 'support':
@@ -298,7 +409,7 @@ export function detailDescriptionFor(kind, item, t) {
   }
 }
 
-export function buildDetailFacts(kind, item, t) {
+export function buildDetailFacts(kind, item, t, context = {}) {
   const f = (key) => adminText(t, key)
   switch (normalizeAdminKind(kind)) {
     case 'transfer':
@@ -306,7 +417,41 @@ export function buildDetailFacts(kind, item, t) {
         [f('admin.facts.status'), item.status],
         [f('admin.facts.sent'), formatMoney(item.amountSent, item.currencyFrom)],
         [f('admin.facts.received'), formatMoney(item.amountReceived, item.currencyTo)],
+        [f('admin.facts.fees'), formatMoney(item.fees, item.currencyFrom)],
         [f('admin.facts.partner'), item.exchanger?.name || '—'],
+        [f('admin.facts.business'), item.businessName || item.exchanger?.name || item.businessId || '—'],
+        [f('admin.facts.businessId'), item.businessId || '—'],
+        [f('admin.facts.owner'), item.businessOwnerId || '—'],
+        [f('admin.facts.proofs'), countTransferProofs(item)],
+        [
+          f('admin.facts.lastEvent'),
+          (() => {
+            const event = lastTransferTimelineEvent(item)
+            if (!event) return '—'
+            const label = event.status || event.label || '—'
+            const at = event.at || event.createdAt
+            return at ? `${label} · ${formatDate(at)}` : label
+          })(),
+        ],
+        [f('admin.facts.date'), formatDate(item.createdAt)],
+      ]
+    case 'p2p_offer':
+      return [
+        [f('admin.facts.status'), item.status],
+        [f('admin.facts.sent'), formatMoney(item.amount, item.fromCurrency)],
+        [f('admin.facts.rate'), item.rate],
+        [f('admin.facts.pair'), `${item.fromCurrency} → ${item.toCurrency}`],
+        [f('admin.facts.owner'), item.ownerName || item.ownerId || '—'],
+        [f('admin.facts.date'), formatDate(item.createdAt)],
+      ]
+    case 'p2p_order':
+      return [
+        [f('admin.facts.status'), item.status],
+        [f('admin.facts.sent'), formatMoney(item.amount, item.fromCurrency)],
+        [f('admin.facts.rate'), item.rate],
+        [f('admin.facts.buyer'), item.buyerName || item.buyerId || '—'],
+        [f('admin.facts.seller'), item.sellerName || item.sellerId || '—'],
+        [f('admin.facts.evidence'), item.proofs?.length || 0],
         [f('admin.facts.date'), formatDate(item.createdAt)],
       ]
     case 'support':
@@ -333,6 +478,16 @@ export function buildDetailFacts(kind, item, t) {
         [f('admin.facts.phone'), item.phone],
         [f('admin.facts.services'), item.services?.join(', ') || '—'],
         [f('admin.facts.updatedAt'), formatDate(item.updatedAt || item.createdAt)],
+        ...(item.activity
+          ? [
+              [f('admin.facts.activityTransfers'), item.activity.transfers],
+              [f('admin.facts.activityListings'), item.activity.listings],
+              [f('admin.facts.activityParcels'), item.activity.parcels],
+              [f('admin.facts.activityJobs'), item.activity.jobs],
+              [f('admin.facts.activityEvents'), item.activity.events],
+              [f('admin.facts.activityPosts'), item.activity.posts],
+            ]
+          : []),
       ]
     case 'listings':
       return [
@@ -399,14 +554,27 @@ export function buildDetailFacts(kind, item, t) {
         [f('admin.facts.createdAt'), formatDate(item.createdAt)],
         [f('admin.facts.reviewedAt'), item.reviewedAt ? formatDate(item.reviewedAt) : '—'],
       ]
-    case 'dispute':
-      return [
+    case 'dispute': {
+      const facts = [
         [f('admin.facts.status'), item.status],
         [f('admin.facts.type'), item.relatedType],
         [f('admin.facts.reference'), item.relatedId],
         [f('admin.facts.evidence'), item.evidence?.length || 0],
         [f('admin.facts.createdAt'), formatDate(item.createdAt)],
       ]
+      const order = context.p2pOrder
+      if (item.relatedType === 'p2p_order' && order) {
+        facts.splice(
+          3,
+          0,
+          [f('admin.facts.sent'), formatMoney(order.amount, order.fromCurrency)],
+          [f('admin.facts.buyer'), order.buyerName || order.buyerId || '—'],
+          [f('admin.facts.seller'), order.sellerName || order.sellerId || '—'],
+          [f('admin.facts.orderStatus'), order.status],
+        )
+      }
+      return facts
+    }
     case 'review':
       return [
         [f('admin.facts.note'), `${item.rating || '—'}/5`],
@@ -443,8 +611,8 @@ export function buildDetailFacts(kind, item, t) {
       ]
     default:
       return [
-        [f('admin.facts.id'), item.id],
         [f('admin.facts.status'), item.status || '—'],
+        [f('admin.facts.createdAt'), item.createdAt ? formatDate(item.createdAt) : '—'],
       ]
   }
 }

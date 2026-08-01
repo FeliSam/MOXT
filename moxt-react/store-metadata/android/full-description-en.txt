@@ -1,0 +1,18 @@
+MOXT — the services platform connecting Africa and Russia.
+
+Send and track transfers, publish or book traveler parcels, buy and sell on the marketplace, find jobs or trusted businesses — built for the Afro-Russian diaspora (Benin / West Africa ↔ Russia). A complete standalone Android app (embedded UI, messaging, push, in-app help), not a website wrapper.
+
+FEATURES
+• Transfers and tracking across communities
+• Traveler parcels with in-app messaging
+• Marketplace (listings, favorites, search)
+• Jobs and businesses
+• In-app help « How to use Moxt »
+• Identity verification and trust score
+• Push notifications
+• UI in FR / RU / EN / PT / ES
+
+SECURITY
+• Protected account, optional KYC
+• No SMS reading and no required GPS
+• Privacy: https://moxtapp.ru/legal/privacy

@@ -38,6 +38,7 @@ export function QrCameraScanner({ active = true }) {
     if (!active) return undefined
 
     let cancelled = false
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset avant une requête asynchrone (permission caméra)
     setPermission('checking')
     queryCameraPermission().then((state) => {
       if (!cancelled) setPermission(state)

@@ -15,9 +15,15 @@ import { setAll as setDisputes } from '../features/disputes/disputeSlice'
 import { setAll as setFinance } from '../features/finance/financeSlice'
 import { setAll as setPosts } from '../features/posts/postsSlice'
 import { setAll as setStatuses } from '../features/statuses/statusesSlice'
+import {
+  applySeenLedgerToStatuses,
+  mergeStatusViewers,
+  mergeViewedByLists,
+} from '../features/statuses/statusViewUtils'
 import { setRecipientAddresses } from '../features/addresses/recipientAddressesSlice'
 import { hydrateAccountPreferences, mergeRemoteAccount, updateAccountPreferences } from '../features/account/accountSlice'
 import { profileRowToAdminUser, setAdminUsers } from '../features/administration/administrationSlice'
+import { setRemoteAuditItems } from '../features/audit/auditSlice'
 import {
   setProfileDirectory,
   upsertProfileDirectoryEntries,
@@ -189,7 +195,7 @@ export const loadAllData = createAsyncThunk(
       notificationsRes,
       postsRes,
       statusesRes,
-      helpArticlesRes,
+      _helpArticlesRes,
       supportTicketsRes,
       recipientAddressesRes,
     ] = await Promise.all([
@@ -222,7 +228,14 @@ export const loadAllData = createAsyncThunk(
             .limit(USER_LIMIT)
         : supabase.from('personal_documents').select('*').eq('user_id', uid).limit(USER_LIMIT),
       supabase.from('p2p_offers').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
-      supabase.from('p2p_orders').select('*').or(`buyer_id.eq.${uid},seller_id.eq.${uid}`).limit(USER_LIMIT),
+      isStaff
+        ? supabase.from('p2p_orders').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT)
+        : supabase
+            .from('p2p_orders')
+            .select('*')
+            .or(`buyer_id.eq.${uid},seller_id.eq.${uid}`)
+            .order('created_at', { ascending: false })
+            .limit(USER_LIMIT),
       supabase.from('reviews').select('*').order('created_at', { ascending: false }).limit(PUBLIC_LIMIT),
       isStaff
         ? supabase.from('disputes').select('*').order('created_at', { ascending: false }).limit(USER_LIMIT)
@@ -267,6 +280,34 @@ export const loadAllData = createAsyncThunk(
             .limit(50),
       supabase.from('recipient_addresses').select('*').eq('user_id', uid).order('updated_at', { ascending: false }).limit(USER_LIMIT),
     ])
+
+    // Afficher les statuts dès que la query est prête — ne pas attendre transferts/conversations.
+    {
+      const localStatusesById = new Map((getState().statuses?.items || []).map((item) => [item.id, item]))
+      const mappedStatuses = fromRows(safeRows(statusesRes, 'des statuts')).map((s) => {
+        const remoteViewedBy = parseJsonField(s.viewedBy ?? s.viewed_by, [])
+        const remoteViewers = parseJsonField(s.viewers, {})
+        const local = localStatusesById.get(s.id)
+        return {
+          ...s,
+          images: parseJsonField(s.images, []).filter((url) => typeof url === 'string' && url).slice(0, 4),
+          viewedBy: mergeViewedByLists(remoteViewedBy, local?.viewedBy),
+          viewers: mergeStatusViewers(remoteViewers, local?.viewers),
+          reactions: parseJsonField(s.reactions, {}),
+          isOfficial: s.isOfficial === true || s.is_official === true,
+        }
+      })
+      dispatch(setStatuses({ items: applySeenLedgerToStatuses(mappedStatuses, uid) }))
+    }
+
+    let auditLogRes = { data: [], error: null }
+    if (isAdmin) {
+      auditLogRes = await supabase
+        .from('moxt_audit_log')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(200)
+    }
 
     let adminBusinessesRes = { data: [], error: null }
     if (isStaff) {
@@ -357,6 +398,16 @@ export const loadAllData = createAsyncThunk(
           .limit(USER_LIMIT),
       )
     }
+    // Staff : catalogue plateforme (RLS autorise déjà admin/moderator).
+    if (isStaff) {
+      transferFetchQueries.push(
+        supabase
+          .from('transfers')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(USER_LIMIT),
+      )
+    }
     const transferFetchResults = await Promise.all(transferFetchQueries)
     const mergedTransferRows = mergeRemoteRowsById(
       ...transferFetchResults.map((result) => safeRows(result, 'des transferts')),
@@ -381,9 +432,19 @@ export const loadAllData = createAsyncThunk(
             .select('*')
             .order('created_at', { ascending: false })
             .limit(USER_LIMIT)
-        : ownedBusinessIds.length
-          ? supabase.from('business_documents').select('*').in('business_id', ownedBusinessIds).limit(USER_LIMIT)
-          : Promise.resolve({ data: [] }),
+        : Promise.all([
+            supabase.from('business_documents').select('*').eq('owner_id', uid).limit(USER_LIMIT),
+            ownedBusinessIds.length
+              ? supabase
+                  .from('business_documents')
+                  .select('*')
+                  .in('business_id', ownedBusinessIds)
+                  .limit(USER_LIMIT)
+              : Promise.resolve({ data: [], error: null }),
+          ]).then(([byOwner, byBusiness]) => ({
+            data: mergeRemoteRowsById(byOwner.data || [], byBusiness.data || []),
+            error: byOwner.error || byBusiness.error || null,
+          })),
       supabase.from('identity_profiles').select('*').eq('user_id', uid).limit(USER_LIMIT),
       isStaff
         ? supabase.from('listing_reports').select('*').order('created_at', { ascending: false }).limit(USER_LIMIT)
@@ -398,7 +459,7 @@ export const loadAllData = createAsyncThunk(
         ? supabase
             .from('profiles')
             .select(
-              'id, first_name, last_name, email, phone, city, origin_country, country, role, status, created_at, updated_at',
+              'id, first_name, last_name, email, phone, city, origin_country, country, role, status, phone_verified, phone_verified_at, avatar_url, created_at, updated_at',
             )
             .order('created_at', { ascending: false })
             .limit(USER_LIMIT)
@@ -625,31 +686,41 @@ export const loadAllData = createAsyncThunk(
           images: normalizedImages.length ? normalizedImages : imageUrl ? [imageUrl] : [],
           imageUrl,
           likes: parseJsonField(p.likes, []),
-          comments: parseJsonField(p.comments, []),
+          comments: parseJsonField(p.comments, []).map((comment, index) => {
+            if (!comment || typeof comment !== 'object') return comment
+            const id =
+              (typeof comment.id === 'string' && comment.id) ||
+              (typeof comment.Id === 'string' && comment.Id) ||
+              `legacy-${p.id}-${index}-${comment.createdAt || comment.created_at || index}`
+            return {
+              ...comment,
+              id,
+              authorId: comment.authorId || comment.author_id,
+              authorName: comment.authorName || comment.author_name,
+              authorAvatarUrl: comment.authorAvatarUrl || comment.author_avatar_url || null,
+              createdAt: comment.createdAt || comment.created_at,
+            }
+          }),
         }
       }) }))
       // Le marquage "vu" (viewedBy/viewers) est écrit en fire-and-forget côté serveur ;
       // si ce rechargement arrive avant que l'écriture précédente n'ait abouti, on
-      // fusionne avec l'état local pour ne jamais faire "regresser" un statut déjà vu
-      // (la bordure ne doit pas redevenir non-vue après un simple refresh).
+      // fusionne avec l'état local + ledger pour ne jamais faire "regresser" un statut déjà vu.
       const localStatusesById = new Map((getState().statuses?.items || []).map((item) => [item.id, item]))
-      dispatch(setStatuses({ items: fromRows(safeRows(statusesRes, 'des statuts')).map((s) => {
-        const remoteViewedBy = parseJsonField(s.viewedBy, [])
+      const mappedStatuses = fromRows(safeRows(statusesRes, 'des statuts')).map((s) => {
+        const remoteViewedBy = parseJsonField(s.viewedBy ?? s.viewed_by, [])
         const remoteViewers = parseJsonField(s.viewers, {})
         const local = localStatusesById.get(s.id)
-        const viewedBy = local?.viewedBy?.length
-          ? Array.from(new Set([...remoteViewedBy, ...local.viewedBy]))
-          : remoteViewedBy
-        const viewers = local?.viewers ? { ...remoteViewers, ...local.viewers } : remoteViewers
         return {
           ...s,
           images: parseJsonField(s.images, []).filter((url) => typeof url === 'string' && url).slice(0, 4),
-          viewedBy,
-          viewers,
+          viewedBy: mergeViewedByLists(remoteViewedBy, local?.viewedBy),
+          viewers: mergeStatusViewers(remoteViewers, local?.viewers),
           reactions: parseJsonField(s.reactions, {}),
-          isOfficial: s.isOfficial === true,
+          isOfficial: s.isOfficial === true || s.is_official === true,
         }
-      }) }))
+      })
+      dispatch(setStatuses({ items: applySeenLedgerToStatuses(mappedStatuses, uid) }))
       dispatch(mergeRemoteAccount({
         favorites: fromRows(safeRows(favoritesRes, 'des favoris')),
         subscriptions: fromRows(safeRows(subscriptionsRes, 'des abonnements')).map((item) => ({
@@ -699,6 +770,9 @@ export const loadAllData = createAsyncThunk(
       }
       dispatch(setRecipientAddresses(fromRows(safeRows(recipientAddressesRes, 'des adresses'))))
       dispatch(setIdentityProfiles(mergedIdentity))
+      if (isAdmin) {
+        dispatch(setRemoteAuditItems(safeRows(auditLogRes, 'du journal d\'audit')))
+      }
       const profilePreferences = parseJsonField(profileRes.data?.preferences, {})
       if (profileRes.data) {
         dispatch(
@@ -727,6 +801,43 @@ export const loadAllData = createAsyncThunk(
         }
       }
     })
+
+    // Admin: ensure verification documentIds are present even if the global docs limit omitted them.
+    if (isAdmin) {
+      const loadedDocs = fromRows(safeRows(personalDocumentsRes, 'des documents'))
+      const loadedIds = new Set(loadedDocs.map((doc) => String(doc.id)))
+      const neededIds = [
+        ...new Set(
+          fromRows(safeRows(verificationRequestsRes, 'des demandes de verification'))
+            .flatMap((item) => parseJsonField(item.documentIds, []))
+            .map((id) => String(id || '').trim())
+            .filter(Boolean),
+        ),
+      ].filter((id) => !loadedIds.has(id))
+      if (neededIds.length) {
+        const missingDocsRes = await supabase
+          .from('personal_documents')
+          .select('*')
+          .in('id', neededIds)
+        const missingDocs = fromRows(safeRows(missingDocsRes, 'des documents manquants')).map(
+          (doc) => ({
+            ...doc,
+            storagePath:
+              doc.storagePath ||
+              doc.storage_path ||
+              (typeof doc.url === 'string' && !doc.url.includes('://') ? doc.url : null) ||
+              null,
+          }),
+        )
+        if (missingDocs.length) {
+          dispatch(
+            mergeRemoteAccount({
+              documents: missingDocs,
+            }),
+          )
+        }
+      }
+    }
 
     const knownProfileIds = new Set(
       safeRows(adminProfilesRes, 'des profils utilisateurs').map((row) => String(row.id)),
@@ -764,7 +875,7 @@ export const loadAllData = createAsyncThunk(
     if (missingProfileIds.length) {
       const extraProfilesRes = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, status, role, city, country, created_at, updated_at')
+        .select('id, first_name, last_name, status, role, city, country, avatar_url, created_at, updated_at')
         .in('id', missingProfileIds)
       dispatch(
         upsertProfileDirectoryEntries(

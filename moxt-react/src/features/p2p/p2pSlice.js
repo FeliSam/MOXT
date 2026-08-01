@@ -1,11 +1,43 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { createId } from '../../services/createId'
 import { createLocalStorage } from '../../services/createLocalStorage'
-import { calculateP2PFee } from './p2pUtils'
+import { addMs, calculateP2PFee, P2P_CONFIG } from './p2pUtils'
 import { mergeRemoteById } from '@moxt/shared/utils/mergeRemoteById.js'
 
 const offersStorage = createLocalStorage('moxt-p2p-offers-v1')
 const ordersStorage = createLocalStorage('moxt-p2p-orders-v1')
+
+function reactivateOffer(state, offerId) {
+  const offer = state.offers.find((item) => item.id === offerId)
+  if (!offer || offer.status !== 'accepted') return
+  const otherOpen = state.orders.some(
+    (order) =>
+      order.offerId === offerId &&
+      !['cancelled', 'completed'].includes(order.status),
+  )
+  if (otherOpen) return
+  offer.status = 'active'
+  offer.updatedAt = new Date().toISOString()
+}
+
+function archiveOffer(state, offerId) {
+  const offer = state.offers.find((item) => item.id === offerId)
+  if (!offer || offer.status === 'archived') return
+  offer.status = 'archived'
+  offer.updatedAt = new Date().toISOString()
+}
+
+/** Buyer cancel / expiry → reactivate. Seller or staff cancel → archive. */
+function resolveOfferAfterCancel(state, order, actionPayload = {}) {
+  const actorId = actionPayload.actorId
+  const actorRole = actionPayload.actorRole
+  const isStaff = ['admin', 'superadmin', 'moderator'].includes(actorRole)
+  if (isStaff || (actorId && actorId === order.sellerId)) {
+    archiveOffer(state, order.offerId)
+    return
+  }
+  reactivateOffer(state, order.offerId)
+}
 
 const p2pSlice = createSlice({
   name: 'p2p',
@@ -42,6 +74,45 @@ const p2pSlice = createSlice({
       offer.status = action.payload.status
       offer.updatedAt = new Date().toISOString()
     },
+    updateOffer(state, action) {
+      const offer = state.offers.find((item) => item.id === action.payload.id)
+      if (!offer || offer.ownerId !== action.payload.ownerId) return
+      const { id: _id, ownerId: _o, createdAt: _c, status: _s, ...changes } = action.payload
+      Object.assign(offer, changes, {
+        amount: Number(changes.amount ?? offer.amount),
+        rate: Number(changes.rate ?? offer.rate),
+        updatedAt: new Date().toISOString(),
+      })
+    },
+    deleteOffer(state, action) {
+      const offer = state.offers.find((item) => item.id === action.payload.id)
+      if (!offer || offer.ownerId !== action.payload.ownerId) return
+      state.offers = state.offers.filter((item) => item.id !== action.payload.id)
+    },
+    /** Reçu via Supabase Realtime (INSERT/UPDATE distant) — remplace/insère l'offre locale. */
+    receiveRemoteOffer(state, action) {
+      const offer = action.payload
+      if (!offer?.id) return
+      const index = state.offers.findIndex((item) => item.id === offer.id)
+      if (index === -1) state.offers.unshift(offer)
+      else state.offers[index] = { ...state.offers[index], ...offer }
+    },
+    /** Reçu via Supabase Realtime (DELETE distant). */
+    removeRemoteOffer(state, action) {
+      state.offers = state.offers.filter((item) => item.id !== action.payload)
+    },
+    /** Reçu via Supabase Realtime (INSERT/UPDATE distant) — remplace/insère la commande locale. */
+    receiveRemoteOrder(state, action) {
+      const order = action.payload
+      if (!order?.id) return
+      const index = state.orders.findIndex((item) => item.id === order.id)
+      if (index === -1) state.orders.unshift(order)
+      else state.orders[index] = { ...state.orders[index], ...order }
+    },
+    /** Reçu via Supabase Realtime (DELETE distant). */
+    removeRemoteOrder(state, action) {
+      state.orders = state.orders.filter((item) => item.id !== action.payload)
+    },
     acceptOffer: {
       reducer(state, action) {
         const offer = state.offers.find((item) => item.id === action.payload.offerId)
@@ -49,7 +120,7 @@ const p2pSlice = createSlice({
         offer.status = 'accepted'
         state.orders.unshift(action.payload)
       },
-      prepare({ buyer, offer }) {
+      prepare({ buyer, offer, feePercent }) {
         const now = new Date().toISOString()
         return {
           payload: {
@@ -63,21 +134,119 @@ const p2pSlice = createSlice({
             fromCurrency: offer.fromCurrency,
             toCurrency: offer.toCurrency,
             rate: offer.rate,
-            fee: calculateP2PFee(offer.amount, offer.fromCurrency),
+            method: offer.method || '',
+            comment: offer.comment || '',
+            receivePhone: offer.receivePhone || '',
+            receiveName: offer.receiveName || offer.receiveAccount || '',
+            receiveCountry: offer.receiveCountry || '',
+            buyerReceivePhone: '',
+            buyerReceiveName: '',
+            buyerReceiveMethod: '',
+            fee: calculateP2PFee(offer.amount, offer.fromCurrency, feePercent),
             status: 'created',
             proofs: [],
             ratings: [],
             createdAt: now,
-            timeline: [{ status: 'created', at: now }],
+            paymentDueAt: addMs(now, P2P_CONFIG.paymentWindowMs),
+            confirmDueAt: null,
+            timeline: [
+              {
+                status: 'created',
+                at: now,
+                method: offer.method || '',
+                comment: offer.comment || '',
+                receivePhone: offer.receivePhone || '',
+                receiveName: offer.receiveName || offer.receiveAccount || '',
+                receiveCountry: offer.receiveCountry || '',
+              },
+            ],
           },
         }
       },
     },
+    updateOrderReceiveDetails(state, action) {
+      const order = state.orders.find((item) => item.id === action.payload.id)
+      if (!order) return
+      if (action.payload.buyerReceivePhone != null) {
+        order.buyerReceivePhone = String(action.payload.buyerReceivePhone).trim()
+      }
+      if (action.payload.buyerReceiveName != null) {
+        order.buyerReceiveName = String(action.payload.buyerReceiveName).trim()
+      }
+      if (action.payload.buyerReceiveMethod != null) {
+        order.buyerReceiveMethod = String(action.payload.buyerReceiveMethod).trim()
+      }
+      order.timeline ||= []
+      order.timeline.push({
+        status: 'buyer_receive_details',
+        at: new Date().toISOString(),
+        buyerReceivePhone: order.buyerReceivePhone || '',
+        buyerReceiveName: order.buyerReceiveName || '',
+        buyerReceiveMethod: order.buyerReceiveMethod || '',
+      })
+    },
     updateOrderStatus(state, action) {
       const order = state.orders.find((item) => item.id === action.payload.id)
       if (!order) return
-      order.status = action.payload.status
-      order.timeline.push({ status: action.payload.status, at: new Date().toISOString() })
+      const next = action.payload.status
+      if (order.status === next) return
+      // L'initiateur (vendeur) doit joindre une preuve avant de finaliser.
+      if (next === 'completed') {
+        const sellerProof = (order.proofs || []).some((proof) => proof.userId === order.sellerId)
+        if (!sellerProof) return
+      }
+      order.status = next
+      const at = new Date().toISOString()
+      order.timeline ||= []
+      order.timeline.push({
+        status: next,
+        at,
+        note: action.payload.note || null,
+      })
+      if (next === 'waiting_payment') {
+        order.confirmDueAt = addMs(at, P2P_CONFIG.confirmWindowMs)
+      }
+      if (next === 'cancelled') {
+        resolveOfferAfterCancel(state, order, action.payload)
+      }
+    },
+    expireOrder(state, action) {
+      const order = state.orders.find((item) => item.id === action.payload.id)
+      if (!order || order.status !== 'created') return
+      const at = new Date().toISOString()
+      order.status = 'cancelled'
+      order.timeline ||= []
+      order.timeline.push({ status: 'cancelled', at, note: 'payment_expired' })
+      reactivateOffer(state, order.offerId)
+    },
+    moderateOffer(state, action) {
+      const offer = state.offers.find((item) => item.id === action.payload.id)
+      if (!offer) return
+      const next = action.payload.status
+      if (!['active', 'archived'].includes(next)) return
+      offer.status = next
+      offer.updatedAt = new Date().toISOString()
+    },
+    moderateOrder(state, action) {
+      const order = state.orders.find((item) => item.id === action.payload.id)
+      if (!order) return
+      const isStaff = ['admin', 'superadmin', 'moderator'].includes(action.payload.actorRole)
+      if (!isStaff) return
+      const next = action.payload.status
+      if (!['completed', 'cancelled', 'waiting_payment', 'disputed'].includes(next)) return
+      if (order.status === next) return
+      order.status = next
+      order.timeline ||= []
+      order.timeline.push({
+        status: next,
+        at: new Date().toISOString(),
+        actorType: 'admin',
+        actorId: action.payload.actorId || null,
+        note: action.payload.note || 'admin_moderate',
+      })
+      if (next === 'cancelled') {
+        resolveOfferAfterCancel(state, order, action.payload)
+      }
     },
     addOrderProof(state, action) {
       const order = state.orders.find((item) => item.id === action.payload.id)
@@ -114,9 +283,19 @@ export const {
   acceptOffer,
   addOrderProof,
   createOffer,
+  deleteOffer,
+  expireOrder,
+  moderateOffer,
+  moderateOrder,
   rateOrder,
+  receiveRemoteOffer,
+  receiveRemoteOrder,
+  removeRemoteOffer,
+  removeRemoteOrder,
   setAll,
+  updateOffer,
   updateOfferStatus,
+  updateOrderReceiveDetails,
   updateOrderStatus,
 } = p2pSlice.actions
 export default p2pSlice.reducer

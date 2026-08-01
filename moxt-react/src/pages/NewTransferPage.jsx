@@ -21,7 +21,7 @@ import { Alert } from '../components/ui/Alert'
 import { VerifiedDisplayName } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
-import { Input } from '../components/ui/Input'
+import { Input, Textarea } from '../components/ui/Input'
 import { Modal } from '../components/ui/Modal'
 import { PageHeader } from '../components/ui/PageHeader'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
@@ -48,7 +48,10 @@ import {
 import { ExchangerPickerAvatar } from '../features/transfers/ExchangerPickerAvatar'
 import { listExchangersForTransfer, resolveUserPartnerCountry } from '../features/transfers/exchangerListUtils'
 import { useExchangeRate } from '../features/transfers/useExchangeRate'
+import { PartnerDirectionalRate } from '../features/transfers/ExchangeRateChips'
+import { BusinessRatingBadge } from '../features/reviews/BusinessRatingBadge'
 import { useLanguage } from '../contexts/useLanguage'
+import { useHorizontalScroll } from '../hooks/useHorizontalScroll'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 import {
   calculateTransfer,
@@ -68,6 +71,7 @@ import {
 export function NewTransferPage() {
   const { t } = useLanguage()
   useScrollToSecondSection()
+  const partnerScrollRef = useHorizontalScroll()
   const [step, setStep] = useState(1)
   const [calculatorOpen, setCalculatorOpen] = useState(false)
   const dispatch = useDispatch()
@@ -84,6 +88,8 @@ export function NewTransferPage() {
     (state.account.transferProfiles || []).filter((item) => item.userId === user.id),
   )
   const draft = useMemo(() => readTransferDraft(), [])
+  const requestedExchangerId = searchParams.get('exchangerId') || ''
+  const draftValues = draft?.userId === user.id ? draft.values || {} : {}
   const originCountry = user.originCountry || (user.country !== 'RU' ? user.country : 'BJ')
   const liveRate = useExchangeRate(currencyForCountry(originCountry))
   const initialDirection = user.country === 'RU' ? DIRECTIONS.RU_TO_BJ : DIRECTIONS.BJ_TO_RU
@@ -94,7 +100,6 @@ export function NewTransferPage() {
       sourceCountry: initialInfo.sourceCountry,
       destinationCountry: initialInfo.destinationCountry,
       amount: '',
-      exchangerId: searchParams.get('exchangerId') || '',
       senderFirstName: user.firstName || '',
       senderLastName: user.lastName || '',
       senderPhone: ensurePhoneCountry(user.phone, initialInfo.sourceCountry),
@@ -103,8 +108,10 @@ export function NewTransferPage() {
       recipientLastName: '',
       recipientPhone: ensurePhoneCountry('', initialInfo.destinationCountry),
       recipientMethod: '',
+      noteToExchanger: '',
       acceptTerms: false,
-      ...(draft?.userId === user.id ? draft.values : {}),
+      ...draftValues,
+      exchangerId: requestedExchangerId || draftValues.exchangerId || '',
     },
     validationSchema: createTransferSchemas(t).transferSchema,
     onSubmit: (values) => {
@@ -147,6 +154,7 @@ export function NewTransferPage() {
           user,
           exchanger: {
             ...exchanger,
+            transferAcceptanceRequired: business.transferAcceptanceRequired === true,
             paymentAccount: paymentView.paymentAccount,
             paymentDetails: paymentView.paymentDetails,
           },
@@ -166,6 +174,7 @@ export function NewTransferPage() {
             phone: values.recipientPhone,
             method: values.recipientMethod,
           },
+          noteToExchanger: values.noteToExchanger,
         }),
       )
       if (action.payload?.blocked || !action.payload?.id) {
@@ -206,6 +215,12 @@ export function NewTransferPage() {
     }, 250)
     return () => window.clearTimeout(timeout)
   }, [formik.values, step, user.id])
+
+  useEffect(() => {
+    if (!requestedExchangerId) return
+    if (formik.values.exchangerId === requestedExchangerId) return
+    formik.setFieldValue('exchangerId', requestedExchangerId)
+  }, [formik, formik.values.exchangerId, requestedExchangerId])
 
   useEffect(() => {
     if (!formik.values.exchangerId) return
@@ -257,7 +272,13 @@ export function NewTransferPage() {
   const stepFields = {
     1: ['direction', 'amount', 'exchangerId'],
     2: ['senderFirstName', 'senderLastName', 'senderPhone', 'senderMethod'],
-    3: ['recipientFirstName', 'recipientLastName', 'recipientPhone', 'recipientMethod'],
+    3: [
+      'recipientFirstName',
+      'recipientLastName',
+      'recipientPhone',
+      'recipientMethod',
+      'noteToExchanger',
+    ],
     4: ['acceptTerms'],
   }
 
@@ -344,7 +365,7 @@ export function NewTransferPage() {
         {step === 1 ? (
           <div className="grid gap-5">
             {/* Direction — 2 visual cards */}
-            <Card className="grid gap-5">
+            <Card className="grid gap-5 !border-0 shadow-none">
               <SectionTitle icon={FiZap} label={t('transfers.new.directionTitle')} />
               <div className="grid gap-3 sm:grid-cols-2">
                 {[DIRECTIONS.BJ_TO_RU, DIRECTIONS.RU_TO_BJ].map((dir) => {
@@ -406,7 +427,7 @@ export function NewTransferPage() {
             </Card>
 
             {/* Amount */}
-            <Card className="grid gap-5">
+            <Card className="grid gap-5 !border-0 shadow-none">
               <SectionTitle icon={FiSend} label={t('transfers.new.amountToSend', { currency: calculation.currencyFrom })} />
               <Input
                 id="amount"
@@ -429,7 +450,7 @@ export function NewTransferPage() {
             </Card>
 
             {/* Exchanger cards */}
-            <Card className="grid gap-4">
+            <Card className="grid gap-4 !border-0 shadow-none">
               <div className="flex items-center justify-between gap-3 border-b border-[var(--app-border)] pb-4">
                 <div className="flex items-center gap-3">
                   <span className="grid size-9 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
@@ -451,7 +472,10 @@ export function NewTransferPage() {
                   {t('transfers.new.noPartnerBody', { flag: flagEmoji(resolveUserPartnerCountry(user, originCountry)) })}
                 </Alert>
               ) : null}
-              <div className="w-full min-w-0 max-w-full overflow-x-auto xl:overflow-visible">
+              <div
+                ref={partnerScrollRef}
+                className="w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain xl:overflow-visible"
+              >
                 <div className="flex w-max gap-3 xl:grid xl:w-full xl:grid-cols-4 xl:gap-3">
                   {ownTransferBusiness && isBusinessPublishReady(ownTransferBusiness) ? (
                     <div
@@ -490,12 +514,20 @@ export function NewTransferPage() {
                         key={exchanger.id}
                         type="button"
                         onClick={() => formik.setFieldValue('exchangerId', exchanger.id)}
-                        className={`flex w-[9.25rem] shrink-0 flex-col items-center gap-2 rounded-2xl border-2 p-4 text-center transition-all duration-200 sm:w-[10.5rem] xl:w-auto xl:shrink ${
+                        className={`relative flex w-[9.25rem] shrink-0 flex-col items-center gap-2 rounded-2xl border-2 p-4 pt-5 text-center transition-all duration-200 sm:w-[10.5rem] xl:w-auto xl:shrink ${
                           active
-                            ? 'border-brand-500 bg-[var(--app-accent-soft)] shadow-md'
+                            ? 'border-emerald-500 bg-emerald-50/80 shadow-md dark:border-emerald-400 dark:bg-emerald-950/30'
                             : 'border-[var(--app-border)] hover:border-brand-400 hover:shadow-sm'
                         }`}
                       >
+                        {active ? (
+                          <span
+                            className="absolute right-2 top-2 grid size-6 place-items-center rounded-full bg-emerald-500 text-white shadow-sm"
+                            aria-label={t('transfers.new.selected')}
+                          >
+                            <FiCheck className="text-xs" strokeWidth={3} />
+                          </span>
+                        ) : null}
                         <ExchangerPickerAvatar exchanger={exchanger} active={active} />
                         <VerifiedDisplayName
                           as="p"
@@ -508,24 +540,20 @@ export function NewTransferPage() {
                         <span className="text-[10px] font-semibold text-[var(--app-text-muted)]">
                           {flagEmoji(exchanger.country)} {exchanger.city || exchanger.country}
                         </span>
-                        {exchanger.rating > 0 ? (
-                          <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600">
-                            <FiStar className="text-[9px]" /> {exchanger.rating.toFixed(1)}
-                          </span>
-                        ) : null}
+                        <BusinessRatingBadge business={exchanger} />
+                        <PartnerDirectionalRate
+                          exchanger={exchanger}
+                          direction={formik.values.direction}
+                          originCountry={originCountry}
+                        />
                         <div className="flex w-full flex-col gap-1">
-                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${active ? 'bg-brand-700 text-white' : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'}`}>
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${active ? 'bg-emerald-600 text-white' : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'}`}>
                             {exchanger.feePercent}% {t('transfers.new.fees')}
                           </span>
-                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${active ? 'bg-brand-600 text-white' : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'}`}>
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${active ? 'bg-emerald-500 text-white' : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'}`}>
                             <FiClock className="mr-0.5 inline text-[9px]" />{exchanger.averageDelay}
                           </span>
                         </div>
-                        {active ? (
-                          <span className="flex items-center gap-1 text-[10px] font-bold text-brand-600">
-                            <FiCheck className="text-[10px]" /> {t('transfers.new.selected')}
-                          </span>
-                        ) : null}
                       </button>
                     )
                   })}
@@ -538,6 +566,7 @@ export function NewTransferPage() {
                 account={selectedReceivingAccount}
                 direction={formik.values.direction}
                 originCountry={originCountry}
+                clientNote={formik.values.noteToExchanger}
               />
             ) : null}
 
@@ -621,16 +650,32 @@ export function NewTransferPage() {
           />
         ) : null}
         {step === 3 ? (
-          <PartyCard
-            title={t('transfers.new.stepRecipient')}
-            prefix="recipient"
-            profiles={recipientProfiles}
-            formik={formik}
-            methods={destinationMethods}
-            errorFor={errorFor}
-            userId={user.id}
-            onProfile={(profile) => applyProfile('recipient', profile)}
-          />
+          <div className="grid gap-5">
+            <PartyCard
+              title={t('transfers.new.stepRecipient')}
+              prefix="recipient"
+              profiles={recipientProfiles}
+              formik={formik}
+              methods={destinationMethods}
+              errorFor={errorFor}
+              userId={user.id}
+              onProfile={(profile) => applyProfile('recipient', profile)}
+            />
+            <Card className="grid gap-3">
+              <Textarea
+                label={t('transfers.new.noteToExchangerLabel')}
+                placeholder={t('transfers.new.noteToExchangerPlaceholder')}
+                hint={t('transfers.new.noteToExchangerHint', {
+                  count: formik.values.noteToExchanger?.length || 0,
+                  max: 300,
+                })}
+                rows={3}
+                maxLength={300}
+                error={errorFor('noteToExchanger')}
+                {...formik.getFieldProps('noteToExchanger')}
+              />
+            </Card>
+          </div>
         ) : null}
 
         {step === 4 ? (
@@ -660,6 +705,16 @@ export function NewTransferPage() {
                   <strong className="text-right text-sm">{value || '—'}</strong>
                 </div>
               ))}
+              {String(formik.values.noteToExchanger || '').trim() ? (
+                <div className="rounded-xl bg-[var(--app-surface-muted)] px-4 py-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-[var(--app-text-muted)]">
+                    {t('transfers.new.noteToExchangerLabel')}
+                  </p>
+                  <p className="mt-1 whitespace-pre-wrap text-sm text-[var(--app-text)]">
+                    {formik.values.noteToExchanger.trim()}
+                  </p>
+                </div>
+              ) : null}
               <label className="flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-[var(--app-border)] p-4 transition hover:border-brand-400">
                 <input
                   className="mt-0.5 size-4 accent-brand-700"

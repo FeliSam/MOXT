@@ -9,7 +9,7 @@ import { Input } from '../components/ui/Input'
 import { Modal } from '../components/ui/Modal'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Select } from '../components/ui/Select'
-import { HELP_CATEGORIES, helpCategoryMeta } from '../config/helpCategories'
+import { ALL_HELP_CATEGORIES, helpCategoryMeta } from '../config/helpCategories'
 import { useLanguage } from '../contexts/useLanguage'
 import { createId } from '../services/createId'
 import {
@@ -35,8 +35,21 @@ function emptyForm() {
     sourceUrl: '',
     pinned: false,
     status: 'published',
+    sortOrder: 0,
+    imagesText: '',
     translations: Object.fromEntries(LANGUAGES.map((lang) => [lang, emptyTranslation()])),
   }
+}
+
+function imagesToText(images) {
+  return Array.isArray(images) ? images.join('\n') : ''
+}
+
+function textToImages(text) {
+  return String(text || '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
 }
 
 function isTranslationFilled(translation) {
@@ -71,7 +84,16 @@ export function AdminHelpArticlesPage() {
     dispatch(loadHelpArticles())
   }, [dispatch])
 
-  const groups = useMemo(() => groupArticles(articles), [articles])
+  const groups = useMemo(
+    () =>
+      groupArticles(articles).sort((a, b) => {
+        const orderA = Number.isFinite(a.primary.sortOrder) ? a.primary.sortOrder : 0
+        const orderB = Number.isFinite(b.primary.sortOrder) ? b.primary.sortOrder : 0
+        if (orderA !== orderB) return orderA - orderB
+        return String(a.primary.title || '').localeCompare(String(b.primary.title || ''))
+      }),
+    [articles],
+  )
 
   function openCreate() {
     setEditingGroupId(null)
@@ -97,6 +119,8 @@ export function AdminHelpArticlesPage() {
       sourceUrl: group.primary.sourceUrl || '',
       pinned: group.primary.pinned === true,
       status: group.primary.status,
+      sortOrder: Number.isFinite(group.primary.sortOrder) ? group.primary.sortOrder : 0,
+      imagesText: imagesToText(group.primary.images),
       translations,
     })
     setActiveLang('fr')
@@ -167,6 +191,8 @@ export function AdminHelpArticlesPage() {
         sourceUrl: form.sourceUrl,
         pinned: form.pinned,
         status: form.status,
+        sortOrder: Number.isFinite(Number(form.sortOrder)) ? Number(form.sortOrder) : 0,
+        images: textToImages(form.imagesText),
       }
 
       if (existing) {
@@ -217,6 +243,11 @@ export function AdminHelpArticlesPage() {
                         : t('adminHelp.status.draft')}
                     </Badge>
                     {group.primary.pinned ? <FiStar className="text-amber-500" /> : null}
+                    {Number.isFinite(group.primary.sortOrder) ? (
+                      <span className="text-[10px] font-bold uppercase tracking-wide text-[var(--app-text-faint)]">
+                        #{group.primary.sortOrder}
+                      </span>
+                    ) : null}
                     <span className="flex items-center gap-1">
                       {LANGUAGES.map((lang) => (
                         <span
@@ -293,7 +324,7 @@ export function AdminHelpArticlesPage() {
               value={form.category}
               onChange={(event) => set('category', event.target.value)}
             >
-              {HELP_CATEGORIES.map((option) => (
+              {ALL_HELP_CATEGORIES.map((option) => (
                 <option key={option.value} value={option.value}>
                   {t(option.labelKey)}
                 </option>
@@ -308,6 +339,14 @@ export function AdminHelpArticlesPage() {
               <option value="published">{t('adminHelp.status.published')}</option>
               <option value="draft">{t('adminHelp.status.draft')}</option>
             </Select>
+            <Input
+              id="help-sort-order"
+              type="number"
+              label={t('adminHelp.fields.sortOrder')}
+              className="min-w-0 w-full"
+              value={form.sortOrder}
+              onChange={(event) => set('sortOrder', event.target.value === '' ? 0 : Number(event.target.value))}
+            />
           </div>
 
           <div>
@@ -373,6 +412,17 @@ export function AdminHelpArticlesPage() {
               />
             </label>
           </div>
+
+          <label className="grid gap-1.5">
+            <span className="text-sm font-bold">{t('adminHelp.fields.images')}</span>
+            <textarea
+              className="min-h-16 min-w-0 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 text-sm"
+              placeholder="/assets/help/mon-illustration.svg"
+              value={form.imagesText}
+              onChange={(event) => set('imagesText', event.target.value)}
+            />
+            <span className="text-xs text-[var(--app-text-muted)]">{t('adminHelp.fields.imagesHint')}</span>
+          </label>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Input

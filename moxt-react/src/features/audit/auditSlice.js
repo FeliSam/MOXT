@@ -4,7 +4,7 @@ import { createSlice } from '@reduxjs/toolkit'
 // sensibles (transferts, auth) en localStorage non chiffré.
 const auditSlice = createSlice({
   name: 'audit',
-  initialState: { items: [] },
+  initialState: { items: [], remoteItems: [] },
   reducers: {
     recordAudit(state, action) {
       state.items.unshift(action.payload)
@@ -13,8 +13,11 @@ const auditSlice = createSlice({
     clearAudit(state) {
       state.items = []
     },
+    setRemoteAuditItems(state, action) {
+      state.remoteItems = action.payload || []
+    },
   },
 })
 
-export const { clearAudit, recordAudit } = auditSlice.actions
+export const { clearAudit, recordAudit, setRemoteAuditItems } = auditSlice.actions
 export default auditSlice.reducer

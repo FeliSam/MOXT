@@ -4,6 +4,8 @@ import {
   buildAdminMetrics,
   buildContentCollections,
   buildQueues,
+  buildBusinessTransferRollups,
+  matchesTransferStatusFilter,
 } from '../adminData'
 import { isActiveParcel, isArchivedParcel, isActivePost, isArchivedPost } from '../../publications/publicationCatalogUtils'
 import { isActiveListing, isArchivedListing } from '../../marketplace/listingCatalogUtils'
@@ -53,8 +55,10 @@ function matchesContentFilter(section, item, statusFilter) {
   return effective === statusFilter || item.status === statusFilter
 }
 
-export function useAdminPageData(query, statusFilter, contentView) {
+export function useAdminPageData(query, statusFilter, contentView, businessIdFilter = '') {
   const state = useSelector((v) => v)
+  const businesses = state.businesses.items || []
+  const transferItems = state.transfers.items
 
   const metrics = useMemo(() => buildAdminMetrics(state), [state])
   const queues = useMemo(() => buildQueues(state), [state])
@@ -82,31 +86,109 @@ export function useAdminPageData(query, statusFilter, contentView) {
     if (statusFilter !== 'all') items = items.filter((i) => i.role === statusFilter || i.status === statusFilter)
     if (query) {
       const q = query.toLowerCase()
-      items = items.filter((i) => `${i.firstName} ${i.lastName} ${i.email} ${i.role}`.toLowerCase().includes(q))
+      // Ville et pays d'origine inclus : l'admin cherche souvent « Moscou »
+      // ou « Kazan » plutôt qu'un nom précis.
+      items = items.filter((i) =>
+        `${i.firstName} ${i.lastName} ${i.email} ${i.role} ${i.city || ''} ${i.originCountry || ''}`
+          .toLowerCase()
+          .includes(q),
+      )
     }
     return items
   }, [query, statusFilter, state.administration.users])
 
   const transfers = useMemo(() => {
-    let items = state.transfers.items
-    if (statusFilter !== 'all') items = items.filter((i) => i.status === statusFilter)
+    let items = transferItems.map((transfer) => {
+      const business = businesses.find((entry) => entry.id === transfer.businessId)
+      return {
+        ...transfer,
+        businessName: business?.name || transfer.exchanger?.name || transfer.businessId || '',
+      }
+    })
+    if (businessIdFilter) {
+      items = items.filter((i) => String(i.businessId || '') === String(businessIdFilter))
+    }
+    if (statusFilter !== 'all') {
+      items = items.filter((i) => matchesTransferStatusFilter(i.status, statusFilter))
+    }
     if (query) {
       const q = query.toLowerCase()
       items = items.filter((i) =>
-        `${i.id} ${i.exchanger?.name || ''} ${i.sender?.firstName || ''} ${i.recipient?.firstName || ''}`.toLowerCase().includes(q)
+        `${i.id} ${i.exchanger?.name || ''} ${i.businessName || ''} ${i.businessId || ''} ${i.sender?.firstName || ''} ${i.recipient?.firstName || ''}`.toLowerCase().includes(q)
+      )
+    }
+    return [...items].sort(
+      (a, b) =>
+        new Date(b.createdAt || b.updatedAt || 0).getTime() -
+        new Date(a.createdAt || a.updatedAt || 0).getTime(),
+    )
+  }, [query, statusFilter, businessIdFilter, transferItems, businesses])
+
+  const businessTransferRollups = useMemo(
+    () => buildBusinessTransferRollups(transferItems, businesses),
+    [transferItems, businesses],
+  )
+
+  const p2pOffers = useMemo(() => {
+    let items = state.p2p.offers
+    const offerStatuses = ['active', 'accepted', 'archived']
+    const orderStatuses = ['created', 'waiting_payment', 'completed', 'cancelled', 'disputed']
+    if (statusFilter !== 'all') {
+      if (offerStatuses.includes(statusFilter)) items = items.filter((i) => i.status === statusFilter)
+      else if (orderStatuses.includes(statusFilter)) items = []
+    }
+    if (query) {
+      const q = query.toLowerCase()
+      items = items.filter((i) =>
+        `${i.id} ${i.ownerName || ''} ${i.fromCurrency || ''} ${i.toCurrency || ''} ${i.status || ''}`.toLowerCase().includes(q),
       )
     }
     return items
-  }, [query, statusFilter, state.transfers.items])
+  }, [query, statusFilter, state.p2p.offers])
 
-  const auditItems = useMemo(() => {
-    let items = state.audit.items
+  const p2pOrders = useMemo(() => {
+    let items = state.p2p.orders
+    const offerStatuses = ['active', 'accepted', 'archived']
+    const orderStatuses = ['created', 'waiting_payment', 'completed', 'cancelled', 'disputed']
+    if (statusFilter !== 'all') {
+      if (orderStatuses.includes(statusFilter)) items = items.filter((i) => i.status === statusFilter)
+      else if (offerStatuses.includes(statusFilter)) items = []
+    }
     if (query) {
       const q = query.toLowerCase()
-      items = items.filter((i) => `${i.action} ${i.actorRole || ''} ${i.targetId || ''}`.toLowerCase().includes(q))
+      items = items.filter((i) =>
+        `${i.id} ${i.buyerName || ''} ${i.sellerName || ''} ${i.status || ''}`.toLowerCase().includes(q),
+      )
     }
     return items
-  }, [query, state.audit.items])
+  }, [query, statusFilter, state.p2p.orders])
+
+  const auditItems = useMemo(() => {
+    // Fusion des events locaux (middleware) et des events distants (moxt_audit_log)
+    const remoteNormalized = (state.audit.remoteItems || []).map((row) => ({
+      id: `remote-${row.id}`,
+      action: row.action,
+      actorId: row.actor_id || row.actorId || null,
+      actorRole: row.actor_role || row.actorRole || 'system',
+      targetId: row.target_id || row.targetId || null,
+      targetType: row.target_type || row.targetType || null,
+      payload: row.payload || {},
+      createdAt: row.created_at || row.createdAt || null,
+      source: 'remote',
+    }))
+    const merged = [...remoteNormalized, ...state.audit.items].sort((a, b) => {
+      const ta = a.createdAt || ''
+      const tb = b.createdAt || ''
+      return tb < ta ? -1 : tb > ta ? 1 : 0
+    })
+    if (query) {
+      const q = query.toLowerCase()
+      return merged.filter((i) =>
+        `${i.action} ${i.actorRole || ''} ${i.targetId || ''} ${i.targetType || ''}`.toLowerCase().includes(q),
+      )
+    }
+    return merged
+  }, [query, state.audit.items, state.audit.remoteItems])
 
   const activeContentItems = useMemo(() => {
     let items = content[contentView] || []
@@ -138,9 +220,18 @@ export function useAdminPageData(query, statusFilter, contentView) {
     supportTickets,
     users,
     transfers,
+    businessTransferRollups,
+    p2pOffers,
+    p2pOrders,
     auditItems,
     activeContentItems,
-    allTransfers: state.transfers.items,
+    allTransfers: transferItems.map((transfer) => {
+      const business = businesses.find((entry) => entry.id === transfer.businessId)
+      return {
+        ...transfer,
+        businessName: business?.name || transfer.exchanger?.name || transfer.businessId || '',
+      }
+    }),
     allVerifications: state.account.verificationRequests.map((item) => {
       const user = state.administration.users.find((entry) => entry.id === item.userId)
       const userName = user

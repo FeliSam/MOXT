@@ -144,9 +144,9 @@ export const FEATURE_MATRIX = [
       },
       {
         id: 'assistant',
-        label: 'Assistant MOXT contextuel',
+        label: 'Moxti (assistant IA)',
         status: 'partial',
-        note: 'L’assistant local recherche et propose des liens; compréhension, contexte de page et actions guidées restent limités.',
+        note: 'Moxti via API REST Gemini (Edge Function proxy), avec repli LLM Supabase puis assistant local.',
       },
       {
         id: 'support',

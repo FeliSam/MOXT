@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { MAIN_RUSSIAN_CITIES, findParentCity } from '../config/russianCities'
+import { MAIN_RUSSIAN_CITIES, findParentCity, toFrenchCityName } from '../config/russianCities'
 import { getRussianCities } from '../services/geographyService'
 
 /** Normalise une chaîne pour la recherche : minuscule + sans accents + séparateurs unifiés */
 function normalize(str) {
-  return str
+  return String(str || '')
     .toLowerCase()
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
@@ -12,12 +12,13 @@ function normalize(str) {
     .trim()
 }
 
-/** Recherche dans la liste complète (API + principales) */
+/** Recherche dans la liste complète (offline + principales) */
 function searchCities(query, allApiCities) {
   const q = normalize(query)
   if (q.length < 2) return []
 
   const mainEnSet = new Set(MAIN_RUSSIAN_CITIES.map((c) => normalize(c.en)))
+  const mainFrSet = new Set(MAIN_RUSSIAN_CITIES.map((c) => normalize(c.fr)))
   const results = []
 
   // 1. Villes principales — cherche fr, en, ru
@@ -33,7 +34,7 @@ function searchCities(query, allApiCities) {
 
   // 2. Villes annexes connues — cherche dans les nearby
   for (const main of MAIN_RUSSIAN_CITIES) {
-    for (const nearby of main.nearby) {
+    for (const nearby of main.nearby || []) {
       if (normalize(nearby).includes(q)) {
         if (!results.find((r) => r.display === nearby)) {
           results.push({
@@ -47,20 +48,21 @@ function searchCities(query, allApiCities) {
     }
   }
 
-  // 3. Villes API non encore dans les résultats
+  // 3. Autres villes (snapshot offline / API) non encore dans les résultats
   for (const apiCity of allApiCities) {
     if (results.length >= 25) break
     const n = normalize(apiCity)
-    if (!mainEnSet.has(n) && n.includes(q)) {
+    if (mainEnSet.has(n) || mainFrSet.has(n)) continue
+    if (!n.includes(q)) continue
+    const display = toFrenchCityName(apiCity)
+    if (!results.find((r) => normalize(r.display) === normalize(display))) {
       const parent = findParentCity(apiCity)
-      if (!results.find((r) => normalize(r.display) === n)) {
-        results.push({
-          display: apiCity,
-          region: parent ? `près de ${parent.fr}` : null,
-          isMain: false,
-          parentFr: parent?.fr || null,
-        })
-      }
+      results.push({
+        display,
+        region: parent ? `près de ${parent.fr}` : null,
+        isMain: false,
+        parentFr: parent?.fr || null,
+      })
     }
   }
 
@@ -69,15 +71,15 @@ function searchCities(query, allApiCities) {
 
 /**
  * Hook de recherche intelligente de villes russes.
- * - Affiche les 28 grandes villes directement (mainCities)
+ * - Affiche les grandes villes directement (mainCities)
  * - Affiche les villes proches de la ville sélectionnée (nearbyOf)
- * - Recherche debounce dans toute la base API
+ * - Recherche debounce dans toute la base offline (puis refresh API en fond)
  */
 export function useCitySearch(query) {
   const [allApiCities, setAllApiCities] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // Charge toutes les villes API (depuis cache ou réseau) une seule fois
+  // Charge toutes les villes (snapshot offline immédiat, API en fond)
   useEffect(() => {
     let active = true
     getRussianCities().then((cities) => {

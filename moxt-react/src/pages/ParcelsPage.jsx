@@ -31,6 +31,7 @@ import {
   parcelCountryFilterOptions,
   parcelStatusFilterOptions,
 } from '../features/parcels/parcelBrowseConfig'
+import { isParcelBrowseArchived } from '../features/parcels/parcelUtils'
 import { formatMoney } from '../features/transfers/transferUtils'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 
@@ -58,8 +59,7 @@ export function ParcelsPage() {
     filters.country === 'ALL' || unfiltered ? null : filters.country || userCountry
   const today = new Date().toISOString().slice(0, 10)
 
-  const isArchived = (parcel) =>
-    parcel.status === 'completed' || (parcel.departureDate && parcel.departureDate < today)
+  const isArchived = (parcel) => isParcelBrowseArchived(parcel, today)
 
   const visibleParcels = useMemo(
     () => {

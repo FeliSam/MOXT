@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { FiCheckCircle, FiClock, FiCreditCard, FiRepeat, FiUser } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
 import { BackButton } from '../components/ui/BackButton'
+import { DetailFloatingActions } from '../components/ui/DetailFloatingActions'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import {
@@ -11,25 +13,45 @@ import {
   DetailSection,
 } from '../components/ui/DetailBlocks'
 import { EmptyState } from '../components/ui/EmptyState'
+import { Modal } from '../components/ui/Modal'
 import { PageHeader } from '../components/ui/PageHeader'
 import { useLanguage } from '../contexts/useLanguage'
 import { ContactButton } from '../features/communications/ContactButton'
+import { P2PNoEscrowBanner } from '../features/p2p/components/P2PNoEscrowBanner'
+import { P2PReputationBadge } from '../features/p2p/components/P2PReputationBadge'
 import { acceptOffer } from '../features/p2p/p2pSlice'
 import { calculateP2PFee } from '../features/p2p/p2pUtils'
+import { selectPlatformFees } from '../features/admin/platformRatesSlice'
+import { useSecurityGate } from '../features/security/useSecurityGate'
 import { formatMoney } from '../features/transfers/transferUtils'
+import { useP2pCatalogRealtime } from '../features/p2p/useP2pRealtime'
 
 export function P2PDetailPage() {
   const { t } = useLanguage()
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const { offerId } = useParams()
+  useP2pCatalogRealtime()
+  const { requireP2PAccept } = useSecurityGate()
+  const [confirmOpen, setConfirmOpen] = useState(false)
   const user = useSelector((state) => state.auth.user)
+  const platformFees = useSelector(selectPlatformFees)
   const offer = useSelector((state) => state.p2p.offers.find((item) => item.id === offerId))
+  const orders = useSelector((state) => state.p2p.orders)
+  const reviews = useSelector((state) => state.reviews.items)
 
   if (!offer) return <EmptyState title={t('p2p.detail.notFound')} />
 
-  function accept() {
-    const action = dispatch(acceptOffer({ buyer: user, offer }))
+  function requestAccept() {
+    if (!requireP2PAccept()) return
+    setConfirmOpen(true)
+  }
+
+  function confirmAccept() {
+    const action = dispatch(
+      acceptOffer({ buyer: user, offer, feePercent: platformFees.p2pFeePercent }),
+    )
+    setConfirmOpen(false)
     if (action.payload?.id) navigate(`/p2p/orders/${action.payload.id}`)
   }
 
@@ -42,6 +64,7 @@ export function P2PDetailPage() {
         })}
         actions={<BackButton fallback="/p2p" />}
       />
+      <P2PNoEscrowBanner />
       <DetailMetrics
         items={[
           {
@@ -76,6 +99,12 @@ export function P2PDetailPage() {
               )}
             />
           </div>
+          <P2PReputationBadge
+            userId={offer.ownerId}
+            orders={orders}
+            reviews={reviews}
+            className="mt-4"
+          />
           {offer.comment ? (
             <p className="mt-5 rounded-xl bg-[var(--app-surface-muted)] p-4 text-sm">
               {offer.comment}
@@ -98,7 +127,7 @@ export function P2PDetailPage() {
               variant="secondary"
             />
             {offer.status === 'active' && offer.ownerId !== user.id ? (
-              <Button icon={FiCheckCircle} onClick={accept}>
+              <Button icon={FiCheckCircle} onClick={requestAccept}>
                 {t('p2p.detail.acceptOffer')}
               </Button>
             ) : null}
@@ -135,6 +164,37 @@ export function P2PDetailPage() {
           />
         </DetailSection>
       </div>
+
+      <Modal
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        title={t('p2p.acceptConfirm.title')}
+      >
+        <div className="grid gap-4">
+          <p className="text-sm leading-6 text-[var(--app-text-muted)]">
+            {t('p2p.acceptConfirm.body')}
+          </p>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button variant="secondary" onClick={() => setConfirmOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={confirmAccept}>{t('p2p.acceptConfirm.cta')}</Button>
+          </div>
+        </div>
+      </Modal>
+
+      <DetailFloatingActions
+        isOwner={offer.ownerId === user.id}
+        ownerId={offer.ownerId}
+        entity={offer}
+        relatedId={offer.id}
+        relatedPath={`/p2p/${offer.id}`}
+        relatedType="p2p"
+        title={t('p2p.detail.relatedTitle', {
+          from: offer.fromCurrency,
+          to: offer.toCurrency,
+        })}
+      />
     </div>
   )
 }

@@ -72,4 +72,20 @@ describe('postFeedUtils', () => {
     expect(feed[0].id).toBe('pinned-en')
     expect(feed.map((post) => post.id)).toContain('welcome')
   })
+
+  it('hides linked posts whose catalog source is unavailable', () => {
+    const linked = {
+      id: 'job-post',
+      status: 'published',
+      sourceType: 'job',
+      sourceId: 'J1',
+      language: 'en',
+      createdAt: '2026-07-03T00:00:00.000Z',
+    }
+    const feed = buildNewsFeed([englishPost, linked], {
+      language: 'en',
+      catalogs: { jobs: [{ id: 'J1', status: 'expired' }] },
+    })
+    expect(feed.map((post) => post.id)).toEqual(['en-post'])
+  })
 })

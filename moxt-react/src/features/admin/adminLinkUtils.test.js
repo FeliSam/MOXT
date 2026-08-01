@@ -20,6 +20,8 @@ describe('adminLinkUtils', () => {
     expect(adminDetailLink('jobs', { id: 'j1' })).toBe('/jobs/j1')
     expect(adminDetailLink('user', { id: 'u1' })).toBe('/users/u1/publications')
     expect(adminDetailLink('support', { id: 't1' })).toBe('/support')
+    expect(adminDetailLink('p2p_offer', { id: 'o1' })).toBe('/p2p')
+    expect(adminDetailLink('p2p_order', { id: 'ord1' })).toBe('/p2p/orders/ord1')
   })
 
   it('resout les signalements vers la fiche concernee', () => {

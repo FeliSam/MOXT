@@ -6,6 +6,7 @@ export function MessageSendButton({ ariaLabel, disabled, ready, sending }) {
 
   useEffect(() => {
     if (!sending) return undefined
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- déclenche une animation temporisée (setTimeout), pas un état dérivé
     setBurst(true)
     const timer = window.setTimeout(() => setBurst(false), 520)
     return () => window.clearTimeout(timer)

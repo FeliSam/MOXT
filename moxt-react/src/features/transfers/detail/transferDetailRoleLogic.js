@@ -153,7 +153,18 @@ export function getTransferDetailAccess(transfer, user, business, ownedBusinessI
     canCancel:
       !claimOnly &&
       isSender &&
-      [TRANSFER_STATUS.PENDING, TRANSFER_STATUS.DECLARED].includes(transfer.status),
+      [
+        TRANSFER_STATUS.PENDING,
+        TRANSFER_STATUS.DECLARED,
+        TRANSFER_STATUS.PENDING_ACCEPTANCE,
+        TRANSFER_STATUS.DECLINED,
+      ].includes(transfer.status),
+    canAcceptRequest:
+      !claimOnly && isBusinessViewer && transfer.status === TRANSFER_STATUS.PENDING_ACCEPTANCE,
+    canDeclineRequest:
+      !claimOnly && isBusinessViewer && transfer.status === TRANSFER_STATUS.PENDING_ACCEPTANCE,
+    canReassignExchanger:
+      !claimOnly && isSender && transfer.status === TRANSFER_STATUS.DECLINED,
     canConfirmPaymentReception:
       !claimOnly && isBusinessViewer && transfer.status === TRANSFER_STATUS.DECLARED,
     canConfirmPayout:

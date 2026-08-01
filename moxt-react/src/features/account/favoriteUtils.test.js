@@ -3,6 +3,7 @@ import {
   buildListingFavoriteSnapshot,
   favoriteCategoryForType,
   groupFavoritesByCategory,
+  mergeUserFavorites,
   resolveFavoriteItem,
 } from './favoriteUtils'
 
@@ -57,5 +58,27 @@ describe('favoriteUtils', () => {
     expect(favorite.display.title).toBe('iPhone')
     expect(favorite.display.image).toBe('https://img.test/1.jpg')
     expect(favoriteCategoryForType('job')).toBe('job')
+  })
+
+  it('masque un favori dont la source a été supprimée ou archivée', () => {
+    const state = {
+      account: {
+        favorites: [
+          { id: 'F1', userId: 'U1', relatedType: 'listing', relatedId: 'L1', title: 'Actif' },
+          { id: 'F2', userId: 'U1', relatedType: 'listing', relatedId: 'L2', title: 'Supprimé' },
+          { id: 'F3', userId: 'U1', relatedType: 'job', relatedId: 'J1', title: 'Archivé' },
+        ],
+      },
+      marketplace: {
+        items: [{ id: 'L1', status: 'active', title: 'Actif' }],
+        // L2 volontairement absent : supprimé côté serveur.
+      },
+      jobs: { items: [{ id: 'J1', status: 'archived', title: 'Archivé' }] },
+      parcels: { items: [] },
+      businesses: { items: [] },
+      events: { items: [] },
+    }
+    const favorites = mergeUserFavorites(state, 'U1')
+    expect(favorites.map((item) => item.id)).toEqual(['F1'])
   })
 })

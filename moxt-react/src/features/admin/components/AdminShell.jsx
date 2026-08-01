@@ -2,6 +2,7 @@ import {
   FiActivity,
   FiLayers,
   FiRepeat,
+  FiTrendingUp,
   FiUsers,
   FiZap,
 } from 'react-icons/fi'
@@ -40,7 +41,7 @@ export function SidebarBtn({ active, badge, icon: Icon, label, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition-all ${
+      className={`group relative flex w-full min-w-0 max-w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition-all ${
         active
           ? 'bg-brand-700 text-white shadow-[0_4px_12px_rgb(15_118_110/0.35)]'
           : 'text-[var(--app-text-muted)] hover:bg-[var(--app-surface-muted)] hover:text-[var(--app-text)]'
@@ -58,7 +59,7 @@ export function SidebarBtn({ active, badge, icon: Icon, label, onClick }) {
       >
         <Icon className="text-sm" />
       </span>
-      <span className="flex-1 truncate">{label}</span>
+      <span className="min-w-0 flex-1 truncate">{label}</span>
       {badge > 0 ? (
         <span
           className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-black ${
@@ -77,12 +78,12 @@ export function SidebarLink({ to, icon: Icon, label }) {
   return (
     <Link
       to={to}
-      className="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-[var(--app-text-muted)] transition-all hover:bg-[var(--app-surface-muted)] hover:text-[var(--app-text)]"
+      className="group flex w-full min-w-0 max-w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-[var(--app-text-muted)] transition-all hover:bg-[var(--app-surface-muted)] hover:text-[var(--app-text)]"
     >
       <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--app-surface-muted)] text-brand-700 transition-all group-hover:bg-brand-50">
         <Icon className="text-sm" />
       </span>
-      <span className="flex-1 truncate">{label}</span>
+      <span className="min-w-0 flex-1 truncate">{label}</span>
     </Link>
   )
 }
@@ -100,6 +101,15 @@ export function HeroKpiRow({ metrics, queues, onSelect }) {
       gradient: 'from-teal-600 to-cyan-500',
     },
     {
+      key: 'p2p',
+      label: adminText(t, 'admin.kpi.p2p.label'),
+      value: metrics.p2p?.total || 0,
+      sub: adminText(t, 'admin.kpi.p2p.sub', { count: metrics.p2p?.disputed || 0 }),
+      icon: FiUsers,
+      trend: (metrics.p2p?.disputed || 0) > 0 ? 'up' : 'stable',
+      gradient: 'from-cyan-600 to-sky-500',
+    },
+    {
       key: 'content',
       label: adminText(t, 'admin.kpi.content.label'),
       value: metrics.content.total,
@@ -109,13 +119,13 @@ export function HeroKpiRow({ metrics, queues, onSelect }) {
       gradient: 'from-violet-600 to-purple-500',
     },
     {
-      key: 'users',
-      label: adminText(t, 'admin.kpi.users.label'),
-      value: metrics.users.total,
-      sub: adminText(t, 'admin.kpi.users.sub', { count: metrics.users.suspended }),
-      icon: FiUsers,
+      key: 'rates',
+      label: adminText(t, 'admin.kpi.rates.label'),
+      value: '—',
+      sub: adminText(t, 'admin.kpi.rates.sub'),
+      icon: FiTrendingUp,
       trend: 'stable',
-      gradient: 'from-blue-600 to-indigo-500',
+      gradient: 'from-emerald-600 to-teal-500',
     },
     {
       key: 'queues',
@@ -138,7 +148,7 @@ export function HeroKpiRow({ metrics, queues, onSelect }) {
   ]
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
       {tiles.map((tile) => (
         <button
           key={tile.key}

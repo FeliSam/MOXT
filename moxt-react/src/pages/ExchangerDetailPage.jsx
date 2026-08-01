@@ -17,12 +17,16 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { flagEmoji } from '../config/flags'
 import { useLanguage } from '../contexts/useLanguage'
 import { ContactButton } from '../features/communications/ContactButton'
+import { BusinessRatingBadge } from '../features/reviews/BusinessRatingBadge'
+import { ReviewsSection, REVIEW_TARGET_TYPES } from '../features/reviews/ReviewsSection'
+import { selectBusinessReviewsBundle } from '../features/reviews/reviewSelectors'
 import { ExchangerPickerAvatar } from '../features/transfers/ExchangerPickerAvatar'
 import {
   EXCHANGER_DELAY_TO_CONFIRM,
   resolveExchangerForDetail,
 } from '../features/transfers/exchangerListUtils'
 import { FALLBACK_EXCHANGERS } from '../features/transfers/transferConfig'
+import { businessesText } from '../features/businesses/businessesI18n'
 import { phase3Text } from '../i18n/phase3I18n'
 
 export function ExchangerDetailPage() {
@@ -30,6 +34,7 @@ export function ExchangerDetailPage() {
   const [searchParams] = useSearchParams()
   const { t } = useLanguage()
   const p3 = (key, vars) => phase3Text(t, key, vars)
+  const bt = (key, vars) => businessesText(t, key, vars)
   const toConfirmLabel = p3('exchangers.toConfirm')
   const allowAllCountries = searchParams.get('scope') === 'all'
   const user = useSelector((state) => state.auth.user)
@@ -52,6 +57,14 @@ export function ExchangerDetailPage() {
   const business = resolved?.business || null
   const exchanger = resolved?.exchanger || null
 
+  const { reviews, rating } = useSelector((state) =>
+    selectBusinessReviewsBundle(state, business),
+  )
+  // Même règle que la fiche entreprise / BusinessRatingBadge : note agrégée
+  // réelle uniquement (pas de fallback sur exchanger.rating figé).
+  const ratingDisplay = rating.count ? `${Number(rating.average || 0).toFixed(1)}/5` : '—'
+  const ratingLabel = bt('businesses.detail.reviewsCount', { count: rating.count })
+
   function delayLabel(value) {
     if (!value || value === EXCHANGER_DELAY_TO_CONFIRM || value === 'A confirmer') {
       return toConfirmLabel
@@ -71,12 +84,26 @@ export function ExchangerDetailPage() {
   return (
     <div className="grid gap-7">
       <PageHeader
-        title={exchanger.name}
+        title={
+          <span className="inline-flex flex-wrap items-center gap-2">
+            <VerifiedDisplayName
+              as="span"
+              name={exchanger.name}
+              verified={['verified', 'approved', 'active'].includes(exchanger.status)}
+              iconSize="md"
+            />
+            {business ? <BusinessRatingBadge business={business} /> : null}
+          </span>
+        }
         actions={<BackButton fallback="/exchangers" />}
       />
       <DetailMetrics
         items={[
-          { icon: FiStar, label: p3('exchangers.detail.evaluation'), value: `${exchanger.rating || 0}/5` },
+          {
+            icon: FiStar,
+            label: ratingLabel,
+            value: ratingDisplay,
+          },
           {
             icon: FiClock,
             label: p3('exchangers.detail.avgDelay'),
@@ -99,20 +126,27 @@ export function ExchangerDetailPage() {
           <div className="flex items-start gap-4">
             <ExchangerPickerAvatar exchanger={exchanger} />
             <div className="min-w-0 flex-1">
-              <VerifiedDisplayName
-                as="h2"
-                name={exchanger.name}
-                verified={['verified', 'approved', 'active'].includes(exchanger.status)}
-                iconSize="md"
-                className="text-lg font-black"
-              />
+              <div className="flex flex-wrap items-center gap-2">
+                <VerifiedDisplayName
+                  as="h2"
+                  name={exchanger.name}
+                  verified={['verified', 'approved', 'active'].includes(exchanger.status)}
+                  iconSize="md"
+                  className="text-lg font-black"
+                />
+                {business ? <BusinessRatingBadge business={business} /> : null}
+              </div>
               <p className="mt-1 text-sm text-[var(--app-text-muted)]">
                 {flagEmoji(exchanger.country)} {exchanger.city || exchanger.country}
               </p>
             </div>
           </div>
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
-            <Metric icon={FiStar} value={`${exchanger.rating || 0}/5`} label={p3('exchangers.detail.evaluation')} />
+            <Metric
+              icon={FiStar}
+              value={ratingDisplay}
+              label={ratingLabel}
+            />
             <Metric
               icon={FiClock}
               value={delayLabel(exchanger.averageDelay)}
@@ -193,6 +227,17 @@ export function ExchangerDetailPage() {
           />
         </DetailSection>
       </div>
+      {business ? (
+        <ReviewsSection
+          embedded
+          ownerId={business.ownerId}
+          ownerName={business.name}
+          profileTargetType={REVIEW_TARGET_TYPES.BUSINESS}
+          profileTargetId={business.id}
+          reviews={reviews}
+          currentUser={user}
+        />
+      ) : null}
     </div>
   )
 }

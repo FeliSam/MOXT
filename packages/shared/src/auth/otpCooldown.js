@@ -1,12 +1,18 @@
 /**
- * Dev UX flags (OTP diagnostics). Cooldown is independent — always 90s in prod UX.
+ * Dev UX flags (OTP diagnostics). Cooldown is independent — always 60s in prod UX.
  */
 export const MOXT_AUTH_DEV_MODE = false
 
 /** Minimum delay between OTP sends to the same phone or e-mail. */
-export const OTP_RESEND_COOLDOWN_SECONDS = 90
+export const OTP_RESEND_COOLDOWN_SECONDS = 60
 
 export const OTP_RESEND_COOLDOWN_MS = OTP_RESEND_COOLDOWN_SECONDS * 1000
+
+/**
+ * Max SMS resends during phone registration (after the initial send).
+ * 1 initial + 1 resend = 2 SMS; the next action switches to e-mail OTP.
+ */
+export const SMS_REGISTRATION_MAX_RESENDS = 1
 
 /** Max OTP sends per identity inside the rolling window (4 tentatives / 3 h). */
 export const OTP_MAX_SENDS_PER_WINDOW = 4
@@ -14,7 +20,7 @@ export const OTP_MAX_SENDS_PER_WINDOW = 4
 /** Rolling abuse window (3 hours). */
 export const OTP_SEND_WINDOW_MS = 3 * 60 * 60 * 1000
 
-/** When true, enforce the 4 / 3h cap (independent of the 90s cooldown). */
+/** When true, enforce the 4 / 3h cap (independent of the 60s cooldown). */
 export const OTP_SEND_CAP_ENABLED = true
 
 export const OTP_SEND_LOG_STORAGE_KEY = 'moxt.otpSendLog.v1'

@@ -120,15 +120,12 @@ async function main() {
   const androidOk = maybeCopyGoogleServices(vars)
   const iosOk = checkIosPlist()
 
-  const supabaseEnv = {
-    ...process.env,
-    SUPABASE_ACCESS_TOKEN:
-      process.env.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN || '',
-  }
-  if (!supabaseEnv.SUPABASE_ACCESS_TOKEN) {
-    console.error('\n✗ SUPABASE_ACCESS_TOKEN manquant.')
-    process.exit(1)
-  }
+  const accessToken =
+    process.env.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN || ''
+  // Ne pas forcer une chaîne vide : ça écrase le token stocké par `supabase login`.
+  const supabaseEnv = accessToken
+    ? { ...process.env, SUPABASE_ACCESS_TOKEN: accessToken }
+    : { ...process.env }
 
   log('Supabase', `secret FCM + deploy send-push (${projectId})`)
   if (runSupabase(['link', '--project-ref', projectRef, '--yes'], supabaseEnv) !== 0) {

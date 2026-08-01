@@ -5,6 +5,7 @@ import {
   FiCamera,
   FiCheck,
   FiCheckCircle,
+  FiFileText,
   FiHome,
   FiShield,
   FiUpload,
@@ -45,14 +46,23 @@ const ID_TYPE_VALUES = [
   { value: 'consular', labelKey: 'verification.idTypes.consular' },
 ]
 
+const RESIDENCE_TYPE_VALUES = [
+  { value: 'visa', labelKey: 'verification.residenceTypes.visa' },
+  { value: 'vnj', labelKey: 'verification.residenceTypes.vnj' },
+  { value: 'rvp', labelKey: 'verification.residenceTypes.rvp' },
+  { value: 'rvpo', labelKey: 'verification.residenceTypes.rvpo' },
+]
+
 export function VerificationPage() {
   const dispatch = useDispatch()
   const { t } = useLanguage()
   const p3 = (key, vars) => phase3Text(t, key, vars)
   const user = useSelector((state) => state.auth.user)
-  const request = useSelector((state) =>
-    state.account.verificationRequests.find((item) => item.userId === user.id),
-  )
+  const request = useSelector((state) => {
+    const userId = state.auth.user?.id
+    if (!userId) return null
+    return state.account.verificationRequests.find((item) => item.userId === userId)
+  })
   const phoneConfirmed = isPhoneVerified(user)
   const emailConfirmed = isEmailVerified(user)
   const requestStale = verificationRequestIsStale(request)
@@ -62,6 +72,8 @@ export function VerificationPage() {
   const [idType, setIdType] = useState('passport')
   const [idDoc, setIdDoc] = useState(null)
   const [selfieDoc, setSelfieDoc] = useState(null)
+  const [residenceType, setResidenceType] = useState('visa')
+  const [residenceDoc, setResidenceDoc] = useState(null)
   const [addressDoc, setAddressDoc] = useState(null)
   const [privacyConsent, setPrivacyConsent] = useState(false)
   const { progress: uploadProgress, track: trackUpload } = useUploadProgress()
@@ -83,6 +95,7 @@ export function VerificationPage() {
         : [{ key: 'email', label: phase3Text(t, 'verification.steps.email') }]),
       { key: 'identity', label: phase3Text(t, 'verification.steps.identity') },
       { key: 'selfie', label: phase3Text(t, 'verification.steps.selfie') },
+      { key: 'residence', label: phase3Text(t, 'verification.steps.residence') },
       ...(level === 'enhanced'
         ? [{ key: 'address', label: phase3Text(t, 'verification.steps.address') }]
         : []),
@@ -93,7 +106,13 @@ export function VerificationPage() {
 
   const current = steps[Math.min(step, steps.length) - 1]
   const ready = Boolean(
-    idDoc && selfieDoc && phoneConfirmed && emailConfirmed && (level !== 'enhanced' || addressDoc),
+    idDoc &&
+      selfieDoc &&
+      residenceDoc &&
+      residenceType &&
+      phoneConfirmed &&
+      emailConfirmed &&
+      (level !== 'enhanced' || addressDoc),
   )
 
   const canContinue = {
@@ -102,6 +121,7 @@ export function VerificationPage() {
     email: emailConfirmed,
     identity: Boolean(idType && idDoc),
     selfie: Boolean(selfieDoc),
+    residence: Boolean(residenceType && residenceDoc),
     address: Boolean(addressDoc),
     review: ready && privacyConsent,
   }[current.key]
@@ -117,8 +137,9 @@ export function VerificationPage() {
     const documentIds = []
     const persist = async (doc, category) => {
       if (!doc?.file) return
+      let uploaded = null
       try {
-        const uploaded = await trackUpload((onProgress) =>
+        uploaded = await trackUpload((onProgress) =>
           storageService.uploadDocument(user.id, category, doc.file, { onProgress }),
         )
         const action = dispatch(
@@ -135,12 +156,16 @@ export function VerificationPage() {
         documentIds.push(action.payload.id)
       } catch (err) {
         console.warn('[Storage] doc upload failed:', err.message)
+        // Le fichier est déjà déposé mais ne sera référencé nulle part :
+        // on le retire pour ne pas laisser une pièce d'identité orpheline.
+        if (uploaded?.path) await storageService.removeDocument(uploaded.path)
       }
     }
     if (!privacyConsent) return
 
     await persist(idDoc, `identity:${idType}`)
     await persist(selfieDoc, 'selfie')
+    await persist(residenceDoc, `residence:${residenceType}`)
     if (level === 'enhanced') await persist(addressDoc, 'address')
 
     dispatch(submitVerificationRequest({ userId: user.id, level, documentIds }))
@@ -176,19 +201,39 @@ export function VerificationPage() {
       ) : null}
 
       {request ? (
-        <Card className="flex items-center gap-4">
-          <FiCheckCircle className="text-2xl text-brand-600" />
-          <div className="flex-1">
-            <strong>
-              {p3('verification.request.heading', {
-                level: p3(`verification.levels.${request.level}`),
-              })}
-            </strong>
-            <p className="text-sm text-[var(--app-text-muted)]">
-              {p3('verification.request.docs', { count: request.documentIds.length })}
-            </p>
+        <Card className="grid gap-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <FiCheckCircle
+              className={`shrink-0 text-2xl ${
+                request.status === 'rejected' ? 'text-red-600' : 'text-brand-600'
+              }`}
+            />
+            <div className="min-w-0 flex-1">
+              <strong className="break-words">
+                {p3('verification.request.heading', {
+                  level: p3(`verification.levels.${request.level}`),
+                })}
+              </strong>
+              <p className="text-sm text-[var(--app-text-muted)]">
+                {p3('verification.request.docs', {
+                  count: Array.isArray(request.documentIds) ? request.documentIds.length : 0,
+                })}
+              </p>
+            </div>
+            <Badge tone={statusMeta(request.status, t).tone}>
+              {statusMeta(request.status, t).label}
+            </Badge>
           </div>
-          <Badge tone={statusMeta(request.status, t).tone}>{statusMeta(request.status, t).label}</Badge>
+          {request.status === 'rejected' ? (
+            <Alert variant="error" title={p3('verification.rejected.title')}>
+              <p>
+                {request.reviewNote
+                  ? p3('verification.rejected.reason', { note: request.reviewNote })
+                  : p3('verification.rejected.fallback')}
+              </p>
+              <p className="mt-2">{p3('verification.rejected.hint')}</p>
+            </Alert>
+          ) : null}
         </Card>
       ) : null}
 
@@ -200,7 +245,7 @@ export function VerificationPage() {
             label: current.label,
           })}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="scrollbar-hidden flex items-center gap-2 overflow-x-auto">
           {steps.map((item, index) => {
             const number = index + 1
             const done = step > number
@@ -316,6 +361,38 @@ export function VerificationPage() {
             </div>
           ) : null}
 
+          {current.key === 'residence' ? (
+            <div className="grid gap-4">
+              <div>
+                <h2 className="font-black">{p3('verification.residence.heading')}</h2>
+                <p className="mt-1 text-sm text-[var(--app-text-muted)]">
+                  {p3('verification.residence.hint')}
+                </p>
+              </div>
+              <Select
+                id="residence-type"
+                label={p3('verification.residence.docType')}
+                value={residenceType}
+                onChange={(event) => setResidenceType(event.target.value)}
+              >
+                {RESIDENCE_TYPE_VALUES.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {p3(option.labelKey)}
+                  </option>
+                ))}
+              </Select>
+              <UploadField
+                icon={FiFileText}
+                doc={residenceDoc}
+                onFile={setResidenceDoc}
+                label={p3('verification.residence.upload')}
+                hint={p3('verification.residence.uploadHint')}
+                kbLabel={p3('common.kb')}
+              />
+              <VerificationGuidePanel type="residence" />
+            </div>
+          ) : null}
+
           {current.key === 'address' ? (
             <div className="grid gap-4">
               <div>
@@ -356,6 +433,14 @@ export function VerificationPage() {
                   label={p3('verification.review.selfie')}
                   value={p3('verification.review.provided')}
                   ok={Boolean(selfieDoc)}
+                />
+                <Row
+                  label={p3('verification.review.residence')}
+                  value={p3(
+                    RESIDENCE_TYPE_VALUES.find((option) => option.value === residenceType)
+                      ?.labelKey || 'verification.residenceTypes.visa',
+                  )}
+                  ok={Boolean(residenceDoc)}
                 />
                 <Row
                   label={p3('verification.review.phone')}
@@ -482,11 +567,11 @@ function UploadField({ doc, hint, icon: Icon, kbLabel, label, onFile }) {
 
 function Row({ label, ok, value }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-xl bg-[var(--app-surface-muted)] p-3">
-      <span className="text-sm text-[var(--app-text-muted)]">{label}</span>
-      <span className="flex items-center gap-2 text-sm font-bold">
-        {value}
-        {ok ? <FiCheckCircle className="text-emerald-500" /> : null}
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[var(--app-surface-muted)] p-3 sm:gap-4 sm:flex-nowrap">
+      <span className="min-w-0 text-sm text-[var(--app-text-muted)]">{label}</span>
+      <span className="flex min-w-0 items-center gap-2 text-right text-sm font-bold">
+        <span className="min-w-0 truncate">{value}</span>
+        {ok ? <FiCheckCircle className="shrink-0 text-emerald-500" /> : null}
       </span>
     </div>
   )
