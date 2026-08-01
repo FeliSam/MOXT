@@ -1,0 +1,15 @@
+# Allowlist gitleaks — faux positifs connus (pas de vrais secrets).
+title = "MOXT gitleaks config"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Clés localStorage / IDs cache applicatifs (pas des API keys)"
+paths = [
+  '''moxt-react/src/services/russianBanksService\.js''',
+]
+regexes = [
+  '''moxt\.ru\.banks\.nspk\.cache\.v1''',
+  '''moxt-ru-banks-nspk-v1''',
+]

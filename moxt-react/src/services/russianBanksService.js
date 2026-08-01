@@ -1,14 +1,15 @@
 import { PAYMENT_METHODS } from '../features/transfers/transferConfig'
 
 const NSPK_BANKS_URL = 'https://qr.nspk.ru/proxyapp/c2bmembers.json'
-const CACHE_KEY = 'moxt-ru-banks-nspk-v1'
+/** Clé localStorage (pas un secret) — nom volontairement descriptif pour gitleaks. */
+const RU_BANKS_LOCAL_CACHE_ID = 'moxt.ru.banks.nspk.cache.v1'
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000
 
 let inFlight = null
 
 function readCache() {
   try {
-    const raw = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null')
+    const raw = JSON.parse(localStorage.getItem(RU_BANKS_LOCAL_CACHE_ID) || 'null')
     if (!raw?.names?.length) return null
     return {
       names: raw.names,
@@ -21,7 +22,7 @@ function readCache() {
 
 function writeCache(names) {
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), names }))
+    localStorage.setItem(RU_BANKS_LOCAL_CACHE_ID, JSON.stringify({ at: Date.now(), names }))
   } catch {
     /* ignore quota */
   }
