@@ -7,7 +7,15 @@ let pending = {
   residenceCity: '',
 }
 
-export function stashSignupCredentials(next) {
+type SignupCredentials = {
+  password?: string
+  firstName?: string
+  lastName?: string
+  originCountry?: string
+  residenceCity?: string
+}
+
+export function stashSignupCredentials(next?: SignupCredentials | null) {
   pending = {
     password: String(next?.password || ''),
     firstName: String(next?.firstName || ''),
