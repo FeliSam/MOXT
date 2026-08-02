@@ -2,6 +2,32 @@
 -- Corrige la boucle « analyse → mêmes orphelins » (échecs silencieux, business_id
 -- sanitisé, placeholders) et empêche les doublons de fiches.
 
+-- Le garde-fou review accédait à NEW.review_status alors que la colonne n’existe
+-- pas → toute INSERT business_documents plantait (ex. réparation auto).
+create or replace function private.moxt_business_documents_review_guard()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_new jsonb := to_jsonb(new);
+begin
+  if not public.moxt_is_admin() then
+    if tg_op = 'INSERT' then
+      if v_new ? 'reviewed_at' then new.reviewed_at := null; end if;
+      if v_new ? 'reviewed_by' then new.reviewed_by := null; end if;
+      if v_new ? 'review_note' then new.review_note := null; end if;
+    elsif tg_op = 'UPDATE' then
+      if v_new ? 'reviewed_at' then new.reviewed_at := old.reviewed_at; end if;
+      if v_new ? 'reviewed_by' then new.reviewed_by := old.reviewed_by; end if;
+      if v_new ? 'review_note' then new.review_note := old.review_note; end if;
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
 alter table public.business_documents
   add column if not exists superseded_at timestamptz;
 
@@ -633,7 +659,13 @@ select cron.schedule(
   $$select public.moxt_report_document_hygiene();$$
 );
 
--- Première réparation immédiate (service / migration)
-select public.moxt_repair_documents(0);
+-- Réparation initiale : best-effort (ne doit pas faire échouer la migration).
+do $$
+begin
+  perform public.moxt_repair_documents(0);
+exception
+  when others then
+    raise notice 'moxt_repair_documents initial: %', sqlerrm;
+end $$;
 
 notify pgrst, 'reload schema';
