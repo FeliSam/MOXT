@@ -10,6 +10,7 @@
     "postinstall": "node scripts/link-expo-router.cjs",
     "web": "npm run dev -w moxt",
     "web:build": "npm run build -w moxt",
+    "appflow:build": "npm run build -w moxt",
     "web:deploy:yandex": "node scripts/deploy-yandex.mjs",
     "deploy:yandex": "npm run web:deploy:yandex",
     "web:deploy:yandex:init": "node scripts/deploy-yandex.mjs --init",

@@ -1,0 +1,7 @@
+{
+  "name": "MOXT",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "custom"
+}

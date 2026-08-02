@@ -103,12 +103,61 @@ if (existsSync(plist)) {
   warn('GoogleService-Info.plist absent — npm run setup:firebase:ios')
 }
 
+console.log('\n▸ Appflow / monorepo')
+const rootCapJson = path.join(root, 'capacitor.config.json')
+if (existsSync(rootCapJson)) {
+  try {
+    const parsed = JSON.parse(read(rootCapJson))
+    if (parsed.webDir === 'moxt-react/dist') ok('capacitor.config.json racine (webDir moxt-react/dist)')
+    else warn(`capacitor.config.json racine webDir=${parsed.webDir}`)
+  } catch {
+    fail('capacitor.config.json racine illisible')
+  }
+} else fail('capacitor.config.json manquant à la racine (requis Appflow)')
+
+if (existsSync(path.join(root, 'ionic.config.json'))) ok('ionic.config.json racine')
+else warn('ionic.config.json racine manquant')
+
+const appflowConfigPath = path.join(root, 'appflow.config.json')
+if (existsSync(appflowConfigPath)) {
+  try {
+    const appflow = JSON.parse(read(appflowConfigPath))
+    const appId = appflow?.apps?.[0]?.appId
+    if (!appId || appId === 'REPLACE_WITH_APPFLOW_APP_ID') {
+      warn('appflow.config.json : renseigner apps[0].appId (dashboard Ionic → Overview)')
+    } else ok(`appflow.config.json appId=${appId}`)
+    if (appflow?.apps?.[0]?.root === 'moxt-react') ok('appflow.config.json root=moxt-react')
+    else warn('appflow.config.json root attendu: moxt-react')
+  } catch {
+    fail('appflow.config.json illisible')
+  }
+} else fail('appflow.config.json manquant')
+
+const pkg = JSON.parse(read(path.join(root, 'package.json')))
+if (pkg.scripts?.['appflow:build']) ok('npm run appflow:build')
+else fail('script appflow:build manquant dans package.json racine')
+
+const iosLink = path.join(root, 'ios')
+const androidLink = path.join(root, 'android')
+const iosLinkBody = existsSync(iosLink) ? read(iosLink).trim() : ''
+const androidLinkBody = existsSync(androidLink) ? read(androidLink).trim() : ''
+if (iosLinkBody === 'moxt-react/ios' || existsSync(path.join(root, 'moxt-react', 'ios'))) {
+  ok('lien / chemin iOS résolu (ios → moxt-react/ios)')
+} else fail('symlink ios manquant (doit pointer vers moxt-react/ios)')
+if (androidLinkBody === 'moxt-react/android' || existsSync(path.join(root, 'moxt-react', 'android'))) {
+  ok('lien / chemin Android résolu (android → moxt-react/android)')
+} else fail('symlink android manquant (doit pointer vers moxt-react/android)')
+
 console.log('\n▸ Capacitor prod (pas de wrapper WebView)')
 const capConfig = path.join(root, 'moxt-react', 'capacitor.config.ts')
 const capTs = read(capConfig)
 if (capTs.includes('CAPACITOR_SERVER_URL') && capTs.includes('isDevServer')) {
   ok('capacitor.config.ts : server.url réservé au live-reload')
 } else warn('vérifier manuellement l’absence de server.url en prod')
+
+if (existsSync(path.join(root, 'moxt-react', 'capacitor.config.json'))) {
+  ok('moxt-react/capacitor.config.json (prod Appflow)')
+} else warn('moxt-react/capacitor.config.json manquant')
 
 const iosCapJson = path.join(root, 'moxt-react', 'ios', 'App', 'App', 'capacitor.config.json')
 if (existsSync(iosCapJson)) {

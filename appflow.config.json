@@ -1,0 +1,12 @@
+{
+  "apps": [
+    {
+      "appId": "REPLACE_WITH_APPFLOW_APP_ID",
+      "root": "moxt-react",
+      "dependencyInstallCommand": "cd .. && npm ci",
+      "webBuildCommand": "npm run build",
+      "iosPath": "ios",
+      "androidPath": "android"
+    }
+  ]
+}

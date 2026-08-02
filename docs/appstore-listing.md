@@ -18,6 +18,30 @@ RuStore : [`docs/rustore-listing.md`](./rustore-listing.md)
 
 ---
 
+## Appflow / Ionic Cloud (build iOS CI)
+
+Le monorepo place Capacitor dans `moxt-react/`. Appflow cherche `capacitor.config.json` à la **racine** du Git — d’où l’erreur :
+
+`native type is capacitor but capacitor.config.json is not available`
+
+Fichiers déjà en place :
+
+| Fichier | Rôle |
+|---------|------|
+| `capacitor.config.json` (racine) | Détection Appflow + `webDir: moxt-react/dist` |
+| `ionic.config.json` (racine) | Marqueur projet Capacitor |
+| `moxt-react/capacitor.config.json` | Config prod côté package |
+| `appflow.config.json` | Monorepo : `root: moxt-react` + chemins iOS/Android |
+| `ios` → `moxt-react/ios` | Symlink de secours si `appId` Appflow non renseigné |
+| `android` → `moxt-react/android` | Idem |
+| `npm run appflow:build` | Build web attendu par Appflow |
+
+**Obligatoire** : remplacer `REPLACE_WITH_APPFLOW_APP_ID` dans [`appflow.config.json`](../appflow.config.json) par l’App ID du dashboard Ionic (Overview de l’app MOXT). Sans ça, le bloc monorepo est ignoré (mais les fichiers racine + symlinks couvrent le cas courant).
+
+```bash
+npm run check:ios-store
+```
+
 ## Prêt côté repo (sans Mac)
 
 Vérifier :

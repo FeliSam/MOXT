@@ -146,6 +146,7 @@ export function ConversationPanel({
   const threadHeaderRef = useRef(null)
   const threadScrollYRef = useRef(0)
   const stickToBottomRef = useRef(true)
+  const forceStickUntilRef = useRef(0)
   const loadOlderAnchorRef = useRef(null)
   const loadingOlderRequestedRef = useRef(false)
   const [attachmentPreviewUrls, setAttachmentPreviewUrls] = useState([])
@@ -195,16 +196,38 @@ export function ConversationPanel({
     messageList.scrollTop = top
   }
 
+  function forceStickToBottom(durationMs = 1000) {
+    stickToBottomRef.current = true
+    forceStickUntilRef.current = performance.now() + durationMs
+    stickToBottom('auto')
+  }
+
   // Force bottom when opening a conversation (before paint). Must not wait for the
   // later useEffect — otherwise a prior "scrolled up" stick=false skips the open stick
   // and the reused scroll node keeps a stale offset.
+  // Native WebViews need extra passes: layout/padding (header + composer) settle late.
   useLayoutEffect(() => {
-    stickToBottomRef.current = true
-    const frame = requestAnimationFrame(() => {
+    forceStickToBottom(1200)
+    const rafIds = []
+    const schedule = (fn) => {
+      const id = requestAnimationFrame(fn)
+      rafIds.push(id)
+    }
+    schedule(() => {
       setThreadHeaderVisible(true)
       stickToBottom('auto')
+      schedule(() => stickToBottom('auto'))
     })
-    return () => cancelAnimationFrame(frame)
+    const timers = [50, 150, 350, 700].map((ms) =>
+      setTimeout(() => {
+        stickToBottomRef.current = true
+        stickToBottom('auto')
+      }, ms),
+    )
+    return () => {
+      rafIds.forEach(cancelAnimationFrame)
+      timers.forEach(clearTimeout)
+    }
   }, [active.id])
 
   useLayoutEffect(() => {
@@ -223,16 +246,19 @@ export function ConversationPanel({
   // Stay pinned while content height changes (messages, draft, loading ↔ empty).
   useLayoutEffect(() => {
     if (loadOlderAnchorRef.current) return
-    if (!stickToBottomRef.current) return
+    if (!stickToBottomRef.current && performance.now() >= forceStickUntilRef.current) return
+    stickToBottomRef.current = true
     stickToBottom('auto')
     const frame = requestAnimationFrame(() => stickToBottom('auto'))
     return () => cancelAnimationFrame(frame)
   }, [
     active.messages.length,
     active.relatedContexts?.length,
+    active.messagesLoaded,
     formik.values.text,
     messagesLoading,
     composerOffset,
+    threadHeaderOffset,
   ])
 
   // Preserve viewport when older messages are prepended.
@@ -308,9 +334,15 @@ export function ConversationPanel({
     function handleScroll() {
       const distanceFromBottom =
         messageList.scrollHeight - messageList.scrollTop - messageList.clientHeight
-      stickToBottomRef.current = distanceFromBottom < 120
-      setShowScrollFab(distanceFromBottom > 120)
-      if (messageList.scrollTop < 80) {
+      const forcing = performance.now() < forceStickUntilRef.current
+      if (forcing) {
+        stickToBottomRef.current = true
+        setShowScrollFab(false)
+      } else {
+        stickToBottomRef.current = distanceFromBottom < 120
+        setShowScrollFab(distanceFromBottom > 120)
+      }
+      if (!forcing && messageList.scrollTop < 80) {
         requestLoadOlder()
       }
 
@@ -360,7 +392,7 @@ export function ConversationPanel({
       <div className="message-thread-canvas relative flex min-h-0 flex-1 flex-col overflow-hidden">
         <header
           ref={threadHeaderRef}
-          className={`message-thread-header absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-1.5 bg-transparent px-3 py-2.5 opacity-[0.89] backdrop-blur-md transition-transform duration-300 ease-out sm:gap-2 sm:px-4 lg:px-5 ${
+          className={`message-thread-header absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-1.5 bg-transparent px-3 py-2.5 backdrop-blur-md transition-transform duration-300 ease-out sm:gap-2 sm:px-4 lg:px-5 ${
             threadHeaderVisible ? 'translate-y-0' : '-translate-y-full pointer-events-none'
           }`}
         >
@@ -519,11 +551,11 @@ export function ConversationPanel({
             </PopoverMenu>
           </div>
           <div
-            className="pointer-events-none absolute inset-x-0 inset-y-0 -z-10 bg-[var(--app-surface-muted)]"
+            className="pointer-events-none absolute inset-x-0 inset-y-0 -z-10 bg-[var(--app-surface-muted)]/89"
             aria-hidden="true"
           />
           <div
-            className="pointer-events-none absolute inset-x-0 top-full -z-10 h-8 bg-gradient-to-b from-[var(--app-surface-muted)] to-transparent"
+            className="pointer-events-none absolute inset-x-0 top-full -z-10 h-8 bg-gradient-to-b from-[var(--app-surface-muted)]/89 to-transparent"
             aria-hidden="true"
           />
         </header>

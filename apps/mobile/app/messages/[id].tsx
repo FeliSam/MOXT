@@ -36,6 +36,14 @@ export default function ChatScreen() {
 
   useEffect(() => {
     if (!id || !conversation) return;
+    const timers = [0, 50, 150, 400, 800].map((ms) =>
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), ms),
+    );
+    return () => timers.forEach(clearTimeout);
+  }, [id, conversation?.messages?.length, conversation?.messagesLoaded]);
+
+  useEffect(() => {
+    if (!id || !conversation) return;
     if (conversation.messagesLoading) return;
     const loadedCount = conversation.messages.length;
     const expectedCount = conversation.messageCount || 0;
@@ -104,7 +112,12 @@ export default function ChatScreen() {
         data={timeline}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.messagesList}
-        onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
+        onContentSizeChange={() => {
+          listRef.current?.scrollToEnd({ animated: false })
+        }}
+        onLayout={() => {
+          listRef.current?.scrollToEnd({ animated: false })
+        }}
         renderItem={({ item }) => {
           if (item.kind === 'related') {
             return (
