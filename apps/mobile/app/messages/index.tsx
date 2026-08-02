@@ -4,14 +4,30 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
 import { PageHeader } from '@/components/ui';
+import { useLanguage } from '@/providers/LanguageProvider';
 import { loadConversations, Conversation } from '@/store/messages';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { useThemeColors } from '@/theme/ThemeContext';
 import { brand, radii, shadows, spacing, typography } from '@/theme/colors';
+import {
+  getMobileConversationPreview,
+  getMobileConversationPreviewAt,
+} from '@/utils/conversationPreview';
 
-function ConversationCard({ conversation }: { conversation: Conversation }) {
+function ConversationCard({
+  conversation,
+  currentUserId,
+}: {
+  conversation: Conversation;
+  currentUserId?: string;
+}) {
   const colors = useThemeColors();
-  const lastMessage = conversation.messages[conversation.messages.length - 1];
+  const { t } = useLanguage();
+  const preview = getMobileConversationPreview(conversation, currentUserId, {
+    youPrefix: t('messages.youPrefix'),
+    empty: t('messages.noMessageYet'),
+  });
+  const previewAt = getMobileConversationPreviewAt(conversation);
   const initials = conversation.title
     .split(' ')
     .slice(0, 2)
@@ -33,16 +49,12 @@ function ConversationCard({ conversation }: { conversation: Conversation }) {
         <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>
           {conversation.title}
         </Text>
-        {lastMessage ? (
-          <Text style={[styles.lastMsg, { color: colors.textMuted }]} numberOfLines={1}>
-            {lastMessage.senderName}: {lastMessage.text}
-          </Text>
-        ) : (
-          <Text style={[styles.lastMsg, { color: colors.textFaint }]}>Pas de message</Text>
-        )}
+        <Text style={[styles.lastMsg, { color: colors.textMuted }]} numberOfLines={1}>
+          {preview}
+        </Text>
       </View>
       <Text style={[styles.cardDate, { color: colors.textFaint }]}>
-        {new Date(conversation.updatedAt).toLocaleDateString('fr-FR', {
+        {new Date(previewAt).toLocaleDateString('fr-FR', {
           day: '2-digit',
           month: 'short',
         })}
@@ -54,6 +66,7 @@ function ConversationCard({ conversation }: { conversation: Conversation }) {
 export default function MessagesListScreen() {
   const dispatch = useAppDispatch();
   const colors = useThemeColors();
+  const { t } = useLanguage();
   const user = useAppSelector((state) => state.auth.user);
   const conversations = useAppSelector((state) => state.messages.conversations);
   const loading = useAppSelector((state) => state.messages.loading);
@@ -74,7 +87,7 @@ export default function MessagesListScreen() {
       </View>
       <PageHeader
         eyebrow="Messagerie"
-        title="Messages"
+        title={t('messages.conversations')}
         description={`${conversations.length} conversation(s)`}
       />
 
@@ -87,15 +100,17 @@ export default function MessagesListScreen() {
           data={conversations}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
-          renderItem={({ item }) => <ConversationCard conversation={item} />}
+          renderItem={({ item }) => (
+            <ConversationCard conversation={item} currentUserId={user?.id} />
+          )}
           ListEmptyComponent={
             <View style={styles.empty}>
               <Text style={{ fontSize: 48 }}>💬</Text>
               <Text style={[styles.emptyTitle, { color: colors.text }]}>
-                Aucune conversation
+                {t('messages.empty.title')}
               </Text>
               <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-                Vos échanges avec vendeurs et acheteurs apparaîtront ici.
+                {t('messages.empty.description')}
               </Text>
             </View>
           }

@@ -10,13 +10,14 @@ import { conversationPreview } from './messageUtils'
 import { shortTime } from './format'
 
 const LIST_AVATAR_CLASS =
-  '!size-14 !rounded-[1.15rem] !text-sm font-black shadow-md self-center'
+  '!size-11 !rounded-full !text-xs font-black self-center sm:!size-12'
 
 export function ConversationRow({
   active,
   assistant = false,
   avatarMap = {},
   conversation,
+  divided = true,
   onClick,
   showOnlineDot = false,
   userId,
@@ -45,14 +46,14 @@ export function ConversationRow({
     <button
       type="button"
       onClick={onClick}
-      className={`group mb-2 flex min-h-[5rem] min-w-0 w-full items-center gap-2.5 rounded-[1.2rem] p-3 text-left transition-all duration-[var(--transition-fast)] sm:gap-3 sm:p-3.5 ${
+      className={`group flex min-h-[3.875rem] min-w-0 w-full items-stretch gap-2.5 rounded-2xl pl-2.5 text-left transition-colors duration-[var(--transition-fast)] sm:min-h-[4.125rem] sm:gap-3 sm:pl-3 ${
         active
-          ? 'bg-[var(--app-accent-soft)] shadow-[0_14px_34px_rgb(15_23_42/0.12)] ring-1 ring-brand-200/70 dark:ring-brand-900/70'
-          : 'bg-[var(--app-surface)] shadow-[0_8px_24px_rgb(15_23_42/0.05)] hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgb(15_23_42/0.1)]'
+          ? 'bg-[var(--app-accent-soft)]'
+          : 'bg-transparent hover:bg-[var(--app-surface)]/55'
       }`}
     >
       {assistant ? (
-        <span className="grid size-14 shrink-0 place-items-center self-center rounded-[1.15rem] bg-gradient-to-br from-brand-500 to-cyan-500 text-lg font-black text-white shadow-md">
+        <span className="grid size-11 shrink-0 place-items-center self-center rounded-full bg-gradient-to-br from-brand-500 to-cyan-500 text-base font-black text-white sm:size-12">
           <FiCpu />
         </span>
       ) : (
@@ -68,13 +69,13 @@ export function ConversationRow({
           />
           {peerOnline ? (
             <span
-              className="absolute bottom-0.5 right-0.5 size-3 rounded-full bg-emerald-500 ring-2 ring-[var(--app-surface)]"
+              className="absolute bottom-0 right-0 size-2.5 rounded-full bg-emerald-500 ring-2 ring-[var(--app-surface-muted)]"
               title={messagesText(t, 'messages.activity.online')}
               aria-label={messagesText(t, 'messages.activity.online')}
             />
           ) : RelatedIcon ? (
             <span
-              className={`absolute -bottom-0.5 -right-0.5 grid size-5 place-items-center rounded-md text-[10px] text-white shadow-sm ${relatedMeta.tone}`}
+              className={`absolute -bottom-0.5 -right-0.5 grid size-4 place-items-center rounded-full text-[9px] text-white ${relatedMeta.tone}`}
               aria-hidden="true"
             >
               <RelatedIcon />
@@ -82,7 +83,7 @@ export function ConversationRow({
           ) : null}
           {peerOnline && RelatedIcon ? (
             <span
-              className={`absolute -bottom-0.5 -left-0.5 grid size-5 place-items-center rounded-md text-[10px] text-white shadow-sm ${relatedMeta.tone}`}
+              className={`absolute -bottom-0.5 -left-0.5 grid size-4 place-items-center rounded-full text-[9px] text-white ${relatedMeta.tone}`}
               aria-hidden="true"
             >
               <RelatedIcon />
@@ -90,11 +91,15 @@ export function ConversationRow({
           ) : null}
         </span>
       )}
-      <span className="min-w-0 flex-1">
-        <span className="flex items-start justify-between gap-2">
+      <span
+        className={`flex min-w-0 flex-1 flex-col justify-center py-2 pr-2.5 sm:py-2.5 sm:pr-3 ${
+          divided ? 'border-b border-[var(--app-border)]/45' : ''
+        }`}
+      >
+        <span className="flex items-baseline justify-between gap-2">
           <strong
             className={`flex min-w-0 items-center gap-1.5 truncate text-[13px] leading-4 ${
-              unread ? 'font-black text-[var(--app-text)]' : 'font-bold'
+              unread ? 'font-black text-[var(--app-text)]' : 'font-semibold text-[var(--app-text)]'
             }`}
           >
             {pinned ? <FiStar className="size-3 shrink-0 text-amber-500" /> : null}
@@ -107,20 +112,34 @@ export function ConversationRow({
             />
             {muted ? <FiBellOff className="size-3 shrink-0 text-[var(--app-text-faint)]" /> : null}
           </strong>
-          <time className="shrink-0 text-[10px] font-semibold text-[var(--app-text-faint)] sm:rounded-full sm:bg-[var(--app-surface-muted)] sm:px-1.5 sm:py-0.5">
-            {assistant ? messagesText(t, 'messages.assistant.alwaysThere') : shortTime(conversation.updatedAt)}
+          <time
+            className={`shrink-0 text-[10px] tabular-nums leading-none ${
+              unread
+                ? 'font-semibold text-[var(--app-accent)]'
+                : 'font-medium text-[var(--app-text-faint)]'
+            }`}
+          >
+            {assistant
+              ? messagesText(t, 'messages.assistant.alwaysThere')
+              : shortTime(
+                  conversation.lastMessageAt ||
+                    conversation.last_message_at ||
+                    conversation.updatedAt,
+                )}
           </time>
         </span>
-        <span className="mt-0.5 flex items-center gap-1.5">
+        <span className="mt-0.5 flex items-center gap-2">
           <span
-            className={`min-w-0 flex-1 truncate text-[11px] leading-4 ${
-              unread ? 'font-semibold text-[var(--app-text-muted)]' : 'text-[var(--app-text-faint)]'
+            className={`min-w-0 flex-1 truncate text-[12px] leading-4 ${
+              unread
+                ? 'font-medium text-[var(--app-text-muted)]'
+                : 'font-normal text-[var(--app-text-faint)]'
             }`}
           >
             {lastMessage}
           </span>
           {unread ? (
-            <span className="grid min-w-5 place-items-center rounded-full bg-brand-600 px-1 text-[10px] font-black text-white dark:bg-brand-500">
+            <span className="grid min-w-5 place-items-center rounded-full bg-brand-600 px-1.5 py-0.5 text-[10px] font-black leading-none text-white dark:bg-brand-500">
               {unread}
             </span>
           ) : null}

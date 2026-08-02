@@ -447,20 +447,23 @@ html.keyboard-open .bottom-nav-shell {
 }
 
 .message-composer-shell {
-  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  padding-bottom: 0;
   margin-bottom: 0;
 }
 
 @media (min-width: 640px) {
   .message-composer-shell {
-    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+    padding-bottom: 0;
   }
 }
 
 html.keyboard-open .message-composer-shell {
   margin-bottom: var(--keyboard-inset, 0px);
-  /* Avoid safe-area gap stacked above the keyboard. */
-  padding-bottom: 0.75rem;
+  padding-bottom: 0;
+}
+
+.message-composer-dock {
+  isolation: isolate;
 }
 
 .bottom-nav-shell .bottom-nav-indicator {
@@ -1405,7 +1408,7 @@ html.messages-route-lock #root {
   align-items: center;
   gap: 0.35rem;
   border-radius: 9999px;
-  border: 1px solid var(--app-border);
+  border: 1px solid color-mix(in srgb, var(--app-border) 45%, transparent);
   background: var(--app-surface);
   padding: 0.35rem 0.75rem;
   font-size: 0.6875rem;
@@ -1420,7 +1423,7 @@ html.messages-route-lock #root {
 
 .message-filter-chip--active {
   border-color: color-mix(in srgb, var(--app-accent) 35%, var(--app-border));
-  background: var(--app-accent-soft);
+  background: var(--app-surface);
   color: var(--app-accent);
 }
 
@@ -1441,14 +1444,14 @@ html.messages-route-lock #root {
   text-overflow: ellipsis;
   white-space: nowrap;
   border-radius: 9999px;
-  border: 1px solid var(--app-border);
+  border: 1px solid color-mix(in srgb, var(--app-border) 45%, transparent);
   background: var(--app-surface);
   padding: 0.3rem 0.7rem;
   font-size: 0.75rem;
   font-weight: 600;
   line-height: 1.3;
   color: var(--app-text-muted);
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
   transition:
     border-color var(--transition-fast),
     background var(--transition-fast),
@@ -1457,7 +1460,7 @@ html.messages-route-lock #root {
 
 .message-suggestion-chip:hover {
   border-color: color-mix(in srgb, var(--app-accent) 35%, var(--app-border));
-  background: var(--app-accent-soft);
+  background: var(--app-surface);
   color: var(--app-accent);
 }
 
@@ -2022,15 +2025,14 @@ html.messages-route-lock #root {
 
 .message-composer-form--ready {
   border-color: color-mix(in srgb, var(--app-accent) 34%, var(--app-border));
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.35),
-    0 0 0 1px color-mix(in srgb, var(--app-accent) 12%, transparent),
-    0 10px 28px rgb(8 112 95 / 8%);
+  box-shadow: none;
+  background: var(--app-surface);
 }
 
 .message-composer-form--sending {
   transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--app-accent) 42%, var(--app-border));
+  background: var(--app-surface);
 }
 
 .message-send-btn {
@@ -2742,10 +2744,9 @@ input[type='file'] {
 /* Mobile / tablet: barre −5 %, glyphes −10 % (avatar profil exclu des glyphes). */
 @media (max-width: 1023px) {
   .header-action-btn {
-    @apply rounded-full border border-[var(--app-border)]/80 bg-[var(--app-surface)]/65 backdrop-blur-md hover:bg-[var(--app-surface)]/80;
+    @apply rounded-full border-0 bg-[var(--app-surface)]/65 backdrop-blur-md hover:bg-[var(--app-surface)]/80;
     width: 3.004375rem;
     height: 3.004375rem;
-    border-width: 0.8px;
   }
 
   @media (min-width: 640px) {

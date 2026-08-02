@@ -175,14 +175,19 @@ Dépôt local suggéré : `outputs/appstore-screenshots/` (gitignoré si volumin
 
 ## Checklist Mac (le jour J)
 
-1. Copier le vrai `GoogleService-Info.plist` → `moxt-react/ios/App/App/`
-2. Firebase → clé APNs (.p8) uploadée
-3. `npm run web:cap:prod:sync` puis `npm run web:cap:prod:ios`
-4. Xcode → Signing : Team + Push Notifications capability
-5. Vérifier Release = `AppRelease.entitlements` (production)
-6. Device réel : login, caméra QR, push
-7. Product → Archive → Distribute → App Store Connect
-8. Connect : build + fiche + Submit for Review
+1. Copier / générer `GoogleService-Info.plist` :
+   ```bash
+   npm run setup:firebase:ios
+   ```
+   (fichier gitignoré → `moxt-react/ios/App/App/GoogleService-Info.plist`)
+2. Apple Developer → Identifiers → activer **Push Notifications** sur `com.moxt.app`
+3. Créer clé **APNs** (.p8) → Firebase Console → Project settings → Cloud Messaging → Apple app configuration
+4. `npm run web:cap:prod:sync` puis `npm run web:cap:prod:ios`
+5. Xcode → Signing : Team + capability **Push Notifications**
+6. Vérifier Release = `AppRelease.entitlements` (production)
+7. Device réel : login, caméra QR, push
+8. Product → Archive → Distribute → App Store Connect
+9. Connect : build + fiche + Submit for Review
 
 ```bash
 npm run check:ios-store

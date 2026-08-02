@@ -19,6 +19,10 @@ import { Conversation, loadConversations } from '@/store/messages';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { brand, radii, spacing } from '@/theme/colors';
 import { useShadows, useThemeColors } from '@/theme/ThemeContext';
+import {
+  getMobileConversationPreview,
+  getMobileConversationPreviewAt,
+} from '@/utils/conversationPreview';
 
 type MessageFilter = 'all' | 'unread' | 'archived';
 
@@ -44,8 +48,13 @@ function ConversationCard({
   currentUserId?: string;
 }) {
   const colors = useThemeColors();
-  const lastMessage = conversation.messages.at(-1);
-  const unread = Boolean(lastMessage && lastMessage.senderId !== currentUserId);
+  const { t } = useLanguage();
+  const preview = getMobileConversationPreview(conversation, currentUserId, {
+    youPrefix: t('messages.youPrefix'),
+    empty: t('messages.noMessageYet'),
+  });
+  const unread = (conversation.unreadBy?.[currentUserId || ''] || 0) > 0;
+  const previewAt = getMobileConversationPreviewAt(conversation);
 
   return (
     <ListCard
@@ -66,11 +75,11 @@ function ConversationCard({
           selectable
           numberOfLines={1}
           style={[styles.lastMessage, { color: colors.textMuted }]}>
-          {lastMessage ? `${lastMessage.senderName}: ${lastMessage.text}` : 'Pas de message'}
+          {preview}
         </Text>
       </View>
       <Text style={[styles.date, { color: colors.textFaint }]}>
-        {new Date(conversation.updatedAt).toLocaleDateString('fr-FR', {
+        {new Date(previewAt).toLocaleDateString('fr-FR', {
           day: '2-digit',
           month: 'short',
         })}
@@ -100,12 +109,12 @@ export default function MessagesTabScreen() {
     const normalizedQuery = query.trim().toLocaleLowerCase('fr');
 
     return conversations.filter((conversation) => {
-      const lastMessage = conversation.messages.at(-1);
-      const unread = Boolean(lastMessage && lastMessage.senderId !== user?.id);
+      const unread = (conversation.unreadBy?.[user?.id || ''] || 0) > 0;
       if (filter === 'unread' && !unread) return false;
       if (filter === 'archived') return false;
       if (!normalizedQuery) return true;
-      return `${conversation.title} ${lastMessage?.text ?? ''}`
+      const preview = getMobileConversationPreview(conversation, user?.id);
+      return `${conversation.title} ${preview}`
         .toLocaleLowerCase('fr')
         .includes(normalizedQuery);
     });

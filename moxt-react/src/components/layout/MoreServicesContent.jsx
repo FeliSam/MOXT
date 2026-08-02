@@ -15,12 +15,12 @@ function MoreServiceTile({ badge, item, onNavigate, resolveLabel }) {
       className={({ isActive }) =>
         `relative flex min-h-[3.5rem] items-center gap-2.5 rounded-[var(--radius-card)] border p-2.5 backdrop-blur-md transition-all duration-[var(--transition-fast)] ${
           isActive
-            ? 'border-[var(--app-accent)]/60 bg-[var(--app-accent-soft)]/55 shadow-[var(--shadow-card)]'
-            : 'border-[var(--app-border)]/70 bg-[var(--app-surface)]/40 shadow-[var(--shadow-card)] hover:border-brand-200 hover:bg-[var(--app-surface)]/55 hover:shadow-[var(--shadow-card-hover)] dark:hover:border-brand-800'
+            ? 'border-[var(--app-accent)]/60 bg-[var(--app-accent-soft)]/90 shadow-[var(--shadow-card)]'
+            : 'border-[var(--app-border)]/70 bg-[var(--app-surface)]/90 shadow-[var(--shadow-card)] hover:border-brand-200 hover:bg-[var(--app-surface)] hover:shadow-[var(--shadow-card-hover)] dark:hover:border-brand-800'
         }`
       }
     >
-      <span className="grid size-9 shrink-0 place-items-center rounded-[0.7rem] bg-[var(--app-surface)]/35 text-[var(--app-accent)] backdrop-blur-sm dark:text-[var(--app-teal)]">
+      <span className="grid size-9 shrink-0 place-items-center rounded-[0.7rem] bg-[var(--app-surface)]/90 text-[var(--app-accent)] backdrop-blur-sm dark:text-[var(--app-teal)]">
         <Icon className="text-lg" aria-hidden="true" />
       </span>
       <span className="min-w-0 flex-1 line-clamp-2 text-xs font-semibold leading-snug text-[var(--app-text)]">
@@ -52,7 +52,7 @@ function MoreServiceRow({ badge, item, onNavigate, resolveLabel }) {
         }`
       }
     >
-      <span className="grid size-9 shrink-0 place-items-center rounded-[0.7rem] bg-[var(--app-surface)]/35 text-[var(--app-accent)] backdrop-blur-sm dark:text-[var(--app-teal)]">
+      <span className="grid size-9 shrink-0 place-items-center rounded-[0.7rem] bg-[var(--app-surface)]/90 text-[var(--app-accent)] backdrop-blur-sm dark:text-[var(--app-teal)]">
         <Icon className="text-lg" aria-hidden="true" />
       </span>
       <span className="min-w-0 flex-1 truncate">{resolveLabel(item)}</span>

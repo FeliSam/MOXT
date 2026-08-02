@@ -66,7 +66,7 @@ export function MobileMoreDrawer({ open, onClose }) {
       />
 
       <div
-        className={`absolute inset-x-0 bottom-0 flex max-h-[88dvh] flex-col rounded-t-[1.4rem] border border-b-0 border-[var(--app-border)]/80 bg-[var(--app-surface)]/55 shadow-[var(--shadow-card)] backdrop-blur-xl ${
+        className={`absolute inset-x-0 bottom-0 flex max-h-[88dvh] flex-col rounded-t-[1.4rem] border border-b-0 border-[var(--app-border)]/80 bg-[var(--app-surface)]/90 shadow-[var(--shadow-card)] backdrop-blur-xl ${
           closing ? 'drawer-leave' : 'drawer-enter'
         }`}
         data-tour="more-panel"
@@ -90,7 +90,7 @@ export function MobileMoreDrawer({ open, onClose }) {
               type="button"
               onClick={requestClose}
               aria-label={t('common.close')}
-              className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-btn)] border border-[var(--app-border)]/70 bg-[var(--app-surface)]/40 text-[var(--app-text-muted)] backdrop-blur-md transition hover:bg-[var(--app-surface)]/55"
+              className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-btn)] border border-[var(--app-border)]/70 bg-[var(--app-surface)]/90 text-[var(--app-text-muted)] backdrop-blur-md transition hover:bg-[var(--app-surface)]"
             >
               <FiX />
             </button>
@@ -122,7 +122,7 @@ export function MobileMoreDrawer({ open, onClose }) {
             <Link
               to="/settings"
               onClick={requestClose}
-              className="flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-btn)] border border-[var(--app-border)]/70 bg-[var(--app-surface)]/40 text-xs font-semibold text-[var(--app-text)] backdrop-blur-md transition hover:bg-[var(--app-surface)]/55"
+              className="flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-btn)] border border-[var(--app-border)]/70 bg-[var(--app-surface)]/90 text-xs font-semibold text-[var(--app-text)] backdrop-blur-md transition hover:bg-[var(--app-surface)]"
             >
               <FiSettings className="text-base text-[var(--app-accent)]" />
               {t('nav.settings')}
@@ -130,7 +130,7 @@ export function MobileMoreDrawer({ open, onClose }) {
             <Link
               to="/profile"
               onClick={requestClose}
-              className="flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-btn)] border border-[var(--app-border)]/70 bg-[var(--app-surface)]/40 text-xs font-semibold text-[var(--app-text)] backdrop-blur-md transition hover:bg-[var(--app-surface)]/55"
+              className="flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-btn)] border border-[var(--app-border)]/70 bg-[var(--app-surface)]/90 text-xs font-semibold text-[var(--app-text)] backdrop-blur-md transition hover:bg-[var(--app-surface)]"
             >
               <FiUser className="text-base text-[var(--app-accent)]" />
               {t('nav.profile')}

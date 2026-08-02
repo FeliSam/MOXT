@@ -93,10 +93,14 @@ else warn('exemple GoogleService-Info manquant')
 if (existsSync(plist)) {
   const body = read(plist)
   if (body.includes('REPLACE_WITH_FIREBASE') || body.includes('moxt-placeholder')) {
-    warn('GoogleService-Info.plist encore un placeholder — remplacer par le vrai fichier Firebase')
-  } else ok('GoogleService-Info.plist présent (à valider sur Mac)')
+    warn('GoogleService-Info.plist encore un placeholder — npm run setup:firebase:ios')
+  } else if (body.includes('com.moxt.app')) {
+    ok('GoogleService-Info.plist présent (com.moxt.app, gitignoré)')
+  } else {
+    warn('GoogleService-Info.plist présent — vérifier BUNDLE_ID=com.moxt.app')
+  }
 } else {
-  warn('GoogleService-Info.plist absent (compte Firebase / Mac) — voir .example')
+  warn('GoogleService-Info.plist absent — npm run setup:firebase:ios')
 }
 
 console.log('\n▸ Capacitor prod (pas de wrapper WebView)')

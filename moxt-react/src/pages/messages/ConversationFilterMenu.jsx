@@ -1,10 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { FiArchive, FiCheck, FiFilter } from 'react-icons/fi'
+import { FiArchive, FiCheck } from 'react-icons/fi'
+import { LuFilter } from 'react-icons/lu'
 import { useLanguage } from '../../contexts/useLanguage'
 import { messagesText } from '../../features/communications/messagesI18n'
 import { MESSAGE_FILTER_IDS } from './messageFilters'
 import { countConversationsForFilter } from './messageUtils'
+
+const HEADER_ICON_STROKE = 1.48
 
 const FILTER_OPTIONS = MESSAGE_FILTER_IDS
 
@@ -170,16 +173,18 @@ export function ConversationFilterMenu({
         <button
           type="button"
           onClick={() => setOpen((value) => !value)}
-          className={`grid size-10 shrink-0 place-items-center rounded-xl shadow-sm transition ${
-            hasActiveFilter
-              ? 'bg-[var(--app-accent-soft)] text-[var(--app-accent)] ring-1 ring-brand-200/80 dark:ring-brand-800/60'
-              : 'bg-[var(--app-surface-muted)] text-[var(--app-accent)]'
+          className={`header-action-btn relative grid ${
+            hasActiveFilter ? 'text-[var(--app-accent)]' : ''
           }`}
           aria-label={t("messages.filterAria")}
           aria-expanded={open}
           aria-haspopup="menu"
         >
-          <FiFilter />
+          <LuFilter
+            className={`header-action-icon ${hasActiveFilter ? 'opacity-100 text-[var(--app-accent)]' : ''}`}
+            strokeWidth={HEADER_ICON_STROKE}
+            aria-hidden="true"
+          />
         </button>
       </div>
       {menu}

@@ -76,6 +76,8 @@ npm run cpd -- --no-commit
 | `npm run setup:smtp` | Push SMTP + **templates e-mail OTP** vers Supabase |
 | `npm run setup:admin-promote` | Verrouillage promotion admin |
 | `npm run setup:push` | Web Push VAPID + `send-push` |
+| `npm run setup:firebase` | Assistant FCM Android guidé |
+| `npm run setup:firebase:ios` | Crée app iOS Firebase + `GoogleService-Info.plist` |
 | `npm run setup:push:native` | FCM Android/iOS + secrets serveur |
 | `npm run setup:production` | Config prod Supabase (legacy Netlify) |
 
@@ -173,7 +175,7 @@ Guide RuStore : [`docs/rustore-listing.md`](../docs/rustore-listing.md)
 |-------|------|--------|
 | **Web** (moxtapp.ru) | VAPID + service worker | `npm run setup:push` |
 | **Android** | FCM via `google-services.json` | `npm run firebase:login` → `npm run setup:firebase -- --project=ID` → `npm run setup:push:native` |
-| **iOS** | APNs via Firebase ou Xcode | Capability Push + `GoogleService-Info.plist` + `npm run setup:push:native` |
+| **iOS** | APNs via Firebase | `npm run setup:firebase:ios` + clé APNs (.p8) dans Firebase + `GoogleService-Info.plist` + `npm run setup:push:native` |
 | **Serveur** | `send-push` web + FCM natif | `scripts/firebase-service-account.json` → `npm run setup:push:native` |
 
 ### Firebase CLI (assistant guidé)

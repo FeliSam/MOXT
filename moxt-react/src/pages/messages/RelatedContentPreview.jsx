@@ -90,7 +90,7 @@ export function RelatedContentPreview({
     return (
       <button
         type="button"
-        className={`group block w-full overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] text-left shadow-sm transition hover:border-brand-200 hover:shadow-md dark:hover:border-brand-800 ${
+        className={`group block w-full overflow-hidden rounded-2xl bg-[var(--app-surface)] text-left shadow-sm transition hover:shadow-md ${
           inline ? 'mx-auto my-3 max-w-md' : 'mb-4'
         }`}
         data-testid="related-content-preview"
@@ -104,7 +104,7 @@ export function RelatedContentPreview({
   return (
     <Link
       to={preview.path}
-      className={`group block overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-sm transition hover:border-brand-200 hover:shadow-md dark:hover:border-brand-800 ${
+      className={`group block overflow-hidden rounded-2xl bg-[var(--app-surface)] shadow-sm transition hover:shadow-md ${
         inline ? 'mx-auto my-3 w-full max-w-md' : 'mb-4'
       }`}
       data-testid="related-content-preview"

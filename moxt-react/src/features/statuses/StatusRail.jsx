@@ -75,10 +75,6 @@ export function StatusRail({ hideWhenNoCommunity: _hideWhenNoCommunity = false }
     (ownBusiness && g.businessId === ownBusiness.id)
   const officialGroups = groups.filter((g) => g.isOfficial && !isMine(g))
   const otherGroups = groups.filter((g) => !isMine(g) && !g.isOfficial)
-  const unseenCount = useMemo(
-    () => [...officialGroups, ...otherGroups].filter((g) => g.hasUnseen).length,
-    [officialGroups, otherGroups],
-  )
 
   useEffect(() => {
     if (!supabase || !user?.id) return undefined
@@ -123,16 +119,6 @@ export function StatusRail({ hideWhenNoCommunity: _hideWhenNoCommunity = false }
 
   return (
     <div className="min-w-0">
-      <div className="mb-1 flex items-center justify-between gap-2 px-4 sm:px-0">
-        <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[var(--app-text-faint)]">
-          {t('status.rail.title')}
-          {unseenCount > 0 ? (
-            <span className="ml-2 rounded-full bg-brand-600 px-1.5 py-0.5 text-[10px] font-black normal-case tracking-normal text-white">
-              {unseenCount}
-            </span>
-          ) : null}
-        </p>
-      </div>
       <div className="scrollbar-hidden -mx-4 flex touch-pan-x gap-4 overflow-x-auto px-4 py-2 sm:gap-5">
         <div className="flex w-16 shrink-0 flex-col items-center gap-1.5 text-center">
           <button

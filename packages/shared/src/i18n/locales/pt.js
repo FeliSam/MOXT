@@ -468,6 +468,8 @@ export const pt = {
     clearSearch: "Limpar pesquisa",
     resultsCount: "Resultados ({count})",
     conversations: "Conversas",
+    yourConversations: "As suas conversas",
+    noMessageYet: "Sem mensagens",
     active: "ativas",
     archived: "arquivadas",
     noPinned: "Nenhuma conversa fixada.",

@@ -303,7 +303,7 @@ export function Sidebar({ open }) {
           />
           <aside
             data-tour="more-panel"
-            className="panel-pop absolute bottom-4 left-24 top-4 flex w-[24rem] flex-col overflow-hidden rounded-[1.4rem] border border-[var(--app-border)]/80 bg-[var(--app-surface)]/55 shadow-[var(--shadow-card)] backdrop-blur-xl"
+            className="panel-pop absolute bottom-4 left-24 top-4 flex w-[24rem] flex-col overflow-hidden rounded-[1.4rem] border border-[var(--app-border)]/80 bg-[var(--app-surface)]/90 shadow-[var(--shadow-card)] backdrop-blur-xl"
           >
             <div className="shrink-0 border-b border-[var(--app-border)]/70 bg-transparent p-5">
               <div className="flex items-start justify-between gap-3">

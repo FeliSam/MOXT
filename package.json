@@ -44,6 +44,7 @@
     "firebase:login": "firebase login",
     "firebase:projects": "firebase projects:list",
     "setup:firebase": "node scripts/setup-firebase.mjs",
+    "setup:firebase:ios": "node scripts/setup-firebase-ios.mjs",
     "firebase:connect": "node scripts/setup-firebase.mjs",
     "push:simulate": "node scripts/simulate-push-pipeline.mjs",
     "db:push": "node scripts/db-push.mjs",

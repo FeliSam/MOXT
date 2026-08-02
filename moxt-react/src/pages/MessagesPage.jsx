@@ -5,6 +5,7 @@ import {
   FiSearch,
   FiX,
 } from 'react-icons/fi'
+import { LuSearch } from 'react-icons/lu'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useDeferredValue } from 'react'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { useSearchParams } from 'react-router-dom'
@@ -81,7 +82,12 @@ export function MessagesPage() {
   const [showArchived, setShowArchived] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [filter, setFilter] = useState('all')
+  const [listHeaderVisible, setListHeaderVisible] = useState(true)
+  const [listHeaderOffset, setListHeaderOffset] = useState(72)
   const listRef = useRef(null)
+  const listScrollRef = useRef(null)
+  const listHeaderRef = useRef(null)
+  const listScrollYRef = useRef(0)
   const desktop = useMediaQuery('(min-width: 1024px)')
   const isFiltering = Boolean(deferredQuery.trim())
   const relatedConversation = conversations.find(
@@ -129,6 +135,38 @@ export function MessagesPage() {
       dispatch(setMessageThreadImmersive(false))
     }
   }, [activeId, desktop, dispatch])
+
+  useLayoutEffect(() => {
+    const header = listHeaderRef.current
+    if (!header || typeof ResizeObserver === 'undefined') return undefined
+    const sync = () => {
+      const next = Math.ceil(header.getBoundingClientRect().height)
+      setListHeaderOffset((prev) => (prev === next ? prev : next))
+    }
+    sync()
+    const observer = new ResizeObserver(sync)
+    observer.observe(header)
+    return () => observer.disconnect()
+  }, [filter, showArchived, desktop, unreadMessagesCount])
+
+  useEffect(() => {
+    const list = listScrollRef.current
+    if (!list) return undefined
+    listScrollYRef.current = list.scrollTop
+    function handleScroll() {
+      const y = list.scrollTop
+      const delta = y - listScrollYRef.current
+      listScrollYRef.current = y
+      if (y <= 8) {
+        setListHeaderVisible(true)
+        return
+      }
+      if (delta > 8) setListHeaderVisible(false)
+      else if (delta < -8) setListHeaderVisible(true)
+    }
+    list.addEventListener('scroll', handleScroll, { passive: true })
+    return () => list.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const { peerTyping, notifyTyping, stopTyping } = useConversationTyping(
     activeId && activeId !== ASSISTANT_ID ? activeId : null,
@@ -527,21 +565,21 @@ export function MessagesPage() {
   }
 
   return (
-    <div
-      className="messages-shell relative flex h-full min-h-0 flex-col overflow-hidden overscroll-none bg-transparent"
-      data-testid="messages-viewport"
-    >
+      <div
+        className="messages-shell relative flex h-full min-h-0 flex-col overflow-hidden overscroll-none bg-transparent"
+        data-testid="messages-viewport"
+      >
       <div
         className={
           integratedAssistant
-            ? 'mx-auto grid h-full min-h-0 w-full min-w-0 overflow-hidden rounded-t-[2rem] bg-[var(--app-surface)] max-lg:rounded-none lg:grid-cols-[25rem_minmax(0,1fr)]'
+            ? 'mx-auto grid h-full min-h-0 w-full min-w-0 overflow-hidden rounded-t-[2rem] bg-transparent max-lg:rounded-none lg:grid-cols-[25rem_minmax(0,1fr)]'
             : activeId
-              ? 'grid h-full min-h-0 w-full min-w-0 overflow-hidden rounded-t-[2rem] bg-[var(--app-surface)] max-lg:rounded-none lg:grid-cols-[25rem_minmax(0,1fr)]'
-              : 'mx-auto h-full min-h-0 w-full min-w-0 max-w-5xl overflow-hidden rounded-t-[2rem] bg-[var(--app-surface)] max-lg:rounded-none'
+              ? 'grid h-full min-h-0 w-full min-w-0 overflow-hidden rounded-t-[2rem] bg-transparent max-lg:rounded-none lg:grid-cols-[25rem_minmax(0,1fr)]'
+              : 'mx-auto h-full min-h-0 w-full min-w-0 max-w-5xl overflow-hidden rounded-t-[2rem] bg-transparent max-lg:rounded-none'
         }
       >
         <aside
-          className={`${activeId ? 'hidden lg:flex' : 'flex'} relative z-30 h-full min-h-0 min-w-0 flex-col overflow-hidden bg-[var(--app-surface)] lg:w-[25rem] lg:max-w-[25rem] ${
+          className={`${activeId ? 'hidden lg:flex' : 'flex'} relative z-30 h-full min-h-0 min-w-0 flex-col overflow-hidden bg-transparent lg:w-[25rem] lg:max-w-[25rem] ${
             activeId ? 'lg:shadow-[12px_0_35px_rgb(15_23_42/0.06)]' : ''
           }`}
           data-testid="messages-list"
@@ -584,18 +622,19 @@ export function MessagesPage() {
                 </div>
                 <div
                   ref={listRef}
-                  className="scrollbar-hidden min-h-0 flex-1 overscroll-contain overflow-y-auto bg-[var(--app-surface-muted)]/45 p-2 sm:p-3"
+                  className="scrollbar-hidden min-h-0 flex-1 overscroll-contain overflow-y-auto bg-transparent px-0 pb-2 pt-1"
                   style={{ maxHeight: 'min(56dvh, 28rem)' }}
                 >
-                  <p className="px-2 pb-1 pt-1 text-[10px] font-bold uppercase tracking-wide text-[var(--app-text-faint)]">
+                  <p className="px-2.5 pb-1.5 pt-1 text-[10px] font-semibold tracking-wide text-[var(--app-text-faint)]">
                     {isFiltering ? t("messages.resultsCount", { count: visible.length }) : t("messages.conversations")}
                   </p>
-                  {visible.map((conversation) => (
+                  {visible.map((conversation, index) => (
                     <ConversationRow
                       key={conversation.id}
                       active={active?.id === conversation.id}
                       avatarMap={avatarMap}
                       conversation={conversation}
+                      divided={index < visible.length - 1}
                       showOnlineDot
                       userId={user.id}
                       onClick={() => selectConversation(conversation.id)}
@@ -610,30 +649,40 @@ export function MessagesPage() {
               </div>
             </div>
           ) : null}
-          <div className="relative z-10 shrink-0 bg-[var(--app-surface)] p-4 pt-[max(1rem,env(safe-area-inset-top))] shadow-[0_10px_30px_rgb(15_23_42/0.06)] sm:p-5 sm:pt-[max(1.25rem,env(safe-area-inset-top))] lg:p-6 lg:pt-6">
-            <div className="flex items-center gap-3">
-              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--app-accent-soft)] text-xl text-[var(--app-accent)]">
-                <FiMessageSquare />
-              </span>
-              <div className="min-w-0 flex-1">
-                <h1 className="font-black">{t("messages.conversations")}</h1>
-                <p className="text-xs text-[var(--app-text-muted)]">
-                  {messagesText(t, 'messages.exchangeCount', {
-                    count: activeHumanConversations.length + 1,
-                  })}{' '}
-                  {showArchived ? t("messages.archived") : t("messages.active")}
-                  {!showArchived && unreadMessagesCount > 0
-                    ? messagesText(
-                        t,
-                        unreadMessagesCount > 1
-                          ? 'messages.unreadCountPlural'
-                          : 'messages.unreadCount',
-                        { count: unreadMessagesCount },
-                      )
-                    : ''}
-                </p>
+          <div className="relative min-h-0 flex-1 overflow-hidden">
+          <div
+            ref={listHeaderRef}
+            className={`message-list-header absolute inset-x-0 top-0 z-20 flex flex-col bg-transparent px-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] opacity-[0.89] backdrop-blur-md transition-transform duration-300 ease-out sm:px-4 sm:pb-2.5 lg:px-5 lg:pt-4 ${
+              listHeaderVisible ? 'translate-y-0' : '-translate-y-full pointer-events-none'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-1.5 sm:gap-2">
+              <div className="header-brand-chip flex h-[3.004375rem] min-w-0 max-w-[calc(100%-7rem)] flex-1 items-center gap-2 rounded-full bg-transparent px-1.5 pr-2.5 sm:h-[3.3048125rem] sm:max-w-[calc(100%-7.75rem)] sm:gap-2.5 sm:pr-3">
+                <span className="grid size-[2.185rem] shrink-0 place-items-center rounded-full bg-[var(--app-accent-soft)] text-[var(--app-accent)] sm:size-[2.458125rem]">
+                  <FiMessageSquare className="text-lg opacity-[0.92]" aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <h1 className="truncate text-sm font-black leading-none tracking-tight text-[var(--app-text)] sm:text-[0.9375rem]">
+                    {t("messages.conversations")}
+                  </h1>
+                  <p className="mt-0.5 truncate text-[11px] leading-tight text-[var(--app-text-muted)]">
+                    {messagesText(t, 'messages.exchangeCount', {
+                      count: activeHumanConversations.length + 1,
+                    })}{' '}
+                    {showArchived ? t("messages.archived") : t("messages.active")}
+                    {!showArchived && unreadMessagesCount > 0
+                      ? messagesText(
+                          t,
+                          unreadMessagesCount > 1
+                            ? 'messages.unreadCountPlural'
+                            : 'messages.unreadCount',
+                          { count: unreadMessagesCount },
+                        )
+                      : ''}
+                  </p>
+                </div>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="ml-auto flex h-[3.004375rem] shrink-0 items-center gap-1.5 sm:h-[3.3048125rem] [&_.header-action-btn]:bg-[var(--app-surface)]/87">
                 <ConversationFilterMenu
                   className="lg:hidden"
                   conversations={conversations}
@@ -649,16 +698,16 @@ export function MessagesPage() {
                 <button
                   type="button"
                   onClick={() => setSearchOpen(true)}
-                  className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--app-surface-muted)] text-[var(--app-accent)] shadow-sm"
+                  className="header-action-btn relative grid"
                   aria-label={t("messages.searchConversationAria")}
                   aria-expanded={searchOpen}
                 >
-                  <FiSearch />
+                  <LuSearch className="header-action-icon" strokeWidth={1.48} aria-hidden="true" />
                 </button>
               </div>
             </div>
             <div
-              className="message-filter-chips scrollbar-hidden mt-3 hidden gap-2 overflow-x-auto pb-0.5 lg:flex"
+              className="message-filter-chips scrollbar-hidden mt-2.5 hidden gap-1.5 overflow-x-auto pb-0.5 lg:flex"
               role="toolbar"
               aria-label={t("messages.filterAria")}
             >
@@ -699,30 +748,47 @@ export function MessagesPage() {
                 {showArchived ? messagesText(t, 'messages.actives') : t('messages.archives')}
               </button>
             </div>
+            <div
+              className="pointer-events-none absolute inset-x-0 inset-y-0 -z-10 bg-[var(--app-surface-muted)]"
+              aria-hidden="true"
+            />
+            <div
+              className="pointer-events-none absolute inset-x-0 top-full -z-10 h-8 bg-gradient-to-b from-[var(--app-surface-muted)] to-transparent"
+              aria-hidden="true"
+            />
           </div>
 
-          <div className="scrollbar-hidden min-h-0 flex-1 overscroll-contain overflow-y-auto bg-[var(--app-surface-muted)]/45 p-2 sm:p-3">
-            <ConversationRow
-              active={assistantActive}
-              assistant
-              onClick={() => selectConversation(ASSISTANT_ID)}
-            />
+          <div
+            ref={listScrollRef}
+            className="scrollbar-hidden h-full overscroll-contain overflow-y-auto bg-transparent px-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+            style={{ paddingTop: `calc(${listHeaderOffset}px + 0.35rem)` }}
+          >
+            <div className="pb-1">
+              <ConversationRow
+                active={assistantActive}
+                assistant
+                onClick={() => selectConversation(ASSISTANT_ID)}
+              />
+            </div>
             {visible.length || showArchived || filter !== 'all' ? (
-              <p className="px-2 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wide text-[var(--app-text-faint)]">
-                Vos conversations
+              <p className="px-2.5 pb-1 pt-3 text-[10px] font-semibold tracking-wide text-[var(--app-text-faint)]">
+                {t('messages.yourConversations')}
               </p>
             ) : null}
-            {visible.map((conversation) => (
+            <div className="flex flex-col">
+            {visible.map((conversation, index) => (
               <ConversationRow
                 key={conversation.id}
                 active={active?.id === conversation.id}
                 avatarMap={avatarMap}
                 conversation={conversation}
+                divided={index < visible.length - 1}
                 showOnlineDot
                 userId={user.id}
                 onClick={() => selectConversation(conversation.id)}
               />
             ))}
+            </div>
             {!visible.length && filter === 'all' && !showArchived ? (
               <MessagesEmptyState />
             ) : !visible.length && filter !== 'all' ? (
@@ -741,11 +807,12 @@ export function MessagesPage() {
               </p>
             ) : null}
           </div>
+          </div>
         </aside>
 
         {activeId ? (
           <section
-            className="flex h-full min-h-0 min-w-0 max-w-full flex-col overflow-hidden bg-[var(--app-surface)]"
+            className="flex h-full min-h-0 min-w-0 max-w-full flex-col overflow-hidden bg-transparent"
             data-testid="message-thread"
           >
             {assistantActive ? (

@@ -1,6 +1,7 @@
 import { attachmentPreviewLabel, attachmentSearchText } from '../../features/communications/attachmentUtils'
 import { messagesText } from '../../features/communications/messagesI18n'
 import { getConversationPeer } from '../../features/communications/conversationDisplay'
+import { resolveConversationPreviewMessage } from '@moxt/shared/utils/conversationPreview.js'
 
 export function messageSearchHaystack(message) {
   if (!message) return ''
@@ -48,25 +49,23 @@ export function messageReadLabel(message, userId) {
 }
 
 export function conversationPreview(conversation, userId, t) {
-  const last = conversation.messages.at(-1)
   const youPrefix = messagesText(t, 'messages.youPrefix')
-  if (last?.attachment) {
+  const resolved = resolveConversationPreviewMessage(conversation, userId)
+
+  if (resolved?.source === 'message' && resolved.message) {
+    const last = resolved.message
     const prefix = isMessageFromUser(last, userId) ? youPrefix : ''
-    const label = attachmentPreviewLabel(last.attachment, t)
-    if (!last.text?.trim()) return `${prefix}${label}`
-    const attachmentHint = `${label} · `
-    return `${prefix}${attachmentHint}${last.text}`
-  }
-  if (last?.text) {
-    const prefix = isMessageFromUser(last, userId) ? youPrefix : ''
-    return `${prefix}${last.text}`
+    if (last.attachment) {
+      const label = attachmentPreviewLabel(last.attachment, t)
+      if (!last.text?.trim()) return `${prefix}${label}`
+      return `${prefix}${label} · ${last.text}`
+    }
+    if (last.text) return `${prefix}${last.text}`
   }
 
-  const previewText = conversation.lastMessageText ?? conversation.last_message_text
-  if (previewText) {
-    const senderId = conversation.lastMessageSenderId ?? conversation.last_message_sender_id
-    const prefix = isMessageFromUser({ senderId }, userId) ? youPrefix : ''
-    return `${prefix}${previewText}`
+  if (resolved?.text) {
+    const prefix = isMessageFromUser({ senderId: resolved.senderId }, userId) ? youPrefix : ''
+    return `${prefix}${resolved.text}`
   }
 
   const total = conversationMessageCount(conversation, userId)

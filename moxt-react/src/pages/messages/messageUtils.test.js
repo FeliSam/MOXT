@@ -51,6 +51,53 @@ describe('conversationPreview', () => {
     )
     expect(preview).toBe('Vous : Ma réponse')
   })
+
+  it('prefere lastMessageText quand il est plus recent que les messages charges', () => {
+    const preview = conversationPreview(
+      {
+        messages: [
+          {
+            id: 'm1',
+            senderId: 'u1',
+            text: 'Ancien message local',
+            createdAt: '2026-01-01T10:00:00.000Z',
+          },
+        ],
+        lastMessageText: 'Nouveau message distant',
+        lastMessageSenderId: 'peer-1',
+        lastMessageAt: '2026-01-02T12:00:00.000Z',
+      },
+      'u1',
+    )
+    expect(preview).toBe('Nouveau message distant')
+  })
+
+  it('ignore un message soft-supprime pour l apercu', () => {
+    const preview = conversationPreview(
+      {
+        messages: [
+          {
+            id: 'm1',
+            senderId: 'peer-1',
+            text: 'Toujours visible',
+            createdAt: '2026-01-01T10:00:00.000Z',
+          },
+          {
+            id: 'm2',
+            senderId: 'peer-1',
+            text: 'Supprimé',
+            createdAt: '2026-01-02T10:00:00.000Z',
+            deletedBy: ['u1'],
+          },
+        ],
+        lastMessageText: 'Supprimé',
+        lastMessageSenderId: 'peer-1',
+        lastMessageAt: '2026-01-02T10:00:00.000Z',
+      },
+      'u1',
+    )
+    expect(preview).toBe('Toujours visible')
+  })
 })
 
 describe('shouldShowConversationInList', () => {

@@ -73,9 +73,9 @@ export function Header({ hideOnMobile = false }) {
         visible ? 'translate-y-0' : '-translate-y-[calc(100%+1rem)]'
       } ${hideOnMobile ? 'hidden lg:block' : ''}`}
     >
-      <div className="mx-auto flex max-w-[96rem] items-center gap-1.5 sm:gap-2 lg:min-h-[4.75rem] lg:gap-3 lg:rounded-[1.4rem] lg:border lg:border-[var(--app-border)]/80 lg:bg-[var(--app-surface)]/65 lg:px-6 lg:py-3 lg:shadow-[var(--shadow-card)] lg:backdrop-blur-xl">
+      <div className="mx-auto flex max-w-[96rem] items-center gap-1.5 sm:gap-2 lg:min-h-[4.75rem] lg:gap-3 lg:rounded-[1.4rem] lg:border-0 lg:bg-[var(--app-surface)]/65 lg:px-6 lg:py-3 lg:shadow-[var(--shadow-card)] lg:backdrop-blur-xl">
         {/* Mobile: avatar + page title share one pill. Desktop: children flow into outer pill. */}
-        <div className="header-brand-chip flex h-[3.004375rem] min-w-0 flex-1 items-center gap-2 rounded-full border border-[var(--app-border)]/80 bg-[var(--app-surface)]/65 px-1.5 pr-2.5 backdrop-blur-md sm:h-[3.3048125rem] sm:gap-2.5 sm:pr-3 lg:contents lg:h-auto lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+        <div className="header-brand-chip flex h-[3.004375rem] min-w-0 flex-1 items-center gap-2 rounded-full bg-[var(--app-surface)]/65 px-1.5 pr-2.5 backdrop-blur-md sm:h-[3.3048125rem] sm:gap-2.5 sm:pr-3 lg:contents lg:h-auto lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
           <Link
             to="/profile"
             aria-label={t('settings.profileSecurity.openProfile')}

@@ -4,10 +4,8 @@ import {
   FiArrowDown,
   FiBell,
   FiBellOff,
-  FiExternalLink,
   FiEye,
   FiEyeOff,
-  FiMoreVertical,
   FiPaperclip,
   FiSearch,
   FiSlash,
@@ -15,9 +13,9 @@ import {
   FiUser,
   FiX,
 } from 'react-icons/fi'
+import { LuEllipsisVertical, LuExternalLink, LuSearch, LuX } from 'react-icons/lu'
 import { Link } from 'react-router-dom'
 import { useSelector } from 'react-redux'
-import { RELATED_CONTENT_META } from '../../config/communications'
 import { useLanguage } from '../../contexts/useLanguage'
 import { UploadProgress } from '../../components/ui/UploadProgress'
 import { shortenFileName } from '../../services/uploadProgress'
@@ -30,7 +28,7 @@ import {
   findRelatedContextById,
   normalizeRelatedContexts,
 } from '../../features/communications/conversationTimeline'
-import { messagesText, relatedOptionLabel } from '../../features/communications/messagesI18n'
+import { messagesText } from '../../features/communications/messagesI18n'
 import { resolveRelatedSnapshot } from '../../features/communications/relatedSnapshot'
 import { PopoverMenu } from '../../components/ui/PopoverMenu'
 import { VerifiedDisplayName } from '../../components/ui/Badge'
@@ -50,6 +48,8 @@ import { conversationMessageCount, isMessageFromUser, messageHasReactions, messa
 import { RelatedContentPreview } from './RelatedContentPreview'
 import { TypingDots, TypingIndicator } from './TypingIndicator'
 import { MessageSendButton } from './MessageSendButton'
+
+const HEADER_ICON_STROKE = 1.48
 
 function matchesThreadQuery(messageOrText, query) {
   if (!query.trim()) return true
@@ -108,8 +108,6 @@ export function ConversationPanel({
   const peerAvatarSrc =
     liveEntry !== undefined ? liveEntry.avatarUrl || null : peer?.avatarUrl || null
   const relatedPreview = useSelector((state) => resolveRelatedSnapshot(state, active))
-  const relatedMeta = RELATED_CONTENT_META[relatedPreview?.type || active.relatedType] || RELATED_CONTENT_META.general
-  const RelatedIcon = relatedMeta.icon
   // Le bandeau "pourquoi cette conversation" ne doit apparaître que si un
   // message a effectivement été échangé à propos du contexte le plus récent
   // — sinon un simple clic sur "Contacter" (sans rien écrire) l'affiche à tort.
@@ -144,6 +142,9 @@ export function ConversationPanel({
   }, [active, relatedPreview, user.id, fallbackTimelineAt])
   const messageListRef = useRef(null)
   const composerRef = useRef(null)
+  const composerShellRef = useRef(null)
+  const threadHeaderRef = useRef(null)
+  const threadScrollYRef = useRef(0)
   const stickToBottomRef = useRef(true)
   const loadOlderAnchorRef = useRef(null)
   const loadingOlderRequestedRef = useRef(false)
@@ -158,6 +159,9 @@ export function ConversationPanel({
   const [threadSearchOpen, setThreadSearchOpen] = useState(false)
   const [threadQuery, setThreadQuery] = useState('')
   const [showScrollFab, setShowScrollFab] = useState(false)
+  const [composerOffset, setComposerOffset] = useState(120)
+  const [threadHeaderVisible, setThreadHeaderVisible] = useState(true)
+  const [threadHeaderOffset, setThreadHeaderOffset] = useState(68)
   const [initialUnreadCount] = useState(() => active.unreadBy?.[user.id] || 0)
   const firstUnreadIndex = useMemo(
     () => firstUnreadMessageIndex(active.messages, user.id, initialUnreadCount),
@@ -196,10 +200,25 @@ export function ConversationPanel({
   // and the reused scroll node keeps a stale offset.
   useLayoutEffect(() => {
     stickToBottomRef.current = true
-    stickToBottom('auto')
-    const frame = requestAnimationFrame(() => stickToBottom('auto'))
+    const frame = requestAnimationFrame(() => {
+      setThreadHeaderVisible(true)
+      stickToBottom('auto')
+    })
     return () => cancelAnimationFrame(frame)
   }, [active.id])
+
+  useLayoutEffect(() => {
+    const header = threadHeaderRef.current
+    if (!header || typeof ResizeObserver === 'undefined') return undefined
+    const sync = () => {
+      const next = Math.ceil(header.getBoundingClientRect().height)
+      setThreadHeaderOffset((prev) => (prev === next ? prev : next))
+    }
+    sync()
+    const observer = new ResizeObserver(sync)
+    observer.observe(header)
+    return () => observer.disconnect()
+  }, [showRelatedContext, peer?.name, peerOnline, peerTyping])
 
   // Stay pinned while content height changes (messages, draft, loading ↔ empty).
   useLayoutEffect(() => {
@@ -213,6 +232,7 @@ export function ConversationPanel({
     active.relatedContexts?.length,
     formik.values.text,
     messagesLoading,
+    composerOffset,
   ])
 
   // Preserve viewport when older messages are prepended.
@@ -251,6 +271,28 @@ export function ConversationPanel({
     el.style.height = `${Math.min(el.scrollHeight, 128)}px`
   }, [formik.values.text])
 
+  useLayoutEffect(() => {
+    const shell = composerShellRef.current
+    if (!shell || typeof ResizeObserver === 'undefined') return
+    const sync = () => {
+      const next = Math.ceil(shell.getBoundingClientRect().height)
+      setComposerOffset((prev) => (prev === next ? prev : next))
+    }
+    sync()
+    const observer = new ResizeObserver(sync)
+    observer.observe(shell)
+    return () => observer.disconnect()
+  }, [
+    blocked,
+    suggestionsEnabled,
+    suggestions.length,
+    attachments?.length,
+    replyToId,
+    replyToContextId,
+    editingId,
+    formik.values.text,
+  ])
+
   const wasSubmittingRef = useRef(false)
   useEffect(() => {
     if (wasSubmittingRef.current && !formik.isSubmitting && !blocked) {
@@ -262,6 +304,7 @@ export function ConversationPanel({
   useEffect(() => {
     const messageList = messageListRef.current
     if (!messageList) return
+    threadScrollYRef.current = messageList.scrollTop
     function handleScroll() {
       const distanceFromBottom =
         messageList.scrollHeight - messageList.scrollTop - messageList.clientHeight
@@ -270,13 +313,23 @@ export function ConversationPanel({
       if (messageList.scrollTop < 80) {
         requestLoadOlder()
       }
+
+      const y = messageList.scrollTop
+      const delta = y - threadScrollYRef.current
+      threadScrollYRef.current = y
+      if (threadSearchOpen || distanceFromBottom < 120 || y <= 8) {
+        setThreadHeaderVisible(true)
+        return
+      }
+      if (delta > 8) setThreadHeaderVisible(false)
+      else if (delta < -8) setThreadHeaderVisible(true)
     }
     handleScroll()
     messageList.addEventListener('scroll', handleScroll, { passive: true })
     return () => messageList.removeEventListener('scroll', handleScroll)
     // requestLoadOlder is stable enough for this scroll subscription (deps cover its gates).
     // eslint-disable-next-line react-hooks/exhaustive-deps -- scroll listener rebinds on conversation / load flags
-  }, [active.id, hasOlderMessages, messagesLoadingOlder])
+  }, [active.id, hasOlderMessages, messagesLoadingOlder, threadSearchOpen])
 
   useEffect(() => {
     const urls = (attachments || []).map((file) =>
@@ -303,171 +356,183 @@ export function ConversationPanel({
   }
 
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden overscroll-none">
-      <header className="message-thread-header relative z-30 flex min-h-[4.25rem] shrink-0 items-center gap-2.5 border-b border-[var(--app-border)]/60 bg-[var(--app-surface)]/95 px-3 py-2.5 backdrop-blur-xl sm:gap-3 sm:px-4 lg:px-5">
-        <button
-          type="button"
-          className="message-touch-target grid size-9 shrink-0 place-items-center rounded-xl text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)] hover:text-[var(--app-text)] lg:hidden"
-          onClick={onBack}
-          aria-label={t('messages.closeConversation')}
+    <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden overscroll-none bg-transparent">
+      <div className="message-thread-canvas relative flex min-h-0 flex-1 flex-col overflow-hidden">
+        <header
+          ref={threadHeaderRef}
+          className={`message-thread-header absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-1.5 bg-transparent px-3 py-2.5 opacity-[0.89] backdrop-blur-md transition-transform duration-300 ease-out sm:gap-2 sm:px-4 lg:px-5 ${
+            threadHeaderVisible ? 'translate-y-0' : '-translate-y-full pointer-events-none'
+          }`}
         >
-          <FiX />
-        </button>
-        <Link to={peer?.id ? `/users/${peer.id}/publications` : '#'} className="relative shrink-0">
-          <EntityAvatar
-            name={peer.name}
-            src={peerAvatarSrc}
-            size="md"
-            shape="user"
-            ring={false}
-            className="!size-10 !rounded-[0.9rem] shadow-[var(--shadow-card)]"
-            alt={peer.name}
-          />
-          {peerOnline ? (
-            <span
-              className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-[var(--app-surface)] bg-emerald-500"
-              aria-hidden="true"
-            />
-          ) : null}
-        </Link>
-        <div className="min-w-0 flex-1 pr-1">
-          <Link
-            to={peer?.id ? `/users/${peer.id}/publications` : '#'}
-            className="flex min-w-0 items-center gap-1.5 hover:underline"
-          >
-            <VerifiedDisplayName
-              as="h2"
-              name={peer.name}
-              verified={Boolean(peer.verified)}
-              iconSize="sm"
-              className="truncate text-sm font-black tracking-tight sm:text-[0.9375rem]"
-            />
-            {pinned ? <FiStar className="size-3.5 shrink-0 text-amber-500" aria-label={t("messages.pinnedAria")} /> : null}
-            {muted ? <FiBellOff className="size-3.5 shrink-0 text-[var(--app-text-faint)]" aria-label={t("messages.mutedAria")} /> : null}
-          </Link>
-          <div className="mt-0.5 flex flex-wrap items-center gap-2">
-            {peerTyping ? (
-              <span className="inline-flex items-center gap-1 text-[11px] font-semibold leading-tight text-brand-700 dark:text-brand-300">
-                {t('messages.typing')}
-                <TypingDots />
-              </span>
-            ) : peerOnline ? (
-              <span className="inline-flex items-center gap-1 text-[11px] font-semibold leading-tight text-emerald-600 dark:text-emerald-400">
-                <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
-                {t('messages.activity.online')}
-              </span>
-            ) : (
-              <span className="text-[11px] leading-tight text-[var(--app-text-muted)]">
-                {peerActivityLabel(peer.lastActiveAt, t)}
-              </span>
-            )}
-            {messageCount ? (
-              <span className="text-[11px] leading-tight text-[var(--app-text-faint)]">
-                ·{' '}
-                {messagesText(
-                  t,
-                  messageCount > 1 ? 'messages.messageCountPlural' : 'messages.messageCount',
-                  { count: messageCount },
+          <div className="header-brand-chip flex h-[3.004375rem] min-w-0 max-w-[calc(100%-7rem)] flex-1 items-center gap-2 rounded-full bg-transparent px-1.5 pr-2.5 sm:h-[3.3048125rem] sm:max-w-[calc(100%-7.75rem)] sm:gap-2.5 sm:pr-3">
+            <button
+              type="button"
+              className="header-action-btn relative grid shrink-0 !size-[2.185rem] !border-0 !bg-transparent sm:!size-[2.458125rem] lg:hidden"
+              onClick={onBack}
+              aria-label={t('messages.closeConversation')}
+            >
+              <LuX className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
+            </button>
+            <Link to={peer?.id ? `/users/${peer.id}/publications` : '#'} className="relative shrink-0">
+              <EntityAvatar
+                name={peer.name}
+                src={peerAvatarSrc}
+                size="md"
+                shape="user"
+                ring={false}
+                className="!size-[2.185rem] !rounded-full shadow-sm sm:!size-[2.458125rem]"
+                alt={peer.name}
+              />
+              {peerOnline ? (
+                <span
+                  className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-[var(--app-surface)] bg-emerald-500"
+                  aria-hidden="true"
+                />
+              ) : null}
+            </Link>
+            <div className="min-w-0">
+              <Link
+                to={peer?.id ? `/users/${peer.id}/publications` : '#'}
+                className="flex min-w-0 items-center gap-1.5 hover:underline"
+              >
+                <VerifiedDisplayName
+                  as="h2"
+                  name={peer.name}
+                  verified={Boolean(peer.verified)}
+                  iconSize="sm"
+                  className="truncate text-sm font-black leading-none tracking-tight text-[var(--app-text)] sm:text-[0.9375rem]"
+                />
+                {pinned ? <FiStar className="size-3.5 shrink-0 text-amber-500" aria-label={t("messages.pinnedAria")} /> : null}
+                {muted ? <FiBellOff className="size-3.5 shrink-0 text-[var(--app-text-faint)]" aria-label={t("messages.mutedAria")} /> : null}
+              </Link>
+              <div className="mt-0.5 flex min-w-0 items-center">
+                {peerTyping ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold leading-tight text-brand-700 dark:text-brand-300">
+                    {t('messages.typing')}
+                    <TypingDots />
+                  </span>
+                ) : peerOnline ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold leading-tight text-emerald-600 dark:text-emerald-400">
+                    <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
+                    {t('messages.activity.online')}
+                  </span>
+                ) : (
+                  <span className="truncate text-[11px] leading-tight text-[var(--app-text-muted)]">
+                    {peerActivityLabel(peer.lastActiveAt, t)}
+                  </span>
                 )}
-              </span>
-            ) : null}
+              </div>
+            </div>
           </div>
-        </div>
-        <button
-          type="button"
-          className="message-touch-target grid size-9 shrink-0 place-items-center rounded-xl border border-transparent text-[var(--app-text-muted)] transition hover:border-[var(--app-border)] hover:bg-[var(--app-surface-muted)]"
-          onClick={() => {
-            setThreadSearchOpen((value) => !value)
-            if (threadSearchOpen) setThreadQuery('')
-          }}
-          aria-label={threadSearchOpen ? t("messages.closeSearchInThread") : t("messages.searchInThread")}
-          aria-pressed={threadSearchOpen}
-        >
-          <FiSearch />
-        </button>
-        {showRelatedContext ? (
-          <>
-            <Link
-              className="message-touch-target grid size-9 shrink-0 place-items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-brand-700 transition hover:border-brand-200 hover:bg-[var(--app-accent-soft)] lg:hidden dark:text-brand-300"
-              to={active.relatedPath || relatedPreview.path}
-              aria-label={t("messages.viewListing")}
+          <div className="ml-auto flex h-[3.004375rem] shrink-0 items-center gap-1.5 sm:h-[3.3048125rem] [&_.header-action-btn]:bg-[var(--app-surface)]/87">
+            <button
+              type="button"
+              className="header-action-btn relative grid"
+              onClick={() => {
+                setThreadSearchOpen((value) => !value)
+                if (threadSearchOpen) setThreadQuery('')
+                setThreadHeaderVisible(true)
+              }}
+              aria-label={threadSearchOpen ? t("messages.closeSearchInThread") : t("messages.searchInThread")}
+              aria-pressed={threadSearchOpen}
             >
-              <FiExternalLink />
-            </Link>
-            <Link
-              className="hidden shrink-0 items-center gap-1.5 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-2.5 py-1.5 text-xs font-bold text-brand-700 transition hover:border-brand-200 hover:bg-[var(--app-accent-soft)] lg:inline-flex dark:text-brand-300"
-              to={active.relatedPath || relatedPreview.path}
+              <LuSearch className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
+            </button>
+            {showRelatedContext ? (
+              <Link
+                className="header-action-btn relative grid lg:hidden"
+                to={active.relatedPath || relatedPreview.path}
+                aria-label={t("messages.viewListing")}
+              >
+                <LuExternalLink className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
+              </Link>
+            ) : null}
+            {showRelatedContext ? (
+              <Link
+                className="hidden h-[3.004375rem] shrink-0 items-center gap-1.5 rounded-full bg-[var(--app-surface)]/65 px-3 text-xs font-bold text-brand-700 backdrop-blur-md transition hover:bg-[var(--app-surface)]/80 sm:h-[3.3048125rem] lg:inline-flex dark:text-brand-300"
+                to={active.relatedPath || relatedPreview.path}
+              >
+                Voir la fiche <LuExternalLink className="size-3.5" strokeWidth={HEADER_ICON_STROKE} />
+              </Link>
+            ) : null}
+            <PopoverMenu
+              ariaLabel={messagesText(t, 'messages.conversationOptionsAria')}
+              trigger={
+                <span className="header-action-btn relative grid cursor-pointer">
+                  <LuEllipsisVertical className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
+                </span>
+              }
             >
-              Voir la fiche <FiExternalLink />
-            </Link>
-          </>
-        ) : null}
-        <PopoverMenu
-          ariaLabel={messagesText(t, 'messages.conversationOptionsAria')}
-          trigger={
-            <span className="message-touch-target grid size-9 cursor-pointer place-items-center rounded-xl border border-transparent text-[var(--app-text-muted)] transition hover:border-[var(--app-border)] hover:bg-[var(--app-surface-muted)]">
-              <FiMoreVertical />
-            </span>
-          }
-        >
-          {peer?.id ? (
-            <Link
-              to={`/users/${peer.id}/publications`}
-              role="menuitem"
-              className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-[var(--app-surface-muted)]"
-            >
-              <FiUser /> {t('messages.viewProfile')}
-            </Link>
-          ) : null}
-          <button
-            type="button"
-            role="menuitem"
-            className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-[var(--app-surface-muted)]"
-            onClick={onPin}
-          >
-            <FiStar /> {pinned ? t("messages.unpin") : t("messages.pin")}
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-[var(--app-surface-muted)]"
-            onClick={onMute}
-          >
-            {muted ? <FiBell /> : <FiBellOff />} {muted ? t("messages.unmute") : t("messages.mute")}
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-[var(--app-surface-muted)]"
-            onClick={() => onToggleSuggestions?.()}
-          >
-            {suggestionsEnabled ? <FiEye /> : <FiEyeOff />}{' '}
-            {suggestionsEnabled
-              ? messagesText(t, 'messages.hideSuggestions')
-              : messagesText(t, 'messages.showSuggestions')}
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-[var(--app-surface-muted)]"
-            onClick={onArchive}
-          >
-            <FiArchive />{' '}
-            {archived ? messagesText(t, 'messages.restore') : messagesText(t, 'messages.archive')}
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 dark:hover:bg-red-950/30"
-            onClick={onBlock}
-          >
-            <FiSlash /> {blocked ? t("messages.unblock") : t("messages.block")}
-          </button>
-        </PopoverMenu>
-      </header>
+              {peer?.id ? (
+                <Link
+                  to={`/users/${peer.id}/publications`}
+                  role="menuitem"
+                  className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-[var(--app-surface-muted)]"
+                >
+                  <FiUser /> {t('messages.viewProfile')}
+                </Link>
+              ) : null}
+              <button
+                type="button"
+                role="menuitem"
+                className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-[var(--app-surface-muted)]"
+                onClick={onPin}
+              >
+                <FiStar /> {pinned ? t("messages.unpin") : t("messages.pin")}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-[var(--app-surface-muted)]"
+                onClick={onMute}
+              >
+                {muted ? <FiBell /> : <FiBellOff />} {muted ? t("messages.unmute") : t("messages.mute")}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-[var(--app-surface-muted)]"
+                onClick={() => onToggleSuggestions?.()}
+              >
+                {suggestionsEnabled ? <FiEye /> : <FiEyeOff />}{' '}
+                {suggestionsEnabled
+                  ? messagesText(t, 'messages.hideSuggestions')
+                  : messagesText(t, 'messages.showSuggestions')}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-[var(--app-surface-muted)]"
+                onClick={onArchive}
+              >
+                <FiArchive />{' '}
+                {archived ? messagesText(t, 'messages.restore') : messagesText(t, 'messages.archive')}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 dark:hover:bg-red-950/30"
+                onClick={onBlock}
+              >
+                <FiSlash /> {blocked ? t("messages.unblock") : t("messages.block")}
+              </button>
+            </PopoverMenu>
+          </div>
+          <div
+            className="pointer-events-none absolute inset-x-0 inset-y-0 -z-10 bg-[var(--app-surface-muted)]"
+            aria-hidden="true"
+          />
+          <div
+            className="pointer-events-none absolute inset-x-0 top-full -z-10 h-8 bg-gradient-to-b from-[var(--app-surface-muted)] to-transparent"
+            aria-hidden="true"
+          />
+        </header>
 
       {threadSearchOpen ? (
-        <div className="shrink-0 border-b border-[var(--app-border)]/60 bg-[var(--app-surface-muted)]/70 px-3 py-2 sm:px-4">
+        <div
+          className="relative z-20 shrink-0 border-b border-[var(--app-border)]/60 bg-[var(--app-surface-muted)]/70 px-3 py-2 sm:px-4"
+          style={{ paddingTop: `calc(${threadHeaderOffset}px + 0.35rem)` }}
+        >
           <div className="mx-auto flex max-w-3xl items-center gap-2 rounded-xl bg-[var(--app-surface)] px-3 py-2">
             <FiSearch className="shrink-0 text-[var(--app-text-muted)]" />
             <input
@@ -492,50 +557,32 @@ export function ConversationPanel({
         </div>
       ) : null}
 
-      {showRelatedContext ? (
-        <div className="message-related-sticky shrink-0 border-b border-[var(--app-border)]/60 bg-[var(--app-surface)]/95 px-3 py-2 backdrop-blur-xl sm:px-4">
-          <Link
-            to={relatedPreview.path}
-            className="mx-auto flex max-w-3xl items-center gap-2.5 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)]/60 px-3 py-2 transition hover:border-brand-200 hover:bg-[var(--app-accent-soft)]/40"
-          >
-            <span
-              className={`grid size-9 shrink-0 place-items-center rounded-lg text-sm text-white ${relatedMeta.tone}`}
-            >
-              <RelatedIcon />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-xs font-black text-[var(--app-text)]">
-                {relatedPreview.title}
-              </span>
-              <span className="block truncate text-[10px] font-semibold text-[var(--app-text-muted)]">
-                {relatedOptionLabel(t, relatedMeta)}
-                {relatedPreview.subtitle ? ` · ${relatedPreview.subtitle}` : ''}
-              </span>
-            </span>
-            <FiExternalLink className="shrink-0 text-[var(--app-text-muted)]" />
-          </Link>
-        </div>
-      ) : null}
-
-      {active.archivedBy?.includes(user.id) ? (
-        <div className="shrink-0 border-b border-amber-200/80 bg-amber-50/90 px-4 py-2.5 text-center text-xs font-semibold text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
-          {messagesText(t, 'messages.archivedBanner')}
-        </div>
-      ) : null}
-
-      {blocked ? (
-        <div className="shrink-0 border-b border-red-200/80 bg-red-50/90 px-4 py-2.5 text-center text-xs font-semibold text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
-          {messagesText(t, 'messages.blockedBanner')}
-        </div>
-      ) : null}
-
-      <div className="relative min-h-0 flex-1">
+      <div
+        className="relative min-h-0 flex-1 overflow-hidden"
+        style={{ '--message-composer-offset': `${composerOffset}px` }}
+      >
         <div
           ref={messageListRef}
-          className="message-thread-canvas scrollbar-hidden h-full overscroll-contain overflow-y-auto p-3 sm:p-4"
+          className="scrollbar-hidden h-full overscroll-contain overflow-y-auto bg-transparent px-3 sm:px-4"
+          style={{
+            paddingTop: threadSearchOpen
+              ? '0.75rem'
+              : `calc(${threadHeaderOffset}px + 0.35rem)`,
+            paddingBottom: `calc(${composerOffset}px + 0.75rem)`,
+          }}
           data-testid="message-scroll-region"
         >
           <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col">
+            {active.archivedBy?.includes(user.id) ? (
+              <div className="mb-3 rounded-xl bg-amber-50/90 px-4 py-2.5 text-center text-xs font-semibold text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+                {messagesText(t, 'messages.archivedBanner')}
+              </div>
+            ) : null}
+            {blocked ? (
+              <div className="mb-3 rounded-xl bg-red-50/90 px-4 py-2.5 text-center text-xs font-semibold text-red-700 dark:bg-red-950/30 dark:text-red-300">
+                {messagesText(t, 'messages.blockedBanner')}
+              </div>
+            ) : null}
             {messagesLoading && active.messages?.length > 0 ? (
               <p className="sticky top-0 z-10 mb-3 rounded-full border border-[var(--app-border)] bg-[var(--app-surface)]/95 px-3 py-1.5 text-center text-xs font-medium text-[var(--app-text-muted)] backdrop-blur-sm">
                 {t('messages.syncing')}
@@ -715,28 +762,29 @@ export function ConversationPanel({
           <button
             type="button"
             className="message-scroll-fab"
+            style={{ bottom: `calc(${composerOffset}px + 0.75rem)` }}
             onClick={scrollToBottom}
             aria-label={t("messages.scrollToBottom")}
           >
             <FiArrowDown />
           </button>
         ) : null}
-      </div>
 
       <div
-        className="message-composer-shell relative z-10 shrink-0 border-t border-[var(--app-border)]/60 bg-[var(--app-surface)]/95 p-3 backdrop-blur-xl sm:p-4"
+        ref={composerShellRef}
+        className="message-composer-shell absolute inset-x-0 bottom-0 z-20 border-t-0 bg-transparent p-0"
         data-testid="message-composer"
       >
         {!blocked && suggestionsEnabled && suggestions.length ? (
           <div
-            className="message-suggestions scrollbar-hidden mx-auto mb-1.5 flex max-w-3xl gap-1 overflow-x-auto"
+            className="message-suggestions scrollbar-hidden mx-auto mb-1.5 flex max-w-3xl gap-1 overflow-x-auto px-3 pt-3 sm:px-4 sm:pt-4"
             data-testid="message-suggestions"
           >
             <button
               type="button"
               onClick={() => onToggleSuggestions?.()}
               aria-label={messagesText(t, 'messages.hideSuggestions')}
-              className="message-touch-target grid size-8 shrink-0 place-items-center rounded-full text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)]"
+              className="message-touch-target grid size-8 shrink-0 place-items-center rounded-full border border-[var(--app-border)]/45 bg-[var(--app-surface)] text-[var(--app-text-muted)] transition hover:border-[var(--app-accent)]/35 hover:text-[var(--app-accent)]"
             >
               <FiX />
             </button>
@@ -753,14 +801,29 @@ export function ConversationPanel({
             ))}
           </div>
         ) : null}
+        <div
+          className={`message-composer-dock relative px-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:px-4 sm:pb-[max(1rem,env(safe-area-inset-bottom,0px))] ${
+            !blocked && suggestionsEnabled && suggestions.length
+              ? 'pt-1.5'
+              : 'pt-3 sm:pt-4'
+          }`}
+        >
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 top-0 -z-10 bg-[var(--app-surface-muted)]"
+            aria-hidden="true"
+          />
+          <div
+            className="pointer-events-none absolute inset-x-0 -top-8 -z-10 h-8 bg-gradient-to-b from-transparent to-[var(--app-surface-muted)]"
+            aria-hidden="true"
+          />
         {attachments?.length ? (
-          <div className="mx-auto mb-2 flex max-w-3xl flex-wrap items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2 text-xs">
+          <div className="mx-auto mb-2 flex max-w-3xl flex-wrap items-center gap-2 rounded-xl border border-[var(--app-border)]/40 bg-transparent px-3 py-2 text-xs">
             {attachments.map((file, index) => {
               const previewUrl = attachmentPreviewUrls[index]
               return (
                 <div
                   key={`${file.name}-${file.size}-${index}`}
-                  className="flex min-w-0 items-center gap-2 rounded-lg bg-[var(--app-surface)] px-2 py-1.5"
+                  className="flex min-w-0 items-center gap-2 rounded-lg bg-transparent px-2 py-1.5"
                 >
                   {previewUrl ? (
                     <img
@@ -806,7 +869,7 @@ export function ConversationPanel({
           </div>
         ) : null}
         {replyToContextId && replyContextPreview ? (
-          <div className="mx-auto mb-2 flex max-w-3xl items-center justify-between gap-3 rounded-xl border border-brand-200/70 border-l-[3px] border-l-brand-500 bg-[var(--app-accent-soft)]/50 px-3 py-2.5 text-xs">
+          <div className="mx-auto mb-2 flex max-w-3xl items-center justify-between gap-3 rounded-xl border border-brand-200/70 border-l-[3px] border-l-brand-500 bg-transparent px-3 py-2.5 text-xs">
             <span className="min-w-0">
               <span className="block font-bold text-[var(--app-accent)]">
                 {messagesText(t, 'messages.replyToListingLabel')}
@@ -827,7 +890,7 @@ export function ConversationPanel({
           </div>
         ) : null}
         {replyToId ? (
-          <div className="mx-auto mb-2 flex max-w-3xl items-center justify-between gap-3 rounded-xl border border-brand-200/70 border-l-[3px] border-l-brand-500 bg-[var(--app-accent-soft)]/50 px-3 py-2.5 text-xs">
+          <div className="mx-auto mb-2 flex max-w-3xl items-center justify-between gap-3 rounded-xl border border-brand-200/70 border-l-[3px] border-l-brand-500 bg-transparent px-3 py-2.5 text-xs">
             <span className="min-w-0">
               <span className="block font-bold text-[var(--app-accent)]">
                 {messagesText(t, 'messages.replyToMessage', {
@@ -851,7 +914,7 @@ export function ConversationPanel({
           </div>
         ) : null}
         {editingId ? (
-          <div className="mx-auto mb-2 flex max-w-3xl items-center justify-between gap-3 rounded-xl border border-amber-300/70 border-l-[3px] border-l-amber-500 bg-amber-50/70 px-3 py-2.5 text-xs dark:bg-amber-950/30">
+          <div className="mx-auto mb-2 flex max-w-3xl items-center justify-between gap-3 rounded-xl border border-amber-300/70 border-l-[3px] border-l-amber-500 bg-transparent px-3 py-2.5 text-xs">
             <span className="min-w-0">
               <span className="block font-bold text-amber-700 dark:text-amber-300">
                 {messagesText(t, 'messages.editingTitle')}
@@ -871,13 +934,13 @@ export function ConversationPanel({
           </div>
         ) : null}
         <form
-          className={`message-composer-form mx-auto flex max-w-3xl items-end gap-1.5 rounded-[1.2rem] border border-[var(--app-border)] bg-[var(--app-surface-muted)]/80 p-1.5 shadow-[inset_0_1px_0_rgb(255_255_255/0.35)] ${
+          className={`message-composer-form mx-auto flex max-w-3xl items-end gap-1.5 rounded-[1.2rem] border border-[var(--app-border)]/40 bg-[var(--app-surface)] p-1.5 ${
             canSend ? 'message-composer-form--ready' : ''
           } ${formik.isSubmitting ? 'message-composer-form--sending' : ''}`}
           onSubmit={formik.handleSubmit}
         >
           <label
-            className="message-touch-target grid size-11 shrink-0 cursor-pointer place-items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-base text-[var(--app-accent)] shadow-sm transition hover:border-brand-200 hover:bg-[var(--app-accent-soft)]"
+            className="message-touch-target grid size-11 shrink-0 cursor-pointer place-items-center rounded-xl border border-[var(--app-border)]/50 bg-transparent text-base text-[var(--app-accent)] transition hover:border-brand-200"
             aria-label={t("messages.addAttachments")}
           >
             <FiPaperclip aria-hidden="true" />
@@ -968,6 +1031,9 @@ export function ConversationPanel({
             ) : null}
           </div>
         ) : null}
+        </div>
+      </div>
+      </div>
       </div>
     </div>
   )

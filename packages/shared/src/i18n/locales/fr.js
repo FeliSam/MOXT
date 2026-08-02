@@ -609,6 +609,8 @@ export const fr = {
     clearSearch: "Effacer la recherche",
     resultsCount: "Résultats ({count})",
     conversations: "Conversations",
+    yourConversations: "Vos conversations",
+    noMessageYet: "Pas de message",
     active: "actif(s)",
     archived: "archivé(s)",
     noPinned: "Aucune conversation épinglée.",

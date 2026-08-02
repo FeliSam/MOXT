@@ -608,6 +608,8 @@ export const ru = {
     clearSearch: "Очистить поиск",
     resultsCount: "Результаты ({count})",
     conversations: "Диалоги",
+    yourConversations: "Ваши диалоги",
+    noMessageYet: "Нет сообщений",
     active: "активн.",
     archived: "в архиве",
     noPinned: "Нет закреплённых диалогов.",

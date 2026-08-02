@@ -34,6 +34,8 @@ export const MESSAGES_FR_SOURCES = {
   'messages.draftSaved': 'Brouillon enregistré',
   'messages.youPrefix': 'Vous : ',
   'messages.startConversation': 'Démarrez la conversation',
+  'messages.yourConversations': 'Vos conversations',
+  'messages.noMessageYet': 'Pas de message',
   'messages.messageCount': '{count} message',
   'messages.messageCountPlural': '{count} messages',
   'messages.unreadSeparator': 'Message non lu',

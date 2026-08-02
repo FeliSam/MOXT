@@ -607,6 +607,8 @@ export const es = {
     clearSearch: "Limpar búsqueda",
     resultsCount: "Resultados ({count})",
     conversations: "Conversaciones",
+    yourConversations: "Tus conversaciones",
+    noMessageYet: "Sin mensajes",
     active: "activas",
     archived: "arquivadas",
     noPinned: "Ninguna conversación fijada.",
