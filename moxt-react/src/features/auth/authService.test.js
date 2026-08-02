@@ -1050,6 +1050,29 @@ describe('authService', () => {
     expect(result.phone).toBe('+79000000010')
   })
 
+  it('reprend l inscription e-mail (resend) au lieu de bloquer si le compte est déjà amorcé', async () => {
+    auth.signUp.mockResolvedValue({
+      data: {
+        user: { id: 'user-email-dup', identities: [] },
+        session: null,
+      },
+      error: null,
+    })
+    auth.resend.mockResolvedValue({ data: {}, error: null })
+
+    const result = await authService.registerWithEmailAfterSmsDenied(registrationDetails())
+
+    expect(auth.resend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'signup',
+        email: 'personne@example.com',
+      }),
+    )
+    expect(result.requiresEmailConfirmation).toBe(true)
+    expect(result.verificationMethod).toBe('email')
+    expect(result.resumedSignup).toBe(true)
+  })
+
   it('register avec verificationMethod email utilise le canal e-mail dès le premier envoi', async () => {
     auth.signUp.mockResolvedValue({
       data: {

@@ -61,7 +61,7 @@ export function Header({ hideOnMobile = false }) {
   const user = useSelector((state) => state.auth.user)
   const unreadCount = useSelector(selectUnreadNotificationCount)
   const unreadMessagesCount = useSelector(selectUnreadMessageCount)
-  const { theme, toggleTheme } = useTheme()
+  const { isDark, toggleTheme } = useTheme()
   const { t, translateLabel } = useLanguage()
   const visible = useSmartNavbar({ disabled: location.pathname === '/messages' })
   const mobileActions = getMobileHeaderActions(location.pathname)
@@ -216,17 +216,17 @@ export function Header({ hideOnMobile = false }) {
             type="button"
             className="header-action-btn btn-press relative hidden sm:grid"
             aria-label={
-              theme === 'dark' ? t('nav.enableLightTheme') : t('nav.enableDarkTheme')
+              isDark ? t('nav.enableLightTheme') : t('nav.enableDarkTheme')
             }
             onClick={toggleTheme}
           >
-            {theme === 'dark' ? (
+            {isDark ? (
               <LuSun className="header-action-icon transition-transform duration-300" strokeWidth={HEADER_ICON_STROKE} />
             ) : (
               <LuMoon className="header-action-icon transition-transform duration-300" strokeWidth={HEADER_ICON_STROKE} />
             )}
             <HeaderActionLabel>
-              {theme === 'dark' ? t('nav.enableLightTheme') : t('nav.enableDarkTheme')}
+              {isDark ? t('nav.enableLightTheme') : t('nav.enableDarkTheme')}
             </HeaderActionLabel>
           </button>
 

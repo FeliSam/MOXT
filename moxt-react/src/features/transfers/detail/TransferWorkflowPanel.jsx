@@ -20,7 +20,9 @@ import { TransferProgressStepper } from './TransferDetailParts'
 import { TransferProofsSection } from './TransferProofsSection'
 import { getTransferWorkflowForView } from './transferWorkflowUtils'
 import { UploadProgress } from '../../../components/ui/UploadProgress'
+import { confirmAction } from '../../../contexts/confirmBridge'
 import { shortenFileName } from '../../../services/uploadProgress'
+import { adminText } from '../../admin/adminI18n'
 
 export function TransferWorkflowPanel({
   access,
@@ -50,6 +52,14 @@ export function TransferWorkflowPanel({
     ? t(currentAction.descriptionKey)
     : currentAction?.description
   const clientNote = transfer.noteToExchanger
+
+  function ask(label, action) {
+    confirmAction({
+      title: adminText(t, 'admin.confirm.actionTitle'),
+      description: adminText(t, 'admin.confirm.actionBody', { action: label }),
+      onConfirm: action,
+    })
+  }
 
   return (
     <Card className="grid min-w-0 gap-0 overflow-hidden p-0">
@@ -125,10 +135,17 @@ export function TransferWorkflowPanel({
               </p>
             ) : null}
             <div className="flex flex-wrap gap-2">
-              <Button icon={FiCheckCircle} onClick={onAcceptRequest}>
+              <Button
+                icon={FiCheckCircle}
+                onClick={() => ask(t('transfers.acceptance.accept'), onAcceptRequest)}
+              >
                 {t('transfers.acceptance.accept')}
               </Button>
-              <Button variant="danger" icon={FiXCircle} onClick={onDeclineRequest}>
+              <Button
+                variant="danger"
+                icon={FiXCircle}
+                onClick={() => ask(t('transfers.acceptance.decline'), onDeclineRequest)}
+              >
                 {t('transfers.acceptance.decline')}
               </Button>
             </div>
@@ -140,7 +157,11 @@ export function TransferWorkflowPanel({
             <TransferClientNote note={clientNote} />
             <Button
               icon={FiCheckCircle}
-              onClick={() => onCompleteBusinessStep(TRANSFER_STATUS.RECEIVED)}
+              onClick={() =>
+                ask(t('transfers.workflow.confirmPaymentReception'), () =>
+                  onCompleteBusinessStep(TRANSFER_STATUS.RECEIVED),
+                )
+              }
             >
               {t('transfers.workflow.confirmPaymentReception')}
             </Button>
@@ -177,7 +198,11 @@ export function TransferWorkflowPanel({
               }
               loading={businessProof?.uploading}
               icon={FiCheckCircle}
-              onClick={() => onCompleteBusinessStep(TRANSFER_STATUS.PAID_OUT)}
+              onClick={() =>
+                ask(t('transfers.workflow.confirmTransfer'), () =>
+                  onCompleteBusinessStep(TRANSFER_STATUS.PAID_OUT),
+                )
+              }
             >
               {t('transfers.workflow.confirmTransfer')}
             </Button>
@@ -214,7 +239,7 @@ export function TransferWorkflowPanel({
               disabled={!proof || proof.uploading}
               loading={proof?.uploading}
               icon={FiCheckCircle}
-              onClick={onDeclarePayment}
+              onClick={() => ask(t('transfers.workflow.declarePayment'), onDeclarePayment)}
             >
               {t('transfers.workflow.declarePayment')}
             </Button>

@@ -1550,6 +1550,7 @@ export const ru = {
       description: "Выберите тему интерфейса.",
       light: "Светлая",
       dark: "Тёмная",
+      system: "Системная",
       ariaLabel: "Тема интерфейса",
     },
     languagePrivacy: {
@@ -7360,6 +7361,8 @@ export const ru = {
     fanOutParcel: "Новая посылка",
     fanOutP2p: "Новое предложение P2P",
     fanOutPost: "Новая публикация",
+    fanOutBusiness: "Новый бизнес",
+    fanOutBusinessBody: "« {name} » проверена и теперь доступна в каталоге MOXT.",
     someone: "Кто-то",
     transferCompleted: "Перевод завершён",
     transferCompletedBody: "Клиент подтвердил получение по {id}.",

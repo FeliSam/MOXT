@@ -188,7 +188,7 @@ export type ThemeColors = {
   inverseBg: string;
   inverseText: string;
 };
-export type ThemeMode = 'light' | 'dark';
+export type ThemeMode = 'light' | 'dark' | 'system';
 
 export const spacing = {
   xs: 4,

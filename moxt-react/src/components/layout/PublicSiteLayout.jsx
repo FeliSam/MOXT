@@ -24,7 +24,7 @@ const SOCIAL_ICONS = {
 }
 
 export function PublicSiteLayout({ children }) {
-  const { theme, toggleTheme } = useTheme()
+  const { isDark, toggleTheme } = useTheme()
   const { t } = useLanguage()
   const visible = useSmartNavbar()
 
@@ -72,9 +72,9 @@ export function PublicSiteLayout({ children }) {
             type="button"
             className="grid size-10 place-items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]"
             onClick={toggleTheme}
-            aria-label={theme === 'dark' ? 'Activer le thème clair' : 'Activer le thème sombre'}
+            aria-label={isDark ? 'Activer le thème clair' : 'Activer le thème sombre'}
           >
-            {theme === 'dark' ? <FiSun /> : <FiMoon />}
+            {isDark ? <FiSun /> : <FiMoon />}
           </button>
           <Link to="/login" className="hidden sm:block">
             <Button variant="secondary">{t('public.auth.login')}</Button>

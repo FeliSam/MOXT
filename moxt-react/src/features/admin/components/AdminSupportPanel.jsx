@@ -12,6 +12,7 @@ import {
 import { updateSimulatedPaymentStatus } from '../../finance/financeSlice'
 import { formatMoney } from '../../transfers/transferUtils'
 import { addToast } from '../../ui/uiSlice'
+import { confirmedClick } from '../adminActions'
 import { CARD, ITEM } from '../adminConfig'
 import { adminText } from '../adminI18n'
 import { Empty, SectionTitle } from './AdminShared'
@@ -211,10 +212,14 @@ export function AdminSupportPanel({ admin, dispatch, reply, setReply, setSelecte
                   <Button
                     icon={FiCheckCircle}
                     disabled={alreadyConfirmed && payment?.status === 'confirmed'}
-                    onClick={() => {
-                      setSelected({ kind: 'support', item: ticket })
-                      confirmContributionReceipt(ticket)
-                    }}
+                    onClick={confirmedClick(
+                      t,
+                      adminText(t, 'admin.support.confirmContribution'),
+                      () => {
+                        setSelected({ kind: 'support', item: ticket })
+                        confirmContributionReceipt(ticket)
+                      },
+                    )}
                   >
                     {adminText(t, 'admin.support.confirmContribution')}
                   </Button>
@@ -222,7 +227,9 @@ export function AdminSupportPanel({ admin, dispatch, reply, setReply, setSelecte
                   <Button
                     variant="secondary"
                     icon={FiCheckCircle}
-                    onClick={() => dispatch(updateSupportStatus({ id: ticket.id, status: 'resolved' }))}
+                    onClick={confirmedClick(t, adminText(t, 'admin.actions.resolve'), () =>
+                      dispatch(updateSupportStatus({ id: ticket.id, status: 'resolved' })),
+                    )}
                   >
                     {adminText(t, 'admin.actions.resolve')}
                   </Button>

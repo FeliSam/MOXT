@@ -852,6 +852,16 @@ export const interactionMiddleware = (store) => {
             type: 'business',
             link: `/businesses/${business.id}`,
           })
+          notifyAllUsersPublication({
+            title: appText('notificationsFeed.fanOutBusiness'),
+            message: appText('notificationsFeed.fanOutBusinessBody', {
+              name: business.name || '',
+            }),
+            type: 'business',
+            link: `/businesses/${business.id}`,
+            priority: 'high',
+            dedupeKey: `business-verified-${business.id}`,
+          })
         } else if (status === 'rejected') {
           notify(store, {
             userId: business.ownerId,

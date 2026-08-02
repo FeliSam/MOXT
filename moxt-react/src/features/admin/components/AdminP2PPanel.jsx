@@ -6,6 +6,7 @@ import { Button } from '../../../components/ui/Button'
 import { Badge } from '../../../components/ui/Badge'
 import { formatMoney } from '../../transfers/transferUtils'
 import { moderateOffer, moderateOrder } from '../../p2p/p2pSlice'
+import { confirmedClick } from '../adminActions'
 import { CARD, ITEM } from '../adminConfig'
 import { adminText } from '../adminI18n'
 import { statusDotColor } from '../adminUtils'
@@ -78,13 +79,19 @@ export function AdminP2PPanel({ dispatch, offers, orders, setSelected }) {
                 {offer.status === 'active' ? (
                   <Button
                     variant="secondary"
-                    onClick={() => dispatch(moderateOffer({ id: offer.id, status: 'archived' }))}
+                    onClick={confirmedClick(t, adminText(t, 'admin.actions.archive'), () =>
+                      dispatch(moderateOffer({ id: offer.id, status: 'archived' })),
+                    )}
                   >
                     {adminText(t, 'admin.actions.archive')}
                   </Button>
                 ) : null}
                 {offer.status === 'archived' ? (
-                  <Button onClick={() => dispatch(moderateOffer({ id: offer.id, status: 'active' }))}>
+                  <Button
+                    onClick={confirmedClick(t, adminText(t, 'admin.actions.reactivate'), () =>
+                      dispatch(moderateOffer({ id: offer.id, status: 'active' })),
+                    )}
+                  >
                     {adminText(t, 'admin.actions.reactivate')}
                   </Button>
                 ) : null}
@@ -148,7 +155,7 @@ export function AdminP2PPanel({ dispatch, offers, orders, setSelected }) {
                 {order.status === 'disputed' ? (
                   <Button
                     icon={FiCheckCircle}
-                    onClick={() =>
+                    onClick={confirmedClick(t, adminText(t, 'admin.p2p.restoreOrder'), () =>
                       dispatch(
                         moderateOrder({
                           id: order.id,
@@ -157,8 +164,8 @@ export function AdminP2PPanel({ dispatch, offers, orders, setSelected }) {
                           actorRole: user?.role || 'admin',
                           note: 'admin_restore',
                         }),
-                      )
-                    }
+                      ),
+                    )}
                   >
                     {adminText(t, 'admin.p2p.restoreOrder')}
                   </Button>
@@ -167,7 +174,7 @@ export function AdminP2PPanel({ dispatch, offers, orders, setSelected }) {
                   <Button
                     variant="secondary"
                     icon={FiAlertTriangle}
-                    onClick={() =>
+                    onClick={confirmedClick(t, adminText(t, 'admin.p2p.markDisputed'), () =>
                       dispatch(
                         moderateOrder({
                           id: order.id,
@@ -176,8 +183,8 @@ export function AdminP2PPanel({ dispatch, offers, orders, setSelected }) {
                           actorRole: user?.role || 'admin',
                           note: 'admin_dispute',
                         }),
-                      )
-                    }
+                      ),
+                    )}
                   >
                     {adminText(t, 'admin.p2p.markDisputed')}
                   </Button>
@@ -186,7 +193,7 @@ export function AdminP2PPanel({ dispatch, offers, orders, setSelected }) {
                   <>
                     <Button
                       icon={FiCheckCircle}
-                      onClick={() =>
+                      onClick={confirmedClick(t, adminText(t, 'admin.p2p.completeOrder'), () =>
                         dispatch(
                           moderateOrder({
                             id: order.id,
@@ -195,15 +202,15 @@ export function AdminP2PPanel({ dispatch, offers, orders, setSelected }) {
                             actorRole: user?.role || 'admin',
                             note: 'admin_complete',
                           }),
-                        )
-                      }
+                        ),
+                      )}
                     >
                       {adminText(t, 'admin.p2p.completeOrder')}
                     </Button>
                     <Button
                       variant="danger"
                       icon={FiXCircle}
-                      onClick={() =>
+                      onClick={confirmedClick(t, adminText(t, 'admin.p2p.cancelOrder'), () =>
                         dispatch(
                           moderateOrder({
                             id: order.id,
@@ -212,8 +219,8 @@ export function AdminP2PPanel({ dispatch, offers, orders, setSelected }) {
                             actorRole: user?.role || 'admin',
                             note: 'admin_cancel',
                           }),
-                        )
-                      }
+                        ),
+                      )}
                     >
                       {adminText(t, 'admin.p2p.cancelOrder')}
                     </Button>

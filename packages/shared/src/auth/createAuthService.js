@@ -521,6 +521,94 @@ export function createAuthService(supabase, redirects = {}) {
     }
   }
 
+  /**
+   * Re-send signup e-mail OTP for an unfinished registration instead of locking
+   * the client on ALREADY_REGISTERED (common after SMS denial / abandoned OTP).
+   */
+  async function resumeEmailSignup(email, phone, profileFields) {
+    const availability = await checkIdentityAvailability('email', email, null, {
+      useCache: false,
+    })
+    if (!availability.available) {
+      if (availability.reason === 'limit') {
+        throw new Error('IDENTITY_LIMIT_REACHED')
+      }
+      throw new Error('ALREADY_REGISTERED')
+    }
+
+    const redirectTo = emailRedirectTo()
+    let resendError = null
+    try {
+      const result = await withTimeout(
+        supabase.auth.resend({
+          type: 'signup',
+          email,
+          options: redirectTo ? { emailRedirectTo: redirectTo } : undefined,
+        }),
+        AUTH_OTP_SEND_TIMEOUT_MS,
+        'resendEmailSignup',
+      )
+      resendError = result.error
+    } catch (error) {
+      if (isTimeoutError(error)) {
+        throw new Error(
+          "L'envoi de l'e-mail prend trop de temps. Réessayez dans quelques instants.",
+        )
+      }
+      throw error
+    }
+
+    if (resendError) {
+      const otpResult = await withTimeout(
+        supabase.auth.signInWithOtp({
+          email,
+          options: {
+            shouldCreateUser: false,
+            ...(redirectTo ? { emailRedirectTo: redirectTo } : {}),
+          },
+        }),
+        AUTH_OTP_SEND_TIMEOUT_MS,
+        'signInWithOtpEmail',
+      )
+      if (otpResult.error) {
+        const combined = `${resendError.message || ''} ${otpResult.error.message || ''}`.toLowerCase()
+        if (
+          combined.includes('already') ||
+          combined.includes('confirmed') ||
+          combined.includes('registered') ||
+          combined.includes('exists')
+        ) {
+          throw new Error('ALREADY_REGISTERED')
+        }
+        throw new Error(
+          translateAuthError(otpResult.error || resendError, {
+            channel: 'email',
+            intent: 'register',
+          }),
+        )
+      }
+    }
+
+    trackOtpSend('email', email)
+    return {
+      user: profileToUser({
+        id: 'pending-email-signup',
+        ...profileFields,
+        email,
+        phone,
+      }),
+      token: '',
+      requiresEmailConfirmation: true,
+      requiresPhoneConfirmation: false,
+      identityChecked: true,
+      pendingUserId: null,
+      verificationMethod: 'email',
+      email,
+      phone,
+      resumedSignup: true,
+    }
+  }
+
   function isResumeBlockerMessage(message = '') {
     // Only treat confirmed-account signals as terminal. Do NOT map "user not found"
     // / "aucun compte" to ALREADY_REGISTERED — that traps unfinished SMS signups.
@@ -1441,19 +1529,23 @@ export function createAuthService(supabase, redirects = {}) {
           'signUpEmail',
         )
 
-        if (error) {
-          if (isAuthAlreadyExistsError(error)) {
-            throw new Error('ALREADY_REGISTERED')
-          }
-          throw new Error(translateAuthError(error, { channel: 'email', intent: 'register' }))
+        const needsEmailResume =
+          Boolean(error && isAuthAlreadyExistsError(error)) ||
+          Boolean(
+            data?.user &&
+              !data.session &&
+              Array.isArray(data.user.identities) &&
+              data.user.identities.length === 0,
+          )
+
+        if (needsEmailResume) {
+          // Incomplete / previous attempt: always resend signup OTP instead of
+          // locking the device on ALREADY_REGISTERED.
+          return resumeEmailSignup(email, normalizedPhone, profileFields)
         }
-        if (
-          data.user &&
-          !data.session &&
-          Array.isArray(data.user.identities) &&
-          data.user.identities.length === 0
-        ) {
-          throw new Error('ALREADY_REGISTERED')
+
+        if (error) {
+          throw new Error(translateAuthError(error, { channel: 'email', intent: 'register' }))
         }
         if (!data.user) throw new Error('Échec de création du compte.')
 
@@ -1678,16 +1770,31 @@ export function createAuthService(supabase, redirects = {}) {
       if (!normalizedEmail) {
         throw new Error("L'e-mail est obligatoire pour renvoyer le code.")
       }
-      guardOtpSend('email', normalizedEmail)
-      const redirectTo = emailRedirectTo()
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: normalizedEmail,
-        options: redirectTo ? { emailRedirectTo: redirectTo } : undefined,
+      return withOtpInFlight('email', normalizedEmail, async () => {
+        guardOtpSend('email', normalizedEmail)
+        const redirectTo = emailRedirectTo()
+        const { error } = await supabase.auth.resend({
+          type: 'signup',
+          email: normalizedEmail,
+          options: redirectTo ? { emailRedirectTo: redirectTo } : undefined,
+        })
+        if (error) {
+          const otpResult = await supabase.auth.signInWithOtp({
+            email: normalizedEmail,
+            options: {
+              shouldCreateUser: false,
+              ...(redirectTo ? { emailRedirectTo: redirectTo } : {}),
+            },
+          })
+          if (otpResult.error) {
+            throw new Error(
+              translateAuthError(otpResult.error || error, { channel: 'email' }),
+            )
+          }
+        }
+        trackOtpSend('email', normalizedEmail)
+        return true
       })
-      if (error) throw new Error(translateAuthError(error, { channel: 'email' }))
-      trackOtpSend('email', normalizedEmail)
-      return true
     },
 
     async requestPhoneVerificationOtp(currentUser, phone) {

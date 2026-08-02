@@ -1441,6 +1441,7 @@ export const pt = {
       description: "Escolha o tema da interface.",
       light: "Claro",
       dark: "Escuro",
+      system: "Sistema",
       ariaLabel: "Tema da interface",
     },
     languagePrivacy: {
@@ -7359,6 +7360,8 @@ export const pt = {
     fanOutParcel: "Nova encomenda",
     fanOutP2p: "Nova oferta P2P",
     fanOutPost: "Nova publicação",
+    fanOutBusiness: "Nova empresa",
+    fanOutBusinessBody: "« {name} » foi verificada e já está disponível no diretório MOXT.",
     someone: "Alguém",
     transferCompleted: "Transferência concluída",
     transferCompletedBody: "O cliente confirmou a receção de {id}.",

@@ -1551,6 +1551,7 @@ export const en = {
       description: "Choose the interface theme.",
       light: "Light",
       dark: "Dark",
+      system: "System",
       ariaLabel: "Interface theme",
     },
     languagePrivacy: {
@@ -7364,6 +7365,8 @@ export const en = {
     fanOutParcel: "New parcel",
     fanOutP2p: "New P2P offer",
     fanOutPost: "New post",
+    fanOutBusiness: "New business",
+    fanOutBusinessBody: "« {name} » has been verified and is now listed in the MOXT directory.",
     someone: "Someone",
     transferCompleted: "Transfer completed",
     transferCompletedBody: "The client confirmed receipt for {id}.",

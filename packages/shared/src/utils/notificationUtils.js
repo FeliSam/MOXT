@@ -15,6 +15,8 @@ export const DEFAULT_NOTIFICATION_PREFERENCES = {
   notifEvents: 'high',
   notifMarketplace: 'high',
   notifActualites: 'high',
+  notifStatuses: 'high',
+  notifOther: 'high',
   notifSysteme: 'high',
   notifNewSubscribers: true,
   messageSuggestionsEnabled: true,
@@ -32,8 +34,8 @@ export function getNotificationPriority(state, userId, preferenceKey) {
   const prefs = getUserPreferences(state, userId)
   const value = prefs[preferenceKey]
   if (value === false || value === 'off') return null
-  if (value === true) return 'normal'
-  return value || 'normal'
+  if (value === true) return 'high'
+  return value || 'high'
 }
 
 export function shouldSendNotification(state, userId, preferenceKey) {

@@ -19,7 +19,7 @@ import { updateBusinessDocumentStatus } from '../../businesses/businessSlice'
 import { updateParcelProofStatus } from '../../parcels/parcelSlice'
 import { moderateReview } from '../../reviews/reviewSlice'
 import { REVIEW_DISPUTE_STATUS } from '@moxt/shared/utils/reviewUtils.js'
-import { ActionButton, contentActions, resolveDisputeAndUnlockOrder } from '../adminActions'
+import { ActionButton, confirmedClick, contentActions, resolveDisputeAndUnlockOrder } from '../adminActions'
 import { CARD, ITEM } from '../adminConfig'
 import { adminText } from '../adminI18n'
 import { promptRejectReason } from '../promptRejectReason'
@@ -117,22 +117,22 @@ export function AdminQueuesPanel({
                 </Button>
                 <Button
                   icon={FiCheckCircle}
-                  onClick={() =>
+                  onClick={confirmedClick(t, t('verification.admin.approve'), () =>
                     dispatch(
                       updateVerificationStatus({
                         id: i.id,
                         status: 'verified',
                         reviewedBy: adminId,
                       }),
-                    )
-                  }
+                    ),
+                  )}
                 >
                   {t('verification.admin.approve')}
                 </Button>
                 <Button
                   variant="danger"
                   icon={FiX}
-                  onClick={() => {
+                  onClick={confirmedClick(t, t('verification.admin.reject'), () => {
                     const reviewNote = promptRejectReason(t)
                     if (!reviewNote) return
                     dispatch(
@@ -143,7 +143,7 @@ export function AdminQueuesPanel({
                         reviewNote,
                       }),
                     )
-                  }}
+                  })}
                 >
                   {t('verification.admin.reject')}
                 </Button>
@@ -173,7 +173,7 @@ export function AdminQueuesPanel({
                 </Button>
                 <Button
                   icon={FiCheckCircle}
-                  onClick={() =>
+                  onClick={confirmedClick(t, adminText(t, 'admin.actions.approve'), () =>
                     dispatch(
                       updateBusinessDocumentStatus({
                         id: i.id,
@@ -181,15 +181,15 @@ export function AdminQueuesPanel({
                         reviewedBy: adminId,
                         reviewNote: '',
                       }),
-                    )
-                  }
+                    ),
+                  )}
                 >
                   {adminText(t, 'admin.actions.approve')}
                 </Button>
                 <Button
                   variant="danger"
                   icon={FiX}
-                  onClick={() => {
+                  onClick={confirmedClick(t, adminText(t, 'admin.actions.reject'), () => {
                     const reviewNote = promptRejectReason(t)
                     if (!reviewNote) return
                     dispatch(
@@ -200,7 +200,7 @@ export function AdminQueuesPanel({
                         reviewNote,
                       }),
                     )
-                  }}
+                  })}
                 >
                   {adminText(t, 'admin.actions.reject')}
                 </Button>
@@ -232,9 +232,9 @@ export function AdminQueuesPanel({
                   icon={FiCheckCircle}
                   done={i.proofStatus === 'verified'}
                   doneLabel={adminText(t, 'admin.queues.validateProof')}
-                  onClick={() =>
-                    dispatch(updateParcelProofStatus({ id: i.id, status: 'verified' }))
-                  }
+                  onClick={confirmedClick(t, adminText(t, 'admin.queues.validateProof'), () =>
+                    dispatch(updateParcelProofStatus({ id: i.id, status: 'verified' })),
+                  )}
                 >
                   {adminText(t, 'admin.queues.validateProof')}
                 </ActionButton>
@@ -243,9 +243,9 @@ export function AdminQueuesPanel({
                   icon={FiX}
                   done={i.proofStatus === 'rejected'}
                   doneLabel={adminText(t, 'admin.queues.rejectProof')}
-                  onClick={() =>
-                    dispatch(updateParcelProofStatus({ id: i.id, status: 'rejected' }))
-                  }
+                  onClick={confirmedClick(t, adminText(t, 'admin.queues.rejectProof'), () =>
+                    dispatch(updateParcelProofStatus({ id: i.id, status: 'rejected' })),
+                  )}
                 >
                   {adminText(t, 'admin.queues.rejectProof')}
                 </ActionButton>
@@ -284,25 +284,25 @@ export function AdminQueuesPanel({
         renderActions={(i) => (
           <>
             <Button
-              onClick={() =>
+              onClick={confirmedClick(t, adminText(t, 'admin.actions.resolve'), () =>
                 resolveDisputeAndUnlockOrder(dispatch, i, {
                   status: 'resolved',
                   actorId: adminId,
                   actorRole,
-                })
-              }
+                }),
+              )}
             >
               {adminText(t, 'admin.actions.resolve')}
             </Button>
             <Button
               variant="secondary"
-              onClick={() =>
+              onClick={confirmedClick(t, adminText(t, 'admin.actions.close'), () =>
                 resolveDisputeAndUnlockOrder(dispatch, i, {
                   status: 'closed',
                   actorId: adminId,
                   actorRole,
-                })
-              }
+                }),
+              )}
             >
               {adminText(t, 'admin.actions.close')}
             </Button>
@@ -321,7 +321,7 @@ export function AdminQueuesPanel({
           <>
             <Button
               variant="danger"
-              onClick={() =>
+              onClick={confirmedClick(t, adminText(t, 'admin.actions.removeReview'), () =>
                 dispatch(
                   moderateReview({
                     id: i.id,
@@ -329,13 +329,13 @@ export function AdminQueuesPanel({
                     disputeStatus: REVIEW_DISPUTE_STATUS.UPHELD,
                     moderatedBy: 'admin',
                   }),
-                )
-              }
+                ),
+              )}
             >
               {adminText(t, 'admin.actions.removeReview')}
             </Button>
             <Button
-              onClick={() =>
+              onClick={confirmedClick(t, adminText(t, 'admin.actions.rejectContest'), () =>
                 dispatch(
                   moderateReview({
                     id: i.id,
@@ -343,8 +343,8 @@ export function AdminQueuesPanel({
                     disputeStatus: REVIEW_DISPUTE_STATUS.REJECTED,
                     moderatedBy: 'admin',
                   }),
-                )
-              }
+                ),
+              )}
             >
               {adminText(t, 'admin.actions.rejectContest')}
             </Button>
@@ -361,10 +361,19 @@ export function AdminQueuesPanel({
         renderMeta={(i) => `${i.targetType} · ${i.rating || 0}/5`}
         renderActions={(i) => (
           <>
-            <Button onClick={() => dispatch(moderateReview({ id: i.id, status: 'published', moderatedBy: 'admin' }))}>
+            <Button
+              onClick={confirmedClick(t, adminText(t, 'admin.actions.publish'), () =>
+                dispatch(moderateReview({ id: i.id, status: 'published', moderatedBy: 'admin' })),
+              )}
+            >
               {adminText(t, 'admin.actions.publish')}
             </Button>
-            <Button variant="danger" onClick={() => dispatch(moderateReview({ id: i.id, status: 'hidden', moderatedBy: 'admin' }))}>
+            <Button
+              variant="danger"
+              onClick={confirmedClick(t, adminText(t, 'admin.actions.hide'), () =>
+                dispatch(moderateReview({ id: i.id, status: 'hidden', moderatedBy: 'admin' })),
+              )}
+            >
               {adminText(t, 'admin.actions.hide')}
             </Button>
           </>

@@ -40,7 +40,7 @@ export function shouldDispatchWebPush(
   const value = preferences[preferenceKey]
   if (value === false || value === 'off') return false
 
-  const effectivePriority = value === true ? 'normal' : value || priority || 'normal'
+  const effectivePriority = value === true ? 'high' : value || priority || 'high'
   return Boolean(effectivePriority)
 }
 

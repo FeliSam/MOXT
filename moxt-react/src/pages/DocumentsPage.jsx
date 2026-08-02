@@ -33,9 +33,8 @@ export function DocumentsPage() {
 
   async function addDocument(file) {
     if (!file || progress.active) return
-    let uploaded = null
     try {
-      uploaded = await track((onProgress) =>
+      const uploaded = await track((onProgress) =>
         storageService.uploadDocument(user.id, category, file, { onProgress }),
       )
       dispatch(
@@ -57,9 +56,8 @@ export function DocumentsPage() {
         }),
       )
     } catch (err) {
-      // Fichier déposé mais non référencé : on le retire pour ne pas laisser
-      // un document personnel orphelin dans le stockage.
-      if (uploaded?.path) await storageService.removeDocument(uploaded.path)
+      // Ne pas supprimer le fichier storage : s’il a été déposé, un admin
+      // pourra le rattacher (Admin → Documents → Attribuer).
       dispatch(addToast({ title: p3('common.error'), message: err.message, tone: 'error' }))
     }
   }

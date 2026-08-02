@@ -1556,7 +1556,7 @@ const handlers = {
   'account/addPersonalDocument': async (payload) => {
     const { error } = await supabase
       .from('personal_documents')
-      .insert(personalDocumentToRemoteRow(payload))
+      .upsert(personalDocumentToRemoteRow(payload), { onConflict: 'id' })
     if (error) throw error
   },
   'account/removePersonalDocument': async (payload) => {
@@ -1931,12 +1931,37 @@ export const supabaseMiddleware = (store) => (next) => (action) => {
           })
         }
       }
+      // Documents : ne jamais supprimer le fichier storage ici — le rattacher
+      // via Admin → Attribuer. On retire seulement la fiche locale optimiste.
+      if (action.type === 'account/addPersonalDocument' && action.payload?.id) {
+        store.dispatch({
+          type: 'account/discardUnsyncedPersonalDocument',
+          payload: { id: action.payload.id },
+        })
+      }
+      if (action.type === 'businesses/addBusinessDocument' && action.payload?.id) {
+        store.dispatch({
+          type: 'businesses/discardUnsyncedBusinessDocument',
+          payload: { id: action.payload.id },
+        })
+      }
       store.dispatch(
         addToast({
-          title: 'Synchronisation impossible',
-          message: sanitizeUserFacingMessage(
-            err?.message || "L'enregistrement distant a échoué.",
-          ),
+          title:
+            action.type === 'account/addPersonalDocument' ||
+            action.type === 'businesses/addBusinessDocument'
+              ? 'Document déposé — synchronisation en attente'
+              : 'Synchronisation impossible',
+          message:
+            action.type === 'account/addPersonalDocument' ||
+            action.type === 'businesses/addBusinessDocument'
+              ? sanitizeUserFacingMessage(
+                  err?.message ||
+                    'Le fichier est conservé dans le stockage sécurisé. Réessayez l’envoi ou un administrateur pourra le rattacher.',
+                )
+              : sanitizeUserFacingMessage(
+                  err?.message || "L'enregistrement distant a échoué.",
+                ),
           tone: 'error',
         }),
       )

@@ -14,14 +14,25 @@ export const OTP_RESEND_COOLDOWN_MS = OTP_RESEND_COOLDOWN_SECONDS * 1000
  */
 export const SMS_REGISTRATION_MAX_RESENDS = 1
 
-/** Max OTP sends per identity inside the rolling window (4 tentatives / 3 h). */
+/** Max OTP sends per phone inside the rolling window (cost control). */
 export const OTP_MAX_SENDS_PER_WINDOW = 4
 
-/** Rolling abuse window (3 hours). */
+/** Rolling abuse window for phone SMS (3 hours). */
 export const OTP_SEND_WINDOW_MS = 3 * 60 * 60 * 1000
 
-/** When true, enforce the 4 / 3h cap (independent of the 60s cooldown). */
+/**
+ * E-mail OTP: short soft window only. Never keep a multi-hour hard block —
+ * after this window elapses, another e-mail code MUST be sendable.
+ */
+export const OTP_EMAIL_MAX_SENDS_PER_WINDOW = 8
+
+export const OTP_EMAIL_SEND_WINDOW_MS = 20 * 60 * 1000
+
+/** When true, enforce the phone 4 / 3h cap (independent of the 60s cooldown). */
 export const OTP_SEND_CAP_ENABLED = true
+
+/** Soft cap for e-mail (20 min). Disabled never — always resets after the window. */
+export const OTP_EMAIL_SEND_CAP_ENABLED = true
 
 export const OTP_SEND_LOG_STORAGE_KEY = 'moxt.otpSendLog.v1'
 
@@ -35,13 +46,36 @@ export function otpIdentityKey(kind, value) {
   return `${kind}:${normalized}`
 }
 
+function windowMsFor(kind) {
+  return kind === 'email' ? OTP_EMAIL_SEND_WINDOW_MS : OTP_SEND_WINDOW_MS
+}
+
+function maxSendsFor(kind) {
+  return kind === 'email' ? OTP_EMAIL_MAX_SENDS_PER_WINDOW : OTP_MAX_SENDS_PER_WINDOW
+}
+
+function capEnabledFor(kind) {
+  return kind === 'email' ? OTP_EMAIL_SEND_CAP_ENABLED : OTP_SEND_CAP_ENABLED
+}
+
 /**
- * Prune timestamps outside the rolling window.
+ * Prune timestamps outside the rolling window for this identity kind.
  * @param {number[]} timestamps
+ * @param {'phone' | 'email'} kind
  * @param {number} [now]
  */
-export function pruneOtpTimestamps(timestamps, now = Date.now()) {
-  return (timestamps || []).filter((ts) => now - ts < OTP_SEND_WINDOW_MS)
+export function pruneOtpTimestamps(timestamps, kindOrNow = Date.now(), maybeNow) {
+  // Back-compat: pruneOtpTimestamps(ts, now) used phone window.
+  let kind = 'phone'
+  let now = Date.now()
+  if (typeof kindOrNow === 'string') {
+    kind = kindOrNow
+    now = maybeNow ?? Date.now()
+  } else if (typeof kindOrNow === 'number') {
+    now = kindOrNow
+  }
+  const windowMs = windowMsFor(kind)
+  return (timestamps || []).filter((ts) => now - ts < windowMs)
 }
 
 /**
@@ -51,23 +85,21 @@ export function pruneOtpTimestamps(timestamps, now = Date.now()) {
  */
 export function getOtpSendState(store, kind, value, now = Date.now()) {
   const key = otpIdentityKey(kind, value)
-  const recent = pruneOtpTimestamps(store.get(key) || [], now)
+  const recent = pruneOtpTimestamps(store.get(key) || [], kind, now)
   const last = recent.length ? recent[recent.length - 1] : 0
   const cooldownRemainingMs = last ? Math.max(0, OTP_RESEND_COOLDOWN_MS - (now - last)) : 0
+  const maxSends = maxSendsFor(kind)
+  const windowMs = windowMsFor(kind)
   const sendsInWindow = recent.length
-  const capped = OTP_SEND_CAP_ENABLED && sendsInWindow >= OTP_MAX_SENDS_PER_WINDOW
-  const windowResetMs = recent.length
-    ? Math.max(0, OTP_SEND_WINDOW_MS - (now - recent[0]))
-    : 0
+  const capped = capEnabledFor(kind) && sendsInWindow >= maxSends
+  const windowResetMs = recent.length ? Math.max(0, windowMs - (now - recent[0])) : 0
 
   return {
     key,
     recent,
     last,
     sendsInWindow,
-    remainingSends: OTP_SEND_CAP_ENABLED
-      ? Math.max(0, OTP_MAX_SENDS_PER_WINDOW - sendsInWindow)
-      : OTP_MAX_SENDS_PER_WINDOW,
+    remainingSends: capEnabledFor(kind) ? Math.max(0, maxSends - sendsInWindow) : maxSends,
     capped,
     cooldownRemainingMs,
     cooldownRemainingSeconds: Math.ceil(cooldownRemainingMs / 1000),
@@ -80,8 +112,13 @@ export function formatOtpCooldownError(waitSeconds) {
   return `Patientez ${waitSeconds} secondes avant de renvoyer un code.`
 }
 
-export function formatOtpCapError(resetMinutes) {
-  return `Limite atteinte : maximum ${OTP_MAX_SENDS_PER_WINDOW} codes par période de 3 heures. Réessayez dans environ ${resetMinutes} minute${resetMinutes > 1 ? 's' : ''}.`
+export function formatOtpCapError(resetMinutes, kind = 'phone') {
+  const max = maxSendsFor(kind)
+  const windowLabel =
+    kind === 'email'
+      ? '20 minutes'
+      : '3 heures'
+  return `Limite atteinte : maximum ${max} codes par période de ${windowLabel}. Réessayez dans environ ${resetMinutes} minute${resetMinutes > 1 ? 's' : ''}.`
 }
 
 /**
@@ -99,7 +136,8 @@ export function loadOtpSendLog(storage = getDefaultStorage()) {
     if (!parsed || typeof parsed !== 'object') return store
     const now = Date.now()
     for (const [key, value] of Object.entries(parsed)) {
-      const pruned = pruneOtpTimestamps(Array.isArray(value) ? value : [], now)
+      const kind = String(key).startsWith('email:') ? 'email' : 'phone'
+      const pruned = pruneOtpTimestamps(Array.isArray(value) ? value : [], kind, now)
       if (pruned.length) store.set(key, pruned)
     }
   } catch {
@@ -117,7 +155,8 @@ export function persistOtpSendLog(store, storage = getDefaultStorage()) {
     const now = Date.now()
     const payload = {}
     for (const [key, timestamps] of store.entries()) {
-      const pruned = pruneOtpTimestamps(timestamps, now)
+      const kind = String(key).startsWith('email:') ? 'email' : 'phone'
+      const pruned = pruneOtpTimestamps(timestamps, kind, now)
       if (pruned.length) payload[key] = pruned
     }
     storage.setItem(OTP_SEND_LOG_STORAGE_KEY, JSON.stringify(payload))
@@ -148,7 +187,16 @@ export function clearOtpSendLog(storage = getDefaultStorage()) {
 }
 
 /**
- * Throws if the identity is under cooldown or has hit the 4 / 3h cap.
+ * Clear only one identity from the send log (e.g. after a successful verify).
+ */
+export function clearOtpSendLogForIdentity(store, kind, value, storage = getDefaultStorage()) {
+  const key = otpIdentityKey(kind, value)
+  store.delete(key)
+  persistOtpSendLog(store, storage)
+}
+
+/**
+ * Throws if the identity is under cooldown or has hit its send cap.
  * Call before the provider send so a blocked attempt never triggers SMS/email.
  *
  * @param {Map<string, number[]>} store
@@ -158,7 +206,7 @@ export function clearOtpSendLog(storage = getDefaultStorage()) {
 export function assertOtpSendAllowed(store, kind, value, now = Date.now()) {
   const state = getOtpSendState(store, kind, value, now)
   if (state.capped) {
-    throw new Error(formatOtpCapError(Math.max(1, state.windowResetMinutes)))
+    throw new Error(formatOtpCapError(Math.max(1, state.windowResetMinutes), kind))
   }
   if (state.cooldownRemainingMs > 0) {
     throw new Error(formatOtpCooldownError(Math.max(1, state.cooldownRemainingSeconds)))

@@ -13,6 +13,7 @@ import { updateBusinessTransferPricing } from '../../businesses/businessSlice'
 import { sortTransfersByNewest } from '../../transfers/transferSelectors'
 import { formatMoney } from '../../transfers/transferUtils'
 import { addToast } from '../../ui/uiSlice'
+import { confirmedClick } from '../adminActions'
 import { CARD, ITEM } from '../adminConfig'
 import { adminText } from '../adminI18n'
 import { countTransferProofs, lastTransferTimelineEvent } from '../adminData'
@@ -137,7 +138,13 @@ export function AdminTransfersPanel({
                 </div>
                 <Button
                   variant={enabled ? 'danger' : 'primary'}
-                  onClick={() => toggleAcceptance(business)}
+                  onClick={confirmedClick(
+                    t,
+                    enabled
+                      ? adminText(t, 'admin.transfers.disableAcceptance')
+                      : adminText(t, 'admin.transfers.enableAcceptance'),
+                    () => toggleAcceptance(business),
+                  )}
                 >
                   {enabled
                     ? adminText(t, 'admin.transfers.disableAcceptance')
@@ -245,23 +252,26 @@ export function AdminTransfersPanel({
                   </Link>
                   {next && (
                     <Button
-                      onClick={() =>
-                        dispatch(
-                          moderateTransfer({
-                            id: transfer.id,
-                            status: next,
-                            actorId: user?.id,
-                            actorRole: user?.role || 'admin',
-                            proof:
-                              next === TRANSFER_STATUS.PAID_OUT
-                                ? transfer.businessProof || {
-                                    name: 'admin-advance.pdf',
-                                    uploadedAt: new Date().toISOString(),
-                                  }
-                                : undefined,
-                          }),
-                        )
-                      }
+                      onClick={confirmedClick(
+                        t,
+                        adminText(t, 'admin.actions.advanceTo', { next }),
+                        () =>
+                          dispatch(
+                            moderateTransfer({
+                              id: transfer.id,
+                              status: next,
+                              actorId: user?.id,
+                              actorRole: user?.role || 'admin',
+                              proof:
+                                next === TRANSFER_STATUS.PAID_OUT
+                                  ? transfer.businessProof || {
+                                      name: 'admin-advance.pdf',
+                                      uploadedAt: new Date().toISOString(),
+                                    }
+                                  : undefined,
+                            }),
+                          ),
+                      )}
                     >
                       {adminText(t, 'admin.actions.advanceTo', { next })}
                     </Button>

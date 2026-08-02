@@ -19,7 +19,7 @@ import {
 import { updateBusinessTransferPricing } from '../../businesses/businessSlice'
 import { getPostImages } from '../../posts/postMediaUtils'
 import { addToast } from '../../ui/uiSlice'
-import { renderDetailActions } from '../adminActions'
+import { renderDetailActions, confirmedClick } from '../adminActions'
 import { CARD } from '../adminConfig'
 import {
   buildDetailFacts,
@@ -252,7 +252,7 @@ export function AdminDetailPanel({
             <Button
               variant="secondary"
               disabled={!originDraft || originDraft === item.originCountry}
-              onClick={() => {
+              onClick={confirmedClick(t, adminText(t, 'admin.actions.save'), () => {
                 dispatch(updateUserOriginCountry({ id: item.id, originCountry: originDraft }))
                 setSelected?.({ kind: 'user', item: { ...item, originCountry: originDraft } })
                 setOriginOverride(null)
@@ -263,7 +263,7 @@ export function AdminDetailPanel({
                     tone: 'success',
                   }),
                 )
-              }}
+              })}
             >
               {adminText(t, 'admin.actions.save')}
             </Button>
@@ -280,7 +280,7 @@ export function AdminDetailPanel({
             <Button
               variant="secondary"
               disabled={!cityDraft.trim() || cityDraft.trim() === (item.city || '')}
-              onClick={() => {
+              onClick={confirmedClick(t, adminText(t, 'admin.actions.save'), () => {
                 const city = cityDraft.trim()
                 dispatch(updateUserCity({ id: item.id, city }))
                 setSelected?.({ kind: 'user', item: { ...item, city } })
@@ -292,7 +292,7 @@ export function AdminDetailPanel({
                     tone: 'success',
                   }),
                 )
-              }}
+              })}
             >
               {adminText(t, 'admin.actions.save')}
             </Button>
@@ -317,33 +317,39 @@ export function AdminDetailPanel({
               </span>
               <Button
                 variant={item.transferAcceptanceRequired === true ? 'danger' : 'primary'}
-                onClick={() => {
-                  const enabled = item.transferAcceptanceRequired === true
-                  dispatch(
-                    updateBusinessTransferPricing({
-                      businessId: item.id,
-                      ownerId: item.ownerId,
-                      actorRole: admin?.role || 'admin',
-                      transferAcceptanceRequired: !enabled,
-                    }),
-                  )
-                  setSelected?.({
-                    kind: 'businesses',
-                    item: { ...item, transferAcceptanceRequired: !enabled },
-                  })
-                  dispatch(
-                    addToast({
-                      title: adminText(t, 'admin.transfers.acceptanceUpdatedTitle'),
-                      message: adminText(t, 'admin.transfers.acceptanceUpdatedBody', {
-                        name: item.name,
-                        state: !enabled
-                          ? adminText(t, 'admin.transfers.acceptanceOn')
-                          : adminText(t, 'admin.transfers.acceptanceOff'),
+                onClick={confirmedClick(
+                  t,
+                  item.transferAcceptanceRequired === true
+                    ? adminText(t, 'admin.business.acceptanceDisable')
+                    : adminText(t, 'admin.business.acceptanceEnable'),
+                  () => {
+                    const enabled = item.transferAcceptanceRequired === true
+                    dispatch(
+                      updateBusinessTransferPricing({
+                        businessId: item.id,
+                        ownerId: item.ownerId,
+                        actorRole: admin?.role || 'admin',
+                        transferAcceptanceRequired: !enabled,
                       }),
-                      tone: 'success',
-                    }),
-                  )
-                }}
+                    )
+                    setSelected?.({
+                      kind: 'businesses',
+                      item: { ...item, transferAcceptanceRequired: !enabled },
+                    })
+                    dispatch(
+                      addToast({
+                        title: adminText(t, 'admin.transfers.acceptanceUpdatedTitle'),
+                        message: adminText(t, 'admin.transfers.acceptanceUpdatedBody', {
+                          name: item.name,
+                          state: !enabled
+                            ? adminText(t, 'admin.transfers.acceptanceOn')
+                            : adminText(t, 'admin.transfers.acceptanceOff'),
+                        }),
+                        tone: 'success',
+                      }),
+                    )
+                  },
+                )}
               >
                 {item.transferAcceptanceRequired === true
                   ? adminText(t, 'admin.business.acceptanceDisable')
@@ -390,7 +396,7 @@ export function AdminDetailPanel({
           />
           <div className="flex flex-wrap gap-2">
             <Button
-              onClick={() => {
+              onClick={confirmedClick(t, adminText(t, 'admin.detail.send'), () => {
                 if (!supportReply.trim()) return
                 dispatch(replySupportTicket({
                   ticketId: item.id,
@@ -400,11 +406,16 @@ export function AdminDetailPanel({
                   text: supportReply,
                 }))
                 setSupportReply('')
-              }}
+              })}
             >
               {adminText(t, 'admin.detail.send')}
             </Button>
-            <Button variant="secondary" onClick={() => dispatch(updateSupportStatus({ id: item.id, status: 'resolved' }))}>
+            <Button
+              variant="secondary"
+              onClick={confirmedClick(t, adminText(t, 'admin.actions.close'), () =>
+                dispatch(updateSupportStatus({ id: item.id, status: 'resolved' })),
+              )}
+            >
               {adminText(t, 'admin.actions.close')}
             </Button>
           </div>

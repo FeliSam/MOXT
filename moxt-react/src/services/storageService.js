@@ -424,10 +424,9 @@ export const storageService = {
   },
 
   /**
-   * Supprime un fichier du bucket privé `documents`.
-   * Sert de compensation quand l'enregistrement en base échoue après un upload
-   * réussi : sans ça le fichier resterait orphelin dans le stockage, invisible
-   * pour l'app (donc jamais purgé, et non supprimé à la clôture du compte).
+   * Compense un échec d'upload *local* (avant enregistrement). Pour un fichier
+   * déjà déposé dont la fiche DB a échoué, préférer la réattribution admin —
+   * ne pas appeler removeDocument.
    */
   async removeDocument(path) {
     if (!path) return false
@@ -454,6 +453,31 @@ export const storageService = {
       path: row.object_name,
       uploadedAt: row.uploaded_at,
     }))
+  },
+
+  /**
+   * Rattache les fichiers non référencés à personal_documents / business_documents
+   * d’après le préfixe {userId}/… (ne supprime rien).
+   */
+  async reattributeOrphanDocuments(graceHours = 0) {
+    const { data, error } = await supabase.rpc('moxt_reattribute_orphan_documents', {
+      p_grace_hours: graceHours,
+    })
+    if (error) throw new Error(error.message)
+    const rows = data || []
+    const attributed = rows.filter((row) => row.attributed_as === 'personal' || row.attributed_as === 'business')
+    const skipped = rows.filter((row) => row.attributed_as === 'skipped')
+    return {
+      rows: rows.map((row) => ({
+        path: row.object_name,
+        attributedAs: row.attributed_as,
+        detail: row.detail,
+      })),
+      attributed: attributed.length,
+      skipped: skipped.length,
+      personal: attributed.filter((row) => row.attributed_as === 'personal').length,
+      business: attributed.filter((row) => row.attributed_as === 'business').length,
+    }
   },
 
   /** Supprime les orphelins listés ci-dessus. Renvoie {removed, failed}. */

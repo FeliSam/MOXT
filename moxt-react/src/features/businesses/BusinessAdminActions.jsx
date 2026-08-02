@@ -1,5 +1,6 @@
 import { ActionButton } from '../admin/AdminActionButton'
 import { adminText } from '../admin/adminI18n'
+import { confirmAction } from '../../contexts/confirmBridge'
 import { moderateBusiness, setBusinessPinned } from './businessSlice'
 
 /**
@@ -15,13 +16,24 @@ export function BusinessAdminActions({ business, dispatch, t, compact = false })
   const blocked = status === 'suspended' || status === 'blocked'
   const rejected = status === 'rejected'
   const pinned = Boolean(business.pinnedAt)
+  const name = business.name || business.id
+
+  function run(title, description, action) {
+    confirmAction({ title, description, onConfirm: action })
+  }
 
   return (
     <div className={`flex flex-wrap gap-2 ${compact ? '' : ''}`}>
       <ActionButton
         done={approved && !unavailable && !blocked}
         doneLabel={adminText(t, 'admin.actions.approved')}
-        onClick={() => dispatch(moderateBusiness({ id: business.id, status: 'verified' }))}
+        onClick={() =>
+          run(
+            adminText(t, 'admin.confirm.approveBusinessTitle'),
+            adminText(t, 'admin.confirm.approveBusinessBody', { name }),
+            () => dispatch(moderateBusiness({ id: business.id, status: 'verified' })),
+          )
+        }
       >
         {adminText(t, 'admin.actions.approve')}
       </ActionButton>
@@ -29,7 +41,13 @@ export function BusinessAdminActions({ business, dispatch, t, compact = false })
         done={status === 'active'}
         doneLabel={adminText(t, 'admin.actions.activated')}
         variant="secondary"
-        onClick={() => dispatch(moderateBusiness({ id: business.id, status: 'active' }))}
+        onClick={() =>
+          run(
+            adminText(t, 'admin.confirm.activateBusinessTitle'),
+            adminText(t, 'admin.confirm.activateBusinessBody', { name }),
+            () => dispatch(moderateBusiness({ id: business.id, status: 'active' })),
+          )
+        }
       >
         {adminText(t, 'admin.actions.activate')}
       </ActionButton>
@@ -39,11 +57,20 @@ export function BusinessAdminActions({ business, dispatch, t, compact = false })
         interactive
         variant="secondary"
         onClick={() =>
-          dispatch(
-            moderateBusiness({
-              id: business.id,
-              status: unavailable ? 'verified' : 'unavailable',
-            }),
+          run(
+            unavailable
+              ? adminText(t, 'admin.confirm.restoreBusinessTitle')
+              : adminText(t, 'admin.confirm.unavailableBusinessTitle'),
+            unavailable
+              ? adminText(t, 'admin.confirm.restoreBusinessBody', { name })
+              : adminText(t, 'admin.confirm.unavailableBusinessBody', { name }),
+            () =>
+              dispatch(
+                moderateBusiness({
+                  id: business.id,
+                  status: unavailable ? 'verified' : 'unavailable',
+                }),
+              ),
           )
         }
       >
@@ -57,11 +84,20 @@ export function BusinessAdminActions({ business, dispatch, t, compact = false })
         interactive
         variant="danger"
         onClick={() =>
-          dispatch(
-            moderateBusiness({
-              id: business.id,
-              status: blocked ? 'verified' : 'suspended',
-            }),
+          run(
+            blocked
+              ? adminText(t, 'admin.confirm.unblockBusinessTitle')
+              : adminText(t, 'admin.confirm.blockBusinessTitle'),
+            blocked
+              ? adminText(t, 'admin.confirm.unblockBusinessBody', { name })
+              : adminText(t, 'admin.confirm.blockBusinessBody', { name }),
+            () =>
+              dispatch(
+                moderateBusiness({
+                  id: business.id,
+                  status: blocked ? 'verified' : 'suspended',
+                }),
+              ),
           )
         }
       >
@@ -71,7 +107,13 @@ export function BusinessAdminActions({ business, dispatch, t, compact = false })
         done={rejected}
         doneLabel={adminText(t, 'admin.actions.rejected')}
         variant="danger"
-        onClick={() => dispatch(moderateBusiness({ id: business.id, status: 'rejected' }))}
+        onClick={() =>
+          run(
+            adminText(t, 'admin.confirm.rejectBusinessTitle'),
+            adminText(t, 'admin.confirm.rejectBusinessBody', { name }),
+            () => dispatch(moderateBusiness({ id: business.id, status: 'rejected' })),
+          )
+        }
       >
         {adminText(t, 'admin.actions.reject')}
       </ActionButton>
@@ -81,7 +123,15 @@ export function BusinessAdminActions({ business, dispatch, t, compact = false })
         interactive
         variant="secondary"
         onClick={() =>
-          dispatch(setBusinessPinned({ id: business.id, pinned: !business.pinnedAt }))
+          run(
+            pinned
+              ? adminText(t, 'admin.confirm.unpinBusinessTitle')
+              : adminText(t, 'admin.confirm.pinBusinessTitle'),
+            pinned
+              ? adminText(t, 'admin.confirm.unpinBusinessBody', { name })
+              : adminText(t, 'admin.confirm.pinBusinessBody', { name }),
+            () => dispatch(setBusinessPinned({ id: business.id, pinned: !business.pinnedAt })),
+          )
         }
       >
         {pinned ? adminText(t, 'admin.actions.unpin') : adminText(t, 'admin.actions.pin')}

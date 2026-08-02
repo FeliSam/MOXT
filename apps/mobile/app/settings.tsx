@@ -28,14 +28,14 @@ const PRIORITY_OPTIONS = ['Haute', 'Normale', 'Faible', 'Off'];
 
 export default function SettingsScreen() {
   const { language, setLanguage, translateLabel } = useLanguage();
-  const { isDark, theme, toggleTheme } = useTheme();
+  const { isDark, theme, setTheme } = useTheme();
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);
 
   const [pushEnabled, setPushEnabled] = useState(true);
   const [emailEnabled, setEmailEnabled] = useState(false);
   const [priorities, setPriorities] = useState<Record<string, string>>(() =>
-    Object.fromEntries(NOTIF_CATEGORIES.map((c) => [c.key, 'Normale'])),
+    Object.fromEntries(NOTIF_CATEGORIES.map((c) => [c.key, 'Haute'])),
   );
 
   useEffect(() => {
@@ -51,12 +51,12 @@ export default function SettingsScreen() {
         setPushEnabled(prefs.pushNotifications !== false);
         setEmailEnabled(Boolean(prefs.emailNotifications));
         setPriorities({
-          notifMessages: prefs.notifMessages === 'high' ? 'Haute' : prefs.notifMessages === 'low' ? 'Faible' : prefs.notifMessages === 'off' ? 'Off' : 'Normale',
-          notifTransfers: prefs.notifTransfers === 'high' ? 'Haute' : prefs.notifTransfers === 'low' ? 'Faible' : prefs.notifTransfers === 'off' ? 'Off' : 'Normale',
-          notifParcels: prefs.notifParcels === 'high' ? 'Haute' : prefs.notifParcels === 'low' ? 'Faible' : prefs.notifParcels === 'off' ? 'Off' : 'Normale',
-          notifJobs: prefs.notifJobs === 'high' ? 'Haute' : prefs.notifJobs === 'low' ? 'Faible' : prefs.notifJobs === 'off' ? 'Off' : 'Normale',
-          notifEvents: prefs.notifEvents === 'high' ? 'Haute' : prefs.notifEvents === 'low' ? 'Faible' : prefs.notifEvents === 'off' ? 'Off' : 'Normale',
-          notifActualites: prefs.notifActualites === 'high' ? 'Haute' : prefs.notifActualites === 'low' ? 'Faible' : prefs.notifActualites === 'off' ? 'Off' : 'Normale',
+          notifMessages: prefs.notifMessages === 'normal' ? 'Normale' : prefs.notifMessages === 'low' ? 'Faible' : prefs.notifMessages === 'off' ? 'Off' : 'Haute',
+          notifTransfers: prefs.notifTransfers === 'normal' ? 'Normale' : prefs.notifTransfers === 'low' ? 'Faible' : prefs.notifTransfers === 'off' ? 'Off' : 'Haute',
+          notifParcels: prefs.notifParcels === 'normal' ? 'Normale' : prefs.notifParcels === 'low' ? 'Faible' : prefs.notifParcels === 'off' ? 'Off' : 'Haute',
+          notifJobs: prefs.notifJobs === 'normal' ? 'Normale' : prefs.notifJobs === 'low' ? 'Faible' : prefs.notifJobs === 'off' ? 'Off' : 'Haute',
+          notifEvents: prefs.notifEvents === 'normal' ? 'Normale' : prefs.notifEvents === 'low' ? 'Faible' : prefs.notifEvents === 'off' ? 'Off' : 'Haute',
+          notifActualites: prefs.notifActualites === 'normal' ? 'Normale' : prefs.notifActualites === 'low' ? 'Faible' : prefs.notifActualites === 'off' ? 'Off' : 'Haute',
         });
       } catch {
         // ignore profile preference load errors
@@ -78,7 +78,7 @@ export default function SettingsScreen() {
     };
     const sourcePriorities = overrides.priorities || priorities;
     const mappedPriorities = Object.fromEntries(
-      Object.entries(sourcePriorities).map(([key, value]) => [key, priorityMap[value] || 'normal']),
+      Object.entries(sourcePriorities).map(([key, value]) => [key, priorityMap[value] || 'high']),
     );
     await supabase
       .from('profiles')
@@ -137,11 +137,27 @@ export default function SettingsScreen() {
         <Card>
           <Text className="text-base font-extrabold text-app-text dark:text-zinc-50 mb-2">Apparence</Text>
           <Text className="text-sm leading-5 text-app-text-muted dark:text-zinc-400">
-            Thème actuel : {theme === 'dark' ? 'sombre' : 'clair'}.
+            Thème :{' '}
+            {theme === 'system' ? 'système' : theme === 'dark' ? 'sombre' : 'clair'}
+            {theme === 'system' ? ` (actif : ${isDark ? 'sombre' : 'clair'})` : ''}.
           </Text>
-          <Button variant="secondary" className="mt-4 self-start" onPress={toggleTheme}>
-            {isDark ? '☀️ Changer le thème' : '🌙 Changer le thème'}
-          </Button>
+          <View className="mt-4 flex-row flex-wrap gap-2">
+            {(
+              [
+                { value: 'light' as const, label: 'Clair' },
+                { value: 'dark' as const, label: 'Sombre' },
+                { value: 'system' as const, label: 'Système' },
+              ] as const
+            ).map((option) => (
+              <Button
+                key={option.value}
+                variant={theme === option.value ? 'primary' : 'secondary'}
+                className="self-start"
+                onPress={() => setTheme(option.value)}>
+                {option.label}
+              </Button>
+            ))}
+          </View>
         </Card>
 
         <Card>

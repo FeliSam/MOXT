@@ -238,6 +238,9 @@ const businessSlice = createSlice({
         }
       },
     },
+    discardUnsyncedBusinessDocument(state, action) {
+      state.documents = state.documents.filter((item) => item.id !== action.payload.id)
+    },
     updateBusinessDocumentStatus(state, action) {
       const document = state.documents.find((item) => item.id === action.payload.id)
       if (!document) return
@@ -302,6 +305,7 @@ const businessSlice = createSlice({
 
 export const {
   addBusinessDocument,
+  discardUnsyncedBusinessDocument,
   addBusinessMember,
   createBusinessRequest,
   deleteBusinessByUser,

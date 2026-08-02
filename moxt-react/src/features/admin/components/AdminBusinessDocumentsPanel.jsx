@@ -7,6 +7,7 @@ import { Button } from '../../../components/ui/Button'
 import { businessDocumentTypeLabel } from '../../businesses/businessDocumentTypes'
 import { updateBusinessDocumentStatus } from '../../businesses/businessSlice'
 import { formatDate } from '../../transfers/transferUtils'
+import { confirmedClick } from '../adminActions'
 import { CARD, ITEM } from '../adminConfig'
 import { adminText } from '../adminI18n'
 import { AdminDocumentPreview } from './AdminDocumentPreview'
@@ -69,29 +70,33 @@ export function AdminBusinessDocumentsPanel({
   }, [businesses, documents, query, statusFilter, users])
 
   function approve(item) {
-    dispatch(
-      updateBusinessDocumentStatus({
-        id: item.id,
-        status: 'verified',
-        reviewedBy: adminId,
-        reviewNote: '',
-      }),
-    )
+    confirmedClick(t, adminText(t, 'admin.actions.approve'), () => {
+      dispatch(
+        updateBusinessDocumentStatus({
+          id: item.id,
+          status: 'verified',
+          reviewedBy: adminId,
+          reviewNote: '',
+        }),
+      )
+    })()
   }
 
   function reject(item) {
     const reviewNote = rejectReason.trim()
     if (!reviewNote) return
-    dispatch(
-      updateBusinessDocumentStatus({
-        id: item.id,
-        status: 'rejected',
-        reviewedBy: adminId,
-        reviewNote,
-      }),
-    )
-    setRejectId(null)
-    setRejectReason('')
+    confirmedClick(t, adminText(t, 'admin.actions.reject'), () => {
+      dispatch(
+        updateBusinessDocumentStatus({
+          id: item.id,
+          status: 'rejected',
+          reviewedBy: adminId,
+          reviewNote,
+        }),
+      )
+      setRejectId(null)
+      setRejectReason('')
+    })()
   }
 
   return (

@@ -17,6 +17,7 @@ const STORAGE_KEY = 'moxt-theme';
 
 type ThemeContextValue = {
   theme: ThemeMode;
+  resolvedTheme: 'light' | 'dark';
   colors: ThemeColors;
   isDark: boolean;
   setTheme: (mode: ThemeMode) => void;
@@ -26,6 +27,7 @@ type ThemeContextValue = {
 
 export const ThemeContext = createContext<ThemeContextValue>({
   theme: 'light',
+  resolvedTheme: 'light',
   colors: lightColors,
   isDark: false,
   setTheme: () => {},
@@ -33,10 +35,15 @@ export const ThemeContext = createContext<ThemeContextValue>({
   ready: false,
 });
 
+function resolveTheme(preference: ThemeMode, systemScheme: string | null | undefined): 'light' | 'dark' {
+  if (preference === 'system') return systemScheme === 'dark' ? 'dark' : 'light';
+  return preference;
+}
+
 async function readStoredTheme(): Promise<ThemeMode | null> {
   try {
     const stored = await AsyncStorage.getItem(STORAGE_KEY);
-    if (stored === 'light' || stored === 'dark') return stored;
+    if (stored === 'light' || stored === 'dark' || stored === 'system') return stored;
   } catch {
     /* ignore */
   }
@@ -45,27 +52,28 @@ async function readStoredTheme(): Promise<ThemeMode | null> {
 
 export function AppThemeProvider({ children }: { children: ReactNode }) {
   const systemScheme = useSystemColorScheme();
-  const [theme, setThemeState] = useState<ThemeMode>(
-    systemScheme === 'dark' ? 'dark' : 'light',
-  );
+  const [theme, setThemeState] = useState<ThemeMode>('light');
   const [ready, setReady] = useState(false);
 
+  const resolvedTheme = resolveTheme(theme, systemScheme);
+  const isDark = resolvedTheme === 'dark';
+
   useEffect(() => {
-    nativewindColorScheme.set(theme);
-  }, [theme]);
+    nativewindColorScheme.set(resolvedTheme);
+  }, [resolvedTheme]);
 
   useEffect(() => {
     let mounted = true;
     readStoredTheme().then((stored) => {
       if (!mounted) return;
       if (stored) setThemeState(stored);
-      else setThemeState(systemScheme === 'dark' ? 'dark' : 'light');
+      else setThemeState('light');
       setReady(true);
     });
     return () => {
       mounted = false;
     };
-  }, [systemScheme]);
+  }, []);
 
   const setTheme = useCallback((mode: ThemeMode) => {
     setThemeState(mode);
@@ -74,7 +82,8 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
 
   const toggleTheme = useCallback(() => {
     setThemeState((current) => {
-      const next: ThemeMode = current === 'dark' ? 'light' : 'dark';
+      const next: ThemeMode =
+        current === 'light' ? 'dark' : current === 'dark' ? 'system' : 'light';
       AsyncStorage.setItem(STORAGE_KEY, next).catch(() => {});
       return next;
     });
@@ -83,22 +92,26 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
   const value = useMemo<ThemeContextValue>(
     () => ({
       theme,
-      colors: theme === 'dark' ? darkColors : lightColors,
-      isDark: theme === 'dark',
+      resolvedTheme,
+      colors: isDark ? darkColors : lightColors,
+      isDark,
       setTheme,
       toggleTheme,
       ready,
     }),
-    [theme, setTheme, toggleTheme, ready],
+    [theme, resolvedTheme, isDark, setTheme, toggleTheme, ready],
   );
 
   if (!ready) {
+    const bootResolved = resolveTheme('light', systemScheme);
+    const bootDark = bootResolved === 'dark';
     return (
       <ThemeContext.Provider
         value={{
-          theme: systemScheme === 'dark' ? 'dark' : 'light',
-          colors: systemScheme === 'dark' ? darkColors : lightColors,
-          isDark: systemScheme === 'dark',
+          theme: 'light',
+          resolvedTheme: bootResolved,
+          colors: bootDark ? darkColors : lightColors,
+          isDark: bootDark,
           setTheme,
           toggleTheme,
           ready: false,

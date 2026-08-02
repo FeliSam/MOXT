@@ -6,6 +6,7 @@ import {
   FiGlobe,
   FiInfo,
   FiLock,
+  FiMonitor,
   FiMoon,
   FiSun,
   FiTrash2,
@@ -52,7 +53,7 @@ export function SettingsPage() {
       (item) => item.userId === user.id && item.status === 'requested',
     ),
   )
-  const { theme, setTheme } = useTheme()
+  const { theme, resolvedTheme, setTheme } = useTheme()
   const { language, setLanguage, t } = useLanguage()
   const [confirmDeletion, setConfirmDeletion] = useState(false)
   const [pushPromptLoading, setPushPromptLoading] = useState(false)
@@ -239,7 +240,13 @@ export function SettingsPage() {
               </p>
             </div>
             <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
-              {theme === 'dark' ? <FiMoon className="text-lg" /> : <FiSun className="text-lg" />}
+              {theme === 'system' ? (
+                <FiMonitor className="text-lg" />
+              ) : resolvedTheme === 'dark' ? (
+                <FiMoon className="text-lg" />
+              ) : (
+                <FiSun className="text-lg" />
+              )}
             </span>
           </div>
           <ThemeToggle theme={theme} onSelect={setTheme} t={t} />
@@ -449,19 +456,24 @@ export function SettingsPage() {
 const THEME_OPTIONS = [
   { value: 'light', labelKey: 'settings.appearance.light', icon: FiSun },
   { value: 'dark', labelKey: 'settings.appearance.dark', icon: FiMoon },
+  { value: 'system', labelKey: 'settings.appearance.system', icon: FiMonitor },
 ]
 
 function ThemeToggle({ theme, onSelect, t }) {
+  const activeIndex = Math.max(
+    0,
+    THEME_OPTIONS.findIndex((option) => option.value === theme),
+  )
   return (
     <div
       role="radiogroup"
       aria-label={t('settings.appearance.ariaLabel')}
-      className="relative mt-5 grid grid-cols-2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-1"
+      className="relative mt-5 grid grid-cols-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-1"
     >
       <span
         aria-hidden
-        className="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-xl bg-[var(--app-surface)] shadow-sm ring-1 ring-[var(--app-border)] transition-transform duration-300 ease-out"
-        style={{ transform: theme === 'dark' ? 'translateX(100%)' : 'translateX(0)' }}
+        className="absolute inset-y-1 left-1 w-[calc(33.333%-0.25rem)] rounded-xl bg-[var(--app-surface)] shadow-sm ring-1 ring-[var(--app-border)] transition-transform duration-300 ease-out"
+        style={{ transform: `translateX(${activeIndex * 100}%)` }}
       />
       {THEME_OPTIONS.map(({ value, labelKey, icon: Icon }) => {
         const active = theme === value
@@ -472,14 +484,14 @@ function ThemeToggle({ theme, onSelect, t }) {
             role="radio"
             aria-checked={active}
             onClick={() => onSelect(value)}
-            className={`relative z-10 flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold transition-colors ${
+            className={`relative z-10 flex items-center justify-center gap-1.5 rounded-xl px-1 py-2.5 text-sm font-bold transition-colors sm:gap-2 ${
               active
                 ? 'text-[var(--app-accent)]'
                 : 'text-[var(--app-text-muted)] hover:text-[var(--app-text)]'
             }`}
           >
-            <Icon className="text-base" aria-hidden />
-            {t(labelKey)}
+            <Icon className="shrink-0 text-base" aria-hidden />
+            <span className="truncate">{t(labelKey)}</span>
           </button>
         )
       })}
@@ -594,7 +606,8 @@ function NotifToggle({ label, description, checked, onChange }) {
 }
 
 function NotifPriority({ label, description, value, onChange, t }) {
-  const current = PRIORITY_OPTIONS.find((o) => o.value === value) ?? PRIORITY_OPTIONS[1]
+  const resolved = value || 'high'
+  const current = PRIORITY_OPTIONS.find((o) => o.value === resolved) ?? PRIORITY_OPTIONS[0]
   return (
     <div className="rounded-2xl border border-[var(--app-border)] p-3">
       <div className="mb-2.5 flex items-start justify-between gap-2">
@@ -611,7 +624,7 @@ function NotifPriority({ label, description, value, onChange, t }) {
             type="button"
             onClick={() => onChange(opt.value)}
             className={`flex-1 rounded-xl py-1 text-[10px] font-black transition ${
-              value === opt.value
+              resolved === opt.value
                 ? 'bg-brand-700 text-white dark:bg-brand-600'
                 : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)] hover:bg-[var(--app-accent-soft)] hover:text-[var(--app-accent)]'
             }`}

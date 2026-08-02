@@ -25,13 +25,17 @@ const SMS_MAX_PER_DAY = Number(Deno.env.get('SMS_MAX_PER_DAY') || '10')
  * contourne en vidant le cache ou en changeant de navigateur ; celui-ci est
  * tenu en base et s'applique quoi qu'il arrive.
  *
- * En cas d'indisponibilité de la base : fail-closed (Vague 3) — un SMS bloqué
- * vaut mieux qu'une facture SMS vidée par un abus.
+ * En cas d'indisponibilité de la base : fail-open — un faux positif de cap
+ * laissait des appareils bloqués des heures avec « SMS indisponible ».
+ * Seul un quota réellement dépassé (réponse false) bloque l'envoi.
  */
 async function smsSendAllowed(phone: string): Promise<boolean> {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-  if (!supabaseUrl || !serviceRoleKey) return false
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.warn('[send-sms] service role absent — cap SMS ignoré (fail-open)')
+    return true
+  }
 
   try {
     const admin = createClient(supabaseUrl, serviceRoleKey, {
@@ -43,17 +47,17 @@ async function smsSendAllowed(phone: string): Promise<boolean> {
       p_window_hours: 24,
     })
     if (error) {
-      console.error('[send-sms] cap check failed:', error.message)
+      console.error('[send-sms] cap check failed (fail-open):', error.message)
       try {
         await admin.rpc('moxt_log_security_event', {
           p_kind: 'sms_cap_unavailable',
           p_subject: phone,
-          p_meta: { error: error.message },
+          p_meta: { error: error.message, failOpen: true },
         })
       } catch {
         /* ignore */
       }
-      return false
+      return true
     }
     if (data === false) {
       try {
@@ -69,8 +73,31 @@ async function smsSendAllowed(phone: string): Promise<boolean> {
     }
     return true
   } catch (error) {
-    console.error('[send-sms] cap check error:', error)
-    return false
+    console.error(
+      '[send-sms] cap check exception (fail-open):',
+      error instanceof Error ? error.message : error,
+    )
+    return true
+  }
+}
+
+async function recordSuccessfulSmsSend(phone: string) {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  if (!supabaseUrl || !serviceRoleKey) return
+  try {
+    const admin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
+    const { error } = await admin.rpc('moxt_sms_send_record', { p_phone: phone })
+    if (error) {
+      console.warn('[send-sms] moxt_sms_send_record:', error.message)
+    }
+  } catch (error) {
+    console.warn(
+      '[send-sms] recordSuccessfulSmsSend:',
+      error instanceof Error ? error.message : error,
+    )
   }
 }
 
@@ -858,6 +885,7 @@ Deno.serve(async (req) => {
 
   try {
     await sendOtpSms(phone, otp)
+    await recordSuccessfulSmsSend(phone)
     return json({})
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Échec envoi SMS.'

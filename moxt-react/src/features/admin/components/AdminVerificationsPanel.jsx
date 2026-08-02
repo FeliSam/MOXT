@@ -5,6 +5,7 @@ import { useLanguage } from '../../../contexts/useLanguage'
 import { Badge } from '../../../components/ui/Badge'
 import { Button } from '../../../components/ui/Button'
 import { updateVerificationStatus } from '../../account/accountSlice'
+import { confirmedClick } from '../adminActions'
 import { CARD, ITEM } from '../adminConfig'
 import { adminText } from '../adminI18n'
 import { formatDate } from '../../transfers/transferUtils'
@@ -59,34 +60,38 @@ export function AdminVerificationsPanel({
   }, [query, statusFilter, users, verifications])
 
   function approve(item) {
-    dispatch(
-      updateVerificationStatus({
-        id: item.id,
-        status: 'verified',
-        reviewedBy: adminId,
-      }),
-    )
-    // Évite un panneau détail obsolète / collision DOM après changement de statut.
-    setSelected?.({ kind: 'verification', item: { ...item, status: 'verified' } })
+    confirmedClick(t, t('verification.admin.approve'), () => {
+      dispatch(
+        updateVerificationStatus({
+          id: item.id,
+          status: 'verified',
+          reviewedBy: adminId,
+        }),
+      )
+      // Évite un panneau détail obsolète / collision DOM après changement de statut.
+      setSelected?.({ kind: 'verification', item: { ...item, status: 'verified' } })
+    })()
   }
 
   function reject(item) {
     const reviewNote = rejectReason.trim()
     if (!reviewNote) return
-    dispatch(
-      updateVerificationStatus({
-        id: item.id,
-        status: 'rejected',
-        reviewedBy: adminId,
-        reviewNote,
-      }),
-    )
-    setRejectId(null)
-    setRejectReason('')
-    setSelected?.({
-      kind: 'verification',
-      item: { ...item, status: 'rejected', reviewNote },
-    })
+    confirmedClick(t, t('verification.admin.rejectConfirm'), () => {
+      dispatch(
+        updateVerificationStatus({
+          id: item.id,
+          status: 'rejected',
+          reviewedBy: adminId,
+          reviewNote,
+        }),
+      )
+      setRejectId(null)
+      setRejectReason('')
+      setSelected?.({
+        kind: 'verification',
+        item: { ...item, status: 'rejected', reviewNote },
+      })
+    })()
   }
 
   return (

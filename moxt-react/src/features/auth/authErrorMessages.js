@@ -63,7 +63,7 @@ export function sanitizeAuthMessage(message = '', t) {
   }
 
   const capMatch = text.match(
-    /^Limite atteinte : maximum (\d+) codes par période de 3 heures\. Réessayez dans environ (\d+) minute/,
+    /^Limite atteinte : maximum (\d+) codes par période de (?:3 heures|20 minutes)\. Réessayez dans environ (\d+) minute/,
   )
   if (capMatch) {
     const max = Number(capMatch[1])

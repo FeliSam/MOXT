@@ -21,6 +21,8 @@ const defaultPreferences = {
   notifEvents: 'high',
   notifMarketplace: 'high',
   notifActualites: 'high',
+  notifStatuses: 'high',
+  notifOther: 'high',
   notifSysteme: 'high',
   notifNewSubscribers: true,
   messageSuggestionsEnabled: true,
@@ -347,6 +349,10 @@ const accountSlice = createSlice({
       document.deletedAt = new Date().toISOString()
       document.deletedByUser = true
     },
+    /** Retire une fiche locale non synchronisée (le fichier storage est conservé pour réattribution). */
+    discardUnsyncedPersonalDocument(state, action) {
+      state.documents = state.documents.filter((item) => item.id !== action.payload.id)
+    },
     submitVerificationRequest: {
       reducer(state, action) {
         const existing = state.verificationRequests.find(
@@ -451,6 +457,7 @@ export function selectAccountPreferences(state, userId) {
 export const {
   addPersonalDocument,
   cancelAccountDeletion,
+  discardUnsyncedPersonalDocument,
   markListingViewed,
   removePersonalDocument,
   requestAccountDeletion,

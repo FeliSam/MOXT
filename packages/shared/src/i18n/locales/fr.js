@@ -243,7 +243,7 @@ export const fr = {
       emailUnavailable: "L'envoi d'e-mail est temporairement indisponible. Choisissez la vérification par SMS ou réessayez plus tard.",
       serviceUnavailable: "Service temporairement indisponible. Réessayez plus tard ou contactez le support.",
       otpCooldown: "Patientez {seconds} secondes avant de renvoyer un code.",
-      otpCap: "Limite atteinte : maximum {max} codes par période de 3 heures. Réessayez dans environ {minutes} minutes.",
+      otpCap: "Limite temporaire atteinte ({max} codes). Réessayez dans environ {minutes} minutes — le blocage ne persiste pas.",
     },
     app: {
       network: "Connexion impossible. Vérifiez votre réseau puis réessayez.",
@@ -1551,6 +1551,7 @@ export const fr = {
       description: "Choisissez le thème de l’interface.",
       light: "Clair",
       dark: "Sombre",
+      system: "Système",
       ariaLabel: "Thème de l’interface",
     },
     languagePrivacy: {
@@ -7371,6 +7372,8 @@ export const fr = {
     fanOutParcel: "Nouveau colis",
     fanOutP2p: "Nouvelle offre P2P",
     fanOutPost: "Nouvelle publication",
+    fanOutBusiness: "Nouvelle entreprise",
+    fanOutBusinessBody: "« {name} » vient d'être vérifiée et est disponible dans l'annuaire MOXT.",
     someone: "Quelqu’un",
     transferCompleted: "Transfert terminé",
     transferCompletedBody: "Le client a confirmé la réception pour {id}.",

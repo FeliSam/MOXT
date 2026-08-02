@@ -7,6 +7,7 @@ import { ScrollToTop } from '../components/routing/ScrollToTop'
 import { DocumentTitle } from '../components/routing/DocumentTitle'
 import { DeepLinkListener } from '../components/routing/DeepLinkListener'
 import { ThemeProvider } from '../contexts/ThemeContext'
+import { ConfirmDialogProvider } from '../contexts/ConfirmDialogProvider'
 import { LanguageProvider } from '../contexts/LanguageContext'
 import { useAppBadgeSync } from '../hooks/useAppBadgeSync'
 import { store } from './store'
@@ -34,6 +35,7 @@ export function AppProviders({ children }) {
     <Provider store={store}>
       <LanguageProvider>
         <ThemeProvider>
+          <ConfirmDialogProvider>
           <BrowserRouter>
             <ScrollToTop />
             <DocumentTitle />
@@ -43,6 +45,7 @@ export function AppProviders({ children }) {
             <GlobalNetworkMonitor />
             {children}
           </BrowserRouter>
+          </ConfirmDialogProvider>
         </ThemeProvider>
       </LanguageProvider>
     </Provider>

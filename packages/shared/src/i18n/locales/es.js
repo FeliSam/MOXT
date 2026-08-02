@@ -1549,6 +1549,7 @@ export const es = {
       description: "Elige o tema da interface.",
       light: "Claro",
       dark: "Escuro",
+      system: "Sistema",
       ariaLabel: "Tema da interface"
     },
     languagePrivacy: {
@@ -7356,6 +7357,8 @@ export const es = {
     fanOutParcel: "Nueva paquete",
     fanOutP2p: "Nueva oferta P2P",
     fanOutPost: "Nueva publicación",
+    fanOutBusiness: "Nueva empresa",
+    fanOutBusinessBody: "« {name} » acaba de ser verificada y está disponible en el directorio MOXT.",
     someone: "Alguien",
     transferCompleted: "Transferencia completada",
     transferCompletedBody: "El cliente confirmó la recepción de {id}.",

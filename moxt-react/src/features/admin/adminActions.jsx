@@ -24,8 +24,21 @@ import { normalizeAdminKind, normalizeReportType } from './adminLinkUtils'
 import { adminText } from './adminI18n'
 import { promptRejectReason } from './promptRejectReason'
 import { ActionButton } from './AdminActionButton'
+import { confirmAction } from '../../contexts/confirmBridge'
 
 export { ActionButton }
+
+function askConfirm(t, actionLabel, onConfirm) {
+  confirmAction({
+    title: adminText(t, 'admin.confirm.actionTitle'),
+    description: adminText(t, 'admin.confirm.actionBody', { action: actionLabel }),
+    onConfirm,
+  })
+}
+
+export function confirmedClick(t, actionLabel, onConfirm) {
+  return () => askConfirm(t, actionLabel, onConfirm)
+}
 
 /** Resolve/close a dispute and unlock the linked P2P order when applicable. */
 export function resolveDisputeAndUnlockOrder(dispatch, dispute, { status, actorId, actorRole }) {
@@ -106,7 +119,9 @@ export function contentActions(contentView, dispatch, item, t) {
           <ActionButton
             done={status === 'active'}
             doneLabel={adminText(t, 'admin.actions.published')}
-            onClick={() => dispatch(updateListingStatus({ id: item.id, status: 'active' }))}
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.publish'), () =>
+              dispatch(updateListingStatus({ id: item.id, status: 'active' })),
+            )}
           >
             {adminText(t, 'admin.actions.publish')}
           </ActionButton>
@@ -114,17 +129,17 @@ export function contentActions(contentView, dispatch, item, t) {
             done={status === 'archived' || status === 'suspended'}
             doneLabel={adminText(t, 'admin.actions.archived')}
             variant="danger"
-            onClick={() => dispatch(updateListingStatus({ id: item.id, status: 'archived' }))}
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.archive'), () =>
+              dispatch(updateListingStatus({ id: item.id, status: 'archived' })),
+            )}
           >
             {adminText(t, 'admin.actions.archive')}
           </ActionButton>
           <ActionButton
             variant="danger"
-            onClick={() => {
-              if (window.confirm(adminText(t, 'admin.actions.deleteListingConfirm'))) {
-                dispatch(deleteListing({ id: item.id, ownerId: item.ownerId }))
-              }
-            }}
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.deleteListingConfirm'), () =>
+              dispatch(deleteListing({ id: item.id, ownerId: item.ownerId })),
+            )}
           >
             {adminText(t, 'admin.actions.delete')}
           </ActionButton>
@@ -136,7 +151,9 @@ export function contentActions(contentView, dispatch, item, t) {
           <ActionButton
             done={status === 'active'}
             doneLabel={adminText(t, 'admin.actions.activated')}
-            onClick={() => dispatch(moderateJob({ id: item.id, status: 'active' }))}
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.activate'), () =>
+              dispatch(moderateJob({ id: item.id, status: 'active' })),
+            )}
           >
             {adminText(t, 'admin.actions.activate')}
           </ActionButton>
@@ -144,7 +161,9 @@ export function contentActions(contentView, dispatch, item, t) {
             done={status === 'archived'}
             doneLabel={adminText(t, 'admin.actions.archivedMasc')}
             variant="danger"
-            onClick={() => dispatch(moderateJob({ id: item.id, status: 'archived' }))}
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.archive'), () =>
+              dispatch(moderateJob({ id: item.id, status: 'archived' })),
+            )}
           >
             {adminText(t, 'admin.actions.archive')}
           </ActionButton>
@@ -152,17 +171,17 @@ export function contentActions(contentView, dispatch, item, t) {
             done={status === 'rejected'}
             doneLabel={adminText(t, 'admin.actions.rejected')}
             variant="danger"
-            onClick={() => dispatch(moderateJob({ id: item.id, status: 'rejected' }))}
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.reject'), () =>
+              dispatch(moderateJob({ id: item.id, status: 'rejected' })),
+            )}
           >
             {adminText(t, 'admin.actions.reject')}
           </ActionButton>
           <ActionButton
             variant="danger"
-            onClick={() => {
-              if (window.confirm(adminText(t, 'admin.actions.deleteJobConfirm'))) {
-                dispatch(deleteJob({ id: item.id, ownerId: item.ownerId }))
-              }
-            }}
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.deleteJobConfirm'), () =>
+              dispatch(deleteJob({ id: item.id, ownerId: item.ownerId })),
+            )}
           >
             {adminText(t, 'admin.actions.delete')}
           </ActionButton>
@@ -174,7 +193,9 @@ export function contentActions(contentView, dispatch, item, t) {
           <ActionButton
             done={status === 'published'}
             doneLabel={adminText(t, 'admin.actions.publishedMasc')}
-            onClick={() => dispatch(moderateEvent({ id: item.id, status: 'published' }))}
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.publish'), () =>
+              dispatch(moderateEvent({ id: item.id, status: 'published' })),
+            )}
           >
             {adminText(t, 'admin.actions.publish')}
           </ActionButton>
@@ -182,7 +203,9 @@ export function contentActions(contentView, dispatch, item, t) {
             done={status === 'archived'}
             doneLabel={adminText(t, 'admin.actions.archivedMasc')}
             variant="danger"
-            onClick={() => dispatch(moderateEvent({ id: item.id, status: 'archived' }))}
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.archive'), () =>
+              dispatch(moderateEvent({ id: item.id, status: 'archived' })),
+            )}
           >
             {adminText(t, 'admin.actions.archive')}
           </ActionButton>
@@ -190,17 +213,17 @@ export function contentActions(contentView, dispatch, item, t) {
             done={status === 'rejected'}
             doneLabel={adminText(t, 'admin.actions.rejectedMasc')}
             variant="danger"
-            onClick={() => dispatch(moderateEvent({ id: item.id, status: 'rejected' }))}
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.reject'), () =>
+              dispatch(moderateEvent({ id: item.id, status: 'rejected' })),
+            )}
           >
             {adminText(t, 'admin.actions.reject')}
           </ActionButton>
           <ActionButton
             variant="danger"
-            onClick={() => {
-              if (window.confirm(adminText(t, 'admin.actions.deleteEventConfirm'))) {
-                dispatch(deleteEvent({ id: item.id, ownerId: item.ownerId }))
-              }
-            }}
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.deleteEventConfirm'), () =>
+              dispatch(deleteEvent({ id: item.id, ownerId: item.ownerId })),
+            )}
           >
             {adminText(t, 'admin.actions.delete')}
           </ActionButton>
@@ -212,7 +235,9 @@ export function contentActions(contentView, dispatch, item, t) {
           <ActionButton
             done={status === 'active'}
             doneLabel={adminText(t, 'admin.actions.active')}
-            onClick={() => dispatch(updateParcelStatus({ id: item.id, status: 'active' }))}
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.activate'), () =>
+              dispatch(updateParcelStatus({ id: item.id, status: 'active' })),
+            )}
           >
             {adminText(t, 'admin.actions.activate')}
           </ActionButton>
@@ -220,7 +245,9 @@ export function contentActions(contentView, dispatch, item, t) {
             done={status === 'archived'}
             doneLabel={adminText(t, 'admin.actions.archivedMasc')}
             variant="danger"
-            onClick={() => dispatch(updateParcelStatus({ id: item.id, status: 'archived' }))}
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.archive'), () =>
+              dispatch(updateParcelStatus({ id: item.id, status: 'archived' })),
+            )}
           >
             {adminText(t, 'admin.actions.archive')}
           </ActionButton>
@@ -228,17 +255,17 @@ export function contentActions(contentView, dispatch, item, t) {
             done={status === 'rejected'}
             doneLabel={adminText(t, 'admin.actions.rejectedMasc')}
             variant="danger"
-            onClick={() => dispatch(updateParcelStatus({ id: item.id, status: 'rejected' }))}
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.reject'), () =>
+              dispatch(updateParcelStatus({ id: item.id, status: 'rejected' })),
+            )}
           >
             {adminText(t, 'admin.actions.reject')}
           </ActionButton>
           <ActionButton
             variant="danger"
-            onClick={() => {
-              if (window.confirm(adminText(t, 'admin.actions.deleteParcelConfirm'))) {
-                dispatch(deleteParcel({ id: item.id, ownerId: item.ownerId }))
-              }
-            }}
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.deleteParcelConfirm'), () =>
+              dispatch(deleteParcel({ id: item.id, ownerId: item.ownerId })),
+            )}
           >
             {adminText(t, 'admin.actions.delete')}
           </ActionButton>
@@ -247,9 +274,9 @@ export function contentActions(contentView, dispatch, item, t) {
               <ActionButton
                 done={item.proofStatus === 'verified'}
                 doneLabel={adminText(t, 'admin.queues.validateProof')}
-                onClick={() =>
-                  dispatch(updateParcelProofStatus({ id: item.id, status: 'verified' }))
-                }
+                onClick={confirmedClick(t, adminText(t, 'admin.queues.validateProof'), () =>
+                  dispatch(updateParcelProofStatus({ id: item.id, status: 'verified' })),
+                )}
               >
                 {adminText(t, 'admin.queues.validateProof')}
               </ActionButton>
@@ -257,9 +284,9 @@ export function contentActions(contentView, dispatch, item, t) {
                 done={item.proofStatus === 'rejected'}
                 doneLabel={adminText(t, 'admin.queues.rejectProof')}
                 variant="danger"
-                onClick={() =>
-                  dispatch(updateParcelProofStatus({ id: item.id, status: 'rejected' }))
-                }
+                onClick={confirmedClick(t, adminText(t, 'admin.queues.rejectProof'), () =>
+                  dispatch(updateParcelProofStatus({ id: item.id, status: 'rejected' })),
+                )}
               >
                 {adminText(t, 'admin.queues.rejectProof')}
               </ActionButton>
@@ -273,7 +300,9 @@ export function contentActions(contentView, dispatch, item, t) {
           <ActionButton
             done={status === 'resolved'}
             doneLabel={adminText(t, 'admin.actions.resolvedReport')}
-            onClick={() => handleReportApprove(dispatch, item)}
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.resolveReport'), () =>
+              handleReportApprove(dispatch, item),
+            )}
           >
             {adminText(t, 'admin.actions.resolveReport')}
           </ActionButton>
@@ -281,7 +310,9 @@ export function contentActions(contentView, dispatch, item, t) {
             done={status === 'dismissed'}
             doneLabel={adminText(t, 'admin.actions.dismissed')}
             variant="danger"
-            onClick={() => handleReportReject(dispatch, item)}
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.dismiss'), () =>
+              handleReportReject(dispatch, item),
+            )}
           >
             {adminText(t, 'admin.actions.dismiss')}
           </ActionButton>
@@ -293,7 +324,9 @@ export function contentActions(contentView, dispatch, item, t) {
           <ActionButton
             done={status === 'published'}
             doneLabel={adminText(t, 'admin.actions.publishedMasc')}
-            onClick={() => dispatch(moderatePost({ id: item.id, status: 'published' }))}
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.publish'), () =>
+              dispatch(moderatePost({ id: item.id, status: 'published' })),
+            )}
           >
             {adminText(t, 'admin.actions.publish')}
           </ActionButton>
@@ -301,21 +334,17 @@ export function contentActions(contentView, dispatch, item, t) {
             done={status === 'archived'}
             doneLabel={adminText(t, 'admin.actions.archivedMasc')}
             variant="danger"
-            onClick={() => {
-              if (window.confirm(adminText(t, 'admin.actions.archivePostConfirm'))) {
-                dispatch(moderatePost({ id: item.id, status: 'archived' }))
-              }
-            }}
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.archivePostConfirm'), () =>
+              dispatch(moderatePost({ id: item.id, status: 'archived' })),
+            )}
           >
             {adminText(t, 'admin.actions.archive')}
           </ActionButton>
           <ActionButton
             variant="danger"
-            onClick={() => {
-              if (window.confirm(adminText(t, 'admin.actions.deletePostConfirm'))) {
-                dispatch(deletePost(item.id))
-              }
-            }}
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.deletePostConfirm'), () =>
+              dispatch(deletePost(item.id)),
+            )}
           >
             {adminText(t, 'admin.actions.delete')}
           </ActionButton>
@@ -332,9 +361,10 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
     case 'transfer': {
       if (actorRole === 'moderator') return null
       const next = TRANSFER_TRANSITIONS[item.status]
+      const advanceLabel = adminText(t, 'admin.actions.advanceTo', { next })
       return next ? (
         <Button
-          onClick={() =>
+          onClick={confirmedClick(t, advanceLabel, () =>
             dispatch(
               moderateTransfer({
                 id: item.id,
@@ -349,10 +379,10 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
                       }
                     : undefined,
               }),
-            )
-          }
+            ),
+          )}
         >
-          {adminText(t, 'admin.actions.advanceTo', { next })}
+          {advanceLabel}
         </Button>
       ) : null
     }
@@ -362,13 +392,19 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
           {item.status === 'active' ? (
             <Button
               variant="secondary"
-              onClick={() => dispatch(moderateOffer({ id: item.id, status: 'archived' }))}
+              onClick={confirmedClick(t, adminText(t, 'admin.actions.archive'), () =>
+                dispatch(moderateOffer({ id: item.id, status: 'archived' })),
+              )}
             >
               {adminText(t, 'admin.actions.archive')}
             </Button>
           ) : null}
           {item.status === 'archived' ? (
-            <Button onClick={() => dispatch(moderateOffer({ id: item.id, status: 'active' }))}>
+            <Button
+              onClick={confirmedClick(t, adminText(t, 'admin.actions.reactivate'), () =>
+                dispatch(moderateOffer({ id: item.id, status: 'active' })),
+              )}
+            >
               {adminText(t, 'admin.actions.reactivate')}
             </Button>
           ) : null}
@@ -379,7 +415,7 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
         <>
           {item.status === 'disputed' ? (
             <Button
-              onClick={() =>
+              onClick={confirmedClick(t, adminText(t, 'admin.p2p.restoreOrder'), () =>
                 dispatch(
                   moderateOrder({
                     id: item.id,
@@ -388,8 +424,8 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
                     actorRole: actorRole || 'admin',
                     note: 'admin_restore',
                   }),
-                )
-              }
+                ),
+              )}
             >
               {adminText(t, 'admin.p2p.restoreOrder')}
             </Button>
@@ -397,7 +433,7 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
           {!['completed', 'cancelled', 'disputed'].includes(item.status) ? (
             <Button
               variant="secondary"
-              onClick={() =>
+              onClick={confirmedClick(t, adminText(t, 'admin.p2p.markDisputed'), () =>
                 dispatch(
                   moderateOrder({
                     id: item.id,
@@ -406,8 +442,8 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
                     actorRole: actorRole || 'admin',
                     note: 'admin_dispute',
                   }),
-                )
-              }
+                ),
+              )}
             >
               {adminText(t, 'admin.p2p.markDisputed')}
             </Button>
@@ -415,7 +451,7 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
           {!['completed', 'cancelled'].includes(item.status) ? (
             <>
               <Button
-                onClick={() =>
+                onClick={confirmedClick(t, adminText(t, 'admin.p2p.completeOrder'), () =>
                   dispatch(
                     moderateOrder({
                       id: item.id,
@@ -424,14 +460,14 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
                       actorRole: actorRole || 'admin',
                       note: 'admin_complete',
                     }),
-                  )
-                }
+                  ),
+                )}
               >
                 {adminText(t, 'admin.p2p.completeOrder')}
               </Button>
               <Button
                 variant="danger"
-                onClick={() =>
+                onClick={confirmedClick(t, adminText(t, 'admin.p2p.cancelOrder'), () =>
                   dispatch(
                     moderateOrder({
                       id: item.id,
@@ -440,8 +476,8 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
                       actorRole: actorRole || 'admin',
                       note: 'admin_cancel',
                     }),
-                  )
-                }
+                  ),
+                )}
               >
                 {adminText(t, 'admin.p2p.cancelOrder')}
               </Button>
@@ -470,9 +506,9 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
             done={item.role === 'moderator'}
             doneLabel={adminText(t, 'admin.actions.moderatorPromoted')}
             variant="secondary"
-            onClick={() =>
-              dispatchUserRole(dispatch, { actorRole, id: item.id, role: 'moderator', t })
-            }
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.promoteModerator'), () =>
+              dispatchUserRole(dispatch, { actorRole, id: item.id, role: 'moderator', t }),
+            )}
           >
             {adminText(t, 'admin.actions.promoteModerator')}
           </ActionButton>
@@ -481,13 +517,21 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
             doneLabel={adminText(t, 'admin.actions.adminPromoted')}
             variant="secondary"
             disabled={actorRole !== 'superadmin'}
-            onClick={() => dispatchUserRole(dispatch, { actorRole, id: item.id, role: 'admin', t })}
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.promoteAdmin'), () =>
+              dispatchUserRole(dispatch, { actorRole, id: item.id, role: 'admin', t }),
+            )}
           >
             {adminText(t, 'admin.actions.promoteAdmin')}
           </ActionButton>
           <Button
             variant={item.status === 'suspended' ? 'secondary' : 'danger'}
-            onClick={() => onSuspendUser(item)}
+            onClick={confirmedClick(
+              t,
+              item.status === 'suspended'
+                ? adminText(t, 'admin.actions.reactivate')
+                : adminText(t, 'admin.actions.suspend'),
+              () => onSuspendUser(item),
+            )}
           >
             {item.status === 'suspended'
               ? adminText(t, 'admin.actions.reactivate')
@@ -496,11 +540,11 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
           <ActionButton
             done={item.phoneVerified}
             doneLabel={adminText(t, 'admin.actions.phoneVerified')}
-            onClick={() => {
-              if (window.confirm(adminText(t, 'admin.actions.verifyPhoneConfirm', { phone: item.phone }))) {
-                verifyUserPhoneManually(dispatch, { id: item.id, t })
-              }
-            }}
+            onClick={confirmedClick(
+              t,
+              adminText(t, 'admin.actions.verifyPhoneConfirm', { phone: item.phone }),
+              () => verifyUserPhoneManually(dispatch, { id: item.id, t }),
+            )}
           >
             {adminText(t, 'admin.actions.verifyPhone')}
           </ActionButton>
@@ -508,11 +552,11 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
             done={item.emailVerified}
             doneLabel={adminText(t, 'admin.actions.emailVerified')}
             variant="secondary"
-            onClick={() => {
-              if (window.confirm(adminText(t, 'admin.actions.verifyEmailConfirm', { email: item.email }))) {
-                verifyUserEmailManually(dispatch, { id: item.id, t })
-              }
-            }}
+            onClick={confirmedClick(
+              t,
+              adminText(t, 'admin.actions.verifyEmailConfirm', { email: item.email }),
+              () => verifyUserEmailManually(dispatch, { id: item.id, t }),
+            )}
           >
             {adminText(t, 'admin.actions.verifyEmail')}
           </ActionButton>
@@ -525,15 +569,15 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
           <ActionButton
             done={item.status === 'verified'}
             doneLabel={adminText(t, 'admin.actions.approved')}
-            onClick={() =>
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.approve'), () =>
               dispatch(
                 updateVerificationStatus({
                   id: item.id,
                   status: 'verified',
                   reviewedBy: reviewerId,
                 }),
-              )
-            }
+              ),
+            )}
           >
             {adminText(t, 'admin.actions.approve')}
           </ActionButton>
@@ -541,7 +585,7 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
             done={item.status === 'rejected'}
             doneLabel={adminText(t, 'admin.actions.rejected')}
             variant="danger"
-            onClick={() => {
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.reject'), () => {
               const reviewNote = promptRejectReason(t, item.reviewNote || '')
               if (!reviewNote) return
               dispatch(
@@ -552,7 +596,7 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
                   reviewNote,
                 }),
               )
-            }}
+            })}
           >
             {adminText(t, 'admin.actions.reject')}
           </ActionButton>
@@ -565,7 +609,7 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
           <ActionButton
             done={item.status === 'verified'}
             doneLabel={adminText(t, 'admin.actions.approved')}
-            onClick={() =>
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.approve'), () =>
               dispatch(
                 updateBusinessDocumentStatus({
                   id: item.id,
@@ -573,8 +617,8 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
                   reviewedBy: reviewerId,
                   reviewNote: '',
                 }),
-              )
-            }
+              ),
+            )}
           >
             {adminText(t, 'admin.actions.approve')}
           </ActionButton>
@@ -582,7 +626,7 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
             done={item.status === 'rejected'}
             doneLabel={adminText(t, 'admin.actions.rejected')}
             variant="danger"
-            onClick={() => {
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.reject'), () => {
               const reviewNote = promptRejectReason(t, item.reviewNote || '')
               if (!reviewNote) return
               dispatch(
@@ -593,7 +637,7 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
                   reviewNote,
                 }),
               )
-            }}
+            })}
           >
             {adminText(t, 'admin.actions.reject')}
           </ActionButton>
@@ -603,25 +647,25 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
       return (
         <>
           <Button
-            onClick={() =>
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.resolve'), () =>
               resolveDisputeAndUnlockOrder(dispatch, item, {
                 status: 'resolved',
                 actorId: reviewerId,
                 actorRole: actorRole || 'admin',
-              })
-            }
+              }),
+            )}
           >
             {adminText(t, 'admin.actions.resolve')}
           </Button>
           <Button
             variant="secondary"
-            onClick={() =>
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.close'), () =>
               resolveDisputeAndUnlockOrder(dispatch, item, {
                 status: 'closed',
                 actorId: reviewerId,
                 actorRole: actorRole || 'admin',
-              })
-            }
+              }),
+            )}
           >
             {adminText(t, 'admin.actions.close')}
           </Button>
@@ -633,7 +677,7 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
           <>
             <Button
               variant="danger"
-              onClick={() =>
+              onClick={confirmedClick(t, adminText(t, 'admin.actions.removeReview'), () =>
                 dispatch(
                   moderateReview({
                     id: item.id,
@@ -641,13 +685,13 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
                     disputeStatus: REVIEW_DISPUTE_STATUS.UPHELD,
                     moderatedBy: 'admin',
                   }),
-                )
-              }
+                ),
+              )}
             >
               {adminText(t, 'admin.actions.removeReview')}
             </Button>
             <Button
-              onClick={() =>
+              onClick={confirmedClick(t, adminText(t, 'admin.actions.rejectContest'), () =>
                 dispatch(
                   moderateReview({
                     id: item.id,
@@ -655,8 +699,8 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
                     disputeStatus: REVIEW_DISPUTE_STATUS.REJECTED,
                     moderatedBy: 'admin',
                   }),
-                )
-              }
+                ),
+              )}
             >
               {adminText(t, 'admin.actions.rejectContest')}
             </Button>
@@ -665,10 +709,19 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
       }
       return (
         <>
-          <Button onClick={() => dispatch(moderateReview({ id: item.id, status: 'published', moderatedBy: 'admin' }))}>
+          <Button
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.publish'), () =>
+              dispatch(moderateReview({ id: item.id, status: 'published', moderatedBy: 'admin' })),
+            )}
+          >
             {adminText(t, 'admin.actions.publish')}
           </Button>
-          <Button variant="danger" onClick={() => dispatch(moderateReview({ id: item.id, status: 'hidden', moderatedBy: 'admin' }))}>
+          <Button
+            variant="danger"
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.hide'), () =>
+              dispatch(moderateReview({ id: item.id, status: 'hidden', moderatedBy: 'admin' })),
+            )}
+          >
             {adminText(t, 'admin.actions.hide')}
           </Button>
         </>
