@@ -8,7 +8,7 @@ export function DashboardCalcBand({ user }) {
 
   return (
     <section
-      className="relative min-w-0 overflow-hidden rounded-[1.35rem] bg-[linear-gradient(135deg,color-mix(in_srgb,var(--app-teal)_32%,var(--app-surface))_0%,color-mix(in_srgb,var(--app-teal)_14%,var(--app-surface-muted))_100%)] p-[5%] shadow-[var(--shadow-card)] dark:bg-[linear-gradient(135deg,rgba(8,112,95,0.55)_0%,rgba(8,112,95,0.28)_100%)]"
+      className="relative min-w-0 overflow-hidden rounded-[1.35rem] bg-[linear-gradient(135deg,color-mix(in_srgb,var(--app-teal)_11.86%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] p-[5%] shadow-[var(--shadow-card)] dark:bg-[linear-gradient(135deg,rgba(8,112,95,0.237)_0%,var(--app-surface-muted)_100%)]"
       aria-label={t('transfers.dashboardCalc.title')}
     >
       <div className="relative z-10 grid min-w-0 gap-4 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-5">
