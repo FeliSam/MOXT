@@ -24,7 +24,7 @@ import {
   toggleLike,
   updatePost,
 } from '../../features/posts/postsSlice'
-import { getPostImages } from '../../features/posts/postMediaUtils'
+import { getPostImages, MAX_POST_MESSAGE_LENGTH } from '../../features/posts/postMediaUtils'
 import { SOURCE_TYPE_LABELS } from '../../features/posts/postTemplates'
 import { formatDate } from '../../features/transfers/transferUtils'
 import { addToast } from '../../features/ui/uiSlice'
@@ -320,7 +320,7 @@ export function FeedPostCard({ post }) {
               className="min-h-24 w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 text-sm sm:min-h-28"
               value={editMessage}
               onChange={(e) => setEditMessage(e.target.value)}
-              maxLength={500}
+              maxLength={MAX_POST_MESSAGE_LENGTH}
             />
             <div className="flex gap-2">
               <button

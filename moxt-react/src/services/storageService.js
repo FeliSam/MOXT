@@ -322,7 +322,7 @@ export const storageService = {
   },
 
   async uploadPostImages(userId, postId, files, { version = '', onProgress } = {}) {
-    const list = Array.isArray(files) ? files.filter(Boolean).slice(0, 4) : []
+    const list = Array.isArray(files) ? files.filter(Boolean).slice(0, 5) : []
     return uploadImageBatch(list, { onProgress, version }, async (file, i, ver, fileProgress) =>
       compressThenUpload(
         file,

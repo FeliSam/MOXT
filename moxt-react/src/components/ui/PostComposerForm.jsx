@@ -1,14 +1,14 @@
 import { useId, useRef } from 'react'
 import { FiImage, FiPlus, FiSend, FiTrash2 } from 'react-icons/fi'
 import { useLanguage } from '../../contexts/useLanguage'
-import { MAX_POST_IMAGES } from '../../features/posts/postMediaUtils'
+import { MAX_POST_IMAGES, MAX_POST_MESSAGE_LENGTH } from '../../features/posts/postMediaUtils'
 import { isProfileVerified } from '../../features/profile/userProfileUtils'
 import { phase3Text } from '../../i18n/phase3I18n'
 import { EntityVerifiedName } from './EntityVerifiedName'
 import { UploadProgress } from './UploadProgress'
 
 /**
- * Shared create/edit composer for feed posts (message + up to 4 images).
+ * Shared create/edit composer for feed posts (message + up to 5 images).
  *
  * imagePreviews: string[] of object URLs / remote URLs / data URLs
  */
@@ -29,7 +29,7 @@ export function PostComposerForm({
   /** @deprecated */
   onRemoveImage,
   directLink = null,
-  maxLength = 500,
+  maxLength = MAX_POST_MESSAGE_LENGTH,
   maxImages = MAX_POST_IMAGES,
   submitLabel,
   submitIcon: SubmitIcon = FiSend,

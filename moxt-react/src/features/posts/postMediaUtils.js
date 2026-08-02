@@ -1,4 +1,5 @@
-export const MAX_POST_IMAGES = 4
+export const MAX_POST_IMAGES = 5
+export const MAX_POST_MESSAGE_LENGTH = 3000
 
 /** Normalize post media: prefer `images[]`, fall back to legacy `imageUrl`. */
 export function getPostImages(post) {

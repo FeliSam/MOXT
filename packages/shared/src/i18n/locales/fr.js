@@ -5054,7 +5054,7 @@ export const fr = {
       removeImage: "Supprimer l'image",
       removeImageIndexed: "Supprimer l’image {index}",
       addImage: "Ajouter une image",
-      addImages: "Ajouter des images (max. 4)",
+      addImages: "Ajouter des images (max. 5)",
       addAnother: "Ajouter",
       imagesHint: "{count}/{max} images",
       link: "Lien : {link}",

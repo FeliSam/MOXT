@@ -5076,7 +5076,7 @@ export const en = {
       removeImage: "Remove image",
       removeImageIndexed: "Remove image {index}",
       addImage: "Add an image",
-      addImages: "Add images (max. 4)",
+      addImages: "Add images (max. 5)",
       addAnother: "Add",
       imagesHint: "{count}/{max} images",
       link: "Link: {link}",

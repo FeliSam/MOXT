@@ -5074,7 +5074,7 @@ export const pt = {
       removeImage: "Remover imagem",
       removeImageIndexed: "Remover imagem {index}",
       addImage: "Adicionar uma imagem",
-      addImages: "Adicionar imagens (máx. 4)",
+      addImages: "Adicionar imagens (máx. 5)",
       addAnother: "Adicionar",
       imagesHint: "{count}/{max} imagens",
       link: "Ligação: {link}",

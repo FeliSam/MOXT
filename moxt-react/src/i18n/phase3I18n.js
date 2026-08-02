@@ -638,7 +638,7 @@ export const PHASE3_FR_SOURCES = {
   'news.composer.removeImageIndexed': 'Supprimer l’image {index}',
   'news.composer.replaceImage': "Remplacer l'image",
   'news.composer.addImage': 'Ajouter une image',
-  'news.composer.addImages': 'Ajouter des images (max. 4)',
+  'news.composer.addImages': 'Ajouter des images (max. 5)',
   'news.composer.addAnother': 'Ajouter',
   'news.composer.imagesHint': '{count}/{max} images',
   'news.composer.link': 'Lien : {link}',

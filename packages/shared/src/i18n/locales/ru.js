@@ -5075,7 +5075,7 @@ export const ru = {
       removeImage: "Удалить изображение",
       removeImageIndexed: "Удалить изображение {index}",
       addImage: "Добавить изображение",
-      addImages: "Добавить изображения (макс. 4)",
+      addImages: "Добавить изображения (макс. 5)",
       addAnother: "Добавить",
       imagesHint: "{count}/{max} изображений",
       link: "Ссылка: {link}",

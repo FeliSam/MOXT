@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { getPostImages, normalizePostImages } from './postMediaUtils'
 
 describe('postMediaUtils', () => {
-  it('prefers images array and caps at 4', () => {
+  it('prefers images array and caps at 5', () => {
     expect(
       getPostImages({
-        images: ['a', 'b', 'c', 'd', 'e'],
+        images: ['a', 'b', 'c', 'd', 'e', 'f'],
         imageUrl: 'legacy',
       }),
-    ).toEqual(['a', 'b', 'c', 'd'])
+    ).toEqual(['a', 'b', 'c', 'd', 'e'])
   })
 
   it('falls back to legacy imageUrl', () => {
