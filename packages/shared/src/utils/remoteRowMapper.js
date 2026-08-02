@@ -163,6 +163,14 @@ const camelMap = {
   confirm_due_at: 'confirmDueAt',
   viewed_by: 'viewedBy',
   is_official: 'isOfficial',
+  storage_path: 'storagePath',
+  superseded_at: 'supersededAt',
+  deleted_at: 'deletedAt',
+  deleted_by_user: 'deletedByUser',
+  review_note: 'reviewNote',
+  reviewed_by: 'reviewedBy',
+  reviewed_at: 'reviewedAt',
+  legal_hold_until: 'legalHoldUntil',
 }
 
 export function fromRow(row) {

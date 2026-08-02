@@ -7360,6 +7360,9 @@ export const fr = {
       "La validation de « {name} » a été refusée. Contactez le support MOXT pour plus d'informations.",
     businessUpdated: "Entreprise mise à jour",
     businessUpdatedBody: "Nouveau statut : {status}.",
+    businessPendingReview: "Entreprise à valider",
+    businessPendingReviewBody:
+      "« {name} » vient d'être créée et attend une validation.",
     resourceUpdated: "{label} mise a jour",
     newStatus: "Nouveau statut: {status}.",
     labelEvent: "Événement",
@@ -7373,7 +7376,8 @@ export const fr = {
     fanOutP2p: "Nouvelle offre P2P",
     fanOutPost: "Nouvelle publication",
     fanOutBusiness: "Nouvelle entreprise",
-    fanOutBusinessBody: "« {name} » vient d'être vérifiée et est disponible dans l'annuaire MOXT.",
+    fanOutBusinessBody:
+      "« {name} » vient d'être créée et est disponible dans l'annuaire MOXT.",
     someone: "Quelqu’un",
     transferCompleted: "Transfert terminé",
     transferCompletedBody: "Le client a confirmé la réception pour {id}.",

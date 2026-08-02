@@ -456,14 +456,21 @@ export const ADMIN_FR_SOURCES = {
   'admin.documents.notFound': 'Documents introuvables ({count}). Vérifiez le chargement admin.',
   'admin.documents.maintenanceTitle': 'Maintenance du stockage documents',
   'admin.documents.maintenanceDescription':
-    'Fichiers du bucket privé non rattachés à une fiche. Priorité : les attribuer au propriétaire (préfixe userId / entreprise). Ne purgez que les chemins sans propriétaire valide. Les documents déjà liés restent protégés par la rétention 5 ans (115-ФЗ).',
-  'admin.documents.scanAction': 'Analyser',
+    'Réparation automatique chaque jour (cron) : rattache chaque fichier au propriétaire / à l’entreprise (dossier dédié) et consolide les doublons. Bouton « Réparer maintenant » pour forcer. Ne purgez que les chemins vraiment sans propriétaire. Rétention 5 ans (115-ФЗ).',
+  'admin.documents.repairAction': 'Réparer maintenant',
+  'admin.documents.scanAction': 'Vérifier le reste',
   'admin.documents.attributeAction': 'Attribuer',
   'admin.documents.purgeAction': 'Purger le reste',
   'admin.documents.noOrphans': 'Aucun fichier non référencé — le stockage est propre.',
-  'admin.documents.scanDoneTitle': 'Analyse terminée',
-  'admin.documents.scanDoneBody': '{count} fichier(s) non référencé(s) détecté(s).',
-  'admin.documents.scanFailedTitle': 'Analyse impossible',
+  'admin.documents.lastRepairSummary':
+    'Dernière réparation : {attributed} rattaché(s), {deduped} doublon(s) consolidé(s), {remaining} restant(s).',
+  'admin.documents.scanDoneTitle': 'Vérification terminée',
+  'admin.documents.scanDoneBody': '{count} fichier(s) encore non rattachable(s).',
+  'admin.documents.scanFailedTitle': 'Vérification impossible',
+  'admin.documents.repairDoneTitle': 'Réparation terminée',
+  'admin.documents.repairDoneBody':
+    '{attributed} rattaché(s) ({personal} perso, {business} entreprise), {deduped} doublon(s), {skipped} ignoré(s), {remaining} restant(s).',
+  'admin.documents.repairFailedTitle': 'Réparation impossible',
   'admin.documents.attributeDoneTitle': 'Attribution terminée',
   'admin.documents.attributeDoneBody':
     '{attributed} rattaché(s) ({personal} perso, {business} entreprise), {skipped} ignoré(s), {remaining} restant(s).',
@@ -473,7 +480,7 @@ export const ADMIN_FR_SOURCES = {
   'admin.documents.purgeFailedTitle': 'Purge impossible',
   'admin.documents.purgeConfirmTitle': 'Purger uniquement le reste non attribuable ?',
   'admin.documents.purgeConfirmBody':
-    'Supprimer définitivement {count} fichier(s) encore non référencé(s) après attribution ? Réservé aux chemins sans propriétaire. Action irréversible.',
+    'Supprimer définitivement {count} fichier(s) encore non référencé(s) après réparation ? Réservé aux chemins sans propriétaire. Action irréversible.',
   'admin.documents.previewUnavailable': 'Aperçu non disponible pour ce type — utilisez Ouvrir.',
   'admin.documents.noSignedUrl': 'Impossible de générer un lien signé pour ce document.',
   'admin.documents.download': 'Télécharger',

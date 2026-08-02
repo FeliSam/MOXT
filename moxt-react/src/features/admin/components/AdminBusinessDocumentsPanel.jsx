@@ -34,7 +34,9 @@ export function AdminBusinessDocumentsPanel({
   const [rejectReason, setRejectReason] = useState('')
 
   const items = useMemo(() => {
-    let list = [...documents]
+    let list = [...documents].filter(
+      (item) => !item.supersededAt && item.status !== 'superseded',
+    )
     if (statusFilter === 'pending') {
       list = list.filter((item) => ['pending_review', 'pending'].includes(item.status))
     } else if (statusFilter !== 'all') {

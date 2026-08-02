@@ -135,10 +135,11 @@ export function businessDocumentToRemoteRow(document) {
     type: document.type || 'application/octet-stream',
     url: document.url || null,
     storage_path: document.storagePath || null,
-    status: document.status || 'pending_review',
+    status: document.status === 'superseded' ? 'superseded' : document.status || 'pending_review',
     reviewed_by: document.reviewedBy || null,
     review_note: document.reviewNote || '',
     reviewed_at: document.reviewedAt || null,
+    superseded_at: document.supersededAt || null,
     created_at: document.createdAt || new Date().toISOString(),
     updated_at: document.updatedAt || new Date().toISOString(),
   }

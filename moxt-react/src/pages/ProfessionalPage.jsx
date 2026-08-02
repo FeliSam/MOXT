@@ -148,7 +148,12 @@ export function ProfessionalPage() {
     state.businesses.members.filter((item) => item.businessId === business?.id),
   )
   const documents = useSelector((state) =>
-    state.businesses.documents.filter((item) => item.businessId === business?.id),
+    state.businesses.documents.filter(
+      (item) =>
+        item.businessId === business?.id &&
+        !item.supersededAt &&
+        item.status !== 'superseded',
+    ),
   )
   const requests = useSelector((state) =>
     state.businesses.requests.filter((item) => item.businessId === business?.id),

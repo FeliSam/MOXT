@@ -16,6 +16,7 @@ import {
   isBusinessDocumentType,
 } from '../../features/businesses/businessDocumentTypes'
 import { addBusinessDocument } from '../../features/businesses/businessSlice'
+import { upsertBusinessDocumentRemote } from '../../features/businesses/businessRemote'
 import { professionalText } from '../../features/businesses/professionalI18n'
 import { addToast } from '../../features/ui/uiSlice'
 import { useUploadProgress } from '../../hooks/useUploadProgress'
@@ -62,7 +63,7 @@ export function DocumentsPanel({ business, dispatch, documents, initialCategory 
           onProgress,
         }),
       )
-      dispatch(
+      const action = dispatch(
         addBusinessDocument({
           businessId: business.id,
           ownerId: business.ownerId,
@@ -74,6 +75,12 @@ export function DocumentsPanel({ business, dispatch, documents, initialCategory 
           storagePath: uploaded?.path || null,
         }),
       )
+      // Persistance immédiate : évite les orphelins si le middleware rate
+      try {
+        await upsertBusinessDocumentRemote(action.payload)
+      } catch (syncErr) {
+        console.warn('[Documents] sync différée:', syncErr?.message || syncErr)
+      }
       dispatch(
         addToast({
           title: pt('professional.documents.toast.addedTitle'),

@@ -636,8 +636,18 @@ const handlers = {
       .eq('business_id', payload.businessId)
     if (error) throw error
   },
-  'businesses/addBusinessDocument': async (payload) => {
+  'businesses/addBusinessDocument': async (payload, state) => {
     await upsertBusinessDocumentRemote(payload)
+    const superseded = (state.businesses.documents || []).filter(
+      (item) =>
+        item.businessId === payload.businessId &&
+        item.category === payload.category &&
+        item.id !== payload.id &&
+        (item.supersededAt || item.status === 'superseded'),
+    )
+    for (const doc of superseded) {
+      await upsertBusinessDocumentRemote(doc)
+    }
   },
   'businesses/updateBusinessDocumentStatus': async (payload, state) => {
     const document = state.businesses.documents.find((item) => item.id === payload.id)
@@ -1553,11 +1563,25 @@ const handlers = {
       .eq('user_id', payload.userId)
     if (error) throw error
   },
-  'account/addPersonalDocument': async (payload) => {
+  'account/addPersonalDocument': async (payload, state) => {
     const { error } = await supabase
       .from('personal_documents')
       .upsert(personalDocumentToRemoteRow(payload), { onConflict: 'id' })
     if (error) throw error
+    const replaced = (state.account.documents || []).filter(
+      (item) =>
+        item.userId === payload.userId &&
+        item.category === payload.category &&
+        item.id !== payload.id &&
+        item.deletedAt &&
+        !item.deletedByUser,
+    )
+    for (const doc of replaced) {
+      const { error: replaceError } = await supabase
+        .from('personal_documents')
+        .upsert(personalDocumentToRemoteRow(doc), { onConflict: 'id' })
+      if (replaceError) throw replaceError
+    }
   },
   'account/removePersonalDocument': async (payload) => {
     await update('personal_documents', payload.id, {
@@ -1931,33 +1955,21 @@ export const supabaseMiddleware = (store) => (next) => (action) => {
           })
         }
       }
-      // Documents : ne jamais supprimer le fichier storage ici — le rattacher
-      // via Admin → Attribuer. On retire seulement la fiche locale optimiste.
-      if (action.type === 'account/addPersonalDocument' && action.payload?.id) {
-        store.dispatch({
-          type: 'account/discardUnsyncedPersonalDocument',
-          payload: { id: action.payload.id },
-        })
-      }
-      if (action.type === 'businesses/addBusinessDocument' && action.payload?.id) {
-        store.dispatch({
-          type: 'businesses/discardUnsyncedBusinessDocument',
-          payload: { id: action.payload.id },
-        })
-      }
+      // Documents : ne jamais supprimer le fichier storage ni la fiche locale —
+      // réessai sync / réparation auto (cron + Admin → Réparer).
       store.dispatch(
         addToast({
           title:
             action.type === 'account/addPersonalDocument' ||
             action.type === 'businesses/addBusinessDocument'
-              ? 'Document déposé — synchronisation en attente'
+              ? 'Document déposé — synchronisation en cours'
               : 'Synchronisation impossible',
           message:
             action.type === 'account/addPersonalDocument' ||
             action.type === 'businesses/addBusinessDocument'
               ? sanitizeUserFacingMessage(
                   err?.message ||
-                    'Le fichier est conservé dans le stockage sécurisé. Réessayez l’envoi ou un administrateur pourra le rattacher.',
+                    'Le fichier est conservé. La fiche reste visible et sera rattachée automatiquement.',
                 )
               : sanitizeUserFacingMessage(
                   err?.message || "L'enregistrement distant a échoué.",

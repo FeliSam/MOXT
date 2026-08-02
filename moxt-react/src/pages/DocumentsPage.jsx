@@ -17,6 +17,7 @@ import { addToast } from '../features/ui/uiSlice'
 import { useUploadProgress } from '../hooks/useUploadProgress'
 import { phase3Text } from '../i18n/phase3I18n'
 import { storageService } from '../services/storageService'
+import { supabase } from '../services/supabaseClient'
 
 export function DocumentsPage() {
   const dispatch = useDispatch()
@@ -37,7 +38,7 @@ export function DocumentsPage() {
       const uploaded = await track((onProgress) =>
         storageService.uploadDocument(user.id, category, file, { onProgress }),
       )
-      dispatch(
+      const action = dispatch(
         addPersonalDocument({
           userId: user.id,
           category,
@@ -48,6 +49,27 @@ export function DocumentsPage() {
           storagePath: uploaded?.path || null,
         }),
       )
+      try {
+        const doc = action.payload
+        const { error } = await supabase.from('personal_documents').upsert(
+          {
+            id: doc.id,
+            user_id: doc.userId,
+            category: doc.category || 'identity',
+            name: doc.name || '',
+            size: Number(doc.size) || 0,
+            type: doc.type || 'application/octet-stream',
+            url: doc.url || null,
+            storage_path: doc.storagePath || null,
+            status: doc.status || 'pending_review',
+            created_at: doc.createdAt || new Date().toISOString(),
+          },
+          { onConflict: 'id' },
+        )
+        if (error) throw error
+      } catch (syncErr) {
+        console.warn('[Documents] sync différée:', syncErr?.message || syncErr)
+      }
       dispatch(
         addToast({
           title: p3('documents.toast.sentTitle'),
@@ -56,8 +78,6 @@ export function DocumentsPage() {
         }),
       )
     } catch (err) {
-      // Ne pas supprimer le fichier storage : s’il a été déposé, un admin
-      // pourra le rattacher (Admin → Documents → Attribuer).
       dispatch(addToast({ title: p3('common.error'), message: err.message, tone: 'error' }))
     }
   }

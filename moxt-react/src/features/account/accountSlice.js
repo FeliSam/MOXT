@@ -322,12 +322,29 @@ const accountSlice = createSlice({
     },
     addPersonalDocument: {
       reducer(state, action) {
-        state.documents.unshift(action.payload)
+        const next = action.payload
+        const category = next.category || 'other'
+        if (category !== 'other') {
+          const now = new Date().toISOString()
+          state.documents.forEach((item) => {
+            if (
+              item.userId === next.userId &&
+              item.category === category &&
+              item.id !== next.id &&
+              !item.deletedAt &&
+              ['pending_review', 'pending', 'rejected'].includes(item.status)
+            ) {
+              item.deletedAt = now
+              item.deletedByUser = false
+            }
+          })
+        }
+        state.documents.unshift(next)
       },
       prepare(values) {
         return {
           payload: {
-            id: createId('PDOC'),
+            id: values.id || createId('PDOC'),
             userId: values.userId,
             category: values.category,
             name: values.name,
@@ -336,7 +353,7 @@ const accountSlice = createSlice({
             url: values.url || null,
             storagePath: values.storagePath || null,
             status: 'pending_review',
-            createdAt: new Date().toISOString(),
+            createdAt: values.createdAt || new Date().toISOString(),
           },
         }
       },
@@ -349,9 +366,11 @@ const accountSlice = createSlice({
       document.deletedAt = new Date().toISOString()
       document.deletedByUser = true
     },
-    /** Retire une fiche locale non synchronisée (le fichier storage est conservé pour réattribution). */
+    /** Retire une fiche locale non synchronisée uniquement si force:true. */
     discardUnsyncedPersonalDocument(state, action) {
-      state.documents = state.documents.filter((item) => item.id !== action.payload.id)
+      if (action.payload?.force) {
+        state.documents = state.documents.filter((item) => item.id !== action.payload.id)
+      }
     },
     submitVerificationRequest: {
       reducer(state, action) {

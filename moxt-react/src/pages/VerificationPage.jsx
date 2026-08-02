@@ -32,6 +32,7 @@ import { EmailVerificationCard } from '../features/security/EmailVerificationCar
 import { VerificationGuidePanel } from '../features/verification/VerificationGuidePanel'
 import { phase3Text } from '../i18n/phase3I18n'
 import { storageService } from '../services/storageService'
+import { supabase } from '../services/supabaseClient'
 import { addToast } from '../features/ui/uiSlice'
 import { UploadProgress } from '../components/ui/UploadProgress'
 import { FileNameText } from '../components/ui/FileNameText'
@@ -153,9 +154,25 @@ export function VerificationPage() {
           }),
         )
         documentIds.push(action.payload.id)
+        const row = action.payload
+        const { error } = await supabase.from('personal_documents').upsert(
+          {
+            id: row.id,
+            user_id: row.userId,
+            category: row.category || 'identity',
+            name: row.name || '',
+            size: Number(row.size) || 0,
+            type: row.type || 'application/octet-stream',
+            url: row.url || null,
+            storage_path: row.storagePath || null,
+            status: row.status || 'pending_review',
+            created_at: row.createdAt || new Date().toISOString(),
+          },
+          { onConflict: 'id' },
+        )
+        if (error) console.warn('[Verification] sync différée:', error.message)
       } catch (err) {
         console.warn('[Storage] doc upload failed:', err.message)
-        // Fichier éventuellement déjà déposé : ne pas le supprimer — réattribution admin.
       }
     }
     if (!privacyConsent) return

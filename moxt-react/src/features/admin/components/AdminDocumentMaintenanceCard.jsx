@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FiHardDrive, FiLink, FiRefreshCw, FiTrash2 } from 'react-icons/fi'
+import { FiHardDrive, FiRefreshCw, FiTool, FiTrash2 } from 'react-icons/fi'
 import { useDispatch } from 'react-redux'
 import { Button } from '../../../components/ui/Button'
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog'
@@ -12,22 +12,21 @@ import { SectionTitle } from './AdminShared'
 
 /**
  * Maintenance du bucket privé `documents`.
- * Priorité : rattacher les fichiers non référencés (préfixe userId) —
- * ne purger que ce qui n’a vraiment pas de propriétaire.
+ * Réparation (attribution + dédoublonnage) — aussi lancée chaque jour par le cron.
  */
 export function AdminDocumentMaintenanceCard() {
   const { t } = useLanguage()
   const dispatch = useDispatch()
   const [orphans, setOrphans] = useState(null)
+  const [lastRepair, setLastRepair] = useState(null)
   const [scanning, setScanning] = useState(false)
-  const [attributing, setAttributing] = useState(false)
+  const [repairing, setRepairing] = useState(false)
   const [purging, setPurging] = useState(false)
   const [confirmPurgeOpen, setConfirmPurgeOpen] = useState(false)
 
   async function scan() {
     setScanning(true)
     try {
-      // grace 0 : inclure aussi les uploads récents non synchronisés
       const found = await storageService.listOrphanDocuments(0)
       setOrphans(found)
       dispatch(
@@ -50,21 +49,27 @@ export function AdminDocumentMaintenanceCard() {
     }
   }
 
-  async function reattribute() {
-    setAttributing(true)
+  async function repair() {
+    setRepairing(true)
     try {
-      const result = await storageService.reattributeOrphanDocuments(0)
+      const result = await storageService.repairDocuments(0)
       const remaining = await storageService.listOrphanDocuments(0)
       setOrphans(remaining)
+      setLastRepair(result)
       dispatch(
         addToast({
-          title: adminText(t, 'admin.documents.attributeDoneTitle'),
-          message: adminText(t, 'admin.documents.attributeDoneBody', {
+          title: adminText(t, 'admin.documents.repairDoneTitle'),
+          message: adminText(t, 'admin.documents.repairDoneBody', {
             attributed: result.attributed,
             personal: result.personal,
             business: result.business,
             skipped: result.skipped,
             remaining: remaining.length,
+            deduped:
+              result.dedupe.businessSuperseded +
+              result.dedupe.personalSoftDeleted +
+              result.dedupe.businessPathRemoved +
+              result.dedupe.personalPathRemoved,
           }),
           tone: remaining.length ? 'warning' : 'success',
         }),
@@ -72,13 +77,13 @@ export function AdminDocumentMaintenanceCard() {
     } catch (err) {
       dispatch(
         addToast({
-          title: adminText(t, 'admin.documents.attributeFailedTitle'),
+          title: adminText(t, 'admin.documents.repairFailedTitle'),
           message: err?.message || '',
           tone: 'error',
         }),
       )
     } finally {
-      setAttributing(false)
+      setRepairing(false)
     }
   }
 
@@ -119,6 +124,20 @@ export function AdminDocumentMaintenanceCard() {
         {adminText(t, 'admin.documents.maintenanceDescription')}
       </p>
 
+      {lastRepair ? (
+        <p className="rounded-xl bg-[var(--app-surface-muted)] px-3 py-2.5 text-xs text-[var(--app-text-muted)]">
+          {adminText(t, 'admin.documents.lastRepairSummary', {
+            attributed: lastRepair.attributed,
+            deduped:
+              lastRepair.dedupe.businessSuperseded +
+              lastRepair.dedupe.personalSoftDeleted +
+              lastRepair.dedupe.businessPathRemoved +
+              lastRepair.dedupe.personalPathRemoved,
+            remaining: lastRepair.remaining,
+          })}
+        </p>
+      ) : null}
+
       {orphans?.length ? (
         <ul className="grid max-h-56 gap-1 overflow-y-auto rounded-xl bg-[var(--app-surface-muted)] p-3">
           {orphans.map((item) => (
@@ -138,16 +157,11 @@ export function AdminDocumentMaintenanceCard() {
       ) : null}
 
       <div className="flex flex-wrap gap-2">
+        <Button icon={FiTool} loading={repairing} onClick={repair}>
+          {adminText(t, 'admin.documents.repairAction')}
+        </Button>
         <Button variant="secondary" icon={FiRefreshCw} loading={scanning} onClick={scan}>
           {adminText(t, 'admin.documents.scanAction')}
-        </Button>
-        <Button
-          icon={FiLink}
-          disabled={!orphans?.length || attributing}
-          loading={attributing}
-          onClick={reattribute}
-        >
-          {adminText(t, 'admin.documents.attributeAction')}
         </Button>
         <Button
           variant="danger"

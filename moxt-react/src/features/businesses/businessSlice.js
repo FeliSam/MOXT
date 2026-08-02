@@ -217,13 +217,31 @@ const businessSlice = createSlice({
     },
     addBusinessDocument: {
       reducer(state, action) {
-        state.documents.unshift(action.payload)
+        const next = action.payload
+        const category = next.category || 'other'
+        if (category !== 'other') {
+          const now = new Date().toISOString()
+          state.documents.forEach((item) => {
+            if (
+              item.businessId === next.businessId &&
+              item.category === category &&
+              item.id !== next.id &&
+              !item.supersededAt &&
+              ['pending_review', 'pending', 'rejected'].includes(item.status)
+            ) {
+              item.supersededAt = now
+              item.updatedAt = now
+              item.status = 'superseded'
+            }
+          })
+        }
+        state.documents.unshift(next)
       },
       prepare(values) {
         return {
           payload: {
             ...values,
-            id: createId('BDOC'),
+            id: values.id || createId('BDOC'),
             name: values.name,
             size: Number(values.size) || 0,
             type: values.type || 'application/octet-stream',
@@ -233,13 +251,18 @@ const businessSlice = createSlice({
             reviewNote: '',
             reviewedBy: null,
             reviewedAt: null,
-            createdAt: new Date().toISOString(),
+            supersededAt: null,
+            createdAt: values.createdAt || new Date().toISOString(),
           },
         }
       },
     },
     discardUnsyncedBusinessDocument(state, action) {
-      state.documents = state.documents.filter((item) => item.id !== action.payload.id)
+      // Conservé pour compat : ne plus retirer après échec sync — le fichier
+      // storage doit rester visible localement jusqu’à sync / réparation auto.
+      if (action.payload?.force) {
+        state.documents = state.documents.filter((item) => item.id !== action.payload.id)
+      }
     },
     updateBusinessDocumentStatus(state, action) {
       const document = state.documents.find((item) => item.id === action.payload.id)

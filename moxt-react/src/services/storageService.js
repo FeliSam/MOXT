@@ -403,7 +403,11 @@ export const storageService = {
       percent: 6,
       fileName: file?.name,
     })
-    const path = `${userId}/${category}-${Date.now()}.${ext(file)}`
+    const safeCategory = String(category || 'other').replace(/[^a-zA-Z0-9_-]/g, '_')
+    const safeName = String(file?.name || 'document')
+      .replace(/[^a-zA-Z0-9._-]+/g, '_')
+      .slice(0, 60)
+    const path = `${userId}/${safeCategory}/${Date.now()}-${safeName || `file.${ext(file)}`}`
     const uploadFile = await maybeCompressProof(file, onProgress)
     await uploadPrivate('documents', path, uploadFile, { onProgress })
     return { url: null, path }
@@ -415,9 +419,13 @@ export const storageService = {
       percent: 6,
       fileName: file?.name,
     })
+    // Dossier dédié par entreprise + type : {owner}/business/{bizId}/{category}/…
     const safeBusiness = String(businessId || 'business').replace(/[^a-zA-Z0-9_-]/g, '_')
     const safeCategory = String(category || 'other').replace(/[^a-zA-Z0-9_-]/g, '_')
-    const path = `${userId}/business/${safeBusiness}/${safeCategory}-${Date.now()}.${ext(file)}`
+    const safeName = String(file?.name || 'document')
+      .replace(/[^a-zA-Z0-9._-]+/g, '_')
+      .slice(0, 60)
+    const path = `${userId}/business/${safeBusiness}/${safeCategory}/${Date.now()}-${safeName || `file.${ext(file)}`}`
     const uploadFile = await maybeCompressProof(file, onProgress)
     await uploadPrivate('documents', path, uploadFile, { onProgress })
     return { url: null, path }
@@ -477,6 +485,33 @@ export const storageService = {
       skipped: skipped.length,
       personal: attributed.filter((row) => row.attributed_as === 'personal').length,
       business: attributed.filter((row) => row.attributed_as === 'business').length,
+    }
+  },
+
+  /**
+   * Attribution + dédoublonnage (cron / admin). Plus besoin d’analyser puis
+   * attribuer à la main pour les cas rattachables.
+   */
+  async repairDocuments(graceHours = 0) {
+    const { data, error } = await supabase.rpc('moxt_repair_documents', {
+      p_grace_hours: graceHours,
+    })
+    if (error) throw new Error(error.message)
+    const result = data && typeof data === 'object' ? data : {}
+    const dedupe = result.dedupe && typeof result.dedupe === 'object' ? result.dedupe : {}
+    return {
+      attributed: Number(result.attributed) || 0,
+      personal: Number(result.personal) || 0,
+      business: Number(result.business) || 0,
+      skipped: Number(result.skipped) || 0,
+      exists: Number(result.exists) || 0,
+      remaining: Number(result.remaining) || 0,
+      dedupe: {
+        businessSuperseded: Number(dedupe.business_superseded) || 0,
+        personalSoftDeleted: Number(dedupe.personal_soft_deleted) || 0,
+        businessPathRemoved: Number(dedupe.business_path_duplicates_removed) || 0,
+        personalPathRemoved: Number(dedupe.personal_path_duplicates_removed) || 0,
+      },
     }
   },
 

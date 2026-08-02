@@ -43,6 +43,23 @@ function notifyAllUsersPublication({ title, message, type, link, priority, dedup
     })
 }
 
+/** Alerte tous les admins via RPC (fonctionne même si la liste locale est vide). */
+function notifyAdminsRemote({ title, message, type, link, priority, dedupeKey }) {
+  if (!supabase) return
+  void supabase
+    .rpc('moxt_notify_admins', {
+      p_title: String(title || '').slice(0, 200),
+      p_message: String(message || '').slice(0, 500),
+      p_type: type || 'moderation',
+      p_link: link || '/admin',
+      p_priority: priority || 'high',
+      p_dedupe_key: dedupeKey || null,
+    })
+    .then(({ error }) => {
+      if (error) console.warn('[notifications] alerte admin:', error.message)
+    })
+}
+
 function fanOutPublicationToEveryone(store, state, item, contentType, title, linkBuilder, priority = 'normal') {
   const publisher = resolvePublisherFromContent(state, item)
   if (!publisher.publisherId || !item?.id) return
@@ -841,17 +858,13 @@ export const interactionMiddleware = (store) => {
       const previous = before.businesses.items.find((item) => item.id === action.payload.id)
       const business = after.businesses.items.find((item) => item.id === action.payload.id)
       const { status } = action.payload
-      if (business?.ownerId && business.ownerId !== actorId && previous?.status !== status) {
+      if (business && previous?.status !== status) {
         const wasPublishReady = BUSINESS_VISIBLE_STATUSES.includes(previous?.status)
         const isPublishReady = BUSINESS_VISIBLE_STATUSES.includes(status)
-        if (isPublishReady && !wasPublishReady) {
-          notify(store, {
-            userId: business.ownerId,
-            title: appText('notificationsFeed.businessVerified'),
-            message: appText('notificationsFeed.businessVerifiedBody', { name: business.name }),
-            type: 'business',
-            link: `/businesses/${business.id}`,
-          })
+
+        // Fan-out global dès qu'une entreprise devient publique — indépendant
+        // du propriétaire (sinon aucune notif si admin = owner ou ownerId manquant).
+        if (isPublishReady && !wasPublishReady && business.id) {
           notifyAllUsersPublication({
             title: appText('notificationsFeed.fanOutBusiness'),
             message: appText('notificationsFeed.fanOutBusinessBody', {
@@ -862,22 +875,34 @@ export const interactionMiddleware = (store) => {
             priority: 'high',
             dedupeKey: `business-verified-${business.id}`,
           })
-        } else if (status === 'rejected') {
-          notify(store, {
-            userId: business.ownerId,
-            title: appText('notificationsFeed.businessRejected'),
-            message: appText('notificationsFeed.businessRejectedBody', { name: business.name }),
-            type: 'moderation',
-            link: `/businesses/${business.id}`,
-          })
-        } else if (!isPublishReady) {
-          notify(store, {
-            userId: business.ownerId,
-            title: appText('notificationsFeed.businessUpdated'),
-            message: appText('notificationsFeed.businessUpdatedBody', { status }),
-            type: 'moderation',
-            link: `/businesses/${business.id}`,
-          })
+        }
+
+        if (business.ownerId && business.ownerId !== actorId) {
+          if (isPublishReady && !wasPublishReady) {
+            notify(store, {
+              userId: business.ownerId,
+              title: appText('notificationsFeed.businessVerified'),
+              message: appText('notificationsFeed.businessVerifiedBody', { name: business.name }),
+              type: 'business',
+              link: `/businesses/${business.id}`,
+            })
+          } else if (status === 'rejected') {
+            notify(store, {
+              userId: business.ownerId,
+              title: appText('notificationsFeed.businessRejected'),
+              message: appText('notificationsFeed.businessRejectedBody', { name: business.name }),
+              type: 'moderation',
+              link: `/businesses/${business.id}`,
+            })
+          } else if (!isPublishReady) {
+            notify(store, {
+              userId: business.ownerId,
+              title: appText('notificationsFeed.businessUpdated'),
+              message: appText('notificationsFeed.businessUpdatedBody', { status }),
+              type: 'moderation',
+              link: `/businesses/${business.id}`,
+            })
+          }
         }
       }
     }
@@ -1054,6 +1079,23 @@ export const interactionMiddleware = (store) => {
   }
   if (successActions[action.type]) {
     store.dispatch(addToast({ ...successActions[action.type], tone: 'success' }))
+  }
+
+  // Nouvelle entreprise → alerter les admins pour validation (pas de flood utilisateurs).
+  if (action.type === 'businesses/saveBusiness') {
+    const existed = before.businesses.items.some((item) => item.id === action.payload?.id)
+    if (!existed && action.payload?.id) {
+      notifyAdminsRemote({
+        title: appText('notificationsFeed.businessPendingReview'),
+        message: appText('notificationsFeed.businessPendingReviewBody', {
+          name: action.payload.name || '',
+        }),
+        type: 'moderation',
+        link: '/admin?view=businesses',
+        priority: 'high',
+        dedupeKey: `business-pending-${action.payload.id}`,
+      })
+    }
   }
 
   if (action.type === 'marketplace/publishListing/fulfilled') {

@@ -1,6 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit'
-import { beforeEach, describe, expect, it } from 'vitest'
-import businessesReducer, { moderateBusiness } from '../features/businesses/businessSlice'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import businessesReducer, { moderateBusiness, saveBusiness } from '../features/businesses/businessSlice'
 import communicationsReducer, { sendMessage } from '../features/communications/communicationSlice'
 import financeReducer from '../features/finance/financeSlice'
 import jobsReducer, { updateApplicationStatus } from '../features/jobs/jobSlice'
@@ -17,10 +17,14 @@ import marketplaceReducer, {
   reportListing,
   updateListingStatus,
 } from '../features/marketplace/marketplaceSlice'
+import { supabase } from '../services/supabaseClient'
 import { interactionMiddleware } from './interactionMiddleware'
 
 describe('interactionMiddleware', () => {
-  beforeEach(() => localStorage.clear())
+  beforeEach(() => {
+    localStorage.clear()
+    vi.restoreAllMocks()
+  })
 
   it('n ajoute pas de notification pour un message envoye', () => {
     const store = configureStore({
@@ -303,6 +307,100 @@ describe('interactionMiddleware', () => {
       type: 'business',
       link: '/businesses/biz-1',
     })
+  })
+
+  it('fan-out global meme si admin = proprietaire de l entreprise', () => {
+    const rpcMock = vi.fn(() => Promise.resolve({ data: 1, error: null }))
+    vi.spyOn(supabase, 'rpc').mockImplementation(rpcMock)
+
+    const store = configureStore({
+      reducer: {
+        auth: () => ({ user: { id: 'owner-1', role: 'admin' } }),
+        communications: communicationsReducer,
+        ui: uiReducer,
+        jobs: () => ({ applications: [], items: [] }),
+        events: () => ({ registrations: [], items: [] }),
+        parcels: () => ({ items: [], requests: [] }),
+        businesses: businessesReducer,
+        marketplace: () => ({ items: [] }),
+        finance: () => ({ payments: [], receipts: [], walletEntries: [] }),
+      },
+      preloadedState: {
+        businesses: {
+          items: [
+            {
+              id: 'biz-1',
+              ownerId: 'owner-1',
+              name: 'MOXT Change',
+              status: 'pending_review',
+            },
+          ],
+          requests: [],
+        },
+        communications: { conversations: [], notifications: [], support: [] },
+      },
+      middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(interactionMiddleware),
+    })
+
+    store.dispatch(moderateBusiness({ id: 'biz-1', status: 'verified' }))
+
+    // Pas de notif locale propriétaire (acteur = owner), mais fan-out RPC obligatoire
+    expect(store.getState().communications.notifications).toHaveLength(0)
+    expect(rpcMock).toHaveBeenCalledWith(
+      'moxt_notify_all_users',
+      expect.objectContaining({
+        p_dedupe_key: 'business-verified-biz-1',
+        p_type: 'business',
+        p_link: '/businesses/biz-1',
+        p_priority: 'high',
+      }),
+    )
+  })
+
+  it('alerte les admins quand une entreprise est creee', () => {
+    const rpcMock = vi.fn(() => Promise.resolve({ data: 1, error: null }))
+    vi.spyOn(supabase, 'rpc').mockImplementation(rpcMock)
+
+    const store = configureStore({
+      reducer: {
+        auth: () => ({ user: { id: 'owner-1', role: 'user' } }),
+        communications: communicationsReducer,
+        ui: uiReducer,
+        jobs: () => ({ applications: [], items: [] }),
+        events: () => ({ registrations: [], items: [] }),
+        parcels: () => ({ items: [], requests: [] }),
+        businesses: businessesReducer,
+        marketplace: () => ({ items: [] }),
+        finance: () => ({ payments: [], receipts: [], walletEntries: [] }),
+      },
+      preloadedState: {
+        businesses: { items: [], requests: [], members: [], documents: [] },
+        communications: { conversations: [], notifications: [], support: [] },
+      },
+      middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(interactionMiddleware),
+    })
+
+    store.dispatch(
+      saveBusiness({
+        ownerId: 'owner-1',
+        name: 'Boutique Test',
+        phone: '+79001234567',
+        description: 'Test',
+        services: [],
+      }),
+    )
+
+    expect(rpcMock).toHaveBeenCalledWith(
+      'moxt_notify_admins',
+      expect.objectContaining({
+        p_type: 'moderation',
+        p_link: '/admin?view=businesses',
+        p_priority: 'high',
+      }),
+    )
+    const dedupe = rpcMock.mock.calls.find((call) => call[0] === 'moxt_notify_admins')?.[1]
+      ?.p_dedupe_key
+    expect(String(dedupe || '')).toMatch(/^business-pending-/)
   })
 
   it('ne renvoie pas de notification de verification si deja verifiee', () => {
