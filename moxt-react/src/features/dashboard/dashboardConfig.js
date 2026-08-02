@@ -1,20 +1,9 @@
 /**
  * Actions rapides — disposition bento (même modèle que Services essentiels).
+ * Ordre UX : annonce → colis → transfert → job → événement.
  * size: hero | featured | medium | compact
  */
 export const quickActions = [
-  {
-    id: 'qa-transfer',
-    labelKey: 'dashboard.config.quickActions.transfer.label',
-    descriptionKey: 'dashboard.config.quickActions.transfer.description',
-    path: '/transfers',
-    image: '/assets/services/3d/service-transfer.png',
-    imageLogo: '/assets/services/service-transfer.png',
-    size: 'hero',
-    iconPos: 'br',
-    surface:
-      'bg-[linear-gradient(135deg,color-mix(in_srgb,var(--app-teal)_16.94%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(135deg,rgba(8,112,95,0.339)_0%,var(--app-surface-muted)_100%)]',
-  },
   {
     id: 'qa-listing',
     labelKey: 'dashboard.config.quickActions.listing.label',
@@ -22,7 +11,7 @@ export const quickActions = [
     path: '/marketplace/publish',
     image: '/assets/services/3d/quick-marketplace.png',
     imageLogo: '/assets/services/quick-marketplace.png',
-    size: 'featured',
+    size: 'hero',
     iconPos: 'br',
     surface:
       'bg-[linear-gradient(160deg,color-mix(in_srgb,#0891b2_14.52%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(160deg,rgba(8,145,178,0.266)_0%,var(--app-surface-muted)_100%)]',
@@ -34,10 +23,22 @@ export const quickActions = [
     path: '/parcels/publish',
     image: '/assets/services/3d/quick-parcel.png',
     imageLogo: '/assets/services/quick-parcel.png',
-    size: 'medium',
+    size: 'featured',
     iconPos: 'br',
     surface:
       'bg-[linear-gradient(145deg,color-mix(in_srgb,#245de8_10.89%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(36,93,232,0.218)_0%,var(--app-surface-muted)_100%)]',
+  },
+  {
+    id: 'qa-transfer',
+    labelKey: 'dashboard.config.quickActions.transfer.label',
+    descriptionKey: 'dashboard.config.quickActions.transfer.description',
+    path: '/transfers',
+    image: '/assets/services/3d/service-transfer.png',
+    imageLogo: '/assets/services/service-transfer.png',
+    size: 'medium',
+    iconPos: 'br',
+    surface:
+      'bg-[linear-gradient(135deg,color-mix(in_srgb,var(--app-teal)_16.94%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(135deg,rgba(8,112,95,0.339)_0%,var(--app-surface-muted)_100%)]',
   },
   {
     id: 'qa-job',

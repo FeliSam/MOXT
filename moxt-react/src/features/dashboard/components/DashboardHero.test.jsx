@@ -8,7 +8,6 @@ vi.mock('../../../contexts/useLanguage', () => ({
     t: (key, vars) => {
       const map = {
         'dashboard.hero.welcome': `Bienvenue ${vars?.name || ''}`,
-        'dashboard.hero.createTransfer': 'Créer un transfert',
         'dashboard.hero.install': "Installer l'App",
         'dashboard.hero.guide': 'Guide',
       }
@@ -17,12 +16,8 @@ vi.mock('../../../contexts/useLanguage', () => ({
   }),
 }))
 
-vi.mock('../../transfers/DashboardTransferCalculator', () => ({
-  DashboardTransferCalculator: () => <div data-testid="transfer-calculator" />,
-}))
-
 describe('DashboardHero', () => {
-  it('affiche les CTA Accueil en boutons (transfert, installer, guide)', () => {
+  it('affiche un hero minimal (salutation, install, guide) sans sous-titre', () => {
     render(
       <MemoryRouter>
         <DashboardHero user={{ firstName: 'Amina', verified: true }} />
@@ -30,8 +25,8 @@ describe('DashboardHero', () => {
     )
 
     expect(screen.getByRole('heading', { name: /Bienvenue Amina/i })).toBeInTheDocument()
-    expect(screen.queryByText(/Tous vos services essentiels/i)).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Créer un transfert/i })).toHaveAttribute('href', '/transfers')
+    expect(screen.queryByText(/Envoyez de l’argent/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /Créer un transfert/i })).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Installer l'App/i })).toHaveAttribute('href', '/install')
     expect(screen.getByRole('link', { name: /^Guide$/i })).toHaveAttribute('href', '/guide')
   })

@@ -36,22 +36,26 @@ export function DashboardTransferCalculator() {
   }
 
   return (
-    <div className="min-w-0 max-w-full overflow-hidden rounded-[var(--radius-card-lg)] bg-white/12 p-3 shadow-2xl backdrop-blur-xl sm:p-5">
+    <div className="min-w-0 max-w-full overflow-hidden">
       <div className="flex min-w-0 items-center justify-between gap-2 sm:gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-bold text-white/65">{t('transfers.dashboardCalc.eyebrow')}</p>
-          <h2 className="mt-1 truncate text-lg font-black sm:text-xl">{t('transfers.dashboardCalc.title')}</h2>
+          <p className="text-xs font-bold text-[var(--app-text-muted)]">
+            {t('transfers.dashboardCalc.eyebrow')}
+          </p>
+          <h2 className="mt-0.5 truncate text-lg font-black tracking-tight text-[var(--app-text)] sm:text-xl">
+            {t('transfers.dashboardCalc.title')}
+          </h2>
         </div>
         <button
           type="button"
           onClick={invert}
-          className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-btn)] bg-white text-brand-800 sm:size-11"
+          className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-btn)] bg-[var(--app-surface)] text-[var(--app-teal)] shadow-[var(--shadow-card)] ring-1 ring-[var(--app-border)] sm:size-11"
           aria-label={t('transfers.calculator.invertAria')}
         >
           <FiRepeat />
         </button>
       </div>
-      <div className="mt-5 grid min-w-0 gap-3 sm:mt-6">
+      <div className="mt-4 grid min-w-0 gap-2.5 sm:mt-5 sm:gap-3">
         <CurrencyField
           label={t('transfers.dashboardCalc.youSend')}
           currency={calculation.currencyFrom}
@@ -59,14 +63,14 @@ export function DashboardTransferCalculator() {
           onChange={setAmount}
         />
         <CurrencyField
-          dark
+          accent
           label={t('transfers.dashboardCalc.receivedEstimate')}
           currency={calculation.currencyTo}
           value={roundAmount(calculation.amountReceived)}
           onChange={updateReceived}
         />
       </div>
-      <div className="mt-3 flex min-w-0 flex-wrap items-center justify-between gap-2 text-[10px] text-white/65">
+      <div className="mt-3 flex min-w-0 flex-wrap items-center justify-between gap-2 text-[10px] text-[var(--app-text-faint)]">
         <span className="min-w-0 truncate">
           1 {calculation.currencyFrom} = {calculation.rate.toFixed(5)} {calculation.currencyTo}
         </span>
@@ -80,16 +84,18 @@ export function DashboardTransferCalculator() {
   )
 }
 
-function CurrencyField({ currency, dark = false, label, onChange, value }) {
+function CurrencyField({ currency, accent = false, label, onChange, value }) {
   return (
     <label
       className={`min-w-0 overflow-hidden rounded-[var(--radius-input)] p-3 sm:p-4 ${
-        dark ? 'bg-slate-950/25' : 'bg-white text-slate-950'
+        accent
+          ? 'bg-[color-mix(in_srgb,var(--app-teal)_12%,var(--app-surface))] text-[var(--app-text)] ring-1 ring-[color-mix(in_srgb,var(--app-teal)_28%,transparent)]'
+          : 'bg-[var(--app-surface)] text-[var(--app-text)] ring-1 ring-[var(--app-border)]'
       }`}
     >
       <span
         className={`block truncate text-[10px] font-black uppercase tracking-wider ${
-          dark ? 'text-white/55' : 'text-slate-400'
+          accent ? 'text-[var(--app-teal)]' : 'text-[var(--app-text-muted)]'
         }`}
       >
         {label}
@@ -103,8 +109,10 @@ function CurrencyField({ currency, dark = false, label, onChange, value }) {
           onChange={(event) => onChange(event.target.value)}
         />
         <span
-          className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-black sm:px-3 ${
-            dark ? 'bg-white/15' : 'bg-emerald-100 text-emerald-800'
+          className={`shrink-0 rounded-lg px-2.5 py-1 text-xs font-black sm:px-3 ${
+            accent
+              ? 'bg-[color-mix(in_srgb,var(--app-teal)_18%,var(--app-surface))] text-[var(--app-teal)]'
+              : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'
           }`}
         >
           {currency}

@@ -16,38 +16,80 @@ import { receiveRemoteStatus, removeRemoteStatus } from './statusesSlice'
 import { statusFromRemoteRow } from './statusRemote'
 import { refreshStatusesData } from './statusSync'
 
-function AuthorBubble({ group, onOpen, badge }) {
-  const shapeClass = group.businessId ? 'rounded-2xl' : 'rounded-full'
+/** Emprise visuelle unique (anneau inclus) pour aligner toutes les bulles. */
+const BUBBLE_OUTER = 'size-[3.75rem]'
+const AVATAR_INNER = 'size-12'
+
+function AvatarFace({ src, initial, shapeClass, muted = false }) {
+  if (src) {
+    return <img src={src} alt="" className={`${AVATAR_INNER} object-cover ${shapeClass}`} />
+  }
   return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="flex w-16 shrink-0 flex-col items-center gap-1.5 text-center"
+    <span
+      className={`grid ${AVATAR_INNER} place-items-center text-sm font-black ${shapeClass} ${
+        muted
+          ? 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'
+          : 'bg-brand-600 text-white'
+      }`}
     >
-      <StatusRing hasStatus hasUnseen={group.hasUnseen} size={14}>
-        {group.authorAvatarUrl ? (
-          <img
-            src={group.authorAvatarUrl}
-            alt=""
-            className={`size-12 object-cover ${shapeClass}`}
-          />
-        ) : (
-          <span
-            className={`grid size-12 place-items-center bg-brand-600 text-sm font-black text-white ${shapeClass}`}
-          >
-            {group.authorName?.charAt(0)}
-          </span>
-        )}
-      </StatusRing>
-      <span className="w-full truncate text-[11px] font-semibold text-[var(--app-text-muted)]">
-        {group.authorName}
-      </span>
-      {badge ? (
-        <span className="rounded-full bg-brand-700/15 px-1.5 text-[9px] font-black uppercase tracking-wide text-brand-800 dark:text-brand-200">
-          {badge}
+      {initial}
+    </span>
+  )
+}
+
+function StatusBubble({
+  label,
+  onOpen,
+  avatarUrl,
+  initial,
+  shapeClass = 'rounded-full',
+  hasStatus = false,
+  hasUnseen = false,
+  badge = null,
+  addLabel = null,
+  onAdd = null,
+  mutedAvatar = false,
+}) {
+  return (
+    <div className="flex w-[4.25rem] shrink-0 flex-col items-center gap-1.5 text-center">
+      <button type="button" onClick={onOpen} className="relative grid place-items-center">
+        <span className={`relative grid ${BUBBLE_OUTER} place-items-center`}>
+          {hasStatus ? (
+            <StatusRing hasStatus hasUnseen={hasUnseen} size={14}>
+              <AvatarFace src={avatarUrl} initial={initial} shapeClass={shapeClass} />
+            </StatusRing>
+          ) : (
+            <AvatarFace
+              src={avatarUrl}
+              initial={initial}
+              shapeClass={shapeClass}
+              muted={mutedAvatar}
+            />
+          )}
+          {badge ? (
+            <span className="pointer-events-none absolute bottom-0 left-1/2 z-[1] -translate-x-1/2 rounded-md bg-brand-700 px-1.5 py-px text-[8px] font-black uppercase tracking-wide text-white shadow-sm ring-2 ring-[var(--app-bg)] dark:bg-brand-600">
+              {badge}
+            </span>
+          ) : null}
+          {onAdd ? (
+            <span
+              role="button"
+              aria-label={addLabel}
+              onClick={(e) => {
+                e.stopPropagation()
+                onAdd()
+              }}
+              className="absolute bottom-0 right-0 z-[1] grid size-5 place-items-center rounded-full bg-brand-700 text-white shadow-sm ring-2 ring-[var(--app-bg)] dark:bg-brand-600"
+            >
+              <FiPlus className="text-[11px]" />
+            </span>
+          ) : null}
         </span>
-      ) : null}
-    </button>
+      </button>
+      <span className="line-clamp-1 w-full text-[11px] font-semibold leading-tight text-[var(--app-text-muted)]">
+        {label}
+      </span>
+    </div>
   )
 }
 
@@ -119,68 +161,55 @@ export function StatusRail({ hideWhenNoCommunity: _hideWhenNoCommunity = false }
 
   return (
     <div className="min-w-0">
-      <div className="scrollbar-hidden -mx-4 flex touch-pan-x gap-4 overflow-x-auto px-4 py-2 sm:gap-5">
-        <div className="flex w-16 shrink-0 flex-col items-center gap-1.5 text-center">
-          <button
-            type="button"
-            onClick={() => (myGroup ? setViewerIndex(groups.indexOf(myGroup)) : setComposerOpen(true))}
-            className="relative"
-          >
-            {myGroup ? (
-              <StatusRing hasStatus hasUnseen={myGroup.hasUnseen} size={14}>
-                {user.avatarUrl ? (
-                  <img src={user.avatarUrl} alt="" className="size-12 rounded-full object-cover" />
-                ) : (
-                  <span className="grid size-12 place-items-center rounded-full bg-brand-600 text-sm font-black text-white">
-                    {user.firstName?.charAt(0)}
-                  </span>
-                )}
-              </StatusRing>
-            ) : user.avatarUrl ? (
-              <img src={user.avatarUrl} alt="" className="size-12 rounded-full object-cover" />
-            ) : (
-              <span className="grid size-12 place-items-center rounded-full bg-[var(--app-surface-muted)] text-sm font-black text-[var(--app-text-muted)]">
-                {user.firstName?.charAt(0)}
-              </span>
-            )}
-            <span
-              role="button"
-              aria-label={t('status.rail.addYours')}
-              onClick={(e) => {
-                e.stopPropagation()
-                setComposerOpen(true)
-              }}
-              className="absolute -bottom-0.5 -right-0.5 grid size-5 place-items-center rounded-full bg-brand-700 text-white shadow-sm ring-2 ring-[var(--app-surface)] dark:bg-brand-600"
-            >
-              <FiPlus className="text-[11px]" />
-            </span>
-          </button>
-          <span className="w-full truncate text-[11px] font-semibold text-[var(--app-text-muted)]">
-            {t('status.rail.you')}
-          </span>
-        </div>
+      <div className="scrollbar-hidden -mx-4 flex touch-pan-x items-start gap-3 overflow-x-auto px-4 py-1 sm:gap-3.5">
+        <StatusBubble
+          label={t('status.rail.you')}
+          onOpen={() => (myGroup ? setViewerIndex(groups.indexOf(myGroup)) : setComposerOpen(true))}
+          avatarUrl={user.avatarUrl}
+          initial={user.firstName?.charAt(0)}
+          hasStatus={Boolean(myGroup)}
+          hasUnseen={Boolean(myGroup?.hasUnseen)}
+          mutedAvatar={!myGroup}
+          addLabel={t('status.rail.addYours')}
+          onAdd={() => setComposerOpen(true)}
+        />
 
         {myBusinessGroup ? (
-          <AuthorBubble
-            group={myBusinessGroup}
+          <StatusBubble
+            label={myBusinessGroup.authorName}
             onOpen={() => setViewerIndex(groups.indexOf(myBusinessGroup))}
+            avatarUrl={myBusinessGroup.authorAvatarUrl}
+            initial={myBusinessGroup.authorName?.charAt(0)}
+            shapeClass="rounded-2xl"
+            hasStatus
+            hasUnseen={myBusinessGroup.hasUnseen}
           />
         ) : null}
 
         {officialGroups.map((group) => (
-          <AuthorBubble
+          <StatusBubble
             key={`${group.authorId}:${group.businessId || ''}`}
-            group={group}
-            badge="MOXT"
+            label={group.authorName}
             onOpen={() => setViewerIndex(groups.indexOf(group))}
+            avatarUrl={group.authorAvatarUrl}
+            initial={group.authorName?.charAt(0)}
+            shapeClass={group.businessId ? 'rounded-2xl' : 'rounded-full'}
+            hasStatus
+            hasUnseen={group.hasUnseen}
+            badge="MOXT"
           />
         ))}
 
         {otherGroups.map((group) => (
-          <AuthorBubble
+          <StatusBubble
             key={`${group.authorId}:${group.businessId || ''}`}
-            group={group}
+            label={group.authorName}
             onOpen={() => setViewerIndex(groups.indexOf(group))}
+            avatarUrl={group.authorAvatarUrl}
+            initial={group.authorName?.charAt(0)}
+            shapeClass={group.businessId ? 'rounded-2xl' : 'rounded-full'}
+            hasStatus
+            hasUnseen={group.hasUnseen}
           />
         ))}
 

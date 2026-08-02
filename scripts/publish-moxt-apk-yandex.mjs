@@ -2,14 +2,17 @@
 /**
  * Publie Moxt.apk sur le bucket Yandex (CDN moxtapp.ru) + enregistrement app_releases.
  * Contourne les resets réseau vers Supabase Storage pour les gros APK.
+ *
+ * Usage:
+ *   node scripts/publish-moxt-apk-yandex.mjs
+ *   node scripts/publish-moxt-apk-yandex.mjs --apk=path/to.apk --version=1.2.5
  */
 import { createClient } from '@supabase/supabase-js'
-import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs'
+import { createReadStream, existsSync, readFileSync, statSync, copyFileSync, mkdirSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { randomBytes } from 'node:crypto'
 import { Upload } from '@aws-sdk/lib-storage'
-import { S3Client } from '@aws-sdk/client-s3'
 import {
   ensureS3Credentials,
   resolveWritableS3Client,
@@ -18,11 +21,20 @@ import {
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const PROJECT_REF = 'rbvqfkccbkwjxkvpnwqn'
 const BUCKET = process.env.MOXT_YC_BUCKET || 'moxtapp-web'
-const APK_PATH = path.join(root, 'releases', 'Moxt-1.2.1-release.apk')
 const OBJECT_KEY = 'downloads/Moxt.apk'
 const PUBLIC_URL = `https://moxtapp.ru/${OBJECT_KEY}`
-const APK_VERSION = '1.2.1'
 const DOWNLOAD_NAME = 'Moxt.apk'
+
+function parseArgs(argv) {
+  const out = {}
+  for (const arg of argv) {
+    if (!arg.startsWith('--')) continue
+    const eq = arg.indexOf('=')
+    if (eq < 0) out[arg.slice(2)] = true
+    else out[arg.slice(2, eq)] = arg.slice(eq + 1)
+  }
+  return out
+}
 
 function parseEnv(filePath) {
   const vars = {}
@@ -62,10 +74,37 @@ async function getServiceRoleKey(accessToken) {
   return key
 }
 
+function resolveApkPath(args, version) {
+  if (args.apk) return path.resolve(root, args.apk)
+  const releaseOut = path.join(
+    root,
+    'moxt-react/android/app/build/outputs/apk/release/app-release.apk',
+  )
+  const archived = path.join(root, 'releases', `Moxt-${version}-release.apk`)
+  if (existsSync(releaseOut)) return releaseOut
+  if (existsSync(archived)) return archived
+  throw new Error(
+    `APK introuvable. Lancez npm run android:apk puis réessayez (attendu: ${releaseOut})`,
+  )
+}
+
 async function main() {
-  if (!existsSync(APK_PATH)) throw new Error(`APK introuvable: ${APK_PATH}`)
+  const args = parseArgs(process.argv.slice(2))
+  const pkg = JSON.parse(readFileSync(path.join(root, 'moxt-react/package.json'), 'utf8'))
+  const APK_VERSION = String(args.version || process.env.MOXT_APK_VERSION || pkg.version)
+  const APK_PATH = resolveApkPath(args, APK_VERSION)
+
+  const releasesDir = path.join(root, 'releases')
+  mkdirSync(releasesDir, { recursive: true })
+  const archivedPath = path.join(releasesDir, `Moxt-${APK_VERSION}-release.apk`)
+  if (path.resolve(APK_PATH) !== path.resolve(archivedPath)) {
+    copyFileSync(APK_PATH, archivedPath)
+    console.log(`▸ Copie locale → ${path.relative(root, archivedPath)}`)
+  }
+
   const size = statSync(APK_PATH).size
   console.log(`▸ Upload Yandex ${(size / (1024 * 1024)).toFixed(1)} Mo → s3://${BUCKET}/${OBJECT_KEY}`)
+  console.log(`  version ${APK_VERSION}`)
 
   ensureS3Credentials({ allowEphemeral: true })
   const writable = await resolveWritableS3Client(BUCKET)

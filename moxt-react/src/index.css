@@ -850,6 +850,11 @@ html.messages-route-lock #root {
   box-shadow: none;
 }
 
+/* Laisse dépasser l’emoji sous la bulle (sinon overflow:hidden le coupe). */
+.message-bubble--has-image:has(.message-reactions) {
+  overflow: visible;
+}
+
 /* Multi-image fan: no clipped plate / border-radius frame — just the images */
 .message-bubble--has-image:has(.message-attachment-stack) {
   overflow: visible;
@@ -1042,7 +1047,8 @@ html.messages-route-lock #root {
 }
 
 .message-bubble--has-image .message-reactions {
-  margin-top: 0.35rem;
+  /* hors flux / absolute — pas de margin interne */
+  margin-top: 0;
 }
 
 .message-bubble--has-image .message-failed-banner {
@@ -1209,12 +1215,11 @@ html.messages-route-lock #root {
   z-index: 40;
 }
 
-/* Réserve de l'espace sous la bulle pour que l'emoji (posé en absolu sur le
-   bord bas) ne chevauche pas le message suivant. */
+/* Réserve de l’espace sous la bulle pour l’emoji posé en dehors. */
 .message-stack--reacted {
   z-index: 5;
-  padding-bottom: 0.65rem;
-  margin-bottom: 0.55rem;
+  padding-bottom: 1rem;
+  margin-bottom: 0.45rem;
 }
 
 .message-row--after-reaction {
@@ -1260,6 +1265,16 @@ html.messages-route-lock #root {
   background: var(--app-surface);
   border: 1px solid var(--app-border);
   box-shadow: var(--shadow-card-lg);
+}
+
+/* Portail body : au-dessus du composer (z-20) et hors overflow du fil. */
+.message-action-menu--portal {
+  position: fixed;
+  z-index: calc(var(--z-modal) + 5);
+  top: auto;
+  right: auto;
+  left: auto;
+  bottom: auto;
 }
 
 /* Bascule au-dessus de la bulle quand il n'y a pas de place en bas. */
@@ -1468,27 +1483,26 @@ html.messages-route-lock #root {
   gap: 0.35rem;
 }
 
-/* Réactions posées en absolu sur le trait bas de la bulle : juste l'emoji,
-   sans bordure ni fond, pour ne pas modifier la taille du message. */
+/* Réaction sous le message, hors de la bulle (côté centre conversation). */
 .message-reactions {
   position: absolute;
-  bottom: -0.8rem;
+  bottom: -0.95rem;
   z-index: 2;
   display: flex;
   gap: 0.2rem;
+  margin-top: 0;
   line-height: 1;
   pointer-events: auto;
 }
 
-/* Emojis sur le bord OPPOSÉ à l'heure/statut pour ne rien recouvrir :
-   messages reçus (heure à gauche) → emojis à droite ;
-   messages envoyés (heure à droite) → emojis à gauche. */
 .message-bubble--received .message-reactions {
   right: 0.55rem;
+  justify-content: flex-end;
 }
 
 .message-bubble--sent .message-reactions {
   left: 0.55rem;
+  justify-content: flex-start;
 }
 
 .message-reaction {

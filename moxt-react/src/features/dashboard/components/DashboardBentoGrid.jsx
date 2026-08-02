@@ -28,12 +28,14 @@ function descriptionKeyOf(item) {
 /**
  * Grille bento asymétrique (hero / featured / medium / compact).
  * items: { path, image, imageLogo, size, iconPos, surface, titleKey|labelKey, descriptionKey?, tagKey? }
+ * leading: tuile optionnelle rendue en tête de grille (ex. bienvenue).
  */
-export function DashboardBentoGrid({ items, className = '' }) {
+export function DashboardBentoGrid({ items, leading = null, className = '' }) {
   const { t } = useLanguage()
 
   return (
     <div className={`dashboard-services-bento ${className}`.trim()}>
+      {leading}
       {items.map((item) => {
         const size = item.size || 'compact'
         const titleKey = titleKeyOf(item)

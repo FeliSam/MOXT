@@ -14,8 +14,8 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // Aligner versionCode avec iOS CURRENT_PROJECT_VERSION (docs/google-play-listing.md).
-        versionCode 7
-        versionName "1.2.4"
+        versionCode 8
+        versionName "1.2.5"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

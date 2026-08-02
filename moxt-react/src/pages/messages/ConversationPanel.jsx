@@ -735,7 +735,11 @@ export function ConversationPanel({
                               : 'message-row--grouped'
                             : 'message-row--spaced'
                         }`}
-                        style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 72px' }}
+                        style={
+                          openActionsId === message.id
+                            ? undefined
+                            : { contentVisibility: 'auto', containIntrinsicSize: 'auto 72px' }
+                        }
                       >
                         {!mine ? (
                           <MessageAvatar

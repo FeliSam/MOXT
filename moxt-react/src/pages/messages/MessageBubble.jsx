@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import {
   FiAlertCircle,
@@ -104,10 +105,11 @@ export function MessageBubble({
 }) {
   const { t } = useLanguage()
   const stackRef = useRef(null)
+  const bubbleRef = useRef(null)
   const menuRef = useRef(null)
   const longPressTimer = useRef(null)
   const longPressTriggered = useRef(false)
-  const [placeAbove, setPlaceAbove] = useState(false)
+  const [menuCoords, setMenuCoords] = useState(null)
   const readStatus = messageReadStatus(message, user.id)
   const failed = Boolean(message.syncFailed)
   const pending = Boolean(message.pending)
@@ -124,36 +126,55 @@ export function MessageBubble({
   // pas besoin de la répéter en légende texte en dessous.
   const hasCaption = Boolean(message.text?.trim()) && !message.attachment?.reactionEmoji
 
-  // Bascule le menu au-dessus de la bulle s'il n'y a pas assez de place en bas
-  // (dernier message, bord du conteneur scrollable) pour éviter qu'il soit coupé.
+  // Menu en portal (fixed) : évite d’être coupé / mangé par le composer ou overflow.
   useLayoutEffect(() => {
     if (!showActions) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset avant mesure DOM (positionnement du menu)
-      setPlaceAbove(false)
-      return
+      const clearId = requestAnimationFrame(() => setMenuCoords(null))
+      return () => cancelAnimationFrame(clearId)
     }
-    const stack = stackRef.current
-    if (!stack) return
-    let scrollParent = stack.parentElement
-    while (scrollParent) {
-      const overflowY = getComputedStyle(scrollParent).overflowY
-      if (overflowY === 'auto' || overflowY === 'scroll') break
-      scrollParent = scrollParent.parentElement
+    const bubble = bubbleRef.current
+    if (!bubble) return
+
+    const update = () => {
+      const rect = bubble.getBoundingClientRect()
+      const menuHeight = menuRef.current?.offsetHeight || 44
+      const menuWidth = menuRef.current?.offsetWidth || 220
+      const gap = 8
+      const composerRaw = getComputedStyle(bubble).getPropertyValue('--message-composer-offset').trim()
+      const composerOffset = Number.parseFloat(composerRaw) || 120
+      const boundBottom = window.innerHeight - composerOffset - 8
+      const roomBelow = boundBottom - rect.bottom
+      const above = roomBelow < menuHeight + gap
+
+      let left = mine ? rect.right - menuWidth : rect.left
+      left = Math.min(Math.max(8, left), window.innerWidth - menuWidth - 8)
+      const top = above ? rect.top - menuHeight - gap : rect.bottom + gap
+      setMenuCoords({
+        top: Math.max(8, Math.min(top, window.innerHeight - menuHeight - 8)),
+        left,
+      })
     }
-    const boundBottom = scrollParent
-      ? scrollParent.getBoundingClientRect().bottom
-      : window.innerHeight
-    const menuHeight = menuRef.current?.offsetHeight || 44
-    const roomBelow = boundBottom - stack.getBoundingClientRect().bottom
-    setPlaceAbove(roomBelow < menuHeight + 12)
-  }, [showActions])
+
+    const frame = requestAnimationFrame(() => {
+      update()
+      requestAnimationFrame(update)
+    })
+    window.addEventListener('resize', update)
+    window.addEventListener('scroll', update, true)
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('resize', update)
+      window.removeEventListener('scroll', update, true)
+    }
+  }, [showActions, mine, failed])
 
   useEffect(() => {
     if (!openActions) return
     function handlePointerDown(event) {
-      if (stackRef.current && !stackRef.current.contains(event.target)) {
-        onCloseActions?.()
-      }
+      const target = event.target
+      // Le menu est porté hors de stackRef → il faut aussi tester menuRef.
+      if (stackRef.current?.contains(target) || menuRef.current?.contains(target)) return
+      onCloseActions?.()
     }
     document.addEventListener('pointerdown', handlePointerDown)
     return () => document.removeEventListener('pointerdown', handlePointerDown)
@@ -167,6 +188,7 @@ export function MessageBubble({
   }
 
   function runAction(event, handler) {
+    event.preventDefault()
     event.stopPropagation()
     handler(message)
     onCloseActions?.()
@@ -186,8 +208,9 @@ export function MessageBubble({
     clearLongPress()
   }
 
-  function handlePointerLeave() {
+  function handlePointerCancel() {
     clearLongPress()
+    longPressTriggered.current = false
   }
 
   function handleBubbleClick(event) {
@@ -195,11 +218,13 @@ export function MessageBubble({
       longPressTriggered.current = false
       return
     }
+    // Ne bloquer que si la sélection est DANS cette bulle (pas une sélection ailleurs).
     const selection = window.getSelection?.()
-    if (selection?.toString().length) return
-    // Ne pas déclencher au clavier ; sinon le clic (souris/tactile) ouvre le menu
-    // flottant sur desktop, tablette et mobile.
+    if (selection?.toString().length && bubbleRef.current?.contains(selection.anchorNode)) {
+      return
+    }
     if (event.detail === 0) return
+    event.stopPropagation()
     onToggleActions?.()
   }
 
@@ -232,13 +257,14 @@ export function MessageBubble({
       ) : null}
 
       <div
+        ref={bubbleRef}
         className={`${bubbleClassName(mine, groupedWithPrevious, groupedWithNext, failed)} ${
           hasImageAttachment ? 'message-bubble--has-image' : ''
         } ${openActions ? 'message-bubble--active' : ''}`}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
-        onPointerCancel={clearLongPress}
-        onPointerLeave={handlePointerLeave}
+        onPointerCancel={handlePointerCancel}
+        onPointerLeave={handlePointerUp}
         onClick={handleBubbleClick}
       >
         {failed ? (
@@ -285,6 +311,7 @@ export function MessageBubble({
                   target="_blank"
                   rel="noopener noreferrer"
                   className="underline underline-offset-2"
+                  onClick={(event) => event.stopPropagation()}
                 >
                   {part.value}
                 </a>
@@ -333,112 +360,120 @@ export function MessageBubble({
         ) : null}
       </div>
 
-      {showActions && failed ? (
-        <div
-          ref={menuRef}
-          className={`message-action-menu ${mine ? 'message-action-menu--sent' : ''} ${
-            placeAbove ? 'message-action-menu--above' : ''
-          }`}
-          role="menu"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <button
-            type="button"
-            onClick={(event) => runAction(event, () => onRetry?.(message))}
-            aria-label={t("messages.retry")}
-            className="message-action-menu-btn"
-          >
-            <FiRefreshCw />
-          </button>
-          {mine ? (
-            <button
-              type="button"
-              onClick={(event) => runAction(event, () => onDelete(message.id))}
-              aria-label={t("messages.delete")}
-              className="message-action-menu-btn message-action-menu-btn--danger"
-            >
-              <FiTrash2 />
-            </button>
-          ) : null}
-        </div>
-      ) : showActions && !failed ? (
-        <div
-          ref={menuRef}
-          className={`message-action-menu ${mine ? 'message-action-menu--sent' : ''} ${
-            placeAbove ? 'message-action-menu--above' : ''
-          }`}
-          role="menu"
-          onClick={(event) => event.stopPropagation()}
-        >
-          {onReact
-            ? ['👍', '❤️', '😂'].map((emoji) => (
+      {showActions && menuCoords && typeof document !== 'undefined'
+        ? createPortal(
+            failed ? (
+              <div
+                ref={menuRef}
+                className={`message-action-menu message-action-menu--portal ${
+                  mine ? 'message-action-menu--sent' : ''
+                }`}
+                role="menu"
+                style={{ top: menuCoords.top, left: menuCoords.left }}
+                onClick={(event) => event.stopPropagation()}
+                onPointerDown={(event) => event.stopPropagation()}
+              >
                 <button
-                  key={emoji}
                   type="button"
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    onReact(message.id, emoji)
-                    onCloseActions?.()
-                  }}
-                  aria-label={t("messages.reactAria", { emoji })}
-                  className="message-action-menu-btn message-action-menu-btn--emoji"
+                  onClick={(event) => runAction(event, () => onRetry?.(message))}
+                  aria-label={t('messages.retry')}
+                  className="message-action-menu-btn"
                 >
-                  {emoji}
+                  <FiRefreshCw />
                 </button>
-              ))
-            : null}
-          <button
-            type="button"
-            onClick={(event) => runAction(event, () => onReply(message.id))}
-            aria-label={t("messages.reply")}
-            className="message-action-menu-btn"
-          >
-            <FiCornerUpLeft />
-          </button>
-          <button
-            type="button"
-            onClick={(event) => runAction(event, onCopy)}
-            aria-label={t("messages.copy")}
-            className="message-action-menu-btn"
-          >
-            <FiCopy />
-          </button>
-          {!mine ? (
-            <Link
-              to={`/users/${message.senderId}/publications`}
-              onClick={(event) => {
-                event.stopPropagation()
-                onCloseActions?.()
-              }}
-              aria-label={messagesText(t, 'messages.viewProfile')}
-              className="message-action-menu-btn"
-            >
-              <FiUser />
-            </Link>
-          ) : null}
-          {mine ? (
-            <button
-              type="button"
-              onClick={(event) => runAction(event, onEdit)}
-              aria-label={t("messages.edit")}
-              className="message-action-menu-btn"
-            >
-              <FiEdit2 />
-            </button>
-          ) : null}
-          {/* Un utilisateur ne peut supprimer que ses propres messages. */}
-          {mine ? (
-            <button
-              type="button"
-              onClick={(event) => runAction(event, () => onDelete(message.id))}
-              aria-label={t("messages.delete")}
-              className="message-action-menu-btn message-action-menu-btn--danger"
-            >
-              <FiTrash2 />
-            </button>
-          ) : null}
-        </div>
-      ) : null}
+                {mine ? (
+                  <button
+                    type="button"
+                    onClick={(event) => runAction(event, () => onDelete(message.id))}
+                    aria-label={t('messages.delete')}
+                    className="message-action-menu-btn message-action-menu-btn--danger"
+                  >
+                    <FiTrash2 />
+                  </button>
+                ) : null}
+              </div>
+            ) : (
+              <div
+                ref={menuRef}
+                className={`message-action-menu message-action-menu--portal ${
+                  mine ? 'message-action-menu--sent' : ''
+                }`}
+                role="menu"
+                style={{ top: menuCoords.top, left: menuCoords.left }}
+                onClick={(event) => event.stopPropagation()}
+                onPointerDown={(event) => event.stopPropagation()}
+              >
+                {onReact
+                  ? ['👍', '❤️', '😂'].map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          onReact(message.id, emoji)
+                          onCloseActions?.()
+                        }}
+                        aria-label={t('messages.reactAria', { emoji })}
+                        className="message-action-menu-btn message-action-menu-btn--emoji"
+                      >
+                        {emoji}
+                      </button>
+                    ))
+                  : null}
+                <button
+                  type="button"
+                  onClick={(event) => runAction(event, () => onReply(message.id))}
+                  aria-label={t('messages.reply')}
+                  className="message-action-menu-btn"
+                >
+                  <FiCornerUpLeft />
+                </button>
+                <button
+                  type="button"
+                  onClick={(event) => runAction(event, onCopy)}
+                  aria-label={t('messages.copy')}
+                  className="message-action-menu-btn"
+                >
+                  <FiCopy />
+                </button>
+                {!mine ? (
+                  <Link
+                    to={`/users/${message.senderId}/publications`}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      onCloseActions?.()
+                    }}
+                    aria-label={messagesText(t, 'messages.viewProfile')}
+                    className="message-action-menu-btn"
+                  >
+                    <FiUser />
+                  </Link>
+                ) : null}
+                {mine ? (
+                  <button
+                    type="button"
+                    onClick={(event) => runAction(event, onEdit)}
+                    aria-label={t('messages.edit')}
+                    className="message-action-menu-btn"
+                  >
+                    <FiEdit2 />
+                  </button>
+                ) : null}
+                {mine ? (
+                  <button
+                    type="button"
+                    onClick={(event) => runAction(event, () => onDelete(message.id))}
+                    aria-label={t('messages.delete')}
+                    className="message-action-menu-btn message-action-menu-btn--danger"
+                  >
+                    <FiTrash2 />
+                  </button>
+                ) : null}
+              </div>
+            ),
+            document.body,
+          )
+        : null}
 
       {!groupedWithNext ? (
         <div className={`message-meta ${mine ? 'message-meta--sent' : ''}`}>

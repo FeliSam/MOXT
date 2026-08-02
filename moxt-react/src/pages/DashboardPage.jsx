@@ -2,7 +2,7 @@ import { shallowEqual, useSelector } from 'react-redux'
 import { DashboardSearch } from '../components/ui/DashboardSearch'
 import { SkeletonCard } from '../components/ui/Skeleton'
 import { DashboardDiscoverySection } from '../features/dashboard/components/DashboardDiscoverySection'
-import { DashboardHero } from '../features/dashboard/components/DashboardHero'
+import { DashboardCalcBand } from '../features/dashboard/components/DashboardCalcBand'
 import { DashboardOverviewPanels } from '../features/dashboard/components/DashboardOverviewPanels'
 import { DashboardQuickActionsSection } from '../features/dashboard/components/DashboardQuickActionsSection'
 import { DashboardSectionHeading } from '../features/dashboard/components/DashboardSectionHeading'
@@ -79,7 +79,7 @@ export function DashboardPage() {
 
       <DashboardServiceCarousels />
 
-      <DashboardHero user={user} />
+      <DashboardCalcBand user={user} />
 
       <div className="lg:hidden">
         <DashboardSearch />
