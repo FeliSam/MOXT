@@ -12,9 +12,18 @@ import { applicationJobId, applicationUserId } from '../features/jobs/jobUtils'
 import { phase3Text } from '../i18n/phase3I18n'
 import { formatTime } from '../utils/formatters'
 
-function activityTitle(at, title) {
+function activityStamp(at) {
+  if (!at) return ''
+  const date = new Date(at)
+  if (Number.isNaN(date.getTime())) return ''
+  const day = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' }).format(date)
   const time = formatTime(at)
-  return time ? `${time} · ${title}` : title
+  return time ? `${day} · ${time}` : day
+}
+
+function activityTitle(at, title) {
+  const stamp = activityStamp(at)
+  return stamp ? `${stamp} · ${title}` : title
 }
 
 export function ActivitiesPage() {

@@ -441,9 +441,15 @@ export function createAuthService(supabase, redirects = {}) {
     // must never receive a "register" OTP (that logs into the existing auth user
     // and would let finalize overwrite their profile).
     // Bypass prefetch cache — this is a security gate, not a UX warm-up.
-    const availability = await checkIdentityAvailability('phone', phone, null, {
-      useCache: false,
-    })
+    let availability = { available: true, reason: null }
+    try {
+      availability = await checkIdentityAvailability('phone', phone, null, {
+        useCache: false,
+      })
+    } catch (error) {
+      if (error?.message !== 'IDENTITY_CHECK_UNAVAILABLE') throw error
+      console.warn('[MOXT] phone identity check unavailable — resuming SMS OTP')
+    }
     if (!availability.available) {
       if (availability.reason === 'limit') {
         throw new Error('IDENTITY_LIMIT_REACHED')
@@ -526,9 +532,16 @@ export function createAuthService(supabase, redirects = {}) {
    * the client on ALREADY_REGISTERED (common after SMS denial / abandoned OTP).
    */
   async function resumeEmailSignup(email, phone, profileFields) {
-    const availability = await checkIdentityAvailability('email', email, null, {
-      useCache: false,
-    })
+    let availability = { available: true, reason: null }
+    try {
+      availability = await checkIdentityAvailability('email', email, null, {
+        useCache: false,
+      })
+    } catch (error) {
+      // Fail open on RPC outage — still attempt Auth resend / OTP.
+      if (error?.message !== 'IDENTITY_CHECK_UNAVAILABLE') throw error
+      console.warn('[MOXT] email identity check unavailable — resuming signup OTP')
+    }
     if (!availability.available) {
       if (availability.reason === 'limit') {
         throw new Error('IDENTITY_LIMIT_REACHED')
@@ -799,13 +812,14 @@ export function createAuthService(supabase, redirects = {}) {
     try {
       results = await Promise.all(tasks)
     } catch (error) {
+      // Fail OPEN: identity RPC timeout / outage must not block signup.
+      // Supabase Auth remains the source of truth for true duplicates.
       if (error?.message === 'IDENTITY_CHECK_UNAVAILABLE') {
-        throw new Error(
-          translateAuthError(
-            { message: 'IDENTITY_CHECK_UNAVAILABLE' },
-            { channel: 'phone', intent: 'register' },
-          ),
+        console.warn(
+          '[MOXT] identity check unavailable — allowing registration to continue',
+          error?.cause?.message || error?.cause || '',
         )
+        return true
       }
       throw new Error(
         translateAuthError(error, { channel: 'phone', intent: 'register' }),
@@ -837,16 +851,13 @@ export function createAuthService(supabase, redirects = {}) {
       availability = await checkIdentityAvailability(kind, value, userId)
     } catch (error) {
       if (error?.message === 'IDENTITY_CHECK_UNAVAILABLE') {
-        throw new Error(
-          translateAuthError(
-            {
-              message: 'IDENTITY_CHECK_UNAVAILABLE',
-              code: error.code,
-              status: error.status,
-            },
-            context,
-          ),
+        // Fail open — do not trap signup/login behind an RPC outage.
+        console.warn(
+          '[MOXT] identity check unavailable — continuing',
+          kind,
+          error?.cause?.message || '',
         )
+        return
       }
       throw error
     }
@@ -1367,8 +1378,7 @@ export function createAuthService(supabase, redirects = {}) {
           options: { channel: 'sms', data: profileFields },
         }
 
-        // OTP page only if phone valid+free, email free, and identity RPC reachable.
-        // Fresh check on submit (no stale prefetch) — network/RPC failure blocks OTP.
+        // OTP page: soft gate via identity RPC. Outage → fail open (see assert).
         await assertRegistrationIdentitiesEligible(
           {
             phone: normalizedPhone,
@@ -1507,10 +1517,10 @@ export function createAuthService(supabase, redirects = {}) {
           registration_via: details.registrationVia || 'email_after_sms_denied',
         }
 
+        // E-mail fallback after SMS: never re-block on the phone identity check
+        // (pending / unfinished phone signup must not trap the e-mail path).
         await assertRegistrationIdentitiesEligible(
-          details.skipPhoneEligibilityCheck
-            ? { email }
-            : { phone: normalizedPhone, email },
+          { email },
           { useCache: false },
         )
         guardOtpSend('email', email)

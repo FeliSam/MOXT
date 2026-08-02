@@ -20,19 +20,19 @@ export const OTP_MAX_SENDS_PER_WINDOW = 4
 /** Rolling abuse window for phone SMS (3 hours). */
 export const OTP_SEND_WINDOW_MS = 3 * 60 * 60 * 1000
 
-/**
- * E-mail OTP: short soft window only. Never keep a multi-hour hard block —
- * after this window elapses, another e-mail code MUST be sendable.
- */
-export const OTP_EMAIL_MAX_SENDS_PER_WINDOW = 8
-
-export const OTP_EMAIL_SEND_WINDOW_MS = 20 * 60 * 1000
-
 /** When true, enforce the phone 4 / 3h cap (independent of the 60s cooldown). */
 export const OTP_SEND_CAP_ENABLED = true
 
-/** Soft cap for e-mail (20 min). Disabled never — always resets after the window. */
-export const OTP_EMAIL_SEND_CAP_ENABLED = true
+/**
+ * Soft cap for e-mail — DISABLED: e-mail must stay available as SMS fallback.
+ * Only the 60s resend cooldown still applies to e-mail.
+ */
+export const OTP_EMAIL_SEND_CAP_ENABLED = false
+
+/** Kept for docs / future tuning; ignored while OTP_EMAIL_SEND_CAP_ENABLED is false. */
+export const OTP_EMAIL_MAX_SENDS_PER_WINDOW = 8
+
+export const OTP_EMAIL_SEND_WINDOW_MS = 20 * 60 * 1000
 
 export const OTP_SEND_LOG_STORAGE_KEY = 'moxt.otpSendLog.v1'
 
@@ -124,6 +124,8 @@ export function formatOtpCapError(resetMinutes, kind = 'phone') {
 /**
  * Read durable OTP send log (localStorage when available). Client+memory only —
  * no DB table; document this for ops (pair with Supabase Auth rate limits).
+ * When e-mail soft cap is disabled, legacy `email:*` entries are dropped so
+ * devices previously capped are unblocked on next load.
  * @returns {Map<string, number[]>}
  */
 export function loadOtpSendLog(storage = getDefaultStorage()) {
@@ -135,11 +137,17 @@ export function loadOtpSendLog(storage = getDefaultStorage()) {
     const parsed = JSON.parse(raw)
     if (!parsed || typeof parsed !== 'object') return store
     const now = Date.now()
+    let droppedEmail = false
     for (const [key, value] of Object.entries(parsed)) {
       const kind = String(key).startsWith('email:') ? 'email' : 'phone'
+      if (kind === 'email' && !OTP_EMAIL_SEND_CAP_ENABLED) {
+        droppedEmail = true
+        continue
+      }
       const pruned = pruneOtpTimestamps(Array.isArray(value) ? value : [], kind, now)
       if (pruned.length) store.set(key, pruned)
     }
+    if (droppedEmail) persistOtpSendLog(store, storage)
   } catch {
     // Ignore corrupt storage.
   }

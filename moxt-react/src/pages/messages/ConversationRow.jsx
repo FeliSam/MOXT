@@ -46,7 +46,7 @@ export function ConversationRow({
     <button
       type="button"
       onClick={onClick}
-      className={`group flex min-h-[3.875rem] min-w-0 w-full items-stretch gap-2.5 rounded-2xl pl-2.5 text-left transition-colors duration-[var(--transition-fast)] sm:min-h-[4.125rem] sm:gap-3 sm:pl-3 ${
+      className={`group flex min-h-[3.875rem] min-w-0 w-full items-stretch gap-2.5 rounded-2xl p-[2%] text-left transition-colors duration-[var(--transition-fast)] sm:min-h-[4.125rem] sm:gap-3 ${
         active
           ? 'bg-[var(--app-accent-soft)]'
           : 'bg-transparent hover:bg-[var(--app-surface)]/55'
@@ -92,7 +92,7 @@ export function ConversationRow({
         </span>
       )}
       <span
-        className={`flex min-w-0 flex-1 flex-col justify-center py-2 pr-2.5 sm:py-2.5 sm:pr-3 ${
+        className={`flex min-w-0 flex-1 flex-col justify-center ${
           divided ? 'border-b border-[var(--app-border)]/45' : ''
         }`}
       >

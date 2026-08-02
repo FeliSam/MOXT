@@ -5,7 +5,7 @@ import { clearSearchHistory } from './searchHistory'
 import { TRANSFER_DRAFT_KEY } from '../features/transfers/wizard/transferWizardConfig'
 
 /** Bump to force a one-time wipe of stale user caches after deploy / DB wipe. */
-export const MOXT_CACHE_VERSION = '2026-07-16-db-wipe'
+export const MOXT_CACHE_VERSION = '2026-08-03-auth-email-unblock'
 const MOXT_CACHE_VERSION_KEY = 'MOXT_CACHE_VERSION'
 
 const PRESERVED_LOCAL_KEYS = new Set([

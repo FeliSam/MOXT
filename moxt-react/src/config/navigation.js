@@ -31,8 +31,18 @@ export const routePreloaders = {
   '/businesses': () => import('../pages/BusinessesPage'),
   '/professional': () => import('../pages/ProfessionalPage'),
   '/exchanger': () => import('../pages/ExchangerDashboardPage'),
-  '/dashboard': () => import('../pages/DashboardPage'),
-  '/moxt': () => import('../pages/MoxtHubPage'),
+  '/dashboard': () => {
+    void import('../features/dashboard/preloadDashboardServiceImages').then((m) =>
+      m.preloadDashboardServiceImages(),
+    )
+    return import('../pages/DashboardPage')
+  },
+  '/moxt': () => {
+    void import('../features/dashboard/preloadDashboardServiceImages').then((m) =>
+      m.preloadDashboardServiceImages(),
+    )
+    return import('../pages/MoxtHubPage')
+  },
   '/documents': () => import('../pages/DocumentsPage'),
   '/events': () => import('../pages/EventsPage'),
   '/guide': () => import('../pages/HelpGuidePage'),

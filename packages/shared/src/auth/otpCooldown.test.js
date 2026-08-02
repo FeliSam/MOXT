@@ -7,6 +7,7 @@ import {
   OTP_SEND_WINDOW_MS,
   OTP_EMAIL_MAX_SENDS_PER_WINDOW,
   OTP_EMAIL_SEND_WINDOW_MS,
+  OTP_EMAIL_SEND_CAP_ENABLED,
   otpIdentityKey,
   recordOtpSend,
   getOtpSendState,
@@ -31,6 +32,7 @@ describe('otpCooldown', () => {
     expect(OTP_MAX_SENDS_PER_WINDOW).toBe(4)
     expect(OTP_SEND_CAP_ENABLED).toBe(true)
     expect(OTP_SEND_WINDOW_MS).toBe(3 * 60 * 60 * 1000)
+    expect(OTP_EMAIL_SEND_CAP_ENABLED).toBe(false)
     expect(OTP_EMAIL_MAX_SENDS_PER_WINDOW).toBe(8)
     expect(OTP_EMAIL_SEND_WINDOW_MS).toBe(20 * 60 * 1000)
   })
@@ -89,29 +91,26 @@ describe('otpCooldown', () => {
     ).not.toThrow()
   })
 
-  it('allows e-mail OTP again after the short 20-minute window', () => {
+  it('does not hard-cap e-mail OTP (SMS fallback must stay open)', () => {
     const store = new Map()
-    for (let i = 0; i < OTP_EMAIL_MAX_SENDS_PER_WINDOW; i += 1) {
-      recordOtpSend(store, 'email', 'a@example.com', { persist: false })
-      if (i < OTP_EMAIL_MAX_SENDS_PER_WINDOW - 1) {
-        vi.advanceTimersByTime(OTP_RESEND_COOLDOWN_MS + 1)
-      }
+    for (let i = 0; i < OTP_EMAIL_MAX_SENDS_PER_WINDOW + 2; i += 1) {
+      expect(() =>
+        recordOtpSend(store, 'email', 'a@example.com', { enforce: true, persist: false }),
+      ).not.toThrow()
+      vi.advanceTimersByTime(OTP_RESEND_COOLDOWN_MS + 1)
     }
-
-    vi.advanceTimersByTime(OTP_RESEND_COOLDOWN_MS + 1)
-    expect(() =>
-      recordOtpSend(store, 'email', 'a@example.com', { enforce: true, persist: false }),
-    ).toThrow(/20 minutes/)
-
-    vi.advanceTimersByTime(OTP_EMAIL_SEND_WINDOW_MS + 1)
-    expect(() =>
-      recordOtpSend(store, 'email', 'a@example.com', { enforce: true, persist: false }),
-    ).not.toThrow()
+    const state = getOtpSendState(store, 'email', 'a@example.com')
+    expect(state.capped).toBe(false)
   })
 
-  it('clears persisted OTP log', () => {
+  it('strips legacy e-mail blocks from storage when e-mail soft cap is off', () => {
     const storage = {
-      data: { [OTP_SEND_LOG_STORAGE_KEY]: '{}' },
+      data: {
+        [OTP_SEND_LOG_STORAGE_KEY]: JSON.stringify({
+          [otpIdentityKey('email', 'blocked@example.com')]: [Date.now()],
+          [otpIdentityKey('phone', '+79000000010')]: [Date.now()],
+        }),
+      },
       getItem(key) {
         return this.data[key] ?? null
       },
@@ -122,8 +121,12 @@ describe('otpCooldown', () => {
         delete this.data[key]
       },
     }
-    clearOtpSendLog(storage)
-    expect(storage.getItem(OTP_SEND_LOG_STORAGE_KEY)).toBeNull()
+
+    const restored = loadOtpSendLog(storage)
+    expect(restored.has(otpIdentityKey('email', 'blocked@example.com'))).toBe(false)
+    expect(restored.has(otpIdentityKey('phone', '+79000000010'))).toBe(true)
+    const persisted = JSON.parse(storage.getItem(OTP_SEND_LOG_STORAGE_KEY))
+    expect(persisted[otpIdentityKey('email', 'blocked@example.com')]).toBeUndefined()
   })
 
   it('persists send timestamps in localStorage when available', () => {

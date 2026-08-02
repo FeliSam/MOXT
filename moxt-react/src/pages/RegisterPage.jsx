@@ -615,10 +615,7 @@ export function RegisterPage() {
       const result = await dispatch(
         registerWithEmailAfterSmsDenied({
           ...formik.values,
-          skipPhoneEligibilityCheck:
-            reason === 'sms_resend_limit' ||
-            reason === 'provider_denied' ||
-            reason === 'sms_temporarily_blocked',
+          skipPhoneEligibilityCheck: true,
           registrationVia:
             reason === 'sms_resend_limit'
               ? 'email_after_sms_resend_limit'

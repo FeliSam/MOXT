@@ -8,10 +8,10 @@ export function DashboardCalcBand({ user }) {
 
   return (
     <section
-      className="relative min-w-0 overflow-hidden rounded-[1.35rem] bg-[linear-gradient(135deg,color-mix(in_srgb,var(--app-teal)_16.94%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] px-4 py-4 shadow-[var(--shadow-card)] dark:bg-[linear-gradient(135deg,rgba(8,112,95,0.339)_0%,var(--app-surface-muted)_100%)] sm:px-5 sm:py-5"
+      className="relative min-w-0 overflow-hidden rounded-[1.35rem] bg-[linear-gradient(135deg,color-mix(in_srgb,var(--app-teal)_32%,var(--app-surface))_0%,color-mix(in_srgb,var(--app-teal)_14%,var(--app-surface-muted))_100%)] p-[5%] shadow-[var(--shadow-card)] dark:bg-[linear-gradient(135deg,rgba(8,112,95,0.55)_0%,rgba(8,112,95,0.28)_100%)]"
       aria-label={t('transfers.dashboardCalc.title')}
     >
-      <div className="relative z-10 grid min-w-0 gap-5 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-6">
+      <div className="relative z-10 grid min-w-0 gap-4 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-5">
         <DashboardHero user={user} />
         <DashboardTransferCalculator />
       </div>

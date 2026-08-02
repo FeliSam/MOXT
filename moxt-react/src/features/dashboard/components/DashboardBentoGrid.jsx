@@ -1,6 +1,8 @@
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { preloadRoute } from '../../../config/navigation'
+import { preloadDashboardServiceImages } from '../preloadDashboardServiceImages'
 import { Dashboard3DIcon } from './Dashboard3DIcon'
 
 const SIZE_CLASS = {
@@ -32,6 +34,10 @@ function descriptionKeyOf(item) {
  */
 export function DashboardBentoGrid({ items, leading = null, className = '' }) {
   const { t } = useLanguage()
+
+  useEffect(() => {
+    void preloadDashboardServiceImages()
+  }, [])
 
   return (
     <div className={`dashboard-services-bento ${className}`.trim()}>

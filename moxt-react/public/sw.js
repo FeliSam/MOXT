@@ -57,6 +57,10 @@ function isHashedAsset(url) {
   return /\/assets\/[^/]+-[A-Za-z0-9_-]{4,}\.(js|css)$/.test(url.pathname);
 }
 
+function isDashboardServiceAsset(url) {
+  return url.pathname.startsWith('/assets/services/');
+}
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
@@ -94,8 +98,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Assets Vite hashés : cache OK (immuables)
-  if (isHashedAsset(url)) {
+  // Assets Vite hashés + icônes services dashboard : cache d’abord (retours accueil)
+  if (isHashedAsset(url) || isDashboardServiceAsset(url)) {
     event.respondWith(
       caches.match(request).then((cached) => {
         if (cached) return cached;

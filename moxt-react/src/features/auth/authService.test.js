@@ -874,18 +874,24 @@ describe('authService', () => {
     expect(result.requiresPhoneConfirmation).toBe(true)
   })
 
-  it('bloque l OTP si le RPC identité renvoie un payload vide (fail closed)', async () => {
+  it('continue l OTP si le RPC identité est en panne (fail open)', async () => {
     rpc.mockImplementation((name, args) => {
       if (name === 'moxt_check_identity_available' && args?.p_kind === 'phone') {
         return Promise.resolve({ data: null, error: null })
       }
       return Promise.resolve({ data: { available: true, reason: null }, error: null })
     })
+    auth.signUp.mockResolvedValue({
+      data: {
+        user: { id: 'user-rpc-down', identities: [{ id: 'id-1' }] },
+        session: null,
+      },
+      error: null,
+    })
 
-    await expect(authService.register(registrationDetails())).rejects.toThrow(
-      /identifiants|indisponible|réseau|serveur/i,
-    )
-    expect(auth.signUp).not.toHaveBeenCalled()
+    const result = await authService.register(registrationDetails())
+    expect(auth.signUp).toHaveBeenCalledOnce()
+    expect(result.requiresPhoneConfirmation).toBe(true)
   })
 
   it('refuse l OTP si le numéro est déjà pris (assertRegistrationIdentities)', async () => {

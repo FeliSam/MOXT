@@ -37,25 +37,22 @@ export function DashboardTransferCalculator() {
 
   return (
     <div className="min-w-0 max-w-full overflow-hidden">
-      <div className="flex min-w-0 items-center justify-between gap-2 sm:gap-3">
+      <div className="flex min-w-0 items-center justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-xs font-bold text-[var(--app-text-muted)]">
-            {t('transfers.dashboardCalc.eyebrow')}
-          </p>
-          <h2 className="mt-0.5 truncate text-lg font-black tracking-tight text-[var(--app-text)] sm:text-xl">
+          <h2 className="truncate text-[1.05rem] font-extrabold leading-tight tracking-[-0.02em] text-[var(--app-text)] sm:text-[1.15rem]">
             {t('transfers.dashboardCalc.title')}
           </h2>
         </div>
         <button
           type="button"
           onClick={invert}
-          className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-btn)] bg-[var(--app-surface)] text-[var(--app-teal)] shadow-[var(--shadow-card)] ring-1 ring-[var(--app-border)] sm:size-11"
+          className="grid size-9 shrink-0 place-items-center rounded-[var(--radius-btn)] bg-[var(--app-surface)] text-[var(--app-teal)] shadow-[var(--shadow-card)] sm:size-10"
           aria-label={t('transfers.calculator.invertAria')}
         >
-          <FiRepeat />
+          <FiRepeat className="text-base" />
         </button>
       </div>
-      <div className="mt-4 grid min-w-0 gap-2.5 sm:mt-5 sm:gap-3">
+      <div className="mt-3 grid min-w-0 gap-2 sm:mt-3.5 sm:gap-2.5">
         <CurrencyField
           label={t('transfers.dashboardCalc.youSend')}
           currency={calculation.currencyFrom}
@@ -70,11 +67,11 @@ export function DashboardTransferCalculator() {
           onChange={updateReceived}
         />
       </div>
-      <div className="mt-3 flex min-w-0 flex-wrap items-center justify-between gap-2 text-[10px] text-[var(--app-text-faint)]">
-        <span className="min-w-0 truncate">
+      <div className="mt-2.5 flex min-w-0 flex-wrap items-center justify-between gap-2 text-[11px] leading-snug text-[var(--app-text-muted)]">
+        <span className="min-w-0 truncate font-medium">
           1 {calculation.currencyFrom} = {calculation.rate.toFixed(5)} {calculation.currencyTo}
         </span>
-        <span className="shrink-0">
+        <span className="shrink-0 font-medium">
           {liveRate.loading
             ? t('transfers.calculator.refreshing')
             : `${liveRate.source}${liveRate.date ? ` · ${liveRate.date}` : ''}`}
@@ -87,29 +84,29 @@ export function DashboardTransferCalculator() {
 function CurrencyField({ currency, accent = false, label, onChange, value }) {
   return (
     <label
-      className={`min-w-0 overflow-hidden rounded-[var(--radius-input)] p-3 sm:p-4 ${
+      className={`min-w-0 overflow-hidden rounded-[0.95rem] px-3 py-2.5 sm:px-3.5 sm:py-3 ${
         accent
           ? 'bg-[color-mix(in_srgb,var(--app-teal)_12%,var(--app-surface))] text-[var(--app-text)] ring-1 ring-[color-mix(in_srgb,var(--app-teal)_28%,transparent)]'
           : 'bg-[var(--app-surface)] text-[var(--app-text)] ring-1 ring-[var(--app-border)]'
       }`}
     >
       <span
-        className={`block truncate text-[10px] font-black uppercase tracking-wider ${
+        className={`block truncate text-[11px] font-bold uppercase tracking-[0.06em] ${
           accent ? 'text-[var(--app-teal)]' : 'text-[var(--app-text-muted)]'
         }`}
       >
         {label}
       </span>
-      <span className="mt-2 flex min-w-0 items-center gap-2 sm:gap-3">
+      <span className="mt-1.5 flex min-w-0 items-center gap-2">
         <input
-          className="min-w-0 flex-1 bg-transparent text-xl font-black outline-none sm:text-2xl"
+          className="min-w-0 flex-1 bg-transparent text-[1.25rem] font-extrabold leading-none tracking-tight outline-none sm:text-[1.4rem]"
           type="number"
           min="0"
           value={value}
           onChange={(event) => onChange(event.target.value)}
         />
         <span
-          className={`shrink-0 rounded-lg px-2.5 py-1 text-xs font-black sm:px-3 ${
+          className={`shrink-0 rounded-md px-2 py-0.5 text-[11px] font-bold tracking-wide sm:px-2.5 ${
             accent
               ? 'bg-[color-mix(in_srgb,var(--app-teal)_18%,var(--app-surface))] text-[var(--app-teal)]'
               : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'

@@ -41,7 +41,9 @@ export function Dashboard3DIcon({
         <img
           src={src}
           alt={alt}
-          loading="lazy"
+          loading="eager"
+          decoding="async"
+          fetchPriority="low"
           draggable={false}
           className={`dashboard-icon-3d__img object-contain ${sizeClass}`}
         />
@@ -49,7 +51,9 @@ export function Dashboard3DIcon({
       <img
         src={logoSrc}
         alt={alt}
-        loading="lazy"
+        loading="eager"
+        decoding="async"
+        fetchPriority="low"
         draggable={false}
         className={`hidden object-contain lg:block ${sizeClass}`}
       />

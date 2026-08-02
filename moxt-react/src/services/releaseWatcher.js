@@ -2,11 +2,8 @@ import { translate } from '@moxt/shared/i18n/translate.js'
 import { addToast } from '../features/ui/uiSlice'
 import { scheduleAppReload, startAppUpdateWatcher } from './appUpdate'
 
-// Ne jamais interrompre une session active en cours d'usage : le rechargement
-// se déclenche en priorité au prochain passage en arrière-plan (visibilitychange,
-// géré par scheduleAppReload) ; ce délai n'est qu'un filet de sécurité pour les
-// onglets qui restent au premier plan sans jamais être mis en arrière-plan.
-const FALLBACK_RELOAD_DELAY_MS = 30 * 60 * 1000
+/** Rechargement forcé rapide après détection d’une nouvelle version (toast puis reload). */
+const FORCE_RELOAD_DELAY_MS = 2500
 
 function currentLanguage() {
   try {
@@ -16,7 +13,7 @@ function currentLanguage() {
   }
 }
 
-/** Surveille version.json et prévient l'utilisateur avant rechargement. */
+/** Surveille version.json et force le rechargement navigateur dès une nouvelle build. */
 export function startReleaseWatcher(store) {
   return startAppUpdateWatcher({
     onUpdate: () => {
@@ -28,7 +25,7 @@ export function startReleaseWatcher(store) {
           tone: 'info',
         }),
       )
-      scheduleAppReload({ reason: 'release', delayMs: FALLBACK_RELOAD_DELAY_MS })
+      scheduleAppReload({ reason: 'release', delayMs: FORCE_RELOAD_DELAY_MS })
     },
   })
 }
