@@ -18,11 +18,14 @@ export function messageImageStackRotation(index, { sent = false } = {}) {
 
 export function isImageAttachment(attachment) {
   if (!attachment) return false
+  if (attachment.kind === 'contact') return false
   if (Array.isArray(attachment.urls) && attachment.urls.length > 0) return true
   if (attachment.type?.startsWith('image/')) return true
   const src = attachment.url || attachment.localUrl || ''
   return /\.(jpe?g|png|gif|webp|avif|bmp|svg)(\?|#|$)/i.test(src)
 }
+
+export { isContactAttachment } from './contactShareUtils'
 
 export function attachmentImageSrc(attachment) {
   if (!attachment) return null
@@ -44,6 +47,11 @@ export function attachmentImageSrcs(attachment) {
 
 export function attachmentPreviewLabel(attachment, t) {
   if (!attachment) return ''
+  if (attachment.kind === 'contact') {
+    return messagesText(t, 'messages.contact.preview', {
+      name: attachment.name || messagesText(t, 'messages.contact.fallbackName'),
+    })
+  }
   if (isImageAttachment(attachment)) {
     const count = attachmentImageSrcs(attachment).length
     if (count > 1) return messagesText(t, 'messages.attachment.photos', { count })
@@ -56,6 +64,9 @@ export function attachmentPreviewLabel(attachment, t) {
 /** Plain searchable label (no emoji) for conversation / thread filters. */
 export function attachmentSearchText(attachment, t) {
   if (!attachment) return ''
+  if (attachment.kind === 'contact') {
+    return `${attachment.name || ''} ${messagesText(t, 'messages.contact.searchLabel')}`.trim()
+  }
   const name = attachment.name || ''
   if (isImageAttachment(attachment)) {
     const count = attachmentImageSrcs(attachment).length

@@ -26,7 +26,8 @@ where (travel_proof_url is null or btrim(travel_proof_url) = '')
 alter table public.parcels
   alter column proof_status set default 'missing';
 
--- Owner cannot self-verify passport_status (same as proof_status)
+-- Owner cannot self-verify passport_status / proof_status (verified|rejected).
+-- Owner MAY switch missing ↔ pending_review when uploading or removing docs.
 create or replace function private.moxt_parcels_proof_guard()
 returns trigger
 language plpgsql
@@ -38,10 +39,20 @@ begin
      and not public.moxt_is_admin()
      and not public.moxt_is_moderator() then
     if new.proof_status is distinct from old.proof_status then
-      new.proof_status := old.proof_status;
+      if old.proof_status = 'verified'
+         or new.proof_status in ('verified', 'rejected') then
+        new.proof_status := old.proof_status;
+      elsif new.proof_status not in ('missing', 'pending_review') then
+        new.proof_status := old.proof_status;
+      end if;
     end if;
     if new.passport_status is distinct from old.passport_status then
-      new.passport_status := old.passport_status;
+      if old.passport_status = 'verified'
+         or new.passport_status in ('verified', 'rejected') then
+        new.passport_status := old.passport_status;
+      elsif new.passport_status not in ('missing', 'pending_review') then
+        new.passport_status := old.passport_status;
+      end if;
     end if;
   end if;
   return new;

@@ -6,6 +6,7 @@ import {
   FiCheck,
   FiCheckCircle,
   FiFileText,
+  FiInfo,
   FiMapPin,
   FiPackage,
   FiUpload,
@@ -17,6 +18,7 @@ import { useNavigate } from 'react-router-dom'
 import { Alert } from '../components/ui/Alert'
 import { AirportSelector } from '../components/ui/AirportSelector'
 import { Button } from '../components/ui/Button'
+import { Modal } from '../components/ui/Modal'
 import { ShareToFeedModal } from '../components/ui/ShareToFeedModal'
 import { useActionBurst } from '../components/ui/ActionBurst'
 import { Card } from '../components/ui/Card'
@@ -134,6 +136,7 @@ export function PublishParcelPage() {
   const [step, setStep] = useState(1)
   useScrollToTopOnStep(step)
   const [shareModal, setShareModal] = useState(null)
+  const [ticketHelpOpen, setTicketHelpOpen] = useState(false)
   const [errors, setErrors] = useState({})
   const { trigger: triggerBurst, node: burstNode } = useActionBurst()
 
@@ -385,6 +388,28 @@ export function PublishParcelPage() {
         onPublished={triggerBurst}
       />
     )}
+    <Modal
+      open={ticketHelpOpen}
+      onClose={() => setTicketHelpOpen(false)}
+      title={publishText(t, 'publish.parcel.fields.travelProofHelpTitle')}
+    >
+      <div className="grid gap-3 text-sm leading-relaxed text-[var(--app-text-muted)]">
+        <p>{publishText(t, 'publish.parcel.fields.travelProofHelpBody')}</p>
+        <ul className="grid list-disc gap-1.5 pl-5 text-[var(--app-text)]">
+          <li>{publishText(t, 'publish.parcel.fields.travelProofHelpItem1')}</li>
+          <li>{publishText(t, 'publish.parcel.fields.travelProofHelpItem2')}</li>
+          <li>{publishText(t, 'publish.parcel.fields.travelProofHelpItem3')}</li>
+        </ul>
+        <p className="rounded-xl bg-[var(--app-accent-soft)] px-3 py-2 text-[var(--app-accent)]">
+          {publishText(t, 'publish.parcel.fields.travelProofHelpTip')}
+        </p>
+      </div>
+      <div className="mt-5 flex justify-end">
+        <Button onClick={() => setTicketHelpOpen(false)}>
+          {publishText(t, 'publish.parcel.fields.travelProofHelpClose')}
+        </Button>
+      </div>
+    </Modal>
     <div className="mx-auto grid max-w-2xl gap-7">
       <div className="flex items-center gap-3">
         <Button variant="secondary" icon={FiArrowLeft} onClick={() => navigate('/parcels')}>
@@ -457,9 +482,6 @@ export function PublishParcelPage() {
               </button>
             ))}
           </div>
-          <Alert variant="info">
-            {publishText(t, 'publish.parcel.alert.airportOnly')}
-          </Alert>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <p className="mb-1 text-xs font-black uppercase tracking-wide text-[var(--app-text-muted)]">
@@ -698,8 +720,19 @@ export function PublishParcelPage() {
             ) : null}
           </label>
           <label className="grid gap-1.5">
-            <span className="text-sm font-bold">
+            <span className="flex items-center gap-2 text-sm font-bold">
               {publishText(t, 'publish.parcel.fields.travelProof')}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault()
+                  setTicketHelpOpen(true)
+                }}
+                className="grid size-7 place-items-center rounded-full text-[var(--app-accent)] transition hover:bg-[var(--app-accent-soft)]"
+                aria-label={publishText(t, 'publish.parcel.fields.travelProofHelpAria')}
+              >
+                <FiInfo className="text-base" />
+              </button>
             </span>
             {form.travelProofFile ? (
               <div className="flex items-center gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3">

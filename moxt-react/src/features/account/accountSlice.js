@@ -36,6 +36,7 @@ const ACCOUNT_DEFAULTS = {
   transferProfiles: [],
   documents: [],
   verificationRequests: [],
+  phoneAssistRequests: [],
   preferences: {},
   deletionRequests: [],
   viewedListings: [],
@@ -70,6 +71,7 @@ const accountSlice = createSlice({
         transferProfiles,
         documents,
         verificationRequests,
+        phoneAssistRequests,
         deletionRequests,
       } = action.payload
       if (favorites) state.favorites = mergeRemoteById(state.favorites, favorites)
@@ -88,6 +90,12 @@ const accountSlice = createSlice({
         state.verificationRequests = mergeRemoteById(
           state.verificationRequests,
           verificationRequests,
+        )
+      }
+      if (phoneAssistRequests) {
+        state.phoneAssistRequests = mergeRemoteById(
+          state.phoneAssistRequests || [],
+          phoneAssistRequests,
         )
       }
       if (deletionRequests) {
@@ -410,6 +418,45 @@ const accountSlice = createSlice({
         request.reviewNote = reviewNote
       }
     },
+    submitPhoneAssistRequest: {
+      reducer(state, action) {
+        state.phoneAssistRequests ||= []
+        const existing = state.phoneAssistRequests.find(
+          (item) => item.userId === action.payload.userId && item.status === 'pending',
+        )
+        if (existing) {
+          Object.assign(existing, action.payload, { id: existing.id })
+          return
+        }
+        state.phoneAssistRequests.unshift(action.payload)
+      },
+      prepare(values) {
+        return {
+          payload: {
+            id: createId('PHA'),
+            userId: values.userId,
+            phone: String(values.phone || '').trim(),
+            note: values.note?.trim() || '',
+            status: 'pending',
+            createdAt: new Date().toISOString(),
+          },
+        }
+      },
+    },
+    updatePhoneAssistStatus(state, action) {
+      const request = (state.phoneAssistRequests || []).find((item) => item.id === action.payload.id)
+      if (!request) return
+      const nextStatus = action.payload.status
+      if (!['approved', 'rejected', 'pending'].includes(nextStatus)) return
+      const reviewNote = String(action.payload.reviewNote ?? request.reviewNote ?? '').trim()
+      if (nextStatus === 'rejected' && !reviewNote) return
+      request.status = nextStatus
+      request.reviewedAt = new Date().toISOString()
+      request.reviewedBy = action.payload.reviewedBy || null
+      if (nextStatus === 'rejected' || action.payload.reviewNote !== undefined) {
+        request.reviewNote = reviewNote
+      }
+    },
     updateAccountPreferences(state, action) {
       const { userId, preferences, fromRemote = false } = action.payload
       const merged = {
@@ -483,6 +530,7 @@ export const {
   removeTransferProfile,
   saveTransferProfile,
   submitVerificationRequest,
+  submitPhoneAssistRequest,
   toggleAccountFavorite,
   upsertPublisherSubscription,
   removePublisherSubscription,
@@ -494,6 +542,7 @@ export const {
   updatePublisherSubscriptionPref,
   updateAccountPreferences,
   updateVerificationStatus,
+  updatePhoneAssistStatus,
   hydrateAccountPreferences,
   mergeRemoteAccount,
   setAll,

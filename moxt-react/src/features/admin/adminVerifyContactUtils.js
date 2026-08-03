@@ -15,8 +15,16 @@ function edgeFunctionErrorDetail(error) {
 }
 
 /** Valide manuellement le numéro de téléphone d'un utilisateur (RPC admin, cf. moxt_admin_verify_phone). */
-export async function verifyUserPhoneManually(dispatch, { id, t }) {
+export async function verifyUserPhoneManually(dispatch, { id, t, phone } = {}) {
   try {
+    const nextPhone = String(phone || '').trim()
+    if (nextPhone) {
+      const { error: phoneError } = await supabase
+        .from('profiles')
+        .update({ phone: nextPhone, updated_at: new Date().toISOString() })
+        .eq('id', id)
+      if (phoneError) throw new Error(phoneError.message)
+    }
     const { error } = await supabase.rpc('moxt_admin_verify_phone', { p_user_id: id })
     if (error) throw new Error(error.message)
 

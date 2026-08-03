@@ -229,8 +229,16 @@ function stripUnsupportedColumns(table, payload) {
 }
 
 async function upsert(table, data) {
-  const payload = stripUnsupportedColumns(table, toSnake(data))
-  const { error } = await supabase.from(table).upsert(payload, { onConflict: 'id' })
+  let payload = stripUnsupportedColumns(table, toSnake(data))
+  let { error } = await supabase.from(table).upsert(payload, { onConflict: 'id' })
+  // Legacy / migration lag: strip unknown columns and retry (parcels passport fields, etc.).
+  for (let i = 0; i < 8 && error; i += 1) {
+    const missing = (error.message || '').match(/Could not find the '([^']+)' column/i)?.[1]
+    if (!missing || !(missing in payload)) break
+    const { [missing]: _omit, ...rest } = payload
+    payload = rest
+    ;({ error } = await supabase.from(table).upsert(payload, { onConflict: 'id' }))
+  }
   if (error) throw error
 }
 
@@ -465,19 +473,22 @@ const handlers = {
       travelProofName: _tpn,
       travelProofType: _tpt,
       travelProofSize: _tps,
+      travelProofFile: _tpf,
       passportProofName: _ppn,
       passportProofType: _ppt,
       passportProofSize: _pps,
+      passportProofFile: _ppf,
       ...parcelData
     } = payload
     const cleaned = {
       ...parcelData,
       maxWeightPerItem: parcelData.maxWeightPerItem !== '' ? parcelData.maxWeightPerItem : null,
-      travelProofUrl: parcelData.travelProofUrl || parcelData.travelProofFile?.url || null,
-      passportProofUrl: parcelData.passportProofUrl || parcelData.passportProofFile?.url || null,
+      travelProofUrl: parcelData.travelProofUrl || null,
+      passportProofUrl: parcelData.passportProofUrl || null,
       proofStatus: parcelData.proofStatus || (parcelData.travelProofUrl ? 'pending_review' : 'missing'),
       passportStatus:
         parcelData.passportStatus || (parcelData.passportProofUrl ? 'pending_review' : 'missing'),
+      reservations: Array.isArray(parcelData.reservations) ? parcelData.reservations : [],
     }
     await upsert('parcels', cleaned)
   },
@@ -519,14 +530,25 @@ const handlers = {
       travelProofName: _tpn,
       travelProofType: _tpt,
       travelProofSize: _tps,
+      travelProofFile: _tpf,
       passportProofName: _ppn,
       passportProofType: _ppt,
       passportProofSize: _pps,
+      passportProofFile: _ppf,
       originCountry: _oc,
       destinationCountry: _dc,
       ...parcelData
     } = parcel
-    await upsert('parcels', parcelData)
+    await upsert('parcels', {
+      ...parcelData,
+      maxWeightPerItem: parcelData.maxWeightPerItem !== '' ? parcelData.maxWeightPerItem : null,
+      travelProofUrl: parcelData.travelProofUrl || null,
+      passportProofUrl: parcelData.passportProofUrl || null,
+      proofStatus: parcelData.proofStatus || (parcelData.travelProofUrl ? 'pending_review' : 'missing'),
+      passportStatus:
+        parcelData.passportStatus || (parcelData.passportProofUrl ? 'pending_review' : 'missing'),
+      reservations: Array.isArray(parcelData.reservations) ? parcelData.reservations : [],
+    })
   },
   'parcels/cancelParcelRequest': async (payload) => {
     await update('parcel_requests', payload.id, { status: 'cancelled' })
@@ -1687,6 +1709,53 @@ const handlers = {
         if (error) throw error
       }
     }
+  },
+  'account/submitPhoneAssistRequest': async (payload, state) => {
+    const pending =
+      (state.account.phoneAssistRequests || []).find(
+        (item) => item.userId === payload.userId && item.status === 'pending',
+      ) || payload
+    const row = {
+      id: pending.id || payload.id,
+      user_id: payload.userId,
+      phone: payload.phone || pending.phone || '',
+      note: payload.note || pending.note || '',
+      status: 'pending',
+      created_at: pending.createdAt || payload.createdAt || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+    const { error: insertError } = await supabase.from('phone_assist_requests').insert(row)
+    if (!insertError) return
+    if (insertError.code === '23505') {
+      const { error: updateError } = await supabase
+        .from('phone_assist_requests')
+        .update({
+          phone: row.phone,
+          note: row.note,
+          status: 'pending',
+          updated_at: row.updated_at,
+        })
+        .eq('user_id', row.user_id)
+        .eq('status', 'pending')
+      if (!updateError) return
+      throw updateError
+    }
+    throw insertError
+  },
+  'account/updatePhoneAssistStatus': async (payload, state) => {
+    const request = (state.account.phoneAssistRequests || []).find((item) => item.id === payload.id)
+    if (!request) return
+    const patch = {
+      status: request.status,
+      reviewed_at: request.reviewedAt || new Date().toISOString(),
+      review_note: request.reviewNote || '',
+      updated_at: new Date().toISOString(),
+    }
+    if (request.reviewedBy && String(request.reviewedBy).length === 36) {
+      patch.reviewed_by = request.reviewedBy
+    }
+    const { error } = await supabase.from('phone_assist_requests').update(patch).eq('id', request.id)
+    if (error) throw error
   },
   'account/updateAccountPreferences': async (payload, state) => {
     const mergedPreferences = {

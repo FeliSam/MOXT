@@ -329,6 +329,23 @@ export const MESSAGES_FR_SOURCES = {
   'messages.suggestions.general.contact.thanks': 'Merci pour votre retour.',
   'messages.suggestions.general.contact.clarify':
     'Pouvez-vous préciser votre demande ?',
+  'messages.composerPlusAria': 'Joindre un fichier ou un contact',
+  'messages.composerPlusClose': 'Fermer le menu de pièces jointes',
+  'messages.composerAttachFile': 'Fichier',
+  'messages.composerAttachContact': 'Contact',
+  'messages.contact.pickerTitle': 'Partager un contact',
+  'messages.contact.pickerHint':
+    'Choisissez parmi vos abonnés et abonnements pour l’envoyer dans la conversation.',
+  'messages.contact.searchPlaceholder': 'Rechercher un contact…',
+  'messages.contact.clearSearch': 'Effacer la recherche',
+  'messages.contact.following': 'Abonnements',
+  'messages.contact.followers': 'Abonnés',
+  'messages.contact.emptyFollowing': 'Aucun abonnement pour le moment.',
+  'messages.contact.emptyFollowers': 'Aucun abonné pour le moment.',
+  'messages.contact.fallbackName': 'Contact MOXT',
+  'messages.contact.openProfile': 'Voir le profil',
+  'messages.contact.preview': '👤 {name}',
+  'messages.contact.searchLabel': 'contact profil',
 }
 
 export function messagesText(t, key, vars = {}) {

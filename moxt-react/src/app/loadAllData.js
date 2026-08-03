@@ -186,7 +186,7 @@ export const loadAllData = createAsyncThunk(
       eventsRes, eventRegistrationsRes,
       businessesRes,
       ownedBusinessesRes,
-      favoritesRes, subscriptionsRes, subscriberBansRes, subscriberReportsRes, transferProfilesRes, verificationRequestsRes, personalDocumentsRes,
+      favoritesRes, subscriptionsRes, subscriberBansRes, subscriberReportsRes, transferProfilesRes, verificationRequestsRes, phoneAssistRequestsRes, personalDocumentsRes,
       p2pOffersRes, p2pOrdersRes,
       reviewsRes,
       disputesRes,
@@ -220,6 +220,13 @@ export const loadAllData = createAsyncThunk(
             .order('created_at', { ascending: false })
             .limit(USER_LIMIT)
         : supabase.from('verification_requests').select('*').eq('user_id', uid).limit(USER_LIMIT),
+      isAdmin
+        ? supabase
+            .from('phone_assist_requests')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(USER_LIMIT)
+        : supabase.from('phone_assist_requests').select('*').eq('user_id', uid).limit(USER_LIMIT),
       isAdmin
         ? supabase
             .from('personal_documents')
@@ -754,6 +761,9 @@ export const loadAllData = createAsyncThunk(
           ...item,
           documentIds: parseJsonField(item.documentIds, []),
         })),
+        phoneAssistRequests: fromRows(
+          safeRows(phoneAssistRequestsRes, 'des demandes validation telephone'),
+        ),
         deletionRequests: fromRows(
           safeRows(deletionRequestsRes, 'des demandes de suppression'),
         ).map((item) => ({

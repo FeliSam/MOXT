@@ -6,7 +6,9 @@ import {
   FiBellOff,
   FiEye,
   FiEyeOff,
+  FiFile,
   FiPaperclip,
+  FiPlus,
   FiSearch,
   FiSlash,
   FiStar,
@@ -20,6 +22,7 @@ import { useLanguage } from '../../contexts/useLanguage'
 import { UploadProgress } from '../../components/ui/UploadProgress'
 import { shortenFileName } from '../../services/uploadProgress'
 import { EntityAvatar } from '../../features/account/EntityAvatar'
+import { ContactSharePicker } from '../../features/communications/ContactSharePicker'
 import { getConversationPeer } from '../../features/communications/conversationDisplay'
 import {
   buildConversationTimeline,
@@ -76,6 +79,7 @@ export function ConversationPanel({
   onBlock,
   onDraft,
   onFile,
+  onShareContact,
   onMute,
   onPin,
   onDelete,
@@ -161,6 +165,9 @@ export function ConversationPanel({
   const [threadQuery, setThreadQuery] = useState('')
   const [showScrollFab, setShowScrollFab] = useState(false)
   const [composerOffset, setComposerOffset] = useState(120)
+  const [attachMenuOpen, setAttachMenuOpen] = useState(false)
+  const [contactPickerOpen, setContactPickerOpen] = useState(false)
+  const fileInputRef = useRef(null)
   const [threadHeaderVisible, setThreadHeaderVisible] = useState(true)
   const [threadHeaderOffset, setThreadHeaderOffset] = useState(68)
   const [initialUnreadCount] = useState(() => active.unreadBy?.[user.id] || 0)
@@ -975,12 +982,64 @@ export function ConversationPanel({
           } ${formik.isSubmitting ? 'message-composer-form--sending' : ''}`}
           onSubmit={formik.handleSubmit}
         >
-          <label
-            className="message-touch-target grid size-11 shrink-0 cursor-pointer place-items-center rounded-xl border border-[var(--app-border)]/50 bg-transparent text-base text-[var(--app-accent)] transition hover:border-brand-200"
-            aria-label={t("messages.addAttachments")}
-          >
-            <FiPaperclip aria-hidden="true" />
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              disabled={blocked}
+              aria-expanded={attachMenuOpen}
+              aria-label={t('messages.composerPlusAria')}
+              className={`message-touch-target grid size-11 place-items-center rounded-xl border border-[var(--app-border)]/50 bg-transparent text-lg text-[var(--app-accent)] transition duration-300 hover:border-brand-200 ${
+                attachMenuOpen ? 'rotate-45 bg-[var(--app-accent-soft)]' : ''
+              }`}
+              onClick={() => setAttachMenuOpen((open) => !open)}
+            >
+              <FiPlus aria-hidden="true" />
+            </button>
+            {attachMenuOpen ? (
+              <>
+                <button
+                  type="button"
+                  className="fixed inset-0 z-20 cursor-default"
+                  aria-label={t('messages.composerPlusClose')}
+                  onClick={() => setAttachMenuOpen(false)}
+                />
+                <div
+                  className="absolute bottom-[calc(100%+0.55rem)] left-0 z-30 grid min-w-[11.5rem] gap-1.5 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-1.5 shadow-[var(--shadow-card)] animate-[composerPlusIn_220ms_ease-out]"
+                  role="menu"
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition hover:bg-[var(--app-accent-soft)]"
+                    onClick={() => {
+                      setAttachMenuOpen(false)
+                      fileInputRef.current?.click()
+                    }}
+                  >
+                    <span className="grid size-8 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
+                      <FiFile />
+                    </span>
+                    {t('messages.composerAttachFile')}
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition hover:bg-[var(--app-accent-soft)]"
+                    onClick={() => {
+                      setAttachMenuOpen(false)
+                      setContactPickerOpen(true)
+                    }}
+                  >
+                    <span className="grid size-8 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
+                      <FiUser />
+                    </span>
+                    {t('messages.composerAttachContact')}
+                  </button>
+                </div>
+              </>
+            ) : null}
             <input
+              ref={fileInputRef}
               className="sr-only"
               type="file"
               accept="image/*,application/pdf,.doc,.docx"
@@ -992,7 +1051,7 @@ export function ConversationPanel({
                 event.target.value = ''
               }}
             />
-          </label>
+          </div>
           <textarea
             ref={composerRef}
             className="max-h-28 min-h-9 flex-1 resize-none overflow-y-auto bg-transparent px-1 py-2 text-xs leading-5 outline-none placeholder:text-[var(--app-text-faint)] sm:text-[13px] sm:leading-5"
@@ -1071,6 +1130,15 @@ export function ConversationPanel({
       </div>
       </div>
       </div>
+      <ContactSharePicker
+        open={contactPickerOpen}
+        userId={user?.id}
+        onClose={() => setContactPickerOpen(false)}
+        onSelect={(contact) => {
+          setContactPickerOpen(false)
+          onShareContact?.(contact)
+        }}
+      />
     </div>
   )
 }

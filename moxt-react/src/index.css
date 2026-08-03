@@ -1768,6 +1768,28 @@ html.messages-route-lock #root {
   }
 }
 
+@keyframes composerPlusIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes contactRowIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes star-fill {
   0%   { transform: scale(0.6); }
   55%  { transform: scale(1.25); }

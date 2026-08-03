@@ -80,6 +80,16 @@ export const PUBLISH_FR_SOURCES = {
   'publish.parcel.fields.travelProofChoose': 'Choisir un fichier (PDF ou image)',
   'publish.parcel.fields.travelProofHint':
     "Visible uniquement par l'équipe MOXT pour vérification, jamais publié publiquement. 5 Mo max.",
+  'publish.parcel.fields.travelProofHelpAria': 'Conseils pour le billet d’avion',
+  'publish.parcel.fields.travelProofHelpTitle': 'Comment préparer votre billet',
+  'publish.parcel.fields.travelProofHelpBody':
+    'Vous pouvez masquer ou flouter le numéro de billet / de réservation. MOXT n’en a pas besoin.',
+  'publish.parcel.fields.travelProofHelpItem1': 'Itinéraire (aéroports / villes)',
+  'publish.parcel.fields.travelProofHelpItem2': 'Dates du voyage',
+  'publish.parcel.fields.travelProofHelpItem3': 'Nom du passager',
+  'publish.parcel.fields.travelProofHelpTip':
+    'Un billet partiellement masqué reste valide pour la vérification, tant que ces infos restent lisibles.',
+  'publish.parcel.fields.travelProofHelpClose': 'Compris',
   'publish.parcel.fields.travelProofReady': 'Prêt',
   'publish.parcel.fields.travelProofUploading': 'Envoi…',
   'publish.parcel.fields.travelProofRemove': 'Retirer le fichier',

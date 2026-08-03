@@ -1,10 +1,11 @@
-import { FiArrowLeft, FiCheck, FiFileText, FiSave, FiUpload, FiX } from 'react-icons/fi'
+import { FiArrowLeft, FiCheck, FiFileText, FiInfo, FiSave, FiUpload, FiX } from 'react-icons/fi'
 import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
+import { Modal } from '../components/ui/Modal'
 import { PageHeader } from '../components/ui/PageHeader'
 import { constrainRussianPhone, phonePlaceholder } from '../config/phone'
 import { updateParcel } from '../features/parcels/parcelSlice'
@@ -28,6 +29,7 @@ export function EditParcelPage() {
 
   const [form, setForm] = useState(null)
   const [proofError, setProofError] = useState('')
+  const [ticketHelpOpen, setTicketHelpOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const { progress: proofProgress, track: trackProofUpload } = useUploadProgress()
 
@@ -272,8 +274,19 @@ export function EditParcelPage() {
             />
           </label>
           <label className="grid gap-1.5">
-            <span className="text-sm font-bold">
+            <span className="flex items-center gap-2 text-sm font-bold">
               {publishText(t, 'publish.parcel.fields.travelProof')}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault()
+                  setTicketHelpOpen(true)
+                }}
+                className="grid size-7 place-items-center rounded-full text-[var(--app-accent)] transition hover:bg-[var(--app-accent-soft)]"
+                aria-label={publishText(t, 'publish.parcel.fields.travelProofHelpAria')}
+              >
+                <FiInfo className="text-base" />
+              </button>
             </span>
             {values.travelProofFile ? (
               <div className="grid gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3">
@@ -350,6 +363,28 @@ export function EditParcelPage() {
           </Button>
         </form>
       </Card>
+      <Modal
+        open={ticketHelpOpen}
+        onClose={() => setTicketHelpOpen(false)}
+        title={publishText(t, 'publish.parcel.fields.travelProofHelpTitle')}
+      >
+        <div className="grid gap-3 text-sm leading-relaxed text-[var(--app-text-muted)]">
+          <p>{publishText(t, 'publish.parcel.fields.travelProofHelpBody')}</p>
+          <ul className="grid list-disc gap-1.5 pl-5 text-[var(--app-text)]">
+            <li>{publishText(t, 'publish.parcel.fields.travelProofHelpItem1')}</li>
+            <li>{publishText(t, 'publish.parcel.fields.travelProofHelpItem2')}</li>
+            <li>{publishText(t, 'publish.parcel.fields.travelProofHelpItem3')}</li>
+          </ul>
+          <p className="rounded-xl bg-[var(--app-accent-soft)] px-3 py-2 text-[var(--app-accent)]">
+            {publishText(t, 'publish.parcel.fields.travelProofHelpTip')}
+          </p>
+        </div>
+        <div className="mt-5 flex justify-end">
+          <Button onClick={() => setTicketHelpOpen(false)}>
+            {publishText(t, 'publish.parcel.fields.travelProofHelpClose')}
+          </Button>
+        </div>
+      </Modal>
     </div>
   )
 }

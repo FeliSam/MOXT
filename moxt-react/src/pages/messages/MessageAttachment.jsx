@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { FiChevronLeft, FiChevronRight, FiPaperclip, FiX } from 'react-icons/fi'
+import { ContactMessageCard } from '../../features/communications/ContactMessageCard'
 import {
   attachmentImageSrcs,
+  isContactAttachment,
   isImageAttachment,
   messageImageStackRotation,
 } from '../../features/communications/attachmentUtils'
@@ -181,6 +183,10 @@ export function MessageAttachment({ attachment, mine }) {
   const images = attachmentImageSrcs(attachment)
   const fromStatus = Boolean(attachment.fromStatus)
   const reactionEmoji = attachment.reactionEmoji
+
+  if (isContactAttachment(attachment)) {
+    return <ContactMessageCard attachment={attachment} mine={mine} />
+  }
 
   if (isImageAttachment(attachment) && images.length) {
     const lightboxOpen = lightboxIndex != null

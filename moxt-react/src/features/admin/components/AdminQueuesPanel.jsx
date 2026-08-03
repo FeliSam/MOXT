@@ -5,6 +5,7 @@ import {
   FiFileText,
   FiHeadphones,
   FiPackage,
+  FiSmartphone,
   FiStar,
   FiTrash2,
   FiUserCheck,
@@ -14,12 +15,13 @@ import { Link } from 'react-router-dom'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { Button } from '../../../components/ui/Button'
 import { Badge } from '../../../components/ui/Badge'
-import { updateVerificationStatus } from '../../account/accountSlice'
+import { updatePhoneAssistStatus, updateVerificationStatus } from '../../account/accountSlice'
 import { updateBusinessDocumentStatus } from '../../businesses/businessSlice'
 import { updateParcelPassportStatus, updateParcelProofStatus } from '../../parcels/parcelSlice'
 import { moderateReview } from '../../reviews/reviewSlice'
 import { REVIEW_DISPUTE_STATUS } from '@moxt/shared/utils/reviewUtils.js'
 import { ActionButton, confirmedClick, contentActions, resolveDisputeAndUnlockOrder } from '../adminActions'
+import { verifyUserPhoneManually } from '../adminVerifyContactUtils'
 import { CARD, ITEM } from '../adminConfig'
 import { adminText } from '../adminI18n'
 import { promptRejectReason } from '../promptRejectReason'
@@ -146,6 +148,62 @@ export function AdminQueuesPanel({
                   })}
                 >
                   {t('verification.admin.reject')}
+                </Button>
+              </>
+            )}
+          />
+          <QueueSection
+            icon={FiSmartphone}
+            items={queues.phoneAssists || []}
+            label={adminText(t, 'admin.overview.queue.phoneAssists')}
+            kind="phoneAssist"
+            setSelected={setSelected}
+            t={t}
+            renderMeta={(i) =>
+              adminText(t, 'admin.queues.phoneAssistMeta', {
+                phone: i.phone || '—',
+                note: i.note || adminText(t, 'admin.queues.phoneAssistNoNote'),
+              })
+            }
+            renderActions={(i) => (
+              <>
+                <Button
+                  icon={FiCheckCircle}
+                  onClick={confirmedClick(t, adminText(t, 'admin.queues.approvePhoneAssist'), async () => {
+                    const ok = await verifyUserPhoneManually(dispatch, {
+                      id: i.userId,
+                      t,
+                      phone: i.phone,
+                    })
+                    if (!ok) return
+                    dispatch(
+                      updatePhoneAssistStatus({
+                        id: i.id,
+                        status: 'approved',
+                        reviewedBy: adminId,
+                      }),
+                    )
+                  })}
+                >
+                  {adminText(t, 'admin.queues.approvePhoneAssist')}
+                </Button>
+                <Button
+                  variant="danger"
+                  icon={FiX}
+                  onClick={confirmedClick(t, adminText(t, 'admin.queues.rejectPhoneAssist'), () => {
+                    const reviewNote = promptRejectReason(t)
+                    if (!reviewNote) return
+                    dispatch(
+                      updatePhoneAssistStatus({
+                        id: i.id,
+                        status: 'rejected',
+                        reviewedBy: adminId,
+                        reviewNote,
+                      }),
+                    )
+                  })}
+                >
+                  {adminText(t, 'admin.queues.rejectPhoneAssist')}
                 </Button>
               </>
             )}

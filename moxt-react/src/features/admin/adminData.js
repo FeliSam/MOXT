@@ -166,11 +166,26 @@ export function buildQueues(state) {
         item.passportStatus || (item.passportProofUrl ? 'pending_review' : 'missing'),
     }))
 
+  const phoneAssists = (state.account.phoneAssistRequests || [])
+    .filter((item) => item.status === 'pending')
+    .map((item) => {
+      const user = state.administration.users.find((entry) => entry.id === item.userId)
+      const userName = user
+        ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email
+        : item.userId
+      return {
+        ...item,
+        userName,
+        userEmail: user?.email || '',
+      }
+    })
+
   return {
     accountDeletions,
     verifications,
     businessDocuments,
     parcelProofs,
+    phoneAssists,
     support: state.communications.support.filter((item) => item.status === 'waiting_agent'),
     disputes: state.disputes.items.filter((i) => ['new', 'open'].includes(i.status)),
     reviews: state.reviews.items.filter((i) => i.status === 'pending'),
@@ -195,6 +210,7 @@ export function buildQueues(state) {
         this.verifications.length +
         this.businessDocuments.length +
         this.parcelProofs.length +
+        this.phoneAssists.length +
         this.support.length +
         this.disputes.length +
         this.reports.length +

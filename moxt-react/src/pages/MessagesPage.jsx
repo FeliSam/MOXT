@@ -56,6 +56,7 @@ import {
   isImageFile,
   MAX_MESSAGE_IMAGES,
 } from '../features/communications/attachmentUtils'
+import { buildContactAttachment } from '../features/communications/contactShareUtils'
 import { messagesText } from '../features/communications/messagesI18n'
 import { useLanguage } from '../contexts/useLanguage'
 import { MESSAGE_FILTER_IDS, conversationMatchesFilter } from './messages/messageFilters'
@@ -545,6 +546,28 @@ export function MessagesPage() {
     setAttachments(imageFiles)
   }
 
+  function handleShareContact(contact) {
+    if (!active || blocked || !contact?.userId) return
+    const attachment = buildContactAttachment(contact)
+    if (!attachment) return
+    const sentAction = dispatch(
+      sendMessage({
+        conversationId: active.id,
+        senderId: user.id,
+        senderName: `${user.firstName} ${user.lastName}`,
+        text: '',
+        attachment,
+      }),
+    )
+    const messageId = sentAction?.payload?.message?.id || sentAction?.payload?.id
+    if (messageId) {
+      setSentAnimationIds((ids) => [...ids, messageId])
+      window.setTimeout(() => {
+        setSentAnimationIds((ids) => ids.filter((id) => id !== messageId))
+      }, 700)
+    }
+  }
+
   function closeSearch() {
     setQuery('')
     setSearchOpen(false)
@@ -942,6 +965,7 @@ export function MessagesPage() {
                 sentAnimationIds={sentAnimationIds}
                 onTyping={notifyTyping}
                 onStopTyping={stopTyping}
+                onShareContact={handleShareContact}
               />
             ) : null}
           </section>
