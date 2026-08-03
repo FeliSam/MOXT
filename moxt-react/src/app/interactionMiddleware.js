@@ -597,6 +597,26 @@ export const interactionMiddleware = (store) => {
     }
   }
 
+  if (action.type === 'parcels/updateParcelPassportStatus') {
+    const parcel = after.parcels.items.find((item) => item.id === action.payload.id)
+    const previous = before.parcels.items.find((item) => item.id === action.payload.id)
+    if (
+      parcel?.ownerId &&
+      previous?.passportStatus !== parcel.passportStatus &&
+      parcel.ownerId !== actorId
+    ) {
+      notify(store, {
+        userId: parcel.ownerId,
+        title: appText('notificationsFeed.parcelPassportReviewed'),
+        message: appText('notificationsFeed.parcelPassportReviewedBody', {
+          status: parcel.passportStatus,
+        }),
+        type: 'parcel',
+        link: `/parcels/${parcel.id}`,
+      })
+    }
+  }
+
   if (action.type === 'businesses/createBusinessRequest') {
     const request = after.businesses.requests.find((item) => item.id === action.payload.id)
     const business = after.businesses.items.find((item) => item.id === request?.businessId)

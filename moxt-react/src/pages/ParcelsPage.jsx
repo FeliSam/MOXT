@@ -21,8 +21,10 @@ import { sortByCountryPriority, resolveUserCountryCode } from '@moxt/shared/util
 import { sortBySubscriptionPriority } from '@moxt/shared/utils/subscriptionUtils.js'
 import { isStaffRole } from '../features/auth/roleUtils'
 import {
+  parcelPassportLabelKey,
   parcelProofLabelKey,
   parcelProofTone,
+  resolveParcelPassportStatus,
   resolveParcelProofStatus,
 } from '../features/parcels/parcelProofUtils'
 import { resolveParcelCountry } from '../features/marketplace/listingCatalogUtils'
@@ -213,11 +215,23 @@ export function ParcelsPage() {
                       >
                         <span className="absolute left-2 top-2 z-10 flex max-w-[calc(100%-1rem)] flex-wrap items-center gap-1">
                           {(() => {
+                            const passportStatus = resolveParcelPassportStatus(parcel)
                             const proofStatus = resolveParcelProofStatus(parcel)
                             return (
-                              <Badge tone={parcelProofTone(proofStatus)} className="!px-1.5 !py-0.5 !text-[9px]">
-                                {t(parcelProofLabelKey(proofStatus))}
-                              </Badge>
+                              <>
+                                <Badge
+                                  tone={parcelProofTone(passportStatus)}
+                                  className="!px-1.5 !py-0.5 !text-[9px]"
+                                >
+                                  {t(parcelPassportLabelKey(passportStatus))}
+                                </Badge>
+                                <Badge
+                                  tone={parcelProofTone(proofStatus)}
+                                  className="!px-1.5 !py-0.5 !text-[9px]"
+                                >
+                                  {t(parcelProofLabelKey(proofStatus))}
+                                </Badge>
+                              </>
                             )
                           })()}
                           {parcel.businessId ? (

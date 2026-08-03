@@ -84,8 +84,9 @@ describe('userSecurity', () => {
     expect(securityGateMessage('p2pAccept', publishReadyUser)).toMatch(/identité|identity|vérif/i)
   })
 
-  it('requires full verification including KYC to publish a voyage', () => {
-    expect(canPublishVoyage(publishReadyUser)).toBe(false)
+  it('requires phone and email only to publish a voyage (no KYC)', () => {
+    expect(canPublishVoyage(publishReadyUser)).toBe(true)
+    expect(canPublishVoyage(phoneUser)).toBe(false)
     expect(canPublishVoyage(identityUser)).toBe(true)
   })
 

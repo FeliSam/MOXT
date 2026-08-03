@@ -13,7 +13,7 @@ import {
   updateListingReportStatus,
   updateListingStatus,
 } from '../marketplace/marketplaceSlice'
-import { deleteParcel, updateParcelProofStatus, updateParcelStatus } from '../parcels/parcelSlice'
+import { deleteParcel, updateParcelPassportStatus, updateParcelProofStatus, updateParcelStatus } from '../parcels/parcelSlice'
 import { deletePost, moderatePost } from '../posts/postsSlice'
 import { moderateReview } from '../reviews/reviewSlice'
 import { TRANSFER_TRANSITIONS } from '../transfers/transferConfig'
@@ -269,6 +269,29 @@ export function contentActions(contentView, dispatch, item, t) {
           >
             {adminText(t, 'admin.actions.delete')}
           </ActionButton>
+          {item.passportProofUrl || item.passportStatus === 'pending_review' ? (
+            <>
+              <ActionButton
+                done={item.passportStatus === 'verified'}
+                doneLabel={adminText(t, 'admin.queues.validatePassport')}
+                onClick={confirmedClick(t, adminText(t, 'admin.queues.validatePassport'), () =>
+                  dispatch(updateParcelPassportStatus({ id: item.id, status: 'verified' })),
+                )}
+              >
+                {adminText(t, 'admin.queues.validatePassport')}
+              </ActionButton>
+              <ActionButton
+                done={item.passportStatus === 'rejected'}
+                doneLabel={adminText(t, 'admin.queues.rejectPassport')}
+                variant="danger"
+                onClick={confirmedClick(t, adminText(t, 'admin.queues.rejectPassport'), () =>
+                  dispatch(updateParcelPassportStatus({ id: item.id, status: 'rejected' })),
+                )}
+              >
+                {adminText(t, 'admin.queues.rejectPassport')}
+              </ActionButton>
+            </>
+          ) : null}
           {item.travelProofUrl || item.proofStatus === 'pending_review' ? (
             <>
               <ActionButton

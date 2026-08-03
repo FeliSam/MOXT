@@ -42,7 +42,7 @@ import { FileNameText } from '../components/ui/FileNameText'
 import { useUploadProgress } from '../hooks/useUploadProgress'
 import { SecurityGatePanel } from '../features/security/SecurityGatePanel'
 import { useSecurityGate } from '../features/security/useSecurityGate'
-import { initialCatalogStatus } from '@moxt/shared/auth/userSecurity.js'
+import { initialParcelDocStatus } from '../features/parcels/parcelProofUtils'
 import { useLanguage } from '../contexts/useLanguage'
 import {
   publishOptionLabel,
@@ -159,15 +159,27 @@ export function PublishParcelPage() {
     conditions: publishText(t, 'publish.parcel.defaults.conditions'),
     contact: user.phone || '',
     publishAs: 'person',
+    passportProofFile: null,
     travelProofFile: null,
   })
+  const [passportError, setPassportError] = useState('')
   const [proofError, setProofError] = useState('')
+  const { progress: passportProgress, track: trackPassportUpload } = useUploadProgress()
   const { progress: proofProgress, track: trackProofUpload } = useUploadProgress()
 
-  async function handleProofFile(file) {
+  async function handleDocFile(kind, file) {
     if (!file) return
+    const field = kind === 'passport' ? 'passportProofFile' : 'travelProofFile'
+    const setErr = kind === 'passport' ? setPassportError : setProofError
+    const track = kind === 'passport' ? trackPassportUpload : trackProofUpload
+    const upload =
+      kind === 'passport'
+        ? (onProgress) =>
+            storageService.uploadParcelPassport(user.id, createId('DRAFT'), file, { onProgress })
+        : (onProgress) =>
+            storageService.uploadParcelProof(user.id, createId('DRAFT'), file, { onProgress })
     if (file.size > 5 * 1024 * 1024) {
-      setProofError(publishText(t, 'publish.parcel.toasts.fileTooLarge.inline'))
+      setErr(publishText(t, 'publish.parcel.toasts.fileTooLarge.inline'))
       dispatch(
         addToast({
           title: publishText(t, 'publish.parcel.toasts.fileTooLarge.title'),
@@ -177,13 +189,11 @@ export function PublishParcelPage() {
       )
       return
     }
-    setProofError('')
-    set('travelProofFile', { name: file.name, size: file.size, type: file.type, uploading: true })
+    setErr('')
+    set(field, { name: file.name, size: file.size, type: file.type, uploading: true })
     try {
-      const path = await trackProofUpload((onProgress) =>
-        storageService.uploadParcelProof(user.id, createId('DRAFT'), file, { onProgress }),
-      )
-      set('travelProofFile', {
+      const path = await track(upload)
+      set(field, {
         name: file.name,
         size: file.size,
         type: file.type,
@@ -192,18 +202,33 @@ export function PublishParcelPage() {
       })
       dispatch(
         addToast({
-          title: publishText(t, 'publish.parcel.toasts.proofAdded.title'),
-          message: publishText(t, 'publish.parcel.toasts.proofAdded.message'),
+          title: publishText(
+            t,
+            kind === 'passport'
+              ? 'publish.parcel.toasts.passportAdded.title'
+              : 'publish.parcel.toasts.proofAdded.title',
+          ),
+          message: publishText(
+            t,
+            kind === 'passport'
+              ? 'publish.parcel.toasts.passportAdded.message'
+              : 'publish.parcel.toasts.proofAdded.message',
+          ),
           tone: 'success',
         }),
       )
     } catch {
-      setProofError(publishText(t, 'publish.parcel.toasts.uploadFailed.inline'))
-      set('travelProofFile', null)
+      setErr(publishText(t, 'publish.parcel.toasts.uploadFailed.inline'))
+      set(field, null)
       dispatch(
         addToast({
           title: publishText(t, 'publish.parcel.toasts.uploadFailed.title'),
-          message: publishText(t, 'publish.parcel.toasts.uploadFailed.message'),
+          message: publishText(
+            t,
+            kind === 'passport'
+              ? 'publish.parcel.toasts.passportUploadFailed.message'
+              : 'publish.parcel.toasts.uploadFailed.message',
+          ),
           tone: 'error',
         }),
       )
@@ -269,8 +294,6 @@ export function PublishParcelPage() {
     if (n === 3) {
       if (!form.contact.trim())
         errs.contact = publishText(t, 'publish.parcel.validation.contactRequired')
-      if (!form.travelProofFile)
-        errs.travelProofFile = publishText(t, 'publish.parcel.validation.travelProofRequired')
     }
     setErrors(errs)
     return Object.keys(errs).length === 0
@@ -301,7 +324,7 @@ export function PublishParcelPage() {
       )
       return
     }
-    const { travelProofFile, ...rest } = form
+    const { travelProofFile, passportProofFile, ...rest } = form
     const action = dispatch(
       createParcel({
         ...rest,
@@ -318,11 +341,17 @@ export function PublishParcelPage() {
           types: form.acceptedTypes.join(', '),
           conditions: form.conditions,
         }),
-        travelProofName: travelProofFile.name,
-        travelProofType: travelProofFile.type,
-        travelProofSize: travelProofFile.size,
-        travelProofUrl: travelProofFile.path || travelProofFile.url || null,
-        status: initialCatalogStatus(user),
+        passportProofName: passportProofFile?.name || null,
+        passportProofType: passportProofFile?.type || null,
+        passportProofSize: passportProofFile?.size || null,
+        passportProofUrl: passportProofFile?.path || passportProofFile?.url || null,
+        passportStatus: initialParcelDocStatus(Boolean(passportProofFile?.path || passportProofFile?.url)),
+        travelProofName: travelProofFile?.name || null,
+        travelProofType: travelProofFile?.type || null,
+        travelProofSize: travelProofFile?.size || null,
+        travelProofUrl: travelProofFile?.path || travelProofFile?.url || null,
+        proofStatus: initialParcelDocStatus(Boolean(travelProofFile?.path || travelProofFile?.url)),
+        status: 'active',
       }),
     )
     triggerBurst()
@@ -607,6 +636,67 @@ export function PublishParcelPage() {
             icon={FiBox}
             label={publishText(t, 'publish.parcel.fields.conditionsTitle')}
           />
+          <Alert variant="info">
+            {publishText(t, 'publish.parcel.fields.docsOptionalHint')}
+          </Alert>
+          <label className="grid gap-1.5">
+            <span className="text-sm font-bold">
+              {publishText(t, 'publish.parcel.fields.passportProof')}
+            </span>
+            {form.passportProofFile ? (
+              <div className="flex items-center gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3">
+                <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-950/40">
+                  <FiFileText className="text-lg" />
+                </span>
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <FileNameText
+                    as="p"
+                    name={form.passportProofFile.name}
+                    className="text-sm font-bold"
+                    maxLength={36}
+                  />
+                  <p className="text-xs text-[var(--app-text-muted)]">
+                    {publishText(t, 'publish.parcel.fields.travelProofKb', {
+                      size: Math.ceil(form.passportProofFile.size / 1024),
+                    })}
+                    {form.passportProofFile.uploading
+                      ? ` · ${publishText(t, 'publish.parcel.fields.travelProofUploading')}`
+                      : ` · ${publishText(t, 'publish.parcel.fields.travelProofReady')}`}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => set('passportProofFile', null)}
+                  aria-label={publishText(t, 'publish.parcel.fields.passportProofRemove')}
+                  className="grid size-8 shrink-0 place-items-center rounded-xl text-[var(--app-text-muted)] transition hover:bg-[var(--app-border)]"
+                >
+                  <FiX />
+                </button>
+              </div>
+            ) : (
+              <label className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[var(--app-border)] px-4 text-sm font-bold text-[var(--app-text-muted)] transition hover:border-brand-400 hover:text-brand-700">
+                <FiUpload /> {publishText(t, 'publish.parcel.fields.passportProofChoose')}
+                <input
+                  className="sr-only"
+                  type="file"
+                  accept=".pdf,image/*"
+                  onChange={(e) => handleDocFile('passport', e.target.files?.[0])}
+                />
+              </label>
+            )}
+            {passportError ? (
+              <p className="text-xs font-bold text-red-600">{passportError}</p>
+            ) : (
+              <p className="text-xs text-[var(--app-text-muted)]">
+                {publishText(t, 'publish.parcel.fields.passportProofHint')}
+              </p>
+            )}
+            {passportProgress.active ||
+            passportProgress.phase === 'done' ||
+            passportProgress.phase === 'error' ? (
+              <UploadProgress progress={passportProgress} compact />
+            ) : null}
+          </label>
           <label className="grid gap-1.5">
             <span className="text-sm font-bold">
               {publishText(t, 'publish.parcel.fields.travelProof')}
@@ -648,12 +738,12 @@ export function PublishParcelPage() {
                   className="sr-only"
                   type="file"
                   accept=".pdf,image/*"
-                  onChange={(e) => handleProofFile(e.target.files?.[0])}
+                  onChange={(e) => handleDocFile('ticket', e.target.files?.[0])}
                 />
               </label>
             )}
-            {errors.travelProofFile || proofError ? (
-              <p className="text-xs font-bold text-red-600">{errors.travelProofFile || proofError}</p>
+            {proofError ? (
+              <p className="text-xs font-bold text-red-600">{proofError}</p>
             ) : (
               <p className="text-xs text-[var(--app-text-muted)]">
                 {publishText(t, 'publish.parcel.fields.travelProofHint')}
@@ -751,12 +841,20 @@ export function PublishParcelPage() {
               ],
               [publishText(t, 'publish.parcel.review.contact'), form.contact],
               [
+                publishText(t, 'publish.parcel.review.passportProof'),
+                form.passportProofFile
+                  ? publishText(t, 'publish.parcel.review.passportProofValue', {
+                      name: form.passportProofFile.name,
+                    })
+                  : publishText(t, 'publish.parcel.review.docMissing'),
+              ],
+              [
                 publishText(t, 'publish.parcel.review.travelProof'),
                 form.travelProofFile
                   ? publishText(t, 'publish.parcel.review.travelProofValue', {
                       name: form.travelProofFile.name,
                     })
-                  : publishText(t, 'publish.common.emDash'),
+                  : publishText(t, 'publish.parcel.review.docMissing'),
               ],
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between gap-4 rounded-xl bg-[var(--app-surface-muted)] px-4 py-3">

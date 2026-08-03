@@ -573,6 +573,18 @@ export const storageService = {
     return path
   },
 
+  async uploadParcelPassport(userId, parcelId, file, { onProgress } = {}) {
+    reportProgress(onProgress, {
+      phase: UPLOAD_PHASES.preparing,
+      percent: 6,
+      fileName: file?.name,
+    })
+    const path = `${userId}/${parcelId}/passport.${ext(file)}`
+    const uploadFile = await maybeCompressProof(file, onProgress)
+    await uploadPrivate('parcels', path, uploadFile, { onProgress })
+    return path
+  },
+
   async uploadTransferProof(userId, transferId, file, { onProgress } = {}) {
     const ownerId = String(userId || '').trim()
     if (!ownerId) throw new Error('Utilisateur requis pour envoyer la preuve.')

@@ -22,12 +22,16 @@ import { openRelatedConversation } from '../features/communications/openRelatedC
 import { buildParcelSnapshot } from '../features/communications/relatedSnapshot'
 import {
   requestParcelReservation,
+  updateParcelPassportStatus,
   updateParcelProofStatus,
   updateParcelRequestStatus,
   incrementParcelView,
 } from '../features/parcels/parcelSlice'
 import {
+  parcelPassportLabelKey,
   parcelProofLabelKey,
+  parcelProofTone,
+  resolveParcelPassportStatus,
   resolveParcelProofStatus,
 } from '../features/parcels/parcelProofUtils'
 import { Input } from '../components/ui/Input'
@@ -68,20 +72,24 @@ export function ParcelDetailPage() {
   const isAdmin = ['admin', 'superadmin'].includes(user.role)
   const canSeeProof = isAdmin || user.id === parcel.ownerId
   const proofStatus = resolveParcelProofStatus(parcel)
-  const proofMeta =
-    proofStatus === 'missing'
-      ? { label: t(parcelProofLabelKey('missing')), tone: 'info' }
+  const passportStatus = resolveParcelPassportStatus(parcel)
+  const docMeta = (status, labelKey) =>
+    status === 'missing'
+      ? { label: t(labelKey(status)), tone: 'info' }
       : {
-          ...statusMeta(proofStatus, t),
+          ...statusMeta(status, t),
           label:
-            proofStatus === 'verified'
-              ? t(parcelProofLabelKey('verified'))
-              : proofStatus === 'pending_review'
-                ? t(parcelProofLabelKey('pending_review'))
-                : proofStatus === 'rejected'
-                  ? t(parcelProofLabelKey('rejected'))
-                  : statusMeta(proofStatus, t).label,
+            status === 'verified'
+              ? t(labelKey('verified'))
+              : status === 'pending_review'
+                ? t(labelKey('pending_review'))
+                : status === 'rejected'
+                  ? t(labelKey('rejected'))
+                  : statusMeta(status, t).label,
+          tone: parcelProofTone(status),
         }
+  const proofMeta = docMeta(proofStatus, parcelProofLabelKey)
+  const passportMeta = docMeta(passportStatus, parcelPassportLabelKey)
   const routeTitle = t('parcels.detail.routeTitle', {
     origin: parcel.origin,
     destination: parcel.destination,
@@ -462,63 +470,113 @@ export function ParcelDetailPage() {
           />
           {canSeeProof ? (
             <div className="mt-5 grid gap-3 rounded-2xl bg-[var(--app-surface-muted)] p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="flex items-center gap-2 text-sm font-black">
-                  <FiShield className="text-brand-700" /> {t('parcels.detail.proof.title')}
-                  <span className="text-[10px] font-bold uppercase tracking-wide text-[var(--app-text-faint)]">
-                    {t('parcels.detail.proof.visibilityNote')}
-                  </span>
-                </p>
-                <Badge tone={proofMeta.tone}>{proofMeta.label}</Badge>
-              </div>
-              {parcel.travelProofUrl ? (
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3">
-                  <div className="min-w-0">
+              <p className="flex items-center gap-2 text-sm font-black">
+                <FiShield className="text-brand-700" /> {t('parcels.detail.proof.title')}
+                <span className="text-[10px] font-bold uppercase tracking-wide text-[var(--app-text-faint)]">
+                  {t('parcels.detail.proof.visibilityNote')}
+                </span>
+              </p>
+
+              <div className="grid gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-bold">{t('parcels.detail.proof.passportTitle')}</p>
+                  <Badge tone={passportMeta.tone}>{passportMeta.label}</Badge>
+                </div>
+                {parcel.passportProofUrl ? (
+                  <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="truncate text-sm font-bold">
-                      {parcel.travelProofName || t('parcels.detail.proof.defaultName')}
+                      {parcel.passportProofName || t('parcels.detail.proof.passportDefaultName')}
                     </p>
-                    {parcel.travelProofSize ? (
-                      <p className="text-xs text-[var(--app-text-muted)]">
-                        {t('parcels.detail.proof.sizeKb', {
-                          size: Math.ceil(parcel.travelProofSize / 1024),
-                        })}
-                      </p>
-                    ) : null}
+                    <a
+                      href={parcel.passportProofUrl}
+                      download={parcel.passportProofName || true}
+                      className="flex shrink-0 items-center gap-2 rounded-xl bg-brand-700 px-3 py-2 text-sm font-bold text-white transition hover:bg-brand-800"
+                    >
+                      {t('parcels.detail.proof.download')} <FiDownload className="text-xs" />
+                    </a>
                   </div>
-                  <a
-                    href={parcel.travelProofUrl}
-                    download={parcel.travelProofName || true}
-                    className="flex shrink-0 items-center gap-2 rounded-xl bg-brand-700 px-3 py-2 text-sm font-bold text-white transition hover:bg-brand-800"
-                  >
-                    {t('parcels.detail.proof.download')} <FiDownload className="text-xs" />
-                  </a>
+                ) : (
+                  <p className="text-sm text-[var(--app-text-muted)]">
+                    {t(parcelPassportLabelKey(passportStatus))}
+                  </p>
+                )}
+                {isAdmin && passportStatus !== 'verified' && passportStatus !== 'missing' ? (
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() =>
+                        dispatch(updateParcelPassportStatus({ id: parcel.id, status: 'verified' }))
+                      }
+                    >
+                      {t('parcels.detail.proof.validatePassport')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      onClick={() =>
+                        dispatch(updateParcelPassportStatus({ id: parcel.id, status: 'rejected' }))
+                      }
+                    >
+                      {t('parcels.detail.proof.reject')}
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="grid gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-bold">{t('parcels.detail.proof.ticketTitle')}</p>
+                  <Badge tone={proofMeta.tone}>{proofMeta.label}</Badge>
                 </div>
-              ) : (
-                <p className="text-sm text-[var(--app-text-muted)]">
-                  {t(parcelProofLabelKey(proofStatus))}
-                </p>
-              )}
-              {isAdmin && proofStatus !== 'verified' ? (
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    onClick={() =>
-                      dispatch(updateParcelProofStatus({ id: parcel.id, status: 'verified' }))
-                    }
-                  >
-                    {t('parcels.detail.proof.validate')}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    onClick={() =>
-                      dispatch(updateParcelProofStatus({ id: parcel.id, status: 'rejected' }))
-                    }
-                  >
-                    {t('parcels.detail.proof.reject')}
-                  </Button>
-                </div>
-              ) : null}
+                {parcel.travelProofUrl ? (
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold">
+                        {parcel.travelProofName || t('parcels.detail.proof.defaultName')}
+                      </p>
+                      {parcel.travelProofSize ? (
+                        <p className="text-xs text-[var(--app-text-muted)]">
+                          {t('parcels.detail.proof.sizeKb', {
+                            size: Math.ceil(parcel.travelProofSize / 1024),
+                          })}
+                        </p>
+                      ) : null}
+                    </div>
+                    <a
+                      href={parcel.travelProofUrl}
+                      download={parcel.travelProofName || true}
+                      className="flex shrink-0 items-center gap-2 rounded-xl bg-brand-700 px-3 py-2 text-sm font-bold text-white transition hover:bg-brand-800"
+                    >
+                      {t('parcels.detail.proof.download')} <FiDownload className="text-xs" />
+                    </a>
+                  </div>
+                ) : (
+                  <p className="text-sm text-[var(--app-text-muted)]">
+                    {t(parcelProofLabelKey(proofStatus))}
+                  </p>
+                )}
+                {isAdmin && proofStatus !== 'verified' && proofStatus !== 'missing' ? (
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() =>
+                        dispatch(updateParcelProofStatus({ id: parcel.id, status: 'verified' }))
+                      }
+                    >
+                      {t('parcels.detail.proof.validate')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      onClick={() =>
+                        dispatch(updateParcelProofStatus({ id: parcel.id, status: 'rejected' }))
+                      }
+                    >
+                      {t('parcels.detail.proof.reject')}
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
             </div>
           ) : null}
         </DetailSection>

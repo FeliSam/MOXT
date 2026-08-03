@@ -69,7 +69,14 @@ export const PUBLISH_FR_SOURCES = {
   'publish.parcel.fields.rejectedTypesPlaceholder':
     'Ex : Pas de liquides, pas de matières dangereuses...',
   'publish.parcel.fields.conditionsTitle': 'Conditions et contact',
-  'publish.parcel.fields.travelProof': 'Preuve de voyage (billet, réservation...)',
+  'publish.parcel.fields.docsOptionalHint':
+    'Passeport et billet d’avion sont optionnels. Sans documents, l’annonce est publiée avec le statut « non fourni ». Avec documents, ils passent en vérification admin.',
+  'publish.parcel.fields.passportProof': 'Passeport (optionnel)',
+  'publish.parcel.fields.passportProofChoose': 'Ajouter le passeport (PDF ou image)',
+  'publish.parcel.fields.passportProofHint':
+    'Visible uniquement par l’équipe MOXT. 5 Mo max. Ajoutez-le avant le billet d’avion.',
+  'publish.parcel.fields.passportProofRemove': 'Retirer le passeport',
+  'publish.parcel.fields.travelProof': 'Billet d’avion / preuve de voyage (optionnel)',
   'publish.parcel.fields.travelProofChoose': 'Choisir un fichier (PDF ou image)',
   'publish.parcel.fields.travelProofHint':
     "Visible uniquement par l'équipe MOXT pour vérification, jamais publié publiquement. 5 Mo max.",
@@ -110,8 +117,11 @@ export const PUBLISH_FR_SOURCES = {
   'publish.parcel.review.priceValue': '{price} RUB',
   'publish.parcel.review.acceptedTypes': 'Types acceptés',
   'publish.parcel.review.contact': 'Contact',
-  'publish.parcel.review.travelProof': 'Preuve de voyage',
+  'publish.parcel.review.passportProof': 'Passeport',
+  'publish.parcel.review.passportProofValue': '{name} ✓',
+  'publish.parcel.review.travelProof': 'Billet d’avion',
   'publish.parcel.review.travelProofValue': '{name} ✓',
+  'publish.parcel.review.docMissing': 'Non fourni — en attente',
   'publish.parcel.review.successHint':
     'Votre voyage sera visible immédiatement dans la section Colis. Les expéditeurs pourront vous contacter directement.',
   'publish.parcel.nav.publish': 'Publier le voyage',
@@ -147,14 +157,18 @@ export const PUBLISH_FR_SOURCES = {
   'publish.parcel.validation.conditionsMin': 'Precisez les conditions.',
   'publish.parcel.toasts.fileTooLarge.title': 'Fichier trop volumineux',
   'publish.parcel.toasts.fileTooLarge.message':
-    'La preuve de voyage ne doit pas dépasser 5 Mo.',
+    'Le document ne doit pas dépasser 5 Mo.',
   'publish.parcel.toasts.fileTooLarge.inline': 'Le fichier ne doit pas dépasser 5 Mo.',
-  'publish.parcel.toasts.proofAdded.title': 'Preuve ajoutée',
-  'publish.parcel.toasts.proofAdded.message': 'Le document de voyage a été envoyé.',
+  'publish.parcel.toasts.proofAdded.title': 'Billet ajouté',
+  'publish.parcel.toasts.proofAdded.message': 'Le billet / preuve de voyage a été envoyé.',
+  'publish.parcel.toasts.passportAdded.title': 'Passeport ajouté',
+  'publish.parcel.toasts.passportAdded.message': 'Le passeport a été envoyé.',
   'publish.parcel.toasts.uploadFailed.inline': "Échec de l'envoi du fichier. Réessayez.",
   'publish.parcel.toasts.uploadFailed.title': 'Envoi impossible',
   'publish.parcel.toasts.uploadFailed.message':
-    "La preuve de voyage n'a pas pu être envoyée.",
+    "Le billet / preuve de voyage n'a pas pu être envoyé.",
+  'publish.parcel.toasts.passportUploadFailed.message':
+    "Le passeport n'a pas pu être envoyé.",
   'publish.parcel.toasts.businessBlockedMessage':
     'Votre entreprise doit être vérifiée et disposer du module Colis avant publication.',
   'publish.parcel.fields.publishAsHint':

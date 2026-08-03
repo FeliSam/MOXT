@@ -124,6 +124,7 @@ export function EditParcelPage() {
           travelProofType: travelProofFile?.type || null,
           travelProofSize: travelProofFile?.size || null,
           travelProofUrl: travelProofFile?.path || travelProofFile?.url || null,
+          proofStatus: travelProofFile?.path || travelProofFile?.url ? 'pending_review' : 'missing',
         }),
       )
       navigate(`/parcels/${parcelId}`)

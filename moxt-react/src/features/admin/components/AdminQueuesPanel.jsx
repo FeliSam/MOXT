@@ -16,7 +16,7 @@ import { Button } from '../../../components/ui/Button'
 import { Badge } from '../../../components/ui/Badge'
 import { updateVerificationStatus } from '../../account/accountSlice'
 import { updateBusinessDocumentStatus } from '../../businesses/businessSlice'
-import { updateParcelProofStatus } from '../../parcels/parcelSlice'
+import { updateParcelPassportStatus, updateParcelProofStatus } from '../../parcels/parcelSlice'
 import { moderateReview } from '../../reviews/reviewSlice'
 import { REVIEW_DISPUTE_STATUS } from '@moxt/shared/utils/reviewUtils.js'
 import { ActionButton, confirmedClick, contentActions, resolveDisputeAndUnlockOrder } from '../adminActions'
@@ -218,6 +218,7 @@ export function AdminQueuesPanel({
               adminText(t, 'admin.queues.parcelProofMeta', {
                 route: `${i.origin || '—'} → ${i.destination || '—'}`,
                 status: i.proofStatus || 'pending_review',
+                passport: i.passportStatus || 'missing',
               })
             }
             renderActions={(i) => (
@@ -228,27 +229,56 @@ export function AdminQueuesPanel({
                 >
                   {adminText(t, 'admin.queues.examineProof')}
                 </Button>
-                <ActionButton
-                  icon={FiCheckCircle}
-                  done={i.proofStatus === 'verified'}
-                  doneLabel={adminText(t, 'admin.queues.validateProof')}
-                  onClick={confirmedClick(t, adminText(t, 'admin.queues.validateProof'), () =>
-                    dispatch(updateParcelProofStatus({ id: i.id, status: 'verified' })),
-                  )}
-                >
-                  {adminText(t, 'admin.queues.validateProof')}
-                </ActionButton>
-                <ActionButton
-                  variant="danger"
-                  icon={FiX}
-                  done={i.proofStatus === 'rejected'}
-                  doneLabel={adminText(t, 'admin.queues.rejectProof')}
-                  onClick={confirmedClick(t, adminText(t, 'admin.queues.rejectProof'), () =>
-                    dispatch(updateParcelProofStatus({ id: i.id, status: 'rejected' })),
-                  )}
-                >
-                  {adminText(t, 'admin.queues.rejectProof')}
-                </ActionButton>
+                {i.passportProofUrl || i.passportStatus === 'pending_review' ? (
+                  <>
+                    <ActionButton
+                      icon={FiCheckCircle}
+                      done={i.passportStatus === 'verified'}
+                      doneLabel={adminText(t, 'admin.queues.validatePassport')}
+                      onClick={confirmedClick(t, adminText(t, 'admin.queues.validatePassport'), () =>
+                        dispatch(updateParcelPassportStatus({ id: i.id, status: 'verified' })),
+                      )}
+                    >
+                      {adminText(t, 'admin.queues.validatePassport')}
+                    </ActionButton>
+                    <ActionButton
+                      variant="danger"
+                      icon={FiX}
+                      done={i.passportStatus === 'rejected'}
+                      doneLabel={adminText(t, 'admin.queues.rejectPassport')}
+                      onClick={confirmedClick(t, adminText(t, 'admin.queues.rejectPassport'), () =>
+                        dispatch(updateParcelPassportStatus({ id: i.id, status: 'rejected' })),
+                      )}
+                    >
+                      {adminText(t, 'admin.queues.rejectPassport')}
+                    </ActionButton>
+                  </>
+                ) : null}
+                {i.travelProofUrl || i.proofStatus === 'pending_review' ? (
+                  <>
+                    <ActionButton
+                      icon={FiCheckCircle}
+                      done={i.proofStatus === 'verified'}
+                      doneLabel={adminText(t, 'admin.queues.validateProof')}
+                      onClick={confirmedClick(t, adminText(t, 'admin.queues.validateProof'), () =>
+                        dispatch(updateParcelProofStatus({ id: i.id, status: 'verified' })),
+                      )}
+                    >
+                      {adminText(t, 'admin.queues.validateProof')}
+                    </ActionButton>
+                    <ActionButton
+                      variant="danger"
+                      icon={FiX}
+                      done={i.proofStatus === 'rejected'}
+                      doneLabel={adminText(t, 'admin.queues.rejectProof')}
+                      onClick={confirmedClick(t, adminText(t, 'admin.queues.rejectProof'), () =>
+                        dispatch(updateParcelProofStatus({ id: i.id, status: 'rejected' })),
+                      )}
+                    >
+                      {adminText(t, 'admin.queues.rejectProof')}
+                    </ActionButton>
+                  </>
+                ) : null}
               </>
             )}
           />

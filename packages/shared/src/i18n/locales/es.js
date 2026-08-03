@@ -2389,10 +2389,14 @@ export const es = {
       }
     },
     card: {
-      proofVerified: "Comprobante verificado",
-      proofPending: "Comprobante en verificación",
-      proofRejected: "Comprobante rechazado",
-      proofMissing: "Comprobante no verificado",
+      proofVerified: "Billete verificado",
+      proofPending: "Billete en verificación",
+      proofRejected: "Billete rechazado",
+      proofMissing: "Billete no proporcionado",
+      passportVerified: "Pasaporte aprobado",
+      passportPending: "Pasaporte en verificación",
+      passportRejected: "Pasaporte rechazado",
+      passportMissing: "Pasaporte no proporcionado",
       business: "Empresa",
       individual: "Particular",
       available: "Disponible",
@@ -2489,18 +2493,22 @@ export const es = {
         individual: "Particular"
       },
       proof: {
-        title: "Comprobante de viagem",
+        title: "Documentos del viaje",
         visibilityNote: "(visível solo para si y o administrador)",
+        passportTitle: "Pasaporte",
+        passportDefaultName: "Pasaporte",
+        ticketTitle: "Billete de avión",
         defaultName: "Documento de viagem",
         sizeKb: "{size} KB",
         download: "Transferir",
         empty: "Ningún documento fornecido.",
-        validate: "Validar comprobante",
+        validate: "Validar billete",
+        validatePassport: "Aprobar pasaporte",
         reject: "Rejeitar"
       },
       trust: {
         title: "Transporte seguro",
-        item1: "Os comprobantes de viagem permanecen privados y reservados à administración.",
+        item1: "Los documentos (pasaporte, billete) permanecen privados y reservados a la administración.",
         item2: "Os objetos transportados devem ser declarados.",
         item3: "A reserva é confirmada pelo transportador."
       }
@@ -3117,7 +3125,13 @@ export const es = {
         rejectedTypes: "Tipos recusados / restriciones (opcional)",
         rejectedTypesPlaceholder: "Ex.: Sem líquidos, sin materiais perigosos...",
         conditionsTitle: "Condiciones y contacto",
-        travelProof: "Comprobante de viagem (bilhete, reserva...)",
+        docsOptionalHint:
+          "Pasaporte y billete de avión son opcionales. Sin documentos, el anuncio se publica como «no proporcionado». Con documentos, pasan a revisión admin.",
+        passportProof: "Pasaporte (opcional)",
+        passportProofChoose: "Añadir pasaporte (PDF o imagen)",
+        passportProofHint: "Visible solo para el equipo MOXT. Máx. 5 MB. Añádelo antes del billete de avión.",
+        passportProofRemove: "Quitar pasaporte",
+        travelProof: "Billete de avión / comprobante (opcional)",
         travelProofChoose: "Escolher ficheiro (PDF o imagem)",
         travelProofHint: "Visível solo pela equipo MOXT para verificación, nunca publicado publicamente. Máx. 5 MB.",
         travelProofReady: "Pronto",
@@ -3176,8 +3190,11 @@ export const es = {
         priceValue: "{price} RUB",
         acceptedTypes: "Tipos aceites",
         contact: "Contacto",
-        travelProof: "Comprobante de viagem",
+        passportProof: "Pasaporte",
+        passportProofValue: "{name} ✓",
+        travelProof: "Billete de avión",
         travelProofValue: "{name} ✓",
+        docMissing: "No proporcionado — pendiente",
         successHint: "A tu viagem será visível imediatamente na sección Paquetes. Os remetentes poderão contactá-lo diretamente."
       },
       nav: {
@@ -3209,17 +3226,24 @@ export const es = {
       toasts: {
         fileTooLarge: {
           title: "Ficheiro demasiado grande",
-          message: "O comprobante de viagem no deve exceder 5 MB.",
+          message: "El documento no debe exceder 5 MB.",
           inline: "O ficheiro no deve exceder 5 MB."
         },
         proofAdded: {
-          title: "Comprobante adicionado",
-          message: "O documento de viagem foi enviado."
+          title: "Billete añadido",
+          message: "El billete de avión / comprobante fue enviado."
+        },
+        passportAdded: {
+          title: "Pasaporte añadido",
+          message: "El pasaporte fue enviado."
         },
         uploadFailed: {
           inline: "Falha no envio do ficheiro. Tente nuevamente.",
           title: "Envio impossível",
-          message: "No foi possível enviar o comprobante de viagem."
+          message: "No fue posible enviar el billete / comprobante."
+        },
+        passportUploadFailed: {
+          message: "No fue posible enviar el pasaporte."
         },
         businessBlockedMessage: "Tu empresa debe estar verificada y tener el módulo Paquetes antes de publicar.",
         publishedTitle: "Viagem publicada",
@@ -7374,8 +7398,10 @@ export const es = {
     registrationCancelledBody: "Se canceló una inscripción a {title}.",
     parcelRequestCancelled: "Solicitud de paquete cancelada",
     parcelRequestCancelledBody: "Se canceló una solicitud de {kg} kg.",
-    parcelProofReviewed: "Prueba de viaje revisada",
-    parcelProofReviewedBody: "Estado de la prueba: {status}.",
+    parcelProofReviewed: "Billete de avión revisado",
+    parcelProofReviewedBody: "Estado del billete: {status}.",
+    parcelPassportReviewed: "Pasaporte revisado",
+    parcelPassportReviewedBody: "Estado del pasaporte: {status}.",
     businessRequestCreated: "Nueva solicitud a la empresa",
     businessRequestCreatedBody: "{name} envió una solicitud a tu empresa.",
     businessMemberAdded: "Añadido a un equipo",

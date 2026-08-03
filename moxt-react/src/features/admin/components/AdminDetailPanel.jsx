@@ -204,30 +204,44 @@ export function AdminDetailPanel({
         </div>
       ) : null}
 
-      {kind === 'parcels' && (item.travelProofUrl || item.travelProofName) ? (
+      {kind === 'parcels' && (item.passportProofUrl || item.travelProofUrl) ? (
         <div className="grid min-w-0 gap-2">
           <p className="text-[10px] font-black uppercase tracking-wider text-[var(--app-text-muted)]">
             {adminText(t, 'admin.detail.proofPreviewTitle')}
           </p>
           <AdminDocumentPreview
             documents={[
-              {
-                id: item.id,
-                name: item.travelProofName || adminText(t, 'admin.detail.proofPreviewTitle'),
-                url: item.travelProofUrl,
-                type: item.travelProofType,
-                size: item.travelProofSize,
-                status: item.proofStatus || 'pending_review',
-              },
-            ]}
+              item.passportProofUrl
+                ? {
+                    id: `${item.id}-passport`,
+                    name: item.passportProofName || adminText(t, 'admin.facts.passport'),
+                    url: item.passportProofUrl,
+                    type: item.passportProofType,
+                    size: item.passportProofSize,
+                    status: item.passportStatus || 'pending_review',
+                  }
+                : null,
+              item.travelProofUrl
+                ? {
+                    id: item.id,
+                    name: item.travelProofName || adminText(t, 'admin.detail.proofPreviewTitle'),
+                    url: item.travelProofUrl,
+                    type: item.travelProofType,
+                    size: item.travelProofSize,
+                    status: item.proofStatus || 'pending_review',
+                  }
+                : null,
+            ].filter(Boolean)}
           />
         </div>
       ) : null}
 
-      {kind === 'parcels' && !item.travelProofUrl ? (
+      {kind === 'parcels' && !item.travelProofUrl && !item.passportProofUrl ? (
         <div className="rounded-xl bg-amber-50 px-3 py-2.5 text-xs font-bold text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
           {adminText(t, 'admin.facts.proofMissing')}
-          {item.proofStatus ? ` · ${item.proofStatus}` : ''}
+          {item.proofStatus || item.passportStatus
+            ? ` · billet ${item.proofStatus || 'missing'} · passeport ${item.passportStatus || 'missing'}`
+            : ''}
         </div>
       ) : null}
 

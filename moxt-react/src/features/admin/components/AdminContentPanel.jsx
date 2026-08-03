@@ -37,6 +37,10 @@ function ContentRow({ contentView, dispatch, item, setSelected, t }) {
     contentView === 'parcels'
       ? item.proofStatus || (item.travelProofUrl ? 'pending_review' : 'missing')
       : null
+  const passportStatus =
+    contentView === 'parcels'
+      ? item.passportStatus || (item.passportProofUrl ? 'pending_review' : 'missing')
+      : null
   const thumb = contentView === 'listings' ? listingThumb(item) : null
   return (
     <div className={`${ITEM} grid gap-3 ${isPending ? 'border-amber-200 dark:border-amber-800/40' : ''} ${isArchived ? 'opacity-80' : ''}`}>
@@ -76,6 +80,23 @@ function ContentRow({ contentView, dispatch, item, setSelected, t }) {
           >
             {status}
           </span>
+          {passportStatus ? (
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+                passportStatus === 'verified'
+                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
+                  : passportStatus === 'rejected'
+                    ? 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300'
+                    : passportStatus === 'pending_review'
+                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'
+                      : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+              }`}
+            >
+              {passportStatus === 'missing'
+                ? `${adminText(t, 'admin.facts.passport')}: ${adminText(t, 'admin.facts.proofMissing')}`
+                : `${adminText(t, 'admin.facts.passportStatus')}: ${passportStatus}`}
+            </span>
+          ) : null}
           {proofStatus ? (
             <span
               className={`rounded-full px-2 py-0.5 text-[10px] font-black ${

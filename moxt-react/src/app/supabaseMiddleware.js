@@ -85,6 +85,8 @@ function toSnake(obj) {
     travelProofUrl: 'travel_proof_url',
     proofStatus: 'proof_status',
     proofNotes: 'proof_notes',
+    passportProofUrl: 'passport_proof_url',
+    passportStatus: 'passport_status',
     contractType: 'contract_type',
     experienceLevel: 'experience_level',
     salaryPeriod: 'salary_period',
@@ -463,12 +465,19 @@ const handlers = {
       travelProofName: _tpn,
       travelProofType: _tpt,
       travelProofSize: _tps,
+      passportProofName: _ppn,
+      passportProofType: _ppt,
+      passportProofSize: _pps,
       ...parcelData
     } = payload
     const cleaned = {
       ...parcelData,
       maxWeightPerItem: parcelData.maxWeightPerItem !== '' ? parcelData.maxWeightPerItem : null,
       travelProofUrl: parcelData.travelProofUrl || parcelData.travelProofFile?.url || null,
+      passportProofUrl: parcelData.passportProofUrl || parcelData.passportProofFile?.url || null,
+      proofStatus: parcelData.proofStatus || (parcelData.travelProofUrl ? 'pending_review' : 'missing'),
+      passportStatus:
+        parcelData.passportStatus || (parcelData.passportProofUrl ? 'pending_review' : 'missing'),
     }
     await upsert('parcels', cleaned)
   },
@@ -497,12 +506,27 @@ const handlers = {
   'parcels/updateParcelProofStatus': async (payload) => {
     await update('parcels', payload.id, { proof_status: payload.status })
   },
+  'parcels/updateParcelPassportStatus': async (payload) => {
+    await update('parcels', payload.id, { passport_status: payload.status })
+  },
   'parcels/updateParcelStatus': async (payload) => {
     await update('parcels', payload.id, { status: payload.status })
   },
   'parcels/updateParcel': async (payload, state) => {
     const parcel = state.parcels.items.find((item) => item.id === payload.id)
-    if (parcel) await upsert('parcels', parcel)
+    if (!parcel) return
+    const {
+      travelProofName: _tpn,
+      travelProofType: _tpt,
+      travelProofSize: _tps,
+      passportProofName: _ppn,
+      passportProofType: _ppt,
+      passportProofSize: _pps,
+      originCountry: _oc,
+      destinationCountry: _dc,
+      ...parcelData
+    } = parcel
+    await upsert('parcels', parcelData)
   },
   'parcels/cancelParcelRequest': async (payload) => {
     await update('parcel_requests', payload.id, { status: 'cancelled' })

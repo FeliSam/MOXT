@@ -55,6 +55,8 @@ const camelMap = {
   travel_proof_url: 'travelProofUrl',
   proof_status: 'proofStatus',
   proof_notes: 'proofNotes',
+  passport_proof_url: 'passportProofUrl',
+  passport_status: 'passportStatus',
   contract_type: 'contractType',
   expires_at: 'expiresAt',
   start_at: 'startAt',

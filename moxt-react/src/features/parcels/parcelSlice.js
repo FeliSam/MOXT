@@ -18,6 +18,8 @@ const parcelSlice = createSlice({
       },
       prepare(values) {
         const now = new Date().toISOString()
+        const hasTicket = Boolean(values.travelProofUrl)
+        const hasPassport = Boolean(values.passportProofUrl)
         return {
           payload: {
             ...values,
@@ -28,7 +30,8 @@ const parcelSlice = createSlice({
             depositDeadline: values.depositDeadline || values.departureDate,
             distributionDate: values.distributionDate || '',
             status: values.status || 'active',
-            proofStatus: 'pending_review',
+            proofStatus: values.proofStatus || (hasTicket ? 'pending_review' : 'missing'),
+            passportStatus: values.passportStatus || (hasPassport ? 'pending_review' : 'missing'),
             createdAt: now,
           },
         }
@@ -38,6 +41,12 @@ const parcelSlice = createSlice({
       const parcel = state.items.find((item) => item.id === action.payload.id)
       if (!parcel) return
       parcel.proofStatus = action.payload.status
+      parcel.updatedAt = new Date().toISOString()
+    },
+    updateParcelPassportStatus(state, action) {
+      const parcel = state.items.find((item) => item.id === action.payload.id)
+      if (!parcel) return
+      parcel.passportStatus = action.payload.status
       parcel.updatedAt = new Date().toISOString()
     },
     reserveParcel(state, action) {
@@ -161,7 +170,8 @@ const parcelSlice = createSlice({
             ownerId,
             status: 'draft',
             remainingKg: Number(parcel.capacityKg),
-            proofStatus: 'pending_review',
+            proofStatus: parcel.travelProofUrl ? 'pending_review' : 'missing',
+            passportStatus: parcel.passportProofUrl ? 'pending_review' : 'missing',
             reservations: [],
             createdAt: now,
             updatedAt: now,
@@ -181,6 +191,7 @@ export const {
   requestParcelReservation,
   reserveParcel,
   updateParcel,
+  updateParcelPassportStatus,
   updateParcelProofStatus,
   updateParcelRequestStatus,
   updateParcelStatus,

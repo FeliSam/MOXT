@@ -148,12 +148,22 @@ export function buildQueues(state) {
   const parcelProofs = state.parcels.items
     .filter((item) => {
       const proof = item.proofStatus || (item.travelProofUrl ? 'pending_review' : 'missing')
-      return proof === 'pending_review' || (item.travelProofUrl && proof !== 'verified' && proof !== 'rejected')
+      const passport =
+        item.passportStatus || (item.passportProofUrl ? 'pending_review' : 'missing')
+      const pendingProof =
+        proof === 'pending_review' ||
+        (item.travelProofUrl && proof !== 'verified' && proof !== 'rejected')
+      const pendingPassport =
+        passport === 'pending_review' ||
+        (item.passportProofUrl && passport !== 'verified' && passport !== 'rejected')
+      return pendingProof || pendingPassport
     })
     .map((item) => ({
       ...item,
       userName: item.ownerName || `${item.origin} → ${item.destination}`,
-      proofStatus: item.proofStatus || 'pending_review',
+      proofStatus: item.proofStatus || (item.travelProofUrl ? 'pending_review' : 'missing'),
+      passportStatus:
+        item.passportStatus || (item.passportProofUrl ? 'pending_review' : 'missing'),
     }))
 
   return {
@@ -521,6 +531,11 @@ export function buildDetailFacts(kind, item, t, context = {}) {
         [f('admin.facts.pricePerKg'), formatMoney(item.pricePerKg, item.currency)],
         [f('admin.facts.status'), item.effectiveStatus || item.status],
         [f('admin.facts.distribution'), item.distributionDate || '—'],
+        [
+          f('admin.facts.passportStatus'),
+          item.passportStatus ||
+            (item.passportProofUrl ? 'pending_review' : f('admin.facts.proofMissing')),
+        ],
         [
           f('admin.facts.proofStatus'),
           item.proofStatus || (item.travelProofUrl ? 'pending_review' : f('admin.facts.proofMissing')),
