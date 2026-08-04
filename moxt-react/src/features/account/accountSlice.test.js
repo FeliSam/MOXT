@@ -9,6 +9,7 @@ import reducer, {
   submitVerificationRequest,
   toggleAccountFavorite,
   updateAccountPreferences,
+  updateVerificationStatus,
 } from './accountSlice'
 
 const emptyState = {
@@ -133,5 +134,47 @@ describe('account', () => {
     expect(first.viewedListings[0]).toMatchObject({ userId: 'u1', listingId: 'lst-1' })
     const again = reducer(first, markListingViewed({ userId: 'u1', listingId: 'lst-1' }))
     expect(again.viewedListings).toHaveLength(1)
+  })
+
+  it('propage la validation KYC aux personal_documents liés', () => {
+    const withDocs = {
+      ...emptyState,
+      documents: [
+        {
+          id: 'd1',
+          userId: 'u1',
+          category: 'identity',
+          status: 'pending_review',
+        },
+        {
+          id: 'd2',
+          userId: 'u1',
+          category: 'income',
+          status: 'pending_review',
+        },
+        {
+          id: 'd3',
+          userId: 'u2',
+          category: 'identity',
+          status: 'pending_review',
+        },
+      ],
+      verificationRequests: [
+        {
+          id: 'ver1',
+          userId: 'u1',
+          documentIds: ['d1'],
+          status: 'pending_review',
+        },
+      ],
+    }
+    const next = reducer(
+      withDocs,
+      updateVerificationStatus({ id: 'ver1', status: 'verified', reviewedBy: 'admin' }),
+    )
+    expect(next.verificationRequests[0].status).toBe('verified')
+    expect(next.documents.find((d) => d.id === 'd1').status).toBe('verified')
+    expect(next.documents.find((d) => d.id === 'd2').status).toBe('pending_review')
+    expect(next.documents.find((d) => d.id === 'd3').status).toBe('pending_review')
   })
 })

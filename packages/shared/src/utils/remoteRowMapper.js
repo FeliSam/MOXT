@@ -68,6 +68,8 @@ const camelMap = {
   rate_reduction_to_ru: 'rateReductionToRu',
   rate_reduction_from_ru: 'rateReductionFromRu',
   average_delay: 'averageDelay',
+  real_avg_delay_minutes: 'realAvgDelayMinutes',
+  real_avg_delay_samples: 'realAvgDelaySamples',
   exchange_methods: 'exchangeMethods',
   transfer_accounts: 'transferAccounts',
   service_zones: 'serviceZones',

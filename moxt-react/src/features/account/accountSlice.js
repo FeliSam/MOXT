@@ -417,6 +417,20 @@ const accountSlice = createSlice({
       if (nextStatus === 'rejected' || action.payload.reviewNote !== undefined) {
         request.reviewNote = reviewNote
       }
+      // Propager la confirmation KYC aux documents personnels liés (évite reconfirmation).
+      if (nextStatus === 'verified') {
+        const ids = new Set((request.documentIds || []).map(String).filter(Boolean))
+        const now = new Date().toISOString()
+        state.documents.forEach((doc) => {
+          if (doc.userId !== request.userId || doc.deletedAt || doc.status === 'verified') return
+          const inRequest = ids.has(String(doc.id))
+          const identityLike = /^(identity|address|selfie|passport)/i.test(String(doc.category || ''))
+          if (inRequest || (ids.size === 0 && identityLike && doc.status !== 'rejected')) {
+            doc.status = 'verified'
+            doc.updatedAt = now
+          }
+        })
+      }
     },
     submitPhoneAssistRequest: {
       reducer(state, action) {

@@ -142,6 +142,7 @@ export const MESSAGES_FR_SOURCES = {
   'communications.related.transfer': 'Transfert',
   'communications.related.general': 'Discussion',
   'communications.related.support': 'Support admin',
+  'communications.related.assistant': 'Assistance Moxti',
 
   // ── contact button ───────────────────────────────────────────────────────
   'communications.contact': 'Contacter',
@@ -187,6 +188,10 @@ export const MESSAGES_FR_SOURCES = {
   'communications.chips.support.received': 'Bien reçu, je regarde cela.',
   'communications.chips.support.delay': 'Merci pour votre patience, je reviens rapidement.',
   'communications.chips.support.needInfo': 'Pouvez-vous me donner un peu plus de détails ?',
+  'communications.chips.assistant.transfer': "Comment effectuer un transfert d'argent ?",
+  'communications.chips.assistant.parcel': 'Comment envoyer un colis via un voyageur ?',
+  'communications.chips.assistant.verify': 'Comment vérifier mon identité ?',
+  'communications.chips.assistant.admin': 'Je souhaite parler avec un administrateur',
 
   // ── dynamic composer suggestions ─────────────────────────────────────────
   'messages.suggestions.fallback.listing': 'cette annonce',

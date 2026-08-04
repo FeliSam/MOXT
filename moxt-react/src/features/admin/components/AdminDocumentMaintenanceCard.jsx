@@ -28,7 +28,20 @@ export function AdminDocumentMaintenanceCard() {
     setScanning(true)
     try {
       const found = await storageService.listOrphanDocuments(0)
-      setOrphans(found)
+      let withReasons = found
+      if (found.length) {
+        try {
+          const dry = await storageService.reattributeOrphanDocuments(0)
+          const byPath = new Map(dry.rows.map((row) => [row.path, row.detail]))
+          withReasons = found.map((item) => ({
+            ...item,
+            skipReason: byPath.get(item.path) || '',
+          }))
+        } catch {
+          /* scan raisons optionnel */
+        }
+      }
+      setOrphans(withReasons)
       dispatch(
         addToast({
           title: adminText(t, 'admin.documents.scanDoneTitle'),
@@ -54,7 +67,20 @@ export function AdminDocumentMaintenanceCard() {
     try {
       const result = await storageService.repairDocuments(0)
       const remaining = await storageService.listOrphanDocuments(0)
-      setOrphans(remaining)
+      let withReasons = remaining
+      if (remaining.length) {
+        try {
+          const dry = await storageService.reattributeOrphanDocuments(0)
+          const byPath = new Map(dry.rows.map((row) => [row.path, row.detail]))
+          withReasons = remaining.map((item) => ({
+            ...item,
+            skipReason: byPath.get(item.path) || '',
+          }))
+        } catch {
+          /* scan raisons optionnel */
+        }
+      }
+      setOrphans(withReasons)
       setLastRepair(result)
       dispatch(
         addToast({
@@ -139,14 +165,17 @@ export function AdminDocumentMaintenanceCard() {
       ) : null}
 
       {orphans?.length ? (
-        <ul className="grid max-h-56 gap-1 overflow-y-auto rounded-xl bg-[var(--app-surface-muted)] p-3">
+        <ul className="grid max-h-56 gap-2 overflow-y-auto rounded-xl bg-[var(--app-surface-muted)] p-3">
           {orphans.map((item) => (
-            <li
-              key={item.path}
-              className="truncate font-mono text-[11px] text-[var(--app-text-muted)]"
-              title={item.path}
-            >
-              {item.path}
+            <li key={item.path} className="grid gap-0.5" title={item.path}>
+              <span className="truncate font-mono text-[11px] text-[var(--app-text-muted)]">
+                {item.path}
+              </span>
+              {item.skipReason ? (
+                <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-300">
+                  {adminText(t, 'admin.documents.skipReason', { reason: item.skipReason })}
+                </span>
+              ) : null}
             </li>
           ))}
         </ul>

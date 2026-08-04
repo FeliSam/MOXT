@@ -129,7 +129,12 @@ export function buildQueues(state) {
     })
 
   const businessDocuments = (state.businesses.documents || [])
-    .filter((i) => ['pending_review', 'pending'].includes(i.status))
+    .filter(
+      (i) =>
+        ['pending_review', 'pending'].includes(i.status) &&
+        !i.supersededAt &&
+        i.status !== 'superseded',
+    )
     .map((item) => {
       const business = state.businesses.items.find((entry) => entry.id === item.businessId)
       const owner = state.administration.users.find((entry) => entry.id === item.ownerId)

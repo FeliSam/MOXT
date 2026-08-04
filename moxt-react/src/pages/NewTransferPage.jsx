@@ -46,7 +46,11 @@ import {
   resolveBusinessReceivingAccount,
 } from '../features/transfers/transferAccountUtils'
 import { ExchangerPickerAvatar } from '../features/transfers/ExchangerPickerAvatar'
-import { listExchangersForTransfer, resolveUserPartnerCountry } from '../features/transfers/exchangerListUtils'
+import {
+  listExchangersForTransfer,
+  resolveExchangerDelayLabel,
+  resolveUserPartnerCountry,
+} from '../features/transfers/exchangerListUtils'
 import { useExchangeRate } from '../features/transfers/useExchangeRate'
 import { PartnerDirectionalRate } from '../features/transfers/ExchangeRateChips'
 import { BusinessRatingBadge } from '../features/reviews/BusinessRatingBadge'
@@ -550,8 +554,18 @@ export function NewTransferPage() {
                           <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${active ? 'bg-emerald-600 text-white' : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'}`}>
                             {exchanger.feePercent}% {t('transfers.new.fees')}
                           </span>
-                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${active ? 'bg-emerald-500 text-white' : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'}`}>
-                            <FiClock className="mr-0.5 inline text-[9px]" />{exchanger.averageDelay}
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${active ? 'bg-emerald-500 text-white' : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'}`}
+                            title={
+                              exchanger.realAvgDelaySamples > 0
+                                ? t('transfers.new.realDelayTitle', {
+                                    count: exchanger.realAvgDelaySamples,
+                                  })
+                                : t('transfers.new.announcedDelayTitle')
+                            }
+                          >
+                            <FiClock className="mr-0.5 inline text-[9px]" />
+                            {resolveExchangerDelayLabel(exchanger, t('transfers.new.delayToConfirm'))}
                           </span>
                         </div>
                       </button>
@@ -611,7 +625,7 @@ export function NewTransferPage() {
                   {[
                     { label: t('transfers.new.amountSent'), value: formatMoney(calculation.amountSent, calculation.currencyFrom) },
                     { label: t('transfers.new.feesPercent', { percent: calculation.feePercent }), value: formatMoney(calculation.fees, calculation.currencyFrom), highlight: true },
-                    { label: t('transfers.new.estimatedDelay'), value: selectedExchanger.averageDelay },
+                    { label: t('transfers.new.estimatedDelay'), value: resolveExchangerDelayLabel(selectedExchanger, t('transfers.new.delayToConfirm')) },
                   ].map(({ label, value, highlight }) => (
                     <div key={label} className="grid gap-0.5 px-4 py-3 text-center">
                       <span className="text-[10px] font-bold text-[var(--app-text-faint)]">

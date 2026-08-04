@@ -177,9 +177,10 @@ export function VerificationPage() {
     }
     if (!privacyConsent) return
 
-    await persist(idDoc, `identity:${idType}`)
+    // Adressage storage : dossiers `{userId}/{category}/…` (pas de `:` — sinon réparation fragile)
+    await persist(idDoc, `identity_${idType || 'passport'}`)
     await persist(selfieDoc, 'selfie')
-    await persist(residenceDoc, `residence:${residenceType}`)
+    await persist(residenceDoc, `residence_${residenceType || 'visa'}`)
     if (level === 'enhanced') await persist(addressDoc, 'address')
 
     dispatch(submitVerificationRequest({ userId: user.id, level, documentIds }))

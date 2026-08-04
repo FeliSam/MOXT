@@ -1707,6 +1707,29 @@ const handlers = {
           .update({ status: 'verified', updated_at: new Date().toISOString() })
           .eq('id', request.userId)
         if (error) throw error
+
+        // Propager verified aux personal_documents liés à la demande.
+        const documentIds = Array.isArray(request.documentIds)
+          ? request.documentIds.map(String).filter(Boolean)
+          : []
+        if (documentIds.length) {
+          const { error: docsError } = await supabase
+            .from('personal_documents')
+            .update({ status: 'verified' })
+            .in('id', documentIds)
+            .eq('user_id', request.userId)
+            .is('deleted_at', null)
+          if (docsError) console.warn('[Supabase] personal docs verify:', docsError.message)
+        } else {
+          const { error: docsError } = await supabase
+            .from('personal_documents')
+            .update({ status: 'verified' })
+            .eq('user_id', request.userId)
+            .is('deleted_at', null)
+            .in('status', ['pending_review', 'pending'])
+            .in('category', ['identity', 'address', 'selfie', 'passport'])
+          if (docsError) console.warn('[Supabase] personal docs verify fallback:', docsError.message)
+        }
       }
     }
   },

@@ -160,12 +160,48 @@ export function resolveExchangerDisplayCountry(business, fallbackOriginCountry =
   return resolveExchangerOriginCountry(business, fallbackOriginCountry)
 }
 
+/**
+ * Formate un délai moyen en minutes pour badge compact.
+ * Ex. 22 → « ≈ 22 min », 90 → « ≈ 1,5 h »
+ */
+export function formatRealAvgDelayMinutes(minutes, { fallback = null, locale = 'fr-FR' } = {}) {
+  if (minutes == null || minutes === '') return fallback
+  const value = Number(minutes)
+  if (!Number.isFinite(value) || value < 0) return fallback
+  if (value < 60) {
+    const rounded = value < 10 ? Math.round(value * 10) / 10 : Math.round(value)
+    return `≈ ${rounded} min`
+  }
+  const hours = value / 60
+  const roundedHours =
+    hours < 10 ? Math.round(hours * 10) / 10 : Math.round(hours)
+  const formatted = Number(roundedHours).toLocaleString(locale, {
+    maximumFractionDigits: roundedHours < 10 ? 1 : 0,
+  })
+  return `≈ ${formatted} h`
+}
+
+/** Préfère le délai réel (réception → virement) ; sinon le délai annoncé. */
+export function resolveExchangerDelayLabel(exchanger, fallback = EXCHANGER_DELAY_TO_CONFIRM) {
+  const samples = Number(exchanger?.realAvgDelaySamples) || 0
+  const minutes = Number(exchanger?.realAvgDelayMinutes)
+  if (samples > 0 && Number.isFinite(minutes) && minutes >= 0) {
+    return formatRealAvgDelayMinutes(minutes, { fallback: exchanger?.averageDelay || fallback })
+  }
+  return exchanger?.averageDelay || fallback
+}
+
 export function businessToExchangerOption(
   business,
   partnerCountry,
   fallbackOriginCountry = 'BJ',
   { toConfirmLabel = EXCHANGER_DELAY_TO_CONFIRM } = {},
 ) {
+  const realAvgDelayMinutes =
+    business.realAvgDelayMinutes != null && Number.isFinite(Number(business.realAvgDelayMinutes))
+      ? Number(business.realAvgDelayMinutes)
+      : null
+  const realAvgDelaySamples = Math.max(0, Number(business.realAvgDelaySamples) || 0)
   return {
     id: business.id,
     ownerId: business.ownerId,
@@ -177,6 +213,8 @@ export function businessToExchangerOption(
     rateReductionFromRu: Math.min(15, Math.max(0, Number(business.rateReductionFromRu) || 0)),
     transferAcceptanceRequired: business.transferAcceptanceRequired === true,
     averageDelay: business.averageDelay || toConfirmLabel,
+    realAvgDelayMinutes,
+    realAvgDelaySamples,
     methods: business.exchangeMethods || business.paymentMethods || [],
     logoUrl: business.logoUrl || '',
     city: business.city || '',

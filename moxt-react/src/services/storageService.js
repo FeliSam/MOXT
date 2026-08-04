@@ -110,6 +110,42 @@ function ext(file) {
     ?.toLowerCase()
 }
 
+/**
+ * Adressage storage `documents` (contrat réparation / auto-attribution) :
+ * - perso : `{userId}/{category}/{timestamp}-{safeName}`
+ * - entreprise : `{userId}/business/{businessId}/{category}/{timestamp}-{safeName}`
+ * Le 1er segment DOIT être l’UUID auth ; la catégorie sans `:` ni caractères spéciaux.
+ */
+function sanitizeDocumentCategory(category) {
+  return String(category || 'other')
+    .trim()
+    .toLowerCase()
+    .replace(/:/g, '_')
+    .replace(/[^a-z0-9_-]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '') || 'other'
+}
+
+function sanitizeDocumentFileName(file) {
+  const safeName = String(file?.name || 'document')
+    .replace(/[^a-zA-Z0-9._-]+/g, '_')
+    .slice(0, 60)
+  return safeName || `file.${ext(file) || 'bin'}`
+}
+
+export function buildPersonalDocumentPath(userId, category, file, now = Date.now()) {
+  const owner = String(userId || '').trim()
+  if (!owner) throw new Error('Utilisateur requis pour l’adressage document.')
+  return `${owner}/${sanitizeDocumentCategory(category)}/${now}-${sanitizeDocumentFileName(file)}`
+}
+
+export function buildBusinessDocumentPath(userId, businessId, category, file, now = Date.now()) {
+  const owner = String(userId || '').trim()
+  if (!owner) throw new Error('Utilisateur requis pour l’adressage document.')
+  const safeBusiness = String(businessId || 'business').replace(/[^a-zA-Z0-9_-]/g, '_')
+  return `${owner}/business/${safeBusiness}/${sanitizeDocumentCategory(category)}/${now}-${sanitizeDocumentFileName(file)}`
+}
+
 /** Aligne extension du nom et MIME après compression (évite .heic + contentType jpeg). */
 function alignProofFileExtension(file) {
   if (!file) return file
@@ -403,11 +439,7 @@ export const storageService = {
       percent: 6,
       fileName: file?.name,
     })
-    const safeCategory = String(category || 'other').replace(/[^a-zA-Z0-9_-]/g, '_')
-    const safeName = String(file?.name || 'document')
-      .replace(/[^a-zA-Z0-9._-]+/g, '_')
-      .slice(0, 60)
-    const path = `${userId}/${safeCategory}/${Date.now()}-${safeName || `file.${ext(file)}`}`
+    const path = buildPersonalDocumentPath(userId, category, file)
     const uploadFile = await maybeCompressProof(file, onProgress)
     await uploadPrivate('documents', path, uploadFile, { onProgress })
     return { url: null, path }
@@ -419,13 +451,8 @@ export const storageService = {
       percent: 6,
       fileName: file?.name,
     })
-    // Dossier dédié par entreprise + type : {owner}/business/{bizId}/{category}/…
-    const safeBusiness = String(businessId || 'business').replace(/[^a-zA-Z0-9_-]/g, '_')
-    const safeCategory = String(category || 'other').replace(/[^a-zA-Z0-9_-]/g, '_')
-    const safeName = String(file?.name || 'document')
-      .replace(/[^a-zA-Z0-9._-]+/g, '_')
-      .slice(0, 60)
-    const path = `${userId}/business/${safeBusiness}/${safeCategory}/${Date.now()}-${safeName || `file.${ext(file)}`}`
+    // {owner}/business/{bizId}/{category}/{timestamp}-{name}
+    const path = buildBusinessDocumentPath(userId, businessId, category, file)
     const uploadFile = await maybeCompressProof(file, onProgress)
     await uploadPrivate('documents', path, uploadFile, { onProgress })
     return { url: null, path }

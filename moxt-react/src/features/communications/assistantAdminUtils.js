@@ -3,6 +3,7 @@ const ADMIN_CONTACT_PATTERNS = {
   en: /administrator|\badmin\b|speak with (a |an )?(human|agent|person)|contact (an? )?admin|human support|talk to (a )?(person|agent)/i,
   ru: /администратор|админ|поговорить с (человеком|оператором|агентом)|связаться с админ|живой поддерж/i,
   pt: /administrador|\badmin\b|falar com (um )?(humano|agente)|contactar (um )?admin|suporte humano/i,
+  es: /administrador|\badmin\b|hablar con (un )?(humano|agente)|contactar (a |un )?admin|soporte humano/i,
 }
 
 export function wantsAdminContact(text, language = 'fr') {

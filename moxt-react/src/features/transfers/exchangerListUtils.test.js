@@ -3,8 +3,10 @@ import { DIRECTIONS } from './transferConfig'
 import {
   businessToExchangerOption,
   exchangerMatchesUserCountry,
+  formatRealAvgDelayMinutes,
   listExchangersForTransfer,
   resolveExchangerCountry,
+  resolveExchangerDelayLabel,
   resolveExchangerDisplayCountry,
   resolveExchangerForDetail,
   resolveExchangerOriginCountry,
@@ -223,5 +225,27 @@ describe('exchangerListUtils', () => {
       originCountry: 'BJ',
     })
     expect(rows.map((row) => row.id)).toEqual(['BIZ-BJ'])
+  })
+
+  it('formate le delai reel en minutes ou heures', () => {
+    expect(formatRealAvgDelayMinutes(22)).toBe('≈ 22 min')
+    expect(formatRealAvgDelayMinutes(90)).toMatch(/≈ 1[,.]5 h/)
+    expect(formatRealAvgDelayMinutes(null, { fallback: 'À confirmer' })).toBe('À confirmer')
+  })
+
+  it('prefere le delai reel a l annonce statique', () => {
+    const option = businessToExchangerOption(
+      {
+        ...bjBusiness,
+        averageDelay: '15-30 min',
+        realAvgDelayMinutes: 18,
+        realAvgDelaySamples: 4,
+      },
+      'BJ',
+      'BJ',
+    )
+    expect(option.realAvgDelayMinutes).toBe(18)
+    expect(resolveExchangerDelayLabel(option)).toBe('≈ 18 min')
+    expect(resolveExchangerDelayLabel({ averageDelay: '15-30 min' })).toBe('15-30 min')
   })
 })

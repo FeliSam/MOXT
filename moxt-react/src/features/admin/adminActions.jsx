@@ -1,4 +1,5 @@
 /* eslint-disable react-refresh/only-export-components -- action helpers */
+import { FiCheckCircle, FiX } from 'react-icons/fi'
 import { Button } from '../../components/ui/Button'
 import { dispatchUserRole } from './promoteAdminUtils'
 import { verifyUserEmailManually, verifyUserPhoneManually } from './adminVerifyContactUtils'
@@ -38,6 +39,74 @@ function askConfirm(t, actionLabel, onConfirm) {
 
 export function confirmedClick(t, actionLabel, onConfirm) {
   return () => askConfirm(t, actionLabel, onConfirm)
+}
+
+function isParcelDocPending(status, hasFile) {
+  if (status === 'pending_review') return true
+  if (hasFile && status !== 'verified' && status !== 'rejected' && status !== 'missing') {
+    return true
+  }
+  return false
+}
+
+/**
+ * Actions passeport / billet — uniquement tant que le document est en attente.
+ * Partagée entre la file « Documents colis » et la liste / détail contenu.
+ */
+export function parcelDocumentActions(dispatch, item, t) {
+  const passportPending = isParcelDocPending(
+    item.passportStatus,
+    Boolean(item.passportProofUrl),
+  )
+  const proofPending = isParcelDocPending(item.proofStatus, Boolean(item.travelProofUrl))
+  if (!passportPending && !proofPending) return null
+
+  return (
+    <>
+      {passportPending ? (
+        <>
+          <ActionButton
+            icon={FiCheckCircle}
+            onClick={confirmedClick(t, adminText(t, 'admin.queues.validatePassport'), () =>
+              dispatch(updateParcelPassportStatus({ id: item.id, status: 'verified' })),
+            )}
+          >
+            {adminText(t, 'admin.queues.validatePassport')}
+          </ActionButton>
+          <ActionButton
+            variant="danger"
+            icon={FiX}
+            onClick={confirmedClick(t, adminText(t, 'admin.queues.rejectPassport'), () =>
+              dispatch(updateParcelPassportStatus({ id: item.id, status: 'rejected' })),
+            )}
+          >
+            {adminText(t, 'admin.queues.rejectPassport')}
+          </ActionButton>
+        </>
+      ) : null}
+      {proofPending ? (
+        <>
+          <ActionButton
+            icon={FiCheckCircle}
+            onClick={confirmedClick(t, adminText(t, 'admin.queues.validateProof'), () =>
+              dispatch(updateParcelProofStatus({ id: item.id, status: 'verified' })),
+            )}
+          >
+            {adminText(t, 'admin.queues.validateProof')}
+          </ActionButton>
+          <ActionButton
+            variant="danger"
+            icon={FiX}
+            onClick={confirmedClick(t, adminText(t, 'admin.queues.rejectProof'), () =>
+              dispatch(updateParcelProofStatus({ id: item.id, status: 'rejected' })),
+            )}
+          >
+            {adminText(t, 'admin.queues.rejectProof')}
+          </ActionButton>
+        </>
+      ) : null}
+    </>
+  )
 }
 
 /** Resolve/close a dispute and unlock the linked P2P order when applicable. */
@@ -255,11 +324,11 @@ export function contentActions(contentView, dispatch, item, t) {
             done={status === 'rejected'}
             doneLabel={adminText(t, 'admin.actions.rejectedMasc')}
             variant="danger"
-            onClick={confirmedClick(t, adminText(t, 'admin.actions.reject'), () =>
+            onClick={confirmedClick(t, adminText(t, 'admin.actions.rejectParcel'), () =>
               dispatch(updateParcelStatus({ id: item.id, status: 'rejected' })),
             )}
           >
-            {adminText(t, 'admin.actions.reject')}
+            {adminText(t, 'admin.actions.rejectParcel')}
           </ActionButton>
           <ActionButton
             variant="danger"
@@ -269,52 +338,7 @@ export function contentActions(contentView, dispatch, item, t) {
           >
             {adminText(t, 'admin.actions.delete')}
           </ActionButton>
-          {item.passportProofUrl || item.passportStatus === 'pending_review' ? (
-            <>
-              <ActionButton
-                done={item.passportStatus === 'verified'}
-                doneLabel={adminText(t, 'admin.queues.validatePassport')}
-                onClick={confirmedClick(t, adminText(t, 'admin.queues.validatePassport'), () =>
-                  dispatch(updateParcelPassportStatus({ id: item.id, status: 'verified' })),
-                )}
-              >
-                {adminText(t, 'admin.queues.validatePassport')}
-              </ActionButton>
-              <ActionButton
-                done={item.passportStatus === 'rejected'}
-                doneLabel={adminText(t, 'admin.queues.rejectPassport')}
-                variant="danger"
-                onClick={confirmedClick(t, adminText(t, 'admin.queues.rejectPassport'), () =>
-                  dispatch(updateParcelPassportStatus({ id: item.id, status: 'rejected' })),
-                )}
-              >
-                {adminText(t, 'admin.queues.rejectPassport')}
-              </ActionButton>
-            </>
-          ) : null}
-          {item.travelProofUrl || item.proofStatus === 'pending_review' ? (
-            <>
-              <ActionButton
-                done={item.proofStatus === 'verified'}
-                doneLabel={adminText(t, 'admin.queues.validateProof')}
-                onClick={confirmedClick(t, adminText(t, 'admin.queues.validateProof'), () =>
-                  dispatch(updateParcelProofStatus({ id: item.id, status: 'verified' })),
-                )}
-              >
-                {adminText(t, 'admin.queues.validateProof')}
-              </ActionButton>
-              <ActionButton
-                done={item.proofStatus === 'rejected'}
-                doneLabel={adminText(t, 'admin.queues.rejectProof')}
-                variant="danger"
-                onClick={confirmedClick(t, adminText(t, 'admin.queues.rejectProof'), () =>
-                  dispatch(updateParcelProofStatus({ id: item.id, status: 'rejected' })),
-                )}
-              >
-                {adminText(t, 'admin.queues.rejectProof')}
-              </ActionButton>
-            </>
-          ) : null}
+          {parcelDocumentActions(dispatch, item, t)}
         </>
       )
     case 'reports':

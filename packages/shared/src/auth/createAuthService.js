@@ -181,17 +181,6 @@ function resolvePendingRegistrationForUser(authUser, pending = loadPendingRegist
   return pending
 }
 
-function isPhoneLoginDisabledError(error) {
-  const message = String(error?.message || error || '').toLowerCase()
-  const code = error?.code
-  return (
-    code === 'phone_provider_disabled' ||
-    message.includes('phone logins are disabled') ||
-    message.includes('phone provider') ||
-    message.includes('unsupported phone provider')
-  )
-}
-
 function isAuthAlreadyExistsError(error) {
   const code = String(error?.code || '').toLowerCase()
   const message = String(error?.message || '').toLowerCase()
@@ -223,17 +212,8 @@ export function createAuthService(supabase, redirects = {}) {
       return phoneResult
     }
 
-    if (phoneResult.error && !isPhoneLoginDisabledError(phoneResult.error)) {
-      if (
-        String(phoneResult.error.message || '')
-          .toLowerCase()
-          .includes('invalid login credentials')
-      ) {
-        return phoneResult
-      }
-    }
-
-    // 2) Fallback Edge Function : login e-mail du profil lié au numéro
+    // 2) Toujours tenter phone-login : un numéro validé manuellement (profiles.phone_verified)
+    // sans phone_confirmed_at Auth renvoie souvent « invalid login credentials » en natif.
     const { data, error } = await supabase.functions.invoke('phone-login', {
       body: { phone, password },
     })

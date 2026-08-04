@@ -166,6 +166,10 @@ export const loadAllData = createAsyncThunk(
         }
       }
       if (authUser) {
+        if (authUser.phone_confirmed_at && !user.phoneVerified && !profilePatch.phoneVerified) {
+          profilePatch.phoneVerified = true
+          profilePatch.phoneVerifiedAt = authUser.phone_confirmed_at
+        }
         const email = String(authUser.email || user.email || '').trim()
         const emailVerified = Boolean(authUser.email_confirmed_at)
         const emailVerifiedAt = authUser.email_confirmed_at || null

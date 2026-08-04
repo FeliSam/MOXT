@@ -154,7 +154,7 @@ export function PublishParcelPage() {
     depositDeadline: '',
     distributionDate: '',
     capacityKg: 20,
-    pricePerKg: 900,
+    pricePerKg: '',
     currency: 'RUB',
     maxWeightPerItem: '',
     acceptedTypes: [],
@@ -621,6 +621,7 @@ export function PublishParcelPage() {
               id="parcel-price"
               label={publishText(t, 'publish.parcel.fields.pricePerKg')}
               type="number"
+              placeholder={publishText(t, 'publish.parcel.fields.pricePerKgPlaceholder')}
               value={form.pricePerKg}
               onChange={(e) => set('pricePerKg', e.target.value)}
               error={errors.pricePerKg}

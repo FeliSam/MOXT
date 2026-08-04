@@ -344,6 +344,7 @@ export const ADMIN_FR_SOURCES = {
   'admin.actions.approve': 'Valider',
   'admin.actions.approved': 'Validée',
   'admin.actions.reject': 'Refuser',
+  'admin.actions.rejectParcel': "Refuser l'annonce",
   'admin.actions.rejected': 'Refusée',
   'admin.actions.rejectedMasc': 'Refusé',
   'admin.actions.publish': 'Publier',
@@ -394,12 +395,16 @@ export const ADMIN_FR_SOURCES = {
     'Valider manuellement le numéro {phone} ? À utiliser seulement si vous avez confirmé qu’il est fonctionnel (OTP jamais reçu après plusieurs essais).',
   'admin.actions.verifyPhoneSuccessTitle': 'Numéro validé',
   'admin.actions.verifyPhoneSuccessBody': 'Le numéro a été confirmé manuellement.',
+  'admin.actions.verifyPhoneUserNotify':
+    'Votre numéro {phone} a été confirmé par l’équipe MOXT. Vous pouvez vous connecter avec ce numéro.',
   'admin.actions.verifyEmail': 'Valider l’e-mail',
   'admin.actions.emailVerified': 'E-mail validé',
   'admin.actions.verifyEmailConfirm':
     'Valider manuellement l’adresse {email} ? À utiliser seulement si vous avez confirmé qu’elle est fonctionnelle.',
   'admin.actions.verifyEmailSuccessTitle': 'E-mail validé',
   'admin.actions.verifyEmailSuccessBody': 'L’adresse a été confirmée manuellement.',
+  'admin.actions.verifyEmailUserNotify':
+    'Votre e-mail a été confirmé par l’équipe MOXT. Vous pouvez vous connecter avec cette adresse.',
   'admin.actions.verifyFailedTitle': 'Validation impossible',
   'admin.actions.verifyFailedBody': 'Réessayez dans un instant.',
   'admin.actions.archivePostConfirm': 'Archiver cette publication ? Elle ne sera plus visible dans le fil.',
@@ -465,7 +470,8 @@ export const ADMIN_FR_SOURCES = {
   'admin.documents.notFound': 'Documents introuvables ({count}). Vérifiez le chargement admin.',
   'admin.documents.maintenanceTitle': 'Maintenance du stockage documents',
   'admin.documents.maintenanceDescription':
-    'Réparation automatique chaque jour (cron) : rattache chaque fichier au propriétaire / à l’entreprise (dossier dédié) et consolide les doublons. Bouton « Réparer maintenant » pour forcer. Ne purgez que les chemins vraiment sans propriétaire. Rétention 5 ans (115-ФЗ).',
+    'Réparation automatique chaque jour (cron) : rattache chaque fichier au propriétaire / à l’entreprise d’après l’adressage `{userId}/{catégorie}/…` ou `{userId}/business/{bizId}/{catégorie}/…`, puis consolide les doublons. Bouton « Réparer maintenant » pour forcer. Les restants « propriétaire introuvable » (compte supprimé) se purgent. Rétention 5 ans (115-ФЗ).',
+  'admin.documents.skipReason': 'Ignoré : {reason}',
   'admin.documents.repairAction': 'Réparer maintenant',
   'admin.documents.scanAction': 'Vérifier le reste',
   'admin.documents.attributeAction': 'Attribuer',

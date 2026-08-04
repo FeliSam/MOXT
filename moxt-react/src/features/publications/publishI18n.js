@@ -64,6 +64,7 @@ export const PUBLISH_FR_SOURCES = {
   'publish.parcel.fields.maxWeightPlaceholder': 'Ex : 5',
   'publish.parcel.fields.pricePerKg': 'Prix par kg',
   'publish.parcel.fields.pricePerKgRub': 'Prix par kg (RUB)',
+  'publish.parcel.fields.pricePerKgPlaceholder': 'Ex : 900',
   'publish.parcel.fields.currency': 'Devise',
   'publish.parcel.fields.rejectedTypes': 'Types refusés / restrictions (optionnel)',
   'publish.parcel.fields.rejectedTypesPlaceholder':

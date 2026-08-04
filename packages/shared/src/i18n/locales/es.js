@@ -733,27 +733,33 @@ export const es = {
       last: "Última atividade · {time}"
     },
     assistant: {
-      name: "Assistente MOXT",
-      alwaysThere: "Sempre disponible",
-      preview: "Como posso ayudar hoy?",
-      subtitle: "Assistente local contextual",
-      greeting: "Olá — posso buscar nos tus dados MOXT y guiá-lo para a ación certa.",
-      backAria: "Voltar às conversaciones",
-      clearHistoryAria: "Limpar histórico",
-      removeDocAria: "Remover documento",
-      addDocAria: "Adicionar un documento",
-      placeholder: "Peça algo ao assistente…",
-      sendAria: "Enviar ao assistente",
-      sources: "Fontes: {list}",
-      error: "O assistente local no conseguiu responder. {detail}",
+      name: "Moxti",
+      alwaysThere: "Siempre disponible",
+      preview: "¿Cómo puedo ayudarte hoy?",
+      subtitle: "Asistente IA MOXT",
+      greeting:
+        "Hola — soy Moxti. Te ayudo con transferencias, P2P, marketplace, paquetes, verificación y soporte. Haz una pregunta o elige una sugerencia.",
+      showAllQuestions: "Ver todas las preguntas predefinidas",
+      hideAllQuestions: "Ocultar las preguntas predefinidas",
+      backAria: "Volver a las conversaciones",
+      clearHistoryAria: "Borrar el historial",
+      removeDocAria: "Quitar el documento",
+      addDocAria: "Añadir un documento",
+      placeholder: "Pregúntale algo a Moxti…",
+      sendAria: "Enviar a Moxti",
+      sources: "Fuentes: {list}",
+      error: "Moxti no pudo responder. {detail}",
       suggestions: {
-        transfer: "Como efetuar una transferencia de dinero?",
-        publishListing: "Como publicar un anuncio no mercado?",
-        parcel: "Como enviar una paquete a través de un viajero?",
-        verify: "Como verificar a minha identidad?",
-        dispute: "Como contactar o soporte em caso de disputa?",
+        transfer: "¿Cómo hago una transferencia de dinero?",
+        p2p: "¿Cómo funciona un intercambio P2P?",
+        publishListing: "¿Cómo publico un anuncio en el marketplace?",
+        shipping: "¿Qué medios de envío puedo ofrecer en Rusia?",
+        parcel: "¿Cómo envío un paquete a través de un viajero?",
+        verify: "¿Cómo verifico mi identidad?",
+        dispute: "¿Cómo contacto al soporte en caso de disputa?",
+        contribute: "¿Cómo contribuyo al desarrollo de MOXT?",
         admin: "Quiero hablar con un administrador",
-        business: "Como crear una cuenta profesional?"
+        business: "¿Cómo creo una cuenta profesional?",
       },
       contactAdmin: "Contactar a un administrador",
       contactAdminAria: "Contactar a un administrador de MOXT",
@@ -761,7 +767,23 @@ export const es = {
       adminTicketDefault: "Solicitud de contacto con un administrador vía el asistente MOXT.",
       adminEscalated:
         "Tu solicitud fue enviada al equipo MOXT (ticket {id}). Un administrador responderá desde Soporte.",
-      adminFollowUp: "Seguir mi solicitud"
+      adminFollowUp: "Seguir mi solicitud",
+      adminComposePrompt:
+        "De acuerdo — un administrador MOXT puede responderte directamente en la mensajería. Describe tu pregunta o inquietud abajo.",
+      adminComposeTitle: "Mensaje al administrador",
+      adminComposeBody:
+        "Explica claramente tu solicitud. Un admin responderá en este chat lo antes posible.",
+      adminComposePlaceholder:
+        "Ej.: necesito cambiar mi país de origen, tengo un problema de publicación…",
+      adminComposeHint: "Quiero hablar con un administrador.",
+      adminComposeLocked: "Escribe tu mensaje en el formulario de arriba…",
+      adminSend: "Enviar al admin",
+      adminSending: "Enviando…",
+      adminChatOpened:
+        "Tu mensaje fue enviado. La conversación con el soporte MOXT está abierta — un administrador puede responder ahí.",
+      adminOpenChat: "Abrir la conversación",
+      adminUnavailable: "Ningún administrador está disponible por ahora. Inténtalo de nuevo en un momento.",
+      adminSendFailed: "No se pudo abrir el chat con el admin. Comprueba tu conexión e inténtalo de nuevo.",
     },
     attachment: {
       photo: "📷 Foto",
@@ -3152,6 +3174,7 @@ export const es = {
         maxWeightPlaceholder: "Ex.: 5",
         pricePerKg: "Precio por kg",
         pricePerKgRub: "Precio por kg (RUB)",
+        pricePerKgPlaceholder: "Ej.: 900",
         currency: "Moneda",
         rejectedTypes: "Tipos recusados / restriciones (opcional)",
         rejectedTypesPlaceholder: "Ex.: Sem líquidos, sin materiais perigosos...",
@@ -4179,6 +4202,9 @@ export const es = {
       amountSent: "Importe enviado",
       feesPercent: "Taxas {percent}%",
       estimatedDelay: "Prazo estimado",
+      delayToConfirm: "A confirmar",
+      realDelayTitle: "Plazo real medio (recepción → pago) · {count} transferencia(s)",
+      announcedDelayTitle: "Plazo anunciado por el cambista",
       dateUnavailable: "data indisponible",
       rateNote: "Tipo del {date} · margen {margin}%",
       enterAmountForEstimate: "Introduza un importe para ver a estimactiva.",
@@ -5343,7 +5369,9 @@ export const es = {
       parcel: "Paquetes",
       p2p: "Intercambio P2P",
       transfer: "Transferencia",
-      general: "Discussão"
+      general: "Conversación",
+      support: "Soporte admin",
+      assistant: "Asistencia Moxti",
     },
     contact: "Contactar",
     contactOpening: "A abrir…",
@@ -5394,11 +5422,22 @@ export const es = {
         rate: "Pode confirmar a tarifa?"
       },
       general: {
-        more: "Olá, gostaria de saber más.",
-        thanks: "Gracias pela tu mensaje.",
-        clarify: "Pode precisar o tu pedido?"
-      }
-    }
+        more: "Hola, me gustaría saber más.",
+        thanks: "Gracias por tu mensaje.",
+        clarify: "¿Puedes precisar tu solicitud?",
+      },
+      support: {
+        received: "Recibido, lo estoy revisando.",
+        delay: "Gracias por tu paciencia, vuelvo enseguida.",
+        needInfo: "¿Puedes darme un poco más de detalles?",
+      },
+      assistant: {
+        transfer: "¿Cómo hago una transferencia de dinero?",
+        parcel: "¿Cómo envío un paquete a través de un viajero?",
+        verify: "¿Cómo verifico mi identidad?",
+        admin: "Quiero hablar con un administrador",
+      },
+    },
   },
   businesses: {
     common: {
@@ -7002,8 +7041,8 @@ export const es = {
           "1": "Que transportadoras están disponibles?"
         },
         texts: {
-          "0": "Ao publicar un anuncio, si activas **Envío**, MOXT ofrece los medios habituais en Rusia:\n- **CDEK** (~2–7 días)\n- **Correos de Rusia** (~5–14 días)\n- **Boxberry**, **Yandex Delivery**, **Delovie Linii**, **PEK**\n- Otro transportista (plazo a convenir)\n\nPuedes seleccionar **varios** e indicar el plazo aproximado. Esta información aparece luego na ficha do anuncio (pestaña Entrega)."
-        }
+          "0": "Al publicar un anuncio, si activas **Envío**, MOXT ofrece los medios habituales en Rusia:\n- **CDEK** (~2–7 días)\n- **Correos de Rusia** (~5–14 días)\n- **Boxberry**, **Yandex Delivery**, **Delovie Linii**, **PEK**\n- Otro transportista (plazo a convenir)\n\nPuedes seleccionar **varios** e indicar el plazo aproximado. Esta información aparece luego en la ficha del anuncio (pestaña Entrega).",
+        },
       },
       contribuer: {
         actions: {
