@@ -106,7 +106,13 @@ export function ShareToFeedModal({
       }).filter(Boolean)
 
       const media = normalizePostImages(urls)
-      const status = initialCatalogStatus(user, { live: 'published', pending: 'pending_review' })
+      // Colis : publication immédiate dans l’actualité (pas de file admin).
+      // Billet / passeport restent vérifiables plus tard côté admin.
+      // Autres sources : identité vérifiée → live, sinon pending_review.
+      const status =
+        sourceType === 'parcel'
+          ? 'published'
+          : initialCatalogStatus(user, { live: 'published', pending: 'pending_review' })
       dispatch(
         createPost({
           id: postId,

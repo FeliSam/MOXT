@@ -358,15 +358,10 @@ export function PublishParcelPage() {
       }),
     )
     triggerBurst()
-    const live = action.payload?.status === 'active'
     dispatch(
       addToast({
-        title: live
-          ? publishText(t, 'publish.parcel.toasts.publishedTitle')
-          : publishText(t, 'publish.parcel.toasts.pendingTitle'),
-        message: live
-          ? publishText(t, 'publish.parcel.toasts.publishedMessage')
-          : publishText(t, 'publish.parcel.toasts.pendingMessage'),
+        title: publishText(t, 'publish.parcel.toasts.publishedTitle'),
+        message: publishText(t, 'publish.parcel.toasts.publishedMessage'),
         tone: 'success',
       }),
     )
