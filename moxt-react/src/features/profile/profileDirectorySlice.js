@@ -7,6 +7,9 @@ function mapDirectoryEntry(row) {
     id: String(row.id),
     firstName: row.firstName || row.first_name || '',
     lastName: row.lastName || row.last_name || '',
+    email: row.email || '',
+    city: row.city || '',
+    avatarUrl: row.avatarUrl || row.avatar_url || null,
     verified: row.verified === true || status === 'verified',
     status,
   }

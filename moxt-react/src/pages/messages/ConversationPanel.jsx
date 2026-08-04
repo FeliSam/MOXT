@@ -17,7 +17,7 @@ import {
 } from 'react-icons/fi'
 import { LuEllipsisVertical, LuExternalLink, LuSearch, LuX } from 'react-icons/lu'
 import { Link } from 'react-router-dom'
-import { useSelector } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { useLanguage } from '../../contexts/useLanguage'
 import { UploadProgress } from '../../components/ui/UploadProgress'
 import { shortenFileName } from '../../services/uploadProgress'
@@ -32,7 +32,9 @@ import {
   normalizeRelatedContexts,
 } from '../../features/communications/conversationTimeline'
 import { messagesText } from '../../features/communications/messagesI18n'
+import { translateMessageCached } from '../../features/communications/messageTranslate'
 import { resolveRelatedSnapshot } from '../../features/communications/relatedSnapshot'
+import { addToast } from '../../features/ui/uiSlice'
 import { PopoverMenu } from '../../components/ui/PopoverMenu'
 import { VerifiedDisplayName } from '../../components/ui/Badge'
 import { peerActivityLabel, truncateWords } from './format'
@@ -106,6 +108,7 @@ export function ConversationPanel({
   pinned,
 }) {
   const { t } = useLanguage()
+  const dispatch = useDispatch()
   const peer = getConversationPeer(active, user.id)
   const peerOnline = useSelector((state) => (peer?.id ? Boolean(state.presence.online[peer.id]) : false))
   const liveEntry = peer?.id ? avatarMap[peer.id] : undefined
@@ -167,6 +170,59 @@ export function ConversationPanel({
   const [composerOffset, setComposerOffset] = useState(120)
   const [attachMenuOpen, setAttachMenuOpen] = useState(false)
   const [contactPickerOpen, setContactPickerOpen] = useState(false)
+  const [translationById, setTranslationById] = useState({})
+  const [translatingId, setTranslatingId] = useState(null)
+  const [translationScopeId, setTranslationScopeId] = useState(active?.id)
+  if (active?.id !== translationScopeId) {
+    setTranslationScopeId(active?.id)
+    setTranslationById({})
+    setTranslatingId(null)
+  }
+
+  async function handleTranslate(message, targetLang) {
+    const text = String(message?.text || '').trim()
+    if (!text || !message?.id) return
+    setTranslatingId(message.id)
+    try {
+      const result = await translateMessageCached({
+        messageId: message.id,
+        text,
+        targetLang,
+      })
+      setTranslationById((prev) => ({
+        ...prev,
+        [message.id]: {
+          targetLang: result.targetLang,
+          translatedText: result.translatedText,
+          showOriginal: false,
+        },
+      }))
+    } catch (error) {
+      dispatch(
+        addToast({
+          title: messagesText(t, 'messages.translateFailedTitle'),
+          message:
+            error?.message && error.message !== 'empty'
+              ? error.message
+              : messagesText(t, 'messages.translateFailed'),
+          tone: 'error',
+        }),
+      )
+    } finally {
+      setTranslatingId((current) => (current === message.id ? null : current))
+    }
+  }
+
+  function handleToggleTranslationOriginal(messageId) {
+    setTranslationById((prev) => {
+      const entry = prev[messageId]
+      if (!entry) return prev
+      return {
+        ...prev,
+        [messageId]: { ...entry, showOriginal: !entry.showOriginal },
+      }
+    })
+  }
   const fileInputRef = useRef(null)
   const [threadHeaderVisible, setThreadHeaderVisible] = useState(true)
   const [threadHeaderOffset, setThreadHeaderOffset] = useState(68)
@@ -774,6 +830,10 @@ export function ConversationPanel({
                           onReply={onReply}
                           onRetry={onRetry}
                           onCopy={onCopy}
+                          onTranslate={handleTranslate}
+                          onToggleTranslationOriginal={handleToggleTranslationOriginal}
+                          translation={translationById[message.id] || null}
+                          translating={translatingId === message.id}
                           onToggleActions={() =>
                             setOpenActionsId((current) =>
                               current === message.id ? null : message.id,

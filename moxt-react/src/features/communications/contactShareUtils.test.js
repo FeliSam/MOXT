@@ -84,6 +84,37 @@ describe('buildShareableContacts', () => {
       section: 'followers',
     })
   })
+
+  it('n’utilise jamais l’UUID comme nom affiché', () => {
+    const uid = '438bc62c-1111-4111-8111-abcdefabcdef'
+    const { following, followers } = buildShareableContacts({
+      userId: 'me',
+      subscriptions: [
+        {
+          userId: 'me',
+          publisherType: 'user',
+          publisherId: uid,
+          publisherName: uid,
+        },
+        {
+          userId: uid,
+          publisherType: 'user',
+          publisherId: 'me',
+        },
+      ],
+      profileById: {},
+      nameFallback: 'Contact MOXT',
+    })
+    expect(following[0].name).toBe('Contact MOXT')
+    expect(followers[0].name).toBe('Contact MOXT')
+  })
+})
+
+describe('buildContactAttachment uuid', () => {
+  it('remplace un nom UUID par le fallback', () => {
+    const uid = '438bc62c-1111-4111-8111-abcdefabcdef'
+    expect(buildContactAttachment({ userId: uid, name: uid }).name).toBe('Contact MOXT')
+  })
 })
 
 describe('filterShareableContacts', () => {

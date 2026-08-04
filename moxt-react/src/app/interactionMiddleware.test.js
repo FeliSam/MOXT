@@ -261,6 +261,18 @@ describe('interactionMiddleware', () => {
           (item) => item.userId === 'business-owner' && item.type === 'transfer',
         ),
     ).toBe(true)
+    expect(
+      store
+        .getState()
+        .communications.notifications.some(
+          (item) =>
+            item.userId === 'client' &&
+            item.type === 'transfer' &&
+            /virement|payout|versé|pay out|выполн|transferencia|transferência/i.test(
+              `${item.title} ${item.message}`,
+            ),
+        ),
+    ).toBe(true)
     expect(store.getState().finance.receipts[0]).toMatchObject({
       userId: 'client',
       relatedType: 'transfer',

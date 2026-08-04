@@ -884,6 +884,12 @@ export const loadAllData = createAsyncThunk(
     for (const offer of safeRows(p2pOffersRes, 'des offres P2P')) {
       rememberProfileId(offer.owner_id || offer.ownerId)
     }
+    for (const sub of fromRows(safeRows(subscriptionsRes, 'des abonnements'))) {
+      const publisherType = sub.publisherType || sub.publisher_type
+      if (publisherType !== 'user') continue
+      rememberProfileId(sub.publisherId || sub.publisher_id)
+      rememberProfileId(sub.userId || sub.subscriberId || sub.user_id || sub.subscriber_id)
+    }
 
     const missingProfileIds = [...neededProfileIds].slice(0, 100)
     if (missingProfileIds.length) {

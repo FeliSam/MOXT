@@ -19,11 +19,73 @@ import { hasReviewEligibility } from '@moxt/shared/utils/reviewEligibility.js'
 import { setUser } from '../features/auth/authSlice'
 import { setUserVerified } from '../features/administration/administrationSlice'
 import { sanitizeUserFacingMessage } from '../features/auth/authErrorMessages'
+import { TRANSFER_STATUS } from '../features/transfers/transferConfig'
 import { appText } from '../i18n/appText'
 import { supabase } from '../services/supabaseClient'
 
 function notify(store, payload) {
   if (payload.userId) store.dispatch(addNotification(payload))
+}
+
+function transferStatusLabel(status) {
+  const map = {
+    [TRANSFER_STATUS.PENDING_ACCEPTANCE]: 'transfers.status.pendingAcceptance',
+    [TRANSFER_STATUS.PENDING]: 'transfers.status.pending',
+    [TRANSFER_STATUS.DECLINED]: 'transfers.status.businessDeclined',
+    [TRANSFER_STATUS.DECLARED]: 'transfers.status.declared',
+    [TRANSFER_STATUS.RECEIVED]: 'transfers.status.received',
+    [TRANSFER_STATUS.PROCESSING]: 'transfers.status.processing',
+    [TRANSFER_STATUS.PAID_OUT]: 'transfers.status.paidOut',
+    [TRANSFER_STATUS.COMPLETED]: 'transfers.status.completed',
+    [TRANSFER_STATUS.CANCELLED]: 'transfers.status.cancelled',
+    [TRANSFER_STATUS.EXPIRED]: 'transfers.status.expired',
+  }
+  const resolved = map[status]
+  if (resolved) {
+    const label = appText(resolved)
+    if (label && label !== resolved) return label
+  }
+  return status
+}
+
+function notifyTransferClientUpdate(store, { transfer, previousStatus, actorId }) {
+  if (!transfer?.userId || transfer.userId === actorId) return
+  if (!previousStatus || previousStatus === transfer.status) return
+
+  const status = transfer.status
+  let title = appText('notificationsFeed.transferUpdated')
+  let message = appText('notificationsFeed.transferUpdatedBody', {
+    id: transfer.id,
+    status: transferStatusLabel(status),
+  })
+  let priority = 'normal'
+
+  if (status === TRANSFER_STATUS.RECEIVED) {
+    title = appText('notificationsFeed.paymentReceived')
+    message = appText('notificationsFeed.paymentReceivedBody', { id: transfer.id })
+    priority = 'high'
+  } else if (status === TRANSFER_STATUS.PAID_OUT) {
+    title = appText('notificationsFeed.payoutConfirmed')
+    message = appText('notificationsFeed.payoutConfirmedBody', { id: transfer.id })
+    priority = 'high'
+  } else if (status === TRANSFER_STATUS.CANCELLED) {
+    title = appText('notificationsFeed.transferCancelled')
+    message = appText('notificationsFeed.transferCancelledBody', { id: transfer.id })
+    priority = 'high'
+  } else if (status === TRANSFER_STATUS.COMPLETED) {
+    title = appText('notificationsFeed.transferCompleted')
+    message = appText('notificationsFeed.transferCompletedStaffBody', { id: transfer.id })
+    priority = 'high'
+  }
+
+  notify(store, {
+    userId: transfer.userId,
+    title,
+    message,
+    type: 'transfer',
+    link: `/transfers/${transfer.id}`,
+    priority,
+  })
 }
 
 /** Notifie tous les comptes actifs (RPC serveur) — marketplace / jobs / colis / events / P2P. */
@@ -346,29 +408,42 @@ export const interactionMiddleware = (store) => {
   // Fusion des deux blocs moderateTransfer qui étaient dupliqués
   if (action.type === 'transfers/moderateTransfer') {
     const transfer = after.transfers.items.find((item) => item.id === action.payload.id)
+    const previousTransfer = before.transfers.items.find((item) => item.id === action.payload.id)
+    const previousStatus = previousTransfer?.status
+    const statusChanged = Boolean(transfer && previousStatus && previousStatus !== transfer.status)
 
-    // Notifier le client du changement de statut
-    if (transfer?.userId && transfer.userId !== actorId) {
-      notify(store, {
-        userId: transfer.userId,
-        title: appText('notificationsFeed.transferUpdated'),
-        message: appText('notificationsFeed.transferUpdatedBody', {
-          id: transfer.id,
-          status: action.payload.status,
-        }),
-        type: 'transfer',
-        link: `/transfers/${transfer.id}`,
+    // Notifier le client du changement de statut (preuves incluses via paid_out / received)
+    if (statusChanged) {
+      notifyTransferClientUpdate(store, {
+        transfer,
+        previousStatus,
+        actorId,
       })
+      // Annulation staff : aussi prévenir l’échangeur
+      if (
+        transfer.status === TRANSFER_STATUS.CANCELLED &&
+        transfer.businessOwnerId &&
+        transfer.businessOwnerId !== actorId &&
+        transfer.businessOwnerId !== transfer.userId
+      ) {
+        notify(store, {
+          userId: transfer.businessOwnerId,
+          title: appText('notificationsFeed.transferCancelled'),
+          message: appText('notificationsFeed.transferCancelledBody', { id: transfer.id }),
+          type: 'transfer',
+          link: `/transfers/${transfer.id}`,
+          priority: 'high',
+        })
+      }
     }
 
     // Toast uniquement si le statut a réellement changé
-    const previousTransfer = before.transfers.items.find((item) => item.id === action.payload.id)
-    if (previousTransfer && previousTransfer.status !== action.payload.status) {
+    if (statusChanged) {
       store.dispatch(
         addToast({
           title: appText('toasts.transferUpdated'),
           message: appText('toasts.transferTimelineMessage', {
-            status: action.payload.status,
+            status: transferStatusLabel(transfer.status),
           }),
           tone: 'success',
         }),
@@ -724,16 +799,24 @@ export const interactionMiddleware = (store) => {
   if (action.type === 'transfers/declarePayment') {
     const transferId = typeof action.payload === 'string' ? action.payload : action.payload.id
     const transfer = after.transfers.items.find((item) => item.id === transferId)
+    const previous = before.transfers.items.find((item) => item.id === transferId)
     if (transfer) {
       syncTransferReceipt(store, transfer)
     }
-    if (transfer?.businessOwnerId) {
+    // Client a déclaré le paiement (+ preuve) → notifier l’entreprise
+    if (
+      transfer?.businessOwnerId &&
+      transfer.businessOwnerId !== actorId &&
+      previous?.status !== transfer.status &&
+      transfer.status === TRANSFER_STATUS.DECLARED
+    ) {
       notify(store, {
         userId: transfer.businessOwnerId,
         title: appText('notificationsFeed.paymentDeclared'),
         message: appText('notificationsFeed.paymentDeclaredBody', { id: transfer.id }),
         type: 'transfer',
         link: `/transfers/${transfer.id}`,
+        priority: 'high',
       })
     }
   }

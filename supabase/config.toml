@@ -96,6 +96,9 @@ verify_jwt = false
 [functions.admin-verify-phone]
 verify_jwt = true
 
+[functions.translate-message]
+verify_jwt = true
+
 [functions.send-sms]
 verify_jwt = false
 

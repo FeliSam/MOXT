@@ -1,14 +1,17 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { FiSearch, FiUserCheck, FiUsers, FiX } from 'react-icons/fi'
-import { useSelector } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { Modal } from '../../components/ui/Modal'
 import { EntityAvatar } from '../account/EntityAvatar'
 import { useLanguage } from '../../contexts/useLanguage'
+import { upsertProfileDirectoryEntries } from '../profile/profileDirectorySlice'
 import { messagesText } from './messagesI18n'
 import {
   buildShareableContacts,
+  collectShareableContactIds,
   filterShareableContacts,
 } from './contactShareUtils'
+import { fetchParticipantProfilesFromRemote } from './conversationDisplay'
 
 function ContactSection({ title, icon: Icon, items, emptyLabel, onSelect }) {
   return (
@@ -64,6 +67,7 @@ function ContactSection({ title, icon: Icon, items, emptyLabel, onSelect }) {
 
 export function ContactSharePicker({ open, onClose, onSelect, userId }) {
   const { t } = useLanguage()
+  const dispatch = useDispatch()
   const [query, setQuery] = useState('')
   const subscriptions = useSelector((state) => state.account.subscriptions || [])
   const directory = useSelector((state) => state.profileDirectory?.byId || {})
@@ -85,9 +89,49 @@ export function ContactSharePicker({ open, onClose, onSelect, userId }) {
     return map
   }, [adminUsers, directory])
 
+  useEffect(() => {
+    if (!open || !userId) return undefined
+    let cancelled = false
+    const ids = collectShareableContactIds({ userId, subscriptions })
+    const missing = ids.filter((id) => {
+      const profile = directory[id]
+      const name = [profile?.firstName, profile?.lastName].filter(Boolean).join(' ').trim()
+      return !name && !profile?.email
+    })
+    if (!missing.length) return undefined
+
+    ;(async () => {
+      try {
+        const remote = await fetchParticipantProfilesFromRemote(missing)
+        if (cancelled || !remote || !Object.keys(remote).length) return
+        dispatch(
+          upsertProfileDirectoryEntries(
+            Object.entries(remote).map(([id, profile]) => ({
+              id,
+              firstName: profile.firstName,
+              lastName: profile.lastName,
+              avatarUrl: profile.avatarUrl,
+              status: profile.status,
+              verified: profile.verified,
+            })),
+          ),
+        )
+      } catch {
+        /* silent — fallback names still apply */
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+    // Intentionally when picker opens / subscription list changes — not on every directory upsert.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- directory read once per open wave
+  }, [dispatch, open, subscriptions, userId])
+
+  const nameFallback = messagesText(t, 'messages.contact.fallbackName')
   const { following, followers } = useMemo(
-    () => buildShareableContacts({ userId, subscriptions, profileById }),
-    [userId, subscriptions, profileById],
+    () => buildShareableContacts({ userId, subscriptions, profileById, nameFallback }),
+    [userId, subscriptions, profileById, nameFallback],
   )
 
   const filteredFollowing = filterShareableContacts(following, query)

@@ -1267,14 +1267,17 @@ html.messages-route-lock #root {
   box-shadow: var(--shadow-card-lg);
 }
 
-/* Portail body : au-dessus du composer (z-20) et hors overflow du fil. */
+/* Portail body : au-dessus du composer (z-20) et hors overflow du fil.
+   Largeur = contenu uniquement — ne pas combiner left (inline) + right:0 (--sent). */
 .message-action-menu--portal {
   position: fixed;
   z-index: calc(var(--z-modal) + 5);
   top: auto;
-  right: auto;
+  right: auto !important;
   left: auto;
   bottom: auto;
+  width: max-content;
+  max-width: calc(100vw - 1rem);
 }
 
 /* Bascule au-dessus de la bulle quand il n'y a pas de place en bas. */
@@ -1283,12 +1286,15 @@ html.messages-route-lock #root {
   bottom: calc(100% + 0.3rem);
 }
 
-.message-action-menu--sent {
+/* Alignement relatif (hors portal) : collé à droite pour messages envoyés. */
+.message-action-menu--sent:not(.message-action-menu--portal) {
   right: 0;
+  left: auto;
 }
 
-.message-action-menu:not(.message-action-menu--sent) {
+.message-action-menu:not(.message-action-menu--sent):not(.message-action-menu--portal) {
   left: 0;
+  right: auto;
 }
 
 .message-action-menu-btn {
@@ -1318,6 +1324,78 @@ html.messages-route-lock #root {
   width: 1.625rem;
   height: 1.625rem;
   font-size: 0.8125rem;
+}
+
+.message-action-menu--translate {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.15rem;
+  min-width: 11.5rem;
+  padding: 0.4rem;
+  border-radius: 1rem;
+}
+
+.message-action-menu-header {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0 0.15rem 0.25rem;
+  border-bottom: 1px solid var(--app-border);
+  margin-bottom: 0.15rem;
+}
+
+.message-action-menu-title {
+  flex: 1;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--app-text-muted);
+}
+
+.message-action-menu-lang {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  border-radius: 0.65rem;
+  padding: 0.45rem 0.55rem;
+  text-align: left;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--app-text);
+  transition: background var(--transition-fast);
+}
+
+.message-action-menu-lang:hover {
+  background: var(--app-surface-muted);
+}
+
+.message-translate-badge {
+  margin-top: 0.28rem;
+  max-width: min(100%, 18rem);
+  border: 0;
+  background: transparent;
+  padding: 0 0.15rem;
+  text-align: left;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--app-text-muted);
+  cursor: pointer;
+}
+
+.message-translate-badge--sent {
+  text-align: right;
+  margin-left: auto;
+}
+
+.message-translate-badge:hover {
+  color: var(--app-accent);
+}
+
+.message-bubble-text--translating {
+  opacity: 0.55;
 }
 
 .message-failed-banner {

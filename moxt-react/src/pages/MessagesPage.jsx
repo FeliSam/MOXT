@@ -890,8 +890,8 @@ export function MessagesPage() {
                   setReplyToId(null)
                   setReplyToContextId(null)
                 }}
-                onCopy={async (message) => {
-                  const text = message.text?.trim()
+                onCopy={async (message, displayText) => {
+                  const text = String(displayText ?? message.text ?? '').trim()
                   if (!text) return
                   let copied = false
                   if (navigator.clipboard?.writeText) {
