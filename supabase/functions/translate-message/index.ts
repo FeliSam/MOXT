@@ -1,18 +1,14 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeadersFor, corsPreflight } from '../_shared/cors.ts'
+import {
+  isSupportedTargetLang,
+  translateViaLibreTranslate,
+} from '../_shared/libreTranslate.ts'
+import { checkRateLimit, clientIp } from '../_shared/rateLimit.ts'
 
-const DEFAULT_MOXTI_URL =
-  'https://ais-dev-tgfremvnud2wr2o2uhhzod-716871433275.europe-west2.run.app/api/messages/incoming'
-
-const MAX_CHARS = 4000
-
-const LANGUAGE_NAMES: Record<string, string> = {
-  fr: 'French',
-  en: 'English',
-  ru: 'Russian',
-  pt: 'Portuguese',
-  es: 'Spanish',
-}
+const MAX_CHARS = 2000
+const RATE_MAX = 20
+const RATE_WINDOW_SEC = 60
 
 function json(body: Record<string, unknown>, status: number, req: Request) {
   return new Response(JSON.stringify(body), {
@@ -24,58 +20,9 @@ function json(body: Record<string, unknown>, status: number, req: Request) {
   })
 }
 
-function moxtiAuthHeaders() {
-  const key = (Deno.env.get('MOXTI_API_KEY') || '').trim()
-  if (!key) return {} as Record<string, string>
-
-  const mode = (Deno.env.get('MOXTI_API_KEY_HEADER') || 'both').toLowerCase()
-  const rawKey = key.replace(/^bearer\s+/i, '')
-  const headers: Record<string, string> = {}
-
-  if (mode === 'bearer' || mode === 'both') {
-    headers.Authorization = `Bearer ${rawKey}`
-  }
-  if (mode === 'x-api-key' || mode === 'both') {
-    headers['X-Api-Key'] = rawKey
-  }
-  if (mode === 'api-key') {
-    headers['Api-Key'] = rawKey
-  }
-
-  return headers
-}
-
-function buildTranslatorPrompt(text: string, targetLang: string) {
-  const targetName = LANGUAGE_NAMES[targetLang] || targetLang
-  return [
-    'You are a professional translator for the MOXT messaging app.',
-    `Translate the following message into ${targetName} (${targetLang}).`,
-    'Rules:',
-    '- Output ONLY the translated text, nothing else.',
-    '- Do not add greetings, explanations, quotes, or labels.',
-    '- Preserve emojis, @mentions, URLs, phone numbers, amounts, currencies, and line breaks.',
-    '- Keep proper names unchanged when they are names of people or brands.',
-    '- If the text is already in the target language, return it unchanged.',
-    '',
-    'Message:',
-    text,
-  ].join('\n')
-}
-
-function extractTranslation(data: Record<string, unknown>, raw: string) {
-  const candidates = [
-    data.translatedText,
-    data.translation,
-    data.generatedReply,
-    data.reply,
-    data.message,
-    data.text,
-  ]
-  for (const value of candidates) {
-    if (typeof value === 'string' && value.trim()) return value.trim()
-  }
-  const stripped = raw.trim()
-  return stripped.startsWith('{') ? '' : stripped
+function participantIdsInclude(participantIds: unknown, userId: string) {
+  if (!Array.isArray(participantIds)) return false
+  return participantIds.some((id) => String(id) === userId)
 }
 
 Deno.serve(async (req) => {
@@ -87,7 +34,8 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
-    if (!supabaseUrl || !anonKey) {
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    if (!supabaseUrl || !anonKey || !serviceRoleKey) {
       return json({ error: 'Configuration Supabase incomplète.' }, 503, req)
     }
 
@@ -100,115 +48,120 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: `Bearer ${token}` } },
     })
+    const admin = createClient(supabaseUrl, serviceRoleKey)
+
     const { data: userData, error: userError } = await supabase.auth.getUser()
     if (userError || !userData?.user) {
       return json({ error: 'Session expirée.' }, 401, req)
     }
 
-    const apiKey = (Deno.env.get('MOXTI_API_KEY') || '').trim()
-    if (!apiKey) {
-      return json(
-        {
-          error:
-            'MOXTI_API_KEY manquante. Définis le secret Supabase puis redéploie translate-message.',
-        },
-        503,
-        req,
-      )
+    const userId = userData.user.id
+    const ip = clientIp(req)
+    const rateOk = await checkRateLimit(
+      admin,
+      `translate-message:user:${userId}`,
+      RATE_MAX,
+      RATE_WINDOW_SEC,
+    )
+    if (!rateOk) {
+      return json({ error: 'Trop de traductions. Réessayez dans un instant.' }, 429, req)
     }
+    await checkRateLimit(admin, `translate-message:ip:${ip}`, RATE_MAX * 2, RATE_WINDOW_SEC)
 
     const body = await req.json().catch(() => ({}))
+    const messageId = String(body.messageId || '').trim()
     const text = String(body.text || body.content || '').trim()
     const targetLang = String(body.targetLang || body.language || '').trim().toLowerCase()
 
+    if (!messageId) return json({ error: 'Message requis' }, 400, req)
     if (!text) return json({ error: 'Message vide' }, 400, req)
-    if (!LANGUAGE_NAMES[targetLang]) {
+    if (!isSupportedTargetLang(targetLang)) {
       return json({ error: 'Langue cible non supportée' }, 400, req)
     }
     if (text.length > MAX_CHARS) {
       return json({ error: `Texte trop long (max ${MAX_CHARS} caractères)` }, 400, req)
     }
 
-    const endpoint = Deno.env.get('MOXTI_API_URL') || DEFAULT_MOXTI_URL
-    const payload = {
-      senderName: 'MOXT Translator',
-      senderContact: userData.user.email || userData.user.id,
-      channel: 'message_translate',
-      subject: `Translate to ${LANGUAGE_NAMES[targetLang]}`,
-      content: buildTranslatorPrompt(text, targetLang).slice(0, MAX_CHARS),
+    const { data: messageRow, error: messageError } = await supabase
+      .from('messages')
+      .select('id, conversation_id, text')
+      .eq('id', messageId)
+      .maybeSingle()
+
+    if (messageError || !messageRow) {
+      return json({ error: 'Message introuvable' }, 404, req)
     }
 
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), 60_000)
+    const { data: conversation, error: conversationError } = await supabase
+      .from('conversations')
+      .select('participant_ids')
+      .eq('id', messageRow.conversation_id)
+      .maybeSingle()
 
-    let upstream: Response
-    try {
-      upstream = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          ...moxtiAuthHeaders(),
-        },
-        body: JSON.stringify(payload),
-        signal: controller.signal,
-      })
-    } finally {
-      clearTimeout(timer)
+    if (conversationError || !conversation) {
+      return json({ error: 'Conversation introuvable' }, 404, req)
     }
 
-    const raw = await upstream.text()
-    let data: Record<string, unknown> = {}
-    try {
-      data = raw ? JSON.parse(raw) : {}
-    } catch {
+    if (!participantIdsInclude(conversation.participant_ids, userId)) {
+      return json({ error: 'Accès refusé' }, 403, req)
+    }
+
+    const { data: cached } = await admin
+      .from('message_translations')
+      .select('translated_text')
+      .eq('message_id', messageId)
+      .eq('target_lang', targetLang)
+      .maybeSingle()
+
+    if (cached?.translated_text) {
       return json(
         {
-          error: upstream.ok
-            ? 'Réponse traducteur non JSON.'
-            : `Traducteur HTTP ${upstream.status}`,
-          detail: raw.slice(0, 240),
+          translatedText: cached.translated_text,
+          targetLang,
+          cached: true,
         },
-        upstream.ok ? 502 : upstream.status,
+        200,
         req,
       )
     }
 
-    if (!upstream.ok) {
+    const result = await translateViaLibreTranslate(text, targetLang)
+    if (result.error || !result.text) {
       return json(
-        {
-          error: typeof data.error === 'string' ? data.error : `Traducteur HTTP ${upstream.status}`,
-        },
-        upstream.status >= 400 && upstream.status < 600 ? upstream.status : 502,
+        { error: result.error || 'Traduction vide' },
+        result.status || 502,
         req,
       )
     }
 
-    const translatedText = extractTranslation(data, raw)
-    if (!translatedText) {
-      return json({ error: 'Traduction vide' }, 502, req)
-    }
+    await admin.from('message_translations').upsert(
+      {
+        message_id: messageId,
+        target_lang: targetLang,
+        translated_text: result.text,
+      },
+      { onConflict: 'message_id,target_lang' },
+    ).then(({ error: cacheError }) => {
+      if (cacheError) {
+        console.warn('message_translations cache skip:', cacheError.message)
+      }
+    })
 
     return json(
       {
-        translatedText,
+        translatedText: result.text,
         targetLang,
-        sourceLength: text.length,
+        cached: false,
       },
       200,
       req,
     )
   } catch (err) {
-    const aborted = err instanceof Error && err.name === 'AbortError'
     return json(
       {
-        error: aborted
-          ? 'La traduction met trop longtemps. Réessayez.'
-          : err instanceof Error
-            ? err.message
-            : 'Erreur de traduction',
+        error: err instanceof Error ? err.message : 'Erreur de traduction',
       },
-      aborted ? 504 : 500,
+      500,
       req,
     )
   }

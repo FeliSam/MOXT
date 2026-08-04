@@ -672,6 +672,8 @@ export const es = {
     translatedInto: "Traducido al {language}",
     showOriginal: "Mostrar original",
     showTranslation: "Mostrar traducción",
+    autoTranslated: "Traducido automáticamente",
+    translationUnavailable: "Traducción no disponible",
     translateFailedTitle: "Traducción imposible",
     translateFailed: "No se puede traducir este mensaje por ahora.",
     edit: "Editar",
@@ -2421,7 +2423,9 @@ export const es = {
       title: "Paquetes y viagens",
       description: "Publique capaciudad de transporte o reserve un lugar disponible.",
       stats: {
-        availableTrips: "Viagens disponibles"
+        availableTrips: "Viajes disponibles",
+        availableKg: "Kg disponibles",
+        availableKgValue: "{kg} kg",
       },
       actions: {
         allParcels: "Todas as paquetes",

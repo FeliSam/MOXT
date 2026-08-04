@@ -32,7 +32,12 @@ import {
   normalizeRelatedContexts,
 } from '../../features/communications/conversationTimeline'
 import { messagesText } from '../../features/communications/messagesI18n'
-import { translateMessageCached } from '../../features/communications/messageTranslate'
+import {
+  shouldAutoTranslate,
+  translateToReaderLanguage,
+  languageLabel,
+} from '../../features/communications/messageTranslate'
+import { canAutoTranslateMessages, canShowAdminTranslateIcon } from '../../config/messageTranslateFlags'
 import { resolveRelatedSnapshot } from '../../features/communications/relatedSnapshot'
 import { addToast } from '../../features/ui/uiSlice'
 import { PopoverMenu } from '../../components/ui/PopoverMenu'
@@ -107,7 +112,7 @@ export function ConversationPanel({
   muted,
   pinned,
 }) {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const dispatch = useDispatch()
   const peer = getConversationPeer(active, user.id)
   const peerOnline = useSelector((state) => (peer?.id ? Boolean(state.presence.online[peer.id]) : false))
@@ -172,46 +177,73 @@ export function ConversationPanel({
   const [contactPickerOpen, setContactPickerOpen] = useState(false)
   const [translationById, setTranslationById] = useState({})
   const [translatingId, setTranslatingId] = useState(null)
-  const [translationScopeId, setTranslationScopeId] = useState(active?.id)
-  if (active?.id !== translationScopeId) {
-    setTranslationScopeId(active?.id)
+  const autoTranslateQueued = useRef(new Set())
+  const translationScopeIdRef = useRef(active?.id)
+
+  useEffect(() => {
+    if (translationScopeIdRef.current === active?.id) return
+    translationScopeIdRef.current = active?.id
     setTranslationById({})
     setTranslatingId(null)
-  }
+    autoTranslateQueued.current.clear()
+  }, [active?.id])
 
-  async function handleTranslate(message, targetLang) {
-    const text = String(message?.text || '').trim()
-    if (!text || !message?.id) return
-    setTranslatingId(message.id)
-    try {
-      const result = await translateMessageCached({
-        messageId: message.id,
-        text,
-        targetLang,
-      })
-      setTranslationById((prev) => ({
-        ...prev,
-        [message.id]: {
-          targetLang: result.targetLang,
-          translatedText: result.translatedText,
-          showOriginal: false,
-        },
-      }))
-    } catch (error) {
-      dispatch(
-        addToast({
-          title: messagesText(t, 'messages.translateFailedTitle'),
-          message:
-            error?.message && error.message !== 'empty'
-              ? error.message
-              : messagesText(t, 'messages.translateFailed'),
-          tone: 'error',
-        }),
-      )
-    } finally {
-      setTranslatingId((current) => (current === message.id ? null : current))
+  useEffect(() => {
+    if (!canAutoTranslateMessages(user)) return undefined
+
+    const pending = active.messages.filter((message) => {
+      if (isMessageFromUser(message, user.id)) return false
+      const text = String(message?.text || '').trim()
+      if (!shouldAutoTranslate(text, language)) return false
+      if (autoTranslateQueued.current.has(message.id)) return false
+      if (translationById[message.id]?.translatedText) return false
+      return true
+    }).slice(0, 5)
+
+    if (!pending.length) return undefined
+
+    let cancelled = false
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        for (const message of pending) {
+          if (cancelled) break
+          autoTranslateQueued.current.add(message.id)
+          setTranslatingId(message.id)
+          try {
+            const result = await translateToReaderLanguage({
+              messageId: message.id,
+              text: message.text,
+              readerLanguage: language,
+            })
+            if (cancelled) break
+            setTranslationById((prev) => {
+              if (prev[message.id]?.translatedText) return prev
+              return {
+                ...prev,
+                [message.id]: {
+                  targetLang: result.targetLang,
+                  translatedText: result.translatedText,
+                  showOriginal: false,
+                },
+              }
+            })
+          } catch {
+            // Échec silencieux — original conservé
+          } finally {
+            autoTranslateQueued.current.delete(message.id)
+            if (!cancelled) {
+              setTranslatingId((current) => (current === message.id ? null : current))
+            }
+          }
+        }
+      })()
+    }, 300)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
     }
-  }
+  }, [active.messages, active?.id, language, translationById, user])
 
   function handleToggleTranslationOriginal(messageId) {
     setTranslationById((prev) => {
@@ -222,6 +254,57 @@ export function ConversationPanel({
         [messageId]: { ...entry, showOriginal: !entry.showOriginal },
       }
     })
+  }
+
+  async function handleTranslateMessage(message) {
+    if (!canShowAdminTranslateIcon(user)) return
+    const text = String(message?.text || '').trim()
+    if (text.length < 3) return
+    if (translatingId === message.id) return
+
+    const existing = translationById[message.id]
+    if (existing?.translatedText) {
+      handleToggleTranslationOriginal(message.id)
+      return
+    }
+
+    setTranslatingId(message.id)
+    try {
+      const result = await translateToReaderLanguage({
+        messageId: message.id,
+        text,
+        readerLanguage: language,
+      })
+      setTranslationById((prev) => ({
+        ...prev,
+        [message.id]: {
+          targetLang: result.targetLang,
+          translatedText: result.translatedText,
+          showOriginal: false,
+        },
+      }))
+      dispatch(
+        addToast({
+          type: 'success',
+          message: messagesText(t, 'messages.translatedInto', {
+            language: languageLabel(result.targetLang),
+          }),
+        }),
+      )
+    } catch (err) {
+      dispatch(
+        addToast({
+          type: 'error',
+          title: messagesText(t, 'messages.translateFailedTitle'),
+          message:
+            err instanceof Error
+              ? err.message
+              : messagesText(t, 'messages.translateFailed'),
+        }),
+      )
+    } finally {
+      setTranslatingId((current) => (current === message.id ? null : current))
+    }
   }
   const fileInputRef = useRef(null)
   const [threadHeaderVisible, setThreadHeaderVisible] = useState(true)
@@ -830,10 +913,14 @@ export function ConversationPanel({
                           onReply={onReply}
                           onRetry={onRetry}
                           onCopy={onCopy}
-                          onTranslate={handleTranslate}
                           onToggleTranslationOriginal={handleToggleTranslationOriginal}
+                          onTranslate={
+                            canShowAdminTranslateIcon(user) ? handleTranslateMessage : undefined
+                          }
+                          showTranslateIcon={canShowAdminTranslateIcon(user)}
                           translation={translationById[message.id] || null}
                           translating={translatingId === message.id}
+                          autoTranslateEnabled={canAutoTranslateMessages(user)}
                           onToggleActions={() =>
                             setOpenActionsId((current) =>
                               current === message.id ? null : message.id,

@@ -1,4 +1,5 @@
 import { corsHeadersFor, corsPreflight } from '../_shared/cors.ts'
+import { extractMoxtiText, parseMoxtiResponse } from '../_shared/moxtiResponse.ts'
 
 const DEFAULT_MOXTI_URL =
   'https://ais-dev-tgfremvnud2wr2o2uhhzod-716871433275.europe-west2.run.app/api/messages/incoming'
@@ -78,7 +79,7 @@ Deno.serve(async (req) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Accept: 'application/json',
+          Accept: 'application/json, text/plain',
           ...moxtiAuthHeaders(),
         },
         body: JSON.stringify(payload),
@@ -89,27 +90,16 @@ Deno.serve(async (req) => {
     }
 
     const raw = await upstream.text()
-    let data: Record<string, unknown> = {}
-    try {
-      data = raw ? JSON.parse(raw) : {}
-    } catch {
-      return json(
-        {
-          error:
-            upstream.ok
-              ? 'Réponse Moxti non JSON (service peut être protégé).'
-              : `Moxti HTTP ${upstream.status}`,
-          detail: raw.slice(0, 240),
-        },
-        upstream.ok ? 502 : upstream.status,
-        req,
-      )
-    }
+    const { data, plainText } = parseMoxtiResponse(raw, upstream.ok)
 
     if (!upstream.ok) {
+      const errorMessage =
+        typeof data.error === 'string'
+          ? data.error
+          : plainText || `Moxti HTTP ${upstream.status}`
       return json(
         {
-          error: typeof data.error === 'string' ? data.error : `Moxti HTTP ${upstream.status}`,
+          error: errorMessage,
           detail: data,
         },
         upstream.status >= 400 && upstream.status < 600 ? upstream.status : 502,
@@ -117,14 +107,11 @@ Deno.serve(async (req) => {
       )
     }
 
+    const generatedReply = extractMoxtiText(data, plainText)
+
     return json(
       {
-        generatedReply:
-          data.generatedReply ||
-          data.reply ||
-          data.message ||
-          data.text ||
-          '',
+        generatedReply,
         aiAnalysis: data.aiAnalysis || null,
         raw: data,
       },

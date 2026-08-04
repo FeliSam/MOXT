@@ -533,6 +533,8 @@ export const pt = {
     translatedInto: "Traduzido para {language}",
     showOriginal: "Mostrar original",
     showTranslation: "Mostrar tradução",
+    autoTranslated: "Traduzido automaticamente",
+    translationUnavailable: "Tradução indisponível",
     translateFailedTitle: "Tradução impossível",
     translateFailed: "Não é possível traduzir esta mensagem de momento.",
     edit: "Editar",
@@ -2422,6 +2424,8 @@ export const pt = {
       description: "Publique capacidade de transporte ou reserve um lugar disponível.",
       stats: {
         availableTrips: "Viagens disponíveis",
+        availableKg: "Kg disponíveis",
+        availableKgValue: "{kg} kg",
       },
       actions: {
         allParcels: "Todas as encomendas",

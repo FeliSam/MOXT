@@ -1,9 +1,11 @@
 import { describe, expect, it, beforeEach } from 'vitest'
 import {
   clearTranslationCache,
+  detectMessageLanguage,
   getCachedTranslation,
-  otherTranslateLanguages,
+  pickTranslatedTextForTest,
   setCachedTranslation,
+  shouldAutoTranslate,
   translationCacheKey,
 } from './messageTranslate.js'
 
@@ -12,9 +14,17 @@ describe('messageTranslate helpers', () => {
     clearTranslationCache()
   })
 
-  it('exclut la langue UI courante des options', () => {
-    expect(otherTranslateLanguages('fr')).toEqual(['en', 'ru', 'pt', 'es'])
-    expect(otherTranslateLanguages('ru')).toEqual(['fr', 'en', 'pt', 'es'])
+  it('détecte la langue du message', () => {
+    expect(detectMessageLanguage('Bonjour, comment ça va ?')).toBe('fr')
+    expect(detectMessageLanguage('Hello, how are you today?')).toBe('en')
+    expect(detectMessageLanguage('Привет, как дела?')).toBe('ru')
+    expect(detectMessageLanguage('OK')).toBeNull()
+  })
+
+  it('auto-traduit seulement si langue message ≠ langue UI', () => {
+    expect(shouldAutoTranslate('Hello there friend', 'fr')).toBe(true)
+    expect(shouldAutoTranslate('Bonjour tout le monde', 'fr')).toBe(false)
+    expect(shouldAutoTranslate('OK', 'fr')).toBe(false)
   })
 
   it('cache les traductions par message et langue', () => {
@@ -23,7 +33,10 @@ describe('messageTranslate helpers', () => {
       translatedText: 'Hello',
       targetLang: 'en',
     })
-    expect(getCachedTranslation('m1', 'ru')).toBeNull()
     expect(translationCacheKey('m1', 'en')).toBe('m1::en')
+  })
+
+  it('extrait la traduction depuis la réponse edge', () => {
+    expect(pickTranslatedTextForTest({ translatedText: 'Hello' })).toBe('Hello')
   })
 })

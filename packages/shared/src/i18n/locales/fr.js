@@ -674,6 +674,8 @@ export const fr = {
     translatedInto: "Traduit en {language}",
     showOriginal: "Afficher l’original",
     showTranslation: "Afficher la traduction",
+    autoTranslated: "Traduit automatiquement",
+    translationUnavailable: "Traduction indisponible",
     translateFailedTitle: "Traduction impossible",
     translateFailed: "Impossible de traduire ce message pour le moment.",
     edit: "Modifier",
@@ -2427,6 +2429,8 @@ export const fr = {
       description: "Publiez une capacité de transport ou réservez une place disponible.",
       stats: {
         availableTrips: "Trajets disponibles",
+        availableKg: "Kg disponibles",
+        availableKgValue: "{kg} kg",
       },
       actions: {
         allParcels: "Tous les colis",

@@ -70,6 +70,7 @@
   --shadow-card-hover: 0 4px 20px rgba(0,0,0,0.06);
   --shadow-card-lg:    0 12px 40px rgba(0,0,0,0.08);
   --shadow-float:      0 20px 56px rgba(0,0,0,0.12);
+  --shadow-bottom-nav: 0 6px 20px rgba(0, 0, 0, 0.07);
   --shadow-finance:    0 4px 24px rgba(8,112,95,0.08);
 
   /* Empilement — la navigation reste au-dessus du contenu page */
@@ -144,6 +145,7 @@
   --shadow-card-hover: 0 4px 20px rgba(0,0,0,0.35);
   --shadow-card-lg:    0 16px 48px rgba(0,0,0,0.4);
   --shadow-float:      0 24px 64px rgba(0,0,0,0.5);
+  --shadow-bottom-nav: 0 8px 28px rgba(0, 0, 0, 0.45);
   --shadow-finance:    0 8px 32px rgba(54,198,170,0.12), 0 0 0 1px rgba(54,198,170,0.06);
 }
 
@@ -416,7 +418,7 @@ html.capacitor-native .bottom-nav-shell {
 :root {
   --keyboard-inset: 0px;
   --bottom-nav-gap: 0.75rem;
-  --bottom-nav-pad: 0.35rem;
+  --bottom-nav-pad: 0.25rem;
   --bottom-nav-offset: max(var(--bottom-nav-gap), env(safe-area-inset-bottom, 0px));
   --bottom-nav-clearance: calc(5.75rem + env(safe-area-inset-bottom, 0px));
   --bottom-nav-clearance-loose: calc(7.5rem + env(safe-area-inset-bottom, 0px));
@@ -427,7 +429,7 @@ html.capacitor-native .bottom-nav-shell {
   left: 0.75rem;
   right: 0.75rem;
   bottom: var(--bottom-nav-offset);
-  padding: 0.25rem;
+  padding: 0.2rem;
   padding-bottom: var(--bottom-nav-pad);
   /* `position: fixed` se cale sur le LAYOUT viewport, pas sur la zone visible.
      Quand la barre d'URL mobile se rétracte/réapparaît, l'écart entre les deux
@@ -1324,6 +1326,24 @@ html.messages-route-lock #root {
   width: 1.625rem;
   height: 1.625rem;
   font-size: 0.8125rem;
+}
+
+.message-action-menu-btn--translate-connected {
+  color: var(--app-accent);
+}
+
+.message-action-menu-btn--translate-loading {
+  color: var(--app-accent);
+  opacity: 0.72;
+}
+
+.message-action-menu-btn--translate-loading svg {
+  animation: message-translate-spin 0.85s linear infinite;
+}
+
+@keyframes message-translate-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .message-action-menu--translate {

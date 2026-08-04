@@ -94,6 +94,14 @@ export function ParcelsPage() {
     [activeCountryCode, filters, parcels, subscriptions, user?.id, userCountry, showMine, today, user.id],
   )
 
+  const totalAvailableKg = useMemo(() => {
+    const total = visibleParcels.reduce((sum, parcel) => {
+      const kg = Number(parcel.remainingKg ?? parcel.capacityKg ?? 0)
+      return sum + (Number.isFinite(kg) && kg > 0 ? kg : 0)
+    }, 0)
+    return Number.isInteger(total) ? total : Math.round(total * 10) / 10
+  }, [visibleParcels])
+
   const archivedParcels = useMemo(
     () => parcels.filter(isArchived),
     [parcels, today],
@@ -109,6 +117,10 @@ export function ParcelsPage() {
         title={t('parcels.browse.title')}
         stats={[
           { label: t('parcels.browse.stats.availableTrips'), value: visibleParcels.length },
+          {
+            label: t('parcels.browse.stats.availableKg'),
+            value: t('parcels.browse.stats.availableKgValue', { kg: totalAvailableKg }),
+          },
         ]}
         actions={
           <>

@@ -140,7 +140,7 @@ export const FEATURE_MATRIX = [
         id: 'messages',
         label: 'Messagerie contextuelle',
         status: 'partial',
-        note: 'Conversations, recherche et interactions locales existent; brouillons, épinglage, mise en sourdine et pièces jointes enrichies manquent.',
+        note: 'Conversations, recherche et interactions locales existent ; traduction auto P2P (LibreTranslate self-hosted, cache DB, beta admin) ; brouillons, épinglage et pièces jointes enrichies manquent.',
       },
       {
         id: 'assistant',

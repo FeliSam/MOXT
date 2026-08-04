@@ -673,6 +673,8 @@ export const ru = {
     translatedInto: "Переведено на {language}",
     showOriginal: "Показать оригинал",
     showTranslation: "Показать перевод",
+    autoTranslated: "Переведено автоматически",
+    translationUnavailable: "Перевод недоступен",
     translateFailedTitle: "Не удалось перевести",
     translateFailed: "Сейчас невозможно перевести это сообщение.",
     edit: "Изменить",
@@ -2423,6 +2425,8 @@ export const ru = {
       description: "Опубликуйте свободный объём перевозки или забронируйте доступное место.",
       stats: {
         availableTrips: "Доступные поездки",
+        availableKg: "Доступные кг",
+        availableKgValue: "{kg} кг",
       },
       actions: {
         allParcels: "Все посылки",
