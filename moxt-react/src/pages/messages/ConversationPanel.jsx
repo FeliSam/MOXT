@@ -34,7 +34,7 @@ import {
 import { messagesText } from '../../features/communications/messagesI18n'
 import {
   shouldAutoTranslate,
-  translateToReaderLanguage,
+  translateToLanguage,
   languageLabel,
 } from '../../features/communications/messageTranslate'
 import { canAutoTranslateMessages, canShowAdminTranslateIcon } from '../../config/messageTranslateFlags'
@@ -210,10 +210,10 @@ export function ConversationPanel({
           autoTranslateQueued.current.add(message.id)
           setTranslatingId(message.id)
           try {
-            const result = await translateToReaderLanguage({
+            const result = await translateToLanguage({
               messageId: message.id,
               text: message.text,
-              readerLanguage: language,
+              targetLang: language,
             })
             if (cancelled) break
             setTranslationById((prev) => {
@@ -256,24 +256,21 @@ export function ConversationPanel({
     })
   }
 
-  async function handleTranslateMessage(message) {
+  async function handleTranslateMessage(message, targetLang) {
     if (!canShowAdminTranslateIcon(user)) return
     const text = String(message?.text || '').trim()
     if (text.length < 3) return
     if (translatingId === message.id) return
 
-    const existing = translationById[message.id]
-    if (existing?.translatedText) {
-      handleToggleTranslationOriginal(message.id)
-      return
-    }
+    const lang = String(targetLang || language || '').toLowerCase()
+    if (!lang) return
 
     setTranslatingId(message.id)
     try {
-      const result = await translateToReaderLanguage({
+      const result = await translateToLanguage({
         messageId: message.id,
         text,
-        readerLanguage: language,
+        targetLang: lang,
       })
       setTranslationById((prev) => ({
         ...prev,

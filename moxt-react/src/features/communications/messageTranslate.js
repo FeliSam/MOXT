@@ -84,6 +84,16 @@ export function languageLabel(code) {
   return LANGUAGE_LABELS[code]?.label || code
 }
 
+export function otherTranslateLanguages(currentLanguage) {
+  const current = String(currentLanguage || '').toLowerCase()
+  return SUPPORTED_LANGUAGES.filter((code) => code !== current)
+}
+
+/** Langues proposées dans le menu admin (toutes les langues MOXT). */
+export function adminTranslateLanguageOptions() {
+  return SUPPORTED_LANGUAGES
+}
+
 async function edgeFunctionErrorDetail(error) {
   let detail = error?.message || 'Erreur de traduction'
   if (error?.context && typeof error.context.json === 'function') {
@@ -97,9 +107,9 @@ async function edgeFunctionErrorDetail(error) {
   return detail
 }
 
-export async function translateToReaderLanguage({ messageId, text, readerLanguage }) {
+export async function translateToLanguage({ messageId, text, targetLang }) {
   const trimmed = String(text || '').trim()
-  const lang = String(readerLanguage || '').trim().toLowerCase()
+  const lang = String(targetLang || '').trim().toLowerCase()
   if (!trimmed || !messageId) throw new Error('empty')
   if (!SUPPORTED_LANGUAGES.includes(lang)) throw new Error('unsupported_lang')
   if (!supabase) throw new Error('supabase_unavailable')
@@ -119,6 +129,10 @@ export async function translateToReaderLanguage({ messageId, text, readerLanguag
   const result = { translatedText, targetLang: lang }
   setCachedTranslation(messageId, lang, translatedText)
   return result
+}
+
+export async function translateToReaderLanguage({ messageId, text, readerLanguage }) {
+  return translateToLanguage({ messageId, text, targetLang: readerLanguage })
 }
 
 /** @internal test helper */

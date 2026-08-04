@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import {
   FiAlertCircle,
   FiCheck,
+  FiChevronLeft,
   FiCopy,
   FiCornerUpLeft,
   FiEdit2,
@@ -21,7 +22,12 @@ import {
 import { MessageAttachment } from './MessageAttachment'
 import { linkifyParts } from './linkify'
 import { useLanguage } from '../../contexts/useLanguage'
+import { LANGUAGE_LABELS } from '../../config/uiTranslations'
 import { messagesText } from '../../features/communications/messagesI18n'
+import {
+  adminTranslateLanguageOptions,
+  languageLabel,
+} from '../../features/communications/messageTranslate'
 import { EntityVerifiedName } from '../../components/ui/EntityVerifiedName'
 
 function bubbleClassName(mine, groupedWithPrevious, groupedWithNext, failed) {
@@ -117,6 +123,7 @@ export function MessageBubble({
   const longPressTimer = useRef(null)
   const longPressTriggered = useRef(false)
   const [menuCoords, setMenuCoords] = useState(null)
+  const [menuView, setMenuView] = useState('actions')
   const readStatus = messageReadStatus(message, user.id)
   const failed = Boolean(message.syncFailed)
   const pending = Boolean(message.pending)
@@ -132,12 +139,15 @@ export function MessageBubble({
   // La réaction-emoji à un statut est déjà affichée en surimpression sur l'image ;
   // pas besoin de la répéter en légende texte en dessous.
   const hasCaption = Boolean(message.text?.trim()) && !message.attachment?.reactionEmoji
-  const showAutoTranslation =
-    autoTranslateEnabled && !mine && Boolean(translation?.translatedText) && !translating
-  const showTranslated = showAutoTranslation && !translation?.showOriginal
+  const showTranslationBadge =
+    Boolean(translation?.translatedText) &&
+    !translating &&
+    (showTranslateIcon || (autoTranslateEnabled && !mine))
+  const showTranslated = showTranslationBadge && !translation?.showOriginal
   const displayText = showTranslated ? translation.translatedText : message.text
   const translateIconConnected = Boolean(translation?.translatedText)
   const canUseTranslateIcon = showTranslateIcon && hasCaption && Boolean(onTranslate)
+  const translateLanguageOptions = adminTranslateLanguageOptions()
 
   // Menu en portal (fixed) : évite d’être coupé / mangé par le composer ou overflow.
   useLayoutEffect(() => {
@@ -182,7 +192,15 @@ export function MessageBubble({
       window.removeEventListener('resize', update)
       window.removeEventListener('scroll', update, true)
     }
-  }, [showActions, mine, failed])
+  }, [showActions, mine, failed, menuView, canUseTranslateIcon])
+
+  useEffect(() => {
+    if (!openActions) {
+      const clearId = requestAnimationFrame(() => setMenuView('actions'))
+      return () => cancelAnimationFrame(clearId)
+    }
+    return undefined
+  }, [openActions])
 
   useEffect(() => {
     if (!openActions) return undefined
@@ -383,7 +401,7 @@ export function MessageBubble({
         ) : null}
       </div>
 
-      {showAutoTranslation ? (
+      {showTranslationBadge ? (
         <button
           type="button"
           className={`message-translate-badge ${mine ? 'message-translate-badge--sent' : ''}`}
@@ -429,6 +447,49 @@ export function MessageBubble({
                     <FiTrash2 />
                   </button>
                 ) : null}
+              </div>
+            ) : menuView === 'translate' && canUseTranslateIcon ? (
+              <div
+                ref={menuRef}
+                className={`message-action-menu message-action-menu--portal message-action-menu--translate ${
+                  mine ? 'message-action-menu--sent' : ''
+                }`}
+                role="menu"
+                style={{ top: menuCoords.top, left: menuCoords.left }}
+                onClick={(event) => event.stopPropagation()}
+                onPointerDown={(event) => event.stopPropagation()}
+              >
+                <div className="message-action-menu-header">
+                  <button
+                    type="button"
+                    className="message-action-menu-btn"
+                    aria-label={messagesText(t, 'messages.translateBack')}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      setMenuView('actions')
+                    }}
+                  >
+                    <FiChevronLeft aria-hidden="true" />
+                  </button>
+                  <span className="message-action-menu-title">
+                    {messagesText(t, 'messages.translateInto')}
+                  </span>
+                </div>
+                {translateLanguageOptions.map((code) => (
+                  <button
+                    key={code}
+                    type="button"
+                    className="message-action-menu-lang"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      onTranslate?.(message, code)
+                      onCloseActions?.()
+                    }}
+                  >
+                    <span aria-hidden="true">{LANGUAGE_LABELS[code]?.flag || ''}</span>
+                    <span>{languageLabel(code)}</span>
+                  </button>
+                ))}
               </div>
             ) : (
               <div
@@ -479,19 +540,12 @@ export function MessageBubble({
                 {canUseTranslateIcon ? (
                   <button
                     type="button"
-                    onClick={(event) => runAction(event, () => onTranslate?.(message))}
-                    aria-label={
-                      translateIconConnected
-                        ? translation?.showOriginal
-                          ? messagesText(t, 'messages.showTranslation')
-                          : messagesText(t, 'messages.showOriginal')
-                        : t('messages.translate')
-                    }
-                    title={
-                      translateIconConnected
-                        ? messagesText(t, 'messages.autoTranslated')
-                        : t('messages.translate')
-                    }
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      setMenuView('translate')
+                    }}
+                    aria-label={t('messages.translate')}
+                    title={t('messages.translate')}
                     className={`message-action-menu-btn message-action-menu-btn--translate ${
                       translating ? 'message-action-menu-btn--translate-loading' : ''
                     } ${translateIconConnected ? 'message-action-menu-btn--translate-connected' : ''}`}

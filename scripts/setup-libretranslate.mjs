@@ -87,16 +87,18 @@ function buildSupabaseEnv(vars) {
   }
 }
 
-async function checkLibreTranslate(url) {
+async function checkLibreTranslate(url, apiKey = '') {
   const base = String(url || '').trim().replace(/\/+$/, '')
   if (!base) return { ok: false, detail: 'URL vide' }
 
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 12_000)
   try {
+    const headers = { Accept: 'application/json' }
+    if (apiKey) headers['X-API-Key'] = apiKey
     const response = await fetch(`${base}/languages`, {
       signal: controller.signal,
-      headers: { Accept: 'application/json' },
+      headers,
     })
     if (!response.ok) {
       return { ok: false, detail: `HTTP ${response.status}` }
@@ -144,7 +146,7 @@ async function main() {
   }
 
   log('Healthcheck', ltUrl)
-  const health = await checkLibreTranslate(ltUrl)
+  const health = await checkLibreTranslate(ltUrl, ltKey)
   if (!health.ok) {
     console.error(`\n✗ LibreTranslate injoignable : ${health.detail}`)
     console.error('  Vérifiez Docker, le firewall et l’URL.')

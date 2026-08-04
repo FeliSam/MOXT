@@ -1,0 +1,19 @@
+#cloud-config
+package_update: true
+packages:
+  - docker.io
+runcmd:
+  - systemctl enable docker
+  - systemctl start docker
+  - usermod -aG docker ubuntu || true
+  - |
+    set -e
+    LT_KEY=$(openssl rand -hex 16)
+    echo "$LT_KEY" > /root/moxt-lt-api-key.txt
+    chmod 600 /root/moxt-lt-api-key.txt
+    docker pull libretranslate/libretranslate
+    docker rm -f libretranslate 2>/dev/null || true
+    docker run -d --name libretranslate --restart unless-stopped \
+      -p 5000:5000 libretranslate/libretranslate \
+      --load-only fr,en,ru,pt,es \
+      --api-keys "$(cat /root/moxt-lt-api-key.txt)"

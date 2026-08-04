@@ -33,6 +33,7 @@
     "setup:sms-ru": "node scripts/setup-sms-ru.mjs",
     "setup:smsc": "node scripts/setup-smsc.mjs",
     "setup:libretranslate": "node scripts/setup-libretranslate.mjs",
+    "setup:libretranslate:yandex": "node scripts/provision-libretranslate-yandex.mjs",
     "setup:p1sms": "node scripts/setup-p1sms.mjs",
     "setup:admin-promote": "node scripts/setup-admin-promote.mjs",
     "setup:google-auth": "node scripts/setup-google-auth.mjs",
