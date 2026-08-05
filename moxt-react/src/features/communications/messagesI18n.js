@@ -35,6 +35,7 @@ export const MESSAGES_FR_SOURCES = {
   'messages.showOriginal': 'Afficher l’original',
   'messages.showTranslation': 'Afficher la traduction',
   'messages.autoTranslated': 'Traduit automatiquement',
+  'messages.autoTranslatedFrom': 'Traduit depuis {language}',
   'messages.translationUnavailable': 'Traduction indisponible',
   'messages.translateFailedTitle': 'Traduction impossible',
   'messages.translateFailed': 'Impossible de traduire ce message pour le moment.',

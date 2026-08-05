@@ -413,7 +413,11 @@ export function MessageBubble({
         >
           {translation.showOriginal
             ? messagesText(t, 'messages.showTranslation')
-            : `${messagesText(t, 'messages.autoTranslated')} · ${messagesText(t, 'messages.showOriginal')}`}
+            : translation.sourceLang
+              ? messagesText(t, 'messages.autoTranslatedFrom', {
+                  language: languageLabel(translation.sourceLang),
+                }) + ` · ${messagesText(t, 'messages.showOriginal')}`
+              : `${messagesText(t, 'messages.autoTranslated')} · ${messagesText(t, 'messages.showOriginal')}`}
         </button>
       ) : null}
 

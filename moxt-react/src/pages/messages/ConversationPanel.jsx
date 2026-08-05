@@ -23,9 +23,9 @@ import {
 } from '../../features/communications/conversationTimeline'
 import { messagesText } from '../../features/communications/messagesI18n'
 import {
-  detectMessageLanguage,
-  translateLanguageOptionsForUser,
   languageLabel,
+  resolveMessageSourceLanguage,
+  translateLanguageOptionsForUser,
 } from '../../features/communications/messageTranslate'
 import {
   canAutoTranslateMessages,
@@ -576,12 +576,15 @@ export function ConversationPanel({
                           onTranslate={messageTranslateEnabled(message) ? handleTranslateMessage : undefined}
                           showTranslateIcon={messageTranslateEnabled(message)}
                           translateLanguageOptions={translateLanguageOptions}
-                          translateHintLanguage={
-                            detectMessageLanguage(message.text) &&
-                            detectMessageLanguage(message.text) !== language
-                              ? languageLabel(detectMessageLanguage(message.text))
+                          translateHintLanguage={(() => {
+                            const source = resolveMessageSourceLanguage({
+                              text: message.text,
+                              peerLanguage,
+                            })
+                            return source && source !== language
+                              ? languageLabel(source)
                               : null
-                          }
+                          })()}
                           translation={translationById[message.id] || null}
                           translating={translatingId === message.id}
                           autoTranslateEnabled={canAutoTranslateMessages(user)}

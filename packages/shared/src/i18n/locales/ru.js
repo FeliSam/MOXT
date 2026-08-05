@@ -676,6 +676,7 @@ export const ru = {
     showOriginal: "Показать оригинал",
     showTranslation: "Показать перевод",
     autoTranslated: "Переведено автоматически",
+    autoTranslatedFrom: "Переведено с {language}",
     translationUnavailable: "Перевод недоступен",
     translateFailedTitle: "Не удалось перевести",
     translateFailed: "Сейчас невозможно перевести это сообщение.",

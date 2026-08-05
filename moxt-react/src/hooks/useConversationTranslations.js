@@ -3,9 +3,9 @@ import { useDispatch } from 'react-redux'
 import { canAutoTranslateMessages, canShowManualTranslate } from '../config/messageTranslateFlags'
 import { messagesText } from '../features/communications/messagesI18n'
 import {
-  detectMessageLanguage,
   languageLabel,
   prefetchMessageTranslations,
+  resolveMessageSourceLanguage,
   shouldOfferMessageTranslation,
   translateMessagesBatch,
   translateToLanguage,
@@ -61,30 +61,34 @@ export function useConversationTranslations({
     setTranslatingId(pending[0]?.id || null)
 
     try {
-      const results = await translateMessagesBatch(
-        pending.map((message) => ({
-          messageId: message.id,
-          text: message.text,
-          targetLang: language,
-          sourceLang: detectMessageLanguage(message.text),
-        })),
-        { concurrency: AUTO_TRANSLATE_CONCURRENCY },
-      )
+          const results = await translateMessagesBatch(
+            pending.map((message) => ({
+              messageId: message.id,
+              text: message.text,
+              targetLang: language,
+              sourceLang: resolveMessageSourceLanguage({
+                text: message.text,
+                peerLanguage,
+              }),
+            })),
+            { concurrency: AUTO_TRANSLATE_CONCURRENCY },
+          )
 
-      if (!results.length) return
+          if (!results.length) return
 
-      setTranslationById((prev) => {
-        const next = { ...prev }
-        for (const row of results) {
-          if (next[row.messageId]?.translatedText) continue
-          next[row.messageId] = {
-            targetLang: row.targetLang,
-            translatedText: row.translatedText,
-            showOriginal: false,
-          }
-        }
-        return next
-      })
+          setTranslationById((prev) => {
+            const next = { ...prev }
+            for (const row of results) {
+              if (next[row.messageId]?.translatedText) continue
+              next[row.messageId] = {
+                targetLang: row.targetLang,
+                sourceLang: row.sourceLang || null,
+                translatedText: row.translatedText,
+                showOriginal: false,
+              }
+            }
+            return next
+          })
     } catch {
       // Échec silencieux — original conservé
     } finally {
@@ -226,12 +230,14 @@ export function useConversationTranslations({
         messageId: message.id,
         text,
         targetLang: lang,
-        sourceLang: detectMessageLanguage(text),
+        peerLanguage,
+        sourceLang: resolveMessageSourceLanguage({ text, peerLanguage }),
       })
       setTranslationById((prev) => ({
         ...prev,
         [message.id]: {
           targetLang: result.targetLang,
+          sourceLang: result.sourceLang || null,
           translatedText: result.translatedText,
           showOriginal: false,
         },

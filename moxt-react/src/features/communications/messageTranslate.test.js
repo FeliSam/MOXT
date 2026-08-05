@@ -4,8 +4,10 @@ import {
   detectMessageLanguage,
   getCachedTranslation,
   pickTranslatedTextForTest,
+  resolveMessageSourceLanguage,
   setCachedTranslation,
   shouldAutoTranslate,
+  shouldOfferMessageTranslation,
   translateLanguageOptionsForUser,
   translationCacheKey,
   TRANSLATE_BATCH_SIZE,
@@ -21,14 +23,32 @@ describe('messageTranslate helpers', () => {
     expect(detectMessageLanguage('Bonjour, comment ça va ?')).toBe('fr')
     expect(detectMessageLanguage('Hello, how are you today?')).toBe('en')
     expect(detectMessageLanguage('Привет, как дела?')).toBe('ru')
-    expect(detectMessageLanguage('OK')).toBeNull()
+    expect(detectMessageLanguage('merci')).toBe('fr')
+    expect(detectMessageLanguage('OK')).toBe('en')
+    expect(detectMessageLanguage('??')).toBeNull()
   })
 
-  it('auto-traduit seulement si langue message ≠ langue UI', () => {
+  it('utilise la langue interlocuteur si détection locale impossible', () => {
+    expect(resolveMessageSourceLanguage({ text: '??? 123', peerLanguage: 'en' })).toBe('en')
+    expect(resolveMessageSourceLanguage({ text: 'Hello friend', peerLanguage: 'fr' })).toBe('en')
+  })
+
+  it('auto-traduit si langue message ≠ langue UI', () => {
     expect(shouldAutoTranslate('Hello there friend', 'fr')).toBe(true)
     expect(shouldAutoTranslate('Bonjour tout le monde', 'fr')).toBe(false)
     expect(shouldAutoTranslate('Bonjour', 'fr', 'fr')).toBe(false)
-    expect(shouldAutoTranslate('OK', 'fr')).toBe(false)
+    expect(shouldAutoTranslate('???', 'fr', 'en')).toBe(true)
+    expect(shouldAutoTranslate('OK', 'fr')).toBe(true)
+  })
+
+  it('propose la traduction si interlocuteur parle une autre langue', () => {
+    expect(
+      shouldOfferMessageTranslation({
+        text: '???',
+        readerLanguage: 'fr',
+        peerLanguage: 'en',
+      }),
+    ).toBe(true)
   })
 
   it('propose les langues lecteur + russe pour les utilisateurs', () => {

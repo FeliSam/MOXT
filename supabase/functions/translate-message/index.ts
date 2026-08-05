@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeadersFor, corsPreflight } from '../_shared/cors.ts'
 import {
+  detectViaLibreTranslate,
   isSupportedTargetLang,
   translateViaLibreTranslate,
 } from '../_shared/libreTranslate.ts'
@@ -27,6 +28,7 @@ type TranslateResult = {
   messageId: string
   targetLang: string
   translatedText?: string
+  sourceLang?: string | null
   cached?: boolean
   error?: string
 }
@@ -102,6 +104,22 @@ async function cacheTranslation(
   })
 }
 
+async function resolveSourceLanguage(
+  text: string,
+  hintedSourceLang: string | null,
+): Promise<string | null> {
+  if (hintedSourceLang && isSupportedTranslationLang(hintedSourceLang)) {
+    return hintedSourceLang
+  }
+
+  const detected = await detectViaLibreTranslate(text)
+  if (detected.language && isSupportedTranslationLang(detected.language)) {
+    return detected.language
+  }
+
+  return null
+}
+
 async function resolveTranslation(
   admin: ReturnType<typeof createClient>,
   item: TranslateItem,
@@ -119,12 +137,15 @@ async function resolveTranslation(
     }
   }
 
-  const sourceLang =
+  const hintedSource =
     item.sourceLang && isSupportedTranslationLang(item.sourceLang) ? item.sourceLang : null
+  let sourceLang = await resolveSourceLanguage(text, hintedSource)
+
   if (sourceLang && sourceLang === item.targetLang) {
     return {
       messageId: item.messageId,
       targetLang: item.targetLang,
+      sourceLang,
       translatedText: text,
       cached: true,
     }
@@ -141,6 +162,7 @@ async function resolveTranslation(
     return {
       messageId: item.messageId,
       targetLang: item.targetLang,
+      sourceLang,
       translatedText: messageCached.translated_text,
       cached: true,
     }
@@ -149,19 +171,25 @@ async function resolveTranslation(
   const hash = await translationContentHash(text, item.targetLang)
   const { data: contentCached } = await admin
     .from('translation_content_cache')
-    .select('translated_text')
+    .select('translated_text, source_lang')
     .eq('content_hash', hash)
     .eq('target_lang', item.targetLang)
     .maybeSingle()
 
   if (contentCached?.translated_text) {
+    sourceLang = contentCached.source_lang || sourceLang
     await cacheTranslation(admin, item, contentCached.translated_text, sourceLang)
     return {
       messageId: item.messageId,
       targetLang: item.targetLang,
+      sourceLang,
       translatedText: contentCached.translated_text,
       cached: true,
     }
+  }
+
+  if (!sourceLang) {
+    sourceLang = await resolveSourceLanguage(text, null)
   }
 
   const result = await translateViaLibreTranslate(text, item.targetLang, sourceLang)
@@ -169,6 +197,7 @@ async function resolveTranslation(
     return {
       messageId: item.messageId,
       targetLang: item.targetLang,
+      sourceLang,
       error: result.error || 'Traduction vide',
     }
   }
@@ -177,6 +206,7 @@ async function resolveTranslation(
   return {
     messageId: item.messageId,
     targetLang: item.targetLang,
+    sourceLang,
     translatedText: result.text,
     cached: false,
   }
@@ -281,6 +311,7 @@ Deno.serve(async (req) => {
         {
           translatedText: single.translatedText,
           targetLang: single.targetLang,
+          sourceLang: single.sourceLang ?? null,
           cached: single.cached ?? false,
         },
         200,

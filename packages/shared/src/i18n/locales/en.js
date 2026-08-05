@@ -677,6 +677,7 @@ export const en = {
     showOriginal: "Show original",
     showTranslation: "Show translation",
     autoTranslated: "Auto-translated",
+    autoTranslatedFrom: "Translated from {language}",
     translationUnavailable: "Translation unavailable",
     translateFailedTitle: "Translation failed",
     translateFailed: "Unable to translate this message right now.",

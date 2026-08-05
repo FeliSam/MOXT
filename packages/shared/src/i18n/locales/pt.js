@@ -536,6 +536,7 @@ export const pt = {
     showOriginal: "Mostrar original",
     showTranslation: "Mostrar tradução",
     autoTranslated: "Traduzido automaticamente",
+    autoTranslatedFrom: "Traduzido do {language}",
     translationUnavailable: "Tradução indisponível",
     translateFailedTitle: "Tradução impossível",
     translateFailed: "Não é possível traduzir esta mensagem de momento.",

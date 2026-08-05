@@ -85,14 +85,39 @@ const WORD_MARKERS = {
   pt: /\b(o|a|os|as|um|uma|que|por|para|com|como|olá|obrigado|obrigada|está|estão|não|você|voce|muito|bem|sim|também|tambem)\b/gi,
 }
 
+const SHORT_PHRASES = {
+  fr: ['merci', 'bonjour', 'salut', 'coucou', 'oui', 'non', 'bien', 'svp', 'stp', 'daccord', "d'accord"],
+  en: ['thanks', 'thank you', 'hello', 'hi', 'hey', 'yes', 'no', 'please', 'ok', 'okay', 'sure'],
+  es: ['hola', 'gracias', 'si', 'sí', 'no', 'buenos dias', 'buenas', 'vale'],
+  pt: ['ola', 'olá', 'obrigado', 'obrigada', 'sim', 'nao', 'não', 'valeu'],
+  ru: ['привет', 'спасибо', 'да', 'нет', 'хорошо', 'ок', 'окей'],
+}
+
 function countMatches(pattern, text) {
   const matches = text.match(pattern)
   return matches ? matches.length : 0
 }
 
+function detectShortPhraseLanguage(text) {
+  const normalized = String(text || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s'-]/gu, ' ')
+    .replace(/\s+/g, ' ')
+  if (!normalized) return null
+
+  for (const [lang, phrases] of Object.entries(SHORT_PHRASES)) {
+    if (phrases.includes(normalized)) return lang
+  }
+  return null
+}
+
 export function detectMessageLanguage(text) {
   const sample = String(text || '').trim()
-  if (sample.length < 3) return null
+  if (sample.length < 2) return null
+
+  const short = detectShortPhraseLanguage(sample)
+  if (short) return short
 
   const cleaned = sample
     .replace(/https?:\/\/\S+/gi, ' ')
@@ -125,6 +150,13 @@ export function detectMessageLanguage(text) {
   return SUPPORTED_LANGUAGES.includes(topLang) ? topLang : null
 }
 
+/** Langue source estimée : détection locale, puis langue préférée de l'interlocuteur. */
+export function resolveMessageSourceLanguage({ text, peerLanguage }) {
+  const detected = detectMessageLanguage(text)
+  if (detected) return detected
+  return normalizeLanguage(peerLanguage)
+}
+
 export function normalizeLanguage(code) {
   const lang = String(code || '').toLowerCase()
   return SUPPORTED_LANGUAGES.includes(lang) ? lang : null
@@ -132,19 +164,23 @@ export function normalizeLanguage(code) {
 
 export function shouldOfferMessageTranslation({ text, readerLanguage, peerLanguage }) {
   const trimmed = String(text || '').trim()
-  if (trimmed.length < 3 || trimmed.length > MAX_AUTO_CHARS) return false
+  if (trimmed.length < 2 || trimmed.length > MAX_AUTO_CHARS) return false
 
   const reader = normalizeLanguage(readerLanguage)
   if (!reader) return false
 
-  const detected = detectMessageLanguage(trimmed)
-  if (!detected) return false
-  if (detected === reader) return false
+  const source = resolveMessageSourceLanguage({ text: trimmed, peerLanguage })
+  if (source) {
+    if (source === reader) return false
+    const peer = normalizeLanguage(peerLanguage)
+    if (peer && reader === peer && source === peer) return false
+    return true
+  }
 
   const peer = normalizeLanguage(peerLanguage)
-  if (peer && reader === peer && detected === peer) return false
+  if (peer && peer !== reader) return true
 
-  return true
+  return false
 }
 
 export function shouldAutoTranslate(text, readerLanguage, peerLanguage) {
@@ -204,6 +240,7 @@ function applyTranslateResults(results) {
     applied.push({
       messageId: row.messageId,
       targetLang: row.targetLang,
+      sourceLang: row.sourceLang || null,
       translatedText: row.translatedText,
       cached: Boolean(row.cached),
     })
@@ -252,6 +289,7 @@ async function invokeTranslateBatch(items) {
       {
         messageId: item.messageId,
         targetLang: item.targetLang,
+        sourceLang: data.sourceLang || item.sourceLang || null,
         translatedText: data.translatedText,
         cached: data.cached,
       },
@@ -295,7 +333,13 @@ export async function translateMessagesBatch(entries, { concurrency = TRANSLATE_
   return results
 }
 
-export async function translateToLanguage({ messageId, text, targetLang, sourceLang = null }) {
+export async function translateToLanguage({
+  messageId,
+  text,
+  targetLang,
+  sourceLang = null,
+  peerLanguage = null,
+}) {
   const trimmed = String(text || '').trim()
   const lang = String(targetLang || '').trim().toLowerCase()
   if (!trimmed || !messageId) throw new Error('empty')
@@ -307,9 +351,12 @@ export async function translateToLanguage({ messageId, text, targetLang, sourceL
     return { translatedText: cached.translatedText, targetLang: lang, cached: true }
   }
 
-  const detected = sourceLang || detectMessageLanguage(trimmed)
+  const detected = resolveMessageSourceLanguage({
+    text: trimmed,
+    peerLanguage,
+  })
   const [result] = await translateMessagesBatch([
-    { messageId, text: trimmed, targetLang: lang, sourceLang: detected },
+    { messageId, text: trimmed, targetLang: lang, sourceLang: sourceLang || detected },
   ])
   if (!result?.translatedText) throw new Error('empty_translation')
   return result
