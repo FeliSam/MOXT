@@ -9,6 +9,7 @@ import { LuSearch } from 'react-icons/lu'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useDeferredValue } from 'react'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { useSearchParams } from 'react-router-dom'
+import { resetMessagesScroll } from '../hooks/useScrollToTopOnStep'
 import { messageSuggestionsForConversation } from '../features/communications/messageSuggestions'
 import { getConversationPeer } from '../features/communications/conversationDisplay'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -128,6 +129,14 @@ export function MessagesPage() {
   useMessagesRealtimeSync(
     activeId && activeId !== ASSISTANT_ID ? activeId : null,
   )
+
+  useLayoutEffect(() => {
+    resetMessagesScroll()
+    if (listScrollRef.current) {
+      listScrollRef.current.scrollTop = 0
+      listScrollYRef.current = 0
+    }
+  }, [])
 
   useLayoutEffect(() => {
     const immersive = Boolean(activeId) && !desktop

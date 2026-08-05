@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect } from 'react'
 import { closeSidebar } from '../../features/ui/uiSlice'
 import { useContentLifecycle } from '../../features/content/useContentLifecycle'
 import { useKeyboardInset } from '../../hooks/useKeyboardInset'
+import { resetMessagesScroll } from '../../hooks/useScrollToTopOnStep'
 import { AppThemeScope } from './AppThemeScope'
 import { BottomNavigation } from './BottomNavigation'
 import { Header } from './Header'
@@ -55,6 +56,7 @@ export function AppLayout({ children }) {
       return undefined
     }
     root.classList.add('messages-route-lock')
+    resetMessagesScroll()
     return () => {
       root.classList.remove('messages-route-lock')
     }

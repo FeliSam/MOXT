@@ -23,9 +23,25 @@ export function measureKeyboardInset(vv) {
 }
 
 /** @param {HTMLElement} root */
+export function isMessagesScrollLock(root) {
+  return root.classList.contains('messages-route-lock')
+}
+
+/** @param {HTMLElement} root */
 export function syncVisualViewportMetrics(root, vv) {
+  const keyboardOpen = root.classList.contains('keyboard-open')
+  if (isMessagesScrollLock(root) && !keyboardOpen) {
+    root.style.setProperty('--visual-viewport-offset-top', '0px')
+    return
+  }
   const offsetTop = Math.max(0, Math.round(vv?.offsetTop ?? 0))
   root.style.setProperty('--visual-viewport-offset-top', `${offsetTop}px`)
+}
+
+/** @param {HTMLElement} root */
+function syncViewportBottomGap(root, raw, { keyboardOpen = false } = {}) {
+  const gap = isMessagesScrollLock(root) || keyboardOpen ? 0 : raw
+  root.style.setProperty('--viewport-bottom-gap', `${gap}px`)
 }
 
 export function shouldPinThreadHeader() {
@@ -41,16 +57,15 @@ export function applyKeyboardInsetState(root, raw, { editing = false } = {}) {
   const open = editing && raw >= KEYBOARD_OPEN_PX
   root.style.setProperty('--keyboard-inset', open ? `${raw}px` : '0px')
   root.classList.toggle('keyboard-open', open)
-  root.style.setProperty('--viewport-bottom-gap', open ? '0px' : `${raw}px`)
+  syncViewportBottomGap(root, raw, { keyboardOpen: open })
 }
 
 /** @param {HTMLElement} root */
 export function forceKeyboardClosed(root) {
   syncVisualViewportMetrics(root, window.visualViewport)
-  const raw = measureKeyboardInset(window.visualViewport)
   root.style.setProperty('--keyboard-inset', '0px')
   root.classList.remove('keyboard-open')
-  root.style.setProperty('--viewport-bottom-gap', `${raw}px`)
+  syncViewportBottomGap(root, measureKeyboardInset(window.visualViewport))
 }
 
 const blurSyncTimers = new Set()

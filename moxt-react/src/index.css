@@ -534,6 +534,11 @@ html.messages-route-lock #root {
   overflow: hidden;
 }
 
+/* Messagerie : pas de compensation scroll document (catalogues scrollent la page). */
+html.messages-route-lock .bottom-nav-shell {
+  transform: none;
+}
+
 .messages-shell {
   overscroll-behavior: none;
 }
@@ -1765,6 +1770,11 @@ html.messages-route-lock #root {
 @media (max-width: 1023px) {
   main {
     scroll-padding-bottom: var(--bottom-nav-clearance-loose, calc(8rem + env(safe-area-inset-bottom, 0px)));
+  }
+
+  html.messages-route-lock main,
+  html.messages-route-lock #main-content {
+    scroll-padding-bottom: 0;
   }
 
   .message-touch-target {

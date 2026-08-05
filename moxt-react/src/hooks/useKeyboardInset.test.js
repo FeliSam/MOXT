@@ -3,6 +3,7 @@ import {
   KEYBOARD_OPEN_PX,
   applyKeyboardInsetState,
   forceKeyboardClosed,
+  isMessagesScrollLock,
   measureKeyboardInset,
 } from './useKeyboardInset.js'
 
@@ -33,5 +34,16 @@ describe('useKeyboardInset helpers', () => {
     forceKeyboardClosed(root)
     expect(root.classList.contains('keyboard-open')).toBe(false)
     expect(root.style.getPropertyValue('--keyboard-inset')).toBe('0px')
+  })
+
+  it('ignore le gap viewport sur la route messages', () => {
+    const root = document.createElement('html')
+    root.classList.add('messages-route-lock')
+    applyKeyboardInsetState(root, KEYBOARD_OPEN_PX + 40, { editing: false })
+    expect(root.style.getPropertyValue('--viewport-bottom-gap')).toBe('0px')
+    expect(root.style.getPropertyValue('--visual-viewport-offset-top')).toBe('0px')
+    forceKeyboardClosed(root)
+    expect(root.style.getPropertyValue('--viewport-bottom-gap')).toBe('0px')
+    expect(isMessagesScrollLock(root)).toBe(true)
   })
 })
