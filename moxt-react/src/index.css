@@ -460,26 +460,41 @@ html.keyboard-open .bottom-nav-shell {
   }
 }
 
-/* Mobile /messages : composer fixed au-dessus de la bottom nav (même pilule que l'accueil). */
+/* Mobile /messages : composer fixed — au-dessus de la nav (liste) ou en bas (thread). */
 @media (max-width: 1023px) {
   html.messages-route-lock .message-composer-shell {
     position: fixed;
     left: 0;
     right: 0;
     z-index: 40;
+  }
+
+  html.messages-route-lock:not(.messages-thread-immersive) .message-composer-shell {
     bottom: var(--bottom-nav-clearance);
+  }
+
+  html.messages-thread-immersive .message-composer-shell {
+    bottom: 0;
   }
 
   html.keyboard-open.messages-route-lock .message-composer-shell {
     bottom: var(--composer-keyboard-bottom, 0px);
   }
 
-  html.messages-route-lock [data-testid='message-scroll-region'] {
+  html.messages-route-lock:not(.messages-thread-immersive) [data-testid='message-scroll-region'] {
     padding-bottom: calc(var(--message-composer-offset, 120px) + var(--bottom-nav-clearance) + 0.75rem);
   }
 
-  html.messages-route-lock .message-scroll-fab {
+  html.messages-thread-immersive [data-testid='message-scroll-region'] {
+    padding-bottom: calc(var(--message-composer-offset, 120px) + 0.75rem);
+  }
+
+  html.messages-route-lock:not(.messages-thread-immersive) .message-scroll-fab {
     bottom: calc(var(--message-composer-offset, 120px) + var(--bottom-nav-clearance) + 0.75rem);
+  }
+
+  html.messages-thread-immersive .message-scroll-fab {
+    bottom: calc(var(--message-composer-offset, 120px) + 0.75rem);
   }
 }
 
@@ -553,9 +568,13 @@ html.messages-route-lock .bottom-nav-shell {
   touch-action: pan-y;
 }
 
-/* Conversation mobile ouverte : masquer le header app (pas la bottom nav — même pilule partout).
-   `.messages-thread-immersive` est aussi posé sur <html> pour le header portalisé. */
+/* Conversation mobile ouverte : header app + bottom nav masqués (nav portalisée sur <html>). */
 @media (max-width: 1023px) {
+  html.messages-thread-immersive {
+    --bottom-nav-clearance: 0px;
+    --bottom-nav-clearance-loose: 0px;
+  }
+
   html.messages-thread-immersive .messages-shell,
   html.messages-thread-immersive #main-content,
   html.messages-thread-immersive [data-testid='messages-viewport'],
@@ -565,7 +584,9 @@ html.messages-route-lock .bottom-nav-shell {
     height: 100%;
   }
 
-  .messages-thread-immersive .app-top-header {
+  .messages-thread-immersive .app-top-header,
+  html.messages-thread-immersive .bottom-nav-shell,
+  .messages-thread-immersive .bottom-nav-shell {
     display: none !important;
     pointer-events: none !important;
     visibility: hidden !important;
@@ -574,6 +595,11 @@ html.messages-route-lock .bottom-nav-shell {
     padding: 0 !important;
     margin: 0 !important;
     border: 0 !important;
+  }
+
+  .messages-thread-immersive main,
+  html.messages-thread-immersive main {
+    padding: 0 !important;
   }
 
   .messages-thread-immersive .message-thread-header {
