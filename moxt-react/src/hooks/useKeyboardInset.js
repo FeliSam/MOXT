@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 
 /** Seuil anti faux-positifs (chrome Safari / URL bar ≈ 40–100px). */
 export const KEYBOARD_OPEN_PX = 180
@@ -23,7 +23,21 @@ export function measureKeyboardInset(vv) {
 }
 
 /** @param {HTMLElement} root */
+export function syncVisualViewportMetrics(root, vv) {
+  const offsetTop = Math.max(0, Math.round(vv?.offsetTop ?? 0))
+  root.style.setProperty('--visual-viewport-offset-top', `${offsetTop}px`)
+}
+
+export function shouldPinThreadHeader() {
+  return (
+    document.documentElement.classList.contains('keyboard-open') ||
+    isEditableField(document.activeElement)
+  )
+}
+
+/** @param {HTMLElement} root */
 export function applyKeyboardInsetState(root, raw, { editing = false } = {}) {
+  syncVisualViewportMetrics(root, window.visualViewport)
   const open = editing && raw >= KEYBOARD_OPEN_PX
   root.style.setProperty('--keyboard-inset', open ? `${raw}px` : '0px')
   root.classList.toggle('keyboard-open', open)
@@ -32,6 +46,7 @@ export function applyKeyboardInsetState(root, raw, { editing = false } = {}) {
 
 /** @param {HTMLElement} root */
 export function forceKeyboardClosed(root) {
+  syncVisualViewportMetrics(root, window.visualViewport)
   const raw = measureKeyboardInset(window.visualViewport)
   root.style.setProperty('--keyboard-inset', '0px')
   root.classList.remove('keyboard-open')
@@ -76,26 +91,29 @@ export function syncKeyboardInsetAfterBlur() {
  * iOS peut laisser visualViewport « petit » après fermeture : on ignore sans focus.
  */
 export function useMessageComposerBottom() {
-  const [bottomPx, setBottomPx] = useState(0)
-
   useEffect(() => {
+    const root = document.documentElement
     const vv = window.visualViewport
 
+    function setComposerKeyboardBottom(px) {
+      root.style.setProperty('--composer-keyboard-bottom', `${px}px`)
+    }
+
     function syncComposer() {
-      setBottomPx(resolveComposerBottomPx(vv))
+      const px = resolveComposerBottomPx(vv)
+      setComposerKeyboardBottom(px)
     }
 
     function syncAll() {
-      const root = document.documentElement
       const editing = isEditableField(document.activeElement)
       const raw = measureKeyboardInset(vv)
       if (!editing) {
         forceKeyboardClosed(root)
-        setBottomPx(0)
+        setComposerKeyboardBottom(0)
         return
       }
       applyKeyboardInsetState(root, raw, { editing: true })
-      setBottomPx(raw >= KEYBOARD_OPEN_PX ? raw : 0)
+      setComposerKeyboardBottom(raw >= KEYBOARD_OPEN_PX ? raw : 0)
     }
 
     function onFocusIn(event) {
@@ -104,7 +122,7 @@ export function useMessageComposerBottom() {
 
     function onFocusOut(event) {
       if (!isEditableField(event.target)) return
-      setBottomPx(0)
+      setComposerKeyboardBottom(0)
       syncKeyboardInsetAfterBlur()
       BLUR_SYNC_DELAYS_MS.forEach((ms) => {
         setTimeout(syncComposer, ms)
@@ -126,10 +144,9 @@ export function useMessageComposerBottom() {
       document.removeEventListener('focusout', onFocusOut, true)
       vv?.removeEventListener('resize', syncAll)
       vv?.removeEventListener('scroll', syncAll)
+      root.style.removeProperty('--composer-keyboard-bottom')
     }
   }, [])
-
-  return bottomPx
 }
 
 /**
@@ -141,6 +158,7 @@ export function useKeyboardInset() {
     const vv = window.visualViewport
 
     function update() {
+      syncVisualViewportMetrics(root, vv)
       const editing = isEditableField(document.activeElement)
       const raw = measureKeyboardInset(vv)
       if (!editing) {
@@ -177,6 +195,7 @@ export function useKeyboardInset() {
       blurSyncTimers.clear()
       root.style.removeProperty('--keyboard-inset')
       root.style.removeProperty('--viewport-bottom-gap')
+      root.style.removeProperty('--visual-viewport-offset-top')
       root.classList.remove('keyboard-open')
     }
   }, [])

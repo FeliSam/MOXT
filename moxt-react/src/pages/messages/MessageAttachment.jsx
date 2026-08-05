@@ -203,7 +203,11 @@ export function MessageAttachment({ attachment, mine }) {
             <span className="message-status-badge">{messagesText(t, 'messages.statusBadge')}</span>
           ) : null}
           {reactionEmoji ? (
-            <span className="message-status-reaction-emoji" aria-hidden="true">
+            <span
+              key={reactionEmoji}
+              className="message-status-reaction-emoji"
+              aria-hidden="true"
+            >
               {reactionEmoji}
             </span>
           ) : null}

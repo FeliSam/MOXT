@@ -15,6 +15,7 @@ import { ASSISTANT_SUGGESTION_KEYS, messagesText } from './messagesI18n'
 import { llmAssistantProvider } from './llmAssistantProvider'
 import { moxtiAssistantProvider } from './moxtiAssistantProvider'
 import { shortenFileName } from '../../services/uploadProgress'
+import { syncKeyboardInsetAfterBlur, shouldPinThreadHeader, useMessageComposerBottom } from '../../hooks/useKeyboardInset'
 
 const HEADER_ICON_STROKE = 1.48
 
@@ -25,6 +26,7 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
   const storageKey = `moxt-ai-assistant-${userId}`
   const messageListRef = useRef(null)
   const threadHeaderRef = useRef(null)
+  const composerShellRef = useRef(null)
   const threadScrollYRef = useRef(0)
   const searchIndex = useSelector(selectSearchIndex)
   const { language, t } = useLanguage()
@@ -45,6 +47,8 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
   const [showAllQuestions, setShowAllQuestions] = useState(false)
   const [threadHeaderVisible, setThreadHeaderVisible] = useState(true)
   const [threadHeaderOffset, setThreadHeaderOffset] = useState(68)
+  const [composerOffset, setComposerOffset] = useState(120)
+  useMessageComposerBottom()
 
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify(messages.slice(-30)))
@@ -68,6 +72,19 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
     return () => observer.disconnect()
   }, [showBack])
 
+  useLayoutEffect(() => {
+    const shell = composerShellRef.current
+    if (!shell || typeof ResizeObserver === 'undefined') return
+    const sync = () => {
+      const next = Math.ceil(shell.getBoundingClientRect().height)
+      setComposerOffset((prev) => (prev === next ? prev : next))
+    }
+    sync()
+    const observer = new ResizeObserver(sync)
+    observer.observe(shell)
+    return () => observer.disconnect()
+  }, [adminCompose, attachment, loading])
+
   useEffect(() => {
     const messageList = messageListRef.current
     if (!messageList) return undefined
@@ -78,6 +95,10 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
       const y = messageList.scrollTop
       const delta = y - threadScrollYRef.current
       threadScrollYRef.current = y
+      if (shouldPinThreadHeader()) {
+        setThreadHeaderVisible(true)
+        return
+      }
       if (distanceFromBottom < 120 || y <= 8) {
         setThreadHeaderVisible(true)
         return
@@ -228,7 +249,10 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden overscroll-none bg-transparent">
-      <div className="message-thread-canvas relative flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div
+        className="message-thread-canvas relative flex min-h-0 flex-1 flex-col overflow-hidden"
+        style={{ '--message-composer-offset': `${composerOffset}px` }}
+      >
         <header
           ref={threadHeaderRef}
           className={`message-thread-header absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-1.5 bg-transparent px-3 py-2.5 opacity-[0.89] backdrop-blur-md transition-transform duration-300 ease-out sm:gap-2 sm:px-4 lg:px-5 ${
@@ -290,7 +314,7 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
 
       <div
         ref={messageListRef}
-        className="scrollbar-hidden min-h-0 flex-1 overscroll-contain overflow-y-auto bg-transparent px-4 pb-4 sm:px-6 sm:pb-6"
+        className="scrollbar-hidden min-h-0 flex-1 overscroll-contain overflow-y-auto bg-transparent px-4 sm:px-6"
         style={{ paddingTop: `calc(${threadHeaderOffset}px + 0.75rem)` }}
         data-testid="message-scroll-region"
       >
@@ -415,7 +439,8 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
       </div>
 
       <div
-        className="message-composer-shell relative z-10 shrink-0 bg-[var(--app-surface)] p-3 shadow-[0_-10px_30px_rgb(15_23_42/0.06)] sm:p-4"
+        ref={composerShellRef}
+        className="message-composer-shell z-10 shrink-0 bg-[var(--app-surface)] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] shadow-[0_-10px_30px_rgb(15_23_42/0.06)] sm:p-4 sm:pb-[max(1rem,env(safe-area-inset-bottom,0px))] max-lg:bottom-auto"
         data-testid="message-composer"
       >
         {attachment ? (
@@ -455,6 +480,13 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
             rows={1}
             disabled={adminCompose}
             onChange={(event) => setQuestion(event.target.value)}
+            onBlur={() => {
+              syncKeyboardInsetAfterBlur()
+              setThreadHeaderVisible(true)
+            }}
+            onFocus={() => {
+              setThreadHeaderVisible(true)
+            }}
             placeholder={
               adminCompose
                 ? messagesText(t, 'messages.assistant.adminComposeLocked')

@@ -18,7 +18,7 @@ import {
 import { LuEllipsisVertical, LuExternalLink, LuSearch, LuX } from 'react-icons/lu'
 import { Link } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
-import { syncKeyboardInsetAfterBlur, useMessageComposerBottom } from '../../hooks/useKeyboardInset'
+import { syncKeyboardInsetAfterBlur, shouldPinThreadHeader, useMessageComposerBottom } from '../../hooks/useKeyboardInset'
 import { useLanguage } from '../../contexts/useLanguage'
 import { UploadProgress } from '../../components/ui/UploadProgress'
 import { shortenFileName } from '../../services/uploadProgress'
@@ -174,7 +174,7 @@ export function ConversationPanel({
   const [threadQuery, setThreadQuery] = useState('')
   const [showScrollFab, setShowScrollFab] = useState(false)
   const [composerOffset, setComposerOffset] = useState(120)
-  const composerBottomPx = useMessageComposerBottom()
+  useMessageComposerBottom()
   const [attachMenuOpen, setAttachMenuOpen] = useState(false)
   const [contactPickerOpen, setContactPickerOpen] = useState(false)
   const [translationById, setTranslationById] = useState({})
@@ -494,6 +494,10 @@ export function ConversationPanel({
       const y = messageList.scrollTop
       const delta = y - threadScrollYRef.current
       threadScrollYRef.current = y
+      if (shouldPinThreadHeader()) {
+        setThreadHeaderVisible(true)
+        return
+      }
       if (threadSearchOpen || distanceFromBottom < 120 || y <= 8) {
         setThreadHeaderVisible(true)
         return
@@ -745,7 +749,6 @@ export function ConversationPanel({
             paddingTop: threadSearchOpen
               ? '0.75rem'
               : `calc(${threadHeaderOffset}px + 0.35rem)`,
-            paddingBottom: `calc(${composerOffset}px + 0.75rem)`,
           }}
           data-testid="message-scroll-region"
         >
@@ -951,7 +954,6 @@ export function ConversationPanel({
           <button
             type="button"
             className="message-scroll-fab"
-            style={{ bottom: `calc(${composerOffset}px + 0.75rem)` }}
             onClick={scrollToBottom}
             aria-label={t("messages.scrollToBottom")}
           >
@@ -962,7 +964,6 @@ export function ConversationPanel({
       <div
         ref={composerShellRef}
         className="message-composer-shell absolute inset-x-0 bottom-0 z-20 border-t-0 bg-transparent p-0 max-lg:bottom-auto"
-        style={{ bottom: composerBottomPx }}
         data-testid="message-composer"
       >
         {!blocked && suggestionsEnabled && suggestions.length ? (
@@ -1245,6 +1246,10 @@ export function ConversationPanel({
             }}
             onBlur={() => {
               syncKeyboardInsetAfterBlur()
+              setThreadHeaderVisible(true)
+            }}
+            onFocus={() => {
+              setThreadHeaderVisible(true)
             }}
           />
           <MessageSendButton

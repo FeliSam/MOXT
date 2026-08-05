@@ -60,7 +60,7 @@ export function AppLayout({ children }) {
     }
   }, [isMessagesRoute])
 
-  // Class on <html> so portaled bottom-nav (document.body) still hides in immersive chat.
+  // Class on <html> so portaled app header hides in immersive chat (bottom nav stays visible).
   useLayoutEffect(() => {
     const root = document.documentElement
     root.classList.toggle('messages-thread-immersive', hideAppChrome)
@@ -110,11 +110,7 @@ export function AppLayout({ children }) {
           tabIndex={-1}
           className={`mx-auto w-full min-w-0 max-w-[96rem] overflow-x-clip ${
             isMessagesRoute
-              ? `flex min-h-0 flex-1 flex-col overflow-hidden overscroll-none ${
-                  hideAppChrome
-                    ? 'max-lg:p-0 lg:px-8 lg:py-8'
-                    : 'px-0 pt-0 pb-[var(--bottom-nav-clearance)] sm:pb-[calc(6rem+env(safe-area-inset-bottom,0px))] lg:px-8 lg:py-8'
-                }`
+              ? 'flex min-h-0 flex-1 flex-col overflow-hidden overscroll-none px-0 pt-0 pb-[var(--bottom-nav-clearance)] lg:px-8 lg:py-8'
               : 'p-4 pb-[var(--bottom-nav-clearance-loose)] sm:p-6 sm:pb-[var(--bottom-nav-clearance-loose)] lg:px-8 lg:py-8'
           }`}
         >
@@ -134,9 +130,7 @@ export function AppLayout({ children }) {
           </div>
         </main>
       </div>
-      {/* Toujours monté : la visibilité pendant un thread immersif est gérée en CSS
-          (.messages-thread-immersive .bottom-nav-shell) pour éviter un remount qui
-          fait "réapparaître"/sauter la barre fixe au mauvais endroit du scroll. */}
+      {/* Toujours monté : même instance / même style pilule sur toutes les routes mobile. */}
       <BottomNavigation />
       <PullToRefreshIndicator disabled={hideAppChrome || isMessagesRoute} />
       <WelcomeGate />
