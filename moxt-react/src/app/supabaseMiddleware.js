@@ -423,6 +423,43 @@ async function withRetry(fn, maxAttempts = 3) {
   throw lastError
 }
 
+const markReadDebounceByConversation = new Map()
+const MARK_READ_RPC_DEBOUNCE_MS = 400
+
+async function persistMarkConversationRead(payload, state) {
+  const conversation = state.communications.conversations.find(
+    (c) => c.id === payload.conversationId,
+  )
+  if (!conversation) return
+
+  const { error } = await supabase.rpc('moxt_mark_conversation_read', {
+    p_conversation_id: payload.conversationId,
+  })
+  if (error) {
+    console.warn('[Supabase] markConversationRead RPC:', error.message)
+    try {
+      await syncConversationRow(state, payload.conversationId)
+    } catch (fallbackError) {
+      console.warn('[Supabase] markConversationRead fallback:', fallbackError?.message)
+    }
+  }
+}
+
+function scheduleMarkConversationRead(payload, getState) {
+  const conversationId = payload.conversationId
+  const existing = markReadDebounceByConversation.get(conversationId)
+  if (existing) clearTimeout(existing.timer)
+
+  markReadDebounceByConversation.set(conversationId, {
+    payload,
+    timer: setTimeout(() => {
+      markReadDebounceByConversation.delete(conversationId)
+      void withRetry(() => persistMarkConversationRead(payload, getState()))
+    }, MARK_READ_RPC_DEBOUNCE_MS),
+  })
+  return Promise.resolve()
+}
+
 // ─── Handlers par action ──────────────────────────────────────────────────────
 
 const handlers = {
@@ -844,25 +881,8 @@ const handlers = {
         .eq('id', conversation.id)
     }
   },
-  'communications/markConversationRead': async (payload, state) => {
-    const conversation = state.communications.conversations.find(
-      (c) => c.id === payload.conversationId,
-    )
-    if (!conversation) return
-
-    // RPC dédiée : évite l'upsert massif des messages (source du uuid = text).
-    const { error } = await supabase.rpc('moxt_mark_conversation_read', {
-      p_conversation_id: payload.conversationId,
-    })
-    if (error) {
-      // Fallback soft : ne pas toaster à chaque ouverture de chat.
-      console.warn('[Supabase] markConversationRead RPC:', error.message)
-      try {
-        await syncConversationRow(state, payload.conversationId)
-      } catch (fallbackError) {
-        console.warn('[Supabase] markConversationRead fallback:', fallbackError?.message)
-      }
-    }
+  'communications/markConversationRead': async (payload, _state, _dispatch, _beforeState, getState) => {
+    scheduleMarkConversationRead(payload, getState || (() => _state))
   },
   'communications/updateConversationContext': async (payload, state) => {
     await syncConversationRow(state, payload.id)
@@ -2025,7 +2045,9 @@ export const supabaseMiddleware = (store) => (next) => (action) => {
 
   const handler = handlers[action.type]
   if (handler && supabase) {
-    withRetry(() => handler(action.payload, store.getState(), store.dispatch, beforeState))
+    withRetry(() =>
+      handler(action.payload, store.getState(), store.dispatch, beforeState, store.getState),
+    )
       .then(() => {
         if (action.type === 'communications/sendMessage') {
           const messageId = action.payload?.message?.id

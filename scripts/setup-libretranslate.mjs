@@ -181,8 +181,12 @@ async function main() {
   }
 
   log('Secrets Supabase', 'LIBRETRANSLATE_URL')
-  const secretArgs = ['secrets', 'set', `LIBRETRANSLATE_URL=${ltUrl}`, '--linked']
-  if (runSupabase(secretArgs, supabaseEnv) !== 0) {
+  if (
+    runSupabase(
+      ['secrets', 'set', `LIBRETRANSLATE_URL=${ltUrl}`, '--project-ref', projectRef],
+      supabaseEnv,
+    ) !== 0
+  ) {
     console.error('\n✗ secrets set LIBRETRANSLATE_URL échoué.')
     process.exit(1)
   }
@@ -190,8 +194,10 @@ async function main() {
   if (ltKey) {
     log('Secrets Supabase', 'LIBRETRANSLATE_API_KEY')
     if (
-      runSupabase(['secrets', 'set', `LIBRETRANSLATE_API_KEY=${ltKey}`, '--linked'], supabaseEnv) !==
-      0
+      runSupabase(
+        ['secrets', 'set', `LIBRETRANSLATE_API_KEY=${ltKey}`, '--project-ref', projectRef],
+        supabaseEnv,
+      ) !== 0
     ) {
       console.error('\n✗ secrets set LIBRETRANSLATE_API_KEY échoué.')
       process.exit(1)
@@ -199,7 +205,12 @@ async function main() {
   }
 
   log('Edge Function', 'translate-message')
-  if (runSupabase(['functions', 'deploy', 'translate-message', '--linked'], supabaseEnv) !== 0) {
+  if (
+    runSupabase(
+      ['functions', 'deploy', 'translate-message', '--project-ref', projectRef],
+      supabaseEnv,
+    ) !== 0
+  ) {
     console.error('\n✗ Deploy translate-message échoué.')
     process.exit(1)
   }

@@ -15,7 +15,7 @@ import { flagEmoji } from '../config/flags'
 import { constrainPhone, phonePrefixForCallingCode } from '../config/phone'
 import { useLanguage } from '../contexts/useLanguage'
 import { createAuthSchemas } from '../features/auth/authSchemas'
-import { updateProfile } from '../features/auth/authSlice'
+import { updateProfile, setUser } from '../features/auth/authSlice'
 import { EmailVerificationCard } from '../features/security/EmailVerificationCard'
 import { addToast } from '../features/ui/uiSlice'
 import { useGeographyOptions } from '../hooks/useGeographyOptions'
@@ -95,6 +95,7 @@ export function PersonalInformationPage() {
         storageService.uploadAvatar(user.id, file, { onProgress }),
       )
       formik.setFieldValue('avatarUrl', url)
+      dispatch(setUser({ ...user, avatarUrl: url }))
       dispatch(
         addToast({
           title: t('profile.personal.toastAvatarTitle'),

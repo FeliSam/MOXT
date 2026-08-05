@@ -265,6 +265,14 @@ export function isRealtimeConnected() {
   return connectionStatus === 'subscribed'
 }
 
+export function shouldAttemptRealtimeReconnect() {
+  return (
+    connectionStatus === 'idle' ||
+    connectionStatus === 'closed' ||
+    connectionStatus === 'error'
+  )
+}
+
 export function getRealtimeConnectionStatus() {
   return connectionStatus
 }
@@ -648,7 +656,12 @@ export async function startRealtimeSubscription(userId, dispatch, getState, opti
   const authed = await syncRealtimeAuthToken()
   if (!authed) return
 
-  if (!force && channel && activeUserId === userId && connectionStatus === 'subscribed') {
+  if (
+    !force &&
+    channel &&
+    activeUserId === userId &&
+    (connectionStatus === 'subscribed' || connectionStatus === 'connecting')
+  ) {
     return
   }
 

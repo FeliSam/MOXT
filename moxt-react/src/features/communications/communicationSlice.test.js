@@ -21,6 +21,7 @@ import reducer, {
   setAll,
   setConversationMessages,
   shouldSkipMessageReload,
+  conversationNeedsInitialMessageLoad,
   toggleConversationBlock,
   toggleConversationMute,
   toggleConversationPin,
@@ -495,15 +496,20 @@ describe('communications', () => {
     expect(merged[1].text).toBe('Recent mis a jour')
   })
 
-  it('skip le rechargement quand le cache couvre le compteur distant', () => {
+  it('skip le rechargement quand le cache initial est deja charge', () => {
+    expect(shouldSkipMessageReload({ messagesLoaded: true })).toBe(true)
+    expect(shouldSkipMessageReload({ messagesLoaded: false })).toBe(false)
+  })
+
+  it('detecte le besoin de chargement initial', () => {
     expect(
-      shouldSkipMessageReload({ messagesLoaded: true, expectedCount: 12, loadedCount: 12 }),
+      conversationNeedsInitialMessageLoad({ messagesLoaded: false, messagesLoading: false }),
     ).toBe(true)
     expect(
-      shouldSkipMessageReload({ messagesLoaded: true, expectedCount: 20, loadedCount: 12 }),
+      conversationNeedsInitialMessageLoad({ messagesLoaded: true, messagesLoading: false }),
     ).toBe(false)
     expect(
-      shouldSkipMessageReload({ messagesLoaded: false, expectedCount: 5, loadedCount: 5 }),
+      conversationNeedsInitialMessageLoad({ messagesLoaded: false, messagesLoading: true }),
     ).toBe(false)
   })
 

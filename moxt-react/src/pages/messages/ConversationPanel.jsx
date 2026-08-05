@@ -18,6 +18,7 @@ import {
 import { LuEllipsisVertical, LuExternalLink, LuSearch, LuX } from 'react-icons/lu'
 import { Link } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
+import { syncKeyboardInsetAfterBlur } from '../../hooks/useKeyboardInset'
 import { useLanguage } from '../../contexts/useLanguage'
 import { UploadProgress } from '../../components/ui/UploadProgress'
 import { shortenFileName } from '../../services/uploadProgress'
@@ -1239,6 +1240,9 @@ export function ConversationPanel({
                   el.selectionStart = el.selectionEnd = start + 1
                 })
               }
+            }}
+            onBlur={() => {
+              syncKeyboardInsetAfterBlur()
             }}
           />
           <MessageSendButton

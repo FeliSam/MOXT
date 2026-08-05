@@ -4,6 +4,7 @@ import { Badge, VerifiedDisplayName } from '../../../components/ui/Badge'
 import { Card } from '../../../components/ui/Card'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { ReferralShareButton } from '../../referral/ReferralShareButton'
+import { avatarDisplayUrl } from '../../account/avatarDisplayUrl'
 import { profileInitials, roleLabelKeys } from '../profilePageConfig'
 
 export function ProfileHeroCard({ profileCompletion, user }) {
@@ -19,7 +20,7 @@ export function ProfileHeroCard({ profileCompletion, user }) {
         <div className="flex items-start justify-between gap-3 sm:contents">
           {user.avatarUrl ? (
             <img
-              src={user.avatarUrl}
+              src={avatarDisplayUrl(user.avatarUrl, { width: 160 })}
               alt={displayName}
               className="size-20 shrink-0 rounded-[var(--radius-card)] border border-[var(--app-border)] object-cover shadow-[var(--shadow-card)]"
             />

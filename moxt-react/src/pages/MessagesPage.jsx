@@ -475,25 +475,18 @@ export function MessagesPage() {
   }, [conversations, searchParams, setSearchParams])
 
   useEffect(() => {
-    if (!active?.id || active.messagesLoading) return
-    const loadedCount = active.messages?.length || 0
-    const expectedCount = active.messageCount || 0
-    const needsReload =
-      !active.messagesLoaded ||
-      (expectedCount > 0 && loadedCount < expectedCount)
-    if (needsReload) {
-      dispatch(loadConversationMessages(active.id))
-      return
-    }
+    if (!active?.id) return
     dispatch(markConversationRead({ conversationId: active.id, userId: user.id }))
+  }, [active?.id, dispatch, user.id])
+
+  useEffect(() => {
+    if (!active?.id || active.messagesLoading || active.messagesLoaded) return
+    dispatch(loadConversationMessages(active.id))
   }, [
     active?.id,
-    active?.messageCount,
-    active?.messages?.length,
     active?.messagesLoaded,
     active?.messagesLoading,
     dispatch,
-    user.id,
   ])
 
   function selectConversation(id) {

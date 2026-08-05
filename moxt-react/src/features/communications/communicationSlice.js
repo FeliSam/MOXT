@@ -117,8 +117,20 @@ export function mergeMessageBatch(existingMessages, remoteRows) {
   )
 }
 
-export function shouldSkipMessageReload({ messagesLoaded, expectedCount, loadedCount }) {
-  return Boolean(messagesLoaded && expectedCount > 0 && loadedCount >= expectedCount)
+export function shouldSkipMessageReload({ messagesLoaded }) {
+  return Boolean(messagesLoaded)
+}
+
+export function conversationNeedsInitialMessageLoad({ messagesLoaded, messagesLoading }) {
+  return !messagesLoaded && !messagesLoading
+}
+
+function pruneReadPendingBy(readPendingBy = {}, remoteUnreadBy = {}) {
+  const pruned = { ...(readPendingBy || {}) }
+  for (const [userId, count] of Object.entries(remoteUnreadBy ?? {})) {
+    if (Number(count) === 0) delete pruned[userId]
+  }
+  return pruned
 }
 
 export function resolveHasOlderMessages({ messages, messageCount, fetchedCount, fetchLimit }) {
@@ -221,6 +233,7 @@ export function normalizeConversation(conv) {
     ...conv,
     participantIds: parseIdList(conv.participantIds ?? conv.participant_ids).map(String),
     unreadBy: parseRecord(conv.unreadBy ?? conv.unread_by),
+    readPendingBy: parseRecord(conv.readPendingBy ?? conv.read_pending_by),
     archivedBy: parseIdList(conv.archivedBy ?? conv.archived_by),
     pinnedBy: parseIdList(conv.pinnedBy ?? conv.pinned_by),
     mutedBy: parseIdList(conv.mutedBy ?? conv.muted_by),
@@ -317,7 +330,10 @@ export function mergeConversations(localConversations, remoteConversations) {
         messagesLoading: localConv.messagesLoading ?? false,
         hasOlderMessages: localConv.hasOlderMessages ?? remoteConv.hasOlderMessages ?? false,
         drafts: { ...remoteConv.drafts, ...localConv.drafts },
-        unreadBy: mergeUnreadBy(remoteConv.unreadBy, localConv.unreadBy),
+        unreadBy: mergeUnreadBy(remoteConv.unreadBy, localConv.unreadBy, {
+          readPendingBy: localConv.readPendingBy,
+        }),
+        readPendingBy: pruneReadPendingBy(localConv.readPendingBy, remoteConv.unreadBy),
         archivedBy: localConv.archivedBy?.length ? localConv.archivedBy : remoteConv.archivedBy,
         pinnedBy: localConv.pinnedBy?.length ? localConv.pinnedBy : remoteConv.pinnedBy,
         mutedBy: localConv.mutedBy?.length ? localConv.mutedBy : remoteConv.mutedBy,
@@ -360,7 +376,10 @@ export function mergeConversations(localConversations, remoteConversations) {
       messagesLoading: newer.messagesLoading || older.messagesLoading,
       hasOlderMessages: newer.hasOlderMessages || older.hasOlderMessages,
       messageCount: Math.max(newer.messageCount || 0, older.messageCount || 0),
-      unreadBy: mergeUnreadBy(newer.unreadBy, older.unreadBy),
+      unreadBy: mergeUnreadBy(newer.unreadBy, older.unreadBy, {
+        readPendingBy: { ...older.readPendingBy, ...newer.readPendingBy },
+      }),
+      readPendingBy: { ...older.readPendingBy, ...newer.readPendingBy },
       drafts: { ...older.drafts, ...newer.drafts },
     }))
   }
@@ -494,7 +513,10 @@ const communicationSlice = createSlice({
           messages: existing.messages,
           messagesLoaded: existing.messagesLoaded,
           messagesLoading: existing.messagesLoading,
-          unreadBy: mergeUnreadBy(conversation.unreadBy, existing.unreadBy),
+          unreadBy: mergeUnreadBy(conversation.unreadBy, existing.unreadBy, {
+            readPendingBy: existing.readPendingBy,
+          }),
+          readPendingBy: pruneReadPendingBy(existing.readPendingBy, conversation.unreadBy),
           drafts: { ...conversation.drafts, ...existing.drafts },
         }
         bumpConversationToTop(state, existing.id)
@@ -521,7 +543,10 @@ const communicationSlice = createSlice({
             messages: existing.messages,
             messagesLoaded: existing.messagesLoaded,
             messagesLoading: existing.messagesLoading,
-            unreadBy: mergeUnreadBy(incoming.unreadBy, existing.unreadBy),
+            unreadBy: mergeUnreadBy(incoming.unreadBy, existing.unreadBy, {
+              readPendingBy: existing.readPendingBy,
+            }),
+            readPendingBy: pruneReadPendingBy(existing.readPendingBy, incoming.unreadBy),
             messageCount: Math.max(
               existing.messageCount || 0,
               incoming.messageCount || existing.messages.length,
@@ -543,7 +568,10 @@ const communicationSlice = createSlice({
         messages: existing.messages,
         messagesLoaded: existing.messagesLoaded,
         messagesLoading: existing.messagesLoading,
-        unreadBy: mergeUnreadBy(incoming.unreadBy, existing.unreadBy),
+        unreadBy: mergeUnreadBy(incoming.unreadBy, existing.unreadBy, {
+          readPendingBy: existing.readPendingBy,
+        }),
+        readPendingBy: pruneReadPendingBy(existing.readPendingBy, incoming.unreadBy),
         messageCount: Math.max(
           existing.messageCount || 0,
           incoming.messageCount || existing.messages.length,
@@ -572,7 +600,10 @@ const communicationSlice = createSlice({
         messagesLoaded: local.messagesLoaded || keeper.messagesLoaded,
         messagesLoading: local.messagesLoading || keeper.messagesLoading,
         drafts: { ...keeper.drafts, ...local.drafts },
-        unreadBy: mergeUnreadBy(keeper.unreadBy, local.unreadBy),
+        unreadBy: mergeUnreadBy(keeper.unreadBy, local.unreadBy, {
+          readPendingBy: local.readPendingBy,
+        }),
+        readPendingBy: pruneReadPendingBy(local.readPendingBy, keeper.unreadBy),
       }
 
       if (keeperIndex >= 0 && keeperIndex !== fromIndex) {
@@ -782,6 +813,8 @@ const communicationSlice = createSlice({
       const readerId = String(action.payload.userId)
       conversation.unreadBy ||= {}
       conversation.unreadBy[readerId] = 0
+      conversation.readPendingBy ||= {}
+      conversation.readPendingBy[readerId] = Date.now()
       conversation.messages.forEach((message) => {
         message.deliveredTo ||= []
         message.readBy ||= []
@@ -1146,6 +1179,10 @@ export const loadConversationMessages = createAsyncThunk(
           }),
         )
         return { conversationId: canonicalId, count: messages.length, incremental: true }
+      }
+
+      if (messagesLoaded) {
+        return { conversationId: canonicalId, count: loadedCount, skipped: true }
       }
 
       if (loadedCount >= expectedCount) {

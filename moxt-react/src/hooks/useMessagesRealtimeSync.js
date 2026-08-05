@@ -1,12 +1,14 @@
 import { useEffect } from 'react'
 import { useDispatch, useStore } from 'react-redux'
 import {
+  conversationNeedsInitialMessageLoad,
   loadConversationMessages,
   refreshConversations,
 } from '../features/communications/communicationSlice'
 import {
   isRealtimeConnected,
   reconnectRealtimeSubscription,
+  shouldAttemptRealtimeReconnect,
 } from '../services/realtimeService'
 
 /** Safety net only when realtime is down — avoid redundant polling while connected. */
@@ -25,7 +27,7 @@ export function useMessagesRealtimeSync(activeConversationId) {
     async function syncInbox() {
       if (cancelled) return
 
-      if (!isRealtimeConnected()) {
+      if (shouldAttemptRealtimeReconnect()) {
         await reconnectRealtimeSubscription(userId, store.dispatch, store.getState)
       }
 
@@ -38,13 +40,10 @@ export function useMessagesRealtimeSync(activeConversationId) {
         .communications.conversations.find((item) => item.id === activeConversationId)
       if (!conversation) return
 
-      const loadedCount = conversation.messages?.length || 0
-      const expectedCount = conversation.messageCount || 0
-      const needsReload =
-        !conversation.messagesLoaded ||
-        (expectedCount > 0 && loadedCount < expectedCount)
-
-      if (needsReload && !conversation.messagesLoading) {
+      if (
+        conversationNeedsInitialMessageLoad(conversation) &&
+        !conversation.messagesLoading
+      ) {
         await dispatch(loadConversationMessages(activeConversationId))
       }
     }

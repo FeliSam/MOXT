@@ -13,7 +13,7 @@ async function upload(bucket, path, file, { onProgress } = {}) {
   await runWithUploadProgress(onProgress, async () => {
     const { error } = await supabase.storage.from(bucket).upload(path, file, {
       upsert: true,
-      cacheControl: '3600',
+      cacheControl: '60',
       contentType: file.type || undefined,
     })
     if (error) throw new Error(error.message)
@@ -21,7 +21,14 @@ async function upload(bucket, path, file, { onProgress } = {}) {
   reportProgress(onProgress, { phase: UPLOAD_PHASES.finalizing, percent: 96 })
   const { data } = supabase.storage.from(bucket).getPublicUrl(path)
   reportProgress(onProgress, { phase: UPLOAD_PHASES.done, percent: 100 })
-  return data.publicUrl
+  return appendCacheBust(data.publicUrl)
+}
+
+/** Même URL Supabase après upsert — le navigateur garde l’ancienne image sans version. */
+export function appendCacheBust(url) {
+  if (!url || typeof url !== 'string') return url
+  const base = url.split('?')[0]
+  return `${base}?v=${Date.now()}`
 }
 
 async function uploadPrivate(bucket, path, file, { onProgress } = {}) {

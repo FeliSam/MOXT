@@ -22,6 +22,7 @@ import { CountBounce } from '../ui/CountBounce'
 import { LanguageSwitcher } from '../ui/LanguageSwitcher'
 import { VerifiedDisplayName } from '../ui/Badge'
 import { isProfileVerified } from '../../features/profile/userProfileUtils'
+import { avatarDisplayUrl } from '../../features/account/avatarDisplayUrl'
 import { Brand } from './Brand'
 import { GlobalSearch } from './GlobalSearch'
 
@@ -273,7 +274,7 @@ function UserAvatar({ user, size = 40 }) {
   if (user?.avatarUrl) {
     return (
       <img
-        src={user.avatarUrl}
+        src={avatarDisplayUrl(user.avatarUrl, { width: Math.max(size * 2, 80) })}
         alt={`${user.firstName || 'Utilisateur'} ${user.lastName || ''}`.trim()}
         style={{ width: size, height: size }}
         className={`shrink-0 rounded-full object-cover shadow-sm ${ring}`}

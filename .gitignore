@@ -13,6 +13,7 @@ web-build/
 .env.*.local
 moxt-react/.env.production
 scripts/phase2.env
+scripts/.cloud-init-libretranslate.generated.yaml
 scripts/phase2.supabase-secrets.env
 scripts/phase2.push-secrets.env
 scripts/.deploy-state.json

@@ -34,6 +34,7 @@
     "setup:smsc": "node scripts/setup-smsc.mjs",
     "setup:libretranslate": "node scripts/setup-libretranslate.mjs",
     "setup:libretranslate:yandex": "node scripts/provision-libretranslate-yandex.mjs",
+    "setup:libretranslate:repair": "node scripts/provision-libretranslate-yandex.mjs --recreate",
     "setup:p1sms": "node scripts/setup-p1sms.mjs",
     "setup:admin-promote": "node scripts/setup-admin-promote.mjs",
     "setup:google-auth": "node scripts/setup-google-auth.mjs",
