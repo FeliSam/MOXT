@@ -451,7 +451,6 @@ html.keyboard-open .bottom-nav-shell {
 .message-composer-shell {
   padding-bottom: 0;
   margin-bottom: 0;
-  bottom: 0;
 }
 
 @media (min-width: 640px) {
@@ -460,11 +459,14 @@ html.keyboard-open .bottom-nav-shell {
   }
 }
 
-/* `bottom` plutôt que margin-bottom : plus fiable pour un shell absolute bottom-0. */
-html.keyboard-open .message-composer-shell {
-  bottom: var(--keyboard-inset, 0px);
-  margin-bottom: 0;
-  padding-bottom: 0;
+/* Mobile thread : composer fixed au viewport (pas au canvas 100dvh qui dérive sur iOS). */
+@media (max-width: 1023px) {
+  html.messages-thread-immersive .message-composer-shell {
+    position: fixed;
+    left: 0;
+    right: 0;
+    z-index: 40;
+  }
 }
 
 .message-composer-dock {

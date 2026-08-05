@@ -18,7 +18,7 @@ import {
 import { LuEllipsisVertical, LuExternalLink, LuSearch, LuX } from 'react-icons/lu'
 import { Link } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
-import { syncKeyboardInsetAfterBlur } from '../../hooks/useKeyboardInset'
+import { syncKeyboardInsetAfterBlur, useMessageComposerBottom } from '../../hooks/useKeyboardInset'
 import { useLanguage } from '../../contexts/useLanguage'
 import { UploadProgress } from '../../components/ui/UploadProgress'
 import { shortenFileName } from '../../services/uploadProgress'
@@ -174,6 +174,7 @@ export function ConversationPanel({
   const [threadQuery, setThreadQuery] = useState('')
   const [showScrollFab, setShowScrollFab] = useState(false)
   const [composerOffset, setComposerOffset] = useState(120)
+  const composerBottomPx = useMessageComposerBottom()
   const [attachMenuOpen, setAttachMenuOpen] = useState(false)
   const [contactPickerOpen, setContactPickerOpen] = useState(false)
   const [translationById, setTranslationById] = useState({})
@@ -960,7 +961,8 @@ export function ConversationPanel({
 
       <div
         ref={composerShellRef}
-        className="message-composer-shell absolute inset-x-0 bottom-0 z-20 border-t-0 bg-transparent p-0"
+        className="message-composer-shell absolute inset-x-0 bottom-0 z-20 border-t-0 bg-transparent p-0 max-lg:bottom-auto"
+        style={{ bottom: composerBottomPx }}
         data-testid="message-composer"
       >
         {!blocked && suggestionsEnabled && suggestions.length ? (

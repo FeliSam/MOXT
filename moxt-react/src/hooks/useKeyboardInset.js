@@ -1,9 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 /** Seuil anti faux-positifs (chrome Safari / URL bar ≈ 40–100px). */
 export const KEYBOARD_OPEN_PX = 180
 
-const BLUR_SYNC_DELAYS_MS = [0, 50, 120, 280, 450]
+const BLUR_SYNC_DELAYS_MS = [0, 50, 120, 280, 450, 700, 1000]
 
 function isEditableField(el) {
   if (!el || !(el instanceof HTMLElement)) return false
@@ -23,8 +23,8 @@ export function measureKeyboardInset(vv) {
 }
 
 /** @param {HTMLElement} root */
-export function applyKeyboardInsetState(root, raw) {
-  const open = raw >= KEYBOARD_OPEN_PX
+export function applyKeyboardInsetState(root, raw, { editing = false } = {}) {
+  const open = editing && raw >= KEYBOARD_OPEN_PX
   root.style.setProperty('--keyboard-inset', open ? `${raw}px` : '0px')
   root.classList.toggle('keyboard-open', open)
   root.style.setProperty('--viewport-bottom-gap', open ? '0px' : `${raw}px`)
@@ -40,6 +40,12 @@ export function forceKeyboardClosed(root) {
 
 const blurSyncTimers = new Set()
 
+function resolveComposerBottomPx(vv) {
+  if (!isEditableField(document.activeElement)) return 0
+  const raw = measureKeyboardInset(vv)
+  return raw >= KEYBOARD_OPEN_PX ? raw : 0
+}
+
 /**
  * iOS Safari omet parfois visualViewport.resize à la fermeture du clavier.
  * Re-mesure plusieurs fois après blur pour remettre le composer / la bottom nav en bas.
@@ -48,13 +54,13 @@ export function syncKeyboardInsetAfterBlur() {
   const root = document.documentElement
 
   function run() {
-    const raw = measureKeyboardInset(window.visualViewport)
-    const editing = isEditableField(document.activeElement)
-    if (!editing && raw < KEYBOARD_OPEN_PX) {
+    if (!isEditableField(document.activeElement)) {
       forceKeyboardClosed(root)
       return
     }
-    applyKeyboardInsetState(root, raw)
+    applyKeyboardInsetState(root, measureKeyboardInset(window.visualViewport), {
+      editing: true,
+    })
   }
 
   blurSyncTimers.forEach((id) => clearTimeout(id))
@@ -66,11 +72,68 @@ export function syncKeyboardInsetAfterBlur() {
 }
 
 /**
- * Suit le visual viewport et expose deux mesures distinctes :
- *
- * - `--keyboard-inset` + classe `keyboard-open` : hauteur du clavier logiciel.
- * - `--viewport-bottom-gap` : écart entre le bas du *layout* viewport (sur
- *   lequel `position: fixed` se cale) et le bas réellement visible.
+ * Offset bas du composer en px — 0 sauf clavier ouvert ET champ focus.
+ * iOS peut laisser visualViewport « petit » après fermeture : on ignore sans focus.
+ */
+export function useMessageComposerBottom() {
+  const [bottomPx, setBottomPx] = useState(0)
+
+  useEffect(() => {
+    const vv = window.visualViewport
+
+    function syncComposer() {
+      setBottomPx(resolveComposerBottomPx(vv))
+    }
+
+    function syncAll() {
+      const root = document.documentElement
+      const editing = isEditableField(document.activeElement)
+      const raw = measureKeyboardInset(vv)
+      if (!editing) {
+        forceKeyboardClosed(root)
+        setBottomPx(0)
+        return
+      }
+      applyKeyboardInsetState(root, raw, { editing: true })
+      setBottomPx(raw >= KEYBOARD_OPEN_PX ? raw : 0)
+    }
+
+    function onFocusIn(event) {
+      if (isEditableField(event.target)) syncAll()
+    }
+
+    function onFocusOut(event) {
+      if (!isEditableField(event.target)) return
+      setBottomPx(0)
+      syncKeyboardInsetAfterBlur()
+      BLUR_SYNC_DELAYS_MS.forEach((ms) => {
+        setTimeout(syncComposer, ms)
+      })
+    }
+
+    syncAll()
+    window.addEventListener('resize', syncAll)
+    window.addEventListener('scroll', syncAll, { passive: true })
+    document.addEventListener('focusin', onFocusIn, true)
+    document.addEventListener('focusout', onFocusOut, true)
+    vv?.addEventListener('resize', syncAll)
+    vv?.addEventListener('scroll', syncAll)
+
+    return () => {
+      window.removeEventListener('resize', syncAll)
+      window.removeEventListener('scroll', syncAll)
+      document.removeEventListener('focusin', onFocusIn, true)
+      document.removeEventListener('focusout', onFocusOut, true)
+      vv?.removeEventListener('resize', syncAll)
+      vv?.removeEventListener('scroll', syncAll)
+    }
+  }, [])
+
+  return bottomPx
+}
+
+/**
+ * Suit le visual viewport pour la bottom nav (hors composer — géré par useMessageComposerBottom).
  */
 export function useKeyboardInset() {
   useEffect(() => {
@@ -78,18 +141,27 @@ export function useKeyboardInset() {
     const vv = window.visualViewport
 
     function update() {
-      applyKeyboardInsetState(root, measureKeyboardInset(vv))
+      const editing = isEditableField(document.activeElement)
+      const raw = measureKeyboardInset(vv)
+      if (!editing) {
+        forceKeyboardClosed(root)
+        return
+      }
+      applyKeyboardInsetState(root, raw, { editing: true })
+    }
+
+    function onFocusIn(event) {
+      if (isEditableField(event.target)) update()
     }
 
     function onFocusOut(event) {
-      if (isEditableField(event.target)) {
-        syncKeyboardInsetAfterBlur()
-      }
+      if (isEditableField(event.target)) syncKeyboardInsetAfterBlur()
     }
 
     update()
     window.addEventListener('resize', update)
     window.addEventListener('scroll', update, { passive: true })
+    document.addEventListener('focusin', onFocusIn, true)
     document.addEventListener('focusout', onFocusOut, true)
     vv?.addEventListener('resize', update)
     vv?.addEventListener('scroll', update)
@@ -97,6 +169,7 @@ export function useKeyboardInset() {
     return () => {
       window.removeEventListener('resize', update)
       window.removeEventListener('scroll', update)
+      document.removeEventListener('focusin', onFocusIn, true)
       document.removeEventListener('focusout', onFocusOut, true)
       vv?.removeEventListener('resize', update)
       vv?.removeEventListener('scroll', update)
