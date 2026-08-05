@@ -129,8 +129,10 @@ async function main() {
 
   log('Infra Docker (VM Yandex)', [
     'docker run -d --name libretranslate --restart unless-stopped \\',
-    '  -p 5000:5000 libretranslate/libretranslate \\',
-    '  --load-only fr,en,ru,pt,es',
+    '  -p 5000:5000 \\',
+    '  -e LT_LOAD_ONLY=fr,en,ru,pt,es \\',
+    '  -e LT_THREADS=4 \\',
+    '  libretranslate/libretranslate',
     '',
     'Restreindre le firewall aux IP sortantes Supabase Edge.',
   ].join('\n  '))

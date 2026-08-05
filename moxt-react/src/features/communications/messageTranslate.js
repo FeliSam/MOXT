@@ -3,23 +3,79 @@ import { supabase } from '../../services/supabaseClient'
 
 const translationCache = new Map()
 const MAX_AUTO_CHARS = 2000
+const BATCH_SIZE = 10
+const TRANSLATE_CONCURRENCY = 3
+const SESSION_STORAGE_KEY = 'moxt-msg-tr-cache-v1'
+const SESSION_STORAGE_MAX = 400
 
 export function translationCacheKey(messageId, targetLang) {
   return `${messageId}::${targetLang}`
 }
 
 export function getCachedTranslation(messageId, targetLang) {
-  return translationCache.get(translationCacheKey(messageId, targetLang)) || null
+  const memory = translationCache.get(translationCacheKey(messageId, targetLang))
+  if (memory?.translatedText) return memory
+  return readSessionTranslation(messageId, targetLang)
 }
 
 export function setCachedTranslation(messageId, targetLang, translatedText) {
   const entry = { translatedText, targetLang, cachedAt: Date.now() }
   translationCache.set(translationCacheKey(messageId, targetLang), entry)
+  writeSessionTranslation(messageId, targetLang, translatedText)
   return entry
 }
 
 export function clearTranslationCache() {
   translationCache.clear()
+  if (typeof sessionStorage === 'undefined') return
+  try {
+    sessionStorage.removeItem(SESSION_STORAGE_KEY)
+  } catch {
+    // ignore quota / privacy mode
+  }
+}
+
+function readSessionStore() {
+  if (typeof sessionStorage === 'undefined') return {}
+  try {
+    const raw = sessionStorage.getItem(SESSION_STORAGE_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
+function writeSessionStore(store) {
+  if (typeof sessionStorage === 'undefined') return
+  try {
+    sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(store))
+  } catch {
+    // ignore quota
+  }
+}
+
+function readSessionTranslation(messageId, targetLang) {
+  const store = readSessionStore()
+  const entry = store[translationCacheKey(messageId, targetLang)]
+  if (!entry?.translatedText) return null
+  return entry
+}
+
+function writeSessionTranslation(messageId, targetLang, translatedText) {
+  const store = readSessionStore()
+  store[translationCacheKey(messageId, targetLang)] = {
+    translatedText,
+    targetLang,
+    cachedAt: Date.now(),
+  }
+  const keys = Object.keys(store)
+  if (keys.length > SESSION_STORAGE_MAX) {
+    keys
+      .sort((a, b) => (store[a]?.cachedAt || 0) - (store[b]?.cachedAt || 0))
+      .slice(0, keys.length - SESSION_STORAGE_MAX)
+      .forEach((key) => delete store[key])
+  }
+  writeSessionStore(store)
 }
 
 const WORD_MARKERS = {
@@ -69,7 +125,6 @@ export function detectMessageLanguage(text) {
   return SUPPORTED_LANGUAGES.includes(topLang) ? topLang : null
 }
 
-/** Traduction auto si langue message ≠ langue UI i18n du lecteur (et interlocuteurs pas déjà alignés). */
 export function normalizeLanguage(code) {
   const lang = String(code || '').toLowerCase()
   return SUPPORTED_LANGUAGES.includes(lang) ? lang : null
@@ -115,7 +170,6 @@ export function otherTranslateLanguages(currentLanguage) {
   return SUPPORTED_LANGUAGES.filter((code) => code !== current)
 }
 
-/** Langues proposées dans le menu admin (toutes les langues MOXT). */
 export function adminTranslateLanguageOptions() {
   return SUPPORTED_LANGUAGES
 }
@@ -133,7 +187,115 @@ async function edgeFunctionErrorDetail(error) {
   return detail
 }
 
-export async function translateToLanguage({ messageId, text, targetLang }) {
+function buildTranslateItem({ messageId, text, targetLang, sourceLang }) {
+  return {
+    messageId,
+    text: String(text || '').trim(),
+    targetLang: String(targetLang || '').trim().toLowerCase(),
+    sourceLang: sourceLang ? String(sourceLang).trim().toLowerCase() : null,
+  }
+}
+
+function applyTranslateResults(results) {
+  const applied = []
+  for (const row of results) {
+    if (!row?.messageId || !row?.translatedText) continue
+    setCachedTranslation(row.messageId, row.targetLang, row.translatedText)
+    applied.push({
+      messageId: row.messageId,
+      targetLang: row.targetLang,
+      translatedText: row.translatedText,
+      cached: Boolean(row.cached),
+    })
+  }
+  return applied
+}
+
+export async function prefetchMessageTranslations({ messageIds, targetLang }) {
+  const lang = normalizeLanguage(targetLang)
+  if (!lang || !supabase || !messageIds?.length) return {}
+
+  const uniqueIds = [...new Set(messageIds.map(String))].slice(0, 200)
+  const { data, error } = await supabase
+    .from('message_translations')
+    .select('message_id, target_lang, translated_text')
+    .in('message_id', uniqueIds)
+    .eq('target_lang', lang)
+
+  if (error || !data?.length) return {}
+
+  const map = {}
+  for (const row of data) {
+    const translatedText = String(row.translated_text || '').trim()
+    if (!translatedText) continue
+    setCachedTranslation(row.message_id, row.target_lang, translatedText)
+    map[row.message_id] = {
+      targetLang: row.target_lang,
+      translatedText,
+      showOriginal: false,
+    }
+  }
+  return map
+}
+
+async function invokeTranslateBatch(items) {
+  if (!supabase) throw new Error('supabase_unavailable')
+  const { data, error } = await supabase.functions.invoke('translate-message', {
+    body: { items },
+  })
+  if (data?.error) throw new Error(String(data.error))
+  if (error) throw new Error(await edgeFunctionErrorDetail(error))
+  if (Array.isArray(data?.results)) return data.results
+  if (data?.translatedText) {
+    const item = items[0]
+    return [
+      {
+        messageId: item.messageId,
+        targetLang: item.targetLang,
+        translatedText: data.translatedText,
+        cached: data.cached,
+      },
+    ]
+  }
+  return []
+}
+
+export async function translateMessagesBatch(entries, { concurrency = TRANSLATE_CONCURRENCY } = {}) {
+  const queue = entries
+    .map((entry) => buildTranslateItem(entry))
+    .filter((item) => {
+      if (!item.messageId || !item.text || item.text.length < 3) return false
+      if (!SUPPORTED_LANGUAGES.includes(item.targetLang)) return false
+      if (getCachedTranslation(item.messageId, item.targetLang)?.translatedText) return false
+      return true
+    })
+
+  if (!queue.length) return []
+
+  const chunks = []
+  for (let i = 0; i < queue.length; i += BATCH_SIZE) {
+    chunks.push(queue.slice(i, i + BATCH_SIZE))
+  }
+
+  const results = []
+  let cursor = 0
+
+  async function worker() {
+    while (cursor < chunks.length) {
+      const index = cursor
+      cursor += 1
+      const batch = chunks[index]
+      const batchResults = await invokeTranslateBatch(batch)
+      results.push(...applyTranslateResults(batchResults))
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(concurrency, chunks.length) }, () => worker())
+  await Promise.all(workers)
+  return results
+}
+
+export async function translateToLanguage({ messageId, text, targetLang, sourceLang = null }) {
   const trimmed = String(text || '').trim()
   const lang = String(targetLang || '').trim().toLowerCase()
   if (!trimmed || !messageId) throw new Error('empty')
@@ -141,19 +303,15 @@ export async function translateToLanguage({ messageId, text, targetLang }) {
   if (!supabase) throw new Error('supabase_unavailable')
 
   const cached = getCachedTranslation(messageId, lang)
-  if (cached?.translatedText) return cached
+  if (cached?.translatedText) {
+    return { translatedText: cached.translatedText, targetLang: lang, cached: true }
+  }
 
-  const { data, error } = await supabase.functions.invoke('translate-message', {
-    body: { messageId, text: trimmed, targetLang: lang },
-  })
-  if (data?.error) throw new Error(String(data.error))
-  if (error) throw new Error(await edgeFunctionErrorDetail(error))
-
-  const translatedText = String(data?.translatedText || '').trim()
-  if (!translatedText) throw new Error('empty_translation')
-
-  const result = { translatedText, targetLang: lang }
-  setCachedTranslation(messageId, lang, translatedText)
+  const detected = sourceLang || detectMessageLanguage(trimmed)
+  const [result] = await translateMessagesBatch([
+    { messageId, text: trimmed, targetLang: lang, sourceLang: detected },
+  ])
+  if (!result?.translatedText) throw new Error('empty_translation')
   return result
 }
 
@@ -165,3 +323,6 @@ export async function translateToReaderLanguage({ messageId, text, readerLanguag
 export function pickTranslatedTextForTest(data) {
   return String(data?.translatedText || data?.text || '').trim()
 }
+
+/** @internal test helper */
+export const TRANSLATE_BATCH_SIZE = BATCH_SIZE

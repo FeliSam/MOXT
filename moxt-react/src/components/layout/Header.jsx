@@ -27,7 +27,6 @@ import { LanguageSwitcher } from '../ui/LanguageSwitcher'
 import { VerifiedDisplayName } from '../ui/Badge'
 import { isProfileVerified } from '../../features/profile/userProfileUtils'
 import { avatarDisplayUrl } from '../../features/account/avatarDisplayUrl'
-import { Brand } from './Brand'
 import { GlobalSearch } from './GlobalSearch'
 
 function HeaderActionLabel({ children }) {
@@ -104,10 +103,6 @@ export function Header({ hideOnMobile = false }) {
           >
             <UserAvatar user={user} size={35} />
           </Link>
-
-          <div className="hidden w-[8rem] shrink-0 lg:flex xl:hidden">
-            <Brand compact iconOnly />
-          </div>
 
           <div className="hidden flex-1 lg:block lg:max-w-[26rem]" data-tour="header-search">
             <GlobalSearch />

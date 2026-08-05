@@ -107,6 +107,7 @@ write_files:
         -p 0.0.0.0:5000:5000 \\
         -e LT_LOAD_ONLY=fr,en,ru,pt,es \\
         -e LT_API_KEYS="$KEY" \\
+        -e LT_THREADS=4 \\
         libretranslate/libretranslate
 runcmd:
   - systemctl enable docker

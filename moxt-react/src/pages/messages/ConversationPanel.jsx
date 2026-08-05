@@ -8,7 +8,7 @@ import {
   FiUser,
   FiX,
 } from 'react-icons/fi'
-import { useDispatch, useSelector } from 'react-redux'
+import { useSelector } from 'react-redux'
 import { syncKeyboardInsetAfterBlur } from '../../hooks/useKeyboardInset'
 import { useLanguage } from '../../contexts/useLanguage'
 import { UploadProgress } from '../../components/ui/UploadProgress'
@@ -24,18 +24,15 @@ import {
 import { messagesText } from '../../features/communications/messagesI18n'
 import {
   detectMessageLanguage,
-  shouldOfferMessageTranslation,
   translateLanguageOptionsForUser,
-  translateToLanguage,
   languageLabel,
 } from '../../features/communications/messageTranslate'
 import {
   canAutoTranslateMessages,
   canShowAdminTranslateIcon,
-  canShowManualTranslate,
 } from '../../config/messageTranslateFlags'
+import { useConversationTranslations } from '../../hooks/useConversationTranslations'
 import { resolveRelatedSnapshot } from '../../features/communications/relatedSnapshot'
-import { addToast } from '../../features/ui/uiSlice'
 import { truncateWords } from './format'
 import {
   MessageAvatar,
@@ -100,14 +97,12 @@ export function ConversationPanel({
   onThreadQueryChange,
 }) {
   const { t, language } = useLanguage()
-  const dispatch = useDispatch()
   const peer = getConversationPeer(active, user.id)
   const peerLanguage = useSelector((state) => {
     const peerId = peer?.id
     if (!peerId) return null
     return state.account.preferences?.[peerId]?.language || null
   })
-  const manualTranslateEnabled = canShowManualTranslate(user)
   const adminTranslateEnabled = canShowAdminTranslateIcon(user)
   const translateLanguageOptions = useMemo(
     () =>
@@ -117,6 +112,22 @@ export function ConversationPanel({
       }),
     [language, adminTranslateEnabled],
   )
+  const messageListRef = useRef(null)
+  const {
+    translationById,
+    translatingId,
+    registerMessageRow,
+    handleToggleTranslationOriginal,
+    handleTranslateMessage,
+    messageTranslateEnabled,
+  } = useConversationTranslations({
+    active,
+    user,
+    language,
+    peerLanguage,
+    scrollRootRef: messageListRef,
+    t,
+  })
   const liveEntry = peer?.id ? avatarMap[peer.id] : undefined
   const peerAvatarSrc =
     liveEntry !== undefined ? liveEntry.avatarUrl || null : peer?.avatarUrl || null
@@ -142,7 +153,6 @@ export function ConversationPanel({
       ...items,
     ]
   }, [active, relatedPreview, user.id, fallbackTimelineAt])
-  const messageListRef = useRef(null)
   const composerRef = useRef(null)
   const composerShellRef = useRef(null)
   const stickToBottomRef = useRef(true)
@@ -161,142 +171,6 @@ export function ConversationPanel({
   const [composerOffset, setComposerOffset] = useState(120)
   const [attachMenuOpen, setAttachMenuOpen] = useState(false)
   const [contactPickerOpen, setContactPickerOpen] = useState(false)
-  const [translationById, setTranslationById] = useState({})
-  const [translatingId, setTranslatingId] = useState(null)
-  const autoTranslateQueued = useRef(new Set())
-  const translationScopeIdRef = useRef(active?.id)
-
-  useEffect(() => {
-    if (translationScopeIdRef.current === active?.id) return
-    translationScopeIdRef.current = active?.id
-    setTranslationById({})
-    setTranslatingId(null)
-    autoTranslateQueued.current.clear()
-  }, [active?.id])
-
-  useEffect(() => {
-    if (!canAutoTranslateMessages(user)) return undefined
-
-    const pending = active.messages.filter((message) => {
-      if (isMessageFromUser(message, user.id)) return false
-      const text = String(message?.text || '').trim()
-      if (!shouldOfferMessageTranslation({ text, readerLanguage: language, peerLanguage })) return false
-      if (autoTranslateQueued.current.has(message.id)) return false
-      if (translationById[message.id]?.translatedText) return false
-      return true
-    }).slice(0, 5)
-
-    if (!pending.length) return undefined
-
-    let cancelled = false
-    const timer = window.setTimeout(() => {
-      void (async () => {
-        for (const message of pending) {
-          if (cancelled) break
-          autoTranslateQueued.current.add(message.id)
-          setTranslatingId(message.id)
-          try {
-            const result = await translateToLanguage({
-              messageId: message.id,
-              text: message.text,
-              targetLang: language,
-            })
-            if (cancelled) break
-            setTranslationById((prev) => {
-              if (prev[message.id]?.translatedText) return prev
-              return {
-                ...prev,
-                [message.id]: {
-                  targetLang: result.targetLang,
-                  translatedText: result.translatedText,
-                  showOriginal: false,
-                },
-              }
-            })
-          } catch {
-            // Échec silencieux — original conservé
-          } finally {
-            autoTranslateQueued.current.delete(message.id)
-            if (!cancelled) {
-              setTranslatingId((current) => (current === message.id ? null : current))
-            }
-          }
-        }
-      })()
-    }, 300)
-
-    return () => {
-      cancelled = true
-      window.clearTimeout(timer)
-    }
-  }, [active.messages, active?.id, language, peerLanguage, translationById, user])
-
-  function handleToggleTranslationOriginal(messageId) {
-    setTranslationById((prev) => {
-      const entry = prev[messageId]
-      if (!entry) return prev
-      return {
-        ...prev,
-        [messageId]: { ...entry, showOriginal: !entry.showOriginal },
-      }
-    })
-  }
-
-  function messageTranslateEnabled(message) {
-    if (!manualTranslateEnabled || isMessageFromUser(message, user.id)) return false
-    const text = String(message?.text || '').trim()
-    if (text.length < 3) return false
-    if (message.attachment?.reactionEmoji) return false
-    return true
-  }
-
-  async function handleTranslateMessage(message, targetLang) {
-    if (!manualTranslateEnabled) return
-    const text = String(message?.text || '').trim()
-    if (text.length < 3) return
-    if (translatingId === message.id) return
-
-    const lang = String(targetLang || language || '').toLowerCase()
-    if (!lang) return
-
-    setTranslatingId(message.id)
-    try {
-      const result = await translateToLanguage({
-        messageId: message.id,
-        text,
-        targetLang: lang,
-      })
-      setTranslationById((prev) => ({
-        ...prev,
-        [message.id]: {
-          targetLang: result.targetLang,
-          translatedText: result.translatedText,
-          showOriginal: false,
-        },
-      }))
-      dispatch(
-        addToast({
-          type: 'success',
-          message: messagesText(t, 'messages.translatedInto', {
-            language: languageLabel(result.targetLang),
-          }),
-        }),
-      )
-    } catch (err) {
-      dispatch(
-        addToast({
-          type: 'error',
-          title: messagesText(t, 'messages.translateFailedTitle'),
-          message:
-            err instanceof Error
-              ? err.message
-              : messagesText(t, 'messages.translateFailed'),
-        }),
-      )
-    } finally {
-      setTranslatingId((current) => (current === message.id ? null : current))
-    }
-  }
   const fileInputRef = useRef(null)
   const [initialUnreadCount] = useState(() => active.unreadBy?.[user.id] || 0)
   const firstUnreadIndex = useMemo(
@@ -658,6 +532,7 @@ export function ConversationPanel({
                       ) : null}
                       {showDate ? <MessageDateSeparator date={item.at} /> : null}
                       <div
+                        ref={(node) => registerMessageRow(message, node)}
                         className={`message-row ${mine ? 'message-row--sent' : ''} ${
                           groupedWithPrevious
                             ? previousHasReactions

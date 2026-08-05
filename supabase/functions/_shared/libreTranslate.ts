@@ -22,11 +22,17 @@ export function isSupportedTargetLang(lang: string) {
 export async function translateViaLibreTranslate(
   text: string,
   targetLang: string,
+  sourceLang?: string | null,
 ): Promise<LibreTranslateResult> {
   const target = String(targetLang || '').toLowerCase()
   if (!isSupportedTargetLang(target)) {
     return { text: '', error: 'Langue cible non supportée', status: 400 }
   }
+
+  const source =
+    sourceLang && isSupportedTargetLang(sourceLang) && sourceLang !== target
+      ? sourceLang
+      : 'auto'
 
   const endpoint = baseUrl()
   if (!endpoint) {
@@ -53,7 +59,7 @@ export async function translateViaLibreTranslate(
       headers,
       body: JSON.stringify({
         q: text,
-        source: 'auto',
+        source,
         target,
         format: 'text',
       }),
