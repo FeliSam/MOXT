@@ -6,6 +6,7 @@ import { Badge, VerifiedBadge } from '../components/ui/Badge'
 import { EntityVerifiedName } from '../components/ui/EntityVerifiedName'
 import { BackButton } from '../components/ui/BackButton'
 import { Button } from '../components/ui/Button'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { Card } from '../components/ui/Card'
 import {
   DetailFacts,
@@ -22,6 +23,7 @@ import { openRelatedConversation } from '../features/communications/openRelatedC
 import { buildParcelSnapshot } from '../features/communications/relatedSnapshot'
 import {
   requestParcelReservation,
+  releaseParcelRequestByOwner,
   updateParcelPassportStatus,
   updateParcelProofStatus,
   updateParcelRequestStatus,
@@ -60,6 +62,7 @@ export function ParcelDetailPage() {
   const [reserveKg, setReserveKg] = useState('')
   const [reserveMessage, setReserveMessage] = useState('')
   const [sendingRequest, setSendingRequest] = useState(false)
+  const [releaseRequest, setReleaseRequest] = useState(null)
   const myRequest = requests.find(
     (item) => item.userId === user.id && item.status === 'submitted',
   )
@@ -107,6 +110,24 @@ export function ParcelDetailPage() {
         tone: status === 'approved' ? 'success' : 'error',
       }),
     )
+  }
+
+  function confirmReleaseReservation() {
+    if (!releaseRequest) return
+    dispatch(
+      releaseParcelRequestByOwner({
+        id: releaseRequest.id,
+        ownerId: user.id,
+      }),
+    )
+    dispatch(
+      addToast({
+        title: t('parcels.detail.toast.releasedTitle'),
+        message: t('parcels.detail.toast.releasedBody', { kg: releaseRequest.kg }),
+        tone: 'success',
+      }),
+    )
+    setReleaseRequest(null)
   }
 
   async function submitReservation() {
@@ -418,6 +439,20 @@ export function ParcelDetailPage() {
                           </Button>
                         </div>
                       ) : null}
+                      {request.status === 'approved' ? (
+                        <div className="mt-3 rounded-xl border border-amber-200/80 bg-amber-50/70 px-3 py-2.5 dark:border-amber-900/40 dark:bg-amber-950/20">
+                          <p className="text-xs leading-relaxed text-amber-900 dark:text-amber-100">
+                            {t('parcels.detail.requests.releaseHint')}
+                          </p>
+                          <Button
+                            className="mt-2"
+                            variant="secondary"
+                            onClick={() => setReleaseRequest(request)}
+                          >
+                            {t('parcels.detail.requests.releaseKg', { kg: request.kg })}
+                          </Button>
+                        </div>
+                      ) : null}
                     </div>
                   )
                 })
@@ -602,6 +637,18 @@ export function ParcelDetailPage() {
         relatedPath={`/parcels/${parcel.id}`}
         relatedType="parcel"
         title={routeTitle}
+      />
+      <ConfirmDialog
+        open={Boolean(releaseRequest)}
+        title={t('parcels.detail.requests.releaseConfirmTitle')}
+        description={t('parcels.detail.requests.releaseConfirmBody', {
+          kg: releaseRequest?.kg || 0,
+        })}
+        confirmLabel={t('parcels.detail.requests.releaseKg', {
+          kg: releaseRequest?.kg || 0,
+        })}
+        onConfirm={confirmReleaseReservation}
+        onCancel={() => setReleaseRequest(null)}
       />
     </div>
   )

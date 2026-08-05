@@ -1,49 +1,42 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
-  FiArchive,
   FiArrowDown,
-  FiBell,
-  FiBellOff,
-  FiEye,
-  FiEyeOff,
   FiFile,
   FiPaperclip,
   FiPlus,
   FiSearch,
-  FiSlash,
-  FiStar,
   FiUser,
   FiX,
 } from 'react-icons/fi'
-import { LuEllipsisVertical, LuExternalLink, LuSearch, LuX } from 'react-icons/lu'
-import { Link } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
-import { syncKeyboardInsetAfterBlur, shouldPinThreadHeader, useMessageComposerBottom } from '../../hooks/useKeyboardInset'
+import { syncKeyboardInsetAfterBlur } from '../../hooks/useKeyboardInset'
 import { useLanguage } from '../../contexts/useLanguage'
 import { UploadProgress } from '../../components/ui/UploadProgress'
 import { shortenFileName } from '../../services/uploadProgress'
-import { EntityAvatar } from '../../features/account/EntityAvatar'
 import { ContactSharePicker } from '../../features/communications/ContactSharePicker'
 import { getConversationPeer } from '../../features/communications/conversationDisplay'
 import {
   buildConversationTimeline,
   buildContextPreview,
-  contextHasMessages,
   findRelatedContextById,
   normalizeRelatedContexts,
 } from '../../features/communications/conversationTimeline'
 import { messagesText } from '../../features/communications/messagesI18n'
 import {
-  shouldAutoTranslate,
+  detectMessageLanguage,
+  shouldOfferMessageTranslation,
+  translateLanguageOptionsForUser,
   translateToLanguage,
   languageLabel,
 } from '../../features/communications/messageTranslate'
-import { canAutoTranslateMessages, canShowAdminTranslateIcon } from '../../config/messageTranslateFlags'
+import {
+  canAutoTranslateMessages,
+  canShowAdminTranslateIcon,
+  canShowManualTranslate,
+} from '../../config/messageTranslateFlags'
 import { resolveRelatedSnapshot } from '../../features/communications/relatedSnapshot'
 import { addToast } from '../../features/ui/uiSlice'
-import { PopoverMenu } from '../../components/ui/PopoverMenu'
-import { VerifiedDisplayName } from '../../components/ui/Badge'
-import { peerActivityLabel, truncateWords } from './format'
+import { truncateWords } from './format'
 import {
   MessageAvatar,
   MessageBubble,
@@ -57,10 +50,8 @@ import {
 } from './MessageBubble'
 import { conversationMessageCount, isMessageFromUser, messageHasReactions, messageSearchHaystack } from './messageUtils'
 import { RelatedContentPreview } from './RelatedContentPreview'
-import { TypingDots, TypingIndicator } from './TypingIndicator'
+import { TypingIndicator } from './TypingIndicator'
 import { MessageSendButton } from './MessageSendButton'
-
-const HEADER_ICON_STROKE = 1.48
 
 function matchesThreadQuery(messageOrText, query) {
   if (!query.trim()) return true
@@ -82,14 +73,9 @@ export function ConversationPanel({
   messagesLoadingOlder = false,
   hasOlderMessages = false,
   onLoadOlder,
-  onArchive,
-  onBack,
-  onBlock,
   onDraft,
   onFile,
   onShareContact,
-  onMute,
-  onPin,
   onDelete,
   onEdit,
   onReact,
@@ -105,33 +91,36 @@ export function ConversationPanel({
   sentAnimationIds = [],
   onTyping,
   onStopTyping,
-  archived,
   onToggleSuggestions,
   suggestions,
   suggestionsEnabled,
   user,
-  muted,
-  pinned,
+  threadSearchOpen = false,
+  threadQuery = '',
+  onThreadQueryChange,
 }) {
   const { t, language } = useLanguage()
   const dispatch = useDispatch()
   const peer = getConversationPeer(active, user.id)
-  const peerOnline = useSelector((state) => (peer?.id ? Boolean(state.presence.online[peer.id]) : false))
+  const peerLanguage = useSelector((state) => {
+    const peerId = peer?.id
+    if (!peerId) return null
+    return state.account.preferences?.[peerId]?.language || null
+  })
+  const manualTranslateEnabled = canShowManualTranslate(user)
+  const adminTranslateEnabled = canShowAdminTranslateIcon(user)
+  const translateLanguageOptions = useMemo(
+    () =>
+      translateLanguageOptionsForUser({
+        readerLanguage: language,
+        isAdmin: adminTranslateEnabled,
+      }),
+    [language, adminTranslateEnabled],
+  )
   const liveEntry = peer?.id ? avatarMap[peer.id] : undefined
   const peerAvatarSrc =
     liveEntry !== undefined ? liveEntry.avatarUrl || null : peer?.avatarUrl || null
   const relatedPreview = useSelector((state) => resolveRelatedSnapshot(state, active))
-  // Le bandeau "pourquoi cette conversation" ne doit apparaître que si un
-  // message a effectivement été échangé à propos du contexte le plus récent
-  // — sinon un simple clic sur "Contacter" (sans rien écrire) l'affiche à tort.
-  const latestContext = useMemo(() => {
-    const contexts = normalizeRelatedContexts(active)
-    if (!contexts.length) return null
-    return contexts.slice().sort((a, b) => new Date(a.introducedAt) - new Date(b.introducedAt)).at(-1)
-  }, [active])
-  const showRelatedContext =
-    Boolean(relatedPreview?.path) &&
-    (latestContext ? contextHasMessages(latestContext, active) : active.messages?.length > 0)
   // Horodatage de secours stable (calculé une seule fois, pas à chaque rendu)
   // pour l'entrée de contexte synthétique quand ni createdAt ni updatedAt n'existent.
   const [fallbackTimelineAt] = useState(() => Date.now())
@@ -156,8 +145,6 @@ export function ConversationPanel({
   const messageListRef = useRef(null)
   const composerRef = useRef(null)
   const composerShellRef = useRef(null)
-  const threadHeaderRef = useRef(null)
-  const threadScrollYRef = useRef(0)
   const stickToBottomRef = useRef(true)
   const forceStickUntilRef = useRef(0)
   const loadOlderAnchorRef = useRef(null)
@@ -170,11 +157,8 @@ export function ConversationPanel({
     : null
   const messageCount = conversationMessageCount(active, user.id)
   const [openActionsId, setOpenActionsId] = useState(null)
-  const [threadSearchOpen, setThreadSearchOpen] = useState(false)
-  const [threadQuery, setThreadQuery] = useState('')
   const [showScrollFab, setShowScrollFab] = useState(false)
   const [composerOffset, setComposerOffset] = useState(120)
-  useMessageComposerBottom()
   const [attachMenuOpen, setAttachMenuOpen] = useState(false)
   const [contactPickerOpen, setContactPickerOpen] = useState(false)
   const [translationById, setTranslationById] = useState({})
@@ -196,7 +180,7 @@ export function ConversationPanel({
     const pending = active.messages.filter((message) => {
       if (isMessageFromUser(message, user.id)) return false
       const text = String(message?.text || '').trim()
-      if (!shouldAutoTranslate(text, language)) return false
+      if (!shouldOfferMessageTranslation({ text, readerLanguage: language, peerLanguage })) return false
       if (autoTranslateQueued.current.has(message.id)) return false
       if (translationById[message.id]?.translatedText) return false
       return true
@@ -245,7 +229,7 @@ export function ConversationPanel({
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [active.messages, active?.id, language, translationById, user])
+  }, [active.messages, active?.id, language, peerLanguage, translationById, user])
 
   function handleToggleTranslationOriginal(messageId) {
     setTranslationById((prev) => {
@@ -258,8 +242,16 @@ export function ConversationPanel({
     })
   }
 
+  function messageTranslateEnabled(message) {
+    if (!manualTranslateEnabled || isMessageFromUser(message, user.id)) return false
+    const text = String(message?.text || '').trim()
+    if (text.length < 3) return false
+    if (message.attachment?.reactionEmoji) return false
+    return true
+  }
+
   async function handleTranslateMessage(message, targetLang) {
-    if (!canShowAdminTranslateIcon(user)) return
+    if (!manualTranslateEnabled) return
     const text = String(message?.text || '').trim()
     if (text.length < 3) return
     if (translatingId === message.id) return
@@ -306,8 +298,6 @@ export function ConversationPanel({
     }
   }
   const fileInputRef = useRef(null)
-  const [threadHeaderVisible, setThreadHeaderVisible] = useState(true)
-  const [threadHeaderOffset, setThreadHeaderOffset] = useState(68)
   const [initialUnreadCount] = useState(() => active.unreadBy?.[user.id] || 0)
   const firstUnreadIndex = useMemo(
     () => firstUnreadMessageIndex(active.messages, user.id, initialUnreadCount),
@@ -359,7 +349,6 @@ export function ConversationPanel({
       rafIds.push(id)
     }
     schedule(() => {
-      setThreadHeaderVisible(true)
       stickToBottom('auto')
       schedule(() => stickToBottom('auto'))
     })
@@ -374,19 +363,6 @@ export function ConversationPanel({
       timers.forEach(clearTimeout)
     }
   }, [active.id])
-
-  useLayoutEffect(() => {
-    const header = threadHeaderRef.current
-    if (!header || typeof ResizeObserver === 'undefined') return undefined
-    const sync = () => {
-      const next = Math.ceil(header.getBoundingClientRect().height)
-      setThreadHeaderOffset((prev) => (prev === next ? prev : next))
-    }
-    sync()
-    const observer = new ResizeObserver(sync)
-    observer.observe(header)
-    return () => observer.disconnect()
-  }, [showRelatedContext, peer?.name, peerOnline, peerTyping])
 
   // Stay pinned while content height changes (messages, draft, loading ↔ empty).
   useLayoutEffect(() => {
@@ -403,7 +379,6 @@ export function ConversationPanel({
     formik.values.text,
     messagesLoading,
     composerOffset,
-    threadHeaderOffset,
   ])
 
   // Preserve viewport when older messages are prepended.
@@ -475,7 +450,6 @@ export function ConversationPanel({
   useEffect(() => {
     const messageList = messageListRef.current
     if (!messageList) return
-    threadScrollYRef.current = messageList.scrollTop
     function handleScroll() {
       const distanceFromBottom =
         messageList.scrollHeight - messageList.scrollTop - messageList.clientHeight
@@ -490,20 +464,6 @@ export function ConversationPanel({
       if (!forcing && messageList.scrollTop < 80) {
         requestLoadOlder()
       }
-
-      const y = messageList.scrollTop
-      const delta = y - threadScrollYRef.current
-      threadScrollYRef.current = y
-      if (shouldPinThreadHeader()) {
-        setThreadHeaderVisible(true)
-        return
-      }
-      if (threadSearchOpen || distanceFromBottom < 120 || y <= 8) {
-        setThreadHeaderVisible(true)
-        return
-      }
-      if (delta > 8) setThreadHeaderVisible(false)
-      else if (delta < -8) setThreadHeaderVisible(true)
     }
     handleScroll()
     messageList.addEventListener('scroll', handleScroll, { passive: true })
@@ -537,190 +497,17 @@ export function ConversationPanel({
   }
 
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden overscroll-none bg-transparent">
+    <div className="message-thread-panel flex h-full min-h-0 min-w-0 flex-col overflow-hidden overscroll-none bg-transparent">
       <div className="message-thread-canvas relative flex min-h-0 flex-1 flex-col overflow-hidden">
-        <header
-          ref={threadHeaderRef}
-          className={`message-thread-header absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-1.5 bg-transparent px-3 py-2.5 backdrop-blur-md transition-transform duration-300 ease-out sm:gap-2 sm:px-4 lg:px-5 ${
-            threadHeaderVisible ? 'translate-y-0' : '-translate-y-full pointer-events-none'
-          }`}
-        >
-          <div className="header-brand-chip flex h-[3.004375rem] min-w-0 max-w-[calc(100%-7rem)] flex-1 items-center gap-2 rounded-full bg-transparent px-1.5 pr-2.5 sm:h-[3.3048125rem] sm:max-w-[calc(100%-7.75rem)] sm:gap-2.5 sm:pr-3">
-            <button
-              type="button"
-              className="header-action-btn relative grid shrink-0 !size-[2.185rem] !border-0 !bg-transparent sm:!size-[2.458125rem] lg:hidden"
-              onClick={onBack}
-              aria-label={t('messages.closeConversation')}
-            >
-              <LuX className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
-            </button>
-            <Link to={peer?.id ? `/users/${peer.id}/publications` : '#'} className="relative shrink-0">
-              <EntityAvatar
-                name={peer.name}
-                src={peerAvatarSrc}
-                size="md"
-                shape="user"
-                ring={false}
-                className="!size-[2.185rem] !rounded-full shadow-sm sm:!size-[2.458125rem]"
-                alt={peer.name}
-              />
-              {peerOnline ? (
-                <span
-                  className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-[var(--app-surface)] bg-emerald-500"
-                  aria-hidden="true"
-                />
-              ) : null}
-            </Link>
-            <div className="min-w-0">
-              <Link
-                to={peer?.id ? `/users/${peer.id}/publications` : '#'}
-                className="flex min-w-0 items-center gap-1.5 hover:underline"
-              >
-                <VerifiedDisplayName
-                  as="h2"
-                  name={peer.name}
-                  verified={Boolean(peer.verified)}
-                  iconSize="sm"
-                  className="truncate text-sm font-black leading-none tracking-tight text-[var(--app-text)] sm:text-[0.9375rem]"
-                />
-                {pinned ? <FiStar className="size-3.5 shrink-0 text-amber-500" aria-label={t("messages.pinnedAria")} /> : null}
-                {muted ? <FiBellOff className="size-3.5 shrink-0 text-[var(--app-text-faint)]" aria-label={t("messages.mutedAria")} /> : null}
-              </Link>
-              <div className="mt-0.5 flex min-w-0 items-center">
-                {peerTyping ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold leading-tight text-brand-700 dark:text-brand-300">
-                    {t('messages.typing')}
-                    <TypingDots />
-                  </span>
-                ) : peerOnline ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold leading-tight text-emerald-600 dark:text-emerald-400">
-                    <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
-                    {t('messages.activity.online')}
-                  </span>
-                ) : (
-                  <span className="truncate text-[11px] leading-tight text-[var(--app-text-muted)]">
-                    {peerActivityLabel(peer.lastActiveAt, t)}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="ml-auto flex h-[3.004375rem] shrink-0 items-center gap-1.5 sm:h-[3.3048125rem] [&_.header-action-btn]:bg-[var(--app-surface)]/87">
-            <button
-              type="button"
-              className="header-action-btn relative grid"
-              onClick={() => {
-                setThreadSearchOpen((value) => !value)
-                if (threadSearchOpen) setThreadQuery('')
-                setThreadHeaderVisible(true)
-              }}
-              aria-label={threadSearchOpen ? t("messages.closeSearchInThread") : t("messages.searchInThread")}
-              aria-pressed={threadSearchOpen}
-            >
-              <LuSearch className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
-            </button>
-            {showRelatedContext ? (
-              <Link
-                className="header-action-btn relative grid lg:hidden"
-                to={active.relatedPath || relatedPreview.path}
-                aria-label={t("messages.viewListing")}
-              >
-                <LuExternalLink className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
-              </Link>
-            ) : null}
-            {showRelatedContext ? (
-              <Link
-                className="hidden h-[3.004375rem] shrink-0 items-center gap-1.5 rounded-full bg-[var(--app-surface)]/65 px-3 text-xs font-bold text-brand-700 backdrop-blur-md transition hover:bg-[var(--app-surface)]/80 sm:h-[3.3048125rem] lg:inline-flex dark:text-brand-300"
-                to={active.relatedPath || relatedPreview.path}
-              >
-                Voir la fiche <LuExternalLink className="size-3.5" strokeWidth={HEADER_ICON_STROKE} />
-              </Link>
-            ) : null}
-            <PopoverMenu
-              ariaLabel={messagesText(t, 'messages.conversationOptionsAria')}
-              trigger={
-                <span className="header-action-btn relative grid cursor-pointer">
-                  <LuEllipsisVertical className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
-                </span>
-              }
-            >
-              {peer?.id ? (
-                <Link
-                  to={`/users/${peer.id}/publications`}
-                  role="menuitem"
-                  className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-[var(--app-surface-muted)]"
-                >
-                  <FiUser /> {t('messages.viewProfile')}
-                </Link>
-              ) : null}
-              <button
-                type="button"
-                role="menuitem"
-                className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-[var(--app-surface-muted)]"
-                onClick={onPin}
-              >
-                <FiStar /> {pinned ? t("messages.unpin") : t("messages.pin")}
-              </button>
-              <button
-                type="button"
-                role="menuitem"
-                className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-[var(--app-surface-muted)]"
-                onClick={onMute}
-              >
-                {muted ? <FiBell /> : <FiBellOff />} {muted ? t("messages.unmute") : t("messages.mute")}
-              </button>
-              <button
-                type="button"
-                role="menuitem"
-                className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-[var(--app-surface-muted)]"
-                onClick={() => onToggleSuggestions?.()}
-              >
-                {suggestionsEnabled ? <FiEye /> : <FiEyeOff />}{' '}
-                {suggestionsEnabled
-                  ? messagesText(t, 'messages.hideSuggestions')
-                  : messagesText(t, 'messages.showSuggestions')}
-              </button>
-              <button
-                type="button"
-                role="menuitem"
-                className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-[var(--app-surface-muted)]"
-                onClick={onArchive}
-              >
-                <FiArchive />{' '}
-                {archived ? messagesText(t, 'messages.restore') : messagesText(t, 'messages.archive')}
-              </button>
-              <button
-                type="button"
-                role="menuitem"
-                className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 dark:hover:bg-red-950/30"
-                onClick={onBlock}
-              >
-                <FiSlash /> {blocked ? t("messages.unblock") : t("messages.block")}
-              </button>
-            </PopoverMenu>
-          </div>
-          <div
-            className="pointer-events-none absolute inset-x-0 inset-y-0 -z-10 bg-[var(--app-surface-muted)]/89"
-            aria-hidden="true"
-          />
-          <div
-            className="pointer-events-none absolute inset-x-0 top-full -z-10 h-8 bg-gradient-to-b from-[var(--app-surface-muted)]/89 to-transparent"
-            aria-hidden="true"
-          />
-        </header>
-
       {threadSearchOpen ? (
-        <div
-          className="relative z-20 shrink-0 border-b border-[var(--app-border)]/60 bg-[var(--app-surface-muted)]/70 px-3 py-2 sm:px-4"
-          style={{ paddingTop: `calc(${threadHeaderOffset}px + 0.35rem)` }}
-        >
+        <div className="relative z-20 shrink-0 border-b border-[var(--app-border)]/60 bg-[var(--app-surface-muted)]/70 px-3 py-2 sm:px-4">
           <div className="mx-auto flex max-w-3xl items-center gap-2 rounded-xl bg-[var(--app-surface)] px-3 py-2">
             <FiSearch className="shrink-0 text-[var(--app-text-muted)]" />
             <input
               autoFocus
               className="min-w-0 flex-1 bg-transparent text-sm outline-none"
               value={threadQuery}
-              onChange={(event) => setThreadQuery(event.target.value)}
+              onChange={(event) => onThreadQueryChange?.(event.target.value)}
               placeholder={t("messages.searchInConversation")}
               aria-label={t("messages.searchInConversation")}
             />
@@ -728,7 +515,7 @@ export function ConversationPanel({
               <button
                 type="button"
                 className="grid size-8 place-items-center rounded-lg text-[var(--app-text-muted)] hover:bg-[var(--app-surface-muted)]"
-                onClick={() => setThreadQuery('')}
+                onClick={() => onThreadQueryChange?.('')}
                 aria-label={t("messages.clearSearch")}
               >
                 <FiX />
@@ -739,17 +526,12 @@ export function ConversationPanel({
       ) : null}
 
       <div
-        className="relative min-h-0 flex-1 overflow-hidden"
+        className="message-thread-scroll relative min-h-0 flex-1 overflow-hidden"
         style={{ '--message-composer-offset': `${composerOffset}px` }}
       >
         <div
           ref={messageListRef}
-          className="scrollbar-hidden h-full overscroll-contain overflow-y-auto bg-transparent px-3 sm:px-4"
-          style={{
-            paddingTop: threadSearchOpen
-              ? '0.75rem'
-              : `calc(${threadHeaderOffset}px + 0.35rem)`,
-          }}
+          className="scrollbar-hidden h-full overscroll-contain overflow-y-auto bg-transparent px-3 pt-2 sm:px-4"
           data-testid="message-scroll-region"
         >
           <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col">
@@ -916,10 +698,15 @@ export function ConversationPanel({
                           onRetry={onRetry}
                           onCopy={onCopy}
                           onToggleTranslationOriginal={handleToggleTranslationOriginal}
-                          onTranslate={
-                            canShowAdminTranslateIcon(user) ? handleTranslateMessage : undefined
+                          onTranslate={messageTranslateEnabled(message) ? handleTranslateMessage : undefined}
+                          showTranslateIcon={messageTranslateEnabled(message)}
+                          translateLanguageOptions={translateLanguageOptions}
+                          translateHintLanguage={
+                            detectMessageLanguage(message.text) &&
+                            detectMessageLanguage(message.text) !== language
+                              ? languageLabel(detectMessageLanguage(message.text))
+                              : null
                           }
-                          showTranslateIcon={canShowAdminTranslateIcon(user)}
                           translation={translationById[message.id] || null}
                           translating={translatingId === message.id}
                           autoTranslateEnabled={canAutoTranslateMessages(user)}
@@ -960,11 +747,14 @@ export function ConversationPanel({
             <FiArrowDown />
           </button>
         ) : null}
+      </div>
+      </div>
 
       <div
         ref={composerShellRef}
-        className="message-composer-shell absolute inset-x-0 bottom-0 z-20 border-t-0 bg-transparent p-0 max-lg:bottom-auto"
+        className="message-composer-shell z-20 w-full shrink-0 bg-transparent p-0"
         data-testid="message-composer"
+        style={{ '--message-composer-offset': `${composerOffset}px` }}
       >
         {!blocked && suggestionsEnabled && suggestions.length ? (
           <div
@@ -1246,10 +1036,6 @@ export function ConversationPanel({
             }}
             onBlur={() => {
               syncKeyboardInsetAfterBlur()
-              setThreadHeaderVisible(true)
-            }}
-            onFocus={() => {
-              setThreadHeaderVisible(true)
             }}
           />
           <MessageSendButton
@@ -1282,8 +1068,6 @@ export function ConversationPanel({
           </div>
         ) : null}
         </div>
-      </div>
-      </div>
       </div>
       <ContactSharePicker
         open={contactPickerOpen}

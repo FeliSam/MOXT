@@ -24,6 +24,7 @@ import {
 } from '../features/transfers/transferProfileFavorites'
 import { createReceipt } from '../features/finance/financeSlice'
 import { TransferWorkflowPanel } from '../features/transfers/detail/TransferWorkflowPanel'
+import { TransferContactMenu } from '../features/transfers/detail/TransferContactMenu'
 import { TransferProofsSection } from '../features/transfers/detail/TransferProofsSection'
 import { TransferDetailAdminPanel } from '../features/transfers/detail/TransferDetailAdminPanel'
 import { TransferDetailFinancialCard } from '../features/transfers/detail/TransferDetailFinancialCard'
@@ -240,15 +241,19 @@ export function TransferDetailPage() {
         title={t('transfers.detail.title')}
         actions={
           <div className="flex max-w-full flex-wrap gap-2">
-            <ContactButton
-              ownerId={access.contactId}
-              relatedEntity={transfer}
-              relatedId={transfer.id}
-              relatedPath={`/transfers/${transfer.id}`}
-              relatedTitle={t('transfers.detail.relatedTitle', { id: transfer.id, contact: access.contactTitle })}
-              relatedType="transfer"
-              variant="secondary"
-            />
+            {access.isAdminViewer ? (
+              <TransferContactMenu transfer={transfer} variant="secondary" />
+            ) : (
+              <ContactButton
+                ownerId={access.contactId}
+                relatedEntity={transfer}
+                relatedId={transfer.id}
+                relatedPath={`/transfers/${transfer.id}`}
+                relatedTitle={t('transfers.detail.relatedTitle', { id: transfer.id, contact: access.contactTitle })}
+                relatedType="transfer"
+                variant="secondary"
+              />
+            )}
             <BackButton
               fallback={access.isBusinessViewer ? '/professional' : '/transfers/history'}
             />
@@ -294,8 +299,9 @@ export function TransferDetailPage() {
               actionView={actionView}
               businessProof={businessProof}
               canCancel={access.canCancel}
-              contactOwnerId={access.contactId}
+              contactOwnerId={access.isAdminViewer ? null : access.contactId}
               contactTitle={access.contactTitle}
+              isAdminViewer={access.isAdminViewer}
               countdown={countdown}
               acceptanceCountdown={acceptanceCountdown}
               proof={proof}

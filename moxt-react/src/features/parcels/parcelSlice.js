@@ -113,6 +113,23 @@ const parcelSlice = createSlice({
       request.status = action.payload.status
       request.updatedAt = new Date().toISOString()
     },
+    releaseParcelRequestByOwner(state, action) {
+      const request = state.requests.find((item) => item.id === action.payload.id)
+      if (!request || request.status !== 'approved') return
+      const parcel = state.items.find((item) => item.id === request.parcelId)
+      if (!parcel || parcel.ownerId !== action.payload.ownerId) return
+      parcel.remainingKg = Math.min(parcel.capacityKg, parcel.remainingKg + request.kg)
+      parcel.reservations = (parcel.reservations || []).filter((item) =>
+        item.requestId
+          ? item.requestId !== request.id
+          : !(item.userId === request.userId && Number(item.kg) === Number(request.kg)),
+      )
+      if (parcel.status === 'full') parcel.status = 'active'
+      parcel.updatedAt = new Date().toISOString()
+      request.status = 'cancelled'
+      request.cancelledBy = 'owner'
+      request.updatedAt = new Date().toISOString()
+    },
     cancelParcelRequest(state, action) {
       const request = state.requests.find(
         (item) => item.id === action.payload.id && item.userId === action.payload.userId,
@@ -188,6 +205,7 @@ export const {
   deleteParcel,
   duplicateParcel,
   incrementParcelView,
+  releaseParcelRequestByOwner,
   requestParcelReservation,
   reserveParcel,
   updateParcel,

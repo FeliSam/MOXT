@@ -11,6 +11,7 @@ import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { ContactButton } from '../../communications/ContactButton'
+import { TransferContactMenu } from './TransferContactMenu'
 import { TransferClientNote } from '../TransferClientNote'
 import { TransferRecipientAccountCard } from '../TransferRecipientAccountCard'
 import { TransferStatusBadge } from '../TransferStatusBadge'
@@ -31,6 +32,7 @@ export function TransferWorkflowPanel({
   canCancel,
   contactOwnerId,
   contactTitle,
+  isAdminViewer = false,
   countdown,
   acceptanceCountdown,
   onAcceptRequest,
@@ -287,7 +289,13 @@ export function TransferWorkflowPanel({
 
         <TransferProofsSection className="border-t border-[var(--app-border)] pt-4" compact transfer={transfer} />
 
-        {contactOwnerId ? (
+        {isAdminViewer ? (
+          <div className="flex justify-end border-t border-[var(--app-border)] pt-4">
+            <TransferContactMenu transfer={transfer} variant="secondary">
+              {t('transfers.workflow.contactChat')}
+            </TransferContactMenu>
+          </div>
+        ) : contactOwnerId ? (
           <div className="flex justify-end border-t border-[var(--app-border)] pt-4">
             <ContactButton
               ownerId={contactOwnerId}

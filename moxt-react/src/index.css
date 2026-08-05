@@ -429,15 +429,13 @@ html.capacitor-native .bottom-nav-shell {
   position: fixed;
   left: 0.75rem;
   right: 0.75rem;
-  bottom: var(--bottom-nav-offset);
   padding: 0.2rem;
   padding-bottom: var(--bottom-nav-pad);
   /* `position: fixed` se cale sur le LAYOUT viewport, pas sur la zone visible.
      Quand la barre d'URL mobile se rétracte/réapparaît, l'écart entre les deux
      fait « décoller » la barre. `--viewport-bottom-gap` (mesuré via l'API
-     VisualViewport dans useKeyboardInset) le compense en temps réel.
-     Le translate3d garde en prime la couche GPU contre le momentum scroll iOS. */
-  transform: translate3d(0, calc(-1 * var(--viewport-bottom-gap, 0px)), 0);
+     VisualViewport dans useKeyboardInset) le compense en temps réel. */
+  bottom: calc(var(--bottom-nav-offset) + var(--viewport-bottom-gap, 0px));
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
 }
@@ -460,7 +458,7 @@ html.keyboard-open .bottom-nav-shell {
   }
 }
 
-/* Mobile /messages : composer fixed — au-dessus de la nav (liste) ou en bas (thread). */
+/* Mobile /messages : composer fixed desktop split — détail mobile = in-flow (catalogues). */
 @media (max-width: 1023px) {
   html.messages-route-lock .message-composer-shell {
     position: fixed;
@@ -469,32 +467,107 @@ html.keyboard-open .bottom-nav-shell {
     z-index: 40;
   }
 
-  html.messages-route-lock:not(.messages-thread-immersive) .message-composer-shell {
+  html.messages-route-lock:not(.messages-thread-detail) .message-composer-shell {
     bottom: var(--bottom-nav-clearance);
   }
 
-  html.messages-thread-immersive .message-composer-shell {
-    bottom: 0;
-  }
-
-  html.keyboard-open.messages-route-lock .message-composer-shell {
+  html.keyboard-open.messages-route-lock:not(.messages-thread-detail) .message-composer-shell {
     bottom: var(--composer-keyboard-bottom, 0px);
   }
 
-  html.messages-route-lock:not(.messages-thread-immersive) [data-testid='message-scroll-region'] {
+  html.messages-route-lock:not(.messages-thread-detail) [data-testid='message-scroll-region'] {
     padding-bottom: calc(var(--message-composer-offset, 120px) + var(--bottom-nav-clearance) + 0.75rem);
   }
 
-  html.messages-thread-immersive [data-testid='message-scroll-region'] {
-    padding-bottom: calc(var(--message-composer-offset, 120px) + 0.75rem);
-  }
-
-  html.messages-route-lock:not(.messages-thread-immersive) .message-scroll-fab {
+  html.messages-route-lock:not(.messages-thread-detail) .message-scroll-fab {
     bottom: calc(var(--message-composer-offset, 120px) + var(--bottom-nav-clearance) + 0.75rem);
   }
 
-  html.messages-thread-immersive .message-scroll-fab {
-    bottom: calc(var(--message-composer-offset, 120px) + 0.75rem);
+  /* Détail mobile (modèle 3) : colonne flex pleine hauteur, composer collé en bas. */
+  html.messages-thread-detail,
+  html.messages-thread-detail body {
+    height: 100%;
+    max-height: 100svh;
+    overflow: hidden;
+  }
+
+  html.messages-thread-detail .messages-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100svh;
+    max-height: 100svh;
+    min-height: 100svh;
+    overflow: hidden;
+  }
+
+  html.messages-thread-detail #root {
+    height: 100%;
+    max-height: 100svh;
+    overflow: hidden;
+  }
+
+  html.messages-thread-detail [data-testid='messages-viewport'],
+  html.messages-thread-detail [data-testid='message-thread'],
+  html.messages-thread-detail .message-thread-panel {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    max-height: none;
+  }
+
+  html.messages-thread-detail .message-thread-canvas {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  html.messages-thread-detail .message-thread-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  html.messages-thread-detail .message-composer-shell {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    flex-shrink: 0;
+    width: 100%;
+    z-index: 40;
+  }
+
+  html.messages-thread-detail .message-composer-dock {
+    width: 100%;
+  }
+
+  /* Capacitor / Safari overlay : coller au clavier via bottom (pas transform — gap iOS). */
+  html.keyboard-open.messages-thread-detail .message-composer-shell {
+    bottom: var(--composer-keyboard-bottom, 0px);
+    transition: bottom 160ms ease-out;
+  }
+
+  /* Clavier ouvert : pas de safe-area sous le form (sinon bande blanche iOS). */
+  html.keyboard-open .message-composer-dock {
+    padding-bottom: 0.75rem !important;
+  }
+
+  @media (min-width: 640px) {
+    html.keyboard-open .message-composer-dock {
+      padding-bottom: 1rem !important;
+    }
+  }
+
+  html.messages-thread-detail [data-testid='message-scroll-region'] {
+    padding-bottom: calc(var(--message-composer-offset, 72px) + 0.75rem);
+  }
+
+  html.messages-thread-detail .message-scroll-fab {
+    bottom: calc(var(--message-composer-offset, 72px) + 0.75rem);
   }
 }
 
@@ -549,13 +622,19 @@ html.messages-route-lock #root {
   overflow: hidden;
 }
 
-/* Messagerie : pas de compensation scroll document (catalogues scrollent la page). */
-html.messages-route-lock .bottom-nav-shell {
-  transform: none;
-}
-
 .messages-shell {
   overscroll-behavior: none;
+}
+
+/* Liste mobile : pas de scroll lock document — même modèle viewport que catalogues. */
+@media (max-width: 1023px) {
+  html:not(.messages-route-lock) .messages-shell {
+    min-height: 100svh;
+  }
+
+  html:not(.messages-route-lock):not(.messages-thread-detail) .messages-shell [data-testid='messages-viewport'] {
+    min-height: calc(100svh - var(--bottom-nav-clearance));
+  }
 }
 
 .messages-floating-layer {
@@ -568,53 +647,20 @@ html.messages-route-lock .bottom-nav-shell {
   touch-action: pan-y;
 }
 
-/* Conversation mobile ouverte : header app + bottom nav masqués (nav portalisée sur <html>). */
+/* Détail mobile : pas de hauteur 100% forcée — svh calculé ci-dessus. */
 @media (max-width: 1023px) {
+  html.messages-thread-detail,
   html.messages-thread-immersive {
     --bottom-nav-clearance: 0px;
     --bottom-nav-clearance-loose: 0px;
   }
 
-  html.messages-thread-immersive .messages-shell,
-  html.messages-thread-immersive #main-content,
-  html.messages-thread-immersive [data-testid='messages-viewport'],
-  html.messages-thread-immersive [data-testid='message-thread'] {
-    min-height: 100dvh;
-    max-height: 100dvh;
-    height: 100%;
-  }
-
-  .messages-thread-immersive .app-top-header,
-  html.messages-thread-immersive .bottom-nav-shell,
-  .messages-thread-immersive .bottom-nav-shell {
-    display: none !important;
-    pointer-events: none !important;
-    visibility: hidden !important;
-    height: 0 !important;
-    overflow: hidden !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border: 0 !important;
-  }
-
   .messages-thread-immersive main,
+  html.messages-thread-detail main,
   html.messages-thread-immersive main {
-    padding: 0 !important;
-  }
-
-  .messages-thread-immersive .message-thread-header {
-    position: fixed;
-    top: calc(var(--visual-viewport-offset-top, 0px) + env(safe-area-inset-top, 0px));
-    left: 0;
-    right: 0;
-    z-index: 45;
-    padding-top: 0.625rem;
-    background: color-mix(in srgb, var(--app-surface-muted) 94%, transparent);
-  }
-
-  html.keyboard-open.messages-thread-immersive .message-thread-header {
-    transform: translate3d(0, 0, 0) !important;
-    pointer-events: auto !important;
+    padding-top: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
   }
 }
 
@@ -1167,7 +1213,7 @@ html.messages-route-lock .bottom-nav-shell {
   font-size: 2.16rem;
   line-height: 1;
   filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.35));
-  animation: status-reaction-bounce 0.72s cubic-bezier(0.34, 1.45, 0.64, 1);
+  animation: status-reaction-emoji-celebrate 10s ease-in-out forwards;
   pointer-events: none;
   transform-origin: center bottom;
 }
@@ -1549,14 +1595,17 @@ html.messages-route-lock .bottom-nav-shell {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--app-accent) 35%, transparent);
 }
 
-[data-testid='message-scroll-region'] {
+html:not(.messages-thread-detail) [data-testid='message-scroll-region'] {
   padding-bottom: calc(var(--message-composer-offset, 120px) + 0.75rem);
+}
+
+html:not(.messages-thread-detail) .message-scroll-fab {
+  bottom: calc(var(--message-composer-offset, 120px) + 0.75rem);
 }
 
 .message-scroll-fab {
   position: absolute;
   right: 1rem;
-  bottom: calc(var(--message-composer-offset, 120px) + 0.75rem);
   z-index: 15;
   display: grid;
   width: 2.75rem;
@@ -1728,7 +1777,88 @@ html.messages-route-lock .bottom-nav-shell {
   }
 }
 
-/* Statut partagé en conversation — rebond élastique à l'apparition. */
+/* Statut partagé — rebond d'entrée puis shake léger pendant 10s. */
+@keyframes status-reaction-emoji-celebrate {
+  0% {
+    transform: scale(0) translateY(12px) rotate(0deg);
+    opacity: 0;
+  }
+  3% {
+    transform: scale(1.4) translateY(-8px) rotate(-6deg);
+    opacity: 1;
+  }
+  6% {
+    transform: scale(0.88) translateY(4px) rotate(5deg);
+  }
+  9% {
+    transform: scale(1.14) translateY(-4px) rotate(-4deg);
+  }
+  12% {
+    transform: scale(0.96) translateY(2px) rotate(3deg);
+  }
+  15% {
+    transform: scale(1.04) translateY(-1px) rotate(-2deg);
+  }
+  18% {
+    transform: scale(1) translateY(0) rotate(0deg);
+  }
+  24% {
+    transform: scale(1.1) translateY(-4px) rotate(-5deg);
+  }
+  27% {
+    transform: scale(1) translateY(1px) rotate(4deg);
+  }
+  33% {
+    transform: scale(1.08) translateY(-3px) rotate(-3deg);
+  }
+  36% {
+    transform: scale(1) translateY(0) rotate(2deg);
+  }
+  42% {
+    transform: scale(1.09) translateY(-3px) rotate(-4deg);
+  }
+  45% {
+    transform: scale(1) translateY(1px) rotate(3deg);
+  }
+  51% {
+    transform: scale(1.07) translateY(-2px) rotate(-3deg);
+  }
+  54% {
+    transform: scale(1) translateY(0) rotate(2deg);
+  }
+  60% {
+    transform: scale(1.08) translateY(-3px) rotate(-3deg);
+  }
+  63% {
+    transform: scale(1) translateY(1px) rotate(2deg);
+  }
+  69% {
+    transform: scale(1.06) translateY(-2px) rotate(-2deg);
+  }
+  72% {
+    transform: scale(1) translateY(0) rotate(1deg);
+  }
+  78% {
+    transform: scale(1.05) translateY(-2px) rotate(-2deg);
+  }
+  81% {
+    transform: scale(1) translateY(0) rotate(1deg);
+  }
+  87% {
+    transform: scale(1.04) translateY(-1px) rotate(-1deg);
+  }
+  90% {
+    transform: scale(1) translateY(0) rotate(1deg);
+  }
+  96% {
+    transform: scale(1.02) translateY(-1px) rotate(-1deg);
+  }
+  100% {
+    transform: scale(1) translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+}
+
 @keyframes status-reaction-bounce {
   0% {
     transform: scale(0) translateY(10px);
@@ -1840,11 +1970,6 @@ html.messages-route-lock .bottom-nav-shell {
 }
 
 @media (max-width: 1023px) and (max-height: 640px) {
-  .message-thread-header {
-    min-height: 4rem;
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-  }
   .message-suggestions {
     margin-bottom: 0.25rem;
   }
@@ -2526,7 +2651,8 @@ html.messages-route-lock .bottom-nav-shell {
   .message-send-btn--sending .message-send-btn__icon,
   .message-send-btn--sending .message-send-btn__ring,
   .message-pending-indicator span,
-  .message-meta-status--pop {
+  .message-meta-status--pop,
+  .message-status-reaction-emoji {
     animation: none !important;
   }
 

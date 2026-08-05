@@ -1,12 +1,9 @@
 import { useFormik } from 'formik'
 import {
-  FiArchive,
-  FiMessageSquare,
   FiSearch,
   FiX,
 } from 'react-icons/fi'
-import { LuSearch } from 'react-icons/lu'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, useDeferredValue } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useDeferredValue, useCallback } from 'react'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { useSearchParams } from 'react-router-dom'
 import { resetMessagesScroll } from '../hooks/useScrollToTopOnStep'
@@ -37,18 +34,16 @@ import {
 import { selectUnreadMessageCount, selectUserConversations } from '../features/selectors'
 import { selectAccountPreferences, updateAccountPreferences } from '../features/account/accountSlice'
 import { useProfileAvatarMap } from '../features/account/useProfileAvatarMap'
-import { addToast, setMessageThreadImmersive } from '../features/ui/uiSlice'
+import { addToast } from '../features/ui/uiSlice'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useMessagesRealtimeSync } from '../hooks/useMessagesRealtimeSync'
 import { useConversationTyping } from '../hooks/useConversationTyping'
 import { useUploadProgress } from '../hooks/useUploadProgress'
-import { ConversationFilterMenu } from './messages/ConversationFilterMenu'
 import { ConversationNotFound } from './messages/ConversationNotFound'
 import { ConversationPanel } from './messages/ConversationPanel'
 import { ConversationRow } from './messages/ConversationRow'
 import { MessagesEmptyState } from './messages/MessagesEmptyState'
 import {
-  countConversationsForFilter,
   conversationMatchesQuery,
   shouldShowConversationInList,
 } from './messages/messageUtils'
@@ -60,7 +55,12 @@ import {
 import { buildContactAttachment } from '../features/communications/contactShareUtils'
 import { messagesText } from '../features/communications/messagesI18n'
 import { useLanguage } from '../contexts/useLanguage'
-import { MESSAGE_FILTER_IDS, conversationMatchesFilter } from './messages/messageFilters'
+import { useSetMessagesHeader } from '../contexts/MessagesHeaderContext'
+import { conversationMatchesFilter } from './messages/messageFilters'
+import { MessagesListHeader } from './messages/headers/MessagesListHeader'
+import { MessagesThreadHeader } from './messages/headers/MessagesThreadHeader'
+import { MessagesAssistantHeader } from './messages/headers/MessagesAssistantHeader'
+import { useConversationHeaderModel } from './messages/headers/useConversationHeaderModel'
 
 const ASSISTANT_ID = 'moxt-assistant'
 
@@ -83,13 +83,17 @@ export function MessagesPage() {
   const [sentAnimationIds, setSentAnimationIds] = useState([])
   const [showArchived, setShowArchived] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [threadSearchOpen, setThreadSearchOpen] = useState(false)
+  const [threadQuery, setThreadQuery] = useState('')
+  const [assistantAdminCompose, setAssistantAdminCompose] = useState(false)
+  const assistantHeaderActionsRef = useRef({
+    onContactAdmin: () => {},
+    onClearHistory: () => {},
+  })
   const [filter, setFilter] = useState('all')
-  const [listHeaderVisible, setListHeaderVisible] = useState(true)
-  const [listHeaderOffset, setListHeaderOffset] = useState(72)
+  const setMessagesHeader = useSetMessagesHeader()
   const listRef = useRef(null)
   const listScrollRef = useRef(null)
-  const listHeaderRef = useRef(null)
-  const listScrollYRef = useRef(0)
   const desktop = useMediaQuery('(min-width: 1024px)')
   const isFiltering = Boolean(deferredQuery.trim())
   const relatedConversation = conversations.find(
@@ -134,48 +138,7 @@ export function MessagesPage() {
     resetMessagesScroll()
     if (listScrollRef.current) {
       listScrollRef.current.scrollTop = 0
-      listScrollYRef.current = 0
     }
-  }, [])
-
-  useLayoutEffect(() => {
-    const immersive = Boolean(activeId) && !desktop
-    dispatch(setMessageThreadImmersive(immersive))
-    return () => {
-      dispatch(setMessageThreadImmersive(false))
-    }
-  }, [activeId, desktop, dispatch])
-
-  useLayoutEffect(() => {
-    const header = listHeaderRef.current
-    if (!header || typeof ResizeObserver === 'undefined') return undefined
-    const sync = () => {
-      const next = Math.ceil(header.getBoundingClientRect().height)
-      setListHeaderOffset((prev) => (prev === next ? prev : next))
-    }
-    sync()
-    const observer = new ResizeObserver(sync)
-    observer.observe(header)
-    return () => observer.disconnect()
-  }, [filter, showArchived, desktop, unreadMessagesCount])
-
-  useEffect(() => {
-    const list = listScrollRef.current
-    if (!list) return undefined
-    listScrollYRef.current = list.scrollTop
-    function handleScroll() {
-      const y = list.scrollTop
-      const delta = y - listScrollYRef.current
-      listScrollYRef.current = y
-      if (y <= 8) {
-        setListHeaderVisible(true)
-        return
-      }
-      if (delta > 8) setListHeaderVisible(false)
-      else if (delta < -8) setListHeaderVisible(true)
-    }
-    list.addEventListener('scroll', handleScroll, { passive: true })
-    return () => list.removeEventListener('scroll', handleScroll)
   }, [])
 
   const { peerTyping, notifyTyping, stopTyping } = useConversationTyping(
@@ -250,6 +213,7 @@ export function MessagesPage() {
   const avatarMap = useProfileAvatarMap(participantAvatarIds)
 
   const active = conversations.find((item) => item.id === activeId)
+  const conversationHeader = useConversationHeaderModel(active, user.id, avatarMap)
   const attachments =
     activeId && activeId !== ASSISTANT_ID ? attachmentsByConversation[activeId] || [] : []
   function setAttachments(next) {
@@ -570,13 +534,151 @@ export function MessagesPage() {
     }
   }
 
+  const returnToList = useCallback(() => {
+    setSearchParams({})
+  }, [setSearchParams])
+
+  const toggleThreadSearch = useCallback(() => {
+    setThreadSearchOpen((open) => {
+      if (open) setThreadQuery('')
+      return !open
+    })
+  }, [])
+
+  const handleAssistantAdminComposeChange = useCallback((value) => {
+    setAssistantAdminCompose(value)
+  }, [])
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset recherche fil à chaque changement de conversation
+    setThreadSearchOpen(false)
+    setThreadQuery('')
+  }, [activeId])
+
+  useLayoutEffect(() => {
+    if (!activeId) {
+      setMessagesHeader({
+        content: (
+          <MessagesListHeader
+            t={t}
+            conversations={conversations}
+            filter={filter}
+            onFilterChange={(next) => {
+              setFilter(next)
+              setShowArchived(false)
+            }}
+            showArchived={showArchived}
+            onToggleArchived={() => setShowArchived((value) => !value)}
+            searchOpen={searchOpen}
+            onSearchOpen={() => setSearchOpen(true)}
+            activeHumanConversations={activeHumanConversations}
+            unreadMessagesCount={unreadMessagesCount}
+            userId={user.id}
+          />
+        ),
+        variant: 'list',
+      })
+    } else if (assistantActive) {
+      setMessagesHeader({
+        content: (
+          <MessagesAssistantHeader
+            t={t}
+            showBack={!desktop}
+            onBack={returnToList}
+            onContactAdmin={() => assistantHeaderActionsRef.current.onContactAdmin?.()}
+            onClearHistory={() => assistantHeaderActionsRef.current.onClearHistory?.()}
+            adminComposeDisabled={!user || assistantAdminCompose}
+          />
+        ),
+        variant: 'assistant',
+      })
+    } else if (active && !invalidConversation) {
+      setMessagesHeader({
+        content: (
+          <MessagesThreadHeader
+            t={t}
+            active={active}
+            relatedPreview={conversationHeader.relatedPreview}
+            peer={conversationHeader.peer}
+            peerAvatarSrc={conversationHeader.peerAvatarSrc}
+            peerOnline={conversationHeader.peerOnline}
+            peerTyping={peerTyping}
+            pinned={conversationHeader.pinned}
+            muted={conversationHeader.muted}
+            blocked={blocked}
+            archived={showArchived}
+            suggestionsEnabled={suggestionsEnabled}
+            showRelatedContext={conversationHeader.showRelatedContext}
+            threadSearchOpen={threadSearchOpen}
+            onToggleThreadSearch={toggleThreadSearch}
+            onBack={returnToList}
+            onPin={() => dispatch(toggleConversationPin({ id: active.id, userId: user.id }))}
+            onMute={() => dispatch(toggleConversationMute({ id: active.id, userId: user.id }))}
+            onToggleSuggestions={() =>
+              dispatch(
+                updateAccountPreferences({
+                  userId: user.id,
+                  preferences: {
+                    messageSuggestionsEnabled: !suggestionsEnabled,
+                  },
+                }),
+              )
+            }
+            onArchive={() => {
+              dispatch(
+                showArchived
+                  ? restoreConversation({ id: active.id, userId: user.id })
+                  : archiveConversation({ id: active.id, userId: user.id }),
+              )
+              returnToList()
+            }}
+            onBlock={() => dispatch(toggleConversationBlock({ id: active.id, userId: user.id }))}
+          />
+        ),
+        variant: 'thread',
+      })
+    } else {
+      setMessagesHeader(null)
+    }
+  }, [
+    active,
+    activeId,
+    assistantActive,
+    assistantAdminCompose,
+    blocked,
+    conversationHeader.peer,
+    conversationHeader.peerAvatarSrc,
+    conversationHeader.peerOnline,
+    conversationHeader.pinned,
+    conversationHeader.muted,
+    conversationHeader.relatedPreview,
+    conversationHeader.showRelatedContext,
+    conversations,
+    desktop,
+    dispatch,
+    filter,
+    invalidConversation,
+    peerTyping,
+    returnToList,
+    searchOpen,
+    setMessagesHeader,
+    showArchived,
+    suggestionsEnabled,
+    t,
+    threadSearchOpen,
+    toggleThreadSearch,
+    unreadMessagesCount,
+    user.id,
+    activeHumanConversations,
+  ])
+
+  useLayoutEffect(() => {
+    return () => setMessagesHeader(null)
+  }, [setMessagesHeader])
+
   function closeSearch() {
     setQuery('')
     setSearchOpen(false)
-  }
-
-  function returnToList() {
-    setSearchParams({})
   }
 
   function retryMessage(message) {
@@ -589,18 +691,22 @@ export function MessagesPage() {
     )
   }
 
+  const mobileThread = Boolean(activeId) && !desktop
+
   return (
       <div
-        className="messages-shell relative flex h-full min-h-0 flex-col overflow-hidden overscroll-none bg-transparent"
+        className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden overscroll-none bg-transparent"
         data-testid="messages-viewport"
       >
       <div
         className={
-          integratedAssistant
-            ? 'mx-auto grid h-full min-h-0 w-full min-w-0 overflow-hidden rounded-t-[2rem] bg-transparent max-lg:rounded-none lg:grid-cols-[25rem_minmax(0,1fr)]'
-            : activeId
-              ? 'grid h-full min-h-0 w-full min-w-0 overflow-hidden rounded-t-[2rem] bg-transparent max-lg:rounded-none lg:grid-cols-[25rem_minmax(0,1fr)]'
-              : 'mx-auto h-full min-h-0 w-full min-w-0 max-w-5xl overflow-hidden rounded-t-[2rem] bg-transparent max-lg:rounded-none'
+          mobileThread
+            ? 'flex h-full min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden bg-transparent max-lg:rounded-none'
+            : integratedAssistant
+              ? 'mx-auto grid h-full min-h-0 w-full min-w-0 overflow-hidden rounded-t-[2rem] bg-transparent max-lg:rounded-none lg:grid-cols-[25rem_minmax(0,1fr)]'
+              : activeId
+                ? 'grid h-full min-h-0 w-full min-w-0 overflow-hidden rounded-t-[2rem] bg-transparent max-lg:rounded-none lg:grid-cols-[25rem_minmax(0,1fr)]'
+                : 'mx-auto h-full min-h-0 w-full min-w-0 max-w-5xl overflow-hidden rounded-t-[2rem] bg-transparent max-lg:rounded-none'
         }
       >
         <aside
@@ -676,117 +782,9 @@ export function MessagesPage() {
           ) : null}
           <div className="relative min-h-0 flex-1 overflow-hidden">
           <div
-            ref={listHeaderRef}
-            className={`message-list-header absolute inset-x-0 top-0 z-20 flex flex-col bg-transparent px-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] opacity-[0.89] backdrop-blur-md transition-transform duration-300 ease-out sm:px-4 sm:pb-2.5 lg:px-5 lg:pt-4 ${
-              listHeaderVisible ? 'translate-y-0' : '-translate-y-full pointer-events-none'
-            }`}
-          >
-            <div className="flex items-center justify-between gap-1.5 sm:gap-2">
-              <div className="header-brand-chip flex h-[3.004375rem] min-w-0 max-w-[calc(100%-7rem)] flex-1 items-center gap-2 rounded-full bg-transparent px-1.5 pr-2.5 sm:h-[3.3048125rem] sm:max-w-[calc(100%-7.75rem)] sm:gap-2.5 sm:pr-3">
-                <span className="grid size-[2.185rem] shrink-0 place-items-center rounded-full bg-[var(--app-accent-soft)] text-[var(--app-accent)] sm:size-[2.458125rem]">
-                  <FiMessageSquare className="text-lg opacity-[0.92]" aria-hidden="true" />
-                </span>
-                <div className="min-w-0">
-                  <h1 className="truncate text-sm font-black leading-none tracking-tight text-[var(--app-text)] sm:text-[0.9375rem]">
-                    {t("messages.conversations")}
-                  </h1>
-                  <p className="mt-0.5 truncate text-[11px] leading-tight text-[var(--app-text-muted)]">
-                    {messagesText(t, 'messages.exchangeCount', {
-                      count: activeHumanConversations.length + 1,
-                    })}{' '}
-                    {showArchived ? t("messages.archived") : t("messages.active")}
-                    {!showArchived && unreadMessagesCount > 0
-                      ? messagesText(
-                          t,
-                          unreadMessagesCount > 1
-                            ? 'messages.unreadCountPlural'
-                            : 'messages.unreadCount',
-                          { count: unreadMessagesCount },
-                        )
-                      : ''}
-                  </p>
-                </div>
-              </div>
-              <div className="ml-auto flex h-[3.004375rem] shrink-0 items-center gap-1.5 sm:h-[3.3048125rem] [&_.header-action-btn]:bg-[var(--app-surface)]/87">
-                <ConversationFilterMenu
-                  className="lg:hidden"
-                  conversations={conversations}
-                  filter={filter}
-                  onFilterChange={(next) => {
-                    setFilter(next)
-                    setShowArchived(false)
-                  }}
-                  showArchived={showArchived}
-                  onToggleArchived={() => setShowArchived((value) => !value)}
-                  userId={user.id}
-                />
-                <button
-                  type="button"
-                  onClick={() => setSearchOpen(true)}
-                  className="header-action-btn relative grid"
-                  aria-label={t("messages.searchConversationAria")}
-                  aria-expanded={searchOpen}
-                >
-                  <LuSearch className="header-action-icon" strokeWidth={1.48} aria-hidden="true" />
-                </button>
-              </div>
-            </div>
-            <div
-              className="message-filter-chips scrollbar-hidden mt-2.5 hidden gap-1.5 overflow-x-auto pb-0.5 lg:flex"
-              role="toolbar"
-              aria-label={t("messages.filterAria")}
-            >
-              {MESSAGE_FILTER_IDS.map((item) => {
-                const count = countConversationsForFilter(
-                  conversations,
-                  item.id,
-                  user.id,
-                  showArchived,
-                )
-                const activeFilter = filter === item.id && !showArchived
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      setFilter(item.id)
-                      setShowArchived(false)
-                    }}
-                    className={`message-filter-chip shrink-0 ${activeFilter ? 'message-filter-chip--active' : ''}`}
-                    aria-pressed={activeFilter}
-                  >
-                    {item.icon ? <item.icon className="size-3" aria-hidden="true" /> : null}
-                    {messagesText(t, item.labelKey) !== item.labelKey
-                      ? messagesText(t, item.labelKey)
-                      : t(item.labelKey)}
-                    {count ? <span className="message-filter-chip-count">{count}</span> : null}
-                  </button>
-                )
-              })}
-              <button
-                type="button"
-                onClick={() => setShowArchived((value) => !value)}
-                className={`message-filter-chip shrink-0 ${showArchived ? 'message-filter-chip--active' : ''}`}
-                aria-pressed={showArchived}
-              >
-                <FiArchive className="size-3" aria-hidden="true" />
-                {showArchived ? messagesText(t, 'messages.actives') : t('messages.archives')}
-              </button>
-            </div>
-            <div
-              className="pointer-events-none absolute inset-x-0 inset-y-0 -z-10 bg-[var(--app-surface-muted)]"
-              aria-hidden="true"
-            />
-            <div
-              className="pointer-events-none absolute inset-x-0 top-full -z-10 h-8 bg-gradient-to-b from-[var(--app-surface-muted)] to-transparent"
-              aria-hidden="true"
-            />
-          </div>
-
-          <div
             ref={listScrollRef}
-            className="scrollbar-hidden h-full overscroll-contain overflow-y-auto bg-transparent px-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
-            style={{ paddingTop: `calc(${listHeaderOffset}px + 0.35rem)` }}
+            data-testid="messages-list-scroll"
+            className="scrollbar-hidden h-full overscroll-contain overflow-y-auto bg-transparent px-0 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2"
           >
             <div className="pb-1">
               <ConversationRow
@@ -837,11 +835,15 @@ export function MessagesPage() {
 
         {activeId ? (
           <section
-            className="flex h-full min-h-0 min-w-0 max-w-full flex-col overflow-hidden bg-transparent"
+            className="flex h-full min-h-0 min-w-0 max-w-full flex-1 flex-col overflow-hidden bg-transparent"
             data-testid="message-thread"
           >
             {assistantActive ? (
-              <AiAssistantPanel onBack={returnToList} showBack={!desktop} userId={user.id} />
+              <AiAssistantPanel
+                userId={user.id}
+                headerActionsRef={assistantHeaderActionsRef}
+                onAdminComposeChange={handleAssistantAdminComposeChange}
+              />
             ) : invalidConversation ? (
               <ConversationNotFound onBack={returnToList} />
             ) : active ? (
@@ -856,20 +858,9 @@ export function MessagesPage() {
                 uploadProgress={uploadProgress}
                 blocked={blocked}
                 formik={formik}
-                onArchive={() => {
-                  dispatch(
-                    showArchived
-                      ? restoreConversation({ id: active.id, userId: user.id })
-                      : archiveConversation({ id: active.id, userId: user.id }),
-                  )
-                  returnToList()
-                }}
-                onBack={returnToList}
-                onBlock={() =>
-                  dispatch(toggleConversationBlock({ id: active.id, userId: user.id }))
-                }
-                onMute={() => dispatch(toggleConversationMute({ id: active.id, userId: user.id }))}
-                onPin={() => dispatch(toggleConversationPin({ id: active.id, userId: user.id }))}
+                threadSearchOpen={threadSearchOpen}
+                threadQuery={threadQuery}
+                onThreadQueryChange={setThreadQuery}
                 onToggleSuggestions={() =>
                   dispatch(
                     updateAccountPreferences({
@@ -953,7 +944,6 @@ export function MessagesPage() {
                 onRetry={retryMessage}
                 replyToId={replyToId}
                 replyToContextId={replyToContextId}
-                archived={showArchived}
                 suggestions={suggestions}
                 editingId={editingId}
                 onCancelEdit={() => {
@@ -961,8 +951,6 @@ export function MessagesPage() {
                   formik.setFieldValue('text', '')
                 }}
                 user={user}
-                muted={active.mutedBy?.includes(user.id)}
-                pinned={active.pinnedBy?.includes(user.id)}
                 peerTyping={peerTyping}
                 sentAnimationIds={sentAnimationIds}
                 onTyping={notifyTyping}

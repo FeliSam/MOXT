@@ -587,8 +587,33 @@ const handlers = {
       reservations: Array.isArray(parcelData.reservations) ? parcelData.reservations : [],
     })
   },
-  'parcels/cancelParcelRequest': async (payload) => {
+  'parcels/cancelParcelRequest': async (payload, state) => {
     await update('parcel_requests', payload.id, { status: 'cancelled' })
+    const request = state.parcels.requests.find((item) => item.id === payload.id)
+    if (request?.parcelId) {
+      const parcel = state.parcels.items.find((item) => item.id === request.parcelId)
+      if (parcel) {
+        await update('parcels', parcel.id, {
+          remaining_kg: parcel.remainingKg,
+          status: parcel.status,
+          reservations: parcel.reservations,
+        })
+      }
+    }
+  },
+  'parcels/releaseParcelRequestByOwner': async (payload, state) => {
+    const request = state.parcels.requests.find((item) => item.id === payload.id)
+    if (request) {
+      await update('parcel_requests', payload.id, { status: 'cancelled' })
+      const parcel = state.parcels.items.find((item) => item.id === request.parcelId)
+      if (parcel) {
+        await update('parcels', parcel.id, {
+          remaining_kg: parcel.remainingKg,
+          status: parcel.status,
+          reservations: parcel.reservations,
+        })
+      }
+    }
   },
   'parcels/deleteParcel': async (payload) => {
     const { error } = await supabase.from('parcels').delete().eq('id', payload.id)

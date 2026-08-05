@@ -28,9 +28,23 @@ export function isMessagesScrollLock(root) {
 }
 
 /** @param {HTMLElement} root */
+export function isMessagesThreadImmersive(root) {
+  return root.classList.contains('messages-thread-immersive')
+}
+
+/** Fil mobile ouvert — layout détail sans scroll lock document. */
+export function isMessagesThreadDetail(root) {
+  return root.classList.contains('messages-thread-detail')
+}
+
+function hasMessagesComposerChrome(root) {
+  return isMessagesScrollLock(root) || isMessagesThreadDetail(root)
+}
+
+/** @param {HTMLElement} root */
 export function syncVisualViewportMetrics(root, vv) {
   const keyboardOpen = root.classList.contains('keyboard-open')
-  if (isMessagesScrollLock(root) && !keyboardOpen) {
+  if (isMessagesThreadImmersive(root) && !keyboardOpen) {
     root.style.setProperty('--visual-viewport-offset-top', '0px')
     return
   }
@@ -40,8 +54,26 @@ export function syncVisualViewportMetrics(root, vv) {
 
 /** @param {HTMLElement} root */
 function syncViewportBottomGap(root, raw, { keyboardOpen = false } = {}) {
-  const gap = isMessagesScrollLock(root) || keyboardOpen ? 0 : raw
+  const gap = isMessagesThreadImmersive(root) || keyboardOpen ? 0 : raw
   root.style.setProperty('--viewport-bottom-gap', `${gap}px`)
+}
+
+/** @param {HTMLElement} root */
+function setComposerKeyboardBottom(root, px) {
+  root.style.setProperty('--composer-keyboard-bottom', `${Math.max(0, Math.round(px))}px`)
+}
+
+/** @param {HTMLElement} root */
+function clearComposerKeyboardBottom(root) {
+  root.style.setProperty('--composer-keyboard-bottom', '0px')
+}
+
+/** Re-mesure le gap Safari après retour liste messages ou changement de route. */
+export function resyncViewportBottomGap(root = document.documentElement) {
+  const vv = window.visualViewport
+  const raw = measureKeyboardInset(vv)
+  syncVisualViewportMetrics(root, vv)
+  syncViewportBottomGap(root, raw, { keyboardOpen: root.classList.contains('keyboard-open') })
 }
 
 export function shouldPinThreadHeader() {
@@ -54,8 +86,10 @@ export function shouldPinThreadHeader() {
 /** @param {HTMLElement} root */
 export function applyKeyboardInsetState(root, raw, { editing = false } = {}) {
   syncVisualViewportMetrics(root, window.visualViewport)
-  const open = editing && raw >= KEYBOARD_OPEN_PX
-  root.style.setProperty('--keyboard-inset', open ? `${raw}px` : '0px')
+  const threadDetail = isMessagesThreadDetail(root)
+  // resizes-content : raw peut être ~0 alors que le clavier est ouvert — on marque quand même open en fil.
+  const open = editing && (raw >= KEYBOARD_OPEN_PX || threadDetail)
+  root.style.setProperty('--keyboard-inset', open && raw >= KEYBOARD_OPEN_PX ? `${raw}px` : '0px')
   root.classList.toggle('keyboard-open', open)
   syncViewportBottomGap(root, raw, { keyboardOpen: open })
 }
@@ -66,15 +100,30 @@ export function forceKeyboardClosed(root) {
   root.style.setProperty('--keyboard-inset', '0px')
   root.classList.remove('keyboard-open')
   syncViewportBottomGap(root, measureKeyboardInset(window.visualViewport))
+  clearComposerKeyboardBottom(root)
+}
+
+/**
+ * Point de sync unique : bottom nav, clavier global, composer messagerie.
+ * @param {HTMLElement} root
+ * @param {VisualViewport | null | undefined} vv
+ */
+export function syncKeyboardState(root, vv) {
+  syncVisualViewportMetrics(root, vv)
+  const editing = isEditableField(document.activeElement)
+  const raw = measureKeyboardInset(vv)
+
+  if (!editing) {
+    forceKeyboardClosed(root)
+    return
+  }
+
+  applyKeyboardInsetState(root, raw, { editing: true })
+  const composerPx = hasMessagesComposerChrome(root) && raw >= KEYBOARD_OPEN_PX ? raw : 0
+  setComposerKeyboardBottom(root, composerPx)
 }
 
 const blurSyncTimers = new Set()
-
-function resolveComposerBottomPx(vv) {
-  if (!isEditableField(document.activeElement)) return 0
-  const raw = measureKeyboardInset(vv)
-  return raw >= KEYBOARD_OPEN_PX ? raw : 0
-}
 
 /**
  * iOS Safari omet parfois visualViewport.resize à la fermeture du clavier.
@@ -82,19 +131,15 @@ function resolveComposerBottomPx(vv) {
  */
 export function syncKeyboardInsetAfterBlur() {
   const root = document.documentElement
+  const vv = window.visualViewport
 
   function run() {
-    if (!isEditableField(document.activeElement)) {
-      forceKeyboardClosed(root)
-      return
-    }
-    applyKeyboardInsetState(root, measureKeyboardInset(window.visualViewport), {
-      editing: true,
-    })
+    syncKeyboardState(root, vv)
   }
 
   blurSyncTimers.forEach((id) => clearTimeout(id))
   blurSyncTimers.clear()
+  clearComposerKeyboardBottom(root)
   BLUR_SYNC_DELAYS_MS.forEach((ms) => {
     const id = setTimeout(run, ms)
     blurSyncTimers.add(id)
@@ -102,70 +147,7 @@ export function syncKeyboardInsetAfterBlur() {
 }
 
 /**
- * Offset bas du composer en px — 0 sauf clavier ouvert ET champ focus.
- * iOS peut laisser visualViewport « petit » après fermeture : on ignore sans focus.
- */
-export function useMessageComposerBottom() {
-  useEffect(() => {
-    const root = document.documentElement
-    const vv = window.visualViewport
-
-    function setComposerKeyboardBottom(px) {
-      root.style.setProperty('--composer-keyboard-bottom', `${px}px`)
-    }
-
-    function syncComposer() {
-      const px = resolveComposerBottomPx(vv)
-      setComposerKeyboardBottom(px)
-    }
-
-    function syncAll() {
-      const editing = isEditableField(document.activeElement)
-      const raw = measureKeyboardInset(vv)
-      if (!editing) {
-        forceKeyboardClosed(root)
-        setComposerKeyboardBottom(0)
-        return
-      }
-      applyKeyboardInsetState(root, raw, { editing: true })
-      setComposerKeyboardBottom(raw >= KEYBOARD_OPEN_PX ? raw : 0)
-    }
-
-    function onFocusIn(event) {
-      if (isEditableField(event.target)) syncAll()
-    }
-
-    function onFocusOut(event) {
-      if (!isEditableField(event.target)) return
-      setComposerKeyboardBottom(0)
-      syncKeyboardInsetAfterBlur()
-      BLUR_SYNC_DELAYS_MS.forEach((ms) => {
-        setTimeout(syncComposer, ms)
-      })
-    }
-
-    syncAll()
-    window.addEventListener('resize', syncAll)
-    window.addEventListener('scroll', syncAll, { passive: true })
-    document.addEventListener('focusin', onFocusIn, true)
-    document.addEventListener('focusout', onFocusOut, true)
-    vv?.addEventListener('resize', syncAll)
-    vv?.addEventListener('scroll', syncAll)
-
-    return () => {
-      window.removeEventListener('resize', syncAll)
-      window.removeEventListener('scroll', syncAll)
-      document.removeEventListener('focusin', onFocusIn, true)
-      document.removeEventListener('focusout', onFocusOut, true)
-      vv?.removeEventListener('resize', syncAll)
-      vv?.removeEventListener('scroll', syncAll)
-      root.style.removeProperty('--composer-keyboard-bottom')
-    }
-  }, [])
-}
-
-/**
- * Suit le visual viewport pour la bottom nav (hors composer — géré par useMessageComposerBottom).
+ * Suit visualViewport : bottom nav, clavier, composer messagerie (hook unique).
  */
 export function useKeyboardInset() {
   useEffect(() => {
@@ -173,14 +155,7 @@ export function useKeyboardInset() {
     const vv = window.visualViewport
 
     function update() {
-      syncVisualViewportMetrics(root, vv)
-      const editing = isEditableField(document.activeElement)
-      const raw = measureKeyboardInset(vv)
-      if (!editing) {
-        forceKeyboardClosed(root)
-        return
-      }
-      applyKeyboardInsetState(root, raw, { editing: true })
+      syncKeyboardState(root, vv)
     }
 
     function onFocusIn(event) {
@@ -188,7 +163,9 @@ export function useKeyboardInset() {
     }
 
     function onFocusOut(event) {
-      if (isEditableField(event.target)) syncKeyboardInsetAfterBlur()
+      if (!isEditableField(event.target)) return
+      clearComposerKeyboardBottom(root)
+      syncKeyboardInsetAfterBlur()
     }
 
     update()
@@ -211,6 +188,7 @@ export function useKeyboardInset() {
       root.style.removeProperty('--keyboard-inset')
       root.style.removeProperty('--viewport-bottom-gap')
       root.style.removeProperty('--visual-viewport-offset-top')
+      root.style.removeProperty('--composer-keyboard-bottom')
       root.classList.remove('keyboard-open')
     }
   }, [])

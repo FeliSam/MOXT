@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import reducer, {
   cancelParcelRequest,
   createParcel,
+  releaseParcelRequestByOwner,
   requestParcelReservation,
   reserveParcel,
   updateParcelRequestStatus,
@@ -66,5 +67,33 @@ describe('parcelSlice', () => {
     expect(cancelled.items[0].remainingKg).toBe(8)
     expect(cancelled.items[0].reservations).toHaveLength(1)
     expect(cancelled.requests[0].status).toBe('cancelled')
+  })
+
+  it('permet au transporteur de libérer une réservation approuvée non utilisée', () => {
+    const created = reducer({ items: [], requests: [] }, createParcel(parcel))
+    const parcelId = created.items[0].id
+    const requested = reducer(
+      created,
+      requestParcelReservation({
+        parcelId,
+        userId: 'u2',
+        ownerId: 'owner',
+        requesterName: 'Client',
+        kg: 4,
+      }),
+    )
+    const approved = reducer(
+      requested,
+      updateParcelRequestStatus({ id: requested.requests[0].id, status: 'approved' }),
+    )
+    const released = reducer(
+      approved,
+      releaseParcelRequestByOwner({ id: requested.requests[0].id, ownerId: 'owner' }),
+    )
+
+    expect(released.items[0].remainingKg).toBe(10)
+    expect(released.items[0].status).toBe('active')
+    expect(released.requests[0].status).toBe('cancelled')
+    expect(released.requests[0].cancelledBy).toBe('owner')
   })
 })

@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { FiCpu, FiPaperclip, FiSend, FiX, FiZap } from 'react-icons/fi'
-import { LuArrowLeft, LuHeadphones, LuTrash2 } from 'react-icons/lu'
+import { LuHeadphones } from 'react-icons/lu'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import { useLanguage } from '../../contexts/useLanguage'
@@ -15,19 +15,20 @@ import { ASSISTANT_SUGGESTION_KEYS, messagesText } from './messagesI18n'
 import { llmAssistantProvider } from './llmAssistantProvider'
 import { moxtiAssistantProvider } from './moxtiAssistantProvider'
 import { shortenFileName } from '../../services/uploadProgress'
-import { syncKeyboardInsetAfterBlur, shouldPinThreadHeader, useMessageComposerBottom } from '../../hooks/useKeyboardInset'
+import { syncKeyboardInsetAfterBlur } from '../../hooks/useKeyboardInset'
+import { HEADER_ICON_STROKE } from '../../components/layout/headerLayout'
 
-const HEADER_ICON_STROKE = 1.48
-
-export function AiAssistantPanel({ onBack, showBack = true, userId }) {
+export function AiAssistantPanel({
+  userId,
+  headerActionsRef,
+  onAdminComposeChange,
+}) {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const user = useSelector((state) => state.auth.user)
   const storageKey = `moxt-ai-assistant-${userId}`
   const messageListRef = useRef(null)
-  const threadHeaderRef = useRef(null)
   const composerShellRef = useRef(null)
-  const threadScrollYRef = useRef(0)
   const searchIndex = useSelector(selectSearchIndex)
   const { language, t } = useLanguage()
   const [messages, setMessages] = useState(() => {
@@ -45,10 +46,11 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
   const [adminDraft, setAdminDraft] = useState('')
   const [adminSending, setAdminSending] = useState(false)
   const [showAllQuestions, setShowAllQuestions] = useState(false)
-  const [threadHeaderVisible, setThreadHeaderVisible] = useState(true)
-  const [threadHeaderOffset, setThreadHeaderOffset] = useState(68)
   const [composerOffset, setComposerOffset] = useState(120)
-  useMessageComposerBottom()
+
+  useEffect(() => {
+    onAdminComposeChange?.(adminCompose)
+  }, [adminCompose, onAdminComposeChange])
 
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify(messages.slice(-30)))
@@ -58,19 +60,6 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
     const messageList = messageListRef.current
     if (messageList) messageList.scrollTop = messageList.scrollHeight
   }, [messages.length, loading, adminCompose])
-
-  useLayoutEffect(() => {
-    const header = threadHeaderRef.current
-    if (!header || typeof ResizeObserver === 'undefined') return undefined
-    const sync = () => {
-      const next = Math.ceil(header.getBoundingClientRect().height)
-      setThreadHeaderOffset((prev) => (prev === next ? prev : next))
-    }
-    sync()
-    const observer = new ResizeObserver(sync)
-    observer.observe(header)
-    return () => observer.disconnect()
-  }, [showBack])
 
   useLayoutEffect(() => {
     const shell = composerShellRef.current
@@ -84,31 +73,6 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
     observer.observe(shell)
     return () => observer.disconnect()
   }, [adminCompose, attachment, loading])
-
-  useEffect(() => {
-    const messageList = messageListRef.current
-    if (!messageList) return undefined
-    threadScrollYRef.current = messageList.scrollTop
-    function handleScroll() {
-      const distanceFromBottom =
-        messageList.scrollHeight - messageList.scrollTop - messageList.clientHeight
-      const y = messageList.scrollTop
-      const delta = y - threadScrollYRef.current
-      threadScrollYRef.current = y
-      if (shouldPinThreadHeader()) {
-        setThreadHeaderVisible(true)
-        return
-      }
-      if (distanceFromBottom < 120 || y <= 8) {
-        setThreadHeaderVisible(true)
-        return
-      }
-      if (delta > 8) setThreadHeaderVisible(false)
-      else if (delta < -8) setThreadHeaderVisible(true)
-    }
-    messageList.addEventListener('scroll', handleScroll, { passive: true })
-    return () => messageList.removeEventListener('scroll', handleScroll)
-  }, [])
 
   function appendAssistantMessage(message) {
     setMessages((current) => [...current, message])
@@ -247,75 +211,24 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
     }
   }
 
+  useLayoutEffect(() => {
+    if (!headerActionsRef) return
+    headerActionsRef.current = {
+      onContactAdmin: () => beginAdminContact(),
+      onClearHistory: () => setMessages([]),
+    }
+  })
+
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden overscroll-none bg-transparent">
+    <div className="message-thread-panel flex h-full min-h-0 min-w-0 flex-col overflow-hidden overscroll-none bg-transparent">
+      <div className="message-thread-canvas relative flex min-h-0 flex-1 flex-col overflow-hidden">
       <div
-        className="message-thread-canvas relative flex min-h-0 flex-1 flex-col overflow-hidden"
+        className="message-thread-scroll relative min-h-0 flex-1 overflow-hidden"
         style={{ '--message-composer-offset': `${composerOffset}px` }}
       >
-        <header
-          ref={threadHeaderRef}
-          className={`message-thread-header absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-1.5 bg-transparent px-3 py-2.5 opacity-[0.89] backdrop-blur-md transition-transform duration-300 ease-out sm:gap-2 sm:px-4 lg:px-5 ${
-            threadHeaderVisible ? 'translate-y-0' : '-translate-y-full pointer-events-none'
-          }`}
-        >
-          <div className="header-brand-chip flex h-[3.004375rem] min-w-0 max-w-[calc(100%-7rem)] flex-1 items-center gap-2 rounded-full bg-transparent px-1.5 pr-2.5 sm:h-[3.3048125rem] sm:max-w-[calc(100%-7.75rem)] sm:gap-2.5 sm:pr-3">
-            {showBack ? (
-              <button
-                type="button"
-                className="header-action-btn relative grid shrink-0 !size-[2.185rem] !border-0 !bg-transparent sm:!size-[2.458125rem]"
-                onClick={onBack}
-                aria-label={messagesText(t, 'messages.assistant.backAria')}
-              >
-                <LuArrowLeft className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
-              </button>
-            ) : null}
-            <span className="grid size-[2.185rem] shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-500 to-cyan-500 text-base text-white shadow-sm sm:size-[2.458125rem]">
-              <FiCpu />
-            </span>
-            <div className="min-w-0">
-              <h2 className="truncate text-sm font-black leading-none tracking-tight text-[var(--app-text)] sm:text-[0.9375rem]">
-                {messagesText(t, 'messages.assistant.name')}
-              </h2>
-              <p className="mt-0.5 truncate text-[11px] leading-tight text-[var(--app-text-muted)]">
-                {messagesText(t, 'messages.assistant.subtitle')}
-              </p>
-            </div>
-          </div>
-          <div className="ml-auto flex h-[3.004375rem] shrink-0 items-center gap-1.5 sm:h-[3.3048125rem] [&_.header-action-btn]:bg-[var(--app-surface)]/87">
-            <button
-              type="button"
-              onClick={() => beginAdminContact()}
-              disabled={!user || adminCompose}
-              className="header-action-btn relative grid disabled:cursor-not-allowed disabled:opacity-40"
-              aria-label={messagesText(t, 'messages.assistant.contactAdminAria')}
-              title={messagesText(t, 'messages.assistant.contactAdmin')}
-            >
-              <LuHeadphones className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setMessages([])}
-              className="header-action-btn relative grid"
-              aria-label={messagesText(t, 'messages.assistant.clearHistoryAria')}
-            >
-              <LuTrash2 className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
-            </button>
-          </div>
-          <div
-            className="pointer-events-none absolute inset-x-0 inset-y-0 -z-10 bg-[var(--app-surface-muted)]"
-            aria-hidden="true"
-          />
-          <div
-            className="pointer-events-none absolute inset-x-0 top-full -z-10 h-8 bg-gradient-to-b from-[var(--app-surface-muted)] to-transparent"
-            aria-hidden="true"
-          />
-        </header>
-
       <div
         ref={messageListRef}
-        className="scrollbar-hidden min-h-0 flex-1 overscroll-contain overflow-y-auto bg-transparent px-4 sm:px-6"
-        style={{ paddingTop: `calc(${threadHeaderOffset}px + 0.75rem)` }}
+        className="scrollbar-hidden h-full overscroll-contain overflow-y-auto bg-transparent px-4 pt-3 sm:px-6"
         data-testid="message-scroll-region"
       >
         <div className="mx-auto flex max-w-3xl flex-col gap-4">
@@ -437,14 +350,26 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
           {error ? <p className="ml-10 text-sm text-red-600">{error}</p> : null}
         </div>
       </div>
+      </div>
+      </div>
 
       <div
         ref={composerShellRef}
-        className="message-composer-shell z-10 shrink-0 bg-[var(--app-surface)] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] shadow-[0_-10px_30px_rgb(15_23_42/0.06)] sm:p-4 sm:pb-[max(1rem,env(safe-area-inset-bottom,0px))] max-lg:bottom-auto"
+        className="message-composer-shell z-20 w-full shrink-0 bg-transparent p-0"
         data-testid="message-composer"
+        style={{ '--message-composer-offset': `${composerOffset}px` }}
       >
+        <div className="message-composer-dock relative px-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] pt-3 sm:px-4 sm:pb-[max(1rem,env(safe-area-inset-bottom,0px))] sm:pt-4">
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 top-0 -z-10 bg-[var(--app-surface-muted)]"
+            aria-hidden="true"
+          />
+          <div
+            className="pointer-events-none absolute inset-x-0 -top-8 -z-10 h-8 bg-gradient-to-b from-transparent to-[var(--app-surface-muted)]"
+            aria-hidden="true"
+          />
         {attachment ? (
-          <div className="mx-auto mb-2 flex max-w-3xl items-center gap-2 rounded-xl bg-[var(--app-surface-muted)] px-3 py-2 text-xs">
+          <div className="mx-auto mb-2 flex max-w-3xl items-center gap-2 rounded-xl bg-transparent px-3 py-2 text-xs">
             <FiPaperclip />
             <span className="min-w-0 flex-1 truncate">{attachment.name}</span>
             <button
@@ -457,7 +382,7 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
           </div>
         ) : null}
         <form
-          className="mx-auto flex max-w-3xl items-end gap-2 rounded-2xl bg-[var(--app-surface-muted)] p-2 shadow-inner"
+          className="message-composer-form mx-auto flex max-w-3xl items-end gap-2 rounded-2xl border border-[var(--app-border)]/40 bg-[var(--app-surface)] p-2 shadow-inner"
           onSubmit={(event) => {
             event.preventDefault()
             ask()
@@ -482,10 +407,6 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
             onChange={(event) => setQuestion(event.target.value)}
             onBlur={() => {
               syncKeyboardInsetAfterBlur()
-              setThreadHeaderVisible(true)
-            }}
-            onFocus={() => {
-              setThreadHeaderVisible(true)
             }}
             placeholder={
               adminCompose
@@ -502,7 +423,7 @@ export function AiAssistantPanel({ onBack, showBack = true, userId }) {
             <FiSend aria-hidden="true" />
           </button>
         </form>
-      </div>
+        </div>
       </div>
     </div>
   )

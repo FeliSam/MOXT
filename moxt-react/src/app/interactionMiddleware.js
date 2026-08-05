@@ -20,6 +20,7 @@ import { setUser } from '../features/auth/authSlice'
 import { setUserVerified } from '../features/administration/administrationSlice'
 import { sanitizeUserFacingMessage } from '../features/auth/authErrorMessages'
 import { TRANSFER_STATUS } from '../features/transfers/transferConfig'
+import { transferCancelledNotificationMessage } from '../features/transfers/transferCancellationNotify'
 import { appText } from '../i18n/appText'
 import { supabase } from '../services/supabaseClient'
 
@@ -70,7 +71,7 @@ function notifyTransferClientUpdate(store, { transfer, previousStatus, actorId }
     priority = 'high'
   } else if (status === TRANSFER_STATUS.CANCELLED) {
     title = appText('notificationsFeed.transferCancelled')
-    message = appText('notificationsFeed.transferCancelledBody', { id: transfer.id })
+    message = transferCancelledNotificationMessage(store, transfer, actorId)
     priority = 'high'
   } else if (status === TRANSFER_STATUS.COMPLETED) {
     title = appText('notificationsFeed.transferCompleted')
@@ -429,7 +430,7 @@ export const interactionMiddleware = (store) => {
         notify(store, {
           userId: transfer.businessOwnerId,
           title: appText('notificationsFeed.transferCancelled'),
-          message: appText('notificationsFeed.transferCancelledBody', { id: transfer.id }),
+          message: transferCancelledNotificationMessage(store, transfer, actorId),
           type: 'transfer',
           link: `/transfers/${transfer.id}`,
           priority: 'high',
@@ -487,7 +488,7 @@ export const interactionMiddleware = (store) => {
       notify(store, {
         userId: transfer.businessOwnerId,
         title: appText('notificationsFeed.transferCancelled'),
-        message: appText('notificationsFeed.transferCancelledBody', { id: transfer.id }),
+        message: transferCancelledNotificationMessage(store, transfer, actorId),
         type: 'transfer',
         link: `/transfers/${transfer.id}`,
         priority: 'high',
@@ -648,6 +649,28 @@ export const interactionMiddleware = (store) => {
         }),
         type: 'parcel',
         link: `/parcels/${request.parcelId}`,
+      })
+    }
+  }
+
+  if (action.type === 'parcels/releaseParcelRequestByOwner') {
+    const request = after.parcels.requests.find((item) => item.id === action.payload.id)
+    const previous = before.parcels.requests.find((item) => item.id === action.payload.id)
+    if (
+      request?.userId &&
+      previous?.status === 'approved' &&
+      request.status === 'cancelled' &&
+      request.userId !== actorId
+    ) {
+      notify(store, {
+        userId: request.userId,
+        title: appText('notificationsFeed.parcelReservationReleased'),
+        message: appText('notificationsFeed.parcelReservationReleasedBody', {
+          kg: request.kg,
+        }),
+        type: 'parcel',
+        link: `/parcels/${request.parcelId}`,
+        priority: 'high',
       })
     }
   }

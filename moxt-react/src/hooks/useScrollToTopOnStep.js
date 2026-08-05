@@ -10,9 +10,6 @@ export function scrollPageToTop() {
 /** Remet le viewport messagerie en haut (pas de scroll « 2e section » des catalogues). */
 export function resetMessagesScroll() {
   scrollPageToTop()
-  const root = document.documentElement
-  root.style.setProperty('--viewport-bottom-gap', '0px')
-  root.style.setProperty('--visual-viewport-offset-top', '0px')
 }
 
 /** Remonte le défilement à chaque changement d'étape (wizards publication, etc.). */

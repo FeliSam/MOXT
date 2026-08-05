@@ -25,7 +25,6 @@ import { useLanguage } from '../../contexts/useLanguage'
 import { LANGUAGE_LABELS } from '../../config/uiTranslations'
 import { messagesText } from '../../features/communications/messagesI18n'
 import {
-  adminTranslateLanguageOptions,
   languageLabel,
 } from '../../features/communications/messageTranslate'
 import { EntityVerifiedName } from '../../components/ui/EntityVerifiedName'
@@ -109,6 +108,8 @@ export function MessageBubble({
   translating = false,
   autoTranslateEnabled = false,
   showTranslateIcon = false,
+  translateLanguageOptions = [],
+  translateHintLanguage = null,
   onToggleActions,
   openActions,
   repliedMessage,
@@ -146,8 +147,8 @@ export function MessageBubble({
   const showTranslated = showTranslationBadge && !translation?.showOriginal
   const displayText = showTranslated ? translation.translatedText : message.text
   const translateIconConnected = Boolean(translation?.translatedText)
-  const canUseTranslateIcon = showTranslateIcon && hasCaption && Boolean(onTranslate)
-  const translateLanguageOptions = adminTranslateLanguageOptions()
+  const canUseTranslateIcon =
+    showTranslateIcon && hasCaption && Boolean(onTranslate) && translateLanguageOptions.length > 0
 
   // Menu en portal (fixed) : évite d’être coupé / mangé par le composer ou overflow.
   useLayoutEffect(() => {
@@ -472,7 +473,9 @@ export function MessageBubble({
                     <FiChevronLeft aria-hidden="true" />
                   </button>
                   <span className="message-action-menu-title">
-                    {messagesText(t, 'messages.translateInto')}
+                    {translateHintLanguage
+                      ? messagesText(t, 'messages.translateFromHint', { language: translateHintLanguage })
+                      : messagesText(t, 'messages.translateInto')}
                   </span>
                 </div>
                 {translateLanguageOptions.map((code) => (
@@ -487,7 +490,11 @@ export function MessageBubble({
                     }}
                   >
                     <span aria-hidden="true">{LANGUAGE_LABELS[code]?.flag || ''}</span>
-                    <span>{languageLabel(code)}</span>
+                    <span>
+                      {code === 'ru'
+                        ? messagesText(t, 'messages.translateRussianFallback')
+                        : languageLabel(code)}
+                    </span>
                   </button>
                 ))}
               </div>

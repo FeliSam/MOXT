@@ -69,15 +69,41 @@ export function detectMessageLanguage(text) {
   return SUPPORTED_LANGUAGES.includes(topLang) ? topLang : null
 }
 
-/** Traduction auto si langue message ≠ langue UI i18n du lecteur. */
-export function shouldAutoTranslate(text, readerLanguage) {
+/** Traduction auto si langue message ≠ langue UI i18n du lecteur (et interlocuteurs pas déjà alignés). */
+export function normalizeLanguage(code) {
+  const lang = String(code || '').toLowerCase()
+  return SUPPORTED_LANGUAGES.includes(lang) ? lang : null
+}
+
+export function shouldOfferMessageTranslation({ text, readerLanguage, peerLanguage }) {
   const trimmed = String(text || '').trim()
   if (trimmed.length < 3 || trimmed.length > MAX_AUTO_CHARS) return false
-  const reader = String(readerLanguage || '').toLowerCase()
-  if (!SUPPORTED_LANGUAGES.includes(reader)) return false
+
+  const reader = normalizeLanguage(readerLanguage)
+  if (!reader) return false
+
   const detected = detectMessageLanguage(trimmed)
   if (!detected) return false
-  return detected !== reader
+  if (detected === reader) return false
+
+  const peer = normalizeLanguage(peerLanguage)
+  if (peer && reader === peer && detected === peer) return false
+
+  return true
+}
+
+export function shouldAutoTranslate(text, readerLanguage, peerLanguage) {
+  return shouldOfferMessageTranslation({ text, readerLanguage, peerLanguage })
+}
+
+export function translateLanguageOptionsForUser({ readerLanguage, isAdmin }) {
+  if (isAdmin) return adminTranslateLanguageOptions()
+
+  const reader = normalizeLanguage(readerLanguage)
+  const options = []
+  if (reader) options.push(reader)
+  if (reader !== 'ru') options.push('ru')
+  return [...new Set(options)]
 }
 
 export function languageLabel(code) {
