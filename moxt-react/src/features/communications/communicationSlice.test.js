@@ -25,6 +25,7 @@ import reducer, {
   toggleConversationBlock,
   toggleConversationMute,
   toggleConversationPin,
+  receiveRemoteNotification,
 } from './communicationSlice'
 
 const emptyState = { conversations: [], support: [], notifications: [] }
@@ -110,6 +111,44 @@ describe('communications', () => {
     const state = reducer(second, markAllNotificationsRead('u1'))
     expect(state.notifications.find((item) => item.userId === 'u1').read).toBe(true)
     expect(state.notifications.find((item) => item.userId === 'u2').read).toBe(false)
+  })
+
+  it('garde les notifications triées par date sans remonter les non lues', () => {
+    const seeded = reducer(
+      emptyState,
+      setAll({
+        notifications: [
+          {
+            id: 'n-new-unread',
+            userId: 'u1',
+            title: 'Recent unread',
+            message: 'x',
+            read: false,
+            createdAt: '2026-08-06T12:00:00.000Z',
+          },
+          {
+            id: 'n-old-read',
+            userId: 'u1',
+            title: 'Older read',
+            message: 'y',
+            read: true,
+            createdAt: '2026-08-05T12:00:00.000Z',
+          },
+        ],
+      }),
+    )
+    const state = reducer(
+      seeded,
+      receiveRemoteNotification({
+        id: 'n-old-read',
+        userId: 'u1',
+        title: 'Older read',
+        message: 'y',
+        read: false,
+        createdAt: '2026-08-05T12:00:00.000Z',
+      }),
+    )
+    expect(state.notifications.map((item) => item.id)).toEqual(['n-new-unread', 'n-old-read'])
   })
 
   it('archive, bloque et conserve les métadonnées de pièce jointe', () => {

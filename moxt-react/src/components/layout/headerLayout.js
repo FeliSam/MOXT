@@ -18,4 +18,8 @@ export const HEADER_ACTIONS_CLASS =
 export const HEADER_BACK_BTN_CLASS =
   'header-action-btn relative grid shrink-0 !size-[2.185rem] !border-0 !bg-transparent sm:!size-[2.458125rem] lg:hidden'
 
+/** Retour visible aussi sur desktop (fil de conversation). */
+export const MESSAGES_THREAD_BACK_BTN_CLASS =
+  'header-action-btn relative grid shrink-0 !size-[2.185rem] !border-0 !bg-transparent sm:!size-[2.458125rem]'
+
 export const HEADER_ROW_CLASS = 'flex w-full items-center justify-between gap-1.5 sm:gap-2'

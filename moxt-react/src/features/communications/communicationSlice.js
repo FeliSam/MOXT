@@ -164,6 +164,12 @@ function normalizeNotification(notification) {
   }
 }
 
+function sortNotificationsByDate(notifications) {
+  notifications.sort(
+    (left, right) => new Date(right.createdAt || 0) - new Date(left.createdAt || 0),
+  )
+}
+
 function parseIdList(value) {
   if (Array.isArray(value)) return value
   if (typeof value === 'string') {
@@ -977,7 +983,8 @@ const communicationSlice = createSlice({
     },
     addNotification: {
       reducer(state, action) {
-        state.notifications.unshift(normalizeNotification(action.payload))
+        state.notifications.push(normalizeNotification(action.payload))
+        sortNotificationsByDate(state.notifications)
       },
       prepare(values) {
         return {
@@ -1021,13 +1028,10 @@ const communicationSlice = createSlice({
           ...state.notifications[index],
           ...normalized,
         })
-        if (normalized.read === false) {
-          const [item] = state.notifications.splice(index, 1)
-          state.notifications.unshift(item)
-        }
-        return
+      } else {
+        state.notifications.push(normalized)
       }
-      state.notifications.unshift(normalized)
+      sortNotificationsByDate(state.notifications)
     },
     setConversationMessages(state, action) {
       const conversation =

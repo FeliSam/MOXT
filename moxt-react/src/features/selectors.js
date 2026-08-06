@@ -13,12 +13,14 @@ export const selectOwnBusiness = createSelector(
 export const selectVisibleNotifications = createSelector(
   [(state) => state.communications.notifications, selectCurrentUser],
   (notifications, user) =>
-    notifications.filter(
-      (item) =>
-        String(item.userId) === String(user?.id) &&
-        item.type !== 'message' &&
-        !item.archived,
-    ),
+    notifications
+      .filter(
+        (item) =>
+          String(item.userId) === String(user?.id) &&
+          item.type !== 'message' &&
+          !item.archived,
+      )
+      .sort((left, right) => new Date(right.createdAt || 0) - new Date(left.createdAt || 0)),
 )
 
 export const selectUnreadNotificationCount = createSelector(

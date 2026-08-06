@@ -8,13 +8,13 @@ import {
   FiStar,
   FiUser,
 } from 'react-icons/fi'
-import { LuEllipsisVertical, LuExternalLink, LuSearch, LuX } from 'react-icons/lu'
+import { LuArrowLeft, LuEllipsisVertical, LuExternalLink, LuSearch, LuX } from 'react-icons/lu'
 import { Link } from 'react-router-dom'
 import { EntityAvatar } from '../../../features/account/EntityAvatar'
 import { messagesText } from '../../../features/communications/messagesI18n'
 import { PopoverMenu } from '../../../components/ui/PopoverMenu'
 import { VerifiedDisplayName } from '../../../components/ui/Badge'
-import { HEADER_BACK_BTN_CLASS, HEADER_ICON_STROKE } from '../../../components/layout/headerLayout'
+import { HEADER_ICON_STROKE, MESSAGES_THREAD_BACK_BTN_CLASS } from '../../../components/layout/headerLayout'
 import { HeaderActionsBar, HeaderBrandChip, HeaderRow } from '../../../components/layout/HeaderChrome'
 import { peerActivityLabel } from '../format'
 import { TypingDots } from '../TypingIndicator'
@@ -49,11 +49,16 @@ export function MessagesThreadHeader({
         {showBackButton ? (
           <button
             type="button"
-            className={HEADER_BACK_BTN_CLASS}
+            className={MESSAGES_THREAD_BACK_BTN_CLASS}
             onClick={onBack}
             aria-label={t('messages.closeConversation')}
           >
-            <LuX className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
+            <LuX className="header-action-icon lg:hidden" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
+            <LuArrowLeft
+              className="header-action-icon hidden lg:block"
+              strokeWidth={HEADER_ICON_STROKE}
+              aria-hidden="true"
+            />
           </button>
         ) : null}
         <Link to={peer?.id ? `/users/${peer.id}/publications` : '#'} className="relative shrink-0">
