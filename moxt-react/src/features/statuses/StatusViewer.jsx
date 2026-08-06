@@ -70,7 +70,7 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
   const safePageIndex = pages.length ? Math.min(pageIndex, pages.length - 1) : 0
   const page = pages[safePageIndex]
   const isMine = group?.authorId === viewer?.id
-  const effectivePaused = paused || reactionPickerOpen || replyOpen || confirmDeleteOpen
+  const effectivePaused = paused || viewersOpen || reactionPickerOpen || replyOpen || confirmDeleteOpen
 
   const currentStatusItem = group?.items.find((item) => item.id === page?.statusId)
   const myReaction = page ? currentStatusItem?.reactions?.[page.imageKey]?.[viewer?.id] : null
@@ -292,7 +292,10 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
         {isMine ? (
           <button
             type="button"
-            onClick={() => setViewersOpen(true)}
+            onClick={() => {
+              setViewersOpen(true)
+              setPaused(true)
+            }}
             className="flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-bold text-white/80 transition hover:bg-white/10 hover:text-white"
           >
             <FiEye className="text-sm" /> {viewersList.length}
@@ -301,7 +304,10 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
         {isMine ? (
           <button
             type="button"
-            onClick={() => setConfirmDeleteOpen(true)}
+            onClick={() => {
+              setViewersOpen(false)
+              setConfirmDeleteOpen(true)
+            }}
             className="shrink-0 rounded-full px-3 py-1.5 text-xs font-bold text-white/80 transition hover:bg-white/10 hover:text-white"
           >
             {t('status.viewer.delete')}
@@ -471,9 +477,12 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
         <div
           className="fixed inset-0 z-10 flex items-end justify-center bg-black/60"
           role="presentation"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setViewersOpen(false)
-          }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setViewersOpen(false)
+                setPaused(false)
+              }
+            }}
         >
           <div
             className="max-h-[70dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-[var(--app-surface)] p-5"
@@ -485,7 +494,10 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
               </h3>
               <button
                 type="button"
-                onClick={() => setViewersOpen(false)}
+                onClick={() => {
+                  setViewersOpen(false)
+                  setPaused(false)
+                }}
                 aria-label={t('status.viewer.close')}
                 className="grid size-8 place-items-center rounded-full text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)]"
               >

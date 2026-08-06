@@ -5,6 +5,20 @@ export const CONTACT_NAME_FALLBACK = 'Contact MOXT'
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
+const GENERIC_CONTACT_NAME_RE = /^(contact|membre(\s+de)?)\s+moxt$/i
+
+export function isGenericContactName(name) {
+  const value = String(name || '').trim()
+  if (!value) return true
+  if (UUID_RE.test(value)) return true
+  return GENERIC_CONTACT_NAME_RE.test(value)
+}
+
+export function resolveContactProfileName(profile) {
+  if (!profile) return ''
+  return [profile.firstName, profile.lastName].filter(Boolean).join(' ').trim()
+}
+
 export function isContactAttachment(attachment) {
   return Boolean(attachment && attachment.kind === 'contact' && attachment.userId)
 }
@@ -12,8 +26,7 @@ export function isContactAttachment(attachment) {
 export function resolveContactDisplayName(...candidates) {
   for (const raw of candidates) {
     const name = String(raw || '').trim()
-    if (!name) continue
-    if (UUID_RE.test(name)) continue
+    if (!name || isGenericContactName(name)) continue
     return name
   }
   return CONTACT_NAME_FALLBACK
@@ -21,13 +34,17 @@ export function resolveContactDisplayName(...candidates) {
 
 export function buildContactAttachment(contact) {
   if (!contact?.userId) return null
-  const name = resolveContactDisplayName(contact.name)
+  const name = resolveContactDisplayName(
+    resolveContactProfileName(contact.profile),
+    contact.profileName,
+    contact.name,
+  )
   return {
     kind: 'contact',
     userId: contact.userId,
     name,
-    avatarUrl: contact.avatarUrl || null,
-    city: contact.city || '',
+    avatarUrl: contact.avatarUrl || contact.profile?.avatarUrl || null,
+    city: contact.city || contact.profile?.city || '',
     path: contact.path || `/users/${contact.userId}/publications`,
   }
 }
@@ -55,12 +72,12 @@ export function buildShareableContacts({
       if (id === String(userId) || seenFollowing.has(id)) continue
       seenFollowing.add(id)
       const profile = profileById[id] || {}
-      const profileName = [profile.firstName, profile.lastName].filter(Boolean).join(' ').trim()
+      const profileName = resolveContactProfileName(profile)
       following.push({
         userId: id,
         name: resolveContactDisplayName(
-          item.publisherName,
           profileName,
+          item.publisherName,
           profile.email,
           nameFallback,
         ),
@@ -68,6 +85,8 @@ export function buildShareableContacts({
         city: profile.city || '',
         path: item.publisherPath || `/users/${id}/publications`,
         section: 'following',
+        profile,
+        profileName,
       })
     }
 
@@ -76,7 +95,7 @@ export function buildShareableContacts({
       if (id === String(userId) || seenFollowers.has(id)) continue
       seenFollowers.add(id)
       const profile = profileById[id] || {}
-      const profileName = [profile.firstName, profile.lastName].filter(Boolean).join(' ').trim()
+      const profileName = resolveContactProfileName(profile)
       followers.push({
         userId: id,
         name: resolveContactDisplayName(profileName, profile.email, nameFallback),
@@ -84,6 +103,8 @@ export function buildShareableContacts({
         city: profile.city || '',
         path: `/users/${id}/publications`,
         section: 'followers',
+        profile,
+        profileName,
       })
     }
   }

@@ -85,6 +85,24 @@ describe('buildShareableContacts', () => {
     })
   })
 
+  it('prefere le profil au libelle generique Membre MOXT', () => {
+    const { following } = buildShareableContacts({
+      userId: 'me',
+      subscriptions: [
+        {
+          userId: 'me',
+          publisherType: 'user',
+          publisherId: 'a',
+          publisherName: 'Membre MOXT',
+        },
+      ],
+      profileById: {
+        a: { firstName: 'Alice', lastName: 'Dupont' },
+      },
+    })
+    expect(following[0].name).toBe('Alice Dupont')
+  })
+
   it('n’utilise jamais l’UUID comme nom affiché', () => {
     const uid = '438bc62c-1111-4111-8111-abcdefabcdef'
     const { following, followers } = buildShareableContacts({
@@ -114,6 +132,16 @@ describe('buildContactAttachment uuid', () => {
   it('remplace un nom UUID par le fallback', () => {
     const uid = '438bc62c-1111-4111-8111-abcdefabcdef'
     expect(buildContactAttachment({ userId: uid, name: uid }).name).toBe('Contact MOXT')
+  })
+
+  it('ignore Membre MOXT si le profil est disponible', () => {
+    expect(
+      buildContactAttachment({
+        userId: 'u1',
+        name: 'Membre MOXT',
+        profile: { firstName: 'Karim', lastName: 'Ben' },
+      }).name,
+    ).toBe('Karim Ben')
   })
 })
 

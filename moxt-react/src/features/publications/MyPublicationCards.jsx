@@ -19,6 +19,7 @@ import { statusMeta } from '../../config/statuses'
 import { useLanguage } from '../../contexts/useLanguage'
 import { phase3Text } from '../../i18n/phase3I18n'
 import { jobContractLabel } from '../jobs/jobDisplayUtils'
+import { getPostImages } from '../posts/postMediaUtils'
 import { formatMoney } from '../transfers/transferUtils'
 import {
   archivedPublicationCardClass,
@@ -31,6 +32,7 @@ import {
 
 function PublicationCardShell({
   archived = false,
+  coverUrl = '',
   icon: Icon,
   tone,
   badge,
@@ -54,12 +56,26 @@ function PublicationCardShell({
     <Card className={`overflow-hidden p-0 ${archived ? archivedPublicationCardClass : ''}`}>
       <div className="flex flex-col gap-0 lg:flex-row">
         <div
-          className={`relative flex h-40 w-full shrink-0 items-center justify-center bg-gradient-to-br lg:h-auto lg:w-48 ${tone} ${
+          className={`relative flex h-40 w-full shrink-0 items-center justify-center overflow-hidden bg-gradient-to-br lg:h-auto lg:w-48 ${tone} ${
             archived ? 'opacity-75 saturate-[0.85]' : ''
           }`}
         >
-          <Icon className="text-4xl text-white opacity-90" />
-          <div className="absolute left-3 top-3">{badge}</div>
+          {coverUrl ? (
+            <>
+              <img
+                src={coverUrl}
+                alt=""
+                className="absolute inset-0 size-full object-cover"
+                loading="lazy"
+                onError={(event) => {
+                  event.currentTarget.style.display = 'none'
+                }}
+              />
+              <div className="absolute inset-0 bg-black/25" aria-hidden="true" />
+            </>
+          ) : null}
+          {!coverUrl ? <Icon className="relative z-[1] text-4xl text-white opacity-90" /> : null}
+          <div className="absolute left-3 top-3 z-[2]">{badge}</div>
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-4 p-4 sm:p-5">
           <div className="min-w-0">
@@ -172,6 +188,7 @@ export function MyJobPublicationCard({
   return (
     <PublicationCardShell
       archived={!active}
+      coverUrl={job.images?.[0] || ''}
       icon={FiBriefcase}
       tone="from-violet-600 to-purple-700"
       badge={<Badge tone={status.tone}>{status.label}</Badge>}
@@ -233,6 +250,7 @@ export function MyEventPublicationCard({
   return (
     <PublicationCardShell
       archived={!active}
+      coverUrl={event.images?.[0] || ''}
       icon={FiCalendar}
       tone="from-amber-600 to-orange-700"
       badge={<Badge tone={status.tone}>{status.label}</Badge>}
@@ -293,6 +311,7 @@ export function MyPostPublicationCard({
   return (
     <PublicationCardShell
       archived={!active}
+      coverUrl={getPostImages(post)[0] || ''}
       icon={FiFileText}
       tone="from-slate-600 to-slate-800"
       badge={<Badge tone="info">{p3('publications.cards.badge')}</Badge>}

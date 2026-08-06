@@ -1,14 +1,26 @@
 import { FiMapPin, FiUser } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
+import { useSelector } from 'react-redux'
 import { EntityAvatar } from '../account/EntityAvatar'
 import { useLanguage } from '../../contexts/useLanguage'
 import { messagesText } from './messagesI18n'
+import {
+  resolveContactDisplayName,
+  resolveContactProfileName,
+} from './contactShareUtils'
 
 export function ContactMessageCard({ attachment, mine = false }) {
   const { t } = useLanguage()
+  const profile = useSelector((state) => state.profileDirectory?.byId?.[attachment?.userId])
   if (!attachment?.userId) return null
   const path = attachment.path || `/users/${attachment.userId}/publications`
-  const name = attachment.name || messagesText(t, 'messages.contact.fallbackName')
+  const name = resolveContactDisplayName(
+    resolveContactProfileName(profile),
+    attachment.name,
+    messagesText(t, 'messages.contact.fallbackName'),
+  )
+  const avatarUrl = attachment.avatarUrl || profile?.avatarUrl || null
+  const city = attachment.city || profile?.city || ''
 
   return (
     <Link
@@ -21,17 +33,17 @@ export function ContactMessageCard({ attachment, mine = false }) {
       onClick={(event) => event.stopPropagation()}
     >
       <span className="relative shrink-0">
-        <EntityAvatar name={name} src={attachment.avatarUrl} size="md" shape="user" />
+        <EntityAvatar name={name} src={avatarUrl} size="md" shape="user" />
         <span className="absolute -bottom-0.5 -right-0.5 grid size-5 place-items-center rounded-full border border-[var(--app-surface)] bg-[var(--app-accent)] text-white shadow-sm">
           <FiUser className="text-[10px]" />
         </span>
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-black leading-tight">{name}</span>
-        {attachment.city ? (
+        {city ? (
           <span className="mt-0.5 flex items-center gap-1 truncate text-[11px] opacity-80">
             <FiMapPin className="shrink-0 text-[10px]" />
-            {attachment.city}
+            {city}
           </span>
         ) : (
           <span className="mt-0.5 block text-[11px] opacity-70">
