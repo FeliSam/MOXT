@@ -1,4 +1,5 @@
 import { FiMessageSquare } from 'react-icons/fi'
+import { LinkifiedText } from '../../components/ui/LinkifiedText'
 import { useLanguage } from '../../contexts/useLanguage'
 
 /** Message client → échangeur (noteToExchanger), visible avant confirmation. */
@@ -20,13 +21,12 @@ export function TransferClientNote({ note, className = '', compact = false }) {
         <FiMessageSquare className="shrink-0" aria-hidden />
         {t('transfers.detail.noteToExchanger')}
       </p>
-      <p
-        className={`mt-1.5 whitespace-pre-wrap break-words text-[var(--app-text)] ${
-          compact ? 'text-xs' : 'text-sm'
-        }`}
-      >
-        {text}
-      </p>
+      <LinkifiedText
+        as="p"
+        text={text}
+        preserveWhitespace="pre-wrap"
+        className={`mt-1.5 text-[var(--app-text)] ${compact ? 'text-xs' : 'text-sm'}`}
+      />
     </div>
   )
 }

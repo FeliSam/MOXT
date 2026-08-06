@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
+import { LinkifiedText } from '../../../components/ui/LinkifiedText'
 import { EntityVerifiedName } from '../../../components/ui/EntityVerifiedName'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { jobContractLabel, jobSectorLabel } from '../../jobs/jobDisplayUtils'
@@ -254,9 +255,12 @@ function DashboardPostCard({ post }) {
           />
         )}
 
-        <p className="mt-2.5 line-clamp-4 flex-1 text-xs leading-relaxed text-[var(--app-text-muted)]">
-          {post.message}
-        </p>
+        <LinkifiedText
+          as="p"
+          text={post.message}
+          preserveWhitespace="pre-line"
+          className="mt-2.5 line-clamp-4 flex-1 text-xs leading-relaxed text-[var(--app-text-muted)]"
+        />
 
         <div className="mt-3 flex items-center gap-3 pt-2.5 text-[10px] text-[var(--app-text-faint)]">
           <span className="flex items-center gap-1">

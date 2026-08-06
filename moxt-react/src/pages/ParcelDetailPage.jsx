@@ -8,6 +8,7 @@ import { BackButton } from '../components/ui/BackButton'
 import { Button } from '../components/ui/Button'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { Card } from '../components/ui/Card'
+import { LinkifiedText } from '../components/ui/LinkifiedText'
 import {
   DetailFacts,
   DetailMetrics,
@@ -288,7 +289,12 @@ export function ParcelDetailPage() {
               {t('parcels.detail.pickupFromDate', { date: distributionDate })}
             </p>
           ) : null}
-          <p className="mt-4 text-sm leading-6">{parcel.conditions}</p>
+          <LinkifiedText
+            as="p"
+            text={parcel.conditions}
+            preserveWhitespace="pre-line"
+            className="mt-4 text-sm leading-6"
+          />
           <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-[var(--app-text-muted)]">
             <span>
               {t('parcels.detail.carrier', {

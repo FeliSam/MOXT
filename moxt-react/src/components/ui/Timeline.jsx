@@ -1,4 +1,5 @@
 import { FiCheckCircle } from 'react-icons/fi'
+import { LinkifiedText } from './LinkifiedText'
 import { formatDateTime } from '../../utils/formatters'
 
 export function Timeline({ events = [], labelFor = (event) => event.label || event.status }) {
@@ -18,7 +19,9 @@ export function Timeline({ events = [], labelFor = (event) => event.label || eve
             <time className="mt-1 block text-xs text-[var(--app-text-muted)]" dateTime={event.at}>
               {formatDateTime(event.at)}
             </time>
-            {event.note ? <p className="mt-2 text-sm">{event.note}</p> : null}
+            {event.note ? (
+              <LinkifiedText as="p" text={event.note} preserveWhitespace="pre-line" className="mt-2 text-sm" />
+            ) : null}
           </div>
         </li>
       ))}

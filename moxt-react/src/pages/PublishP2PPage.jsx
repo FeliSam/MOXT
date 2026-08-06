@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom'
 import { Alert } from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
+import { LinkifiedText } from '../components/ui/LinkifiedText'
 import { Input, Textarea } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
 import {
@@ -617,7 +618,12 @@ export function PublishP2PPage() {
                 </div>
               ))}
               {form.comment.trim() ? (
-                <p className="text-sm text-[var(--app-text-muted)]">{form.comment}</p>
+                <LinkifiedText
+                  as="p"
+                  text={form.comment}
+                  preserveWhitespace="pre-line"
+                  className="text-sm text-[var(--app-text-muted)]"
+                />
               ) : null}
             </Card>
           </div>

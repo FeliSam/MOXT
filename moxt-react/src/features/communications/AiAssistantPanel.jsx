@@ -4,6 +4,7 @@ import { LuHeadphones } from 'react-icons/lu'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import { useLanguage } from '../../contexts/useLanguage'
+import { LinkifiedText, linkifyChildren } from '../../components/ui/LinkifiedText'
 import { selectSearchIndex } from '../searchSelectors'
 import { openAdminSupportChat } from './adminSupportChat'
 import { localAssistantProvider } from './assistantProvider'
@@ -286,7 +287,11 @@ export function AiAssistantPanel({
                 key={message.id}
                 className="ml-auto max-w-[88%] rounded-2xl rounded-br-md bg-brand-700 px-4 py-3 text-sm leading-6 text-white"
               >
-                {message.text}
+                <LinkifiedText
+                  text={message.text}
+                  preserveWhitespace="pre-line"
+                  linkClassName="underline underline-offset-2 text-white"
+                />
                 {message.attachment ? (
                   <span className="mt-2 flex min-w-0 max-w-full items-center gap-2 overflow-hidden rounded-xl bg-white/10 px-3 py-2 text-xs">
                     <FiPaperclip className="shrink-0" />
@@ -457,7 +462,9 @@ function renderMarkdown(text) {
 
 function inlineBold(text) {
   const parts = text.split(/\*\*(.*?)\*\*/g)
-  return parts.map((part, i) => (i % 2 === 1 ? <strong key={i}>{part}</strong> : part))
+  return parts.flatMap((part, i) =>
+    i % 2 === 1 ? [<strong key={`b-${i}`}>{part}</strong>] : linkifyChildren(part, { keyPrefix: `l-${i}-` }),
+  )
 }
 
 function AssistantMessage({

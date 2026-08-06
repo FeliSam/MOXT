@@ -11,6 +11,7 @@ import {
 import { QrSharePanel } from '../../features/share/QrSharePanel'
 import { Badge } from '../../components/ui/Badge'
 import { Card } from '../../components/ui/Card'
+import { LinkifiedText } from '../../components/ui/LinkifiedText'
 import { statusMeta } from '../../config/statuses'
 import { useLanguage } from '../../contexts/useLanguage'
 
@@ -55,9 +56,12 @@ export function ProfilePanel({ activity, business, documents = [], secondaryActi
               {pt('professional.profile.eyebrow')}
             </p>
             <h2 className="mt-1 text-2xl font-black">{business.name}</h2>
-            <p className="mt-2 max-w-2xl whitespace-pre-line text-sm leading-6 text-[var(--app-text-muted)]">
-              {business.description}
-            </p>
+            <LinkifiedText
+              as="p"
+              text={business.description}
+              preserveWhitespace="pre-line"
+              className="mt-2 max-w-2xl text-sm leading-6 text-[var(--app-text-muted)]"
+            />
           </div>
           <Badge tone={statusMeta(business.status, t).tone}>{statusMeta(business.status, t).label}</Badge>
         </div>

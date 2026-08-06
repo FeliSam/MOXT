@@ -9,6 +9,7 @@ import { Badge } from '../components/ui/Badge'
 import { EntityVerifiedName } from '../components/ui/EntityVerifiedName'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
+import { LinkifiedText } from '../components/ui/LinkifiedText'
 import { Input } from '../components/ui/Input'
 import { PageHeader } from '../components/ui/PageHeader'
 import { PublicationModal } from '../components/ui/PublicationModal'
@@ -455,7 +456,7 @@ function TicketCard({ dispatch, ticket, user }) {
               userId={message.senderId}
               className="block text-xs"
             />
-            <p className="mt-1">{message.text}</p>
+            <LinkifiedText as="p" text={message.text} preserveWhitespace="pre-line" className="mt-1" />
             {message.imageUrl ? (
               <a href={message.imageUrl} target="_blank" rel="noreferrer" className="mt-2 block">
                 <img

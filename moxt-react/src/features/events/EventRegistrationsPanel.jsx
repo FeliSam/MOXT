@@ -4,6 +4,7 @@ import { Badge } from '../../components/ui/Badge'
 import { EntityVerifiedName } from '../../components/ui/EntityVerifiedName'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import { LinkifiedText } from '../../components/ui/LinkifiedText'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { useLanguage } from '../../contexts/useLanguage'
 import { updateRegistrationStatus } from './eventSlice'
@@ -44,7 +45,12 @@ export function EventRegistrationsPanel({ id = 'event-registrations' }) {
                       />
                       <p className="mt-1 text-sm text-[var(--app-text-muted)]">{event?.title}</p>
                       {row.message ? (
-                        <p className="mt-2 text-sm text-[var(--app-text-muted)]">{row.message}</p>
+                        <LinkifiedText
+                          as="p"
+                          text={row.message}
+                          preserveWhitespace="pre-line"
+                          className="mt-2 text-sm text-[var(--app-text-muted)]"
+                        />
                       ) : null}
                     </div>
                     <div className="flex flex-wrap items-center gap-2">

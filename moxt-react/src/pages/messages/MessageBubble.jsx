@@ -20,7 +20,7 @@ import {
   isImageAttachment,
 } from '../../features/communications/attachmentUtils'
 import { MessageAttachment } from './MessageAttachment'
-import { linkifyParts } from './linkify'
+import { LinkifiedText } from '../../components/ui/LinkifiedText'
 import { useLanguage } from '../../contexts/useLanguage'
 import { LANGUAGE_LABELS } from '../../config/uiTranslations'
 import { messagesText } from '../../features/communications/messagesI18n'
@@ -321,9 +321,13 @@ export function MessageBubble({
           </button>
         ) : null}
         {repliedMessage ? (
-          <p className={`message-quote ${mine ? 'message-quote--sent' : 'message-quote--received'}`}>
-            {repliedMessage.text}
-          </p>
+          <LinkifiedText
+            as="p"
+            text={repliedMessage.text}
+            preserveWhitespace="pre-wrap"
+            className={`message-quote ${mine ? 'message-quote--sent' : 'message-quote--received'}`}
+            stopPropagation
+          />
         ) : null}
         {repliedContext ? (
           <p className={`message-quote ${mine ? 'message-quote--sent' : 'message-quote--received'}`}>
@@ -340,28 +344,15 @@ export function MessageBubble({
         ) : null}
 
         {hasCaption ? (
-          <p
-            className={`message-bubble-text whitespace-pre-wrap break-words ${
+          <LinkifiedText
+            as="p"
+            text={displayText}
+            preserveWhitespace="pre-wrap"
+            stopPropagation
+            className={`message-bubble-text ${
               hasImageAttachment ? 'message-bubble-text--caption' : ''
             } ${translating ? 'message-bubble-text--translating' : ''}`}
-          >
-            {linkifyParts(displayText).map((part, index) =>
-              part.type === 'link' ? (
-                <a
-                  key={`${part.href}-${index}`}
-                  href={part.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline underline-offset-2"
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  {part.value}
-                </a>
-              ) : (
-                <span key={`t-${index}`}>{part.value}</span>
-              ),
-            )}
-          </p>
+          />
         ) : null}
 
         {message.reactions && Object.entries(message.reactions).some(([, u]) => u?.length) ? (

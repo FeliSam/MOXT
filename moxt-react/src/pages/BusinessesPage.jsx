@@ -6,6 +6,7 @@ import { Badge, PillBadge, VerifiedDisplayName } from '../components/ui/Badge'
 import { BusinessRatingBadge } from '../features/reviews/BusinessRatingBadge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
+import { LinkifiedText } from '../components/ui/LinkifiedText'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { CatalogSearch } from '../components/ui/CatalogSearch'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -415,9 +416,12 @@ export function BusinessesPage() {
                       <BusinessRatingBadge business={business} />
                     </div>
 
-                    <p className="mt-3 max-sm:hidden line-clamp-5 min-h-[7.5rem] text-sm leading-6 text-[var(--app-text-muted)]">
-                      {business.description}
-                    </p>
+                    <LinkifiedText
+                      as="p"
+                      text={business.description}
+                      preserveWhitespace="pre-line"
+                      className="mt-3 max-sm:hidden line-clamp-5 min-h-[7.5rem] text-sm leading-6 text-[var(--app-text-muted)]"
+                    />
                     <div className="mt-4 flex flex-wrap gap-2">
                       {(business.services || []).slice(0, 3).map((service) => (
                         <Badge key={service} tone="teal">

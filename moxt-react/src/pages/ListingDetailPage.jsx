@@ -19,6 +19,7 @@ import { Badge } from '../components/ui/Badge'
 import { EntityVerifiedName } from '../components/ui/EntityVerifiedName'
 import { BackButton } from '../components/ui/BackButton'
 import { Button } from '../components/ui/Button'
+import { LinkifiedText } from '../components/ui/LinkifiedText'
 import { Card } from '../components/ui/Card'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { DetailFacts, DetailMetrics, DetailTimeline } from '../components/ui/DetailBlocks'
@@ -248,9 +249,12 @@ export function ListingDetailPage() {
               {activeTab === 'description' ? (
                 <div>
                   <h2 className="text-xl font-black">{mt('marketplace.detail.about')}</h2>
-                  <p className="mt-4 whitespace-pre-line leading-8 text-[var(--app-text-muted)]">
-                    {listing.description}
-                  </p>
+                  <LinkifiedText
+                    as="p"
+                    text={listing.description}
+                    preserveWhitespace="pre-line"
+                    className="mt-4 leading-8 text-[var(--app-text-muted)]"
+                  />
                 </div>
               ) : null}
               {activeTab === 'details' ? <DetailFacts items={characteristicItems} /> : null}
@@ -897,13 +901,17 @@ function Questions({ dispatch, listing, question, setQuestion, submitQuestion, u
                   {formatShortDate(item.createdAt)}
                 </span>
               </div>
-              <p className="mt-2 text-sm">{item.text}</p>
+              <p className="mt-2 text-sm">
+                <LinkifiedText text={item.text} preserveWhitespace="pre-line" />
+              </p>
               {item.answer ? (
                 <div className="mt-3 rounded-xl bg-[var(--app-surface)] p-3 text-sm">
                   <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--app-accent)]">
                     {mt('marketplace.detail.sellerAnswer')}
                   </p>
-                  <p className="mt-1">{item.answer}</p>
+                  <p className="mt-1">
+                    <LinkifiedText text={item.answer} preserveWhitespace="pre-line" />
+                  </p>
                   {item.answeredAt ? (
                     <p className="mt-2 text-[10px] text-[var(--app-text-faint)]">
                       {formatShortDate(item.answeredAt)}

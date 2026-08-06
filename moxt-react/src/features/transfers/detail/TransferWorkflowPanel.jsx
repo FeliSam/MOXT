@@ -9,6 +9,7 @@ import {
 } from 'react-icons/fi'
 import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
+import { LinkifiedText } from '../../../components/ui/LinkifiedText'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { ContactButton } from '../../communications/ContactButton'
 import { TransferContactMenu } from './TransferContactMenu'
@@ -326,9 +327,12 @@ function ActionZone({ children, description, title }) {
         {t('transfers.workflow.actionRequired')}
       </p>
       <h3 className="mt-1 break-words font-black [overflow-wrap:anywhere]">{title}</h3>
-      <p className="mt-2 break-words text-sm leading-6 text-[var(--app-text-muted)] [overflow-wrap:anywhere]">
-        {description}
-      </p>
+      <LinkifiedText
+        as="p"
+        text={description}
+        preserveWhitespace="pre-line"
+        className="mt-2 text-sm leading-6 text-[var(--app-text-muted)] [overflow-wrap:anywhere]"
+      />
       {children ? <div className="mt-4 grid min-w-0 gap-3">{children}</div> : null}
     </div>
   )

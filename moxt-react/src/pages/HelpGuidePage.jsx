@@ -3,6 +3,7 @@ import { FiExternalLink, FiStar } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useParams } from 'react-router-dom'
 import { BackButton } from '../components/ui/BackButton'
+import { LinkifiedText } from '../components/ui/LinkifiedText'
 import { Badge, PillBadge } from '../components/ui/Badge'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { CatalogSearch } from '../components/ui/CatalogSearch'
@@ -142,9 +143,12 @@ export function HelpArticleDetailPage() {
         <p className="-mt-2 text-sm leading-6 text-[var(--app-text-muted)]">{article.summary}</p>
       ) : null}
       <div className="grid gap-4 rounded-[var(--radius-card-lg)] bg-[var(--app-surface)] p-5 shadow-[var(--shadow-card)] sm:p-6">
-        <p className="whitespace-pre-line text-sm leading-7 text-[var(--app-text)]">
-          {article.content}
-        </p>
+        <LinkifiedText
+          as="p"
+          text={article.content}
+          preserveWhitespace="pre-line"
+          className="text-sm leading-7 text-[var(--app-text)]"
+        />
         {article.verifiedAt ? (
           <Badge tone="info" className="w-fit">
             {t('help.article.verifiedOn', { date: formatDate(article.verifiedAt) })}

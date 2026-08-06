@@ -14,6 +14,7 @@ import { Link, useParams } from 'react-router-dom'
 import { Badge, VerifiedDisplayName } from '../components/ui/Badge'
 import { BackButton } from '../components/ui/BackButton'
 import { Card } from '../components/ui/Card'
+import { LinkifiedText } from '../components/ui/LinkifiedText'
 import { CatalogArchiveTabs } from '../components/ui/CatalogArchiveTabs'
 import {
   DetailFacts,
@@ -238,9 +239,12 @@ export function BusinessDetailPage() {
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone={statusMeta(business.status, t).tone}>{statusMeta(business.status, t).label}</Badge>
           </div>
-          <p className="max-w-3xl whitespace-pre-line leading-7 text-[var(--app-text-muted)]">
-            {business.description}
-          </p>
+          <LinkifiedText
+            as="p"
+            text={business.description}
+            preserveWhitespace="pre-line"
+            className="max-w-3xl leading-7 text-[var(--app-text-muted)]"
+          />
           <div className="rounded-[1.5rem] bg-[var(--app-surface-muted)] p-4 text-sm leading-6 text-[var(--app-text-muted)]">
             <strong className="block text-[var(--app-text)]">{activityLabel}</strong>
             <span>

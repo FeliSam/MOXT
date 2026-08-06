@@ -17,6 +17,7 @@ import { Badge, VerifiedBadge } from '../components/ui/Badge'
 import { EntityVerifiedName } from '../components/ui/EntityVerifiedName'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
+import { LinkifiedText } from '../components/ui/LinkifiedText'
 import {
   DetailFacts,
   DetailMetrics,
@@ -223,21 +224,32 @@ export function JobDetailPage() {
             {job.businessId ? <VerifiedBadge size="sm" label={t('jobs.card.business')} /> : null}
           </div>
           <h2 className="mt-6 font-black">{t('jobs.detail.description')}</h2>
-          <p className="mt-3 leading-7 text-slate-600 dark:text-slate-300">
-            {displayJobField(job.description, t)}
-          </p>
+          <LinkifiedText
+            as="p"
+            text={displayJobField(job.description, t)}
+            preserveWhitespace="pre-line"
+            className="mt-3 leading-7 text-slate-600 dark:text-slate-300"
+          />
           {hasJobText(job.requirements) ? (
             <>
               <h2 className="mt-6 font-black">{t('jobs.detail.requirements')}</h2>
-              <p className="mt-3 leading-7 text-slate-600 dark:text-slate-300">
-                {job.requirements}
-              </p>
+              <LinkifiedText
+                as="p"
+                text={job.requirements}
+                preserveWhitespace="pre-line"
+                className="mt-3 leading-7 text-slate-600 dark:text-slate-300"
+              />
             </>
           ) : null}
           {job.benefits ? (
             <>
               <h2 className="mt-6 font-black">{t('jobs.detail.benefits')}</h2>
-              <p className="mt-3 leading-7 text-slate-600 dark:text-slate-300">{job.benefits}</p>
+              <LinkifiedText
+                as="p"
+                text={job.benefits}
+                preserveWhitespace="pre-line"
+                className="mt-3 leading-7 text-slate-600 dark:text-slate-300"
+              />
             </>
           ) : null}
         </Card>

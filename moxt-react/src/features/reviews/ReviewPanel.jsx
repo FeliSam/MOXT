@@ -6,6 +6,7 @@ import { useDispatch } from 'react-redux'
 import { PillBadge } from '../../components/ui/Badge'
 import { EntityVerifiedName } from '../../components/ui/EntityVerifiedName'
 import { Button } from '../../components/ui/Button'
+import { LinkifiedText } from '../../components/ui/LinkifiedText'
 import { StarRating } from '../../components/ui/StarRating'
 import { EntityAvatar } from '../account/EntityAvatar'
 import {
@@ -147,7 +148,12 @@ export function ReviewCard({ review, ownerId, ownerName, isOwner, authorProfile 
         </Link>
       ) : null}
 
-      <p className="mt-3 text-sm leading-6 text-[var(--app-text-muted)]">{review.comment}</p>
+      <LinkifiedText
+        as="p"
+        text={review.comment}
+        preserveWhitespace="pre-line"
+        className="mt-3 text-sm leading-6 text-[var(--app-text-muted)]"
+      />
 
       {review.replyText ? (
         <div className="mt-4 rounded-xl border border-brand-100 bg-brand-50/70 p-3 dark:border-brand-900/40 dark:bg-brand-950/20">
@@ -160,7 +166,12 @@ export function ReviewCard({ review, ownerId, ownerName, isOwner, authorProfile 
               </span>
             ) : null}
           </p>
-          <p className="mt-2 text-sm leading-6 text-[var(--app-text-muted)]">{review.replyText}</p>
+          <LinkifiedText
+            as="p"
+            text={review.replyText}
+            preserveWhitespace="pre-line"
+            className="mt-2 text-sm leading-6 text-[var(--app-text-muted)]"
+          />
         </div>
       ) : null}
 
@@ -170,7 +181,12 @@ export function ReviewCard({ review, ownerId, ownerName, isOwner, authorProfile 
             <FiAlertTriangle />
             Motif de contestation
           </p>
-          <p className="mt-1 leading-6">{review.disputeReason}</p>
+          <LinkifiedText
+            as="p"
+            text={review.disputeReason}
+            preserveWhitespace="pre-line"
+            className="mt-1 leading-6"
+          />
         </div>
       ) : null}
 

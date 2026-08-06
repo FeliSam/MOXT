@@ -4,6 +4,7 @@ import { Badge } from '../../components/ui/Badge'
 import { EntityVerifiedName } from '../../components/ui/EntityVerifiedName'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import { LinkifiedText } from '../../components/ui/LinkifiedText'
 import { DetailSection } from '../../components/ui/DetailBlocks'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { statusMeta } from '../../config/statuses'
@@ -89,9 +90,12 @@ export function EventParticipantsSection({ event, eventId }) {
                         </Badge>
                       </div>
                       {row.message ? (
-                        <p className="mt-3 rounded-xl bg-[var(--app-surface)] px-3 py-2 text-sm text-[var(--app-text-muted)]">
-                          {row.message}
-                        </p>
+                        <LinkifiedText
+                          as="p"
+                          text={row.message}
+                          preserveWhitespace="pre-line"
+                          className="mt-3 rounded-xl bg-[var(--app-surface)] px-3 py-2 text-sm text-[var(--app-text-muted)]"
+                        />
                       ) : null}
                     </div>
                     <div className="flex flex-wrap gap-2">

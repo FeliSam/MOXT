@@ -28,6 +28,7 @@ import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
+import { LinkifiedText } from '../components/ui/LinkifiedText'
 import { CitySelector } from '../components/ui/CitySelector'
 import { Input, Textarea } from '../components/ui/Input'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -283,7 +284,12 @@ function BusinessPreview({ formik, hasTransfer, serviceOptions }) {
           </div>
 
           {v.description ? (
-            <p className="whitespace-pre-line text-xs leading-5 text-[var(--app-text-muted)]">{v.description}</p>
+            <LinkifiedText
+              as="p"
+              text={v.description}
+              preserveWhitespace="pre-line"
+              className="text-xs leading-5 text-[var(--app-text-muted)]"
+            />
           ) : (
             <p className="text-xs italic text-[var(--app-text-faint)]">
               {bt('businesses.setup.preview.presentationPlaceholder')}
@@ -1127,7 +1133,9 @@ function ReviewStep({ formik, hasTransfer, serviceOptions }) {
         <ReviewRow label={bt('businesses.common.hours')} value={v.scheduleSummary || bt('businesses.common.emDash')} />
         <ReviewRow label={bt('businesses.common.zones')} value={v.serviceZones || bt('businesses.common.emDash')} />
         {v.description ? (
-          <div className="rounded-xl bg-[var(--app-surface-muted)] p-3 text-sm text-[var(--app-text-muted)]">{v.description}</div>
+          <div className="rounded-xl bg-[var(--app-surface-muted)] p-3 text-sm text-[var(--app-text-muted)]">
+            <LinkifiedText text={v.description} preserveWhitespace="pre-line" />
+          </div>
         ) : null}
       </Card>
 

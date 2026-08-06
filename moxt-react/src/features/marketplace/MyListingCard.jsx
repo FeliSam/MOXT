@@ -16,6 +16,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import { LinkifiedText } from '../../components/ui/LinkifiedText'
 import { FavoriteButton } from '../../components/ui/FavoriteButton'
 import { statusMeta } from '../../config/statuses'
 import { useLanguage } from '../../contexts/useLanguage'
@@ -157,9 +158,12 @@ export function MyListingCard({
               </span>
             </div>
             {listing.description ? (
-              <p className="mt-3 line-clamp-2 text-sm leading-6 text-[var(--app-text-muted)]">
-                {listing.description}
-              </p>
+              <LinkifiedText
+                as="p"
+                text={listing.description}
+                preserveWhitespace="pre-line"
+                className="mt-3 line-clamp-2 text-sm leading-6 text-[var(--app-text-muted)]"
+              />
             ) : null}
           </div>
 

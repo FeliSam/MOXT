@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom'
 import { VerifiedDisplayName } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import { LinkifiedText } from '../../components/ui/LinkifiedText'
 import { useLanguage } from '../../contexts/useLanguage'
 import { isBusinessPublishReady } from '../businesses/businessPublishUtils'
 import { formatShortDate } from '../../utils/formatters'
@@ -73,9 +74,12 @@ export function PublisherDetailCard({
         <PublisherStat icon={FiShoppingBag} value={publicationCount} label={resolvedCountLabel} />
         <PublisherStat icon={FiMessageSquare} value={contactCount} label={t('publications.publisher.stats.contacts')} />
       </div>
-      <p className="mt-5 text-sm leading-6 text-[var(--app-text-muted)]">
-        {description || business?.description || resolvedDescriptionFallback}
-      </p>
+      <LinkifiedText
+        as="p"
+        text={description || business?.description || resolvedDescriptionFallback}
+        preserveWhitespace="pre-line"
+        className="mt-5 text-sm leading-6 text-[var(--app-text-muted)]"
+      />
       {business ? (
         <Link to={`/businesses/${business.id}`}>
           <Button className="mt-5 w-full" variant="secondary" icon={FiUser}>

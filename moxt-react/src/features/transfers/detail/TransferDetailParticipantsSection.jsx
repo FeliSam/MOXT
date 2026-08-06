@@ -1,6 +1,7 @@
 import { FiUsers } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Card } from '../../../components/ui/Card'
+import { LinkifiedText } from '../../../components/ui/LinkifiedText'
 import { useLanguage } from '../../../contexts/useLanguage'
 import {
   removeTransferProfile,
@@ -106,9 +107,12 @@ export function TransferDetailParticipantsSection({ transfer }) {
           <p className="text-xs font-bold uppercase tracking-wide text-[var(--app-text-muted)]">
             {t('transfers.detail.noteToExchanger')}
           </p>
-          <p className="mt-1 whitespace-pre-wrap break-words text-sm text-[var(--app-text)] [overflow-wrap:anywhere]">
-            {String(transfer.noteToExchanger).trim()}
-          </p>
+          <LinkifiedText
+            as="p"
+            text={String(transfer.noteToExchanger).trim()}
+            preserveWhitespace="pre-wrap"
+            className="mt-1 text-sm text-[var(--app-text)] [overflow-wrap:anywhere]"
+          />
         </div>
       ) : null}
     </Card>

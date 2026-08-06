@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { FiClock, FiZap } from 'react-icons/fi'
 import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
+import { LinkifiedText } from '../../../components/ui/LinkifiedText'
 import { SkeletonList } from '../../../components/ui/Skeleton'
 import { canActorPerformBusinessTransferAction } from '../transferActionUtils'
 import { TRANSFER_STATUS } from '../transferConfig'
@@ -51,7 +52,12 @@ function TransferOpsCard({ transfer, user, onManage, t }) {
             {transfer.sender?.firstName || t('exchanger.queue.client')} · {transfer.id}
           </p>
           {note ? (
-            <p className="mt-1 line-clamp-2 break-words text-xs text-[var(--app-text-faint)]">{note}</p>
+            <LinkifiedText
+              as="p"
+              text={note}
+              preserveWhitespace="pre-line"
+              className="mt-1 line-clamp-2 text-xs text-[var(--app-text-faint)]"
+            />
           ) : null}
           {transfer.paymentDeadlineAt && transfer.status === TRANSFER_STATUS.PENDING ? (
             <p className="mt-1 flex flex-wrap items-center gap-1 text-[10px] text-amber-700 dark:text-amber-300">

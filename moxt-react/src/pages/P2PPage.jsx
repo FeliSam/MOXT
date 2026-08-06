@@ -6,6 +6,7 @@ import { Badge, VerifiedBadge } from '../components/ui/Badge'
 import { EntityVerifiedName } from '../components/ui/EntityVerifiedName'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
+import { LinkifiedText } from '../components/ui/LinkifiedText'
 import { CatalogArchiveTabs } from '../components/ui/CatalogArchiveTabs'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { CatalogSearch } from '../components/ui/CatalogSearch'
@@ -272,9 +273,12 @@ export function P2PPage() {
                   </div>
 
                   {offer.comment ? (
-                    <p className="mt-3 line-clamp-2 text-xs text-[var(--app-text-muted)]">
-                      {offer.comment}
-                    </p>
+                    <LinkifiedText
+                      as="p"
+                      text={offer.comment}
+                      preserveWhitespace="pre-line"
+                      className="mt-3 line-clamp-2 text-xs text-[var(--app-text-muted)]"
+                    />
                   ) : null}
 
                   <div className="mt-4 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-stretch">

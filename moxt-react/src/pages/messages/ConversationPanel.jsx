@@ -12,6 +12,7 @@ import { useSelector } from 'react-redux'
 import { syncKeyboardInsetAfterBlur } from '../../hooks/useKeyboardInset'
 import { useLanguage } from '../../contexts/useLanguage'
 import { UploadProgress } from '../../components/ui/UploadProgress'
+import { LinkifiedText } from '../../components/ui/LinkifiedText'
 import { shortenFileName } from '../../services/uploadProgress'
 import { ContactSharePicker } from '../../features/communications/ContactSharePicker'
 import { getConversationPeer } from '../../features/communications/conversationDisplay'
@@ -758,9 +759,12 @@ export function ConversationPanel({
                     messagesText(t, 'messages.replyToMessageFallback'),
                 })}
               </span>
-              <span className="block truncate text-[var(--app-text-muted)]">
-                {replyTarget?.text || ''}
-              </span>
+              <LinkifiedText
+                as="span"
+                text={replyTarget?.text || ''}
+                preserveWhitespace="pre-line"
+                className="block truncate text-[var(--app-text-muted)]"
+              />
             </span>
             <button
               type="button"

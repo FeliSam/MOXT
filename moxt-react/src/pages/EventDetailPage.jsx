@@ -14,6 +14,7 @@ import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
 import { EntityVerifiedName } from '../components/ui/EntityVerifiedName'
 import { BackButton } from '../components/ui/BackButton'
+import { LinkifiedText } from '../components/ui/LinkifiedText'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import {
@@ -190,7 +191,12 @@ export function EventDetailPage() {
             </Badge>
           </div>
           <h2 className="font-black">{t('events.detail.about')}</h2>
-          <p className="mt-4 leading-7 text-slate-600 dark:text-slate-300">{event.description}</p>
+          <LinkifiedText
+            as="p"
+            text={event.description}
+            preserveWhitespace="pre-line"
+            className="mt-4 leading-7 text-slate-600 dark:text-slate-300"
+          />
           <div className="mt-6 grid gap-3 text-sm sm:grid-cols-2">
             <span className="inline-flex min-w-0 flex-wrap items-center gap-1">
               {t('events.detail.organizerLabel')} :{' '}

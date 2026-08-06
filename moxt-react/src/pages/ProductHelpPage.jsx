@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useParams } from 'react-router-dom'
 import { BackButton } from '../components/ui/BackButton'
+import { LinkifiedText } from '../components/ui/LinkifiedText'
 import { PillBadge } from '../components/ui/Badge'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { CatalogSearch } from '../components/ui/CatalogSearch'
@@ -172,9 +173,12 @@ export function ProductHelpSessionPage() {
         />
       ) : null}
       <div className="grid gap-4 rounded-[var(--radius-card-lg)] bg-[var(--app-surface)] p-5 shadow-[var(--shadow-card)] sm:p-6">
-        <p className="whitespace-pre-line text-sm leading-7 text-[var(--app-text)]">
-          {session.content}
-        </p>
+        <LinkifiedText
+          as="p"
+          text={session.content}
+          preserveWhitespace="pre-line"
+          className="text-sm leading-7 text-[var(--app-text)]"
+        />
       </div>
       <Link
         to="/support"

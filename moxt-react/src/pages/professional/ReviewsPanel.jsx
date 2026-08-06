@@ -5,6 +5,7 @@ import { useProfileAvatarMap } from '../../features/account/useProfileAvatarMap'
 import { Badge } from '../../components/ui/Badge'
 import { EntityVerifiedName } from '../../components/ui/EntityVerifiedName'
 import { Card } from '../../components/ui/Card'
+import { LinkifiedText } from '../../components/ui/LinkifiedText'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { useLanguage } from '../../contexts/useLanguage'
 import { professionalText } from '../../features/businesses/professionalI18n'
@@ -125,7 +126,12 @@ export function ReviewsPanel({ reviews, rating = null, transferMode = false }) {
                 )}
                 <Badge tone="warning">{review.rating}/5</Badge>
               </div>
-              <p className="mt-3 text-sm leading-6 text-[var(--app-text-muted)]">{review.comment}</p>
+              <LinkifiedText
+                as="p"
+                text={review.comment}
+                preserveWhitespace="pre-line"
+                className="mt-3 text-sm leading-6 text-[var(--app-text-muted)]"
+              />
             </Card>
           )
         })}

@@ -12,6 +12,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { FavoriteButton } from './FavoriteButton'
+import { LinkifiedText } from './LinkifiedText'
 import { CountBounce } from './CountBounce'
 import { useLanguage } from '../../contexts/useLanguage'
 import { adminText } from '../../features/admin/adminI18n'
@@ -58,14 +59,15 @@ function ExpandableFeedMessage({ text }) {
 
   return (
     <div className="feed-post-message">
-      <p
+      <LinkifiedText
         ref={textRef}
-        className={`whitespace-pre-line text-sm leading-relaxed text-[var(--app-text)] sm:text-[0.9375rem] sm:leading-7 ${
+        as="p"
+        text={text}
+        preserveWhitespace="pre-line"
+        className={`text-sm leading-relaxed text-[var(--app-text)] sm:text-[0.9375rem] sm:leading-7 ${
           expanded ? '' : 'line-clamp-6'
         }`}
-      >
-        {text}
-      </p>
+      />
       {canToggle ? (
         <button
           type="button"
@@ -432,7 +434,7 @@ export function FeedPostCard({ post }) {
                         className="text-xs font-bold"
                       />
                     </Link>
-                    <p className="text-sm mt-0.5">{comment.text}</p>
+                    <LinkifiedText as="p" text={comment.text} preserveWhitespace="pre-line" className="text-sm mt-0.5" />
                   </div>
                   {(user?.id === comment.authorId || isAuthor || isModerator) && comment.id ? (
                     <button

@@ -2,6 +2,7 @@ import { FiAlertTriangle } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
 import { Badge } from '../components/ui/Badge'
 import { Card } from '../components/ui/Card'
+import { LinkifiedText } from '../components/ui/LinkifiedText'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { statusMeta } from '../config/statuses'
@@ -37,7 +38,12 @@ export function DisputesPage() {
                   <strong>
                     {dispute.relatedType} · {dispute.relatedId}
                   </strong>
-                  <p className="mt-2 text-sm text-[var(--app-text-muted)]">{dispute.reason}</p>
+                  <LinkifiedText
+                    as="p"
+                    text={dispute.reason}
+                    preserveWhitespace="pre-line"
+                    className="mt-2 text-sm text-[var(--app-text-muted)]"
+                  />
                   <p className="mt-2 text-xs text-[var(--app-text-muted)]">
                     {formatDate(dispute.createdAt)}
                   </p>

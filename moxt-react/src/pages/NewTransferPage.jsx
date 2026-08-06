@@ -21,6 +21,7 @@ import { Alert } from '../components/ui/Alert'
 import { VerifiedDisplayName } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
+import { LinkifiedText } from '../components/ui/LinkifiedText'
 import { Input, Textarea } from '../components/ui/Input'
 import { Modal } from '../components/ui/Modal'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -724,9 +725,12 @@ export function NewTransferPage() {
                   <p className="text-xs font-bold uppercase tracking-wide text-[var(--app-text-muted)]">
                     {t('transfers.new.noteToExchangerLabel')}
                   </p>
-                  <p className="mt-1 whitespace-pre-wrap text-sm text-[var(--app-text)]">
-                    {formik.values.noteToExchanger.trim()}
-                  </p>
+                  <LinkifiedText
+                    as="p"
+                    text={formik.values.noteToExchanger.trim()}
+                    preserveWhitespace="pre-wrap"
+                    className="mt-1 text-sm text-[var(--app-text)]"
+                  />
                 </div>
               ) : null}
               <label className="flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-[var(--app-border)] p-4 transition hover:border-brand-400">

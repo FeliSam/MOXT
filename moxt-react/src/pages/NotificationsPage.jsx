@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
+import { LinkifiedText } from '../components/ui/LinkifiedText'
 import { PageHeader } from '../components/ui/PageHeader'
 import { useLanguage } from '../contexts/useLanguage'
 import {
@@ -154,9 +155,12 @@ export function NotificationsPage() {
                         </Badge>
                       </div>
                     </div>
-                    <p className="mt-2 break-words text-sm leading-5 text-slate-500">
-                      {notification.message}
-                    </p>
+                    <LinkifiedText
+                      as="p"
+                      text={notification.message}
+                      preserveWhitespace="pre-line"
+                      className="mt-2 text-sm leading-5 text-slate-500"
+                    />
                     <p className="mt-2 text-xs text-slate-400">{formatDate(notification.createdAt)}</p>
                     <div
                       className="mt-3 flex min-w-0 flex-wrap gap-2"

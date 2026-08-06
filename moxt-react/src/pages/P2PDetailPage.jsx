@@ -7,6 +7,7 @@ import { BackButton } from '../components/ui/BackButton'
 import { DetailFloatingActions } from '../components/ui/DetailFloatingActions'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
+import { LinkifiedText } from '../components/ui/LinkifiedText'
 import {
   DetailFacts,
   DetailMetrics,
@@ -106,9 +107,12 @@ export function P2PDetailPage() {
             className="mt-4"
           />
           {offer.comment ? (
-            <p className="mt-5 rounded-xl bg-[var(--app-surface-muted)] p-4 text-sm">
-              {offer.comment}
-            </p>
+            <LinkifiedText
+              as="p"
+              text={offer.comment}
+              preserveWhitespace="pre-line"
+              className="mt-5 rounded-xl bg-[var(--app-surface-muted)] p-4 text-sm"
+            />
           ) : null}
         </Card>
         <Card>
