@@ -2,13 +2,20 @@ import { useSyncExternalStore } from 'react'
 
 const TICK_MS = 30_000
 
+/** Valeur stable lue par getSnapshot — mise à jour uniquement au tick. */
+let cachedNow = 0
+
 function subscribe(onStoreChange) {
-  const timer = window.setInterval(onStoreChange, TICK_MS)
+  cachedNow = Date.now()
+  const timer = window.setInterval(() => {
+    cachedNow = Date.now()
+    onStoreChange()
+  }, TICK_MS)
   return () => window.clearInterval(timer)
 }
 
 function getSnapshot() {
-  return Date.now()
+  return cachedNow
 }
 
 function getServerSnapshot() {
