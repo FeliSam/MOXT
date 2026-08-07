@@ -20,6 +20,9 @@ export function PublicOnlyRoute() {
     if (needsRegisterProfileCompletion(user)) {
       return <Navigate to="/register" replace />
     }
+    if (user.status === 'suspended') {
+      return <Navigate to="/account/status" replace />
+    }
     if (returnTo && returnTo.startsWith('/')) {
       return <Navigate to={decodeURIComponent(returnTo)} replace />
     }

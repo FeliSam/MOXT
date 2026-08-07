@@ -1686,13 +1686,68 @@ export const en = {
     },
     danger: {
       title: "Danger zone",
-      description: "The request is only saved locally and remains reversible.",
+      description:
+        "Request account deletion. You have 24 hours to cancel before automatic suspension.",
+      coolingDescription:
+        "Request saved. For 24 hours you keep normal access and can cancel.",
+      pendingSuspensionDescription:
+        "The cooling-off period has ended. Your account will be suspended automatically.",
+      coolingLabel: "Time remaining before suspension",
+      coolingHint:
+        "After 24 hours your account will be suspended. You will then have 30 days to request reopening or confirm permanent deletion.",
       cancelRequest: "Cancel request",
+      viewStatusPage: "View account status",
       requestDeletion: "Request deletion",
       confirmTitle: "Request account deletion",
-      confirmBody: "Your account will be flagged for deletion. MOXT moderation will process the request within 30 days.",
+      confirmBody:
+        "Your request will be recorded. For 24 hours you can cancel it. Then the account is suspended for 30 days before permanent deletion unless reopened.",
       toastTitle: "Request saved",
-      toastBody: "Your deletion request has been submitted.",
+      toastBody: "You have 24 hours to cancel from Settings.",
+    },
+    accountStatus: {
+      badge: "Restricted access",
+      heroTitle: "Your MOXT account is suspended",
+      heroBody:
+        "Platform access is limited. You can request reopening or confirm permanent deletion.",
+      heroFooter: "The MOXT team reviews reopening requests within 2 business days.",
+      titleDeletion: "Account pending deletion",
+      titleModeration: "Account suspended",
+      bodyDeletion:
+        "You requested deletion. After the cooling-off period, access is restricted.",
+      bodyModeration:
+        "Your account was suspended by MOXT moderation. Contact support if needed.",
+      countdownPurge: "Time remaining before permanent deletion",
+      timelineTitle: "Timeline",
+      step: {
+        suspended: "Account suspended",
+        suspendedDesc: "MOXT access is restricted — only this page and support remain available.",
+        grace: "Reopening period (30 days)",
+        graceDesc: "Request reopening or confirm permanent deletion.",
+        purge: "Permanent deletion",
+        purgeDesc: "After this deadline, the account and credentials are erased.",
+      },
+      reopen: {
+        label: "Message for the MOXT team (optional)",
+        placeholder: "Briefly explain why you want your account back…",
+        action: "Request reopening",
+        toastTitle: "Request sent",
+        toastBody: "MOXT moderation will review your request soon.",
+      },
+      reopenPending:
+        "Your reopening request was submitted. We will reply by notification or email.",
+      purgeHint:
+        "If you prefer not to wait, you can permanently delete your account now.",
+      purgeAction: "Delete permanently now",
+      purgeConfirmTitle: "Permanently delete your account?",
+      purgeConfirmBody:
+        "This action is irreversible. Your profile, credentials and data will be erased.",
+      contactSupport: "Contact support",
+      logout: "Sign out",
+      footerNote: "Deadlines are calculated automatically on the server.",
+      backToApp: "Back to the app",
+      errorTitle: "Action failed",
+      errorBody: "Try again in a moment or contact support.",
+      expiredCountdown: "Deadline passed — processing in progress",
     },
     push: {
       unavailableTitle: "Notifications unavailable",

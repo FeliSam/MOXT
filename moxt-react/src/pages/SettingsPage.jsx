@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   FiBell,
   FiCheck,
@@ -30,6 +30,8 @@ import {
   updateAccountPreferences,
 } from '../features/account/accountSlice'
 import { addToast } from '../features/ui/uiSlice'
+import { canCancelDeletion, formatCountdown } from '../utils/accountLifecycleUtils'
+import { useLifecycleClock } from '../hooks/useLifecycleClock'
 import { isNative } from '../platform/capacitor'
 import { syncNativePushPreference } from '../platform/pushNotifications'
 import {
@@ -57,6 +59,7 @@ export function SettingsPage() {
   const { language, setLanguage, t } = useLanguage()
   const [confirmDeletion, setConfirmDeletion] = useState(false)
   const [pushPromptLoading, setPushPromptLoading] = useState(false)
+  const cooldownNow = useLifecycleClock()
   const pushPermission =
     typeof Notification !== 'undefined' ? Notification.permission : 'unsupported'
   const showWebPushPrompt =
@@ -64,6 +67,18 @@ export function SettingsPage() {
     canPromptForPushPermission() &&
     preferences.pushNotifications !== false &&
     pushPermission === 'default'
+
+  const deletionCountdown = useMemo(
+    () =>
+      deletionRequest && cooldownNow > 0
+        ? formatCountdown(deletionRequest.suspendAt, { now: cooldownNow })
+        : null,
+    [deletionRequest, cooldownNow],
+  )
+  const deletionCoolingOff =
+    deletionRequest &&
+    cooldownNow > 0 &&
+    canCancelDeletion(deletionRequest, { now: cooldownNow })
 
   async function requestWebPushPermission() {
     if (!getVapidPublicKey()) {
@@ -409,9 +424,27 @@ export function SettingsPage() {
         <Card className="border-red-200 dark:border-red-900">
           <h2 className="font-black text-red-700 dark:text-red-300">{t('settings.danger.title')}</h2>
           <p className="mt-2 text-sm text-[var(--app-text-muted)]">
-            {t('settings.danger.description')}
+            {deletionRequest
+              ? deletionCoolingOff
+                ? t('settings.danger.coolingDescription')
+                : t('settings.danger.pendingSuspensionDescription')
+              : t('settings.danger.description')}
           </p>
-          {deletionRequest ? (
+          {deletionRequest && deletionCoolingOff && deletionCountdown && !deletionCountdown.expired ? (
+            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
+              <p className="text-[10px] font-black uppercase tracking-wider text-amber-800 dark:text-amber-200">
+                {t('settings.danger.coolingLabel')}
+              </p>
+              <p className="mt-2 font-display text-2xl font-extrabold tabular-nums text-amber-900 dark:text-amber-100">
+                {deletionCountdown.days > 0 ? `${deletionCountdown.days}j ` : ''}
+                {deletionCountdown.hours}h {deletionCountdown.minutes}min
+              </p>
+              <p className="mt-2 text-xs leading-5 text-amber-900/80 dark:text-amber-100/80">
+                {t('settings.danger.coolingHint')}
+              </p>
+            </div>
+          ) : null}
+          {deletionRequest && deletionCoolingOff ? (
             <Button
               className="mt-5"
               variant="secondary"
@@ -419,6 +452,10 @@ export function SettingsPage() {
             >
               {t('settings.danger.cancelRequest')}
             </Button>
+          ) : deletionRequest ? (
+            <Link className="mt-5 inline-block" to="/account/status">
+              <Button variant="secondary">{t('settings.danger.viewStatusPage')}</Button>
+            </Link>
           ) : (
             <Button
               className="mt-5"

@@ -122,6 +122,10 @@ describe('translateAuthError', () => {
     expect(message).not.toMatch(/nouveau code/i)
   })
 
+  it('maps suspended account to a support message', () => {
+    expect(translateAuthError({ message: 'MOXT_ACCOUNT_SUSPENDED' })).toMatch(/suspendu/i)
+  })
+
   it('keeps OTP-specific network wording only while verifying a code', () => {
     expect(
       translateAuthError(

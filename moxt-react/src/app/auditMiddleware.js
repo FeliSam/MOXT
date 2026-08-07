@@ -42,10 +42,14 @@ function resolveBusinessAction(actionType, payload) {
       return { action, targetId: payload?.id, targetType: 'transfer' }
     }
     case 'administration/updateUserStatus': {
-      const action =
-        payload?.status === 'suspended' ? 'user.suspended' : 'user.reactivated'
-      return { action, targetId: payload?.id, targetType: 'user' }
+      const status = payload?.status
+      let actionName = 'user.reactivated'
+      if (status === 'suspended') actionName = 'user.suspended'
+      else if (status === 'pending_deletion') actionName = 'user.pending_deletion'
+      return { action: actionName, targetId: payload?.id, targetType: 'user' }
     }
+    case 'administration/purgeUserAccount':
+      return { action: 'user.deleted', targetId: payload?.id, targetType: 'user' }
     case 'administration/updateUserRole':
       return {
         action: 'user.role_changed',

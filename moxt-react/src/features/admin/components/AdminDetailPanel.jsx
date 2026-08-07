@@ -77,6 +77,7 @@ export function AdminDetailPanel({
   admin,
   dispatch,
   onSuspendUser,
+  onPurgeUser,
   selected,
   setSelected,
   supportReply,
@@ -391,6 +392,7 @@ export function AdminDetailPanel({
             item,
             kind,
             onSuspendUser,
+            onPurgeUser,
             t,
           })}
         </div>

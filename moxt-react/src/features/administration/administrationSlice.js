@@ -62,6 +62,16 @@ const administrationSlice = createSlice({
       user.status = action.payload.status
       user.updatedAt = new Date().toISOString()
     },
+    removeAdministrativeUser(state, action) {
+      const userId = action.payload?.id
+      if (!userId) return
+      state.users = state.users.filter((item) => item.id !== userId)
+    },
+    purgeUserAccount(state, action) {
+      const userId = action.payload?.id
+      if (!userId) return
+      state.users = state.users.filter((item) => item.id !== userId)
+    },
     updateUserOriginCountry(state, action) {
       const user = state.users.find((item) => item.id === action.payload.id)
       if (!user || !action.payload.originCountry) return
@@ -104,6 +114,8 @@ export const {
   registerAdministrativeUser,
   updateUserRole,
   updateUserStatus,
+  removeAdministrativeUser,
+  purgeUserAccount,
   updateUserOriginCountry,
   updateUserCity,
   setUserVerified,

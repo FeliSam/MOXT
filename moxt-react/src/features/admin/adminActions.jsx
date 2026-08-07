@@ -402,7 +402,7 @@ export function contentActions(contentView, dispatch, item, t) {
   }
 }
 
-export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, onSuspendUser, t }) {
+export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, onSuspendUser, onPurgeUser, t }) {
   const reviewerId = actorId || 'admin'
   switch (normalizeAdminKind(kind)) {
     case 'transfer': {
@@ -584,6 +584,14 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
               ? adminText(t, 'admin.actions.reactivate')
               : adminText(t, 'admin.actions.suspend')}
           </Button>
+          {item.status === 'suspended' && item.id !== actorId && item.role !== 'superadmin' ? (
+            <Button
+              variant="danger"
+              onClick={() => onPurgeUser?.(item)}
+            >
+              {adminText(t, 'admin.actions.purgeAccount')}
+            </Button>
+          ) : null}
           <ActionButton
             done={item.phoneVerified}
             doneLabel={adminText(t, 'admin.actions.phoneVerified')}

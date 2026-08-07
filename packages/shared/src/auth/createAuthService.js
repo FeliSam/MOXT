@@ -16,9 +16,15 @@ import {
 
 /** Thrown when Supabase Auth session exists but profiles row was wiped (ops / DB reset). */
 export const ORPHAN_SESSION_ERROR = 'MOXT_ORPHAN_SESSION'
+/** Thrown when profile.status is suspended — session must not be established. */
+export const ACCOUNT_SUSPENDED_ERROR = 'MOXT_ACCOUNT_SUSPENDED'
 
 function isOrphanSessionError(error) {
   return error?.code === ORPHAN_SESSION_ERROR || error?.message === ORPHAN_SESSION_ERROR
+}
+
+function isAccountSuspendedError(error) {
+  return error?.code === ACCOUNT_SUSPENDED_ERROR || error?.message === ACCOUNT_SUSPENDED_ERROR
 }
 
 /**
@@ -124,6 +130,10 @@ function profileToUser(profile) {
     role: profile.role || 'user',
     verified: profile.status === 'verified',
     status: profile.status || 'active',
+    suspendedAt: profile.suspended_at || null,
+    purgeAt: profile.purge_at || null,
+    suspensionSource: profile.suspension_source || null,
+    reopenRequestedAt: profile.reopen_requested_at || null,
     phoneVerified: profile.phone_verified === true,
     phoneVerifiedAt: profile.phone_verified_at || null,
     emailVerified: profile.email_verified === true,
@@ -2365,47 +2375,42 @@ export function createAuthService(supabase, redirects = {}) {
 
     async requestAccountDeletion(userId, requestId) {
       if (!supabase || !userId) throw new Error('Session expirée.')
-      const now = new Date().toISOString()
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ status: 'pending_deletion', updated_at: now })
-        .eq('id', userId)
-      if (profileError) throw new Error(profileError.message)
-
       const id = requestId || `DEL-${Date.now().toString(36).toUpperCase()}`
-      const { error } = await supabase.from('account_deletion_requests').insert({
-        id,
-        user_id: userId,
-        status: 'requested',
-        created_at: now,
+      const { data, error } = await supabase.rpc('moxt_request_account_deletion', {
+        p_request_id: id,
+        p_note: null,
       })
       if (error) throw new Error(error.message)
-      return { id, userId, status: 'requested', createdAt: now }
+      return {
+        id: data?.id || id,
+        userId: data?.userId || userId,
+        status: data?.status || 'requested',
+        createdAt: data?.createdAt || new Date().toISOString(),
+        suspendAt: data?.suspendAt || null,
+        purgeAt: data?.purgeAt || null,
+      }
     },
 
     async cancelAccountDeletion(userId) {
       if (!supabase || !userId) throw new Error('Session expirée.')
-      const now = new Date().toISOString()
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ status: 'active', updated_at: now })
-        .eq('id', userId)
-      if (profileError) throw new Error(profileError.message)
+      const { error } = await supabase.rpc('moxt_cancel_account_deletion')
+      if (error) throw new Error(error.message)
+      return true
+    },
 
-      const { data: rows } = await supabase
-        .from('account_deletion_requests')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('status', 'requested')
-        .limit(1)
+    async requestAccountReopening(note) {
+      if (!supabase) throw new Error('Session expirée.')
+      const { data, error } = await supabase.rpc('moxt_request_account_reopening', {
+        p_note: note?.trim() || null,
+      })
+      if (error) throw new Error(error.message)
+      return data
+    },
 
-      if (rows?.[0]?.id) {
-        const { error } = await supabase
-          .from('account_deletion_requests')
-          .update({ status: 'cancelled', cancelled_at: now })
-          .eq('id', rows[0].id)
-        if (error) throw new Error(error.message)
-      }
+    async confirmPermanentDeletion() {
+      if (!supabase) throw new Error('Session expirée.')
+      const { error } = await supabase.rpc('moxt_confirm_permanent_deletion')
+      if (error) throw new Error(error.message)
       return true
     },
 

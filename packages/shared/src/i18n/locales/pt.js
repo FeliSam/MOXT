@@ -1576,13 +1576,67 @@ export const pt = {
     },
     danger: {
       title: "Zona sensível",
-      description: "O pedido fica guardado apenas localmente e pode ser cancelado.",
+      description:
+        "Peça a eliminação da conta. Tem 24 horas para cancelar antes da suspensão automática.",
+      coolingDescription:
+        "Pedido registado. Durante 24 horas mantém acesso normal e pode cancelar.",
+      pendingSuspensionDescription:
+        "O período de reflexão terminou. A conta será suspensa automaticamente.",
+      coolingLabel: "Tempo restante antes da suspensão",
+      coolingHint:
+        "Após 24 horas a conta será suspensa. Depois tem 30 dias para reabrir ou confirmar eliminação.",
       cancelRequest: "Cancelar o pedido",
+      viewStatusPage: "Estado da conta",
       requestDeletion: "Pedir eliminação",
       confirmTitle: "Pedir eliminação da conta",
-      confirmBody: "A sua conta será marcada para eliminação. A moderação da MOXT processará o pedido no prazo de 30 dias.",
+      confirmBody:
+        "O pedido será registado. Durante 24 horas pode cancelar. Depois suspensão por 30 dias antes da eliminação, salvo reabertura.",
       toastTitle: "Pedido registado",
-      toastBody: "O seu pedido de eliminação foi enviado.",
+      toastBody: "Tem 24 horas para cancelar nas definições.",
+    },
+    accountStatus: {
+      badge: "Acesso restrito",
+      heroTitle: "A sua conta MOXT está suspensa",
+      heroBody:
+        "O acesso à plataforma está limitado. Pode pedir reabertura ou confirmar eliminação definitiva.",
+      heroFooter: "A equipa MOXT analisa pedidos de reabertura em 2 dias úteis.",
+      titleDeletion: "Conta em eliminação",
+      titleModeration: "Conta suspensa",
+      bodyDeletion:
+        "Pediu eliminação. Após o período de reflexão, o acesso está restrito.",
+      bodyModeration:
+        "A conta foi suspensa pela moderação MOXT. Contacte o suporte se necessário.",
+      countdownPurge: "Tempo restante antes da eliminação definitiva",
+      timelineTitle: "Calendário",
+      step: {
+        suspended: "Conta suspensa",
+        suspendedDesc: "Acesso MOXT restrito — só esta página e o suporte.",
+        grace: "Período de reabertura (30 dias)",
+        graceDesc: "Peça reabertura ou confirme eliminação definitiva.",
+        purge: "Eliminação definitiva",
+        purgeDesc: "Após o prazo, a conta e credenciais são apagadas.",
+      },
+      reopen: {
+        label: "Mensagem para a equipa MOXT (opcional)",
+        placeholder: "Explique brevemente porque quer recuperar a conta…",
+        action: "Pedir reabertura",
+        toastTitle: "Pedido enviado",
+        toastBody: "A moderação MOXT analisará o pedido em breve.",
+      },
+      reopenPending:
+        "O pedido de reabertura foi enviado. Responderemos por notificação ou e-mail.",
+      purgeHint: "Pode eliminar a conta definitivamente agora, sem esperar.",
+      purgeAction: "Eliminar definitivamente agora",
+      purgeConfirmTitle: "Eliminar definitivamente a conta?",
+      purgeConfirmBody:
+        "Esta ação é irreversível. Perfil, credenciais e dados serão apagados.",
+      contactSupport: "Contactar suporte",
+      logout: "Terminar sessão",
+      footerNote: "Os prazos são calculados automaticamente no servidor.",
+      backToApp: "Voltar à aplicação",
+      errorTitle: "Ação impossível",
+      errorBody: "Tente novamente ou contacte o suporte.",
+      expiredCountdown: "Prazo expirado — processamento",
     },
   },
   security: {

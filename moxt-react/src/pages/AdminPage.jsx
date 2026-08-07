@@ -4,11 +4,16 @@ import { useDispatch, useSelector } from 'react-redux'
 import { useSearchParams } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { PasswordConfirmDialog } from '../components/ui/PasswordConfirmDialog'
 import { PageHeader } from '../components/ui/PageHeader'
 import { useLanguage } from '../contexts/useLanguage'
-import { updateUserStatus } from '../features/administration/administrationSlice'
+import {
+  purgeUserAccount,
+  updateUserStatus,
+} from '../features/administration/administrationSlice'
 import { ADMIN_VIEW_IDS, MAIN_VIEWS, CARD } from '../features/admin/adminConfig'
 import { adminOptionLabel, adminText } from '../features/admin/adminI18n'
+import { supabase } from '../services/supabaseClient'
 import { AdminAuditPanel } from '../features/admin/components/AdminAuditPanel'
 import { AdminContentPanel } from '../features/admin/components/AdminContentPanel'
 import { AdminDetailPanel } from '../features/admin/components/AdminDetailPanel'
@@ -47,6 +52,9 @@ export function AdminPage() {
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [confirmUser, setConfirmUser] = useState(null)
+  const [purgeUser, setPurgeUser] = useState(null)
+  const [confirmingPurge, setConfirmingPurge] = useState(false)
+  const [purgeError, setPurgeError] = useState('')
 
   const {
     state,
@@ -86,6 +94,7 @@ export function AdminPage() {
   }
 
   const confirmName = `${confirmUser?.firstName || ''} ${confirmUser?.lastName || ''}`.trim()
+  const purgeName = `${purgeUser?.firstName || ''} ${purgeUser?.lastName || ''}`.trim()
   const auditFullWidth = view === 'audit' && !selected
   const showDetailPanel = !auditFullWidth || selected
 
@@ -197,6 +206,7 @@ export function AdminPage() {
               actorRole={admin?.role}
               dispatch={dispatch}
               onSuspendUser={setConfirmUser}
+              onPurgeUser={setPurgeUser}
               setSelected={setSelected}
               users={users}
             />
@@ -248,6 +258,7 @@ export function AdminPage() {
               admin={admin}
               dispatch={dispatch}
               onSuspendUser={setConfirmUser}
+              onPurgeUser={setPurgeUser}
               selected={selected}
               setSelected={setSelected}
               supportReply={supportReply}
@@ -271,13 +282,51 @@ export function AdminPage() {
         }
         onCancel={() => setConfirmUser(null)}
         onConfirm={() => {
+          const nextStatus = confirmUser.status === 'suspended' ? 'active' : 'suspended'
           dispatch(
             updateUserStatus({
               id: confirmUser.id,
-              status: confirmUser.status === 'suspended' ? 'active' : 'suspended',
+              status: nextStatus,
             }),
           )
+          if (nextStatus === 'suspended') {
+            setPurgeUser({ ...confirmUser, status: 'suspended' })
+          }
           setConfirmUser(null)
+        }}
+      />
+
+      <PasswordConfirmDialog
+        open={Boolean(purgeUser)}
+        title={adminText(t, 'admin.confirm.purgeTitle')}
+        description={adminText(t, 'admin.confirm.purgeBody', { name: purgeName })}
+        confirmLabel={adminText(t, 'admin.confirm.purgeConfirm')}
+        loading={confirmingPurge}
+        error={purgeError}
+        onCancel={() => {
+          setPurgeUser(null)
+          setPurgeError('')
+        }}
+        onConfirm={async (password) => {
+          if (!purgeUser) return
+          setConfirmingPurge(true)
+          setPurgeError('')
+          try {
+            const { data, error } = await supabase.functions.invoke('admin-verify-password', {
+              body: { password },
+            })
+            if (error || !data?.ok) {
+              setPurgeError(adminText(t, 'admin.users.roleChange.wrongPassword'))
+              return
+            }
+            dispatch(purgeUserAccount({ id: purgeUser.id }))
+            if (selected?.kind === 'user' && selected.item.id === purgeUser.id) {
+              setSelected(null)
+            }
+            setPurgeUser(null)
+          } finally {
+            setConfirmingPurge(false)
+          }
         }}
       />
     </div>

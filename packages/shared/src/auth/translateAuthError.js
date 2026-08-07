@@ -116,6 +116,9 @@ export function translateAuthError(error, context = {}) {
         : 'La finalisation du profil a échoué. Réessayez « Confirmer » sans renvoyer de SMS.'
       : 'La finalisation du compte a échoué. Réessayez dans un instant.'
   }
+  if (message.includes('MOXT_ACCOUNT_SUSPENDED')) {
+    return 'Ce compte est suspendu. Contactez le support MOXT si vous pensez qu’il s’agit d’une erreur.'
+  }
   if (
     message.includes('MOXT_SESSION_REQUIRED') ||
     /session invalide|session non établie|session expirée|session missing|auth session/i.test(

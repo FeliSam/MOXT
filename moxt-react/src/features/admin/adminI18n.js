@@ -11,6 +11,10 @@ export const ADMIN_FR_SOURCES = {
   'admin.confirm.reactivateBody': '{name} retrouvera un acces complet a la plateforme.',
   'admin.confirm.suspendBody':
     '{name} ne pourra plus se connecter ni utiliser MOXT tant que le compte est suspendu.',
+  'admin.confirm.purgeTitle': 'Supprimer definitivement ce compte ?',
+  'admin.confirm.purgeBody':
+    '« {name} » sera effacé de MOXT (profil et identifiants). Cette action est irreversible.',
+  'admin.confirm.purgeConfirm': 'Supprimer definitivement',
   'admin.confirm.actionTitle': 'Confirmer cette action ?',
   'admin.confirm.actionBody': '« {action} » sera appliquée immédiatement.',
   'admin.confirm.approveBusinessTitle': 'Valider cette entreprise ?',
@@ -376,6 +380,7 @@ export const ADMIN_FR_SOURCES = {
   'admin.actions.moderatorPromoted': 'Modérateur',
   'admin.actions.reactivate': 'Reactiver',
   'admin.actions.suspend': 'Suspendre',
+  'admin.actions.purgeAccount': 'Supprimer definitivement',
   'admin.actions.rejectPrompt': 'Motif du refus (obligatoire) :',
   'admin.actions.rejectReasonRequired': 'Un motif de refus est obligatoire.',
   'admin.actions.resolve': 'Resoudre',

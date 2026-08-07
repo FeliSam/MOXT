@@ -23,6 +23,7 @@ import { sanitizeUserFacingMessage } from '../features/auth/authErrorMessages'
 import { authService } from '../features/auth/authService'
 import { selectAccountPreferences } from '../features/account/accountSlice'
 import { buildTransferRemotePayload } from '../features/transfers/transferRemote'
+import { setAdminUsers } from '../features/administration/administrationSlice'
 
 async function triggerEmail(transferId, event) {
   await supabase.functions.invoke('send-email', {
@@ -1862,11 +1863,27 @@ const handlers = {
     if (error) throw error
   },
   'administration/updateUserStatus': async (payload) => {
-    const profileStatus = payload.status === 'suspended' ? 'suspended' : 'active'
+    const allowed = ['active', 'suspended', 'pending_deletion']
+    const profileStatus = allowed.includes(payload.status) ? payload.status : 'active'
     const { error } = await supabase
       .from('profiles')
       .update({ status: profileStatus, updated_at: new Date().toISOString() })
       .eq('id', payload.id)
+    if (error) throw error
+  },
+  'administration/purgeUserAccount': async (payload, state) => {
+    const actor = state.auth?.user
+    if (!actor || !['admin', 'superadmin'].includes(actor.role)) {
+      throw new Error('Accès refusé.')
+    }
+    if (payload.id === actor.id) {
+      throw new Error('Vous ne pouvez pas supprimer votre propre compte depuis l’administration.')
+    }
+    const target = state.administration?.users?.find((item) => item.id === payload.id)
+    if (target?.role === 'superadmin') {
+      throw new Error('Impossible de supprimer un superadmin.')
+    }
+    const { error } = await supabase.rpc('moxt_purge_user_account', { p_user_id: payload.id })
     if (error) throw error
   },
   'administration/updateUserOriginCountry': async (payload) => {
@@ -2117,6 +2134,9 @@ export const supabaseMiddleware = (store) => (next) => (action) => {
             payload: { postId: action.payload.postId, comment },
           })
         }
+      }
+      if (action.type === 'administration/purgeUserAccount') {
+        store.dispatch(setAdminUsers(beforeState.administration?.users || []))
       }
       // Documents : ne jamais supprimer le fichier storage ni la fiche locale —
       // réessai sync / réparation auto (cron + Admin → Réparer).

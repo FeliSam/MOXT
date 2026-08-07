@@ -19,7 +19,7 @@ import { Empty, SectionTitle } from './AdminShared'
 
 const SORT_OPTIONS = ['newest', 'oldest', 'name']
 
-export function AdminUsersPanel({ actorRole, dispatch, onSuspendUser, setSelected, users }) {
+export function AdminUsersPanel({ actorRole, dispatch, onSuspendUser, onPurgeUser, setSelected, users }) {
   const { t } = useLanguage()
   const { countries } = useGeographyOptions()
   const onlineMap = useSelector((state) => state.presence?.online || {})
@@ -292,6 +292,11 @@ export function AdminUsersPanel({ actorRole, dispatch, onSuspendUser, setSelecte
                     ? adminText(t, 'admin.actions.reactivate')
                     : adminText(t, 'admin.actions.suspend')}
                 </Button>
+                {user.status === 'suspended' && user.role !== 'superadmin' ? (
+                  <Button variant="danger" onClick={() => onPurgeUser?.(user)}>
+                    {adminText(t, 'admin.actions.purgeAccount')}
+                  </Button>
+                ) : null}
               </div>
             </div>
           )

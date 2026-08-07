@@ -508,12 +508,17 @@ const accountSlice = createSlice({
         if (!existing) state.deletionRequests.unshift(action.payload)
       },
       prepare({ userId }) {
+        const createdAt = new Date().toISOString()
+        const suspendAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        const purgeAt = new Date(Date.now() + (24 + 30 * 24) * 60 * 60 * 1000).toISOString()
         return {
           payload: {
             id: createId('DEL'),
             userId,
             status: 'requested',
-            createdAt: new Date().toISOString(),
+            createdAt,
+            suspendAt,
+            purgeAt,
           },
         }
       },

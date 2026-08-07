@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import reducer, {
+  purgeUserAccount,
   setUserVerified,
   updateUserCity,
   updateUserRole,
@@ -29,5 +30,17 @@ describe('administrationSlice', () => {
     const initial = { users: [{ id: 'u1', role: 'user', status: 'active', verified: false }] }
     const updated = reducer(initial, setUserVerified({ id: 'u1', verified: true }))
     expect(updated.users[0].verified).toBe(true)
+  })
+
+  it('supprime un utilisateur après purge admin', () => {
+    const initial = {
+      users: [
+        { id: 'u1', role: 'user', status: 'suspended' },
+        { id: 'u2', role: 'user', status: 'active' },
+      ],
+    }
+    const purged = reducer(initial, purgeUserAccount({ id: 'u1' }))
+    expect(purged.users).toHaveLength(1)
+    expect(purged.users[0].id).toBe('u2')
   })
 })

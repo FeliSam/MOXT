@@ -6,6 +6,7 @@ import { AuthLayout } from '../components/layout/AuthLayout'
 import { PublicSiteLayout } from '../components/layout/PublicSiteLayout'
 import { LegacyDetailRedirect } from '../components/routing/LegacyDetailRedirect'
 import { ProtectedRoute } from '../components/routing/ProtectedRoute'
+import { AccountStatusGate } from '../components/routing/AccountStatusGate'
 import { PublicOnlyRoute } from '../components/routing/PublicOnlyRoute'
 import {
   MARKETPLACE_LEGACY_PATHS,
@@ -151,6 +152,7 @@ const ReceiptsPage = lazyPage(() => import('../pages/ReceiptsPage'), 'ReceiptsPa
 const ReceiptDetailPage = lazyPage(() => import('../pages/ReceiptDetailPage'), 'ReceiptDetailPage')
 const SupportPage = lazyPage(() => import('../pages/SupportPage'), 'SupportPage')
 const SettingsPage = lazyPage(() => import('../pages/SettingsPage'), 'SettingsPage')
+const AccountStatusPage = lazyPage(() => import('../pages/AccountStatusPage'), 'AccountStatusPage')
 const VersionPage = lazyPage(() => import('../pages/VersionPage'), 'VersionPage')
 const SecurityPage = lazyPage(() => import('../pages/SecurityPage'), 'SecurityPage')
 const SuperAdminPage = lazyPage(() => import('../pages/SuperAdminPage'), 'SuperAdminPage')
@@ -224,6 +226,8 @@ export function AppRouter() {
               <Route path="/design-directions/:directionId" element={<DesignDirectionRoutePage />} />
             </>
           ) : null}
+          <Route path="/account/status" element={<AccountStatusPage />} />
+          <Route element={<AccountStatusGate />}>
           <Route element={<AppLayout />}>
             <Route index element={<Navigate to="/dashboard" replace />} />
             {SIMPLE_LEGACY_REDIRECTS.map(([path, target]) => (
@@ -395,6 +399,7 @@ export function AppRouter() {
                 </ProtectedRoute>
               }
             />
+          </Route>
           </Route>
         </Route>
 

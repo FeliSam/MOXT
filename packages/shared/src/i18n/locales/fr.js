@@ -1688,13 +1688,68 @@ export const fr = {
     },
     danger: {
       title: "Zone sensible",
-      description: "La demande est seulement enregistrée localement et reste réversible.",
+      description:
+        "Demandez la suppression de votre compte. Vous disposez de 24 h pour annuler avant la suspension automatique.",
+      coolingDescription:
+        "Demande enregistrée. Pendant 24 h vous conservez l'accès normal et pouvez annuler.",
+      pendingSuspensionDescription:
+        "La période de réflexion est terminée. Votre compte sera suspendu automatiquement.",
+      coolingLabel: "Temps restant avant suspension",
+      coolingHint:
+        "Après 24 h, votre compte sera suspendu. Vous aurez ensuite 30 jours pour demander une réouverture ou confirmer la suppression définitive.",
       cancelRequest: "Annuler la demande",
+      viewStatusPage: "Voir l'état du compte",
       requestDeletion: "Demander la suppression",
       confirmTitle: "Demander la suppression du compte",
-      confirmBody: "Votre compte sera marqué pour suppression. La modération MOXT traitera la demande sous 30 jours.",
+      confirmBody:
+        "Votre demande sera enregistrée. Pendant 24 h vous pourrez l'annuler. Ensuite le compte sera suspendu pendant 30 jours avant suppression définitive, sauf réouverture.",
       toastTitle: "Demande enregistrée",
-      toastBody: "Votre demande de suppression a été transmise.",
+      toastBody: "Vous avez 24 h pour annuler depuis les paramètres.",
+    },
+    accountStatus: {
+      badge: "Accès restreint",
+      heroTitle: "Votre compte MOXT est suspendu",
+      heroBody:
+        "L'accès à la plateforme est limité. Vous pouvez demander une réouverture ou confirmer la suppression définitive.",
+      heroFooter: "L'équipe MOXT traite les demandes de réouverture sous 48 h ouvrées.",
+      titleDeletion: "Compte en cours de suppression",
+      titleModeration: "Compte suspendu",
+      bodyDeletion:
+        "Vous aviez demandé la suppression. Après la période de réflexion, l'accès est restreint.",
+      bodyModeration:
+        "Votre compte a été suspendu par la modération MOXT. Contactez le support si besoin.",
+      countdownPurge: "Délai restant avant suppression définitive",
+      timelineTitle: "Calendrier",
+      step: {
+        suspended: "Compte suspendu",
+        suspendedDesc: "Accès à MOXT restreint — seules cette page et le support restent accessibles.",
+        grace: "Période de réouverture (30 jours)",
+        graceDesc: "Demandez la réouverture ou confirmez la suppression définitive.",
+        purge: "Suppression définitive",
+        purgeDesc: "Passé ce délai, le compte et vos identifiants seront effacés.",
+      },
+      reopen: {
+        label: "Message pour l'équipe MOXT (facultatif)",
+        placeholder: "Expliquez brièvement pourquoi vous souhaitez récupérer votre compte…",
+        action: "Demander la réouverture",
+        toastTitle: "Demande envoyée",
+        toastBody: "La modération MOXT examinera votre demande rapidement.",
+      },
+      reopenPending:
+        "Votre demande de réouverture a été transmise. Nous vous répondrons par notification ou e-mail.",
+      purgeHint:
+        "Si vous ne souhaitez pas attendre, vous pouvez supprimer définitivement votre compte maintenant.",
+      purgeAction: "Supprimer définitivement maintenant",
+      purgeConfirmTitle: "Supprimer définitivement votre compte ?",
+      purgeConfirmBody:
+        "Cette action est irréversible. Votre profil, vos identifiants et vos données seront effacés.",
+      contactSupport: "Contacter le support",
+      logout: "Se déconnecter",
+      footerNote: "Les délais sont calculés automatiquement côté serveur.",
+      backToApp: "Retour à l'application",
+      errorTitle: "Action impossible",
+      errorBody: "Réessayez dans un instant ou contactez le support.",
+      expiredCountdown: "Délai écoulé — traitement en cours",
     },
     push: {
       unavailableTitle: "Notifications indisponibles",

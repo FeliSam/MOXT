@@ -135,10 +135,28 @@ export const loadAllData = createAsyncThunk(
 
     try {
 
+    if (!['admin', 'superadmin'].includes(user.role)) {
+      const { data: lifecycleData } = await supabase.rpc('moxt_sync_account_lifecycle_for_user')
+      if (lifecycleData?.ok && lifecycleData.status && lifecycleData.status !== user.status) {
+        dispatch(
+          setUser({
+            ...user,
+            status: lifecycleData.status,
+            suspendedAt: lifecycleData.suspendedAt || null,
+            purgeAt: lifecycleData.purgeAt || null,
+            suspensionSource: lifecycleData.suspensionSource || null,
+            reopenRequestedAt: lifecycleData.reopenRequestedAt || null,
+          }),
+        )
+      }
+    }
+
     const [profileRes, authUserRes] = await Promise.all([
       supabase
         .from('profiles')
-        .select('activity_visibility, role, preferences, status, phone, phone_verified, phone_verified_at')
+        .select(
+          'activity_visibility, role, preferences, status, phone, phone_verified, phone_verified_at, suspended_at, purge_at, suspension_source, reopen_requested_at',
+        )
         .eq('id', uid)
         .maybeSingle(),
       supabase.auth.getUser().catch(() => ({ data: { user: null } })),
@@ -155,10 +173,26 @@ export const loadAllData = createAsyncThunk(
         profilePatch.role = profileRes.data.role
       }
       if (profileRes.data) {
-        const verified = profileRes.data.status === 'verified'
+        const remoteStatus = profileRes.data.status || 'active'
+        const verified = remoteStatus === 'verified'
         if (verified !== Boolean(user.verified)) {
           profilePatch.verified = verified
-          profilePatch.status = profileRes.data.status || user.status
+        }
+        const normalizedStatus = verified ? 'active' : remoteStatus
+        if (normalizedStatus !== user.status) {
+          profilePatch.status = normalizedStatus
+        }
+        if (profileRes.data.suspended_at !== user.suspendedAt) {
+          profilePatch.suspendedAt = profileRes.data.suspended_at || null
+        }
+        if (profileRes.data.purge_at !== user.purgeAt) {
+          profilePatch.purgeAt = profileRes.data.purge_at || null
+        }
+        if (profileRes.data.suspension_source !== user.suspensionSource) {
+          profilePatch.suspensionSource = profileRes.data.suspension_source || null
+        }
+        if (profileRes.data.reopen_requested_at !== user.reopenRequestedAt) {
+          profilePatch.reopenRequestedAt = profileRes.data.reopen_requested_at || null
         }
         if (profileRes.data.phone_verified === true && !user.phoneVerified) {
           profilePatch.phoneVerified = true
@@ -773,6 +807,9 @@ export const loadAllData = createAsyncThunk(
         ).map((item) => ({
           ...item,
           userId: item.userId || item.user_id,
+          suspendAt: item.suspendAt || item.suspend_at || null,
+          purgeAt: item.purgeAt || item.purge_at || null,
+          reopenRequestedAt: item.reopenRequestedAt || item.reopen_requested_at || null,
         })),
       }))
       const profileDirectoryRows = safeRows(adminProfilesRes, 'des profils utilisateurs')
