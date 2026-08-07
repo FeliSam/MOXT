@@ -28,6 +28,7 @@ export function ReviewsSection({
   const { t } = useLanguage()
   const dispatch = useDispatch()
   const formRef = useRef(null)
+  const [isEditing, setIsEditing] = useState(false)
   const [rating, setRating] = useState(5)
   const [comment, setComment] = useState('')
 
@@ -53,25 +54,40 @@ export function ReviewsSection({
     [appState, currentUser?.id, profileTargetType, profileTargetId],
   )
   const canReview = eligibility.allowed || Boolean(existingReview)
+  const showComposeForm = canReview && (!existingReview || isEditing)
   const ineligibleReason = eligibility.reasonKey
     ? t(eligibility.reasonKey)
     : eligibility.reason
 
-  // Précharge le formulaire avec l'avis existant (calculé pendant le rendu, pas
-  // dans un effet, pour éviter un rendu de flash avec les valeurs par défaut).
-  const [prevExistingReview, setPrevExistingReview] = useState(existingReview)
-  if (existingReview !== prevExistingReview) {
-    setPrevExistingReview(existingReview)
-    if (existingReview) {
+  // Réinitialise le brouillon si l'avis est supprimé ; ferme l'édition après sync distante.
+  const [prevExistingReviewId, setPrevExistingReviewId] = useState(existingReview?.id)
+  if (existingReview?.id !== prevExistingReviewId) {
+    setPrevExistingReviewId(existingReview?.id)
+    if (!existingReview) {
+      setIsEditing(false)
+      setRating(5)
+      setComment('')
+    } else if (!isEditing) {
       setRating(existingReview.rating)
-      setComment(existingReview.comment || '')
+      setComment('')
     }
   }
 
   function handleEditReview(review) {
+    setIsEditing(true)
     setRating(review.rating)
     setComment(review.comment || '')
     formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  function handleCancelEdit() {
+    setIsEditing(false)
+    setComment('')
+    if (existingReview) {
+      setRating(existingReview.rating)
+    } else {
+      setRating(5)
+    }
   }
 
   function handleSubmit(event) {
@@ -91,8 +107,9 @@ export function ReviewsSection({
         createdAt: existingReview?.createdAt,
       }),
     )
+    setIsEditing(false)
+    setComment('')
     if (!existingReview) {
-      setComment('')
       setRating(5)
     }
   }
@@ -134,13 +151,32 @@ export function ReviewsSection({
         <Card className="grid content-start gap-5">
           <ReviewSummary rating={aggregate} />
 
-          {canReview ? (
+          {canReview && existingReview && !isEditing ? (
+            <div className="grid gap-3 border-t border-[var(--app-border)] pt-5">
+              <h3 className="font-black">{t('reviews.publishedTitle')}</h3>
+              <StarRating value={existingReview.rating} readOnly size="lg" />
+              <p className="text-sm leading-6 text-[var(--app-text-muted)]">{existingReview.comment}</p>
+              <p className="text-xs text-[var(--app-text-faint)]">{t('reviews.publishedHint')}</p>
+              <Button
+                type="button"
+                variant="secondary"
+                icon={FiMessageCircle}
+                onClick={() => handleEditReview(existingReview)}
+              >
+                {t('reviews.actions.edit')}
+              </Button>
+            </div>
+          ) : null}
+
+          {showComposeForm ? (
             <form
               ref={formRef}
               className="grid gap-4 border-t border-[var(--app-border)] pt-5"
               onSubmit={handleSubmit}
             >
-              <h3 className="font-black">{t('reviews.leaveReview')}</h3>
+              <h3 className="font-black">
+                {existingReview ? t('reviews.update') : t('reviews.leaveReview')}
+              </h3>
               <div className="grid gap-2">
                 <span className="text-sm font-semibold">{t('reviews.yourRating')}</span>
                 <StarRating value={rating} onChange={setRating} size="lg" />
@@ -148,7 +184,7 @@ export function ReviewsSection({
               <label className="grid gap-2 text-sm font-semibold">
                 {t('reviews.yourComment')}
                 <textarea
-                  className="min-h-28 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 text-sm font-normal"
+                  className="min-h-28 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 text-base font-normal"
                   placeholder={t('reviews.commentPlaceholder')}
                   value={comment}
                   onChange={(event) => setComment(event.target.value)}
@@ -156,9 +192,16 @@ export function ReviewsSection({
                   required
                 />
               </label>
-              <Button type="submit" icon={FiMessageCircle}>
-                {existingReview ? t('reviews.update') : t('reviews.publish')}
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button type="submit" icon={FiMessageCircle}>
+                  {existingReview ? t('reviews.update') : t('reviews.publish')}
+                </Button>
+                {existingReview ? (
+                  <Button type="button" variant="ghost" onClick={handleCancelEdit}>
+                    {t('reviews.cancelEdit')}
+                  </Button>
+                ) : null}
+              </div>
             </form>
           ) : null}
 

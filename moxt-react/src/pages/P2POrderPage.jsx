@@ -625,7 +625,7 @@ export function P2POrderPage() {
                 ))}
               </select>
               <textarea
-                className="min-h-20 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 text-sm"
+                className="min-h-20 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 text-base"
                 value={comment}
                 onChange={(event) => setComment(event.target.value)}
                 placeholder={t('p2p.order.commentPlaceholder')}

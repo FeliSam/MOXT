@@ -164,7 +164,7 @@ export function ReceiveTransferScreen() {
             <label className="grid gap-2 text-sm font-semibold">
               {t('transfers.receive.reviewComment')}
               <textarea
-                className="min-h-28 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 text-sm font-normal"
+                className="min-h-28 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 text-base font-normal"
                 placeholder={t('transfers.receive.reviewCommentPlaceholder')}
                 value={comment}
                 onChange={(event) => setComment(event.target.value)}
