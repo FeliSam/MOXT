@@ -1,13 +1,26 @@
 import { useState } from 'react'
-import { FiAlertTriangle, FiBriefcase, FiCalendar, FiMessageSquare, FiPackage, FiShield, FiShoppingBag } from 'react-icons/fi'
+import {
+  FiAlertTriangle,
+  FiBriefcase,
+  FiCalendar,
+  FiEdit3,
+  FiExternalLink,
+  FiMessageSquare,
+  FiPackage,
+  FiShield,
+  FiShoppingBag,
+  FiTrash2,
+} from 'react-icons/fi'
 import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import { PillBadge } from '../../components/ui/Badge'
 import { EntityVerifiedName } from '../../components/ui/EntityVerifiedName'
 import { Button } from '../../components/ui/Button'
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { LinkifiedText } from '../../components/ui/LinkifiedText'
 import { StarRating } from '../../components/ui/StarRating'
+import { useLanguage } from '../../contexts/useLanguage'
 import { EntityAvatar } from '../account/EntityAvatar'
 import {
   REVIEW_DISPUTE_LABELS,
@@ -16,7 +29,8 @@ import {
   REVIEW_TARGET_TYPES,
 } from '@moxt/shared/utils/reviewUtils.js'
 import { formatReviewDate } from '@moxt/shared/utils/reviewPublicationResolver.js'
-import { contestReview, replyToReview } from './reviewSlice'
+import { contestReview, deleteReview, replyToReview } from './reviewSlice'
+import { resolveReviewTargetHref } from './reviewRemote'
 import { useReviewPublication } from './useReviewPublication'
 
 const PUBLICATION_ICONS = {
@@ -28,20 +42,33 @@ const PUBLICATION_ICONS = {
   business: HiOutlineBuildingOffice2,
 }
 
-export function ReviewCard({ review, ownerId, ownerName, isOwner, authorProfile }) {
+export function ReviewCard({
+  review,
+  ownerId,
+  ownerName,
+  isOwner,
+  currentUserId,
+  onEditReview,
+  authorProfile,
+}) {
   const dispatch = useDispatch()
+  const navigate = useNavigate()
+  const { t } = useLanguage()
   const publication = useReviewPublication(review)
   const [replyOpen, setReplyOpen] = useState(false)
   const [contestOpen, setContestOpen] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const [replyText, setReplyText] = useState(review.replyText || '')
   const [disputeReason, setDisputeReason] = useState('')
 
-  const sourceLabel = REVIEW_SOURCE_LABELS[review.targetType] || 'Publication'
+  const sourceLabel = REVIEW_SOURCE_LABELS[review.targetType] || t('reviews.card.publicationFallback')
   const disputeLabel = REVIEW_DISPUTE_LABELS[review.disputeStatus]
   const PublicationIcon = PUBLICATION_ICONS[review.targetType] || FiShoppingBag
   const isProfileReview = review.targetType === REVIEW_TARGET_TYPES.USER_PROFILE
+  const isAuthor = Boolean(currentUserId && review.authorId === currentUserId)
+  const targetHref = resolveReviewTargetHref(review, publication)
   const authorName =
-    authorProfile?.name || review.authorName || 'Membre MOXT'
+    authorProfile?.name || review.authorName || t('reviews.memberFallback')
   const authorAvatarUrl = authorProfile?.avatarUrl || null
   const authorHref = review.authorId ? `/users/${review.authorId}/publications` : null
   const authorBlock = (
@@ -89,6 +116,11 @@ export function ReviewCard({ review, ownerId, ownerName, isOwner, authorProfile 
       }),
     )
     setContestOpen(false)
+  }
+
+  function handleDelete() {
+    dispatch(deleteReview(review.id))
+    setConfirmDelete(false)
   }
 
   return (
@@ -159,7 +191,7 @@ export function ReviewCard({ review, ownerId, ownerName, isOwner, authorProfile 
         <div className="mt-4 rounded-xl border border-brand-100 bg-brand-50/70 p-3 dark:border-brand-900/40 dark:bg-brand-950/20">
           <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.08em] text-brand-700 dark:text-brand-300">
             <FiMessageSquare />
-            Réponse de {ownerName || 'le propriétaire'}
+            {t('reviews.card.ownerReply', { name: ownerName || t('reviews.card.ownerFallback') })}
             {review.replyAt ? (
               <span className="font-medium normal-case text-[var(--app-text-faint)]">
                 · {formatReviewDate(review.replyAt)}
@@ -179,7 +211,7 @@ export function ReviewCard({ review, ownerId, ownerName, isOwner, authorProfile 
         <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-100">
           <p className="flex items-center gap-2 font-bold">
             <FiAlertTriangle />
-            Motif de contestation
+            {t('reviews.card.disputeReasonTitle')}
           </p>
           <LinkifiedText
             as="p"
@@ -187,6 +219,32 @@ export function ReviewCard({ review, ownerId, ownerName, isOwner, authorProfile 
             preserveWhitespace="pre-line"
             className="mt-1 leading-6"
           />
+        </div>
+      ) : null}
+
+      {isAuthor ? (
+        <div className="mt-4 flex flex-wrap gap-2 border-t border-[var(--app-border)] pt-4">
+          <Button size="sm" variant="secondary" icon={FiEdit3} onClick={() => onEditReview?.(review)}>
+            {t('reviews.actions.edit')}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={FiTrash2}
+            onClick={() => setConfirmDelete(true)}
+          >
+            {t('reviews.actions.delete')}
+          </Button>
+          {targetHref ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={FiExternalLink}
+              onClick={() => navigate(targetHref)}
+            >
+              {publication ? t('reviews.actions.viewPublication') : t('reviews.actions.viewTarget')}
+            </Button>
+          ) : null}
         </div>
       ) : null}
 
@@ -198,7 +256,7 @@ export function ReviewCard({ review, ownerId, ownerName, isOwner, authorProfile 
             icon={FiMessageSquare}
             onClick={() => setReplyOpen((value) => !value)}
           >
-            {review.replyText ? 'Modifier la réponse' : 'Répondre'}
+            {review.replyText ? t('reviews.actions.editReply') : t('reviews.actions.reply')}
           </Button>
           {review.disputeStatus === REVIEW_DISPUTE_STATUS.NONE ? (
             <Button
@@ -207,7 +265,7 @@ export function ReviewCard({ review, ownerId, ownerName, isOwner, authorProfile 
               icon={FiShield}
               onClick={() => setContestOpen((value) => !value)}
             >
-              Contester
+              {t('reviews.actions.contest')}
             </Button>
           ) : null}
         </div>
@@ -217,16 +275,16 @@ export function ReviewCard({ review, ownerId, ownerName, isOwner, authorProfile 
         <form className="mt-3 grid gap-3" onSubmit={submitReply}>
           <textarea
             className="min-h-24 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 text-sm"
-            placeholder="Répondez de manière professionnelle à cet avis…"
+            placeholder={t('reviews.actions.replyPlaceholder')}
             value={replyText}
             onChange={(event) => setReplyText(event.target.value)}
           />
           <div className="flex gap-2">
             <Button size="sm" type="submit">
-              Publier la réponse
+              {t('reviews.actions.publishReply')}
             </Button>
             <Button size="sm" variant="ghost" type="button" onClick={() => setReplyOpen(false)}>
-              Annuler
+              {t('common.cancel')}
             </Button>
           </div>
         </form>
@@ -236,25 +294,34 @@ export function ReviewCard({ review, ownerId, ownerName, isOwner, authorProfile 
         <form className="mt-3 grid gap-3" onSubmit={submitContest}>
           <textarea
             className="min-h-24 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 text-sm"
-            placeholder="Expliquez pourquoi cet avis vous semble injuste ou non conforme (min. 10 caractères)…"
+            placeholder={t('reviews.actions.contestPlaceholder')}
             value={disputeReason}
             onChange={(event) => setDisputeReason(event.target.value)}
           />
           <div className="flex gap-2">
             <Button size="sm" variant="danger" type="submit">
-              Envoyer la contestation
+              {t('reviews.actions.submitContest')}
             </Button>
             <Button size="sm" variant="ghost" type="button" onClick={() => setContestOpen(false)}>
-              Annuler
+              {t('common.cancel')}
             </Button>
           </div>
         </form>
       ) : null}
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title={t('reviews.actions.deleteConfirmTitle')}
+        description={t('reviews.actions.deleteConfirmBody')}
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={handleDelete}
+      />
     </article>
   )
 }
 
 export function ReviewSummary({ rating }) {
+  const { t } = useLanguage()
   const maxCount = Math.max(...rating.breakdown, 1)
   return (
     <div className="grid gap-4 sm:grid-cols-[auto_1fr] sm:items-center">
@@ -269,7 +336,7 @@ export function ReviewSummary({ rating }) {
           className="mt-2 justify-center sm:justify-start"
         />
         <p className="mt-2 text-sm text-[var(--app-text-muted)]">
-          {rating.count} avis au total
+          {t('reviews.summaryTotal', { count: rating.count })}
         </p>
       </div>
       <div className="grid gap-2">

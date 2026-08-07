@@ -264,12 +264,14 @@ export function P2POrderPage() {
     dispatch(rateOrder({ id: order.id, userId: user.id, rating, comment }))
     dispatch(
       createReview({
+        id: myReview?.id,
         targetType: REVIEW_TARGET_TYPES.USER_PROFILE,
         targetId: otherPartyId,
         authorId: user.id,
         authorName: `${user.firstName} ${user.lastName}`,
         rating,
         comment,
+        createdAt: myReview?.createdAt,
       }),
     )
     dispatch(

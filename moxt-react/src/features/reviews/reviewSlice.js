@@ -89,9 +89,18 @@ const reviewSlice = createSlice({
       }
       review.updatedAt = review.moderatedAt
     },
+    deleteReview(state, action) {
+      state.items = state.items.filter((item) => item.id !== action.payload)
+    },
   },
 })
 
-export const { createReview, replyToReview, contestReview, moderateReview, setAll } =
-  reviewSlice.actions
+export const {
+  createReview,
+  replyToReview,
+  contestReview,
+  moderateReview,
+  deleteReview,
+  setAll,
+} = reviewSlice.actions
 export default reviewSlice.reducer

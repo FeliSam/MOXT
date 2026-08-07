@@ -190,8 +190,24 @@ export const interactionMiddleware = (store) => {
             tone: 'error',
           }),
         )
-        return action
+        return
       }
+    }
+  }
+
+  if (action.type === 'reviews/deleteReview') {
+    const review = before.reviews.items.find((item) => item.id === action.payload)
+    const actorId = before.auth.user?.id
+    const isStaff = ['admin', 'superadmin', 'moderator'].includes(before.auth.user?.role)
+    if (!review || (review.authorId !== actorId && !isStaff)) {
+      store.dispatch(
+        addToast({
+          title: appText('errors.app.permissionDenied'),
+          message: appText('errors.app.permissionDenied'),
+          tone: 'error',
+        }),
+      )
+      return
     }
   }
 

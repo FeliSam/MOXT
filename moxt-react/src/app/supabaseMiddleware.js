@@ -2,7 +2,7 @@ import { supabase } from '../services/supabaseClient'
 import { saveListingRemote } from '../features/marketplace/marketplaceRemote'
 import { saveJobApplicationRemote, saveJobRemote } from '../features/jobs/jobRemote'
 import { saveBusinessRemote, upsertBusinessDocumentRemote, upsertBusinessMemberRemote, upsertBusinessRequestRemote } from '../features/businesses/businessRemote'
-import { reviewToRemoteRow } from '../features/reviews/reviewRemote'
+import { syncReviewRemote, syncReviewOwnerRemote, deleteReviewRemote } from '../features/reviews/reviewRemote'
 import { identityToRemoteRow } from '../features/identity/identityRemote'
 import { p2pOfferToRemoteRow, p2pOrderToRemoteRow, reportToRemoteRow, subscriberBanToRemoteRow, subscriberReportToRemoteRow } from '../features/sync/entityRemote'
 import {
@@ -2044,15 +2044,18 @@ const handlers = {
           item.targetId === payload.targetId,
       ) ||
       payload
-    await upsert('reviews', reviewToRemoteRow(review))
+    await syncReviewRemote(review)
   },
   'reviews/replyToReview': async (payload, state) => {
     const review = state.reviews.items.find((item) => item.id === payload.id)
-    if (review) await upsert('reviews', reviewToRemoteRow(review))
+    if (review) await syncReviewOwnerRemote(review)
   },
   'reviews/contestReview': async (payload, state) => {
     const review = state.reviews.items.find((item) => item.id === payload.id)
-    if (review) await upsert('reviews', reviewToRemoteRow(review))
+    if (review) await syncReviewOwnerRemote(review)
+  },
+  'reviews/deleteReview': async (payload) => {
+    await deleteReviewRemote(payload)
   },
   'reviews/moderateReview': async (payload, state) => {
     const review = state.reviews.items.find((item) => item.id === payload.id)

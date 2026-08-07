@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { FiMessageCircle, FiStar } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Card } from '../../components/ui/Card'
@@ -27,6 +27,7 @@ export function ReviewsSection({
 }) {
   const { t } = useLanguage()
   const dispatch = useDispatch()
+  const formRef = useRef(null)
   const [rating, setRating] = useState(5)
   const [comment, setComment] = useState('')
 
@@ -65,6 +66,12 @@ export function ReviewsSection({
       setRating(existingReview.rating)
       setComment(existingReview.comment || '')
     }
+  }
+
+  function handleEditReview(review) {
+    setRating(review.rating)
+    setComment(review.comment || '')
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   function handleSubmit(event) {
@@ -128,7 +135,11 @@ export function ReviewsSection({
           <ReviewSummary rating={aggregate} />
 
           {canReview ? (
-            <form className="grid gap-4 border-t border-[var(--app-border)] pt-5" onSubmit={handleSubmit}>
+            <form
+              ref={formRef}
+              className="grid gap-4 border-t border-[var(--app-border)] pt-5"
+              onSubmit={handleSubmit}
+            >
               <h3 className="font-black">{t('reviews.leaveReview')}</h3>
               <div className="grid gap-2">
                 <span className="text-sm font-semibold">{t('reviews.yourRating')}</span>
@@ -175,6 +186,8 @@ export function ReviewsSection({
                   ownerId={ownerId}
                   ownerName={ownerName}
                   isOwner={isOwner}
+                  currentUserId={currentUser?.id}
+                  onEditReview={handleEditReview}
                   authorProfile={
                     avatarMap[review.authorId] ||
                     (review.authorName ? { name: review.authorName } : null)

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import reducer, {
   contestReview,
   createReview,
+  deleteReview,
   moderateReview,
   replyToReview,
 } from './reviewSlice'
@@ -98,5 +99,21 @@ describe('reviews', () => {
       }),
     )
     expect(state.items[0].disputeStatus).toBe('pending')
+  })
+
+  it('supprime un avis', () => {
+    const created = reducer(
+      { items: [] },
+      createReview({
+        targetType: 'business',
+        targetId: 'b1',
+        authorId: 'u1',
+        authorName: 'Amina',
+        rating: 2,
+        comment: 'Déçu.',
+      }),
+    )
+    const state = reducer(created, deleteReview(created.items[0].id))
+    expect(state.items).toHaveLength(0)
   })
 })

@@ -86,6 +86,7 @@ export function ReceiveTransferScreen() {
     if (!user?.id || !transfer?.businessId || comment.trim().length < 5) return
     dispatch(
       createReview({
+        id: existingReview?.id,
         targetType: REVIEW_TARGET_TYPES.BUSINESS,
         targetId: transfer.businessId,
         authorId: user.id,
@@ -93,6 +94,7 @@ export function ReceiveTransferScreen() {
           `${user.firstName || ''} ${user.lastName || ''}`.trim() || t('reviews.memberFallback'),
         rating,
         comment: comment.trim(),
+        createdAt: existingReview?.createdAt,
       }),
     )
     setReviewSaved(true)
