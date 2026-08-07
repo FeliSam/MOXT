@@ -1,28 +1,17 @@
-import { useSyncExternalStore } from 'react'
+import { useEffect, useState } from 'react'
 
 const TICK_MS = 30_000
 
-/** Valeur stable lue par getSnapshot — mise à jour uniquement au tick. */
-let cachedNow = Date.now()
-
-function subscribe(onStoreChange) {
-  cachedNow = Date.now()
-  const timer = window.setInterval(() => {
-    cachedNow = Date.now()
-    onStoreChange()
-  }, TICK_MS)
-  return () => window.clearInterval(timer)
-}
-
-function getSnapshot() {
-  return cachedNow
-}
-
-function getServerSnapshot() {
-  return 0
-}
-
-/** Horloge partagée pour comptes à rebours (suspendu, suppression). */
+/** Horloge client pour comptes à rebours — évite useSyncExternalStore (hydratation / removeChild). */
 export function useLifecycleClock() {
-  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
+  const [now, setNow] = useState(0)
+
+  useEffect(() => {
+    const update = () => setNow(Date.now())
+    update()
+    const timer = window.setInterval(update, TICK_MS)
+    return () => window.clearInterval(timer)
+  }, [])
+
+  return now
 }

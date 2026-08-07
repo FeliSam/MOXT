@@ -13,7 +13,7 @@ import {
   FiUsers,
 } from 'react-icons/fi'
 import { useDispatch, useSelector, useStore } from 'react-redux'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { isEmailVerified } from '@moxt/shared/auth/userSecurity.js'
 import { BackButton } from '../components/ui/BackButton'
 import { Button } from '../components/ui/Button'
@@ -47,6 +47,7 @@ import {
 export function SettingsPage() {
   const dispatch = useDispatch()
   const store = useStore()
+  const navigate = useNavigate()
   const user = useSelector((value) => value.auth.user)
   const emailConfirmed = isEmailVerified(user)
   const preferences = useSelector((value) => selectAccountPreferences(value, user.id))
@@ -60,6 +61,7 @@ export function SettingsPage() {
   const [confirmDeletion, setConfirmDeletion] = useState(false)
   const [pushPromptLoading, setPushPromptLoading] = useState(false)
   const cooldownNow = useLifecycleClock()
+  const effectiveNow = cooldownNow > 0 ? cooldownNow : null
   const pushPermission =
     typeof Notification !== 'undefined' ? Notification.permission : 'unsupported'
   const showWebPushPrompt =
@@ -70,15 +72,16 @@ export function SettingsPage() {
 
   const deletionCountdown = useMemo(
     () =>
-      deletionRequest && cooldownNow > 0
-        ? formatCountdown(deletionRequest.suspendAt, { now: cooldownNow })
+      deletionRequest && effectiveNow
+        ? formatCountdown(deletionRequest.suspendAt, { now: effectiveNow })
         : null,
-    [deletionRequest, cooldownNow],
+    [deletionRequest, effectiveNow],
   )
-  const deletionCoolingOff =
+  const deletionCoolingOff = Boolean(
     deletionRequest &&
-    cooldownNow > 0 &&
-    canCancelDeletion(deletionRequest, { now: cooldownNow })
+      effectiveNow &&
+      canCancelDeletion(deletionRequest, { now: effectiveNow }),
+  )
 
   async function requestWebPushPermission() {
     if (!getVapidPublicKey()) {
@@ -444,28 +447,25 @@ export function SettingsPage() {
               </p>
             </div>
           ) : null}
-          {deletionRequest && deletionCoolingOff ? (
-            <Button
-              className="mt-5"
-              variant="secondary"
-              onClick={() => dispatch(cancelAccountDeletion(user.id))}
-            >
-              {t('settings.danger.cancelRequest')}
-            </Button>
-          ) : deletionRequest ? (
-            <Link className="mt-5 inline-block" to="/account/status">
-              <Button variant="secondary">{t('settings.danger.viewStatusPage')}</Button>
-            </Link>
-          ) : (
-            <Button
-              className="mt-5"
-              variant="danger"
-              icon={FiTrash2}
-              onClick={() => setConfirmDeletion(true)}
-            >
-              {t('settings.danger.requestDeletion')}
-            </Button>
-          )}
+          <div className="mt-5">
+            {deletionRequest && deletionCoolingOff ? (
+              <Button variant="secondary" onClick={() => dispatch(cancelAccountDeletion(user.id))}>
+                {t('settings.danger.cancelRequest')}
+              </Button>
+            ) : deletionRequest ? (
+              <Button variant="secondary" onClick={() => navigate('/account/status')}>
+                {t('settings.danger.viewStatusPage')}
+              </Button>
+            ) : (
+              <Button
+                variant="danger"
+                icon={FiTrash2}
+                onClick={() => setConfirmDeletion(true)}
+              >
+                {t('settings.danger.requestDeletion')}
+              </Button>
+            )}
+          </div>
         </Card>
       </div>
       <ConfirmDialog
