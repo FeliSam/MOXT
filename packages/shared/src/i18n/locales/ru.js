@@ -1934,8 +1934,11 @@ export const ru = {
     personal: {
       toastSavedTitle: "Профиль обновлён",
       toastSavedBody: "Личные данные сохранены.",
-      toastAvatarTitle: "Фото добавлено",
-      toastAvatarBody: "Новое фото профиля готово к сохранению.",
+      toastAvatarTitle: "Фото сохранено",
+      toastAvatarBody: "Фото профиля обновлено.",
+      toastAvatarSaveFailBody: "Фото загружено, но не удалось сохранить в профиль. Нажмите «Сохранить».",
+      toastAvatarRemovedTitle: "Фото удалено",
+      toastAvatarRemovedBody: "Фото профиля удалено.",
       toastUploadFailTitle: "Не удалось загрузить",
       toastUploadFailBody: "Не удалось отправить фото.",
       pageEyebrow: "Мой профиль",

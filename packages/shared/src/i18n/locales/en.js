@@ -1936,8 +1936,11 @@ export const en = {
     personal: {
       toastSavedTitle: "Profile updated",
       toastSavedBody: "Your personal information has been saved.",
-      toastAvatarTitle: "Photo added",
-      toastAvatarBody: "Your new profile photo is ready to be saved.",
+      toastAvatarTitle: "Photo saved",
+      toastAvatarBody: "Your profile photo has been updated.",
+      toastAvatarSaveFailBody: "The photo was uploaded but could not be saved to your profile. Tap Save.",
+      toastAvatarRemovedTitle: "Photo removed",
+      toastAvatarRemovedBody: "Your profile photo has been removed.",
       toastUploadFailTitle: "Upload failed",
       toastUploadFailBody: "The photo could not be uploaded.",
       pageEyebrow: "My profile",

@@ -1939,8 +1939,11 @@ export const fr = {
     personal: {
       toastSavedTitle: "Profil mis à jour",
       toastSavedBody: "Vos informations personnelles ont été enregistrées.",
-      toastAvatarTitle: "Photo ajoutée",
-      toastAvatarBody: "Votre nouvelle photo de profil est prête à être enregistrée.",
+      toastAvatarTitle: "Photo enregistrée",
+      toastAvatarBody: "Votre photo de profil a été mise à jour.",
+      toastAvatarSaveFailBody: "La photo a été envoyée mais n'a pas pu être enregistrée sur votre profil. Cliquez sur Enregistrer.",
+      toastAvatarRemovedTitle: "Photo supprimée",
+      toastAvatarRemovedBody: "Votre photo de profil a été retirée.",
       toastUploadFailTitle: "Échec de l’envoi",
       toastUploadFailBody: "La photo n'a pas pu être envoyée.",
       pageEyebrow: "Mon profil",

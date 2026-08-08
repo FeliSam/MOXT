@@ -2275,8 +2275,11 @@ export const pt = {
     personal: {
       toastSavedTitle: "Perfil atualizado",
       toastSavedBody: "As suas informações pessoais foram guardadas.",
-      toastAvatarTitle: "Foto adicionada",
-      toastAvatarBody: "A nova foto de perfil está pronta a guardar.",
+      toastAvatarTitle: "Foto guardada",
+      toastAvatarBody: "A sua foto de perfil foi atualizada.",
+      toastAvatarSaveFailBody: "A foto foi enviada mas não pôde ser guardada no perfil. Clique em Guardar.",
+      toastAvatarRemovedTitle: "Foto removida",
+      toastAvatarRemovedBody: "A sua foto de perfil foi removida.",
       toastUploadFailTitle: "Falha no envio",
       toastUploadFailBody: "Não foi possível enviar a foto.",
       pageEyebrow: "O meu perfil",

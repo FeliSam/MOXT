@@ -45,6 +45,7 @@ export function PersonalInformationPage() {
   const { countries } = useGeographyOptions()
   const avatarInputRef = useRef(null)
   const [avatarUploading, setAvatarUploading] = React.useState(false)
+  const [avatarPreview, setAvatarPreview] = React.useState('')
   const { progress: avatarProgress, track: trackAvatarUpload } = useUploadProgress()
 
   const formik = useFormik({
@@ -85,25 +86,53 @@ export function PersonalInformationPage() {
 
   if (!user) return null
 
+  const displayedAvatar = avatarPreview || formik.values.avatarUrl
+
+  async function persistProfile(overrides = {}) {
+    const values = { ...formik.values, ...overrides }
+    const result = await dispatch(updateProfile(values))
+    if (updateProfile.fulfilled.match(result)) {
+      formik.resetForm({ values })
+      return true
+    }
+    return false
+  }
+
   async function handleAvatarFile(event) {
     const file = event.target.files?.[0]
     if (!file) return
-    formik.setFieldValue('avatarUrl', URL.createObjectURL(file)) // prévisualisation immédiate
+    const previewUrl = URL.createObjectURL(file)
+    setAvatarPreview(previewUrl)
     setAvatarUploading(true)
     try {
       const url = await trackAvatarUpload((onProgress) =>
         storageService.uploadAvatar(user.id, file, { onProgress }),
       )
-      formik.setFieldValue('avatarUrl', url)
-      dispatch(setUser({ ...user, avatarUrl: url }))
-      dispatch(
-        addToast({
-          title: t('profile.personal.toastAvatarTitle'),
-          message: t('profile.personal.toastAvatarBody'),
-          tone: 'success',
-        }),
-      )
+      setAvatarPreview('')
+      URL.revokeObjectURL(previewUrl)
+      const saved = await persistProfile({ avatarUrl: url })
+      if (saved) {
+        dispatch(
+          addToast({
+            title: t('profile.personal.toastAvatarTitle'),
+            message: t('profile.personal.toastAvatarBody'),
+            tone: 'success',
+          }),
+        )
+      } else {
+        formik.setFieldValue('avatarUrl', url, true)
+        dispatch(setUser({ ...user, avatarUrl: url }))
+        dispatch(
+          addToast({
+            title: t('profile.personal.toastUploadFailTitle'),
+            message: t('profile.personal.toastAvatarSaveFailBody'),
+            tone: 'warning',
+          }),
+        )
+      }
     } catch (err) {
+      setAvatarPreview('')
+      URL.revokeObjectURL(previewUrl)
       dispatch(
         addToast({
           title: t('profile.personal.toastUploadFailTitle'),
@@ -111,6 +140,26 @@ export function PersonalInformationPage() {
           tone: 'error',
         }),
       )
+    } finally {
+      setAvatarUploading(false)
+      event.target.value = ''
+    }
+  }
+
+  async function handleRemoveAvatar() {
+    setAvatarPreview('')
+    setAvatarUploading(true)
+    try {
+      const saved = await persistProfile({ avatarUrl: '' })
+      if (saved) {
+        dispatch(
+          addToast({
+            title: t('profile.personal.toastAvatarRemovedTitle'),
+            message: t('profile.personal.toastAvatarRemovedBody'),
+            tone: 'success',
+          }),
+        )
+      }
     } finally {
       setAvatarUploading(false)
     }
@@ -132,9 +181,9 @@ export function PersonalInformationPage() {
           <div className="grid content-start gap-4">
             <Card className="flex flex-col items-center gap-4 p-6 text-center">
               <div className="relative">
-                {formik.values.avatarUrl ? (
+                {displayedAvatar ? (
                   <img
-                    src={formik.values.avatarUrl}
+                    src={displayedAvatar}
                     alt={t('profile.personal.avatarAlt')}
                     className="size-28 rounded-full object-cover shadow-lg ring-4 ring-[var(--app-accent-soft)]"
                   />
@@ -182,11 +231,12 @@ export function PersonalInformationPage() {
               avatarProgress.phase === 'error' ? (
                 <UploadProgress progress={avatarProgress} compact className="w-full" />
               ) : null}
-              {formik.values.avatarUrl ? (
+              {displayedAvatar ? (
                 <button
                   type="button"
-                  className="text-xs text-red-600 hover:underline"
-                  onClick={() => formik.setFieldValue('avatarUrl', '')}
+                  className="text-xs text-red-600 hover:underline disabled:opacity-50"
+                  disabled={avatarUploading}
+                  onClick={() => void handleRemoveAvatar()}
                 >
                   {t('profile.personal.removePhoto')}
                 </button>

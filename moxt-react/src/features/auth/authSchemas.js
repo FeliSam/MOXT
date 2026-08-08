@@ -202,8 +202,13 @@ export const createAuthSchemas = (t) => {
       .required(m('validation.name.lastRequired', 'Le nom est obligatoire.')),
     avatarUrl: Yup.string()
       .trim()
-      .url(m('validation.avatar.invalid', "L'adresse de l'image est invalide."))
-      .nullable(),
+      .transform((value) => value || null)
+      .nullable()
+      .test(
+        'avatar-url',
+        m('validation.avatar.invalid', "L'adresse de l'image est invalide."),
+        (value) => !value || /^https?:\/\//i.test(value),
+      ),
     phone: Yup.string()
       .test(
         'russian-phone',
