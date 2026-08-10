@@ -1362,6 +1362,9 @@ export const en = {
     update: {
       title: "MOXT update",
       body: "A new version is available — reloading automatically as soon as possible.",
+      stuckTitle: "Update pending",
+      stuckBody:
+        "The new version could not load automatically. Please refresh the page manually (Ctrl+F5 or pull to refresh).",
     },
     lightbox: {
       title: "Image preview",

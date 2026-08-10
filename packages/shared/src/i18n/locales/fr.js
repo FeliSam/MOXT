@@ -1364,6 +1364,9 @@ export const fr = {
     update: {
       title: "Mise à jour MOXT",
       body: "Nouvelle version disponible — rechargement automatique dès que possible.",
+      stuckTitle: "Mise à jour en attente",
+      stuckBody:
+        "La nouvelle version n’a pas pu se charger automatiquement. Rechargez la page manuellement (Ctrl+F5 ou tirer pour actualiser).",
     },
     lightbox: {
       title: "Aperçu de l’image",

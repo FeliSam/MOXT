@@ -1,11 +1,27 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   checkForAppUpdate,
+  clearUpdateReloadGuard,
   fetchRemoteBuildId,
+  isUpdateReloadBlocked,
+  recordUpdateReloadAttempt,
   scheduleAppReload,
   shouldApplyUpdate,
   startAppUpdateWatcher,
 } from './appUpdate'
+
+function mockSession() {
+  const store = new Map()
+  return {
+    getItem: (key) => store.get(key) ?? null,
+    setItem: (key, value) => {
+      store.set(key, String(value))
+    },
+    removeItem: (key) => {
+      store.delete(key)
+    },
+  }
+}
 
 describe('appUpdate', () => {
   it('detecte une nouvelle version', () => {
@@ -37,6 +53,53 @@ describe('appUpdate', () => {
       checkForAppUpdate({ localBuildId: 'ancien', fetchImpl, onUpdate }),
     ).resolves.toBe(true)
     expect(onUpdate).toHaveBeenCalledOnce()
+  })
+
+  it('bloque la boucle apres plusieurs rechargements infructueux', async () => {
+    const session = mockSession()
+    vi.stubGlobal('sessionStorage', session)
+
+    recordUpdateReloadAttempt('nouveau')
+    recordUpdateReloadAttempt('nouveau')
+
+    const onUpdate = vi.fn()
+    const onBlocked = vi.fn()
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ buildId: 'nouveau' }),
+    })
+
+    await expect(
+      checkForAppUpdate({
+        localBuildId: 'ancien',
+        fetchImpl,
+        onUpdate,
+        onBlocked,
+      }),
+    ).resolves.toBe(false)
+
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(onBlocked).toHaveBeenCalledOnce()
+    expect(isUpdateReloadBlocked('nouveau')).toBe(true)
+
+    clearUpdateReloadGuard()
+    vi.unstubAllGlobals()
+  })
+
+  it('reinitialise le garde-fou quand les versions correspondent', async () => {
+    const session = mockSession()
+    vi.stubGlobal('sessionStorage', session)
+    recordUpdateReloadAttempt('abc')
+
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ buildId: 'abc' }),
+    })
+
+    await expect(checkForAppUpdate({ localBuildId: 'abc', fetchImpl })).resolves.toBe(false)
+    expect(isUpdateReloadBlocked('abc')).toBe(false)
+
+    vi.unstubAllGlobals()
   })
 
   it('planifie un reload differe', () => {

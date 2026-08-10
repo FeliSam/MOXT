@@ -1206,6 +1206,9 @@ export const pt = {
     update: {
       title: "Atualização MOXT",
       body: "Nova versão disponível — atualização automática assim que possível.",
+      stuckTitle: "Atualização pendente",
+      stuckBody:
+        "A nova versão não carregou automaticamente. Atualize a página manualmente (Ctrl+F5 ou puxe para atualizar).",
     },
     lightbox: {
       title: "Pré-visualização da imagem",
