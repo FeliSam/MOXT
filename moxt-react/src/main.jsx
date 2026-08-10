@@ -39,6 +39,9 @@ async function bootstrap() {
     </StrictMode>,
   )
 
+  // Masquer le splash natif dès le 1er paint React (MoxtLoadingScreen = même visuel).
+  void import('./platform/capacitor').then(({ hideNativeSplash }) => hideNativeSplash())
+
   const { startAuthSessionSync } = await import('./services/authSessionSync')
   startAuthSessionSync(store)
 

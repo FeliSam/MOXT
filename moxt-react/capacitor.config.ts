@@ -30,11 +30,11 @@ const config: CapacitorConfig = {
   },
   android: {
     allowMixedContent: isDevServer,
-    backgroundColor: '#08705f',
+    backgroundColor: '#ffffff',
     webContentsDebuggingEnabled: isDevServer,
   },
   ios: {
-    backgroundColor: '#08705f',
+    backgroundColor: '#ffffff',
     contentInset: 'automatic',
     scheme: 'MOXT',
     webContentsDebuggingEnabled: isDevServer,
@@ -43,14 +43,14 @@ const config: CapacitorConfig = {
     SplashScreen: {
       launchShowDuration: 0,
       launchAutoHide: false,
-      backgroundColor: '#08705f',
+      backgroundColor: '#ffffff',
       androidSplashResourceName: 'splash',
-      androidScaleType: 'CENTER_CROP',
+      androidScaleType: 'FIT_CENTER',
       showSpinner: false,
     },
     StatusBar: {
-      style: 'LIGHT',
-      backgroundColor: '#08705f',
+      style: 'DARK',
+      backgroundColor: '#ffffff',
     },
     Keyboard: {
       resize: 'none',

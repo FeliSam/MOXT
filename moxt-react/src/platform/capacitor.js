@@ -27,16 +27,26 @@ async function bindDeepLinks(App) {
   }
 }
 
+/** Masque le splash natif dès que le WebView peut afficher l’UI web. */
+export async function hideNativeSplash() {
+  if (!isNative) return
+  try {
+    const { SplashScreen } = await import('@capacitor/splash-screen')
+    await SplashScreen.hide()
+  } catch {
+    /* plugin indisponible */
+  }
+}
+
 /** Initialise le shell natif (splash, status bar, clavier, bouton retour). */
 export async function initCapacitor() {
   if (!isNative) return
 
   markNativeShell()
 
-  const [{ App }, { SplashScreen }, { StatusBar, Style }, { Keyboard, KeyboardResize }] =
+  const [{ App }, { StatusBar, Style }, { Keyboard, KeyboardResize }] =
     await Promise.all([
       import('@capacitor/app'),
-      import('@capacitor/splash-screen'),
       import('@capacitor/status-bar'),
       import('@capacitor/keyboard'),
     ])
@@ -51,9 +61,9 @@ export async function initCapacitor() {
 
   try {
     const isDark = document.documentElement.classList.contains('dark')
-    await StatusBar.setStyle({ style: isDark ? Style.Dark : Style.Light })
+    await StatusBar.setStyle({ style: isDark ? Style.Light : Style.Dark })
     if (nativePlatform === 'android') {
-      await StatusBar.setBackgroundColor({ color: isDark ? '#0c0c0e' : '#08705f' })
+      await StatusBar.setBackgroundColor({ color: isDark ? '#0c0c0e' : '#ffffff' })
     }
   } catch {
     /* status bar optionnelle */
@@ -77,9 +87,7 @@ export async function initCapacitor() {
 
   await bindDeepLinks(App)
 
-  // Afficher l'UI tout de suite — ne pas bloquer le splash sur l'init push
-  // (register() peut rester pending et forcer un kill/reopen).
-  await SplashScreen.hide()
+  await hideNativeSplash()
 
   void import('./pushNotifications')
     .then(({ initNativePushNotifications }) => initNativePushNotifications())

@@ -4,6 +4,7 @@ import sharp from 'sharp'
 
 const root = path.resolve(import.meta.dirname, '..')
 const brand = path.join(root, 'public', 'assets', 'brand', 'mark.png')
+const splashArt = path.join(root, 'public', 'assets', 'logos', 'Moxt-splash.png')
 const mobile = path.join(root, '..', 'apps', 'mobile', 'assets', 'images')
 const dark = { r: 10, g: 14, b: 24, alpha: 1 }
 const white = { r: 255, g: 255, b: 255, alpha: 1 }
@@ -38,10 +39,10 @@ await sharp({
   .png()
   .toFile(path.join(mobile, 'android-icon-background.png'))
 
-await sharp(brand)
-  .resize(512, 512, { fit: 'contain', background: white })
+await sharp(splashArt)
+  .resize(1024, 1536, { fit: 'inside', background: white })
   .flatten({ background: white })
   .png()
   .toFile(path.join(mobile, 'splash-icon.png'))
 
-console.log('Mobile brand icons: full-square mark (no baked squircle)')
+console.log('Mobile brand icons: launcher mark + Moxt-splash native splash art')
