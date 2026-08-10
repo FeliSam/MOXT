@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { FiCheckCircle, FiDownload, FiSmartphone, FiUpload } from 'react-icons/fi'
+import { FiCheckCircle, FiDownload, FiExternalLink, FiSmartphone, FiUpload } from 'react-icons/fi'
 import { MdPhoneIphone } from 'react-icons/md'
 import { Link } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
@@ -12,6 +12,7 @@ import { useLanguage } from '../contexts/useLanguage'
 import { isNative } from '../platform/capacitor'
 import { appReleaseService } from '../services/appReleaseService'
 import { addToast } from '../features/ui/uiSlice'
+import { RUSTORE_APP_URL } from '../config/appStores'
 
 const TABS = [
   { id: 'android', labelKey: 'install.tabs.android' },
@@ -198,36 +199,54 @@ export function InstallAppPage() {
               </div>
             </div>
 
-            {loading ? (
-              <p className="text-sm text-[var(--app-text-muted)]">{t('install.android.loading')}</p>
-            ) : release?.downloadUrl ? (
-              <div className="grid gap-3 rounded-2xl bg-[var(--app-surface-muted)] p-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge tone="success">{t('install.android.available')}</Badge>
-                  {release.version ? (
-                    <span className="text-xs font-bold text-[var(--app-text-muted)]">
-                      v{release.version}
-                    </span>
-                  ) : null}
-                  {release.fileSize ? (
-                    <span className="text-xs text-[var(--app-text-muted)]">
-                      {formatBytes(release.fileSize)}
-                    </span>
-                  ) : null}
-                </div>
-                <p className="text-sm font-medium">Moxt.apk</p>
-                <a href={release.downloadUrl} download="Moxt.apk">
-                  <Button icon={FiDownload}>{t('install.android.download')}</Button>
-                </a>
-                <p className="text-xs text-[var(--app-text-muted)]">{t('install.android.hint')}</p>
+            <div className="grid gap-3 rounded-2xl border border-brand-200 bg-brand-50/70 p-4 dark:border-brand-800/80 dark:bg-brand-950/25">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge tone="info">RuStore</Badge>
+                <Badge tone="success">{t('install.android.rustoreRecommended')}</Badge>
               </div>
-            ) : (
-              <div className="rounded-2xl border border-dashed border-[var(--app-border)] p-4 text-sm text-[var(--app-text-muted)]">
-                {t('install.android.unavailable')}
-              </div>
-            )}
+              <h3 className="font-black">{t('install.android.rustoreTitle')}</h3>
+              <p className="text-sm leading-6 text-[var(--app-text-muted)]">
+                {t('install.android.rustoreBody')}
+              </p>
+              <a href={RUSTORE_APP_URL} target="_blank" rel="noopener noreferrer">
+                <Button icon={FiExternalLink}>{t('install.android.rustoreDownload')}</Button>
+              </a>
+              <p className="text-xs text-[var(--app-text-muted)]">{t('install.android.rustoreHint')}</p>
+            </div>
 
-            <p className="text-xs text-[var(--app-text-muted)]">{t('install.android.rustoreLater')}</p>
+            <div className="grid gap-3">
+              <h3 className="text-sm font-black text-[var(--app-text-muted)]">
+                {t('install.android.apkTitle')}
+              </h3>
+              {loading ? (
+                <p className="text-sm text-[var(--app-text-muted)]">{t('install.android.loading')}</p>
+              ) : release?.downloadUrl ? (
+                <div className="grid gap-3 rounded-2xl bg-[var(--app-surface-muted)] p-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge tone="success">{t('install.android.available')}</Badge>
+                    {release.version ? (
+                      <span className="text-xs font-bold text-[var(--app-text-muted)]">
+                        v{release.version}
+                      </span>
+                    ) : null}
+                    {release.fileSize ? (
+                      <span className="text-xs text-[var(--app-text-muted)]">
+                        {formatBytes(release.fileSize)}
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="text-sm font-medium">Moxt.apk</p>
+                  <a href={release.downloadUrl} download="Moxt.apk">
+                    <Button icon={FiDownload}>{t('install.android.download')}</Button>
+                  </a>
+                  <p className="text-xs text-[var(--app-text-muted)]">{t('install.android.hint')}</p>
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-[var(--app-border)] p-4 text-sm text-[var(--app-text-muted)]">
+                  {t('install.android.unavailable')}
+                </div>
+              )}
+            </div>
           </Card>
 
           {isStaff ? (

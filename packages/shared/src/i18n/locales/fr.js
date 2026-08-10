@@ -6711,7 +6711,7 @@ export const fr = {
     eyebrow: "Application",
     title: "Installer l'App",
     description:
-      "MOXT est une application complète (transferts, P2P, messagerie, espace pro). Téléchargez l’APK Android ou ajoutez-la à l’écran d’accueil sur iPhone — ce n’est pas un simple raccourci vers le site.",
+      "MOXT est une application complète (transferts, P2P, messagerie, espace pro). Téléchargez-la sur RuStore ou via l’APK Android, ou ajoutez-la à l’écran d’accueil sur iPhone.",
     native: {
       title: "Vous êtes dans l’app MOXT",
       description:
@@ -6730,13 +6730,19 @@ export const fr = {
     },
     android: {
       title: "Télécharger pour Android",
-      body: "Installez l’application autonome MOXT (APK) — interface complète embarquée, pas un navigateur vers le site.",
+      body: "Installez MOXT depuis RuStore (recommandé) ou téléchargez l’APK directement.",
       loading: "Chargement de la version disponible…",
       available: "Disponible",
       download: "Télécharger l’APK",
       hint: "Si Android bloque l’installation, autorisez les sources inconnues pour votre navigateur ou gestionnaire de fichiers.",
       unavailable: "Aucune version Android n’est encore publiée. Revenez bientôt.",
-      rustoreLater: "Le lien RuStore sera ajouté ultérieurement.",
+      rustoreRecommended: "Recommandé",
+      rustoreTitle: "Télécharger sur RuStore",
+      rustoreBody:
+        "Installation et mises à jour automatiques via la boutique officielle RuStore.",
+      rustoreDownload: "Ouvrir dans RuStore",
+      rustoreHint: "Vous serez redirigé vers la fiche MOXT sur RuStore.",
+      apkTitle: "Téléchargement direct (APK)",
       loadError: "Impossible de charger la version Android.",
       staffTitle: "Publication staff",
       staffBody: "Déposez un fichier .apk : il remplace la version active proposée aux utilisateurs.",

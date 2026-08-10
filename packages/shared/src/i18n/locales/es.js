@@ -6724,7 +6724,8 @@ export const es = {
   install: {
     eyebrow: "Aplicación",
     title: "Instalar MOXT",
-    description: "Descarga el APK Android o añade MOXT a la pantalla de inicio en iPhone.",
+    description:
+      "Descarga MOXT desde RuStore o el APK Android, o añádela a la pantalla de inicio en iPhone.",
     native: {
       title: "Estás en la app MOXT",
       description:
@@ -6740,13 +6741,18 @@ export const es = {
     tabs: { android: "Android", iphone: "iPhone" },
     android: {
       title: "Descargar para Android",
-      body: "Instala el archivo APK directamente en tu teléfono Android.",
+      body: "Instala MOXT desde RuStore (recomendado) o descarga el APK directamente.",
       loading: "Cargando la versión disponible…",
       available: "Disponible",
       download: "Descargar APK",
       hint: "Si Android bloquea la instalación, permite orígenes desconocidos para el navegador o el gestor de archivos.",
       unavailable: "Aún no hay versión Android publicada. Vuelve pronto.",
-      rustoreLater: "El enlace de RuStore se añadirá más adelante.",
+      rustoreRecommended: "Recomendado",
+      rustoreTitle: "Descargar en RuStore",
+      rustoreBody: "Instalación y actualizaciones automáticas desde la tienda oficial RuStore.",
+      rustoreDownload: "Abrir en RuStore",
+      rustoreHint: "Serás redirigido a la ficha de MOXT en RuStore.",
+      apkTitle: "Descarga directa (APK)",
       loadError: "No se pudo cargar la versión Android.",
       staffTitle: "Publicación staff",
       staffBody: "Sube un archivo .apk para reemplazar la versión activa.",
