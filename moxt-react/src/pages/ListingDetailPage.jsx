@@ -620,7 +620,7 @@ function Gallery({
       <div className="group relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-cyan-700 to-blue-600 text-white">
         <button
           type="button"
-          className="grid h-[360px] w-full place-items-center lg:h-[432px]"
+          className="grid h-[486px] w-full place-items-center lg:h-[583px]"
           onClick={onOpen}
           aria-label={mt('marketplace.detail.openGallery')}
         >
