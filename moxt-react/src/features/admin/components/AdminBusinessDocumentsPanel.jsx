@@ -5,6 +5,7 @@ import { useLanguage } from '../../../contexts/useLanguage'
 import { Badge } from '../../../components/ui/Badge'
 import { Button } from '../../../components/ui/Button'
 import { businessDocumentTypeLabel } from '../../businesses/businessDocumentTypes'
+import { groupBusinessDocumentsByOwner } from '../../businesses/businessDocumentUtils'
 import { updateBusinessDocumentStatus } from '../../businesses/businessSlice'
 import { formatDate } from '../../transfers/transferUtils'
 import { confirmedClick } from '../adminActions'
@@ -17,6 +18,111 @@ function statusTone(status) {
   if (status === 'verified') return 'success'
   if (status === 'rejected') return 'danger'
   return 'warning'
+}
+
+function BusinessDocumentRow({
+  t,
+  item,
+  rejectId,
+  rejectReason,
+  setRejectId,
+  setRejectReason,
+  setSelected,
+  onApprove,
+  onReject,
+}) {
+  const pending = ['pending_review', 'pending'].includes(item.status)
+  const typeLabel = businessDocumentTypeLabel(item.category, t)
+
+  return (
+    <div className={`${ITEM} grid min-w-0 gap-3 overflow-hidden`}>
+      <div className="flex min-w-0 flex-wrap items-start gap-3">
+        <button
+          type="button"
+          onClick={() => setSelected({ kind: 'businessDocument', item })}
+          className="min-w-0 flex-1 text-left hover:text-brand-700"
+        >
+          <p className="truncate text-xs text-[var(--app-text-muted)]">
+            {adminText(t, 'admin.businessDocuments.meta', {
+              type: typeLabel,
+              name: item.name,
+              date: formatDate(item.createdAt),
+            })}
+          </p>
+          {item.reviewNote ? (
+            <p className="mt-1 line-clamp-2 break-words text-xs text-rose-700 dark:text-rose-300">
+              {adminText(t, 'admin.businessDocuments.rejectNoteLabel', {
+                note: item.reviewNote,
+              })}
+            </p>
+          ) : null}
+        </button>
+        <Badge tone={statusTone(item.status)} className="shrink-0">
+          {item.status}
+        </Badge>
+      </div>
+
+      {rejectId === item.id ? (
+        <div className="grid gap-2 rounded-xl bg-[var(--app-surface)] p-3 ring-1 ring-[var(--app-border)]">
+          <label className="text-[10px] font-black uppercase tracking-wider text-[var(--app-text-muted)]">
+            {adminText(t, 'admin.businessDocuments.rejectReasonLabel')}
+          </label>
+          <textarea
+            value={rejectReason}
+            onChange={(event) => setRejectReason(event.target.value)}
+            rows={3}
+            placeholder={adminText(t, 'admin.businessDocuments.rejectReasonPlaceholder')}
+            className="w-full rounded-xl bg-[var(--app-surface-muted)] p-3 text-sm outline-none ring-1 ring-[var(--app-border)] focus:ring-brand-500"
+          />
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="danger"
+              icon={FiX}
+              disabled={!rejectReason.trim()}
+              onClick={() => onReject(item)}
+            >
+              {adminText(t, 'admin.businessDocuments.rejectConfirm')}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setRejectId(null)
+                setRejectReason('')
+              }}
+            >
+              {t('common.cancel')}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="grid min-w-0 gap-3">
+          <AdminDocumentPreview documents={[item]} />
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={() => setSelected({ kind: 'businessDocument', item })}>
+              {adminText(t, 'admin.businessDocuments.examine')}
+            </Button>
+            {pending ? (
+              <>
+                <Button icon={FiCheckCircle} onClick={() => onApprove(item)}>
+                  {adminText(t, 'admin.actions.approve')}
+                </Button>
+                <Button
+                  variant="danger"
+                  icon={FiX}
+                  onClick={() => {
+                    setRejectId(item.id)
+                    setRejectReason('')
+                  }}
+                >
+                  {adminText(t, 'admin.actions.reject')}
+                </Button>
+              </>
+            ) : null}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function AdminBusinessDocumentsPanel({
@@ -71,6 +177,11 @@ export function AdminBusinessDocumentsPanel({
     })
   }, [businesses, documents, query, statusFilter, users])
 
+  const groups = useMemo(
+    () => groupBusinessDocumentsByOwner(items, businesses, users),
+    [businesses, items, users],
+  )
+
   function approve(item) {
     confirmedClick(t, adminText(t, 'admin.actions.approve'), () => {
       dispatch(
@@ -113,105 +224,67 @@ export function AdminBusinessDocumentsPanel({
         {adminText(t, 'admin.businessDocuments.description')}
       </p>
 
-      {items.length ? (
-        items.map((item) => {
-          const business = businesses.find((entry) => entry.id === item.businessId)
-          const pending = ['pending_review', 'pending'].includes(item.status)
-          const typeLabel = businessDocumentTypeLabel(item.category, t)
+      {groups.length ? (
+        groups.map((group) => {
+          const businessLabel = group.business?.name
+            || (group.businessId
+              ? adminText(t, 'admin.businessDocuments.unknownBusiness', { id: group.businessId })
+              : adminText(t, 'admin.businessDocuments.unknownBusiness', { id: '—' }))
           return (
-            <div key={item.id} className={`${ITEM} grid min-w-0 gap-3 overflow-hidden`}>
-              <div className="flex min-w-0 flex-wrap items-start gap-3">
-                <button
-                  type="button"
-                  onClick={() => setSelected({ kind: 'businessDocument', item })}
-                  className="min-w-0 flex-1 text-left hover:text-brand-700"
-                >
-                  <strong className="block truncate text-sm">
-                    {business?.name || item.businessName || item.name}
-                  </strong>
-                  <p className="truncate text-xs text-[var(--app-text-muted)]">
-                    {adminText(t, 'admin.businessDocuments.meta', {
-                      type: typeLabel,
-                      name: item.name,
-                      date: formatDate(item.createdAt),
+            <section
+              key={group.key}
+              className="grid gap-3 rounded-2xl border border-[var(--app-border)]/60 bg-[var(--app-surface-muted)]/35 p-4"
+            >
+              <div className="flex min-w-0 flex-wrap items-start justify-between gap-2 border-b border-[var(--app-border)]/50 pb-3">
+                <div className="min-w-0">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      group.business
+                        ? setSelected({ kind: 'businesses', item: group.business })
+                        : null
+                    }
+                    className={`block truncate text-left text-sm font-black ${
+                      group.business ? 'hover:text-brand-700' : 'text-[var(--app-text)]'
+                    }`}
+                  >
+                    {businessLabel}
+                  </button>
+                  <p className="mt-0.5 text-xs text-[var(--app-text-muted)]">
+                    {adminText(t, 'admin.businessDocuments.ownerMeta', {
+                      name: group.ownerName || group.ownerId || '—',
                     })}
+                    {group.ownerEmail
+                      ? ` · ${adminText(t, 'admin.businessDocuments.ownerEmail', {
+                          email: group.ownerEmail,
+                        })}`
+                      : ''}
                   </p>
-                  {item.reviewNote ? (
-                    <p className="mt-1 line-clamp-2 break-words text-xs text-rose-700 dark:text-rose-300">
-                      {adminText(t, 'admin.businessDocuments.rejectNoteLabel', {
-                        note: item.reviewNote,
-                      })}
-                    </p>
-                  ) : null}
-                </button>
-                <Badge tone={statusTone(item.status)} className="shrink-0">
-                  {item.status}
+                </div>
+                <Badge tone="neutral" className="shrink-0">
+                  {adminText(t, 'admin.businessDocuments.groupCount', {
+                    count: group.documents.length,
+                  })}
                 </Badge>
               </div>
 
-              {rejectId === item.id ? (
-                <div className="grid gap-2 rounded-xl bg-[var(--app-surface)] p-3 ring-1 ring-[var(--app-border)]">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-[var(--app-text-muted)]">
-                    {adminText(t, 'admin.businessDocuments.rejectReasonLabel')}
-                  </label>
-                  <textarea
-                    value={rejectReason}
-                    onChange={(event) => setRejectReason(event.target.value)}
-                    rows={3}
-                    placeholder={adminText(t, 'admin.businessDocuments.rejectReasonPlaceholder')}
-                    className="w-full rounded-xl bg-[var(--app-surface-muted)] p-3 text-sm outline-none ring-1 ring-[var(--app-border)] focus:ring-brand-500"
+              <div className="grid gap-3">
+                {group.documents.map((item) => (
+                  <BusinessDocumentRow
+                    key={item.id}
+                    t={t}
+                    item={item}
+                    rejectId={rejectId}
+                    rejectReason={rejectReason}
+                    setRejectId={setRejectId}
+                    setRejectReason={setRejectReason}
+                    setSelected={setSelected}
+                    onApprove={approve}
+                    onReject={reject}
                   />
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant="danger"
-                      icon={FiX}
-                      disabled={!rejectReason.trim()}
-                      onClick={() => reject(item)}
-                    >
-                      {adminText(t, 'admin.businessDocuments.rejectConfirm')}
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      onClick={() => {
-                        setRejectId(null)
-                        setRejectReason('')
-                      }}
-                    >
-                      {t('common.cancel')}
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid min-w-0 gap-3">
-                  <AdminDocumentPreview documents={[item]} />
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant="secondary"
-                      onClick={() => setSelected({ kind: 'businessDocument', item })}
-                    >
-                      {adminText(t, 'admin.businessDocuments.examine')}
-                    </Button>
-                    {pending ? (
-                      <>
-                        <Button icon={FiCheckCircle} onClick={() => approve(item)}>
-                          {adminText(t, 'admin.actions.approve')}
-                        </Button>
-                        <Button
-                          variant="danger"
-                          icon={FiX}
-                          onClick={() => {
-                            setRejectId(item.id)
-                            setRejectReason('')
-                          }}
-                        >
-                          {adminText(t, 'admin.actions.reject')}
-                        </Button>
-                      </>
-                    ) : null}
-                  </div>
-                </div>
-              )}
-            </div>
+                ))}
+              </div>
+            </section>
           )
         })
       ) : (

@@ -119,84 +119,88 @@ export function NewTransferPage() {
       exchangerId: requestedExchangerId || draftValues.exchangerId || '',
     },
     validationSchema: createTransferSchemas(t).transferSchema,
-    onSubmit: (values) => {
-      const exchanger = exchangers.find((item) => item.id === values.exchangerId)
-      const business = businesses.find((item) => item.id === values.exchangerId)
-      if (!exchanger || !business) {
-        formik.setFieldError('exchangerId', t('transfers.new.errors.chooseAvailableBusiness'))
-        return
-      }
-      if (exchanger && isBusinessOwnedBy(business, user.id)) {
-        formik.setFieldError('exchangerId', t('transfers.new.errors.cannotUseOwnBusiness'))
-        return
-      }
-      const paymentView = buildExchangerPaymentView(business, values.direction, originCountry)
-      if (!paymentView.paymentDetails) {
-        formik.setFieldError(
-          'exchangerId',
-          t('transfers.new.errors.businessMissingReceivingAccount'),
-        )
-        return
-      }
-      const transferInfo = directionInfo(values.direction)
-      const amountError = validateTransferAmount(
-        values.amount,
-        values.direction,
-        user.verified,
-        monthlyTransferTotal(transfers, user.id, transferInfo.from),
-        originCountry,
-        t,
-      )
-      if (amountError) {
-        formik.setFieldError('amount', amountError)
-        return
-      }
-      const action = dispatch(
-        createTransfer({
-          amount: values.amount,
-          direction: values.direction,
+    onSubmit: async (values, { setSubmitting }) => {
+      try {
+        const exchanger = exchangers.find((item) => item.id === values.exchangerId)
+        const business = businesses.find((item) => item.id === values.exchangerId)
+        if (!exchanger || !business) {
+          formik.setFieldError('exchangerId', t('transfers.new.errors.chooseAvailableBusiness'))
+          return
+        }
+        if (exchanger && isBusinessOwnedBy(business, user.id)) {
+          formik.setFieldError('exchangerId', t('transfers.new.errors.cannotUseOwnBusiness'))
+          return
+        }
+        const paymentView = buildExchangerPaymentView(business, values.direction, originCountry)
+        if (!paymentView.paymentDetails) {
+          formik.setFieldError(
+            'exchangerId',
+            t('transfers.new.errors.businessMissingReceivingAccount'),
+          )
+          return
+        }
+        const transferInfo = directionInfo(values.direction)
+        const amountError = validateTransferAmount(
+          values.amount,
+          values.direction,
+          user.verified,
+          monthlyTransferTotal(transfers, user.id, transferInfo.from),
           originCountry,
-          user,
-          exchanger: {
-            ...exchanger,
-            transferAcceptanceRequired: business.transferAcceptanceRequired === true,
-            paymentAccount: paymentView.paymentAccount,
-            paymentDetails: paymentView.paymentDetails,
-          },
-          rateOverride:
-            values.direction === DIRECTIONS.BJ_TO_RU ? liveRate.originToRub : liveRate.rubToOrigin,
-          rateSource: liveRate.source,
-          rateDate: liveRate.date,
-          sender: {
-            firstName: values.senderFirstName,
-            lastName: values.senderLastName,
-            phone: values.senderPhone,
-            method: values.senderMethod,
-          },
-          recipient: {
-            firstName: values.recipientFirstName,
-            lastName: values.recipientLastName,
-            phone: values.recipientPhone,
-            method: values.recipientMethod,
-          },
-          noteToExchanger: values.noteToExchanger,
-        }),
-      )
-      if (action.payload?.blocked || !action.payload?.id) {
-        dispatch(
-          addToast({
-            title: t('transfers.new.errors.createFailedTitle'),
-            message:
-              action.payload?.reason === 'self_business_transfer'
-                ? t('transfers.new.errors.cannotUseOwnBusiness')
-                : t('transfers.new.errors.chooseAvailableBusiness'),
-            tone: 'error',
+          t,
+        )
+        if (amountError) {
+          formik.setFieldError('amount', amountError)
+          return
+        }
+        const action = dispatch(
+          createTransfer({
+            amount: values.amount,
+            direction: values.direction,
+            originCountry,
+            user,
+            exchanger: {
+              ...exchanger,
+              transferAcceptanceRequired: business.transferAcceptanceRequired === true,
+              paymentAccount: paymentView.paymentAccount,
+              paymentDetails: paymentView.paymentDetails,
+            },
+            rateOverride:
+              values.direction === DIRECTIONS.BJ_TO_RU ? liveRate.originToRub : liveRate.rubToOrigin,
+            rateSource: liveRate.source,
+            rateDate: liveRate.date,
+            sender: {
+              firstName: values.senderFirstName,
+              lastName: values.senderLastName,
+              phone: values.senderPhone,
+              method: values.senderMethod,
+            },
+            recipient: {
+              firstName: values.recipientFirstName,
+              lastName: values.recipientLastName,
+              phone: values.recipientPhone,
+              method: values.recipientMethod,
+            },
+            noteToExchanger: values.noteToExchanger,
           }),
         )
-        return
+        if (action.payload?.blocked || !action.payload?.id) {
+          dispatch(
+            addToast({
+              title: t('transfers.new.errors.createFailedTitle'),
+              message:
+                action.payload?.reason === 'self_business_transfer'
+                  ? t('transfers.new.errors.cannotUseOwnBusiness')
+                  : t('transfers.new.errors.chooseAvailableBusiness'),
+              tone: 'error',
+            }),
+          )
+          return
+        }
+        clearTransferDraft()
+        navigate(`/transfers/${action.payload.id}`, { state: { transferView: 'client' } })
+      } finally {
+        setSubmitting(false)
       }
-      clearTransferDraft()
-      navigate(`/transfers/${action.payload.id}`, { state: { transferView: 'client' } })
     },
   })
 
@@ -747,7 +751,13 @@ export function NewTransferPage() {
               {errorFor('acceptTerms') ? (
                 <p className="text-xs text-red-600">{errorFor('acceptTerms')}</p>
               ) : null}
-              <Button type="submit" icon={FiShield} className="w-full sm:w-auto">
+              <Button
+                type="submit"
+                icon={FiShield}
+                className="w-full sm:w-auto"
+                disabled={formik.isSubmitting}
+                loading={formik.isSubmitting}
+              >
                 {t('transfers.new.createAndSubmit')}
               </Button>
             </Card>

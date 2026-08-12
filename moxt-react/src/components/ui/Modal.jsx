@@ -9,7 +9,7 @@ const sizes = {
   wide: 'max-w-5xl',
 }
 
-export function Modal({ children, open, onClose, size = 'default', title }) {
+export function Modal({ children, open, onClose, size = 'default', title, immersive = false }) {
   const { t } = useLanguage()
   const titleId = useId()
   const dialogRef = useRef(null)
@@ -70,18 +70,35 @@ export function Modal({ children, open, onClose, size = 'default', title }) {
       <section
         ref={dialogRef}
         tabIndex={-1}
-        className={`scrollbar-hidden relative z-10 max-h-[calc(100dvh-1.5rem)] min-w-0 w-full overflow-auto rounded-[2rem] border border-[var(--app-border)] bg-[var(--app-surface)] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl sm:max-h-[92vh] sm:p-7 ${sizes[size]}`}
+        className={`scrollbar-hidden relative z-10 max-h-[calc(100dvh-1.5rem)] min-w-0 w-full shadow-2xl sm:max-h-[92vh] ${sizes[size]} ${
+          immersive
+            ? 'overflow-hidden rounded-[2rem] border-0 bg-black p-0 pb-0 sm:p-0'
+            : 'overflow-auto rounded-[2rem] border border-[var(--app-border)] bg-[var(--app-surface)] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:p-7'
+        }`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
       >
-        <header className="mb-5 flex items-center justify-between gap-4">
-          <h2 id={titleId} className="text-lg font-black">
+        <header
+          className={
+            immersive
+              ? 'absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-4 bg-gradient-to-b from-black/75 via-black/35 to-transparent px-4 pb-8 pt-4 sm:px-6 sm:pt-5'
+              : 'mb-5 flex items-center justify-between gap-4'
+          }
+        >
+          <h2
+            id={titleId}
+            className={`text-lg font-black ${immersive ? 'text-white drop-shadow-sm' : ''}`}
+          >
             {title}
           </h2>
           <button
             type="button"
-            className="grid size-9 place-items-center rounded-xl hover:bg-[var(--app-surface-muted)]"
+            className={`grid size-9 place-items-center rounded-xl ${
+              immersive
+                ? 'bg-white/15 text-white backdrop-blur-sm hover:bg-white/25'
+                : 'hover:bg-[var(--app-surface-muted)]'
+            }`}
             aria-label={t('common.close')}
             onClick={onClose}
           >

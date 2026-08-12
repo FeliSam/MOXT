@@ -1,5 +1,4 @@
 import {
-  FiBriefcase,
   FiCheckCircle,
   FiMessageSquare,
   FiShoppingBag,
@@ -10,13 +9,15 @@ import { Link } from 'react-router-dom'
 import { VerifiedDisplayName } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
-import { LinkifiedText } from '../../components/ui/LinkifiedText'
+import { ExpandableLinkifiedText } from '../../components/ui/ExpandableLinkifiedText'
 import { useLanguage } from '../../contexts/useLanguage'
 import { isBusinessPublishReady } from '../businesses/businessPublishUtils'
 import { formatShortDate } from '../../utils/formatters'
 
 export function PublisherDetailCard({
   business,
+  businessId,
+  businessProfilePath,
   className = '',
   ownerBusiness,
   publisherName,
@@ -38,6 +39,11 @@ export function PublisherDetailCard({
   const resolvedDescriptionFallback =
     descriptionFallback ?? t('publications.publisher.descriptionFallback')
   const resolvedCtaLabel = ctaLabel ?? t('publications.publisher.viewAllPublications')
+  const directoryPath =
+    businessProfilePath ||
+    (businessId ? `/businesses/${businessId}/publications/listings` : null) ||
+    (business?.id ? `/businesses/${business.id}/publications/listings` : null) ||
+    (ownerBusiness?.id ? `/businesses/${ownerBusiness.id}/publications/listings` : null)
   const publisherVerified = business ? isBusinessPublishReady(business) : verified
   const profilePath =
     publicationsPath || (ownerId ? `/users/${ownerId}/publications` : null)
@@ -74,14 +80,15 @@ export function PublisherDetailCard({
         <PublisherStat icon={FiShoppingBag} value={publicationCount} label={resolvedCountLabel} />
         <PublisherStat icon={FiMessageSquare} value={contactCount} label={t('publications.publisher.stats.contacts')} />
       </div>
-      <LinkifiedText
+      <ExpandableLinkifiedText
         as="p"
         text={description || business?.description || resolvedDescriptionFallback}
         preserveWhitespace="pre-line"
+        maxLines={4}
         className="mt-5 text-sm leading-6 text-[var(--app-text-muted)]"
       />
-      {business ? (
-        <Link to={`/businesses/${business.id}`}>
+      {directoryPath ? (
+        <Link to={directoryPath}>
           <Button className="mt-5 w-full" variant="secondary" icon={FiUser}>
             {t('publications.publisher.viewBusinessProfile')}
           </Button>
@@ -90,13 +97,6 @@ export function PublisherDetailCard({
         <Link to={profilePath}>
           <Button className="mt-5 w-full" variant="secondary" icon={FiUser}>
             {resolvedCtaLabel}
-          </Button>
-        </Link>
-      ) : null}
-      {!business && ownerBusiness ? (
-        <Link to={`/businesses/${ownerBusiness.id}/publications/listings`}>
-          <Button className="mt-3 w-full" variant="secondary" icon={FiBriefcase}>
-            {t('publications.publisher.viewBusiness')}
           </Button>
         </Link>
       ) : null}

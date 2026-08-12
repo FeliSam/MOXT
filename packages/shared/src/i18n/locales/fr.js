@@ -682,6 +682,11 @@ export const fr = {
     translateFailedTitle: "Traduction impossible",
     translateFailed: "Impossible de traduire ce message pour le moment.",
     edit: "Modifier",
+    messageActions: "Actions du message",
+    report: "Signaler",
+    reportTitle: "Signaler ce message",
+    reportToastTitle: "Signalement envoyé",
+    reportToastBody: "Notre équipe va examiner ce message.",
     reactAria: "Réagir {emoji}",
     reactionAria: "Réaction {emoji}",
     securityNotice: "Vérifiez l'identité de votre interlocuteur et les détails de l'annonce avant tout engagement.",
@@ -4181,6 +4186,9 @@ export const fr = {
         declinedBody: "Le client pourra choisir un autre échangeur.",
         reassignedTitle: "Transfert réassigné",
         reassignedBody: "Nouveau partenaire : {name}.",
+        actionFailedTitle: "Action impossible",
+        actionFailedBody:
+          "La demande n’a pas pu être traitée (délai expiré, statut déjà modifié ou droits insuffisants). Actualisez la page.",
       },
     },
     workflow: {

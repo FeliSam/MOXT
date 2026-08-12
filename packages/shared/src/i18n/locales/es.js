@@ -680,6 +680,11 @@ export const es = {
     translateFailedTitle: "Traducción imposible",
     translateFailed: "No se puede traducir este mensaje por ahora.",
     edit: "Editar",
+    messageActions: "Acciones del mensaje",
+    report: "Reportar",
+    reportTitle: "Reportar este mensaje",
+    reportToastTitle: "Reporte enviado",
+    reportToastBody: "Nuestro equipo revisará este mensaje.",
     reactAria: "Reagir {emoji}",
     reactionAria: "Reación {emoji}",
     securityNotice: "Verifique a identidad do interlocutor y os detalhes do anuncio antes de cuálquer compromisso.",
@@ -4173,6 +4178,9 @@ export const es = {
         declinedBody: "El cliente puede elegir otro cambista.",
         reassignedTitle: "Transferencia reasignada",
         reassignedBody: "Nuevo socio: {name}.",
+        actionFailedTitle: "Acción imposible",
+        actionFailedBody:
+          "No se pudo procesar la solicitud (plazo vencido, estado ya modificado o permisos insuficientes). Actualice la página.",
       },
     },
 

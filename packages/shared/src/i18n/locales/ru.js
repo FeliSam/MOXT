@@ -681,6 +681,11 @@ export const ru = {
     translateFailedTitle: "Не удалось перевести",
     translateFailed: "Сейчас невозможно перевести это сообщение.",
     edit: "Изменить",
+    messageActions: "Действия с сообщением",
+    report: "Пожаловаться",
+    reportTitle: "Пожаловаться на сообщение",
+    reportToastTitle: "Жалоба отправлена",
+    reportToastBody: "Наша команда рассмотрит это сообщение.",
     reactAria: "Реакция {emoji}",
     reactionAria: "Реакция {emoji}",
     securityNotice: "Проверьте личность собеседника и детали объявления перед любыми обязательствами.",
@@ -4174,6 +4179,9 @@ export const ru = {
         declinedBody: "Клиент может выбрать другого обменника.",
         reassignedTitle: "Перевод переназначен",
         reassignedBody: "Новый партнёр: {name}.",
+        actionFailedTitle: "Действие невозможно",
+        actionFailedBody:
+          "Запрос не удалось обработать (истёк срок, статус уже изменён или недостаточно прав). Обновите страницу.",
       },
     },
 

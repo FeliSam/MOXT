@@ -40,7 +40,12 @@ import {
   businessMemberFromRemoteRow,
   businessRequestFromRemoteRow,
   syncLocalBusinessesToRemote,
+  upsertBusinessDocumentRemote,
 } from '../features/businesses/businessRemote'
+import {
+  enrichBusinessDocuments,
+  parseBusinessIdFromStoragePath,
+} from '../features/businesses/businessDocumentUtils'
 import { filterByBusinessIds, reconcileBusinesses } from '../features/businesses/businessSyncUtils'
 import { matchUserId } from '../features/businesses/businessVisibility'
 import { reviewFromRemoteRow } from '../features/reviews/reviewRemote'
@@ -619,12 +624,86 @@ export const loadAllData = createAsyncThunk(
     const remoteDocuments = safeRows(businessDocumentsRes, 'des documents entreprise')
       .map(businessDocumentFromRemoteRow)
       .filter(Boolean)
-    const mergedDocuments = isAdmin
+
+    let businessesForDocuments = mergedBusinesses
+    if (isAdmin && remoteDocuments.length) {
+      const ownerIds = [
+        ...new Set(remoteDocuments.map((doc) => doc.ownerId).filter(Boolean)),
+      ]
+      const pathBusinessIds = [
+        ...new Set(
+          remoteDocuments
+            .map((doc) => parseBusinessIdFromStoragePath(doc.storagePath))
+            .filter(Boolean),
+        ),
+      ]
+      const loadedBusinessIds = new Set(businessesForDocuments.map((item) => item.id))
+      const businessQueries = []
+      if (ownerIds.length) {
+        businessQueries.push(
+          supabase.from('businesses').select('*').in('owner_id', ownerIds).limit(USER_LIMIT),
+        )
+      }
+      const missingPathIds = pathBusinessIds.filter((id) => !loadedBusinessIds.has(id))
+      if (missingPathIds.length) {
+        businessQueries.push(
+          supabase.from('businesses').select('*').in('id', missingPathIds).limit(USER_LIMIT),
+        )
+      }
+      if (businessQueries.length) {
+        const linkedBusinessResults = await Promise.all(businessQueries)
+        const linkedBusinessRows = mergeRemoteRowsById(
+          ...linkedBusinessResults.map((result) =>
+            safeRows(result, 'des entreprises liées aux documents'),
+          ),
+        )
+        if (linkedBusinessRows.length) {
+          businessesForDocuments = reconcileBusinesses(
+            mergedBusinesses,
+            linkedBusinessRows.map(businessFromRemoteRow).filter(Boolean),
+            uid,
+            { preserveLocalOwnedOnRemoteError: true },
+          )
+        }
+      }
+    }
+
+    let mergedDocuments = isAdmin
       ? mergeRemoteItems(getState().businesses.documents, remoteDocuments)
       : filterByBusinessIds(
           mergeRemoteItems(getState().businesses.documents, remoteDocuments),
           mergedBusinessIds,
         )
+    mergedDocuments = enrichBusinessDocuments(mergedDocuments, businessesForDocuments)
+
+    if (isAdmin) {
+      const reconciledDocuments = mergedDocuments.filter(
+        (doc) => doc._businessIdReconciledFrom === 'storage_path',
+      )
+      if (reconciledDocuments.length) {
+        void Promise.allSettled(
+          reconciledDocuments.map((doc) => {
+            const { _businessIdReconciledFrom, ...payload } = doc
+            return upsertBusinessDocumentRemote(payload)
+          }),
+        ).then((results) => {
+          results.forEach((result, index) => {
+            if (result.status === 'rejected') {
+              console.warn(
+                '[MOXT] Réconciliation document entreprise:',
+                reconciledDocuments[index]?.id,
+                result.reason?.message || result.reason,
+              )
+            }
+          })
+        })
+      }
+    }
+
+    const mergedBusinessItems =
+      businessesForDocuments.length > mergedBusinesses.length
+        ? businessesForDocuments
+        : mergedBusinesses
     const mergedRequests = filterByBusinessIds(
       mergeRemoteItems(
         getState().businesses.requests,
@@ -682,7 +761,7 @@ export const loadAllData = createAsyncThunk(
         reports: mergeRemoteItems(getState().events.reports, eventReports),
       }))
       dispatch(setBusinesses({
-        items: mergedBusinesses,
+        items: mergedBusinessItems,
         members: mergedMembers,
         documents: mergedDocuments,
         requests: mergedRequests,

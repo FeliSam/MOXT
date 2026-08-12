@@ -8,6 +8,7 @@ import { deleteStatus, markStatusViewed, reactToStatus, removeStatusImage } from
 import { openConversationWithContact, sendMessage } from '../communications/communicationSlice'
 import { addToast } from '../ui/uiSlice'
 import { useLanguage } from '../../contexts/useLanguage'
+import { useSwipeDownToClose } from '../../hooks/useSwipeDownToClose'
 
 const IMAGE_DURATION_MS = 4500
 const QUICK_REACTIONS = ['❤️', '😂', '😮', '😢', '👏', '🔥']
@@ -69,6 +70,34 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
   // taille de `pages` : on recadre à la lecture plutôt que dans un effet séparé.
   const safePageIndex = pages.length ? Math.min(pageIndex, pages.length - 1) : 0
   const page = pages[safePageIndex]
+
+  function goNextGroup() {
+    if (groupIndex < groups.length - 1) setGroupIndex((i) => i + 1)
+    else onClose()
+  }
+
+  function goPrevGroup() {
+    if (groupIndex > 0) {
+      setGroupIndex((i) => i - 1)
+    }
+  }
+
+  function goNextPage() {
+    if (safePageIndex < pages.length - 1) setPageIndex(safePageIndex + 1)
+    else goNextGroup()
+  }
+
+  function goPrevPage() {
+    if (safePageIndex > 0) setPageIndex(safePageIndex - 1)
+    else goPrevGroup()
+  }
+
+  const { imageRef, imageSwipeHandlers } = useSwipeDownToClose(
+    onClose,
+    Boolean(group && page),
+    page?.imageKey,
+    { onPrevious: goPrevPage, onNext: goNextPage },
+  )
   const isMine = group?.authorId === viewer?.id
   const effectivePaused = paused || viewersOpen || reactionPickerOpen || replyOpen || confirmDeleteOpen
 
@@ -114,27 +143,6 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
     if (!group) onClose()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [group])
-
-  function goNextGroup() {
-    if (groupIndex < groups.length - 1) setGroupIndex((i) => i + 1)
-    else onClose()
-  }
-
-  function goPrevGroup() {
-    if (groupIndex > 0) {
-      setGroupIndex((i) => i - 1)
-    }
-  }
-
-  function goNextPage() {
-    if (safePageIndex < pages.length - 1) setPageIndex(safePageIndex + 1)
-    else goNextGroup()
-  }
-
-  function goPrevPage() {
-    if (safePageIndex > 0) setPageIndex(safePageIndex - 1)
-    else goPrevGroup()
-  }
 
   useEffect(() => {
     if (effectivePaused || !pages.length) return undefined
@@ -254,7 +262,12 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
   if (!group || !page) return null
 
   return createPortal(
-    <div className="fixed inset-0 z-[var(--z-modal)] flex flex-col bg-black" role="dialog" aria-modal="true">
+    <div
+      className="fixed inset-0 z-[var(--z-modal)] flex flex-col overscroll-none touch-none bg-black"
+      data-no-pull-refresh
+      role="dialog"
+      aria-modal="true"
+    >
       {/* Barres de progression */}
       <div
         className="flex shrink-0 gap-1 p-2 sm:p-3"
@@ -325,13 +338,29 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
 
       {/* Contenu */}
       <div
-        className="relative min-h-0 flex-1"
-        onPointerDown={() => setPaused(true)}
-        onPointerUp={() => setPaused(false)}
+        ref={imageRef}
+        className="relative min-h-0 flex-1 touch-none"
+        onPointerDown={(event) => {
+          imageSwipeHandlers.onPointerDown(event)
+          setPaused(true)
+        }}
+        onPointerMove={imageSwipeHandlers.onPointerMove}
+        onPointerUp={(event) => {
+          imageSwipeHandlers.onPointerUp(event)
+          setPaused(false)
+        }}
+        onPointerCancel={(event) => {
+          imageSwipeHandlers.onPointerCancel(event)
+          setPaused(false)
+        }}
         onPointerLeave={() => setPaused(false)}
       >
         {page.url ? (
-          <img src={page.url} alt="" className="mx-auto size-full max-w-2xl object-contain" />
+          <img
+            src={page.url}
+            alt=""
+            className="relative z-20 mx-auto size-full max-w-2xl object-contain"
+          />
         ) : (
           <div className="flex size-full items-center justify-center bg-gradient-to-br from-brand-800 via-brand-600 to-[var(--app-cobalt)] px-8">
             <LinkifiedText
@@ -357,17 +386,21 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
           type="button"
           onClick={goPrevPage}
           aria-label={t('status.viewer.previous')}
-          className="absolute inset-y-0 left-0 flex w-1/3 items-center justify-start pl-2 text-white/0 transition hover:text-white/70 sm:pl-4"
+          className="pointer-events-none absolute inset-y-0 left-0 z-30 flex w-1/3 items-center justify-start pl-2 sm:pl-4"
         >
-          <FiChevronLeft className="text-3xl drop-shadow" />
+          <span className="pointer-events-auto inline-grid size-10 place-items-center rounded-full bg-black/[0.8] text-white/70 backdrop-blur-sm transition hover:text-white">
+            <FiChevronLeft className="text-3xl drop-shadow" />
+          </span>
         </button>
         <button
           type="button"
           onClick={goNextPage}
           aria-label={t('status.viewer.next')}
-          className="absolute inset-y-0 right-0 flex w-1/3 items-center justify-end pr-2 text-white/0 transition hover:text-white/70 sm:pr-4"
+          className="pointer-events-none absolute inset-y-0 right-0 z-30 flex w-1/3 items-center justify-end pr-2 sm:pr-4"
         >
-          <FiChevronRight className="text-3xl drop-shadow" />
+          <span className="pointer-events-auto inline-grid size-10 place-items-center rounded-full bg-black/[0.8] text-white/70 backdrop-blur-sm transition hover:text-white">
+            <FiChevronRight className="text-3xl drop-shadow" />
+          </span>
         </button>
       </div>
 

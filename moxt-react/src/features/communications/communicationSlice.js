@@ -409,6 +409,7 @@ const communicationSlice = createSlice({
     conversations: hydrateStoredConversations(),
     support: supportStorage.read(),
     notifications: notificationsStorage.read().map(normalizeNotification),
+    messageReports: [],
   },
   reducers: {
     setAll(state, action) {
@@ -917,6 +918,34 @@ const communicationSlice = createSlice({
           message.deletedBy.push(target)
         }
       }
+    },
+    reportMessage: {
+      reducer(state, action) {
+        state.messageReports ||= []
+        const duplicate = state.messageReports.some(
+          (report) =>
+            report.messageId === action.payload.messageId &&
+            report.reporterId === action.payload.reporterId &&
+            report.status === 'new',
+        )
+        if (!duplicate) state.messageReports.unshift(action.payload)
+      },
+      prepare({ conversationId, messageId, senderId, reporterId, reason, evidenceUrl = null }) {
+        const stamp = Date.now().toString(36).toUpperCase()
+        return {
+          payload: {
+            id: `MREP-${stamp}`,
+            conversationId,
+            messageId,
+            senderId,
+            reporterId,
+            reason: String(reason || '').trim(),
+            evidenceUrl,
+            status: 'new',
+            createdAt: new Date().toISOString(),
+          },
+        }
+      },
     },
     toggleConversationBlock(state, action) {
       const conversation = state.conversations.find((item) => item.id === action.payload.id)
@@ -1570,6 +1599,7 @@ export const {
   markConversationRead,
   markNotificationRead,
   reactToMessage,
+  reportMessage,
   replySupportTicket,
   restoreConversation,
   saveConversationDraft,

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useStore } from 'react-redux'
 import { FiCheck, FiExternalLink, FiUpload } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { Button } from '../../../components/ui/Button'
@@ -12,6 +13,7 @@ import {
   canApplyModerateTransfer,
   isClaimOnlyPhase,
 } from '../transferActionUtils'
+import { dispatchTransferAcceptanceAction } from '../transferAcceptanceDispatch'
 import { TRANSFER_STATUS } from '../transferConfig'
 import { TransferClientNote } from '../TransferClientNote'
 import { TransferStatusBadge } from '../TransferStatusBadge'
@@ -23,8 +25,6 @@ import {
   getTransferPricing,
 } from '../transferUtils'
 import {
-  acceptTransferRequest,
-  declineTransferRequest,
   moderateTransfer,
 } from '../transferSlice'
 import { addToast } from '../../ui/uiSlice'
@@ -39,6 +39,7 @@ export function TransferQuickManageModal({
 }) {
   const [proof, setProof] = useState(null)
   const { progress: uploadProgress, track: trackUpload, reset: resetUpload } = useUploadProgress()
+  const store = useStore()
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reset preuve/upload quand on change de transfert (système externe : sélection file d'attente)
@@ -137,39 +138,57 @@ export function TransferQuickManageModal({
   }
 
   function confirmAcceptance() {
-    dispatch(
-      acceptTransferRequest({
-        id: transfer.id,
-        actorId: user.id,
-        actorRole: user.role,
-      }),
-    )
+    const result = dispatchTransferAcceptanceAction(dispatch, store.getState, {
+      transferId: transfer.id,
+      actorId: user.id,
+      actorRole: user.role,
+      action: 'accept',
+    })
+    if (result.applied) {
+      dispatch(
+        addToast({
+          title: t('transfers.acceptance.toasts.acceptedTitle'),
+          message: t('transfers.acceptance.toasts.acceptedBody'),
+          tone: 'success',
+        }),
+      )
+      onClose()
+      return
+    }
     dispatch(
       addToast({
-        title: t('transfers.acceptance.toasts.acceptedTitle'),
-        message: t('transfers.acceptance.toasts.acceptedBody'),
-        tone: 'success',
+        title: t('transfers.acceptance.toasts.actionFailedTitle'),
+        message: t('transfers.acceptance.toasts.actionFailedBody'),
+        tone: 'error',
       }),
     )
-    onClose()
   }
 
   function declineAcceptance() {
-    dispatch(
-      declineTransferRequest({
-        id: transfer.id,
-        actorId: user.id,
-        actorRole: user.role,
-      }),
-    )
+    const result = dispatchTransferAcceptanceAction(dispatch, store.getState, {
+      transferId: transfer.id,
+      actorId: user.id,
+      actorRole: user.role,
+      action: 'decline',
+    })
+    if (result.applied) {
+      dispatch(
+        addToast({
+          title: t('transfers.acceptance.toasts.declinedTitle'),
+          message: t('transfers.acceptance.toasts.declinedBody'),
+          tone: 'info',
+        }),
+      )
+      onClose()
+      return
+    }
     dispatch(
       addToast({
-        title: t('transfers.acceptance.toasts.declinedTitle'),
-        message: t('transfers.acceptance.toasts.declinedBody'),
-        tone: 'info',
+        title: t('transfers.acceptance.toasts.actionFailedTitle'),
+        message: t('transfers.acceptance.toasts.actionFailedBody'),
+        tone: 'error',
       }),
     )
-    onClose()
   }
 
   function confirmReception() {

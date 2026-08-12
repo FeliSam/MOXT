@@ -21,6 +21,7 @@ import {
   loadParticipantProfiles,
   markConversationRead,
   reactToMessage,
+  reportMessage,
   refreshConversations,
   restoreConversation,
   saveConversationDraft,
@@ -538,6 +539,35 @@ export function MessagesPage() {
     setSearchParams({})
   }, [setSearchParams])
 
+  const getConversationRowActions = useCallback(
+    (conversation) => ({
+      archived: showArchived,
+      blocked: conversation.blockedBy?.includes(user.id),
+      suggestionsEnabled,
+      onPin: () => dispatch(toggleConversationPin({ id: conversation.id, userId: user.id })),
+      onMute: () => dispatch(toggleConversationMute({ id: conversation.id, userId: user.id })),
+      onToggleSuggestions: () =>
+        dispatch(
+          updateAccountPreferences({
+            userId: user.id,
+            preferences: {
+              messageSuggestionsEnabled: !suggestionsEnabled,
+            },
+          }),
+        ),
+      onArchive: () => {
+        dispatch(
+          showArchived
+            ? restoreConversation({ id: conversation.id, userId: user.id })
+            : archiveConversation({ id: conversation.id, userId: user.id }),
+        )
+        if (active?.id === conversation.id) returnToList()
+      },
+      onBlock: () => dispatch(toggleConversationBlock({ id: conversation.id, userId: user.id })),
+    }),
+    [active?.id, dispatch, returnToList, showArchived, suggestionsEnabled, user.id],
+  )
+
   const toggleThreadSearch = useCallback(() => {
     setThreadSearchOpen((open) => {
       if (open) setThreadQuery('')
@@ -769,6 +799,7 @@ export function MessagesPage() {
                       showOnlineDot
                       userId={user.id}
                       onClick={() => selectConversation(conversation.id)}
+                      {...getConversationRowActions(conversation)}
                     />
                   ))}
                   {isFiltering && !visible.length ? (
@@ -809,6 +840,7 @@ export function MessagesPage() {
                 showOnlineDot
                 userId={user.id}
                 onClick={() => selectConversation(conversation.id)}
+                {...getConversationRowActions(conversation)}
               />
             ))}
             </div>
@@ -922,6 +954,35 @@ export function MessagesPage() {
                             title: t('messages.copyFailedTitle'),
                             message: t('messages.copyFailed'),
                             tone: 'error',
+                          },
+                    ),
+                  )
+                }}
+                onReport={({ conversationId, message, reason, evidenceUrl }) => {
+                  const before = store.getState().communications.messageReports?.length || 0
+                  dispatch(
+                    reportMessage({
+                      conversationId,
+                      messageId: message.id,
+                      senderId: message.senderId,
+                      reporterId: user.id,
+                      reason,
+                      evidenceUrl,
+                    }),
+                  )
+                  const after = store.getState().communications.messageReports?.length || 0
+                  dispatch(
+                    addToast(
+                      after > before
+                        ? {
+                            title: t('messages.reportToastTitle'),
+                            message: t('messages.reportToastBody'),
+                            tone: 'success',
+                          }
+                        : {
+                            title: t('toasts.alreadyReported'),
+                            message: t('toasts.alreadyReportedBody'),
+                            tone: 'info',
                           },
                     ),
                   )

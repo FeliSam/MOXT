@@ -23,7 +23,8 @@ import { LinkifiedText } from '../components/ui/LinkifiedText'
 import { Card } from '../components/ui/Card'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { DetailFacts, DetailMetrics, DetailTimeline } from '../components/ui/DetailBlocks'
-import { Modal } from '../components/ui/Modal'
+import { ImageGalleryViewer } from '../components/ui/ImageGalleryViewer'
+import { useSwipeDownToClose } from '../hooks/useSwipeDownToClose'
 import { PageHeader } from '../components/ui/PageHeader'
 import { FavoriteButton } from '../components/ui/FavoriteButton'
 import { RevealListItem } from '../components/ui/RevealListItem'
@@ -166,9 +167,6 @@ export function ListingDetailPage() {
   const mobilePagePadding = isListingOwner
     ? 'max-md:pb-[calc(1.95rem+env(safe-area-inset-bottom))]'
     : 'max-md:pb-[calc(6.5rem+env(safe-area-inset-bottom))]'
-  const mobileFloatBottom = isListingOwner
-    ? 'bottom-[calc(1.65rem+env(safe-area-inset-bottom))]'
-    : 'bottom-[calc(5.5rem+env(safe-area-inset-bottom))]'
 
   function selectImageAt(nextIndex) {
     if (!images.length) return
@@ -507,64 +505,28 @@ export function ListingDetailPage() {
         relatedPath={`/marketplace/${listing.id}`}
         relatedType="listing"
         title={listing.title}
-        floatBottomClass={mobileFloatBottom}
+        autoHintMs={5000}
         onContact={() => dispatch(incrementListingContact(listing.id))}
         onShared={() => dispatch(incrementListingShare(listing.id))}
       />
 
-      <Modal open={imageOpen} onClose={() => setImageOpen(false)} title={mt('marketplace.detail.gallery')} size="wide">
-        {activeImage ? (
-          <div className="grid gap-4">
-            <div className="relative overflow-hidden rounded-[1.5rem] bg-[var(--app-surface-muted)]">
-              <img
-                src={activeImage}
-                alt={listing.title}
-                className="max-h-[75vh] w-full object-contain"
-              />
-              {images.length > 1 ? (
-                <>
-                  <button
-                    type="button"
-                    className="absolute left-3 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-white/95 text-slate-900 shadow-lg"
-                    onClick={() => selectImageAt(activeImageIndex - 1)}
-                    aria-label={mt('marketplace.detail.previousImage')}
-                  >
-                    <FiChevronLeft />
-                  </button>
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-white/95 text-slate-900 shadow-lg"
-                    onClick={() => selectImageAt(activeImageIndex + 1)}
-                    aria-label={mt('marketplace.detail.nextImage')}
-                  >
-                    <FiChevronRight />
-                  </button>
-                </>
-              ) : null}
-            </div>
-            {images.length > 1 ? (
-              <div className="flex items-center justify-between text-sm text-[var(--app-text-muted)]">
-                <span>
-                  {mt('marketplace.detail.imageCount', {
-                    current: activeImageIndex + 1,
-                    total: images.length,
-                  })}
-                </span>
-                <div className="flex gap-2">
-                  <Button variant="secondary" onClick={() => selectImageAt(activeImageIndex - 1)}>
-                    {mt('marketplace.detail.previous')}
-                  </Button>
-                  <Button variant="secondary" onClick={() => selectImageAt(activeImageIndex + 1)}>
-                    {mt('marketplace.detail.next')}
-                  </Button>
-                </div>
-              </div>
-            ) : null}
-          </div>
-        ) : (
-          <Placeholder listing={listing} />
-        )}
-      </Modal>
+      <ImageGalleryViewer
+        open={imageOpen}
+        onClose={() => setImageOpen(false)}
+        title={mt('marketplace.detail.gallery')}
+        images={images}
+        activeIndex={activeImageIndex}
+        onSelectIndex={selectImageAt}
+        alt={listing.title}
+        countLabel={
+          images.length > 1
+            ? mt('marketplace.detail.imageCount', {
+                current: activeImageIndex + 1,
+                total: images.length,
+              })
+            : null
+        }
+      />
 
       <ConfirmDialog
         open={soldOpen}
@@ -615,15 +577,21 @@ function Gallery({
 }) {
   const { t } = useLanguage()
   const mt = (key, vars) => marketplaceText(t, key, vars)
+  const hasMultiple = images.length > 1
+  const { imageRef, imageSwipeHandlers } = useSwipeDownToClose(null, hasMultiple, activeImage, {
+    onPrevious: () => onSelectIndex(activeImageIndex - 1),
+    onNext: () => onSelectIndex(activeImageIndex + 1),
+    lockBody: false,
+  })
+
   return (
     <Card className="overflow-hidden p-4 sm:p-4">
-      <div className="group relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-cyan-700 to-blue-600 text-white">
-        <button
-          type="button"
-          className="grid h-[486px] w-full place-items-center lg:h-[583px]"
-          onClick={onOpen}
-          aria-label={mt('marketplace.detail.openGallery')}
-        >
+      <div
+        ref={imageRef}
+        className="group relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-cyan-700 to-blue-600 text-white"
+        {...imageSwipeHandlers}
+      >
+        <div className="relative grid h-[486px] w-full place-items-center lg:h-[583px]">
           {activeImage ? (
             <img
               src={activeImage}
@@ -635,27 +603,42 @@ function Gallery({
           ) : (
             <Placeholder listing={listing} />
           )}
-          <span className="absolute right-4 top-4 grid size-11 place-items-center rounded-full bg-white text-slate-950 shadow-xl">
+          <button
+            type="button"
+            className="absolute inset-x-1/3 inset-y-0 z-10"
+            onClick={onOpen}
+            aria-label={mt('marketplace.detail.openGallery')}
+          />
+          <button
+            type="button"
+            className="absolute right-4 top-4 z-20 grid size-11 place-items-center rounded-full bg-white text-slate-950 shadow-xl"
+            onClick={onOpen}
+            aria-label={mt('marketplace.detail.openGallery')}
+          >
             <FiMaximize2 />
-          </span>
-        </button>
-        {images.length > 1 ? (
+          </button>
+        </div>
+        {hasMultiple ? (
           <>
             <button
               type="button"
-              className="absolute left-3 top-1/2 grid size-10 -translate-y-1/2 place-items-center rounded-full bg-white/95 text-slate-900 shadow-lg transition hover:scale-110"
+              className="pointer-events-none absolute left-3 top-1/2 z-20 grid size-10 -translate-y-1/2 place-items-center rounded-full bg-white/95 text-slate-900 shadow-lg transition hover:scale-110"
               onClick={() => onSelectIndex(activeImageIndex - 1)}
               aria-label={mt('marketplace.detail.previousImage')}
             >
-              <FiChevronLeft />
+              <span className="pointer-events-auto grid size-full place-items-center">
+                <FiChevronLeft />
+              </span>
             </button>
             <button
               type="button"
-              className="absolute right-3 top-1/2 grid size-10 -translate-y-1/2 place-items-center rounded-full bg-white/95 text-slate-900 shadow-lg transition hover:scale-110"
+              className="pointer-events-none absolute right-3 top-1/2 z-20 grid size-10 -translate-y-1/2 place-items-center rounded-full bg-white/95 text-slate-900 shadow-lg transition hover:scale-110"
               onClick={() => onSelectIndex(activeImageIndex + 1)}
               aria-label={mt('marketplace.detail.nextImage')}
             >
-              <FiChevronRight />
+              <span className="pointer-events-auto grid size-full place-items-center">
+                <FiChevronRight />
+              </span>
             </button>
           </>
         ) : null}

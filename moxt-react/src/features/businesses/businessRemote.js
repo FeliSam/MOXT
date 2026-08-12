@@ -87,6 +87,7 @@ export function businessToRemoteRow(business) {
     currencies: business.currencies || [],
     exchange_methods: business.exchangeMethods || [],
     transfer_accounts: business.transferAccounts || [],
+    transfer_acceptance_required: business.transferAcceptanceRequired === true,
     schedule: business.schedule || [],
     payload: {
       hours: business.hours?.trim() || business.scheduleSummary || '',

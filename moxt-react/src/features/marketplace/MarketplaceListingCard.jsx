@@ -10,7 +10,13 @@ import { buildListingFavoriteSnapshot } from '../account/favoriteUtils'
 import { formatMoney } from '../transfers/transferUtils'
 import { listingOptionLabel, marketplaceText } from './marketplaceI18n'
 
-function MarketplaceListingCardComponent({ listing, linked = true, showFavorite = true }) {
+function MarketplaceListingCardComponent({
+  listing,
+  linked = true,
+  showFavorite = true,
+  guestMode = false,
+  onGuestInteract,
+}) {
   const dispatch = useDispatch()
   const { t } = useLanguage()
   const mt = (key, vars) => marketplaceText(t, key, vars)
@@ -36,6 +42,12 @@ function MarketplaceListingCardComponent({ listing, linked = true, showFavorite 
     ? listingOptionLabel(t, categoryOption)
     : listing.category
   const detailPath = `/marketplace/${listing.id}`
+
+  function handleGuestClick(event) {
+    if (!guestMode) return
+    event.preventDefault()
+    onGuestInteract?.()
+  }
 
   function handleToggleLike(event) {
     event.preventDefault()
@@ -119,9 +131,12 @@ function MarketplaceListingCardComponent({ listing, linked = true, showFavorite 
       role="article"
       className="group relative h-full overflow-hidden rounded-[1.4rem] shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)]"
     >
-      <div className="relative h-[280px] w-full bg-gradient-to-br from-cyan-700 to-blue-600">
+      <div className="relative h-[322px] w-full bg-gradient-to-br from-cyan-700 to-blue-600 xl:h-[370px]">
         {linked ? (
-          <Link to={detailPath} className="absolute inset-0 block" onClick={handleOpen}>
+          <Link to={detailPath} className="absolute inset-0 block" onClick={(event) => {
+            handleGuestClick(event)
+            if (!guestMode) handleOpen()
+          }}>
             {mediaBody}
           </Link>
         ) : (

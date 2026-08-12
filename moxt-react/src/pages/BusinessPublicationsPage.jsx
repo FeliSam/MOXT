@@ -17,6 +17,7 @@ import { businessesOptionLabel, businessesText } from '../features/businesses/bu
 import { ContactButton } from '../features/communications/ContactButton'
 import { SubscribeButton } from '../features/account/SubscribeButton'
 import { MyListingCard } from '../features/marketplace/MyListingCard'
+import { MarketplaceListingCard } from '../features/marketplace/MarketplaceListingCard'
 import {
   MyEventPublicationCard,
   MyJobPublicationCard,
@@ -342,53 +343,77 @@ export function BusinessPublicationsPage() {
       </div>
 
       {hasContent ? (
-        <div className="grid gap-4">
-          {visible.listing.map((listing) => (
-            <MyListingCard
-              key={listing.id}
-              listing={listing}
-              ownerMode={isOwner}
-              showViews={isOwner}
-              guestMode={guestMode}
-              onGuestInteract={handleGuestInteract}
-            />
-          ))}
-          {visible.parcel.map((parcel) => (
-            <MyParcelPublicationCard
-              key={parcel.id}
-              parcel={parcel}
-              readOnly={!isOwner}
-              guestMode={guestMode}
-              onGuestInteract={handleGuestInteract}
-            />
-          ))}
-          {visible.job.map((job) => (
-            <MyJobPublicationCard
-              key={job.id}
-              job={job}
-              readOnly={!isOwner}
-              guestMode={guestMode}
-              onGuestInteract={handleGuestInteract}
-            />
-          ))}
-          {visible.event.map((event) => (
-            <MyEventPublicationCard
-              key={event.id}
-              event={event}
-              readOnly={!isOwner}
-              guestMode={guestMode}
-              onGuestInteract={handleGuestInteract}
-            />
-          ))}
-          {visible.other.map((offer) => (
-            <MyP2POfferPublicationCard
-              key={offer.id}
-              offer={offer}
-              readOnly
-              guestMode={guestMode}
-              onGuestInteract={handleGuestInteract}
-            />
-          ))}
+        <div className="grid gap-6">
+          {visible.listing.length ? (
+            isOwner ? (
+              <div className="grid gap-4">
+                {visible.listing.map((listing) => (
+                  <MyListingCard
+                    key={listing.id}
+                    listing={listing}
+                    ownerMode={isOwner}
+                    showViews={isOwner}
+                    guestMode={guestMode}
+                    onGuestInteract={handleGuestInteract}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {visible.listing.map((listing) => (
+                  <MarketplaceListingCard
+                    key={listing.id}
+                    listing={listing}
+                    guestMode={guestMode}
+                    onGuestInteract={handleGuestInteract}
+                  />
+                ))}
+              </div>
+            )
+          ) : null}
+          {visible.parcel.length ||
+          visible.job.length ||
+          visible.event.length ||
+          visible.other.length ? (
+            <div className="grid gap-4">
+              {visible.parcel.map((parcel) => (
+                <MyParcelPublicationCard
+                  key={parcel.id}
+                  parcel={parcel}
+                  readOnly={!isOwner}
+                  guestMode={guestMode}
+                  onGuestInteract={handleGuestInteract}
+                />
+              ))}
+              {visible.job.map((job) => (
+                <MyJobPublicationCard
+                  key={job.id}
+                  job={job}
+                  readOnly={!isOwner}
+                  guestMode={guestMode}
+                  onGuestInteract={handleGuestInteract}
+                />
+              ))}
+              {visible.event.map((event) => (
+                <MyEventPublicationCard
+                  key={event.id}
+                  event={event}
+                  readOnly={!isOwner}
+                  guestMode={guestMode}
+                  onGuestInteract={handleGuestInteract}
+                />
+              ))}
+              {visible.other.map((offer) => (
+                <MyP2POfferPublicationCard
+                  key={offer.id}
+                  offer={offer}
+                  readOnly
+                  guestMode={guestMode}
+                  onGuestInteract={handleGuestInteract}
+                />
+              ))}
+            </div>
+          ) : null}
         </div>
       ) : (
         <EmptyState

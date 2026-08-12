@@ -76,7 +76,6 @@ export function usePublisherDetailProfile(entity, kind) {
   const meta = PROFILE_META[kind]
   const ownerId = entity?.ownerId
   const businessId = entity?.businessId
-
   const business = useSelector((state) =>
     state.businesses.items.find((item) => item.id === businessId),
   )
@@ -119,9 +118,15 @@ export function usePublisherDetailProfile(entity, kind) {
     return null
   }
 
+  const resolvedBusinessId = businessId || ownerBusiness?.id || null
+
   return {
     business,
     ownerBusiness,
+    businessId: resolvedBusinessId,
+    businessProfilePath: resolvedBusinessId
+      ? `/businesses/${resolvedBusinessId}/publications/listings`
+      : null,
     publisherName: meta.resolveName(entity) || t('publications.publisher.memberMoxt'),
     publicationCount,
     rating,

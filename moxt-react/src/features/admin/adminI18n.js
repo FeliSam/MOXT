@@ -469,6 +469,10 @@ export const ADMIN_FR_SOURCES = {
   'admin.businessDocuments.rejectConfirm': 'Confirmer le refus',
   'admin.businessDocuments.rejectNoteLabel': 'Motif refus : {note}',
   'admin.businessDocuments.empty': 'Aucun document à examiner.',
+  'admin.businessDocuments.ownerMeta': 'Propriétaire : {name}',
+  'admin.businessDocuments.ownerEmail': '{email}',
+  'admin.businessDocuments.unknownBusiness': 'Entreprise introuvable ({id})',
+  'admin.businessDocuments.groupCount': '{count} document(s)',
 
   // ── documents ───────────────────────────────────────────────────────────
   'admin.documents.none': 'Aucun document associé à cette demande.',

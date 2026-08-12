@@ -14,7 +14,7 @@ import { Link, useParams } from 'react-router-dom'
 import { Badge, VerifiedDisplayName } from '../components/ui/Badge'
 import { BackButton } from '../components/ui/BackButton'
 import { Card } from '../components/ui/Card'
-import { LinkifiedText } from '../components/ui/LinkifiedText'
+import { ExpandableLinkifiedText } from '../components/ui/ExpandableLinkifiedText'
 import { CatalogArchiveTabs } from '../components/ui/CatalogArchiveTabs'
 import {
   DetailFacts,
@@ -239,10 +239,11 @@ export function BusinessDetailPage() {
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone={statusMeta(business.status, t).tone}>{statusMeta(business.status, t).label}</Badge>
           </div>
-          <LinkifiedText
+          <ExpandableLinkifiedText
             as="p"
             text={business.description}
             preserveWhitespace="pre-line"
+            maxLines={4}
             className="max-w-3xl leading-7 text-[var(--app-text-muted)]"
           />
           <div className="rounded-[1.5rem] bg-[var(--app-surface-muted)] p-4 text-sm leading-6 text-[var(--app-text-muted)]">
@@ -276,21 +277,42 @@ export function BusinessDetailPage() {
           </div>
         </div>
       </Card>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {sections.map(({ icon: Icon, key, label }) => (
-          <Card key={key}>
-            <Icon className="text-2xl text-brand-600" />
-            <strong className="mt-4 block text-2xl">{content[key].length}</strong>
-            <span className="text-sm text-[var(--app-text-muted)]">{label}</span>
-            <Link
-              className="mt-4 block text-sm font-bold text-brand-700 dark:text-brand-300"
-              to={`/businesses/${business.id}/publications/${key}`}
-            >
-              {bt('businesses.common.consult')}
-            </Link>
-          </Card>
-        ))}
-      </div>
+      {sections.length ? (
+        <div className="grid gap-4">
+          <div>
+            <h2 className="text-2xl font-black">{bt('businesses.detail.linkedPublications')}</h2>
+            <p className="mt-1 text-sm text-[var(--app-text-muted)]">
+              {bt('businesses.detail.linkedPublicationsHint')}
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {sections.map(({ icon: Icon, key, label }) => (
+              <Link key={key} to={`/businesses/${business.id}/publications/${key}`}>
+                <Card className="h-full">
+                  <Icon className="text-2xl text-brand-600" />
+                  <strong className="mt-4 block text-xl">{label}</strong>
+                  <p className="mt-1 text-sm text-[var(--app-text-muted)]">
+                    {bt('businesses.detail.publishedItems', { count: content[key].length })}
+                  </p>
+                  <div className="mt-4">
+                    {content[key][0]?.images?.[0] ? (
+                      <img
+                        src={content[key][0].images[0]}
+                        alt={content[key][0].title || label}
+                        className="h-36 w-full rounded-[1.25rem] object-cover"
+                      />
+                    ) : (
+                      <div className="grid h-36 place-items-center rounded-[1.25rem] bg-[var(--app-surface-muted)] text-sm text-[var(--app-text-muted)]">
+                        {bt('businesses.detail.viewPublishedList')}
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : null}
       <CatalogArchiveTabs
         active={detailTab}
         onChange={setDetailTab}
@@ -388,42 +410,6 @@ export function BusinessDetailPage() {
               </div>
             </DetailSection>
           </div>
-          {sections.length ? (
-            <div className="grid gap-4">
-              <div>
-                <h2 className="text-2xl font-black">{bt('businesses.detail.linkedPublications')}</h2>
-                <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-                  {bt('businesses.detail.linkedPublicationsHint')}
-                </p>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                {sections.map(({ icon: Icon, key, label }) => (
-                  <Link key={key} to={`/businesses/${business.id}/publications/${key}`}>
-                    <Card className="h-full">
-                      <Icon className="text-2xl text-brand-600" />
-                      <strong className="mt-4 block text-xl">{label}</strong>
-                      <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-                        {bt('businesses.detail.publishedItems', { count: content[key].length })}
-                      </p>
-                      <div className="mt-4">
-                        {content[key][0]?.images?.[0] ? (
-                          <img
-                            src={content[key][0].images[0]}
-                            alt={content[key][0].title || label}
-                            className="h-36 w-full rounded-[1.25rem] object-cover"
-                          />
-                        ) : (
-                          <div className="grid h-36 place-items-center rounded-[1.25rem] bg-[var(--app-surface-muted)] text-sm text-[var(--app-text-muted)]">
-                            {bt('businesses.detail.viewPublishedList')}
-                          </div>
-                        )}
-                      </div>
-                    </Card>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ) : null}
         </>
       ) : detailTab === 'abonnements' ? (
         <BusinessSubscriptionSection

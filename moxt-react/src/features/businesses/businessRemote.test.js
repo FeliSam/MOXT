@@ -18,12 +18,27 @@ describe('businessRemote', () => {
     expect(row.owner_id).toBe('user-1')
     expect(row.primary_activity).toBe('commerce')
     expect(row.schedule_summary).toBe('Semaine')
+    expect(row.transfer_acceptance_required).toBe(false)
     expect(row.payload).toEqual({
       hours: 'Lun-Ven 9h-18h',
       transferAcceptanceRequired: false,
     })
     expect(row).not.toHaveProperty('hours')
     expect(row).not.toHaveProperty('deleted_by_user_at')
+  })
+
+  it('mappe transferAcceptanceRequired vers la colonne dediee', () => {
+    const row = businessToRemoteRow({
+      id: 'BIZ-3',
+      ownerId: 'user-1',
+      name: 'Test',
+      phone: '+79990000000',
+      description: 'Description',
+      transferAcceptanceRequired: true,
+    })
+
+    expect(row.transfer_acceptance_required).toBe(true)
+    expect(row.payload.transferAcceptanceRequired).toBe(true)
   })
 
   it('stocke la suppression utilisateur dans payload', () => {

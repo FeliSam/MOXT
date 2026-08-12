@@ -31,7 +31,14 @@ export function getTransferWorkflowForView(transfer, actionView, access) {
     }
   }
 
-  if (actionView === 'business' || (actionView === 'admin' && access.isBusinessViewer)) {
+  const showBusinessActions =
+    actionView === 'business' ||
+    (actionView === 'admin' &&
+      (access.canAcceptRequest ||
+        access.canConfirmPaymentReception ||
+        access.canConfirmPayout))
+
+  if (showBusinessActions) {
     if (access.canAcceptRequest) {
       return {
         steps,

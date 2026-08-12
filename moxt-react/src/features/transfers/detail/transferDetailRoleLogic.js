@@ -141,6 +141,7 @@ export function getTransferDetailAccess(transfer, user, business, ownedBusinessI
     ownedBusinessIds,
   )
   const isAdminViewer = ['admin', 'superadmin'].includes(user.role)
+  const canActAsBusiness = isBusinessViewer || isAdminViewer
   const nextBusinessStatus = TRANSFER_TRANSITIONS[transfer.status]
   const claimOnly = isClaimOnlyPhase(transfer)
 
@@ -160,22 +161,24 @@ export function getTransferDetailAccess(transfer, user, business, ownedBusinessI
         TRANSFER_STATUS.DECLINED,
       ].includes(transfer.status),
     canAcceptRequest:
-      !claimOnly && isBusinessViewer && transfer.status === TRANSFER_STATUS.PENDING_ACCEPTANCE,
+      !claimOnly &&
+      canActAsBusiness &&
+      transfer.status === TRANSFER_STATUS.PENDING_ACCEPTANCE,
     canDeclineRequest:
-      !claimOnly && isBusinessViewer && transfer.status === TRANSFER_STATUS.PENDING_ACCEPTANCE,
+      !claimOnly &&
+      canActAsBusiness &&
+      transfer.status === TRANSFER_STATUS.PENDING_ACCEPTANCE,
     canReassignExchanger:
       !claimOnly && isSender && transfer.status === TRANSFER_STATUS.DECLINED,
     canConfirmPaymentReception:
-      !claimOnly && isBusinessViewer && transfer.status === TRANSFER_STATUS.DECLARED,
+      !claimOnly && canActAsBusiness && transfer.status === TRANSFER_STATUS.DECLARED,
     canConfirmPayout:
-      !claimOnly && isBusinessViewer && transfer.status === TRANSFER_STATUS.RECEIVED,
+      !claimOnly && canActAsBusiness && transfer.status === TRANSFER_STATUS.RECEIVED,
     canModerateBusiness:
-      !claimOnly &&
-      isBusinessViewer &&
-      transferNeedsBusinessAction(transfer),
+      !claimOnly && canActAsBusiness && transferNeedsBusinessAction(transfer),
     canUploadBusinessProof:
       !claimOnly &&
-      isBusinessViewer &&
+      canActAsBusiness &&
       nextBusinessStatus === TRANSFER_STATUS.PAID_OUT,
     canDeclareReception: canClientDeclareReception(transfer, isSender),
     // Réclamation disponible dès la création pour les deux parties (hors annulé/expiré).

@@ -1,6 +1,6 @@
 import { MessageAvatar } from './MessageBubble'
 
-export function TypingIndicator({ label, peerName }) {
+export function TypingIndicator({ label, peerName, peerId }) {
   return (
     <div
       className="message-row message-row--spaced"
@@ -8,7 +8,7 @@ export function TypingIndicator({ label, peerName }) {
       aria-live="polite"
       aria-label={label}
     >
-      <MessageAvatar name={peerName} />
+      <MessageAvatar name={peerName} userId={peerId} />
       <div className="message-typing-bubble" aria-hidden="true">
         <span className="message-typing-dot" />
         <span className="message-typing-dot" />

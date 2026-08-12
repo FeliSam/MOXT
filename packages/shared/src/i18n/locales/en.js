@@ -682,6 +682,11 @@ export const en = {
     translateFailedTitle: "Translation failed",
     translateFailed: "Unable to translate this message right now.",
     edit: "Edit",
+    messageActions: "Message actions",
+    report: "Report",
+    reportTitle: "Report this message",
+    reportToastTitle: "Report sent",
+    reportToastBody: "Our team will review this message.",
     reactAria: "React {emoji}",
     reactionAria: "Reaction {emoji}",
     securityNotice: "Verify your contact’s identity and the listing details before any commitment.",
@@ -4176,6 +4181,9 @@ export const en = {
         declinedBody: "The client can choose another exchanger.",
         reassignedTitle: "Transfer reassigned",
         reassignedBody: "New partner: {name}.",
+        actionFailedTitle: "Action failed",
+        actionFailedBody:
+          "The request could not be processed (deadline passed, status already changed, or insufficient permissions). Refresh the page.",
       },
     },
     workflow: {

@@ -541,6 +541,11 @@ export const pt = {
     translateFailedTitle: "Tradução impossível",
     translateFailed: "Não é possível traduzir esta mensagem de momento.",
     edit: "Editar",
+    messageActions: "Ações da mensagem",
+    report: "Denunciar",
+    reportTitle: "Denunciar esta mensagem",
+    reportToastTitle: "Denúncia enviada",
+    reportToastBody: "A nossa equipa vai analisar esta mensagem.",
     reactAria: "Reagir {emoji}",
     reactionAria: "Reação {emoji}",
     securityNotice: "Verifique a identidade do interlocutor e os detalhes do anúncio antes de qualquer compromisso.",
@@ -4173,6 +4178,9 @@ export const pt = {
         declinedBody: "O cliente pode escolher outro cambista.",
         reassignedTitle: "Transferência reatribuída",
         reassignedBody: "Novo parceiro: {name}.",
+        actionFailedTitle: "Ação impossível",
+        actionFailedBody:
+          "Não foi possível processar o pedido (prazo expirado, estado já alterado ou permissões insuficientes). Atualize a página.",
       },
     },
 

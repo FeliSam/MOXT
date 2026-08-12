@@ -1,6 +1,6 @@
 import { FiClock, FiFlag, FiRepeat, FiShield, FiUser } from 'react-icons/fi'
 import { useEffect, useState } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
+import { useDispatch, useSelector, useStore } from 'react-redux'
 import { useLocation, useParams } from 'react-router-dom'
 import { Card } from '../components/ui/Card'
 import { BackButton } from '../components/ui/BackButton'
@@ -48,12 +48,11 @@ import {
 import { useTransferDetail } from '../features/transfers/detail/useTransferDetail'
 import { selectOwnedBusinessIds } from '../features/transfers/transferSelectors'
 import { canApplyModerateTransfer } from '../features/transfers/transferActionUtils'
+import { dispatchTransferAcceptanceAction } from '../features/transfers/transferAcceptanceDispatch'
 import { printReceipt } from '../features/transfers/receiptExport'
 import {
-  acceptTransferRequest,
   cancelTransfer,
   declarePayment,
-  declineTransferRequest,
   expireOverdueTransfers,
   moderateTransfer,
   reassignTransferExchanger,
@@ -83,6 +82,7 @@ export function TransferDetailPage() {
   const [reassignOpen, setReassignOpen] = useState(false)
   const [detailTab, setDetailTab] = useState('suivi')
   const dispatch = useDispatch()
+  const store = useStore()
   const location = useLocation()
   const { transferId } = useParams()
   const user = useSelector((state) => state.auth.user)
@@ -309,34 +309,52 @@ export function TransferDetailPage() {
               onProofSelected={handleProofSelected}
               onBusinessProofSelected={handleBusinessProofSelected}
               onAcceptRequest={() => {
-                dispatch(
-                  acceptTransferRequest({
-                    id: transfer.id,
-                    actorId: user.id,
-                    actorRole: user.role,
-                  }),
-                )
+                const result = dispatchTransferAcceptanceAction(dispatch, store.getState, {
+                  transferId: transfer.id,
+                  actorId: user.id,
+                  actorRole: user.role,
+                  action: 'accept',
+                })
+                if (result.applied) {
+                  dispatch(
+                    addToast({
+                      title: t('transfers.acceptance.toasts.acceptedTitle'),
+                      message: t('transfers.acceptance.toasts.acceptedBody'),
+                      tone: 'success',
+                    }),
+                  )
+                  return
+                }
                 dispatch(
                   addToast({
-                    title: t('transfers.acceptance.toasts.acceptedTitle'),
-                    message: t('transfers.acceptance.toasts.acceptedBody'),
-                    tone: 'success',
+                    title: t('transfers.acceptance.toasts.actionFailedTitle'),
+                    message: t('transfers.acceptance.toasts.actionFailedBody'),
+                    tone: 'error',
                   }),
                 )
               }}
               onDeclineRequest={() => {
-                dispatch(
-                  declineTransferRequest({
-                    id: transfer.id,
-                    actorId: user.id,
-                    actorRole: user.role,
-                  }),
-                )
+                const result = dispatchTransferAcceptanceAction(dispatch, store.getState, {
+                  transferId: transfer.id,
+                  actorId: user.id,
+                  actorRole: user.role,
+                  action: 'decline',
+                })
+                if (result.applied) {
+                  dispatch(
+                    addToast({
+                      title: t('transfers.acceptance.toasts.declinedTitle'),
+                      message: t('transfers.acceptance.toasts.declinedBody'),
+                      tone: 'info',
+                    }),
+                  )
+                  return
+                }
                 dispatch(
                   addToast({
-                    title: t('transfers.acceptance.toasts.declinedTitle'),
-                    message: t('transfers.acceptance.toasts.declinedBody'),
-                    tone: 'info',
+                    title: t('transfers.acceptance.toasts.actionFailedTitle'),
+                    message: t('transfers.acceptance.toasts.actionFailedBody'),
+                    tone: 'error',
                   }),
                 )
               }}

@@ -81,6 +81,7 @@ export function ConversationPanel({
   onReplyToContext,
   onRetry,
   onCopy,
+  onReport,
   editingId,
   onCancelEdit,
   replyToId,
@@ -550,6 +551,7 @@ export function ConversationPanel({
                         {!mine ? (
                           <MessageAvatar
                             name={message.senderName}
+                            userId={message.senderId}
                             avatarUrl={
                               peer?.id && String(message.senderId) === String(peer.id)
                                 ? peerAvatarSrc
@@ -595,6 +597,8 @@ export function ConversationPanel({
                             )
                           }
                           openActions={openActionsId === message.id}
+                          conversationId={active.id}
+                          onReport={onReport}
                           repliedMessage={repliedMessage}
                           repliedContext={repliedContext}
                           showSenderName={showSenderName}
@@ -608,6 +612,7 @@ export function ConversationPanel({
                 {peerTyping ? (
                   <TypingIndicator
                     peerName={peer.name}
+                    peerId={peer.id}
                     label={t('messages.typingAria', { name: peer.name })}
                   />
                 ) : null}

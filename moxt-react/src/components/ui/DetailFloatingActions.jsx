@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FiPlus, FiShare2 } from 'react-icons/fi'
 import { useLanguage } from '../../contexts/useLanguage'
 import { ContactButton } from '../../features/communications/ContactButton'
@@ -15,7 +15,7 @@ import { marketplaceText } from '../../features/marketplace/marketplaceI18n'
  */
 export function DetailFloatingActions({
   entity,
-  floatBottomClass = 'bottom-[calc(5.5rem+env(safe-area-inset-bottom))]',
+  floatBottomClass = 'bottom-[var(--bottom-nav-clearance)]',
   isOwner = false,
   onContact,
   onShared,
@@ -24,11 +24,24 @@ export function DetailFloatingActions({
   relatedPath,
   relatedType,
   title,
+  autoHintMs = 0,
 }) {
   const { t } = useLanguage()
   const mt = (key, vars) => marketplaceText(t, key, vars)
   const [open, setOpen] = useState(false)
   const share = useShareEntity({ title, onShared })
+
+  useEffect(() => {
+    if (!autoHintMs) return undefined
+
+    const openTimer = window.setTimeout(() => setOpen(true), 200)
+    const closeTimer = window.setTimeout(() => setOpen(false), autoHintMs)
+
+    return () => {
+      window.clearTimeout(openTimer)
+      window.clearTimeout(closeTimer)
+    }
+  }, [autoHintMs, relatedId])
 
   // Partage + favori pour tout le monde ; contacter seulement si l'on n'est
   // pas le propriétaire de la fiche.
