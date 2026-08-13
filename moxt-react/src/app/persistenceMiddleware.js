@@ -1,4 +1,5 @@
 import { setAll as resetBusinesses } from '../features/businesses/businessSlice'
+import { sanitizeTransferPaymentVisibility } from '../features/transfers/transferAcceptanceUtils'
 import { setAll as resetCommunications } from '../features/communications/communicationSlice'
 import { clearAppBadge } from '../platform/appBadge'
 import { clearClientCache } from '../services/clearClientCache'
@@ -59,7 +60,10 @@ const persistenceMap = {
     { key: 'moxt-parcels-v1', select: (state) => state.parcels.items },
     { key: 'moxt-parcel-requests-v1', select: (state) => state.parcels.requests },
   ],
-  transfers: [{ key: 'moxt-transfers-v1', select: (state) => state.transfers.items }],
+  transfers: [{
+    key: 'moxt-transfers-v1',
+    select: (state) => state.transfers.items.map(sanitizeTransferPaymentVisibility),
+  }],
 }
 
 // Actions haute fréquence qui ne doivent pas déclencher de persistence

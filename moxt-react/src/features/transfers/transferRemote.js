@@ -95,7 +95,10 @@ export function transferFromRemoteRow(row) {
     receivedProof: base.receivedProof ?? nested.receivedProof ?? null,
     noteToExchanger,
     acceptanceRequired:
-      base.acceptanceRequired === true || nested.acceptanceRequired === true,
+      base.acceptanceRequired === true ||
+      nested.acceptanceRequired === true ||
+      base.status === 'pending_business_acceptance' ||
+      nested.status === 'pending_business_acceptance',
     acceptanceRequestedAt:
       base.acceptanceRequestedAt ?? nested.acceptanceRequestedAt ?? null,
     acceptanceExpiresAt: base.acceptanceExpiresAt ?? nested.acceptanceExpiresAt ?? null,

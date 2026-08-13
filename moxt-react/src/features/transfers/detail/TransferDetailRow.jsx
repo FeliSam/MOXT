@@ -18,10 +18,10 @@ export function TransferDetailRow({ label, value, onCopy }) {
           <button
             type="button"
             onClick={onCopy}
-            className="grid size-7 shrink-0 place-items-center rounded-full text-[var(--app-text-faint)] transition hover:bg-[var(--app-surface-muted)] hover:text-brand-700"
+            className="grid size-7 shrink-0 place-items-center rounded-lg text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)] hover:text-[var(--app-text)]"
             aria-label={t('transfers.detail.copyAria', { label })}
           >
-            <FiCopy className="text-xs" />
+            <FiCopy className="text-sm" aria-hidden />
           </button>
         ) : null}
       </span>

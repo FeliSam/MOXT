@@ -51,6 +51,7 @@ import { matchUserId } from '../features/businesses/businessVisibility'
 import { reviewFromRemoteRow } from '../features/reviews/reviewRemote'
 import { identityFromRemoteRow } from '../features/identity/identityRemote'
 import { transfersFromRemoteRows } from '../features/transfers/transferRemote'
+import { mergeTransferItems } from '../features/transfers/transferRecordUtils'
 import {
   p2pOfferFromRemoteRow,
   p2pOrderFromRemoteRow,
@@ -767,7 +768,7 @@ export const loadAllData = createAsyncThunk(
         requests: mergedRequests,
       }))
       dispatch(setTransfers({
-        items: mergeRemoteItems(
+        items: mergeTransferItems(
           getState().transfers.items,
           transfersFromRemoteRows(mergedTransferRows),
         ),

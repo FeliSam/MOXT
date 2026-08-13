@@ -10,7 +10,7 @@ import reducer, {
   reassignTransferExchanger,
   receiveRemoteTransfer,
 } from './transferSlice'
-import { canRevealPaymentDetails } from './transferAcceptanceUtils'
+import { canRevealPaymentDetails, canClientDeclarePayment } from './transferAcceptanceUtils'
 import { DIRECTIONS, TRANSFER_STATUS } from './transferConfig'
 
 const payload = {
@@ -289,5 +289,60 @@ describe('transferSlice', () => {
     )
     expect(updated.items).toHaveLength(1)
     expect(updated.items[0].status).toBe(TRANSFER_STATUS.DECLARED)
+  })
+
+  it('refuse la declaration de paiement sans acceptation entreprise', () => {
+    const created = reducer(
+      { items: [] },
+      createTransfer({
+        ...payload,
+        exchanger: {
+          ...payload.exchanger,
+          transferAcceptanceRequired: true,
+          paymentDetails: { phone: '97000000' },
+        },
+      }),
+    )
+    const id = created.items[0].id
+    const tampered = {
+      items: [
+        {
+          ...created.items[0],
+          status: TRANSFER_STATUS.PENDING,
+          exchanger: {
+            ...created.items[0].exchanger,
+            paymentDetails: { phone: '97000000' },
+          },
+        },
+      ],
+    }
+    expect(canRevealPaymentDetails(tampered.items[0])).toBe(false)
+    expect(canClientDeclarePayment(tampered.items[0])).toBe(false)
+
+    const declared = reducer(
+      tampered,
+      declarePayment({ id, actorId: 'u1', proof: { name: 'preuve.pdf' } }),
+    )
+    expect(declared.items[0].status).toBe(TRANSFER_STATUS.PENDING)
+  })
+
+  it('masque les coordonnees distantes tant que l acceptation est en attente', () => {
+    const remote = {
+      id: 'MXT-REMOTE2',
+      userId: 'client-1',
+      businessId: 'EXC-1',
+      businessOwnerId: 'business-owner',
+      status: TRANSFER_STATUS.PENDING_ACCEPTANCE,
+      acceptanceRequired: true,
+      acceptanceResolvedAt: null,
+      exchanger: {
+        name: 'MOXT Change',
+        paymentAccount: 'Secret account',
+        paymentDetails: { phone: '+7900' },
+      },
+    }
+    const added = reducer({ items: [] }, receiveRemoteTransfer(remote))
+    expect(added.items[0].exchanger.paymentDetails).toBeNull()
+    expect(added.items[0].exchanger.paymentAccount).toBeNull()
   })
 })

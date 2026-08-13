@@ -1,4 +1,5 @@
 import { TRANSFER_STATUS, TRANSFER_TRANSITIONS } from '../transferConfig'
+import { canClientDeclarePayment } from '../transferAcceptanceUtils'
 import { transferNextStepConfig } from './transferDetailConfig'
 import {
   canClientDeclareReception,
@@ -150,7 +151,7 @@ export function getTransferDetailAccess(transfer, user, business, ownedBusinessI
     isBusinessViewer,
     isAdminViewer,
     isClaimOnly: claimOnly,
-    canDeclare: !claimOnly && isSender && transfer.status === TRANSFER_STATUS.PENDING,
+    canDeclare: !claimOnly && isSender && canClientDeclarePayment(transfer),
     canCancel:
       !claimOnly &&
       isSender &&

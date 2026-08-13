@@ -3894,6 +3894,14 @@ input[type='file'] {
     radial-gradient(ellipse at 80% 20%, rgba(36,93,232,0.05) 0%, transparent 50%);
 }
 
+/* Coordonnées masquées tant que le partenaire n'a pas accepté le transfert. */
+.transfer-payment-sensitive-blur {
+  filter: blur(6px);
+  -webkit-filter: blur(6px);
+  user-select: none;
+  pointer-events: none;
+}
+
 .dark .theme-finance .finance-hero-glow {
   background:
     radial-gradient(ellipse at 20% 0%, rgba(85,221,191,0.1) 0%, transparent 55%),

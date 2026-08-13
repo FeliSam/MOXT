@@ -586,6 +586,9 @@ export function NewTransferPage() {
                 direction={formik.values.direction}
                 originCountry={originCountry}
                 clientNote={formik.values.noteToExchanger}
+                blurPaymentIdentifier={
+                  selectedExchangerBusiness?.transferAcceptanceRequired === true
+                }
               />
             ) : null}
 

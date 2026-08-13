@@ -1,6 +1,5 @@
 import { FiAlertCircle, FiCheck, FiCopy, FiCreditCard } from 'react-icons/fi'
 import { Badge } from '../../components/ui/Badge'
-import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { useLanguage } from '../../contexts/useLanguage'
 import { TransferClientNote } from './TransferClientNote'
@@ -19,6 +18,7 @@ export function TransferReceivingAccountCard({
   className = '',
   compact = false,
   clientNote = null,
+  blurPaymentIdentifier = false,
 }) {
   const { t } = useLanguage()
   const slotMeta = transferAccountSlotMeta(receivingSlotForDirection(direction), originCountry)
@@ -96,6 +96,12 @@ export function TransferReceivingAccountCard({
         <InfoRow
           label={t('transfers.receivingAccount.numberOrAccount')}
           value={account.phone || account.accountNumber}
+          blurValue={blurPaymentIdentifier}
+          blurHint={t('transfers.acceptance.paymentHidden')}
+          onCopy={
+            copyValue && onCopy && !blurPaymentIdentifier ? () => onCopy(copyValue) : undefined
+          }
+          copyLabel={t('transfers.receivingAccount.copyDetails')}
         />
         {account.bankName ? (
           <InfoRow label={t('transfers.receivingAccount.bank')} value={account.bankName} />
@@ -107,30 +113,39 @@ export function TransferReceivingAccountCard({
         ) : null}
       </div>
 
-      {copyValue && onCopy ? (
-        <Button variant="secondary" icon={FiCopy} className="mt-4" onClick={() => onCopy(copyValue)}>
-          {t('transfers.receivingAccount.copyDetails')}
-        </Button>
-      ) : null}
-
       <TransferClientNote note={clientNote} className="mt-4" compact={compact} />
     </Card>
   )
 }
 
-function InfoRow({ label, value }) {
+function InfoRow({ label, value, blurValue = false, blurHint = '', onCopy = null, copyLabel = '' }) {
   if (!value) return null
   return (
     <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-2 border-b border-[var(--app-border)] py-2 last:border-0">
       <span className="shrink-0 text-xs font-bold uppercase tracking-wide text-[var(--app-text-faint)]">
         {label}
       </span>
-      <strong
-        className="min-w-0 max-w-full break-words text-right text-sm [overflow-wrap:anywhere]"
-        title={String(value)}
-      >
-        {value}
-      </strong>
+      <div className="flex min-w-0 max-w-full items-center justify-end gap-1">
+        <strong
+          className={`min-w-0 max-w-full break-words text-right text-sm [overflow-wrap:anywhere] ${
+            blurValue ? 'transfer-payment-sensitive-blur' : ''
+          }`}
+          title={blurValue ? blurHint || undefined : String(value)}
+          aria-hidden={blurValue ? true : undefined}
+        >
+          {value}
+        </strong>
+        {onCopy ? (
+          <button
+            type="button"
+            onClick={onCopy}
+            aria-label={copyLabel || undefined}
+            className="grid size-7 shrink-0 place-items-center rounded-lg text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)] hover:text-[var(--app-text)]"
+          >
+            <FiCopy className="text-sm" aria-hidden />
+          </button>
+        ) : null}
+      </div>
     </div>
   )
 }

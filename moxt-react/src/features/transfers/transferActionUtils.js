@@ -1,3 +1,4 @@
+import { canClientDeclarePayment } from './transferAcceptanceUtils'
 import { TRANSFER_STATUS, TRANSFER_TRANSITIONS } from './transferConfig'
 
 const DONE_STATUSES = new Set([
@@ -68,7 +69,8 @@ export function transferNeedsBusinessAction(transfer) {
 
 export function transferNeedsClientAction(transfer) {
   if (!transfer || isClaimOnlyPhase(transfer)) return false
-  if (transfer.status === TRANSFER_STATUS.PENDING) return true
+  if (transfer.status === TRANSFER_STATUS.PENDING_ACCEPTANCE) return true
+  if (transfer.status === TRANSFER_STATUS.PENDING) return canClientDeclarePayment(transfer)
   if (transfer.status === TRANSFER_STATUS.DECLINED) return true
   return (
     transfer.status === TRANSFER_STATUS.PAID_OUT &&

@@ -3,12 +3,24 @@ import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { downloadReceiptImage, shareReceipt } from '../receiptExport'
+import { canRevealPaymentDetails } from '../transferAcceptanceUtils'
 import { formatMoney, getTransferPricing } from '../transferUtils'
 import { TransferDetailRow } from './TransferDetailRow'
 
-export function TransferDetailFinancialCard({ onCopyReference, onDownloadReceipt, transfer }) {
+export function TransferDetailFinancialCard({
+  onCopyPaymentNumber,
+  onCopyReference,
+  onDownloadReceipt,
+  transfer,
+}) {
   const { t } = useLanguage()
   const pricing = getTransferPricing(transfer)
+  const showPaymentCoords = canRevealPaymentDetails(transfer)
+  const paymentNumber = showPaymentCoords
+    ? transfer.exchanger?.paymentDetails?.phone ||
+      transfer.exchanger?.paymentDetails?.accountNumber ||
+      null
+    : null
 
   return (
     <Card
@@ -47,10 +59,18 @@ export function TransferDetailFinancialCard({ onCopyReference, onDownloadReceipt
         <TransferDetailRow
           label={t('transfers.detail.financial.paymentDetails')}
           value={
-            transfer.exchanger?.paymentAccount || t('transfers.detail.financial.confirmWithBusiness')
+            showPaymentCoords
+              ? transfer.exchanger?.paymentAccount ||
+                t('transfers.detail.financial.confirmWithBusiness')
+              : t('transfers.acceptance.paymentHidden')
+          }
+          onCopy={
+            paymentNumber && onCopyPaymentNumber
+              ? () => onCopyPaymentNumber(paymentNumber)
+              : undefined
           }
         />
-        {transfer.exchanger?.paymentDetails?.country ? (
+        {showPaymentCoords && transfer.exchanger?.paymentDetails?.country ? (
           <TransferDetailRow
             label={t('transfers.detail.financial.receivingCountry')}
             value={transfer.exchanger.paymentDetails.country}

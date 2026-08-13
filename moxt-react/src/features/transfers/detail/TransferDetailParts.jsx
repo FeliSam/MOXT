@@ -1,4 +1,4 @@
-import { FiCheck, FiHeart, FiUser } from 'react-icons/fi'
+import { FiCheck, FiCopy, FiHeart, FiUser } from 'react-icons/fi'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { getTransferProgressState } from '../transferProgressUtils'
 
@@ -67,6 +67,7 @@ export function TransferProgressStepper({ activeIndex, steps: stepsProp, transfe
 
 export function TransferParticipantCard({
   isFavorite = false,
+  onCopyPhone = null,
   onToggleFavorite,
   party,
   title,
@@ -113,9 +114,26 @@ export function TransferParticipantCard({
           </button>
         ) : null}
       </div>
-      <span className="mt-3 block truncate text-xs text-[var(--app-text-muted)]" title={party.phone}>
-        {party.phone}
-      </span>
+      {party.phone ? (
+        <div className="mt-3 flex min-w-0 items-center gap-1">
+          <span
+            className="min-w-0 flex-1 truncate text-xs text-[var(--app-text-muted)]"
+            title={party.phone}
+          >
+            {party.phone}
+          </span>
+          {onCopyPhone ? (
+            <button
+              type="button"
+              onClick={() => onCopyPhone(party.phone)}
+              aria-label={t('transfers.receivingAccount.copyDetails')}
+              className="grid size-7 shrink-0 place-items-center rounded-lg text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]"
+            >
+              <FiCopy className="text-sm" aria-hidden />
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       <span className="mt-1 block truncate text-xs text-[var(--app-text-muted)]" title={party.method}>
         {party.method}
       </span>

@@ -24,24 +24,54 @@ export function needsAcceptanceResolution(transfer) {
   return transfer?.status === TRANSFER_STATUS.DECLINED
 }
 
+/** Vrai tant que la pré-acceptation entreprise n'a pas été tranchée (acceptation ou refus). */
+export function isBusinessAcceptanceBlocking(transfer) {
+  if (!transfer?.acceptanceRequired) return false
+  return !transfer.acceptanceResolvedAt
+}
+
+function hasUnresolvedPendingPaymentDetails(transfer) {
+  if (transfer?.acceptanceResolvedAt) return false
+  return Boolean(transfer?.pendingPaymentDetails || transfer?.pendingPaymentAccount)
+}
+
 /** Coordonnées de versement masquées tant que l'échangeur n'a pas accepté. */
 export function canRevealPaymentDetails(transfer) {
   if (!transfer) return false
   if (
-    transfer.status === TRANSFER_STATUS.PENDING_ACCEPTANCE ||
-    transfer.status === TRANSFER_STATUS.DECLINED
+    [
+      TRANSFER_STATUS.PENDING_ACCEPTANCE,
+      TRANSFER_STATUS.DECLINED,
+      TRANSFER_STATUS.CANCELLED,
+      TRANSFER_STATUS.EXPIRED,
+    ].includes(transfer.status)
   ) {
     return false
   }
-  if (
-    transfer.acceptanceRequired &&
-    !transfer.acceptanceResolvedAt &&
-    transfer.status !== TRANSFER_STATUS.PENDING
-  ) {
-    // Filet de sécurité pour les états ambigus.
-    return ![TRANSFER_STATUS.CANCELLED, TRANSFER_STATUS.EXPIRED].includes(transfer.status)
+  if (isBusinessAcceptanceBlocking(transfer)) {
+    return false
+  }
+  if (hasUnresolvedPendingPaymentDetails(transfer)) {
+    return false
   }
   return true
+}
+
+/** Compte destinataire (versement entreprise) visible uniquement après réception du paiement client. */
+export function canShowPayoutRecipientAccount(transfer) {
+  if (!transfer || !canRevealPaymentDetails(transfer)) return false
+  return [
+    TRANSFER_STATUS.RECEIVED,
+    TRANSFER_STATUS.PROCESSING,
+    TRANSFER_STATUS.PAID_OUT,
+    TRANSFER_STATUS.COMPLETED,
+  ].includes(transfer.status)
+}
+
+/** Le client peut déclarer un paiement uniquement après acceptation (si requise). */
+export function canClientDeclarePayment(transfer) {
+  if (!transfer || transfer.status !== TRANSFER_STATUS.PENDING) return false
+  return canRevealPaymentDetails(transfer)
 }
 
 export function acceptanceDeadlineReached(transfer, now = Date.now()) {
@@ -55,5 +85,14 @@ export function stripPaymentDetailsFromExchanger(exchanger) {
     ...exchanger,
     paymentAccount: null,
     paymentDetails: null,
+  }
+}
+
+/** Masque les coordonnées côté client si la pré-acceptation bloque encore le paiement. */
+export function sanitizeTransferPaymentVisibility(transfer) {
+  if (!transfer || canRevealPaymentDetails(transfer)) return transfer
+  return {
+    ...transfer,
+    exchanger: stripPaymentDetailsFromExchanger(transfer.exchanger),
   }
 }

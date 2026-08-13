@@ -7,36 +7,16 @@ import {
 import {
   buildAcceptanceWindow,
   buildPaymentDeadline,
+  sanitizeTransferPaymentVisibility,
   stripPaymentDetailsFromExchanger,
 } from './transferAcceptanceUtils'
+import { mergeTransferRecord } from './transferRecordUtils'
 import { DIRECTIONS, TRANSFER_STATUS, TRANSFER_TRANSITIONS } from './transferConfig'
 import { transferStorage } from './transferStorage'
 import { calculateTransfer } from './transferUtils'
 
 const initialState = {
-  items: transferStorage.read(),
-}
-
-/** Fusionne un transfert distant sans écraser les champs locaux avec `undefined`. */
-function mergeTransferRecord(prev, next) {
-  const merged = { ...prev }
-  for (const [key, value] of Object.entries(next || {})) {
-    if (value !== undefined) merged[key] = value
-  }
-  // Conserver les preuves locales si le refresh « light » ne les renvoie pas.
-  if (next?.paymentProof == null && prev?.paymentProof != null) {
-    merged.paymentProof = prev.paymentProof
-  }
-  if (next?.businessProof == null && prev?.businessProof != null) {
-    merged.businessProof = prev.businessProof
-  }
-  if (next?.receivedProof == null && prev?.receivedProof != null) {
-    merged.receivedProof = prev.receivedProof
-  }
-  if (next?.noteToExchanger == null && prev?.noteToExchanger != null) {
-    merged.noteToExchanger = prev.noteToExchanger
-  }
-  return merged
+  items: transferStorage.read().map(sanitizeTransferPaymentVisibility),
 }
 
 function pushTimeline(transfer, entry) {
@@ -105,12 +85,20 @@ const transferSlice = createSlice({
   initialState,
   reducers: {
     setAll(state, action) {
-      Object.assign(state, action.payload)
+      const payload = action.payload || {}
+      if (Array.isArray(payload.items)) {
+        Object.assign(state, {
+          ...payload,
+          items: payload.items.map(sanitizeTransferPaymentVisibility),
+        })
+        return
+      }
+      Object.assign(state, payload)
     },
     createTransfer: {
       reducer(state, action) {
         if (action.payload.blocked) return
-        state.items.unshift(action.payload)
+        state.items.unshift(sanitizeTransferPaymentVisibility(action.payload))
       },
       prepare({
         amount,
@@ -334,6 +322,7 @@ const transferSlice = createSlice({
         typeof action.payload === 'string' ? { id: action.payload, proof: null } : action.payload
       const transfer = state.items.find((item) => item.id === payload.id)
       if (!transfer || transfer.status !== TRANSFER_STATUS.PENDING) return
+      if (transfer.acceptanceRequired === true && !transfer.acceptanceResolvedAt) return
       if (!canActorPerformClientTransferAction(transfer, payload.actorId)) return
       transfer.status = TRANSFER_STATUS.DECLARED
       transfer.paymentProof = payload.proof || null
@@ -479,11 +468,15 @@ const transferSlice = createSlice({
       })
     },
     receiveRemoteTransfer(state, action) {
-      const transfer = action.payload
+      const transfer = sanitizeTransferPaymentVisibility(action.payload)
       if (!transfer?.id || transfer.blocked) return
       const index = state.items.findIndex((item) => item.id === transfer.id)
       if (index === -1) state.items.unshift(transfer)
-      else state.items[index] = mergeTransferRecord(state.items[index], transfer)
+      else {
+        state.items[index] = sanitizeTransferPaymentVisibility(
+          mergeTransferRecord(state.items[index], transfer),
+        )
+      }
     },
     receiveRemoteTransfers(state, action) {
       const list = Array.isArray(action.payload) ? action.payload : []
@@ -492,7 +485,12 @@ const transferSlice = createSlice({
       for (const transfer of list) {
         if (!transfer?.id || transfer.blocked) continue
         const prev = byId.get(transfer.id)
-        byId.set(transfer.id, prev ? mergeTransferRecord(prev, transfer) : transfer)
+        byId.set(
+          transfer.id,
+          sanitizeTransferPaymentVisibility(
+            prev ? mergeTransferRecord(prev, transfer) : transfer,
+          ),
+        )
       }
       const next = [...byId.values()]
       next.sort((a, b) =>

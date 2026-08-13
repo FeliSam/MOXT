@@ -15,7 +15,7 @@ import {
 } from '../transferProfileFavorites'
 import { TransferParticipantCard } from './TransferDetailParts'
 
-export function TransferDetailParticipantsSection({ transfer }) {
+export function TransferDetailParticipantsSection({ enablePhoneCopy = false, transfer }) {
   const { t } = useLanguage()
   const dispatch = useDispatch()
   const user = useSelector((state) => state.auth.user)
@@ -23,6 +23,22 @@ export function TransferDetailParticipantsSection({ transfer }) {
   const originCountry = transfer.originCountry || user?.originCountry || 'BJ'
   const destinationCountry =
     directionInfo(transfer.direction, originCountry).destinationCountry || originCountry
+
+  function copyPhone(phone) {
+    if (!phone) return
+    navigator.clipboard?.writeText(phone)
+    dispatch(
+      addToast({
+        title: t('transfers.detail.copiedTitle'),
+        message: t('transfers.detail.copiedMessage', {
+          label: t('transfers.detail.copy.coordinates'),
+        }),
+        tone: 'info',
+      }),
+    )
+  }
+
+  const onCopyPhone = enablePhoneCopy ? copyPhone : null
 
   function toggleFavorite(party, country) {
     if (!user?.id || !party?.phone) return
@@ -93,12 +109,14 @@ export function TransferDetailParticipantsSection({ transfer }) {
           title={t('transfers.detail.participants.sender')}
           party={transfer.sender}
           isFavorite={Boolean(senderFavorite)}
+          onCopyPhone={onCopyPhone}
           onToggleFavorite={() => toggleFavorite(transfer.sender, originCountry)}
         />
         <TransferParticipantCard
           title={t('transfers.detail.participants.recipient')}
           party={transfer.recipient}
           isFavorite={Boolean(recipientFavorite)}
+          onCopyPhone={onCopyPhone}
           onToggleFavorite={() => toggleFavorite(transfer.recipient, destinationCountry)}
         />
       </div>

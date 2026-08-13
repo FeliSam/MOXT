@@ -14,7 +14,9 @@ import { useLanguage } from '../../../contexts/useLanguage'
 import { ContactButton } from '../../communications/ContactButton'
 import { TransferContactMenu } from './TransferContactMenu'
 import { TransferClientNote } from '../TransferClientNote'
+import { TransferReceivingAccountInline } from '../TransferReceivingAccountInline'
 import { TransferRecipientAccountCard } from '../TransferRecipientAccountCard'
+import { canRevealPaymentDetails } from '../transferAcceptanceUtils'
 import { TransferStatusBadge } from '../TransferStatusBadge'
 import { TRANSFER_STATUS } from '../transferConfig'
 import { formatDate } from '../transferUtils'
@@ -42,6 +44,7 @@ export function TransferWorkflowPanel({
   onBusinessProofSelected,
   onCancel,
   onCompleteBusinessStep,
+  onCopyPaymentValue,
   onDeclarePayment,
   onProofSelected,
   proof,
@@ -55,6 +58,9 @@ export function TransferWorkflowPanel({
     ? t(currentAction.descriptionKey)
     : currentAction?.description
   const clientNote = transfer.noteToExchanger
+  const receivingAccount = canRevealPaymentDetails(transfer)
+    ? transfer.exchanger?.paymentDetails || null
+    : null
 
   function ask(label, action) {
     confirmAction({
@@ -174,7 +180,7 @@ export function TransferWorkflowPanel({
         {currentAction?.type === 'confirm_payout' ? (
           <ActionZone description={actionDescription} title={actionTitle}>
             <TransferClientNote note={clientNote} />
-            <TransferRecipientAccountCard transfer={transfer} />
+            <TransferRecipientAccountCard transfer={transfer} onCopyPhone={onCopyPaymentValue} />
             <label className="grid cursor-pointer gap-2 rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3">
               <span className="flex items-center gap-2 text-sm font-bold">
                 <FiUpload className="text-brand-700 dark:text-brand-300" />
@@ -223,6 +229,14 @@ export function TransferWorkflowPanel({
                 : actionDescription
             }
             title={actionTitle}
+            leading={
+              receivingAccount ? (
+                <TransferReceivingAccountInline
+                  account={receivingAccount}
+                  onCopy={onCopyPaymentValue}
+                />
+              ) : null
+            }
           >
             <label className="grid min-w-0 cursor-pointer gap-2 overflow-hidden rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3">
               <span className="flex items-center gap-2 text-sm font-bold">
@@ -319,10 +333,11 @@ export function TransferWorkflowPanel({
   )
 }
 
-function ActionZone({ children, description, title }) {
+function ActionZone({ children, description, leading = null, title }) {
   const { t } = useLanguage()
   return (
     <div className="min-w-0 overflow-hidden rounded-2xl border-2 border-brand-300 bg-brand-50/30 p-4 dark:border-brand-700 dark:bg-brand-950/20">
+      {leading ? <div className="mb-4 min-w-0">{leading}</div> : null}
       <p className="text-xs font-black uppercase tracking-wide text-brand-700 dark:text-brand-300">
         {t('transfers.workflow.actionRequired')}
       </p>

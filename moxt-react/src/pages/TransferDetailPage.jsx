@@ -35,7 +35,7 @@ import { TransferDetailTimelineCard } from '../features/transfers/detail/Transfe
 import { TransferReceivingAccountCard } from '../features/transfers/TransferReceivingAccountCard'
 import { TransferRecipientAccountCard } from '../features/transfers/TransferRecipientAccountCard'
 import { ReassignExchangerPicker } from '../features/transfers/ReassignExchangerPicker'
-import { canRevealPaymentDetails } from '../features/transfers/transferAcceptanceUtils'
+import { canRevealPaymentDetails, canShowPayoutRecipientAccount } from '../features/transfers/transferAcceptanceUtils'
 import { TRANSFER_STATUS } from '../features/transfers/transferConfig'
 import {
   getTransferDetailAccess,
@@ -359,6 +359,7 @@ export function TransferDetailPage() {
                 )
               }}
               onReassignClick={() => setReassignOpen(true)}
+              onCopyPaymentValue={(value) => copyValue(value, t('transfers.detail.copy.coordinates'))}
               onDeclarePayment={() => {
                 if (!access.canDeclare) return
                 dispatch(
@@ -472,8 +473,11 @@ export function TransferDetailPage() {
               </Card>
             )
           ) : null}
-          {access.isBusinessViewer ? (
-            <TransferRecipientAccountCard transfer={transfer} />
+          {access.isBusinessViewer && canShowPayoutRecipientAccount(transfer) ? (
+            <TransferRecipientAccountCard
+              transfer={transfer}
+              onCopyPhone={(value) => copyValue(value, t('transfers.detail.copy.coordinates'))}
+            />
           ) : null}
           {access.canOpenClaim ? (
             <div className="flex justify-start">
@@ -504,6 +508,7 @@ export function TransferDetailPage() {
           <TransferDetailFinancialCard
             transfer={transfer}
             onCopyReference={() => copyValue(transfer.id, t('transfers.detail.copy.reference'))}
+            onCopyPaymentNumber={(value) => copyValue(value, t('transfers.detail.copy.coordinates'))}
             onDownloadReceipt={downloadReceipt}
           />
         </div>
@@ -515,9 +520,13 @@ export function TransferDetailPage() {
             <TransferDetailFinancialCard
               transfer={transfer}
               onCopyReference={() => copyValue(transfer.id, t('transfers.detail.copy.reference'))}
+              onCopyPaymentNumber={(value) => copyValue(value, t('transfers.detail.copy.coordinates'))}
               onDownloadReceipt={downloadReceipt}
             />
-            <TransferDetailParticipantsSection transfer={transfer} />
+            <TransferDetailParticipantsSection
+              enablePhoneCopy={access.isBusinessViewer}
+              transfer={transfer}
+            />
             <TransferDetailTimelineCard transfer={transfer} />
             <TransferProofsSection transfer={transfer} />
           </div>
