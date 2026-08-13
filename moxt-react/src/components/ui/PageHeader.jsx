@@ -1,6 +1,6 @@
 export function PageHeader({ eyebrow, title, description, actions, stats }) {
   return (
-    <header className="flex min-w-0 max-w-full flex-col gap-5 overflow-visible rounded-[var(--radius-card-lg)] border border-[var(--app-border)] bg-[var(--app-surface)]/80 p-5 shadow-[var(--shadow-card)] backdrop-blur-xl sm:p-7">
+    <header className="flex min-w-0 max-w-full flex-col gap-4 overflow-visible rounded-[var(--radius-card-lg)] border border-[var(--app-border)] bg-[var(--app-surface)]/80 p-4 shadow-[var(--shadow-card)] backdrop-blur-xl sm:gap-5 sm:p-7">
       <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           {eyebrow ? (
@@ -8,19 +8,17 @@ export function PageHeader({ eyebrow, title, description, actions, stats }) {
               {eyebrow}
             </p>
           ) : null}
-          <h1 className="font-display break-words text-2xl font-extrabold tracking-[-0.02em] text-[var(--app-text)] sm:text-4xl">
+          <h1 className="font-display break-words text-xl font-extrabold tracking-[-0.02em] text-[var(--app-text)] sm:text-4xl">
             {title}
           </h1>
           {description ? (
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--app-text-muted)]">
+            <p className="mt-2 max-w-2xl break-words text-sm leading-6 text-[var(--app-text-muted)]">
               {description}
             </p>
           ) : null}
         </div>
         {actions ? (
-          <div className="relative z-20 flex min-w-0 flex-wrap items-center gap-2 lg:shrink-0 lg:justify-end">
-            {actions}
-          </div>
+          <div className="relative z-20 w-full min-w-0 lg:w-auto lg:shrink-0">{actions}</div>
         ) : null}
       </div>
 

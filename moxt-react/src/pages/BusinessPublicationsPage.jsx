@@ -234,7 +234,7 @@ export function BusinessPublicationsPage() {
     : ''
 
   return (
-    <div className="grid gap-7">
+    <div className="grid min-w-0 max-w-full gap-5 overflow-x-clip sm:gap-7">
       <PageHeader
         eyebrow={bt('businesses.publications.eyebrow')}
         title={business.name}
@@ -243,7 +243,7 @@ export function BusinessPublicationsPage() {
           location: descriptionLocation,
         })}
         actions={
-          <div className="flex flex-wrap gap-3">
+          <div className="grid w-full min-w-0 grid-cols-1 gap-2 xs:grid-cols-2 sm:flex sm:flex-wrap sm:items-center [&_a]:min-w-0 [&_a]:w-full sm:[&_a]:w-auto [&_button]:w-full sm:[&_button]:w-auto">
             {guestMode ? (
               <Link to="/discover">
                 <Button variant="secondary" icon={FiArrowLeft}>
@@ -359,7 +359,7 @@ export function BusinessPublicationsPage() {
                 ))}
               </div>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {visible.listing.map((listing) => (
                   <MarketplaceListingCard
                     key={listing.id}

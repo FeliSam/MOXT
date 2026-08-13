@@ -272,7 +272,7 @@ export function UserPublicationsPage() {
         : p3('publications.user.description.noPublications')
 
   return (
-    <div className="grid gap-7">
+    <div className="grid min-w-0 max-w-full gap-5 overflow-x-clip sm:gap-7">
       <PageHeader
         eyebrow={p3('publications.user.eyebrow')}
         title={
@@ -282,7 +282,7 @@ export function UserPublicationsPage() {
         }
         description={pageDescription}
         actions={
-          <div className="relative z-30 flex min-w-0 flex-wrap items-center justify-end gap-2">
+          <div className="grid w-full min-w-0 grid-cols-1 gap-2 xs:grid-cols-2 sm:flex sm:flex-wrap sm:items-center [&_a]:min-w-0 [&_a]:w-full sm:[&_a]:w-auto [&_button]:w-full sm:[&_button]:w-auto">
             {!isOwner && !guestMode ? (
               <>
                 <ContactButton

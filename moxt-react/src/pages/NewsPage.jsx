@@ -89,7 +89,7 @@ export function NewsPage() {
   }, [highlightPostId, filtered, searchParams, setSearchParams])
 
   return (
-    <div className="grid gap-7">
+    <div className="grid min-w-0 max-w-full gap-7 overflow-x-clip">
       <PageHeader
         title={p3('news.title')}
         stats={[{ label: p3('news.stats.publications'), value: publishedPosts.length }]}
@@ -103,7 +103,7 @@ export function NewsPage() {
       />
 
       {/* Statuts + filtres + fil centré, une publication par ligne */}
-      <div className="mx-auto grid w-full max-w-3xl gap-5">
+      <div className="mx-auto grid w-full min-w-0 max-w-3xl gap-5">
         <StatusRail />
 
         <div className="flex items-center gap-6 overflow-x-auto border-b border-[var(--app-border)] scrollbar-hidden">
@@ -127,13 +127,15 @@ export function NewsPage() {
         </div>
 
         {filtered.length > 0 ? (
-          <div className="flex flex-col gap-5 sm:gap-6">
+          <div className="flex min-w-0 flex-col gap-5 sm:gap-6">
             {filtered.map((post) => (
               <div
                 key={post.id}
                 id={`news-post-${post.id}`}
                 className={
-                  highlightPostId === post.id ? 'news-post-highlight rounded-2xl' : undefined
+                  highlightPostId === post.id
+                    ? 'news-post-highlight min-w-0 max-w-full rounded-2xl'
+                    : 'min-w-0 max-w-full'
                 }
               >
                 <FeedPostCard post={post} />

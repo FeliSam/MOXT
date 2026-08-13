@@ -58,13 +58,13 @@ function ExpandableFeedMessage({ text }) {
   }, [text, expanded])
 
   return (
-    <div className="feed-post-message">
+    <div className="feed-post-message min-w-0 max-w-full overflow-x-clip">
       <LinkifiedText
         ref={textRef}
         as="p"
         text={text}
         preserveWhitespace="pre-line"
-        className={`text-sm leading-relaxed text-[var(--app-text)] sm:text-[0.9375rem] sm:leading-7 ${
+        className={`min-w-0 max-w-full text-sm leading-relaxed text-[var(--app-text)] [overflow-wrap:anywhere] sm:text-[0.9375rem] sm:leading-7 ${
           expanded ? '' : 'line-clamp-6'
         }`}
       />
@@ -221,10 +221,10 @@ export function FeedPostCard({ post }) {
   }
 
   return (
-    <article className="h-auto w-full overflow-hidden rounded-3xl bg-[var(--app-surface)] shadow-[var(--shadow-card)]">
+    <article className="h-auto w-full min-w-0 max-w-full overflow-x-clip rounded-3xl bg-[var(--app-surface)] shadow-[var(--shadow-card)]">
       {/* Header */}
-      <div className="flex items-start justify-between gap-3 p-4 sm:p-5">
-        <div className="flex items-center gap-3">
+      <div className="flex min-w-0 items-start justify-between gap-2 p-4 sm:gap-3 sm:p-5">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
           <Link to={`/users/${post.authorId}/publications`} className="shrink-0">
             {post.authorAvatarUrl ? (
               <img src={post.authorAvatarUrl} alt="" className="size-10 rounded-full object-cover" />
@@ -234,19 +234,22 @@ export function FeedPostCard({ post }) {
               </span>
             )}
           </Link>
-          <div>
-            <Link to={`/users/${post.authorId}/publications`} className="hover:underline">
+          <div className="min-w-0">
+            <Link
+              to={`/users/${post.authorId}/publications`}
+              className="block min-w-0 hover:underline"
+            >
               <EntityVerifiedName
                 as="p"
                 name={post.authorName}
                 userId={post.authorId}
-                className="text-sm font-bold leading-tight"
+                className="max-w-full text-sm font-bold leading-tight"
               />
             </Link>
-            <p className="text-xs text-[var(--app-text-muted)]">{formatDate(post.createdAt)}</p>
+            <p className="truncate text-xs text-[var(--app-text-muted)]">{formatDate(post.createdAt)}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           {pinned ? (
             <span
               className="grid size-8 place-items-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300"
@@ -315,7 +318,7 @@ export function FeedPostCard({ post }) {
       </div>
 
       {/* Message */}
-      <div className="px-4 pb-3 sm:px-5 sm:pb-4">
+      <div className="min-w-0 overflow-x-clip px-4 pb-3 sm:px-5 sm:pb-4">
         {editing ? (
           <div className="grid gap-2">
             <textarea
@@ -425,7 +428,7 @@ export function FeedPostCard({ post }) {
                       </span>
                     )}
                   </Link>
-                  <div className="flex-1 rounded-2xl bg-[var(--app-surface-muted)] px-3 py-2">
+                  <div className="min-w-0 flex-1 rounded-2xl bg-[var(--app-surface-muted)] px-3 py-2">
                     <Link to={`/users/${comment.authorId}/publications`} className="hover:underline">
                       <EntityVerifiedName
                         as="p"
@@ -434,7 +437,12 @@ export function FeedPostCard({ post }) {
                         className="text-xs font-bold"
                       />
                     </Link>
-                    <LinkifiedText as="p" text={comment.text} preserveWhitespace="pre-line" className="text-sm mt-0.5" />
+                    <LinkifiedText
+                      as="p"
+                      text={comment.text}
+                      preserveWhitespace="pre-line"
+                      className="mt-0.5 min-w-0 max-w-full text-sm [overflow-wrap:anywhere]"
+                    />
                   </div>
                   {(user?.id === comment.authorId || isAuthor || isModerator) && comment.id ? (
                     <button

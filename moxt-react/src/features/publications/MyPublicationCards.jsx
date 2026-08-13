@@ -53,10 +53,10 @@ function PublicationCardShell({
   }
 
   return (
-    <Card className={`overflow-hidden p-0 ${archived ? archivedPublicationCardClass : ''}`}>
-      <div className="flex flex-col gap-0 lg:flex-row">
+    <Card className={`min-w-0 overflow-hidden p-0 ${archived ? archivedPublicationCardClass : ''}`}>
+      <div className="flex min-w-0 flex-col gap-0 lg:flex-row">
         <div
-          className={`relative flex h-40 w-full shrink-0 items-center justify-center overflow-hidden bg-gradient-to-br lg:h-auto lg:w-48 ${tone} ${
+          className={`relative flex h-36 w-full shrink-0 items-center justify-center overflow-hidden bg-gradient-to-br sm:h-40 lg:h-auto lg:w-48 ${tone} ${
             archived ? 'opacity-75 saturate-[0.85]' : ''
           }`}
         >
@@ -77,21 +77,23 @@ function PublicationCardShell({
           {!coverUrl ? <Icon className="relative z-[1] text-4xl text-white opacity-90" /> : null}
           <div className="absolute left-3 top-3 z-[2]">{badge}</div>
         </div>
-        <div className="flex min-w-0 flex-1 flex-col gap-4 p-4 sm:p-5">
+        <div className="flex min-w-0 flex-1 flex-col gap-3 p-4 sm:gap-4 sm:p-5">
           <div className="min-w-0">
-            <h3 className="text-lg font-black">{title}</h3>
+            <h3 className="break-words text-base font-black sm:text-lg">{title}</h3>
             {subtitle ? (
-              <p className="mt-1 text-sm font-semibold text-brand-700">{subtitle}</p>
+              <p className="mt-1 break-words text-sm font-semibold text-brand-700">{subtitle}</p>
             ) : null}
             {meta?.length ? (
-              <div className="mt-3 flex flex-wrap gap-3 text-sm text-[var(--app-text-muted)]">
+              <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-sm text-[var(--app-text-muted)]">
                 {meta.map((line) => (
-                  <span key={line}>{line}</span>
+                  <span key={line} className="min-w-0 break-words">
+                    {line}
+                  </span>
                 ))}
               </div>
             ) : null}
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap [&_a]:min-w-0 [&_button]:w-full sm:[&_button]:w-auto">
             <Link to={path} onClick={handleGuestClick}>
               <Button variant="secondary" icon={FiExternalLink} size="sm">
                 {phase3Text(t, 'publications.cards.open')}

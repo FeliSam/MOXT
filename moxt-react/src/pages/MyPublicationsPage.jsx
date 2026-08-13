@@ -169,7 +169,7 @@ export function MyPublicationsPage() {
       : `/users/${user.id}/publications`
 
   return (
-    <div className="grid gap-7">
+    <div className="grid min-w-0 max-w-full gap-5 overflow-x-clip sm:gap-7">
       <PageHeader
         eyebrow={p3('publications.mine.eyebrow')}
         title={p3('publications.mine.title')}
@@ -186,7 +186,7 @@ export function MyPublicationsPage() {
           { label: p3('publications.mine.stats.views'), value: totalViews },
         ]}
         actions={
-          <>
+          <div className="grid w-full min-w-0 grid-cols-1 gap-2 xs:grid-cols-2 sm:flex sm:flex-wrap sm:items-center [&_a]:min-w-0 [&_a]:w-full sm:[&_a]:w-auto [&_button]:w-full sm:[&_button]:w-auto">
             <PublicationScopeButton business={ownBusiness} onScopeChange={setScope} scope={scope} />
             <Link
               to={`/users/${user.id}/publications${scope === 'business' ? '?scope=business' : ''}`}
@@ -198,7 +198,7 @@ export function MyPublicationsPage() {
             <Link to={publishLink.to}>
               <Button icon={FiPlus}>{p3(publishLink.labelKey)}</Button>
             </Link>
-          </>
+          </div>
         }
       />
 

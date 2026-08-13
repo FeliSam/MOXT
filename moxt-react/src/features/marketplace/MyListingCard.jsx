@@ -79,10 +79,10 @@ export function MyListingCard({
   }
 
   return (
-    <Card className={`overflow-visible p-0 ${active ? '' : archivedPublicationCardClass}`}>
-      <div className="flex flex-col gap-0 lg:flex-row">
+    <Card className={`min-w-0 overflow-hidden p-0 ${active ? '' : archivedPublicationCardClass}`}>
+      <div className="flex min-w-0 flex-col gap-0 lg:flex-row">
         <div
-          className={`relative h-48 w-full shrink-0 overflow-hidden rounded-t-[inherit] bg-gradient-to-br from-cyan-700 to-blue-600 lg:h-auto lg:w-56 lg:rounded-l-[inherit] lg:rounded-tr-none ${
+          className={`relative h-44 w-full shrink-0 overflow-hidden rounded-t-[inherit] bg-gradient-to-br from-cyan-700 to-blue-600 sm:h-48 lg:h-auto lg:w-56 lg:rounded-l-[inherit] lg:rounded-tr-none ${
             active ? '' : 'opacity-75 saturate-[0.85]'
           }`}
         >
@@ -116,10 +116,10 @@ export function MyListingCard({
 
         <div className="flex min-w-0 flex-1 flex-col gap-4 p-4 sm:p-5">
           <div className="min-w-0">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
+            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+              <div className="min-w-0 flex-1">
                 <Link
-                  className="line-clamp-2 text-lg font-black hover:text-brand-700"
+                  className="line-clamp-2 break-words text-base font-black hover:text-brand-700 sm:text-lg"
                   to={detailPath}
                   onClick={handleGuestClick}
                 >
@@ -131,7 +131,7 @@ export function MyListingCard({
                   </p>
                 ) : null}
               </div>
-              <strong className="shrink-0 text-lg font-black text-brand-700">
+              <strong className="shrink-0 text-base font-black text-brand-700 sm:text-lg">
                 {listing.price
                   ? formatMoney(listing.price, listing.currency)
                   : mt('marketplace.common.onQuote')}
@@ -167,7 +167,7 @@ export function MyListingCard({
             ) : null}
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap [&_a]:min-w-0 [&_button]:w-full sm:[&_button]:w-auto">
             <Link to={detailPath}>
               <Button variant="secondary" icon={FiExternalLink} size="sm">
                 {active

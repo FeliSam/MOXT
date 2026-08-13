@@ -29,8 +29,8 @@ export function FeedPostImages({ images = [], alt = '' }) {
 
   return (
     <>
-      <div className="relative border-y border-[var(--app-border)]/60 bg-[var(--app-surface-muted)]/40">
-        <div className="relative aspect-[10/9] w-full overflow-hidden">
+      <div className="relative min-w-0 max-w-full border-y border-[var(--app-border)]/60 bg-[var(--app-surface-muted)]/40">
+        <div className="relative aspect-[10/9] w-full min-w-0 overflow-hidden">
           <button
             type="button"
             onClick={openPreview}
@@ -40,7 +40,7 @@ export function FeedPostImages({ images = [], alt = '' }) {
             <img
               src={current}
               alt={imageAlt}
-              className="h-full w-full object-cover transition duration-200 group-hover:brightness-95"
+              className="h-full w-full max-w-full object-cover transition duration-200 group-hover:brightness-95"
               loading="lazy"
               decoding="async"
               onError={(e) => {

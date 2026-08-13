@@ -53,16 +53,17 @@ export function PublisherDetailCard({
       : '—'
   return (
     <Card className={`min-w-0 overflow-hidden ${className}`}>
-      <div className="flex items-center gap-3">
-        <span className="grid size-14 place-items-center rounded-2xl bg-[var(--app-accent-soft)] text-xl font-black text-[var(--app-accent)]">
+      <div className="flex min-w-0 items-start gap-3">
+        <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[var(--app-accent-soft)] text-lg font-black text-[var(--app-accent)] sm:size-14 sm:text-xl">
           {publisherName?.slice(0, 2).toUpperCase()}
         </span>
-        <div>
+        <div className="min-w-0 flex-1">
           <VerifiedDisplayName
             as="h2"
             name={publisherName}
             verified={publisherVerified}
-            className="font-black"
+            className="min-w-0 font-black"
+            nameClassName="truncate"
             iconSize="md"
           />
           <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-[var(--app-text-muted)]">
@@ -71,7 +72,7 @@ export function PublisherDetailCard({
           </p>
         </div>
       </div>
-      <div className="mt-5 grid grid-cols-3 gap-2 text-center">
+      <div className="mt-5 grid min-w-0 grid-cols-3 gap-1.5 text-center sm:gap-2">
         <PublisherStat
           icon={FiStar}
           value={ratingDisplay}
@@ -85,7 +86,7 @@ export function PublisherDetailCard({
         text={description || business?.description || resolvedDescriptionFallback}
         preserveWhitespace="pre-line"
         maxLines={4}
-        className="mt-5 text-sm leading-6 text-[var(--app-text-muted)]"
+        className="mt-5 break-words text-sm leading-6 text-[var(--app-text-muted)]"
       />
       {directoryPath ? (
         <Link to={directoryPath}>
@@ -100,10 +101,10 @@ export function PublisherDetailCard({
           </Button>
         </Link>
       ) : null}
-      <div className="mt-4 flex items-center justify-between text-xs text-[var(--app-text-muted)]">
-        <span>{t('publications.publisher.shares', { count: shareCount })}</span>
+      <div className="mt-4 flex min-w-0 flex-col gap-1 text-xs text-[var(--app-text-muted)] sm:flex-row sm:items-center sm:justify-between">
+        <span className="min-w-0 truncate">{t('publications.publisher.shares', { count: shareCount })}</span>
         {updatedAt ? (
-          <span>{t('publications.publisher.updatedAt', { date: formatShortDate(updatedAt) })}</span>
+          <span className="shrink-0">{t('publications.publisher.updatedAt', { date: formatShortDate(updatedAt) })}</span>
         ) : null}
       </div>
     </Card>
@@ -112,10 +113,10 @@ export function PublisherDetailCard({
 
 function PublisherStat({ icon: Icon, label, value }) {
   return (
-    <div className="rounded-2xl bg-[var(--app-surface-muted)] p-3">
+    <div className="min-w-0 rounded-2xl bg-[var(--app-surface-muted)] p-2 sm:p-3">
       <Icon className="mx-auto text-brand-600" />
-      <strong className="mt-2 block">{value}</strong>
-      <span className="text-[10px] text-[var(--app-text-muted)]">{label}</span>
+      <strong className="mt-2 block truncate text-sm sm:text-base">{value}</strong>
+      <span className="block truncate text-[9px] text-[var(--app-text-muted)] sm:text-[10px]">{label}</span>
     </div>
   )
 }
