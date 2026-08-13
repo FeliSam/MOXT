@@ -65,6 +65,12 @@ function toSnake(obj) {
     bannedBy: 'banned_by',
     moderatedAt: 'moderated_at',
     moderatedBy: 'moderated_by',
+    replyText: 'reply_text',
+    replyAt: 'reply_at',
+    replyBy: 'reply_by',
+    disputeStatus: 'dispute_status',
+    disputeReason: 'dispute_reason',
+    disputedAt: 'disputed_at',
     sellerName: 'seller_name',
     sellerType: 'seller_type',
     originCountry: 'origin_country',
@@ -2034,7 +2040,7 @@ const handlers = {
   },
 
   // ── Avis ──────────────────────────────────────────────────────────────────────
-  'reviews/createReview': async (payload, state) => {
+  'reviews/createReview': async (payload, state, dispatch) => {
     const review =
       state.reviews.items.find((item) => item.id === payload.id) ||
       state.reviews.items.find(
@@ -2044,7 +2050,13 @@ const handlers = {
           item.targetId === payload.targetId,
       ) ||
       payload
-    await syncReviewRemote(review)
+    const canonicalId = await syncReviewRemote(review)
+    if (canonicalId && canonicalId !== review.id) {
+      dispatch({
+        type: 'reviews/reconcileReviewId',
+        payload: { localId: review.id, remoteId: canonicalId },
+      })
+    }
   },
   'reviews/replyToReview': async (payload, state) => {
     const review = state.reviews.items.find((item) => item.id === payload.id)
@@ -2060,10 +2072,16 @@ const handlers = {
   'reviews/moderateReview': async (payload, state) => {
     const review = state.reviews.items.find((item) => item.id === payload.id)
     if (review) {
+      const moderatorId = state.auth.user?.id
+      const moderatedBy =
+        moderatorId && String(moderatorId).length === 36 ? moderatorId : null
       await update('reviews', review.id, {
         status: review.status,
         moderatedAt: review.moderatedAt,
-        moderatedBy: review.moderatedBy,
+        moderatedBy,
+        disputeStatus: review.disputeStatus,
+        disputeReason: review.disputeReason,
+        disputedAt: review.disputedAt,
       })
     }
   },

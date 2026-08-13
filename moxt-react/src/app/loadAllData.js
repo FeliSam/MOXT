@@ -49,6 +49,7 @@ import {
 import { filterByBusinessIds, reconcileBusinesses } from '../features/businesses/businessSyncUtils'
 import { matchUserId } from '../features/businesses/businessVisibility'
 import { reviewFromRemoteRow } from '../features/reviews/reviewRemote'
+import { REVIEW_TARGET_TYPES } from '@moxt/shared/utils/reviewUtils.js'
 import { identityFromRemoteRow } from '../features/identity/identityRemote'
 import { transfersFromRemoteRows } from '../features/transfers/transferRemote'
 import { mergeTransferItems } from '../features/transfers/transferRecordUtils'
@@ -125,6 +126,49 @@ async function fetchIncomingRows(table, foreignKey, ownerIds, limit = USER_LIMIT
     return []
   }
   return data || []
+}
+
+/** Avis liés au compte : auteur, profil, entreprises et publications possédées (+ contestations staff). */
+async function fetchScopedReviewRows(uid, { ownedBusinessIds, ownedListingIds, ownedParcelIds, ownedJobIds, ownedEventIds, includePendingDisputes }) {
+  const queries = [
+    supabase.from('reviews').select('*').eq('author_id', uid).limit(USER_LIMIT),
+    supabase
+      .from('reviews')
+      .select('*')
+      .eq('target_type', REVIEW_TARGET_TYPES.USER_PROFILE)
+      .eq('target_id', uid)
+      .limit(USER_LIMIT),
+  ]
+  if (ownedBusinessIds.length) {
+    queries.push(
+      supabase
+        .from('reviews')
+        .select('*')
+        .eq('target_type', REVIEW_TARGET_TYPES.BUSINESS)
+        .in('target_id', ownedBusinessIds)
+        .limit(USER_LIMIT),
+    )
+  }
+  const publicationTargets = [
+    [REVIEW_TARGET_TYPES.LISTING, ownedListingIds],
+    [REVIEW_TARGET_TYPES.PARCEL, ownedParcelIds],
+    [REVIEW_TARGET_TYPES.JOB, ownedJobIds],
+    [REVIEW_TARGET_TYPES.EVENT, ownedEventIds],
+  ]
+  for (const [targetType, ids] of publicationTargets) {
+    if (ids?.length) {
+      queries.push(
+        supabase.from('reviews').select('*').eq('target_type', targetType).in('target_id', ids).limit(USER_LIMIT),
+      )
+    }
+  }
+  if (includePendingDisputes) {
+    queries.push(
+      supabase.from('reviews').select('*').eq('dispute_status', 'pending').limit(USER_LIMIT),
+    )
+  }
+  const results = await Promise.all(queries)
+  return mergeRemoteRowsById(...results.map((result) => (result.error ? [] : result.data || [])))
 }
 
 export const loadAllData = createAsyncThunk(
@@ -546,6 +590,9 @@ export const loadAllData = createAsyncThunk(
     const ownedEventIds = (eventsRes.data || [])
       .filter((event) => event.owner_id === uid)
       .map((event) => event.id)
+    const ownedListingIds = (listingsRes.data || [])
+      .filter((listing) => matchUserId(listing.owner_id, uid))
+      .map((listing) => listing.id)
 
     const [incomingParcelRequests, incomingJobApplications, incomingEventRegistrations] =
       await Promise.all([
@@ -713,9 +760,23 @@ export const loadAllData = createAsyncThunk(
       mergedBusinessIds,
     )
 
+    const scopedReviewRows = await fetchScopedReviewRows(uid, {
+      ownedBusinessIds,
+      ownedListingIds,
+      ownedParcelIds,
+      ownedJobIds,
+      ownedEventIds,
+      includePendingDisputes: isStaff,
+    })
+
     const mergedReviews = mergeRemoteItems(
       getState().reviews.items,
-      safeRows(reviewsRes, 'des avis').map(reviewFromRemoteRow).filter(Boolean),
+      [
+        ...safeRows(reviewsRes, 'des avis'),
+        ...scopedReviewRows,
+      ]
+        .map(reviewFromRemoteRow)
+        .filter(Boolean),
     )
 
     const mergedIdentity = mergeRemoteItems(

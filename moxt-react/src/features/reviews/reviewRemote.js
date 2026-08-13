@@ -70,10 +70,12 @@ export async function syncReviewRemote(review) {
         .from('reviews')
         .update(authorEditableFields(row))
         .eq('id', existing.id))
+      if (!error) return existing.id
     }
   }
 
   if (error) throw error
+  return row.id
 }
 
 /** Mise à jour propriétaire (réponse / contestation) — champs limités. */

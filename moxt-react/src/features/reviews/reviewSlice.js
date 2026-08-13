@@ -92,6 +92,18 @@ const reviewSlice = createSlice({
     deleteReview(state, action) {
       state.items = state.items.filter((item) => item.id !== action.payload)
     },
+    reconcileReviewId(state, action) {
+      const { localId, remoteId } = action.payload || {}
+      if (!localId || !remoteId || localId === remoteId) return
+      const index = state.items.findIndex((item) => item.id === localId)
+      if (index < 0) return
+      const duplicate = state.items.findIndex((item) => item.id === remoteId)
+      if (duplicate >= 0 && duplicate !== index) {
+        state.items.splice(index, 1)
+        return
+      }
+      state.items[index].id = remoteId
+    },
   },
 })
 

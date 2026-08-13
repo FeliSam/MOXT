@@ -508,18 +508,18 @@ export function StatusViewer({ groups, initialGroupIndex, onClose }) {
 
       {viewersOpen ? (
         <div
-          className="fixed inset-0 z-10 flex items-end justify-center bg-black/60"
+          className="fixed inset-0 z-40 flex items-start justify-center bg-black/60"
           role="presentation"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setViewersOpen(false)
-                setPaused(false)
-              }
-            }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setViewersOpen(false)
+              setPaused(false)
+            }
+          }}
         >
           <div
-            className="max-h-[70dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-[var(--app-surface)] p-5"
-            style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom, 0px))' }}
+            className="max-h-[70dvh] w-full max-w-md overflow-y-auto rounded-b-3xl bg-[var(--app-surface)] p-5 shadow-xl"
+            style={{ paddingTop: 'max(1.25rem, env(safe-area-inset-top, 0px))' }}
           >
             <div className="mb-4 flex items-center justify-between gap-3">
               <h3 className="font-black">

@@ -195,11 +195,20 @@ export function createAuthSlice(authService) {
             state.user = action.payload.user
             state.token = action.payload.token
             state.status = 'authenticated'
-          } else {
-            state.status = 'anonymous'
+            return
           }
+          // INITIAL_SESSION peut déjà avoir appliqué l'utilisateur pendant restoreSession.
+          if (state.user) {
+            if (state.status === 'loading') state.status = 'authenticated'
+            return
+          }
+          state.status = 'anonymous'
         })
         .addCase(restoreSession.rejected, (state) => {
+          if (state.user) {
+            if (state.status === 'loading') state.status = 'authenticated'
+            return
+          }
           state.status = 'anonymous'
         })
         .addCase(login.pending, setLoading)

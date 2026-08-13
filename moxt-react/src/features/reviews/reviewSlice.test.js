@@ -116,4 +116,25 @@ describe('reviews', () => {
     const state = reducer(created, deleteReview(created.items[0].id))
     expect(state.items).toHaveLength(0)
   })
+
+  it('réconcilie un id local avec l id distant après conflit auteur+cible', () => {
+    const created = reducer(
+      { items: [] },
+      createReview({
+        id: 'REV-local',
+        targetType: 'business',
+        targetId: 'b1',
+        authorId: 'u1',
+        authorName: 'Amina',
+        rating: 4,
+        comment: 'Service sérieux.',
+      }),
+    )
+    const state = reducer(created, {
+      type: 'reviews/reconcileReviewId',
+      payload: { localId: 'REV-local', remoteId: 'REV-remote' },
+    })
+    expect(state.items).toHaveLength(1)
+    expect(state.items[0].id).toBe('REV-remote')
+  })
 })

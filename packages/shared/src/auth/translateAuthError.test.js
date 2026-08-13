@@ -166,6 +166,25 @@ describe('translateAuthError', () => {
     ).toMatch(/SMS/i)
   })
 
+  it('maps phone login failures to login wording, never SMS send', () => {
+    expect(
+      translateAuthError(
+        { name: 'AuthRetryableFetchError', message: '{}', status: 500 },
+        { channel: 'phone', intent: 'login' },
+      ),
+    ).toMatch(/Connexion impossible/i)
+    expect(
+      translateAuthError(
+        { name: 'AuthRetryableFetchError', message: '{}', status: 500 },
+        { channel: 'phone', intent: 'login' },
+      ),
+    ).not.toMatch(/envoi du code SMS/i)
+
+    expect(
+      translateAuthError({ message: 'MOXT_PHONE_NOT_CONFIRMED' }, { channel: 'phone', intent: 'login' }),
+    ).toMatch(/inscription n’est pas terminée|inscription/i)
+  })
+
   it('maps OTP verify failures to confirmation wording, not SMS send', () => {
     expect(
       translateAuthError(

@@ -154,7 +154,7 @@ Deno.serve(async (req) => {
 
     if (authPhone && !phoneConfirmed) {
       await logSecurityEvent(admin, 'phone_login_denied', phone, { ip, reason: 'unconfirmed' })
-      return respond({ error: GENERIC_AUTH_ERROR }, 401)
+      return respond({ error: 'MOXT_PHONE_NOT_CONFIRMED' }, 401)
     }
 
     if (authPhone) {

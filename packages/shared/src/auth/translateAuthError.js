@@ -132,9 +132,11 @@ export function translateAuthError(error, context = {}) {
       : 'Session expirée. Reconnectez-vous ou renvoyez un code.'
   }
   if (message.includes('MOXT_PHONE_NOT_CONFIRMED')) {
-    return verifyingOtp
-      ? `Le numéro n’est pas encore confirmé. Vérifiez les 6 chiffres ${otpResendHint()}.`
-      : 'Le numéro n’est pas confirmé. Renvoyez un code puis confirmez.'
+    return context.intent === 'login'
+      ? 'Votre inscription n’est pas terminée. Confirmez votre numéro avec le code SMS reçu lors de l’inscription, ou créez un compte sur la page Inscription.'
+      : verifyingOtp
+        ? `Le numéro n’est pas encore confirmé. Vérifiez les 6 chiffres ${otpResendHint()}.`
+        : 'Le numéro n’est pas confirmé. Renvoyez un code puis confirmez.'
   }
   if (message.includes('MOXT_EMAIL_NOT_CONFIRMED')) {
     return verifyingOtp
@@ -192,6 +194,9 @@ export function translateAuthError(error, context = {}) {
     return 'La connexion par numéro est temporairement indisponible. Réessayez plus tard ou contactez le support.'
   }
   if (code === 'sms_send_failed' || code === 'over_sms_send_rate_limit') {
+    if (context.intent === 'login') {
+      return 'Connexion impossible. Vérifiez vos identifiants ou réessayez dans quelques instants.'
+    }
     if (channel === 'email') {
       return "L'envoi du code e-mail a échoué. Réessayez dans quelques instants ou vérifiez vos spams."
     }
@@ -214,6 +219,9 @@ export function translateAuthError(error, context = {}) {
   // Auth maps a broken send_sms hook (HTTP ≠ 200) to AuthRetryableFetchError + "{}" / 500.
   // Never show SMS wording when the user explicitly chose e-mail OTP.
   if (isAuthHookOpaqueFailure({ message, name, status, code })) {
+    if (context.intent === 'login') {
+      return 'Connexion impossible pour le moment. Réessayez dans quelques instants.'
+    }
     if (channel === 'email') {
       return "L'envoi du code e-mail est temporairement indisponible. Réessayez dans quelques minutes et vérifiez vos spams."
     }
@@ -419,11 +427,16 @@ function translateSupabaseError(message, meta = {}, context = {}) {
   const m = String(message || '').toLowerCase()
   const { code, status, name } = meta
   const channel = context.channel
+  const loginContext = context.intent === 'login'
   // Canal e-mail explicite : ne jamais dériver « SMS » depuis des heuristiques (hook / 500).
   const phoneContext =
-    channel === 'phone' || (channel !== 'email' && isSmsRelated(message, meta))
+    !loginContext &&
+    (channel === 'phone' || (channel !== 'email' && isSmsRelated(message, meta)))
 
   if (!message) {
+    if (loginContext) {
+      return 'Connexion impossible. Vérifiez vos identifiants ou terminez votre inscription.'
+    }
     return phoneContext
       ? "L'envoi du code SMS a échoué. Réessayez dans quelques instants."
       : channel === 'email'
@@ -465,6 +478,11 @@ function translateSupabaseError(message, meta = {}, context = {}) {
     return 'Votre numéro n’est pas encore confirmé. Terminez l’inscription avec le code SMS reçu.'
   }
   if (m.includes('invalid login credentials')) {
+    if (loginContext) {
+      return channel === 'phone'
+        ? 'Identifiants incorrects. Vérifiez votre numéro (+7) et mot de passe, ou terminez l’inscription si vous venez de créer un compte.'
+        : 'Identifiants incorrects. Vérifiez votre e-mail et mot de passe.'
+    }
     return phoneContext
       ? 'Identifiants incorrects. Vérifiez votre numéro russe (+7) et votre mot de passe, ou confirmez d’abord votre inscription par SMS.'
       : 'Identifiants incorrects. Vérifiez votre e-mail et mot de passe.'
@@ -490,6 +508,9 @@ function translateSupabaseError(message, meta = {}, context = {}) {
     m.includes('error creating user') ||
     m.includes('database error saving')
   ) {
+    if (loginContext) {
+      return 'Connexion impossible pour le moment. Réessayez dans quelques instants.'
+    }
     if (channel === 'email') {
       return "L'envoi du code e-mail est temporairement indisponible. Réessayez dans quelques minutes et vérifiez vos spams."
     }
@@ -524,6 +545,9 @@ function translateSupabaseError(message, meta = {}, context = {}) {
   }
   if (context.intent === 'email_verification') {
     return "Impossible d'envoyer le code e-mail. Réessayez dans quelques instants ou vérifiez l'adresse."
+  }
+  if (loginContext) {
+    return 'Connexion impossible. Vérifiez vos identifiants ou contactez le support.'
   }
   return phoneContext
     ? "L'envoi du code SMS a échoué. Réessayez dans quelques instants ou contactez le support."

@@ -1239,7 +1239,7 @@ export function createAuthService(supabase, redirects = {}) {
         )
         data = result.data
         if (result.error) {
-          throw new Error(translateAuthError(result.error, { channel }))
+          throw new Error(translateAuthError(result.error, { channel, intent: 'login' }))
         }
       } catch (error) {
         if (isTimeoutError(error)) {

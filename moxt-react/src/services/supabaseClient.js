@@ -15,6 +15,20 @@ const client = createSupabaseClient({
   storage: typeof localStorage !== 'undefined' ? createBrowserSessionStorage() : null,
 })
 
+/** Single-flight autour de getSession — évite races multi-onglet au boot. */
+if (client?.auth?.getSession) {
+  const originalGetSession = client.auth.getSession.bind(client.auth)
+  let getSessionInFlight = null
+  client.auth.getSession = (...args) => {
+    if (!getSessionInFlight) {
+      getSessionInFlight = Promise.resolve(originalGetSession(...args)).finally(() => {
+        getSessionInFlight = null
+      })
+    }
+    return getSessionInFlight
+  }
+}
+
 /**
  * Single-flight autour de refreshSession — évite refresh_token_already_used
  * (keepalive + visibility + autoRefresh + boot en parallèle).

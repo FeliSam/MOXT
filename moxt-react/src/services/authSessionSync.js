@@ -37,20 +37,11 @@ const KEEPALIVE_MS = 45_000
 const PROACTIVE_REFRESH_MIN_GAP_MS = 20_000
 const SESSION_RESOLVE_TIMEOUT_MS = 15_000
 const TRANSIENT_RETRY_MS = 5_000
-/** Échecs « missing » consécutifs avant logout réel (évite faux positifs Safari). */
-const MAX_CONSECUTIVE_SESSION_MISSES = 3
 /** Délai après SIGNED_OUT parasite avant recovery. */
 const SIGNED_OUT_RECOVERY_DELAY_MS = 600
 
-let consecutiveSessionMisses = 0
-
 function noteSessionRecovered() {
-  consecutiveSessionMisses = 0
-}
-
-function noteSessionMiss() {
-  consecutiveSessionMisses += 1
-  return consecutiveSessionMisses
+  // noop — conservé pour les appels existants après recovery session
 }
 
 async function refreshConversationsIfNeeded(dispatch, getState) {
@@ -264,12 +255,10 @@ async function resolveSupabaseSession() {
  * Conserve Redux + tokens tant qu’il reste un espoir de recovery.
  */
 function shouldForceLogoutOnMissing() {
-  if (hasSupabaseAuthInStorage()) return false
-  return noteSessionMiss() >= MAX_CONSECUTIVE_SESSION_MISSES
+  return false
 }
 
 function forceLogout(dispatch, reason) {
-  consecutiveSessionMisses = 0
   stopRealtimeSubscription()
   dispatch(clearSession())
   clearClientCache({ scope: 'full', reason, preserveAuth: false })

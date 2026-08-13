@@ -9,7 +9,21 @@
  * Requiert SUPABASE_ACCESS_TOKEN (scripts/phase2.env ou env CI).
  */
 import { createClient } from '@supabase/supabase-js'
-import { loadPhase2Env } from './lib/env.mjs'
+import { existsSync, readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { loadPhase2Env, root as monorepoRoot } from './lib/env.mjs'
+
+function readProdAnonKey() {
+  const prodPath = path.join(monorepoRoot, 'moxt-react', '.env.production')
+  if (!existsSync(prodPath)) return ''
+  for (const line of readFileSync(prodPath, 'utf8').split(/\r?\n/)) {
+    if (line.startsWith('VITE_SUPABASE_ANON_KEY=')) {
+      return line.slice('VITE_SUPABASE_ANON_KEY='.length).trim()
+    }
+  }
+  return ''
+}
 
 const PROJECT_REF = 'rbvqfkccbkwjxkvpnwqn'
 
@@ -120,6 +134,7 @@ async function main() {
   const url = vars.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL
   const anonKey =
     vars.VITE_SUPABASE_ANON_KEY ||
+    readProdAnonKey() ||
     process.env.VITE_SUPABASE_ANON_KEY ||
     process.env.VITE_SUPABASE_PUBLISHABLE_KEY
   const accessToken = vars.SUPABASE_ACCESS_TOKEN || process.env.SUPABASE_ACCESS_TOKEN
