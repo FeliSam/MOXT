@@ -2066,8 +2066,9 @@ const handlers = {
     const review = state.reviews.items.find((item) => item.id === payload.id)
     if (review) await syncReviewOwnerRemote(review)
   },
-  'reviews/deleteReview': async (payload) => {
-    await deleteReviewRemote(payload)
+  'reviews/deleteReview': async (payload, _state, _dispatch, beforeState) => {
+    const review = beforeState.reviews.items.find((item) => item.id === payload)
+    await deleteReviewRemote(payload, review)
   },
   'reviews/moderateReview': async (payload, state) => {
     const review = state.reviews.items.find((item) => item.id === payload.id)
@@ -2153,6 +2154,15 @@ export const supabaseMiddleware = (store) => (next) => (action) => {
           store.dispatch({
             type: 'posts/restoreComment',
             payload: { postId: action.payload.postId, comment },
+          })
+        }
+      }
+      if (action.type === 'reviews/deleteReview') {
+        const review = beforeState.reviews.items.find((item) => item.id === action.payload)
+        if (review) {
+          store.dispatch({
+            type: 'reviews/restoreReviewDeleted',
+            payload: { review },
           })
         }
       }

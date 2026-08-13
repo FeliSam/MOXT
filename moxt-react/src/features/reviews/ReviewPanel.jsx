@@ -13,7 +13,7 @@ import {
 } from 'react-icons/fi'
 import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 import { Link, useNavigate } from 'react-router-dom'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { PillBadge } from '../../components/ui/Badge'
 import { EntityVerifiedName } from '../../components/ui/EntityVerifiedName'
 import { Button } from '../../components/ui/Button'
@@ -21,6 +21,8 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { LinkifiedText } from '../../components/ui/LinkifiedText'
 import { StarRating } from '../../components/ui/StarRating'
 import { useLanguage } from '../../contexts/useLanguage'
+import { adminText } from '../admin/adminI18n'
+import { isStaffRole } from '../auth/roleUtils'
 import { EntityAvatar } from '../account/EntityAvatar'
 import {
   REVIEW_DISPUTE_LABELS,
@@ -30,6 +32,7 @@ import {
 } from '@moxt/shared/utils/reviewUtils.js'
 import { formatReviewDate } from '@moxt/shared/utils/reviewPublicationResolver.js'
 import { contestReview, deleteReview, replyToReview } from './reviewSlice'
+import { ReviewAdminActions } from './ReviewAdminActions'
 import { resolveReviewTargetHref } from './reviewRemote'
 import { useReviewPublication } from './useReviewPublication'
 
@@ -54,6 +57,8 @@ export function ReviewCard({
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const { t } = useLanguage()
+  const user = useSelector((state) => state.auth.user)
+  const isStaff = isStaffRole(user)
   const publication = useReviewPublication(review)
   const [replyOpen, setReplyOpen] = useState(false)
   const [contestOpen, setContestOpen] = useState(false)
@@ -143,6 +148,9 @@ export function ReviewCard({
               <PillBadge tone={review.disputeStatus === 'pending' ? 'warning' : 'info'}>
                 {disputeLabel}
               </PillBadge>
+            ) : null}
+            {isStaff && review.status && review.status !== 'published' ? (
+              <PillBadge tone="warning">{review.status}</PillBadge>
             ) : null}
           </div>
           <p className="mt-1 text-xs font-medium text-[var(--app-text-faint)]">
@@ -307,6 +315,22 @@ export function ReviewCard({
             </Button>
           </div>
         </form>
+      ) : null}
+
+      {isStaff ? (
+        <div className="mt-4 grid gap-2 border-t border-dashed border-brand-200 pt-4 dark:border-brand-900/50">
+          <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.08em] text-brand-700 dark:text-brand-300">
+            <FiShield />
+            {adminText(t, 'admin.reviews.moderationTitle')}
+          </p>
+          <ReviewAdminActions
+            review={review}
+            dispatch={dispatch}
+            t={t}
+            compact
+            moderatorId={user?.id}
+          />
+        </div>
       ) : null}
 
       <ConfirmDialog

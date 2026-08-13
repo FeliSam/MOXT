@@ -17,8 +17,7 @@ import { Button } from '../../../components/ui/Button'
 import { Badge } from '../../../components/ui/Badge'
 import { updatePhoneAssistStatus, updateVerificationStatus } from '../../account/accountSlice'
 import { updateBusinessDocumentStatus } from '../../businesses/businessSlice'
-import { moderateReview } from '../../reviews/reviewSlice'
-import { REVIEW_DISPUTE_STATUS } from '@moxt/shared/utils/reviewUtils.js'
+import { ReviewAdminActions } from '../../reviews/ReviewAdminActions'
 import {
   confirmedClick,
   contentActions,
@@ -362,37 +361,12 @@ export function AdminQueuesPanel({
         t={t}
         renderMeta={(i) => `${i.targetType} · ${i.authorName || i.authorId}`}
         renderActions={(i) => (
-          <>
-            <Button
-              variant="danger"
-              onClick={confirmedClick(t, adminText(t, 'admin.actions.removeReview'), () =>
-                dispatch(
-                  moderateReview({
-                    id: i.id,
-                    status: 'hidden',
-                    disputeStatus: REVIEW_DISPUTE_STATUS.UPHELD,
-                    moderatedBy: 'admin',
-                  }),
-                ),
-              )}
-            >
-              {adminText(t, 'admin.actions.removeReview')}
-            </Button>
-            <Button
-              onClick={confirmedClick(t, adminText(t, 'admin.actions.rejectContest'), () =>
-                dispatch(
-                  moderateReview({
-                    id: i.id,
-                    status: 'published',
-                    disputeStatus: REVIEW_DISPUTE_STATUS.REJECTED,
-                    moderatedBy: 'admin',
-                  }),
-                ),
-              )}
-            >
-              {adminText(t, 'admin.actions.rejectContest')}
-            </Button>
-          </>
+          <ReviewAdminActions
+            review={i}
+            dispatch={dispatch}
+            t={t}
+            moderatorId={adminId}
+          />
         )}
       />
       <QueueSection
@@ -404,23 +378,12 @@ export function AdminQueuesPanel({
         t={t}
         renderMeta={(i) => `${i.targetType} · ${i.rating || 0}/5`}
         renderActions={(i) => (
-          <>
-            <Button
-              onClick={confirmedClick(t, adminText(t, 'admin.actions.publish'), () =>
-                dispatch(moderateReview({ id: i.id, status: 'published', moderatedBy: 'admin' })),
-              )}
-            >
-              {adminText(t, 'admin.actions.publish')}
-            </Button>
-            <Button
-              variant="danger"
-              onClick={confirmedClick(t, adminText(t, 'admin.actions.hide'), () =>
-                dispatch(moderateReview({ id: i.id, status: 'hidden', moderatedBy: 'admin' })),
-              )}
-            >
-              {adminText(t, 'admin.actions.hide')}
-            </Button>
-          </>
+          <ReviewAdminActions
+            review={i}
+            dispatch={dispatch}
+            t={t}
+            moderatorId={adminId}
+          />
         )}
       />
       <QueueSection

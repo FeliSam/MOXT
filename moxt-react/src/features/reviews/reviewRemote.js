@@ -96,9 +96,41 @@ export async function syncReviewOwnerRemote(review) {
   if (error) throw error
 }
 
-export async function deleteReviewRemote(reviewId) {
-  const { error } = await supabase.from('reviews').delete().eq('id', reviewId)
+async function deleteReviewRows(query) {
+  const { data, error } = await query.select('id')
   if (error) throw error
+  return data?.length || 0
+}
+
+/** Supprime un avis — retente par auteur+cible si l'id local ne correspond pas au back. */
+export async function deleteReviewRemote(reviewId, review) {
+  if (reviewId) {
+    const deleted = await deleteReviewRows(
+      supabase.from('reviews').delete().eq('id', reviewId),
+    )
+    if (deleted > 0) return
+  }
+
+  if (review?.authorId && review?.targetType && review?.targetId) {
+    const deleted = await deleteReviewRows(
+      supabase
+        .from('reviews')
+        .delete()
+        .eq('author_id', review.authorId)
+        .eq('target_type', review.targetType)
+        .eq('target_id', review.targetId),
+    )
+    if (deleted > 0) return
+  }
+
+  if (reviewId) {
+    const deleted = await deleteReviewRows(
+      supabase.from('reviews').delete().eq('id', reviewId),
+    )
+    if (deleted > 0) return
+  }
+
+  throw new Error('review delete failed')
 }
 
 export function resolveReviewTargetHref(review, publication) {

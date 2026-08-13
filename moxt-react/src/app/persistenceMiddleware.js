@@ -55,7 +55,7 @@ const persistenceMap = {
     { key: 'moxt-p2p-offers-v1', select: (state) => state.p2p.offers },
     { key: 'moxt-p2p-orders-v1', select: (state) => state.p2p.orders },
   ],
-  reviews: [{ key: 'moxt-reviews-v1', select: (state) => state.reviews.items }],
+  reviews: [{ key: 'moxt-reviews-v1', select: (state) => state.reviews }],
   parcels: [
     { key: 'moxt-parcels-v1', select: (state) => state.parcels.items },
     { key: 'moxt-parcel-requests-v1', select: (state) => state.parcels.requests },

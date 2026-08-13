@@ -16,11 +16,10 @@ import {
 } from '../marketplace/marketplaceSlice'
 import { deleteParcel, updateParcelPassportStatus, updateParcelProofStatus, updateParcelStatus } from '../parcels/parcelSlice'
 import { deletePost, moderatePost } from '../posts/postsSlice'
-import { moderateReview } from '../reviews/reviewSlice'
+import { ReviewAdminActions } from '../reviews/ReviewAdminActions'
 import { TRANSFER_TRANSITIONS } from '../transfers/transferConfig'
 import { moderateTransfer } from '../transfers/transferSlice'
 import { moderateOffer, moderateOrder } from '../p2p/p2pSlice'
-import { REVIEW_DISPUTE_STATUS } from '@moxt/shared/utils/reviewUtils.js'
 import { normalizeAdminKind, normalizeReportType } from './adminLinkUtils'
 import { adminText } from './adminI18n'
 import { promptRejectReason } from './promptRejectReason'
@@ -727,59 +726,13 @@ export function renderDetailActions({ actorId, actorRole, dispatch, item, kind, 
         </>
       )
     case 'review':
-      if (item.disputeStatus === REVIEW_DISPUTE_STATUS.PENDING) {
-        return (
-          <>
-            <Button
-              variant="danger"
-              onClick={confirmedClick(t, adminText(t, 'admin.actions.removeReview'), () =>
-                dispatch(
-                  moderateReview({
-                    id: item.id,
-                    status: 'hidden',
-                    disputeStatus: REVIEW_DISPUTE_STATUS.UPHELD,
-                    moderatedBy: 'admin',
-                  }),
-                ),
-              )}
-            >
-              {adminText(t, 'admin.actions.removeReview')}
-            </Button>
-            <Button
-              onClick={confirmedClick(t, adminText(t, 'admin.actions.rejectContest'), () =>
-                dispatch(
-                  moderateReview({
-                    id: item.id,
-                    status: 'published',
-                    disputeStatus: REVIEW_DISPUTE_STATUS.REJECTED,
-                    moderatedBy: 'admin',
-                  }),
-                ),
-              )}
-            >
-              {adminText(t, 'admin.actions.rejectContest')}
-            </Button>
-          </>
-        )
-      }
       return (
-        <>
-          <Button
-            onClick={confirmedClick(t, adminText(t, 'admin.actions.publish'), () =>
-              dispatch(moderateReview({ id: item.id, status: 'published', moderatedBy: 'admin' })),
-            )}
-          >
-            {adminText(t, 'admin.actions.publish')}
-          </Button>
-          <Button
-            variant="danger"
-            onClick={confirmedClick(t, adminText(t, 'admin.actions.hide'), () =>
-              dispatch(moderateReview({ id: item.id, status: 'hidden', moderatedBy: 'admin' })),
-            )}
-          >
-            {adminText(t, 'admin.actions.hide')}
-          </Button>
-        </>
+        <ReviewAdminActions
+          review={item}
+          dispatch={dispatch}
+          t={t}
+          moderatorId={reviewerId}
+        />
       )
     default:
       return null
