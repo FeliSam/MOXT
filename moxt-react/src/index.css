@@ -1037,10 +1037,12 @@ html.messages-route-lock #root {
   .message-thread-canvas {
     --message-media-width: min(62.5cqw, 28.125rem);
     --message-media-top: min(15.625cqw, 7.03125rem);
+    --message-text-row-width-pct: 80%;
+    --message-text-row-width-cap: 32.5rem;
   }
 
   .message-row {
-    max-width: min(100%, 40.625rem);
+    max-width: min(var(--message-text-row-width-pct), var(--message-text-row-width-cap));
   }
 
   .message-row:has(.message-stack--media) {
@@ -1049,7 +1051,7 @@ html.messages-route-lock #root {
 
   /* Reçus : compenser avatar + espacement pour égaler la largeur utile des envoyés */
   .message-row:not(.message-row--sent):has(.message-avatar:not(.message-avatar--ghost)) {
-    max-width: min(100%, calc(40.625rem + 2.05rem));
+    max-width: min(var(--message-text-row-width-pct), calc(var(--message-text-row-width-cap) + 2.05rem));
   }
 
   .message-row:not(.message-row--sent):has(.message-stack--media):has(

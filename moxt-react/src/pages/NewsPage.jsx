@@ -127,15 +127,15 @@ export function NewsPage() {
         </div>
 
         {filtered.length > 0 ? (
-          <div className="flex min-w-0 flex-col gap-5 sm:gap-6">
+          <div className="flex min-w-0 flex-col divide-y divide-[var(--app-border)]">
             {filtered.map((post) => (
               <div
                 key={post.id}
                 id={`news-post-${post.id}`}
                 className={
                   highlightPostId === post.id
-                    ? 'news-post-highlight min-w-0 max-w-full rounded-2xl'
-                    : 'min-w-0 max-w-full'
+                    ? 'news-post-highlight min-w-0 max-w-full rounded-2xl py-5 sm:py-6'
+                    : 'min-w-0 max-w-full py-5 sm:py-6'
                 }
               >
                 <FeedPostCard post={post} />

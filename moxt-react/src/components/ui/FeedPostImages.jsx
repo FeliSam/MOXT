@@ -29,8 +29,8 @@ export function FeedPostImages({ images = [], alt = '' }) {
 
   return (
     <>
-      <div className="relative min-w-0 max-w-full border-y border-[var(--app-border)]/60 bg-[var(--app-surface-muted)]/40">
-        <div className="relative aspect-[10/9] w-full min-w-0 overflow-hidden">
+      <div className="relative min-w-0 max-w-full px-4 sm:px-5">
+        <div className="relative aspect-[50/57] w-full min-w-0 overflow-hidden rounded-2xl sm:aspect-[25/27]">
           <button
             type="button"
             onClick={openPreview}

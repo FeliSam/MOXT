@@ -3,6 +3,7 @@ import {
   FiArchive,
   FiChevronDown,
   FiEdit2,
+  FiHeart,
   FiMessageCircle,
   FiMoreHorizontal,
   FiShare2,
@@ -11,7 +12,6 @@ import {
 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
-import { FavoriteButton } from './FavoriteButton'
 import { LinkifiedText } from './LinkifiedText'
 import { CountBounce } from './CountBounce'
 import { useLanguage } from '../../contexts/useLanguage'
@@ -43,6 +43,10 @@ const TYPE_COLORS = {
   free:     'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]',
 }
 
+const FEED_ACTION_BTN =
+  'flex items-center gap-1 text-[1.00625rem] font-bold transition'
+const FEED_ACTION_ICON = 'size-[1.00625rem] shrink-0'
+
 function ExpandableFeedMessage({ text }) {
   const { t } = useLanguage()
   const p3 = (key) => phase3Text(t, key)
@@ -58,7 +62,7 @@ function ExpandableFeedMessage({ text }) {
   }, [text, expanded])
 
   return (
-    <div className="feed-post-message min-w-0 max-w-full overflow-x-clip">
+    <div className="feed-post-message min-w-0 max-w-full overflow-x-clip bg-transparent">
       <LinkifiedText
         ref={textRef}
         as="p"
@@ -221,7 +225,7 @@ export function FeedPostCard({ post }) {
   }
 
   return (
-    <article className="h-auto w-full min-w-0 max-w-full overflow-x-clip rounded-3xl bg-[var(--app-surface)] shadow-[var(--shadow-card)]">
+    <article className="h-auto w-full min-w-0 max-w-full overflow-x-clip">
       {/* Header */}
       <div className="flex min-w-0 items-start justify-between gap-2 p-4 sm:gap-3 sm:p-5">
         <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -318,7 +322,7 @@ export function FeedPostCard({ post }) {
       </div>
 
       {/* Message */}
-      <div className="min-w-0 overflow-x-clip px-4 pb-3 sm:px-5 sm:pb-4">
+      <div className="min-w-0 overflow-x-clip bg-transparent px-4 pb-3 sm:px-5 sm:pb-4">
         {editing ? (
           <div className="grid gap-2">
             <textarea
@@ -369,48 +373,47 @@ export function FeedPostCard({ post }) {
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-4 border-t border-[var(--app-border)] px-4 py-3 sm:px-5">
-        <div className="flex items-center gap-1.5">
-          <FavoriteButton
-            active={liked}
-            size="sm"
-            variant="solid"
-            className={`!size-8 !shadow-none ${
-              liked
-                ? '!border-transparent !bg-transparent !text-red-500'
-                : '!border-transparent !bg-transparent !text-[var(--app-text-muted)] hover:!text-red-500'
-            }`}
-            onToggle={handleLike}
-            ariaLabel={liked ? 'Retirer le like' : 'Aimer'}
-          />
+      <div className="flex items-center gap-[1.15rem] bg-transparent px-4 py-3 sm:px-5">
+        <button
+          type="button"
+          onClick={handleLike}
+          aria-label={liked ? 'Retirer le like' : 'Aimer'}
+          aria-pressed={liked}
+          className={`${FEED_ACTION_BTN} ${
+            liked
+              ? 'text-red-500 hover:text-red-500'
+              : 'text-[var(--app-text-muted)] hover:text-red-500'
+          }`}
+        >
+          <FiHeart className={`${FEED_ACTION_ICON} ${liked ? 'fill-current' : ''}`} aria-hidden />
           <CountBounce
             value={post.likes?.length || 0}
             maxDisplay={999}
-            className={`text-sm font-bold ${liked ? 'text-red-500' : 'text-[var(--app-text-muted)]'}`}
           />
-        </div>
+        </button>
         <button
           type="button"
           onClick={() => setShowComments((v) => !v)}
-          className="flex items-center gap-1.5 text-sm font-bold text-[var(--app-text-muted)] transition hover:text-[var(--app-text)]"
+          aria-expanded={showComments}
+          className={`${FEED_ACTION_BTN} text-[var(--app-text-muted)] hover:text-[var(--app-text)]`}
         >
-          <FiMessageCircle />
+          <FiMessageCircle className={FEED_ACTION_ICON} aria-hidden />
           {post.comments?.length || 0}
         </button>
         <button
           type="button"
           onClick={handleShare}
-          className="flex items-center gap-1.5 text-sm font-bold text-[var(--app-text-muted)] transition hover:text-[var(--app-text)]"
+          className={`${FEED_ACTION_BTN} text-[var(--app-text-muted)] hover:text-[var(--app-text)]`}
           aria-label={p3('common.share')}
         >
-          <FiShare2 />
+          <FiShare2 className={FEED_ACTION_ICON} aria-hidden />
           {shareCount}
         </button>
       </div>
 
       {/* Commentaires — 5 visibles, le reste en scroll */}
       {showComments && (
-        <div className="grid gap-3 border-t border-[var(--app-border)] px-4 py-3 sm:px-5 sm:py-4">
+        <div className="grid gap-3 bg-transparent px-4 py-3 sm:px-5 sm:py-4">
           {(post.comments?.length || 0) > 0 ? (
             <div
               className="grid max-h-[17.5rem] gap-3 overflow-y-auto overscroll-contain pr-1 [scrollbar-width:thin]"
