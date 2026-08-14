@@ -11,7 +11,7 @@ import {
   stripPaymentDetailsFromExchanger,
 } from './transferAcceptanceUtils'
 import { mergeTransferRecord } from './transferRecordUtils'
-import { DIRECTIONS, TRANSFER_STATUS, TRANSFER_TRANSITIONS } from './transferConfig'
+import { DIRECTIONS, TRANSFER_STATUS, TRANSFER_TIMELINE_EVENT, TRANSFER_TRANSITIONS } from './transferConfig'
 import { transferStorage } from './transferStorage'
 import { calculateTransfer } from './transferUtils'
 
@@ -224,11 +224,10 @@ const transferSlice = createSlice({
       }
       transfer.updatedAt = nowIso
       pushTimeline(transfer, {
-        status: TRANSFER_STATUS.PENDING,
+        status: TRANSFER_TIMELINE_EVENT.BUSINESS_ACCEPTED,
         at: nowIso,
         actorType: 'business',
         actorId: action.payload.actorId,
-        note: 'business_accepted',
       })
     },
     declineTransferRequest(state, action) {

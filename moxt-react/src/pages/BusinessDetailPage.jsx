@@ -51,7 +51,7 @@ import {
   businessesText,
 } from '../features/businesses/businessesI18n'
 import { canViewBusinessActivity } from '../features/account/activityVisibility'
-import { selectBusinessReviewsBundle } from '../features/reviews/reviewSelectors'
+import { useScopedBusinessReviews } from '../features/reviews/useScopedTargetReviews'
 import { ReviewsSection, REVIEW_TARGET_TYPES } from '../features/reviews/ReviewsSection'
 
 const SERVICE_SECTION_DEFS = [
@@ -76,9 +76,6 @@ export function BusinessDetailPage() {
   const documents = useSelector((state) =>
     state.businesses.documents.filter((item) => item.businessId === businessId),
   )
-  const { reviews, rating } = useSelector((state) =>
-    selectBusinessReviewsBundle(state, business),
-  )
 
   const isOwner = business?.ownerId === user.id
   const isAdminViewer = isStaffRole(user)
@@ -94,6 +91,11 @@ export function BusinessDetailPage() {
     canView &&
     isBusinessVisibleToViewer(business, user) &&
     (isOwner || isAdminViewer || ['verified', 'approved', 'active'].includes(business?.status))
+
+  const { reviews, rating } = useScopedBusinessReviews(businessId, content, {
+    enabled: Boolean(canPreview && businessId),
+    ownerUserId: business?.ownerId,
+  })
 
   if (!business || !canPreview) {
     return (

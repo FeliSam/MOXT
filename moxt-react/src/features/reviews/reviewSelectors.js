@@ -40,6 +40,7 @@ export function selectAggregateBusinessReviews(state, business, content) {
     profileTargetType: REVIEW_TARGET_TYPES.BUSINESS,
     profileTargetId: business?.id,
     publicationIds,
+    ownerProfileId: business?.ownerId,
   })
 }
 
@@ -61,6 +62,7 @@ export const selectBusinessReviewsBundle = createSelector(
         events: content?.events || [],
         posts: [],
       }),
+      ownerProfileId: business.ownerId,
     })
     return { reviews, rating: calculateAggregateRating(reviews) }
   },

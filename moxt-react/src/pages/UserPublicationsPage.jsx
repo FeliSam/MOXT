@@ -19,7 +19,6 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { canViewUserActivity } from '../features/account/activityVisibility'
 import { useProfileActivityVisibility } from '../features/account/useProfileActivityVisibility'
-import { matchUserId } from '../features/businesses/businessVisibility'
 import { MyListingCard } from '../features/marketplace/MyListingCard'
 import {
   MyEventPublicationCard,
@@ -47,6 +46,7 @@ import { ContactButton } from '../features/communications/ContactButton'
 import { useGuestAction } from '../features/guest/useGuestAction'
 import { useGuestUserPreview } from '../features/guest/useGuestPreview'
 import { REVIEW_TARGET_TYPES, ReviewsSection } from '../features/reviews/ReviewsSection'
+import { useScopedProfileReviews } from '../features/reviews/useScopedTargetReviews'
 import {
   calculateAggregateRating,
   collectPublicationTargetIds,
@@ -143,22 +143,29 @@ export function UserPublicationsPage() {
   const hasContent = visiblePublicationCount(visible) > 0
   const hasAnyPublication = publicationTotalCount(publications) > 0
   const EmptyIcon = EMPTY_ICONS[typeTab] || FiShoppingBag
+  const scopedReviews = useScopedProfileReviews(userId, publications, {
+    enabled: Boolean(canView && !guestMode && userId),
+  })
   const aggregateReviews = useMemo(() => {
-    const source = guestMode ? guestPreview.reviews : appState.reviews?.items || []
-    return filterAggregateReviews(source, {
-      profileTargetType: REVIEW_TARGET_TYPES.USER_PROFILE,
-      profileTargetId: userId,
-      publicationIds: collectPublicationTargetIds(publications),
-    })
-  }, [appState.reviews?.items, guestMode, guestPreview.reviews, publications, userId])
-  const aggregateRating = useMemo(
-    () => calculateAggregateRating(aggregateReviews),
-    [aggregateReviews],
-  )
-
-  if (currentUser && matchUserId(userId, currentUser.id)) {
-    return <Navigate to="/profile" replace />
-  }
+    if (guestMode) {
+      return filterAggregateReviews(guestPreview.reviews, {
+        profileTargetType: REVIEW_TARGET_TYPES.USER_PROFILE,
+        profileTargetId: userId,
+        publicationIds: collectPublicationTargetIds(publications),
+      })
+    }
+    return scopedReviews.reviews
+  }, [
+    guestMode,
+    guestPreview.reviews,
+    publications,
+    scopedReviews.reviews,
+    userId,
+  ])
+  const aggregateRating = useMemo(() => {
+    if (guestMode) return calculateAggregateRating(aggregateReviews)
+    return scopedReviews.rating
+  }, [aggregateReviews, guestMode, scopedReviews.rating])
 
   function setMainTab(next) {
     const params = new URLSearchParams(searchParams)
@@ -282,7 +289,7 @@ export function UserPublicationsPage() {
         }
         description={pageDescription}
         actions={
-          <div className="grid w-full min-w-0 grid-cols-1 gap-2 xs:grid-cols-2 sm:flex sm:flex-wrap sm:items-center [&_a]:min-w-0 [&_a]:w-full sm:[&_a]:w-auto [&_button]:w-full sm:[&_button]:w-auto">
+          <div className="grid w-full min-w-0 grid-cols-1 gap-2 xs:grid-cols-2 sm:flex sm:flex-wrap sm:items-center [&>*]:min-w-0 [&>*]:w-full sm:[&>*]:w-auto">
             {!isOwner && !guestMode ? (
               <>
                 <ContactButton

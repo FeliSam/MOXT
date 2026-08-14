@@ -1,4 +1,4 @@
-import { TRANSFER_STATUS } from '../transferConfig'
+import { TRANSFER_STATUS, TRANSFER_TIMELINE_EVENT } from '../transferConfig'
 
 export const TRANSFER_PROGRESS_STEPS = [
   { key: TRANSFER_STATUS.PENDING, labelKey: 'transfers.progress.created' },
@@ -10,6 +10,7 @@ export const TRANSFER_PROGRESS_STEPS = [
 
 export const transferTimelineLabelKeys = {
   [TRANSFER_STATUS.PENDING_ACCEPTANCE]: 'transfers.timeline.pendingAcceptance',
+  [TRANSFER_TIMELINE_EVENT.BUSINESS_ACCEPTED]: 'transfers.timeline.businessAccepted',
   [TRANSFER_STATUS.PENDING]: 'transfers.timeline.pending',
   [TRANSFER_STATUS.DECLINED]: 'transfers.timeline.businessDeclined',
   [TRANSFER_STATUS.DECLARED]: 'transfers.timeline.declared',

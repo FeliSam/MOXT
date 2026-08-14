@@ -186,7 +186,7 @@ export function MyPublicationsPage() {
           { label: p3('publications.mine.stats.views'), value: totalViews },
         ]}
         actions={
-          <div className="grid w-full min-w-0 grid-cols-1 gap-2 xs:grid-cols-2 sm:flex sm:flex-wrap sm:items-center [&_a]:min-w-0 [&_a]:w-full sm:[&_a]:w-auto [&_button]:w-full sm:[&_button]:w-auto">
+          <div className="grid w-full min-w-0 grid-cols-1 gap-2 xs:grid-cols-2 sm:flex sm:flex-wrap sm:items-center [&>*]:min-w-0 [&>*]:w-full sm:[&>*]:w-auto">
             <PublicationScopeButton business={ownBusiness} onScopeChange={setScope} scope={scope} />
             <Link
               to={`/users/${user.id}/publications${scope === 'business' ? '?scope=business' : ''}`}

@@ -2,7 +2,11 @@ import { supabase } from '../../services/supabaseClient'
 import { fromRows } from '../../services/remoteRowMapper'
 import { listingFromRemoteRow } from '../marketplace/marketplaceRemote'
 import { businessFromRemoteRow } from '../businesses/businessRemote'
-import { reviewFromRemoteRow } from '../reviews/reviewRemote'
+import {
+  collectPublicationTargetIds,
+  REVIEW_TARGET_TYPES,
+} from '@moxt/shared/utils/reviewUtils.js'
+import { fetchReviewsForTargetScope } from '../reviews/reviewRemote'
 
 function mapProfile(row) {
   if (!row) return null
@@ -56,7 +60,7 @@ export async function fetchGuestUserPreview(userId) {
     return { error: visibility === 'contacts' ? 'contacts' : 'private', visibility }
   }
 
-  const [listingsRes, parcelsRes, jobsRes, eventsRes, postsRes, businessRes, reviewsRes] =
+  const [listingsRes, parcelsRes, jobsRes, eventsRes, postsRes, businessRes] =
     await Promise.all([
       supabase.from('listings').select('*').eq('owner_id', userId).eq('status', 'active'),
       supabase.from('parcels').select('*').eq('owner_id', userId).in('status', ['active', 'full']),
@@ -70,7 +74,6 @@ export async function fetchGuestUserPreview(userId) {
         .in('status', ['verified', 'approved', 'active'])
         .limit(1)
         .maybeSingle(),
-      supabase.from('reviews').select('*').eq('status', 'published'),
     ])
 
   const publications = mapPublications({
@@ -81,17 +84,11 @@ export async function fetchGuestUserPreview(userId) {
     posts: postsRes.data,
   })
 
-  const reviews = (reviewsRes.data || [])
-    .map(reviewFromRemoteRow)
-    .filter(
-      (review) =>
-        review &&
-        (review.targetId === userId ||
-          publications.listings.some((item) => item.id === review.targetId) ||
-          publications.parcels.some((item) => item.id === review.targetId) ||
-          publications.jobs.some((item) => item.id === review.targetId) ||
-          publications.events.some((item) => item.id === review.targetId)),
-    )
+  const reviews = await fetchReviewsForTargetScope({
+    profileTargetType: REVIEW_TARGET_TYPES.USER_PROFILE,
+    profileTargetId: userId,
+    publicationIds: collectPublicationTargetIds(publications),
+  })
 
   return {
     profile: mapProfile(profileRes.data),
@@ -124,12 +121,11 @@ export async function fetchGuestBusinessPreview(businessId) {
     return { error: visibility === 'contacts' ? 'contacts' : 'private', visibility }
   }
 
-  const [listingsRes, parcelsRes, jobsRes, eventsRes, reviewsRes] = await Promise.all([
+  const [listingsRes, parcelsRes, jobsRes, eventsRes] = await Promise.all([
     supabase.from('listings').select('*').eq('business_id', businessId).eq('status', 'active'),
     supabase.from('parcels').select('*').eq('business_id', businessId).in('status', ['active', 'full']),
     supabase.from('jobs').select('*').eq('business_id', businessId).eq('status', 'active'),
     supabase.from('events').select('*').eq('business_id', businessId).eq('status', 'published'),
-    supabase.from('reviews').select('*').eq('status', 'published'),
   ])
 
   const publications = mapPublications({
@@ -140,17 +136,12 @@ export async function fetchGuestBusinessPreview(businessId) {
     posts: [],
   })
 
-  const reviews = (reviewsRes.data || [])
-    .map(reviewFromRemoteRow)
-    .filter(
-      (review) =>
-        review &&
-        (review.targetId === businessId ||
-          publications.listings.some((item) => item.id === review.targetId) ||
-          publications.parcels.some((item) => item.id === review.targetId) ||
-          publications.jobs.some((item) => item.id === review.targetId) ||
-          publications.events.some((item) => item.id === review.targetId)),
-    )
+  const reviews = await fetchReviewsForTargetScope({
+    profileTargetType: REVIEW_TARGET_TYPES.BUSINESS,
+    profileTargetId: businessId,
+    publicationIds: collectPublicationTargetIds(publications),
+    ownerProfileId: businessRes.data?.owner_id || null,
+  })
 
   return {
     business: businessFromRemoteRow(businessRes.data),

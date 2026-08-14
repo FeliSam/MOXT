@@ -44,6 +44,42 @@ describe('reviewUtils', () => {
     expect(calculateAggregateRating(filtered).count).toBe(2)
   })
 
+  it('inclut les avis profil du propriétaire sur une fiche entreprise', () => {
+    const reviews = [
+      {
+        id: 'r-biz',
+        targetType: REVIEW_TARGET_TYPES.BUSINESS,
+        targetId: 'b1',
+        rating: 5,
+        status: 'published',
+        createdAt: '2026-01-02T00:00:00.000Z',
+      },
+      {
+        id: 'r-owner',
+        targetType: REVIEW_TARGET_TYPES.USER_PROFILE,
+        targetId: 'u-owner',
+        rating: 4,
+        status: 'published',
+        createdAt: '2026-01-03T00:00:00.000Z',
+      },
+      {
+        id: 'r-other',
+        targetType: REVIEW_TARGET_TYPES.USER_PROFILE,
+        targetId: 'u-other',
+        rating: 1,
+        status: 'published',
+        createdAt: '2026-01-04T00:00:00.000Z',
+      },
+    ]
+    const filtered = filterAggregateReviews(reviews, {
+      profileTargetType: REVIEW_TARGET_TYPES.BUSINESS,
+      profileTargetId: 'b1',
+      publicationIds: { listing: [], parcel: [], job: [], event: [], post: [] },
+      ownerProfileId: 'u-owner',
+    })
+    expect(filtered.map((item) => item.id)).toEqual(['r-owner', 'r-biz'])
+  })
+
   it('collecte les ids de publications', () => {
     const ids = collectPublicationTargetIds({
       listings: [{ id: 'l1' }],

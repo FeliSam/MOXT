@@ -167,7 +167,7 @@ export function MyListingCard({
             ) : null}
           </div>
 
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap [&_a]:min-w-0 [&_button]:w-full sm:[&_button]:w-auto">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap [&>*]:min-w-0 [&>*]:w-full sm:[&>*]:w-auto">
             <Link to={detailPath}>
               <Button variant="secondary" icon={FiExternalLink} size="sm">
                 {active

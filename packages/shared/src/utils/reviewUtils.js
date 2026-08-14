@@ -57,12 +57,22 @@ export function isReviewVisible(review) {
   return false
 }
 
-export function filterAggregateReviews(reviews, { profileTargetType, profileTargetId, publicationIds }) {
+export function filterAggregateReviews(
+  reviews,
+  { profileTargetType, profileTargetId, publicationIds, ownerProfileId },
+) {
   const idsByType = publicationIds || {}
   return (reviews || [])
     .filter(isReviewVisible)
     .filter((review) => {
       if (review.targetType === profileTargetType && review.targetId === profileTargetId) {
+        return true
+      }
+      if (
+        ownerProfileId &&
+        review.targetType === REVIEW_TARGET_TYPES.USER_PROFILE &&
+        review.targetId === ownerProfileId
+      ) {
         return true
       }
       const bucket = idsByType[review.targetType]

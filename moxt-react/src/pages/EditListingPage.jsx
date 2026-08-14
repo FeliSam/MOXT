@@ -25,6 +25,7 @@ import {
 } from '../features/marketplace/marketplaceI18n'
 import { useGeographyOptions } from '../hooks/useGeographyOptions'
 import { updateListing } from '../features/marketplace/marketplaceSlice'
+import { MAX_LISTING_PHOTOS } from '../features/marketplace/listingImageUtils'
 import { useLanguage } from '../contexts/useLanguage'
 import { storageService } from '../services/storageService'
 import { addToast } from '../features/ui/uiSlice'
@@ -139,7 +140,7 @@ export function EditListingPage() {
         const images = photos
           .map((photo) => (photo.existing ? photo.url : uploaded[uploadIndex++]))
           .filter(Boolean)
-          .slice(0, 6)
+          .slice(0, MAX_LISTING_PHOTOS)
         dispatch(
           updateListing({
             id: listingId,
@@ -175,7 +176,7 @@ export function EditListingPage() {
 
   function addPhotos(files) {
     const added = Array.from(files)
-      .slice(0, 6 - photos.length)
+      .slice(0, MAX_LISTING_PHOTOS - photos.length)
       .map((file) => ({ file, url: URL.createObjectURL(file), name: file.name }))
     updatePhotos((current) => [...current, ...added])
   }
@@ -358,7 +359,7 @@ export function EditListingPage() {
             photos={photos}
             onAdd={addPhotos}
             onRemove={removePhoto}
-            max={6}
+            max={MAX_LISTING_PHOTOS}
             label={mt('marketplace.common.photos')}
             hint={mt('marketplace.edit.imagesMax')}
             progress={uploadProgress}

@@ -108,7 +108,7 @@ export function ShareToFeedModal({
       const media = normalizePostImages(urls)
       // Colis : publication immédiate dans l’actualité (pas de file admin).
       // Billet / passeport restent vérifiables plus tard côté admin.
-      // Autres sources : identité vérifiée → live, sinon pending_review.
+      // Autres sources : téléphone + e-mail confirmés → live, sinon pending_review.
       const status =
         sourceType === 'parcel'
           ? 'published'

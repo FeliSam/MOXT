@@ -63,10 +63,11 @@ describe('userSecurity', () => {
     expect(securityGateMessage('publish', emailOnly)).toMatch(/numéro russe/i)
   })
 
-  it('publishes live only when identity is verified', () => {
+  it('publishes live when phone and email are verified', () => {
     expect(initialCatalogStatus(phoneUser)).toBe('pending_review')
+    expect(initialCatalogStatus(publishReadyUser)).toBe('active')
+    expect(initialCatalogStatus(publishReadyUser, { live: 'published' })).toBe('published')
     expect(initialCatalogStatus(identityUser)).toBe('active')
-    expect(initialCatalogStatus(identityUser, { live: 'published' })).toBe('published')
   })
 
   it('requires identity and email to publish P2P offers', () => {

@@ -1,5 +1,7 @@
 import { supabase } from '../../services/supabaseClient'
 
+export const MAX_LISTING_PHOTOS = 8
+
 function parseImagesValue(value) {
   if (!value) return []
   if (Array.isArray(value)) return value

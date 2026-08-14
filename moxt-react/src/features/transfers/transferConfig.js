@@ -16,6 +16,11 @@ export const TRANSFER_STATUS = {
   EXPIRED: 'expired',
 }
 
+/** Entrées de chronologie qui ne changent pas le statut métier du transfert. */
+export const TRANSFER_TIMELINE_EVENT = {
+  BUSINESS_ACCEPTED: 'business_accepted',
+}
+
 export const TRANSFER_TRANSITIONS = {
   [TRANSFER_STATUS.DECLARED]: TRANSFER_STATUS.RECEIVED,
   [TRANSFER_STATUS.RECEIVED]: TRANSFER_STATUS.PAID_OUT,

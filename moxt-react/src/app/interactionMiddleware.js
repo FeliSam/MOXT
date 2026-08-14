@@ -161,6 +161,19 @@ function fanOutPublication(store, state, item, contentType, title, linkBuilder, 
   })
 }
 
+const LIVE_PUBLICATION_STATUS = {
+  listing: new Set(['active']),
+  job: new Set(['active']),
+  event: new Set(['published']),
+  parcel: new Set(['active', 'full']),
+  post: new Set(['published']),
+  p2p: new Set(['active']),
+}
+
+function isLivePublicationStatus(contentType, status) {
+  return LIVE_PUBLICATION_STATUS[contentType]?.has(status) ?? false
+}
+
 export const interactionMiddleware = (store) => {
   const triggers = createNotificationDispatcher(store)
   return (next) => (action) => {
@@ -1051,29 +1064,95 @@ export const interactionMiddleware = (store) => {
   }
 
   const moderationDomains = {
-    'events/moderateEvent': ['events', '/events/', appText('notificationsFeed.labelEvent')],
-    'jobs/moderateJob': ['jobs', '/jobs/', appText('notificationsFeed.labelJob')],
-    'marketplace/updateListingStatus': [
-      'marketplace',
-      '/marketplace/',
-      appText('notificationsFeed.labelListing'),
-    ],
+    'events/moderateEvent': {
+      sliceKey: 'events',
+      linkFor: (resource) => `/events/${resource.id}`,
+      label: appText('notificationsFeed.labelEvent'),
+      fanOut: {
+        contentType: 'event',
+        title: appText('notificationsFeed.fanOutEvent'),
+        link: (id) => `/events/${id}`,
+        everyone: true,
+      },
+    },
+    'jobs/moderateJob': {
+      sliceKey: 'jobs',
+      linkFor: (resource) => `/jobs/${resource.id}`,
+      label: appText('notificationsFeed.labelJob'),
+      fanOut: {
+        contentType: 'job',
+        title: appText('notificationsFeed.fanOutJob'),
+        link: (id) => `/jobs/${id}`,
+        everyone: true,
+      },
+    },
+    'marketplace/updateListingStatus': {
+      sliceKey: 'marketplace',
+      linkFor: (resource) => `/marketplace/${resource.id}`,
+      label: appText('notificationsFeed.labelListing'),
+      fanOut: {
+        contentType: 'listing',
+        title: appText('notificationsFeed.fanOutListing'),
+        link: (id) => `/marketplace/${id}`,
+        everyone: true,
+      },
+    },
+    'posts/moderatePost': {
+      sliceKey: 'posts',
+      linkFor: (resource) => `/news?post=${resource.id}`,
+      label: appText('notificationsFeed.fanOutPost'),
+      fanOut: {
+        contentType: 'post',
+        title: appText('notificationsFeed.fanOutPost'),
+        link: (id) => `/news?post=${id}`,
+        everyone: false,
+      },
+    },
   }
   const moderation = moderationDomains[action.type]
   if (moderation) {
     const actor = store.getState().auth?.user
     const actorIsStaff = ['admin', 'superadmin', 'moderator'].includes(actor?.role)
     if (actorIsStaff) {
-      const [domain, path, label] = moderation
-      const resource = after[domain].items.find((item) => item.id === action.payload.id)
-      if (resource?.ownerId && resource.ownerId !== actorId) {
+      const previous = before[moderation.sliceKey].items.find((item) => item.id === action.payload.id)
+      const resource = after[moderation.sliceKey].items.find((item) => item.id === action.payload.id)
+      const { status } = action.payload
+      const ownerId = resource?.ownerId || resource?.authorId
+      if (ownerId && ownerId !== actorId) {
         notify(store, {
-          userId: resource.ownerId,
-          title: appText('notificationsFeed.resourceUpdated', { label }),
-          message: appText('notificationsFeed.newStatus', { status: action.payload.status }),
+          userId: ownerId,
+          title: appText('notificationsFeed.resourceUpdated', { label: moderation.label }),
+          message: appText('notificationsFeed.newStatus', { status }),
           type: 'moderation',
-          link: `${path}${resource.id}`,
+          link: moderation.linkFor(resource),
         })
+      }
+
+      const { fanOut } = moderation
+      const wasLive = isLivePublicationStatus(fanOut.contentType, previous?.status)
+      const isLive = isLivePublicationStatus(fanOut.contentType, status)
+      if (isLive && !wasLive && resource?.id) {
+        if (fanOut.everyone) {
+          fanOutPublicationToEveryone(
+            store,
+            after,
+            resource,
+            fanOut.contentType,
+            fanOut.title,
+            fanOut.link,
+            'high',
+          )
+        } else {
+          fanOutPublication(
+            store,
+            after,
+            resource,
+            fanOut.contentType,
+            fanOut.title,
+            fanOut.link,
+            'high',
+          )
+        }
       }
     }
   }
@@ -1241,75 +1320,87 @@ export const interactionMiddleware = (store) => {
   }
 
   if (action.type === 'marketplace/publishListing/fulfilled') {
-    fanOutPublicationToEveryone(
-      store,
-      after,
-      action.payload,
-      'listing',
-      appText('notificationsFeed.fanOutListing'),
-      (id) => `/marketplace/${id}`,
-      'high',
-    )
+    if (isLivePublicationStatus('listing', action.payload?.status)) {
+      fanOutPublicationToEveryone(
+        store,
+        after,
+        action.payload,
+        'listing',
+        appText('notificationsFeed.fanOutListing'),
+        (id) => `/marketplace/${id}`,
+        'high',
+      )
+    }
   }
 
   if (action.type === 'jobs/createJob') {
-    fanOutPublicationToEveryone(
-      store,
-      after,
-      action.payload,
-      'job',
-      appText('notificationsFeed.fanOutJob'),
-      (id) => `/jobs/${id}`,
-      'high',
-    )
+    if (isLivePublicationStatus('job', action.payload?.status)) {
+      fanOutPublicationToEveryone(
+        store,
+        after,
+        action.payload,
+        'job',
+        appText('notificationsFeed.fanOutJob'),
+        (id) => `/jobs/${id}`,
+        'high',
+      )
+    }
   }
 
   if (action.type === 'events/createEvent') {
-    fanOutPublicationToEveryone(
-      store,
-      after,
-      action.payload,
-      'event',
-      appText('notificationsFeed.fanOutEvent'),
-      (id) => `/events/${id}`,
-      'high',
-    )
+    if (isLivePublicationStatus('event', action.payload?.status)) {
+      fanOutPublicationToEveryone(
+        store,
+        after,
+        action.payload,
+        'event',
+        appText('notificationsFeed.fanOutEvent'),
+        (id) => `/events/${id}`,
+        'high',
+      )
+    }
   }
 
   if (action.type === 'parcels/createParcel') {
-    fanOutPublicationToEveryone(
-      store,
-      after,
-      action.payload,
-      'parcel',
-      appText('notificationsFeed.fanOutParcel'),
-      (id) => `/parcels/${id}`,
-      'high',
-    )
+    if (isLivePublicationStatus('parcel', action.payload?.status)) {
+      fanOutPublicationToEveryone(
+        store,
+        after,
+        action.payload,
+        'parcel',
+        appText('notificationsFeed.fanOutParcel'),
+        (id) => `/parcels/${id}`,
+        'high',
+      )
+    }
   }
 
   if (action.type === 'p2p/createOffer') {
-    fanOutPublicationToEveryone(
-      store,
-      after,
-      action.payload,
-      'p2p',
-      appText('notificationsFeed.fanOutP2p'),
-      (id) => `/p2p/${id}`,
-      'high',
-    )
+    if (isLivePublicationStatus('p2p', action.payload?.status)) {
+      fanOutPublicationToEveryone(
+        store,
+        after,
+        action.payload,
+        'p2p',
+        appText('notificationsFeed.fanOutP2p'),
+        (id) => `/p2p/${id}`,
+        'high',
+      )
+    }
   }
 
   if (action.type === 'posts/createPost') {
-    fanOutPublication(
-      store,
-      after,
-      action.payload,
-      'post',
-      appText('notificationsFeed.fanOutPost'),
-      (id) => `/news?post=${id}`,
-      'high',
-    )
+    if (isLivePublicationStatus('post', action.payload?.status)) {
+      fanOutPublication(
+        store,
+        after,
+        action.payload,
+        'post',
+        appText('notificationsFeed.fanOutPost'),
+        (id) => `/news?post=${id}`,
+        'high',
+      )
+    }
   }
 
   if (

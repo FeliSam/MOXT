@@ -243,7 +243,7 @@ export function BusinessPublicationsPage() {
           location: descriptionLocation,
         })}
         actions={
-          <div className="grid w-full min-w-0 grid-cols-1 gap-2 xs:grid-cols-2 sm:flex sm:flex-wrap sm:items-center [&_a]:min-w-0 [&_a]:w-full sm:[&_a]:w-auto [&_button]:w-full sm:[&_button]:w-auto">
+          <div className="grid w-full min-w-0 grid-cols-1 gap-2 xs:grid-cols-2 sm:flex sm:flex-wrap sm:items-center [&>*]:min-w-0 [&>*]:w-full sm:[&>*]:w-auto">
             {guestMode ? (
               <Link to="/discover">
                 <Button variant="secondary" icon={FiArrowLeft}>

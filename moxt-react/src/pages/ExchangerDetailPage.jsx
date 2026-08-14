@@ -19,7 +19,8 @@ import { useLanguage } from '../contexts/useLanguage'
 import { ContactButton } from '../features/communications/ContactButton'
 import { BusinessRatingBadge } from '../features/reviews/BusinessRatingBadge'
 import { ReviewsSection, REVIEW_TARGET_TYPES } from '../features/reviews/ReviewsSection'
-import { selectBusinessReviewsBundle } from '../features/reviews/reviewSelectors'
+import { useScopedBusinessReviews } from '../features/reviews/useScopedTargetReviews'
+import { selectBusinessContent } from '../features/businesses/businessSelectors'
 import { ExchangerPickerAvatar } from '../features/transfers/ExchangerPickerAvatar'
 import {
   EXCHANGER_DELAY_TO_CONFIRM,
@@ -56,10 +57,11 @@ export function ExchangerDetailPage() {
   )
   const business = resolved?.business || null
   const exchanger = resolved?.exchanger || null
-
-  const { reviews, rating } = useSelector((state) =>
-    selectBusinessReviewsBundle(state, business),
-  )
+  const content = useSelector((state) => selectBusinessContent(state, business))
+  const { reviews, rating } = useScopedBusinessReviews(business?.id, content, {
+    enabled: Boolean(business?.id),
+    ownerUserId: business?.ownerId,
+  })
   // Même règle que la fiche entreprise / BusinessRatingBadge : note agrégée
   // réelle uniquement (pas de fallback sur exchanger.rating figé).
   const ratingDisplay = rating.count ? `${Number(rating.average || 0).toFixed(1)}/5` : '—'

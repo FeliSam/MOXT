@@ -48,6 +48,7 @@ import {
   resolveBusinessPublishContext,
 } from '../features/businesses/businessPublishUtils'
 import { publishListing } from '../features/marketplace/marketplaceSlice'
+import { MAX_LISTING_PHOTOS } from '../features/marketplace/listingImageUtils'
 import { useActionBurst } from '../components/ui/ActionBurst'
 import { addToast } from '../features/ui/uiSlice'
 import { SecurityGatePanel } from '../features/security/SecurityGatePanel'
@@ -208,7 +209,7 @@ export function PublishListingPage() {
   // ── Photos ────────────────────────────────────────────────────────────────
   function addPhotos(files) {
     const added = Array.from(files)
-      .slice(0, 6 - photos.length)
+      .slice(0, MAX_LISTING_PHOTOS - photos.length)
       .map((f) => ({ file: f, url: URL.createObjectURL(f), name: f.name }))
     setPhotos((p) => [...p, ...added])
     setErrors((e) => ({ ...e, photos: undefined }))
@@ -783,7 +784,7 @@ export function PublishListingPage() {
                   </div>
                 </div>
               ))}
-              {photos.length < 6 ? (
+              {photos.length < MAX_LISTING_PHOTOS ? (
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}

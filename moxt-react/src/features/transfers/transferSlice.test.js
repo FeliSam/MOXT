@@ -11,7 +11,7 @@ import reducer, {
   receiveRemoteTransfer,
 } from './transferSlice'
 import { canRevealPaymentDetails, canClientDeclarePayment } from './transferAcceptanceUtils'
-import { DIRECTIONS, TRANSFER_STATUS } from './transferConfig'
+import { DIRECTIONS, TRANSFER_STATUS, TRANSFER_TIMELINE_EVENT } from './transferConfig'
 
 const payload = {
   amount: 50000,
@@ -93,6 +93,9 @@ describe('transferSlice', () => {
     expect(accepted.items[0].paymentDeadlineAt).toBeTruthy()
     expect(accepted.items[0].exchanger.paymentDetails?.phone).toBe('97000000')
     expect(canRevealPaymentDetails(accepted.items[0])).toBe(true)
+    expect(accepted.items[0].timeline).toHaveLength(2)
+    expect(accepted.items[0].timeline[0].status).toBe(TRANSFER_STATUS.PENDING_ACCEPTANCE)
+    expect(accepted.items[0].timeline[1].status).toBe(TRANSFER_TIMELINE_EVENT.BUSINESS_ACCEPTED)
   })
 
   it('refuse puis permet la reassignation du meme transfert', () => {

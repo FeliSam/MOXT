@@ -219,9 +219,16 @@ export function ReviewsSection({
         </Card>
 
         <Card className="grid content-start gap-4">
-          <h3 className="font-black">{t('reviews.allReviews')}</h3>
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h3 className="font-black">{t('reviews.allReviews')}</h3>
+            {reviews.length ? (
+              <span className="text-xs font-semibold tabular-nums text-[var(--app-text-faint)]">
+                {t('reviews.summaryTotal', { count: reviews.length })}
+              </span>
+            ) : null}
+          </div>
           {reviews.length ? (
-            <div className="grid max-h-[42rem] gap-3 overflow-y-auto pr-1">
+            <div className="grid max-h-[min(42rem,70vh)] gap-3 overflow-y-auto overscroll-y-contain pr-1">
               {reviews.map((review) => (
                 <ReviewCard
                   key={review.id}

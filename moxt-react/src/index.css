@@ -1033,6 +1033,66 @@ html.messages-route-lock #root {
   min-width: 0;
 }
 
+@media (max-width: 639px) {
+  .message-thread-canvas {
+    --message-media-width: min(62.5cqw, 28.125rem);
+    --message-media-top: min(15.625cqw, 7.03125rem);
+  }
+
+  .message-row {
+    max-width: min(100%, 40.625rem);
+  }
+
+  .message-row:has(.message-stack--media) {
+    max-width: min(100%, 56.25rem);
+  }
+
+  /* Reçus : compenser avatar + espacement pour égaler la largeur utile des envoyés */
+  .message-row:not(.message-row--sent):has(.message-avatar:not(.message-avatar--ghost)) {
+    max-width: min(100%, calc(40.625rem + 2.05rem));
+  }
+
+  .message-row:not(.message-row--sent):has(.message-stack--media):has(
+      .message-avatar:not(.message-avatar--ghost)
+    ) {
+    max-width: min(100%, calc(56.25rem + 2.05rem));
+  }
+
+  .message-row:not(.message-row--sent) .message-avatar--ghost {
+    display: none;
+  }
+
+  .message-row:not(.message-row--sent) .message-stack {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .message-stack--media {
+    width: var(--message-media-width, min(62.5%, 28.125rem));
+  }
+
+  .message-row:not(.message-row--sent) .message-stack--media {
+    width: var(--message-media-width, min(62.5%, 28.125rem));
+    max-width: var(--message-media-width, min(62.5%, 28.125rem));
+    flex-shrink: 0;
+  }
+
+  .message-stack--media .message-stack-row {
+    width: 100%;
+  }
+
+  .message-stack--media .message-bubble {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 639px) and (hover: none) {
+  .message-actions-trigger:not(.message-actions-trigger--open) {
+    display: none;
+  }
+}
+
 .message-bubble--has-image {
   width: 100%;
   max-width: 100%;
@@ -1092,6 +1152,8 @@ html.messages-route-lock #root {
   background: none;
   line-height: 0;
   cursor: zoom-in;
+  overflow: hidden;
+  border-radius: 0.875rem;
   transition: transform var(--transition-fast), filter var(--transition-fast);
 }
 
@@ -1149,6 +1211,8 @@ html.messages-route-lock #root {
   background: none;
   line-height: 0;
   cursor: zoom-in;
+  overflow: hidden;
+  border-radius: 0.875rem;
   transform: rotate(var(--stack-rot, 0deg)) scale(var(--stack-scale, 1));
   transition: filter var(--transition-fast);
   will-change: transform;
@@ -1175,6 +1239,8 @@ html.messages-route-lock #root {
   object-fit: cover;
   border-radius: 0.875rem;
   box-shadow: none;
+  transform: scale(1.35);
+  transform-origin: center center;
 }
 
 .message-attachment-stack-layer:hover {
@@ -1202,6 +1268,8 @@ html.messages-route-lock #root {
   object-fit: cover;
   border-radius: 0.875rem;
   box-shadow: var(--shadow-card);
+  transform: scale(1.35);
+  transform-origin: center center;
 }
 
 .message-bubble--has-image.message-bubble--sent .message-attachment-image img {
@@ -1209,7 +1277,7 @@ html.messages-route-lock #root {
 }
 
 .message-attachment-image:hover img {
-  transform: translateY(-1px);
+  transform: scale(1.35) translateY(-1px);
   filter: brightness(1.02);
 }
 

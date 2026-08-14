@@ -110,6 +110,44 @@ describe('interactionMiddleware', () => {
     expect(notifications[0].link).toBe('/news?post=POST-1')
   })
 
+  it('n envoie pas de notification pour un post en attente de moderation', () => {
+    const store = configureStore({
+      reducer: {
+        auth: () => ({ user: { id: 'author1' } }),
+        communications: communicationsReducer,
+        ui: uiReducer,
+        posts: postsReducer,
+        jobs: () => ({ applications: [], items: [] }),
+        events: () => ({ registrations: [], items: [] }),
+        parcels: () => ({ items: [] }),
+        businesses: () => ({ items: [] }),
+        marketplace: () => ({ items: [] }),
+        finance: () => ({ payments: [], receipts: [], walletEntries: [] }),
+        account: () => ({
+          subscriptions: [
+            { userId: 'sub1', publisherType: 'user', publisherId: 'author1', notifyPref: 'all' },
+          ],
+        }),
+      },
+      preloadedState: {
+        communications: { conversations: [], notifications: [], support: [] },
+      },
+      middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(interactionMiddleware),
+    })
+
+    store.dispatch(
+      createPost({
+        id: 'POST-2',
+        authorId: 'author1',
+        authorName: 'Amina',
+        message: 'En attente',
+        status: 'pending_review',
+      }),
+    )
+
+    expect(store.getState().communications.notifications).toHaveLength(0)
+  })
+
   it('notifie le candidat quand son statut change', () => {
     const store = configureStore({
       reducer: {

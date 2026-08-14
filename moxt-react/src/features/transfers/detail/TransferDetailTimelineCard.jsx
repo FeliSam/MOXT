@@ -3,10 +3,11 @@ import { Card } from '../../../components/ui/Card'
 import { DetailTimeline } from '../../../components/ui/DetailBlocks'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { formatDate } from '../transferUtils'
-import { transferTimelineLabelKeys, transferTimelineLabels } from './transferDetailConfig'
+import { buildTransferTimelineItems } from './transferTimelineUtils'
 
 export function TransferDetailTimelineCard({ transfer }) {
   const { t } = useLanguage()
+  const items = buildTransferTimelineItems(transfer, t, formatDate)
   return (
     <Card className="ring-1 ring-transparent transition-shadow duration-300 hover:ring-brand-200 dark:hover:ring-brand-800">
       <h2 className="flex items-center gap-2 font-black">
@@ -16,16 +17,7 @@ export function TransferDetailTimelineCard({ transfer }) {
         {t('transfers.detail.timeline.title')}
       </h2>
       <div className="mt-5">
-        <DetailTimeline
-          items={transfer.timeline.map((event) => {
-            const key = transferTimelineLabelKeys[event.status]
-            const label = key ? t(key) : transferTimelineLabels[event.status] || event.status
-            return {
-              label,
-              date: formatDate(event.at),
-            }
-          })}
-        />
+        <DetailTimeline items={items} />
       </div>
     </Card>
   )

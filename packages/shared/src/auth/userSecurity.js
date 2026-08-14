@@ -39,11 +39,11 @@ export function canPublishContent(user) {
 }
 
 /**
- * Compte identité vérifié → publication immédiate.
+ * Téléphone + e-mail confirmés (accès marketplace) → publication immédiate.
  * Sinon → pending_review (modération admin).
  */
 export function initialCatalogStatus(user, { live = 'active', pending = 'pending_review' } = {}) {
-  return isIdentityVerified(user) ? live : pending
+  return canPublishContent(user) ? live : pending
 }
 
 /** E-mail confirmé (Supabase Auth). */

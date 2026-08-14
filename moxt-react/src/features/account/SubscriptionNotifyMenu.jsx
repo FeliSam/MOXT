@@ -197,7 +197,7 @@ export function SubscriptionNotifyMenu({
 
   return (
     <>
-      <span ref={anchorRef} className="inline-flex">
+      <span ref={anchorRef} className="inline-flex shrink-0">
         {triggerElement}
       </span>
       {menu}

@@ -1,6 +1,11 @@
 import { fromRow } from '../../services/remoteRowMapper'
 import { supabase } from '../../services/supabaseClient'
-import { REVIEW_TARGET_TYPES } from '@moxt/shared/utils/reviewUtils.js'
+import {
+  PUBLICATION_REVIEW_TARGET_TYPES,
+  REVIEW_TARGET_TYPES,
+} from '@moxt/shared/utils/reviewUtils.js'
+
+export { REVIEW_TARGET_TYPES }
 
 export function reviewToRemoteRow(review) {
   return {
@@ -102,12 +107,42 @@ async function deleteReviewRows(query) {
   return data?.length || 0
 }
 
+async function findReviewRemoteId(review) {
+  if (!review?.authorId || !review?.targetType || !review?.targetId) return null
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('id')
+    .eq('author_id', review.authorId)
+    .eq('target_type', review.targetType)
+    .eq('target_id', review.targetId)
+    .maybeSingle()
+  if (error) throw error
+  return data?.id || null
+}
+
+async function reviewExistsRemote(reviewId) {
+  if (!reviewId) return false
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('id')
+    .eq('id', reviewId)
+    .maybeSingle()
+  if (error) throw error
+  return Boolean(data?.id)
+}
+
 /** Supprime un avis — retente par auteur+cible si l'id local ne correspond pas au back. */
 export async function deleteReviewRemote(reviewId, review) {
-  if (reviewId) {
-    const deleted = await deleteReviewRows(
-      supabase.from('reviews').delete().eq('id', reviewId),
-    )
+  const candidateIds = []
+  if (reviewId) candidateIds.push(reviewId)
+
+  const resolvedId = await findReviewRemoteId(review)
+  if (resolvedId && !candidateIds.includes(resolvedId)) {
+    candidateIds.unshift(resolvedId)
+  }
+
+  for (const id of candidateIds) {
+    const deleted = await deleteReviewRows(supabase.from('reviews').delete().eq('id', id))
     if (deleted > 0) return
   }
 
@@ -123,14 +158,80 @@ export async function deleteReviewRemote(reviewId, review) {
     if (deleted > 0) return
   }
 
-  if (reviewId) {
-    const deleted = await deleteReviewRows(
-      supabase.from('reviews').delete().eq('id', reviewId),
-    )
-    if (deleted > 0) return
+  for (const id of candidateIds) {
+    if (!(await reviewExistsRemote(id))) return
   }
 
   throw new Error('review delete failed')
+}
+
+const SCOPE_FETCH_LIMIT = 100
+
+function mergeReviewRowsById(...groups) {
+  const merged = new Map()
+  for (const group of groups) {
+    for (const row of group || []) {
+      if (row?.id) merged.set(row.id, row)
+    }
+  }
+  return [...merged.values()]
+}
+
+/** Charge les avis visibles pour un profil ou une entreprise (+ publications liées). */
+export async function fetchReviewsForTargetScope({
+  profileTargetType,
+  profileTargetId,
+  publicationIds = {},
+  ownerProfileId = null,
+}) {
+  if (!profileTargetType || !profileTargetId || !supabase) return []
+
+  const queries = [
+    supabase
+      .from('reviews')
+      .select('*')
+      .eq('target_type', profileTargetType)
+      .eq('target_id', profileTargetId)
+      .order('created_at', { ascending: false })
+      .limit(SCOPE_FETCH_LIMIT),
+  ]
+
+  if (
+    ownerProfileId &&
+    profileTargetType === REVIEW_TARGET_TYPES.BUSINESS &&
+    ownerProfileId !== profileTargetId
+  ) {
+    queries.push(
+      supabase
+        .from('reviews')
+        .select('*')
+        .eq('target_type', REVIEW_TARGET_TYPES.USER_PROFILE)
+        .eq('target_id', ownerProfileId)
+        .order('created_at', { ascending: false })
+        .limit(SCOPE_FETCH_LIMIT),
+    )
+  }
+
+  for (const targetType of PUBLICATION_REVIEW_TARGET_TYPES) {
+    const ids = publicationIds[targetType]
+    if (!Array.isArray(ids) || !ids.length) continue
+    queries.push(
+      supabase
+        .from('reviews')
+        .select('*')
+        .eq('target_type', targetType)
+        .in('target_id', ids)
+        .order('created_at', { ascending: false })
+        .limit(SCOPE_FETCH_LIMIT),
+    )
+  }
+
+  const results = await Promise.all(queries)
+  const failed = results.find((result) => result.error)
+  if (failed?.error) throw failed.error
+
+  const rows = mergeReviewRowsById(...results.map((result) => result.data || []))
+  return rows.map(reviewFromRemoteRow).filter(Boolean)
 }
 
 export function resolveReviewTargetHref(review, publication) {

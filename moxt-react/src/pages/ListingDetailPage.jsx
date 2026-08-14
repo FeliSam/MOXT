@@ -644,7 +644,7 @@ function Gallery({
         ) : null}
       </div>
       {images.length ? (
-        <div className="mt-3 grid grid-cols-4 gap-3 sm:grid-cols-6">
+        <div className="mt-3 grid grid-cols-4 gap-3 sm:grid-cols-8">
           {images.map((image, index) => (
             <button
               key={image}

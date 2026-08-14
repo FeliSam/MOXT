@@ -3748,7 +3748,7 @@ export const pt = {
       productCondition: "Estado do produto",
       availableQuantity: "Quantidade disponível",
       specificInfo: "Informações específicas · {type}",
-      photosHint: "Máximo de 6 fotos · a primeira será a foto principal · clique para reordenar.",
+      photosHint: "Máximo de 8 fotos · a primeira será a foto principal · clique para reordenar.",
       mainPhoto: "Principal",
       dropPhotos: "Clique ou arraste as suas fotos aqui",
       dropPhotosHint: "JPG, PNG, WebP — máx. 6 fotos",
@@ -3938,6 +3938,7 @@ export const pt = {
     },
     timeline: {
       pendingAcceptance: "Pedido enviado ao cambista",
+      businessAccepted: "Pedido aceite pela empresa",
       businessDeclined: "Cambista indisponível (recusa ou prazo esgotado)",
       pending: "Transferência criada, pagamento pendente",
       declared: "Pagamento declarado pelo cliente",

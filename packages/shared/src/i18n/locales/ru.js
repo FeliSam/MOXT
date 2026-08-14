@@ -3749,7 +3749,7 @@ export const ru = {
       productCondition: "Состояние товара",
       availableQuantity: "Доступное количество",
       specificInfo: "Дополнительная информация · {type}",
-      photosHint: "Максимум 6 фото · первое фото будет главным · нажмите, чтобы изменить порядок.",
+      photosHint: "Максимум 8 фото · первое фото будет главным · нажмите, чтобы изменить порядок.",
       mainPhoto: "Главное",
       dropPhotos: "Нажмите или перетащите фото сюда",
       dropPhotosHint: "JPG, PNG, WebP — максимум 6 фото",
@@ -3939,6 +3939,7 @@ export const ru = {
     },
     timeline: {
       pendingAcceptance: "Запрос отправлен обменнику",
+      businessAccepted: "Запрос принят компанией",
       businessDeclined: "Обменник недоступен (отказ или истечение срока)",
       pending: "Перевод создан, ожидается оплата",
       declared: "Клиент заявил об оплате",
