@@ -12,7 +12,7 @@ import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { CatalogSearch } from '../components/ui/CatalogSearch'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Modal } from '../components/ui/Modal'
-import { PageHeader } from '../components/ui/PageHeader'
+import { HeaderIslandButton, PageHeader } from '../components/ui/PageHeader'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { Select } from '../components/ui/Select'
 import { useLanguage } from '../contexts/useLanguage'
@@ -124,9 +124,11 @@ export function P2PPage() {
         title={t('p2p.page.title')}
         stats={[{ label: t('p2p.page.activeOffers'), value: activeOffers.length }]}
         actions={
-          <Button icon={FiPlus} onClick={openPublish}>
-            {t('p2p.page.proposeOffer')}
-          </Button>
+          <HeaderIslandButton
+            icon={FiPlus}
+            label={t('p2p.page.proposeOffer')}
+            onClick={openPublish}
+          />
         }
       />
 

@@ -57,7 +57,7 @@ export function parseMoxtScanTarget(raw) {
     const businessId = businessPublicationsMatch[1]
     return {
       type: 'business',
-      path: `/businesses/${businessId}/publications/listings${search}`,
+      path: `/businesses/${businessId}${search}`,
       labelKey: 'share.scanner.targets.business',
       businessId,
     }
@@ -68,7 +68,7 @@ export function parseMoxtScanTarget(raw) {
     const businessId = businessMatch[1]
     return {
       type: 'business',
-      path: `/businesses/${businessId}/publications/listings`,
+      path: `/businesses/${businessId}${search}`,
       labelKey: 'share.scanner.targets.business',
       businessId,
     }

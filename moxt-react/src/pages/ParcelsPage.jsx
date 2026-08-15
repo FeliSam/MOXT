@@ -9,7 +9,7 @@ import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { CatalogSearch } from '../components/ui/CatalogSearch'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Input } from '../components/ui/Input'
-import { PageHeader } from '../components/ui/PageHeader'
+import { HeaderIslandButton, PageHeader } from '../components/ui/PageHeader'
 import { Badge, VerifiedBadge } from '../components/ui/Badge'
 import { EntityVerifiedName } from '../components/ui/EntityVerifiedName'
 import { RevealListItem } from '../components/ui/RevealListItem'
@@ -124,16 +124,17 @@ export function ParcelsPage() {
         ]}
         actions={
           <>
-            <Button
-              variant={showMine ? 'primary' : 'secondary'}
+            <HeaderIslandButton
               icon={FiUser}
+              active={showMine}
+              label={showMine ? t('parcels.browse.actions.allParcels') : t('parcels.browse.actions.myParcels')}
               onClick={() => setShowMine((v) => !v)}
-            >
-              {showMine ? t('parcels.browse.actions.allParcels') : t('parcels.browse.actions.myParcels')}
-            </Button>
-            <Button icon={FiPlus} onClick={() => navigate('/parcels/publish')}>
-              {t('parcels.browse.actions.publish')}
-            </Button>
+            />
+            <HeaderIslandButton
+              icon={FiPlus}
+              label={t('parcels.browse.actions.publish')}
+              onClick={() => navigate('/parcels/publish')}
+            />
           </>
         }
       />

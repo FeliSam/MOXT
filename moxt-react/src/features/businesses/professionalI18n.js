@@ -9,6 +9,7 @@ export const PROFESSIONAL_FR_SOURCES = {
   'professional.page.description':
     'Demandes, équipe, documents, publications et performances dans un espace adapté à votre activité.',
   'professional.page.viewPublic': 'Voir la fiche publique',
+  'professional.page.republish': 'Republier',
   'professional.page.tabsAria': 'Sections de mon entreprise',
   'professional.page.metrics.profileComplete': 'Profil complété',
   'professional.page.metrics.requests': 'Demandes',

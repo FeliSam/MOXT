@@ -1,5 +1,6 @@
 import { FiArrowLeft } from 'react-icons/fi'
 import { Button } from './Button'
+import { HeaderIslandButton } from './PageHeader'
 import { useLanguage } from '../../contexts/useLanguage'
 import { useBackNavigation } from '../../hooks/useBackNavigation'
 
@@ -12,11 +13,24 @@ export function BackButton({
   appearance = 'button',
   variant = 'secondary',
   className,
+  iconOnly = false,
   ...buttonProps
 }) {
   const { t } = useLanguage()
   const { goBack } = useBackNavigation(fallback)
   const resolvedLabel = label ?? t('common.back')
+
+  if (iconOnly || appearance === 'island') {
+    return (
+      <HeaderIslandButton
+        icon={FiArrowLeft}
+        label={resolvedLabel}
+        onClick={goBack}
+        className={className}
+        {...buttonProps}
+      />
+    )
+  }
 
   if (appearance === 'link') {
     return (

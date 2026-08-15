@@ -41,9 +41,9 @@ export function PublisherDetailCard({
   const resolvedCtaLabel = ctaLabel ?? t('publications.publisher.viewAllPublications')
   const directoryPath =
     businessProfilePath ||
-    (businessId ? `/businesses/${businessId}/publications/listings` : null) ||
-    (business?.id ? `/businesses/${business.id}/publications/listings` : null) ||
-    (ownerBusiness?.id ? `/businesses/${ownerBusiness.id}/publications/listings` : null)
+    (businessId ? `/businesses/${businessId}` : null) ||
+    (business?.id ? `/businesses/${business.id}` : null) ||
+    (ownerBusiness?.id ? `/businesses/${ownerBusiness.id}` : null)
   const publisherVerified = business ? isBusinessPublishReady(business) : verified
   const profilePath =
     publicationsPath || (ownerId ? `/users/${ownerId}/publications` : null)

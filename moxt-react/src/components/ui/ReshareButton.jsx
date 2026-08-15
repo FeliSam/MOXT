@@ -8,7 +8,13 @@ import { ShareToFeedModal } from './ShareToFeedModal'
  * Bouton "Republier" affiché sur les pages de détail.
  * Seul le propriétaire de l'élément peut le republier, et une seule fois.
  */
-export function ReshareButton({ sourceType, sourceId, sourceData, className = '' }) {
+export function ReshareButton({
+  sourceType,
+  sourceId,
+  sourceData,
+  className = '',
+  iconOnly = false,
+}) {
   const user = useSelector((s) => s.auth.user)
   const [open, setOpen] = useState(false)
   const { trigger: triggerBurst, node: burstNode } = useActionBurst()
@@ -26,9 +32,16 @@ export function ReshareButton({ sourceType, sourceId, sourceData, className = ''
   if (alreadyShared) {
     return (
       <span
-        className={`flex items-center gap-2 rounded-2xl border-2 border-gray-200 bg-gray-50 px-4 py-2.5 text-sm font-bold text-gray-400 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-500 ${className}`}
+        className={
+          iconOnly
+            ? `grid size-12 place-items-center rounded-full border border-[var(--app-border)] bg-[var(--app-surface-muted)] text-lg text-[var(--app-text-faint)] ${className}`
+            : `flex items-center gap-2 rounded-2xl border-2 border-gray-200 bg-gray-50 px-4 py-2.5 text-sm font-bold text-gray-400 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-500 ${className}`
+        }
+        title="Déjà publié"
+        aria-label="Déjà publié"
       >
-        <FiCheck className="text-sm" /> Déjà publié
+        <FiCheck className={iconOnly ? 'text-lg' : 'text-sm'} />
+        {iconOnly ? null : ' Déjà publié'}
       </span>
     )
   }
@@ -39,9 +52,15 @@ export function ReshareButton({ sourceType, sourceId, sourceData, className = ''
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`btn-press flex items-center gap-2 rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-700 transition hover:border-emerald-400 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 dark:hover:border-emerald-500 ${className}`}
+        aria-label={iconOnly ? 'Republier' : undefined}
+        className={
+          iconOnly
+            ? `btn-press grid size-12 place-items-center rounded-full border border-[var(--app-border)] bg-[var(--app-surface)] text-lg text-[var(--app-text)] shadow-[var(--shadow-float)] transition hover:border-brand-300 hover:text-brand-700 ${className}`
+            : `btn-press flex items-center gap-2 rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-700 transition hover:border-emerald-400 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 dark:hover:border-emerald-500 ${className}`
+        }
       >
-        <FiRepeat className="text-sm" /> Republier annuaire
+        <FiRepeat className={iconOnly ? 'text-lg' : 'text-sm'} />
+        {iconOnly ? null : ' Republier annuaire'}
       </button>
       {open && (
         <ShareToFeedModal

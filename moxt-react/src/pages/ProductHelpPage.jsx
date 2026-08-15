@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useParams } from 'react-router-dom'
-import { BackButton } from '../components/ui/BackButton'
+import { FiArrowLeft } from 'react-icons/fi'
 import { LinkifiedText } from '../components/ui/LinkifiedText'
 import { PillBadge } from '../components/ui/Badge'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { CatalogSearch } from '../components/ui/CatalogSearch'
 import { EmptyState } from '../components/ui/EmptyState'
-import { PageHeader } from '../components/ui/PageHeader'
+import { HeaderIslandButton, PageHeader } from '../components/ui/PageHeader'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { PRODUCT_HELP_CATEGORIES, productHelpCategoryMeta } from '../config/productHelpCategories'
 import { findProductSession, resolveProductSessions } from '../config/productHelpSessions'
@@ -154,7 +154,7 @@ export function ProductHelpSessionPage() {
     <div className="mx-auto grid max-w-3xl gap-6">
       <PageHeader
         title={session.title}
-        actions={<BackButton fallback="/aide" />}
+        actions={<HeaderIslandButton icon={FiArrowLeft} label={t('common.back')} to="/aide" />}
       />
       <div className="flex flex-wrap items-center gap-2 text-xs font-black uppercase tracking-wide text-brand-700 dark:text-brand-300">
         <span className="grid size-7 place-items-center rounded-lg bg-brand-700 text-white">

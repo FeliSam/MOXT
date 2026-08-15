@@ -115,7 +115,7 @@ export function FavoriteButton({
       onClick={handleClick}
       aria-label={ariaLabel || (active ? 'Retirer des favoris' : 'Ajouter aux favoris')}
       aria-pressed={active}
-      className={`favorite-btn pointer-events-auto grid place-items-center overflow-visible ${shapeClass} transition-all duration-200 active:scale-90 ${sizeClass} ${variantClass} ${
+      className={`favorite-btn pointer-events-auto grid shrink-0 place-items-center overflow-visible ${shapeClass} transition-all duration-200 active:scale-90 ${sizeClass} ${variantClass} ${
         pulse === 'in' ? 'favorite-btn--pop' : ''
       } ${pulse === 'out' ? 'favorite-btn--shrink' : ''} ${className}`}
     >

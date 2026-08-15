@@ -43,16 +43,14 @@ function MarketplaceListingCardComponent({
     : listing.category
   const detailPath = `/marketplace/${listing.id}`
 
-  function handleGuestClick(event) {
-    if (!guestMode) return
-    event.preventDefault()
-    onGuestInteract?.()
-  }
-
   function handleToggleLike(event) {
     event.preventDefault()
     event.stopPropagation()
-    if (!user) return
+    if (guestMode) {
+      onGuestInteract?.()
+      return
+    }
+    if (!user?.id) return
     dispatch(
       toggleAccountFavorite({
         userId: user.id,
@@ -133,10 +131,13 @@ function MarketplaceListingCardComponent({
     >
       <div className="relative h-[322px] w-full bg-gradient-to-br from-cyan-700 to-blue-600 xl:h-[370px]">
         {linked ? (
-          <Link to={detailPath} className="absolute inset-0 block" onClick={(event) => {
-            handleGuestClick(event)
-            if (!guestMode) handleOpen()
-          }}>
+          <Link
+            to={detailPath}
+            className="absolute inset-0 block"
+            onClick={() => {
+              if (!guestMode) handleOpen()
+            }}
+          >
             {mediaBody}
           </Link>
         ) : (

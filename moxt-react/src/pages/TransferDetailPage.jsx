@@ -14,7 +14,7 @@ import {
 import { Input, Textarea } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
 import { Modal } from '../components/ui/Modal'
-import { PageHeader } from '../components/ui/PageHeader'
+import { HeaderIslandWrap, headerIslandClass, PageHeader } from '../components/ui/PageHeader'
 import { Button } from '../components/ui/Button'
 import { ContactButton } from '../features/communications/ContactButton'
 import { openDispute } from '../features/disputes/disputeSlice'
@@ -240,24 +240,38 @@ export function TransferDetailPage() {
       <PageHeader
         title={t('transfers.detail.title')}
         actions={
-          <div className="flex max-w-full flex-wrap gap-2">
+          <>
             {access.isAdminViewer ? (
-              <TransferContactMenu transfer={transfer} variant="secondary" />
+              <HeaderIslandWrap label={t('transfers.workflow.contactChat')}>
+                <TransferContactMenu
+                  transfer={transfer}
+                  variant="secondary"
+                  iconOnly
+                  className={`${headerIslandClass} !size-11 !min-h-11 !rounded-2xl !px-0`}
+                />
+              </HeaderIslandWrap>
             ) : (
-              <ContactButton
-                ownerId={access.contactId}
-                relatedEntity={transfer}
-                relatedId={transfer.id}
-                relatedPath={`/transfers/${transfer.id}`}
-                relatedTitle={t('transfers.detail.relatedTitle', { id: transfer.id, contact: access.contactTitle })}
-                relatedType="transfer"
-                variant="secondary"
-              />
+              <HeaderIslandWrap label={t('transfers.workflow.contactChat')}>
+                <ContactButton
+                  ownerId={access.contactId}
+                  relatedEntity={transfer}
+                  relatedId={transfer.id}
+                  relatedPath={`/transfers/${transfer.id}`}
+                  relatedTitle={t('transfers.detail.relatedTitle', {
+                    id: transfer.id,
+                    contact: access.contactTitle,
+                  })}
+                  relatedType="transfer"
+                  iconOnly
+                  className={`${headerIslandClass} !size-11`}
+                />
+              </HeaderIslandWrap>
             )}
             <BackButton
+              iconOnly
               fallback={access.isBusinessViewer ? '/professional' : '/transfers/history'}
             />
-          </div>
+          </>
         }
       />
 

@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { FiX } from 'react-icons/fi'
+import { FiPlus, FiX } from 'react-icons/fi'
 import { HiOutlineBuildingOffice2, HiOutlineUser } from 'react-icons/hi2'
 import { useDispatch, useSelector } from 'react-redux'
 import { Button } from '../../components/ui/Button'
@@ -27,9 +27,23 @@ export function StatusComposer({ onClose, officialIdentity }) {
   const [photos, setPhotos] = useState([])
   const [submitting, setSubmitting] = useState(false)
   const [postAs, setPostAs] = useState('personal')
+  const [dialogEl, setDialogEl] = useState(null)
+  const titleId = useId()
   const { progress: uploadProgress, track: trackUpload } = useUploadProgress()
   const canPostAsBusiness = Boolean(ownBusiness) && !officialIdentity
   const postingAsBusiness = canPostAsBusiness && postAs === 'business'
+
+  useEffect(() => {
+    dialogEl?.focus()
+  }, [dialogEl])
+
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
 
   function addPhotos(files) {
     const added = Array.from(files)
@@ -106,92 +120,102 @@ export function StatusComposer({ onClose, officialIdentity }) {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[var(--z-modal)] flex items-end justify-center bg-slate-950/80 p-0 backdrop-blur-md sm:items-center sm:p-4"
+      className="fixed inset-0 z-[var(--z-modal)] flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center"
       role="presentation"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
     >
       <div
+        ref={setDialogEl}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
-        className="grid max-h-[100dvh] w-full max-w-md gap-4 overflow-y-auto rounded-none border-0 bg-slate-950 p-5 text-white shadow-[var(--shadow-card-lg)] sm:max-h-[90dvh] sm:rounded-[var(--radius-card-lg)] sm:border sm:border-white/10 sm:p-6"
+        aria-labelledby={titleId}
+        className="scrollbar-hidden max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-3xl bg-[var(--app-surface)] shadow-2xl outline-none"
       >
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="font-display text-lg font-extrabold tracking-tight text-white">
-              {officialIdentity ? t('status.composer.officialTitle') : t('status.composer.title')}
-            </h2>
-            <p className="mt-1 text-xs text-white/60">
-              {officialIdentity
-                ? t('status.composer.officialDescription')
-                : t('status.composer.description')}
-            </p>
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[var(--app-border)] bg-[var(--app-surface)] px-5 py-4">
+          <div className="flex items-center gap-2.5">
+            <span className="grid size-8 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
+              <FiPlus className="text-sm" />
+            </span>
+            <div>
+              <h2 id={titleId} className="text-sm font-black">
+                {officialIdentity ? t('status.composer.officialTitle') : t('status.composer.title')}
+              </h2>
+              <p className="text-xs text-[var(--app-text-muted)]">
+                {officialIdentity
+                  ? t('status.composer.officialDescription')
+                  : t('status.composer.description')}
+              </p>
+            </div>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label={t('status.viewer.close')}
-            className="grid size-9 shrink-0 place-items-center rounded-xl text-white/70 transition hover:bg-white/10"
+            className="grid size-8 place-items-center rounded-xl text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface-muted)]"
           >
             <FiX />
           </button>
         </div>
 
-        {canPostAsBusiness ? (
-          <div className="grid grid-cols-2 gap-2 rounded-2xl bg-white/5 p-1">
-            <button
-              type="button"
-              onClick={() => setPostAs('personal')}
-              className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition ${
-                postAs === 'personal'
-                  ? 'bg-white/15 text-white shadow-sm'
-                  : 'text-white/55'
-              }`}
-            >
-              <HiOutlineUser className="shrink-0" />
-              <span className="truncate">{t('status.composer.postAsPersonal')}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setPostAs('business')}
-              className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition ${
-                postAs === 'business'
-                  ? 'bg-white/15 text-white shadow-sm'
-                  : 'text-white/55'
-              }`}
-            >
-              <HiOutlineBuildingOffice2 className="shrink-0" />
-              <span className="truncate">{ownBusiness.name}</span>
-            </button>
-          </div>
-        ) : null}
+        <div className="grid gap-4 p-5">
+          {canPostAsBusiness ? (
+            <div className="grid grid-cols-2 gap-1 rounded-2xl bg-[var(--app-surface-muted)] p-1">
+              <button
+                type="button"
+                onClick={() => setPostAs('personal')}
+                className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition ${
+                  postAs === 'personal'
+                    ? 'bg-[var(--app-surface)] text-[var(--app-text)] shadow-sm'
+                    : 'text-[var(--app-text-muted)]'
+                }`}
+              >
+                <HiOutlineUser className="shrink-0" />
+                <span className="truncate">{t('status.composer.postAsPersonal')}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPostAs('business')}
+                className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition ${
+                  postAs === 'business'
+                    ? 'bg-[var(--app-surface)] text-[var(--app-text)] shadow-sm'
+                    : 'text-[var(--app-text-muted)]'
+                }`}
+              >
+                <HiOutlineBuildingOffice2 className="shrink-0" />
+                <span className="truncate">{ownBusiness.name}</span>
+              </button>
+            </div>
+          ) : null}
 
-        <PosterUploader
-          photos={photos}
-          onAdd={addPhotos}
-          onRemove={removePhoto}
-          max={4}
-          label={t('status.composer.title')}
-          hint={t('status.composer.imagesOrText')}
-          progress={uploadProgress}
-        />
+          <PosterUploader
+            photos={photos}
+            onAdd={addPhotos}
+            onRemove={removePhoto}
+            max={4}
+            label={t('status.composer.title')}
+            hint={t('status.composer.imagesOrText')}
+            progress={uploadProgress}
+          />
 
-        <textarea
-          value={caption}
-          onChange={(e) => setCaption(e.target.value)}
-          placeholder={t('status.composer.captionPlaceholder')}
-          rows={3}
-          className="w-full resize-none rounded-2xl border border-white/10 bg-white/5 p-3 text-sm text-white outline-none placeholder:text-white/40 focus:border-brand-400"
-        />
+          <textarea
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            placeholder={t('status.composer.captionPlaceholder')}
+            rows={3}
+            className="w-full resize-none rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-text-faint)] focus:border-[var(--app-accent)]"
+          />
 
-        <Button
-          onClick={handlePublish}
-          loading={submitting}
-          disabled={(!photos.length && !caption.trim()) || submitting}
-        >
-          {submitting ? t('status.composer.publishing') : t('status.composer.publish')}
-        </Button>
+          <Button
+            onClick={handlePublish}
+            loading={submitting}
+            disabled={(!photos.length && !caption.trim()) || submitting}
+          >
+            {submitting ? t('status.composer.publishing') : t('status.composer.publish')}
+          </Button>
+        </div>
       </div>
     </div>,
     document.body,

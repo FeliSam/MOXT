@@ -11,7 +11,7 @@ import { jobContractLabel, jobSectorLabel } from '../../jobs/jobDisplayUtils'
 import { formatParcelDepartureLabel } from '../../parcels/parcelUtils'
 import { buildNewsFeed } from '../../posts/postFeedUtils'
 import { formatDate } from '../../transfers/transferUtils'
-import { dashboardCarouselTrackClass } from '../dashboardConfig'
+import { dashboardNewsItemClass, dashboardNewsTrackClass } from '../dashboardConfig'
 import { DashboardLiveList } from './DashboardLiveList'
 import { DashboardSectionHeading } from './DashboardSectionHeading'
 
@@ -44,7 +44,7 @@ export function DashboardDiscoverySection({
           events: catalogEvents,
           businesses,
         },
-      }).slice(0, 3),
+      }).slice(0, 4),
     [allPosts, businesses, catalogEvents, catalogJobs, catalogParcels, language, listings],
   )
 
@@ -133,12 +133,9 @@ export function DashboardDiscoverySection({
         linkLabel={t('dashboard.discovery.readAll')}
       />
       {posts.length > 0 ? (
-        <div className={dashboardCarouselTrackClass}>
+        <div className={dashboardNewsTrackClass}>
           {posts.map((post) => (
-            <div
-              key={post.id}
-              className="w-[clamp(14rem,72vw,19rem)] shrink-0 sm:w-[clamp(15rem,48vw,20rem)] lg:w-[clamp(16rem,28vw,21rem)]"
-            >
+            <div key={post.id} className={dashboardNewsItemClass}>
               <DashboardPostCard post={post} />
             </div>
           ))}
@@ -249,7 +246,7 @@ function DashboardPostCard({ post }) {
           <img
             src={post.imageUrl}
             alt=""
-            className="mt-2.5 h-[8.5rem] w-full rounded-xl object-cover"
+            className="mt-2.5 h-[10.2rem] w-full rounded-xl object-cover"
             loading="lazy"
             onError={(e) => { e.currentTarget.style.display = 'none' }}
           />
@@ -259,7 +256,7 @@ function DashboardPostCard({ post }) {
           as="p"
           text={post.message}
           preserveWhitespace="pre-line"
-          className="mt-2.5 line-clamp-4 flex-1 text-xs leading-relaxed text-[var(--app-text-muted)]"
+          className="mt-2.5 line-clamp-3 flex-1 text-xs leading-relaxed text-[var(--app-text-muted)]"
         />
 
         <div className="mt-3 flex items-center gap-3 pt-2.5 text-[10px] text-[var(--app-text-faint)]">

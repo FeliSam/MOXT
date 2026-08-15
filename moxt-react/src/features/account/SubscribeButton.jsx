@@ -116,12 +116,12 @@ export function SubscribeButton({
   }
 
   return (
-    <div className={`flex w-full min-w-0 items-center gap-1.5 sm:w-auto ${className}`}>
+    <div className={`flex min-w-0 items-center gap-1.5 ${className}`}>
       <Button
         size={size}
         variant="secondary"
         icon={FiUserCheck}
-        className="min-w-0 flex-1 border-brand-200 bg-brand-50 text-brand-800 sm:flex-none dark:border-brand-800 dark:bg-brand-950/40 dark:text-brand-200"
+        className="min-w-0 flex-1 border-brand-200 bg-brand-50 text-brand-800 dark:border-brand-800 dark:bg-brand-950/40 dark:text-brand-200"
         aria-pressed="true"
       >
         {p3('subscriptions.subscribed')}

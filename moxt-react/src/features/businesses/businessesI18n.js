@@ -269,6 +269,7 @@ export const BUSINESSES_FR_SOURCES = {
   'businesses.detail.bannerAlt': 'Bannière {name}',
   'businesses.detail.logoAlt': '{name} logo',
   'businesses.detail.averageDelay': 'Délai moyen',
+  'businesses.detail.tabs.publications': 'Publications',
   'businesses.detail.tabs.informations': 'Informations',
   'businesses.detail.tabs.subscriptions': 'Abonnements',
   'businesses.detail.tabs.reviews': 'Avis',

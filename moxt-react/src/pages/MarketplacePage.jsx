@@ -1,13 +1,13 @@
 import { FiList, FiPlus, FiShoppingBag } from 'react-icons/fi'
 import { useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useOutletContext } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { CatalogSearch } from '../components/ui/CatalogSearch'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Input } from '../components/ui/Input'
-import { PageHeader } from '../components/ui/PageHeader'
+import { HeaderIslandButton, PageHeader } from '../components/ui/PageHeader'
 import { PillBadge } from '../components/ui/Badge'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { Select } from '../components/ui/Select'
@@ -31,6 +31,8 @@ import { resolveListingCountry } from '../features/marketplace/listingCatalogUti
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 import { useLanguage } from '../contexts/useLanguage'
+import { useGuestAction } from '../features/guest/useGuestAction'
+import { useGuestMarketplaceListings } from '../features/guest/useGuestPreview'
 
 export function MarketplacePage() {
   useScrollToSecondSection()
@@ -39,7 +41,11 @@ export function MarketplacePage() {
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const listings = useSelector((state) => state.marketplace.items)
+  const { guestMode = false } = useOutletContext() || {}
+  const { requireAccount } = useGuestAction()
+  const guestCatalog = useGuestMarketplaceListings(guestMode)
+  const reduxListings = useSelector((state) => state.marketplace.items)
+  const listings = guestMode ? guestCatalog.listings : reduxListings
   const filters = useSelector((state) => state.marketplace.filters)
   const categoryOptions = useMemo(
     () => (filters.type ? categoriesForType(filters.type) : []),
@@ -101,14 +107,24 @@ export function MarketplacePage() {
         ]}
         actions={
           <>
-            <Link to="/publications/mine">
-              <Button variant="secondary" icon={FiList}>
-                {mt('marketplace.page.myPublications')}
-              </Button>
-            </Link>
-            <Button icon={FiPlus} onClick={() => navigate('/marketplace/publish')}>
-              {mt('marketplace.page.publishListing')}
-            </Button>
+            <HeaderIslandButton
+              icon={FiList}
+              label={mt('marketplace.page.myPublications')}
+              to="/publications/mine"
+              onClick={(event) => {
+                if (requireAccount(mt('marketplace.page.myPublications').toLowerCase())) {
+                  event.preventDefault()
+                }
+              }}
+            />
+            <HeaderIslandButton
+              icon={FiPlus}
+              label={mt('marketplace.page.publishListing')}
+              onClick={() => {
+                if (requireAccount(mt('marketplace.page.publishListing').toLowerCase())) return
+                navigate('/marketplace/publish')
+              }}
+            />
           </>
         }
       />
@@ -203,11 +219,22 @@ export function MarketplacePage() {
           </div>
         </CatalogSearch>
         <section>
-          {visible.length ? (
+          {guestMode && guestCatalog.loading ? (
+            <EmptyState
+              icon={FiShoppingBag}
+              tone="warm"
+              title={mt('marketplace.page.emptyTitle')}
+              description={mt('marketplace.page.searchPlaceholder')}
+            />
+          ) : visible.length ? (
             <CatalogGrid lazy={false}>
               {visible.map((listing, index) => (
                 <RevealListItem key={listing.id} index={index} className="h-full overflow-visible">
-                  <MarketplaceListingCard listing={listing} />
+                  <MarketplaceListingCard
+                    listing={listing}
+                    guestMode={guestMode}
+                    onGuestInteract={() => requireAccount('aimer cette annonce')}
+                  />
                 </RevealListItem>
               ))}
             </CatalogGrid>
@@ -218,7 +245,13 @@ export function MarketplacePage() {
               title={mt('marketplace.page.emptyTitle')}
               description={mt('marketplace.page.emptyDescription')}
               action={
-                <Button icon={FiPlus} onClick={() => navigate('/marketplace/publish')}>
+                <Button
+                  icon={FiPlus}
+                  onClick={() => {
+                    if (requireAccount(mt('marketplace.page.publishListing').toLowerCase())) return
+                    navigate('/marketplace/publish')
+                  }}
+                >
                   {mt('marketplace.page.publishListing')}
                 </Button>
               }

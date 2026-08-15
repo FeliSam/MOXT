@@ -10,7 +10,7 @@ import { Card } from '../components/ui/Card'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Input } from '../components/ui/Input'
 import { Modal } from '../components/ui/Modal'
-import { PageHeader } from '../components/ui/PageHeader'
+import { HeaderIslandButton, PageHeader } from '../components/ui/PageHeader'
 import { Select } from '../components/ui/Select'
 import { phoneError, phonePlaceholder, phonePrefix, validatePhone } from '../config/phone'
 import { useLanguage } from '../contexts/useLanguage'
@@ -110,22 +110,20 @@ export function FavoritesPage() {
         stats={[{ label: p3('favorites.stats.items'), value: favorites.length }]}
         actions={
           <>
-            <Link to="/marketplace">
-              <Button variant="secondary" icon={FiShoppingBag}>
-                Marketplace
-              </Button>
-            </Link>
-            <Button
-              variant="secondary"
+            <HeaderIslandButton
+              icon={FiShoppingBag}
+              to="/marketplace"
+              label="Marketplace"
+            />
+            <HeaderIslandButton
               icon={FiPlus}
+              label={p3('favorites.actions.transferProfile')}
               onClick={() => {
                 setEditingProfile(null)
                 formik.resetForm()
                 setProfileOpen(true)
               }}
-            >
-              {p3('favorites.actions.transferProfile')}
-            </Button>
+            />
           </>
         }
       />

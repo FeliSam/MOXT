@@ -250,6 +250,13 @@ export const dashboardFourUpTrackClass =
 export const dashboardFourUpItemClass =
   'w-[clamp(10.5rem,22vw,14rem)] shrink-0 lg:w-auto lg:min-w-0 lg:shrink'
 
+/** Actualités — cartes plus larges, 3 colonnes à xl puis 4 à 2xl. */
+export const dashboardNewsTrackClass =
+  `${dashboardTrackBase} horizontal-track--xl-grid dashboard-h-bleed xl:mx-0 xl:grid xl:grid-cols-3 xl:gap-5 xl:px-0 2xl:grid-cols-4`
+
+export const dashboardNewsItemClass =
+  'w-[clamp(12rem,58.5vw,15.4rem)] shrink-0 sm:w-[clamp(16.5rem,46vw,21rem)] xl:w-auto xl:min-w-0 xl:shrink'
+
 /** Annonces — carrousel puis grille 4 colonnes (lg). */
 export const dashboardListingTrackClass =
   `${dashboardTrackBase} horizontal-track--lg-grid dashboard-h-bleed lg:mx-0 lg:grid lg:grid-cols-4 lg:gap-4 lg:px-0`

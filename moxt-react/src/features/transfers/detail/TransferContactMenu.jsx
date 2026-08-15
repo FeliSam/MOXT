@@ -67,6 +67,7 @@ export function TransferContactMenu({
   className = '',
   variant = 'secondary',
   children,
+  iconOnly = false,
 }) {
   const dispatch = useDispatch()
   const navigate = useNavigate()
@@ -185,12 +186,16 @@ export function TransferContactMenu({
           className={className}
           disabled={Boolean(loadingTarget)}
           icon={FiMessageSquare}
+          iconOnly={iconOnly}
           variant={variant}
+          aria-label={t('transfers.workflow.contactChat')}
           onClick={(event) => openChat(event, target)}
         >
-          {loadingTarget
-            ? sharedText(t, 'shared.opening')
-            : children || t('transfers.workflow.contactChat')}
+          {iconOnly
+            ? null
+            : loadingTarget
+              ? sharedText(t, 'shared.opening')
+              : children || t('transfers.workflow.contactChat')}
         </Button>
       </>
     )
@@ -236,19 +241,26 @@ export function TransferContactMenu({
   return (
     <>
       {burstNode}
-      <span ref={anchorRef} className={`inline-flex ${className}`}>
+      <span ref={anchorRef} className="inline-flex">
         <Button
+          className={className}
           disabled={Boolean(loadingTarget)}
           icon={FiMessageSquare}
+          iconOnly={iconOnly}
           variant={variant}
           aria-expanded={open}
           aria-haspopup="menu"
+          aria-label={t('transfers.detail.contact.menu')}
           onClick={(event) => {
             event.stopPropagation()
             setOpen((value) => !value)
           }}
         >
-          {loadingTarget ? sharedText(t, 'shared.opening') : children || t('transfers.detail.contact.menu')}
+          {iconOnly
+            ? null
+            : loadingTarget
+              ? sharedText(t, 'shared.opening')
+              : children || t('transfers.detail.contact.menu')}
         </Button>
       </span>
       {menu}

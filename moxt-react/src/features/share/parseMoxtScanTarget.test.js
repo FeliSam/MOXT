@@ -21,22 +21,22 @@ describe('parseMoxtScanTarget', () => {
     expect(target?.path).toBe(`/users/${userId}/publications`)
   })
 
-  it('détecte une entreprise et normalise vers les publications', () => {
+  it('détecte une entreprise depuis la fiche unifiée', () => {
     const businessId = 'biz-123'
     const target = parseMoxtScanTarget(`https://moxt.app/businesses/${businessId}`)
     expect(target).toMatchObject({
       type: 'business',
-      path: `/businesses/${businessId}/publications/listings`,
+      path: `/businesses/${businessId}`,
       businessId,
     })
   })
 
-  it('conserve la query sur les publications entreprise', () => {
+  it('conserve la query sur les anciennes URLs publications entreprise', () => {
     const businessId = 'biz-456'
     const target = parseMoxtScanTarget(
       `/businesses/${businessId}/publications/listings?v=abc`,
     )
-    expect(target?.path).toBe(`/businesses/${businessId}/publications/listings?v=abc`)
+    expect(target?.path).toBe(`/businesses/${businessId}?v=abc`)
   })
 
   it('détecte une invitation MOXT depuis le code seul', () => {

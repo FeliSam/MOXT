@@ -4,7 +4,6 @@ import {
   FiAlertTriangle,
   FiCalendar,
   FiCheckCircle,
-  FiEdit2,
   FiMapPin,
   FiUsers,
 } from 'react-icons/fi'
@@ -24,9 +23,7 @@ import {
 } from '../components/ui/DetailBlocks'
 import { PageHeader } from '../components/ui/PageHeader'
 import { ReportDialog } from '../components/ui/ReportDialog'
-import { ReshareButton } from '../components/ui/ReshareButton'
 import { DetailFloatingActions } from '../components/ui/DetailFloatingActions'
-import { FavoriteButton } from '../features/account/FavoriteButton'
 import { ContactButton } from '../features/communications/ContactButton'
 import { openRelatedConversation } from '../features/communications/openRelatedConversation'
 import {
@@ -111,29 +108,7 @@ export function EventDetailPage() {
     <div className="grid gap-7">
       <PageHeader
         title={event.title}
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <ReshareButton sourceType="event" sourceId={event.id} sourceData={event} />
-            {event.ownerId === user.id ? (
-              <Link to={`/events/${eventId}/edit`}>
-                <Button variant="secondary" icon={FiEdit2}>
-                  {t('events.detail.edit')}
-                </Button>
-              </Link>
-            ) : null}
-            <FavoriteButton
-              relatedId={event.id}
-              relatedType="event"
-              title={event.title}
-              path={`/events/${event.id}`}
-              entity={event}
-              variant="solid"
-              showLabel={false}
-              className="hidden !size-11 !min-h-11 !rounded-2xl shrink-0 xl:inline-grid"
-            />
-            <BackButton fallback="/events" />
-          </div>
-        }
+        actions={<BackButton fallback="/events" />}
       />
       <DetailMetrics
         items={[
@@ -366,6 +341,9 @@ export function EventDetailPage() {
         relatedPath={`/events/${event.id}`}
         relatedType="event"
         title={event.title}
+        sourceType="event"
+        sourceId={event.id}
+        editTo={event.ownerId === user.id ? `/events/${eventId}/edit` : undefined}
       />
     </div>
   )

@@ -14,7 +14,7 @@ import {
   FiShoppingBag,
 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useOutletContext, useParams } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
 import { EntityVerifiedName } from '../components/ui/EntityVerifiedName'
 import { BackButton } from '../components/ui/BackButton'
@@ -26,9 +26,8 @@ import { DetailFacts, DetailMetrics, DetailTimeline } from '../components/ui/Det
 import { ImageGalleryViewer } from '../components/ui/ImageGalleryViewer'
 import { useSwipeDownToClose } from '../hooks/useSwipeDownToClose'
 import { PageHeader } from '../components/ui/PageHeader'
-import { FavoriteButton } from '../components/ui/FavoriteButton'
+import { FavoriteButton as AccountFavoriteButton } from '../features/account/FavoriteButton'
 import { RevealListItem } from '../components/ui/RevealListItem'
-import { ReshareButton } from '../components/ui/ReshareButton'
 import { DetailFloatingActions } from '../components/ui/DetailFloatingActions'
 import { Tabs } from '../components/ui/Tabs'
 import {
@@ -49,8 +48,7 @@ import {
   reportListing,
   updateListingStatus,
 } from '../features/marketplace/marketplaceSlice'
-import { markListingViewed, toggleAccountFavorite } from '../features/account/accountSlice'
-import { buildListingFavoriteSnapshot } from '../features/account/favoriteUtils'
+import { markListingViewed } from '../features/account/accountSlice'
 import { addToast } from '../features/ui/uiSlice'
 import { formatMoney } from '../features/transfers/transferUtils'
 import { formatDateTime, formatShortDate } from '../utils/formatters'
@@ -63,6 +61,11 @@ import {
   listingOptionLabel,
   marketplaceText,
 } from '../features/marketplace/marketplaceI18n'
+import { useGuestAction } from '../features/guest/useGuestAction'
+import {
+  useGuestListingDetail,
+  useGuestMarketplaceListings,
+} from '../features/guest/useGuestPreview'
 
 const TAB_DEFS = [
   { value: 'description', labelKey: 'marketplace.detail.tabs.description' },
@@ -78,11 +81,17 @@ export function ListingDetailPage() {
   const tabs = TAB_DEFS.map((tab) => ({ ...tab, label: mt(tab.labelKey) }))
   const dispatch = useDispatch()
   const { listingId } = useParams()
+  const { guestMode = false } = useOutletContext() || {}
+  const { requireAccount } = useGuestAction()
   const user = useSelector((state) => state.auth.user)
-  const listing = useSelector((state) =>
+  const guestDetail = useGuestListingDetail(listingId, guestMode)
+  const guestCatalog = useGuestMarketplaceListings(guestMode)
+  const reduxListing = useSelector((state) =>
     state.marketplace.items.find((item) => item.id === listingId),
   )
-  const allListings = useSelector((state) => state.marketplace.items)
+  const reduxAllListings = useSelector((state) => state.marketplace.items)
+  const listing = guestMode ? guestDetail.listing : reduxListing
+  const allListings = guestMode ? guestCatalog.listings : reduxAllListings
   const [selectedImage, setSelectedImage] = useState(null)
   const [imageOpen, setImageOpen] = useState(false)
   const [soldOpen, setSoldOpen] = useState(false)
@@ -90,15 +99,7 @@ export function ListingDetailPage() {
   const [activeTab, setActiveTab] = useState('description')
   const [quantity, setQuantity] = useState(1)
   const [question, setQuestion] = useState('')
-  const isAdminViewer = ['admin', 'superadmin'].includes(user.role)
-  const favorite = useSelector((state) =>
-    state.account.favorites.some(
-      (item) =>
-        item.userId === user?.id &&
-        item.relatedType === 'listing' &&
-        item.relatedId === listingId,
-    ),
-  )
+  const isAdminViewer = Boolean(user?.role && ['admin', 'superadmin'].includes(user.role))
   const publisherProfile = usePublisherDetailProfile(listing, 'listing')
 
   useEffect(() => {
@@ -121,6 +122,10 @@ export function ListingDetailPage() {
         .slice(0, 3),
     [allListings, listing?.category, listing?.city, listingId],
   )
+
+  if (guestMode && guestDetail.loading) {
+    return <Card>{mt('marketplace.page.searchPlaceholder')}</Card>
+  }
 
   if (!listing) return <Card>{mt('marketplace.detail.notFound')}</Card>
 
@@ -163,7 +168,7 @@ export function ListingDetailPage() {
     images.findIndex((image) => image === activeImage),
   )
   const total = Number(listing.price || 0) * quantity
-  const isListingOwner = listing.ownerId === user.id
+  const isListingOwner = Boolean(user?.id && listing.ownerId === user.id)
   const mobilePagePadding = isListingOwner
     ? 'max-md:pb-[calc(1.95rem+env(safe-area-inset-bottom))]'
     : 'max-md:pb-[calc(6.5rem+env(safe-area-inset-bottom))]'
@@ -176,6 +181,7 @@ export function ListingDetailPage() {
 
   function submitQuestion(event) {
     event.preventDefault()
+    if (requireAccount('poser une question')) return
     if (question.trim().length < 5) return
     dispatch(
       addListingQuestion({
@@ -201,10 +207,7 @@ export function ListingDetailPage() {
       <PageHeader
         title={listing.title}
         actions={
-          <>
-            <ReshareButton sourceType="listing" sourceId={listing.id} sourceData={listing} />
-            <BackButton fallback="/marketplace" />
-          </>
+          <BackButton fallback="/marketplace" />
         }
       />
 
@@ -401,13 +404,11 @@ export function ListingDetailPage() {
             </div>
             <ListingActionPanel
               dispatch={dispatch}
-              favorite={favorite}
               listing={listing}
               quantity={quantity}
               setQuantity={setQuantity}
               stock={stock}
               total={total}
-              user={user}
             />
             <p className="mt-5 rounded-2xl bg-amber-50 p-3 text-xs leading-5 text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
               {mt('marketplace.detail.paymentWarning')}
@@ -419,7 +420,7 @@ export function ListingDetailPage() {
           ) : null}
 
           <Card>
-            {listing.ownerId === user.id ? (
+            {isListingOwner ? (
               <div className="grid gap-2">
                 <Link to={`/marketplace/${listing.id}/edit`}>
                   <Button className="w-full" variant="secondary" icon={FiEdit2}>
@@ -432,7 +433,7 @@ export function ListingDetailPage() {
                   </Button>
                 ) : null}
               </div>
-            ) : (
+            ) : user?.id ? (
               <Button
                 variant="danger"
                 icon={FiAlertTriangle}
@@ -440,7 +441,7 @@ export function ListingDetailPage() {
               >
                 {mt('marketplace.detail.report')}
               </Button>
-            )}
+            ) : null}
           </Card>
           {isAdminViewer ? (
             <Card className="border border-brand-100 bg-brand-50/60 dark:border-brand-900/40 dark:bg-brand-950/20">
@@ -490,7 +491,11 @@ export function ListingDetailPage() {
           <div className="grid gap-4 overflow-visible sm:grid-cols-2 xl:grid-cols-3">
             {similar.map((item, index) => (
               <RevealListItem key={item.id} index={index} className="h-full overflow-visible">
-                <MarketplaceListingCard listing={item} />
+                <MarketplaceListingCard
+                  listing={item}
+                  guestMode={guestMode}
+                  onGuestInteract={() => requireAccount('aimer cette annonce')}
+                />
               </RevealListItem>
             ))}
           </div>
@@ -508,6 +513,9 @@ export function ListingDetailPage() {
         autoHintMs={5000}
         onContact={() => dispatch(incrementListingContact(listing.id))}
         onShared={() => dispatch(incrementListingShare(listing.id))}
+        sourceType="listing"
+        sourceId={listing.id}
+        editTo={isListingOwner ? `/marketplace/${listing.id}/edit` : undefined}
       />
 
       <ImageGalleryViewer
@@ -539,29 +547,31 @@ export function ListingDetailPage() {
         }}
       />
 
-      <ReportDialog
-        open={reportOpen}
-        onClose={() => setReportOpen(false)}
-        title={mt('marketplace.detail.reportTitle')}
-        userId={user.id}
-        onSubmit={async ({ reason, evidenceUrl }) => {
-          dispatch(
-            reportListing({
-              listingId: listing.id,
-              reporterId: user.id,
-              reason,
-              evidenceUrl,
-            }),
-          )
-          dispatch(
-            addToast({
-              title: mt('marketplace.detail.reportToastTitle'),
-              message: mt('marketplace.detail.reportToastBody'),
-              tone: 'success',
-            }),
-          )
-        }}
-      />
+      {user?.id ? (
+        <ReportDialog
+          open={reportOpen}
+          onClose={() => setReportOpen(false)}
+          title={mt('marketplace.detail.reportTitle')}
+          userId={user.id}
+          onSubmit={async ({ reason, evidenceUrl }) => {
+            dispatch(
+              reportListing({
+                listingId: listing.id,
+                reporterId: user.id,
+                reason,
+                evidenceUrl,
+              }),
+            )
+            dispatch(
+              addToast({
+                title: mt('marketplace.detail.reportToastTitle'),
+                message: mt('marketplace.detail.reportToastBody'),
+                tone: 'success',
+              }),
+            )
+          }}
+        />
+      ) : null}
     </div>
   )
 }
@@ -722,22 +732,7 @@ function ListingPurchaseOptions({ listing, quantity, setQuantity, stock, total }
   )
 }
 
-function toggleListingFavorite(dispatch, listing, user) {
-  return () =>
-    dispatch(
-      toggleAccountFavorite({
-        userId: user.id,
-        relatedType: 'listing',
-        relatedId: listing.id,
-        title: listing.title,
-        path: `/marketplace/${listing.id}`,
-        snapshot: buildListingFavoriteSnapshot(listing),
-      }),
-    )
-}
-
-function ListingActionButtons({ dispatch, favorite, listing, user }) {
-  const toggleFavorite = toggleListingFavorite(dispatch, listing, user)
+function ListingActionButtons({ dispatch, listing }) {
   const contactProps = {
     ownerId: listing.ownerId,
     relatedEntity: listing,
@@ -751,11 +746,13 @@ function ListingActionButtons({ dispatch, favorite, listing, user }) {
   return (
     <div className="grid min-w-0 gap-1">
       <ContactButton className="w-full" {...contactProps} />
-      <FavoriteButton
-        active={favorite}
-        onToggle={toggleFavorite}
+      <AccountFavoriteButton
+        relatedId={listing.id}
+        relatedType="listing"
+        title={listing.title}
+        path={`/marketplace/${listing.id}`}
+        entity={listing}
         variant="solid"
-        label
         className="w-full !shadow-none"
       />
     </div>
@@ -764,13 +761,11 @@ function ListingActionButtons({ dispatch, favorite, listing, user }) {
 
 function ListingActionPanel({
   dispatch,
-  favorite,
   listing,
   quantity,
   setQuantity,
   stock,
   total,
-  user,
 }) {
   return (
     <>
@@ -782,12 +777,7 @@ function ListingActionPanel({
         total={total}
       />
       <div className="mt-2">
-        <ListingActionButtons
-          dispatch={dispatch}
-          favorite={favorite}
-          listing={listing}
-          user={user}
-        />
+        <ListingActionButtons dispatch={dispatch} listing={listing} />
       </div>
     </>
   )
@@ -830,7 +820,7 @@ function Questions({ dispatch, listing, question, setQuestion, submitQuestion, u
   const mt = (key, vars) => marketplaceText(t, key, vars)
   const [answers, setAnswers] = useState({})
   const [replyingId, setReplyingId] = useState(null)
-  const isOwner = listing.ownerId === user.id
+  const isOwner = Boolean(user?.id && listing.ownerId === user.id)
 
   function submitAnswer(event, questionId) {
     event.preventDefault()

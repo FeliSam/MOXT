@@ -1,12 +1,65 @@
 import { supabase } from '../../services/supabaseClient'
 import { fromRows } from '../../services/remoteRowMapper'
-import { listingFromRemoteRow } from '../marketplace/marketplaceRemote'
+import { listingFromRemoteRow, mergeListingQuestions } from '../marketplace/marketplaceRemote'
 import { businessFromRemoteRow } from '../businesses/businessRemote'
 import {
   collectPublicationTargetIds,
   REVIEW_TARGET_TYPES,
 } from '@moxt/shared/utils/reviewUtils.js'
 import { fetchReviewsForTargetScope } from '../reviews/reviewRemote'
+
+const GUEST_LISTING_LIMIT = 100
+
+export async function fetchGuestMarketplaceListings() {
+  if (!supabase) return { listings: [] }
+
+  const listingsRes = await supabase
+    .from('listings')
+    .select('*')
+    .eq('status', 'active')
+    .order('updated_at', { ascending: false })
+    .limit(GUEST_LISTING_LIMIT)
+
+  if (listingsRes.error) {
+    console.warn('[MOXT] Aperçu invité marketplace:', listingsRes.error.message)
+    return { listings: [] }
+  }
+
+  return {
+    listings: (listingsRes.data || []).map(listingFromRemoteRow).filter(Boolean),
+  }
+}
+
+export async function fetchGuestListingDetail(listingId) {
+  if (!supabase || !listingId) return { error: 'not_found' }
+
+  const listingRes = await supabase
+    .from('listings')
+    .select('*')
+    .eq('id', listingId)
+    .eq('status', 'active')
+    .maybeSingle()
+
+  if (listingRes.error) {
+    console.warn('[MOXT] Aperçu invité annonce:', listingRes.error.message)
+    return { error: 'unavailable' }
+  }
+  if (!listingRes.data) return { error: 'not_found' }
+
+  let listing = listingFromRemoteRow(listingRes.data)
+  const questionsRes = await supabase
+    .from('listing_questions')
+    .select('*')
+    .eq('listing_id', listingId)
+    .order('created_at', { ascending: false })
+    .limit(50)
+
+  if (!questionsRes.error && questionsRes.data?.length) {
+    ;[listing] = mergeListingQuestions([listing], questionsRes.data)
+  }
+
+  return { listing }
+}
 
 function mapProfile(row) {
   if (!row) return null

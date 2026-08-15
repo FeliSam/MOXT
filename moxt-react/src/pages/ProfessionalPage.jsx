@@ -2,6 +2,7 @@ import {
   FiAlertCircle,
   FiCalendar,
   FiCheckCircle,
+  FiExternalLink,
   FiFileText,
   FiInbox,
   FiPackage,
@@ -18,7 +19,7 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { EmptyState } from '../components/ui/EmptyState'
 import { flattenGroupedTabs, GroupedTabs } from '../components/ui/GroupedTabs'
-import { PageHeader } from '../components/ui/PageHeader'
+import { HeaderIslandButton, HeaderIslandWrap, headerIslandClass, PageHeader } from '../components/ui/PageHeader'
 import { ReshareButton } from '../components/ui/ReshareButton'
 import { selectPublisherSubscribers } from '../features/account/subscriptionSelectors'
 import { activityByValue } from '../config/businessActivities'
@@ -284,25 +285,38 @@ export function ProfessionalPage() {
         title={business.name}
         description={pt('professional.page.description')}
         actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <ProfileQrShareButton
-              type="business"
-              activityVisibility={business.activityVisibility}
-              refreshKey={businessShareVersion(business)}
-              shareUrl={buildBusinessShareUrl(business)}
-              shareText={buildBusinessShareText(business)}
-              title={business.name}
-              subtitle={activityLabel}
-              verified={['verified', 'approved', 'active'].includes(business.status)}
-              city={businessCityLabel(business)}
-              sector={activityLabel}
-              logoUrl={business.logoUrl}
+          <>
+            <HeaderIslandWrap label={t('share.qrToShare')}>
+              <ProfileQrShareButton
+                type="business"
+                activityVisibility={business.activityVisibility}
+                refreshKey={businessShareVersion(business)}
+                shareUrl={buildBusinessShareUrl(business)}
+                shareText={buildBusinessShareText(business)}
+                title={business.name}
+                subtitle={activityLabel}
+                verified={['verified', 'approved', 'active'].includes(business.status)}
+                city={businessCityLabel(business)}
+                sector={activityLabel}
+                logoUrl={business.logoUrl}
+                className={`${headerIslandClass} !size-11 !rounded-2xl`}
+              />
+            </HeaderIslandWrap>
+            <HeaderIslandWrap label={pt('professional.page.republish')}>
+              <ReshareButton
+                sourceType="business"
+                sourceId={business.id}
+                sourceData={business}
+                iconOnly
+                className={`${headerIslandClass} !size-11 !rounded-2xl !border !shadow-[var(--shadow-card)]`}
+              />
+            </HeaderIslandWrap>
+            <HeaderIslandButton
+              icon={FiExternalLink}
+              label={pt('professional.page.viewPublic')}
+              to={`/businesses/${business.id}`}
             />
-            <ReshareButton sourceType="business" sourceId={business.id} sourceData={business} />
-            <Link to={`/businesses/${business.id}`}>
-              <Button variant="secondary">{pt('professional.page.viewPublic')}</Button>
-            </Link>
-          </div>
+          </>
         }
       />
 

@@ -93,7 +93,12 @@ function StatusBubble({
   )
 }
 
-export function StatusRail({ hideWhenNoCommunity: _hideWhenNoCommunity = false }) {
+export function StatusRail({
+  hideWhenNoCommunity: _hideWhenNoCommunity = false,
+  composerOpen: composerOpenProp,
+  onComposerOpenChange,
+  renderComposer = true,
+}) {
   const { t } = useLanguage()
   const dispatch = useDispatch()
   const user = useSelector((s) => s.auth.user)
@@ -102,7 +107,12 @@ export function StatusRail({ hideWhenNoCommunity: _hideWhenNoCommunity = false }
   )
   const statuses = useSelector((s) => s.statuses?.items ?? [])
   const [viewerIndex, setViewerIndex] = useState(null)
-  const [composerOpen, setComposerOpen] = useState(false)
+  const [composerOpenInternal, setComposerOpenInternal] = useState(false)
+  const composerOpen = composerOpenProp ?? composerOpenInternal
+  function setComposerOpen(next) {
+    if (onComposerOpenChange) onComposerOpenChange(next)
+    else setComposerOpenInternal(next)
+  }
 
   const groups = useMemo(
     () => groupActiveStatusesByAuthor(statuses, user?.id),
@@ -221,7 +231,9 @@ export function StatusRail({ hideWhenNoCommunity: _hideWhenNoCommunity = false }
           />
         ) : null}
 
-        {composerOpen ? <StatusComposer onClose={() => setComposerOpen(false)} /> : null}
+        {renderComposer && composerOpen ? (
+          <StatusComposer onClose={() => setComposerOpen(false)} />
+        ) : null}
       </div>
     </div>
   )

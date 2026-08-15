@@ -14,7 +14,7 @@ import { CatalogSearch } from '../components/ui/CatalogSearch'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Input } from '../components/ui/Input'
-import { PageHeader } from '../components/ui/PageHeader'
+import { HeaderIslandButton, PageHeader } from '../components/ui/PageHeader'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { Select } from '../components/ui/Select'
@@ -89,9 +89,11 @@ export function ExchangersPage() {
         title={p3('exchangers.title')}
         stats={[{ label: p3('exchangers.stats.partners'), value: visibleExchangers.length }]}
         actions={
-          <Link to="/transfers">
-            <Button icon={FiRepeat}>{p3('exchangers.newTransfer')}</Button>
-          </Link>
+          <HeaderIslandButton
+            icon={FiRepeat}
+            to="/transfers"
+            label={p3('exchangers.newTransfer')}
+          />
         }
       />
       <ScrollSectionAnchor className="scroll-mt-24 grid gap-5 lg:scroll-mt-28">

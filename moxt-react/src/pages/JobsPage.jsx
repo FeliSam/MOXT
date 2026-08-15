@@ -12,7 +12,7 @@ import { CatalogSearch } from '../components/ui/CatalogSearch'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Input } from '../components/ui/Input'
-import { PageHeader } from '../components/ui/PageHeader'
+import { HeaderIslandButton, PageHeader } from '../components/ui/PageHeader'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { Select } from '../components/ui/Select'
@@ -103,21 +103,24 @@ export function JobsPage() {
           <>
             {canPublish ? (
               <>
-                <Button
-                  variant={showMine ? 'primary' : 'secondary'}
+                <HeaderIslandButton
                   icon={FiUser}
+                  active={showMine}
+                  label={showMine ? t('jobs.browse.allJobs') : t('jobs.browse.myJobs')}
                   onClick={() => setShowMine((v) => !v)}
-                >
-                  {showMine ? t('jobs.browse.allJobs') : t('jobs.browse.myJobs')}
-                </Button>
-                <Button variant="secondary" icon={FiUsers} onClick={() => navigate('/jobs/applications')}>
-                  {t('jobs.browse.receivedRequests')}
-                </Button>
+                />
+                <HeaderIslandButton
+                  icon={FiUsers}
+                  label={t('jobs.browse.receivedRequests')}
+                  onClick={() => navigate('/jobs/applications')}
+                />
               </>
             ) : null}
-            <Button icon={FiPlus} onClick={() => navigate('/jobs/publish')}>
-              {t('jobs.browse.publish')}
-            </Button>
+            <HeaderIslandButton
+              icon={FiPlus}
+              label={t('jobs.browse.publish')}
+              onClick={() => navigate('/jobs/publish')}
+            />
           </>
         }
       />

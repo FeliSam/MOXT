@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import {
   FiArchive,
   FiArrowLeft,
@@ -12,14 +12,14 @@ import {
 } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
 import { Link, Navigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom'
-import { PillBadge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { CatalogArchiveTabs } from '../components/ui/CatalogArchiveTabs'
+import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { canViewUserActivity } from '../features/account/activityVisibility'
 import { useProfileActivityVisibility } from '../features/account/useProfileActivityVisibility'
-import { MyListingCard } from '../features/marketplace/MyListingCard'
+import { MarketplaceListingCard } from '../features/marketplace/MarketplaceListingCard'
 import {
   MyEventPublicationCard,
   MyJobPublicationCard,
@@ -37,6 +37,7 @@ import {
   publicationTotalCount,
   publicationTypeCounts,
   visiblePublicationCount,
+  visiblePublicationTypeTabs,
 } from '../features/publications/publicationCatalogUtils'
 import { PublicationProfileCard } from '../features/publications/PublicationProfileCard'
 import { PublicationScopeButton } from '../features/publications/PublicationScopeButton'
@@ -136,6 +137,10 @@ export function UserPublicationsPage() {
     () => publicationTypeCounts(publications, archiveTab),
     [archiveTab, publications],
   )
+  const visibleTypeTabs = useMemo(
+    () => visiblePublicationTypeTabs(PUBLICATION_TYPE_TABS, typeCounts),
+    [typeCounts],
+  )
   const visible = useMemo(
     () => filterPublicationsByTabs(publications, { archiveTab, typeTab }),
     [archiveTab, publications, typeTab],
@@ -187,6 +192,21 @@ export function UserPublicationsPage() {
     else params.set('type', next)
     setSearchParams(params, { replace: true })
   }
+
+  const hasArchives = archiveCounts.archived > 0
+
+  useEffect(() => {
+    if (visibleTypeTabs.length === 0) return
+    if (!visibleTypeTabs.some((tab) => tab.id === typeTab)) {
+      setTypeTab(visibleTypeTabs[0].id)
+    }
+  }, [typeTab, visibleTypeTabs])
+
+  useEffect(() => {
+    if (!hasArchives && archiveTab === 'archived') {
+      setArchiveTab('active')
+    }
+  }, [archiveTab, hasArchives])
 
   function setScope(next) {
     const params = new URLSearchParams(searchParams)
@@ -268,82 +288,8 @@ export function UserPublicationsPage() {
 
   const handleGuestInteract = () => requireAccount(p3('publications.user.guestAction'))
 
-  const pageDescription = isOwner
-    ? scope === 'business' && ownBusiness
-      ? p3('publications.user.description.ownerBusiness', { name: ownBusiness.name })
-      : p3('publications.user.description.ownerPersonal')
-    : scope === 'business' && ownBusiness
-      ? p3('publications.user.description.business', { name: ownBusiness.name })
-      : hasAnyPublication
-        ? p3('publications.user.description.personal')
-        : p3('publications.user.description.noPublications')
-
   return (
     <div className="grid min-w-0 max-w-full gap-5 overflow-x-clip sm:gap-7">
-      <PageHeader
-        eyebrow={p3('publications.user.eyebrow')}
-        title={
-          isOwner
-            ? p3('publications.user.title.owner')
-            : p3('publications.user.title.member', { name: displayName })
-        }
-        description={pageDescription}
-        actions={
-          <div className="grid w-full min-w-0 grid-cols-1 gap-2 xs:grid-cols-2 sm:flex sm:flex-wrap sm:items-center [&>*]:min-w-0 [&>*]:w-full sm:[&>*]:w-auto">
-            {!isOwner && !guestMode ? (
-              <>
-                <ContactButton
-                  ownerId={userId}
-                  relatedEntity={{
-                    name: displayName,
-                    sellerName: displayName,
-                    avatarUrl: guestMode ? guestProfile?.avatarUrl : memberProfile?.avatarUrl,
-                  }}
-                  relatedId={userId}
-                  relatedPath={`/users/${userId}/publications`}
-                  relatedTitle={displayName}
-                  relatedType="profile"
-                />
-                <SubscribeButton
-                  className="relative z-30"
-                  publisherType="user"
-                  publisherId={userId}
-                  publisherName={displayName}
-                  publisherPath={`/users/${userId}/publications`}
-                />
-              </>
-            ) : null}
-            {ownBusiness && !guestMode ? (
-              <PublicationScopeButton
-                business={ownBusiness}
-                isOwner={isOwner}
-                onScopeChange={setScope}
-                scope={scope}
-              />
-            ) : null}
-            {isOwner ? (
-              <Link to={`/publications/mine${scope === 'business' ? '?scope=business' : ''}`}>
-                <Button variant="secondary" icon={FiArrowLeft}>
-                  {p3('publications.user.manage')}
-                </Button>
-              </Link>
-            ) : guestMode ? (
-              <Link to="/discover">
-                <Button variant="secondary" icon={FiArrowLeft}>
-                  {p3('publications.user.discover')}
-                </Button>
-              </Link>
-            ) : (
-              <Link to="/dashboard">
-                <Button variant="secondary" icon={FiArrowLeft}>
-                  {p3('publications.user.back')}
-                </Button>
-              </Link>
-            )}
-          </div>
-        }
-      />
-
       <PublicationProfileCard
         displayName={displayName}
         verified={Boolean(guestMode ? guestProfile?.verified : memberProfile?.verified)}
@@ -360,15 +306,74 @@ export function UserPublicationsPage() {
         ownBusiness={ownBusiness}
         shareUserId={guestMode ? null : userId}
         avatarUrl={guestMode ? guestProfile?.avatarUrl : memberProfile?.avatarUrl}
-        contactOwnerId={!isOwner && !guestMode ? userId : null}
-        contactPath={`/users/${userId}/publications`}
-        contactTitle={displayName}
-        contactEntity={{
-          name: displayName,
-          sellerName: displayName,
-          avatarUrl: guestMode ? guestProfile?.avatarUrl : memberProfile?.avatarUrl,
-        }}
-        contactType="profile"
+        actions={
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 border-t border-[var(--app-border)] pt-4 sm:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)]">
+            {!isOwner ? (
+              <ContactButton
+                ownerId={userId}
+                relatedEntity={{
+                  name: displayName,
+                  sellerName: displayName,
+                  avatarUrl: guestMode ? guestProfile?.avatarUrl : memberProfile?.avatarUrl,
+                }}
+                relatedId={userId}
+                relatedPath={`/users/${userId}/publications`}
+                relatedTitle={displayName}
+                relatedType="profile"
+                iconOnly
+                className="!size-11 shrink-0"
+              />
+            ) : ownBusiness && !guestMode ? (
+              <div className="col-span-2 flex flex-wrap items-center gap-2 sm:col-auto">
+                <PublicationScopeButton
+                  business={ownBusiness}
+                  isOwner={isOwner}
+                  onScopeChange={setScope}
+                  scope={scope}
+                />
+              </div>
+            ) : null}
+            {!isOwner && !guestMode ? (
+              <SubscribeButton
+                publisherType="user"
+                publisherId={userId}
+                publisherName={displayName}
+                publisherPath={`/users/${userId}/publications`}
+                className="min-w-0 w-full"
+              />
+            ) : null}
+            {!isOwner && ownBusiness && !guestMode ? (
+              <PublicationScopeButton
+                business={ownBusiness}
+                isOwner={false}
+                onScopeChange={setScope}
+                scope={scope}
+                className="col-span-2 min-w-0 sm:col-auto"
+              />
+            ) : isOwner ? (
+              <Link
+                to={`/publications/mine${scope === 'business' ? '?scope=business' : ''}`}
+                className="col-span-2 min-w-0 sm:col-auto"
+              >
+                <Button variant="secondary" icon={FiArrowLeft} className="w-full">
+                  {p3('publications.user.manage')}
+                </Button>
+              </Link>
+            ) : guestMode ? (
+              <Link to="/discover" className="min-w-0">
+                <Button variant="secondary" icon={FiArrowLeft} className="w-full">
+                  {p3('publications.user.discover')}
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/dashboard" className="col-span-2 min-w-0 sm:col-auto">
+                <Button variant="secondary" icon={FiArrowLeft} className="w-full">
+                  {p3('publications.user.back')}
+                </Button>
+              </Link>
+            )}
+          </div>
+        }
       />
 
       <CatalogArchiveTabs
@@ -385,42 +390,44 @@ export function UserPublicationsPage() {
             key: 'avis',
             label: p3('publications.user.tabs.reviews'),
             count: aggregateRating.count,
+            alwaysShow: true,
           },
         ]}
       />
 
       {mainTab === 'publications' ? (
         <div className="grid gap-4">
-          <CatalogArchiveTabs
-            active={archiveTab}
-            onChange={setArchiveTab}
-            variant="filter"
-            tabs={[
-              {
-                key: 'active',
-                label: p3('publications.mine.stats.active'),
-                count: archiveCounts.active,
-              },
-              {
-                key: 'archived',
-                label: p3('publications.mine.stats.archived'),
-                count: archiveCounts.archived,
-              },
-            ]}
-          />
+          {visibleTypeTabs.length > 0 ? (
+            <CatalogArchiveTabs
+              active={typeTab}
+              onChange={setTypeTab}
+              tabs={visibleTypeTabs.map((tab) => ({
+                key: tab.id,
+                label: p3(`publications.mine.types.${tab.id}`),
+                count: typeCounts[tab.id],
+              }))}
+            />
+          ) : null}
 
-          <div className="scrollbar-hidden -mx-1 flex touch-pan-x gap-2 overflow-x-auto px-1 pb-1">
-            {PUBLICATION_TYPE_TABS.map((tab) => (
-              <PillBadge
-                key={tab.id}
-                active={typeTab === tab.id}
-                onClick={() => setTypeTab(tab.id)}
-                className="shrink-0 whitespace-nowrap"
-              >
-                {p3(`publications.mine.types.${tab.id}`)} ({typeCounts[tab.id]})
-              </PillBadge>
-            ))}
-          </div>
+          {hasArchives ? (
+            <CatalogArchiveTabs
+              active={archiveTab}
+              onChange={setArchiveTab}
+              variant="filter"
+              tabs={[
+                {
+                  key: 'active',
+                  label: p3('publications.mine.stats.active'),
+                  count: archiveCounts.active,
+                },
+                {
+                  key: 'archived',
+                  label: p3('publications.mine.stats.archived'),
+                  count: archiveCounts.archived,
+                },
+              ]}
+            />
+          ) : null}
 
           {!hasAnyPublication ? (
             <EmptyState
@@ -429,18 +436,26 @@ export function UserPublicationsPage() {
               description={p3('publications.user.empty.description')}
             />
           ) : hasContent ? (
-            <div className="grid gap-4">
-              {visible.listing.map((listing) => (
-                <MyListingCard
-                  key={listing.id}
-                  listing={listing}
-                  ownerMode={false}
-                  showViews={isOwner}
-                  guestMode={guestMode}
-                  onGuestInteract={handleGuestInteract}
-                />
-              ))}
-              {visible.parcel.map((parcel) => (
+            <div className="grid gap-6">
+              {visible.listing.length ? (
+                <CatalogGrid lazy={false}>
+                  {visible.listing.map((listing) => (
+                    <MarketplaceListingCard
+                      key={listing.id}
+                      listing={listing}
+                      guestMode={guestMode}
+                      onGuestInteract={handleGuestInteract}
+                    />
+                  ))}
+                </CatalogGrid>
+              ) : null}
+              {visible.parcel.length ||
+              visible.job.length ||
+              visible.event.length ||
+              visible.post.length ||
+              visible.other.length ? (
+                <div className="grid gap-4">
+                  {visible.parcel.map((parcel) => (
                 <MyParcelPublicationCard
                   key={parcel.id}
                   parcel={parcel}
@@ -486,6 +501,8 @@ export function UserPublicationsPage() {
                   onGuestInteract={handleGuestInteract}
                 />
               ))}
+                </div>
+              ) : null}
             </div>
           ) : (
             <EmptyState

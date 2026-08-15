@@ -7,6 +7,7 @@ import { statusMeta } from '../../../config/statuses'
 import { transferNeedsClientAction } from '../../transfers/transferActionUtils'
 import { TransferStatusBadge } from '../../transfers/TransferStatusBadge'
 import { formatMoney } from '../../transfers/transferUtils'
+import { DashboardBusinessRail } from './DashboardBusinessRail'
 
 export function DashboardOverviewPanels({ activeTransfers, rate, user, business }) {
   const { t } = useLanguage()
@@ -32,7 +33,32 @@ export function DashboardOverviewPanels({ activeTransfers, rate, user, business 
         </Card>
       ) : null}
 
+      <DashboardBusinessRail />
+
       <section className="grid gap-5 lg:grid-cols-2">
+        <Card className="!border-0 shadow-none">
+          <div className="flex items-center gap-3">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
+              <FiTrendingUp />
+            </span>
+            <h2 className="font-black">{t('dashboard.overview.rateTitle')}</h2>
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="rounded-2xl bg-[var(--app-surface-muted)] p-4">
+              <span className="text-xs text-[var(--app-text-muted)]">1 XOF</span>
+              <strong className="mt-1 block text-lg">
+                {Number.isFinite(rate.originToRub) ? rate.originToRub.toFixed(4) : '—'} RUB
+              </strong>
+            </div>
+            <div className="rounded-2xl bg-[var(--app-surface-muted)] p-4">
+              <span className="text-xs text-[var(--app-text-muted)]">1 RUB</span>
+              <strong className="mt-1 block text-lg">
+                {Number.isFinite(rate.rubToOrigin) ? rate.rubToOrigin.toFixed(2) : '—'} XOF
+              </strong>
+            </div>
+          </div>
+        </Card>
+
         <Card className="!border-0 shadow-none">
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-black">{t('dashboard.overview.transfersTitle')}</h2>
@@ -84,29 +110,6 @@ export function DashboardOverviewPanels({ activeTransfers, rate, user, business 
                 </Link>
               </div>
             )}
-          </div>
-        </Card>
-
-        <Card className="!border-0 shadow-none">
-          <div className="flex items-center gap-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
-              <FiTrendingUp />
-            </span>
-            <h2 className="font-black">{t('dashboard.overview.rateTitle')}</h2>
-          </div>
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <div className="rounded-2xl bg-[var(--app-surface-muted)] p-4">
-              <span className="text-xs text-[var(--app-text-muted)]">1 XOF</span>
-              <strong className="mt-1 block text-lg">
-                {Number.isFinite(rate.originToRub) ? rate.originToRub.toFixed(4) : '—'} RUB
-              </strong>
-            </div>
-            <div className="rounded-2xl bg-[var(--app-surface-muted)] p-4">
-              <span className="text-xs text-[var(--app-text-muted)]">1 RUB</span>
-              <strong className="mt-1 block text-lg">
-                {Number.isFinite(rate.rubToOrigin) ? rate.rubToOrigin.toFixed(2) : '—'} XOF
-              </strong>
-            </div>
           </div>
         </Card>
       </section>

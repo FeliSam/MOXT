@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
-import { FiExternalLink, FiStar } from 'react-icons/fi'
+import { FiArrowLeft, FiExternalLink, FiStar } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useParams } from 'react-router-dom'
-import { BackButton } from '../components/ui/BackButton'
 import { LinkifiedText } from '../components/ui/LinkifiedText'
 import { Badge, PillBadge } from '../components/ui/Badge'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { CatalogSearch } from '../components/ui/CatalogSearch'
 import { EmptyState } from '../components/ui/EmptyState'
-import { PageHeader } from '../components/ui/PageHeader'
+import { HeaderIslandButton, PageHeader } from '../components/ui/PageHeader'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { HELP_CATEGORIES, helpCategoryMeta, isProductHelpCategory } from '../config/helpCategories'
 import { useLanguage } from '../contexts/useLanguage'
@@ -56,7 +55,7 @@ export function HelpGuidePage() {
             value: visibleArticles.length,
           },
         ]}
-        actions={<BackButton fallback="/moxt" />}
+        actions={<HeaderIslandButton icon={FiArrowLeft} label={t('common.back')} to="/moxt" />}
       />
 
       <div className="grid gap-5">
@@ -137,7 +136,7 @@ export function HelpArticleDetailPage() {
     <div className="mx-auto grid max-w-3xl gap-6">
       <PageHeader
         title={article.title}
-        actions={<BackButton fallback="/guide" />}
+        actions={<HeaderIslandButton icon={FiArrowLeft} label={t('common.back')} to="/guide" />}
       />
       {article.summary ? (
         <p className="-mt-2 text-sm leading-6 text-[var(--app-text-muted)]">{article.summary}</p>

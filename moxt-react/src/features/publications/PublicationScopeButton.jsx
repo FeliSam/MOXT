@@ -3,15 +3,21 @@ import { Link } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { useLanguage } from '../../contexts/useLanguage'
 
-export function PublicationScopeButton({ business, scope, onScopeChange, isOwner = true }) {
+export function PublicationScopeButton({
+  business,
+  scope,
+  onScopeChange,
+  isOwner = true,
+  className = '',
+}) {
   const { t } = useLanguage()
 
   if (!business) return null
 
   if (!isOwner) {
     return (
-      <Link to={`/businesses/${business.id}/publications/listings`}>
-        <Button icon={HiOutlineBuildingOffice2} variant="secondary">
+      <Link to={`/businesses/${business.id}`} className={`min-w-0 ${className}`.trim()}>
+        <Button icon={HiOutlineBuildingOffice2} variant="secondary" className="w-full">
           {t('publications.scope.business')}
         </Button>
       </Link>

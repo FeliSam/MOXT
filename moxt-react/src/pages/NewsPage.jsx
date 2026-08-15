@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { FiEdit3, FiRss } from 'react-icons/fi'
+import { FiEdit3, FiPlus, FiRss } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
@@ -11,12 +11,13 @@ import {
 import { Button } from '../components/ui/Button'
 import { EmptyState } from '../components/ui/EmptyState'
 import { FeedPostCard } from '../components/ui/FeedPostCard'
-import { PageHeader } from '../components/ui/PageHeader'
+import { headerIslandClass } from '../components/ui/PageHeader'
 import { ShareToFeedModal } from '../components/ui/ShareToFeedModal'
 import { useLanguage } from '../contexts/useLanguage'
 import { useSecurityGate } from '../features/security/useSecurityGate'
 import { buildNewsFeed } from '../features/posts/postFeedUtils'
 import { StatusRail } from '../features/statuses/StatusRail'
+import { StatusComposer } from '../features/statuses/StatusComposer'
 import { phase3Text } from '../i18n/phase3I18n'
 
 const FILTER_KEYS = ['all', 'listing', 'job', 'parcel', 'event', 'business', 'free']
@@ -38,6 +39,22 @@ export function NewsPage() {
 
   const [activeFilter, setActiveFilter] = useState('all')
   const [showShareModal, setShowShareModal] = useState(false)
+  const [statusComposerOpen, setStatusComposerOpen] = useState(false)
+
+  function openStatusComposer() {
+    if (canPublishContent(user)) {
+      setStatusComposerOpen(true)
+      return
+    }
+    requirePublish()
+    if (
+      isPhoneVerified(user) &&
+      isValidRussianPhone(user?.phone) &&
+      !isEmailVerified(user)
+    ) {
+      navigate('/security?verify=email')
+    }
+  }
 
   function openComposer() {
     if (canPublishContent(user)) {
@@ -90,21 +107,51 @@ export function NewsPage() {
 
   return (
     <div className="grid min-w-0 max-w-full gap-7 overflow-x-clip">
-      <PageHeader
-        title={p3('news.title')}
-        stats={[{ label: p3('news.stats.publications'), value: publishedPosts.length }]}
-        actions={
-          user && (
-            <Button icon={FiEdit3} onClick={openComposer}>
-              {p3('news.writePost')}
-            </Button>
-          )
-        }
-      />
+      <header className="flex min-w-0 max-w-full flex-col gap-4 overflow-visible rounded-[var(--radius-card-lg)] border-0 bg-[var(--app-surface)]/80 p-4 shadow-[var(--shadow-card)] backdrop-blur-xl sm:gap-5 sm:p-7">
+        <div className="flex min-w-0 items-center justify-between gap-3">
+          <h1 className="font-display min-w-0 break-words text-xl font-extrabold tracking-[-0.02em] text-[var(--app-text)] sm:text-4xl">
+            {p3('news.title')}
+          </h1>
+          {user ? (
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={openStatusComposer}
+                aria-label={t('status.rail.addYours')}
+                className="btn-press inline-flex shrink-0 items-center gap-2.5 text-sm font-semibold text-[var(--app-text)]"
+              >
+                <span className={headerIslandClass}>
+                  <FiPlus className="text-base" aria-hidden="true" />
+                </span>
+                <span className="hidden sm:inline">{p3('news.addStatus')}</span>
+              </button>
+              <button
+                type="button"
+                onClick={openComposer}
+                aria-label={p3('news.writePost')}
+                className="btn-press inline-flex shrink-0 items-center gap-2.5 text-sm font-semibold text-[var(--app-text)]"
+              >
+                <span className={headerIslandClass}>
+                  <FiEdit3 className="text-base" aria-hidden="true" />
+                </span>
+                <span className="hidden sm:inline">{p3('news.writePost')}</span>
+              </button>
+            </div>
+          ) : null}
+        </div>
+      </header>
 
       {/* Statuts + filtres + fil centré, une publication par ligne */}
       <div className="mx-auto grid w-full min-w-0 max-w-3xl gap-5">
-        <StatusRail />
+        <StatusRail
+          composerOpen={statusComposerOpen}
+          onComposerOpenChange={setStatusComposerOpen}
+          renderComposer={false}
+        />
+
+        {statusComposerOpen ? (
+          <StatusComposer onClose={() => setStatusComposerOpen(false)} />
+        ) : null}
 
         <div className="flex items-center gap-6 overflow-x-auto border-b border-[var(--app-border)] scrollbar-hidden">
           {FILTER_KEYS.map((key) => (

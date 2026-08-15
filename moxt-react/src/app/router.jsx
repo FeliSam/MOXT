@@ -50,9 +50,9 @@ const BusinessDetailPage = lazyPage(
   () => import('../pages/BusinessDetailPage'),
   'BusinessDetailPage',
 )
-const BusinessPublicationsPage = lazyPage(
-  () => import('../pages/BusinessPublicationsPage'),
-  'BusinessPublicationsPage',
+const BusinessPublicationsRedirect = lazyPage(
+  () => import('../pages/BusinessPublicationsRedirect'),
+  'BusinessPublicationsRedirect',
 )
 const BusinessSetupPage = lazyPage(() => import('../pages/BusinessSetupPage'), 'BusinessSetupPage')
 const DashboardPage = lazyPage(() => import('../pages/DashboardPage'), 'DashboardPage')
@@ -188,9 +188,27 @@ export function AppRouter() {
         <Route element={<PublicationShell />}>
           <Route path="/users/:userId/publications" element={<UserPublicationsPage />} />
           <Route path="/users/:userId/annonces" element={<UserListingsRedirect />} />
+          <Route path="/businesses/:businessId" element={<BusinessDetailPage />} />
           <Route
             path="/businesses/:businessId/publications/:contentType"
-            element={<BusinessPublicationsPage />}
+            element={<BusinessPublicationsRedirect />}
+          />
+          <Route path="/marketplace" element={<MarketplacePage />} />
+          <Route path="/marketplace/:listingId" element={<ListingDetailPage />} />
+          {MARKETPLACE_LEGACY_PATHS.map((path) => (
+            <Route
+              key={path}
+              path={`/${path}`}
+              element={<Navigate to="/marketplace" replace />}
+            />
+          ))}
+          <Route
+            path="/sales-detail"
+            element={<LegacyDetailRedirect fallback="/marketplace" target="/marketplace" />}
+          />
+          <Route
+            path="/sale-detail"
+            element={<LegacyDetailRedirect fallback="/marketplace" target="/marketplace" />}
           />
         </Route>
 
@@ -281,7 +299,6 @@ export function AppRouter() {
             />
             <Route path="/businesses" element={<BusinessesPage />} />
             <Route path="/businesses/setup" element={<BusinessSetupPage />} />
-            <Route path="/businesses/:businessId" element={<BusinessDetailPage />} />
             <Route path="/professional" element={<ProfessionalPage />} />
             <Route path="/exchanger" element={<ExchangerDashboardPage />} />
             <Route
@@ -305,19 +322,10 @@ export function AppRouter() {
               path="/p2p-order-detail"
               element={<LegacyDetailRedirect fallback="/p2p" target="/p2p/orders" />}
             />
-            <Route path="/marketplace" element={<MarketplacePage />} />
             <Route path="/marketplace/publish" element={<PublishListingPage />} />
             <Route path="/publications/mine" element={<MyPublicationsPage />} />
             <Route path="/marketplace/mine" element={<MyListingsPage />} />
             <Route path="/marketplace/:listingId/edit" element={<EditListingPage />} />
-            <Route path="/marketplace/:listingId" element={<ListingDetailPage />} />
-            {MARKETPLACE_LEGACY_PATHS.map((path) => (
-              <Route
-                key={path}
-                path={`/${path}`}
-                element={<Navigate to="/marketplace" replace />}
-              />
-            ))}
             {MY_LISTINGS_LEGACY_PATHS.map((path) => (
               <Route
                 key={path}
@@ -325,14 +333,6 @@ export function AppRouter() {
                 element={<Navigate to="/publications/mine" replace />}
               />
             ))}
-            <Route
-              path="/sales-detail"
-              element={<LegacyDetailRedirect fallback="/marketplace" target="/marketplace" />}
-            />
-            <Route
-              path="/sale-detail"
-              element={<LegacyDetailRedirect fallback="/marketplace" target="/marketplace" />}
-            />
             <Route path="/jobs" element={<JobsPage />} />
             <Route path="/jobs/applications" element={<JobApplicationsPage />} />
             <Route path="/jobs/publish" element={<PublishJobPage />} />

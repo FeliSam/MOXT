@@ -10,7 +10,7 @@ import { LinkifiedText } from '../components/ui/LinkifiedText'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { CatalogSearch } from '../components/ui/CatalogSearch'
 import { EmptyState } from '../components/ui/EmptyState'
-import { PageHeader } from '../components/ui/PageHeader'
+import { HeaderIslandButton, PageHeader } from '../components/ui/PageHeader'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { Select } from '../components/ui/Select'
@@ -188,11 +188,11 @@ export function BusinessesPage() {
         title={bt('businesses.page.title')}
         stats={[{ label: bt('businesses.page.stats.verified'), value: visibleBusinesses.length }]}
         actions={
-          <Link to="/businesses/setup">
-            <Button icon={FiPlus}>
-              {ownBusiness ? bt('businesses.page.editBusiness') : bt('businesses.page.createBusiness')}
-            </Button>
-          </Link>
+          <HeaderIslandButton
+            icon={FiPlus}
+            to="/businesses/setup"
+            label={ownBusiness ? bt('businesses.page.editBusiness') : bt('businesses.page.createBusiness')}
+          />
         }
       />
 

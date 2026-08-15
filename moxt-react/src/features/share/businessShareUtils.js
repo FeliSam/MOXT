@@ -2,7 +2,7 @@ import { activityByValue } from '../../config/businessActivities'
 import { buildAbsoluteUrl } from '../../utils/siteUrl'
 
 export function businessPublicationsPath(businessId) {
-  return `/businesses/${businessId}/publications/listings`
+  return `/businesses/${businessId}`
 }
 
 export function businessShareVersion(business = {}) {

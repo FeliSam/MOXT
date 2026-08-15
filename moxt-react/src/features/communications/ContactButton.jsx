@@ -1,11 +1,12 @@
 import { FiMessageSquare } from 'react-icons/fi'
 import { useRef, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useActionBurst } from '../../components/ui/ActionBurst'
 import { Button } from '../../components/ui/Button'
 import { useLanguage } from '../../contexts/useLanguage'
 import { sharedText } from '../../i18n/sharedI18n'
+import { addToast } from '../ui/uiSlice'
 import { openConversationWithContact } from './communicationSlice'
 import { buildRelatedSnapshot } from './relatedSnapshot'
 import { resolveContactProfileFromEntity } from './conversationDisplay'
@@ -30,6 +31,7 @@ export function ContactButton({
 }) {
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const location = useLocation()
   const { t } = useLanguage()
   const user = useSelector((state) => state.auth.user)
   const [loading, setLoading] = useState(false)
@@ -39,11 +41,23 @@ export function ContactButton({
     ? sharedText(t, 'shared.opening')
     : children || sharedText(t, 'shared.contact')
 
-  if (!ownerId || ownerId === user.id) return null
+  if (!ownerId || (user?.id && ownerId === user.id)) return null
 
   async function handleContact(event) {
     event?.preventDefault?.()
     event?.stopPropagation?.()
+    if (!user?.id) {
+      const returnTo = encodeURIComponent(`${location.pathname}${location.search}`)
+      dispatch(
+        addToast({
+          title: 'Connexion requise',
+          message: 'Connectez-vous pour contacter ce vendeur.',
+          tone: 'info',
+        }),
+      )
+      navigate(`/login?returnTo=${returnTo}`)
+      return
+    }
     if (pendingRef.current) return
     pendingRef.current = true
     setLoading(true)
@@ -114,6 +128,7 @@ export function ContactButton({
           className={className}
           disabled={loading}
           icon={FiMessageSquare}
+          iconOnly
           variant={variant}
           aria-label={contactLabel}
           title={contactLabel}

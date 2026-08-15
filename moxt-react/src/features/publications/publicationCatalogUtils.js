@@ -9,6 +9,10 @@ export const PUBLICATION_TYPE_TABS = [
   { id: 'other', label: 'Autres' },
 ]
 
+export function visiblePublicationTypeTabs(tabs, typeCounts) {
+  return tabs.filter((tab) => (typeCounts[tab.id] ?? 0) > 0)
+}
+
 export const archivedPublicationCardClass =
   'bg-[var(--app-surface-muted)]/75 ring-1 ring-[var(--app-border)]/70'
 

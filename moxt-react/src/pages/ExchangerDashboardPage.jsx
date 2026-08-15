@@ -15,7 +15,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { EmptyState } from '../components/ui/EmptyState'
-import { PageHeader } from '../components/ui/PageHeader'
+import { HeaderIslandButton, PageHeader } from '../components/ui/PageHeader'
 import { SkeletonStat } from '../components/ui/Skeleton'
 import { useLanguage } from '../contexts/useLanguage'
 import { selectActiveBusinessForOwner } from '../features/businesses/businessVisibility'
@@ -279,18 +279,18 @@ export function ExchangerDashboardPage() {
         title={business.name || t('exchanger.page.title')}
         description={t('exchanger.page.description')}
         actions={
-          <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-            <Button variant="secondary" className="min-w-0 flex-1 sm:flex-none" onClick={() => setTab('rates')}>
-              <FiSliders className="mr-1 shrink-0" />
-              <span className="truncate">{t('exchanger.actions.rates')}</span>
-            </Button>
-            <Link to="/transfers/history" className="min-w-0 flex-1 sm:flex-none">
-              <Button variant="secondary" className="w-full sm:w-auto">
-                <span className="truncate">{t('exchanger.actions.viewAll')}</span>
-                <FiArrowRight className="ml-1 shrink-0" />
-              </Button>
-            </Link>
-          </div>
+          <>
+            <HeaderIslandButton
+              icon={FiSliders}
+              label={t('exchanger.actions.rates')}
+              onClick={() => setTab('rates')}
+            />
+            <HeaderIslandButton
+              icon={FiArrowRight}
+              label={t('exchanger.actions.viewAll')}
+              to="/transfers/history"
+            />
+          </>
         }
       />
 

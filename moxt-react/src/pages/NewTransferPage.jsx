@@ -24,7 +24,7 @@ import { Card } from '../components/ui/Card'
 import { LinkifiedText } from '../components/ui/LinkifiedText'
 import { Input, Textarea } from '../components/ui/Input'
 import { Modal } from '../components/ui/Modal'
-import { PageHeader } from '../components/ui/PageHeader'
+import { HeaderIslandButton, PageHeader } from '../components/ui/PageHeader'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { Select } from '../components/ui/Select'
 import { flagColor, flagEmoji } from '../config/flags'
@@ -334,19 +334,21 @@ export function NewTransferPage() {
         description={t('transfers.new.description')}
         actions={
           <>
-            <Button variant="secondary" icon={FiSliders} onClick={() => setCalculatorOpen(true)}>
-              {t('transfers.new.calculator')}
-            </Button>
-            <Link to="/exchangers">
-              <Button variant="secondary" icon={FiRefreshCw}>
-                {t('transfers.new.exchangers')}
-              </Button>
-            </Link>
-            <Link to="/transfers/history">
-              <Button variant="secondary" icon={FiArrowLeft}>
-                {t('transfers.history.sectionTitle')}
-              </Button>
-            </Link>
+            <HeaderIslandButton
+              icon={FiSliders}
+              label={t('transfers.new.calculator')}
+              onClick={() => setCalculatorOpen(true)}
+            />
+            <HeaderIslandButton
+              icon={FiRefreshCw}
+              label={t('transfers.new.exchangers')}
+              to="/exchangers"
+            />
+            <HeaderIslandButton
+              icon={FiArrowLeft}
+              label={t('transfers.history.sectionTitle')}
+              to="/transfers/history"
+            />
           </>
         }
       />

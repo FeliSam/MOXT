@@ -1,18 +1,18 @@
 import {
-  FiBriefcase,
+  FiArrowLeft,
   FiCalendar,
+  FiEye,
+  FiLock,
   FiMapPin,
-  FiPackage,
   FiShield,
-  FiShoppingBag,
   FiStar,
 } from 'react-icons/fi'
 import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
-import { useState } from 'react'
+import { useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useOutletContext, useParams, useSearchParams } from 'react-router-dom'
 import { Badge, VerifiedDisplayName } from '../components/ui/Badge'
-import { BackButton } from '../components/ui/BackButton'
+import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { ExpandableLinkifiedText } from '../components/ui/ExpandableLinkifiedText'
 import { CatalogArchiveTabs } from '../components/ui/CatalogArchiveTabs'
@@ -22,7 +22,6 @@ import {
   DetailSection,
 } from '../components/ui/DetailBlocks'
 import { EmptyState } from '../components/ui/EmptyState'
-import { PageHeader } from '../components/ui/PageHeader'
 import { ReshareButton } from '../components/ui/ReshareButton'
 import { activityByValue, businessExperienceForActivity } from '../config/businessActivities'
 import { statusMeta } from '../config/statuses'
@@ -36,10 +35,10 @@ import {
   businessCityLabel,
   businessShareVersion,
 } from '../features/share/businessShareUtils'
-import { selectBusinessContent } from '../features/businesses/businessSelectors'
+import { selectBusinessById } from '../features/businesses/businessSelectors'
+import { BusinessPublicationsPanel } from '../features/businesses/BusinessPublicationsPanel'
 import { BusinessSubscriptionSection } from '../features/businesses/BusinessSubscriptionSection'
 import { BusinessVerificationProgress } from '../features/businesses/BusinessVerificationProgress'
-import { isBusinessVisibleToViewer } from '../features/businesses/businessVisibility'
 import { isStaffRole } from '../features/auth/roleUtils'
 import { BusinessAdminActions } from '../features/businesses/BusinessAdminActions'
 import { ContactButton } from '../features/communications/ContactButton'
@@ -51,63 +50,186 @@ import {
   businessesText,
 } from '../features/businesses/businessesI18n'
 import { canViewBusinessActivity } from '../features/account/activityVisibility'
+import { useBusinessActivityVisibility } from '../features/businesses/useBusinessActivityVisibility'
+import { useGuestAction } from '../features/guest/useGuestAction'
+import { useGuestBusinessPreview } from '../features/guest/useGuestPreview'
+import {
+  buildBusinessPublicationProfile,
+  collectBusinessPublications,
+  publicationTotalCount,
+} from '../features/publications/publicationCatalogUtils'
+import { formatMemberSince } from '../features/publications/usePublicationProfile'
 import { useScopedBusinessReviews } from '../features/reviews/useScopedTargetReviews'
 import { ReviewsSection, REVIEW_TARGET_TYPES } from '../features/reviews/ReviewsSection'
-
-const SERVICE_SECTION_DEFS = [
-  { key: 'listings', labelKey: 'businesses.services.listings', icon: FiShoppingBag, service: 'Marketplace' },
-  { key: 'jobs', labelKey: 'businesses.services.jobs', icon: FiBriefcase, service: 'Jobs' },
-  { key: 'events', labelKey: 'businesses.services.eventsLabel', icon: FiCalendar, service: 'Events' },
-  { key: 'parcels', labelKey: 'businesses.services.colis', icon: FiPackage, service: 'Colis' },
-]
+import { calculateAggregateRating } from '@moxt/shared/utils/reviewUtils.js'
 
 export function BusinessDetailPage() {
   const dispatch = useDispatch()
   const { t } = useLanguage()
   const bt = (key, vars) => businessesText(t, key, vars)
-  const [detailTab, setDetailTab] = useState('informations')
+  const [searchParams, setSearchParams] = useSearchParams()
   const { businessId } = useParams()
+  const { guestMode = false } = useOutletContext() || {}
+  const { requireAccount } = useGuestAction()
   const user = useSelector((state) => state.auth.user)
   const conversations = useSelector((state) => state.communications.conversations)
-  const business = useSelector((state) =>
-    state.businesses.items.find((item) => item.id === businessId),
-  )
-  const content = useSelector((state) => selectBusinessContent(state, business))
+  const reduxBusiness = useSelector((state) => selectBusinessById(state, businessId))
+  const guestPreview = useGuestBusinessPreview(guestMode ? businessId : null)
+  const business = guestMode ? guestPreview.business : reduxBusiness
   const documents = useSelector((state) =>
     state.businesses.documents.filter((item) => item.businessId === businessId),
   )
+  const marketplaceItems = useSelector((state) => state.marketplace.items)
+  const parcelItems = useSelector((state) => state.parcels.items)
+  const jobItems = useSelector((state) => state.jobs.items)
+  const eventItems = useSelector((state) => state.events.items)
+  const offerItems = useSelector((state) => state.p2p.offers)
 
-  const isOwner = business?.ownerId === user.id
+  const mainTab =
+    searchParams.get('view') === 'informations'
+      ? 'informations'
+      : searchParams.get('view') === 'abonnements'
+        ? 'abonnements'
+        : searchParams.get('view') === 'avis'
+          ? 'avis'
+          : 'publications'
+
+  const publications = useMemo(() => {
+    if (guestMode) {
+      return (
+        guestPreview.publications || {
+          listings: [],
+          parcels: [],
+          jobs: [],
+          events: [],
+          posts: [],
+          others: [],
+        }
+      )
+    }
+    return collectBusinessPublications(
+      {
+        marketplace: { items: marketplaceItems },
+        parcels: { items: parcelItems },
+        jobs: { items: jobItems },
+        events: { items: eventItems },
+        p2p: { offers: offerItems },
+      },
+      businessId,
+    )
+  }, [
+    businessId,
+    eventItems,
+    guestMode,
+    guestPreview.publications,
+    jobItems,
+    marketplaceItems,
+    offerItems,
+    parcelItems,
+  ])
+  const publicationCount = publicationTotalCount(publications)
+  const profile = useMemo(
+    () => buildBusinessPublicationProfile(business, publications),
+    [business, publications],
+  )
+  const memberSinceLabel = formatMemberSince(profile.memberSince)
+
+  const isOwner = !guestMode && business?.ownerId === user?.id
   const isAdminViewer = isStaffRole(user)
-  const canView =
-    business &&
-    canViewBusinessActivity({
-      viewerId: user?.id,
-      business,
-      conversations,
-    })
-  const canPreview =
-    business &&
-    canView &&
-    isBusinessVisibleToViewer(business, user) &&
-    (isOwner || isAdminViewer || ['verified', 'approved', 'active'].includes(business?.status))
+  const { visibility, loading: visibilityLoading } = useBusinessActivityVisibility(
+    business,
+    user?.id,
+  )
+  const canView = guestMode
+    ? !guestPreview.loading && !guestPreview.error && guestPreview.business
+    : business &&
+      canViewBusinessActivity({
+        viewerId: user?.id,
+        business: { ...business, activityVisibility: visibility },
+        conversations,
+      })
 
-  const { reviews, rating } = useScopedBusinessReviews(businessId, content, {
-    enabled: Boolean(canPreview && businessId),
+  const { reviews, rating: scopedRating } = useScopedBusinessReviews(businessId, publications, {
+    enabled: Boolean(!guestMode && canView && businessId),
     ownerUserId: business?.ownerId,
   })
+  const rating = guestMode
+    ? calculateAggregateRating(guestPreview.reviews || [])
+    : scopedRating
+  const handleGuestInteract = () => requireAccount(bt('businesses.publications.guestInteract'))
 
-  if (!business || !canPreview) {
+  function setMainTab(next) {
+    const params = new URLSearchParams(searchParams)
+    if (next === 'publications') {
+      params.delete('view')
+    } else {
+      params.set('view', next)
+    }
+    setSearchParams(params, { replace: true })
+  }
+
+  if (guestMode && guestPreview.loading) {
     return (
       <EmptyState
-        title={
-          business && !canView
-            ? bt('businesses.detail.notAccessible')
-            : bt('businesses.detail.notFoundPending')
+        title={bt('businesses.publications.loadingTitle')}
+        description={bt('businesses.publications.loadingDescription')}
+      />
+    )
+  }
+
+  if (guestMode && guestPreview.error === 'not_found') {
+    return (
+      <EmptyState
+        title={bt('businesses.publications.notFound')}
+        description={bt('businesses.publications.notFoundDescription')}
+        action={
+          <Link to="/discover">
+            <Button variant="secondary" icon={FiArrowLeft}>
+              {bt('businesses.publications.discoverMoxt')}
+            </Button>
+          </Link>
         }
-        description={
-          business && !canView ? bt('businesses.detail.restrictedVisibility') : undefined
+      />
+    )
+  }
+
+  if (guestMode && (guestPreview.error === 'private' || guestPreview.error === 'contacts')) {
+    return (
+      <EmptyState
+        icon={FiLock}
+        title={bt('businesses.detail.notAccessible')}
+        description={bt('businesses.publications.notAccessibleDescription')}
+        action={
+          <Link to="/register">
+            <Button>{bt('businesses.publications.createAccount')}</Button>
+          </Link>
         }
+      />
+    )
+  }
+
+  if (!isOwner && !guestMode && !visibilityLoading && business && !canView) {
+    return (
+      <EmptyState
+        icon={FiLock}
+        title={bt('businesses.detail.notAccessible')}
+        description={bt('businesses.detail.restrictedVisibility')}
+        action={
+          <Link to="/businesses">
+            <Button variant="secondary" icon={FiArrowLeft}>
+              {bt('businesses.publications.backToDirectory')}
+            </Button>
+          </Link>
+        }
+      />
+    )
+  }
+
+  if (!business) {
+    return (
+      <EmptyState
+        title={bt('businesses.detail.notFoundPending')}
+        description={guestMode ? bt('businesses.publications.notFoundDescription') : undefined}
       />
     )
   }
@@ -115,15 +237,7 @@ export function BusinessDetailPage() {
   const activity = activityByValue(business.primaryActivity)
   const experience = businessExperienceForActivity(business.primaryActivity)
   const hasTransfer = business.services?.includes('Transfert')
-  // Note agrégée réelle uniquement (alignée BusinessRatingBadge / échangeurs).
   const ratingDisplay = rating.count ? `${Number(rating.average || 0).toFixed(1)}/5` : '—'
-  const serviceSections = SERVICE_SECTION_DEFS.map((section) => ({
-    ...section,
-    label: bt(section.labelKey),
-  }))
-  const sections = serviceSections.filter(
-    ({ key, service }) => business.services?.includes(service) || content[key]?.length,
-  )
   const activityLabel = businessesOptionLabel(t, activity) || business.sector
   const spotlightKeys = experience.spotlightKeys || []
   const onboardingKeys = experience.onboardingKeys || []
@@ -139,7 +253,8 @@ export function BusinessDetailPage() {
     {
       icon: HiOutlineBuildingOffice2,
       label: bt('businesses.common.publications'),
-      value: `${Object.values(content).reduce((total, items) => total + items.length, 0)}`,
+      value: `${publicationCount}`,
+      count: publicationCount,
     },
   ]
 
@@ -152,43 +267,8 @@ export function BusinessDetailPage() {
   }
 
   return (
-    <div className="grid gap-7">
-      <PageHeader
-        title={
-          <VerifiedDisplayName
-            name={business.name}
-            verified={['verified', 'approved', 'active'].includes(business.status)}
-            iconSize="md"
-          />
-        }
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <ReshareButton sourceType="business" sourceId={business.id} sourceData={business} />
-            {!isOwner ? (
-              <FavoriteButton
-                relatedId={business.id}
-                relatedType="business"
-                title={business.name}
-                path={`/businesses/${business.id}`}
-                entity={business}
-                className="!w-auto !shadow-none"
-              />
-            ) : null}
-            {!isOwner ? (
-              <ContactButton
-                ownerId={business.ownerId}
-                relatedEntity={business}
-                relatedId={business.id}
-                relatedPath={`/businesses/${business.id}`}
-                relatedTitle={business.name}
-                relatedType="business"
-              />
-            ) : null}
-            <BackButton fallback="/businesses" label={bt('businesses.common.directory')} />
-          </div>
-        }
-      />
-      {isOwner ? (
+    <div className="grid min-w-0 max-w-full gap-5 overflow-x-clip sm:gap-7">
+      {isOwner && !guestMode ? (
         <BusinessVerificationProgress business={business} documents={documents} />
       ) : null}
       <DetailMetrics items={metricItems} />
@@ -238,9 +318,64 @@ export function BusinessDetailPage() {
         </div>
 
         <div className="grid gap-4 pt-8">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge tone={statusMeta(business.status, t).tone}>{statusMeta(business.status, t).label}</Badge>
+          <VerifiedDisplayName
+            as="h1"
+            name={business.name}
+            verified={['verified', 'approved', 'active'].includes(business.status)}
+            iconSize="md"
+            className="text-xl font-black sm:text-2xl"
+          />
+          <div className="flex min-w-0 flex-wrap gap-1.5 sm:gap-2">
+            <Badge tone="success" className="max-w-full truncate">
+              <HiOutlineBuildingOffice2 className="mr-1 inline shrink-0" />
+              {t('publications.profile.businessBadge')}
+            </Badge>
+            {activityLabel ? (
+              <Badge tone="neutral" className="max-w-full truncate">
+                {activityLabel}
+              </Badge>
+            ) : null}
+            <Badge tone={statusMeta(business.status, t).tone}>
+              {statusMeta(business.status, t).label}
+            </Badge>
           </div>
+
+          {memberSinceLabel ? (
+            <p className="flex min-w-0 items-center gap-1.5 text-sm text-[var(--app-text-muted)]">
+              <FiCalendar className="shrink-0 text-brand-600" />
+              <span className="min-w-0 truncate">
+                {t('publications.profile.memberSince', { date: memberSinceLabel })}
+              </span>
+            </p>
+          ) : null}
+
+          <div className="scrollbar-hidden -mx-1 flex min-w-0 touch-pan-x gap-1.5 overflow-x-auto px-1 pb-0.5 sm:flex-wrap sm:overflow-visible">
+            <Badge tone="success" className="shrink-0 whitespace-nowrap">
+              {t('publications.profile.activeCount', { count: profile.activeCount })}
+            </Badge>
+            <Badge tone="info" className="shrink-0 whitespace-nowrap">
+              {t('publications.profile.archivedCount', { count: profile.archivedCount })}
+            </Badge>
+            <Badge tone="warning" className="shrink-0 whitespace-nowrap">
+              {t('publications.profile.totalCount', { count: profile.totalCount })}
+            </Badge>
+            {rating.count ? (
+              <Badge tone="warning" className="shrink-0 whitespace-nowrap">
+                <FiStar className="mr-1 inline" />
+                {t('publications.profile.reviewCount', {
+                  average: rating.average,
+                  count: rating.count,
+                })}
+              </Badge>
+            ) : null}
+            {profile.totalViews > 0 || isOwner ? (
+              <Badge tone="warning" className="shrink-0 whitespace-nowrap">
+                <FiEye className="mr-1 inline" />
+                {t('publications.profile.listingViews', { count: profile.totalViews })}
+              </Badge>
+            ) : null}
+          </div>
+
           <ExpandableLinkifiedText
             as="p"
             text={business.description}
@@ -248,87 +383,108 @@ export function BusinessDetailPage() {
             maxLines={4}
             className="max-w-3xl leading-7 text-[var(--app-text-muted)]"
           />
-          <div className="rounded-[1.5rem] bg-[var(--app-surface-muted)] p-4 text-sm leading-6 text-[var(--app-text-muted)]">
-            <strong className="block text-[var(--app-text)]">{activityLabel}</strong>
-            <span>
-              {experience.promiseKey
-                ? businessesText(t, experience.promiseKey)
-                : experience.promise}
-            </span>
-          </div>
           <p className="flex items-center gap-2 text-sm">
             <FiMapPin className="text-brand-600" /> {business.city} · {business.country}
           </p>
-          <div className="flex flex-wrap gap-3">
-            <ContactButton
-              ownerId={business.ownerId}
-              relatedEntity={business}
-              relatedId={business.id}
-              relatedPath={`/businesses/${business.id}`}
-              relatedTitle={business.name}
-              relatedType="business"
-            />
-            {!isOwner ? (
+
+          <div className="grid grid-cols-2 items-center gap-2 border-t border-[var(--app-border)] pt-4 sm:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)]">
+            <div className="col-span-2 flex flex-wrap items-center gap-2 sm:col-span-1">
+              {!guestMode ? (
+                <ReshareButton
+                  sourceType="business"
+                  sourceId={business.id}
+                  sourceData={business}
+                  className="shrink-0"
+                />
+              ) : null}
+              {!isOwner && !guestMode ? (
+                <FavoriteButton
+                  relatedId={business.id}
+                  relatedType="business"
+                  title={business.name}
+                  path={`/businesses/${business.id}`}
+                  entity={business}
+                  showLabel={false}
+                  className="!size-11 shrink-0 !shadow-none"
+                />
+              ) : null}
+              {!isOwner ? (
+                <ContactButton
+                  ownerId={business.ownerId}
+                  relatedEntity={business}
+                  relatedId={business.id}
+                  relatedPath={`/businesses/${business.id}`}
+                  relatedTitle={business.name}
+                  relatedType="business"
+                  iconOnly
+                  className="!size-11 shrink-0"
+                />
+              ) : null}
+            </div>
+            {!isOwner && !guestMode ? (
               <SubscribeButton
                 publisherType="business"
                 publisherId={business.id}
                 publisherName={business.name}
                 publisherPath={`/businesses/${business.id}`}
+                className="w-full min-w-0"
               />
             ) : null}
+            {guestMode ? (
+              <Link
+                to="/discover"
+                className={`min-w-0 ${isOwner || guestMode ? 'col-span-2 sm:col-span-1' : ''}`}
+              >
+                <Button variant="secondary" icon={FiArrowLeft} className="w-full">
+                  {bt('businesses.publications.discoverMoxt')}
+                </Button>
+              </Link>
+            ) : (
+              <Link
+                to="/businesses"
+                className={`min-w-0 ${isOwner || guestMode ? 'col-span-2 sm:col-span-1' : ''}`}
+              >
+                <Button variant="secondary" icon={HiOutlineBuildingOffice2} className="w-full">
+                  {bt('businesses.common.directory')}
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </Card>
-      {sections.length ? (
-        <div className="grid gap-4">
-          <div>
-            <h2 className="text-2xl font-black">{bt('businesses.detail.linkedPublications')}</h2>
-            <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-              {bt('businesses.detail.linkedPublicationsHint')}
-            </p>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {sections.map(({ icon: Icon, key, label }) => (
-              <Link key={key} to={`/businesses/${business.id}/publications/${key}`}>
-                <Card className="h-full">
-                  <Icon className="text-2xl text-brand-600" />
-                  <strong className="mt-4 block text-xl">{label}</strong>
-                  <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-                    {bt('businesses.detail.publishedItems', { count: content[key].length })}
-                  </p>
-                  <div className="mt-4">
-                    {content[key][0]?.images?.[0] ? (
-                      <img
-                        src={content[key][0].images[0]}
-                        alt={content[key][0].title || label}
-                        className="h-36 w-full rounded-[1.25rem] object-cover"
-                      />
-                    ) : (
-                      <div className="grid h-36 place-items-center rounded-[1.25rem] bg-[var(--app-surface-muted)] text-sm text-[var(--app-text-muted)]">
-                        {bt('businesses.detail.viewPublishedList')}
-                      </div>
-                    )}
-                  </div>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </div>
-      ) : null}
+
       <CatalogArchiveTabs
-        active={detailTab}
-        onChange={setDetailTab}
+        active={mainTab}
+        onChange={setMainTab}
         variant="section"
-        className="!grid-cols-3 sm:!inline-flex"
         tabs={[
+          {
+            key: 'publications',
+            label: bt('businesses.detail.tabs.publications'),
+            count: publicationCount,
+          },
+          {
+            key: 'avis',
+            label: bt('businesses.detail.tabs.reviews'),
+            count: rating.count,
+            alwaysShow: true,
+          },
           { key: 'informations', label: bt('businesses.detail.tabs.informations') },
           { key: 'abonnements', label: bt('businesses.detail.tabs.subscriptions') },
-          { key: 'avis', label: bt('businesses.detail.tabs.reviews'), count: rating.count },
         ]}
       />
-      {detailTab === 'informations' ? (
+
+      {mainTab === 'publications' ? (
+        <BusinessPublicationsPanel
+          businessId={businessId}
+          guestMode={guestMode}
+          guestPublications={guestPreview.publications}
+          isOwner={isOwner}
+          onGuestInteract={handleGuestInteract}
+        />
+      ) : mainTab === 'informations' ? (
         <>
-          {isOwner ? <BusinessActivityVisibilitySection business={business} /> : null}
+          {isOwner && !guestMode ? <BusinessActivityVisibilitySection business={business} /> : null}
           <div className="grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
             <DetailSection title={bt('businesses.detail.professionalInfo')}>
               <DetailFacts
@@ -366,7 +522,7 @@ export function BusinessDetailPage() {
               </div>
             </DetailSection>
           </div>
-          {isAdminViewer ? (
+          {isAdminViewer && !guestMode ? (
             <Card className="border border-brand-100 bg-brand-50/60 dark:border-brand-900/40 dark:bg-brand-950/20">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -413,7 +569,7 @@ export function BusinessDetailPage() {
             </DetailSection>
           </div>
         </>
-      ) : detailTab === 'abonnements' ? (
+      ) : mainTab === 'abonnements' ? (
         <BusinessSubscriptionSection
           business={business}
           enabledServices={business.services || []}
@@ -426,7 +582,7 @@ export function BusinessDetailPage() {
           ownerName={business.name}
           profileTargetType={REVIEW_TARGET_TYPES.BUSINESS}
           profileTargetId={business.id}
-          reviews={reviews}
+          reviews={guestMode ? guestPreview.reviews || [] : reviews}
           currentUser={user}
         />
       )}

@@ -229,6 +229,8 @@ export const MARKETPLACE_FR_SOURCES = {
   "marketplace.detail.tabsLabel": "Détail annonce",
   "marketplace.detail.meta": "{city} · Publiée le {date} · Réf. {id}",
   "marketplace.detail.share": "Partager",
+  "marketplace.detail.republish": "Republier",
+  "marketplace.detail.contact": "Contacter",
   "marketplace.detail.shareSuccessTitle": "Annonce partagée",
   "marketplace.detail.shareSuccessBody": "Le lien a été partagé ou copié.",
   "marketplace.detail.shareCancelledTitle": "Partage annulé",

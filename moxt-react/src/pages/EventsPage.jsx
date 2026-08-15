@@ -9,7 +9,7 @@ import { Card } from '../components/ui/Card'
 import { CatalogSearch } from '../components/ui/CatalogSearch'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { Input } from '../components/ui/Input'
-import { PageHeader } from '../components/ui/PageHeader'
+import { HeaderIslandButton, PageHeader } from '../components/ui/PageHeader'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { ScrollSectionAnchor } from '../components/ui/ScrollSectionAnchor'
 import { Select } from '../components/ui/Select'
@@ -72,17 +72,18 @@ export function EventsPage() {
         actions={
           <>
             {canManage ? (
-              <Button
-                variant={showMine ? 'primary' : 'secondary'}
+              <HeaderIslandButton
                 icon={FiUser}
+                active={showMine}
+                label={showMine ? t('events.browse.showAll') : t('events.browse.showMine')}
                 onClick={() => setShowMine((v) => !v)}
-              >
-                {showMine ? t('events.browse.showAll') : t('events.browse.showMine')}
-              </Button>
+              />
             ) : null}
-            <Button icon={FiPlus} onClick={() => navigate('/events/publish')}>
-              {t('events.browse.create')}
-            </Button>
+            <HeaderIslandButton
+              icon={FiPlus}
+              label={t('events.browse.create')}
+              onClick={() => navigate('/events/publish')}
+            />
           </>
         }
       />

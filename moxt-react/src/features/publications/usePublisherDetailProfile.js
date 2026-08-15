@@ -125,7 +125,7 @@ export function usePublisherDetailProfile(entity, kind) {
     ownerBusiness,
     businessId: resolvedBusinessId,
     businessProfilePath: resolvedBusinessId
-      ? `/businesses/${resolvedBusinessId}/publications/listings`
+      ? `/businesses/${resolvedBusinessId}`
       : null,
     publisherName: meta.resolveName(entity) || t('publications.publisher.memberMoxt'),
     publicationCount,

@@ -568,6 +568,7 @@ export const PHASE3_FR_SOURCES = {
   'news.description': 'Découvrez les dernières publications de la communauté MOXT.',
   'news.stats.publications': 'Publications',
   'news.writePost': 'Écrire un post',
+  'news.addStatus': 'Statut',
   'news.filters.all': 'Tous',
   'news.filters.listing': 'Annonces',
   'news.filters.job': 'Jobs',

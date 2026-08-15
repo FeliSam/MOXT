@@ -20,7 +20,7 @@ export function useGuestAction() {
       dispatch(
         addToast({
           title: 'Compte requis',
-          message: `Créez un compte MOXT pour ${intent} avec ce profil.`,
+          message: `Créez un compte MOXT pour ${intent}.`,
           tone: 'info',
         }),
       )

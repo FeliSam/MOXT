@@ -4,7 +4,6 @@ import { ImageLightbox } from '../components/ui/ImageLightbox'
 import {
   FiAlertTriangle,
   FiBriefcase,
-  FiEdit2,
   FiMapPin,
   FiSend,
   FiUsers,
@@ -24,9 +23,7 @@ import {
   DetailSection,
 } from '../components/ui/DetailBlocks'
 import { PageHeader } from '../components/ui/PageHeader'
-import { ReshareButton } from '../components/ui/ReshareButton'
 import { DetailFloatingActions } from '../components/ui/DetailFloatingActions'
-import { FavoriteButton } from '../features/account/FavoriteButton'
 import { ContactButton } from '../features/communications/ContactButton'
 import { openRelatedConversation } from '../features/communications/openRelatedConversation'
 import { createJobSchemas } from '../features/jobs/jobSchemas'
@@ -142,27 +139,7 @@ export function JobDetailPage() {
     <div className="grid gap-7">
       <PageHeader
         title={job.title}
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <ReshareButton sourceType="job" sourceId={job.id} sourceData={job} />
-            {job.ownerId === user.id ? (
-              <Link to={`/jobs/${jobId}/edit`}>
-                <Button variant="secondary" icon={FiEdit2}>{t('jobs.detail.edit')}</Button>
-              </Link>
-            ) : null}
-            <FavoriteButton
-              relatedId={job.id}
-              relatedType="job"
-              title={job.title}
-              path={`/jobs/${job.id}`}
-              entity={job}
-              variant="solid"
-              showLabel={false}
-              className="hidden !size-11 !min-h-11 !rounded-2xl shrink-0 xl:inline-grid"
-            />
-            <BackButton fallback="/jobs" />
-          </div>
-        }
+        actions={<BackButton fallback="/jobs" />}
       />
 
       {job.images?.length ? (
@@ -400,6 +377,9 @@ export function JobDetailPage() {
         relatedPath={`/jobs/${job.id}`}
         relatedType="job"
         title={job.title}
+        sourceType="job"
+        sourceId={job.id}
+        editTo={job.ownerId === user.id ? `/jobs/${jobId}/edit` : undefined}
       />
     </div>
   )

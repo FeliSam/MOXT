@@ -18,7 +18,7 @@ describe('businessShareUtils', () => {
       updatedAt: '2026-07-11T11:00:00.000Z',
     })
 
-    expect(first).toContain('/businesses/BIZ-1/publications/listings?v=')
+    expect(first).toContain('/businesses/BIZ-1?v=')
     expect(second).not.toBe(first)
   })
 

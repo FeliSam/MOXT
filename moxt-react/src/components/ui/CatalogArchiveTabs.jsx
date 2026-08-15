@@ -1,9 +1,12 @@
+import { useEffect } from 'react'
+import { useHorizontalScroll } from '../../hooks/useHorizontalScroll'
+
 const VARIANTS = {
   /** Onglets catalogue (colis, jobs…) — soulignement classique */
   underline: {
-    root: 'flex items-center gap-6 border-b border-[var(--app-border)]',
+    root: 'scrollbar-hidden flex min-w-0 touch-pan-x items-center gap-6 overflow-x-auto border-b border-[var(--app-border)]',
     button: (active) =>
-      `relative flex items-center gap-2 pb-3 text-sm font-bold transition-colors ${
+      `relative flex shrink-0 items-center gap-2 whitespace-nowrap pb-3 text-sm font-bold transition-colors ${
         active
           ? 'text-[var(--app-text)]'
           : 'text-[var(--app-text-muted)] hover:text-[var(--app-text)]'
@@ -18,9 +21,9 @@ const VARIANTS = {
   },
   /** Navigation principale (Publications | Avis) — segments larges */
   section: {
-    root: 'grid grid-cols-2 gap-1 rounded-[var(--radius-card)] border border-[var(--app-border)] bg-[var(--app-surface-muted)]/60 p-1 sm:inline-flex sm:w-auto sm:grid-cols-none',
+    root: 'scrollbar-hidden flex w-full min-w-0 touch-pan-x gap-1 overflow-x-auto overscroll-x-contain rounded-[var(--radius-card)] border border-[var(--app-border)] bg-[var(--app-surface-muted)]/60 p-1 sm:w-auto',
     button: (active) =>
-      `flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[calc(var(--radius-card)-0.25rem)] px-4 py-2.5 text-sm font-black transition-all sm:min-w-[9.5rem] ${
+      `flex min-h-11 min-w-[8.25rem] shrink-0 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-[calc(var(--radius-card)-0.25rem)] px-4 py-2.5 text-sm font-black transition-all sm:min-w-[9.5rem] ${
         active
           ? 'bg-[var(--app-surface)] text-[var(--app-text)] shadow-[var(--shadow-card)] ring-1 ring-[var(--app-border)]'
           : 'text-[var(--app-text-muted)] hover:bg-[var(--app-surface)]/50 hover:text-[var(--app-text)]'
@@ -52,12 +55,29 @@ const VARIANTS = {
   },
 }
 
+function visibleTabs(tabs) {
+  return tabs.filter(({ count, alwaysShow }) => alwaysShow || count === undefined || count > 0)
+}
+
 export function CatalogArchiveTabs({ active, onChange, tabs, variant = 'underline', className = '' }) {
   const styles = VARIANTS[variant] ?? VARIANTS.underline
+  const scrollRef = useHorizontalScroll()
+  const tabsToShow = visibleTabs(tabs)
+  const visibleKeys = tabsToShow.map((tab) => tab.key).join(',')
+
+  useEffect(() => {
+    if (!visibleKeys) return
+    const keys = visibleKeys.split(',')
+    if (!keys.includes(active)) {
+      onChange(keys[0])
+    }
+  }, [active, onChange, visibleKeys])
+
+  if (tabsToShow.length === 0) return null
 
   return (
-    <div className={`${styles.root} ${className}`.trim()} role="tablist">
-      {tabs.map(({ key, label, count }) => {
+    <div ref={scrollRef} className={`${styles.root} ${className}`.trim()} role="tablist">
+      {tabsToShow.map(({ key, label, count }) => {
         const isActive = active === key
         return (
           <button

@@ -2,20 +2,33 @@ import { FiCheckCircle, FiClock, FiInfo, FiShield } from 'react-icons/fi'
 import { Badge } from './Badge'
 import { Card } from './Card'
 
+function visibleMetrics(items) {
+  return items.filter(({ value, count }) => {
+    if (typeof count === 'number') return count > 0
+    const text = String(value ?? '').trim()
+    return text !== '0' && text !== '0%'
+  })
+}
+
 export function DetailMetrics({ items }) {
+  const metrics = visibleMetrics(items)
+  if (!metrics.length) return null
+
   return (
-    <section className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 xl:grid-cols-4">
-      {items.map(({ icon: Icon = FiInfo, label, tone = 'brand', value }) => (
-        <Card key={label} className="min-w-0 overflow-hidden p-4 sm:p-5">
-          <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
-            <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-[var(--app-accent-soft)] text-[var(--app-accent)] sm:size-11">
-              <Icon />
+    <section className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
+      {metrics.map(({ icon: Icon = FiInfo, label, tone = 'brand', value }) => (
+        <Card key={label} className="min-w-0 overflow-hidden p-3 sm:p-5">
+          <div className="flex min-w-0 flex-row items-center gap-2 sm:gap-3">
+            <span className="grid size-9 shrink-0 place-items-center rounded-2xl bg-[var(--app-accent-soft)] text-[var(--app-accent)] sm:size-11">
+              <Icon className="text-sm sm:text-base" />
             </span>
-            <div className="min-w-0">
-              <strong className="block break-words text-sm tabular-nums [overflow-wrap:anywhere] sm:truncate sm:text-lg">
+            <div className="min-w-0 flex-1">
+              <strong className="block truncate text-xs font-bold tabular-nums sm:text-sm lg:text-lg">
                 {value}
               </strong>
-              <span className="text-xs text-[var(--app-text-faint)]">{label}</span>
+              <span className="block truncate text-[10px] sm:text-xs text-[var(--app-text-faint)]">
+                {label}
+              </span>
             </div>
           </div>
           {tone !== 'brand' ? <Badge tone={tone}>{label}</Badge> : null}

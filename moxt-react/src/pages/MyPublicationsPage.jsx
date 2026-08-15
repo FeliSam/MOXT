@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   FiBriefcase,
   FiCalendar,
@@ -45,6 +45,7 @@ import {
   publicationTotalViews,
   publicationTypeCounts,
   visiblePublicationCount,
+  visiblePublicationTypeTabs,
 } from '../features/publications/publicationCatalogUtils'
 import { PublicationScopeButton } from '../features/publications/PublicationScopeButton'
 import { SubscribersPanel } from '../features/account/SubscribersPanel'
@@ -119,6 +120,10 @@ export function MyPublicationsPage() {
     () => publicationTypeCounts(publications, archiveTab, { includePending: true }),
     [archiveTab, publications],
   )
+  const visibleTypeTabs = useMemo(
+    () => visiblePublicationTypeTabs(PUBLICATION_TYPE_TABS, typeCounts),
+    [typeCounts],
+  )
   const visible = useMemo(
     () => filterPublicationsByTabs(publications, { archiveTab, typeTab, includePending: true }),
     [archiveTab, publications, typeTab],
@@ -139,6 +144,13 @@ export function MyPublicationsPage() {
     else params.set('type', next)
     setSearchParams(params, { replace: true })
   }
+
+  useEffect(() => {
+    if (visibleTypeTabs.length === 0) return
+    if (!visibleTypeTabs.some((tab) => tab.id === typeTab)) {
+      setTypeTab(visibleTypeTabs[0].id)
+    }
+  }, [typeTab, visibleTypeTabs])
 
   function setScope(next) {
     const params = new URLSearchParams(searchParams)
@@ -240,18 +252,20 @@ export function MyPublicationsPage() {
               ]}
             />
 
-            <div className="scrollbar-hidden -mx-1 flex touch-pan-x gap-2 overflow-x-auto px-1 pb-1">
-              {PUBLICATION_TYPE_TABS.map((tab) => (
-                <PillBadge
-                  key={tab.id}
-                  active={typeTab === tab.id}
-                  onClick={() => setTypeTab(tab.id)}
-                  className="shrink-0 whitespace-nowrap"
-                >
-                  {p3(`publications.mine.types.${tab.id}`)} ({typeCounts[tab.id]})
-                </PillBadge>
-              ))}
-            </div>
+            {visibleTypeTabs.length > 0 ? (
+              <div className="scrollbar-hidden -mx-1 flex touch-pan-x gap-2 overflow-x-auto px-1 pb-1">
+                {visibleTypeTabs.map((tab) => (
+                  <PillBadge
+                    key={tab.id}
+                    active={typeTab === tab.id}
+                    onClick={() => setTypeTab(tab.id)}
+                    className="shrink-0 whitespace-nowrap"
+                  >
+                    {p3(`publications.mine.types.${tab.id}`)} ({typeCounts[tab.id]})
+                  </PillBadge>
+                ))}
+              </div>
+            ) : null}
           </div>
 
           {hasContent ? (

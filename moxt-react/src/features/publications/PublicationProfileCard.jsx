@@ -2,7 +2,6 @@ import { FiCalendar, FiEye, FiMapPin, FiStar, FiUser } from 'react-icons/fi'
 import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 import { Badge, VerifiedDisplayName } from '../../components/ui/Badge'
 import { Card } from '../../components/ui/Card'
-import { ContactButton } from '../communications/ContactButton'
 import { activityByValue } from '../../config/businessActivities'
 import { useLanguage } from '../../contexts/useLanguage'
 import { isBusinessPublishReady } from '../businesses/businessPublishUtils'
@@ -31,11 +30,7 @@ export function PublicationProfileCard({
   ownBusiness,
   shareUserId,
   avatarUrl,
-  contactOwnerId,
-  contactPath,
-  contactTitle,
-  contactEntity,
-  contactType = 'profile',
+  actions = null,
 }) {
   const { t } = useLanguage()
   const memberSinceLabel = formatMemberSince(memberSince)
@@ -47,7 +42,7 @@ export function PublicationProfileCard({
     ? activityByValue(ownBusiness.primaryActivity)?.label || ownBusiness.sector
     : ''
   const qrTargetPath = isBusinessScope
-    ? `/businesses/${ownBusiness.id}/publications/listings`
+    ? `/businesses/${ownBusiness.id}`
     : shareUserId
       ? `/users/${shareUserId}/publications`
       : null
@@ -90,7 +85,7 @@ export function PublicationProfileCard({
               />
               {qrTargetPath ? (
                 <ProfileQrShareButton
-                  className="shrink-0 lg:hidden"
+                  className="shrink-0"
                   type={isBusinessScope ? 'business' : 'user'}
                   activityVisibility={isBusinessScope ? ownBusiness?.activityVisibility : undefined}
                   targetPath={!isBusinessScope ? qrTargetPath : undefined}
@@ -157,15 +152,21 @@ export function PublicationProfileCard({
         ) : null}
 
         <div className="scrollbar-hidden -mx-1 flex min-w-0 touch-pan-x gap-1.5 overflow-x-auto px-1 pb-0.5 sm:flex-wrap sm:overflow-visible">
-          <Badge tone="success" className="shrink-0 whitespace-nowrap">
-            {t('publications.profile.activeCount', { count: activeCount })}
-          </Badge>
-          <Badge tone="info" className="shrink-0 whitespace-nowrap">
-            {t('publications.profile.archivedCount', { count: archivedCount })}
-          </Badge>
-          <Badge tone="warning" className="shrink-0 whitespace-nowrap">
-            {t('publications.profile.totalCount', { count: totalCount })}
-          </Badge>
+          {activeCount > 0 ? (
+            <Badge tone="success" className="shrink-0 whitespace-nowrap">
+              {t('publications.profile.activeCount', { count: activeCount })}
+            </Badge>
+          ) : null}
+          {archivedCount > 0 ? (
+            <Badge tone="info" className="shrink-0 whitespace-nowrap">
+              {t('publications.profile.archivedCount', { count: archivedCount })}
+            </Badge>
+          ) : null}
+          {totalCount > 0 ? (
+            <Badge tone="warning" className="shrink-0 whitespace-nowrap">
+              {t('publications.profile.totalCount', { count: totalCount })}
+            </Badge>
+          ) : null}
           {aggregateRating?.count ? (
             <Badge tone="warning" className="shrink-0 whitespace-nowrap">
               <FiStar className="mr-1 inline" />
@@ -183,37 +184,7 @@ export function PublicationProfileCard({
           ) : null}
         </div>
 
-        {!isOwner && contactOwnerId ? (
-          <ContactButton
-            className="w-full sm:w-auto"
-            ownerId={contactOwnerId}
-            relatedEntity={contactEntity}
-            relatedId={isBusinessScope ? ownBusiness?.id : shareUserId}
-            relatedPath={contactPath}
-            relatedTitle={contactTitle || headlineName}
-            relatedType={contactType}
-            variant="secondary"
-          />
-        ) : null}
-
-        {qrTargetPath ? (
-          <div className="hidden justify-end lg:flex">
-            <ProfileQrShareButton
-              type={isBusinessScope ? 'business' : 'user'}
-              activityVisibility={isBusinessScope ? ownBusiness?.activityVisibility : undefined}
-              targetPath={!isBusinessScope ? qrTargetPath : undefined}
-              refreshKey={isBusinessScope ? businessShareVersion(ownBusiness) : undefined}
-              shareUrl={isBusinessScope ? buildBusinessShareUrl(ownBusiness) : undefined}
-              shareText={isBusinessScope ? buildBusinessShareText(ownBusiness) : undefined}
-              title={headlineName}
-              subtitle={isBusinessScope ? sectorLabel || ownBusiness.sector : displayName}
-              verified={showVerifiedIcon}
-              city={isBusinessScope ? businessCityLabel(ownBusiness) : city}
-              sector={isBusinessScope ? sectorLabel || ownBusiness.sector : undefined}
-              logoUrl={isBusinessScope ? ownBusiness.logoUrl : avatarUrl}
-            />
-          </div>
-        ) : null}
+        {actions}
       </div>
     </Card>
   )

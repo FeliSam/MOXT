@@ -1,4 +1,4 @@
-import { FiArrowRight, FiBox, FiCalendar, FiDownload, FiEdit2, FiMapPin, FiSend, FiShield } from 'react-icons/fi'
+import { FiArrowRight, FiBox, FiCalendar, FiDownload, FiMapPin, FiSend, FiShield } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
@@ -15,10 +15,8 @@ import {
   DetailSection,
 } from '../components/ui/DetailBlocks'
 import { PageHeader } from '../components/ui/PageHeader'
-import { ReshareButton } from '../components/ui/ReshareButton'
 import { DetailFloatingActions } from '../components/ui/DetailFloatingActions'
 import { useLanguage } from '../contexts/useLanguage'
-import { FavoriteButton } from '../features/account/FavoriteButton'
 import { ContactButton } from '../features/communications/ContactButton'
 import { openRelatedConversation } from '../features/communications/openRelatedConversation'
 import { buildParcelSnapshot } from '../features/communications/relatedSnapshot'
@@ -188,29 +186,7 @@ export function ParcelDetailPage() {
     <div className="grid gap-7">
       <PageHeader
         title={routeTitle}
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <ReshareButton sourceType="parcel" sourceId={parcel.id} sourceData={parcel} />
-            {user.id === parcel.ownerId ? (
-              <Link to={`/parcels/${parcelId}/edit`}>
-                <Button variant="secondary" icon={FiEdit2}>
-                  {t('parcels.detail.edit')}
-                </Button>
-              </Link>
-            ) : null}
-            <FavoriteButton
-              relatedId={parcel.id}
-              relatedType="parcel"
-              title={routeTitle}
-              path={`/parcels/${parcel.id}`}
-              entity={parcel}
-              variant="solid"
-              showLabel={false}
-              className="hidden !size-11 !min-h-11 !rounded-2xl shrink-0 xl:inline-grid"
-            />
-            <BackButton fallback="/parcels" />
-          </div>
-        }
+        actions={<BackButton fallback="/parcels" />}
       />
 
       {/* Route visuelle origine -> destination */}
@@ -643,6 +619,9 @@ export function ParcelDetailPage() {
         relatedPath={`/parcels/${parcel.id}`}
         relatedType="parcel"
         title={routeTitle}
+        sourceType="parcel"
+        sourceId={parcel.id}
+        editTo={user.id === parcel.ownerId ? `/parcels/${parcelId}/edit` : undefined}
       />
       <ConfirmDialog
         open={Boolean(releaseRequest)}
