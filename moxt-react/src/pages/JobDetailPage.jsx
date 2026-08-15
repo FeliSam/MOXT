@@ -9,7 +9,7 @@ import {
   FiUsers,
 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Alert } from '../components/ui/Alert'
 import { BackButton } from '../components/ui/BackButton'
 import { Badge, VerifiedBadge } from '../components/ui/Badge'

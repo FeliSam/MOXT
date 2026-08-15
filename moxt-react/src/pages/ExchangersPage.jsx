@@ -8,7 +8,6 @@ import {
   BusinessRatingValue,
 } from '../features/reviews/BusinessRatingBadge'
 import { BothWayExchangeRates } from '../features/transfers/ExchangeRateChips'
-import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { CatalogSearch } from '../components/ui/CatalogSearch'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
