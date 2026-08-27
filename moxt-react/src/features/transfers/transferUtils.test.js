@@ -54,7 +54,7 @@ describe('calcul des transferts', () => {
     expect(roundMoneyUp(8810)).toBe(8810)
     expect(roundTransferInput(8810.56)).toBe('8811')
     expect(roundTransferInput(6329.01)).toBe('6330')
-    expect(roundMoneyUp(4275.0000000000005)).toBe(4275)
+    expect(roundMoneyUp(4275 + Number.EPSILON)).toBe(4275)
   })
 
   it('borne la reduction entre 0 et 15 %', () => {

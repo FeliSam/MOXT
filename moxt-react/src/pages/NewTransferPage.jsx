@@ -322,24 +322,16 @@ export function NewTransferPage() {
   }
   const info = directionInfo(formik.values.direction, originCountry)
   const usedThisMonth = monthlyTransferTotal(transfers, user.id, info.from)
-  const sourceMethods = useMemo(
-    () =>
-      exchangerMethodsForParty({
-        business: selectedExchangerBusiness,
-        country: info.sourceCountry,
-        originCountry,
-      }),
-    [selectedExchangerBusiness, info.sourceCountry, originCountry],
-  )
-  const destinationMethods = useMemo(
-    () =>
-      exchangerMethodsForParty({
-        business: selectedExchangerBusiness,
-        country: info.destinationCountry,
-        originCountry,
-      }),
-    [selectedExchangerBusiness, info.destinationCountry, originCountry],
-  )
+  const sourceMethods = exchangerMethodsForParty({
+    business: selectedExchangerBusiness,
+    country: info.sourceCountry,
+    originCountry,
+  })
+  const destinationMethods = exchangerMethodsForParty({
+    business: selectedExchangerBusiness,
+    country: info.destinationCountry,
+    originCountry,
+  })
   const senderProfiles = transferProfiles.filter(
     (item) =>
       transferProfileMatchesCountry(item, info.sourceCountry) &&

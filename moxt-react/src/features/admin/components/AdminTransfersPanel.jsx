@@ -10,7 +10,7 @@ import {
   FiShield,
   FiSlash,
 } from 'react-icons/fi'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../../../contexts/useLanguage'
@@ -179,10 +179,13 @@ export function AdminTransfersPanel({
     () => paginateItems(visibleRollups, rollupPage, ADMIN_PAGE_SIZE),
     [rollupPage, visibleRollups],
   )
-  useEffect(() => {
+  const filterSignature = `${businessIdFilter}|${currencyFilter}|${detailStatus}|${directionFilter}|${proofFilter}`
+  const [pageResetKey, setPageResetKey] = useState(filterSignature)
+  if (pageResetKey !== filterSignature) {
+    setPageResetKey(filterSignature)
     setTransferPage(1)
     setRollupPage(1)
-  }, [businessIdFilter, currencyFilter, detailStatus, directionFilter, proofFilter])
+  }
 
   const hasLocalFilters =
     Boolean(businessIdFilter) ||
