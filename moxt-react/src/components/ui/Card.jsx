@@ -7,7 +7,7 @@
   variant="featured"     → gradient subtil en fond, pour hero / KPI
   variant="verified"     → bordure gauche verte, signal de confiance
   variant="flat"         → sans bordure ni ombre, fond muted
-  variant="finance"      → carte KPI / montants (couche fintech 20 %)
+  variant="flush"        → image plein cadre, sans padding ni bordure
 */
 
 const variants = {
@@ -31,6 +31,9 @@ const variants = {
 
   finance:
     'rounded-[var(--radius-card-lg)] border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--shadow-finance)] sm:p-6 tabular-nums',
+
+  flush:
+    'overflow-hidden rounded-[var(--radius-card-lg)] !border-0 bg-[var(--app-surface)] !p-0 shadow-[var(--shadow-card)] sm:!p-0',
 }
 
 export function Card({ children, className = '', variant = 'default', as: Tag = 'section', ...props }) {

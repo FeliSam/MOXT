@@ -1,3 +1,4 @@
+import { isReviewVisible } from '@moxt/shared/utils/reviewUtils.js'
 import { transferLimitsForCurrency } from '../transfers/transferConfig'
 
 export const P2P_CONFIG = {
@@ -75,6 +76,7 @@ export function computeP2PReputation(userId, { orders = [], reviews = [] } = {})
 
   const profileReviews = (reviews || []).filter(
     (review) =>
+      isReviewVisible(review) &&
       review.targetId === userId &&
       (review.targetType === 'user_profile' || review.targetType === 'USER_PROFILE'),
   )

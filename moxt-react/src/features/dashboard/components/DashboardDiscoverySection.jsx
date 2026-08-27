@@ -9,7 +9,7 @@ import { EntityVerifiedName } from '../../../components/ui/EntityVerifiedName'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { jobContractLabel, jobSectorLabel } from '../../jobs/jobDisplayUtils'
 import { formatParcelDepartureLabel } from '../../parcels/parcelUtils'
-import { buildNewsFeed } from '../../posts/postFeedUtils'
+import { buildNewsFeed, newsPostPath } from '../../posts/postFeedUtils'
 import { formatDate } from '../../transfers/transferUtils'
 import { dashboardNewsItemClass, dashboardNewsTrackClass } from '../dashboardConfig'
 import { DashboardLiveList } from './DashboardLiveList'
@@ -48,9 +48,13 @@ export function DashboardDiscoverySection({
     [allPosts, businesses, catalogEvents, catalogJobs, catalogParcels, language, listings],
   )
 
+  const showLiveLists = parcelsLoading || jobsLoading || eventsLoading
+    || parcels.length > 0 || jobs.length > 0 || events.length > 0
+
   return (
     <>
-      <section className="grid min-w-0 gap-6 [&>*]:min-w-0">
+      {showLiveLists ? (
+        <section className="grid min-w-0 gap-6 [&>*]:min-w-0">
         <DashboardLiveList
           accent="parcels"
           title={t('dashboard.discovery.availableParcels')}
@@ -123,31 +127,27 @@ export function DashboardDiscoverySection({
             badge: item.organizerName || item.category,
           }))}
         />
-      </section>
+        </section>
+      ) : null}
 
       {listingsSection}
 
-      <DashboardSectionHeading
-        title={t('dashboard.discovery.newsTitle')}
-        link="/news"
-        linkLabel={t('dashboard.discovery.readAll')}
-      />
       {posts.length > 0 ? (
-        <div className={dashboardNewsTrackClass}>
-          {posts.map((post) => (
-            <div key={post.id} className={dashboardNewsItemClass}>
-              <DashboardPostCard post={post} />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <Card className="flex flex-col items-center gap-3 !border-0 py-8 text-center shadow-none">
-          <p className="text-sm text-[var(--app-text-muted)]">{t('dashboard.discovery.noNews')}</p>
-          <Link to="/news">
-            <Button variant="secondary">{t('dashboard.discovery.newsLink')}</Button>
-          </Link>
-        </Card>
-      )}
+        <>
+          <DashboardSectionHeading
+            title={t('dashboard.discovery.newsTitle')}
+            link="/news"
+            linkLabel={t('dashboard.discovery.readAll')}
+          />
+          <div className={dashboardNewsTrackClass}>
+            {posts.map((post) => (
+              <div key={post.id} className={dashboardNewsItemClass}>
+                <DashboardPostCard post={post} />
+              </div>
+            ))}
+          </div>
+        </>
+      ) : null}
 
       <section className="grid min-w-0 gap-6 [&>*]:min-w-0">
         <Card className="relative overflow-hidden bg-slate-950 text-white dark:bg-black">
@@ -216,7 +216,7 @@ function DashboardPostCard({ post }) {
   const typeLabelKey = TYPE_LABEL_KEYS[post.sourceType] ?? TYPE_LABEL_KEYS.free
 
   return (
-    <Link to={`/news`}>
+    <Link to={newsPostPath(post.id)}>
       <Card className="relative flex h-full flex-col overflow-hidden !border-0 p-4 shadow-none transition hover:-translate-y-0.5 hover:shadow-lg">
         <span className={`absolute right-2.5 top-2.5 rounded-full px-1.5 py-0.5 text-[9px] font-black ${TYPE_COLORS[post.sourceType] ?? TYPE_COLORS.free}`}>
           {t(typeLabelKey)}

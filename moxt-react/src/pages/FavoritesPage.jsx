@@ -4,9 +4,10 @@ import { FiEdit2, FiHeart, FiPlus, FiRepeat, FiShoppingBag, FiTrash2 } from 'rea
 import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import * as Yup from 'yup'
-import { Badge, PillBadge } from '../components/ui/Badge'
+import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
+import { CatalogArchiveTabs } from '../components/ui/CatalogArchiveTabs'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Input } from '../components/ui/Input'
 import { Modal } from '../components/ui/Modal'
@@ -17,6 +18,7 @@ import { useLanguage } from '../contexts/useLanguage'
 import { PAYMENT_METHODS } from '../features/transfers/transferConfig'
 import { FavoriteCategorySection } from '../features/account/FavoriteContentCards'
 import {
+  FAVORITE_ALL_CATEGORY,
   FAVORITE_CATEGORIES,
   groupFavoritesByCategory,
   mergeUserFavorites,
@@ -27,6 +29,7 @@ import {
   toggleAccountFavorite,
 } from '../features/account/accountSlice'
 import { phase3Text } from '../i18n/phase3I18n'
+import { normalizeTransferProfile } from '../features/transfers/transferProfileFavorites'
 
 function createProfileSchema(p3) {
   return Yup.object({
@@ -50,11 +53,13 @@ export function FavoritesPage() {
   const p3 = (key, vars) => phase3Text(t, key, vars)
   const [profileOpen, setProfileOpen] = useState(false)
   const [editingProfile, setEditingProfile] = useState(null)
-  const [categoryTab, setCategoryTab] = useState(FAVORITE_CATEGORIES[0].id)
+  const [categoryTab, setCategoryTab] = useState(FAVORITE_ALL_CATEGORY.id)
   const user = useSelector((state) => state.auth.user)
   const appState = useSelector((state) => state)
   const transferProfiles = useSelector((state) =>
-    (state.account.transferProfiles || []).filter((item) => item.userId === user.id),
+    (state.account.transferProfiles || [])
+      .map(normalizeTransferProfile)
+      .filter((item) => item.userId === user.id),
   )
   const favorites = useMemo(() => mergeUserFavorites(appState, user.id), [appState, user.id])
   const favoriteCategories = useMemo(() => groupFavoritesByCategory(favorites), [favorites])
@@ -97,11 +102,25 @@ export function FavoritesPage() {
     )
   }
 
-  const categoryTabs = FAVORITE_CATEGORIES.map((category) => ({
-    key: category.id,
-    label: p3(category.labelKey),
-    count: favoriteCategories.find((entry) => entry.id === category.id)?.items.length || 0,
-  }))
+  const categoryTabs = useMemo(
+    () => [
+      {
+        key: FAVORITE_ALL_CATEGORY.id,
+        label: phase3Text(t, FAVORITE_ALL_CATEGORY.labelKey),
+        count: favorites.length,
+        icon: FAVORITE_ALL_CATEGORY.icon,
+        color: FAVORITE_ALL_CATEGORY.color,
+      },
+      ...FAVORITE_CATEGORIES.map((category) => ({
+        key: category.id,
+        label: phase3Text(t, category.labelKey),
+        count: favoriteCategories.find((entry) => entry.id === category.id)?.items.length || 0,
+        icon: category.icon,
+        color: category.color,
+      })),
+    ],
+    [favoriteCategories, favorites.length, t],
+  )
 
   return (
     <div className="grid gap-7">
@@ -129,18 +148,12 @@ export function FavoritesPage() {
       />
 
       <section className="grid gap-6">
-        <div className="scrollbar-hidden -mx-1 flex touch-pan-x gap-2 overflow-x-auto px-1 pb-1">
-          {categoryTabs.map((tab) => (
-            <PillBadge
-              key={tab.key}
-              active={categoryTab === tab.key}
-              onClick={() => setCategoryTab((current) => (current === tab.key ? 'all' : tab.key))}
-              className="shrink-0 whitespace-nowrap"
-            >
-              {tab.label} ({tab.count})
-            </PillBadge>
-          ))}
-        </div>
+        <CatalogArchiveTabs
+          variant="chips"
+          active={categoryTab}
+          onChange={setCategoryTab}
+          tabs={categoryTabs}
+        />
         {visibleCategories.length ? (
           visibleCategories.map((category) => (
             <FavoriteCategorySection
@@ -195,8 +208,12 @@ export function FavoritesPage() {
                   <span className="grid size-11 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
                     <FiRepeat />
                   </span>
-                  <Badge tone={profile.country === 'BJ' ? 'success' : 'info'}>
-                    {profile.country === 'BJ' ? p3('common.benin') : p3('common.russia')}
+                  <Badge tone={profile.country === 'RU' ? 'info' : 'success'}>
+                    {profile.country === 'RU'
+                      ? p3('common.russia')
+                      : profile.country === 'BJ'
+                        ? p3('common.benin')
+                        : profile.country || p3('common.benin')}
                   </Badge>
                 </div>
                 <h3 className="mt-4 font-black">

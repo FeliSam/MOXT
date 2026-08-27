@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { DIRECTIONS } from './transferConfig'
 import {
   buildExchangerPaymentView,
+  exchangerMethodsForParty,
   normalizeTransferCountryCode,
   receivingCountryForDirection,
   receivingSlotForDirection,
@@ -54,6 +55,49 @@ describe('transferAccountUtils', () => {
     const view = buildExchangerPaymentView({ transferAccounts: accounts }, DIRECTIONS.BJ_TO_RU, 'BJ')
     expect(view.paymentDetails?.recipientName).toBe('MTN Compte')
     expect(view.paymentAccount).toContain('MTN MoMo')
+  })
+
+  it('filtre les reseaux africains selon les comptes actifs de l echangeur', () => {
+    expect(
+      exchangerMethodsForParty({
+        business: { transferAccounts: accounts, exchangeMethods: ['MTN MoMo', 'Moov Money', 'Sberbank'] },
+        country: 'BJ',
+        originCountry: 'BJ',
+      }),
+    ).toEqual(['MTN MoMo'])
+  })
+
+  it('aligne le compte de reception sur le moyen choisi par le client', () => {
+    const withMoov = [
+      ...accounts,
+      {
+        id: 'bj-2',
+        slot: TRANSFER_ACCOUNT_SLOTS.ORIGIN,
+        country: 'BJ',
+        recipientName: 'Moov secondaire',
+        phone: '+2290190000001',
+        method: 'Moov Money',
+        active: true,
+      },
+    ]
+    expect(
+      resolveBusinessReceivingAccount(withMoov, DIRECTIONS.BJ_TO_RU, 'BJ', { method: 'Moov Money' })
+        ?.id,
+    ).toBe('bj-2')
+    expect(
+      exchangerMethodsForParty({
+        business: { transferAccounts: withMoov },
+        country: 'BJ',
+        originCountry: 'BJ',
+      }),
+    ).toEqual(['MTN MoMo', 'Moov Money'])
+    expect(
+      exchangerMethodsForParty({
+        business: { transferAccounts: withMoov },
+        country: 'RU',
+        originCountry: 'BJ',
+      }),
+    ).toEqual(['Sberbank'])
   })
 
   it('choisit le compte par defaut dans un slot', () => {

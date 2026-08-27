@@ -1,6 +1,7 @@
 import { isProfileComplete } from '@moxt/shared/auth/profileCompletion.js'
 import { applySession, clearSession } from '../features/auth/authSlice'
 import { authService } from '../features/auth/authService'
+import { isE2eHarnessActive } from './e2eSession'
 import { supabase } from './supabaseClient'
 import { clearClientCache, hasSupabaseAuthInStorage } from './clearClientCache'
 import {
@@ -493,6 +494,7 @@ function stopKeepalive() {
 
 /** Garde Redux aligné avec Supabase (refresh token, déconnexion, retour d'onglet). */
 export function startAuthSessionSync(store) {
+  if (isE2eHarnessActive()) return
   if (!supabase || authSubscription) return
 
   const { dispatch, getState } = store

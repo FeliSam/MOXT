@@ -175,13 +175,21 @@ const camelMap = {
   reviewed_by: 'reviewedBy',
   reviewed_at: 'reviewedAt',
   legal_hold_until: 'legalHoldUntil',
+  first_name: 'firstName',
+  last_name: 'lastName',
+}
+
+function toCamelKey(key) {
+  if (camelMap[key]) return camelMap[key]
+  if (!key.includes('_')) return key
+  return key.replace(/_([a-z0-9])/g, (_, char) => char.toUpperCase())
 }
 
 export function fromRow(row) {
   if (!row || typeof row !== 'object') return row
   const result = {}
   for (const [key, value] of Object.entries(row)) {
-    result[camelMap[key] ?? key] = value
+    result[toCamelKey(key)] = value
   }
   return result
 }

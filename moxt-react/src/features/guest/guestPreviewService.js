@@ -4,6 +4,7 @@ import { listingFromRemoteRow, mergeListingQuestions } from '../marketplace/mark
 import { businessFromRemoteRow } from '../businesses/businessRemote'
 import {
   collectPublicationTargetIds,
+  isReviewVisible,
   REVIEW_TARGET_TYPES,
 } from '@moxt/shared/utils/reviewUtils.js'
 import { fetchReviewsForTargetScope } from '../reviews/reviewRemote'
@@ -147,7 +148,7 @@ export async function fetchGuestUserPreview(userId) {
     profile: mapProfile(profileRes.data),
     publications,
     business: businessFromRemoteRow(businessRes.data),
-    reviews,
+    reviews: reviews.filter(isReviewVisible),
     visibility,
   }
 }
@@ -199,6 +200,6 @@ export async function fetchGuestBusinessPreview(businessId) {
   return {
     business: businessFromRemoteRow(businessRes.data),
     publications,
-    reviews,
+    reviews: reviews.filter(isReviewVisible),
   }
 }

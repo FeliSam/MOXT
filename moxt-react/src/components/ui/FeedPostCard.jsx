@@ -26,6 +26,7 @@ import {
   updatePost,
 } from '../../features/posts/postsSlice'
 import { getPostImages, MAX_POST_MESSAGE_LENGTH } from '../../features/posts/postMediaUtils'
+import { newsPostPath } from '../../features/posts/postFeedUtils'
 import { SOURCE_TYPE_LABELS } from '../../features/posts/postTemplates'
 import { formatDate } from '../../features/transfers/transferUtils'
 import { addToast } from '../../features/ui/uiSlice'
@@ -181,7 +182,7 @@ export function FeedPostCard({ post }) {
   }
 
   async function handleShare() {
-    const url = buildAbsoluteUrl('/news')
+    const url = buildAbsoluteUrl(newsPostPath(post.id))
     const shareData = {
       title: post.title || post.authorName || 'MOXT',
       text: (post.message || '').trim().slice(0, 200),

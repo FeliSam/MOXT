@@ -28,6 +28,7 @@ import {
   MyPostPublicationCard,
 } from '../features/publications/MyPublicationCards'
 import {
+  BUSINESS_PUBLICATION_TYPE_TABS,
   buildUserPublicationProfile,
   collectUserPublications,
   filterPublicationsByScope,
@@ -39,6 +40,7 @@ import {
   visiblePublicationCount,
   visiblePublicationTypeTabs,
 } from '../features/publications/publicationCatalogUtils'
+import { PublicationCatalogNav } from '../features/publications/PublicationCatalogNav'
 import { PublicationProfileCard } from '../features/publications/PublicationProfileCard'
 import { PublicationScopeButton } from '../features/publications/PublicationScopeButton'
 import { usePublicationProfile } from '../features/publications/usePublicationProfile'
@@ -75,6 +77,7 @@ export function UserPublicationsPage() {
   const currentUser = useSelector((state) => state.auth.user)
   const appState = useSelector((state) => state)
   const guestPreview = useGuestUserPreview(guestMode ? userId : null)
+  const isOwner = !guestMode && currentUser?.id === userId
 
   const mainTab = searchParams.get('view') === 'avis' ? 'avis' : 'publications'
   const archiveTab = searchParams.get('status') === 'archived' ? 'archived' : 'active'
@@ -82,8 +85,6 @@ export function UserPublicationsPage() {
     ? searchParams.get('type')
     : 'listing'
   const scope = searchParams.get('scope') === 'business' ? 'business' : 'personal'
-
-  const isOwner = !guestMode && currentUser?.id === userId
   const conversations = useSelector((state) => state.communications.conversations)
   const reduxOwnBusiness = useSelector((state) =>
     state.businesses.items.find((item) => item.ownerId === userId),
@@ -132,14 +133,18 @@ export function UserPublicationsPage() {
     () => buildUserPublicationProfile(userId, publications, { displayName }),
     [displayName, publications, userId],
   )
-  const archiveCounts = useMemo(() => publicationArchiveCounts(publications), [publications])
+  const typeTabSource = scope === 'business' ? BUSINESS_PUBLICATION_TYPE_TABS : PUBLICATION_TYPE_TABS
+  const archiveCounts = useMemo(
+    () => publicationArchiveCounts(publications, { typeTab }),
+    [publications, typeTab],
+  )
   const typeCounts = useMemo(
     () => publicationTypeCounts(publications, archiveTab),
     [archiveTab, publications],
   )
   const visibleTypeTabs = useMemo(
-    () => visiblePublicationTypeTabs(PUBLICATION_TYPE_TABS, typeCounts),
-    [typeCounts],
+    () => visiblePublicationTypeTabs(typeTabSource, typeCounts),
+    [typeCounts, typeTabSource],
   )
   const visible = useMemo(
     () => filterPublicationsByTabs(publications, { archiveTab, typeTab }),
@@ -194,6 +199,7 @@ export function UserPublicationsPage() {
   }
 
   const hasArchives = archiveCounts.archived > 0
+  const showArchives = hasArchives
 
   useEffect(() => {
     if (visibleTypeTabs.length === 0) return
@@ -203,10 +209,10 @@ export function UserPublicationsPage() {
   }, [typeTab, visibleTypeTabs])
 
   useEffect(() => {
-    if (!hasArchives && archiveTab === 'archived') {
+    if (!showArchives && archiveTab === 'archived') {
       setArchiveTab('active')
     }
-  }, [archiveTab, hasArchives])
+  }, [archiveTab, showArchives])
 
   function setScope(next) {
     const params = new URLSearchParams(searchParams)
@@ -307,7 +313,7 @@ export function UserPublicationsPage() {
         shareUserId={guestMode ? null : userId}
         avatarUrl={guestMode ? guestProfile?.avatarUrl : memberProfile?.avatarUrl}
         actions={
-          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 border-t border-[var(--app-border)] pt-4 sm:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)]">
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 border-t border-[var(--app-border)] pt-4">
             {!isOwner ? (
               <ContactButton
                 ownerId={userId}
@@ -324,7 +330,7 @@ export function UserPublicationsPage() {
                 className="!size-11 shrink-0"
               />
             ) : ownBusiness && !guestMode ? (
-              <div className="col-span-2 flex flex-wrap items-center gap-2 sm:col-auto">
+              <div className="col-span-2 flex flex-wrap items-center gap-2">
                 <PublicationScopeButton
                   business={ownBusiness}
                   isOwner={isOwner}
@@ -348,12 +354,12 @@ export function UserPublicationsPage() {
                 isOwner={false}
                 onScopeChange={setScope}
                 scope={scope}
-                className="col-span-2 min-w-0 sm:col-auto"
+                className="col-span-2 min-w-0"
               />
             ) : isOwner ? (
               <Link
                 to={`/publications/mine${scope === 'business' ? '?scope=business' : ''}`}
-                className="col-span-2 min-w-0 sm:col-auto"
+                className="col-span-2 min-w-0"
               >
                 <Button variant="secondary" icon={FiArrowLeft} className="w-full">
                   {p3('publications.user.manage')}
@@ -365,13 +371,7 @@ export function UserPublicationsPage() {
                   {p3('publications.user.discover')}
                 </Button>
               </Link>
-            ) : (
-              <Link to="/dashboard" className="col-span-2 min-w-0 sm:col-auto">
-                <Button variant="secondary" icon={FiArrowLeft} className="w-full">
-                  {p3('publications.user.back')}
-                </Button>
-              </Link>
-            )}
+            ) : null}
           </div>
         }
       />
@@ -397,37 +397,19 @@ export function UserPublicationsPage() {
 
       {mainTab === 'publications' ? (
         <div className="grid gap-4">
-          {visibleTypeTabs.length > 0 ? (
-            <CatalogArchiveTabs
-              active={typeTab}
-              onChange={setTypeTab}
-              tabs={visibleTypeTabs.map((tab) => ({
-                key: tab.id,
-                label: p3(`publications.mine.types.${tab.id}`),
-                count: typeCounts[tab.id],
-              }))}
-            />
-          ) : null}
-
-          {hasArchives ? (
-            <CatalogArchiveTabs
-              active={archiveTab}
-              onChange={setArchiveTab}
-              variant="filter"
-              tabs={[
-                {
-                  key: 'active',
-                  label: p3('publications.mine.stats.active'),
-                  count: archiveCounts.active,
-                },
-                {
-                  key: 'archived',
-                  label: p3('publications.mine.stats.archived'),
-                  count: archiveCounts.archived,
-                },
-              ]}
-            />
-          ) : null}
+          <PublicationCatalogNav
+            typeTab={typeTab}
+            onTypeTab={setTypeTab}
+            typeTabs={visibleTypeTabs}
+            typeCounts={typeCounts}
+            typeLabel={(tab) => p3(`publications.mine.types.${tab.id}`)}
+            archiveTab={archiveTab}
+            onArchiveTab={setArchiveTab}
+            archiveCounts={archiveCounts}
+            showArchives={showArchives}
+            activeLabel={p3('publications.mine.stats.active')}
+            archivedLabel={p3('publications.mine.stats.archived')}
+          />
 
           {!hasAnyPublication ? (
             <EmptyState
@@ -449,59 +431,62 @@ export function UserPublicationsPage() {
                   ))}
                 </CatalogGrid>
               ) : null}
+              {visible.post.length ? (
+                <CatalogGrid lazy={false}>
+                  {visible.post.map((post) => (
+                    <MyPostPublicationCard
+                      key={post.id}
+                      post={post}
+                      readOnly
+                      guestMode={guestMode}
+                      onGuestInteract={handleGuestInteract}
+                    />
+                  ))}
+                </CatalogGrid>
+              ) : null}
               {visible.parcel.length ||
               visible.job.length ||
               visible.event.length ||
-              visible.post.length ||
               visible.other.length ? (
-                <div className="grid gap-4">
+                <CatalogGrid lazy={false}>
                   {visible.parcel.map((parcel) => (
-                <MyParcelPublicationCard
-                  key={parcel.id}
-                  parcel={parcel}
-                  readOnly
-                  guestMode={guestMode}
-                  onGuestInteract={handleGuestInteract}
-                />
-              ))}
-              {visible.job.map((job) => (
-                <MyJobPublicationCard
-                  key={job.id}
-                  job={job}
-                  readOnly
-                  ownerDisplayName={displayName}
-                  guestMode={guestMode}
-                  onGuestInteract={handleGuestInteract}
-                />
-              ))}
-              {visible.event.map((event) => (
-                <MyEventPublicationCard
-                  key={event.id}
-                  event={event}
-                  readOnly
-                  guestMode={guestMode}
-                  onGuestInteract={handleGuestInteract}
-                />
-              ))}
-              {visible.post.map((post) => (
-                <MyPostPublicationCard
-                  key={post.id}
-                  post={post}
-                  readOnly
-                  guestMode={guestMode}
-                  onGuestInteract={handleGuestInteract}
-                />
-              ))}
-              {visible.other.map((offer) => (
-                <MyP2POfferPublicationCard
-                  key={offer.id}
-                  offer={offer}
-                  readOnly
-                  guestMode={guestMode}
-                  onGuestInteract={handleGuestInteract}
-                />
-              ))}
-                </div>
+                    <MyParcelPublicationCard
+                      key={parcel.id}
+                      parcel={parcel}
+                      readOnly
+                      guestMode={guestMode}
+                      onGuestInteract={handleGuestInteract}
+                    />
+                  ))}
+                  {visible.job.map((job) => (
+                    <MyJobPublicationCard
+                      key={job.id}
+                      job={job}
+                      readOnly
+                      ownerDisplayName={displayName}
+                      guestMode={guestMode}
+                      onGuestInteract={handleGuestInteract}
+                    />
+                  ))}
+                  {visible.event.map((event) => (
+                    <MyEventPublicationCard
+                      key={event.id}
+                      event={event}
+                      readOnly
+                      guestMode={guestMode}
+                      onGuestInteract={handleGuestInteract}
+                    />
+                  ))}
+                  {visible.other.map((offer) => (
+                    <MyP2POfferPublicationCard
+                      key={offer.id}
+                      offer={offer}
+                      readOnly
+                      guestMode={guestMode}
+                      onGuestInteract={handleGuestInteract}
+                    />
+                  ))}
+                </CatalogGrid>
               ) : null}
             </div>
           ) : (

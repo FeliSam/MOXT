@@ -943,6 +943,7 @@ export function RegisterPage() {
               <Input
                 id="firstName"
                 label={t('auth.register.firstName')}
+                placeholder={t('auth.register.firstNamePlaceholder')}
                 autoComplete="given-name"
                 {...formik.getFieldProps('firstName')}
                 error={errorFor('firstName')}
@@ -950,6 +951,7 @@ export function RegisterPage() {
               <Input
                 id="lastName"
                 label={t('auth.register.lastName')}
+                placeholder={t('auth.register.lastNamePlaceholder')}
                 autoComplete="family-name"
                 {...formik.getFieldProps('lastName')}
                 error={errorFor('lastName')}
@@ -958,6 +960,7 @@ export function RegisterPage() {
             <Input
               id="register-email"
               label={t('auth.register.email')}
+              placeholder={t('auth.register.emailPlaceholder')}
               type="email"
               autoComplete="email"
               required
@@ -982,6 +985,7 @@ export function RegisterPage() {
                 <Input
                   id="oauth-firstName"
                   label={t('auth.register.firstName')}
+                  placeholder={t('auth.register.firstNamePlaceholder')}
                   autoComplete="given-name"
                   {...formik.getFieldProps('firstName')}
                   error={errorFor('firstName')}
@@ -989,6 +993,7 @@ export function RegisterPage() {
                 <Input
                   id="oauth-lastName"
                   label={t('auth.register.lastName')}
+                  placeholder={t('auth.register.lastNamePlaceholder')}
                   autoComplete="family-name"
                   {...formik.getFieldProps('lastName')}
                   error={errorFor('lastName')}
@@ -997,6 +1002,7 @@ export function RegisterPage() {
                   id="oauth-email"
                   className="@md:col-span-2"
                   label={t('auth.register.email')}
+                  placeholder={t('auth.register.emailPlaceholder')}
                   type="email"
                   autoComplete="email"
                   required
@@ -1006,30 +1012,6 @@ export function RegisterPage() {
                 />
               </div>
             ) : null}
-
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.1em] text-[var(--app-text-muted)]">
-                {t('auth.register.uiLanguage')}
-              </p>
-              <LanguageSegment
-                className="mt-2"
-                size="sm"
-                value={language}
-                ariaLabel={t('auth.register.uiLanguage')}
-                onChange={(code) => {
-                  setLanguage(code)
-                  const uid = authUser?.id || store.getState().auth.user?.id
-                  if (uid) {
-                    dispatch(
-                      updateAccountPreferences({
-                        userId: uid,
-                        preferences: { language: code },
-                      }),
-                    )
-                  }
-                }}
-              />
-            </div>
 
             <Select
               id="originCountry"
@@ -1072,6 +1054,29 @@ export function RegisterPage() {
               }
               error={errorFor('originPhone')}
             />
+
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.1em] text-[var(--app-text-muted)]">
+                {t('auth.register.uiLanguage')}
+              </p>
+              <LanguageSegment
+                className="mt-2"
+                value={language}
+                ariaLabel={t('auth.register.uiLanguage')}
+                onChange={(code) => {
+                  setLanguage(code)
+                  const uid = authUser?.id || store.getState().auth.user?.id
+                  if (uid) {
+                    dispatch(
+                      updateAccountPreferences({
+                        userId: uid,
+                        preferences: { language: code },
+                      }),
+                    )
+                  }
+                }}
+              />
+            </div>
 
             <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-3">
               {!oauthCompletion ? (

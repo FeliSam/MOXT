@@ -92,7 +92,7 @@ async function main() {
     process.exit(1)
   }
 
-  console.log('\n✓ ai-assistant déployée (Yandex GPT — reformulation du brouillon local).')
+  console.log('\n✓ ai-assistant déployée (Moxti agent : tools + playbooks + Yandex).')
 }
 
 main().catch((error) => {

@@ -13,6 +13,18 @@ export const STATUS_LABEL_KEYS = {
   [TRANSFER_STATUS.EXPIRED]: 'transfers.status.expired',
 }
 
+const STATUS_ALIASES = {
+  received: TRANSFER_STATUS.RECEIVED,
+  declared: TRANSFER_STATUS.DECLARED,
+  pending: TRANSFER_STATUS.PENDING,
+  paid: TRANSFER_STATUS.PAID_OUT,
+  completed: TRANSFER_STATUS.COMPLETED,
+  cancelled: TRANSFER_STATUS.CANCELLED,
+  expired: TRANSFER_STATUS.EXPIRED,
+  processing: TRANSFER_STATUS.PROCESSING,
+}
+
 export function statusLabelKey(status) {
-  return STATUS_LABEL_KEYS[status] || status
+  const normalized = STATUS_ALIASES[status] || status
+  return STATUS_LABEL_KEYS[normalized] || status
 }

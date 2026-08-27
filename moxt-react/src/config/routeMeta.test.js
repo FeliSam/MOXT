@@ -4,6 +4,17 @@ import { primaryNavigationItems } from './primaryNavigation'
 import { getRouteMetadata } from './routeMeta'
 
 describe('route metadata', () => {
+  it('resolves a news publication before the feed list', () => {
+    expect(getRouteMetadata('/news/POST-1')).toMatchObject({
+      title: 'Publication',
+      back: '/news',
+    })
+    expect(getRouteMetadata('/news/POST-1/edit')).toMatchObject({
+      title: 'Modifier la publication',
+      back: '/news',
+    })
+  })
+
   it('selects specific detail metadata before list metadata', () => {
     expect(getRouteMetadata('/transfers/MXT-1')).toMatchObject({
       title: 'Détail du transfert',
@@ -54,6 +65,17 @@ describe('route metadata', () => {
     expect(getRouteMetadata('/professional')).toMatchObject({
       title: 'Mon entreprise',
       eyebrow: 'Services',
+    })
+  })
+
+  it('addresses a news post without colliding with edit', () => {
+    expect(getRouteMetadata('/news/POST-1')).toMatchObject({
+      title: 'Publication',
+      back: '/news',
+    })
+    expect(getRouteMetadata('/news/POST-1/edit')).toMatchObject({
+      title: 'Modifier la publication',
+      back: '/news',
     })
   })
 })

@@ -135,6 +135,47 @@ describe('transferSlice', () => {
     expect(reassigned.items[0].id).toBe(id)
   })
 
+  it('recalcule le taux et le recu avec le nouvel echangeur', () => {
+    const created = reducer(
+      { items: [] },
+      createTransfer({
+        ...payload,
+        amount: 50000,
+        rateOverride: 0.1,
+        exchanger: { ...payload.exchanger, feePercent: 2, rateReductionToRu: 0, transferAcceptanceRequired: true },
+      }),
+    )
+    const id = created.items[0].id
+    const declined = reducer(
+      created,
+      declineTransferRequest({ id, actorId: 'business-owner', actorRole: 'user' }),
+    )
+    const reassigned = reducer(
+      declined,
+      reassignTransferExchanger({
+        id,
+        actorId: 'u1',
+        amount: 50000,
+        rateOverride: 0.1,
+        exchanger: {
+          id: 'EXC-2',
+          ownerId: 'other-owner',
+          name: 'Pont Change',
+          feePercent: 5,
+          rateReductionToRu: 10,
+          transferAcceptanceRequired: true,
+        },
+      }),
+    )
+
+    expect(reassigned.items[0].feePercent).toBe(5)
+    expect(reassigned.items[0].rateMarginPercent).toBe(10)
+    expect(reassigned.items[0].rate).toBeCloseTo(0.09)
+    expect(reassigned.items[0].totalToPay).toBe(50000)
+    expect(reassigned.items[0].amountSent).toBe(47500)
+    expect(reassigned.items[0].amountReceived).toBe(4275)
+  })
+
   it('expire automatiquement une acceptation depassee', () => {
     const created = reducer(
       { items: [] },
@@ -347,5 +388,55 @@ describe('transferSlice', () => {
     const added = reducer({ items: [] }, receiveRemoteTransfer(remote))
     expect(added.items[0].exchanger.paymentDetails).toBeNull()
     expect(added.items[0].exchanger.paymentAccount).toBeNull()
+  })
+
+  it('cloture un transfert paid_out apres 24 h si les deux preuves sont presentes', () => {
+    const paidOut = {
+      items: [
+        {
+          id: 'MXT-AUTO',
+          status: TRANSFER_STATUS.PAID_OUT,
+          paymentProof: { name: 'client.pdf' },
+          businessProof: { name: 'virement.pdf' },
+          timeline: [{ status: TRANSFER_STATUS.PAID_OUT, at: '2026-01-04T00:00:00.000Z' }],
+        },
+      ],
+    }
+    const completed = reducer(
+      paidOut,
+      expireOverdueTransfers('2026-01-05T01:00:00.000Z'),
+    )
+    expect(completed.items[0].status).toBe(TRANSFER_STATUS.COMPLETED)
+    expect(completed.items[0].timeline.at(-1).note).toBe('auto_completed_after_24h')
+  })
+
+  it('ne cloture pas un paid_out s il manque une preuve ou un litige est ouvert', () => {
+    const paidOut = {
+      items: [
+        {
+          id: 'MXT-HOLD',
+          status: TRANSFER_STATUS.PAID_OUT,
+          paymentProof: { name: 'client.pdf' },
+          businessProof: { name: 'virement.pdf' },
+          timeline: [{ status: TRANSFER_STATUS.PAID_OUT, at: '2026-01-04T00:00:00.000Z' }],
+        },
+      ],
+    }
+    const disputed = reducer(
+      paidOut,
+      expireOverdueTransfers({
+        now: '2026-01-05T01:00:00.000Z',
+        disputedTransferIds: ['MXT-HOLD'],
+      }),
+    )
+    expect(disputed.items[0].status).toBe(TRANSFER_STATUS.PAID_OUT)
+
+    const missingProof = reducer(
+      {
+        items: [{ ...paidOut.items[0], businessProof: null }],
+      },
+      expireOverdueTransfers('2026-01-05T01:00:00.000Z'),
+    )
+    expect(missingProof.items[0].status).toBe(TRANSFER_STATUS.PAID_OUT)
   })
 })

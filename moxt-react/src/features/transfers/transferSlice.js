@@ -3,6 +3,8 @@ import { matchUserId } from '../businesses/businessVisibility'
 import {
   canActorPerformBusinessTransferAction,
   canActorPerformClientTransferAction,
+  canAutoCompletePaidOutTransfer,
+  collectOpenTransferDisputeIds,
 } from './transferActionUtils'
 import {
   buildAcceptanceWindow,
@@ -19,9 +21,35 @@ const initialState = {
   items: transferStorage.read().map(sanitizeTransferPaymentVisibility),
 }
 
+function parseExpirePayload(payload) {
+  if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+    return {
+      now: new Date(payload.now || Date.now()).getTime(),
+      disputedIds: new Set(payload.disputedTransferIds || []),
+    }
+  }
+  return {
+    now: new Date(payload || Date.now()).getTime(),
+    disputedIds: new Set(),
+  }
+}
+
 function pushTimeline(transfer, entry) {
   transfer.timeline ||= []
   transfer.timeline.push(entry)
+}
+
+function autoCompletePaidOutTransfer(transfer, nowIso) {
+  transfer.status = TRANSFER_STATUS.COMPLETED
+  transfer.receivedAt = transfer.receivedAt || nowIso
+  transfer.updatedAt = nowIso
+  transfer.timeline ||= []
+  transfer.timeline.push({
+    status: TRANSFER_STATUS.COMPLETED,
+    at: nowIso,
+    actorType: 'system',
+    note: 'auto_completed_after_24h',
+  })
 }
 
 function applyExchangerAssignment(transfer, exchanger, { nowIso, preserveAmounts = true }) {
@@ -438,7 +466,8 @@ const transferSlice = createSlice({
       })
     },
     expireOverdueTransfers(state, action) {
-      const now = new Date(action.payload || Date.now()).getTime()
+      const { now, disputedIds } = parseExpirePayload(action.payload)
+      const nowIso = new Date(now).toISOString()
       state.items.forEach((transfer) => {
         if (
           transfer.status === TRANSFER_STATUS.PENDING_ACCEPTANCE &&
@@ -446,8 +475,8 @@ const transferSlice = createSlice({
           new Date(transfer.acceptanceExpiresAt).getTime() <= now
         ) {
           transfer.status = TRANSFER_STATUS.DECLINED
-          transfer.acceptanceResolvedAt = new Date(now).toISOString()
-          transfer.updatedAt = transfer.acceptanceResolvedAt
+          transfer.acceptanceResolvedAt = nowIso
+          transfer.updatedAt = nowIso
           pushTimeline(transfer, {
             status: TRANSFER_STATUS.DECLINED,
             at: transfer.updatedAt,
@@ -461,8 +490,17 @@ const transferSlice = createSlice({
           new Date(transfer.paymentDeadlineAt).getTime() <= now
         ) {
           transfer.status = TRANSFER_STATUS.EXPIRED
-          transfer.updatedAt = new Date(now).toISOString()
+          transfer.updatedAt = nowIso
           transfer.timeline.push({ status: TRANSFER_STATUS.EXPIRED, at: transfer.updatedAt })
+          return
+        }
+        if (
+          canAutoCompletePaidOutTransfer(transfer, {
+            now,
+            hasOpenDispute: disputedIds.has(transfer.id),
+          })
+        ) {
+          autoCompletePaidOutTransfer(transfer, nowIso)
         }
       })
     },
@@ -514,4 +552,16 @@ export const {
   receiveTransfer,
   setAll,
 } = transferSlice.actions
+
+export function runExpireOverdueTransfers(now) {
+  return (dispatch, getState) => {
+    dispatch(
+      expireOverdueTransfers({
+        now: now || new Date().toISOString(),
+        disputedTransferIds: collectOpenTransferDisputeIds(getState().disputes?.items),
+      }),
+    )
+  }
+}
+
 export default transferSlice.reducer

@@ -46,7 +46,7 @@ export function calculateTransfer(
 
   return {
     amountSent,
-    amountReceived: amountSent * rate,
+    amountReceived: roundMoneyUp(amountSent * rate),
     fees,
     totalToPay,
     currencyFrom: info.from,
@@ -62,6 +62,42 @@ export function calculateTransfer(
     sourceCountry: info.sourceCountry,
     destinationCountry: info.destinationCountry,
   }
+}
+
+/** Inverse : montant exact à recevoir → total à payer (frais inclus). */
+export function totalToPayFromReceived(
+  receivedAmount,
+  direction,
+  feePercent = TRANSFER_CONFIG.feePercent,
+  rawRateOverride,
+  originCountry = 'BJ',
+  rateReductionPercent,
+) {
+  const preview = calculateTransfer(
+    1,
+    direction,
+    feePercent,
+    rawRateOverride,
+    originCountry,
+    rateReductionPercent,
+  )
+  const factor = (1 - Number(preview.feePercent) / 100) * preview.rate
+  if (!Number.isFinite(factor) || factor <= 0) return 0
+  const numeric = Math.max(0, Number(receivedAmount) || 0)
+  return roundMoneyUp(numeric / factor)
+}
+
+/** Arrondi des montants de transfert à l'entier supérieur (ex. 8810.56 → 8811). */
+export function roundMoneyUp(value) {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric) || numeric <= 0) return 0
+  return Math.ceil(Number(numeric.toFixed(8)))
+}
+
+export function roundTransferInput(value) {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric) || numeric <= 0) return ''
+  return String(roundMoneyUp(numeric))
 }
 
 /** Business % reduction for a transfer direction (0–15). Null if no business. */

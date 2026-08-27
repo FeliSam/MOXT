@@ -11,7 +11,7 @@ export function FeatureMatrixPage() {
       <PageHeader
         eyebrow="Pilotage"
         title="Couverture fonctionnelle"
-        description="État réel des fonctions React, sans confondre démonstration locale et service connecté."
+        description="État des fonctions livrées (août 2026) : chaque parcours listé ici est utilisable de bout en bout."
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

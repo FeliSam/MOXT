@@ -58,4 +58,26 @@ describe('remoteRowMapper', () => {
   it('mappe un tableau de lignes', () => {
     expect(fromRows([{ owner_name: 'Alice' }])).toEqual([{ ownerName: 'Alice' }])
   })
+
+  it('mappe les profils de transfert first_name / last_name', () => {
+    expect(
+      fromRow({
+        id: 'TPRO1',
+        user_id: 'u1',
+        first_name: 'Amina',
+        last_name: 'Demo',
+        phone: '+22901000000',
+        country: 'BJ',
+        method: 'MTN MoMo',
+      }),
+    ).toMatchObject({
+      id: 'TPRO1',
+      userId: 'u1',
+      firstName: 'Amina',
+      lastName: 'Demo',
+      phone: '+22901000000',
+      country: 'BJ',
+      method: 'MTN MoMo',
+    })
+  })
 })

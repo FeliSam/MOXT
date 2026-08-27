@@ -9,7 +9,9 @@ import postsReducer, { createPost } from '../features/posts/postsSlice'
 import transfersReducer, {
   createTransfer,
   declarePayment,
+  declineTransferRequest,
   moderateTransfer,
+  reassignTransferExchanger,
 } from '../features/transfers/transferSlice'
 import { DIRECTIONS, TRANSFER_STATUS } from '../features/transfers/transferConfig'
 import uiReducer from '../features/ui/uiSlice'
@@ -107,7 +109,7 @@ describe('interactionMiddleware', () => {
     const notifications = store.getState().communications.notifications
     expect(notifications).toHaveLength(1)
     expect(notifications[0].userId).toBe('sub1')
-    expect(notifications[0].link).toBe('/news?post=POST-1')
+    expect(notifications[0].link).toBe('/news/POST-1')
   })
 
   it('n envoie pas de notification pour un post en attente de moderation', () => {
@@ -317,6 +319,91 @@ describe('interactionMiddleware', () => {
       relatedId: id,
       simulation: true,
     })
+  })
+
+  it('notifie echangeur choisi, client et ancien partenaire lors d une reassignation', () => {
+    const rpcMock = vi.fn(() => Promise.resolve({ data: 1, error: null }))
+    vi.spyOn(supabase, 'rpc').mockImplementation(rpcMock)
+
+    const store = configureStore({
+      reducer: {
+        auth: () => ({ user: { id: 'client' } }),
+        communications: communicationsReducer,
+        ui: uiReducer,
+        jobs: () => ({ applications: [], items: [] }),
+        events: () => ({ registrations: [], items: [] }),
+        parcels: () => ({ items: [], requests: [] }),
+        businesses: () => ({
+          items: [
+            { id: 'biz-1', ownerId: 'owner-1', name: 'MOXT Change' },
+            { id: 'biz-2', ownerId: 'owner-2', name: 'Pont Change' },
+          ],
+        }),
+        marketplace: () => ({ items: [] }),
+        finance: () => ({ payments: [], receipts: [], walletEntries: [] }),
+        transfers: transfersReducer,
+      },
+      preloadedState: {
+        communications: { conversations: [], notifications: [], support: [] },
+        transfers: { items: [] },
+      },
+      middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(interactionMiddleware),
+    })
+
+    store.dispatch(
+      createTransfer({
+        amount: 50000,
+        direction: DIRECTIONS.BJ_TO_RU,
+        user: { id: 'client' },
+        sender: { firstName: 'Amina', lastName: 'Demo', phone: '+22901', method: 'MTN MoMo' },
+        recipient: { firstName: 'Ivan', lastName: 'Demo', phone: '+7900', method: 'Sberbank' },
+        exchanger: {
+          id: 'biz-1',
+          ownerId: 'owner-1',
+          name: 'MOXT Change',
+          rating: 4.9,
+          averageDelay: '10 min',
+          feePercent: 3,
+          transferAcceptanceRequired: true,
+        },
+      }),
+    )
+    const id = store.getState().transfers.items[0].id
+    store.dispatch(declineTransferRequest({ id, actorId: 'owner-1', actorRole: 'user' }))
+    store.dispatch(
+      reassignTransferExchanger({
+        id,
+        actorId: 'client',
+        amount: 50000,
+        rateOverride: 0.1,
+        exchanger: {
+          id: 'biz-2',
+          ownerId: 'owner-2',
+          name: 'Pont Change',
+          feePercent: 5,
+          rateReductionToRu: 2,
+          transferAcceptanceRequired: true,
+        },
+      }),
+    )
+
+    const notifications = store.getState().communications.notifications
+    expect(notifications.some((item) => item.userId === 'owner-2' && item.type === 'transfer')).toBe(
+      true,
+    )
+    expect(notifications.some((item) => item.userId === 'client' && item.id?.includes('CLI'))).toBe(
+      true,
+    )
+    expect(notifications.some((item) => item.userId === 'owner-1' && item.id?.includes('AWAY'))).toBe(
+      true,
+    )
+    expect(rpcMock).toHaveBeenCalledWith(
+      'moxt_notify_admins',
+      expect.objectContaining({
+        p_dedupe_key: expect.stringContaining(`trf-re-${id}`),
+        p_type: 'transfer',
+      }),
+    )
   })
 
   it('notifie le proprietaire quand son entreprise est verifiee', () => {

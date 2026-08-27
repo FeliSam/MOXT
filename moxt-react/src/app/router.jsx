@@ -268,6 +268,7 @@ export function AppRouter() {
             <Route path={ROUTES.localData} element={<LocalDataPage />} />
             <Route path="/news" element={<NewsPage />} />
             <Route path="/news/:postId/edit" element={<EditPostPage />} />
+            <Route path="/news/:postId" element={<NewsPage />} />
             <Route path="/transfers" element={<NewTransferPage />} />
             <Route path="/transfers/history" element={<TransfersPage />} />
             <Route path="/transfers/new" element={<NewTransferPage />} />

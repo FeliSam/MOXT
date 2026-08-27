@@ -1,12 +1,13 @@
 import {
+  FiArchive,
   FiBriefcase,
   FiCalendar,
+  FiCheckCircle,
   FiCopy,
   FiEdit2,
   FiExternalLink,
   FiFileText,
   FiPackage,
-  FiArchive,
   FiRepeat,
   FiRotateCcw,
   FiTrash2,
@@ -14,12 +15,15 @@ import {
 import { Link } from 'react-router-dom'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
-import { Card } from '../../components/ui/Card'
 import { statusMeta } from '../../config/statuses'
 import { useLanguage } from '../../contexts/useLanguage'
 import { phase3Text } from '../../i18n/phase3I18n'
 import { jobContractLabel } from '../jobs/jobDisplayUtils'
+import { MarketplaceListingCard } from '../marketplace/MarketplaceListingCard'
+import { isActiveListing } from '../marketplace/listingCatalogUtils'
+import { marketplaceText } from '../marketplace/marketplaceI18n'
 import { getPostImages } from '../posts/postMediaUtils'
+import { newsPostPath } from '../posts/postFeedUtils'
 import { formatMoney } from '../transfers/transferUtils'
 import {
   archivedPublicationCardClass,
@@ -53,57 +57,120 @@ function PublicationCardShell({
   }
 
   return (
-    <Card className={`min-w-0 overflow-hidden p-0 ${archived ? archivedPublicationCardClass : ''}`}>
-      <div className="flex min-w-0 flex-col gap-0 lg:flex-row">
-        <div
-          className={`relative flex h-36 w-full shrink-0 items-center justify-center overflow-hidden bg-gradient-to-br sm:h-40 lg:h-auto lg:w-48 ${tone} ${
-            archived ? 'opacity-75 saturate-[0.85]' : ''
-          }`}
-        >
-          {coverUrl ? (
-            <>
-              <img
-                src={coverUrl}
-                alt=""
-                className="absolute inset-0 size-full object-cover"
-                loading="lazy"
-                onError={(event) => {
-                  event.currentTarget.style.display = 'none'
-                }}
-              />
-              <div className="absolute inset-0 bg-black/25" aria-hidden="true" />
-            </>
-          ) : null}
-          {!coverUrl ? <Icon className="relative z-[1] text-4xl text-white opacity-90" /> : null}
-          <div className="absolute left-3 top-3 z-[2]">{badge}</div>
-        </div>
-        <div className="flex min-w-0 flex-1 flex-col gap-3 p-4 sm:gap-4 sm:p-5">
-          <div className="min-w-0">
-            <h3 className="break-words text-base font-black sm:text-lg">{title}</h3>
-            {subtitle ? (
-              <p className="mt-1 break-words text-sm font-semibold text-brand-700">{subtitle}</p>
-            ) : null}
-            {meta?.length ? (
-              <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-sm text-[var(--app-text-muted)]">
-                {meta.map((line) => (
-                  <span key={line} className="min-w-0 break-words">
-                    {line}
-                  </span>
-                ))}
-              </div>
-            ) : null}
+    <article
+      className={`group relative h-full overflow-hidden rounded-[1.4rem] shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)] ${
+        archived ? archivedPublicationCardClass : ''
+      }`}
+    >
+      <Link
+        to={path}
+        onClick={handleGuestClick}
+        className={`relative block h-[290px] w-full overflow-hidden bg-gradient-to-br xl:h-[333px] ${tone} ${
+          archived ? 'opacity-75 saturate-[0.85]' : ''
+        }`}
+      >
+        {coverUrl ? (
+          <img
+            src={coverUrl}
+            alt=""
+            className="h-full w-full object-cover transition duration-500 ease-out group-hover:scale-[1.05]"
+            loading="lazy"
+            onError={(event) => {
+              event.currentTarget.style.display = 'none'
+            }}
+          />
+        ) : (
+          <div className="grid h-full w-full place-items-center text-white">
+            <Icon className="text-4xl opacity-90" />
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap [&>*]:min-w-0 [&>*]:w-full sm:[&>*]:w-auto">
-            <Link to={path} onClick={handleGuestClick}>
-              <Button variant="secondary" icon={FiExternalLink} size="sm">
-                {phase3Text(t, 'publications.cards.open')}
+        )}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-2/3 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
+        {badge ? <div className="absolute left-2.5 top-2.5 z-[2]">{badge}</div> : null}
+        <div className="absolute inset-x-0 bottom-0 z-[2] p-3 sm:p-4">
+          <h3 className="line-clamp-2 break-words text-sm font-black leading-snug text-white drop-shadow sm:text-base">
+            {title}
+          </h3>
+          {subtitle ? (
+            <p className="mt-1 line-clamp-1 text-sm font-bold text-white/90">{subtitle}</p>
+          ) : null}
+          {meta?.length ? (
+            <p className="mt-1.5 line-clamp-2 text-[11px] font-semibold text-white/75">
+              {meta.join(' · ')}
+            </p>
+          ) : null}
+        </div>
+      </Link>
+      {actions ? (
+        <div className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,7.75rem),1fr))] gap-1.5 bg-[var(--app-surface)] p-2.5 [&>a]:min-w-0 [&>button]:min-w-0 [&_button]:min-w-0 [&_button]:w-full [&_button]:max-w-full [&_button]:flex-wrap [&_button]:whitespace-normal">
+          <Link to={path} onClick={handleGuestClick}>
+            <Button variant="secondary" icon={FiExternalLink} size="sm" className="w-full">
+              {phase3Text(t, 'publications.cards.open')}
+            </Button>
+          </Link>
+          {actions}
+        </div>
+      ) : null}
+    </article>
+  )
+}
+
+export function MyListingPublicationCard({
+  listing,
+  readOnly = false,
+  guestMode = false,
+  onGuestInteract,
+  onArchive,
+  onReactivate,
+  onDuplicate,
+  onMarkSold,
+  onDelete,
+}) {
+  const { t } = useLanguage()
+  const p3 = (key) => phase3Text(t, key)
+  const mt = (key) => marketplaceText(t, key)
+  const status = statusMeta(listing.status, t)
+  const active = isActiveListing(listing)
+
+  return (
+    <MarketplaceListingCard
+      listing={listing}
+      guestMode={guestMode}
+      onGuestInteract={onGuestInteract}
+      showFavorite={readOnly}
+      archived={!active}
+      badge={<Badge tone={status.tone}>{status.label}</Badge>}
+      actions={
+        readOnly ? null : (
+          <>
+            <Link to={`/marketplace/${listing.id}/edit`}>
+              <Button variant="secondary" icon={FiEdit2} size="sm">
+                {p3('publications.cards.edit')}
               </Button>
             </Link>
-            {actions}
-          </div>
-        </div>
-      </div>
-    </Card>
+            <Button variant="secondary" icon={FiCopy} size="sm" onClick={onDuplicate}>
+              {p3('publications.cards.duplicate')}
+            </Button>
+            {active ? (
+              <>
+                <Button variant="secondary" icon={FiCheckCircle} size="sm" onClick={onMarkSold}>
+                  {mt('marketplace.common.markSold')}
+                </Button>
+                <Button variant="danger" icon={FiArchive} size="sm" onClick={onArchive}>
+                  {p3('publications.cards.archive')}
+                </Button>
+              </>
+            ) : (
+              <Button icon={FiRotateCcw} size="sm" onClick={onReactivate}>
+                {p3('publications.cards.republish')}
+              </Button>
+            )}
+            <Button variant="danger" icon={FiTrash2} size="sm" onClick={onDelete}>
+              {p3('publications.cards.delete')}
+            </Button>
+          </>
+        )
+      }
+    />
   )
 }
 
@@ -316,14 +383,18 @@ export function MyPostPublicationCard({
       coverUrl={getPostImages(post)[0] || ''}
       icon={FiFileText}
       tone="from-slate-600 to-slate-800"
-      badge={<Badge tone="info">{p3('publications.cards.badge')}</Badge>}
+      badge={
+        <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.06em] text-white backdrop-blur-sm">
+          {p3('publications.cards.badge')}
+        </span>
+      }
       title={post.message?.slice(0, 80) || p3('publications.cards.fallbackTitle')}
       subtitle={post.sourceType !== 'free' ? post.sourceType : null}
       meta={[
         p3('publications.cards.likes', { count: post.likes?.length || 0 }),
         p3('publications.cards.comments', { count: post.comments?.length || 0 }),
       ]}
-      path="/news"
+      path={newsPostPath(post.id)}
       guestMode={guestMode}
       onGuestInteract={onGuestInteract}
       actions={

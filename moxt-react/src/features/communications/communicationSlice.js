@@ -1018,7 +1018,7 @@ const communicationSlice = createSlice({
       prepare(values) {
         return {
           payload: {
-            id: `NOT-${Date.now().toString(36).toUpperCase()}`,
+            id: values.id || `NOT-${Date.now().toString(36).toUpperCase()}`,
             userId: values.userId,
             title: values.title,
             message: values.message,

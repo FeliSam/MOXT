@@ -53,9 +53,9 @@ import { printReceipt } from '../features/transfers/receiptExport'
 import {
   cancelTransfer,
   declarePayment,
-  expireOverdueTransfers,
   moderateTransfer,
   reassignTransferExchanger,
+  runExpireOverdueTransfers,
 } from '../features/transfers/transferSlice'
 import {
   directionLabel,
@@ -102,9 +102,10 @@ export function TransferDetailPage() {
     if (!transfer) return
     if (
       transfer.status === TRANSFER_STATUS.PENDING_ACCEPTANCE ||
-      transfer.status === TRANSFER_STATUS.PENDING
+      transfer.status === TRANSFER_STATUS.PENDING ||
+      transfer.status === TRANSFER_STATUS.PAID_OUT
     ) {
-      dispatch(expireOverdueTransfers())
+      dispatch(runExpireOverdueTransfers())
     }
   }, [dispatch, transfer, acceptanceCountdown.expired, countdown.expired])
 
@@ -679,13 +680,16 @@ export function TransferDetailPage() {
             user={user}
             transfer={transfer}
             excludeBusinessId={transfer.businessId}
-            onSelect={(exchanger) => {
+            onSelect={({ exchanger, amount, rateOverride, rateSource, rateDate }) => {
               dispatch(
                 reassignTransferExchanger({
                   id: transfer.id,
                   actorId: user.id,
                   exchanger,
-                  amount: transfer.amountSent,
+                  amount,
+                  rateOverride,
+                  rateSource,
+                  rateDate,
                 }),
               )
               dispatch(

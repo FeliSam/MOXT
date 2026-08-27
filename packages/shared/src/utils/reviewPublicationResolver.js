@@ -5,7 +5,7 @@ const PUBLICATION_PATHS = {
   parcel: (id) => `/parcels/${id}`,
   job: (id) => `/jobs/${id}`,
   event: (id) => `/events/${id}`,
-  post: (id) => `/news`,
+  post: (id) => `/news/${id}`,
   business: (id) => `/businesses/${id}`,
 }
 

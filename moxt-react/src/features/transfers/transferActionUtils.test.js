@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { TRANSFER_STATUS } from './transferConfig'
 import {
   canApplyModerateTransfer,
+  canAutoCompletePaidOutTransfer,
   canClientDeclareReception,
+  collectOpenTransferDisputeIds,
+  hasBothRequiredTransferProofs,
   hasBusinessPayoutWithProof,
   isBusinessViewerForTransfer,
   isClaimOnlyPhase,
@@ -98,5 +101,38 @@ describe('transferActionUtils', () => {
     expect(
       isBusinessViewerForTransfer(transfer, { id: 'member-1' }, catalogBusiness, ['EXC-1']),
     ).toBe(true)
+  })
+
+  it('cloture automatiquement un virement apres 24 h si les preuves sont la et sans litige', () => {
+    expect(hasBothRequiredTransferProofs(baseTransfer)).toBe(true)
+    expect(
+      canAutoCompletePaidOutTransfer(baseTransfer, {
+        now: Date.parse('2026-01-05T00:00:00.000Z'),
+      }),
+    ).toBe(true)
+    expect(
+      canAutoCompletePaidOutTransfer(baseTransfer, {
+        now: Date.parse('2026-01-04T12:00:00.000Z'),
+      }),
+    ).toBe(false)
+    expect(
+      canAutoCompletePaidOutTransfer(
+        { ...baseTransfer, businessProof: null },
+        { now: Date.parse('2026-01-05T00:00:00.000Z') },
+      ),
+    ).toBe(false)
+    expect(
+      canAutoCompletePaidOutTransfer(baseTransfer, {
+        now: Date.parse('2026-01-05T00:00:00.000Z'),
+        hasOpenDispute: true,
+      }),
+    ).toBe(false)
+    expect(
+      collectOpenTransferDisputeIds([
+        { relatedType: 'transfer', relatedId: 'MXT-1', status: 'new' },
+        { relatedType: 'transfer', relatedId: 'MXT-2', status: 'resolved' },
+        { relatedType: 'p2p', relatedId: 'MXT-1', status: 'new' },
+      ]),
+    ).toEqual(['MXT-1'])
   })
 })

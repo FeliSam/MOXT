@@ -12,8 +12,55 @@ export function avatarColor(name = '') {
 }
 
 export function statusDotColor(status) {
-  if (['completed', 'active', 'published', 'resolved', 'verified'].includes(status)) return 'bg-emerald-500'
-  if (['pending', 'pending_review', 'open', 'new', 'waiting_payment', 'created', 'accepted'].includes(status)) return 'bg-amber-400'
-  if (['cancelled', 'rejected', 'suspended', 'hidden', 'disputed'].includes(status)) return 'bg-red-500'
+  if (
+    ['completed', 'active', 'published', 'resolved', 'verified', 'paid_out', 'payment_received'].includes(
+      status,
+    )
+  ) {
+    return 'bg-emerald-500'
+  }
+  if (
+    [
+      'pending',
+      'pending_review',
+      'pending_payment',
+      'pending_business_acceptance',
+      'payment_declared',
+      'processing',
+      'open',
+      'new',
+      'waiting_payment',
+      'created',
+      'accepted',
+    ].includes(status)
+  ) {
+    return 'bg-amber-400'
+  }
+  if (
+    ['cancelled', 'rejected', 'suspended', 'hidden', 'disputed', 'expired', 'business_declined'].includes(
+      status,
+    )
+  ) {
+    return 'bg-red-500'
+  }
   return 'bg-slate-400'
+}
+
+export const ADMIN_PAGE_SIZE = 15
+
+export function paginateItems(items, page, pageSize = ADMIN_PAGE_SIZE) {
+  const list = Array.isArray(items) ? items : []
+  const total = list.length
+  const pageCount = Math.max(1, Math.ceil(total / pageSize) || 1)
+  const safePage = Math.min(Math.max(1, Number(page) || 1), pageCount)
+  const start = (safePage - 1) * pageSize
+  return {
+    page: safePage,
+    pageCount,
+    pageSize,
+    total,
+    from: total === 0 ? 0 : start + 1,
+    to: Math.min(start + pageSize, total),
+    items: list.slice(start, start + pageSize),
+  }
 }

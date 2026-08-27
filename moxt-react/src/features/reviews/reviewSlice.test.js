@@ -4,6 +4,9 @@ import reducer, {
   createReview,
   deleteReview,
   moderateReview,
+  receiveRemoteReview,
+  reconcileTargetReviews,
+  removeRemoteReview,
   replyToReview,
   restoreReviewDeleted,
   setAll,
@@ -201,5 +204,112 @@ describe('reviews', () => {
     })
     expect(state.items).toHaveLength(1)
     expect(state.items[0].id).toBe('REV-remote')
+  })
+
+  it('applique un avis distant et retire un avis supprimé à distance', () => {
+    const created = reducer(
+      emptyState,
+      createReview({
+        id: 'REV-1',
+        targetType: 'business',
+        targetId: 'b1',
+        authorId: 'u1',
+        authorName: 'Amina',
+        rating: 5,
+        comment: 'Parfait.',
+      }),
+    )
+    const hidden = reducer(
+      created,
+      receiveRemoteReview({ ...created.items[0], status: 'hidden' }),
+    )
+    expect(hidden.items[0].status).toBe('hidden')
+    const removed = reducer(hidden, removeRemoteReview('REV-1'))
+    expect(removed.items).toHaveLength(0)
+  })
+
+  it('remplace les avis d une cible par le jeu distant', () => {
+    const local = reducer(
+      emptyState,
+      setAll({
+        items: [
+          {
+            id: 'REV-keep',
+            targetType: 'business',
+            targetId: 'other',
+            authorId: 'u2',
+            status: 'published',
+            createdAt: '2026-08-01T00:00:00.000Z',
+          },
+          {
+            id: 'REV-stale',
+            targetType: 'business',
+            targetId: 'b1',
+            authorId: 'u3',
+            status: 'published',
+            createdAt: '2026-08-01T00:00:00.000Z',
+          },
+        ],
+      }),
+    )
+    const reconciled = reducer(
+      local,
+      reconcileTargetReviews({
+        profileTargetType: 'business',
+        profileTargetId: 'b1',
+        publicationIds: { listing: [], parcel: [], job: [], event: [], post: [] },
+        items: [
+          {
+            id: 'REV-fresh',
+            targetType: 'business',
+            targetId: 'b1',
+            authorId: 'u4',
+            status: 'published',
+            createdAt: '2026-08-20T00:00:00.000Z',
+          },
+        ],
+      }),
+    )
+    expect(reconciled.items.map((item) => item.id).sort()).toEqual(['REV-fresh', 'REV-keep'])
+  })
+
+  it('retire un avis récent absent du snapshot distant', () => {
+    const local = reducer(
+      emptyState,
+      setAll({
+        items: [
+          {
+            id: 'REV-stale',
+            targetType: 'business',
+            targetId: 'b1',
+            createdAt: '2026-08-20T00:00:00.000Z',
+            status: 'published',
+          },
+          {
+            id: 'REV-old',
+            targetType: 'business',
+            targetId: 'b1',
+            createdAt: '2026-01-01T00:00:00.000Z',
+            status: 'published',
+          },
+        ],
+      }),
+    )
+    const pruned = reducer(
+      local,
+      setAll({
+        pruneRecentMissing: true,
+        items: [
+          {
+            id: 'REV-live',
+            targetType: 'business',
+            targetId: 'b1',
+            createdAt: '2026-08-10T00:00:00.000Z',
+            status: 'published',
+          },
+        ],
+      }),
+    )
+    expect(pruned.items.map((item) => item.id).sort()).toEqual(['REV-live', 'REV-old'])
   })
 })

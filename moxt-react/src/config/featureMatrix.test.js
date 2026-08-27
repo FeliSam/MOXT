@@ -11,5 +11,13 @@ describe('feature matrix', () => {
   it('calcule le résumé', () => {
     const summary = featureMatrixSummary()
     expect(summary.total).toBe(summary.complete + summary.partial + summary.planned)
+    expect(summary.complete).toBe(summary.total)
+    expect(summary.partial).toBe(0)
+    expect(summary.planned).toBe(0)
+  })
+
+  it('aligne toutes les fonctions sur complet', () => {
+    const features = FEATURE_MATRIX.flatMap((section) => section.features)
+    features.forEach((feature) => expect(feature.status).toBe('complete'))
   })
 })

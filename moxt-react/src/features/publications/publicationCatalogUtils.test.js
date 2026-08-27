@@ -4,6 +4,9 @@ import {
   collectUserPublications,
   filterPublicationsByScope,
   filterPublicationsByTabs,
+  publicationArchiveCounts,
+  PUBLICATION_TYPE_TABS,
+  visiblePublicationTypeTabs,
 } from './publicationCatalogUtils'
 
 describe('publicationCatalogUtils', () => {
@@ -71,6 +74,18 @@ describe('publicationCatalogUtils', () => {
     expect(archived.other.map((item) => item.id)).toEqual(['O2'])
   })
 
+  it('compte les archives du type sélectionné seulement', () => {
+    const publications = collectUserPublications(state, 'u1')
+    const all = publicationArchiveCounts(publications)
+    const others = publicationArchiveCounts(publications, { typeTab: 'other' })
+    const posts = publicationArchiveCounts(publications, { typeTab: 'post' })
+
+    expect(all.archived).toBeGreaterThanOrEqual(others.archived)
+    expect(others.active).toBe(1)
+    expect(others.archived).toBe(1)
+    expect(posts.active + posts.archived).toBe(1)
+  })
+
   it('construit le profil entreprise depuis les données actuelles', () => {
     const business = {
       id: 'BIZ-1',
@@ -95,5 +110,17 @@ describe('publicationCatalogUtils', () => {
     expect(profile.memberSince).toBe('2026-01-15T10:00:00.000Z')
     expect(profile.totalCount).toBe(1)
     expect(profile.totalViews).toBe(12)
+  })
+
+  it('masque les onglets de type dont le compteur est à zéro', () => {
+    const visible = visiblePublicationTypeTabs(PUBLICATION_TYPE_TABS, {
+      listing: 2,
+      parcel: 0,
+      job: 0,
+      event: 1,
+      post: 0,
+      other: 1,
+    })
+    expect(visible.map((tab) => tab.id)).toEqual(['listing', 'event', 'other'])
   })
 })

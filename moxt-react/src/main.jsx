@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { cleanupLocalStorage, migrateLegacyStorage } from './services/legacyMigration'
 import { clearDemoContent } from './services/seedDemoContent'
 import { ensureClientCacheVersion } from './services/clearClientCache'
+import { isE2eHarnessActive } from './services/e2eSession'
 import './index.css'
 
 async function bootstrap() {
@@ -53,6 +54,7 @@ async function bootstrap() {
       clearAppBadge()
       return
     }
+    if (isE2eHarnessActive()) return
 
     const { loadAllData } = await import('./app/loadAllData')
     store.dispatch(loadAllData())

@@ -1,8 +1,9 @@
 import { searchablePages } from '../../config/searchablePages'
 import { supabase } from '../../services/supabaseClient'
 import { filterSearchIndex } from '../searchSelectors'
+import { buildAssistantContextPack, buildTransferCandidates } from './assistantContext'
 
-function buildCandidates(question, searchIndex) {
+function buildCandidates(question, searchIndex, contextPack = null) {
   const entityMatches = filterSearchIndex(searchIndex, question)
     .slice(0, 6)
     .map((item) => ({
@@ -16,20 +17,53 @@ function buildCandidates(question, searchIndex) {
     label: page.title,
     path: page.path,
   }))
-  return [...entityMatches, ...pageCandidates]
+  const dynamic = buildTransferCandidates(contextPack)
+  const seen = new Set()
+  const merged = []
+  for (const item of [...dynamic, ...entityMatches, ...pageCandidates]) {
+    if (!item?.id || seen.has(item.id)) continue
+    seen.add(item.id)
+    merged.push(item)
+  }
+  return merged
 }
 
 export const llmAssistantProvider = {
-  async respond({ question, searchIndex, history = [], language = 'fr', draft = null }) {
+  async respond({
+    question,
+    searchIndex,
+    history = [],
+    language = 'fr',
+    draft = null,
+    state = null,
+    user = null,
+  }) {
     if (!supabase) throw new Error('Supabase non configuré')
 
-    const candidates = buildCandidates(question, searchIndex)
+    let contextPack = {
+      toolsUsed: [],
+      searchHits: [],
+      transfers: [],
+      focusedTransfer: null,
+      exchangers: [],
+    }
+    try {
+      if (state) {
+        contextPack = buildAssistantContextPack({ state, question, user, searchIndex })
+      }
+    } catch (err) {
+      console.warn('[Moxti] context pack failed', err)
+    }
 
-    // Les 6 derniers échanges (3 paires) pour le contexte
-    const recentHistory = history.slice(-6).map((m) => ({
-      role: m.role === 'user' ? 'user' : 'assistant',
-      text: m.text,
-    }))
+    const candidates = buildCandidates(question, searchIndex, contextPack)
+
+    const recentHistory = history
+      .filter((m) => m?.text)
+      .slice(-8)
+      .map((m) => ({
+        role: m.role === 'user' ? 'user' : 'assistant',
+        text: String(m.text).slice(0, 1200),
+      }))
 
     const { data, error } = await supabase.functions.invoke('ai-assistant', {
       body: {
@@ -37,6 +71,7 @@ export const llmAssistantProvider = {
         candidates,
         history: recentHistory,
         language,
+        context: contextPack,
         draft: draft
           ? {
               text: draft.text,
@@ -47,8 +82,19 @@ export const llmAssistantProvider = {
           : null,
       },
     })
-    if (error) throw error
+
+    // supabase-js peut renseigner error même si le body JSON est utilisable
     if (data?.error) throw new Error(data.error)
+    if (!data?.text) {
+      const detail =
+        error?.message ||
+        (typeof error === 'string' ? error : null) ||
+        'Réponse ai-assistant vide'
+      throw new Error(detail)
+    }
+    if (error) {
+      console.warn('[Moxti] invoke warning (body OK)', error.message || error)
+    }
 
     const selected = (data.actionIds || [])
       .map((id) => candidates.find((item) => item.id === id))
@@ -64,11 +110,16 @@ export const llmAssistantProvider = {
       ? selected.filter((item) => item.typeLabel).map((item) => `${item.typeLabel}: ${item.label}`)
       : draft?.sources || []
 
+    const citations = Array.isArray(data.citations) ? data.citations.filter(Boolean) : []
+    const followUps = Array.isArray(data.followUps) ? data.followUps.filter(Boolean) : []
+
     return {
-      text: data.text || draft?.text || "Je n'ai pas pu formuler de réponse.",
+      text: data.text,
       actions,
-      sources,
-      suggestions: draft?.suggestions,
+      sources: [...sources, ...citations.filter((c) => !sources.includes(c))].slice(0, 8),
+      suggestions: followUps.length ? followUps : draft?.suggestions,
+      toolsUsed: data.toolsUsed || contextPack.toolsUsed,
+      provider: data.provider || 'yandex-ai',
     }
   },
 }

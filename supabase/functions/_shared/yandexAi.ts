@@ -53,10 +53,27 @@ function extractOutputText(payload: Record<string, unknown>) {
 export async function createYandexResponse(
   config: YandexAiConfig,
   input: string,
+  options: { instructions?: string; temperature?: number; usePrompt?: boolean } = {},
 ): Promise<YandexResponsesResult> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 90_000)
+  const usePrompt =
+    options.usePrompt === true ||
+    String(Deno.env.get('YANDEX_AI_USE_PROMPT') || '').toLowerCase() === 'true'
+
   try {
+    const body: Record<string, unknown> = {
+      input: input.slice(0, 12000),
+      temperature: typeof options.temperature === 'number' ? options.temperature : 0.8,
+    }
+    if (usePrompt && config.promptId) {
+      body.prompt = { id: config.promptId }
+    } else {
+      // Mode libre : pas de template AI Studio (évite les réponses checklist figées).
+      body.model = `gpt://${config.folderId}/yandexgpt/latest`
+    }
+    if (options.instructions) body.instructions = options.instructions.slice(0, 4000)
+
     const response = await fetch(`${config.baseUrl}/responses`, {
       method: 'POST',
       headers: {
@@ -64,10 +81,7 @@ export async function createYandexResponse(
         'Content-Type': 'application/json',
         'OpenAI-Project': config.folderId,
       },
-      body: JSON.stringify({
-        prompt: { id: config.promptId },
-        input: input.slice(0, 12000),
-      }),
+      body: JSON.stringify(body),
       signal: controller.signal,
     })
     const raw = (await response.json().catch(() => ({}))) as Record<string, unknown>
@@ -98,9 +112,15 @@ export function parseAssistantJson(outputText: string) {
     const actionIds = Array.isArray(parsed.actionIds)
       ? parsed.actionIds.map((id) => String(id)).filter(Boolean)
       : []
-    if (text) return { text, actionIds }
+    const followUps = Array.isArray(parsed.followUps)
+      ? parsed.followUps.map((item) => String(item).trim()).filter(Boolean).slice(0, 4)
+      : []
+    const citations = Array.isArray(parsed.citations)
+      ? parsed.citations.map((item) => String(item).trim()).filter(Boolean).slice(0, 6)
+      : []
+    if (text) return { text, actionIds, followUps, citations }
   } catch {
     // plain text fallback
   }
-  return { text: trimmed, actionIds: [] as string[] }
+  return { text: trimmed, actionIds: [] as string[], followUps: [] as string[], citations: [] as string[] }
 }

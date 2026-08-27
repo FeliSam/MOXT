@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 import {
   buildTransferClaimReason,
   findMatchingTransferProfile,
+  normalizeTransferProfile,
   normalizeTransferProfilePhone,
   partyToTransferProfileInput,
+  transferProfileMatchesCountry,
 } from './transferProfileFavorites'
 
 describe('transferProfileFavorites', () => {
@@ -44,5 +46,33 @@ describe('transferProfileFavorites', () => {
     expect(reason).toContain('[delay]')
     expect(reason).toContain('MXT-ABC')
     expect(reason).toContain('Toujours en attente')
+  })
+
+  it('normalise first_name / user_id venus de Supabase', () => {
+    expect(
+      normalizeTransferProfile({
+        id: 'TPRO1',
+        user_id: 'u1',
+        first_name: 'Amina',
+        last_name: 'Demo',
+        phone: '+22901000000',
+        country: 'bj',
+        method: 'MTN MoMo',
+      }),
+    ).toMatchObject({
+      userId: 'u1',
+      firstName: 'Amina',
+      lastName: 'Demo',
+      country: 'BJ',
+    })
+  })
+
+  it('associe un profil BJ au corridor Afrique, pas à la Russie', () => {
+    const profile = { country: 'BJ' }
+    expect(transferProfileMatchesCountry(profile, 'BJ')).toBe(true)
+    expect(transferProfileMatchesCountry(profile, 'CI')).toBe(true)
+    expect(transferProfileMatchesCountry(profile, 'RU')).toBe(false)
+    expect(transferProfileMatchesCountry({ country: 'RU' }, 'RU')).toBe(true)
+    expect(transferProfileMatchesCountry({ country: 'RU' }, 'CM')).toBe(false)
   })
 })

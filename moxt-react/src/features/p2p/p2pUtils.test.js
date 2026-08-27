@@ -48,10 +48,22 @@ describe('p2pUtils', () => {
         { buyerId: 'u1', sellerId: 'u2', status: 'completed' },
         { buyerId: 'u1', sellerId: 'u2', status: 'cancelled' },
       ],
-      reviews: [{ targetId: 'u1', targetType: 'user_profile', rating: 4 }],
+      reviews: [{ targetId: 'u1', targetType: 'user_profile', rating: 4, status: 'published' }],
     })
     expect(stats.completed).toBe(1)
     expect(stats.successRate).toBe(50)
     expect(stats.avgRating).toBe(4)
+  })
+
+  it('ignore les avis masqués ou retirés dans la réputation P2P', () => {
+    const stats = computeP2PReputation('u1', {
+      orders: [],
+      reviews: [
+        { targetId: 'u1', targetType: 'user_profile', rating: 5, status: 'published' },
+        { targetId: 'u1', targetType: 'user_profile', rating: 1, status: 'hidden' },
+      ],
+    })
+    expect(stats.avgRating).toBe(5)
+    expect(stats.ratingCount).toBe(1)
   })
 })

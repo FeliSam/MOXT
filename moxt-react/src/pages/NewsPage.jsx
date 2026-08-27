@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { FiEdit3, FiPlus, FiRss } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   canPublishContent,
   isEmailVerified,
@@ -15,7 +15,7 @@ import { headerIslandClass } from '../components/ui/PageHeader'
 import { ShareToFeedModal } from '../components/ui/ShareToFeedModal'
 import { useLanguage } from '../contexts/useLanguage'
 import { useSecurityGate } from '../features/security/useSecurityGate'
-import { buildNewsFeed } from '../features/posts/postFeedUtils'
+import { buildNewsFeed, newsPostPath } from '../features/posts/postFeedUtils'
 import { StatusRail } from '../features/statuses/StatusRail'
 import { StatusComposer } from '../features/statuses/StatusComposer'
 import { phase3Text } from '../i18n/phase3I18n'
@@ -24,8 +24,9 @@ const FILTER_KEYS = ['all', 'listing', 'job', 'parcel', 'event', 'business', 'fr
 
 export function NewsPage() {
   const navigate = useNavigate()
-  const [searchParams, setSearchParams] = useSearchParams()
-  const highlightPostId = searchParams.get('post')
+  const { postId: postIdParam } = useParams()
+  const [searchParams] = useSearchParams()
+  const highlightPostId = postIdParam || searchParams.get('post')
   const { language, t } = useLanguage()
   const p3 = (key, vars) => phase3Text(t, key, vars)
   const user = useSelector((s) => s.auth.user)
@@ -89,21 +90,27 @@ export function NewsPage() {
     [activeFilter, catalogs, language, posts, publishedPosts],
   )
 
-  // Cible une publication précise depuis une notification (?post=id) : on
-  // défile jusqu'à elle et on l'entoure brièvement, plutôt que de renvoyer
-  // vers le fil général sans indication.
+  const targetedPost = highlightPostId
+    ? posts.find((item) => item.id === highlightPostId)
+    : null
+  const visiblePosts = useMemo(() => {
+    if (!targetedPost) return filtered
+    if (filtered.some((item) => item.id === targetedPost.id)) return filtered
+    return [targetedPost, ...filtered]
+  }, [filtered, targetedPost])
+
+  // Cible une publication précise (?post=id ou /news/:postId).
   useEffect(() => {
     if (!highlightPostId) return undefined
+    if (!postIdParam) {
+      navigate(newsPostPath(highlightPostId), { replace: true })
+      return undefined
+    }
     const el = document.getElementById(`news-post-${highlightPostId}`)
     if (!el) return undefined
     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    const timer = window.setTimeout(() => {
-      const params = new URLSearchParams(searchParams)
-      params.delete('post')
-      setSearchParams(params, { replace: true })
-    }, 2400)
-    return () => window.clearTimeout(timer)
-  }, [highlightPostId, filtered, searchParams, setSearchParams])
+    return undefined
+  }, [highlightPostId, navigate, postIdParam, visiblePosts])
 
   return (
     <div className="grid min-w-0 max-w-full gap-7 overflow-x-clip">
@@ -173,9 +180,16 @@ export function NewsPage() {
           ))}
         </div>
 
-        {filtered.length > 0 ? (
+        {highlightPostId && !targetedPost ? (
+          <EmptyState
+            icon={FiRss}
+            tone="search"
+            title={p3('news.empty.notFoundTitle')}
+            description={p3('news.empty.notFoundDescription')}
+          />
+        ) : visiblePosts.length > 0 ? (
           <div className="flex min-w-0 flex-col divide-y divide-[var(--app-border)]">
-            {filtered.map((post) => (
+            {visiblePosts.map((post) => (
               <div
                 key={post.id}
                 id={`news-post-${post.id}`}

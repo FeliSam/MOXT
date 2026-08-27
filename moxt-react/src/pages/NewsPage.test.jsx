@@ -1,7 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { Provider } from 'react-redux'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NewsPage } from './NewsPage'
 
@@ -70,7 +70,7 @@ describe('NewsPage', () => {
     expect(screen.getAllByTestId('feed-post')).toHaveLength(2)
   })
 
-  it('met en évidence la publication ciblée par ?post= (lien de notification)', () => {
+  it('met en évidence la publication ciblée par ?post= (lien de notification)', async () => {
     const scrollIntoView = vi.fn()
     Element.prototype.scrollIntoView = scrollIntoView
 
@@ -94,7 +94,47 @@ describe('NewsPage', () => {
     render(
       <Provider store={store}>
         <MemoryRouter initialEntries={['/news?post=p2']}>
-          <NewsPage />
+          <Routes>
+            <Route path="/news" element={<NewsPage />} />
+            <Route path="/news/:postId" element={<NewsPage />} />
+          </Routes>
+        </MemoryRouter>
+      </Provider>,
+    )
+
+    await waitFor(() => {
+      expect(document.getElementById('news-post-p2')).toHaveClass('news-post-highlight')
+      expect(scrollIntoView).toHaveBeenCalled()
+    })
+  })
+
+  it('ouvre la publication ciblée par /news/:postId', () => {
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+
+    const store = configureStore({
+      reducer: {
+        auth: () => ({ user: { id: 'u1', role: 'user', firstName: 'A', lastName: 'B' } }),
+        posts: () => ({
+          items: [
+            {
+              id: 'p2',
+              status: 'published',
+              sourceType: 'free',
+              language: 'fr',
+              message: 'Salut',
+              createdAt: '2026-07-01T00:00:00.000Z',
+            },
+          ],
+        }),
+      },
+    })
+    render(
+      <Provider store={store}>
+        <MemoryRouter initialEntries={['/news/p2']}>
+          <Routes>
+            <Route path="/news/:postId" element={<NewsPage />} />
+          </Routes>
         </MemoryRouter>
       </Provider>,
     )

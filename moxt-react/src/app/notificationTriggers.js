@@ -13,6 +13,7 @@ import { filterPublisherSubscribers } from '@moxt/shared/utils/subscriptionUtils
 import { supabase } from '../services/supabaseClient'
 import { translate } from '../i18n/translate'
 import { sharedText } from '../i18n/sharedI18n'
+import { newsPostPath } from '../features/posts/postFeedUtils'
 
 /**
  * Notifie tous les administrateurs via le serveur (RPC security definer).
@@ -338,7 +339,7 @@ export function createNotificationDispatcher(store) {
             name: actorName || notifyT('shared.notifications.someone'),
           }),
           type: 'post',
-          link: '/news',
+          link: newsPostPath(post.id),
         },
         'notifActualites',
       )
@@ -360,7 +361,7 @@ export function createNotificationDispatcher(store) {
             text: String(comment.text).slice(0, 100),
           }),
           type: 'post',
-          link: '/news',
+          link: newsPostPath(post.id),
         },
         'notifActualites',
       )

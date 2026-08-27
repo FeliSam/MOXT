@@ -1116,6 +1116,7 @@ const handlers = {
           status: transfer.status,
           timeline: transfer.timeline,
           updatedAt: transfer.updatedAt,
+          receivedAt: transfer.receivedAt,
           payload: buildTransferRemotePayload(transfer),
         }),
       ),

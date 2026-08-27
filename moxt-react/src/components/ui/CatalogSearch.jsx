@@ -5,7 +5,6 @@ import { Button } from './Button'
 export function CatalogSearch({
   advancedOpen,
   children,
-  count,
   label,
   onClear,
   onQueryChange,
@@ -13,7 +12,6 @@ export function CatalogSearch({
   placeholder,
   query,
   activeFilterCount = 0,
-  showCount = true,
 }) {
   const { t } = useLanguage()
   const searchLabel = label ?? t('catalog.search.label')
@@ -65,34 +63,28 @@ export function CatalogSearch({
         </Button>
       </div>
 
-      {showCount ? (
-        <div className="mt-3 flex items-center justify-end gap-3 text-xs text-[var(--app-text-faint)]">
-          <strong className="shrink-0 rounded-full bg-[var(--app-surface-muted)] px-2.5 py-1 text-[var(--app-text)]">
-            {t(count > 1 ? 'catalog.search.resultsPlural' : 'catalog.search.results', { count })}
-          </strong>
-        </div>
-      ) : null}
-
       {advancedOpen ? (
-        <div className="mt-5 rounded-[var(--radius-card)] bg-[var(--app-surface-muted)] p-4 sm:p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
+        <div className="mt-4 overflow-hidden rounded-[var(--radius-card)] border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-4 motion-safe:animate-[fadeIn_180ms_ease-out] sm:mt-5 sm:p-5">
+          <div className="mb-4 flex items-start justify-between gap-3 border-b border-[var(--app-border)] pb-3">
+            <div className="min-w-0">
               <p className="text-xs font-black uppercase tracking-[0.12em] text-brand-700 dark:text-brand-300">
                 {t('catalog.search.advancedTitle')}
               </p>
-              <p className="mt-1 text-xs text-[var(--app-text-faint)]">
+              <p className="mt-1 text-xs leading-5 text-[var(--app-text-faint)]">
                 {t('catalog.search.advancedDescription')}
               </p>
             </div>
             <button
               type="button"
-              className="text-xs font-black text-brand-700 transition hover:text-brand-800 dark:text-brand-300"
+              className="shrink-0 rounded-full bg-[var(--app-surface)] px-3 py-1.5 text-xs font-black text-brand-700 shadow-sm transition hover:text-brand-800 dark:text-brand-300"
               onClick={onClear}
             >
               {t('catalog.search.clearAll')}
             </button>
           </div>
-          {children}
+          <div className="catalog-advanced-fields [&_input]:!border-[var(--app-border)] [&_input]:!bg-[var(--app-surface)] [&_input:focus]:!bg-[var(--app-surface)] [&_select]:!border-[var(--app-border)] [&_select]:!bg-[var(--app-surface)] [&_select:disabled]:!bg-[var(--app-surface)] [&_select:focus]:!bg-[var(--app-surface)]">
+            {children}
+          </div>
         </div>
       ) : null}
     </section>

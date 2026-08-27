@@ -14,7 +14,7 @@ import { useLanguage } from '../contexts/useLanguage'
 import { TransferCalculator } from '../features/transfers/TransferCalculator'
 import { TransferStatusBadge } from '../features/transfers/TransferStatusBadge'
 import { statusLabelKey } from '../features/transfers/exchanger/statusLabels'
-import { expireOverdueTransfers } from '../features/transfers/transferSlice'
+import { runExpireOverdueTransfers } from '../features/transfers/transferSlice'
 import { selectTransfersVisibleToUser } from '../features/transfers/transferSelectors'
 import { refreshVisibleTransfers } from '../features/transfers/transferSync'
 import {
@@ -75,7 +75,7 @@ export function TransfersPage() {
   const activeCount = tab === 'transfers' ? visibleTransfers.length : myP2pOrders.length
 
   useEffect(() => {
-    dispatch(expireOverdueTransfers())
+    dispatch(runExpireOverdueTransfers())
     if (user?.id) {
       dispatch(refreshVisibleTransfers({ userId: user.id }))
     }

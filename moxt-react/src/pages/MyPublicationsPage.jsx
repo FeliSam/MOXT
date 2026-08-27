@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
+  FiArchive,
   FiBriefcase,
   FiCalendar,
   FiEye,
@@ -8,49 +9,54 @@ import {
   FiPlus,
   FiRepeat,
   FiShoppingBag,
-  FiUsers,
 } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { CatalogArchiveTabs } from '../components/ui/CatalogArchiveTabs'
+import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { EmptyState } from '../components/ui/EmptyState'
-import { PageHeader } from '../components/ui/PageHeader'
-import { PillBadge } from '../components/ui/Badge'
 import { deletePost, moderatePost } from '../features/posts/postsSlice'
 import { deleteEvent, duplicateEvent, moderateEvent } from '../features/events/eventSlice'
 import { deleteJob, duplicateJob, moderateJob } from '../features/jobs/jobSlice'
 import { deleteParcel, duplicateParcel, updateParcelStatus } from '../features/parcels/parcelSlice'
 import { deleteOffer, updateOfferStatus } from '../features/p2p/p2pSlice'
-import { MyListingCard } from '../features/marketplace/MyListingCard'
 import {
   deleteListing,
   duplicateListing,
   updateListingStatus,
 } from '../features/marketplace/marketplaceSlice'
+import { selectPublisherSubscribers } from '../features/account/subscriptionSelectors'
 import {
   MyEventPublicationCard,
   MyJobPublicationCard,
+  MyListingPublicationCard,
   MyP2POfferPublicationCard,
   MyParcelPublicationCard,
   MyPostPublicationCard,
 } from '../features/publications/MyPublicationCards'
 import {
+  BUSINESS_PUBLICATION_TYPE_TABS,
+  buildUserPublicationProfile,
   collectUserPublications,
   filterPublicationsByScope,
   filterPublicationsByTabs,
   PUBLICATION_TYPE_TABS,
   publicationArchiveCounts,
-  publicationTotalViews,
+  publicationTotalCount,
   publicationTypeCounts,
   visiblePublicationCount,
   visiblePublicationTypeTabs,
 } from '../features/publications/publicationCatalogUtils'
+import { PublicationCatalogNav } from '../features/publications/PublicationCatalogNav'
+import { PublicationProfileCard } from '../features/publications/PublicationProfileCard'
 import { PublicationScopeButton } from '../features/publications/PublicationScopeButton'
+import { usePublicationProfile } from '../features/publications/usePublicationProfile'
 import { SubscribersPanel } from '../features/account/SubscribersPanel'
 import { canRepublishBusinessItem } from '../features/businesses/businessPublishUtils'
 import { addToast } from '../features/ui/uiSlice'
+import { useScopedProfileReviews } from '../features/reviews/useScopedTargetReviews'
 import { useLanguage } from '../contexts/useLanguage'
 import { phase3Text } from '../i18n/phase3I18n'
 
@@ -77,7 +83,6 @@ export function MyPublicationsPage() {
   const p3 = (key, vars) => phase3Text(t, key, vars)
   const dispatch = useDispatch()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [deletingListing, setDeletingListing] = useState(null)
   const [deletingItem, setDeletingItem] = useState(null)
   const user = useSelector((state) => state.auth.user)
   const appState = useSelector((state) => state)
@@ -88,6 +93,7 @@ export function MyPublicationsPage() {
     () => new Map(appState.businesses.items.map((item) => [item.id, item])),
     [appState.businesses.items],
   )
+  const { profile: memberProfile } = usePublicationProfile(user.id, user)
 
   function guardBusinessRepublish(item) {
     if (canRepublishBusinessItem(item, businessById)) return true
@@ -112,24 +118,46 @@ export function MyPublicationsPage() {
     () => filterPublicationsByScope(collectUserPublications(appState, user.id), scope),
     [appState, scope, user.id],
   )
+  const typeTabSource = scope === 'business' ? BUSINESS_PUBLICATION_TYPE_TABS : PUBLICATION_TYPE_TABS
   const archiveCounts = useMemo(
-    () => publicationArchiveCounts(publications, { includePending: true }),
-    [publications],
+    () => publicationArchiveCounts(publications, { includePending: true, typeTab }),
+    [publications, typeTab],
   )
   const typeCounts = useMemo(
     () => publicationTypeCounts(publications, archiveTab, { includePending: true }),
     [archiveTab, publications],
   )
   const visibleTypeTabs = useMemo(
-    () => visiblePublicationTypeTabs(PUBLICATION_TYPE_TABS, typeCounts),
-    [typeCounts],
+    () => visiblePublicationTypeTabs(typeTabSource, typeCounts),
+    [typeCounts, typeTabSource],
   )
   const visible = useMemo(
     () => filterPublicationsByTabs(publications, { archiveTab, typeTab, includePending: true }),
     [archiveTab, publications, typeTab],
   )
-  const totalViews = publicationTotalViews(publications)
   const hasContent = visiblePublicationCount(visible) > 0
+  const hasAnyPublication = publicationTotalCount(publications) > 0
+  const hasArchives = archiveCounts.archived > 0
+  const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim()
+  const displayName = fullName || p3('publications.mine.profileFallback')
+  const profile = useMemo(
+    () => buildUserPublicationProfile(user.id, publications, { displayName }),
+    [displayName, publications, user.id],
+  )
+  const { rating: aggregateRating } = useScopedProfileReviews(user.id, publications, {
+    enabled: Boolean(user.id),
+  })
+  const subscriberPublisherType = scope === 'business' && ownBusiness ? 'business' : 'user'
+  const subscriberPublisherId = scope === 'business' && ownBusiness ? ownBusiness.id : user.id
+  const subscriberPublisherName =
+    scope === 'business' && ownBusiness ? ownBusiness.name : displayName
+  const subscriberPublisherPath =
+    scope === 'business' && ownBusiness
+      ? `/businesses/${ownBusiness.id}`
+      : `/users/${user.id}/publications`
+  const subscriberCount = useSelector((state) =>
+    selectPublisherSubscribers(state, subscriberPublisherType, subscriberPublisherId),
+  ).length
 
   function setArchiveTab(next) {
     const params = new URLSearchParams(searchParams)
@@ -152,6 +180,12 @@ export function MyPublicationsPage() {
     }
   }, [typeTab, visibleTypeTabs])
 
+  useEffect(() => {
+    if (!hasArchives && archiveTab === 'archived') {
+      setArchiveTab('active')
+    }
+  }, [archiveTab, hasArchives])
+
   function setScope(next) {
     const params = new URLSearchParams(searchParams)
     if (next === 'personal') params.delete('scope')
@@ -168,61 +202,64 @@ export function MyPublicationsPage() {
 
   const publishLink = PUBLISH_LINKS[typeTab] || PUBLISH_LINKS.listing
   const EmptyIcon = EMPTY_ICONS[typeTab] || FiShoppingBag
-  const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim()
-  const subscriberPublisherType = scope === 'business' && ownBusiness ? 'business' : 'user'
-  const subscriberPublisherId = scope === 'business' && ownBusiness ? ownBusiness.id : user.id
-  const subscriberPublisherName =
-    scope === 'business' && ownBusiness
-      ? ownBusiness.name
-      : fullName || p3('publications.mine.profileFallback')
-  const subscriberPublisherPath =
-    scope === 'business' && ownBusiness
-      ? `/businesses/${ownBusiness.id}`
-      : `/users/${user.id}/publications`
 
   return (
     <div className="grid min-w-0 max-w-full gap-5 overflow-x-clip sm:gap-7">
-      <PageHeader
-        eyebrow={p3('publications.mine.eyebrow')}
-        title={p3('publications.mine.title')}
-        description={
-          panel === 'subscribers'
-            ? p3('publications.mine.description.subscribers')
-            : scope === 'business' && ownBusiness
-              ? p3('publications.mine.description.business', { name: ownBusiness.name })
-              : p3('publications.mine.description.personal')
-        }
-        stats={[
-          { label: p3('publications.mine.stats.active'), value: archiveCounts.active },
-          { label: p3('publications.mine.stats.archived'), value: archiveCounts.archived },
-          { label: p3('publications.mine.stats.views'), value: totalViews },
-        ]}
+      <PublicationProfileCard
+        displayName={displayName}
+        verified={Boolean(memberProfile?.verified)}
+        memberSince={memberProfile?.memberSince}
+        city={memberProfile?.city || profile.city}
+        country={memberProfile?.country || profile.country}
+        activeCount={profile.activeCount}
+        archivedCount={profile.archivedCount}
+        totalCount={profile.totalCount}
+        totalViews={profile.totalViews}
+        aggregateRating={aggregateRating}
+        isOwner
+        scope={scope}
+        ownBusiness={ownBusiness}
+        shareUserId={user.id}
+        avatarUrl={memberProfile?.avatarUrl}
         actions={
-          <div className="grid w-full min-w-0 grid-cols-1 gap-2 xs:grid-cols-2 sm:flex sm:flex-wrap sm:items-center [&>*]:min-w-0 [&>*]:w-full sm:[&>*]:w-auto">
+          <div className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,12.5rem),1fr))] gap-2 border-t border-[var(--app-border)] pt-4 [&>a]:min-w-0 [&>button]:min-w-0 [&_button]:min-w-0 [&_button]:w-full [&_button]:max-w-full [&_button]:flex-wrap [&_button]:whitespace-normal">
             <PublicationScopeButton business={ownBusiness} onScopeChange={setScope} scope={scope} />
             <Link
               to={`/users/${user.id}/publications${scope === 'business' ? '?scope=business' : ''}`}
+              className="min-w-0"
             >
-              <Button variant="secondary" icon={FiEye}>
+              <Button variant="secondary" icon={FiEye} className="w-full min-w-0 max-w-full flex-wrap whitespace-normal">
                 {p3('publications.mine.publicView')}
               </Button>
             </Link>
-            <Link to={publishLink.to}>
-              <Button icon={FiPlus}>{p3(publishLink.labelKey)}</Button>
+            <Link to={publishLink.to} className="min-w-0">
+              <Button icon={FiPlus} className="w-full min-w-0 max-w-full flex-wrap whitespace-normal">
+                {p3(publishLink.labelKey)}
+              </Button>
             </Link>
           </div>
         }
       />
 
-      <div className="flex flex-wrap gap-2">
-        <PillBadge active={panel === 'publications'} onClick={() => setPanel('publications')}>
-          {p3('publications.mine.tabs.publications')}
-        </PillBadge>
-        <PillBadge active={panel === 'subscribers'} onClick={() => setPanel('subscribers')}>
-          <FiUsers className="mr-1 inline" />
-          {p3('publications.mine.tabs.subscribers')}
-        </PillBadge>
-      </div>
+      <CatalogArchiveTabs
+        active={panel}
+        onChange={setPanel}
+        variant="section"
+        tabs={[
+          {
+            key: 'publications',
+            label: p3('publications.mine.tabs.publications'),
+            count: profile.totalCount,
+            alwaysShow: true,
+          },
+          {
+            key: 'subscribers',
+            label: p3('publications.mine.tabs.subscribers'),
+            count: subscriberCount,
+            alwaysShow: true,
+          },
+        ]}
+      />
 
       {panel === 'subscribers' ? (
         <SubscribersPanel
@@ -232,138 +269,157 @@ export function MyPublicationsPage() {
           publisherPath={subscriberPublisherPath}
         />
       ) : (
-        <>
-          <div className="grid gap-4">
-            <CatalogArchiveTabs
-              active={archiveTab}
-              onChange={setArchiveTab}
-              variant="filter"
-              tabs={[
-                {
-                  key: 'active',
-                  label: p3('publications.mine.stats.active'),
-                  count: archiveCounts.active,
-                },
-                {
-                  key: 'archived',
-                  label: p3('publications.mine.stats.archived'),
-                  count: archiveCounts.archived,
-                },
-              ]}
+        <div className="grid gap-4">
+          <PublicationCatalogNav
+            typeTab={typeTab}
+            onTypeTab={setTypeTab}
+            typeTabs={visibleTypeTabs}
+            typeCounts={typeCounts}
+            typeLabel={(tab) => p3(`publications.mine.types.${tab.id}`)}
+            archiveTab={archiveTab}
+            onArchiveTab={setArchiveTab}
+            archiveCounts={archiveCounts}
+            showArchives={hasArchives}
+            activeLabel={p3('publications.mine.stats.active')}
+            archivedLabel={p3('publications.mine.stats.archived')}
+          />
+
+          {!hasAnyPublication ? (
+            <EmptyState
+              icon={FiShoppingBag}
+              title={p3('publications.user.empty.title')}
+              description={p3('publications.user.empty.description')}
+              action={
+                <Link to={publishLink.to}>
+                  <Button icon={FiPlus}>{p3(publishLink.labelKey)}</Button>
+                </Link>
+              }
             />
-
-            {visibleTypeTabs.length > 0 ? (
-              <div className="scrollbar-hidden -mx-1 flex touch-pan-x gap-2 overflow-x-auto px-1 pb-1">
-                {visibleTypeTabs.map((tab) => (
-                  <PillBadge
-                    key={tab.id}
-                    active={typeTab === tab.id}
-                    onClick={() => setTypeTab(tab.id)}
-                    className="shrink-0 whitespace-nowrap"
-                  >
-                    {p3(`publications.mine.types.${tab.id}`)} ({typeCounts[tab.id]})
-                  </PillBadge>
-                ))}
-              </div>
-            ) : null}
-          </div>
-
-          {hasContent ? (
-            <div className="grid gap-4">
-              {visible.listing.map((listing) => (
-                <MyListingCard
-                  key={listing.id}
-                  listing={listing}
-                  ownerMode
-                  showViews
-                  onDuplicate={() => dispatch(duplicateListing({ listing, ownerId: user.id }))}
-                  onRepublish={() => {
-                    if (!guardBusinessRepublish(listing)) return
-                    dispatch(
-                      updateListingStatus({ id: listing.id, status: 'active', actorId: user.id }),
-                    )
-                  }}
-                  onMarkSold={() =>
-                    dispatch(
-                      updateListingStatus({ id: listing.id, status: 'sold', actorId: user.id }),
-                    )
-                  }
-                  onArchive={() =>
-                    dispatch(
-                      updateListingStatus({ id: listing.id, status: 'archived', actorId: user.id }),
-                    )
-                  }
-                  onDelete={() => setDeletingListing(listing)}
-                />
-              ))}
-              {visible.parcel.map((parcel) => (
-                <MyParcelPublicationCard
-                  key={parcel.id}
-                  parcel={parcel}
-                  onArchive={() =>
-                    dispatch(updateParcelStatus({ id: parcel.id, status: 'archived' }))
-                  }
-                  onReactivate={() => {
-                    if (!guardBusinessRepublish(parcel)) return
-                    dispatch(updateParcelStatus({ id: parcel.id, status: 'active' }))
-                  }}
-                  onDuplicate={() => dispatch(duplicateParcel({ parcel, ownerId: user.id }))}
-                  onDelete={() => setDeletingItem({ type: 'parcel', item: parcel })}
-                />
-              ))}
-              {visible.job.map((job) => (
-                <MyJobPublicationCard
-                  key={job.id}
-                  job={job}
-                  onArchive={() => dispatch(moderateJob({ id: job.id, status: 'archived' }))}
-                  onReactivate={() => {
-                    if (!guardBusinessRepublish(job)) return
-                    dispatch(moderateJob({ id: job.id, status: 'active' }))
-                  }}
-                  onDuplicate={() => dispatch(duplicateJob({ job, ownerId: user.id }))}
-                  onDelete={() => setDeletingItem({ type: 'job', item: job })}
-                />
-              ))}
-              {visible.event.map((event) => (
-                <MyEventPublicationCard
-                  key={event.id}
-                  event={event}
-                  onArchive={() => dispatch(moderateEvent({ id: event.id, status: 'archived' }))}
-                  onReactivate={() => {
-                    if (!guardBusinessRepublish(event)) return
-                    dispatch(moderateEvent({ id: event.id, status: 'published' }))
-                  }}
-                  onDuplicate={() => dispatch(duplicateEvent({ event, ownerId: user.id }))}
-                  onDelete={() => setDeletingItem({ type: 'event', item: event })}
-                />
-              ))}
-              {visible.post.map((post) => (
-                <MyPostPublicationCard
-                  key={post.id}
-                  post={post}
-                  onArchive={() => dispatch(moderatePost({ id: post.id, status: 'archived' }))}
-                  onReactivate={() => dispatch(moderatePost({ id: post.id, status: 'published' }))}
-                  onDelete={() => setDeletingItem({ type: 'post', item: post })}
-                />
-              ))}
-              {visible.other.map((offer) => (
-                <MyP2POfferPublicationCard
-                  key={offer.id}
-                  offer={offer}
-                  onArchive={() =>
-                    dispatch(updateOfferStatus({ id: offer.id, status: 'archived' }))
-                  }
-                  onReactivate={() => {
-                    if (!guardBusinessRepublish(offer)) return
-                    dispatch(updateOfferStatus({ id: offer.id, status: 'active' }))
-                  }}
-                  onDelete={() => setDeletingItem({ type: 'other', item: offer })}
-                />
-              ))}
+          ) : hasContent ? (
+            <div className="grid gap-6">
+              {visible.listing.length ? (
+                <CatalogGrid lazy={false}>
+                  {visible.listing.map((listing) => (
+                    <MyListingPublicationCard
+                      key={listing.id}
+                      listing={listing}
+                      onArchive={() =>
+                        dispatch(
+                          updateListingStatus({
+                            id: listing.id,
+                            status: 'archived',
+                            actorId: user.id,
+                          }),
+                        )
+                      }
+                      onReactivate={() => {
+                        if (!guardBusinessRepublish(listing)) return
+                        dispatch(
+                          updateListingStatus({
+                            id: listing.id,
+                            status: 'active',
+                            actorId: user.id,
+                          }),
+                        )
+                      }}
+                      onDuplicate={() =>
+                        dispatch(duplicateListing({ listing, ownerId: user.id }))
+                      }
+                      onMarkSold={() =>
+                        dispatch(
+                          updateListingStatus({
+                            id: listing.id,
+                            status: 'sold',
+                            actorId: user.id,
+                          }),
+                        )
+                      }
+                      onDelete={() => setDeletingItem({ type: 'listing', item: listing })}
+                    />
+                  ))}
+                </CatalogGrid>
+              ) : null}
+              {visible.post.length ? (
+                <CatalogGrid lazy={false}>
+                  {visible.post.map((post) => (
+                    <MyPostPublicationCard
+                      key={post.id}
+                      post={post}
+                      onArchive={() => dispatch(moderatePost({ id: post.id, status: 'archived' }))}
+                      onReactivate={() =>
+                        dispatch(moderatePost({ id: post.id, status: 'published' }))
+                      }
+                      onDelete={() => setDeletingItem({ type: 'post', item: post })}
+                    />
+                  ))}
+                </CatalogGrid>
+              ) : null}
+              {visible.parcel.length ||
+              visible.job.length ||
+              visible.event.length ||
+              visible.other.length ? (
+                <CatalogGrid lazy={false}>
+                  {visible.parcel.map((parcel) => (
+                    <MyParcelPublicationCard
+                      key={parcel.id}
+                      parcel={parcel}
+                      onArchive={() =>
+                        dispatch(updateParcelStatus({ id: parcel.id, status: 'archived' }))
+                      }
+                      onReactivate={() => {
+                        if (!guardBusinessRepublish(parcel)) return
+                        dispatch(updateParcelStatus({ id: parcel.id, status: 'active' }))
+                      }}
+                      onDuplicate={() => dispatch(duplicateParcel({ parcel, ownerId: user.id }))}
+                      onDelete={() => setDeletingItem({ type: 'parcel', item: parcel })}
+                    />
+                  ))}
+                  {visible.job.map((job) => (
+                    <MyJobPublicationCard
+                      key={job.id}
+                      job={job}
+                      onArchive={() => dispatch(moderateJob({ id: job.id, status: 'archived' }))}
+                      onReactivate={() => {
+                        if (!guardBusinessRepublish(job)) return
+                        dispatch(moderateJob({ id: job.id, status: 'active' }))
+                      }}
+                      onDuplicate={() => dispatch(duplicateJob({ job, ownerId: user.id }))}
+                      onDelete={() => setDeletingItem({ type: 'job', item: job })}
+                    />
+                  ))}
+                  {visible.event.map((event) => (
+                    <MyEventPublicationCard
+                      key={event.id}
+                      event={event}
+                      onArchive={() => dispatch(moderateEvent({ id: event.id, status: 'archived' }))}
+                      onReactivate={() => {
+                        if (!guardBusinessRepublish(event)) return
+                        dispatch(moderateEvent({ id: event.id, status: 'published' }))
+                      }}
+                      onDuplicate={() => dispatch(duplicateEvent({ event, ownerId: user.id }))}
+                      onDelete={() => setDeletingItem({ type: 'event', item: event })}
+                    />
+                  ))}
+                  {visible.other.map((offer) => (
+                    <MyP2POfferPublicationCard
+                      key={offer.id}
+                      offer={offer}
+                      onArchive={() =>
+                        dispatch(updateOfferStatus({ id: offer.id, status: 'archived' }))
+                      }
+                      onReactivate={() => {
+                        if (!guardBusinessRepublish(offer)) return
+                        dispatch(updateOfferStatus({ id: offer.id, status: 'active' }))
+                      }}
+                      onDelete={() => setDeletingItem({ type: 'other', item: offer })}
+                    />
+                  ))}
+                </CatalogGrid>
+              ) : null}
             </div>
           ) : (
             <EmptyState
-              icon={EmptyIcon}
+              icon={archiveTab === 'archived' ? FiArchive : EmptyIcon}
               title={
                 archiveTab === 'active'
                   ? p3('publications.mine.empty.active')
@@ -383,19 +439,8 @@ export function MyPublicationsPage() {
               }
             />
           )}
-        </>
+        </div>
       )}
-
-      <ConfirmDialog
-        open={Boolean(deletingListing)}
-        title={p3('publications.mine.delete.title')}
-        description={p3('publications.mine.delete.description')}
-        onCancel={() => setDeletingListing(null)}
-        onConfirm={() => {
-          dispatch(deleteListing({ id: deletingListing.id, ownerId: user.id }))
-          setDeletingListing(null)
-        }}
-      />
 
       <ConfirmDialog
         open={Boolean(deletingItem)}
@@ -405,6 +450,7 @@ export function MyPublicationsPage() {
         onConfirm={() => {
           const { type, item } = deletingItem
           if (type === 'parcel') dispatch(deleteParcel({ id: item.id, ownerId: user.id }))
+          else if (type === 'listing') dispatch(deleteListing({ id: item.id, ownerId: user.id }))
           else if (type === 'job') dispatch(deleteJob({ id: item.id, ownerId: user.id }))
           else if (type === 'event') dispatch(deleteEvent({ id: item.id, ownerId: user.id }))
           else if (type === 'post') dispatch(deletePost(item.id))

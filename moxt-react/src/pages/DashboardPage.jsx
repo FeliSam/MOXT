@@ -45,7 +45,7 @@ export function DashboardPage() {
   const stats = useDashboardStats(user)
   const rate = useExchangeRate()
 
-  const listingsSection = (
+  const listingsSection = authLoading || listings.length > 0 ? (
     <section className="grid min-w-0 gap-3">
       <DashboardSectionHeading
         title={t('dashboard.discovery.latestListings')}
@@ -69,7 +69,7 @@ export function DashboardPage() {
         <ScrollArrows scrollRef={listingsScrollRef} />
       </div>
     </section>
-  )
+  ) : null
 
   return (
     <div className="grid min-w-0 gap-6 overflow-x-clip sm:gap-7">

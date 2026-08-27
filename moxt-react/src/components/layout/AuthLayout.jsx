@@ -13,7 +13,13 @@ export function AuthLayout() {
   const location = useLocation()
   const registering = location.pathname === '/register'
   return (
-    <main className="grid h-dvh overflow-y-auto lg:grid-cols-[1.1fr_0.9fr] lg:overflow-hidden">
+    <div className="grid h-dvh overflow-y-auto lg:grid-cols-[1.1fr_0.9fr] lg:overflow-hidden">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:bg-brand-600 focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-white"
+      >
+        Aller au contenu
+      </a>
       <section className="relative hidden overflow-hidden bg-[linear-gradient(135deg,#0f766e_0%,#08705f_45%,#2563eb_100%)] p-10 text-white lg:flex lg:h-full lg:flex-col lg:justify-between xl:p-12">
         <div className="absolute -left-24 top-32 size-96 rounded-full bg-cyan-300/20 blur-3xl" />
         <div className="absolute -bottom-32 right-0 size-80 rounded-full bg-brand-400/20 blur-3xl" />
@@ -52,11 +58,14 @@ export function AuthLayout() {
         </p>
       </section>
 
-      <section className="scrollbar-hidden flex min-h-dvh items-center justify-center overflow-y-auto p-5 sm:p-8 lg:h-full lg:min-h-0">
+      <section
+        id="main-content"
+        className="scrollbar-hidden flex min-h-dvh items-center justify-center overflow-y-auto p-5 sm:p-8 lg:h-full lg:min-h-0"
+      >
         <div className={`w-full ${registering ? 'max-w-2xl' : 'max-w-md'}`}>
           <Outlet />
         </div>
       </section>
-    </main>
+    </div>
   )
 }

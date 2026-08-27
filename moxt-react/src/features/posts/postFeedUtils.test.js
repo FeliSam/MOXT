@@ -3,7 +3,9 @@ import {
   buildNewsFeed,
   isPinnedPost,
   isWelcomePost,
+  newsPostPath,
   postMatchesDisplayLanguage,
+  resolveNewsFeedLink,
 } from './postFeedUtils'
 
 describe('postFeedUtils', () => {
@@ -87,5 +89,17 @@ describe('postFeedUtils', () => {
       catalogs: { jobs: [{ id: 'J1', status: 'expired' }] },
     })
     expect(feed.map((post) => post.id)).toEqual(['en-post'])
+  })
+
+  it('builds a stable path for a given post', () => {
+    expect(newsPostPath('POST-1')).toBe('/news/POST-1')
+    expect(newsPostPath()).toBe('/news')
+  })
+
+  it('normalise les anciens liens ?post= vers /news/:id', () => {
+    expect(resolveNewsFeedLink('/news?post=POST-1')).toBe('/news/POST-1')
+    expect(resolveNewsFeedLink('/news')).toBe('/news')
+    expect(resolveNewsFeedLink('/news/POST-1')).toBe('/news/POST-1')
+    expect(resolveNewsFeedLink('/news/POST-1/edit')).toBe('/news/POST-1/edit')
   })
 })

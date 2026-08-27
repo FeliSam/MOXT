@@ -93,7 +93,7 @@ export function resolveReviewOwnerLink({ targetType, targetId }) {
     case REVIEW_TARGET_TYPES.EVENT:
       return `/events/${targetId}`
     case REVIEW_TARGET_TYPES.POST:
-      return '/news'
+      return targetId ? `/news/${targetId}` : '/news'
     default:
       return null
   }

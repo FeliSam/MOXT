@@ -201,10 +201,10 @@ export function ProfessionalPage() {
         hasTransfers,
         showRequests,
         subscriberCount: subscribers.length,
-        reviewCount: reviews.length,
+        reviewCount: rating.count,
         pt,
       }),
-    [hasTransfers, pt, reviews.length, showRequests, subscribers.length],
+    [hasTransfers, pt, rating.count, showRequests, subscribers.length],
   )
   const tabs = useMemo(() => flattenGroupedTabs(tabGroups), [tabGroups])
   const safeActive = tabs.some((item) => item.value === active) ? active : 'profile'

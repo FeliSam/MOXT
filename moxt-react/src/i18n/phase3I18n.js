@@ -579,6 +579,8 @@ export const PHASE3_FR_SOURCES = {
   'news.empty.title': "Aucun post pour l'instant",
   'news.empty.description': 'Soyez le premier à partager quelque chose avec la communauté !',
   'news.empty.type': 'Aucun post de type "{type}" pour l\'instant.',
+  'news.empty.notFoundTitle': 'Publication introuvable',
+  'news.empty.notFoundDescription': 'Cette publication a peut-être été supprimée ou n’est plus accessible.',
   'news.seeMore': 'Voir plus',
   'news.seeLess': 'Voir moins',
   'news.pinned': 'Publication épinglée',
@@ -937,6 +939,9 @@ export const PHASE3_FR_SOURCES = {
   'publications.cards.likes': "{count} j'aime",
   'publications.cards.comments': '{count} commentaires',
   'publications.cards.delete': 'Supprimer',
+  'publications.cards.duplicate': 'Dupliquer',
+  'publications.cards.deleteConfirmTitle': 'Supprimer cette publication ?',
+  'publications.cards.deleteConfirmDescription': 'Cette suppression est définitive.',
 
   // ── FAQ ────────────────────────────────────────────────────────────────
   'faq.title': 'Questions fréquentes',

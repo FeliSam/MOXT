@@ -8,6 +8,7 @@ const DEFAULT_PATH_BUILDERS = {
   business: (id) => `/businesses/${id}`,
   transfer: (id) => `/transfers/${id}`,
   p2p: (id) => `/p2p/${id}`,
+  post: (id) => `/news/${id}`,
 }
 
 function defaultRelatedPath(relatedType, relatedId) {

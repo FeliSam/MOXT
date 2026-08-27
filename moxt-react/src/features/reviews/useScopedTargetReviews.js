@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import {
   REVIEW_TARGET_TYPES,
   calculateAggregateRating,
@@ -7,7 +7,7 @@ import {
   filterAggregateReviews,
 } from '@moxt/shared/utils/reviewUtils.js'
 import { fetchReviewsForTargetScope } from './reviewRemote'
-import { setAll } from './reviewSlice'
+import { reconcileTargetReviews } from './reviewSlice'
 
 const PUBLICATION_KEY_ORDER = ['listing', 'parcel', 'job', 'event', 'post']
 
@@ -28,6 +28,7 @@ function useScopedTargetReviews({
   enabled = true,
 }) {
   const dispatch = useDispatch()
+  const storedItems = useSelector((state) => state.reviews.items)
   const publicationIds = useMemo(
     () => collectPublicationTargetIds(publications || {}),
     [publications],
@@ -37,7 +38,6 @@ function useScopedTargetReviews({
     [publicationIds],
   )
   const shouldFetch = Boolean(enabled && profileTargetType && profileTargetId)
-  const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -55,12 +55,18 @@ function useScopedTargetReviews({
     })
       .then((reviews) => {
         if (cancelled) return
-        setItems(reviews)
-        if (reviews.length) dispatch(setAll({ items: reviews }))
+        dispatch(
+          reconcileTargetReviews({
+            items: reviews,
+            profileTargetType,
+            profileTargetId,
+            publicationIds,
+            ownerProfileId,
+          }),
+        )
       })
       .catch((error) => {
         console.warn('[MOXT] Avis cible:', error?.message || error)
-        if (!cancelled) setItems([])
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -73,13 +79,13 @@ function useScopedTargetReviews({
 
   const reviews = useMemo(() => {
     if (!shouldFetch) return []
-    return filterAggregateReviews(items, {
+    return filterAggregateReviews(storedItems, {
       profileTargetType,
       profileTargetId,
       publicationIds,
       ownerProfileId,
     })
-  }, [shouldFetch, items, ownerProfileId, profileTargetId, profileTargetType, publicationIds])
+  }, [shouldFetch, storedItems, ownerProfileId, profileTargetId, profileTargetType, publicationIds])
 
   const rating = useMemo(() => calculateAggregateRating(reviews), [reviews])
 

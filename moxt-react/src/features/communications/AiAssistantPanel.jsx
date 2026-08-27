@@ -26,6 +26,7 @@ export function AiAssistantPanel({
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const user = useSelector((state) => state.auth.user)
+  const rootState = useSelector((state) => state)
   const storageKey = `moxt-ai-assistant-${userId}`
   const messageListRef = useRef(null)
   const composerShellRef = useRef(null)
@@ -164,31 +165,46 @@ export function AiAssistantPanel({
     try {
       const localDraft = await localAssistantProvider.respond({
         question: text,
-        searchIndex,
+        searchIndex: searchIndex || [],
         language,
         t,
       })
       let response
+      let usedFallback = false
       try {
         response = await llmAssistantProvider.respond({
           question: text,
-          searchIndex,
-          history: messages,
+          searchIndex: searchIndex || [],
+          history: nextMessages,
           language,
           draft: localDraft,
+          state: rootState,
+          user,
         })
-      } catch {
-        response = localDraft
+      } catch (llmError) {
+        console.error('[Moxti] Yandex/ai-assistant failed — fallback local', llmError)
+        usedFallback = true
+        response = {
+          ...localDraft,
+          provider: 'local-fallback',
+          sources: [
+            ...(localDraft.sources || []),
+            'Moxti local (IA indisponible)',
+          ],
+        }
       }
       setMessages((current) => [
         ...current,
         {
           id: `AI-${Date.now()}`,
           role: 'assistant',
-          text: response.text,
-          actions: response.actions,
-          sources: response.sources,
-          suggestions: response.suggestions,
+          text: response.text || localDraft.text,
+          actions: response.actions?.length ? response.actions : localDraft.actions,
+          sources: response.sources?.length ? response.sources : localDraft.sources,
+          suggestions: response.suggestions?.length
+            ? response.suggestions
+            : localDraft.suggestions,
+          provider: response.provider || (usedFallback ? 'local-fallback' : 'yandex-ai'),
           createdAt: new Date().toISOString(),
         },
       ])

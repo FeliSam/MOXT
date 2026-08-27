@@ -20,10 +20,22 @@ import { jobContractLabel, jobSectorLabel } from '../jobs/jobDisplayUtils'
 import { formatMoney } from '../transfers/transferUtils'
 import { formatListingPrice } from './favoriteUtils'
 
-function FavoriteRemoveButton({ item, onRemove }) {
+function FavoriteRemoveButton({ item, onRemove, overlay = false }) {
   const { t } = useLanguage()
   const p3 = (key, vars) => phase3Text(t, key, vars)
   if (item.legacy) return null
+  if (overlay) {
+    return (
+      <button
+        type="button"
+        aria-label={p3('favorites.remove')}
+        onClick={() => onRemove(item)}
+        className="absolute right-2.5 top-2.5 z-30 grid size-9 place-items-center rounded-full bg-black/45 text-white shadow-sm backdrop-blur-sm transition hover:bg-black/65"
+      >
+        <FiTrash2 className="text-sm" />
+      </button>
+    )
+  }
   return (
     <Button className="w-full min-w-0" variant="ghost" icon={FiTrash2} onClick={() => onRemove(item)}>
       {p3('favorites.remove')}
@@ -33,19 +45,18 @@ function FavoriteRemoveButton({ item, onRemove }) {
 
 function ListingFavoriteCard({ item, onRemove }) {
   const { t } = useLanguage()
-  const p3 = (key, vars) => phase3Text(t, key, vars)
   const { display, path } = item
   return (
-    <Card className="overflow-hidden !border-transparent p-0">
-      <div className="relative h-44 bg-gradient-to-br from-cyan-700 to-blue-600">
+    <Card variant="flush" className="relative">
+      <Link to={path} className="relative block aspect-[4/5] overflow-hidden sm:aspect-[3/4]">
         {display.image ? (
           <img src={display.image} alt={display.title} className="h-full w-full object-cover" loading="lazy" />
         ) : (
-          <div className="grid h-full w-full place-items-center text-white">
+          <div className="grid h-full w-full place-items-center bg-gradient-to-br from-cyan-700 to-blue-600 text-white">
             <FiShoppingBag className="text-3xl opacity-90" />
           </div>
         )}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 p-3">
           <div className="mb-1 flex flex-wrap gap-1">
             {display.typeLabel ? (
@@ -72,15 +83,8 @@ function ListingFavoriteCard({ item, onRemove }) {
             ) : null}
           </div>
         </div>
-      </div>
-      <div className="grid gap-2 p-3">
-        <Link to={path}>
-          <Button className="w-full" variant="secondary">
-            {p3('favorites.open')}
-          </Button>
-        </Link>
-        <FavoriteRemoveButton item={item} onRemove={onRemove} />
-      </div>
+      </Link>
+      <FavoriteRemoveButton item={item} onRemove={onRemove} overlay />
     </Card>
   )
 }
@@ -187,16 +191,16 @@ function OtherFavoriteCard({ item, onRemove }) {
   const { display, path, relatedType } = item
   const isEvent = relatedType === 'event'
   return (
-    <Card className="overflow-hidden !border-transparent p-0">
-      <div className="relative h-36 bg-gradient-to-br from-slate-700 to-slate-900">
+    <Card variant="flush" className="relative">
+      <Link to={path} className="relative block aspect-[4/5] overflow-hidden sm:aspect-[3/4]">
         {display.image ? (
           <img src={display.image} alt={display.title} className="h-full w-full object-cover" loading="lazy" />
         ) : (
-          <div className="grid h-full w-full place-items-center text-white">
+          <div className="grid h-full w-full place-items-center bg-gradient-to-br from-slate-700 to-slate-900 text-white">
             {isEvent ? <FiCalendar className="text-3xl opacity-90" /> : <FiHeart className="text-3xl opacity-90" />}
           </div>
         )}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/70 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 p-3">
           <Badge tone={isEvent ? 'warning' : 'success'} className="mb-2">
             {isEvent ? p3('favorites.event') : p3('favorites.business')}
@@ -205,33 +209,26 @@ function OtherFavoriteCard({ item, onRemove }) {
           {display.subtitle ? (
             <p className="mt-1 text-xs text-white/80">{display.subtitle}</p>
           ) : null}
+          {isEvent && display.date ? (
+            <p className="mt-1 flex items-center gap-1 text-xs text-white/80">
+              <FiCalendar className="shrink-0" />
+              {display.date}
+            </p>
+          ) : null}
+          {display.location || display.city ? (
+            <p className="mt-1 flex items-center gap-1 text-xs text-white/80">
+              <FiMapPin className="shrink-0" />
+              {display.location || display.city}
+            </p>
+          ) : null}
+          {isEvent && display.price != null ? (
+            <p className="mt-1 text-sm font-black text-white">
+              {display.price > 0 ? formatMoney(display.price, display.currency) : p3('favorites.free')}
+            </p>
+          ) : null}
         </div>
-      </div>
-      <div className="grid gap-2 p-3 text-sm">
-        {isEvent && display.date ? (
-          <p className="flex items-center gap-1 text-[var(--app-text-muted)]">
-            <FiCalendar className="shrink-0" />
-            {display.date}
-          </p>
-        ) : null}
-        {display.location || display.city ? (
-          <p className="flex items-center gap-1 text-[var(--app-text-muted)]">
-            <FiMapPin className="shrink-0" />
-            {display.location || display.city}
-          </p>
-        ) : null}
-        {isEvent && display.price != null ? (
-          <p className="font-bold text-brand-700">
-            {display.price > 0 ? formatMoney(display.price, display.currency) : p3('favorites.free')}
-          </p>
-        ) : null}
-        <Link to={path}>
-          <Button className="w-full" variant="secondary">
-            {p3('favorites.open')}
-          </Button>
-        </Link>
-        <FavoriteRemoveButton item={item} onRemove={onRemove} />
-      </div>
+      </Link>
+      <FavoriteRemoveButton item={item} onRemove={onRemove} overlay />
     </Card>
   )
 }

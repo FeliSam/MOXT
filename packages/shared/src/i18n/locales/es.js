@@ -46,6 +46,9 @@ export const es = {
       firstName: "Nombre",
       lastName: "Apellidos",
       email: "Correo electrónico",
+      firstNamePlaceholder: "John",
+      lastNamePlaceholder: "Doe",
+      emailPlaceholder: "mail@mail.com",
       continue: "Continuar",
       back: "Atrás",
       uiLanguage: "Idioma de la interfaz",
@@ -4165,10 +4168,16 @@ export const es = {
       businessCountdown: "Respuesta esperada en {countdown}.",
       paymentHidden: "Los datos de pago aparecerán tras la aceptación del cambista.",
       reassignTitle: "Elegir otro cambista",
-      reassignDescription: "La misma transferencia se reasignará. Puede comenzar una nueva ventana de aceptación.",
+      reassignDescription: "La misma transferencia se reasignará. Revise primero el nuevo precio según el tipo del cambista elegido.",
       noOtherExchanger: "No hay otro cambista compatible ahora.",
       confirmReassign: "Reasignar transferencia",
+      reviewPricingCta: "Ver el nuevo precio",
+      reviewPricingDescription: "El importe a pagar se recalcula con el tipo y las comisiones de este cambista. Vuelva atrás para elegir otro.",
+      confirmReassignPricing: "Confirmar reasignación",
+      backToExchangers: "Elegir otro cambista",
       requiresAcceptanceShort: "preaceptación",
+      quoteSend: "Envío",
+      quoteReceive: "Recepción",
       queueDeadline: "Aceptar antes de {date}",
       businessActionTitle: "Nueva solicitud",
       businessActionBody: "Acepta para desbloquear el pago del cliente, o rechaza si no estás disponible.",
@@ -4272,6 +4281,8 @@ export const es = {
       directionTitle: "Sentido da transferencia",
       selected: "Selecionado",
       amountToSend: "Importe a enviar em {currency}",
+      amountToReceive: "Importe exacto a recibir en {currency}",
+      amountModeHint: "Introduzca el importe exacto a enviar, o el importe exacto que debe recibir el destinatario. El otro campo se calcula según el sentido de la transferencia y el tipo del cambista.",
       amountIn: "Importe em {currency}",
       amountMinPlaceholder: "Mín. {amount}",
       minimumLabel: "Mínimo",
@@ -4315,6 +4326,7 @@ export const es = {
       lastName: "Apelido",
       phone: "Teléfono",
       networkOrBank: "Red o banco",
+      noExchangerMethods: "Este cambista aún no tiene un medio compatible para este lado.",
       noFavoriteProfiles: "Ningún perfil favorito para este país. Crea uno o completa manualmente.",
       profileCreate: {
         button: "Crear un perfil",
@@ -7325,7 +7337,7 @@ export const es = {
           "3": "Que países são cobertos?"
         },
         texts: {
-          "0": "Olá! Sou a Moxi, a tu assistente MOXT. Posso ayudar con:\n\n- **Transferências** — enviar dinero entre a Rusia y a África\n- **Encomendas** — enviar artigos via viajeros\n- **Marketplace** — comprar y vender na comunidad\n- **Empregos e eventos** — candidatar-se o organizar encontros\n- **Empresas** — encontrar un cambiador o registar a atividade\n- **Verificação** — desbloquear limites de transferencia más altos\n- **Litígios e suporte** — obter ayuda em caso de problema\n\nCuál é a tu pergunta?",
+          "0": "¡Hola! Soy Moxti, tu asistente MOXT. Puedo ayudarte con:\n\n- **Transferencias** — enviar dinero entre Rusia y África\n- **Envíos** — enviar artículos a través de viajeros\n- **Mercado** — comprar y vender en la comunidad\n- **Empleos y eventos** — postularte u organizar encuentros\n- **Empresas** — encontrar un cambiador o registrar tu actividad\n- **Verificación** — desbloquear límites de transferencia más altos\n- **Disputas y soporte** — obtener ayuda si hay un problema\n\n¿Cuál es tu pregunta?",
           "1": "Estou aquí para o orientar na plataforma MOXT, que liga a **Rússia** y os **países da África subsariana**.\n\nDiga-me o que procura — transferencia, paquete, anuncio, empleo o otro — y eu indico a sección certa con as informaciones úteis."
         }
       }
@@ -7544,6 +7556,8 @@ export const es = {
     transferAcceptanceExpiredBody: "Sin respuesta para {id}. Elige otro cambista o cancela.",
     transferReassignedAway: "Transferencia reasignada",
     transferReassignedAwayBody: "La transferencia {id} se asignó a otro cambista.",
+    transferReassigned: "Transferencia reasignada",
+    transferReassignedBody: "La transferencia {id} se asignó a {name}.",
     newTransferReceived: "Nueva transferencia recebida",
     newTransferReceivedBody: "{name} escolheu a tu empresa para {id}.",
     transferUpdated: "Transferencia actualizada",
@@ -7604,6 +7618,9 @@ export const es = {
     someone: "Alguien",
     transferCompleted: "Transferencia completada",
     transferCompletedBody: "El cliente confirmó la recepción de {id}.",
+    transferAutoCompleted: "Transferencia cerrada automáticamente",
+    transferAutoCompletedBody:
+      "La transferencia {id} se marcó como completada tras 24 h: ambas pruebas están presentes y no hay ningún litigio abierto.",
     transferCancelled: "Transferencia cancelada",
     transferCancelledBody: "La transferencia {id} fue cancelada por {by}.",
     transferCancelledActorClient: "el cliente",

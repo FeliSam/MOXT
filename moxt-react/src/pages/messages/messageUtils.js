@@ -2,6 +2,7 @@ import { attachmentPreviewLabel, attachmentSearchText } from '../../features/com
 import { messagesText } from '../../features/communications/messagesI18n'
 import { getConversationPeer } from '../../features/communications/conversationDisplay'
 import { resolveConversationPreviewMessage } from '@moxt/shared/utils/conversationPreview.js'
+import { resolveNewsFeedLink } from '../../features/posts/postFeedUtils'
 
 export function messageSearchHaystack(message) {
   if (!message) return ''
@@ -155,7 +156,7 @@ export function resolveNotificationTarget(notification, conversations = []) {
     return '/messages'
   }
 
-  return notification.link || null
+  return resolveNewsFeedLink(notification.link) || notification.link || null
 }
 
 export function isMessageNotification(notification) {

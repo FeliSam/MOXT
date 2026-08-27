@@ -1,4 +1,5 @@
 import { createSelector } from '@reduxjs/toolkit'
+import { calculateAggregateRating } from '@moxt/shared/utils/reviewUtils.js'
 import {
   calculateBusinessCompletion,
   getBusinessCompletionStatus,
@@ -33,12 +34,6 @@ export const selectBusinessContent = createSelector(
 )
 
 export function calculateBusinessRating(reviews = []) {
-  const published = reviews.filter((item) => item.status === 'published')
-  if (!published.length) return { average: 0, count: 0 }
-  return {
-    average: Number(
-      (published.reduce((total, review) => total + review.rating, 0) / published.length).toFixed(1),
-    ),
-    count: published.length,
-  }
+  const { average, count } = calculateAggregateRating(reviews)
+  return { average, count }
 }

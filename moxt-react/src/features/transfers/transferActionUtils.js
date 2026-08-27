@@ -1,5 +1,5 @@
 import { canClientDeclarePayment } from './transferAcceptanceUtils'
-import { TRANSFER_STATUS, TRANSFER_TRANSITIONS } from './transferConfig'
+import { TRANSFER_CONFIG, TRANSFER_STATUS, TRANSFER_TRANSITIONS } from './transferConfig'
 
 const DONE_STATUSES = new Set([
   TRANSFER_STATUS.DECLARED,
@@ -37,6 +37,49 @@ export function hasBusinessPayoutWithProof(transfer) {
 
 export function hasRecipientDeclaredReception(transfer) {
   return Boolean(transfer?.receivedAt)
+}
+
+export const PAID_OUT_AUTO_COMPLETE_MS =
+  Number(TRANSFER_CONFIG.paidOutAutoCompleteHours || 24) * 60 * 60 * 1000
+
+function hasNamedProof(proof) {
+  return Boolean(proof && (proof.name || proof.url || proof.path))
+}
+
+export function hasBothRequiredTransferProofs(transfer) {
+  return hasNamedProof(transfer?.paymentProof) && hasNamedProof(transfer?.businessProof)
+}
+
+export function transferPaidOutAt(transfer) {
+  const fromTimeline = (transfer?.timeline || []).find(
+    (event) => event.status === TRANSFER_STATUS.PAID_OUT,
+  )?.at
+  return fromTimeline || null
+}
+
+export function isOpenTransferDispute(dispute, transferId) {
+  if (!dispute || !transferId) return false
+  if (dispute.relatedType !== 'transfer') return false
+  if (String(dispute.relatedId) !== String(transferId)) return false
+  return !['resolved', 'closed'].includes(String(dispute.status || '').toLowerCase())
+}
+
+export function collectOpenTransferDisputeIds(disputes = []) {
+  return (disputes || [])
+    .filter((item) => isOpenTransferDispute(item, item.relatedId))
+    .map((item) => item.relatedId)
+}
+
+export function canAutoCompletePaidOutTransfer(
+  transfer,
+  { now = Date.now(), hasOpenDispute = false } = {},
+) {
+  if (!transfer || transfer.status !== TRANSFER_STATUS.PAID_OUT) return false
+  if (hasOpenDispute) return false
+  if (!hasBothRequiredTransferProofs(transfer)) return false
+  const paidAt = Date.parse(transferPaidOutAt(transfer) || '')
+  if (!Number.isFinite(paidAt)) return false
+  return now - paidAt >= PAID_OUT_AUTO_COMPLETE_MS
 }
 
 /** Réception déclarée + virement entreprise confirmé avec preuve → seule la réclamation reste possible. */

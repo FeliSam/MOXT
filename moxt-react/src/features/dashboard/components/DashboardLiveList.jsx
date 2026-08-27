@@ -89,7 +89,6 @@ function DashboardLiveTile({ accent, icon: ItemIcon, item, path }) {
 export function DashboardLiveList({
   accent = 'parcels',
   description,
-  emptyLabel,
   icon: SectionIcon,
   items,
   loading = false,
@@ -101,7 +100,7 @@ export function DashboardLiveList({
   const internalScrollRef = useHorizontalScroll()
   const scrollRef = externalScrollRef || internalScrollRef
   const headerIconStyle = dashboardLiveAccents[accent]?.icon || dashboardLiveAccents.parcels.icon
-  const resolvedEmptyLabel = emptyLabel ?? t('dashboard.discovery.emptyRecent')
+  if (!loading && items.length === 0) return null
 
   return (
     <Card className={dashboardLiveCardClass}>
@@ -144,21 +143,15 @@ export function DashboardLiveList({
                 <SkeletonCard />
               </div>
             ))
-          : items.length
-            ? items.map((item) => (
-                <DashboardLiveTile
-                  key={item.id}
-                  accent={accent}
-                  icon={item.icon || SectionIcon}
-                  item={item}
-                  path={path}
-                />
-              ))
-            : (
-              <p className="min-w-full shrink-0 rounded-[var(--radius-card)] border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)]/60 px-5 py-8 text-center text-sm text-[var(--app-text-muted)]">
-                {resolvedEmptyLabel}
-              </p>
-              )}
+          : items.map((item) => (
+              <DashboardLiveTile
+                key={item.id}
+                accent={accent}
+                icon={item.icon || SectionIcon}
+                item={item}
+                path={path}
+              />
+            ))}
       </div>
     </Card>
   )

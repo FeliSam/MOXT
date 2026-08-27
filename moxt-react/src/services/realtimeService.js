@@ -33,6 +33,8 @@ import {
   removeRemoteOffer,
   removeRemoteOrder,
 } from '../features/p2p/p2pSlice'
+import { reviewFromRemoteRow } from '../features/reviews/reviewRemote'
+import { receiveRemoteReview, removeRemoteReview } from '../features/reviews/reviewSlice'
 import {
   isTransferRelevantToUser,
   ownedBusinessIdsForUser,
@@ -348,6 +350,16 @@ function bindChannel(userId, dispatch, getState) {
     dispatch(removeRemoteListing(listing.id))
   }
 
+  const handleReviewChange = (payload) => {
+    if (payload.eventType === 'DELETE') {
+      const id = payload.old?.id
+      if (id) dispatch(removeRemoteReview(id))
+      return
+    }
+    const review = reviewFromRemoteRow(payload.new)
+    if (review?.id) dispatch(receiveRemoteReview(review))
+  }
+
   const handleP2POfferUpsert = (payload) => {
     const offer = p2pOfferFromRemoteRow(payload.new)
     if (offer?.id) dispatch(receiveRemoteOffer(offer))
@@ -522,6 +534,21 @@ function bindChannel(userId, dispatch, getState) {
       'postgres_changes',
       { event: 'DELETE', schema: 'public', table: 'listings' },
       (payload) => dispatch(removeRemoteListing(payload.old.id)),
+    )
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'reviews' },
+      handleReviewChange,
+    )
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'reviews' },
+      handleReviewChange,
+    )
+    .on(
+      'postgres_changes',
+      { event: 'DELETE', schema: 'public', table: 'reviews' },
+      handleReviewChange,
     )
     .on(
       'postgres_changes',

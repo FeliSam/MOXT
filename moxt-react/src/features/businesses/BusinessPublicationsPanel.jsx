@@ -1,27 +1,30 @@
 import { useEffect, useMemo } from 'react'
-import { useSelector } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { useSearchParams } from 'react-router-dom'
-import { CatalogArchiveTabs } from '../../components/ui/CatalogArchiveTabs'
 import { CatalogGrid } from '../../components/ui/CatalogGrid'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { useLanguage } from '../../contexts/useLanguage'
-import { MyListingCard } from '../marketplace/MyListingCard'
-import { MarketplaceListingCard } from '../marketplace/MarketplaceListingCard'
+import {
+  duplicateListing,
+  updateListingStatus,
+} from '../marketplace/marketplaceSlice'
 import {
   MyEventPublicationCard,
   MyJobPublicationCard,
+  MyListingPublicationCard,
   MyP2POfferPublicationCard,
   MyParcelPublicationCard,
 } from '../publications/MyPublicationCards'
 import {
+  BUSINESS_PUBLICATION_TYPE_TABS,
   collectBusinessPublications,
   filterPublicationsByTabs,
-  PUBLICATION_TYPE_TABS,
   publicationArchiveCounts,
   publicationTypeCounts,
   visiblePublicationCount,
   visiblePublicationTypeTabs,
 } from '../publications/publicationCatalogUtils'
+import { PublicationCatalogNav } from '../publications/PublicationCatalogNav'
 import { useRefreshPublicationsData } from '../publications/useRefreshPublicationsData'
 import { businessesText } from './businessesI18n'
 
@@ -33,8 +36,6 @@ const TYPE_LABEL_KEYS = {
   other: 'businesses.publications.types.other',
 }
 
-const BUSINESS_TYPE_TABS = PUBLICATION_TYPE_TABS.filter((tab) => tab.id !== 'post')
-
 export function BusinessPublicationsPanel({
   businessId,
   guestMode = false,
@@ -43,8 +44,10 @@ export function BusinessPublicationsPanel({
   onGuestInteract,
 }) {
   const [searchParams, setSearchParams] = useSearchParams()
+  const dispatch = useDispatch()
   const { t } = useLanguage()
   const bt = (key, vars) => businessesText(t, key, vars)
+  const user = useSelector((state) => state.auth.user)
   const marketplaceItems = useSelector((state) => state.marketplace.items)
   const parcelItems = useSelector((state) => state.parcels.items)
   const jobItems = useSelector((state) => state.jobs.items)
@@ -54,7 +57,7 @@ export function BusinessPublicationsPanel({
   useRefreshPublicationsData(guestMode ? null : businessId)
 
   const archiveTab = searchParams.get('status') === 'archived' ? 'archived' : 'active'
-  const typeTab = BUSINESS_TYPE_TABS.some((tab) => tab.id === searchParams.get('type'))
+  const typeTab = BUSINESS_PUBLICATION_TYPE_TABS.some((tab) => tab.id === searchParams.get('type'))
     ? searchParams.get('type')
     : 'listing'
 
@@ -92,13 +95,16 @@ export function BusinessPublicationsPanel({
     parcelItems,
   ])
 
-  const archiveCounts = useMemo(() => publicationArchiveCounts(publications), [publications])
+  const archiveCounts = useMemo(
+    () => publicationArchiveCounts(publications, { typeTab }),
+    [publications, typeTab],
+  )
   const typeCounts = useMemo(
     () => publicationTypeCounts(publications, archiveTab),
     [archiveTab, publications],
   )
   const visibleTypeTabs = useMemo(
-    () => visiblePublicationTypeTabs(BUSINESS_TYPE_TABS, typeCounts),
+    () => visiblePublicationTypeTabs(BUSINESS_PUBLICATION_TYPE_TABS, typeCounts),
     [typeCounts],
   )
   const visible = useMemo(
@@ -122,6 +128,7 @@ export function BusinessPublicationsPanel({
   }
 
   const hasArchives = archiveCounts.archived > 0
+  const showArchives = hasArchives
 
   useEffect(() => {
     if (visibleTypeTabs.length === 0) return
@@ -131,79 +138,77 @@ export function BusinessPublicationsPanel({
   }, [typeTab, visibleTypeTabs])
 
   useEffect(() => {
-    if (!hasArchives && archiveTab === 'archived') {
+    if (!showArchives && archiveTab === 'archived') {
       setArchiveTab('active')
     }
-  }, [archiveTab, hasArchives])
+  }, [archiveTab, showArchives])
 
   return (
     <div className="grid gap-4">
-      {visibleTypeTabs.length > 0 ? (
-        <CatalogArchiveTabs
-          active={typeTab}
-          onChange={setTypeTab}
-          tabs={visibleTypeTabs.map((tab) => ({
-            key: tab.id,
-            label: TYPE_LABEL_KEYS[tab.id] ? bt(TYPE_LABEL_KEYS[tab.id]) : tab.label,
-            count: typeCounts[tab.id],
-          }))}
-        />
-      ) : null}
-
-      {hasArchives ? (
-        <CatalogArchiveTabs
-          active={archiveTab}
-          onChange={setArchiveTab}
-          variant="filter"
-          tabs={[
-            {
-              key: 'active',
-              label: bt('businesses.publications.tabs.active'),
-              count: archiveCounts.active,
-            },
-            {
-              key: 'archived',
-              label: bt('businesses.publications.tabs.archived'),
-              count: archiveCounts.archived,
-            },
-          ]}
-        />
-      ) : null}
+      <PublicationCatalogNav
+        typeTab={typeTab}
+        onTypeTab={setTypeTab}
+        typeTabs={visibleTypeTabs}
+        typeCounts={typeCounts}
+        typeLabel={(tab) => (TYPE_LABEL_KEYS[tab.id] ? bt(TYPE_LABEL_KEYS[tab.id]) : tab.label)}
+        archiveTab={archiveTab}
+        onArchiveTab={setArchiveTab}
+        archiveCounts={archiveCounts}
+        showArchives={showArchives}
+        activeLabel={bt('businesses.publications.tabs.active')}
+        archivedLabel={bt('businesses.publications.tabs.archived')}
+      />
 
       {hasContent ? (
         <div className="grid gap-6">
           {visible.listing.length ? (
-            isOwner ? (
-              <div className="grid gap-4">
-                {visible.listing.map((listing) => (
-                  <MyListingCard
-                    key={listing.id}
-                    listing={listing}
-                    ownerMode={isOwner}
-                    showViews={isOwner}
-                    guestMode={guestMode}
-                    onGuestInteract={onGuestInteract}
-                  />
-                ))}
-              </div>
-            ) : (
-              <CatalogGrid lazy={false}>
-                {visible.listing.map((listing) => (
-                  <MarketplaceListingCard
-                    key={listing.id}
-                    listing={listing}
-                    guestMode={guestMode}
-                    onGuestInteract={onGuestInteract}
-                  />
-                ))}
-              </CatalogGrid>
-            )
+            <CatalogGrid lazy={false}>
+              {visible.listing.map((listing) => (
+                <MyListingPublicationCard
+                  key={listing.id}
+                  listing={listing}
+                  readOnly={!isOwner}
+                  guestMode={guestMode}
+                  onGuestInteract={onGuestInteract}
+                  onArchive={() =>
+                    dispatch(
+                      updateListingStatus({
+                        id: listing.id,
+                        status: 'archived',
+                        actorId: user?.id,
+                      }),
+                    )
+                  }
+                  onReactivate={() =>
+                    dispatch(
+                      updateListingStatus({
+                        id: listing.id,
+                        status: 'active',
+                        actorId: user?.id,
+                      }),
+                    )
+                  }
+                  onDuplicate={() =>
+                    dispatch(duplicateListing({ listing, ownerId: user?.id }))
+                  }
+                  onMarkSold={() =>
+                    dispatch(
+                      updateListingStatus({
+                        id: listing.id,
+                        status: 'sold',
+                        actorId: user?.id,
+                      }),
+                    )
+                  }
+                />
+              ))}
+            </CatalogGrid>
           ) : null}
           {visible.parcel.length ||
           visible.job.length ||
           visible.event.length ||
           visible.other.length ? (
-            <div className="grid gap-4">
+            <CatalogGrid lazy={false}>
               {visible.parcel.map((parcel) => (
                 <MyParcelPublicationCard
                   key={parcel.id}
@@ -240,7 +245,7 @@ export function BusinessPublicationsPanel({
                   onGuestInteract={onGuestInteract}
                 />
               ))}
-            </div>
+            </CatalogGrid>
           ) : null}
         </div>
       ) : (

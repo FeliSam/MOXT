@@ -40,6 +40,7 @@ export function VerifiedIcon({
   }
   return (
     <span
+      role="img"
       title={title}
       aria-label={title}
       className={`inline-flex shrink-0 items-center justify-center leading-none text-emerald-500 ${icon[size] ?? icon.sm} ${className}`}

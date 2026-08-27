@@ -3,7 +3,7 @@ import { FiRepeat } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
 import { useLanguage } from '../../contexts/useLanguage'
 import { currencyForCountry, DIRECTIONS } from './transferConfig'
-import { calculateTransfer } from './transferUtils'
+import { calculateTransfer, roundMoneyUp, totalToPayFromReceived } from './transferUtils'
 import { useExchangeRate } from './useExchangeRate'
 
 export function DashboardTransferCalculator() {
@@ -26,13 +26,12 @@ export function DashboardTransferCalculator() {
     setDirection((current) =>
       current === DIRECTIONS.BJ_TO_RU ? DIRECTIONS.RU_TO_BJ : DIRECTIONS.BJ_TO_RU,
     )
-    setAmount(String(Math.max(0, Math.round(calculation.amountReceived))))
+    setAmount(String(roundMoneyUp(calculation.amountReceived)))
   }
 
   function updateReceived(value) {
-    const numeric = Math.max(0, Number(value) || 0)
-    const effectiveRate = calculation.rate || 1
-    setAmount(String(Math.round(numeric / effectiveRate)))
+    const total = totalToPayFromReceived(value, direction, undefined, selectedRate, originCountry)
+    setAmount(total ? String(roundMoneyUp(total)) : '')
   }
 
   return (
@@ -120,7 +119,5 @@ function CurrencyField({ currency, accent = false, label, onChange, value }) {
 }
 
 function roundAmount(value) {
-  return Number(value || 0)
-    .toFixed(2)
-    .replace(/\.00$/, '')
+  return String(roundMoneyUp(value))
 }

@@ -3,8 +3,18 @@ import {
   conversationMatchesQuery,
   conversationPreview,
   messageReadLabel,
+  resolveNotificationTarget,
   shouldShowConversationInList,
 } from './messageUtils.js'
+
+describe('resolveNotificationTarget', () => {
+  it('ouvre la publication visee, pas le fil general', () => {
+    expect(resolveNotificationTarget({ type: 'post', link: '/news?post=POST-1' })).toBe(
+      '/news/POST-1',
+    )
+    expect(resolveNotificationTarget({ type: 'post', link: '/news/POST-1' })).toBe('/news/POST-1')
+  })
+})
 
 describe('messageReadLabel', () => {
   it('affiche Lu quand le correspondant a lu', () => {

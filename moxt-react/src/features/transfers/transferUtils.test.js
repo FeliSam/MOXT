@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { DIRECTIONS } from './transferConfig'
-import { calculateTransfer, getTransferPricing, validateTransferAmount } from './transferUtils'
+import {
+  calculateTransfer,
+  getTransferPricing,
+  roundMoneyUp,
+  roundTransferInput,
+  totalToPayFromReceived,
+  validateTransferAmount,
+} from './transferUtils'
 
 describe('calcul des transferts', () => {
   it('applique la marge et les frais inclus dans le montant saisi (XOF vers RUB)', () => {
@@ -10,7 +17,7 @@ describe('calcul des transferts', () => {
     expect(result.totalToPay).toBe(50000)
     expect(result.fees).toBe(1250)
     expect(result.amountSent).toBe(48750)
-    expect(result.amountReceived).toBeCloseTo(48750 * 0.100485)
+    expect(result.amountReceived).toBe(4899)
   })
 
   it('utilise les devises opposees dans le sens Russie vers Benin', () => {
@@ -20,7 +27,7 @@ describe('calcul des transferts', () => {
     expect(result.currencyTo).toBe('XOF')
     expect(result.totalToPay).toBe(1000)
     expect(result.amountSent).toBe(975)
-    expect(result.amountReceived).toBeCloseTo(975 * result.rate)
+    expect(result.amountReceived).toBe(roundMoneyUp(975 * result.rate))
   })
 
   it('applique la reduction d entreprise a la place de la marge plateforme', () => {
@@ -31,7 +38,23 @@ describe('calcul des transferts', () => {
     expect(result.totalToPay).toBe(1000)
     expect(result.fees).toBe(25)
     expect(result.amountSent).toBe(975)
-    expect(result.amountReceived).toBeCloseTo(92.625)
+    expect(result.amountReceived).toBe(93)
+  })
+
+  it('retrouve le total a payer depuis le montant exact a recevoir', () => {
+    const back = totalToPayFromReceived(4900, DIRECTIONS.BJ_TO_RU, 2.5, 0.1, 'BJ', 5)
+
+    expect(Number.isInteger(back)).toBe(true)
+    expect(back).toBeGreaterThanOrEqual(50000)
+    expect(back).toBe(roundMoneyUp(4900 / ((1 - 2.5 / 100) * 0.095)))
+  })
+
+  it('arrondit les montants a l entier superieur', () => {
+    expect(roundMoneyUp(8810.56)).toBe(8811)
+    expect(roundMoneyUp(8810)).toBe(8810)
+    expect(roundTransferInput(8810.56)).toBe('8811')
+    expect(roundTransferInput(6329.01)).toBe('6330')
+    expect(roundMoneyUp(4275.0000000000005)).toBe(4275)
   })
 
   it('borne la reduction entre 0 et 15 %', () => {

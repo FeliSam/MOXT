@@ -35,15 +35,16 @@ import { isBusinessOwnedBy, selectActiveBusinessForOwner } from '../features/bus
 import {
   currencyForCountry,
   DIRECTIONS,
-  paymentMethodsForCountry,
 } from '../features/transfers/transferConfig'
 import { createTransferSchemas } from '../features/transfers/transferSchemas'
 import { createTransfer } from '../features/transfers/transferSlice'
 import { addToast } from '../features/ui/uiSlice'
 import { TransferCalculator } from '../features/transfers/TransferCalculator'
+import { TransferAmountDualFields } from '../features/transfers/TransferAmountDualFields'
 import { TransferReceivingAccountCard } from '../features/transfers/TransferReceivingAccountCard'
 import {
   buildExchangerPaymentView,
+  exchangerMethodsForParty,
   resolveBusinessReceivingAccount,
 } from '../features/transfers/transferAccountUtils'
 import { ExchangerPickerAvatar } from '../features/transfers/ExchangerPickerAvatar'
@@ -59,10 +60,17 @@ import { useLanguage } from '../contexts/useLanguage'
 import { useHorizontalScroll } from '../hooks/useHorizontalScroll'
 import { useScrollToSecondSection } from '../hooks/useScrollToSecondSection'
 import {
+  normalizeTransferProfile,
+  transferProfileMatchesCountry,
+} from '../features/transfers/transferProfileFavorites'
+import {
   calculateTransfer,
   directionInfo,
   formatMoney,
   monthlyTransferTotal,
+  rateReductionForDirection,
+  roundTransferInput,
+  totalToPayFromReceived,
   validateTransferAmount,
 } from '../features/transfers/transferUtils'
 
@@ -73,12 +81,15 @@ import {
   readTransferDraft,
   writeTransferDraft,
 } from '../features/transfers/wizard/transferWizardConfig'
+
 export function NewTransferPage() {
   const { t } = useLanguage()
   useScrollToSecondSection()
   const partnerScrollRef = useHorizontalScroll()
   const [step, setStep] = useState(1)
   const [calculatorOpen, setCalculatorOpen] = useState(false)
+  const [amountAnchor, setAmountAnchor] = useState('send')
+  const [receiveInput, setReceiveInput] = useState('')
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -90,7 +101,9 @@ export function NewTransferPage() {
   }, [businesses, user.id])
   const transfers = useSelector((state) => state.transfers.items)
   const transferProfiles = useSelector((state) =>
-    (state.account.transferProfiles || []).filter((item) => item.userId === user.id),
+    (state.account.transferProfiles || [])
+      .map(normalizeTransferProfile)
+      .filter((item) => item.userId === user.id),
   )
   const draft = useMemo(() => readTransferDraft(), [])
   const requestedExchangerId = searchParams.get('exchangerId') || ''
@@ -131,7 +144,9 @@ export function NewTransferPage() {
           formik.setFieldError('exchangerId', t('transfers.new.errors.cannotUseOwnBusiness'))
           return
         }
-        const paymentView = buildExchangerPaymentView(business, values.direction, originCountry)
+        const paymentView = buildExchangerPaymentView(business, values.direction, originCountry, {
+          method: values.senderMethod,
+        })
         if (!paymentView.paymentDetails) {
           formik.setFieldError(
             'exchangerId',
@@ -255,29 +270,111 @@ export function NewTransferPage() {
       selectedExchangerBusiness.transferAccounts,
       formik.values.direction,
       originCountry,
+      { method: formik.values.senderMethod },
     )
-  }, [selectedExchangerBusiness, formik.values.direction, originCountry])
+  }, [
+    selectedExchangerBusiness,
+    formik.values.direction,
+    formik.values.senderMethod,
+    originCountry,
+  ])
+  const selectedRate =
+    formik.values.direction === DIRECTIONS.BJ_TO_RU ? liveRate.originToRub : liveRate.rubToOrigin
+  const selectedMargin = selectedExchanger
+    ? rateReductionForDirection(selectedExchanger, formik.values.direction)
+    : undefined
   const calculation = calculateTransfer(
     formik.values.amount,
     formik.values.direction,
     selectedExchanger?.feePercent,
-    formik.values.direction === DIRECTIONS.BJ_TO_RU ? liveRate.originToRub : liveRate.rubToOrigin,
+    selectedRate,
     originCountry,
-    selectedExchanger
-      ? formik.values.direction === DIRECTIONS.BJ_TO_RU
-        ? selectedExchanger.rateReductionToRu
-        : selectedExchanger.rateReductionFromRu
-      : undefined,
+    selectedMargin,
   )
+  const displayedReceive =
+    amountAnchor === 'receive'
+      ? receiveInput
+      : Number(formik.values.amount)
+        ? roundTransferInput(calculation.amountReceived)
+        : ''
+
+  function handleSendAmountChange(value) {
+    setAmountAnchor('send')
+    formik.setFieldValue('amount', value)
+  }
+
+  function handleReceiveAmountChange(value) {
+    setAmountAnchor('receive')
+    setReceiveInput(value)
+    if (value === '') {
+      formik.setFieldValue('amount', '')
+      return
+    }
+    const total = totalToPayFromReceived(
+      value,
+      formik.values.direction,
+      selectedExchanger?.feePercent,
+      selectedRate,
+      originCountry,
+      selectedMargin,
+    )
+    formik.setFieldValue('amount', roundTransferInput(total))
+  }
   const info = directionInfo(formik.values.direction, originCountry)
   const usedThisMonth = monthlyTransferTotal(transfers, user.id, info.from)
-  const senderProfiles = transferProfiles.filter((item) => item.country === info.sourceCountry)
-  const recipientProfiles = transferProfiles.filter(
-    (item) => item.country === info.destinationCountry,
+  const sourceMethods = useMemo(
+    () =>
+      exchangerMethodsForParty({
+        business: selectedExchangerBusiness,
+        country: info.sourceCountry,
+        originCountry,
+      }),
+    [selectedExchangerBusiness, info.sourceCountry, originCountry],
   )
-  const sourceMethods = paymentMethodsForCountry(info.sourceCountry)
-  const destinationMethods = paymentMethodsForCountry(info.destinationCountry)
+  const destinationMethods = useMemo(
+    () =>
+      exchangerMethodsForParty({
+        business: selectedExchangerBusiness,
+        country: info.destinationCountry,
+        originCountry,
+      }),
+    [selectedExchangerBusiness, info.destinationCountry, originCountry],
+  )
+  const senderProfiles = transferProfiles.filter(
+    (item) =>
+      transferProfileMatchesCountry(item, info.sourceCountry) &&
+      (!item.method || sourceMethods.includes(item.method)),
+  )
+  const recipientProfiles = transferProfiles.filter(
+    (item) =>
+      transferProfileMatchesCountry(item, info.destinationCountry) &&
+      (!item.method || destinationMethods.includes(item.method)),
+  )
   const errorFor = (field) => (formik.touched[field] ? formik.errors[field] : undefined)
+  const sourceMethodsKey = sourceMethods.join('|')
+  const destinationMethodsKey = destinationMethods.join('|')
+  const senderMethod = formik.values.senderMethod
+  const recipientMethod = formik.values.recipientMethod
+
+  useEffect(() => {
+    if (!sourceMethods.length) {
+      if (senderMethod) formik.setFieldValue('senderMethod', '')
+      return
+    }
+    if (senderMethod && sourceMethods.includes(senderMethod)) return
+    const next = sourceMethods.length === 1 ? sourceMethods[0] : ''
+    if (next !== senderMethod) formik.setFieldValue('senderMethod', next)
+  }, [formik, senderMethod, sourceMethods, sourceMethodsKey])
+
+  useEffect(() => {
+    if (!destinationMethods.length) {
+      if (recipientMethod) formik.setFieldValue('recipientMethod', '')
+      return
+    }
+    if (recipientMethod && destinationMethods.includes(recipientMethod)) return
+    const next = destinationMethods.length === 1 ? destinationMethods[0] : ''
+    if (next !== recipientMethod) formik.setFieldValue('recipientMethod', next)
+  }, [destinationMethods, destinationMethodsKey, formik, recipientMethod])
   const stepFields = {
     1: ['direction', 'amount', 'exchangerId'],
     2: ['senderFirstName', 'senderLastName', 'senderPhone', 'senderMethod'],
@@ -320,10 +417,15 @@ export function NewTransferPage() {
   }
 
   function applyProfile(prefix, profile) {
-    formik.setFieldValue(`${prefix}FirstName`, profile.firstName)
-    formik.setFieldValue(`${prefix}LastName`, profile.lastName)
-    formik.setFieldValue(`${prefix}Phone`, profile.phone)
-    formik.setFieldValue(`${prefix}Method`, profile.method)
+    const next = normalizeTransferProfile(profile)
+    const allowed = prefix === 'sender' ? sourceMethods : destinationMethods
+    formik.setFieldValue(`${prefix}FirstName`, next.firstName)
+    formik.setFieldValue(`${prefix}LastName`, next.lastName)
+    formik.setFieldValue(`${prefix}Phone`, next.phone)
+    formik.setFieldValue(
+      `${prefix}Method`,
+      allowed.includes(next.method) ? next.method : allowed[0] || '',
+    )
   }
 
   return (
@@ -401,6 +503,7 @@ export function NewTransferPage() {
                         formik.setFieldValue("recipientPhone", phonePrefix(cardInfo.destinationCountry))
                         formik.setFieldValue("senderMethod", "")
                         formik.setFieldValue("recipientMethod", "")
+                        setAmountAnchor('send')
                       }}
                       style={active ? { borderColor: accent } : undefined}
                       className={`rounded-2xl border-2 p-5 text-left transition-all duration-200 ${
@@ -437,17 +540,18 @@ export function NewTransferPage() {
               </div>
             </Card>
 
-            {/* Amount */}
+            {/* Amount — send exact or receive exact */}
             <Card className="grid gap-5 !border-0 shadow-none">
               <SectionTitle icon={FiSend} label={t('transfers.new.amountToSend', { currency: calculation.currencyFrom })} />
-              <Input
-                id="amount"
-                label={t('transfers.new.amountIn', { currency: calculation.currencyFrom })}
-                type="number"
-                min={calculation.minimumRequired}
-                placeholder={t('transfers.new.amountMinPlaceholder', { amount: formatMoney(calculation.minimumRequired, calculation.currencyFrom) })}
-                {...formik.getFieldProps('amount')}
-                error={errorFor('amount')}
+              <TransferAmountDualFields
+                currencyFrom={calculation.currencyFrom}
+                currencyTo={calculation.currencyTo}
+                sendValue={formik.values.amount}
+                receiveValue={displayedReceive}
+                onSendChange={handleSendAmountChange}
+                onReceiveChange={handleReceiveAmountChange}
+                sendError={errorFor('amount')}
+                sendMin={calculation.minimumRequired}
               />
               <div className="flex items-start gap-3 rounded-2xl bg-[var(--app-accent-soft)] p-4 text-sm">
                 <FiClock className="mt-0.5 shrink-0 text-[var(--app-accent)]" />
@@ -524,7 +628,20 @@ export function NewTransferPage() {
                       <button
                         key={exchanger.id}
                         type="button"
-                        onClick={() => formik.setFieldValue('exchangerId', exchanger.id)}
+                        onClick={() => {
+                          formik.setFieldValue('exchangerId', exchanger.id)
+                          if (amountAnchor === 'receive' && receiveInput) {
+                            const total = totalToPayFromReceived(
+                              receiveInput,
+                              formik.values.direction,
+                              exchanger.feePercent,
+                              selectedRate,
+                              originCountry,
+                              rateReductionForDirection(exchanger, formik.values.direction),
+                            )
+                            formik.setFieldValue('amount', roundTransferInput(total))
+                          }
+                        }}
                         className={`relative flex w-[9.25rem] shrink-0 flex-col items-center gap-2 rounded-2xl border-2 p-4 pt-5 text-center transition-all duration-200 sm:w-[10.5rem] xl:w-auto xl:shrink ${
                           active
                             ? 'border-emerald-500 bg-emerald-50/80 shadow-md dark:border-emerald-400 dark:bg-emerald-950/30'
@@ -876,25 +993,28 @@ function PartyCard({ title, prefix, profiles, formik, methods, errorFor, onProfi
         </div>
         {profiles.length ? (
           <div className="grid gap-2 sm:grid-cols-2">
-            {profiles.map((profile) => (
+            {profiles.map((profile) => {
+              const next = normalizeTransferProfile(profile)
+              return (
               <button
-                key={profile.id}
+                key={next.id}
                 type="button"
-                onClick={() => onProfile(profile)}
+                onClick={() => onProfile(next)}
                 className="flex items-center gap-3 rounded-2xl border border-[var(--app-border)] p-3 text-left transition hover:border-brand-400 hover:shadow-sm"
               >
                 <span className="grid size-9 shrink-0 place-items-center whitespace-nowrap rounded-xl bg-[var(--app-surface-muted)] text-sm font-black">
-                  {`${profile.firstName?.[0] || ''}${profile.lastName?.[0] || ''}`.toUpperCase()}
+                  {`${next.firstName?.[0] || ''}${next.lastName?.[0] || ''}`.toUpperCase()}
                 </span>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-bold">
-                    {profile.firstName} {profile.lastName}
+                    {next.firstName} {next.lastName}
                   </p>
-                  <p className="truncate text-xs text-[var(--app-text-muted)]">{profile.method}</p>
+                  <p className="truncate text-xs text-[var(--app-text-muted)]">{next.method}</p>
                 </div>
                 <FiCheck className="ml-auto shrink-0 text-[var(--app-text-muted)]" />
               </button>
-            ))}
+              )
+            })}
           </div>
         ) : (
           <p className="text-xs text-[var(--app-text-muted)]">
@@ -942,22 +1062,28 @@ function PartyCard({ title, prefix, profiles, formik, methods, errorFor, onProfi
           />
           <div>
             <p className="mb-1.5 text-sm font-bold">{t('transfers.new.networkOrBank')}</p>
-            <div className="flex flex-wrap gap-2">
-              {methods.map((method) => (
-                <button
-                  key={method}
-                  type="button"
-                  onClick={() => formik.setFieldValue(`${prefix}Method`, method)}
-                  className={`rounded-full px-3 py-2 text-xs font-bold transition ${
-                    formik.values[`${prefix}Method`] === method
-                      ? 'bg-brand-700 text-white shadow-sm'
-                      : 'bg-[var(--app-surface-muted)] text-[var(--app-text)] hover:bg-[var(--app-accent-soft)] hover:text-[var(--app-accent)]'
-                  }`}
-                >
-                  {method}
-                </button>
-              ))}
-            </div>
+            {methods.length ? (
+              <div className="flex flex-wrap gap-2">
+                {methods.map((method) => (
+                  <button
+                    key={method}
+                    type="button"
+                    onClick={() => formik.setFieldValue(`${prefix}Method`, method)}
+                    className={`rounded-full px-3 py-2 text-xs font-bold transition ${
+                      formik.values[`${prefix}Method`] === method
+                        ? 'bg-brand-700 text-white shadow-sm'
+                        : 'bg-[var(--app-surface-muted)] text-[var(--app-text)] hover:bg-[var(--app-accent-soft)] hover:text-[var(--app-accent)]'
+                    }`}
+                  >
+                    {method}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-[var(--app-text-muted)]">
+                {t('transfers.new.noExchangerMethods')}
+              </p>
+            )}
             {errorFor(`${prefix}Method`) ? (
               <p className="mt-1 text-xs text-red-600">{errorFor(`${prefix}Method`)}</p>
             ) : null}

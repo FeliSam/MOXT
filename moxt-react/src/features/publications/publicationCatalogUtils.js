@@ -1,13 +1,24 @@
+import {
+  FiBriefcase,
+  FiCalendar,
+  FiFileText,
+  FiPackage,
+  FiRepeat,
+  FiShoppingBag,
+} from 'react-icons/fi'
 import { isActiveListing, isArchivedListing } from '../marketplace/listingCatalogUtils'
 
 export const PUBLICATION_TYPE_TABS = [
-  { id: 'listing', label: 'Annonces' },
-  { id: 'parcel', label: 'Colis' },
-  { id: 'job', label: 'Jobs' },
-  { id: 'event', label: 'Événements' },
-  { id: 'post', label: 'Publication' },
-  { id: 'other', label: 'Autres' },
+  { id: 'listing', label: 'Annonces', icon: FiShoppingBag, color: 'from-cyan-500 to-blue-600' },
+  { id: 'parcel', label: 'Colis', icon: FiPackage, color: 'from-sky-500 to-blue-600' },
+  { id: 'job', label: 'Jobs', icon: FiBriefcase, color: 'from-violet-500 to-purple-600' },
+  { id: 'event', label: 'Événements', icon: FiCalendar, color: 'from-amber-500 to-orange-600' },
+  { id: 'post', label: 'Publication', icon: FiFileText, color: 'from-slate-500 to-slate-700' },
+  { id: 'other', label: 'Autres', icon: FiRepeat, color: 'from-emerald-500 to-teal-600' },
 ]
+
+/** Types visibles sur un profil entreprise (pas de posts personnels). */
+export const BUSINESS_PUBLICATION_TYPE_TABS = PUBLICATION_TYPE_TABS.filter((tab) => tab.id !== 'post')
 
 export function visiblePublicationTypeTabs(tabs, typeCounts) {
   return tabs.filter((tab) => (typeCounts[tab.id] ?? 0) > 0)
@@ -249,15 +260,18 @@ export function publicationTypeCounts(publications, archiveTab, { includePending
   }
 }
 
-export function publicationArchiveCounts(publications, { includePending = false } = {}) {
+export function publicationArchiveCounts(
+  publications,
+  { includePending = false, typeTab = 'all' } = {},
+) {
   const active = filterPublicationsByTabs(publications, {
     archiveTab: 'active',
-    typeTab: 'all',
+    typeTab,
     includePending,
   })
   const archived = filterPublicationsByTabs(publications, {
     archiveTab: 'archived',
-    typeTab: 'all',
+    typeTab,
     includePending,
   })
   const countAll = (bucket) =>

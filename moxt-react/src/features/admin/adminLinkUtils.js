@@ -90,7 +90,7 @@ export function adminDetailLink(kind, item) {
       return `/parcels/${item.id}`
     case 'posts':
     case 'post':
-      return '/news'
+      return item.id ? `/news/${item.id}` : '/news'
     case 'report':
       return reportTargetLink(item)
     case 'user':

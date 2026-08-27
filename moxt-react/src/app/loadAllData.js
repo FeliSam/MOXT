@@ -7,7 +7,7 @@ import { setAll as setJobs } from '../features/jobs/jobSlice'
 import { jobsFromRemoteRows, jobApplicationsFromRemoteRows } from '../features/jobs/jobRemote'
 import { setAll as setEvents } from '../features/events/eventSlice'
 import { setAll as setBusinesses } from '../features/businesses/businessSlice'
-import { setAll as setTransfers } from '../features/transfers/transferSlice'
+import { setAll as setTransfers, runExpireOverdueTransfers } from '../features/transfers/transferSlice'
 import { setAll as setP2P } from '../features/p2p/p2pSlice'
 import { setAll as setCommunications, mergeConversations, normalizeConversation } from '../features/communications/communicationSlice'
 import { setAll as setReviews } from '../features/reviews/reviewSlice'
@@ -769,15 +769,12 @@ export const loadAllData = createAsyncThunk(
       includePendingDisputes: isStaff,
     })
 
-    const mergedReviews = mergeRemoteItems(
-      getState().reviews.items,
-      [
-        ...safeRows(reviewsRes, 'des avis'),
-        ...scopedReviewRows,
-      ]
-        .map(reviewFromRemoteRow)
-        .filter(Boolean),
-    )
+    const remoteReviews = [
+      ...safeRows(reviewsRes, 'des avis'),
+      ...scopedReviewRows,
+    ]
+      .map(reviewFromRemoteRow)
+      .filter(Boolean)
 
     const mergedIdentity = mergeRemoteItems(
       getState().identity.profiles,
@@ -849,7 +846,7 @@ export const loadAllData = createAsyncThunk(
         offers: safeRows(p2pOffersRes, 'des offres P2P').map(p2pOfferFromRemoteRow),
         orders: mergeRemoteItems(getState().p2p.orders, p2pOrders),
       }))
-      dispatch(setReviews({ items: mergedReviews }))
+      dispatch(setReviews({ items: remoteReviews, pruneRecentMissing: !reviewsRes?.error }))
       dispatch(setDisputes({ items: fromRows(disputesRes.data) }))
       dispatch(setFinance({
         payments: fromRows(safeRows(paymentsRes, 'des paiements')),
@@ -925,7 +922,14 @@ export const loadAllData = createAsyncThunk(
             subscriberId: item.subscriberId || item.userId,
           }),
         ),
-        transferProfiles: fromRows(safeRows(transferProfilesRes, 'des profils transfert')),
+        transferProfiles: fromRows(safeRows(transferProfilesRes, 'des profils transfert')).map(
+          (item) => ({
+            ...item,
+            userId: item.userId || item.user_id,
+            firstName: item.firstName || item.first_name || '',
+            lastName: item.lastName || item.last_name || '',
+          }),
+        ),
         documents: fromRows(safeRows(personalDocumentsRes, 'des documents')).map((doc) => ({
           ...doc,
           storagePath:
@@ -1051,7 +1055,7 @@ export const loadAllData = createAsyncThunk(
     for (const status of fromRows(safeRows(statusesRes, 'des statuts'))) {
       rememberProfileId(status.authorId)
     }
-    for (const review of mergedReviews) rememberProfileId(review.authorId)
+    for (const review of remoteReviews) rememberProfileId(review.authorId)
     for (const job of jobsFromRemoteRows(jobsRes.data)) rememberProfileId(job.ownerId)
     for (const event of fromRows(eventsRes.data)) rememberProfileId(event.ownerId)
     for (const parcel of fromRows(parcelsRes.data)) rememberProfileId(parcel.ownerId)
@@ -1081,6 +1085,8 @@ export const loadAllData = createAsyncThunk(
         ),
       )
     }
+
+    dispatch(runExpireOverdueTransfers())
     } catch (error) {
       console.error('[MOXT] Échec du chargement des données:', error)
       return rejectWithValue(

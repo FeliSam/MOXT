@@ -4,14 +4,12 @@ import { CatalogSearch } from './CatalogSearch'
 
 vi.mock('../../contexts/useLanguage', () => ({
   useLanguage: () => ({
-    t: (key, vars) => {
+    t: (key) => {
       const map = {
         'catalog.search.label': 'Rechercher',
         'catalog.search.placeholder': 'Rechercher',
         'catalog.search.clearSearch': 'Effacer la recherche',
         'catalog.search.filters': 'Filtres',
-        'catalog.search.results': `${vars?.count ?? 0} résultat`,
-        'catalog.search.resultsPlural': `${vars?.count ?? 0} résultats`,
         'catalog.search.advancedTitle': 'Filtres avancés',
         'catalog.search.advancedDescription': 'Affinez les résultats avec plusieurs critères.',
         'catalog.search.clearAll': 'Tout effacer',
@@ -63,6 +61,6 @@ describe('CatalogSearch', () => {
     )
 
     expect(screen.getByText('Filtres métier')).toBeVisible()
-    expect(screen.getByText('3 résultats')).toBeVisible()
+    expect(screen.queryByText('3 résultats')).not.toBeInTheDocument()
   })
 })

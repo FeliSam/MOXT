@@ -7,6 +7,7 @@ import { EntityVerifiedName } from '../../components/ui/EntityVerifiedName'
 import { Card } from '../../components/ui/Card'
 import { LinkifiedText } from '../../components/ui/LinkifiedText'
 import { EmptyState } from '../../components/ui/EmptyState'
+import { isReviewVisible } from '@moxt/shared/utils/reviewUtils.js'
 import { useLanguage } from '../../contexts/useLanguage'
 import { professionalText } from '../../features/businesses/professionalI18n'
 
@@ -22,7 +23,7 @@ function ratingDistribution(reviews) {
 export function ReviewsPanel({ reviews, rating = null, transferMode = false }) {
   const { t } = useLanguage()
   const pt = (key, vars) => professionalText(t, key, vars)
-  const visible = reviews.filter((item) => item.status === 'published')
+  const visible = reviews.filter(isReviewVisible)
   const authorIds = visible.map((review) => review.authorId).filter(Boolean)
   const avatarMap = useProfileAvatarMap(authorIds)
   const distribution = ratingDistribution(visible)

@@ -109,6 +109,18 @@ export const routeMetadata = [
   { pattern: /^\/local-data$/, title: 'Données locales', eyebrow: 'Compte', back: '/profile' },
   { pattern: /^\/news$/, title: 'Actualités', eyebrow: 'Communauté' },
   {
+    pattern: /^\/news\/[^/]+\/edit$/,
+    title: 'Modifier la publication',
+    eyebrow: 'Communauté',
+    back: '/news',
+  },
+  {
+    pattern: /^\/news\/[^/]+$/,
+    title: 'Publication',
+    eyebrow: 'Communauté',
+    back: '/news',
+  },
+  {
     pattern: /^\/transfers\/new$/,
     title: 'Nouveau transfert',
     eyebrow: 'Finances',

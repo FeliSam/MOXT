@@ -1,9 +1,9 @@
 import {
   FiBriefcase,
+  FiCoffee,
   FiCpu,
-  FiDroplet,
-  FiGlobe,
   FiHome,
+  FiMapPin,
   FiPackage,
   FiShoppingBag,
   FiTruck,
@@ -62,7 +62,7 @@ export const LISTING_TYPES_META = [
     labelKey: 'marketplace.types.realEstate.label',
     hint: 'Appartement, maison, terrain',
     hintKey: 'marketplace.types.realEstate.hint',
-    icon: FiGlobe,
+    icon: FiMapPin,
     color: 'from-rose-500 to-pink-500',
   },
   {
@@ -71,7 +71,7 @@ export const LISTING_TYPES_META = [
     labelKey: 'marketplace.types.food.label',
     hint: 'Produit alimentaire, plat cuisiné',
     hintKey: 'marketplace.types.food.hint',
-    icon: FiDroplet,
+    icon: FiCoffee,
     color: 'from-green-500 to-lime-500',
   },
   {

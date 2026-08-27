@@ -3,14 +3,37 @@ export function normalizeTransferProfilePhone(phone) {
   return String(phone || '').replace(/\D/g, '')
 }
 
+export function normalizeTransferProfile(profile) {
+  if (!profile || typeof profile !== 'object') return profile
+  return {
+    ...profile,
+    userId: profile.userId || profile.user_id || '',
+    firstName: String(profile.firstName || profile.first_name || '').trim(),
+    lastName: String(profile.lastName || profile.last_name || '').trim(),
+    phone: String(profile.phone || '').trim(),
+    country: String(profile.country || '').toUpperCase(),
+    method: profile.method || '',
+  }
+}
+
+/** RU ↔ Afrique : un profil BJ s’applique à tout pays d’origine hors Russie. */
+export function transferProfileMatchesCountry(profile, country) {
+  const profileCountry = String(profile?.country || '').toUpperCase()
+  const target = String(country || '').toUpperCase()
+  if (!profileCountry || !target) return false
+  if (profileCountry === target) return true
+  const profileIsRussia = profileCountry === 'RU'
+  const targetIsRussia = target === 'RU'
+  return profileIsRussia === targetIsRussia
+}
+
 export function findMatchingTransferProfile(profiles, party, userId) {
   const phone = normalizeTransferProfilePhone(party?.phone)
   if (!phone || !userId) return null
-  return (profiles || []).find(
-    (item) =>
-      item.userId === userId &&
-      normalizeTransferProfilePhone(item.phone) === phone,
-  )
+  return (profiles || []).find((item) => {
+    const profile = normalizeTransferProfile(item)
+    return profile.userId === userId && normalizeTransferProfilePhone(profile.phone) === phone
+  })
 }
 
 export function partyToTransferProfileInput(party, { userId, country, method }) {

@@ -7,6 +7,7 @@ import { EmptyState } from '../../components/ui/EmptyState'
 import { StarRating } from '../../components/ui/StarRating'
 import {
   calculateAggregateRating,
+  isReviewVisible,
   REVIEW_TARGET_TYPES,
 } from '@moxt/shared/utils/reviewUtils.js'
 import { hasReviewEligibility } from '@moxt/shared/utils/reviewEligibility.js'
@@ -32,10 +33,14 @@ export function ReviewsSection({
   const [rating, setRating] = useState(5)
   const [comment, setComment] = useState('')
 
-  const aggregate = useMemo(() => calculateAggregateRating(reviews), [reviews])
-  const authorIds = useMemo(
-    () => [...new Set((reviews || []).map((item) => item.authorId).filter(Boolean))],
+  const visibleReviews = useMemo(
+    () => (reviews || []).filter(isReviewVisible),
     [reviews],
+  )
+  const aggregate = useMemo(() => calculateAggregateRating(visibleReviews), [visibleReviews])
+  const authorIds = useMemo(
+    () => [...new Set(visibleReviews.map((item) => item.authorId).filter(Boolean))],
+    [visibleReviews],
   )
   const avatarMap = useProfileAvatarMap(authorIds)
   const existingReview = useSelector((state) =>
@@ -221,15 +226,15 @@ export function ReviewsSection({
         <Card className="grid content-start gap-4">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h3 className="font-black">{t('reviews.allReviews')}</h3>
-            {reviews.length ? (
+            {visibleReviews.length ? (
               <span className="text-xs font-semibold tabular-nums text-[var(--app-text-faint)]">
-                {t('reviews.summaryTotal', { count: reviews.length })}
+                {t('reviews.summaryTotal', { count: visibleReviews.length })}
               </span>
             ) : null}
           </div>
-          {reviews.length ? (
+          {visibleReviews.length ? (
             <div className="grid max-h-[min(42rem,70vh)] gap-3 overflow-y-auto overscroll-y-contain pr-1">
-              {reviews.map((review) => (
+              {visibleReviews.map((review) => (
                 <ReviewCard
                   key={review.id}
                   review={review}

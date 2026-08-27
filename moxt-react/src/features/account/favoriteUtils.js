@@ -1,3 +1,4 @@
+import { FiBriefcase, FiGrid, FiHeart, FiPackage, FiShoppingBag } from 'react-icons/fi'
 import { categoriesForType, LISTING_TYPES_META } from '../../config/listingConfig'
 import { activityByValue } from '../../config/businessActivities'
 import { phase3Text } from '../../i18n/phase3I18n'
@@ -5,11 +6,42 @@ import { formatMoney } from '../transfers/transferUtils'
 import { isSourceItemLive } from '@moxt/shared/utils/sourceLiveStatus.js'
 
 export const FAVORITE_CATEGORIES = [
-  { id: 'listing', labelKey: 'favorites.categories.listing', types: ['listing'] },
-  { id: 'parcel', labelKey: 'favorites.categories.parcel', types: ['parcel'] },
-  { id: 'job', labelKey: 'favorites.categories.job', types: ['job'] },
-  { id: 'other', labelKey: 'favorites.categories.other', types: ['business', 'event'] },
+  {
+    id: 'listing',
+    labelKey: 'favorites.categories.listing',
+    types: ['listing'],
+    icon: FiShoppingBag,
+    color: 'from-blue-500 to-cyan-500',
+  },
+  {
+    id: 'parcel',
+    labelKey: 'favorites.categories.parcel',
+    types: ['parcel'],
+    icon: FiPackage,
+    color: 'from-sky-500 to-blue-600',
+  },
+  {
+    id: 'job',
+    labelKey: 'favorites.categories.job',
+    types: ['job'],
+    icon: FiBriefcase,
+    color: 'from-violet-500 to-purple-500',
+  },
+  {
+    id: 'other',
+    labelKey: 'favorites.categories.other',
+    types: ['business', 'event'],
+    icon: FiHeart,
+    color: 'from-slate-500 to-slate-700',
+  },
 ]
+
+export const FAVORITE_ALL_CATEGORY = {
+  id: 'all',
+  labelKey: 'favorites.tabs.all',
+  icon: FiGrid,
+  color: 'from-brand-500 to-teal-500',
+}
 
 export function favoriteCategoryForType(relatedType) {
   return FAVORITE_CATEGORIES.find((category) => category.types.includes(relatedType))?.id || 'other'

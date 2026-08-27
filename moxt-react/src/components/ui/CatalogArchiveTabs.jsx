@@ -53,10 +53,54 @@ const VARIANTS = {
       }`,
     indicator: false,
   },
+  /** Catalogue type marketplace / favoris — pastilles icône + compteur */
+  chips: {
+    root: 'scrollbar-hidden -mx-1 flex snap-x snap-mandatory touch-pan-x gap-2 overflow-x-auto px-1 pb-1',
+    kind: 'chips',
+    indicator: false,
+  },
 }
 
 function visibleTabs(tabs) {
   return tabs.filter(({ count, alwaysShow }) => alwaysShow || count === undefined || count > 0)
+}
+
+function ChipTab({ tab, isActive, onChange }) {
+  const Icon = tab.icon
+  const accessibleName = tab.count !== undefined ? `${tab.label} (${tab.count})` : tab.label
+  return (
+    <button
+      type="button"
+      role="tab"
+      title={accessibleName}
+      aria-label={accessibleName}
+      aria-selected={isActive}
+      onClick={() => onChange(tab.key)}
+      className={`flex h-[5.35rem] w-[5.15rem] shrink-0 snap-start flex-col items-center justify-center gap-1.5 rounded-[1.1rem] px-1.5 transition duration-[var(--transition-fast)] ${
+        isActive
+          ? 'bg-brand-700 text-white shadow-sm dark:bg-brand-600'
+          : 'bg-[var(--app-surface)] text-[var(--app-text-muted)] shadow-sm ring-1 ring-[var(--app-border)] hover:text-[var(--app-text)]'
+      }`}
+    >
+      <span
+        className={`grid size-9 shrink-0 place-items-center rounded-xl leading-none ${
+          isActive
+            ? 'bg-white/20 text-white'
+            : `bg-gradient-to-br text-white ${tab.color || 'from-brand-500 to-teal-500'}`
+        }`}
+      >
+        {Icon ? <Icon aria-hidden="true" className="block size-[1.125rem] shrink-0" /> : null}
+      </span>
+      <span className="flex h-[1.7rem] w-full flex-col items-center justify-center text-center text-[10px] font-black leading-tight tracking-wide">
+        <span className="line-clamp-1">{tab.label}</span>
+        {tab.count !== undefined ? (
+          <span className={isActive ? 'text-white/80' : 'text-[var(--app-text-faint)]'}>
+            ({tab.count})
+          </span>
+        ) : null}
+      </span>
+    </button>
+  )
 }
 
 export function CatalogArchiveTabs({ active, onChange, tabs, variant = 'underline', className = '' }) {
@@ -77,20 +121,26 @@ export function CatalogArchiveTabs({ active, onChange, tabs, variant = 'underlin
 
   return (
     <div ref={scrollRef} className={`${styles.root} ${className}`.trim()} role="tablist">
-      {tabsToShow.map(({ key, label, count }) => {
-        const isActive = active === key
+      {tabsToShow.map((tab) => {
+        const isActive = active === tab.key
+        if (styles.kind === 'chips') {
+          return <ChipTab key={tab.key} tab={tab} isActive={isActive} onChange={onChange} />
+        }
+
+        const Icon = tab.icon
         return (
           <button
-            key={key}
+            key={tab.key}
             type="button"
             role="tab"
             aria-selected={isActive}
-            onClick={() => onChange(key)}
+            onClick={() => onChange(tab.key)}
             className={styles.button(isActive)}
           >
-            {label}
-            {count !== undefined ? (
-              <span className={styles.count(isActive)}>{count}</span>
+            {Icon ? <Icon aria-hidden="true" className="size-3.5 shrink-0" /> : null}
+            {tab.label}
+            {tab.count !== undefined ? (
+              <span className={styles.count(isActive)}>{tab.count}</span>
             ) : null}
             {styles.indicator && isActive ? (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-brand-600" />

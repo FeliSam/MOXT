@@ -2,7 +2,11 @@ import { createSlice } from '@reduxjs/toolkit'
 import { createId } from '../../services/createId'
 import { createLocalStorage } from '../../services/createLocalStorage'
 import { mergeRemoteById } from '@moxt/shared/utils/mergeRemoteById.js'
-import { REVIEW_DISPUTE_STATUS } from '@moxt/shared/utils/reviewUtils.js'
+import {
+  dropStaleCachedReviews,
+  matchesReviewAggregateScope,
+  REVIEW_DISPUTE_STATUS,
+} from '@moxt/shared/utils/reviewUtils.js'
 
 const storage = createLocalStorage('moxt-reviews-v1')
 const MAX_TOMBSTONES = 500
@@ -81,7 +85,10 @@ const reviewSlice = createSlice({
           state.deletedIds,
           state.deletedKeys,
         )
-        state.items = mergeRemoteById(filteredLocal, filteredRemote)
+        const merged = mergeRemoteById(filteredLocal, filteredRemote)
+        state.items = action.payload.pruneRecentMissing
+          ? dropStaleCachedReviews(merged, filteredRemote)
+          : merged
       }
     },
     createReview: {
@@ -183,6 +190,45 @@ const reviewSlice = createSlice({
       }
       state.items[index].id = remoteId
     },
+    receiveRemoteReview(state, action) {
+      const review = action.payload
+      if (!review?.id) return
+      const kept = applyDeletedFilters([review], state.deletedIds, state.deletedKeys)
+      if (!kept.length) return
+      const index = state.items.findIndex((item) => item.id === review.id)
+      if (index >= 0) {
+        state.items[index] = { ...state.items[index], ...review }
+        return
+      }
+      const identityIndex = findReviewIndex(state.items, review)
+      if (identityIndex >= 0) {
+        state.items[identityIndex] = { ...state.items[identityIndex], ...review }
+        return
+      }
+      state.items.unshift(review)
+    },
+    removeRemoteReview(state, action) {
+      const id = action.payload
+      if (!id) return
+      state.items = state.items.filter((item) => item.id !== id)
+    },
+    reconcileTargetReviews(state, action) {
+      const {
+        items: remoteItems = [],
+        profileTargetType,
+        profileTargetId,
+        publicationIds,
+        ownerProfileId,
+      } = action.payload || {}
+      const scope = { profileTargetType, profileTargetId, publicationIds, ownerProfileId }
+      const remote = applyDeletedFilters(remoteItems, state.deletedIds, state.deletedKeys)
+      const remoteIds = new Set(remote.map((item) => item.id).filter(Boolean))
+      const kept = state.items.filter((item) => {
+        if (remoteIds.has(item.id)) return false
+        return !matchesReviewAggregateScope(item, scope)
+      })
+      state.items = mergeRemoteById(kept, remote)
+    },
   },
 })
 
@@ -193,6 +239,9 @@ export const {
   moderateReview,
   deleteReview,
   restoreReviewDeleted,
+  receiveRemoteReview,
+  removeRemoteReview,
+  reconcileTargetReviews,
   setAll,
 } = reviewSlice.actions
 export default reviewSlice.reducer

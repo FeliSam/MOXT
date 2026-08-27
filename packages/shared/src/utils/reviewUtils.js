@@ -40,6 +40,15 @@ export const REVIEW_SOURCE_LABELS = {
   post: 'Publication',
 }
 
+export const INACTIVE_REVIEW_STATUSES = new Set([
+  'hidden',
+  'suspended',
+  'deleted',
+  'removed',
+  'unpublished',
+  'rejected',
+])
+
 export function collectPublicationTargetIds(publications = {}) {
   return {
     listing: (publications.listings || []).map((item) => item.id),
@@ -50,35 +59,62 @@ export function collectPublicationTargetIds(publications = {}) {
   }
 }
 
+/** Avis encore actif pour l'affichage et le calcul des étoiles. */
 export function isReviewVisible(review) {
   if (!review) return false
-  if (review.status === 'published') return true
-  if (review.disputeStatus === REVIEW_DISPUTE_STATUS.PENDING) return true
-  return false
+  if (review.deletedAt || review.deleted) return false
+  if (review.disputeStatus === REVIEW_DISPUTE_STATUS.UPHELD) return false
+  const status = String(review.status || '').toLowerCase()
+  if (INACTIVE_REVIEW_STATUSES.has(status)) return false
+  return status === 'published'
 }
 
-export function filterAggregateReviews(
-  reviews,
-  { profileTargetType, profileTargetId, publicationIds, ownerProfileId },
+export function matchesReviewAggregateScope(
+  review,
+  { profileTargetType, profileTargetId, publicationIds, ownerProfileId } = {},
 ) {
-  const idsByType = publicationIds || {}
+  if (!review) return false
+  if (review.targetType === profileTargetType && review.targetId === profileTargetId) {
+    return true
+  }
+  if (
+    ownerProfileId &&
+    review.targetType === REVIEW_TARGET_TYPES.USER_PROFILE &&
+    review.targetId === ownerProfileId
+  ) {
+    return true
+  }
+  const bucket = (publicationIds || {})[review.targetType]
+  return Array.isArray(bucket) && bucket.includes(review.targetId)
+}
+
+export function filterAggregateReviews(reviews, scope) {
   return (reviews || [])
     .filter(isReviewVisible)
-    .filter((review) => {
-      if (review.targetType === profileTargetType && review.targetId === profileTargetId) {
-        return true
-      }
-      if (
-        ownerProfileId &&
-        review.targetType === REVIEW_TARGET_TYPES.USER_PROFILE &&
-        review.targetId === ownerProfileId
-      ) {
-        return true
-      }
-      const bucket = idsByType[review.targetType]
-      return Array.isArray(bucket) && bucket.includes(review.targetId)
-    })
+    .filter((review) => matchesReviewAggregateScope(review, scope))
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+}
+
+/**
+ * Retire du cache local les avis récents absents du back (supprimés ou
+ * masqués : le SELECT RLS ne les renvoie plus, mais le merge local les
+ * conservait encore).
+ */
+export function dropStaleCachedReviews(localItems = [], remoteItems = []) {
+  if (!remoteItems.length) return localItems
+  const remoteIds = new Set(remoteItems.map((item) => item?.id).filter(Boolean))
+  let oldest = Infinity
+  for (const item of remoteItems) {
+    const time = new Date(item?.createdAt || 0).getTime()
+    if (Number.isFinite(time) && time < oldest) oldest = time
+  }
+  if (!Number.isFinite(oldest)) return localItems
+  return (localItems || []).filter((item) => {
+    if (!item?.id || remoteIds.has(item.id)) return true
+    const time = new Date(item.createdAt || 0).getTime()
+    if (!Number.isFinite(time)) return true
+    return time < oldest
+  })
 }
 
 export function calculateAggregateRating(reviews = []) {

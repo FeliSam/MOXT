@@ -18,7 +18,6 @@ import { ExpandableLinkifiedText } from '../components/ui/ExpandableLinkifiedTex
 import { CatalogArchiveTabs } from '../components/ui/CatalogArchiveTabs'
 import {
   DetailFacts,
-  DetailMetrics,
   DetailSection,
 } from '../components/ui/DetailBlocks'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -237,41 +236,15 @@ export function BusinessDetailPage() {
   const activity = activityByValue(business.primaryActivity)
   const experience = businessExperienceForActivity(business.primaryActivity)
   const hasTransfer = business.services?.includes('Transfert')
-  const ratingDisplay = rating.count ? `${Number(rating.average || 0).toFixed(1)}/5` : '—'
   const activityLabel = businessesOptionLabel(t, activity) || business.sector
   const spotlightKeys = experience.spotlightKeys || []
   const onboardingKeys = experience.onboardingKeys || []
-
-  const metricItems = [
-    {
-      icon: FiStar,
-      label: bt('businesses.detail.reviewsCount', { count: rating.count }),
-      value: ratingDisplay,
-    },
-    { icon: FiShield, label: bt('businesses.common.status'), value: statusMeta(business.status, t).label },
-    { icon: FiMapPin, label: bt('businesses.common.location'), value: business.city },
-    {
-      icon: HiOutlineBuildingOffice2,
-      label: bt('businesses.common.publications'),
-      value: `${publicationCount}`,
-      count: publicationCount,
-    },
-  ]
-
-  if (hasTransfer) {
-    metricItems.splice(1, 0, {
-      icon: HiOutlineBuildingOffice2,
-      label: bt('businesses.detail.feeAnnounced'),
-      value: `${business.feePercent}%`,
-    })
-  }
 
   return (
     <div className="grid min-w-0 max-w-full gap-5 overflow-x-clip sm:gap-7">
       {isOwner && !guestMode ? (
         <BusinessVerificationProgress business={business} documents={documents} />
       ) : null}
-      <DetailMetrics items={metricItems} />
       <Card className="grid gap-6">
         <div className="relative">
           {business.bannerUrl ? (

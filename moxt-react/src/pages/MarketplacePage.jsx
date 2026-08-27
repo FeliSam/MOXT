@@ -1,4 +1,4 @@
-import { FiList, FiPlus, FiShoppingBag } from 'react-icons/fi'
+import { FiGrid, FiList, FiPlus, FiShoppingBag } from 'react-icons/fi'
 import { useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate, useOutletContext } from 'react-router-dom'
@@ -8,7 +8,6 @@ import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Input } from '../components/ui/Input'
 import { HeaderIslandButton, PageHeader } from '../components/ui/PageHeader'
-import { PillBadge } from '../components/ui/Badge'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { Select } from '../components/ui/Select'
 import {
@@ -129,26 +128,29 @@ export function MarketplacePage() {
         }
       />
       <ScrollSectionAnchor className="scroll-mt-24 grid gap-5 lg:scroll-mt-28">
-        <div className="scrollbar-hidden -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-          <PillBadge
+        <nav
+          aria-label={mt('marketplace.common.type')}
+          className="scrollbar-hidden -mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-1 touch-pan-x"
+        >
+          <MarketplaceTypeChip
             active={!filters.type}
+            icon={FiGrid}
+            label={mt('marketplace.common.all')}
             onClick={() => dispatch(setMarketplaceFilters({ type: '', category: '' }))}
-          >
-            {mt('marketplace.common.all')}
-          </PillBadge>
+          />
           {LISTING_TYPES_META.map((option) => (
-            <PillBadge
+            <MarketplaceTypeChip
               key={option.value}
               active={filters.type === option.value}
+              icon={option.icon}
+              label={listingOptionLabel(t, option)}
+              color={option.color}
               onClick={() =>
                 dispatch(setMarketplaceFilters({ type: option.value, category: '' }))
               }
-              className="shrink-0"
-            >
-              {listingOptionLabel(t, option)}
-            </PillBadge>
+            />
           ))}
-        </div>
+        </nav>
 
         <CatalogSearch
           advancedOpen={advancedOpen}
@@ -160,7 +162,7 @@ export function MarketplacePage() {
           onClear={() => dispatch(resetMarketplaceFilters())}
           placeholder={mt('marketplace.page.searchPlaceholder')}
         >
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
             <Select
               id="market-type"
               label={mt('marketplace.common.type')}
@@ -200,6 +202,7 @@ export function MarketplacePage() {
               id="market-city"
               label={mt('marketplace.page.cityDistrict')}
               value={filters.city}
+              wrapperClass="col-span-2"
               onChange={(event) => dispatch(setMarketplaceFilters({ city: event.target.value }))}
             />
             <Input
@@ -260,5 +263,34 @@ export function MarketplacePage() {
         </section>
       </ScrollSectionAnchor>
     </div>
+  )
+}
+
+function MarketplaceTypeChip({ active, icon: Icon, label, color, onClick }) {
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-pressed={active}
+      onClick={onClick}
+      className={`flex h-[5.35rem] w-[5rem] shrink-0 snap-start flex-col items-center justify-center gap-1.5 rounded-[1.1rem] px-1.5 transition duration-[var(--transition-fast)] ${
+        active
+          ? 'bg-brand-700 text-white shadow-sm dark:bg-brand-600'
+          : 'bg-[var(--app-surface)] text-[var(--app-text-muted)] shadow-sm ring-1 ring-[var(--app-border)] hover:text-[var(--app-text)]'
+      }`}
+    >
+      <span
+        className={`grid size-9 shrink-0 place-items-center rounded-xl leading-none ${
+          active
+            ? 'bg-white/20 text-white'
+            : `bg-gradient-to-br text-white ${color || 'from-brand-500 to-teal-500'}`
+        }`}
+      >
+        <Icon aria-hidden="true" className="block size-[1.125rem] shrink-0" />
+      </span>
+      <span className="flex h-[1.7rem] w-full items-center justify-center text-center text-[10px] font-black leading-tight tracking-wide">
+        <span className="line-clamp-2">{label}</span>
+      </span>
+    </button>
   )
 }

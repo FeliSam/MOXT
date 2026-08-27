@@ -345,7 +345,7 @@ export const ENGLISH_UI_CATALOG = {
   Silencieuses: 'Muted',
   'Aucune conversation trouvée.': 'No conversation found.',
   'Envoyer à l\'assistant': 'Send to assistant',
-  'Demandez quelque chose à Moxi...': 'Ask Moxi something...',
+  'Demandez quelque chose à Moxti...': 'Ask Moxti something...',
   Verifie: 'Verified',
   'Mon compte': 'My account',
   'Ouvrir la navigation': 'Open navigation',

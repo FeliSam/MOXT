@@ -24,7 +24,7 @@ import { computeBusinessTransferStats } from '../features/transfers/businessTran
 import { currencyForCountry, TRANSFER_STATUS } from '../features/transfers/transferConfig'
 import { selectBusinessTransfers } from '../features/transfers/transferSelectors'
 import { refreshVisibleTransfers } from '../features/transfers/transferSync'
-import { expireOverdueTransfers } from '../features/transfers/transferSlice'
+import { runExpireOverdueTransfers } from '../features/transfers/transferSlice'
 import { InteractiveCharts } from '../features/transfers/exchanger/InteractiveCharts'
 import { ExchangerOpsQueue } from '../features/transfers/exchanger/ExchangerOpsQueue'
 import { TransferQuickManageModal } from '../features/transfers/exchanger/TransferQuickManageModal'
@@ -187,7 +187,7 @@ export function ExchangerDashboardPage() {
         }
       })
 
-    dispatch(expireOverdueTransfers())
+    dispatch(runExpireOverdueTransfers())
 
     return () => {
       cancelled = true

@@ -13,6 +13,7 @@ import {
 } from '../features/moderation/reportUtils'
 import { collectCascadeArchiveTargets } from '../features/posts/archiveLinkedPosts'
 import { archivePostsBySource } from '../features/posts/postsSlice'
+import { newsPostPath } from '../features/posts/postFeedUtils'
 
 import { createNotificationDispatcher } from './notificationTriggers'
 import { hasReviewEligibility } from '@moxt/shared/utils/reviewEligibility.js'
@@ -26,6 +27,17 @@ import { supabase } from '../services/supabaseClient'
 
 function notify(store, payload) {
   if (payload.userId) store.dispatch(addNotification(payload))
+}
+
+function transferNotifyId(kind, transferId) {
+  return `NOT-TRF-${kind}-${String(transferId || '').slice(0, 24)}`
+}
+
+function resolveTransferOwnerId(state, transfer) {
+  if (transfer?.businessOwnerId) return transfer.businessOwnerId
+  const businessId = transfer?.businessId
+  if (!businessId) return null
+  return (state.businesses?.items || []).find((item) => item.id === businessId)?.ownerId || null
 }
 
 function transferStatusLabel(status) {
@@ -108,7 +120,7 @@ function notifyAllUsersPublication({ title, message, type, link, priority, dedup
 
 /** Alerte tous les admins via RPC (fonctionne même si la liste locale est vide). */
 function notifyAdminsRemote({ title, message, type, link, priority, dedupeKey }) {
-  if (!supabase) return
+  if (!supabase?.rpc) return
   void supabase
     .rpc('moxt_notify_admins', {
       p_title: String(title || '').slice(0, 200),
@@ -338,24 +350,28 @@ export const interactionMiddleware = (store) => {
 
   if (action.type === 'transfers/createTransfer' && !action.payload?.blocked) {
     const needsAcceptance = action.payload.status === 'pending_business_acceptance'
-    notify(store, {
-      userId: action.payload.businessOwnerId,
-      title: needsAcceptance
-        ? appText('notificationsFeed.transferAcceptanceRequested')
-        : appText('notificationsFeed.newTransferReceived'),
-      message: needsAcceptance
-        ? appText('notificationsFeed.transferAcceptanceRequestedBody', {
-            name: action.payload.sender?.firstName,
-            id: action.payload.id,
-          })
-        : appText('notificationsFeed.newTransferReceivedBody', {
-            name: action.payload.sender?.firstName,
-            id: action.payload.id,
-          }),
-      type: 'transfer',
-      link: `/transfers/${action.payload.id}`,
-      priority: needsAcceptance ? 'high' : 'normal',
-    })
+    const ownerId = resolveTransferOwnerId(after, action.payload)
+    if (ownerId) {
+      notify(store, {
+        id: transferNotifyId('EXC', action.payload.id),
+        userId: ownerId,
+        title: needsAcceptance
+          ? appText('notificationsFeed.transferAcceptanceRequested')
+          : appText('notificationsFeed.newTransferReceived'),
+        message: needsAcceptance
+          ? appText('notificationsFeed.transferAcceptanceRequestedBody', {
+              name: action.payload.sender?.firstName,
+              id: action.payload.id,
+            })
+          : appText('notificationsFeed.newTransferReceivedBody', {
+              name: action.payload.sender?.firstName,
+              id: action.payload.id,
+            }),
+        type: 'transfer',
+        link: `/transfers/${action.payload.id}`,
+        priority: needsAcceptance ? 'high' : 'normal',
+      })
+    }
   }
 
   if (action.type === 'transfers/acceptTransferRequest') {
@@ -402,36 +418,71 @@ export const interactionMiddleware = (store) => {
     const transfer = after.transfers.items.find((item) => item.id === action.payload.id)
     const previous = before.transfers.items.find((item) => item.id === action.payload.id)
     if (transfer && previous && transfer.businessId !== previous.businessId) {
-      if (previous.businessOwnerId && previous.businessOwnerId !== actorId) {
+      const previousOwnerId = resolveTransferOwnerId(before, previous)
+      const newOwnerId = resolveTransferOwnerId(after, transfer)
+      const link = `/transfers/${transfer.id}`
+      const senderName = transfer.sender?.firstName
+
+      if (previousOwnerId && previousOwnerId !== actorId && previousOwnerId !== newOwnerId) {
         notify(store, {
-          userId: previous.businessOwnerId,
+          id: transferNotifyId('AWAY', transfer.id),
+          userId: previousOwnerId,
           title: appText('notificationsFeed.transferReassignedAway'),
           message: appText('notificationsFeed.transferReassignedAwayBody', { id: transfer.id }),
           type: 'transfer',
-          link: `/transfers/${transfer.id}`,
+          link,
         })
       }
-      if (transfer.businessOwnerId && transfer.businessOwnerId !== actorId) {
+
+      if (newOwnerId) {
         const needsAcceptance = transfer.status === 'pending_business_acceptance'
         notify(store, {
-          userId: transfer.businessOwnerId,
+          id: transferNotifyId('EXC', transfer.id),
+          userId: newOwnerId,
           title: needsAcceptance
             ? appText('notificationsFeed.transferAcceptanceRequested')
             : appText('notificationsFeed.newTransferReceived'),
           message: needsAcceptance
             ? appText('notificationsFeed.transferAcceptanceRequestedBody', {
-                name: transfer.sender?.firstName,
+                name: senderName,
                 id: transfer.id,
               })
             : appText('notificationsFeed.newTransferReceivedBody', {
-                name: transfer.sender?.firstName,
+                name: senderName,
                 id: transfer.id,
               }),
           type: 'transfer',
-          link: `/transfers/${transfer.id}`,
+          link,
           priority: 'high',
         })
       }
+
+      if (transfer.userId) {
+        notify(store, {
+          id: transferNotifyId('CLI', transfer.id),
+          userId: transfer.userId,
+          title: appText('notificationsFeed.transferReassigned'),
+          message: appText('notificationsFeed.transferReassignedBody', {
+            id: transfer.id,
+            name: transfer.exchanger?.name || '',
+          }),
+          type: 'transfer',
+          link,
+          priority: 'high',
+        })
+      }
+
+      notifyAdminsRemote({
+        title: appText('notificationsFeed.transferReassigned'),
+        message: appText('notificationsFeed.transferReassignedBody', {
+          id: transfer.id,
+          name: transfer.exchanger?.name || '',
+        }),
+        type: 'transfer',
+        link,
+        priority: 'high',
+        dedupeKey: `trf-re-${transfer.id}-${transfer.businessId}`,
+      })
     }
   }
 
@@ -560,6 +611,21 @@ export const interactionMiddleware = (store) => {
             priority: 'high',
           })
         }
+        return
+      }
+      if (transfer.status === 'completed' && previous.status === 'paid_out') {
+        ;[transfer.userId, transfer.businessOwnerId]
+          .filter((id) => id && id !== actorId)
+          .forEach((userId) => {
+            notify(store, {
+              userId,
+              title: appText('notificationsFeed.transferAutoCompleted'),
+              message: appText('notificationsFeed.transferAutoCompletedBody', { id: transfer.id }),
+              type: 'transfer',
+              link: `/transfers/${transfer.id}`,
+              priority: 'high',
+            })
+          })
       }
     })
   }
@@ -1099,12 +1165,12 @@ export const interactionMiddleware = (store) => {
     },
     'posts/moderatePost': {
       sliceKey: 'posts',
-      linkFor: (resource) => `/news?post=${resource.id}`,
+      linkFor: (resource) => newsPostPath(resource.id),
       label: appText('notificationsFeed.fanOutPost'),
       fanOut: {
         contentType: 'post',
         title: appText('notificationsFeed.fanOutPost'),
-        link: (id) => `/news?post=${id}`,
+        link: (id) => newsPostPath(id),
         everyone: false,
       },
     },
@@ -1397,7 +1463,7 @@ export const interactionMiddleware = (store) => {
         action.payload,
         'post',
         appText('notificationsFeed.fanOutPost'),
-        (id) => `/news?post=${id}`,
+        (id) => newsPostPath(id),
         'high',
       )
     }

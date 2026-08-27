@@ -3,6 +3,36 @@ import { sortPostsByPublishedAt } from './postSortUtils'
 
 export const WELCOME_POST_IMAGE_MARKER = 'welcome-moxt-launch'
 
+/** URL stable d’une publication dans le fil d’actualité. */
+export function newsPostPath(postId) {
+  return postId ? `/news/${encodeURIComponent(postId)}` : '/news'
+}
+
+/** Convertit les anciens liens `/news?post=` vers `/news/:id`. */
+export function resolveNewsFeedLink(link) {
+  if (!link || typeof link !== 'string') return link || null
+  const raw = link.trim()
+  if (!raw) return null
+  const pathOnly = raw.split('?')[0]
+  if (/^\/news\/[^/]+\/edit\/?$/.test(pathOnly)) return raw
+  try {
+    const url = new URL(raw, 'https://moxt.local')
+    const path = url.pathname.replace(/\/$/, '') || '/'
+    if (path.startsWith('/news/') && path !== '/news') {
+      const postId = decodeURIComponent(path.slice('/news/'.length).split('/')[0] || '')
+      return postId && postId !== 'edit' ? newsPostPath(postId) : raw
+    }
+    if (path === '/news') {
+      const postId = url.searchParams.get('post')
+      return postId ? newsPostPath(postId) : '/news'
+    }
+  } catch {
+    const match = raw.match(/[?&]post=([^&]+)/)
+    if (match?.[1]) return newsPostPath(decodeURIComponent(match[1]))
+  }
+  return raw
+}
+
 /** Post de lancement MOXT (contenu), indépendant du flag d'épinglage DB. */
 export function isWelcomePost(post) {
   if (!post || post.status !== 'published') return false

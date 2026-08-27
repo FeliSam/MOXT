@@ -197,6 +197,7 @@ export function Sidebar({ open }) {
               <button
                 type="button"
                 data-tour="nav-more"
+                aria-label={t('nav.moreServicesAria')}
                 onClick={() => setMoreOpen(true)}
                 onMouseEnter={() => setRailHover('more')}
                 onFocus={() => setRailHover('more')}
@@ -235,6 +236,7 @@ export function Sidebar({ open }) {
         >
           <NavLink
             to="/settings"
+            aria-label={t('nav.settings')}
             onClick={() => dispatch(closeSidebar())}
             onMouseEnter={() => setRailHover('settings')}
             className={({ isActive }) =>

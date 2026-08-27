@@ -1,5 +1,5 @@
 import { FALLBACK_AFRICAN_COUNTRIES, RUSSIA } from '../../config/geography'
-import { DIRECTIONS } from './transferConfig'
+import { DIRECTIONS, PAYMENT_METHODS, paymentMethodsForCountry } from './transferConfig'
 
 export const TRANSFER_ACCOUNT_SLOTS = {
   RU: 'ru',
@@ -49,6 +49,108 @@ export function receivingCountryForDirection(direction, originCountry = 'BJ') {
     : normalizeTransferCountryCode(originCountry, 'BJ')
 }
 
+export function payoutSlotForDirection(direction) {
+  return direction === DIRECTIONS.RU_TO_BJ
+    ? TRANSFER_ACCOUNT_SLOTS.ORIGIN
+    : TRANSFER_ACCOUNT_SLOTS.RU
+}
+
+export function payoutCountryForDirection(direction, originCountry = 'BJ') {
+  return direction === DIRECTIONS.RU_TO_BJ
+    ? normalizeTransferCountryCode(originCountry, 'BJ')
+    : 'RU'
+}
+
+function methodsEqual(left, right) {
+  return String(left || '').trim().toLowerCase() === String(right || '').trim().toLowerCase()
+}
+
+function accountMethodLabel(account) {
+  return String(account?.method || account?.bankName || '').trim()
+}
+
+export function accountsForCountry(accounts = [], country, originCountry = 'BJ') {
+  const target = normalizeTransferCountryCode(country, originCountry)
+  const slot = inferTransferAccountSlot(target)
+  return (accounts || []).filter((account) => {
+    if (account.active === false) return false
+    const accountSlot = account.slot || inferTransferAccountSlot(account.country, originCountry)
+    const accountCountry = normalizeTransferCountryCode(
+      account.country,
+      accountSlot === TRANSFER_ACCOUNT_SLOTS.RU ? 'RU' : originCountry,
+    )
+    return accountSlot === slot || accountCountry === target
+  })
+}
+
+function uniqueAccountMethods(accounts = []) {
+  const seen = new Set()
+  const methods = []
+  for (const account of accounts) {
+    const method = accountMethodLabel(account)
+    const key = method.toLowerCase()
+    if (!method || seen.has(key)) continue
+    seen.add(key)
+    methods.push(method)
+  }
+  return methods
+}
+
+/**
+ * Moyens proposés au client pour un côté (envoi vers l'échangeur ou réception).
+ * Afrique : uniquement les réseaux dont l'échangeur a un compte actif.
+ * Russie : méthodes des comptes RU s'ils sont renseignés, sinon le catalogue banques.
+ */
+export function exchangerMethodsForParty({
+  business,
+  country,
+  originCountry = 'BJ',
+} = {}) {
+  const target = normalizeTransferCountryCode(country, originCountry)
+  const catalog = paymentMethodsForCountry(target)
+  const accounts = accountsForCountry(business?.transferAccounts, target, originCountry)
+  const fromAccounts = uniqueAccountMethods(accounts)
+  const declared = (business?.exchangeMethods || business?.paymentMethods || [])
+    .map((item) => String(item || '').trim())
+    .filter(Boolean)
+
+  if (target === 'RU') {
+    if (fromAccounts.length) return fromAccounts
+    const declaredRu = declared.filter(
+      (method) =>
+        catalog.some((item) => methodsEqual(item, method)) ||
+        PAYMENT_METHODS.RU.some((item) => methodsEqual(item, method)),
+    )
+    if (declaredRu.length) return declaredRu
+    return catalog
+  }
+
+  if (fromAccounts.length) return fromAccounts
+  const declaredLocal = declared.filter((method) =>
+    catalog.some((item) => methodsEqual(item, method)),
+  )
+  if (declaredLocal.length) return declaredLocal
+  return catalog
+}
+
+export function resolveBusinessAccountForMethod(
+  accounts = [],
+  country,
+  originCountry = 'BJ',
+  method = '',
+) {
+  const pool = accountsForCountry(accounts, country, originCountry)
+  if (!pool.length) return null
+  const wanted = String(method || '').trim()
+  if (wanted) {
+    const matched = pool.filter((account) => methodsEqual(accountMethodLabel(account), wanted))
+    if (matched.length) {
+      return matched.find((account) => account.isDefault) || matched[0]
+    }
+  }
+  return pool.find((account) => account.isDefault) || pool[0] || null
+}
+
 export function countryLabel(code) {
   const normalized = normalizeTransferCountryCode(code, code)
   if (normalized === 'RU') return RUSSIA.name
@@ -76,14 +178,24 @@ export function transferAccountSlotMeta(slot, originCountry = 'BJ') {
   }
 }
 
-export function resolveBusinessReceivingAccount(accounts = [], direction, originCountry = 'BJ') {
+export function resolveBusinessReceivingAccount(accounts = [], direction, originCountry = 'BJ', options = {}) {
   const slot = receivingSlotForDirection(direction)
   const country = receivingCountryForDirection(direction, originCountry)
+  const method = options?.method
   const pool = (accounts || []).filter((account) => account.active !== false)
   const slotAccounts = pool.filter((account) => {
     const accountSlot = account.slot || inferTransferAccountSlot(account.country, originCountry)
     return accountSlot === slot || account.country === country
   })
+
+  if (method) {
+    const matched = slotAccounts.filter((account) =>
+      methodsEqual(accountMethodLabel(account), method),
+    )
+    if (matched.length) {
+      return matched.find((account) => account.isDefault) || matched[0]
+    }
+  }
 
   return (
     slotAccounts.find((account) => account.isDefault) ||
@@ -139,11 +251,12 @@ export function formatReceivingAccountSummary(account) {
     .join(' · ')
 }
 
-export function buildExchangerPaymentView(business, direction, originCountry = 'BJ') {
+export function buildExchangerPaymentView(business, direction, originCountry = 'BJ', options = {}) {
   const paymentDetails = resolveBusinessReceivingAccount(
     business?.transferAccounts,
     direction,
     originCountry,
+    options,
   )
   const paymentAccount =
     formatReceivingAccountSummary(paymentDetails) ||

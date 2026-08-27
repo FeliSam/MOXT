@@ -3,6 +3,7 @@ import { createId } from '../../services/createId'
 import { createLocalStorage } from '../../services/createLocalStorage'
 import { mergeRemoteById } from '@moxt/shared/utils/mergeRemoteById.js'
 import { isSubscriberBanned } from '@moxt/shared/utils/subscriptionUtils.js'
+import { normalizeTransferProfile } from '../transfers/transferProfileFavorites'
 
 const storage = createLocalStorage('moxt-account-v1')
 
@@ -83,7 +84,10 @@ const accountSlice = createSlice({
         state.subscriberReports = mergeRemoteById(state.subscriberReports || [], subscriberReports)
       }
       if (transferProfiles) {
-        state.transferProfiles = mergeRemoteById(state.transferProfiles, transferProfiles)
+        state.transferProfiles = mergeRemoteById(
+          state.transferProfiles,
+          transferProfiles.map(normalizeTransferProfile),
+        )
       }
       if (documents) state.documents = mergeRemoteById(state.documents, documents)
       if (verificationRequests) {
@@ -112,15 +116,16 @@ const accountSlice = createSlice({
         else state.transferProfiles.unshift(action.payload)
       },
       prepare(values) {
+        const profile = normalizeTransferProfile(values)
         return {
           payload: {
             id: values.id || createId('TPRO'),
-            userId: values.userId,
-            firstName: values.firstName.trim(),
-            lastName: values.lastName.trim(),
-            phone: values.phone.trim(),
-            country: values.country,
-            method: values.method,
+            userId: profile.userId,
+            firstName: profile.firstName,
+            lastName: profile.lastName,
+            phone: profile.phone,
+            country: profile.country || 'RU',
+            method: profile.method || 'mobile_money',
             createdAt: values.createdAt || new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           },

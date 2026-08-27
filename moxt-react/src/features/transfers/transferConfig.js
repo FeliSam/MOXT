@@ -33,6 +33,7 @@ export const TRANSFER_CONFIG = {
   rateMarginPercent: 1,
   acceptanceWindowMinutes: 10,
   paymentWindowMinutes: 30,
+  paidOutAutoCompleteHours: 24,
   minimums: { XOF: 1000, RUB: 500 },
   limits: {
     unverified: { XOF: 500000, RUB: 200000 },
