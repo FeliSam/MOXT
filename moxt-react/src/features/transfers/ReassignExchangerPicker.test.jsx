@@ -95,9 +95,13 @@ describe('ReassignExchangerPicker', () => {
         'BJ',
         rateReductionForDirection(exchanger, DIRECTIONS.BJ_TO_RU),
       )
-      expect(screen.getByText(formatMoney(quote.amountSent, quote.currencyFrom))).toBeVisible()
+      const sent = formatMoney(quote.amountSent, quote.currencyFrom)
+      const received = formatMoney(quote.amountReceived, quote.currencyTo)
       expect(
-        screen.getByText(formatMoney(quote.amountReceived, quote.currencyTo)),
+        screen.getByText((_, node) => node?.tagName === 'SPAN' && (node.textContent || '').includes(sent)),
+      ).toBeVisible()
+      expect(
+        screen.getByText((_, node) => node?.tagName === 'SPAN' && (node.textContent || '').includes(received)),
       ).toBeVisible()
     }
   })
