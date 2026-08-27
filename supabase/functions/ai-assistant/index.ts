@@ -20,12 +20,19 @@ function json(body: Record<string, unknown>, status = 200, req?: Request) {
 
 type Candidate = { id: string; label: string; path?: string; typeLabel?: string }
 type HistoryItem = { role: string; text: string }
+type LocalDraft = {
+  text?: string
+  actions?: Array<{ label?: string; path?: string }>
+  sources?: string[]
+  suggestions?: string[]
+}
 
 function buildAssistantInput(
   question: string,
   candidates: Candidate[],
   history: HistoryItem[],
   language: string,
+  draft: LocalDraft | null,
 ) {
   const candidateLines = candidates
     .slice(0, 12)
@@ -37,19 +44,36 @@ function buildAssistantInput(
     .map((item) => `${item.role === 'assistant' ? 'Assistant' : 'Utilisateur'}: ${item.text}`)
     .join('\n')
 
+  const draftLines = draft?.text
+    ? [
+        '',
+        'Brouillon local MOXT (source de vérité — reformule sans inventer de faits):',
+        `Texte: ${draft.text}`,
+        draft.actions?.length
+          ? `Liens suggérés: ${draft.actions.map((a) => `${a.label} → ${a.path}`).join(' · ')}`
+          : '',
+        draft.sources?.length ? `Sources: ${draft.sources.join(' · ')}` : '',
+      ]
+        .filter(Boolean)
+        .join('\n')
+    : ''
+
   return [
     `Langue de réponse: ${language || 'fr'}`,
     '',
     'Historique récent:',
     historyLines || '(aucun)',
+    draftLines,
     '',
     'Pages / entités candidates (utilise leurs ids dans actionIds si pertinent):',
     candidateLines || '(aucune)',
     '',
     `Question utilisateur: ${question}`,
     '',
+    'Reformule le brouillon local en réponse naturelle, concise et utile.',
+    'Ne contredis pas le brouillon ; ne promets rien qui n’y figure pas.',
     'Réponds UNIQUEMENT avec un JSON valide:',
-    '{"text":"ta réponse courte et utile","actionIds":["id-candidat-optionnel"]}',
+    '{"text":"ta réponse","actionIds":["id-candidat-optionnel"]}',
   ].join('\n')
 }
 
@@ -87,8 +111,10 @@ Deno.serve(async (req) => {
     const candidates = Array.isArray(body.candidates) ? body.candidates : []
     const history = Array.isArray(body.history) ? body.history : []
     const language = String(body.language || 'fr')
+    const draft =
+      body.draft && typeof body.draft === 'object' ? (body.draft as LocalDraft) : null
 
-    const input = buildAssistantInput(question, candidates, history, language)
+    const input = buildAssistantInput(question, candidates, history, language, draft)
     const { outputText } = await createYandexResponse(config, input)
     const parsed = parseAssistantJson(outputText)
 

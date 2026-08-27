@@ -14,7 +14,6 @@ import {
 } from './assistantAdminUtils'
 import { ASSISTANT_SUGGESTION_KEYS, messagesText } from './messagesI18n'
 import { llmAssistantProvider } from './llmAssistantProvider'
-import { moxtiAssistantProvider } from './moxtiAssistantProvider'
 import { shortenFileName } from '../../services/uploadProgress'
 import { syncKeyboardInsetAfterBlur } from '../../hooks/useKeyboardInset'
 import { HEADER_ICON_STROKE } from '../../components/layout/headerLayout'
@@ -163,30 +162,23 @@ export function AiAssistantPanel({
     }
 
     try {
+      const localDraft = await localAssistantProvider.respond({
+        question: text,
+        searchIndex,
+        language,
+        t,
+      })
       let response
       try {
-        response = await moxtiAssistantProvider.respond({
+        response = await llmAssistantProvider.respond({
           question: text,
-          user,
+          searchIndex,
           history: messages,
           language,
+          draft: localDraft,
         })
       } catch {
-        try {
-          response = await llmAssistantProvider.respond({
-            question: text,
-            searchIndex,
-            history: messages,
-            language,
-          })
-        } catch {
-          response = await localAssistantProvider.respond({
-            question: text,
-            searchIndex,
-            language,
-            t,
-          })
-        }
+        response = localDraft
       }
       setMessages((current) => [
         ...current,

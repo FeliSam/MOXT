@@ -20,7 +20,7 @@ function buildCandidates(question, searchIndex) {
 }
 
 export const llmAssistantProvider = {
-  async respond({ question, searchIndex, history = [], language = 'fr' }) {
+  async respond({ question, searchIndex, history = [], language = 'fr', draft = null }) {
     if (!supabase) throw new Error('Supabase non configuré')
 
     const candidates = buildCandidates(question, searchIndex)
@@ -32,7 +32,20 @@ export const llmAssistantProvider = {
     }))
 
     const { data, error } = await supabase.functions.invoke('ai-assistant', {
-      body: { question, candidates, history: recentHistory, language },
+      body: {
+        question,
+        candidates,
+        history: recentHistory,
+        language,
+        draft: draft
+          ? {
+              text: draft.text,
+              actions: draft.actions,
+              sources: draft.sources,
+              suggestions: draft.suggestions,
+            }
+          : null,
+      },
     })
     if (error) throw error
     if (data?.error) throw new Error(data.error)
@@ -41,12 +54,21 @@ export const llmAssistantProvider = {
       .map((id) => candidates.find((item) => item.id === id))
       .filter(Boolean)
 
+    const fallbackActions = (draft?.actions || []).filter((item) => item?.path && item?.label)
+    const actions = (selected.length ? selected : fallbackActions).map((item) => ({
+      label: item.label,
+      path: item.path,
+    }))
+
+    const sources = selected.length
+      ? selected.filter((item) => item.typeLabel).map((item) => `${item.typeLabel}: ${item.label}`)
+      : draft?.sources || []
+
     return {
-      text: data.text || "Je n'ai pas pu formuler de réponse.",
-      actions: selected.map((item) => ({ label: item.label, path: item.path })),
-      sources: selected
-        .filter((item) => item.typeLabel)
-        .map((item) => `${item.typeLabel}: ${item.label}`),
+      text: data.text || draft?.text || "Je n'ai pas pu formuler de réponse.",
+      actions,
+      sources,
+      suggestions: draft?.suggestions,
     }
   },
 }
