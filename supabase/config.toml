@@ -108,5 +108,8 @@ verify_jwt = false
 [functions.media-api]
 verify_jwt = true
 
+[functions.ai-assistant]
+verify_jwt = true
+
 [auth.external.google]
 enabled = false

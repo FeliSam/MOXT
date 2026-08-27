@@ -1,11 +1,6 @@
 import { supabase } from './supabaseClient'
 import { compressImage } from './imageUtils'
-import {
-  fileSliceProgress,
-  reportProgress,
-  runWithUploadProgress,
-  UPLOAD_PHASES,
-} from './uploadProgress'
+import { fileSliceProgress, reportProgress, UPLOAD_PHASES } from './uploadProgress'
 import { mediaStorage } from './media/mediaStorageProvider.js'
 export { appendCacheBust } from './media/mediaUrlUtils.js'
 
@@ -22,52 +17,6 @@ function isImageFile(file) {
     file?.type?.startsWith('image/') ||
       /\.(jpe?g|png|gif|webp|heic|heif|avif)$/i.test(file?.name || ''),
   )
-}
-
-const ALLOWED_UPLOAD_MIME = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-  'image/heic',
-  'image/heif',
-  'image/avif',
-  'application/pdf',
-])
-
-const ALLOWED_UPLOAD_EXT = new Set([
-  'jpg',
-  'jpeg',
-  'png',
-  'gif',
-  'webp',
-  'heic',
-  'heif',
-  'avif',
-  'pdf',
-])
-
-function assertAllowedUpload(file, { imagesOnly = false } = {}) {
-  if (!file) throw new Error('Fichier manquant.')
-  const extension = String(file.name || '')
-    .split('.')
-    .pop()
-    ?.toLowerCase()
-  const mime = String(file.type || '').toLowerCase()
-  const mimeOk = mime ? ALLOWED_UPLOAD_MIME.has(mime) : false
-  const extOk = extension ? ALLOWED_UPLOAD_EXT.has(extension) : false
-  if (!mimeOk && !extOk) {
-    throw new Error('Type de fichier non autorisé.')
-  }
-  if (imagesOnly && !isImageFile(file)) {
-    throw new Error('Seules les images sont autorisées.')
-  }
-  if (mime.startsWith('image/') && extension === 'pdf') {
-    throw new Error('Type de fichier incohérent.')
-  }
-  if (mime === 'application/pdf' && !/\.pdf$/i.test(file.name || '')) {
-    throw new Error('Type de fichier incohérent.')
-  }
 }
 
 /** Compresse les images de preuve ; laisse PDF / autres fichiers intacts. */

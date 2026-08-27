@@ -31,6 +31,7 @@
     "setup:yandex-all": "node scripts/setup-yandex-all.mjs",
     "setup:yandex-media": "node scripts/setup-yandex-media-buckets.mjs",
     "setup:media-api": "node scripts/setup-media-api.mjs",
+    "setup:ai-assistant": "node scripts/setup-ai-assistant.mjs",
     "migrate:media:yandex": "node scripts/migrate-supabase-to-yandex.mjs",
     "db:push:api": "node scripts/apply-media-migrations.mjs",
     "setup:phase2": "node scripts/setup-phase2-postbox-sms.mjs",

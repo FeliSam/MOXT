@@ -8,7 +8,7 @@
  */
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
-import { readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import {
   createStorageS3Client,
   ensureS3Credentials,
@@ -31,6 +31,67 @@ function parseArgs(argv) {
   return out
 }
 
+function resolveServiceAccountIds() {
+  const fromEnv = [process.env.MOXT_YC_DEPLOY_SA_ID, process.env.MOXT_YC_AUTH_SA_ID].filter(Boolean)
+  if (fromEnv.length) return [...new Set(fromEnv)]
+
+  const keyPath = path.join(root, 'scripts', 'github-deploy-sa.json')
+  if (existsSync(keyPath)) {
+    try {
+      const parsed = JSON.parse(readFileSync(keyPath, 'utf8'))
+      if (parsed?.service_account_id) return [parsed.service_account_id]
+    } catch {
+      /* ignore */
+    }
+  }
+
+  try {
+    const list = ycJson('iam', 'service-account', 'list')
+    const accounts = Array.isArray(list) ? list : list?.serviceAccounts || []
+    const names = ['moxt-github-deploy', 'moxt-auth']
+    const ids = names
+      .map((name) =>
+        accounts.find((account) => account.name === name || account.name?.endsWith(`/${name}`))?.id,
+      )
+      .filter(Boolean)
+    if (ids.length) return [...new Set(ids)]
+  } catch {
+    /* ignore */
+  }
+
+  console.warn(
+    '  ⚠ Aucun SA ID — définissez MOXT_YC_DEPLOY_SA_ID / MOXT_YC_AUTH_SA_ID ou vérifiez yc iam service-account list',
+  )
+  return []
+}
+
+function buildPublicBucketPolicy(bucketName, saIds) {
+  const statement = [
+    {
+      Effect: 'Allow',
+      Principal: '*',
+      Action: ['s3:GetObject'],
+      Resource: [`arn:aws:s3:::${bucketName}/*`],
+    },
+  ]
+  if (saIds.length) {
+    statement.push({
+      Sid: 'MoxtServiceAccountsWrite',
+      Effect: 'Allow',
+      Principal: { CanonicalUser: saIds },
+      Action: [
+        's3:PutObject',
+        's3:PutObjectAcl',
+        's3:GetObject',
+        's3:DeleteObject',
+        's3:ListBucket',
+      ],
+      Resource: [`arn:aws:s3:::${bucketName}`, `arn:aws:s3:::${bucketName}/*`],
+    })
+  }
+  return JSON.stringify({ Version: '2012-10-17', Statement: statement }, null, 2)
+}
+
 function ensureBucket(name, { publicRead = false } = {}) {
   const list = ycJson('storage', 'bucket', 'list')
   const buckets = list?.buckets || list || []
@@ -43,19 +104,13 @@ function ensureBucket(name, { publicRead = false } = {}) {
   }
 
   if (publicRead) {
-    const saIds = [
-      process.env.MOXT_YC_DEPLOY_SA_ID || 'ajeg2cc4j404o6m6krrt',
-      process.env.MOXT_YC_AUTH_SA_ID || 'ajeea2k4t12t641ibgvf',
-    ]
+    const saIds = resolveServiceAccountIds()
     const grantArgs = saIds.flatMap((id) => [
       '--grants',
       `grant-type=grant-type-account,grantee-id=${id},permission=permission-full-control`,
     ])
-    const policyPath = path.join(root, 'scripts', 'lib', 'moxt-public-bucket-policy.json')
-    let policyTemplate = readFileSync(policyPath, 'utf8')
-    policyTemplate = policyTemplate.replaceAll('moxt-public', name)
     const policyFile = path.join(root, 'scripts', 'lib', `.${name}-policy.generated.json`)
-    writeFileSync(policyFile, policyTemplate)
+    writeFileSync(policyFile, buildPublicBucketPolicy(name, saIds))
     const { code, stderr } = ycRun([
       'storage',
       'bucket',
