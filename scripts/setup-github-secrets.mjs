@@ -313,6 +313,25 @@ async function main() {
   } else {
     console.log('  ⚠ VITE_VAPID_PUBLIC_KEY ignoré — npm run push:generate-vapid')
   }
+
+  const localEnv = parseEnvFile(path.join(root, 'moxt-react', '.env.local'))
+  await setSecret(
+    'VITE_MEDIA_YANDEX_ENABLED',
+    process.env.VITE_MEDIA_YANDEX_ENABLED || localEnv.VITE_MEDIA_YANDEX_ENABLED || 'true',
+  )
+  await setSecret(
+    'VITE_MEDIA_CDN_BASE',
+    process.env.VITE_MEDIA_CDN_BASE || localEnv.VITE_MEDIA_CDN_BASE || 'https://cdn.moxtapp.ru',
+  )
+  await setSecret(
+    'VITE_MEDIA_PUBLIC_BUCKET',
+    process.env.VITE_MEDIA_PUBLIC_BUCKET || localEnv.VITE_MEDIA_PUBLIC_BUCKET || 'moxt-public',
+  )
+  await setSecret(
+    'VITE_MEDIA_PRIVATE_BUCKET',
+    process.env.VITE_MEDIA_PRIVATE_BUCKET || localEnv.VITE_MEDIA_PRIVATE_BUCKET || 'moxt-private',
+  )
+
   if (vapidPrivate) {
     await setSecret('VAPID_PRIVATE_KEY', vapidPrivate)
   }

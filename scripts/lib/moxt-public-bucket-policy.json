@@ -1,0 +1,32 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": ["s3:GetObject"],
+      "Resource": ["arn:aws:s3:::moxt-public/*"]
+    },
+    {
+      "Sid": "MoxtServiceAccountsWrite",
+      "Effect": "Allow",
+      "Principal": {
+        "CanonicalUser": [
+          "ajeg2cc4j404o6m6krrt",
+          "ajeea2k4t12t641ibgvf"
+        ]
+      },
+      "Action": [
+        "s3:PutObject",
+        "s3:PutObjectAcl",
+        "s3:GetObject",
+        "s3:DeleteObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::moxt-public",
+        "arn:aws:s3:::moxt-public/*"
+      ]
+    }
+  ]
+}

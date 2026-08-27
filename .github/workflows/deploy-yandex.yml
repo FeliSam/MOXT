@@ -52,6 +52,10 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
+          VITE_MEDIA_YANDEX_ENABLED: 'true'
+          VITE_MEDIA_CDN_BASE: 'https://cdn.moxtapp.ru'
+          VITE_MEDIA_PUBLIC_BUCKET: 'moxt-public'
+          VITE_MEDIA_PRIVATE_BUCKET: 'moxt-private'
         run: npm run web:build
 
       - name: Cache Yandex CLI

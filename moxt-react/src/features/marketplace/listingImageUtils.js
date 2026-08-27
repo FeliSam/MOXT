@@ -1,4 +1,5 @@
 import { supabase } from '../../services/supabaseClient'
+import { resolveMediaDisplayUrl } from '../../services/media/mediaUrlUtils.js'
 
 export const MAX_LISTING_PHOTOS = 8
 
@@ -17,14 +18,12 @@ function parseImagesValue(value) {
 }
 
 export function resolveListingImageUrl(value) {
+  const resolved = resolveMediaDisplayUrl(value, { legacyBucket: 'listings' })
+  if (resolved) return resolved
   if (!value) return null
   const raw = typeof value === 'string' ? value : value?.url || value?.src || value?.path || ''
   const trimmed = String(raw).trim()
-  if (!trimmed) return null
-  if (/^(https?:)?\/\//i.test(trimmed) || trimmed.startsWith('data:') || trimmed.startsWith('/')) {
-    return trimmed.startsWith('//') ? `https:${trimmed}` : trimmed
-  }
-  if (!supabase) return trimmed
+  if (!trimmed || !supabase) return trimmed || null
   const { data } = supabase.storage.from('listings').getPublicUrl(trimmed)
   return data?.publicUrl || trimmed
 }

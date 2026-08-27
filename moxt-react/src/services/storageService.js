@@ -6,45 +6,15 @@ import {
   runWithUploadProgress,
   UPLOAD_PHASES,
 } from './uploadProgress'
+import { mediaStorage } from './media/mediaStorageProvider.js'
+export { appendCacheBust } from './media/mediaUrlUtils.js'
 
 async function upload(bucket, path, file, { onProgress } = {}) {
-  assertAllowedUpload(file)
-  reportProgress(onProgress, { phase: UPLOAD_PHASES.uploading, percent: 32 })
-  await runWithUploadProgress(onProgress, async () => {
-    const { error } = await supabase.storage.from(bucket).upload(path, file, {
-      upsert: true,
-      cacheControl: '60',
-      contentType: file.type || undefined,
-    })
-    if (error) throw new Error(error.message)
-  })
-  reportProgress(onProgress, { phase: UPLOAD_PHASES.finalizing, percent: 96 })
-  const { data } = supabase.storage.from(bucket).getPublicUrl(path)
-  reportProgress(onProgress, { phase: UPLOAD_PHASES.done, percent: 100 })
-  return appendCacheBust(data.publicUrl)
-}
-
-/** Même URL Supabase après upsert — le navigateur garde l’ancienne image sans version. */
-export function appendCacheBust(url) {
-  if (!url || typeof url !== 'string') return url
-  const base = url.split('?')[0]
-  return `${base}?v=${Date.now()}`
+  return mediaStorage.uploadPublic(bucket, path, file, { onProgress })
 }
 
 async function uploadPrivate(bucket, path, file, { onProgress } = {}) {
-  assertAllowedUpload(file)
-  reportProgress(onProgress, { phase: UPLOAD_PHASES.uploading, percent: 32 })
-  await runWithUploadProgress(onProgress, async () => {
-    const { error } = await supabase.storage.from(bucket).upload(path, file, {
-      upsert: true,
-      cacheControl: '3600',
-      contentType: file.type || undefined,
-    })
-    if (error) throw new Error(error.message)
-  })
-  reportProgress(onProgress, { phase: UPLOAD_PHASES.done, percent: 100 })
-  // Pas de createSignedUrl ici — signer à la consultation (économie bande passante).
-  return path
+  return mediaStorage.uploadPrivate(bucket, path, file, { onProgress })
 }
 
 function isImageFile(file) {
@@ -590,9 +560,7 @@ export const storageService = {
   async getDocumentSignedUrl(urlOrPath) {
     const path = this.extractDocumentsPath(urlOrPath)
     if (!path) throw new Error('Chemin document introuvable')
-    const { data, error } = await supabase.storage.from('documents').createSignedUrl(path, 3600)
-    if (error) throw new Error(error.message)
-    return data.signedUrl
+    return mediaStorage.signedUrl('documents', path)
   },
 
   async uploadParcelProof(userId, parcelId, file, { onProgress } = {}) {
@@ -664,15 +632,11 @@ export const storageService = {
   },
 
   async getParcelProofSignedUrl(path) {
-    const { data, error } = await supabase.storage.from('parcels').createSignedUrl(path, 3600)
-    if (error) throw new Error(error.message)
-    return data.signedUrl
+    return mediaStorage.signedUrl('parcels', path)
   },
 
   async getTransferProofSignedUrl(path) {
-    const { data, error } = await supabase.storage.from('transfers').createSignedUrl(path, 3600)
-    if (error) throw new Error(error.message)
-    return data.signedUrl
+    return mediaStorage.signedUrl('transfers', path)
   },
 
   async downloadTransferProof(path) {

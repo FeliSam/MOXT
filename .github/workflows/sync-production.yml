@@ -43,8 +43,16 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: |
-          for KEY in VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY; do
-            VALUE="${!KEY}"
+          for KEY in VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY \
+            VITE_MEDIA_YANDEX_ENABLED VITE_MEDIA_CDN_BASE \
+            VITE_MEDIA_PUBLIC_BUCKET VITE_MEDIA_PRIVATE_BUCKET; do
+            case "$KEY" in
+              VITE_MEDIA_YANDEX_ENABLED) VALUE="true" ;;
+              VITE_MEDIA_CDN_BASE) VALUE="https://cdn.moxtapp.ru" ;;
+              VITE_MEDIA_PUBLIC_BUCKET) VALUE="moxt-public" ;;
+              VITE_MEDIA_PRIVATE_BUCKET) VALUE="moxt-private" ;;
+              *) VALUE="${!KEY}" ;;
+            esac
             curl -sf -X PUT "https://api.netlify.com/api/v1/accounts/self/env/${KEY}" \
               -H "Authorization: Bearer ${NETLIFY_AUTH_TOKEN}" \
               -H "Content-Type: application/json" \

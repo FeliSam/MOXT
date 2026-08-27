@@ -27,6 +27,27 @@ function parseEnvLineValue(line, key) {
   return line.slice(prefix.length).trim()
 }
 
+/** Valeurs prod média Yandex (publiques — embarquées dans le bundle client). */
+const DEFAULT_MEDIA = {
+  VITE_MEDIA_YANDEX_ENABLED: 'true',
+  VITE_MEDIA_CDN_BASE: 'https://cdn.moxtapp.ru',
+  VITE_MEDIA_PUBLIC_BUCKET: 'moxt-public',
+  VITE_MEDIA_PRIVATE_BUCKET: 'moxt-private',
+}
+
+function readEnvFileVars(filePath) {
+  const vars = {}
+  if (!existsSync(filePath)) return vars
+  for (const line of readFileSync(filePath, 'utf8').split(/\r?\n/)) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#')) continue
+    const eq = trimmed.indexOf('=')
+    if (eq < 0) continue
+    vars[trimmed.slice(0, eq).trim()] = trimmed.slice(eq + 1).trim()
+  }
+  return vars
+}
+
 function readPhase2VapidPublic() {
   const phase2 = path.join(monorepoRoot, 'scripts', 'phase2.env')
   if (!existsSync(phase2)) return ''
@@ -44,6 +65,20 @@ function readPhase2VapidPublic() {
     if (publicKey && !fallback) fallback = publicKey
   }
   return vapid || fallback
+}
+
+function resolveMediaEnv() {
+  const phase2 = readEnvFileVars(path.join(monorepoRoot, 'scripts', 'phase2.env'))
+  const local = readEnvFileVars(path.join(root, '.env.local'))
+  const out = {}
+  for (const key of Object.keys(DEFAULT_MEDIA)) {
+    out[key] =
+      process.env[key] ||
+      local[key] ||
+      phase2[key] ||
+      DEFAULT_MEDIA[key]
+  }
+  return out
 }
 
 function upsertEnvKey(filePath, key, value) {
@@ -94,6 +129,8 @@ const vapidPublic =
   process.env.VAPID_PUBLIC_KEY ||
   readPhase2VapidPublic()
 
+const mediaEnv = resolveMediaEnv()
+
 if (vapidPublic) {
   upsertEnvKey(outDevPath, 'VITE_VAPID_PUBLIC_KEY', vapidPublic)
   console.log('[MOXT] .env.development.local : VAPID injecté (dev / npm run web)')
@@ -110,7 +147,10 @@ if (!key) {
 
 const lines = [`VITE_SUPABASE_URL=${url}`, `VITE_SUPABASE_ANON_KEY=${key}`]
 if (vapidPublic) lines.push(`VITE_VAPID_PUBLIC_KEY=${vapidPublic}`)
+for (const [key, value] of Object.entries(mediaEnv)) {
+  if (value) lines.push(`${key}=${value}`)
+}
 writeFileSync(outProdPath, `${lines.join('\n')}\n`, 'utf8')
 console.log(
-  `[MOXT] .env.production prêt (${url}${vapidPublic ? ', VAPID inclus' : ', VAPID absent'})`,
+  `[MOXT] .env.production prêt (${url}${vapidPublic ? ', VAPID inclus' : ', VAPID absent'}${mediaEnv.VITE_MEDIA_YANDEX_ENABLED === 'true' ? ', média Yandex activé' : ''})`,
 )

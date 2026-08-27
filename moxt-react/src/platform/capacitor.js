@@ -89,6 +89,10 @@ export async function initCapacitor() {
 
   await hideNativeSplash()
 
+  void import('../services/media/mobileMediaCache.js')
+    .then(({ initMobileMediaCache }) => initMobileMediaCache())
+    .catch(() => {})
+
   void import('./pushNotifications')
     .then(({ initNativePushNotifications }) => initNativePushNotifications())
     .catch(() => {

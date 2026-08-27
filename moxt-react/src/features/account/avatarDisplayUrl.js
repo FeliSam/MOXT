@@ -1,10 +1,17 @@
 /**
- * URL d’avatar réduite pour listes (Supabase image transform si disponible).
- * Ne casse pas les URLs non-Supabase / déjà transformées.
+ * Variantes d’affichage avatar — Supabase render (legacy) ou CDN Yandex (Phase 1).
  */
+import { mediaConfig } from '../../config/mediaConfig.js'
+import { isCdnMediaUrl, isSupabaseStorageUrl } from '../../services/media/mediaUrlUtils.js'
+
 export function avatarDisplayUrl(url, { width = 96, height } = {}) {
   if (!url || typeof url !== 'string') return url
   if (url.includes('/render/image/')) return url
+  if (isCdnMediaUrl(url)) {
+    const h = height || width
+    const base = url.split('?')[0]
+    return `${base}?w=${width}&h=${h}&fit=cover`
+  }
   const h = height || width
 
   let base = url
@@ -15,7 +22,7 @@ export function avatarDisplayUrl(url, { width = 96, height } = {}) {
     query = url.slice(queryIndex + 1)
   }
 
-  if (base.includes('/storage/v1/object/public/')) {
+  if (isSupabaseStorageUrl(base) && base.includes('/object/public/')) {
     const transformed = base.replace('/object/public/', '/render/image/public/')
     const transformParams = `width=${width}&height=${h}&resize=cover`
     const combined = query ? `${query}&${transformParams}` : transformParams
@@ -24,3 +31,6 @@ export function avatarDisplayUrl(url, { width = 96, height } = {}) {
   return url
 }
 
+export function avatarThumbBaseUrl() {
+  return mediaConfig.cdnBase || null
+}
