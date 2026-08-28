@@ -4964,6 +4964,7 @@ export const es = {
       amountAndRate: "Importe y tasa",
       currentCeiling: "Límite actual: {amount}",
       amountLabel: "Importe ({currency})",
+      amountReceiveLabel: "Importe a recibir ({currency})",
       rateLabel: "Tasa propuesta ({from} → {to})",
       rateMarginLabel: "Margen sobre la tasa (−{max} % a +{max} %)",
       rateMarginHint:

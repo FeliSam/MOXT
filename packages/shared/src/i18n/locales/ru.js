@@ -4965,6 +4965,7 @@ export const ru = {
       amountAndRate: "Сумма и курс",
       currentCeiling: "Текущий лимит: {amount}",
       amountLabel: "Сумма ({currency})",
+      amountReceiveLabel: "Сумма к получению ({currency})",
       rateLabel: "Предлагаемый курс ({from} → {to})",
       rateMarginLabel: "Маржа к курсу (−{max} % … +{max} %)",
       rateMarginHint:

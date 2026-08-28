@@ -111,7 +111,7 @@ function MarketplaceListingCardComponent({
       className={`group relative h-full overflow-hidden rounded-[1.4rem] shadow-[var(--shadow-card)] ${
         isRail
           ? ''
-          : 'transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)]'
+          : 'md:transition-all md:duration-300 md:hover:-translate-y-1 md:hover:shadow-[var(--shadow-card-hover)]'
       } ${archived ? archivedPublicationCardClass : ''}`}
     >
       <div
@@ -131,7 +131,7 @@ function MarketplaceListingCardComponent({
                 <img
                   src={src}
                   alt={listing.title}
-                  className={`h-full w-full object-cover ${isRail ? '' : 'transition duration-500 ease-out group-hover:scale-[1.05]'}`}
+                  className={`h-full w-full object-cover ${isRail ? '' : 'md:transition md:duration-500 md:ease-out md:group-hover:scale-[1.05]'}`}
                   loading={index === 0 ? 'eager' : 'lazy'}
                   draggable={false}
                   onError={() => {

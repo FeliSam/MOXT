@@ -13,7 +13,11 @@ import { isBusinessPublishReady } from './businessPublishUtils'
 import { BusinessRatingBadge } from '../reviews/BusinessRatingBadge'
 
 const CARD_CLASS =
-  'flex w-full flex-col gap-2.5 rounded-[1.4rem] border border-[var(--app-border)]/60 bg-[var(--app-surface)] p-3.5 shadow-[var(--shadow-card)]'
+  'flex w-full flex-col gap-2.5 rounded-[1.4rem] border-0 bg-[var(--app-surface)] p-3.5 shadow-[var(--shadow-card)] transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-hover)]'
+
+/** Largeur fixe des cartes dans le carrousel dashboard (−30 % vs clamp d’origine). */
+export const BUSINESS_DISCOVERY_RAIL_WIDTH_CLASS =
+  'w-[clamp(10.85rem,55vw,13.3rem)] shrink-0 sm:w-[clamp(11.2rem,29vw,13.65rem)]'
 
 export function BusinessDiscoveryCard({ business, user, className = '' }) {
   const { t } = useLanguage()
@@ -29,7 +33,7 @@ export function BusinessDiscoveryCard({ business, user, className = '' }) {
 
   return (
     <article className={`${CARD_CLASS} ${className}`}>
-      <Link to={`/businesses/${business.id}`} className="flex min-w-0 flex-col gap-2.5">
+      <Link to={`/businesses/${business.id}`} className="flex min-w-0 flex-1 flex-col gap-2.5">
         <div className="flex min-w-0 items-start gap-2.5">
           {business.logoUrl ? (
             <img
@@ -65,12 +69,12 @@ export function BusinessDiscoveryCard({ business, user, className = '' }) {
         </div>
 
         {description ? (
-          <p className="line-clamp-3 text-[11px] leading-4 text-[var(--app-text-muted)]">
+          <p className="line-clamp-2 text-[11px] leading-4 text-[var(--app-text-muted)]">
             {description}
           </p>
         ) : null}
 
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="mt-auto flex flex-wrap items-center gap-1.5">
           {business.city ? (
             <span className="inline-flex min-w-0 items-center gap-1 text-[11px] text-[var(--app-text-faint)]">
               <FiMapPin className="shrink-0" />

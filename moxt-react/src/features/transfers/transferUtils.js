@@ -65,8 +65,11 @@ export function calculateTransfer(
   }
 }
 
-/** Inverse : montant exact à recevoir → total à payer (frais inclus). */
-export function totalToPayFromReceived(
+/**
+ * Calcul ancré sur le montant exact à recevoir : le montant saisi dans la devise
+ * cible est conservé tel quel ; le total à payer est dérivé en conséquence.
+ */
+export function calculateTransferFromReceived(
   receivedAmount,
   direction,
   feePercent = TRANSFER_CONFIG.feePercent,
@@ -74,6 +77,19 @@ export function totalToPayFromReceived(
   originCountry = 'BJ',
   rateReductionPercent,
 ) {
+  const target = roundMoneyUp(Number(receivedAmount) || 0)
+  const empty = calculateTransfer(
+    0,
+    direction,
+    feePercent,
+    rawRateOverride,
+    originCountry,
+    rateReductionPercent,
+  )
+  if (target <= 0) {
+    return { ...empty, amountReceived: 0 }
+  }
+
   const preview = calculateTransfer(
     1,
     direction,
@@ -83,9 +99,43 @@ export function totalToPayFromReceived(
     rateReductionPercent,
   )
   const factor = (1 - Number(preview.feePercent) / 100) * preview.rate
-  if (!Number.isFinite(factor) || factor <= 0) return 0
-  const numeric = Math.max(0, Number(receivedAmount) || 0)
-  return roundMoneyUp(numeric / factor)
+  if (!Number.isFinite(factor) || factor <= 0) {
+    return { ...preview, amountReceived: target, totalToPay: 0, amountSent: 0, fees: 0 }
+  }
+
+  const totalToPay = roundMoneyUp(target / factor)
+  const calculation = calculateTransfer(
+    totalToPay,
+    direction,
+    feePercent,
+    rawRateOverride,
+    originCountry,
+    rateReductionPercent,
+  )
+
+  return {
+    ...calculation,
+    amountReceived: target,
+  }
+}
+
+/** Inverse : montant exact à recevoir → total à payer (frais inclus). */
+export function totalToPayFromReceived(
+  receivedAmount,
+  direction,
+  feePercent = TRANSFER_CONFIG.feePercent,
+  rawRateOverride,
+  originCountry = 'BJ',
+  rateReductionPercent,
+) {
+  return calculateTransferFromReceived(
+    receivedAmount,
+    direction,
+    feePercent,
+    rawRateOverride,
+    originCountry,
+    rateReductionPercent,
+  ).totalToPay
 }
 
 /** Arrondi des montants de transfert à l'entier supérieur (ex. 8810.56 → 8811). */

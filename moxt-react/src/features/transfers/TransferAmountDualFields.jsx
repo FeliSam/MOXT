@@ -9,14 +9,18 @@ export function TransferAmountDualFields({
   onReceiveChange,
   sendError,
   sendMin,
+  sendId = 'transfer-amount-send',
+  receiveId = 'transfer-amount-receive',
+  sendLabel,
+  receiveLabel,
 }) {
   const { t } = useLanguage()
 
   return (
     <div className="grid gap-3">
       <CurrencyAmountField
-        id="transfer-amount-send"
-        label={t('transfers.new.amountToSend', { currency: currencyFrom })}
+        id={sendId}
+        label={sendLabel || t('transfers.new.amountToSend', { currency: currencyFrom })}
         currency={currencyFrom}
         value={sendValue}
         min={sendMin}
@@ -24,9 +28,9 @@ export function TransferAmountDualFields({
         error={sendError}
       />
       <CurrencyAmountField
-        id="transfer-amount-receive"
+        id={receiveId}
         accent
-        label={t('transfers.new.amountToReceive', { currency: currencyTo })}
+        label={receiveLabel || t('transfers.new.amountToReceive', { currency: currencyTo })}
         currency={currencyTo}
         value={receiveValue}
         onChange={onReceiveChange}

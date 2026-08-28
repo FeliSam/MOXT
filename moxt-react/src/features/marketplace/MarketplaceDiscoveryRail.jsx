@@ -50,7 +50,6 @@ function RailListingCard({
 export function MarketplaceDiscoveryRail({
   railId,
   title,
-  subtitle,
   listings,
   guestMode,
   onGuestInteract,
@@ -101,9 +100,6 @@ export function MarketplaceDiscoveryRail({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="text-sm font-black tracking-tight">{title}</h2>
-          {subtitle ? (
-            <p className="mt-0.5 text-xs text-[var(--app-text-muted)]">{subtitle}</p>
-          ) : null}
         </div>
         {onViewAll ? (
           <button

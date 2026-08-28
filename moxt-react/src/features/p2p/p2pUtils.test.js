@@ -5,8 +5,12 @@ import {
   clampP2PRateMargin,
   computeP2PReputation,
   formatCountdown,
+  convertP2PAmountOnPairFlip,
+  formatP2PAmountInput,
   formatP2PRate,
   frankfurterRateForPair,
+  p2pOfferedFromReceived,
+  p2pReceivedFromOffered,
   isPastDue,
   P2P_CONFIG,
   p2pOrderStepIndex,
@@ -32,6 +36,14 @@ describe('p2pUtils', () => {
     expect(frankfurterRateForPair(live, 'XOF', 'RUB', 'XOF')).toBe(0.13)
     expect(frankfurterRateForPair(live, 'RUB', 'XOF', 'XOF')).toBe(7.7)
     expect(formatP2PRate(0.13672)).toBe('0.13672')
+  })
+
+  it('converts the offered amount when the pair is flipped', () => {
+    expect(p2pReceivedFromOffered(1000, 7.7)).toBe('7700')
+    expect(p2pOfferedFromReceived(7700, 7.7)).toBe('1000')
+    expect(convertP2PAmountOnPairFlip(1000, 7.7)).toBe('7700')
+    expect(convertP2PAmountOnPairFlip('', 7.7)).toBe('')
+    expect(formatP2PAmountInput(996.4)).toBe('996.4')
   })
 
   it('maps order steps and countdown helpers', () => {

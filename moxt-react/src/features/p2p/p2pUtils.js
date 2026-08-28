@@ -123,6 +123,37 @@ export function formatP2PRate(rate) {
   return value.toFixed(6).replace(/\.?0+$/, '')
 }
 
+/** Saisie montant P2P : 2 décimales au-dessus de 1, sinon précision plus fine. */
+export function formatP2PAmountInput(value) {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric) || numeric <= 0) return ''
+  if (numeric >= 1) {
+    const rounded = Math.round(numeric * 100) / 100
+    return String(rounded).replace(/\.0+$/, '')
+  }
+  return numeric.toFixed(6).replace(/\.?0+$/, '')
+}
+
+export function p2pReceivedFromOffered(amount, rate) {
+  const offered = Number(amount)
+  const numericRate = Number(rate)
+  if (!(offered > 0) || !(numericRate > 0)) return ''
+  return formatP2PAmountInput(offered * numericRate)
+}
+
+export function p2pOfferedFromReceived(received, rate) {
+  const target = Number(received)
+  const numericRate = Number(rate)
+  if (!(target > 0) || !(numericRate > 0)) return ''
+  return formatP2PAmountInput(target / numericRate)
+}
+
+/** À l’inversion de paire, l’ancien montant reçu devient le nouveau montant proposé. */
+export function convertP2PAmountOnPairFlip(amount, rate) {
+  const converted = p2pReceivedFromOffered(amount, rate)
+  return converted || amount
+}
+
 /**
  * Taux Frankfurter pour la paire from→to (RUB ↔ devise d’origine).
  * `liveRate` vient de `useExchangeRate(originCurrency)`.

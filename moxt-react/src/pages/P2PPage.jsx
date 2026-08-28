@@ -1,4 +1,4 @@
-import { FiArrowRight, FiPlus, FiStar, FiUsers } from 'react-icons/fi'
+import { FiArrowRight, FiPlus, FiRepeat, FiStar, FiUsers } from 'react-icons/fi'
 import { useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
@@ -192,123 +192,135 @@ export function P2PPage() {
           className="min-w-0 w-full"
         >
           {displayedOffers.length ? (
-            displayedOffers.map((offer, index) => (
+            displayedOffers.map((offer, index) => {
+              const feeAmount = calculateP2PFee(offer.amount, offer.fromCurrency)
+              const canAccept =
+                tab === 'active' && offer.status === 'active' && offer.ownerId !== user.id
+              return (
               <RevealListItem key={offer.id} index={index} className="min-w-0 max-w-full">
                 <Card
                   variant="interactive"
-                  className={`group flex h-full min-w-0 max-w-full flex-col overflow-hidden !border-0 p-3 shadow-none ring-0 transition-shadow duration-300 xs:p-4 sm:p-5 ${tab === 'archived' ? 'opacity-80' : ''}`}
+                  className={`group relative flex h-full min-w-0 max-w-full flex-col overflow-hidden !p-0 ${
+                    tab === 'archived' ? 'opacity-80' : ''
+                  }`}
                 >
-                  <div className="flex min-w-0 items-start justify-between gap-2">
-                    <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand-700 sm:size-11 dark:bg-brand-900 dark:text-brand-200">
-                      <FiUsers />
-                    </span>
-                    <div className="flex min-w-0 max-w-[70%] flex-wrap items-center justify-end gap-1.5">
-                      <Badge tone={offer.status === 'active' ? 'success' : 'warning'}>
-                        {offer.status === 'active'
-                          ? t('p2p.page.statusActive')
-                          : t('p2p.page.statusArchived')}
-                      </Badge>
-                      {offer.businessId ? (
-                        <VerifiedBadge size="sm" label={t('p2p.page.business')} />
-                      ) : (
-                        <span className="rounded-full bg-[var(--app-surface-muted)] px-2 py-0.5 text-[10px] font-black text-[var(--app-text-faint)]">
-                          {t('p2p.page.individual')}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <h2 className="mt-3.5 break-words text-sm font-black tabular-nums leading-snug sm:text-base">
-                    {t('p2p.page.amountTo', {
-                      amount: formatMoney(offer.amount, offer.fromCurrency),
-                      currency: offer.toCurrency,
-                    })}
-                  </h2>
-                  <EntityVerifiedName
-                    as="p"
-                    name={offer.ownerName}
-                    userId={offer.ownerId}
-                    businessId={offer.businessId}
-                    className="mt-1.5 text-xs text-[var(--app-text-faint)]"
-                    nameClassName="truncate"
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[var(--app-teal)] via-brand-500 to-[var(--app-cobalt)] opacity-80"
                   />
-                  {offer.createdAt ? (
-                    <p className="mt-1 text-[11px] text-[var(--app-text-faint)]">
-                      {t('p2p.page.publishedOn', { date: formatDate(offer.createdAt) })}
-                    </p>
-                  ) : null}
-                  <P2PReputationBadge
-                    userId={offer.ownerId}
-                    orders={orders}
-                    reviews={reviews}
-                    className="mt-1.5"
-                  />
-
-                  <div className="mt-4 flex items-center gap-2 rounded-2xl bg-[var(--app-surface-muted)] p-3">
-                    <div className="min-w-0 flex-1 text-center">
-                      <p className="truncate text-xs font-black uppercase tracking-wide text-[var(--app-text)]">
-                        {offer.fromCurrency}
-                      </p>
-                    </div>
-                    <span className="grid size-7 shrink-0 place-items-center rounded-full bg-brand-700 text-white dark:bg-brand-600">
-                      <FiArrowRight className="text-xs" />
-                    </span>
-                    <div className="min-w-0 flex-1 text-center">
-                      <p className="truncate text-xs font-black uppercase tracking-wide text-[var(--app-text)]">
-                        {offer.toCurrency}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 grid flex-1 content-start gap-2 sm:grid-cols-2">
-                    <P2PMetric
-                      value={t('p2p.page.rateValue', { rate: offer.rate })}
-                      label={offer.method}
-                    />
-                    <P2PMetric
-                      value={formatMoney(
-                        calculateP2PFee(offer.amount, offer.fromCurrency),
-                        offer.fromCurrency,
-                      )}
-                      label={t('p2p.page.estimatedFees')}
-                    />
-                  </div>
-
-                  {offer.comment ? (
-                    <LinkifiedText
-                      as="p"
-                      text={offer.comment}
-                      preserveWhitespace="pre-line"
-                      className="mt-3 line-clamp-2 text-xs text-[var(--app-text-muted)]"
-                    />
-                  ) : null}
-
-                  <div className="mt-4 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-stretch">
-                    {tab === 'active' && offer.status === 'active' && offer.ownerId !== user.id ? (
-                      <Button
-                        size="sm"
-                        className="min-h-10 w-full flex-1 sm:min-h-11"
-                        onClick={() => requestAccept(offer)}
-                      >
-                        {t('p2p.page.accept')}
-                      </Button>
-                    ) : null}
-                    <Link
-                      to={`/p2p/${offer.id}`}
-                      className={
-                        tab === 'active' && offer.status === 'active' && offer.ownerId !== user.id
-                          ? 'min-w-0 flex-1'
-                          : 'min-w-0 w-full flex-1'
-                      }
-                    >
-                      <span className="flex min-h-10 w-full items-center justify-center gap-2 rounded-2xl bg-brand-700 px-3 text-center text-xs font-black text-white transition group-hover:bg-brand-800 sm:min-h-11 sm:px-4 sm:text-sm dark:bg-brand-600">
-                        {t('p2p.page.detail')} <FiArrowRight className="shrink-0 text-xs" />
+                  <div className="flex min-w-0 flex-1 flex-col p-4 sm:p-5">
+                    <div className="flex min-w-0 items-start justify-between gap-3">
+                      <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                        <Badge tone={offer.status === 'active' ? 'success' : 'warning'}>
+                          {offer.status === 'active'
+                            ? t('p2p.page.statusActive')
+                            : t('p2p.page.statusArchived')}
+                        </Badge>
+                        {offer.businessId ? (
+                          <VerifiedBadge size="sm" label={t('p2p.page.business')} />
+                        ) : (
+                          <span className="rounded-full bg-[var(--app-surface-muted)] px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-[var(--app-text-faint)]">
+                            {t('p2p.page.individual')}
+                          </span>
+                        )}
+                      </div>
+                      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[color-mix(in_srgb,var(--app-teal)_14%,var(--app-surface))] text-[var(--app-teal)] ring-1 ring-[color-mix(in_srgb,var(--app-teal)_22%,transparent)]">
+                        <FiRepeat className="text-sm" />
                       </span>
-                    </Link>
+                    </div>
+
+                    <h2 className="mt-3.5 break-words text-lg font-black tabular-nums leading-tight tracking-tight sm:text-xl">
+                      {t('p2p.page.amountTo', {
+                        amount: formatMoney(offer.amount, offer.fromCurrency),
+                        currency: offer.toCurrency,
+                      })}
+                    </h2>
+                    <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+                      <EntityVerifiedName
+                        as="span"
+                        name={offer.ownerName}
+                        userId={offer.ownerId}
+                        businessId={offer.businessId}
+                        className="text-xs text-[var(--app-text-muted)]"
+                        nameClassName="truncate font-semibold"
+                      />
+                      {offer.createdAt ? (
+                        <span className="text-[11px] text-[var(--app-text-faint)]">
+                          · {formatDate(offer.createdAt)}
+                        </span>
+                      ) : null}
+                    </div>
+                    <P2PReputationBadge
+                      userId={offer.ownerId}
+                      orders={orders}
+                      reviews={reviews}
+                      className="mt-2"
+                    />
+
+                    <div className="mt-4 rounded-[1.15rem] bg-[color-mix(in_srgb,var(--app-teal)_7%,var(--app-surface-muted))] p-3.5 ring-1 ring-[color-mix(in_srgb,var(--app-teal)_12%,transparent)]">
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <span className="rounded-lg bg-[var(--app-surface)] px-2.5 py-1.5 text-xs font-black uppercase tracking-wide text-[var(--app-text)] shadow-sm">
+                          {offer.fromCurrency}
+                        </span>
+                        <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--app-teal)] text-white shadow-sm">
+                          <FiArrowRight className="text-xs" />
+                        </span>
+                        <span className="rounded-lg bg-[var(--app-surface)] px-2.5 py-1.5 text-xs font-black uppercase tracking-wide text-[var(--app-text)] shadow-sm">
+                          {offer.toCurrency}
+                        </span>
+                        <div className="ml-auto min-w-0 text-right">
+                          <p className="truncate text-sm font-black tabular-nums text-[var(--app-text)]">
+                            {offer.rate}
+                          </p>
+                          <p className="truncate text-[11px] font-semibold text-[var(--app-text-muted)]">
+                            {offer.method}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {feeAmount > 0 ? (
+                      <p className="mt-2.5 text-[11px] text-[var(--app-text-faint)]">
+                        {t('p2p.page.estimatedFees')}:{' '}
+                        <span className="font-semibold text-[var(--app-text-muted)]">
+                          {formatMoney(feeAmount, offer.fromCurrency)}
+                        </span>
+                      </p>
+                    ) : null}
+
+                    {offer.comment ? (
+                      <LinkifiedText
+                        as="p"
+                        text={offer.comment}
+                        preserveWhitespace="pre-line"
+                        className="mt-3 line-clamp-2 text-xs leading-relaxed text-[var(--app-text-muted)]"
+                      />
+                    ) : null}
+
+                    <div className="mt-auto flex min-w-0 flex-col gap-2 pt-4 sm:flex-row sm:items-stretch">
+                      {canAccept ? (
+                        <Button
+                          size="sm"
+                          className="min-h-10 w-full flex-1 sm:min-h-11"
+                          onClick={() => requestAccept(offer)}
+                        >
+                          {t('p2p.page.accept')}
+                        </Button>
+                      ) : null}
+                      <Link
+                        to={`/p2p/${offer.id}`}
+                        className={canAccept ? 'min-w-0 flex-1' : 'min-w-0 w-full flex-1'}
+                      >
+                        <span className="flex min-h-10 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--app-teal)] px-3 text-center text-xs font-black text-white transition group-hover:brightness-110 sm:min-h-11 sm:px-4 sm:text-sm">
+                          {t('p2p.page.detail')} <FiArrowRight className="shrink-0 text-xs" />
+                        </span>
+                      </Link>
+                    </div>
                   </div>
                 </Card>
               </RevealListItem>
-            ))
+              )
+            })
           ) : (
             <EmptyState
               className="col-span-full"
@@ -394,11 +406,3 @@ export function P2PPage() {
   )
 }
 
-function P2PMetric({ label, value }) {
-  return (
-    <div className="rounded-2xl bg-[var(--app-surface-muted)] p-4">
-      <strong className="block truncate">{value}</strong>
-      <span className="mt-1 block truncate text-xs text-[var(--app-text-muted)]">{label}</span>
-    </div>
-  )
-}

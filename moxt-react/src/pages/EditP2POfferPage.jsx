@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { FiArrowLeft, FiRepeat, FiSave } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
@@ -15,13 +15,21 @@ import {
   applyP2PRateMargin,
   calculateP2PFee,
   clampP2PRateMargin,
+  convertP2PAmountOnPairFlip,
   formatP2PRate,
   frankfurterRateForPair,
   P2P_CONFIG,
   p2pLimit,
+  p2pOfferedFromReceived,
+  p2pReceivedFromOffered,
 } from '../features/p2p/p2pUtils'
-import { methodCountryForP2POffer, usePaymentMethodOptions } from '../features/p2p/usePaymentMethodOptions'
+import {
+  exchangeMethodCountryForP2POffer,
+  usePaymentMethodOptions,
+} from '../features/p2p/usePaymentMethodOptions'
 import { currencyForCountry, transferCurrenciesForCountry } from '../features/transfers/transferConfig'
+import { countryLabel } from '../features/transfers/transferAccountUtils'
+import { TransferAmountDualFields } from '../features/transfers/TransferAmountDualFields'
 import { useExchangeRate } from '../features/transfers/useExchangeRate'
 import { formatMoney } from '../features/transfers/transferUtils'
 import { addToast } from '../features/ui/uiSlice'
@@ -42,6 +50,8 @@ export function EditP2POfferPage() {
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState({})
   const [form, setForm] = useState(null)
+  const [amountAnchor, setAmountAnchor] = useState('offer')
+  const [receiveInput, setReceiveInput] = useState('')
 
   const values = form ?? {
     fromCurrency: offer?.fromCurrency || originCurrency,
@@ -56,9 +66,32 @@ export function EditP2POfferPage() {
   }
 
   const liveRate = useExchangeRate(originCurrency, { kind: 'p2p' })
-  const methodCountry = methodCountryForP2POffer(values.fromCurrency, originCountry)
-  const { options: methodOptions, loading: methodsLoading, isRussia: methodIsRussia } =
-    usePaymentMethodOptions(methodCountry)
+  const exchangeCountry = exchangeMethodCountryForP2POffer(values.toCurrency, originCountry)
+  const receiveCountry = exchangeCountry
+  const exchangeIsRussia = exchangeCountry === 'RU'
+  const { options: methodOptions, loading: methodsLoading } = usePaymentMethodOptions(exchangeCountry)
+
+  useEffect(() => {
+    if (!methodOptions.length) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- réseau selon devise recherchée / pays
+    setForm((prev) => {
+      if (!prev) return prev
+      const nextMethod =
+        prev.method && methodOptions.includes(prev.method) ? prev.method : ''
+      if (nextMethod === prev.method) return prev
+      return { ...prev, method: nextMethod }
+    })
+  }, [methodOptions, exchangeCountry])
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- préfixe selon la devise reçue (toCurrency)
+    setForm((prev) => {
+      if (!prev) return prev
+      const nextPhone = ensurePhoneCountry(prev.receivePhone, receiveCountry)
+      if (nextPhone === prev.receivePhone) return prev
+      return { ...prev, receivePhone: nextPhone }
+    })
+  }, [receiveCountry])
 
   const frankfurterRaw = useMemo(
     () => frankfurterRateForPair(liveRate, values.fromCurrency, values.toCurrency, originCurrency),
@@ -70,18 +103,41 @@ export function EditP2POfferPage() {
   )
   const rateFormatted = formatP2PRate(appliedRate) || values.rate
   const frankfurterFormatted = formatP2PRate(frankfurterRaw)
+  const rateNumber = Number(appliedRate) > 0 ? Number(appliedRate) : Number(values.rate)
+  const displayedOffer =
+    amountAnchor === 'receive'
+      ? p2pOfferedFromReceived(receiveInput, rateNumber) || values.amount
+      : values.amount
+  const displayedReceive =
+    amountAnchor === 'receive'
+      ? receiveInput
+      : p2pReceivedFromOffered(values.amount, rateNumber)
 
   if (!offer) return <Card>{t('p2p.edit.notFound')}</Card>
   if (offer.ownerId !== user.id) return <Navigate to={`/p2p/${offerId}`} replace />
 
+  function applyPairChange(current, nextFrom, nextTo) {
+    if (nextFrom === current.fromCurrency && nextTo === current.toCurrency) return current
+    const isFlip = nextFrom === current.toCurrency && nextTo === current.fromCurrency
+    return {
+      ...current,
+      fromCurrency: nextFrom,
+      toCurrency: nextTo,
+      amount: isFlip ? convertP2PAmountOnPairFlip(current.amount, current.rate || rateFormatted) : current.amount,
+    }
+  }
+
   function set(field, value) {
+    if (field === 'fromCurrency' || field === 'toCurrency') {
+      setAmountAnchor('offer')
+    }
     setForm((prev) => {
       const current = prev ?? values
       if (field === 'fromCurrency') {
-        return { ...current, fromCurrency: value, toCurrency: otherCurrency(value) }
+        return applyPairChange(current, value, otherCurrency(value))
       }
       if (field === 'toCurrency') {
-        return { ...current, toCurrency: value, fromCurrency: otherCurrency(value) }
+        return applyPairChange(current, otherCurrency(value), value)
       }
       return { ...current, [field]: value }
     })
@@ -89,17 +145,30 @@ export function EditP2POfferPage() {
   }
 
   function swapCurrencies() {
+    setAmountAnchor('offer')
     setForm((prev) => {
       const current = prev ?? values
-      return { ...current, fromCurrency: current.toCurrency, toCurrency: current.fromCurrency }
+      return applyPairChange(current, current.toCurrency, current.fromCurrency)
     })
+  }
+
+  function handleOfferAmountChange(value) {
+    setAmountAnchor('offer')
+    set('amount', value)
+  }
+
+  function handleReceiveAmountChange(value) {
+    setAmountAnchor('receive')
+    setReceiveInput(value)
+    const offered = p2pOfferedFromReceived(value, rateNumber)
+    if (offered) set('amount', offered)
   }
 
   function validate() {
     const errs = {}
-    if (!values.amount || !(Number(values.amount) > 0)) {
+    if (!displayedOffer || !(Number(displayedOffer) > 0)) {
       errs.amount = t('validation.p2p.amountRequired')
-    } else if (Number(values.amount) > p2pLimit(user, values.fromCurrency)) {
+    } else if (Number(displayedOffer) > p2pLimit(user, values.fromCurrency)) {
       errs.amount = t('validation.p2p.amountCeiling', {
         amount: formatMoney(p2pLimit(user, values.fromCurrency), values.fromCurrency),
       })
@@ -111,8 +180,8 @@ export function EditP2POfferPage() {
       errs.rateMarginPercent = t('validation.p2p.marginRange', { max: P2P_CONFIG.maxRateMarginPercent })
     }
     if (!values.method.trim()) errs.method = t('validation.p2p.methodRequired')
-    if (!validatePhone(values.receivePhone, methodCountry)) {
-      errs.receivePhone = phoneError(methodCountry)
+    if (!validatePhone(values.receivePhone, receiveCountry)) {
+      errs.receivePhone = phoneError(receiveCountry)
     }
     if (!String(values.receiveName || '').trim() || String(values.receiveName).trim().length < 2) {
       errs.receiveName = t('validation.p2p.receiveNameRequired')
@@ -132,7 +201,7 @@ export function EditP2POfferPage() {
         ownerId: user.id,
         fromCurrency: values.fromCurrency,
         toCurrency: values.toCurrency,
-        amount: Number(values.amount),
+        amount: Number(displayedOffer),
         rate: Number(rateFormatted || values.rate),
         rateMarginPercent: clampP2PRateMargin(values.rateMarginPercent),
         frankfurterRate: frankfurterRaw,
@@ -140,7 +209,7 @@ export function EditP2POfferPage() {
         method: values.method,
         receivePhone: values.receivePhone.trim(),
         receiveName: values.receiveName.trim(),
-        receiveCountry: methodCountry,
+        receiveCountry,
         comment: values.comment,
       }),
     )
@@ -155,12 +224,9 @@ export function EditP2POfferPage() {
     navigate(`/p2p/${offerId}`)
   }
 
-  const amountNumber = Number(values.amount)
-  const rateNumber = Number(rateFormatted || values.rate)
+  const amountNumber = Number(displayedOffer)
   const estimatedFee =
     amountNumber > 0 ? calculateP2PFee(amountNumber, values.fromCurrency, P2P_CONFIG.platformFeePercent) : 0
-  const amountReceived = amountNumber > 0 && rateNumber > 0 ? amountNumber * rateNumber : 0
-  const amountReceivedFormatted = amountReceived > 0 ? formatMoney(amountReceived, values.toCurrency) : null
 
   return (
     <div className="mx-auto grid max-w-2xl gap-7">
@@ -237,14 +303,18 @@ export function EditP2POfferPage() {
               amount: formatMoney(p2pLimit(user, values.fromCurrency), values.fromCurrency),
             })}
           </p>
-          <Input
-            id="p2p-edit-amount"
-            label={t('p2p.publish.amountLabel', { currency: values.fromCurrency })}
-            type="number"
-            inputMode="decimal"
-            value={values.amount}
-            onChange={(event) => set('amount', event.target.value)}
-            error={errors.amount}
+          <TransferAmountDualFields
+            sendId="p2p-edit-amount"
+            receiveId="p2p-edit-amount-receive"
+            sendLabel={t('p2p.publish.amountLabel', { currency: values.fromCurrency })}
+            receiveLabel={t('p2p.publish.amountReceiveLabel', { currency: values.toCurrency })}
+            currencyFrom={values.fromCurrency}
+            currencyTo={values.toCurrency}
+            sendValue={displayedOffer}
+            receiveValue={displayedReceive}
+            onSendChange={handleOfferAmountChange}
+            onReceiveChange={handleReceiveAmountChange}
+            sendError={errors.amount}
           />
           <Input
             id="p2p-edit-rate"
@@ -280,16 +350,6 @@ export function EditP2POfferPage() {
               })}
             </div>
           ) : null}
-          {amountReceivedFormatted ? (
-            <div className="rounded-[var(--radius-card)] border border-brand-200/60 bg-brand-50/80 px-4 py-4 dark:border-brand-800/50 dark:bg-brand-950/30">
-              <p className="text-xs font-black uppercase tracking-[0.12em] text-brand-700 dark:text-brand-300">
-                {t('p2p.publish.receivedLabel')}
-              </p>
-              <p className="mt-1 text-2xl font-black tabular-nums text-[var(--app-text)]">
-                {amountReceivedFormatted}
-              </p>
-            </div>
-          ) : null}
           <Alert variant="info">
             {t('p2p.publish.estimatedFees', {
               amount: formatMoney(estimatedFee, values.fromCurrency),
@@ -305,14 +365,14 @@ export function EditP2POfferPage() {
           <Select
             id="p2p-edit-method"
             label={
-              methodIsRussia
+              exchangeIsRussia
                 ? t('p2p.publish.methodRussia')
-                : t('p2p.publish.methodAfrica', { country: originCountry })
+                : t('p2p.publish.methodAfrica', { country: countryLabel(exchangeCountry) })
             }
             value={values.method}
             onChange={(event) => set('method', event.target.value)}
             error={errors.method}
-            disabled={methodsLoading && methodIsRussia}
+            disabled={methodsLoading && exchangeIsRussia}
           >
             <option value="">
               {methodsLoading ? t('p2p.publish.methodLoading') : t('p2p.publish.methodPlaceholder')}
@@ -323,12 +383,19 @@ export function EditP2POfferPage() {
               </option>
             ))}
           </Select>
+          <p className="text-sm text-[var(--app-text-muted)]">
+            {exchangeIsRussia
+              ? t('p2p.publish.receiveHintRussia')
+              : t('p2p.publish.receiveHintAfrica', { country: countryLabel(receiveCountry) })}
+          </p>
           <Input
             id="p2p-edit-receive-phone"
             label={t('p2p.publish.receivePhone')}
-            placeholder={phonePlaceholder(methodCountry)}
+            placeholder={phonePlaceholder(receiveCountry)}
             value={values.receivePhone}
-            onChange={(event) => set('receivePhone', ensurePhoneCountry(event.target.value, methodCountry))}
+            onChange={(event) =>
+              set('receivePhone', ensurePhoneCountry(event.target.value, receiveCountry))
+            }
             error={errors.receivePhone}
           />
           <Input

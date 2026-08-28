@@ -38,7 +38,13 @@ import {
 } from '../config/listingConfig'
 import { DELIVERY_OPTIONS, LISTING_CONDITIONS, optionLabel } from '../config/options'
 import { ContactButton } from '../features/communications/ContactButton'
+import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { MarketplaceListingCard } from '../features/marketplace/MarketplaceListingCard'
+import {
+  MARKETPLACE_DISCOVER_GRID_COLUMNS,
+  MARKETPLACE_DISCOVER_GRID_GAP,
+  MARKETPLACE_DISCOVERY_CARD_HEIGHT,
+} from '../features/marketplace/marketplaceDiscoveryLayout'
 import {
   addListingQuestion,
   answerListingQuestion,
@@ -481,24 +487,31 @@ export function ListingDetailPage() {
       ) : null}
 
       {similar.length ? (
-        <section>
-          <div className="mb-4">
-            <h2 className="text-2xl font-black">{mt('marketplace.detail.similarTitle')}</h2>
-            <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-              {mt('marketplace.detail.similarDescription')}
-            </p>
+        <section className="grid gap-3">
+          <div className="min-w-0">
+            <h2 className="text-sm font-black tracking-tight">{mt('marketplace.detail.similarTitle')}</h2>
           </div>
-          <div className="grid gap-4 overflow-visible sm:grid-cols-2 xl:grid-cols-3">
+          <CatalogGrid
+            lazy={false}
+            columns={MARKETPLACE_DISCOVER_GRID_COLUMNS}
+            gap={MARKETPLACE_DISCOVER_GRID_GAP}
+            className="min-w-0 w-full"
+          >
             {similar.map((item, index) => (
-              <RevealListItem key={item.id} index={index} className="h-full overflow-visible">
+              <RevealListItem
+                key={item.id}
+                index={index}
+                className={`${MARKETPLACE_DISCOVERY_CARD_HEIGHT} min-w-0 overflow-hidden`}
+              >
                 <MarketplaceListingCard
                   listing={item}
                   guestMode={guestMode}
                   onGuestInteract={() => requireAccount('aimer cette annonce')}
+                  layout="rail"
                 />
               </RevealListItem>
             ))}
-          </div>
+          </CatalogGrid>
         </section>
       ) : null}
 
@@ -601,12 +614,12 @@ function Gallery({
         className="group relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-cyan-700 to-blue-600 text-white"
         {...imageSwipeHandlers}
       >
-        <div className="relative grid h-[486px] w-full place-items-center lg:h-[583px]">
+        <div className="relative flex h-[486px] w-full items-center justify-center lg:h-[583px]">
           {activeImage ? (
             <img
               src={activeImage}
               alt={listing.title}
-              className="h-full w-full object-cover"
+              className="max-h-full max-w-full object-contain"
               fetchPriority="high"
               decoding="async"
             />

@@ -312,7 +312,7 @@ function FeedVideoPlayer({ video, active, onActivate }) {
   }
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-[var(--app-surface)]">
+    <div className="relative h-full w-full overflow-hidden bg-black">
       <video
         ref={videoRef}
         key={video.id}

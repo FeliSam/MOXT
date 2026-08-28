@@ -129,7 +129,7 @@ export function FeedSnapScroller({
       ref={scrollerRef}
       data-navbar-ignore
       data-testid={testId}
-      className={`feed-snap-scroller scrollbar-hidden w-full snap-y snap-mandatory overflow-y-auto overscroll-y-contain bg-[var(--app-bg)] md:hidden ${className}`}
+      className={`feed-snap-scroller scrollbar-hidden w-full snap-y snap-mandatory overflow-y-auto overscroll-y-contain bg-black md:hidden ${className}`}
     >
       {displayItems.map((item, index) => {
         const mounted = isSlideMounted(index, activeIndex)

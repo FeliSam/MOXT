@@ -166,7 +166,7 @@ export function FeedPage() {
   }
 
   return (
-    <div className="relative max-md:bg-[var(--app-bg)]">
+    <div className="relative max-md:bg-black">
       <div className="feed-mobile-shell md:contents">
         <FeedTypeChips counts={kindCounts} totalCount={allItems.length} showPublish />
         <FeedSnapScroller items={items} initialIndex={initialIndex} renderSlide={renderFeedSlide} />

@@ -4978,6 +4978,7 @@ export const fr = {
       amountAndRate: "Montant et taux",
       currentCeiling: "Plafond actuel : {amount}",
       amountLabel: "Montant ({currency})",
+      amountReceiveLabel: "Montant à recevoir ({currency})",
       rateLabel: "Taux proposé ({from} → {to})",
       rateMarginLabel: "Marge sur le taux (−{max} % à +{max} %)",
       rateMarginHint:

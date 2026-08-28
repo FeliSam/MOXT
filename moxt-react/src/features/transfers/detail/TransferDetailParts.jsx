@@ -11,8 +11,8 @@ export function TransferProgressStepper({ activeIndex, steps: stepsProp, transfe
   const { steps, activeIndex: active } = resolved
 
   return (
-    <div className="-mx-1 overflow-x-auto pb-1">
-      <div className="flex min-w-[min(100%,36rem)] items-start gap-0 px-1 sm:min-w-full">
+    <div className="scrollbar-hidden -mx-1 touch-pan-x overflow-x-auto overscroll-x-contain pb-1">
+      <div className="flex w-full min-w-0 items-start gap-0 px-1">
         {steps.map((step, index) => {
           const isDone = step.done
           const isCurrent = step.active || (index === active && !isDone)
@@ -20,9 +20,9 @@ export function TransferProgressStepper({ activeIndex, steps: stepsProp, transfe
           return (
             <div
               key={step.key}
-              className={`flex min-w-0 flex-1 items-start ${index < steps.length - 1 ? 'pr-1' : ''}`}
+              className={`flex min-w-0 flex-1 items-start ${index < steps.length - 1 ? 'pr-0.5' : ''}`}
             >
-              <div className="flex w-full min-w-[4.5rem] flex-col items-center gap-1.5">
+              <div className="flex w-full min-w-[3rem] flex-col items-center gap-1 sm:min-w-[4.5rem]">
                 <span
                   className={`grid size-8 shrink-0 place-items-center rounded-full text-xs font-black transition-all duration-300 ${
                     isDone
@@ -35,7 +35,7 @@ export function TransferProgressStepper({ activeIndex, steps: stepsProp, transfe
                   {isDone ? <FiCheck className="text-sm" /> : index + 1}
                 </span>
                 <span
-                  className={`max-w-[4.5rem] text-center text-[10px] font-bold leading-tight sm:max-w-none sm:text-[11px] ${
+                  className={`max-w-[3.25rem] text-center text-[9px] font-bold leading-tight sm:max-w-none sm:text-[11px] ${
                     isDone
                       ? 'text-emerald-700 dark:text-emerald-400'
                       : isCurrent

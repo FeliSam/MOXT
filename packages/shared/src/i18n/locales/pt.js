@@ -4964,6 +4964,7 @@ export const pt = {
       amountAndRate: "Montante e taxa",
       currentCeiling: "Limite atual: {amount}",
       amountLabel: "Montante ({currency})",
+      amountReceiveLabel: "Montante a receber ({currency})",
       rateLabel: "Taxa proposta ({from} → {to})",
       rateMarginLabel: "Margem sobre a taxa (−{max} % a +{max} %)",
       rateMarginHint:

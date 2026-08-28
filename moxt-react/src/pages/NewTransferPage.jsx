@@ -70,12 +70,12 @@ import {
 } from '../features/transfers/transferProfileFavorites'
 import {
   calculateTransfer,
+  calculateTransferFromReceived,
   directionInfo,
   formatMoney,
   monthlyTransferTotal,
   rateReductionForDirection,
   roundTransferInput,
-  totalToPayFromReceived,
   validateTransferAmount,
 } from '../features/transfers/transferUtils'
 
@@ -160,8 +160,19 @@ export function NewTransferPage() {
           return
         }
         const transferInfo = directionInfo(values.direction)
+        const amountForValidation =
+          amountAnchor === 'receive' && receiveInput
+            ? calculateTransferFromReceived(
+                receiveInput,
+                values.direction,
+                exchanger.feePercent,
+                values.direction === DIRECTIONS.BJ_TO_RU ? liveRate.originToRub : liveRate.rubToOrigin,
+                originCountry,
+                rateReductionForDirection(exchanger, values.direction),
+              ).totalToPay
+            : values.amount
         const amountError = validateTransferAmount(
-          values.amount,
+          amountForValidation,
           values.direction,
           user.verified,
           monthlyTransferTotal(transfers, user.id, transferInfo.from),
@@ -175,6 +186,8 @@ export function NewTransferPage() {
         const action = dispatch(
           createTransfer({
             amount: values.amount,
+            amountAnchor,
+            exactAmountReceived: amountAnchor === 'receive' ? receiveInput : undefined,
             direction: values.direction,
             originCountry,
             user,
@@ -288,14 +301,28 @@ export function NewTransferPage() {
   const selectedMargin = selectedExchanger
     ? rateReductionForDirection(selectedExchanger, formik.values.direction)
     : undefined
-  const calculation = calculateTransfer(
+  const calculation = useMemo(() => {
+    const args = [
+      formik.values.direction,
+      selectedExchanger?.feePercent,
+      selectedRate,
+      originCountry,
+      selectedMargin,
+    ]
+    if (amountAnchor === 'receive' && receiveInput !== '') {
+      return calculateTransferFromReceived(receiveInput, ...args)
+    }
+    return calculateTransfer(formik.values.amount, ...args)
+  }, [
+    amountAnchor,
+    receiveInput,
     formik.values.amount,
     formik.values.direction,
     selectedExchanger?.feePercent,
     selectedRate,
     originCountry,
     selectedMargin,
-  )
+  ])
   const displayedReceive =
     amountAnchor === 'receive'
       ? receiveInput
@@ -303,27 +330,40 @@ export function NewTransferPage() {
         ? roundTransferInput(calculation.amountReceived)
         : ''
 
+  useEffect(() => {
+    if (amountAnchor !== 'receive') return
+    if (receiveInput === '') {
+      formik.setFieldValue('amount', '')
+      return
+    }
+    const total = calculateTransferFromReceived(
+      receiveInput,
+      formik.values.direction,
+      selectedExchanger?.feePercent,
+      selectedRate,
+      originCountry,
+      selectedMargin,
+    ).totalToPay
+    formik.setFieldValue('amount', roundTransferInput(total))
+  }, [
+    amountAnchor,
+    receiveInput,
+    formik.values.direction,
+    selectedExchanger?.feePercent,
+    selectedRate,
+    originCountry,
+    selectedMargin,
+  ])
+
   function handleSendAmountChange(value) {
     setAmountAnchor('send')
+    setReceiveInput('')
     formik.setFieldValue('amount', value)
   }
 
   function handleReceiveAmountChange(value) {
     setAmountAnchor('receive')
     setReceiveInput(value)
-    if (value === '') {
-      formik.setFieldValue('amount', '')
-      return
-    }
-    const total = totalToPayFromReceived(
-      value,
-      formik.values.direction,
-      selectedExchanger?.feePercent,
-      selectedRate,
-      originCountry,
-      selectedMargin,
-    )
-    formik.setFieldValue('amount', roundTransferInput(total))
   }
   const info = directionInfo(formik.values.direction, originCountry)
   const usedThisMonth = monthlyTransferTotal(transfers, user.id, info.from)
@@ -649,17 +689,6 @@ export function NewTransferPage() {
                         type="button"
                         onClick={() => {
                           formik.setFieldValue('exchangerId', exchanger.id)
-                          if (amountAnchor === 'receive' && receiveInput) {
-                            const total = totalToPayFromReceived(
-                              receiveInput,
-                              formik.values.direction,
-                              exchanger.feePercent,
-                              selectedRate,
-                              originCountry,
-                              rateReductionForDirection(exchanger, formik.values.direction),
-                            )
-                            formik.setFieldValue('amount', roundTransferInput(total))
-                          }
                         }}
                         className={`relative flex w-[9.25rem] shrink-0 flex-col items-center gap-2 rounded-2xl border-2 p-4 pt-5 text-center transition-all duration-200 sm:w-[10.5rem] xl:w-auto xl:shrink ${
                           active

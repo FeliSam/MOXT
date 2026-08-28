@@ -4,12 +4,11 @@ import { useSelector } from 'react-redux'
 import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { businessesText } from '../../businesses/businessesI18n'
-import { BusinessDiscoveryCard } from '../../businesses/BusinessDiscoveryCard'
+import { BusinessDiscoveryCard, BUSINESS_DISCOVERY_RAIL_WIDTH_CLASS } from '../../businesses/BusinessDiscoveryCard'
 import { useHorizontalScroll } from '../../../hooks/useHorizontalScroll'
 import { selectDashboardBusinesses } from '../dashboardBrowseUtils'
 
-const CARD_CLASS =
-  'flex w-[clamp(15.5rem,78vw,19rem)] shrink-0 flex-col gap-2.5 rounded-[1.4rem] border-0 bg-[var(--app-surface)] p-3.5 shadow-[var(--shadow-card)] transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-hover)] sm:w-[clamp(16rem,42vw,19.5rem)]'
+const CARD_CLASS = `flex flex-col gap-2.5 rounded-[1.4rem] border-0 bg-[var(--app-surface)] p-3.5 shadow-[var(--shadow-card)] transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-hover)] ${BUSINESS_DISCOVERY_RAIL_WIDTH_CLASS}`
 
 function shuffleBusinesses(items) {
   const next = [...items]
@@ -48,7 +47,7 @@ export function DashboardBusinessRail() {
             key={business.id}
             business={business}
             user={user}
-            className={`${CARD_CLASS} shrink-0`}
+            className={BUSINESS_DISCOVERY_RAIL_WIDTH_CLASS}
           />
         ))}
 

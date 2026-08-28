@@ -15,7 +15,7 @@ import {
 import { mergeTransferRecord } from './transferRecordUtils'
 import { DIRECTIONS, TRANSFER_STATUS, TRANSFER_TIMELINE_EVENT, TRANSFER_TRANSITIONS } from './transferConfig'
 import { transferStorage } from './transferStorage'
-import { calculateTransfer } from './transferUtils'
+import { calculateTransfer, calculateTransferFromReceived } from './transferUtils'
 
 const initialState = {
   items: transferStorage.read().map(sanitizeTransferPaymentVisibility),
@@ -130,6 +130,8 @@ const transferSlice = createSlice({
       },
       prepare({
         amount,
+        amountAnchor,
+        exactAmountReceived,
         direction,
         exchanger,
         noteToExchanger,
@@ -149,16 +151,28 @@ const transferSlice = createSlice({
             },
           }
         }
-        const calculation = calculateTransfer(
-          amount,
-          direction,
-          exchanger.feePercent,
-          rateOverride,
-          originCountry,
+        const margin =
           direction === DIRECTIONS.BJ_TO_RU
             ? exchanger.rateReductionToRu
-            : exchanger.rateReductionFromRu,
-        )
+            : exchanger.rateReductionFromRu
+        const calculation =
+          amountAnchor === 'receive' && exactAmountReceived != null && exactAmountReceived !== ''
+            ? calculateTransferFromReceived(
+                exactAmountReceived,
+                direction,
+                exchanger.feePercent,
+                rateOverride,
+                originCountry,
+                margin,
+              )
+            : calculateTransfer(
+                amount,
+                direction,
+                exchanger.feePercent,
+                rateOverride,
+                originCountry,
+                margin,
+              )
         const createdAt = new Date().toISOString()
         const acceptanceRequired = exchanger.transferAcceptanceRequired === true
         const acceptanceMeta = acceptanceRequired

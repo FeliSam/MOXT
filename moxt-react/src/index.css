@@ -193,14 +193,18 @@ body {
    z-index reste sous la nav (100) ; le rail d’actions utilise --z-page-float en fixed. */
 .feed-mobile-shell {
   position: fixed;
-  inset: 0;
+  top: var(--feed-viewport-offset-top, 0px);
+  left: 0;
+  right: 0;
   z-index: 1;
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100dvh;
-  height: 100svh;
-  background: var(--app-bg);
+  /* visualViewport JS + lvh : évite la bande blanche quand la barre Safari se cache */
+  height: var(--feed-viewport-height, 100lvh);
+  min-height: var(--feed-viewport-height, 100lvh);
+  overflow: hidden;
+  background: #000;
 }
 
 .feed-snap-scroller {
@@ -214,8 +218,10 @@ body {
 }
 
 .feed-snap-scroller [data-feed-slide] {
+  box-sizing: border-box;
   min-height: 100%;
   height: 100%;
+  scroll-snap-stop: always;
 }
 
 .feed-snap-scroller::-webkit-scrollbar {
@@ -704,8 +710,25 @@ html.messages-route-lock #root {
   }
 
   html.feed-mobile-immersive {
-    --bottom-nav-clearance: max(0.75rem, env(safe-area-inset-bottom, 0px));
-    --bottom-nav-clearance-loose: max(1.25rem, env(safe-area-inset-bottom, 0px));
+    --bottom-nav-clearance: env(safe-area-inset-bottom, 0px);
+    --bottom-nav-clearance-loose: env(safe-area-inset-bottom, 0px);
+    --viewport-bottom-gap: 0px;
+    background: #000;
+  }
+
+  html.feed-mobile-immersive body {
+    overflow: hidden;
+    background: #000;
+  }
+
+  html.feed-mobile-immersive #root {
+    overflow: hidden;
+    background: #000;
+  }
+
+  html.feed-mobile-immersive #main-content {
+    padding-bottom: 0 !important;
+    background: #000;
   }
 
   .messages-thread-immersive main,

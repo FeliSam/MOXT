@@ -7,6 +7,7 @@ export function CatalogGrid({
   as: Component = 'section',
   lazy = true,
   columns = 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4',
+  gap = 'gap-3 sm:gap-4',
 }) {
   const items = lazy
     ? Children.map(children, (child, index) => (
@@ -17,7 +18,7 @@ export function CatalogGrid({
     : children
 
   return (
-    <Component className={`grid content-start gap-3 sm:gap-4 ${columns} ${className}`}>
+    <Component className={`grid content-start ${gap} ${columns} ${className}`}>
       {items}
     </Component>
   )

@@ -38,8 +38,21 @@ export function usePaymentMethodOptions(countryCode) {
   return { options, loading, isRussia }
 }
 
-/** Pays des méthodes selon la devise proposée (RUB → banques RU, sinon pays d’origine). */
+/** Pays des méthodes de paiement selon la devise proposée (legacy / compat). */
 export function methodCountryForP2POffer(fromCurrency, originCountry) {
   if (fromCurrency === 'RUB') return 'RU'
   return originCountry || 'BJ'
+}
+
+/**
+ * Pays des réseaux pour la devise recherchée (toCurrency) :
+ * numéro de réception + moyen de paiement côté bénéficiaire.
+ */
+export function receiveCountryForP2POffer(toCurrency, originCountry) {
+  return methodCountryForP2POffer(toCurrency, originCountry)
+}
+
+/** Alias explicite pour le select « Réseau / moyen » à l’étape modalités. */
+export function exchangeMethodCountryForP2POffer(toCurrency, originCountry) {
+  return receiveCountryForP2POffer(toCurrency, originCountry)
 }

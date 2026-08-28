@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { DIRECTIONS, TRANSFER_LIMITS_POLICY } from './transferConfig'
 import {
   calculateTransfer,
+  calculateTransferFromReceived,
   getTransferPricing,
   roundMoneyUp,
   roundTransferInput,
@@ -57,6 +58,16 @@ describe('calcul des transferts', () => {
     expect(Number.isInteger(back)).toBe(true)
     expect(back).toBeGreaterThanOrEqual(50000)
     expect(back).toBe(roundMoneyUp(4900 / ((1 - 2.5 / 100) * 0.095)))
+  })
+
+  it('conserve le montant exact saisi a recevoir dans le calcul inverse', () => {
+    const result = calculateTransferFromReceived(10000, DIRECTIONS.RU_TO_BJ, 2.5, 0.0065, 'BJ', 0)
+
+    expect(result.amountReceived).toBe(10000)
+    expect(result.currencyFrom).toBe('RUB')
+    expect(result.currencyTo).toBe('XOF')
+    expect(result.totalToPay).toBeGreaterThan(0)
+    expect(Number.isInteger(result.totalToPay)).toBe(true)
   })
 
   it('arrondit les montants a l entier superieur', () => {

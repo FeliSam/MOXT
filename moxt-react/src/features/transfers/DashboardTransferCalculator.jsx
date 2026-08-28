@@ -3,7 +3,11 @@ import { FiRepeat } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
 import { useLanguage } from '../../contexts/useLanguage'
 import { currencyForCountry, DIRECTIONS } from './transferConfig'
-import { calculateTransfer, roundMoneyUp, totalToPayFromReceived } from './transferUtils'
+import {
+  calculateTransfer,
+  calculateTransferFromReceived,
+  roundMoneyUp,
+} from './transferUtils'
 import { useExchangeRate } from './useExchangeRate'
 
 export function DashboardTransferCalculator() {
@@ -14,25 +18,60 @@ export function DashboardTransferCalculator() {
   const initialDirection = user?.country === 'RU' ? DIRECTIONS.RU_TO_BJ : DIRECTIONS.BJ_TO_RU
 
   const [direction, setDirection] = useState(initialDirection)
+  const [amountAnchor, setAmountAnchor] = useState('send')
   const [amount, setAmount] = useState(user?.country === 'RU' ? '5000' : '100000')
+  const [receiveInput, setReceiveInput] = useState('')
   const liveRate = useExchangeRate(currencyForCountry(originCountry))
   const selectedRate = direction === DIRECTIONS.BJ_TO_RU ? liveRate.originToRub : liveRate.rubToOrigin
-  const calculation = useMemo(
-    () => calculateTransfer(amount, direction, undefined, selectedRate, originCountry),
-    [amount, direction, selectedRate, originCountry],
-  )
+  const calculation = useMemo(() => {
+    if (amountAnchor === 'receive' && receiveInput !== '') {
+      return calculateTransferFromReceived(receiveInput, direction, undefined, selectedRate, originCountry)
+    }
+    return calculateTransfer(amount, direction, undefined, selectedRate, originCountry)
+  }, [amountAnchor, receiveInput, amount, direction, selectedRate, originCountry])
 
   function invert() {
-    setDirection((current) =>
-      current === DIRECTIONS.BJ_TO_RU ? DIRECTIONS.RU_TO_BJ : DIRECTIONS.BJ_TO_RU,
-    )
-    setAmount(String(roundMoneyUp(calculation.amountReceived)))
+    const nextDirection =
+      direction === DIRECTIONS.BJ_TO_RU ? DIRECTIONS.RU_TO_BJ : DIRECTIONS.BJ_TO_RU
+    const nextReceive =
+      amountAnchor === 'receive' && receiveInput !== ''
+        ? receiveInput
+        : String(roundMoneyUp(calculation.amountReceived))
+    setDirection(nextDirection)
+    setAmountAnchor('send')
+    setReceiveInput('')
+    setAmount(nextReceive)
   }
 
-  function updateReceived(value) {
-    const total = totalToPayFromReceived(value, direction, undefined, selectedRate, originCountry)
+  function handleSendChange(value) {
+    setAmountAnchor('send')
+    setReceiveInput('')
+    setAmount(value)
+  }
+
+  function handleReceiveChange(value) {
+    setAmountAnchor('receive')
+    setReceiveInput(value)
+    if (value === '') {
+      setAmount('')
+      return
+    }
+    const total = calculateTransferFromReceived(
+      value,
+      direction,
+      undefined,
+      selectedRate,
+      originCountry,
+    ).totalToPay
     setAmount(total ? String(roundMoneyUp(total)) : '')
   }
+
+  const displayedReceive =
+    amountAnchor === 'receive'
+      ? receiveInput
+      : amount
+        ? String(roundMoneyUp(calculation.amountReceived))
+        : ''
 
   return (
     <div className="min-w-0 max-w-full overflow-hidden">
@@ -56,14 +95,14 @@ export function DashboardTransferCalculator() {
           label={t('transfers.dashboardCalc.youSend')}
           currency={calculation.currencyFrom}
           value={amount}
-          onChange={setAmount}
+          onChange={handleSendChange}
         />
         <CurrencyField
           accent
           label={t('transfers.dashboardCalc.receivedEstimate')}
           currency={calculation.currencyTo}
-          value={roundAmount(calculation.amountReceived)}
-          onChange={updateReceived}
+          value={displayedReceive}
+          onChange={handleReceiveChange}
         />
       </div>
       <div className="mt-2.5 flex min-w-0 flex-wrap items-center justify-between gap-2 text-[11px] leading-snug text-[var(--app-text-muted)]">
@@ -116,8 +155,4 @@ function CurrencyField({ currency, accent = false, label, onChange, value }) {
       </span>
     </label>
   )
-}
-
-function roundAmount(value) {
-  return String(roundMoneyUp(value))
 }

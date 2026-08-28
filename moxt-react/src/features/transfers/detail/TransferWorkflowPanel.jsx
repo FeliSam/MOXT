@@ -87,7 +87,7 @@ export function TransferWorkflowPanel({
           </div>
           <TransferStatusBadge status={transfer.status} />
         </div>
-        <div className="min-w-0 overflow-x-auto">
+        <div className="min-w-0">
           <TransferProgressStepper steps={workflow.steps} activeIndex={workflow.activeIndex} />
         </div>
       </div>

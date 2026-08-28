@@ -29,15 +29,19 @@ import {
   applyP2PRateMargin,
   calculateP2PFee,
   clampP2PRateMargin,
+  convertP2PAmountOnPairFlip,
   formatP2PRate,
   frankfurterRateForPair,
   P2P_CONFIG,
   p2pLimit,
+  p2pOfferedFromReceived,
+  p2pReceivedFromOffered,
 } from '../features/p2p/p2pUtils'
 import {
-  methodCountryForP2POffer,
+  exchangeMethodCountryForP2POffer,
   usePaymentMethodOptions,
 } from '../features/p2p/usePaymentMethodOptions'
+import { countryLabel } from '../features/transfers/transferAccountUtils'
 import { SecurityGatePanel } from '../features/security/SecurityGatePanel'
 import { useSecurityGate } from '../features/security/useSecurityGate'
 import {
@@ -46,6 +50,7 @@ import {
 } from '../features/transfers/transferConfig'
 import { useExchangeRate } from '../features/transfers/useExchangeRate'
 import { formatMoney } from '../features/transfers/transferUtils'
+import { TransferAmountDualFields } from '../features/transfers/TransferAmountDualFields'
 import { addToast } from '../features/ui/uiSlice'
 import { useScrollToTopOnStep } from '../hooks/useScrollToTopOnStep'
 
@@ -151,27 +156,32 @@ export function PublishP2PPage() {
     receiveName: '',
     comment: '',
   })
+  const [amountAnchor, setAmountAnchor] = useState('offer')
+  const [receiveInput, setReceiveInput] = useState('')
   const liveRate = useExchangeRate(originCurrency, { kind: 'p2p' })
-  const methodCountry = methodCountryForP2POffer(form.fromCurrency, originCountry)
-  const { options: methodOptions, loading: methodsLoading, isRussia: methodIsRussia } =
-    usePaymentMethodOptions(methodCountry)
+  const exchangeCountry = exchangeMethodCountryForP2POffer(form.toCurrency, originCountry)
+  const receiveCountry = exchangeCountry
+  const exchangeIsRussia = exchangeCountry === 'RU'
+  const { options: methodOptions, loading: methodsLoading } = usePaymentMethodOptions(exchangeCountry)
 
   useEffect(() => {
     if (!methodOptions.length) return
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- retire la méthode si elle devient invalide pour le pays (options chargées async)
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- réseau selon devise recherchée / pays
     setForm((prev) => {
-      if (prev.method && methodOptions.includes(prev.method)) return prev
-      return { ...prev, method: '' }
+      const nextMethod =
+        prev.method && methodOptions.includes(prev.method) ? prev.method : ''
+      if (nextMethod === prev.method) return prev
+      return { ...prev, method: nextMethod }
     })
-  }, [methodOptions])
+  }, [methodOptions, exchangeCountry])
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- adapte le préfixe téléphonique au pays de la méthode sélectionnée
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- préfixe selon la devise reçue (toCurrency)
     setForm((prev) => ({
       ...prev,
-      receivePhone: ensurePhoneCountry(prev.receivePhone, methodCountry),
+      receivePhone: ensurePhoneCountry(prev.receivePhone, receiveCountry),
     }))
-  }, [methodCountry])
+  }, [receiveCountry])
 
   const frankfurterRaw = useMemo(
     () =>
@@ -189,6 +199,13 @@ export function PublishP2PPage() {
   )
   const rateFormatted = formatP2PRate(appliedRate)
   const frankfurterFormatted = formatP2PRate(frankfurterRaw)
+  const rateNumber = Number(appliedRate) > 0 ? Number(appliedRate) : Number(form.rate)
+  const displayedOffer =
+    amountAnchor === 'receive'
+      ? p2pOfferedFromReceived(receiveInput, rateNumber) || form.amount
+      : form.amount
+  const displayedReceive =
+    amountAnchor === 'receive' ? receiveInput : p2pReceivedFromOffered(form.amount, rateNumber)
 
   useEffect(() => {
     if (!rateFormatted) return
@@ -196,21 +213,27 @@ export function PublishP2PPage() {
     setForm((prev) => (prev.rate === rateFormatted ? prev : { ...prev, rate: rateFormatted }))
   }, [rateFormatted])
 
+  function applyPairChange(prev, nextFrom, nextTo) {
+    if (nextFrom === prev.fromCurrency && nextTo === prev.toCurrency) return prev
+    const isFlip = nextFrom === prev.toCurrency && nextTo === prev.fromCurrency
+    return {
+      ...prev,
+      fromCurrency: nextFrom,
+      toCurrency: nextTo,
+      amount: isFlip ? convertP2PAmountOnPairFlip(prev.amount, prev.rate) : prev.amount,
+    }
+  }
+
   function set(field, value) {
+    if (field === 'fromCurrency' || field === 'toCurrency') {
+      setAmountAnchor('offer')
+    }
     setForm((prev) => {
       if (field === 'fromCurrency') {
-        return {
-          ...prev,
-          fromCurrency: value,
-          toCurrency: otherCurrency(value),
-        }
+        return applyPairChange(prev, value, otherCurrency(value))
       }
       if (field === 'toCurrency') {
-        return {
-          ...prev,
-          toCurrency: value,
-          fromCurrency: otherCurrency(value),
-        }
+        return applyPairChange(prev, otherCurrency(value), value)
       }
       return { ...prev, [field]: value }
     })
@@ -218,12 +241,21 @@ export function PublishP2PPage() {
   }
 
   function swapCurrencies() {
-    setForm((prev) => ({
-      ...prev,
-      fromCurrency: prev.toCurrency,
-      toCurrency: prev.fromCurrency,
-    }))
+    setAmountAnchor('offer')
+    setForm((prev) => applyPairChange(prev, prev.toCurrency, prev.fromCurrency))
     setErrors((prev) => ({ ...prev, fromCurrency: undefined, toCurrency: undefined }))
+  }
+
+  function handleOfferAmountChange(value) {
+    setAmountAnchor('offer')
+    set('amount', value)
+  }
+
+  function handleReceiveAmountChange(value) {
+    setAmountAnchor('receive')
+    setReceiveInput(value)
+    const offered = p2pOfferedFromReceived(value, rateNumber)
+    if (offered) set('amount', offered)
   }
 
   function validate(n) {
@@ -244,9 +276,9 @@ export function PublishP2PPage() {
       }
     }
     if (n === 2) {
-      const amount = Number(form.amount)
+      const amount = Number(displayedOffer)
       const rate = Number(form.rate)
-      if (!form.amount || !(amount > 0)) errs.amount = t('validation.p2p.amountRequired')
+      if (!displayedOffer || !(amount > 0)) errs.amount = t('validation.p2p.amountRequired')
       else if (amount > p2pLimit(user, form.fromCurrency)) {
         errs.amount = t('validation.p2p.amountCeiling', {
           amount: formatMoney(p2pLimit(user, form.fromCurrency), form.fromCurrency),
@@ -264,8 +296,8 @@ export function PublishP2PPage() {
     }
     if (n === 3) {
       if (!form.method.trim()) errs.method = t('validation.p2p.methodRequired')
-      if (!validatePhone(form.receivePhone, methodCountry)) {
-        errs.receivePhone = phoneError(methodCountry)
+      if (!validatePhone(form.receivePhone, receiveCountry)) {
+        errs.receivePhone = phoneError(receiveCountry)
       }
       if (!String(form.receiveName || '').trim() || String(form.receiveName).trim().length < 2) {
         errs.receiveName = t('validation.p2p.receiveNameRequired')
@@ -302,9 +334,10 @@ export function PublishP2PPage() {
     const action = dispatch(
       createOffer({
         ...form,
+        amount: Number(displayedOffer),
         receivePhone: form.receivePhone.trim(),
         receiveName: form.receiveName.trim(),
-        receiveCountry: methodCountry,
+        receiveCountry,
         rate: Number(form.rate),
         rateMarginPercent: clampP2PRateMargin(form.rateMarginPercent),
         frankfurterRate: frankfurterRaw,
@@ -326,14 +359,12 @@ export function PublishP2PPage() {
     navigate(action.payload?.id ? `/p2p/${action.payload.id}` : '/p2p')
   }
 
-  const amountNumber = Number(form.amount)
-  const rateNumber = Number(form.rate)
+  const amountNumber = Number(displayedOffer)
   const estimatedFee =
     amountNumber > 0
       ? calculateP2PFee(amountNumber, form.fromCurrency, P2P_CONFIG.platformFeePercent)
       : 0
-  const amountReceived =
-    amountNumber > 0 && rateNumber > 0 ? amountNumber * rateNumber : 0
+  const amountReceived = Number(displayedReceive) > 0 ? Number(displayedReceive) : 0
   const amountReceivedFormatted =
     amountReceived > 0 ? formatMoney(amountReceived, form.toCurrency) : null
 
@@ -435,14 +466,18 @@ export function PublishP2PPage() {
                   amount: formatMoney(p2pLimit(user, form.fromCurrency), form.fromCurrency),
                 })}
               </p>
-              <Input
-                id="p2p-publish-amount"
-                label={t('p2p.publish.amountLabel', { currency: form.fromCurrency })}
-                type="number"
-                inputMode="decimal"
-                value={form.amount}
-                onChange={(event) => set('amount', event.target.value)}
-                error={errors.amount}
+              <TransferAmountDualFields
+                sendId="p2p-publish-amount"
+                receiveId="p2p-publish-amount-receive"
+                sendLabel={t('p2p.publish.amountLabel', { currency: form.fromCurrency })}
+                receiveLabel={t('p2p.publish.amountReceiveLabel', { currency: form.toCurrency })}
+                currencyFrom={form.fromCurrency}
+                currencyTo={form.toCurrency}
+                sendValue={displayedOffer}
+                receiveValue={displayedReceive}
+                onSendChange={handleOfferAmountChange}
+                onReceiveChange={handleReceiveAmountChange}
+                sendError={errors.amount}
               />
               <Input
                 id="p2p-publish-rate"
@@ -490,24 +525,6 @@ export function PublishP2PPage() {
                   {t('p2p.publish.frankfurterRateLoading')}
                 </p>
               ) : null}
-              {amountReceivedFormatted ? (
-                <div className="rounded-[var(--radius-card)] border border-brand-200/60 bg-brand-50/80 px-4 py-4 dark:border-brand-800/50 dark:bg-brand-950/30">
-                  <p className="text-xs font-black uppercase tracking-[0.12em] text-brand-700 dark:text-brand-300">
-                    {t('p2p.publish.receivedLabel')}
-                  </p>
-                  <p className="mt-1 text-2xl font-black tabular-nums text-[var(--app-text)]">
-                    {amountReceivedFormatted}
-                  </p>
-                  <p className="mt-1 text-xs text-[var(--app-text-muted)]">
-                    {t('p2p.publish.receivedHint', {
-                      amount: formatMoney(amountNumber, form.fromCurrency),
-                      rate: rateFormatted || form.rate,
-                      from: form.fromCurrency,
-                      to: form.toCurrency,
-                    })}
-                  </p>
-                </div>
-              ) : null}
               <Alert variant="info">
                 {t('p2p.publish.estimatedFees', {
                   amount: formatMoney(estimatedFee, form.fromCurrency),
@@ -525,14 +542,14 @@ export function PublishP2PPage() {
               <Select
                 id="p2p-publish-method"
                 label={
-                  methodIsRussia
+                  exchangeIsRussia
                     ? t('p2p.publish.methodRussia')
-                    : t('p2p.publish.methodAfrica', { country: originCountry })
+                    : t('p2p.publish.methodAfrica', { country: countryLabel(exchangeCountry) })
                 }
                 value={form.method}
                 onChange={(event) => set('method', event.target.value)}
                 error={errors.method}
-                disabled={methodsLoading && methodIsRussia}
+                disabled={methodsLoading && exchangeIsRussia}
               >
                 <option value="">
                   {methodsLoading
@@ -549,21 +566,21 @@ export function PublishP2PPage() {
             <Card className="grid gap-5">
               <SectionTitle icon={FiPhone} label={t('p2p.publish.receiveSection')} />
               <p className="text-sm text-[var(--app-text-muted)]">
-                {methodIsRussia
+                {exchangeIsRussia
                   ? t('p2p.publish.receiveHintRussia')
-                  : t('p2p.publish.receiveHintAfrica', { country: methodCountry })}
+                  : t('p2p.publish.receiveHintAfrica', { country: countryLabel(receiveCountry) })}
               </p>
               <Input
                 id="p2p-publish-receive-phone"
                 label={t('p2p.publish.receivePhone')}
-                placeholder={phonePlaceholder(methodCountry)}
+                placeholder={phonePlaceholder(receiveCountry)}
                 value={form.receivePhone}
                 onChange={(event) =>
-                  set('receivePhone', ensurePhoneCountry(event.target.value, methodCountry))
+                  set('receivePhone', ensurePhoneCountry(event.target.value, receiveCountry))
                 }
                 onFocus={() => {
                   if (!String(form.receivePhone || '').replace(/\D/g, '').slice(1)) {
-                    set('receivePhone', ensurePhoneCountry('', methodCountry))
+                    set('receivePhone', ensurePhoneCountry('', receiveCountry))
                   }
                 }}
                 error={errors.receivePhone}
@@ -589,7 +606,7 @@ export function PublishP2PPage() {
             <Card className="grid gap-4">
               <SectionTitle icon={FiCheckCircle} label={t('p2p.publish.recap')} />
               {[
-                [t('p2p.publish.iOffer'), `${form.amount || '—'} ${form.fromCurrency}`],
+                [t('p2p.publish.iOffer'), `${displayedOffer || '—'} ${form.fromCurrency}`],
                 [t('p2p.publish.iSeek'), form.toCurrency],
                 [
                   t('p2p.publish.receivedLabel'),

@@ -125,6 +125,35 @@ export function AppLayout({ children }) {
 
   }, [isFeedMobileFeed])
 
+  useLayoutEffect(() => {
+    if (!isFeedMobileFeed) return undefined
+
+    const root = document.documentElement
+
+    function syncFeedViewport() {
+      const vv = window.visualViewport
+      const height = Math.round(vv?.height ?? window.innerHeight)
+      const offsetTop = Math.round(vv?.offsetTop ?? 0)
+      root.style.setProperty('--feed-viewport-height', `${height}px`)
+      root.style.setProperty('--feed-viewport-offset-top', `${offsetTop}px`)
+    }
+
+    syncFeedViewport()
+    window.visualViewport?.addEventListener('resize', syncFeedViewport)
+    window.visualViewport?.addEventListener('scroll', syncFeedViewport)
+    window.addEventListener('resize', syncFeedViewport)
+    window.addEventListener('orientationchange', syncFeedViewport)
+
+    return () => {
+      window.visualViewport?.removeEventListener('resize', syncFeedViewport)
+      window.visualViewport?.removeEventListener('scroll', syncFeedViewport)
+      window.removeEventListener('resize', syncFeedViewport)
+      window.removeEventListener('orientationchange', syncFeedViewport)
+      root.style.removeProperty('--feed-viewport-height')
+      root.style.removeProperty('--feed-viewport-offset-top')
+    }
+  }, [isFeedMobileFeed])
+
 
 
   useLayoutEffect(() => {
@@ -187,7 +216,9 @@ export function AppLayout({ children }) {
             ? 'messages-shell flex h-[100svh] max-h-[100svh] flex-col overflow-hidden overscroll-none'
             : isMessagesRoute
               ? 'messages-shell flex min-h-[100svh] flex-col'
-              : 'min-h-screen'
+              : isFeedMobileFeed
+                ? 'min-h-0 overflow-hidden bg-black'
+                : 'min-h-screen'
       } ${hideAppChrome ? 'messages-thread-immersive' : ''}`}
 
     >
@@ -248,7 +279,7 @@ export function AppLayout({ children }) {
                     : 'px-0 pt-0 pb-[var(--bottom-nav-clearance)] lg:px-8 lg:py-8'
                 }`
               : isFeedMobileFeed
-                ? 'bg-[var(--app-bg)] px-0 pt-0 pb-0 lg:bg-transparent lg:px-8 lg:py-8'
+                ? 'bg-black px-0 pt-0 pb-0 lg:bg-transparent lg:px-8 lg:py-8'
                 : 'p-4 pb-[var(--bottom-nav-clearance-loose)] sm:p-6 sm:pb-[var(--bottom-nav-clearance-loose)] lg:px-8 lg:py-8'
           }`}
 

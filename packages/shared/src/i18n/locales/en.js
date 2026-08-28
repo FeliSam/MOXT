@@ -4966,6 +4966,7 @@ export const en = {
       amountAndRate: "Amount and rate",
       currentCeiling: "Current limit: {amount}",
       amountLabel: "Amount ({currency})",
+      amountReceiveLabel: "Amount to receive ({currency})",
       rateLabel: "Proposed rate ({from} → {to})",
       rateMarginLabel: "Rate margin (−{max}% to +{max}%)",
       rateMarginHint:

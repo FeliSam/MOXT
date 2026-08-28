@@ -19,6 +19,7 @@ import { MarketplaceListingCard } from '../features/marketplace/MarketplaceListi
 import { MarketplaceDiscoveryRail } from '../features/marketplace/MarketplaceDiscoveryRail'
 import {
   MARKETPLACE_DISCOVER_GRID_COLUMNS,
+  MARKETPLACE_DISCOVER_GRID_GAP,
   MARKETPLACE_DISCOVERY_CARD_HEIGHT,
 } from '../features/marketplace/marketplaceDiscoveryLayout'
 import { buildMarketplaceDiscovery } from '../features/marketplace/marketplaceFeed'
@@ -323,11 +324,6 @@ export function MarketplacePage() {
                   <MarketplaceDiscoveryRail
                     railId="forYou"
                     title={mt('marketplace.page.feed.forYou')}
-                    subtitle={
-                      feed.personalized
-                        ? mt('marketplace.page.feed.forYouHint')
-                        : mt('marketplace.page.feed.forYouColdHint')
-                    }
                     badgeLabel={mt('marketplace.page.feed.badgeForYou')}
                     viewAllLabel={mt('marketplace.page.feed.viewAll')}
                     listings={feed.forYou}
@@ -340,7 +336,6 @@ export function MarketplacePage() {
                   <MarketplaceDiscoveryRail
                     railId="trending"
                     title={mt('marketplace.page.feed.trending')}
-                    subtitle={mt('marketplace.page.feed.trendingHint')}
                     badgeLabel={mt('marketplace.page.feed.badgeTrending')}
                     viewAllLabel={mt('marketplace.page.feed.viewAll')}
                     listings={feed.trending}
@@ -353,7 +348,6 @@ export function MarketplacePage() {
                   <MarketplaceDiscoveryRail
                     railId="fresh"
                     title={mt('marketplace.page.feed.fresh')}
-                    subtitle={mt('marketplace.page.feed.freshHint')}
                     badgeLabel={mt('marketplace.page.feed.badgeFresh')}
                     viewAllLabel={mt('marketplace.page.feed.viewAll')}
                     listings={feed.fresh}
@@ -375,15 +369,16 @@ export function MarketplacePage() {
                       ? mt('marketplace.page.feed.results')
                       : mt('marketplace.page.feed.discover')}
                   </h2>
-                  <p className="mt-0.5 text-xs text-[var(--app-text-muted)]">
-                    {searching
-                      ? mt('marketplace.page.feed.resultsHint')
-                      : mt('marketplace.page.feed.discoverHint')}
-                  </p>
+                  {searching ? (
+                    <p className="mt-0.5 text-xs text-[var(--app-text-muted)]">
+                      {mt('marketplace.page.feed.resultsHint')}
+                    </p>
+                  ) : null}
                 </div>
                 <CatalogGrid
                   lazy={false}
                   columns={MARKETPLACE_DISCOVER_GRID_COLUMNS}
+                  gap={MARKETPLACE_DISCOVER_GRID_GAP}
                   className="min-w-0 w-full"
                 >
                 {visibleItems.map((listing, index) => (
