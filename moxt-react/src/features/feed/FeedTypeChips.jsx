@@ -20,6 +20,7 @@ export function FeedTypeChips({
   counts = {},
   totalCount = 0,
   showPublish = true,
+  backHref = '/dashboard',
   className = '',
 }) {
   const { t } = useLanguage()
@@ -43,7 +44,7 @@ export function FeedTypeChips({
       className={`pointer-events-auto absolute inset-x-0 top-0 z-20 flex items-center gap-1.5 px-2.5 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] ${className}`}
       data-testid="feed-type-chips"
     >
-      <Link to="/dashboard" aria-label={p3('common.back')} className={FEED_BACK_BTN_CLASS}>
+      <Link to={backHref} aria-label={p3('common.back')} className={FEED_BACK_BTN_CLASS}>
         <FiArrowLeft className="text-lg" aria-hidden="true" />
       </Link>
 

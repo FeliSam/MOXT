@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../../contexts/useLanguage'
 import { loadStarsBalance, loadStarsHistory } from './starsSlice'
-import { totalStarsAvailable } from './starsWalletUi'
+import { resolveWalletDisplay } from './starsWalletUi'
 import { useStarsModuleEnabled } from './useStarsModuleEnabled'
 
 export function HeaderStarsBalance() {
@@ -22,7 +22,8 @@ export function HeaderStarsBalance() {
 
   if (!starsEnabled) return null
 
-  const total = totalStarsAvailable(balance)
+  const wallet = resolveWalletDisplay(balance)
+  const total = wallet.total
 
   return (
     <Link

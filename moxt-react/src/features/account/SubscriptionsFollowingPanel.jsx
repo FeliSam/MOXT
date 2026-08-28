@@ -1,30 +1,19 @@
 import { useMemo } from 'react'
 import { FiBell, FiExternalLink, FiStar, FiUser, FiUsers, FiVolumeX } from 'react-icons/fi'
 import { HiOutlineBuildingOffice2 } from 'react-icons/hi2'
-import { useDispatch, useSelector } from 'react-redux'
-import { Link, useSearchParams } from 'react-router-dom'
-import { Button } from '../components/ui/Button'
-import { EmptyState } from '../components/ui/EmptyState'
-import { PageHeader } from '../components/ui/PageHeader'
-import { PillBadge, VerifiedDisplayName } from '../components/ui/Badge'
-import { RevealListItem } from '../components/ui/RevealListItem'
-import { Tabs } from '../components/ui/Tabs'
-import { useLanguage } from '../contexts/useLanguage'
-import { phase3Text } from '../i18n/phase3I18n'
-import {
-  removePublisherSubscription,
-  updatePublisherSubscriptionPref,
-} from '../features/account/accountSlice'
-import { AvatarStack, EntityAvatar } from '../features/account/EntityAvatar'
-import { SubscriptionNotifyMenu } from '../features/account/SubscriptionNotifyMenu'
-import { SubscribersPanel } from '../features/account/SubscribersPanel'
-import {
-  selectPublisherSubscribers,
-  selectUserSubscriptions,
-} from '../features/account/subscriptionSelectors'
-import { useProfileAvatarMap } from '../features/account/useProfileAvatarMap'
-import { usePublicationProfile } from '../features/publications/usePublicationProfile'
-import { selectBusinessById } from '../features/businesses/businessSelectors'
+import { useSelector } from 'react-redux'
+import { Link } from 'react-router-dom'
+import { Button } from '../../components/ui/Button'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { PillBadge, VerifiedDisplayName } from '../../components/ui/Badge'
+import { RevealListItem } from '../../components/ui/RevealListItem'
+import { useLanguage } from '../../contexts/useLanguage'
+import { phase3Text } from '../../i18n/phase3I18n'
+import { AvatarStack, EntityAvatar } from './EntityAvatar'
+import { SubscriptionNotifyMenu } from './SubscriptionNotifyMenu'
+import { useProfileAvatarMap } from './useProfileAvatarMap'
+import { usePublicationProfile } from '../publications/usePublicationProfile'
+import { selectBusinessById } from '../businesses/businessSelectors'
 
 const NOTIFY_LABEL_KEYS = {
   all: 'subscriptions.notify.all',
@@ -37,22 +26,10 @@ function notifyPrefLabel(p3, pref) {
   return key ? p3(key) : pref
 }
 
-export function SubscriptionsPage() {
-  const dispatch = useDispatch()
+export function SubscriptionsFollowingPanel({ subscriptions, onPrefChange, onUnsubscribe }) {
   const { t } = useLanguage()
   const p3 = (key, vars) => phase3Text(t, key, vars)
-  const user = useSelector((state) => state.auth.user)
-  const [searchParams, setSearchParams] = useSearchParams()
-  const activeTab = searchParams.get('tab') === 'subscribers' ? 'subscribers' : 'following'
-
-  const subscriptions = useSelector((state) => selectUserSubscriptions(state, user.id))
-  const subscribers = useSelector((state) => selectPublisherSubscribers(state, 'user', user.id))
   const businesses = useSelector((state) => state.businesses.items || [])
-
-  const tabItems = [
-    { value: 'following', label: p3('subscriptions.tabs.subscriptions') },
-    { value: 'subscribers', label: p3('subscriptions.tabs.subscribers') },
-  ]
 
   const grouped = useMemo(() => {
     const users = subscriptions.filter((item) => item.publisherType === 'user')
@@ -66,7 +43,7 @@ export function SubscriptionsPage() {
   )
   const followingAvatarMap = useProfileAvatarMap(followingUserIds)
 
-  const followingStack = useMemo(() => {
+  const stackItems = useMemo(() => {
     const items = []
     for (const item of grouped.users) {
       const entry = followingAvatarMap[item.publisherId]
@@ -87,97 +64,7 @@ export function SubscriptionsPage() {
       })
     }
     return items
-  }, [businesses, followingAvatarMap, grouped.businesses, grouped.users, t])
-
-  const displayName =
-    `${user.firstName || ''} ${user.lastName || ''}`.trim() || p3('subscriptions.myProfile')
-  const publisherPath = `/users/${user.id}/publications`
-
-  function setActiveTab(tab) {
-    if (tab === 'following') {
-      setSearchParams({}, { replace: true })
-    } else {
-      setSearchParams({ tab }, { replace: true })
-    }
-  }
-
-  const description =
-    activeTab === 'subscribers'
-      ? subscribers.length
-        ? p3('subscriptions.desc.subscribersCount', { count: subscribers.length })
-        : p3('subscriptions.desc.subscribersEmpty')
-      : subscriptions.length
-        ? p3('subscriptions.desc.subscriptionsCount', { count: subscriptions.length })
-        : p3('subscriptions.desc.subscriptionsEmpty')
-
-  return (
-    <div className="grid gap-7 page-enter">
-      <PageHeader
-        eyebrow={p3('subscriptions.eyebrow')}
-        title={p3('subscriptions.title')}
-        description={description}
-        actions={
-          activeTab === 'following' && followingStack.length ? (
-            <AvatarStack items={followingStack} max={6} size="md" className="hidden sm:flex" />
-          ) : null
-        }
-        stats={
-          activeTab === 'following'
-            ? [
-                { label: p3('subscriptions.stats.members'), value: grouped.users.length },
-                { label: p3('subscriptions.stats.businesses'), value: grouped.businesses.length },
-              ]
-            : [{ label: p3('subscriptions.stats.subscribers'), value: subscribers.length }]
-        }
-      />
-
-      <Tabs
-        items={tabItems}
-        active={activeTab}
-        onChange={setActiveTab}
-        label={p3('subscriptions.tabsTypeLabel')}
-      />
-
-      {activeTab === 'following' ? (
-        <FollowingPanel
-          grouped={grouped}
-          subscriptions={subscriptions}
-          stackItems={followingStack}
-          onPrefChange={(item, notifyPref) =>
-            dispatch(
-              updatePublisherSubscriptionPref({
-                userId: user.id,
-                publisherType: item.publisherType,
-                publisherId: item.publisherId,
-                notifyPref,
-              }),
-            )
-          }
-          onUnsubscribe={(item) =>
-            dispatch(
-              removePublisherSubscription({
-                userId: user.id,
-                publisherType: item.publisherType,
-                publisherId: item.publisherId,
-              }),
-            )
-          }
-        />
-      ) : (
-        <SubscribersPanel
-          publisherType="user"
-          publisherId={user.id}
-          publisherName={displayName}
-          publisherPath={publisherPath}
-        />
-      )}
-    </div>
-  )
-}
-
-function FollowingPanel({ grouped, subscriptions, stackItems, onPrefChange, onUnsubscribe }) {
-  const { t } = useLanguage()
-  const p3 = (key, vars) => phase3Text(t, key, vars)
+  }, [businesses, followingAvatarMap, grouped.businesses, grouped.users, p3])
 
   if (!subscriptions.length) {
     return (

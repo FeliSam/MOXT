@@ -77,9 +77,9 @@ const PublishVideoPage = lazyPage(() => import('../pages/PublishVideoPage'), 'Pu
 const EditVideoPage = lazyPage(() => import('../pages/EditVideoPage'), 'EditVideoPage')
 const EditListingPage = lazyPage(() => import('../pages/EditListingPage'), 'EditListingPage')
 const FavoritesPage = lazyPage(() => import('../pages/FavoritesPage'), 'FavoritesPage')
-const SubscriptionsPage = lazyPage(
-  () => import('../pages/SubscriptionsPage'),
-  'SubscriptionsPage',
+const SubscriptionsRedirect = lazyPage(
+  () => import('../components/routing/SubscriptionsRedirect'),
+  'SubscriptionsRedirect',
 )
 const FeatureMatrixPage = lazyPage(() => import('../pages/FeatureMatrixPage'), 'FeatureMatrixPage')
 const ExchangersPage = lazyPage(() => import('../pages/ExchangersPage'), 'ExchangersPage')
@@ -182,6 +182,10 @@ const PublicationShell = lazyPage(
   () => import('../components/routing/PublicationShell'),
   'PublicationShell',
 )
+const FeedAccessShell = lazyPage(
+  () => import('../components/routing/FeedAccessShell'),
+  'FeedAccessShell',
+)
 const InviteRedirect = lazyPage(() => import('../pages/InviteRedirect'), 'InviteRedirect')
 const TrustPage = lazyPage(() => import('../pages/TrustPage'), 'TrustPage')
 const LegalPage = lazyPage(() => import('../pages/LegalPage'), 'LegalPage')
@@ -218,6 +222,10 @@ export function AppRouter() {
             path="/sale-detail"
             element={<LegacyDetailRedirect fallback="/marketplace" target="/marketplace" />}
           />
+        </Route>
+
+        <Route element={<FeedAccessShell />}>
+          <Route path="/feed" element={<FeedPage />} />
         </Route>
 
         <Route element={<PublicSiteLayout />}>
@@ -266,7 +274,7 @@ export function AppRouter() {
             <Route path="/profile/information" element={<PersonalInformationPage />} />
             <Route path="/activities" element={<ActivitiesPage />} />
             <Route path="/favorites" element={<FavoritesPage />} />
-            <Route path="/subscriptions" element={<SubscriptionsPage />} />
+            <Route path="/subscriptions" element={<SubscriptionsRedirect />} />
             <Route path="/documents" element={<DocumentsPage />} />
             <Route path="/addresses" element={<AddressesPage />} />
             <Route path="/verification" element={<VerificationPage />} />
@@ -494,14 +502,6 @@ export function AppRouter() {
             <Route
               path="/event-detail"
               element={<LegacyDetailRedirect fallback="/events" target="/events" />}
-            />
-            <Route
-              path="/feed"
-              element={
-                <DevModuleRoute moduleId="feed">
-                  <FeedPage />
-                </DevModuleRoute>
-              }
             />
             <Route
               path="/videos"

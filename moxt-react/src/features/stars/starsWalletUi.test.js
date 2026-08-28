@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { combinedBonusRemaining, mergeLinkedWalletBalances, totalStarsAvailable } from './starsWalletUi'
+import { combinedBonusRemaining, mergeLinkedWalletBalances, resolveWalletDisplay, totalStarsAvailable } from './starsWalletUi'
 
 describe('totalStarsAvailable', () => {
   it('sums paid and the current bonus pool', () => {
@@ -36,5 +36,34 @@ describe('mergeLinkedWalletBalances', () => {
     expect(merged.businessBonus).toBe(150)
     expect(merged.bonusPool).toBe(210)
     expect(merged.combinedTotal).toBe(720)
+  })
+})
+
+describe('resolveWalletDisplay', () => {
+  it('splits linked personal and business pools without guessing from owned business alone', () => {
+    const wallet = resolveWalletDisplay({
+      linkedBusinessId: 'BIZ-1',
+      personalBonus: 60,
+      businessBonus: 115,
+      sharedPaid: 510,
+      personalBonusGranted: 60,
+      businessBonusGranted: 150,
+      combinedTotal: 685,
+    })
+    expect(wallet.linkedBusiness).toBe(true)
+    expect(wallet.personalBonus).toBe(60)
+    expect(wallet.businessBonus).toBe(115)
+    expect(wallet.bonusTotal).toBe(175)
+    expect(wallet.paid).toBe(510)
+    expect(wallet.total).toBe(685)
+  })
+
+  it('does not treat an unlinked profile as enterprise when only bonusPool exists', () => {
+    const wallet = resolveWalletDisplay({ bonusPool: 60, paid: 510 })
+    expect(wallet.linkedBusiness).toBe(false)
+    expect(wallet.personalBonus).toBe(60)
+    expect(wallet.businessBonus).toBe(0)
+    expect(wallet.bonusTotal).toBe(60)
+    expect(wallet.total).toBe(570)
   })
 })

@@ -236,7 +236,9 @@ export function createNotificationDispatcher(store) {
             name: subscriberName || notifyT('shared.notifications.someone'),
           }),
           type: 'subscription',
-          link: action.payload.userId ? `/users/${action.payload.userId}/publications` : '/subscriptions',
+          link: action.payload.userId
+            ? `/users/${action.payload.userId}/publications`
+            : '/publications/mine?panel=subscriptions&sub=subscribers',
         },
         'notifNewSubscribers',
       )
@@ -262,7 +264,7 @@ export function createNotificationDispatcher(store) {
             name: action.payload.publisherName || notifyT('shared.notifications.publisher'),
           }),
           type: 'subscription',
-          link: '/subscriptions',
+          link: '/publications/mine?panel=subscriptions',
         },
         'notifSysteme',
       )
@@ -284,7 +286,7 @@ export function createNotificationDispatcher(store) {
             name: action.payload.publisherName || notifyT('shared.notifications.publisher'),
           }),
           type: 'subscription',
-          link: '/subscriptions',
+          link: '/publications/mine?panel=subscriptions',
           priority: 'high',
         },
         'notifSysteme',

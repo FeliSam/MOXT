@@ -3,7 +3,7 @@ export const DEV_MODULE_IDS = ['stars', 'feed', 'news', 'videos', 'events', 'job
 
 export const DEFAULT_DEV_MODULE_FLAGS = Object.freeze({
   stars: false,
-  feed: false,
+  feed: true,
   news: true,
   videos: false,
   events: true,

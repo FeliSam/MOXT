@@ -96,7 +96,6 @@ export const routeMetadata = [
   { pattern: /^\/documents$/, title: 'Mes documents', eyebrow: 'Compte', back: '/profile' },
   { pattern: /^\/verification$/, title: 'Vérification', eyebrow: 'Compte', back: '/profile' },
   { pattern: /^\/security$/, title: 'Sécurité', eyebrow: 'Compte', back: '/profile' },
-  { pattern: /^\/subscriptions$/, title: 'Abonnements', eyebrow: 'Communauté', back: '/profile' },
   { pattern: /^\/profile$/, title: 'Mon profil', eyebrow: 'Compte' },
   { pattern: /^\/referral$/, title: 'QR code & invitation', eyebrow: 'Compte' },
   {

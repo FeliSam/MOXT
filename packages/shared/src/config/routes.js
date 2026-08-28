@@ -5,7 +5,7 @@ export const ROUTES = {
   profileInformation: '/profile/information',
   activities: '/activities',
   favorites: '/favorites',
-  subscriptions: '/subscriptions',
+  subscriptions: '/publications/mine?panel=subscriptions',
   documents: '/documents',
   verification: '/verification',
   security: '/security',

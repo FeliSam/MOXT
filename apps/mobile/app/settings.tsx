@@ -15,17 +15,6 @@ import { useAppDispatch, useAppSelector } from '@/store/store';
 import { supabase } from '@/services/supabase';
 import { useTheme } from '@/theme/ThemeContext';
 
-/* ── Web : NOTIF_CATEGORIES + priorités ── */
-const NOTIF_CATEGORIES: { key: string; label: string; description: string }[] = [
-  { key: 'notifMessages', label: 'Messages', description: 'Nouveaux messages reçus' },
-  { key: 'notifTransfers', label: 'Transferts', description: 'Mises à jour de vos opérations' },
-  { key: 'notifParcels', label: 'Colis', description: 'Réservations et confirmations' },
-  { key: 'notifJobs', label: 'Jobs', description: 'Candidatures et offres' },
-  { key: 'notifEvents', label: 'Événements', description: 'Inscriptions et rappels' },
-  { key: 'notifActualites', label: 'Actualités', description: 'Posts et nouveautés' },
-];
-const PRIORITY_OPTIONS = ['Haute', 'Normale', 'Faible', 'Off'];
-
 export default function SettingsScreen() {
   const { language, setLanguage, translateLabel } = useLanguage();
   const { isDark, theme, setTheme } = useTheme();
@@ -34,9 +23,7 @@ export default function SettingsScreen() {
 
   const [pushEnabled, setPushEnabled] = useState(true);
   const [emailEnabled, setEmailEnabled] = useState(false);
-  const [priorities, setPriorities] = useState<Record<string, string>>(() =>
-    Object.fromEntries(NOTIF_CATEGORIES.map((c) => [c.key, 'Haute'])),
-  );
+  const [preferences, setPreferences] = useState(DEFAULT_NOTIFICATION_PREFERENCES);
 
   useEffect(() => {
     if (!user?.id || !supabase) return;
@@ -48,16 +35,9 @@ export default function SettingsScreen() {
           .eq('id', user.id)
           .maybeSingle();
         const prefs = { ...DEFAULT_NOTIFICATION_PREFERENCES, ...(data?.preferences || {}) };
+        setPreferences(prefs);
         setPushEnabled(prefs.pushNotifications !== false);
         setEmailEnabled(Boolean(prefs.emailNotifications));
-        setPriorities({
-          notifMessages: prefs.notifMessages === 'normal' ? 'Normale' : prefs.notifMessages === 'low' ? 'Faible' : prefs.notifMessages === 'off' ? 'Off' : 'Haute',
-          notifTransfers: prefs.notifTransfers === 'normal' ? 'Normale' : prefs.notifTransfers === 'low' ? 'Faible' : prefs.notifTransfers === 'off' ? 'Off' : 'Haute',
-          notifParcels: prefs.notifParcels === 'normal' ? 'Normale' : prefs.notifParcels === 'low' ? 'Faible' : prefs.notifParcels === 'off' ? 'Off' : 'Haute',
-          notifJobs: prefs.notifJobs === 'normal' ? 'Normale' : prefs.notifJobs === 'low' ? 'Faible' : prefs.notifJobs === 'off' ? 'Off' : 'Haute',
-          notifEvents: prefs.notifEvents === 'normal' ? 'Normale' : prefs.notifEvents === 'low' ? 'Faible' : prefs.notifEvents === 'off' ? 'Off' : 'Haute',
-          notifActualites: prefs.notifActualites === 'normal' ? 'Normale' : prefs.notifActualites === 'low' ? 'Faible' : prefs.notifActualites === 'off' ? 'Off' : 'Haute',
-        });
       } catch {
         // ignore profile preference load errors
       }
@@ -65,30 +45,20 @@ export default function SettingsScreen() {
   }, [user?.id]);
 
   async function persistPreferences(overrides: {
-    priorities?: Record<string, string>;
     pushNotifications?: boolean;
     emailNotifications?: boolean;
   } = {}) {
     if (!user?.id || !supabase) return;
-    const priorityMap: Record<string, string> = {
-      Haute: 'high',
-      Normale: 'normal',
-      Faible: 'low',
-      Off: 'off',
+    const next = {
+      ...preferences,
+      pushNotifications: overrides.pushNotifications ?? pushEnabled,
+      emailNotifications: overrides.emailNotifications ?? emailEnabled,
     };
-    const sourcePriorities = overrides.priorities || priorities;
-    const mappedPriorities = Object.fromEntries(
-      Object.entries(sourcePriorities).map(([key, value]) => [key, priorityMap[value] || 'high']),
-    );
+    setPreferences(next);
     await supabase
       .from('profiles')
       .update({
-        preferences: {
-          ...DEFAULT_NOTIFICATION_PREFERENCES,
-          ...mappedPriorities,
-          pushNotifications: overrides.pushNotifications ?? pushEnabled,
-          emailNotifications: overrides.emailNotifications ?? emailEnabled,
-        },
+        preferences: next,
         updated_at: new Date().toISOString(),
       })
       .eq('id', user.id);
@@ -232,38 +202,6 @@ export default function SettingsScreen() {
               trackColor={{ true: '#0b8975' }}
             />
           </View>
-
-          <Text className="text-[11px] font-black tracking-widest text-app-text-faint dark:text-zinc-500 mt-5 mb-1">
-            PRIORITÉ PAR CATÉGORIE
-          </Text>
-          {NOTIF_CATEGORIES.map(({ key, label, description }) => (
-            <View key={key} className="border border-app-border dark:border-zinc-700 rounded-xl p-3.5 mt-2">
-              <Text className="text-sm font-extrabold text-app-text dark:text-zinc-50">{label}</Text>
-              <Text className="text-xs text-app-text-muted dark:text-zinc-400 mt-0.5">{description}</Text>
-              <View className="flex-row gap-1.5 mt-2.5">
-                {PRIORITY_OPTIONS.map((opt) => {
-                  const selected = priorities[key] === opt;
-                  return (
-                    <Pressable
-                      key={opt}
-                      className={cn(
-                        'flex-1 rounded-lg py-1.5 items-center',
-                        selected ? 'bg-brand-700' : 'bg-app-surface-muted dark:bg-zinc-800',
-                      )}
-                      onPress={() => {
-                        const next = { ...priorities, [key]: opt };
-                        setPriorities(next);
-                        void persistPreferences({ priorities: next });
-                      }}>
-                      <Text className={cn('text-[11px] font-black', selected ? 'text-white' : 'text-app-text-muted dark:text-zinc-400')}>
-                        {opt}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-          ))}
         </Card>
 
         {/* ── Profil et sécurité ── */}

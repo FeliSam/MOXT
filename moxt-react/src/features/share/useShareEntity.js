@@ -31,8 +31,8 @@ export function useShareEntity({ title, url, onShared } = {}) {
           tone: 'success',
         }),
       )
-    } catch {
-      // AbortError (partage annulé par l'utilisateur) ou presse-papiers refusé.
+    } catch (error) {
+      if (error?.name === 'AbortError') return
       dispatch(
         addToast({
           title: mt('marketplace.detail.shareCancelledTitle'),

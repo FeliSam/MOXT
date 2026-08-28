@@ -44,7 +44,7 @@ export const accountSections = [
         labelKey: 'profile.links.subscriptions',
         descriptionKey: 'profile.links.subscriptionsDesc',
         icon: FiBell,
-        path: '/subscriptions',
+        path: '/publications/mine?panel=subscriptions',
       },
       {
         labelKey: 'profile.links.activities',

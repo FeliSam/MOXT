@@ -105,6 +105,38 @@ export function combinedBonusRemaining(balance) {
   return sumBonusBalances(balance.bonus || {}, balance)
 }
 
+/** Valeurs d’affichage cohérentes (portefeuille, dashboard, header). */
+export function resolveWalletDisplay(balance, { monthlyQuotaForPlan } = {}) {
+  const paid = Number(balance?.sharedPaid ?? balance?.paid ?? 0)
+  const personalBonus = Number(
+    balance?.personalBonus ?? (balance?.businessBonus != null ? 0 : balance?.bonusPool) ?? 0,
+  )
+  const businessBonus = Number(balance?.businessBonus ?? 0)
+  const linkedBusiness = Boolean(balance?.linkedBusinessId)
+  const bonusTotal = personalBonus + (linkedBusiness ? businessBonus : 0)
+  const personalQuota = Number(
+    balance?.personalBonusGranted ??
+      (monthlyQuotaForPlan ? monthlyQuotaForPlan('user', balance?.config) : 0) ??
+      0,
+  )
+  const businessQuota = Number(
+    balance?.businessBonusGranted ??
+      (monthlyQuotaForPlan ? monthlyQuotaForPlan('business', balance?.config) : 0) ??
+      0,
+  )
+  return {
+    paid,
+    personalBonus,
+    businessBonus,
+    linkedBusiness,
+    bonusTotal,
+    total: totalStarsAvailable(balance),
+    personalQuota,
+    businessQuota,
+    bonusQuota: personalQuota + (linkedBusiness ? businessQuota : 0),
+  }
+}
+
 /** Fusionne le solde perso avec le pool entreprise (RPC v1 sans linkedBusinessId). */
 export function mergeLinkedWalletBalances(personalPayload, businessPayload, linkedBusinessId) {
   const personalBonus = Number(personalPayload?.personalBonus ?? personalPayload?.bonusPool ?? 0)

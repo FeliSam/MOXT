@@ -2,9 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { buildFeedRankContext } from '../features/feed/feedRankUtils'
 import { FiLayers } from 'react-icons/fi'
 import { useDispatch, useSelector, useStore } from 'react-redux'
-import { Link, Navigate, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useOutletContext, useSearchParams } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { EmptyState } from '../components/ui/EmptyState'
+import { ShareMeta } from '../components/routing/ShareMeta'
 import { useLanguage } from '../contexts/useLanguage'
 import { FeedSnapScroller } from '../features/feed/FeedSnapScroller'
 import { FeedTypeChips } from '../features/feed/FeedTypeChips'
@@ -18,6 +19,8 @@ import {
   preserveFeedOrder,
   resolveFeedDesktopRedirect,
 } from '../features/feed/feedItemUtils'
+import { loadGuestFeedCatalog } from '../features/guest/guestFeedService'
+import { buildEntityShareUrl } from '../features/share/shareLinkUtils'
 import { loadFeedBoosts } from '../features/stars/starsSlice'
 import { injectFeedDiscoverySlides } from '../features/feed/feedDiscoveryUtils'
 import { useIsFeedViewport } from '../features/feed/feedViewport'
@@ -61,6 +64,7 @@ export function FeedPage() {
   const store = useStore()
   const { t } = useLanguage()
   const p3 = (key, vars) => phase3Text(t, key, vars)
+  const { guestMode = false } = useOutletContext() || {}
   const [searchParams] = useSearchParams()
   const isFeedViewport = useIsFeedViewport()
   const rawType = searchParams.get('type') || 'all'
@@ -81,18 +85,30 @@ export function FeedPage() {
   const p2p = useSelector((s) => s.p2p)
   const [suggestionSalt, setSuggestionSalt] = useState(() => String(Date.now()))
   const [refreshNonce, setRefreshNonce] = useState(0)
+  const [guestReady, setGuestReady] = useState(!guestMode)
 
   useEffect(() => {
     dispatch(loadFeedBoosts())
   }, [dispatch])
 
   useEffect(() => {
-    if (!user?.id) return
+    if (!guestMode) return undefined
+    let cancelled = false
+    dispatch(loadGuestFeedCatalog()).finally(() => {
+      if (!cancelled) setGuestReady(true)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [dispatch, guestMode])
+
+  useEffect(() => {
+    if (!user?.id || guestMode) return
     import('../app/catalogSync.js').then(({ hasUsableFeedCatalog, scheduleCatalogSync }) => {
       if (hasUsableFeedCatalog()) return
       void scheduleCatalogSync(store)
     })
-  }, [store, user?.id])
+  }, [store, user?.id, guestMode])
 
   const feedState = useMemo(
     () => ({
@@ -161,17 +177,37 @@ export function FeedPage() {
   }, [organicItems, typeFilter, feedState, rankCtx, user])
 
   const initialIndex = pickInitialFeedIndex(items, itemParam, feedState)
+  const focusedItem = useMemo(() => {
+    if (!itemParam || !items.length) return items[initialIndex] || null
+    const resolvedId = items.find((row) => row.id === itemParam)?.id
+      || items.find((row) => row.id.endsWith(`:${itemParam.split(':').pop()}`))?.id
+    return items.find((row) => row.id === (resolvedId || itemParam)) || items[initialIndex] || null
+  }, [itemParam, items, initialIndex])
 
   const refreshFeed = useCallback(async () => {
     dispatch(loadFeedBoosts())
     setSuggestionSalt(String(Date.now()))
     setRefreshNonce((value) => value + 1)
+    if (guestMode) {
+      setGuestReady(false)
+      await dispatch(loadGuestFeedCatalog())
+      setGuestReady(true)
+      return
+    }
     const { scheduleCatalogSync } = await import('../app/catalogSync.js')
     await scheduleCatalogSync(store, { force: true })
-  }, [dispatch, store])
+  }, [dispatch, guestMode, store])
 
   if (!isFeedViewport) {
     return <Navigate to={desktopRedirect} replace />
+  }
+
+  if (guestMode && !guestReady) {
+    return (
+      <div className="grid min-h-[50vh] place-items-center px-6 text-center text-sm text-[var(--app-text-muted)]">
+        {p3('feed.loadingGuest')}
+      </div>
+    )
   }
 
   if (filterEmpty) {
@@ -186,9 +222,15 @@ export function FeedPage() {
           title={p3('feed.emptyTitle')}
           description={p3('feed.emptyDescription')}
           action={
-            <Link to="/publications/mine">
-              <Button icon={FiLayers}>{p3('feed.emptyCta')}</Button>
-            </Link>
+            guestMode ? (
+              <Link to={`/register?returnTo=${encodeURIComponent('/feed')}`}>
+                <Button>{t('guest.previewBanner.createAccount')}</Button>
+              </Link>
+            ) : (
+              <Link to="/publications/mine">
+                <Button icon={FiLayers}>{p3('feed.emptyCta')}</Button>
+              </Link>
+            )
           }
         />
       </div>
@@ -197,8 +239,21 @@ export function FeedPage() {
 
   return (
     <div className="relative max-md:bg-black">
+      {focusedItem ? (
+        <ShareMeta
+          title={focusedItem.title || 'MOXT'}
+          description={focusedItem.caption || focusedItem.title || ''}
+          image={focusedItem.media?.poster || focusedItem.media?.images?.[0] || ''}
+          url={buildEntityShareUrl(focusedItem)}
+        />
+      ) : null}
       <div className="feed-mobile-shell md:contents">
-        <FeedTypeChips counts={kindCounts} totalCount={allItems.length} showPublish />
+        <FeedTypeChips
+          counts={kindCounts}
+          totalCount={allItems.length}
+          showPublish={!guestMode}
+          backHref={guestMode ? '/' : '/dashboard'}
+        />
         <FeedSnapScroller
           items={items}
           initialIndex={initialIndex}

@@ -18,6 +18,7 @@ import { CatalogArchiveTabs } from '../components/ui/CatalogArchiveTabs'
 import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { EmptyState } from '../components/ui/EmptyState'
+import { Tabs } from '../components/ui/Tabs'
 import { deletePost, moderatePost } from '../features/posts/postsSlice'
 import { deleteEvent, duplicateEvent, moderateEvent } from '../features/events/eventSlice'
 import { deleteVideo, duplicateVideo, moderateVideo } from '../features/videos/videosSlice'
@@ -29,7 +30,12 @@ import {
   duplicateListing,
   updateListingStatus,
 } from '../features/marketplace/marketplaceSlice'
-import { selectPublisherSubscribers } from '../features/account/subscriptionSelectors'
+import { selectPublisherSubscribers, selectUserSubscriptions } from '../features/account/subscriptionSelectors'
+import {
+  removePublisherSubscription,
+  updatePublisherSubscriptionPref,
+} from '../features/account/accountSlice'
+import { SubscriptionsFollowingPanel } from '../features/account/SubscriptionsFollowingPanel'
 import {
   MyEventPublicationCard,
   MyJobPublicationCard,
@@ -128,7 +134,13 @@ export function MyPublicationsPage() {
   }
 
   const requestedArchiveTab = searchParams.get('status') === 'archived' ? 'archived' : 'active'
-  const panel = searchParams.get('panel') === 'subscribers' ? 'subscribers' : 'publications'
+  const rawPanel = searchParams.get('panel')
+  const panel =
+    rawPanel === 'subscriptions' || rawPanel === 'subscribers' ? 'subscriptions' : 'publications'
+  const subscriptionSub =
+    searchParams.get('sub') === 'subscribers' || rawPanel === 'subscribers'
+      ? 'subscribers'
+      : 'following'
   const typeTab = PUBLICATION_TYPE_TABS.some((tab) => tab.id === searchParams.get('type'))
     ? searchParams.get('type')
     : 'listing'
@@ -181,6 +193,16 @@ export function MyPublicationsPage() {
   const subscriberCount = useSelector((state) =>
     selectPublisherSubscribers(state, subscriberPublisherType, subscriberPublisherId),
   ).length
+  const subscriptions = useSelector((state) => selectUserSubscriptions(state, user.id))
+  const subscriptionsCount = subscriptions.length + subscriberCount
+
+  useEffect(() => {
+    if (rawPanel !== 'subscribers') return
+    const params = new URLSearchParams(searchParams)
+    params.set('panel', 'subscriptions')
+    params.set('sub', 'subscribers')
+    setSearchParams(params, { replace: true })
+  }, [rawPanel, searchParams, setSearchParams])
 
   useEffect(() => {
     dispatch(loadFeedBoosts())
@@ -292,8 +314,21 @@ export function MyPublicationsPage() {
 
   function setPanel(next) {
     const params = new URLSearchParams(searchParams)
-    if (next === 'publications') params.delete('panel')
-    else params.set('panel', next)
+    if (next === 'publications') {
+      params.delete('panel')
+      params.delete('sub')
+    } else {
+      params.set('panel', 'subscriptions')
+      if (!params.get('sub')) params.set('sub', 'following')
+    }
+    setSearchParams(params, { replace: true })
+  }
+
+  function setSubscriptionSub(next) {
+    const params = new URLSearchParams(searchParams)
+    params.set('panel', 'subscriptions')
+    if (next === 'following') params.delete('sub')
+    else params.set('sub', next)
     setSearchParams(params, { replace: true })
   }
 
@@ -350,21 +385,58 @@ export function MyPublicationsPage() {
             alwaysShow: true,
           },
           {
-            key: 'subscribers',
-            label: p3('publications.mine.tabs.subscribers'),
-            count: subscriberCount,
+            key: 'subscriptions',
+            label: p3('publications.mine.tabs.subscriptions'),
+            count: subscriptionsCount,
             alwaysShow: true,
           },
         ]}
       />
 
-      {panel === 'subscribers' ? (
-        <SubscribersPanel
-          publisherType={subscriberPublisherType}
-          publisherId={subscriberPublisherId}
-          publisherName={subscriberPublisherName}
-          publisherPath={subscriberPublisherPath}
-        />
+      {panel === 'subscriptions' ? (
+        <div className="grid gap-4">
+          <Tabs
+            items={[
+              { value: 'following', label: p3('subscriptions.tabs.subscriptions') },
+              { value: 'subscribers', label: p3('subscriptions.tabs.subscribers') },
+            ]}
+            active={subscriptionSub}
+            onChange={setSubscriptionSub}
+            label={p3('publications.mine.subscriptionsMenuLabel')}
+          />
+
+          {subscriptionSub === 'following' ? (
+            <SubscriptionsFollowingPanel
+              subscriptions={subscriptions}
+              onPrefChange={(item, notifyPref) =>
+                dispatch(
+                  updatePublisherSubscriptionPref({
+                    userId: user.id,
+                    publisherType: item.publisherType,
+                    publisherId: item.publisherId,
+                    notifyPref,
+                  }),
+                )
+              }
+              onUnsubscribe={(item) =>
+                dispatch(
+                  removePublisherSubscription({
+                    userId: user.id,
+                    publisherType: item.publisherType,
+                    publisherId: item.publisherId,
+                  }),
+                )
+              }
+            />
+          ) : (
+            <SubscribersPanel
+              publisherType={subscriberPublisherType}
+              publisherId={subscriberPublisherId}
+              publisherName={subscriberPublisherName}
+              publisherPath={subscriberPublisherPath}
+            />
+          )}
+        </div>
       ) : (
         <div className="grid gap-4">
           <PublicationCatalogNav

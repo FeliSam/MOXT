@@ -8,7 +8,6 @@ import {
   FiInfo,
   FiRefreshCw,
   FiStar,
-  FiUser,
 } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
@@ -19,7 +18,7 @@ import { monthlyBonusPoolForPlan } from '../features/stars/starsConfig'
 import { StarsPricingGuide } from '../features/stars/StarsPricingGuide'
 import { historyEntryMeta, normalizeStarsHistory } from '../features/stars/starsHistoryUtils'
 import { loadStarsBalance, loadStarsCatalog, loadStarsHistory } from '../features/stars/starsSlice'
-import { formatStarsPeriod, totalStarsAvailable } from '../features/stars/starsWalletUi'
+import { formatStarsPeriod, resolveWalletDisplay } from '../features/stars/starsWalletUi'
 import { selectActiveBusinessForOwner } from '../features/businesses/businessVisibility'
 
 const HISTORY_PAGE_SIZE = 10
@@ -104,8 +103,8 @@ function PoolMeter({ label, remaining, quota, t }) {
   )
 }
 
-function BalanceSplitBar({ personalBonus, businessBonus, paid, hasBusiness, t }) {
-  const bonus = personalBonus + (hasBusiness ? businessBonus : 0)
+function BalanceSplitBar({ personalBonus, businessBonus, paid, linkedBusiness, t }) {
+  const bonus = personalBonus + (linkedBusiness ? businessBonus : 0)
   const total = bonus + paid
   const bonusPct = total > 0 ? Math.round((bonus / total) * 100) : 0
   const paidPct = total > 0 ? Math.max(0, 100 - bonusPct) : 0
@@ -135,14 +134,14 @@ function BalanceSplitBar({ personalBonus, businessBonus, paid, hasBusiness, t })
       <div className="mt-3 grid grid-cols-2 gap-2">
         <div className="rounded-xl bg-white/10 px-3 py-2.5 backdrop-blur-sm">
           <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-white/70">
-            <FiUser className="text-xs" aria-hidden />
-            {t('stars.bonusPoolShort')}
+            <FiStar className="text-xs" aria-hidden />
+            {linkedBusiness ? t('stars.totalBonus') : t('stars.bonusPoolShort')}
           </p>
           <p className="mt-0.5 font-display text-xl font-black tabular-nums">
             {bonus}
             <span className="ml-1 text-sm font-bold text-white/65">★</span>
           </p>
-          {hasBusiness ? (
+          {linkedBusiness ? (
             <p className="mt-0.5 text-[10px] font-semibold text-white/65">
               {t('stars.bonusPoolCombinedHint', {
                 personal: personalBonus,
@@ -182,19 +181,17 @@ export function StarsWalletPage() {
   }, [dispatch, ownedBusiness?.id, user?.id])
 
   const enforced = Boolean(balance?.enforced)
-  const paidBalance = Number(balance?.sharedPaid ?? balance?.paid ?? 0)
-  const personalBonus = Number(balance?.personalBonus ?? (balance?.businessBonus != null ? 0 : balance?.bonusPool) ?? 0)
-  const businessBonus = Number(balance?.businessBonus ?? 0)
-  const linkedBusiness = Boolean(balance?.linkedBusinessId || ownedBusiness?.id)
-  const personalQuota =
-    balance?.personalBonusGranted ??
-    monthlyBonusPoolForPlan('user', balance?.config)
-  const businessQuota =
-    balance?.businessBonusGranted ??
-    monthlyBonusPoolForPlan('business', balance?.config)
-  const bonusRemaining = personalBonus + (linkedBusiness ? businessBonus : 0)
-  const bonusQuota = personalQuota + (linkedBusiness ? businessQuota : 0)
-  const totalAvailable = totalStarsAvailable(balance)
+  const wallet = resolveWalletDisplay(balance, { monthlyQuotaForPlan: monthlyBonusPoolForPlan })
+  const {
+    paid: paidBalance,
+    personalBonus,
+    businessBonus,
+    linkedBusiness,
+    total: totalAvailable,
+    personalQuota,
+    businessQuota,
+    bonusQuota,
+  } = wallet
   const periodLabel = formatStarsPeriod(balance?.period, language || 'fr')
   const historyItems = useMemo(() => normalizeStarsHistory(transactions), [transactions])
   const historyPageCount = Math.max(1, Math.ceil(historyItems.length / HISTORY_PAGE_SIZE) || 1)
@@ -259,18 +256,26 @@ export function StarsWalletPage() {
           personalBonus={personalBonus}
           businessBonus={businessBonus}
           paid={paidBalance}
-          hasBusiness={linkedBusiness}
+          linkedBusiness={linkedBusiness}
           t={t}
         />
 
         {enforced && bonusQuota > 0 ? (
-          <div className="relative mt-4">
+          <div className="relative mt-4 grid gap-2">
             <PoolMeter
-              label={t('stars.bonusPoolSection')}
-              remaining={bonusRemaining}
-              quota={bonusQuota}
+              label={linkedBusiness ? t('stars.personalBonusPool') : t('stars.bonusPoolSection')}
+              remaining={personalBonus}
+              quota={personalQuota}
               t={t}
             />
+            {linkedBusiness ? (
+              <PoolMeter
+                label={t('stars.businessBonusPool')}
+                remaining={businessBonus}
+                quota={businessQuota}
+                t={t}
+              />
+            ) : null}
           </div>
         ) : null}
 

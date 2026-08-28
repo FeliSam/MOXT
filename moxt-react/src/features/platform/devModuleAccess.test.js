@@ -35,6 +35,7 @@ describe('devModuleAccess', () => {
   })
 
   it('applique les défauts quand le flag est absent', () => {
+    expect(canAccessDevModule(user, {}, 'feed')).toBe(DEFAULT_DEV_MODULE_FLAGS.feed)
     expect(canAccessDevModule(user, {}, 'videos')).toBe(DEFAULT_DEV_MODULE_FLAGS.videos)
     expect(canAccessDevModule(user, {}, 'news')).toBe(DEFAULT_DEV_MODULE_FLAGS.news)
     expect(canAccessDevModule(user, {}, 'events')).toBe(DEFAULT_DEV_MODULE_FLAGS.events)
@@ -45,7 +46,7 @@ describe('devModuleAccess', () => {
   it('normalizeDevModuleFlags conserve les défauts ON pour news/events/jobs/parcels', () => {
     expect(normalizeDevModuleFlags({})).toMatchObject({
       stars: false,
-      feed: false,
+      feed: true,
       news: true,
       videos: false,
       events: true,

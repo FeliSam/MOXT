@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { FiArchive, FiEdit2, FiPlus, FiRotateCcw, FiShare2 } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../../contexts/useLanguage'
 import { ContactButton } from '../../features/communications/ContactButton'
 import { FavoriteButton } from '../../features/account/FavoriteButton'
-import { useShareEntity } from '../../features/share/useShareEntity'
+import { buildEntityShareUrl } from '../../features/share/shareLinkUtils'
+import { EntityShareSheet } from '../../features/share/EntityShareSheet'
 import { marketplaceText } from '../../features/marketplace/marketplaceI18n'
 import { ReshareButton } from './ReshareButton'
 
@@ -42,7 +43,15 @@ export function DetailFloatingActions({
   const { t } = useLanguage()
   const mt = (key, vars) => marketplaceText(t, key, vars)
   const [open, setOpen] = useState(false)
-  const share = useShareEntity({ title, onShared })
+  const [shareOpen, setShareOpen] = useState(false)
+  const shareUrl = useMemo(() => {
+    if (!relatedId || !relatedType) return undefined
+    return buildEntityShareUrl({
+      kind: relatedType,
+      entityId: relatedId,
+      href: relatedPath,
+    })
+  }, [relatedId, relatedPath, relatedType])
 
   useEffect(() => {
     if (!autoHintMs) return undefined
@@ -63,7 +72,7 @@ export function DetailFloatingActions({
       node: (
         <button
           type="button"
-          onClick={share}
+          onClick={() => setShareOpen(true)}
           aria-label={mt('marketplace.detail.share')}
           className={ICON_BUTTON_CLASS}
         >
@@ -215,6 +224,14 @@ export function DetailFloatingActions({
           className={`transition-transform duration-200 ease-out ${open ? 'rotate-45' : 'rotate-0'}`}
         />
       </button>
+
+      <EntityShareSheet
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        title={title}
+        url={shareUrl}
+        onShared={onShared}
+      />
     </div>
   )
 }

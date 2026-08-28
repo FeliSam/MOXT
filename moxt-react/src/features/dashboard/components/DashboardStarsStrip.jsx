@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { loadStarsBalance } from '../../stars/starsSlice'
-import { totalStarsAvailable } from '../../stars/starsWalletUi'
+import { resolveWalletDisplay } from '../../stars/starsWalletUi'
 import { useStarsModuleEnabled } from '../../stars/useStarsModuleEnabled'
 
 export function DashboardStarsStrip() {
@@ -21,8 +21,8 @@ export function DashboardStarsStrip() {
 
   if (!starsEnabled) return null
 
-  const total = totalStarsAvailable(balance)
-  const paid = Number(balance?.paid ?? 0)
+  const wallet = resolveWalletDisplay(balance)
+  const { total, paid, personalBonus, businessBonus, linkedBusiness, bonusTotal } = wallet
 
   return (
     <Link
@@ -43,7 +43,26 @@ export function DashboardStarsStrip() {
         </p>
         <p className="mt-0.5 flex items-center gap-1 text-xs text-[var(--app-text-muted)]">
           <FiGift className="shrink-0 text-amber-600 dark:text-amber-300" aria-hidden="true" />
-          {t('dashboard.starsStrip.hint', { n: paid })}
+          {balance ? (
+            linkedBusiness ? (
+              <>
+                {t('stars.bonusPoolCombinedHint', {
+                  personal: personalBonus,
+                  business: businessBonus,
+                })}
+                {' · '}
+                {t('dashboard.starsStrip.hint', { n: paid })}
+              </>
+            ) : (
+              <>
+                {t('stars.bonusLeft', { n: bonusTotal })}
+                {' · '}
+                {t('dashboard.starsStrip.hint', { n: paid })}
+              </>
+            )
+          ) : (
+            t('dashboard.starsStrip.loading')
+          )}
         </p>
       </div>
       <FiChevronRight

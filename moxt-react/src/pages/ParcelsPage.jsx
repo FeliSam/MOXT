@@ -130,13 +130,11 @@ export function ParcelsPage() {
               label={showMine ? t('parcels.browse.actions.allParcels') : t('parcels.browse.actions.myParcels')}
               onClick={() => setShowMine((v) => !v)}
             />
-            <span className="hidden lg:inline-flex">
-              <HeaderIslandButton
-                icon={FiPlus}
-                label={t('parcels.browse.actions.publish')}
-                onClick={() => navigate('/parcels/publish')}
-              />
-            </span>
+            <HeaderIslandButton
+              icon={FiPlus}
+              label={t('parcels.browse.actions.publish')}
+              onClick={() => navigate('/parcels/publish')}
+            />
           </>
         }
       />

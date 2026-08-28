@@ -21,7 +21,8 @@ import { useGuestAction } from '../guest/useGuestAction'
 import { toggleListingLike } from '../marketplace/marketplaceSlice'
 import { toggleLike } from '../posts/postsSlice'
 import { FeedCommentsSheet } from './FeedCommentsSheet'
-import { useShareEntity } from '../share/useShareEntity'
+import { buildEntityShareUrl } from '../share/shareLinkUtils'
+import { EntityShareSheet } from '../share/EntityShareSheet'
 import { addToast } from '../ui/uiSlice'
 import { phase3Text } from '../../i18n/phase3I18n'
 import { liveFeedSocialStats } from './feedItemUtils'
@@ -62,9 +63,7 @@ function FeedMoreSheet({ item, open, onClose }) {
   }
 
   async function copyLink() {
-    const path = item.feedHref || item.href || '/feed'
-    const url =
-      typeof window === 'undefined' ? path : `${window.location.origin}${path}`
+    const url = buildEntityShareUrl(item)
     try {
       await navigator.clipboard?.writeText(url)
       dispatch(
@@ -179,6 +178,7 @@ export function FeedItemActions({ item, visible = true }) {
   const user = useSelector((state) => state.auth.user)
   const { requireAccount, promptAccount } = useGuestAction()
   const [moreOpen, setMoreOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
   const [commentsOpen, setCommentsOpen] = useState(false)
   const entityKey = `${item.kind}:${item.entityId || item.id}`
   const railKeys = railKeysForKind(item.kind)
@@ -191,15 +191,7 @@ export function FeedItemActions({ item, visible = true }) {
   const likeCount = social.likeCount
   const commentCount = social.commentCount
 
-  const shareUrl =
-    typeof window === 'undefined'
-      ? item.feedHref || item.href || '/feed'
-      : `${window.location.origin}${item.feedHref || item.href || '/feed'}`
-
-  const share = useShareEntity({
-    title: item.title || 'MOXT',
-    url: shareUrl,
-  })
+  const shareUrl = buildEntityShareUrl(item)
 
   const OpenIcon = OPEN_ICON[item.kind] || FiExternalLink
   const openLabel =
@@ -309,7 +301,7 @@ export function FeedItemActions({ item, visible = true }) {
         <button
           key={key}
           type="button"
-          onClick={share}
+          onClick={() => setShareOpen(true)}
           onPointerDown={stopTouchBubble}
           onTouchStart={stopTouchBubble}
           className={FEED_ACTION_BTN_CLASS}
@@ -356,6 +348,12 @@ export function FeedItemActions({ item, visible = true }) {
         onClose={() => setCommentsOpen(false)}
       />
       <FeedMoreSheet item={item} open={moreOpen} onClose={() => setMoreOpen(false)} />
+      <EntityShareSheet
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        title={item.title || 'MOXT'}
+        url={shareUrl}
+      />
     </>
   )
 }

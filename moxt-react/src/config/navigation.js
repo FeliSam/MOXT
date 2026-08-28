@@ -81,7 +81,6 @@ export const routePreloaders = {
   '/stars': () => import('../pages/StarsWalletPage'),
   '/stars/buy': () => import('../pages/StarsBuyPage'),
   '/stars/buy/checkout/:purchaseId': () => import('../pages/StarsCheckoutPage'),
-  '/subscriptions': () => import('../pages/SubscriptionsPage'),
   '/security': () => import('../pages/SecurityPage'),
   '/transfers': () => import('../pages/NewTransferPage'),
   '/transfers/history': () => import('../pages/TransfersPage'),
@@ -226,20 +225,12 @@ export const navigationGroups = [
     icon: FiUser,
     color: 'from-slate-500 to-slate-700',
     children: [
-      { id: 'profile', label: 'Profil', labelKey: 'nav.profile', path: '/profile', icon: FiUser },
       {
         id: 'my-publications',
         label: 'Mes publications',
         labelKey: 'nav.myPublications',
         path: '/publications/mine',
         icon: FiList,
-      },
-      {
-        id: 'subscriptions',
-        label: 'Abonnements',
-        labelKey: 'nav.subscriptions',
-        path: '/subscriptions',
-        icon: FiBell,
       },
       {
         id: 'favorites',

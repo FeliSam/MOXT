@@ -2,7 +2,7 @@ import type { LucideIcon } from 'lucide-react-native';
 import {
   Home, ArrowLeftRight, Repeat, Handshake, Building2, BriefcaseBusiness, Package,
   ShoppingBag, Newspaper, Briefcase, CalendarDays, MessageSquare, Bell, Heart,
-  FileText, BellRing, SlidersHorizontal, BarChart3, ShieldCheck, Gift,
+  FileText, SlidersHorizontal, BarChart3, ShieldCheck, Gift,
 } from 'lucide-react-native';
 
 import { bottomNavigationPaths, moreServicesExcludedPaths } from '@moxt/shared';
@@ -31,8 +31,7 @@ const WEB_TO_MOBILE: Record<string, string> = {
   '/dashboard': '/(tabs)/index',
   '/transfers': '/transfer/wizard',
   '/p2p': '/search',
-  '/subscriptions': '/settings',
-  '/exchangers': '/exchangers',
+  '/publications/mine': '/listing/mine',
   '/businesses': '/organization',
   '/professional': '/organization',
   '/parcels': '/(tabs)/parcels',
@@ -121,7 +120,6 @@ export const navigationGroups: MoreServiceGroup[] = [
       item('favorites', 'Mes favoris', '/favorites', '❤️', Heart),
       item('referral', 'Inviter un ami', '/referral', '🎁', Gift),
       item('my-publications', 'Mes publications', '/publications/mine', '📋', FileText),
-      item('subscriptions', 'Mes abonnements', '/subscriptions', '🔔', BellRing),
     ],
   },
   {

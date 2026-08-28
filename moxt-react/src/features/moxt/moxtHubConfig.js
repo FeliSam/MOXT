@@ -26,7 +26,6 @@ export const moxtHubSecondaryGroups = [
       { id: 'personal-info', labelKey: 'profile.links.personalInfo', path: '/profile/information', icon: FiUser },
       { id: 'my-publications', labelKey: 'nav.myPublications', path: '/publications/mine', icon: FiList },
       { id: 'favorites', labelKey: 'nav.favorites', path: '/favorites', icon: FiHeart },
-      { id: 'subscriptions', labelKey: 'nav.subscriptions', path: '/subscriptions', icon: FiBell },
       { id: 'activities', labelKey: 'profile.links.activities', path: '/activities', icon: FiActivity },
       { id: 'referral', labelKey: 'nav.qrInvitation', path: '/referral', icon: FiGift },
       { id: 'professional', labelKey: 'nav.professional', path: '/professional', icon: FiGrid },

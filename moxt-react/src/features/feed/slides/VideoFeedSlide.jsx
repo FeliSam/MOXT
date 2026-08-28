@@ -19,7 +19,8 @@ import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog'
 import { useGuestAction } from '../../guest/useGuestAction'
-import { useShareEntity } from '../../share/useShareEntity'
+import { EntityShareSheet } from '../../share/EntityShareSheet'
+import { buildEntityShareUrl } from '../../share/shareLinkUtils'
 import { isActiveVideo } from '../../publications/publicationCatalogUtils'
 import { BoostPublicationSheet } from '../../stars/BoostPublicationSheet'
 import { useStarsBoostFlow } from '../../stars/useStarsBoostFlow'
@@ -52,9 +53,13 @@ function formatCount(value) {
   return String(n)
 }
 
-function buildAbsoluteFeedUrl(videoId) {
-  if (typeof window === 'undefined') return videoFeedPath(videoId)
-  return `${window.location.origin}${videoFeedPath(videoId)}`
+function buildVideoShareUrl(video) {
+  return buildEntityShareUrl({
+    kind: 'video',
+    entityId: video?.id,
+    href: video?.id ? `/videos/${video.id}` : '/videos',
+    feedHref: videoFeedPath(video?.id),
+  })
 }
 
 function MoreActionRow({ icon: Icon, children, onClick, to, danger = false, onNavigate }) {
@@ -124,7 +129,7 @@ function VideoMoreSheet({
   }
 
   async function copyLink() {
-    const url = buildAbsoluteFeedUrl(video.id)
+    const url = buildVideoShareUrl(video)
     try {
       await navigator.clipboard?.writeText(url)
       dispatch(
@@ -372,6 +377,7 @@ export function VideoFeedSlide({ item, index, active }) {
   const boostFlow = useStarsBoostFlow()
   const starsEnabled = useStarsModuleEnabled()
   const [commentsOpen, setCommentsOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const viewed = useRef(false)
@@ -414,13 +420,7 @@ export function VideoFeedSlide({ item, index, active }) {
     ownerId: business?.ownerId,
   }
 
-  const share = useShareEntity({
-    title: video?.title || 'MOXT',
-    url: buildAbsoluteFeedUrl(video?.id),
-    onShared: () => {
-      if (video?.id) dispatch(incrementVideoShare({ id: video.id }))
-    },
-  })
+  const shareUrl = buildVideoShareUrl(video)
 
   if (!video?.id) return null
 
@@ -555,7 +555,7 @@ export function VideoFeedSlide({ item, index, active }) {
         liked={liked}
         onLike={handleLike}
         onComment={() => setCommentsOpen(true)}
-        onShare={share}
+        onShare={() => setShareOpen(true)}
         onMore={handleMore}
         visible={active}
       />
@@ -563,6 +563,15 @@ export function VideoFeedSlide({ item, index, active }) {
         video={video}
         open={commentsOpen}
         onClose={() => setCommentsOpen(false)}
+      />
+      <EntityShareSheet
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        title={video?.title || 'MOXT'}
+        url={shareUrl}
+        onShared={() => {
+          if (video?.id) dispatch(incrementVideoShare({ id: video.id }))
+        }}
       />
       <VideoMoreSheet
         video={video}

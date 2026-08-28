@@ -366,31 +366,6 @@ export function SettingsPage() {
               }}
             />
           </div>
-
-          <div className="mt-6 border-t border-[var(--app-border)] pt-5">
-            <p className="mb-3 text-xs font-black uppercase tracking-[0.12em] text-[var(--app-text-faint)]">
-              {t('settings.notifications.priorityHeading')}
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {NOTIF_CATEGORIES.map(({ key, labelKey, descriptionKey }) => (
-                <NotifPriority
-                  key={key}
-                  t={t}
-                  label={t(labelKey)}
-                  description={t(descriptionKey)}
-                  value={preferences[key]}
-                  onChange={(v) => updatePreference(key, v)}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--app-text-muted)]">
-            <span><span className="mr-1.5 inline-block size-2 rounded-full bg-rose-500" />{t('settings.notifications.legend.high')}</span>
-            <span><span className="mr-1.5 inline-block size-2 rounded-full bg-brand-500" />{t('settings.notifications.legend.normal')}</span>
-            <span><span className="mr-1.5 inline-block size-2 rounded-full bg-slate-400" />{t('settings.notifications.legend.low')}</span>
-            <span><span className="mr-1.5 inline-block size-2 rounded-full bg-[var(--app-border)]" />{t('settings.notifications.legend.off')}</span>
-          </div>
         </Card>
         <Card>
           <h2 className="font-black">{t('settings.data.title')}</h2>
@@ -590,26 +565,6 @@ function VisibilityPicker({ value, onSelect, t }) {
   )
 }
 
-const NOTIF_CATEGORIES = [
-  { key: 'notifMessages', labelKey: 'settings.notifications.cat.messages', descriptionKey: 'settings.notifications.cat.messagesDesc' },
-  { key: 'notifTransfers', labelKey: 'settings.notifications.cat.transfers', descriptionKey: 'settings.notifications.cat.transfersDesc' },
-  { key: 'notifParcels', labelKey: 'settings.notifications.cat.parcels', descriptionKey: 'settings.notifications.cat.parcelsDesc' },
-  { key: 'notifJobs', labelKey: 'settings.notifications.cat.jobs', descriptionKey: 'settings.notifications.cat.jobsDesc' },
-  { key: 'notifEvents', labelKey: 'settings.notifications.cat.events', descriptionKey: 'settings.notifications.cat.eventsDesc' },
-  { key: 'notifMarketplace', labelKey: 'settings.notifications.cat.marketplace', descriptionKey: 'settings.notifications.cat.marketplaceDesc' },
-  { key: 'notifActualites', labelKey: 'settings.notifications.cat.news', descriptionKey: 'settings.notifications.cat.newsDesc' },
-  { key: 'notifStatuses', labelKey: 'settings.notifications.cat.statuses', descriptionKey: 'settings.notifications.cat.statusesDesc' },
-  { key: 'notifOther', labelKey: 'settings.notifications.cat.other', descriptionKey: 'settings.notifications.cat.otherDesc' },
-  { key: 'notifSysteme', labelKey: 'settings.notifications.cat.system', descriptionKey: 'settings.notifications.cat.systemDesc' },
-]
-
-const PRIORITY_OPTIONS = [
-  { value: 'high', labelKey: 'settings.notifications.priority.high', color: 'bg-rose-500' },
-  { value: 'normal', labelKey: 'settings.notifications.priority.normal', color: 'bg-brand-500' },
-  { value: 'low', labelKey: 'settings.notifications.priority.low', color: 'bg-slate-400' },
-  { value: 'off', labelKey: 'settings.notifications.priority.off', color: 'bg-[var(--app-border)]' },
-]
-
 function NotifToggle({ label, description, checked, onChange }) {
   return (
     <button
@@ -639,37 +594,5 @@ function NotifToggle({ label, description, checked, onChange }) {
         <span className="block text-xs text-[var(--app-text-muted)]">{description}</span>
       </span>
     </button>
-  )
-}
-
-function NotifPriority({ label, description, value, onChange, t }) {
-  const resolved = value || 'high'
-  const current = PRIORITY_OPTIONS.find((o) => o.value === resolved) ?? PRIORITY_OPTIONS[0]
-  return (
-    <div className="rounded-2xl border border-[var(--app-border)] p-3">
-      <div className="mb-2.5 flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <strong className="block text-sm">{label}</strong>
-          <span className="block text-xs text-[var(--app-text-muted)]">{description}</span>
-        </div>
-        <span className={`mt-0.5 shrink-0 size-2.5 rounded-full ${current.color}`} />
-      </div>
-      <div className="flex gap-1.5">
-        {PRIORITY_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => onChange(opt.value)}
-            className={`flex-1 rounded-xl py-1 text-[10px] font-black transition ${
-              resolved === opt.value
-                ? 'bg-brand-700 text-white dark:bg-brand-600'
-                : 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)] hover:bg-[var(--app-accent-soft)] hover:text-[var(--app-accent)]'
-            }`}
-          >
-            {t(opt.labelKey)}
-          </button>
-        ))}
-      </div>
-    </div>
   )
 }
