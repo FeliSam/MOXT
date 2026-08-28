@@ -43,6 +43,7 @@ import { useLanguage } from '../../../contexts/useLanguage'
 import { addToast } from '../../ui/uiSlice'
 import { phase3Text } from '../../../i18n/phase3I18n'
 import { FeedSlideShell } from '../FeedSlideShell'
+import { liveFeedSocialStats } from '../feedItemUtils'
 
 function formatCount(value) {
   const n = Number(value) || 0
@@ -400,8 +401,8 @@ export function VideoFeedSlide({ item, index, active }) {
     },
     [dispatch],
   )
-  const liked = Boolean(
-    user?.id && Array.isArray(video?.likes) && video.likes.includes(user.id),
+  const liked = useSelector((state) =>
+    liveFeedSocialStats(state, 'video', video?.id, user?.id).liked,
   )
   const caption = String(video?.caption || '').trim()
   const publisher = {
@@ -549,6 +550,7 @@ export function VideoFeedSlide({ item, index, active }) {
       <FeedVideoPlayer video={video} active={active} onActivate={handleActivate} />
       {active ? (
         <VideoFeedActions
+          key={video.id}
           video={video}
           item={item}
           liked={liked}

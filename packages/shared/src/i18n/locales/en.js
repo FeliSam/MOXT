@@ -1317,6 +1317,8 @@ export const en = {
       eyebrow: "Discover MOXT",
       latestListings: "Latest listings",
       viewMarket: "View marketplace",
+      latestP2P: "P2P offers",
+      viewP2P: "View exchanges",
       availableParcels: "Available parcels",
       recentTrips: "Recent trips offered by travellers",
       kgAvailable: "{kg} kg available",

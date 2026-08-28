@@ -7,11 +7,12 @@ import {
   LuMessageCircle,
   LuMoon,
   LuNewspaper,
+  LuPlus,
   LuRss,
   LuSun,
 } from 'react-icons/lu'
 import { useSelector } from 'react-redux'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { getRouteMetadata } from '../../config/routeMeta'
 import { useTheme } from '../../contexts/useTheme'
 import { useLanguage } from '../../contexts/useLanguage'
@@ -30,6 +31,7 @@ import { GlobalSearch } from './GlobalSearch'
 import { FeedPublishMenu } from '../../features/feed/FeedPublishMenu'
 import { useDevModuleAccess } from '../../hooks/useDevModuleAccess'
 import { useIsFeedViewport } from '../../features/feed/feedViewport'
+import { useSecurityGate } from '../../features/security/useSecurityGate'
 
 function HeaderActionLabel({ children }) {
   return (
@@ -44,17 +46,30 @@ function pathMatches(pathname, prefix) {
 }
 
 /** Mobile header shortcuts — contextual per section. */
-function getMobileHeaderActions(pathname, { canFeed, canJobs, canNews, isFeedViewport }) {
+function getMobileHeaderActions(pathname, { canFeed, canJobs, canNews, canEvents, canParcels, isFeedViewport }) {
   const isHome = pathname === '/dashboard' || pathname === '/'
   const isTransfers = pathMatches(pathname, '/transfers')
   const isParcels = pathMatches(pathname, '/parcels')
   const isNews = pathMatches(pathname, '/news')
   const isMarketplace = pathMatches(pathname, '/marketplace')
+  const isP2P = pathMatches(pathname, '/p2p')
+  const isJobs = pathMatches(pathname, '/jobs')
+  const isEvents = pathMatches(pathname, '/events')
   const isFeed = pathMatches(pathname, '/feed') || pathname === '/videos'
   const showContextualShortcuts =
     !isTransfers && !isParcels && !isNews && !isMarketplace && !isFeed
+  const sectionPublish = isP2P && !pathMatches(pathname, '/p2p/publish')
+    ? { to: '/p2p/publish', labelKey: 'p2p.page.proposeOffer', gate: 'p2p', always: true }
+    : canJobs && isJobs && !pathMatches(pathname, '/jobs/publish')
+      ? { to: '/jobs/publish', labelKey: 'jobs.browse.publish', gate: 'publish' }
+      : canParcels && isParcels && !pathMatches(pathname, '/parcels/publish')
+        ? { to: '/parcels/publish', labelKey: 'parcels.browse.actions.publish', gate: 'voyage' }
+        : canEvents && isEvents && !pathMatches(pathname, '/events/publish')
+          ? { to: '/events/publish', labelKey: 'events.browse.create', gate: 'publish' }
+          : null
   return {
     showPublishMenu: isHome || isMarketplace,
+    sectionPublish,
     showNews: canNews && showContextualShortcuts && !(isFeedViewport && canFeed),
     showFeed: isFeedViewport && canFeed && (showContextualShortcuts || isNews),
     showPublishVideo: false,
@@ -66,6 +81,8 @@ function getMobileHeaderActions(pathname, { canFeed, canJobs, canNews, isFeedVie
 
 export function Header({ hideOnMobile = false }) {
   const location = useLocation()
+  const navigate = useNavigate()
+  const { requireP2PPublish, requirePublish, requireVoyagePublish } = useSecurityGate()
   const route = getRouteMetadata(location.pathname)
   const user = useSelector((state) => state.auth.user)
   const unreadCount = useSelector(selectUnreadNotificationCount)
@@ -76,6 +93,8 @@ export function Header({ hideOnMobile = false }) {
   const canFeed = useDevModuleAccess('feed')
   const canJobs = useDevModuleAccess('jobs')
   const canNews = useDevModuleAccess('news')
+  const canEvents = useDevModuleAccess('events')
+  const canParcels = useDevModuleAccess('parcels')
   const isFeedViewport = useIsFeedViewport()
   const isMessagesRoute = isMessagesPath(location.pathname)
   const isFeedRoute = location.pathname === '/feed' || location.pathname === '/videos'
@@ -91,6 +110,8 @@ export function Header({ hideOnMobile = false }) {
     canFeed,
     canJobs,
     canNews,
+    canEvents,
+    canParcels,
     isFeedViewport,
   })
   const showMessagesHeader = isMessagesRoute && messagesHeader?.content
@@ -140,6 +161,31 @@ export function Header({ hideOnMobile = false }) {
             <div className="relative grid lg:hidden" data-tour="header-publish">
               <FeedPublishMenu variant="header" />
             </div>
+          ) : null}
+
+          {mobileActions.sectionPublish ? (
+            <button
+              type="button"
+              data-tour="header-section-publish"
+              data-testid="header-section-publish"
+              className={`header-action-btn relative ${
+                mobileActions.sectionPublish.always ? 'grid' : 'grid lg:hidden'
+              }`}
+              aria-label={t(mobileActions.sectionPublish.labelKey)}
+              onClick={() => {
+                const { gate, to } = mobileActions.sectionPublish
+                const allowed =
+                  gate === 'p2p'
+                    ? requireP2PPublish()
+                    : gate === 'voyage'
+                      ? requireVoyagePublish()
+                      : requirePublish()
+                if (allowed) navigate(to)
+              }}
+            >
+              <LuPlus className="header-action-icon" strokeWidth={HEADER_ICON_STROKE} aria-hidden="true" />
+              <HeaderActionLabel>{t(mobileActions.sectionPublish.labelKey)}</HeaderActionLabel>
+            </button>
           ) : null}
 
           {mobileActions.showNews ? (

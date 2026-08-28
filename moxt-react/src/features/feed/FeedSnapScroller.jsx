@@ -136,7 +136,7 @@ export function FeedSnapScroller({
         if (!mounted) {
           return (
             <section
-              key={`feed-slide-${index}`}
+              key={`feed-ph-${item.id}-${index}`}
               data-feed-slide
               data-index={index}
               className={FEED_SLIDE_SECTION_CLASS}
@@ -145,7 +145,7 @@ export function FeedSnapScroller({
           )
         }
         return (
-          <Fragment key={`feed-slide-${index}`}>
+          <Fragment key={`feed-slide-${item.id}-${index}`}>
             {renderSlide(item, {
               index,
               active: index === activeIndex,

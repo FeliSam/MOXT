@@ -3,6 +3,7 @@ import {
   selectDashboardEvents,
   selectDashboardJobs,
   selectDashboardListings,
+  selectDashboardP2POffers,
   selectDashboardParcels,
 } from './dashboardBrowseUtils'
 
@@ -41,5 +42,19 @@ describe('dashboardBrowseUtils', () => {
         { id: 'l2', status: 'sold' },
       ]).map((l) => l.id),
     ).toEqual(['l1'])
+  })
+
+  it('keeps recent active P2P offers for the user currencies', () => {
+    expect(
+      selectDashboardP2POffers(
+        [
+          { id: 'o1', status: 'active', fromCurrency: 'RUB', toCurrency: 'XOF', createdAt: '2026-08-02' },
+          { id: 'o2', status: 'archived', fromCurrency: 'RUB', toCurrency: 'XOF', createdAt: '2026-08-03' },
+          { id: 'o3', status: 'active', fromCurrency: 'EUR', toCurrency: 'USD', createdAt: '2026-08-04' },
+          { id: 'o4', status: 'active', fromCurrency: 'RUB', toCurrency: 'XOF', createdAt: '2026-08-01' },
+        ],
+        { currencies: ['RUB', 'XOF'], limit: 8 },
+      ).map((o) => o.id),
+    ).toEqual(['o1', 'o4'])
   })
 })

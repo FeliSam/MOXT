@@ -6,7 +6,7 @@ Commandes pour aller vite au quotidien. Toutes s’exécutent à la racine du d�
 
 | Commande | Action |
 |----------|--------|
-| `npm run cpd -- -m "message"` | **Quotidien** : commit + push + site Yandex (+ lint/tests). **Sans** SMSC/push |
+| `npm run cpd -- -m "message"` | **Quotidien** : commit + push + site Yandex (+ lint/tests). **Sans** migrations / SMSC / push |
 | `npm run cpd:web -- -m "message"` | Identique à `cpd` |
 | `npm run cpd:full -- -m "message"` | Complet : + migrations + Supabase (push soft-fail si GUC managé) |
 | `npm run tout -- -m "message"` | Identique à `cpd:full` |

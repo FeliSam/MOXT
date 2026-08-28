@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux'
 import { useLanguage } from '../../../contexts/useLanguage'
 import { phase3Text } from '../../../i18n/phase3I18n'
 import { BusinessDiscoveryCard } from '../../businesses/BusinessDiscoveryCard'
+import { FeedItemActions } from '../FeedItemActions'
 import { FEED_SLIDE_SECTION_CLASS } from '../feedActionStyles.jsx'
 
 const VARIANT_TITLE = {
@@ -129,6 +130,26 @@ export function DiscoveryFeedSlide({ item, index, active = true }) {
 
   if (!slideCount) return null
 
+  const focusedBusiness = isBusinessVariant ? businesses[activeCard] : null
+  const focusedCard = !isBusinessVariant ? cards[activeCard] : null
+  const actionItem = focusedBusiness
+    ? {
+        kind: 'discovery',
+        entityId: focusedBusiness.id,
+        title: focusedBusiness.name || focusedBusiness.tradeName || '',
+        href: `/businesses/${focusedBusiness.id}`,
+        feedHref: `/businesses/${focusedBusiness.id}`,
+      }
+    : focusedCard
+      ? {
+          kind: 'discovery',
+          entityId: focusedCard.id,
+          title: focusedCard.title || '',
+          href: focusedCard.href || '/feed',
+          feedHref: focusedCard.href || '/feed',
+        }
+      : null
+
   return (
     <section
       data-feed-slide
@@ -199,8 +220,15 @@ export function DiscoveryFeedSlide({ item, index, active = true }) {
           </div>
         </div>
 
+        {active && actionItem ? (
+          <FeedItemActions
+            key={`${actionItem.kind}:${actionItem.entityId}`}
+            item={actionItem}
+          />
+        ) : null}
+
         {slideCount > 1 ? (
-          <div className="pointer-events-none absolute inset-x-0 bottom-[calc(var(--bottom-nav-clearance,0px)+0.5rem)] flex justify-center gap-1.5">
+          <div className="pointer-events-none absolute inset-x-0 bottom-[calc(var(--bottom-nav-clearance,0px)+0.5rem)] flex justify-center gap-1.5 pr-16">
             {Array.from({ length: slideCount }, (_, cardIndex) => (
               <span
                 key={`dot:${cardIndex}`}

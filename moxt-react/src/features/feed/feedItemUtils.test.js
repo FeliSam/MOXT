@@ -6,6 +6,7 @@ import {
   feedPath,
   isLinkedCatalogPost,
   linkedPostToFeedItemId,
+  liveFeedSocialStats,
   normalizeListingFeedItem,
   normalizePostFeedItem,
   normalizeVideoFeedItem,
@@ -302,5 +303,56 @@ describe('feedItemUtils', () => {
     const third = preserveFeedOrder(second, updated, signature)
     expect(third.items.map((item) => item.id)).toEqual(['video:b', 'video:a'])
     expect(third.items[0].stats.views).toBe(99)
+  })
+
+  it('liveFeedSocialStats isole likes et commentaires par publication', () => {
+    const state = {
+      marketplace: {
+        items: [
+          {
+            id: 'LST-A',
+            status: 'active',
+            favorites: ['u-me', 'u-other'],
+            comments: [{ id: 'c-a', text: 'sur A' }],
+          },
+          {
+            id: 'LST-B',
+            status: 'active',
+            favorites: ['u-other'],
+            comments: [{ id: 'c-b', text: 'sur B' }],
+          },
+        ],
+      },
+      posts: {
+        items: [
+          {
+            id: 'POST-A',
+            status: 'published',
+            sourceType: 'marketplace',
+            sourceId: 'LST-A',
+            likes: ['u-linked'],
+            comments: [{ id: 'c-post-a', text: 'commentaire lié A' }],
+          },
+          {
+            id: 'POST-B',
+            status: 'published',
+            sourceType: 'marketplace',
+            sourceId: 'LST-B',
+            likes: ['u-stray'],
+            comments: [{ id: 'c-post-b', text: 'commentaire lié B' }],
+          },
+        ],
+      },
+    }
+
+    const a = liveFeedSocialStats(state, 'listing', 'LST-A', 'u-me')
+    const b = liveFeedSocialStats(state, 'listing', 'LST-B', 'u-me')
+
+    expect(a.liked).toBe(true)
+    expect(b.liked).toBe(false)
+    expect(a.likeCount).toBe(3)
+    expect(b.likeCount).toBe(2)
+    expect(a.commentCount).toBe(2)
+    expect(b.commentCount).toBe(2)
   })
 })

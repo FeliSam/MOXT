@@ -1316,6 +1316,8 @@ export const ru = {
       eyebrow: "Открыть MOXT",
       latestListings: "Последние объявления",
       viewMarket: "Смотреть рынок",
+      latestP2P: "Предложения P2P",
+      viewP2P: "Смотреть обмены",
       availableParcels: "Доступные посылки",
       recentTrips: "Недавние поездки от путешественников",
       kgAvailable: "{kg} кг свободно",

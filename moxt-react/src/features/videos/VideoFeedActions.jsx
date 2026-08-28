@@ -16,6 +16,7 @@ import {
   FEED_ACTION_RAIL_CLASS,
   FeedActionCount,
 } from '../feed/feedActionStyles.jsx'
+import { liveFeedSocialStats } from '../feed/feedItemUtils'
 
 /**
  * Bouton s’abonner icon-only — après le nom (overlay bas).
@@ -92,29 +93,22 @@ export function VideoFeedActions({
 }) {
   const { t } = useLanguage()
   const p3 = (key, vars) => phase3Text(t, key, vars)
-  const likeCount =
-    item?.stats?.likes != null
-      ? Number(item.stats.likes) || 0
-      : Array.isArray(video?.likes)
-        ? video.likes.length
-        : 0
-  const commentCount =
-    item?.stats?.comments != null
-      ? Number(item.stats.comments) || 0
-      : Array.isArray(video?.comments)
-        ? video.comments.length
-        : 0
-  const shareCount =
-    item?.stats?.shares != null
-      ? Number(item.stats.shares) || 0
-      : Number(video?.shareCount) || 0
+  const social = useSelector((state) => liveFeedSocialStats(state, 'video', video?.id, ''))
+  const likeCount = social.likeCount
+  const commentCount = social.commentCount
+  const shareCount = Number(video?.shareCount) || Number(item?.stats?.shares) || 0
 
   function stopTouchBubble(event) {
     event.stopPropagation()
   }
 
   return (
-    <div className={FEED_ACTION_RAIL_CLASS} data-testid="feed-action-rail">
+    <div
+      className={FEED_ACTION_RAIL_CLASS}
+      data-testid="feed-action-rail"
+      data-kind="video"
+      data-entity={video?.id || ''}
+    >
       <button
         type="button"
         onClick={onLike}

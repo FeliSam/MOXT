@@ -183,7 +183,9 @@ export function FeedSlideShell({
             </Link>
           ) : null}
         </div>
-        {showActions && item && active ? <FeedItemActions item={item} /> : null}
+        {showActions && item && active ? (
+          <FeedItemActions key={item.id} item={item} />
+        ) : null}
       </div>
     </section>
   )

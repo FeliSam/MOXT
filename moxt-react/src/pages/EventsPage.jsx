@@ -79,11 +79,13 @@ export function EventsPage() {
                 onClick={() => setShowMine((v) => !v)}
               />
             ) : null}
-            <HeaderIslandButton
-              icon={FiPlus}
-              label={t('events.browse.create')}
-              onClick={() => navigate('/events/publish')}
-            />
+            <span className="hidden lg:inline-flex">
+              <HeaderIslandButton
+                icon={FiPlus}
+                label={t('events.browse.create')}
+                onClick={() => navigate('/events/publish')}
+              />
+            </span>
           </>
         }
       />

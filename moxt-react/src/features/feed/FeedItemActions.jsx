@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
+  FiBriefcase,
+  FiCalendar,
   FiCopy,
+  FiExternalLink,
   FiFlag,
   FiHeart,
   FiMessageCircle,
   FiMoreHorizontal,
+  FiPackage,
   FiShare2,
   FiX,
 } from 'react-icons/fi'
@@ -18,6 +22,7 @@ import { toggleLike } from '../posts/postsSlice'
 import { useShareEntity } from '../share/useShareEntity'
 import { addToast } from '../ui/uiSlice'
 import { phase3Text } from '../../i18n/phase3I18n'
+import { liveFeedSocialStats } from './feedItemUtils'
 import {
   FEED_ACTION_BTN_CLASS,
   FEED_ACTION_ICON_CLASS,
@@ -144,8 +149,23 @@ function FeedMoreSheet({ item, open, onClose }) {
   )
 }
 
+const OPEN_ICON = {
+  parcel: FiPackage,
+  job: FiBriefcase,
+  event: FiCalendar,
+  discovery: FiExternalLink,
+}
+
+function railKeysForKind(kind) {
+  if (kind === 'post' || kind === 'listing') return ['like', 'comment', 'share', 'more']
+  if (kind === 'parcel' || kind === 'job' || kind === 'event' || kind === 'discovery') {
+    return ['open', 'share', 'more']
+  }
+  return ['open', 'share', 'more']
+}
+
 /**
- * Rail d’actions unifié pour slides non-vidéo.
+ * Rail d’actions par type de publication (annonce ≠ colis ≠ découverte).
  * Monté seulement sur la slide active (position fixed hors shell mobile).
  */
 export function FeedItemActions({ item }) {
@@ -156,34 +176,15 @@ export function FeedItemActions({ item }) {
   const user = useSelector((state) => state.auth.user)
   const { requireAccount, promptAccount } = useGuestAction()
   const [moreOpen, setMoreOpen] = useState(false)
-
-  const post = useSelector((state) =>
-    item.kind === 'post' ? state.posts.items.find((row) => row.id === item.entityId) : null,
-  )
-  const listing = useSelector((state) =>
-    item.kind === 'listing'
-      ? state.marketplace.items.find((row) => row.id === item.entityId)
-      : null,
+  const entityKey = `${item.kind}:${item.entityId || item.id}`
+  const railKeys = railKeysForKind(item.kind)
+  const social = useSelector((state) =>
+    liveFeedSocialStats(state, item.kind, item.entityId, user?.id),
   )
 
-  const liked =
-    item.kind === 'post'
-      ? Boolean(user?.id && post?.likes?.includes(user.id))
-      : item.kind === 'listing'
-        ? Boolean(user?.id && listing?.favorites?.includes(user.id))
-        : false
-
-  const likeCount =
-    item.kind === 'post'
-      ? post?.likes?.length ?? (Number(item.stats?.likes) || 0)
-      : item.kind === 'listing'
-        ? listing?.favorites?.length ?? (Number(item.stats?.likes) || 0)
-        : Number(item.stats?.likes) || 0
-
-  const commentCount =
-    item.kind === 'post'
-      ? post?.comments?.length ?? (Number(item.stats?.comments) || 0)
-      : Number(item.stats?.comments) || 0
+  const liked = social.liked
+  const likeCount = social.likeCount
+  const commentCount = social.commentCount
 
   const shareUrl =
     typeof window === 'undefined'
@@ -194,6 +195,20 @@ export function FeedItemActions({ item }) {
     title: item.title || 'MOXT',
     url: shareUrl,
   })
+
+  const OpenIcon = OPEN_ICON[item.kind] || FiExternalLink
+  const openLabel =
+    item.kind === 'listing'
+      ? p3('feed.cta.listing')
+      : item.kind === 'parcel'
+        ? p3('feed.cta.parcel')
+        : item.kind === 'job'
+          ? p3('feed.cta.job')
+          : item.kind === 'event'
+            ? p3('feed.cta.event')
+            : item.kind === 'post'
+              ? p3('feed.cta.post')
+              : p3('feed.openDetail')
 
   function goDetail() {
     if (item.href) navigate(item.href)
@@ -216,19 +231,14 @@ export function FeedItemActions({ item }) {
         return
       }
       dispatch(toggleListingFavorite({ listingId: item.entityId, userId: user.id }))
-      return
     }
-    goDetail()
   }
 
-  function handleComment() {
-    goDetail()
-  }
-
-  return (
-    <>
-      <div className={FEED_ACTION_RAIL_CLASS} data-testid="feed-action-rail">
+  function renderAction(key) {
+    if (key === 'like') {
+      return (
         <button
+          key={key}
           type="button"
           onClick={handleLike}
           onPointerDown={stopTouchBubble}
@@ -239,13 +249,17 @@ export function FeedItemActions({ item }) {
         >
           <span className={`${FEED_ACTION_ICON_WRAP_CLASS} ${liked ? 'text-red-500' : ''}`}>
             <FiHeart className={`${FEED_ACTION_ICON_CLASS} ${liked ? 'fill-current' : ''}`} />
-            <FeedActionCount value={likeCount} />
+            <FeedActionCount key={`${entityKey}-likes`} value={likeCount} />
           </span>
         </button>
-
+      )
+    }
+    if (key === 'comment') {
+      return (
         <button
+          key={key}
           type="button"
-          onClick={handleComment}
+          onClick={goDetail}
           onPointerDown={stopTouchBubble}
           onTouchStart={stopTouchBubble}
           className={FEED_ACTION_BTN_CLASS}
@@ -253,11 +267,32 @@ export function FeedItemActions({ item }) {
         >
           <span className={FEED_ACTION_ICON_WRAP_CLASS}>
             <FiMessageCircle className={FEED_ACTION_ICON_CLASS} />
-            <FeedActionCount value={commentCount} />
+            <FeedActionCount key={`${entityKey}-comments`} value={commentCount} />
           </span>
         </button>
-
+      )
+    }
+    if (key === 'open') {
+      return (
         <button
+          key={key}
+          type="button"
+          onClick={goDetail}
+          onPointerDown={stopTouchBubble}
+          onTouchStart={stopTouchBubble}
+          className={FEED_ACTION_BTN_CLASS}
+          aria-label={openLabel}
+        >
+          <span className={FEED_ACTION_ICON_WRAP_CLASS}>
+            <OpenIcon className={FEED_ACTION_ICON_CLASS} />
+          </span>
+        </button>
+      )
+    }
+    if (key === 'share') {
+      return (
+        <button
+          key={key}
           type="button"
           onClick={share}
           onPointerDown={stopTouchBubble}
@@ -269,19 +304,34 @@ export function FeedItemActions({ item }) {
             <FiShare2 className={FEED_ACTION_ICON_SM_CLASS} />
           </span>
         </button>
+      )
+    }
+    return (
+      <button
+        key={key}
+        type="button"
+        onClick={() => setMoreOpen(true)}
+        onPointerDown={stopTouchBubble}
+        onTouchStart={stopTouchBubble}
+        className={FEED_ACTION_BTN_CLASS}
+        aria-label={p3('videos.feed.moreActions')}
+      >
+        <span className={FEED_ACTION_ICON_WRAP_CLASS}>
+          <FiMoreHorizontal className={FEED_ACTION_ICON_SM_CLASS} />
+        </span>
+      </button>
+    )
+  }
 
-        <button
-          type="button"
-          onClick={() => setMoreOpen(true)}
-          onPointerDown={stopTouchBubble}
-          onTouchStart={stopTouchBubble}
-          className={FEED_ACTION_BTN_CLASS}
-          aria-label={p3('videos.feed.moreActions')}
-        >
-          <span className={FEED_ACTION_ICON_WRAP_CLASS}>
-            <FiMoreHorizontal className={FEED_ACTION_ICON_SM_CLASS} />
-          </span>
-        </button>
+  return (
+    <>
+      <div
+        className={FEED_ACTION_RAIL_CLASS}
+        data-testid="feed-action-rail"
+        data-kind={item.kind}
+        data-entity={item.entityId || item.id}
+      >
+        {railKeys.map(renderAction)}
       </div>
       <FeedMoreSheet item={item} open={moreOpen} onClose={() => setMoreOpen(false)} />
     </>

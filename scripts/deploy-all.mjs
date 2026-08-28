@@ -10,8 +10,8 @@
  *   --no-push        ignorer git push
  *   --parallel       déploie smsc / admin / push en parallèle (défaut)
  *   --sequential     déploiement Supabase séquentiel
- *   --skip-migrate   sauter db:push
- *   --skip-supabase  sauter smsc, admin-promote, push
+ *   --skip-migrate   sauter db:push (passé automatiquement par cpd / --skip-supabase via ship)
+ *   --skip-supabase  sauter smsc, admin-promote, push (ship y ajoute --skip-migrate)
  *   --skip-web       sauter web:deploy:yandex
  *   --purge-cdn      invalider le cache CDN après upload
  */

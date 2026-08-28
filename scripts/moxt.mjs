@@ -118,8 +118,10 @@ async function ship() {
   if (argv.includes('--purge-cdn')) deployArgs.push('--purge-cdn')
   if (argv.includes('--skip-web')) deployArgs.push('--skip-web')
   if (argv.includes('--skip-supabase')) {
-    deployArgs.push('--skip-supabase')
-    console.log('\n  ℹ Mode rapide : Supabase (SMSC/push) ignoré — site seulement')
+    // cpd quotidien = site seulement. Sans --skip-migrate, db:push reste bloquant
+    // (timeout Postgres) et le build Yandex ne part jamais.
+    deployArgs.push('--skip-supabase', '--skip-migrate')
+    console.log('\n  ℹ Mode rapide : migrations + SMSC/push ignorés — site seulement')
   }
 
   if (runNode('deploy-all.mjs', deployArgs) !== 0) process.exit(1)
@@ -183,7 +185,7 @@ MOXT CLI — npm run moxt -- <commande>
 Documentation complète : scripts/RACCOURCIS.md
 
 Raccourcis npm :
-  npm run cpd -- -m "message"       Quotidien : commit + push + site (sans SMSC/push)
+  npm run cpd -- -m "message"       Quotidien : commit + push + site (sans migrations/SMSC)
   npm run cpd:full -- -m "message"  Complet : + migrations + Supabase
   npm run deploy:web                Site seul (+ purge CDN)
   npm run deploy:web:yc             Site via yc (si S3 instable)
@@ -205,7 +207,7 @@ Flags :
   --no-commit     Push + deploy sans commit
   --purge-cdn      Purge CDN Yandex (défaut sur ship/tout/cpd/go)
   --skip-web       Sauter le site
-  --skip-supabase  Sauter Supabase (défaut de npm run cpd)
+  --skip-supabase  Sauter migrations + SMSC/push (défaut de npm run cpd)
   --skip-checks    Sauter lint + tests (urgence seulement)
 `)
 }

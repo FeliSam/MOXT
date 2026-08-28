@@ -174,6 +174,63 @@ export function aggregateEntitySocialStats(
   }
 }
 
+const FEED_ENTITY_COLLECTIONS = {
+  listing: (state) => state.marketplace?.items,
+  post: (state) => state.posts?.items,
+  video: (state) => state.videos?.items,
+  parcel: (state) => state.parcels?.items,
+  job: (state) => state.jobs?.items,
+  event: (state) => state.events?.items,
+}
+
+export function resolveFeedEntity(state, kind, entityId) {
+  if (!kind || !entityId) return null
+  const list = FEED_ENTITY_COLLECTIONS[kind]?.(state)
+  if (!Array.isArray(list)) return null
+  return list.find((row) => row?.id === entityId) || null
+}
+
+/** Likes d’une annonce = favoris de la fiche (pas un tableau `likes` partagé). */
+export function entityOwnSocial(kind, entity) {
+  if (!entity) return { likes: [], comments: [] }
+  if (kind === 'listing') {
+    const fromFavorites = Array.isArray(entity.favorites) ? entity.favorites : []
+    const fromLikes = Array.isArray(entity.likes) ? entity.likes : []
+    return {
+      likes: [...fromFavorites, ...fromLikes],
+      comments: Array.isArray(entity.comments) ? entity.comments : [],
+    }
+  }
+  return {
+    likes: Array.isArray(entity.likes) ? entity.likes : [],
+    comments: Array.isArray(entity.comments) ? entity.comments : [],
+  }
+}
+
+/**
+ * Compteurs / état « j’aime » lus dans Redux pour UNE publication (id + kind).
+ * Ne jamais réutiliser les stats d’un autre item du fil.
+ */
+export function liveFeedSocialStats(state = {}, kind, entityId, userId = '') {
+  const entity = resolveFeedEntity(state, kind, entityId)
+  const own = entityOwnSocial(kind, entity)
+  const counts = aggregateEntitySocialStats(kind, entityId, state, own)
+  const likedIds = likeIdSet([own.likes])
+  if (kind && entityId) {
+    const targetId = feedItemKey(kind, entityId)
+    for (const post of state.posts?.items || []) {
+      if (!isActivePost(post)) continue
+      if (linkedPostToFeedItemId(post) !== targetId) continue
+      for (const id of likeIdSet([post.likes])) likedIds.add(id)
+    }
+  }
+  return {
+    likeCount: counts.likes,
+    commentCount: counts.comments,
+    liked: Boolean(userId && likedIds.has(String(userId))),
+  }
+}
+
 /**
  * Résout `?item=` : un post lié redirige vers la fiche catalogue initiale.
  */
@@ -292,8 +349,8 @@ export function normalizeListingFeedItem(listing, state = {}) {
       )
   const images = asImages(listing.images)
   const social = aggregateEntitySocialStats('listing', listing.id, state, {
-    likes: listing.likes,
-    comments: listing.comments,
+    likes: entityOwnSocial('listing', listing).likes,
+    comments: entityOwnSocial('listing', listing).comments,
   })
   return {
     id: feedItemKey('listing', listing.id),

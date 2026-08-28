@@ -271,6 +271,12 @@ export const dashboardListingTrackClass =
 export const dashboardListingItemClass =
   'w-[clamp(12rem,25vw,16rem)] shrink-0 overflow-hidden lg:w-auto lg:min-w-0 lg:shrink'
 
+/** Offres P2P — carrousel horizontal sous la recherche accueil. */
+export const dashboardP2PTrackClass = `${dashboardTrackBase} dashboard-h-bleed`
+
+export const dashboardP2PItemClass =
+  'w-[min(20.5rem,86vw)] shrink-0 sm:w-[min(22rem,42vw)]'
+
 /** Services essentiels — carrousel horizontal sur tous les écrans. */
 export const dashboardServicesTrackClass = `${dashboardTrackBase} dashboard-h-bleed`
 

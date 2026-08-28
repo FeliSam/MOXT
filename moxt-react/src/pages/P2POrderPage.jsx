@@ -48,8 +48,9 @@ import { storageService } from '../services/storageService'
 import { useP2pOrderRealtime } from '../features/p2p/useP2pRealtime'
 
 const ACCOUNT_EMPHASIS_CLASS =
-  'rounded-2xl border border-brand-200/70 bg-brand-50/70 p-4 text-sm dark:border-brand-800/50 dark:bg-brand-950/30'
-const ACCOUNT_MUTED_CLASS = 'rounded-2xl bg-[var(--app-surface-muted)] p-4 text-sm'
+  'rounded-2xl border border-[color-mix(in_srgb,var(--app-teal)_32%,var(--app-border))] bg-[color-mix(in_srgb,var(--app-teal)_14%,var(--app-surface))] p-4 text-sm text-[var(--app-text)]'
+const ACCOUNT_MUTED_CLASS =
+  'rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-4 text-sm text-[var(--app-text)]'
 
 const ORDER_STATUS_KEYS = {
   created: { labelKey: 'p2p.order.status.created', tone: 'info' },
@@ -396,7 +397,7 @@ export function P2POrderPage() {
 
         {(receivePhone || receiveName) && isBuyer ? (
           <div className={ACCOUNT_EMPHASIS_CLASS}>
-            <p className="text-xs font-black uppercase tracking-wide text-brand-700 dark:text-brand-300">
+            <p className="text-xs font-black uppercase tracking-wide text-[var(--app-teal)]">
               {t('p2p.order.payToTitle')}
             </p>
             <p className="mt-1 text-sm text-[var(--app-text-muted)]">{t('p2p.order.payToHint')}</p>
@@ -435,7 +436,7 @@ export function P2POrderPage() {
         {(order.buyerReceivePhone || order.buyerReceiveName) && (isSeller || isBuyer) ? (
           <div className={isSeller ? ACCOUNT_EMPHASIS_CLASS : ACCOUNT_MUTED_CLASS}>
             {isSeller ? (
-              <p className="text-xs font-black uppercase tracking-wide text-brand-700 dark:text-brand-300">
+              <p className="text-xs font-black uppercase tracking-wide text-[var(--app-teal)]">
                 {t('p2p.order.buyerPayToTitle', { currency: order.toCurrency })}
               </p>
             ) : (
@@ -529,6 +530,42 @@ export function P2POrderPage() {
           </div>
         ) : null}
 
+        {order.proofs?.length ? (
+          <div className="grid gap-2">
+            <h3 className="text-sm font-black">{t('p2p.order.proofsTitle')}</h3>
+            {order.proofs.map((proof) => (
+              <div
+                key={proof.id}
+                className="flex min-w-0 items-center justify-between gap-2 overflow-hidden rounded-xl bg-[var(--app-surface-muted)] p-3 text-sm"
+              >
+                <span className="flex min-w-0 items-center gap-2 overflow-hidden">
+                  <FiFileText className="shrink-0" />
+                  <FileNameText name={proof.name} className="font-medium" maxLength={28} />
+                  <Badge tone={proof.userId === order.buyerId ? 'info' : 'slate'} className="shrink-0 !text-[10px]">
+                    {proof.userId === order.buyerId
+                      ? t('p2p.order.proofBuyer')
+                      : t('p2p.order.proofSeller')}
+                  </Badge>
+                </span>
+                {proof.path ? (
+                  <button
+                    type="button"
+                    onClick={() => handleViewProof(proof)}
+                    className="flex shrink-0 items-center gap-1 text-xs font-bold text-brand-700 hover:underline dark:text-brand-300"
+                  >
+                    {t('p2p.order.viewProof')} <FiExternalLink className="text-xs" />
+                  </button>
+                ) : null}
+              </div>
+            ))}
+            {order.status === 'waiting_payment' && isSeller && !buyerProofs.length ? (
+              <p className="text-xs text-amber-700 dark:text-amber-300">
+                {t('p2p.order.noBuyerProofYet')}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
         {!actionsLocked && isParty ? (
           <div className="grid gap-3 border-t border-[var(--app-border)] pt-4">
             <div className="flex flex-wrap gap-2">
@@ -576,42 +613,6 @@ export function P2POrderPage() {
             proofProgress.phase === 'done' ||
             proofProgress.phase === 'error' ? (
               <UploadProgress progress={proofProgress} compact />
-            ) : null}
-          </div>
-        ) : null}
-
-        {order.proofs?.length ? (
-          <div className="grid gap-2">
-            <h3 className="text-sm font-black">{t('p2p.order.proofsTitle')}</h3>
-            {order.proofs.map((proof) => (
-              <div
-                key={proof.id}
-                className="flex min-w-0 items-center justify-between gap-2 overflow-hidden rounded-xl bg-[var(--app-surface-muted)] p-3 text-sm"
-              >
-                <span className="flex min-w-0 items-center gap-2 overflow-hidden">
-                  <FiFileText className="shrink-0" />
-                  <FileNameText name={proof.name} className="font-medium" maxLength={28} />
-                  <Badge tone={proof.userId === order.buyerId ? 'info' : 'slate'} className="shrink-0 !text-[10px]">
-                    {proof.userId === order.buyerId
-                      ? t('p2p.order.proofBuyer')
-                      : t('p2p.order.proofSeller')}
-                  </Badge>
-                </span>
-                {proof.path ? (
-                  <button
-                    type="button"
-                    onClick={() => handleViewProof(proof)}
-                    className="flex shrink-0 items-center gap-1 text-xs font-bold text-brand-700 hover:underline dark:text-brand-300"
-                  >
-                    {t('p2p.order.viewProof')} <FiExternalLink className="text-xs" />
-                  </button>
-                ) : null}
-              </div>
-            ))}
-            {order.status === 'waiting_payment' && isSeller && !buyerProofs.length ? (
-              <p className="text-xs text-amber-700 dark:text-amber-300">
-                {t('p2p.order.noBuyerProofYet')}
-              </p>
             ) : null}
           </div>
         ) : null}

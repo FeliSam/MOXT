@@ -116,11 +116,13 @@ export function JobsPage() {
                 />
               </>
             ) : null}
-            <HeaderIslandButton
-              icon={FiPlus}
-              label={t('jobs.browse.publish')}
-              onClick={() => navigate('/jobs/publish')}
-            />
+            <span className="hidden lg:inline-flex">
+              <HeaderIslandButton
+                icon={FiPlus}
+                label={t('jobs.browse.publish')}
+                onClick={() => navigate('/jobs/publish')}
+              />
+            </span>
           </>
         }
       />
