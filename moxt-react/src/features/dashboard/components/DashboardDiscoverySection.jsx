@@ -7,6 +7,7 @@ import { Card } from '../../../components/ui/Card'
 import { LinkifiedText } from '../../../components/ui/LinkifiedText'
 import { EntityVerifiedName } from '../../../components/ui/EntityVerifiedName'
 import { useLanguage } from '../../../contexts/useLanguage'
+import { useDevModuleAccess } from '../../../hooks/useDevModuleAccess'
 import { jobContractLabel, jobSectorLabel } from '../../jobs/jobDisplayUtils'
 import { formatParcelDepartureLabel } from '../../parcels/parcelUtils'
 import { buildNewsFeed, newsPostPath } from '../../posts/postFeedUtils'
@@ -27,6 +28,7 @@ export function DashboardDiscoverySection({
   parcelsLoading,
 }) {
   const { language, t } = useLanguage()
+  const canNews = useDevModuleAccess('news')
   const allPosts = useSelector((s) => s.posts?.items ?? [])
   const listings = useSelector((s) => s.marketplace?.items ?? [])
   const catalogParcels = useSelector((s) => s.parcels?.items ?? [])
@@ -35,17 +37,19 @@ export function DashboardDiscoverySection({
   const businesses = useSelector((s) => s.businesses?.items ?? [])
   const posts = useMemo(
     () =>
-      buildNewsFeed(allPosts, {
-        language,
-        catalogs: {
-          listings,
-          parcels: catalogParcels,
-          jobs: catalogJobs,
-          events: catalogEvents,
-          businesses,
-        },
-      }).slice(0, 4),
-    [allPosts, businesses, catalogEvents, catalogJobs, catalogParcels, language, listings],
+      canNews
+        ? buildNewsFeed(allPosts, {
+            language,
+            catalogs: {
+              listings,
+              parcels: catalogParcels,
+              jobs: catalogJobs,
+              events: catalogEvents,
+              businesses,
+            },
+          }).slice(0, 4)
+        : [],
+    [allPosts, businesses, canNews, catalogEvents, catalogJobs, catalogParcels, language, listings],
   )
 
   const showLiveLists = parcelsLoading || jobsLoading || eventsLoading

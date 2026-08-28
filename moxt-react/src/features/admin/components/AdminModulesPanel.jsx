@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { FiBriefcase, FiBox, FiCalendar, FiPlay, FiRss, FiStar } from 'react-icons/fi'
+import { FiBriefcase, FiBox, FiCalendar, FiFileText, FiPlay, FiRss, FiStar } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
@@ -13,6 +13,7 @@ import { addToast } from '../../ui/uiSlice'
 const MODULE_ICONS = {
   stars: FiStar,
   feed: FiRss,
+  news: FiFileText,
   videos: FiPlay,
   events: FiCalendar,
   jobs: FiBriefcase,

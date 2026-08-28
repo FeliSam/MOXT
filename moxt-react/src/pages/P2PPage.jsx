@@ -14,13 +14,14 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { Modal } from '../components/ui/Modal'
 import { HeaderIslandButton, PageHeader } from '../components/ui/PageHeader'
 import { RevealListItem } from '../components/ui/RevealListItem'
+import { SwipeToAccept } from '../components/ui/SwipeToAccept'
 import { Select } from '../components/ui/Select'
 import { useLanguage } from '../contexts/useLanguage'
 import { P2PNoEscrowBanner } from '../features/p2p/components/P2PNoEscrowBanner'
 import { P2PReputationBadge } from '../features/p2p/components/P2PReputationBadge'
 import { P2PTrustChecklist } from '../features/p2p/components/P2PTrustChecklist'
 import { acceptOffer } from '../features/p2p/p2pSlice'
-import { calculateP2PFee } from '../features/p2p/p2pUtils'
+import { calculateP2PFee, p2pReceivedFromOffered } from '../features/p2p/p2pUtils'
 import { selectPlatformFees } from '../features/admin/platformRatesSlice'
 import { useSecurityGate } from '../features/security/useSecurityGate'
 import { transferCurrenciesForCountry } from '../features/transfers/transferConfig'
@@ -194,6 +195,7 @@ export function P2PPage() {
           {displayedOffers.length ? (
             displayedOffers.map((offer, index) => {
               const feeAmount = calculateP2PFee(offer.amount, offer.fromCurrency)
+              const equivalentAmount = p2pReceivedFromOffered(offer.amount, offer.rate)
               const canAccept =
                 tab === 'active' && offer.status === 'active' && offer.ownerId !== user.id
               return (
@@ -204,11 +206,19 @@ export function P2PPage() {
                     tab === 'archived' ? 'opacity-80' : ''
                   }`}
                 >
+                  <Link
+                    to={`/p2p/${offer.id}`}
+                    className="absolute inset-0 z-[1]"
+                    aria-label={t('p2p.page.amountTo', {
+                      amount: formatMoney(offer.amount, offer.fromCurrency),
+                      currency: offer.toCurrency,
+                    })}
+                  />
                   <div
                     aria-hidden
-                    className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[var(--app-teal)] via-brand-500 to-[var(--app-cobalt)] opacity-80"
+                    className="pointer-events-none absolute inset-x-0 top-0 z-[2] h-1 bg-gradient-to-r from-[var(--app-teal)] via-brand-500 to-[var(--app-cobalt)] opacity-80"
                   />
-                  <div className="flex min-w-0 flex-1 flex-col p-4 sm:p-5">
+                  <div className="pointer-events-none relative z-[2] flex min-w-0 flex-1 flex-col p-4 sm:p-5">
                     <div className="flex min-w-0 items-start justify-between gap-3">
                       <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                         <Badge tone={offer.status === 'active' ? 'success' : 'warning'}>
@@ -277,6 +287,16 @@ export function P2PPage() {
                           </p>
                         </div>
                       </div>
+                      {equivalentAmount ? (
+                        <div className="mt-3 flex min-w-0 items-baseline justify-between gap-3 border-t border-[color-mix(in_srgb,var(--app-teal)_14%,transparent)] pt-2.5">
+                          <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--app-text-muted)]">
+                            {t('p2p.page.equivalent')}
+                          </span>
+                          <span className="min-w-0 truncate text-sm font-black tabular-nums text-[var(--app-text)]">
+                            {formatMoney(equivalentAmount, offer.toCurrency)}
+                          </span>
+                        </div>
+                      ) : null}
                     </div>
 
                     {feeAmount > 0 ? (
@@ -297,19 +317,16 @@ export function P2PPage() {
                       />
                     ) : null}
 
-                    <div className="mt-auto flex min-w-0 flex-col gap-2 pt-4 sm:flex-row sm:items-stretch">
+                    <div className="pointer-events-auto mt-auto flex min-w-0 flex-col gap-2 pt-4">
                       {canAccept ? (
-                        <Button
-                          size="sm"
-                          className="min-h-10 w-full flex-1 sm:min-h-11"
-                          onClick={() => requestAccept(offer)}
-                        >
-                          {t('p2p.page.accept')}
-                        </Button>
+                        <SwipeToAccept
+                          label={t('p2p.page.swipeToAccept')}
+                          onComplete={() => requestAccept(offer)}
+                        />
                       ) : null}
                       <Link
                         to={`/p2p/${offer.id}`}
-                        className={canAccept ? 'min-w-0 flex-1' : 'min-w-0 w-full flex-1'}
+                        className="min-w-0 w-full"
                       >
                         <span className="flex min-h-10 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--app-teal)] px-3 text-center text-xs font-black text-white transition group-hover:brightness-110 sm:min-h-11 sm:px-4 sm:text-sm">
                           {t('p2p.page.detail')} <FiArrowRight className="shrink-0 text-xs" />

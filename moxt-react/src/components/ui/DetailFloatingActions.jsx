@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { FiEdit2, FiPlus, FiShare2 } from 'react-icons/fi'
+import { FiArchive, FiEdit2, FiPlus, FiRotateCcw, FiShare2 } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../../contexts/useLanguage'
 import { ContactButton } from '../../features/communications/ContactButton'
@@ -33,6 +33,11 @@ export function DetailFloatingActions({
   sourceType,
   sourceId,
   editTo,
+  editLabel,
+  onArchive,
+  archiveLabel,
+  onReactivate,
+  reactivateLabel,
 }) {
   const { t } = useLanguage()
   const mt = (key, vars) => marketplaceText(t, key, vars)
@@ -83,11 +88,53 @@ export function DetailFloatingActions({
     isOwner && editTo
       ? {
           key: 'edit',
-          label: mt('marketplace.common.edit'),
+          label: editLabel || mt('marketplace.common.edit'),
           node: (
-            <Link to={editTo} aria-label={mt('marketplace.common.edit')} className={ICON_BUTTON_CLASS}>
+            <Link
+              to={editTo}
+              aria-label={editLabel || mt('marketplace.common.edit')}
+              className={ICON_BUTTON_CLASS}
+            >
               <FiEdit2 />
             </Link>
+          ),
+        }
+      : null,
+    isOwner && onArchive
+      ? {
+          key: 'archive',
+          label: archiveLabel || mt('marketplace.common.archive'),
+          node: (
+            <button
+              type="button"
+              onClick={() => {
+                onArchive()
+                setOpen(false)
+              }}
+              aria-label={archiveLabel || mt('marketplace.common.archive')}
+              className={ICON_BUTTON_CLASS}
+            >
+              <FiArchive />
+            </button>
+          ),
+        }
+      : null,
+    isOwner && onReactivate
+      ? {
+          key: 'reactivate',
+          label: reactivateLabel || mt('marketplace.common.republish'),
+          node: (
+            <button
+              type="button"
+              onClick={() => {
+                onReactivate()
+                setOpen(false)
+              }}
+              aria-label={reactivateLabel || mt('marketplace.common.republish')}
+              className={ICON_BUTTON_CLASS}
+            >
+              <FiRotateCcw />
+            </button>
           ),
         }
       : null,

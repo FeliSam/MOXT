@@ -24,6 +24,7 @@ import { useDevModuleNavAccess } from '../../hooks/useDevModuleAccess'
 
 const PUBLISH_OPTION_MODULES = {
   video: 'videos',
+  post: 'news',
   event: 'events',
   job: 'jobs',
   parcel: 'parcels',

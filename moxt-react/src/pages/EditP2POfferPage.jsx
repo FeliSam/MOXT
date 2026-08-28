@@ -115,6 +115,9 @@ export function EditP2POfferPage() {
 
   if (!offer) return <Card>{t('p2p.edit.notFound')}</Card>
   if (offer.ownerId !== user.id) return <Navigate to={`/p2p/${offerId}`} replace />
+  if (!['active', 'archived'].includes(offer.status)) {
+    return <Navigate to={`/p2p/${offerId}`} replace />
+  }
 
   function applyPairChange(current, nextFrom, nextTo) {
     if (nextFrom === current.fromCurrency && nextTo === current.toCurrency) return current

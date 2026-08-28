@@ -33,7 +33,7 @@ export const primaryNavigationItems = [
     desktopOnly: true,
     requiresOwnedBusiness: true,
   },
-  { id: 'news', label: 'Actualités', labelKey: 'nav.news', path: '/news', icon: FiFileText, desktopOnly: true },
+  { id: 'news', label: 'Actualités', labelKey: 'nav.news', path: '/news', icon: FiFileText, desktopOnly: true, devModule: 'news' },
 ]
 
 const primaryById = Object.fromEntries(primaryNavigationItems.map((item) => [item.id, item]))

@@ -3,6 +3,7 @@ import {
   FiAlertTriangle,
   FiCheckCircle,
   FiClock,
+  FiCopy,
   FiExternalLink,
   FiFileText,
   FiStar,
@@ -18,6 +19,7 @@ import { Card } from '../components/ui/Card'
 import { FileNameText } from '../components/ui/FileNameText'
 import { Modal } from '../components/ui/Modal'
 import { PageHeader } from '../components/ui/PageHeader'
+import { StarRating } from '../components/ui/StarRating'
 import { UploadProgress } from '../components/ui/UploadProgress'
 import { useLanguage } from '../contexts/useLanguage'
 import { openAdminSupportChat } from '../features/communications/adminSupportChat'
@@ -45,9 +47,14 @@ import { useUploadProgress } from '../hooks/useUploadProgress'
 import { storageService } from '../services/storageService'
 import { useP2pOrderRealtime } from '../features/p2p/useP2pRealtime'
 
+const ACCOUNT_EMPHASIS_CLASS =
+  'rounded-2xl border border-brand-200/70 bg-brand-50/70 p-4 text-sm dark:border-brand-800/50 dark:bg-brand-950/30'
+const ACCOUNT_MUTED_CLASS = 'rounded-2xl bg-[var(--app-surface-muted)] p-4 text-sm'
+
 const ORDER_STATUS_KEYS = {
   created: { labelKey: 'p2p.order.status.created', tone: 'info' },
   waiting_payment: { labelKey: 'p2p.order.status.waitingPayment', tone: 'warning' },
+  buyer_receive_details: { labelKey: 'p2p.order.status.buyerReceiveDetails', tone: 'info' },
   completed: { labelKey: 'p2p.order.status.completed', tone: 'success' },
   cancelled: { labelKey: 'p2p.order.status.cancelled', tone: 'slate' },
   disputed: { labelKey: 'p2p.order.status.disputed', tone: 'warning' },
@@ -90,6 +97,13 @@ export function P2POrderPage() {
         !['resolved', 'closed'].includes(item.status),
     ),
   )
+
+  useEffect(() => {
+    if (!myReview) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- préremplit l'avis existant
+    if (Number.isFinite(myReview.rating)) setRating(myReview.rating)
+    if (typeof myReview.comment === 'string') setComment(myReview.comment)
+  }, [myReview])
 
   const orderStatusLabel = (status) =>
     ORDER_STATUS_KEYS[status] ? t(ORDER_STATUS_KEYS[status].labelKey) : status
@@ -154,6 +168,26 @@ export function P2POrderPage() {
   const otherPartyId = isBuyer ? order.sellerId : order.buyerId
   const otherPartyName = isBuyer ? order.sellerName : order.buyerName
   const statusMeta = ORDER_STATUS_KEYS[order.status] || { tone: 'info' }
+  const phoneLabel = t('p2p.order.receivePhone')
+
+  function copyField(value, label) {
+    const text = String(value || '').trim()
+    if (!text) return
+    navigator.clipboard
+      ?.writeText(text)
+      .then(() => {
+        dispatch(
+          addToast({
+            title: t('transfers.detail.copiedTitle'),
+            message: t('transfers.detail.copiedMessage', { label }),
+            tone: 'success',
+          }),
+        )
+      })
+      .catch(() => {
+        dispatch(addToast({ title: t('common.error'), message: t('common.retryLater'), tone: 'error' }))
+      })
+  }
 
   async function handleProofUpload(event) {
     const file = event.target.files?.[0]
@@ -361,7 +395,7 @@ export function P2POrderPage() {
         </div>
 
         {(receivePhone || receiveName) && isBuyer ? (
-          <div className="rounded-2xl border border-brand-200/70 bg-brand-50/70 p-4 dark:border-brand-800/50 dark:bg-brand-950/30">
+          <div className={ACCOUNT_EMPHASIS_CLASS}>
             <p className="text-xs font-black uppercase tracking-wide text-brand-700 dark:text-brand-300">
               {t('p2p.order.payToTitle')}
             </p>
@@ -370,29 +404,50 @@ export function P2POrderPage() {
               {receiveMethod ? <Row label={t('p2p.detail.method')} value={receiveMethod} /> : null}
               {receiveName ? <Row label={t('p2p.order.receiveName')} value={receiveName} /> : null}
               {receivePhone ? (
-                <Row label={t('p2p.order.receivePhone')} value={receivePhone} />
+                <Row
+                  label={phoneLabel}
+                  value={receivePhone}
+                  copyAria={t('transfers.detail.copyAria', { label: phoneLabel })}
+                  onCopy={() => copyField(receivePhone, phoneLabel)}
+                />
               ) : null}
             </div>
           </div>
         ) : null}
 
         {(receivePhone || receiveName) && isSeller ? (
-          <div className="rounded-2xl bg-[var(--app-surface-muted)] p-4 text-sm">
+          <div className={ACCOUNT_MUTED_CLASS}>
             <p className="font-bold">{t('p2p.order.yourReceiveTitle')}</p>
             <div className="mt-2 grid gap-2">
               {receiveName ? <Row label={t('p2p.order.receiveName')} value={receiveName} /> : null}
               {receivePhone ? (
-                <Row label={t('p2p.order.receivePhone')} value={receivePhone} />
+                <Row
+                  label={phoneLabel}
+                  value={receivePhone}
+                  copyAria={t('transfers.detail.copyAria', { label: phoneLabel })}
+                  onCopy={() => copyField(receivePhone, phoneLabel)}
+                />
               ) : null}
             </div>
           </div>
         ) : null}
 
         {(order.buyerReceivePhone || order.buyerReceiveName) && (isSeller || isBuyer) ? (
-          <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 text-sm">
-            <p className="font-bold">
-              {t('p2p.order.buyerPayToTitle', { currency: order.toCurrency })}
-            </p>
+          <div className={isSeller ? ACCOUNT_EMPHASIS_CLASS : ACCOUNT_MUTED_CLASS}>
+            {isSeller ? (
+              <p className="text-xs font-black uppercase tracking-wide text-brand-700 dark:text-brand-300">
+                {t('p2p.order.buyerPayToTitle', { currency: order.toCurrency })}
+              </p>
+            ) : (
+              <p className="font-bold">
+                {t('p2p.order.buyerPayToTitle', { currency: order.toCurrency })}
+              </p>
+            )}
+            {isSeller ? (
+              <p className="mt-1 text-sm text-[var(--app-text-muted)]">
+                {t('p2p.order.buyerPayToHint', { currency: order.toCurrency })}
+              </p>
+            ) : null}
             <div className="mt-2 grid gap-2">
               {order.buyerReceiveMethod ? (
                 <Row label={t('p2p.detail.method')} value={order.buyerReceiveMethod} />
@@ -401,7 +456,12 @@ export function P2POrderPage() {
                 <Row label={t('p2p.order.receiveName')} value={order.buyerReceiveName} />
               ) : null}
               {order.buyerReceivePhone ? (
-                <Row label={t('p2p.order.receivePhone')} value={order.buyerReceivePhone} />
+                <Row
+                  label={phoneLabel}
+                  value={order.buyerReceivePhone}
+                  copyAria={t('transfers.detail.copyAria', { label: phoneLabel })}
+                  onCopy={() => copyField(order.buyerReceivePhone, phoneLabel)}
+                />
               ) : null}
             </div>
             {isBuyer && order.status === 'waiting_payment' ? (
@@ -566,6 +626,13 @@ export function P2POrderPage() {
                 <FiCheckCircle className="mt-0.5 text-brand-700" />
                 <div>
                   <strong className="block text-sm">{orderStatusLabel(event.status)}</strong>
+                  {event.buyerReceiveMethod || event.buyerReceiveName || event.buyerReceivePhone ? (
+                    <span className="mt-0.5 block text-xs text-[var(--app-text-muted)]">
+                      {[event.buyerReceiveMethod, event.buyerReceiveName, event.buyerReceivePhone]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </span>
+                  ) : null}
                   <span className="text-xs text-slate-500">{formatDate(event.at)}</span>
                 </div>
               </div>
@@ -612,24 +679,30 @@ export function P2POrderPage() {
             <p className="mt-2 text-sm text-[var(--app-text-muted)]">
               {t('p2p.order.rateIntro', { name: otherPartyName })}
             </p>
-            <div className="mt-4 grid gap-3 sm:max-w-md">
-              <select
-                className="min-h-11 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3"
-                value={rating}
-                onChange={(event) => setRating(Number(event.target.value))}
-              >
-                {[5, 4, 3, 2, 1].map((value) => (
-                  <option key={value} value={value}>
-                    {value}/5
-                  </option>
-                ))}
-              </select>
-              <textarea
-                className="min-h-20 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3 text-base"
-                value={comment}
-                onChange={(event) => setComment(event.target.value)}
-                placeholder={t('p2p.order.commentPlaceholder')}
-              />
+            <div className="mt-5 grid gap-4 sm:max-w-md">
+              <div className="grid gap-2">
+                <span className="text-sm font-semibold">{t('reviews.yourRating')}</span>
+                <div className="flex flex-wrap items-center gap-3">
+                  <StarRating
+                    value={rating}
+                    onChange={setRating}
+                    size="lg"
+                    label={t('reviews.yourRating')}
+                  />
+                  <span className="text-sm font-black tabular-nums text-amber-700 dark:text-amber-300">
+                    {rating}/5
+                  </span>
+                </div>
+              </div>
+              <label className="grid gap-2 text-sm font-semibold">
+                {t('p2p.order.commentPlaceholder')}
+                <textarea
+                  className="min-h-24 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 text-base font-normal"
+                  value={comment}
+                  onChange={(event) => setComment(event.target.value)}
+                  placeholder={t('p2p.order.commentPlaceholder')}
+                />
+              </label>
               <Button icon={FiStar} onClick={handleSaveRating}>
                 {myReview ? t('p2p.order.updateRating') : t('p2p.order.saveRating')}
               </Button>
@@ -720,11 +793,23 @@ export function P2POrderPage() {
   )
 }
 
-function Row({ label, value }) {
+function Row({ label, value, onCopy, copyAria }) {
   return (
     <div className="flex justify-between gap-4 border-b border-slate-100 pb-2 dark:border-slate-800">
       <span className="text-slate-500">{label}</span>
-      <strong className="text-right">{value}</strong>
+      <span className="flex min-w-0 items-center justify-end gap-1.5">
+        <strong className="text-right break-all">{value}</strong>
+        {onCopy ? (
+          <button
+            type="button"
+            onClick={onCopy}
+            className="grid size-7 shrink-0 place-items-center rounded-lg text-[var(--app-text-muted)] transition hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]"
+            aria-label={copyAria || label}
+          >
+            <FiCopy className="text-sm" aria-hidden />
+          </button>
+        ) : null}
+      </span>
     </div>
   )
 }

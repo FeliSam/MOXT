@@ -164,7 +164,7 @@ export const navigationGroups = [
     icon: FiUsers,
     color: 'from-amber-500 to-orange-500',
     children: [
-      { id: 'news', label: 'Actualités', labelKey: 'nav.news', path: '/news', icon: FiFileText },
+      { id: 'news', label: 'Actualités', labelKey: 'nav.news', path: '/news', icon: FiFileText, devModule: 'news' },
       {
         id: 'feed',
         label: 'Fil',

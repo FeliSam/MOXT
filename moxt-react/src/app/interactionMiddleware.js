@@ -118,6 +118,42 @@ function notifyAllUsersPublication({ title, message, type, link, priority, dedup
     })
 }
 
+function p2pOfferNotifyLabel(offer) {
+  if (!offer) return appText('notificationsFeed.newContentPublished')
+  const amount = Number(offer.amount)
+  const amountLabel = Number.isFinite(amount)
+    ? amount.toLocaleString('fr-FR', { maximumFractionDigits: 2 })
+    : String(offer.amount || '')
+  const from = offer.fromCurrency || ''
+  const to = offer.toCurrency || ''
+  const rate = offer.rate != null && offer.rate !== '' ? String(offer.rate) : ''
+  const method = offer.method ? String(offer.method) : ''
+  return appText('notificationsFeed.fanOutP2pBody', {
+    amount: amountLabel,
+    from,
+    to,
+    rate: rate || '—',
+    method: method || '—',
+  })
+}
+
+/** Fan-out global dès qu'une offre P2P devient disponible (création ou republication). */
+function notifyEveryoneNewP2pOffer(offer) {
+  if (!offer?.id || offer.status !== 'active') return
+  const publisherName =
+    offer.ownerName ||
+    offer.businessName ||
+    appText('notificationsFeed.someone')
+  notifyAllUsersPublication({
+    title: `${publisherName} — ${appText('notificationsFeed.fanOutP2p')}`,
+    message: p2pOfferNotifyLabel(offer),
+    type: 'p2p',
+    link: `/p2p/${offer.id}`,
+    priority: 'high',
+    dedupeKey: `p2p-${offer.id}`,
+  })
+}
+
 /** Alerte tous les admins via RPC (fonctionne même si la liste locale est vide). */
 function notifyAdminsRemote({ title, message, type, link, priority, dedupeKey }) {
   if (!supabase?.rpc) return
@@ -1442,16 +1478,19 @@ export const interactionMiddleware = (store) => {
   }
 
   if (action.type === 'p2p/createOffer') {
-    if (isLivePublicationStatus('p2p', action.payload?.status)) {
-      fanOutPublicationToEveryone(
-        store,
-        after,
-        action.payload,
-        'p2p',
-        appText('notificationsFeed.fanOutP2p'),
-        (id) => `/p2p/${id}`,
-        'high',
-      )
+    notifyEveryoneNewP2pOffer(action.payload)
+  }
+
+  if (action.type === 'p2p/updateOfferStatus') {
+    const previous = before.p2p?.offers?.find((item) => item.id === action.payload?.id)
+    const offer = after.p2p?.offers?.find((item) => item.id === action.payload?.id)
+    if (
+      offer &&
+      offer.status === 'active' &&
+      previous?.status &&
+      previous.status !== 'active'
+    ) {
+      notifyEveryoneNewP2pOffer(offer)
     }
   }
 

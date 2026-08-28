@@ -1,4 +1,4 @@
-import { FiUser, FiUserPlus } from 'react-icons/fi'
+import { FiUserPlus } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { EntityAvatar } from '../account/EntityAvatar'
@@ -37,7 +37,7 @@ export function FeedSubscribeChip({ publisher, guestKey = 'videos.feed.guestSubs
   )
   const isSubscribed = Boolean(subscription)
 
-  if (!publisherId || isOwner) return null
+  if (!publisherId || isOwner || isSubscribed) return null
 
   function toggle(event) {
     event.preventDefault()
@@ -75,13 +75,10 @@ export function FeedSubscribeChip({ publisher, guestKey = 'videos.feed.guestSubs
     <button
       type="button"
       onClick={toggle}
-      aria-pressed={isSubscribed}
-      aria-label={isSubscribed ? p3('subscriptions.subscribed') : p3('subscriptions.subscribe')}
-      className={`grid size-7 shrink-0 place-items-center rounded-full shadow-[0_2px_10px_rgba(0,0,0,0.35)] backdrop-blur-sm transition active:scale-95 ${
-        isSubscribed ? 'bg-white/90 text-black' : 'bg-[var(--app-accent)] text-white'
-      }`}
+      aria-label={p3('subscriptions.subscribe')}
+      className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--app-accent)] text-white shadow-[0_2px_10px_rgba(0,0,0,0.35)] backdrop-blur-sm transition active:scale-95"
     >
-      {isSubscribed ? <FiUser className="text-sm" /> : <FiUserPlus className="text-sm" />}
+      <FiUserPlus className="text-sm" />
     </button>
   )
 }

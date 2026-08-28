@@ -1,9 +1,10 @@
 /** Modules pilotés par l’admin — défaut false = beta off ; true = actif pour tous. */
-export const DEV_MODULE_IDS = ['stars', 'feed', 'videos', 'events', 'jobs', 'parcels']
+export const DEV_MODULE_IDS = ['stars', 'feed', 'news', 'videos', 'events', 'jobs', 'parcels']
 
 export const DEFAULT_DEV_MODULE_FLAGS = Object.freeze({
   stars: false,
   feed: false,
+  news: true,
   videos: false,
   events: true,
   jobs: true,
@@ -20,6 +21,11 @@ export const DEV_MODULE_META = {
     labelKey: 'admin.modules.feed',
     hintKey: 'admin.modules.feedHint',
     paths: ['/feed'],
+  },
+  news: {
+    labelKey: 'admin.modules.news',
+    hintKey: 'admin.modules.newsHint',
+    paths: ['/news'],
   },
   videos: {
     labelKey: 'admin.modules.videos',
@@ -57,6 +63,7 @@ export function normalizeDevModuleFlags(raw = {}) {
 export function devModuleForPath(pathname = '') {
   if (!pathname) return null
   if (pathname === '/feed' || pathname.startsWith('/feed/')) return 'feed'
+  if (pathname === '/news' || pathname.startsWith('/news/')) return 'news'
   if (pathname === '/videos' || pathname.startsWith('/videos/')) return 'videos'
   if (pathname === '/stars' || pathname.startsWith('/stars/')) return 'stars'
   if (pathname === '/events' || pathname.startsWith('/events/')) return 'events'

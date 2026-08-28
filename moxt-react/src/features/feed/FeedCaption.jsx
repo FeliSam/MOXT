@@ -37,7 +37,7 @@ export function FeedCaption({ text, lines = 1 }) {
   if (expanded) {
     return (
       <div className="mt-1 min-w-0">
-        <p className="whitespace-pre-wrap text-[13px] font-medium leading-snug text-white/90">{text}</p>
+        <p className="whitespace-pre-wrap text-[13px] font-medium leading-snug text-white">{text}</p>
         <button
           type="button"
           onClick={toggle}
@@ -52,7 +52,7 @@ export function FeedCaption({ text, lines = 1 }) {
   if (lines <= 1) {
     return (
       <p className="mt-1 flex min-w-0 items-baseline gap-1.5 text-[13px] leading-snug">
-        <span ref={textRef} className="min-w-0 truncate font-medium text-white/88">
+        <span ref={textRef} className="min-w-0 truncate font-medium text-white">
           {text}
         </span>
         {canExpand ? (
@@ -72,7 +72,7 @@ export function FeedCaption({ text, lines = 1 }) {
 
   return (
     <div className="mt-1 min-w-0">
-      <p ref={textRef} className={`text-[13px] font-medium leading-snug text-white/88 ${clampClass}`}>
+      <p ref={textRef} className={`text-[13px] font-medium leading-snug text-white ${clampClass}`}>
         {text}
       </p>
       {canExpand ? (

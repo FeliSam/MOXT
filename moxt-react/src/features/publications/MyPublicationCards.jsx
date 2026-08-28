@@ -26,6 +26,7 @@ import { marketplaceText } from '../marketplace/marketplaceI18n'
 import { getPostImages } from '../posts/postMediaUtils'
 import { newsPostPath } from '../posts/postFeedUtils'
 import { formatMoney } from '../transfers/transferUtils'
+import { p2pReceivedFromOffered } from '../p2p/p2pUtils'
 import {
   archivedPublicationCardClass,
   isActiveEvent,
@@ -464,6 +465,7 @@ export function MyP2POfferPublicationCard({
   const p3 = (key) => phase3Text(t, key)
   const active = isActiveP2POffer(offer)
   const status = statusMeta(offer.status, t)
+  const equivalentAmount = p2pReceivedFromOffered(offer.amount, offer.rate)
 
   return (
     <PublicationCardShell
@@ -473,9 +475,14 @@ export function MyP2POfferPublicationCard({
       badge={<Badge tone={status.tone}>{status.label}</Badge>}
       title={formatMoney(offer.amount, offer.fromCurrency)}
       subtitle={`${offer.fromCurrency} → ${offer.toCurrency}`}
-      meta={[t('p2p.page.rateValue', { rate: offer.rate }), offer.method, offer.ownerName].filter(
-        Boolean,
-      )}
+      meta={[
+        equivalentAmount
+          ? `${t('p2p.page.equivalent')} ${formatMoney(equivalentAmount, offer.toCurrency)}`
+          : null,
+        t('p2p.page.rateValue', { rate: offer.rate }),
+        offer.method,
+        offer.ownerName,
+      ].filter(Boolean)}
       path={`/p2p/${offer.id}`}
       guestMode={guestMode}
       onGuestInteract={onGuestInteract}

@@ -5,6 +5,7 @@ import communicationsReducer, { sendMessage } from '../features/communications/c
 import financeReducer from '../features/finance/financeSlice'
 import jobsReducer, { updateApplicationStatus } from '../features/jobs/jobSlice'
 import parcelsReducer, { updateParcelRequestStatus } from '../features/parcels/parcelSlice'
+import p2pReducer, { createOffer, updateOfferStatus } from '../features/p2p/p2pSlice'
 import postsReducer, { createPost } from '../features/posts/postsSlice'
 import transfersReducer, {
   createTransfer,
@@ -680,5 +681,108 @@ describe('interactionMiddleware', () => {
     expect(posts.find((p) => p.id === 'POST-1').status).toBe('archived')
     expect(posts.find((p) => p.id === 'POST-2').status).toBe('published')
     expect(posts.find((p) => p.id === 'POST-3').status).toBe('published')
+  })
+
+  it('notifie tous les utilisateurs quand une offre P2P est publiee', () => {
+    const rpcMock = vi.fn(() => Promise.resolve({ data: 12, error: null }))
+    vi.spyOn(supabase, 'rpc').mockImplementation(rpcMock)
+
+    const store = configureStore({
+      reducer: {
+        auth: () => ({ user: { id: 'seller-1', role: 'user' } }),
+        communications: communicationsReducer,
+        ui: uiReducer,
+        p2p: p2pReducer,
+        jobs: () => ({ applications: [], items: [] }),
+        events: () => ({ registrations: [], items: [] }),
+        parcels: () => ({ items: [], requests: [] }),
+        businesses: () => ({ items: [] }),
+        marketplace: () => ({ items: [] }),
+        finance: () => ({ payments: [], receipts: [], walletEntries: [] }),
+      },
+      preloadedState: {
+        p2p: { offers: [], orders: [] },
+        communications: { conversations: [], notifications: [], support: [] },
+      },
+      middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(interactionMiddleware),
+    })
+
+    store.dispatch(
+      createOffer({
+        ownerId: 'seller-1',
+        ownerName: 'MOXT Change',
+        amount: 15000,
+        fromCurrency: 'RUB',
+        toCurrency: 'XOF',
+        rate: 6.7,
+        method: 'MTN MoMo',
+      }),
+    )
+
+    const offerId = store.getState().p2p.offers[0]?.id
+    expect(offerId).toBeTruthy()
+    expect(rpcMock).toHaveBeenCalledWith(
+      'moxt_notify_all_users',
+      expect.objectContaining({
+        p_type: 'p2p',
+        p_link: `/p2p/${offerId}`,
+        p_priority: 'high',
+        p_dedupe_key: `p2p-${offerId}`,
+        p_title: expect.stringContaining('Nouvelle offre P2P'),
+        p_message: expect.stringContaining('RUB'),
+      }),
+    )
+  })
+
+  it('notifie tous les utilisateurs quand une offre P2P est republiée', () => {
+    const rpcMock = vi.fn(() => Promise.resolve({ data: 12, error: null }))
+    vi.spyOn(supabase, 'rpc').mockImplementation(rpcMock)
+
+    const store = configureStore({
+      reducer: {
+        auth: () => ({ user: { id: 'seller-1', role: 'user' } }),
+        communications: communicationsReducer,
+        ui: uiReducer,
+        p2p: p2pReducer,
+        jobs: () => ({ applications: [], items: [] }),
+        events: () => ({ registrations: [], items: [] }),
+        parcels: () => ({ items: [], requests: [] }),
+        businesses: () => ({ items: [] }),
+        marketplace: () => ({ items: [] }),
+        finance: () => ({ payments: [], receipts: [], walletEntries: [] }),
+      },
+      preloadedState: {
+        p2p: {
+          offers: [
+            {
+              id: 'P2P-ARCHIVED-1',
+              ownerId: 'seller-1',
+              ownerName: 'MOXT Change',
+              amount: 1000,
+              fromCurrency: 'RUB',
+              toCurrency: 'XOF',
+              rate: 6.5,
+              method: 'Moov Money',
+              status: 'archived',
+            },
+          ],
+          orders: [],
+        },
+        communications: { conversations: [], notifications: [], support: [] },
+      },
+      middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(interactionMiddleware),
+    })
+
+    store.dispatch(updateOfferStatus({ id: 'P2P-ARCHIVED-1', status: 'active' }))
+
+    expect(rpcMock).toHaveBeenCalledWith(
+      'moxt_notify_all_users',
+      expect.objectContaining({
+        p_type: 'p2p',
+        p_link: '/p2p/P2P-ARCHIVED-1',
+        p_dedupe_key: 'p2p-P2P-ARCHIVED-1',
+        p_priority: 'high',
+      }),
+    )
   })
 })

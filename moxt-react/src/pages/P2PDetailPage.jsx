@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FiCheckCircle, FiClock, FiCreditCard, FiRepeat, FiUser } from 'react-icons/fi'
+import { FiClock, FiCreditCard, FiRepeat, FiUser } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
@@ -16,16 +16,18 @@ import {
 import { EmptyState } from '../components/ui/EmptyState'
 import { Modal } from '../components/ui/Modal'
 import { PageHeader } from '../components/ui/PageHeader'
+import { SwipeToAccept } from '../components/ui/SwipeToAccept'
 import { useLanguage } from '../contexts/useLanguage'
 import { ContactButton } from '../features/communications/ContactButton'
 import { P2PNoEscrowBanner } from '../features/p2p/components/P2PNoEscrowBanner'
 import { P2PReputationBadge } from '../features/p2p/components/P2PReputationBadge'
-import { acceptOffer } from '../features/p2p/p2pSlice'
-import { calculateP2PFee } from '../features/p2p/p2pUtils'
+import { acceptOffer, updateOfferStatus } from '../features/p2p/p2pSlice'
+import { calculateP2PFee, p2pReceivedFromOffered } from '../features/p2p/p2pUtils'
 import { selectPlatformFees } from '../features/admin/platformRatesSlice'
 import { useSecurityGate } from '../features/security/useSecurityGate'
 import { formatMoney } from '../features/transfers/transferUtils'
 import { useP2pCatalogRealtime } from '../features/p2p/useP2pRealtime'
+import { addToast } from '../features/ui/uiSlice'
 
 export function P2PDetailPage() {
   const { t } = useLanguage()
@@ -43,6 +45,11 @@ export function P2PDetailPage() {
 
   if (!offer) return <EmptyState title={t('p2p.detail.notFound')} />
 
+  const isOwner = offer.ownerId === user.id
+  const canEdit = isOwner && ['active', 'archived'].includes(offer.status)
+  const editPath = `/p2p/${offer.id}/edit`
+  const equivalentAmount = p2pReceivedFromOffered(offer.amount, offer.rate)
+
   function requestAccept() {
     if (!requireP2PAccept()) return
     setConfirmOpen(true)
@@ -54,6 +61,28 @@ export function P2PDetailPage() {
     )
     setConfirmOpen(false)
     if (action.payload?.id) navigate(`/p2p/orders/${action.payload.id}`)
+  }
+
+  function archiveOffer() {
+    dispatch(updateOfferStatus({ id: offer.id, status: 'archived' }))
+    dispatch(
+      addToast({
+        title: t('p2p.detail.archiveToastTitle'),
+        message: t('p2p.detail.archiveToastMessage'),
+        tone: 'success',
+      }),
+    )
+  }
+
+  function reactivateOffer() {
+    dispatch(updateOfferStatus({ id: offer.id, status: 'active' }))
+    dispatch(
+      addToast({
+        title: t('p2p.detail.reactivateToastTitle'),
+        message: t('p2p.detail.reactivateToastMessage'),
+        tone: 'success',
+      }),
+    )
   }
 
   return (
@@ -70,15 +99,17 @@ export function P2PDetailPage() {
         items={[
           {
             icon: FiRepeat,
-            label: t('p2p.detail.conversion'),
-            value: `${offer.fromCurrency} → ${offer.toCurrency}`,
+            label: t('p2p.detail.equivalent'),
+            value: equivalentAmount
+              ? formatMoney(equivalentAmount, offer.toCurrency)
+              : `${offer.fromCurrency} → ${offer.toCurrency}`,
           },
           { icon: FiCreditCard, label: t('p2p.detail.method'), value: offer.method },
           { icon: FiClock, label: t('p2p.detail.status'), value: offer.status },
           { icon: FiUser, label: t('p2p.detail.proposedBy'), value: offer.ownerName },
         ]}
       />
-      <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
+      <div className={`grid gap-5 ${isOwner ? '' : 'lg:grid-cols-[1.2fr_0.8fr]'}`}>
         <Card>
           <div className="flex justify-between gap-3">
             <h2 className="font-black">{t('p2p.detail.conditions')}</h2>
@@ -89,6 +120,12 @@ export function P2PDetailPage() {
               label={t('p2p.detail.proposedAmount')}
               value={formatMoney(offer.amount, offer.fromCurrency)}
             />
+            {equivalentAmount ? (
+              <div className="flex justify-between gap-4 rounded-xl bg-[color-mix(in_srgb,var(--app-teal)_8%,var(--app-surface-muted))] px-3 py-2.5 ring-1 ring-[color-mix(in_srgb,var(--app-teal)_14%,transparent)]">
+                <span className="text-[var(--app-text-muted)]">{t('p2p.detail.equivalent')}</span>
+                <strong className="tabular-nums">{formatMoney(equivalentAmount, offer.toCurrency)}</strong>
+              </div>
+            ) : null}
             <Row label={t('p2p.detail.soughtCurrency')} value={offer.toCurrency} />
             <Row label={t('p2p.detail.rate')} value={offer.rate} />
             <Row label={t('p2p.detail.method')} value={offer.method} />
@@ -115,31 +152,34 @@ export function P2PDetailPage() {
             />
           ) : null}
         </Card>
-        <Card>
-          <h2 className="font-black">{t('p2p.detail.contactOrAccept')}</h2>
-          <div className="mt-5 grid gap-3">
-            <ContactButton
-              ownerId={offer.ownerId}
-              relatedEntity={offer}
-              relatedId={offer.id}
-              relatedPath={`/p2p/${offer.id}`}
-              relatedTitle={t('p2p.detail.relatedTitle', {
-                from: offer.fromCurrency,
-                to: offer.toCurrency,
-              })}
-              relatedType="p2p"
-              variant="secondary"
-            />
-            {offer.status === 'active' && offer.ownerId !== user.id ? (
-              <Button icon={FiCheckCircle} onClick={requestAccept}>
-                {t('p2p.detail.acceptOffer')}
-              </Button>
-            ) : null}
-          </div>
-          <p className="mt-5 text-xs leading-5 text-[var(--app-text-muted)]">
-            {t('p2p.detail.acceptNote')}
-          </p>
-        </Card>
+        {!isOwner ? (
+          <Card>
+            <h2 className="font-black">{t('p2p.detail.contactOrAccept')}</h2>
+            <div className="mt-5 grid gap-3">
+              <ContactButton
+                ownerId={offer.ownerId}
+                relatedEntity={offer}
+                relatedId={offer.id}
+                relatedPath={`/p2p/${offer.id}`}
+                relatedTitle={t('p2p.detail.relatedTitle', {
+                  from: offer.fromCurrency,
+                  to: offer.toCurrency,
+                })}
+                relatedType="p2p"
+                variant="secondary"
+              />
+              {offer.status === 'active' ? (
+                <SwipeToAccept
+                  label={t('p2p.page.swipeToAccept')}
+                  onComplete={requestAccept}
+                />
+              ) : null}
+            </div>
+            <p className="mt-5 text-xs leading-5 text-[var(--app-text-muted)]">
+              {t('p2p.detail.acceptNote')}
+            </p>
+          </Card>
+        ) : null}
       </div>
       <div className="grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
         <DetailSection title={t('p2p.detail.exchangeDetails')}>
@@ -149,6 +189,14 @@ export function P2PDetailPage() {
                 label: t('p2p.detail.availableAmount'),
                 value: formatMoney(offer.amount, offer.fromCurrency),
               },
+              ...(equivalentAmount
+                ? [
+                    {
+                      label: t('p2p.detail.equivalent'),
+                      value: formatMoney(equivalentAmount, offer.toCurrency),
+                    },
+                  ]
+                : []),
               { label: t('p2p.detail.requestedCurrency'), value: offer.toCurrency },
               { label: t('p2p.detail.proposedRate'), value: offer.rate },
               {
@@ -188,7 +236,7 @@ export function P2PDetailPage() {
       </Modal>
 
       <DetailFloatingActions
-        isOwner={offer.ownerId === user.id}
+        isOwner={isOwner}
         ownerId={offer.ownerId}
         entity={offer}
         relatedId={offer.id}
@@ -198,6 +246,12 @@ export function P2PDetailPage() {
           from: offer.fromCurrency,
           to: offer.toCurrency,
         })}
+        editTo={canEdit ? editPath : undefined}
+        editLabel={t('p2p.detail.editOffer')}
+        onArchive={isOwner && offer.status === 'active' ? archiveOffer : undefined}
+        archiveLabel={t('p2p.detail.archiveOffer')}
+        onReactivate={isOwner && offer.status === 'archived' ? reactivateOffer : undefined}
+        reactivateLabel={t('p2p.detail.reactivateOffer')}
       />
     </div>
   )

@@ -192,6 +192,7 @@ export const coreServices = [
     tagKey: 'dashboard.config.services.news.tag',
     size: 'compact',
     iconPos: 'br',
+    devModule: 'news',
     surface:
       'bg-[linear-gradient(145deg,color-mix(in_srgb,#db2777_9.68%,var(--app-surface))_0%,var(--app-surface-muted)_100%)] dark:bg-[linear-gradient(145deg,rgba(219,39,119,0.194)_0%,var(--app-surface-muted)_100%)]',
   },

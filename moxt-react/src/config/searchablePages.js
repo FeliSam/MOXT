@@ -150,6 +150,7 @@ export const searchablePages = [
     subtitle: 'Communauté',
     subtitleKey: 'shared.pages.groups.community',
     path: '/news',
+    devModule: 'news',
   },
   {
     id: 'page-jobs',

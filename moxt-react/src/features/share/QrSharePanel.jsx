@@ -9,7 +9,7 @@ import { useStarsModuleEnabled } from '../stars/useStarsModuleEnabled'
 import { makeQrCodeUrl } from '../../utils/qrCode'
 import { DownloadBadgeButton } from './DownloadBadgeButton'
 
-export const REFERRAL_STARS_PER_INVITE = 5
+const REFERRAL_STARS_PER_INVITE = 5
 
 function initialsFromTitle(title = '') {
   const parts = title.trim().split(/\s+/).filter(Boolean)

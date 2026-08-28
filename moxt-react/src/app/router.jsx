@@ -274,9 +274,30 @@ export function AppRouter() {
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/settings/version" element={<VersionPage />} />
             <Route path={ROUTES.localData} element={<LocalDataPage />} />
-            <Route path="/news" element={<NewsPage />} />
-            <Route path="/news/:postId/edit" element={<EditPostPage />} />
-            <Route path="/news/:postId" element={<NewsPage />} />
+            <Route
+              path="/news"
+              element={
+                <DevModuleRoute moduleId="news">
+                  <NewsPage />
+                </DevModuleRoute>
+              }
+            />
+            <Route
+              path="/news/:postId/edit"
+              element={
+                <DevModuleRoute moduleId="news">
+                  <EditPostPage />
+                </DevModuleRoute>
+              }
+            />
+            <Route
+              path="/news/:postId"
+              element={
+                <DevModuleRoute moduleId="news">
+                  <NewsPage />
+                </DevModuleRoute>
+              }
+            />
             <Route path="/transfers" element={<NewTransferPage />} />
             <Route path="/transfers/history" element={<TransfersPage />} />
             <Route path="/transfers/new" element={<NewTransferPage />} />

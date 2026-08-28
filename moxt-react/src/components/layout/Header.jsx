@@ -44,7 +44,7 @@ function pathMatches(pathname, prefix) {
 }
 
 /** Mobile header shortcuts — contextual per section. */
-function getMobileHeaderActions(pathname, { canFeed, canJobs, isFeedViewport }) {
+function getMobileHeaderActions(pathname, { canFeed, canJobs, canNews, isFeedViewport }) {
   const isHome = pathname === '/dashboard' || pathname === '/'
   const isTransfers = pathMatches(pathname, '/transfers')
   const isParcels = pathMatches(pathname, '/parcels')
@@ -55,7 +55,7 @@ function getMobileHeaderActions(pathname, { canFeed, canJobs, isFeedViewport }) 
     !isTransfers && !isParcels && !isNews && !isMarketplace && !isFeed
   return {
     showPublishMenu: isHome || isMarketplace,
-    showNews: showContextualShortcuts && !(isFeedViewport && canFeed),
+    showNews: canNews && showContextualShortcuts && !(isFeedViewport && canFeed),
     showFeed: isFeedViewport && canFeed && (showContextualShortcuts || isNews),
     showPublishVideo: false,
     showHistory: isTransfers,
@@ -75,6 +75,7 @@ export function Header({ hideOnMobile = false }) {
   const messagesHeader = useMessagesHeaderContent()
   const canFeed = useDevModuleAccess('feed')
   const canJobs = useDevModuleAccess('jobs')
+  const canNews = useDevModuleAccess('news')
   const isFeedViewport = useIsFeedViewport()
   const isMessagesRoute = isMessagesPath(location.pathname)
   const isFeedRoute = location.pathname === '/feed' || location.pathname === '/videos'
@@ -89,6 +90,7 @@ export function Header({ hideOnMobile = false }) {
   const mobileActions = getMobileHeaderActions(location.pathname, {
     canFeed,
     canJobs,
+    canNews,
     isFeedViewport,
   })
   const showMessagesHeader = isMessagesRoute && messagesHeader?.content

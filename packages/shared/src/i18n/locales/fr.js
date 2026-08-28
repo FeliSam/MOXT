@@ -4799,7 +4799,9 @@ export const fr = {
       amountTo: "{amount} vers {currency}",
       rateValue: "Taux {rate}",
       estimatedFees: "Frais estimés",
+      equivalent: "Équivalent",
       accept: "Accepter",
+      swipeToAccept: "Glisser pour accepter",
       detail: "Détail",
       emptyActiveTitle: "Aucune offre P2P active",
       emptyArchiveTitle: "Aucune archive",
@@ -4820,10 +4822,21 @@ export const fr = {
       proposedBy: "Proposé par",
       conditions: "Conditions de l’offre",
       proposedAmount: "Montant proposé",
+      equivalent: "Équivalent",
       soughtCurrency: "Devise recherchée",
       rate: "Taux",
       estimatedFees: "Frais estimés",
       contactOrAccept: "Contacter ou accepter",
+      manageOffer: "Gérer l’offre",
+      editOffer: "Modifier l’offre",
+      archiveOffer: "Archiver l’offre",
+      reactivateOffer: "Republier l’offre",
+      manageNote:
+        "Modifiez le montant, le taux ou les modalités. L’archivage retire l’offre du catalogue actif.",
+      archiveToastTitle: "Offre archivée",
+      archiveToastMessage: "L’offre n’apparaît plus dans les offres actives.",
+      reactivateToastTitle: "Offre republiée",
+      reactivateToastMessage: "L’offre est de nouveau visible dans le catalogue.",
       relatedTitle: "{from} vers {to}",
       acceptOffer: "Accepter l’offre",
       acceptNote:
@@ -4844,6 +4857,7 @@ export const fr = {
       status: {
         created: "À payer",
         waitingPayment: "Paiement envoyé",
+        buyerReceiveDetails: "Coordonnées de réception de l’acheteur",
         completed: "Terminé",
         cancelled: "Annulé",
         disputed: "Litige",
@@ -4915,6 +4929,8 @@ export const fr = {
       receiveName: "Nom et prénoms",
       yourReceiveTitle: "Vos coordonnées de réception (affichées à l’acheteur)",
       buyerPayToTitle: "Où l’acheteur reçoit {currency}",
+      buyerPayToHint:
+        "Envoyez {currency} uniquement sur ces coordonnées, avec la méthode indiquée.",
       buyerReceive: {
         title: "Coordonnées de réception",
         description:
@@ -7881,6 +7897,7 @@ export const fr = {
     fanOutEvent: "Nouvel événement",
     fanOutParcel: "Nouveau colis",
     fanOutP2p: "Nouvelle offre P2P",
+    fanOutP2pBody: "{amount} {from} → {to} · taux {rate} · {method}",
     fanOutPost: "Nouvelle publication",
     fanOutBusiness: "Nouvelle entreprise",
     fanOutBusinessBody:

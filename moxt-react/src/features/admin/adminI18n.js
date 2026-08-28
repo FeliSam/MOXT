@@ -90,6 +90,8 @@ export const ADMIN_FR_SOURCES = {
   'admin.modules.starsHint': 'Wallet, achat de packs et quotas de publication.',
   'admin.modules.feed': 'Fil d’actualité',
   'admin.modules.feedHint': 'Feed unifié, statuts et partages vers le fil.',
+  'admin.modules.news': 'Actualités',
+  'admin.modules.newsHint': 'Fil communauté, posts et page Actualités.',
   'admin.modules.videos': 'Vidéos',
   'admin.modules.videosHint': 'Feed vidéo vertical et publication entreprise.',
   'admin.modules.events': 'Événements',

@@ -85,8 +85,8 @@ export function ListingFeedSlide({ item, index, active = true }) {
       metaExtra={
         <div className="mt-2 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
           {sizeInfo ? (
-            <p className="truncate text-xs font-semibold text-white/75">
-              <span className="text-white/55">{sizeInfo.label} · </span>
+            <p className="truncate text-xs font-semibold text-white">
+              <span className="text-white/80">{sizeInfo.label} · </span>
               {sizeInfo.value}
             </p>
           ) : null}
