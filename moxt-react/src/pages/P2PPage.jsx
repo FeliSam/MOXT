@@ -9,7 +9,7 @@ import { CatalogGrid } from '../components/ui/CatalogGrid'
 import { CatalogSearch } from '../components/ui/CatalogSearch'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Modal } from '../components/ui/Modal'
-import { PageHeader } from '../components/ui/PageHeader'
+import { HeaderIslandButton, PageHeader } from '../components/ui/PageHeader'
 import { RevealListItem } from '../components/ui/RevealListItem'
 import { Select } from '../components/ui/Select'
 import { useLanguage } from '../contexts/useLanguage'
@@ -52,7 +52,7 @@ export function P2PPage() {
   const orders = useSelector((state) => state.p2p.orders)
   const reviews = useSelector((state) => state.reviews.items)
   const [acceptOfferTarget, setAcceptOfferTarget] = useState(null)
-  const originCountry = user.originCountry || (user.country !== 'RU' ? user.country : 'BJ')
+  const originCountry = user?.originCountry || (user?.country !== 'RU' ? user?.country : 'BJ')
   const availableCurrencies = transferCurrenciesForCountry(originCountry)
   const filteredOffers = useMemo(
     () =>
@@ -87,9 +87,9 @@ export function P2PPage() {
   const myOrders = useMemo(
     () =>
       orders
-        .filter((order) => [order.buyerId, order.sellerId].includes(user.id))
+        .filter((order) => user?.id && [order.buyerId, order.sellerId].includes(user.id))
         .sort(byCreatedAtDesc),
-    [orders, user.id],
+    [orders, user],
   )
 
   function clearFilters() {
@@ -119,6 +119,13 @@ export function P2PPage() {
       <PageHeader
         title={t('p2p.page.title')}
         stats={[{ label: t('p2p.page.activeOffers'), value: activeOffers.length }]}
+        actions={
+          <HeaderIslandButton
+            icon={FiPlus}
+            label={t('p2p.page.proposeOffer')}
+            onClick={openPublish}
+          />
+        }
       />
 
       <P2PNoEscrowBanner />
@@ -183,7 +190,10 @@ export function P2PPage() {
           {displayedOffers.length ? (
             displayedOffers.map((offer, index) => {
               const canAccept =
-                tab === 'active' && offer.status === 'active' && offer.ownerId !== user.id
+                tab === 'active' &&
+                offer.status === 'active' &&
+                Boolean(user?.id) &&
+                offer.ownerId !== user.id
               return (
               <RevealListItem key={offer.id} index={index} className="min-w-0 max-w-full">
                 <P2POfferCard

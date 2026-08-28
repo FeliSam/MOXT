@@ -59,7 +59,20 @@ export function scoreFeedItem(item, ctx = {}) {
     score -= 5
   }
 
+  if (ctx.suggestionSalt) {
+    score += suggestionJitter(item.id, ctx.suggestionSalt)
+  }
+
   return score
+}
+
+function suggestionJitter(id, salt) {
+  const raw = `${id}:${salt}`
+  let hash = 0
+  for (let i = 0; i < raw.length; i += 1) {
+    hash = (hash * 33 + raw.charCodeAt(i)) >>> 0
+  }
+  return (hash % 11) - 3
 }
 
 /** Top engagement du fil (hors vedettes Stars). */

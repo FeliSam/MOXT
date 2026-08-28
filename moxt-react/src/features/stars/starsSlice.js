@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import { createLocalStorage } from '../../services/createLocalStorage'
+import { selectActiveBusinessForOwner } from '../businesses/businessVisibility'
 import {
   adminStarsOverview,
   consumeStars,
@@ -13,6 +14,7 @@ import {
   listStarsTransactions,
   quoteStarsAction,
 } from './starsRemote'
+import { mergeLinkedWalletBalances } from './starsWalletUi'
 
 const feedBoostsStorage = createLocalStorage('moxt-feed-boosts-v1')
 const FEED_BOOSTS_TTL_MS = 20 * 60 * 1000
@@ -55,9 +57,25 @@ const initialState = {
 
 export const loadStarsBalance = createAsyncThunk(
   'stars/loadBalance',
-  async (args = {}, { rejectWithValue }) => {
+  async (args = {}, { getState, rejectWithValue }) => {
     try {
-      return await fetchStarsBalance(args)
+      const primary = await fetchStarsBalance(args)
+      const alreadyLinked = Boolean(primary?.linkedBusinessId) && primary?.businessBonus != null
+      if (alreadyLinked || args.ownerType === 'business') {
+        return primary
+      }
+      const userId = args.ownerId || getState().auth.user?.id
+      const business = selectActiveBusinessForOwner(getState().businesses?.items || [], userId)
+      if (!business?.id) return primary
+      try {
+        const company = await fetchStarsBalance({
+          ownerType: 'business',
+          ownerId: business.id,
+        })
+        return mergeLinkedWalletBalances(primary, company, business.id)
+      } catch {
+        return primary
+      }
     } catch (error) {
       return rejectWithValue(error.message || 'offline')
     }

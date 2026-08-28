@@ -39,6 +39,7 @@ import {
   publicationArchiveCounts,
   publicationTotalCount,
   publicationTypeCounts,
+  preferredPublicationArchiveTab,
   visiblePublicationCount,
   visiblePublicationTypeTabs,
 } from '../features/publications/publicationCatalogUtils'
@@ -83,7 +84,7 @@ export function UserPublicationsPage() {
   const isOwner = !guestMode && currentUser?.id === userId
 
   const mainTab = searchParams.get('view') === 'avis' ? 'avis' : 'publications'
-  const archiveTab = searchParams.get('status') === 'archived' ? 'archived' : 'active'
+  const requestedArchiveTab = searchParams.get('status') === 'archived' ? 'archived' : 'active'
   const typeTab = PUBLICATION_TYPE_TABS.some((tab) => tab.id === searchParams.get('type'))
     ? searchParams.get('type')
     : 'listing'
@@ -138,10 +139,8 @@ export function UserPublicationsPage() {
     [displayName, publications, userId],
   )
   const typeTabSource = scope === 'business' ? BUSINESS_PUBLICATION_TYPE_TABS : PUBLICATION_TYPE_TABS
-  const archiveCounts = useMemo(
-    () => publicationArchiveCounts(publications, { typeTab }),
-    [publications, typeTab],
-  )
+  const archiveCounts = useMemo(() => publicationArchiveCounts(publications), [publications])
+  const archiveTab = preferredPublicationArchiveTab(publications, requestedArchiveTab)
   const typeCounts = useMemo(
     () => publicationTypeCounts(publications, archiveTab),
     [archiveTab, publications],
@@ -213,10 +212,9 @@ export function UserPublicationsPage() {
   }, [typeTab, visibleTypeTabs])
 
   useEffect(() => {
-    if (!showArchives && archiveTab === 'archived') {
-      setArchiveTab('active')
-    }
-  }, [archiveTab, showArchives])
+    if (archiveTab === requestedArchiveTab) return
+    setArchiveTab(archiveTab)
+  }, [archiveTab, requestedArchiveTab])
 
   function setScope(next) {
     const params = new URLSearchParams(searchParams)

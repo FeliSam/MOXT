@@ -82,12 +82,61 @@ export function sumBonusBalances(bonus = {}, balancePayload = null) {
   return Object.values(bonus).reduce((total, value) => total + Number(value || 0), 0)
 }
 
-/** Total Stars utilisables (paid + pool bonus restant). */
+/** Total Stars utilisables (Paid partagé + pools bonus perso et entreprise). */
 export function totalStarsAvailable(balance) {
   if (!balance) return 0
-  const paid = Number(balance.paid ?? 0)
-  const bonusPool = sumBonusBalances(balance.bonus || {}, balance)
-  return paid + bonusPool
+  if (balance.combinedTotal != null) return Number(balance.combinedTotal) || 0
+  const paid = Number(balance.paid ?? balance.sharedPaid ?? 0)
+  const personal = Number(balance.personalBonus ?? 0)
+  const business = Number(balance.businessBonus ?? 0)
+  if (balance.personalBonus != null || balance.businessBonus != null) {
+    return paid + personal + business
+  }
+  return paid + sumBonusBalances(balance.bonus || {}, balance)
+}
+
+export function combinedBonusRemaining(balance) {
+  if (!balance) return 0
+  const personal = Number(balance.personalBonus ?? 0)
+  const business = Number(balance.businessBonus ?? 0)
+  if (balance.personalBonus != null || balance.businessBonus != null) {
+    return personal + business
+  }
+  return sumBonusBalances(balance.bonus || {}, balance)
+}
+
+/** Fusionne le solde perso avec le pool entreprise (RPC v1 sans linkedBusinessId). */
+export function mergeLinkedWalletBalances(personalPayload, businessPayload, linkedBusinessId) {
+  const personalBonus = Number(personalPayload?.personalBonus ?? personalPayload?.bonusPool ?? 0)
+  const businessBonus = Number(
+    businessPayload?.businessBonus ?? businessPayload?.bonusPool ?? businessPayload?.personalBonus ?? 0,
+  )
+  const paid = Number(personalPayload?.sharedPaid ?? personalPayload?.paid ?? 0)
+  const personalGranted = Number(
+    personalPayload?.personalBonusGranted ??
+      personalPayload?.bonusPoolGranted ??
+      personalPayload?.quotas?.pool ??
+      0,
+  )
+  const businessGranted = Number(
+    businessPayload?.businessBonusGranted ??
+      businessPayload?.bonusPoolGranted ??
+      businessPayload?.quotas?.pool ??
+      0,
+  )
+  return {
+    ...personalPayload,
+    linkedBusinessId,
+    personalBonus,
+    businessBonus,
+    personalBonusGranted: personalGranted,
+    businessBonusGranted: businessGranted,
+    sharedPaid: paid,
+    paid,
+    bonusPool: personalBonus + businessBonus,
+    bonusPoolGranted: personalGranted + businessGranted,
+    combinedTotal: paid + personalBonus + businessBonus,
+  }
 }
 
 /** Styles visuels des packs d’achat Stars. */

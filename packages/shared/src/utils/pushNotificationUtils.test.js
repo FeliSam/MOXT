@@ -9,7 +9,7 @@ describe('pushNotificationUtils', () => {
   it('mappe les types vers les préférences', () => {
     expect(resolveNotificationPreferenceKey('p2p')).toBe('notifTransfers')
     expect(resolveNotificationPreferenceKey('subscription')).toBe('notifNewSubscribers')
-    expect(resolveNotificationPreferenceKey('review')).toBe('notifSysteme')
+    expect(resolveNotificationPreferenceKey('stars')).toBe('notifSysteme')
   })
 
   it('respecte le toggle push global et les catégories', () => {

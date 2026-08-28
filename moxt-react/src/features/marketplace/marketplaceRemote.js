@@ -1,5 +1,26 @@
 import { supabase } from '../../services/supabaseClient'
+import { createId } from '../../services/createId'
 import { normalizeListingImages } from './listingImageUtils'
+
+function asIdArray(value) {
+  if (Array.isArray(value)) return value.map(String).filter(Boolean)
+  return []
+}
+
+function asCommentArray(value) {
+  if (!Array.isArray(value)) return []
+  return value
+    .filter((item) => item && typeof item === 'object')
+    .map((item) => ({
+      id: item.id || createId('CMT'),
+      authorId: item.authorId || item.author_id || '',
+      authorName: item.authorName || item.author_name || '',
+      authorAvatarUrl: item.authorAvatarUrl || item.author_avatar_url || '',
+      text: String(item.text || '').trim(),
+      createdAt: item.createdAt || item.created_at || new Date().toISOString(),
+    }))
+    .filter((item) => item.text)
+}
 
 const BASE_COLUMNS = {
   ownerId: 'owner_id',
@@ -25,6 +46,8 @@ function listingToRemoteRow(listing) {
     city: listing.city,
     address: listing.address,
     images: listing.images || [],
+    likes: asIdArray(listing.likes),
+    comments: asCommentArray(listing.comments),
     payload: listing,
   }
 
@@ -44,6 +67,8 @@ export function listingFromRemoteRow(row) {
   }
   const listing = { ...(row.payload || {}), ...base }
   listing.images = normalizeListingImages(row.images, row.payload?.images, listing.images)
+  listing.likes = asIdArray(Array.isArray(row.likes) ? row.likes : listing.likes)
+  listing.comments = asCommentArray(Array.isArray(row.comments) ? row.comments : listing.comments)
   return listing
 }
 

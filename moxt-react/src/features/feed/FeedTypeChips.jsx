@@ -40,7 +40,7 @@ export function FeedTypeChips({
 
   return (
     <div
-      className={`pointer-events-auto absolute inset-x-0 top-0 z-20 flex items-center gap-2 px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] ${className}`}
+      className={`pointer-events-auto absolute inset-x-0 top-0 z-20 flex items-center gap-1.5 px-2.5 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] ${className}`}
       data-testid="feed-type-chips"
     >
       <Link to="/dashboard" aria-label={p3('common.back')} className={FEED_BACK_BTN_CLASS}>
@@ -48,7 +48,7 @@ export function FeedTypeChips({
       </Link>
 
       {showFilters ? (
-        <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto scrollbar-hidden">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto overscroll-x-contain scroll-smooth snap-x snap-proximity touch-pan-x scrollbar-hidden">
           {visible.map((filter) => {
             const active =
               current === filter.id || (filter.id === 'all' && (!current || current === 'all'))
@@ -60,7 +60,7 @@ export function FeedTypeChips({
               <Link
                 key={filter.id}
                 to={to}
-                className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold backdrop-blur-md transition ${
+                className={`inline-flex h-9 shrink-0 snap-start items-center justify-center whitespace-nowrap rounded-full px-3 text-[11px] font-bold leading-none backdrop-blur-md transition active:scale-[0.98] ${
                   active
                     ? 'bg-white text-black'
                     : 'bg-black/40 text-white/90 ring-1 ring-white/20'

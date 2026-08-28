@@ -40,7 +40,7 @@ export function EventsPage() {
   const visibleEvents = useMemo(
     () => {
       const filtered = events.filter((event) => {
-        if (showMine && (event.ownerId !== user.id || event.businessId)) return false
+        if (showMine && (event.ownerId !== user?.id || event.businessId)) return false
         const haystack =
           `${event.title} ${event.organizerName} ${event.category} ${event.city} ${event.venue}`.toLowerCase()
         return (
@@ -59,7 +59,7 @@ export function EventsPage() {
         'event',
       )
     },
-    [events, filters, preferredCountry, showMine, subscriptions, user?.id, user.id],
+    [events, filters, preferredCountry, showMine, subscriptions, user?.id],
   )
   function clearFilters() {
     setFilters({ query: '', city: '', category: '', price: '' })

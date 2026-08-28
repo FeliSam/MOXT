@@ -310,7 +310,7 @@ export function ProfessionalPage() {
   const activityLabel = businessesOptionLabel(t, activity) || business.sector
 
   return (
-    <div className="grid min-w-0 max-w-full gap-7">
+    <div className="mx-auto grid min-w-0 w-full max-w-6xl gap-5 sm:gap-7">
       <PageHeader
         eyebrow={pt('professional.page.eyebrow')}
         title={business.name}
@@ -351,7 +351,7 @@ export function ProfessionalPage() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-5">
         {metrics.map((metric) => (
           <Metric
             key={metric.label}
@@ -363,13 +363,16 @@ export function ProfessionalPage() {
         ))}
       </div>
 
+      <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(15.5rem,18rem)_minmax(0,1fr)] lg:items-start lg:gap-8">
       <GroupedTabs
         groups={tabGroups}
         active={safeActive}
         onChange={handleTabChange}
         label={pt('professional.page.tabsAria')}
+        className="min-[480px]:grid-cols-2 lg:sticky lg:top-24 lg:grid-cols-1"
       />
 
+      <div className="min-w-0">
       {safeActive === 'profile' ? (
         <ProfilePanel
           activity={activity}
@@ -432,6 +435,8 @@ export function ProfessionalPage() {
         <SubscriptionsPanel business={business} enabledServices={enabledServices} />
       ) : null}
       {safeActive === 'actions' ? <ActionsPanel business={business} /> : null}
+      </div>
+      </div>
     </div>
   )
 }
@@ -439,12 +444,14 @@ export function ProfessionalPage() {
 function Metric({ icon: Icon, label, value, onClick }) {
   const content = (
     <>
-      <span className="grid size-11 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
-        <Icon />
+      <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[var(--app-accent-soft)] text-[var(--app-accent)] sm:size-11">
+        <Icon className="text-base sm:text-lg" />
       </span>
       <div className="min-w-0">
-        <strong className="block truncate text-2xl">{value}</strong>
-        <span className="text-xs text-[var(--app-text-muted)]">{label}</span>
+        <strong className="block truncate text-lg tabular-nums sm:text-2xl">{value}</strong>
+        <span className="line-clamp-2 text-[11px] leading-snug text-[var(--app-text-muted)] sm:text-xs">
+          {label}
+        </span>
       </div>
     </>
   )
@@ -453,13 +460,13 @@ function Metric({ icon: Icon, label, value, onClick }) {
       <button
         type="button"
         onClick={onClick}
-        className="flex w-full items-center gap-4 rounded-[1.4rem] border border-[var(--app-border)] bg-[var(--app-surface)] p-4 text-left transition hover:border-[var(--app-accent)] hover:shadow-sm"
+        className="flex h-full min-w-0 w-full items-center gap-3 rounded-[1.4rem] border border-[var(--app-border)] bg-[var(--app-surface)] p-3 text-left transition hover:border-[var(--app-accent)] hover:shadow-sm sm:gap-4 sm:p-4"
       >
         {content}
       </button>
     )
   }
-  return <Card className="flex items-center gap-4">{content}</Card>
+  return <Card className="flex h-full min-w-0 items-center gap-3 p-3 sm:gap-4 sm:p-4">{content}</Card>
 }
 
 function buildBusinessMetrics({

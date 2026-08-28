@@ -4,10 +4,10 @@ import { mergePricingIntoConfig, pricingFormFromConfig } from './adminStarsConfi
 describe('adminStarsConfigForm', () => {
   it('builds form state from config', () => {
     const form = pricingFormFromConfig({
-      monthlyBonusPool: { personal: 30, business: 100 },
+      monthlyBonusPool: { personal: 60, business: 150 },
       publish: { marketplace: 20, video: 25 },
     })
-    expect(form.poolPersonal).toBe('30')
+    expect(form.poolPersonal).toBe('60')
     expect(form.publish.marketplace).toBe('20')
   })
 

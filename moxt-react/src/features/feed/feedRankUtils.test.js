@@ -34,6 +34,15 @@ describe('feedRankUtils', () => {
     expect(sorted[0].id).toBe('b')
   })
 
+  it('varie le score selon le sel de suggestion', () => {
+    const item = { id: 'a', kind: 'post', createdAt: '2026-08-01T00:00:00.000Z', stats: { likes: 1 } }
+    const now = Date.parse('2026-08-28T00:00:00.000Z')
+    const scores = ['1', '2', '3', '4', '5', '6', '7'].map((suggestionSalt) =>
+      scoreFeedItem(item, { suggestionSalt, now }),
+    )
+    expect(new Set(scores).size).toBeGreaterThan(1)
+  })
+
   it('marque les items tendance', () => {
     const items = annotateTrendingItems([
       { id: '1', stats: { views: 100, likes: 20 } },

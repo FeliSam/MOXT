@@ -1,17 +1,14 @@
 import { FiChevronRight } from 'react-icons/fi'
-import { NavLink } from 'react-router-dom'
-import { preloadRoute } from '../../config/navigation'
+import { FastNavLink } from '../routing/FastNavLink'
 import { resolveNavLabel } from '../../config/navLabel'
 
 function MoreServiceTile({ badge, item, onNavigate, resolveLabel }) {
   const Icon = item.icon
   return (
-    <NavLink
+    <FastNavLink
       to={item.path}
       data-tour={item.id ? `more-${item.id}` : undefined}
       onClick={onNavigate}
-      onFocus={() => preloadRoute(item.path)}
-      onMouseEnter={() => preloadRoute(item.path)}
       className={({ isActive }) =>
         `relative flex min-h-[3.5rem] items-center gap-2.5 rounded-[var(--radius-card)] border p-2.5 backdrop-blur-md transition-all duration-[var(--transition-fast)] ${
           isActive
@@ -31,19 +28,17 @@ function MoreServiceTile({ badge, item, onNavigate, resolveLabel }) {
           {badge > 9 ? '9+' : badge}
         </span>
       ) : null}
-    </NavLink>
+    </FastNavLink>
   )
 }
 
 function MoreServiceRow({ badge, item, onNavigate, resolveLabel }) {
   const Icon = item.icon
   return (
-    <NavLink
+    <FastNavLink
       to={item.path}
       data-tour={item.id ? `more-${item.id}` : undefined}
       onClick={onNavigate}
-      onFocus={() => preloadRoute(item.path)}
-      onMouseEnter={() => preloadRoute(item.path)}
       className={({ isActive }) =>
         `flex min-h-11 items-center gap-3 rounded-xl px-2.5 text-sm font-semibold transition-all duration-[var(--transition-fast)] ${
           isActive
@@ -62,7 +57,7 @@ function MoreServiceRow({ badge, item, onNavigate, resolveLabel }) {
         </span>
       ) : null}
       <FiChevronRight className="shrink-0 text-[var(--app-text-faint)]" aria-hidden="true" />
-    </NavLink>
+    </FastNavLink>
   )
 }
 

@@ -12,6 +12,9 @@ import reducer, {
   normalizeListing,
   receiveRemoteListing,
   toggleListingFavorite,
+  toggleListingLike,
+  addListingComment,
+  deleteListingComment,
   updateListing,
   updateListingStatus,
 } from './marketplaceSlice'
@@ -74,6 +77,8 @@ describe('marketplaceSlice', () => {
     expect(state.items[0].title).toContain('Copie de')
     expect(state.items[0].views).toBe(0)
     expect(state.items[0].favorites).toEqual([])
+    expect(state.items[0].likes).toEqual([])
+    expect(state.items[0].comments).toEqual([])
     expect(state.items[0].questions).toEqual([])
   })
 
@@ -101,6 +106,29 @@ describe('marketplaceSlice', () => {
     const removed = reducer(favorite, toggleListingFavorite({ listingId: id, userId: 'u1' }))
     expect(favorite.items[0].favorites).toEqual(['u1'])
     expect(removed.items[0].favorites).toEqual([])
+  })
+
+  it('ajoute puis retire un like de fil et persiste un commentaire', () => {
+    const created = reducer({ items: [] }, createListing(listing))
+    const id = created.items[0].id
+    const liked = reducer(created, toggleListingLike({ listingId: id, userId: 'u1' }))
+    const unliked = reducer(liked, toggleListingLike({ listingId: id, userId: 'u1' }))
+    expect(liked.items[0].likes).toEqual(['u1'])
+    expect(unliked.items[0].likes).toEqual([])
+
+    const commented = reducer(
+      created,
+      addListingComment({
+        listingId: id,
+        authorId: 'u2',
+        authorName: 'Marie',
+        text: 'Toujours dispo ?',
+      }),
+    )
+    const commentId = commented.items[0].comments[0].id
+    expect(commented.items[0].comments[0].text).toBe('Toujours dispo ?')
+    const deleted = reducer(commented, deleteListingComment({ listingId: id, commentId }))
+    expect(deleted.items[0].comments).toEqual([])
   })
 
   it('historise les statuts et évite les signalements actifs en double', () => {

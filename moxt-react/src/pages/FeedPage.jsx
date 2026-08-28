@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { buildFeedRankContext } from '../features/feed/feedRankUtils'
 import { FiLayers } from 'react-icons/fi'
 import { useDispatch, useSelector, useStore } from 'react-redux'
@@ -23,8 +23,11 @@ import { injectFeedDiscoverySlides } from '../features/feed/feedDiscoveryUtils'
 import { useIsFeedViewport } from '../features/feed/feedViewport'
 import { CoverFeedSlide } from '../features/feed/slides/CoverFeedSlide'
 import { DiscoveryFeedSlide } from '../features/feed/slides/DiscoveryFeedSlide'
+import { EventFeedSlide } from '../features/feed/slides/EventFeedSlide'
+import { JobFeedSlide } from '../features/feed/slides/JobFeedSlide'
 import { ListingFeedSlide } from '../features/feed/slides/ListingFeedSlide'
 import { ParcelFeedSlide } from '../features/feed/slides/ParcelFeedSlide'
+import { P2pFeedSlide } from '../features/feed/slides/P2pFeedSlide'
 import { VideoFeedSlide } from '../features/feed/slides/VideoFeedSlide'
 import { phase3Text } from '../i18n/phase3I18n'
 
@@ -40,6 +43,15 @@ function renderFeedSlide(item, { index, active }) {
   }
   if (item.kind === 'parcel') {
     return <ParcelFeedSlide item={item} index={index} active={active} />
+  }
+  if (item.kind === 'job') {
+    return <JobFeedSlide item={item} index={index} active={active} />
+  }
+  if (item.kind === 'event') {
+    return <EventFeedSlide item={item} index={index} active={active} />
+  }
+  if (item.kind === 'p2p') {
+    return <P2pFeedSlide item={item} index={index} active={active} />
   }
   return <CoverFeedSlide item={item} index={index} active={active} />
 }
@@ -66,6 +78,9 @@ export function FeedPage() {
   const events = useSelector((s) => s.events)
   const posts = useSelector((s) => s.posts)
   const businesses = useSelector((s) => s.businesses)
+  const p2p = useSelector((s) => s.p2p)
+  const [suggestionSalt, setSuggestionSalt] = useState(() => String(Date.now()))
+  const [refreshNonce, setRefreshNonce] = useState(0)
 
   useEffect(() => {
     dispatch(loadFeedBoosts())
@@ -87,13 +102,17 @@ export function FeedPage() {
       jobs,
       events,
       posts,
+      p2p,
       businesses,
       account: { subscriptions, favorites, viewedListings },
     }),
-    [videos, marketplace, parcels, jobs, events, posts, businesses, subscriptions, favorites, viewedListings],
+    [videos, marketplace, parcels, jobs, events, posts, p2p, businesses, subscriptions, favorites, viewedListings],
   )
 
-  const rankCtx = useMemo(() => buildFeedRankContext(feedState, user), [feedState, user])
+  const rankCtx = useMemo(
+    () => ({ ...buildFeedRankContext(feedState, user), suggestionSalt }),
+    [feedState, user, suggestionSalt],
+  )
 
   const desktopRedirect = useMemo(
     () =>
@@ -124,7 +143,10 @@ export function FeedPage() {
   const filterEmpty = requestedType !== 'all' && filteredItems.length === 0 && allItems.length > 0
   const typeFilter = filterEmpty ? 'all' : requestedType
   const rawItems = filterEmpty ? allItems : filteredItems
-  const orderSignature = useMemo(() => feedOrderSignature(rawItems), [rawItems])
+  const orderSignature = useMemo(
+    () => feedOrderSignature(rawItems, suggestionSalt),
+    [rawItems, suggestionSalt],
+  )
   const orderCacheRef = useRef({ signature: '', items: [] })
   /* eslint-disable react-hooks/refs -- stable feed order cache between re-ranks */
   const organicItems = useMemo(() => {
@@ -139,6 +161,14 @@ export function FeedPage() {
   }, [organicItems, typeFilter, feedState, rankCtx, user])
 
   const initialIndex = pickInitialFeedIndex(items, itemParam, feedState)
+
+  const refreshFeed = useCallback(async () => {
+    dispatch(loadFeedBoosts())
+    setSuggestionSalt(String(Date.now()))
+    setRefreshNonce((value) => value + 1)
+    const { scheduleCatalogSync } = await import('../app/catalogSync.js')
+    await scheduleCatalogSync(store, { force: true })
+  }, [dispatch, store])
 
   if (!isFeedViewport) {
     return <Navigate to={desktopRedirect} replace />
@@ -169,7 +199,13 @@ export function FeedPage() {
     <div className="relative max-md:bg-black">
       <div className="feed-mobile-shell md:contents">
         <FeedTypeChips counts={kindCounts} totalCount={allItems.length} showPublish />
-        <FeedSnapScroller items={items} initialIndex={initialIndex} renderSlide={renderFeedSlide} />
+        <FeedSnapScroller
+          items={items}
+          initialIndex={initialIndex}
+          renderSlide={renderFeedSlide}
+          onRefresh={refreshFeed}
+          refreshNonce={refreshNonce}
+        />
       </div>
     </div>
   )

@@ -45,13 +45,19 @@ export function MobileMoreDrawer({ open, onClose }) {
     [canAccessModule, groups, query, resolveLabel, role],
   )
 
-  function requestClose() {
+  function requestClose(immediate = false) {
+    if (immediate) {
+      setClosing(false)
+      setQuery('')
+      onClose()
+      return
+    }
     setClosing(true)
     setTimeout(() => {
       onClose()
       setClosing(false)
       setQuery('')
-    }, 220)
+    }, 90)
   }
 
   if (!open && !closing) return null
@@ -114,7 +120,7 @@ export function MobileMoreDrawer({ open, onClose }) {
             badgeFor={(item) => badgeForItem(item, state)}
             groups={filteredGroups}
             layout="grid"
-            onNavigate={requestClose}
+            onNavigate={() => requestClose(true)}
             resolveLabel={resolveLabel}
           />
         </div>

@@ -24,9 +24,37 @@ import { TRANSFER_STATUS } from '../features/transfers/transferConfig'
 import { transferCancelledNotificationMessage } from '../features/transfers/transferCancellationNotify'
 import { appText } from '../i18n/appText'
 import { supabase } from '../services/supabaseClient'
+import {
+  classifyStarsNotify,
+  markStarsNotifySeen,
+  readStarsSeenIds,
+  starsNotifyCopy,
+  starsNotifyId,
+  starsNotifyIdFromKey,
+  takeUnseenStarsTransactions,
+} from '../features/stars/starsNotify'
+import { resolvePublisherOwnerId } from '@moxt/shared/utils/notificationUtils.js'
 
 function notify(store, payload) {
   if (payload.userId) store.dispatch(addNotification(payload))
+}
+
+function notifyStarsWallet(store, { userId, id, kind, amount, detail, existingIds }) {
+  if (!userId || !id) return
+  if (existingIds?.has(id)) return
+  const copy = starsNotifyCopy(kind, amount, appText, detail)
+  store.dispatch(
+    addNotification({
+      id,
+      userId,
+      title: copy.title,
+      message: copy.message,
+      type: 'stars',
+      link: '/stars',
+      priority: copy.priority,
+    }),
+  )
+  markStarsNotifySeen(userId, [id])
 }
 
 function transferNotifyId(kind, transferId) {
@@ -1505,6 +1533,75 @@ export const interactionMiddleware = (store) => {
         (id) => newsPostPath(id),
         'high',
       )
+    }
+  }
+
+  if (action.type === 'stars/loadHistory/fulfilled') {
+    const userId = after.auth.user?.id
+    const rows = action.payload || []
+    const existingIds = new Set(
+      (after.communications?.notifications || [])
+        .filter((item) => item.userId === userId)
+        .map((item) => item.id),
+    )
+    const unseen = takeUnseenStarsTransactions(rows, readStarsSeenIds(userId))
+    markStarsNotifySeen(userId, unseen.markIds)
+    if (unseen.mode === 'notify') {
+      for (const item of unseen.items) {
+        notifyStarsWallet(store, {
+          userId,
+          id: starsNotifyId(item),
+          kind: classifyStarsNotify(item),
+          amount: item.amount,
+          detail: item.reason,
+          existingIds,
+        })
+      }
+    }
+  }
+
+  if (action.type === 'stars/consume/fulfilled' && !action.payload?.skipped && !action.payload?.idempotent) {
+    const userId = after.auth.user?.id
+    const paid = Number(action.payload?.paid || action.payload?.paid_use || 0)
+    const bonus = Number(action.payload?.bonus || action.payload?.bonus_use || 0)
+    const amount = paid + bonus || Number(action.payload?.totalCost) || 0
+    const id = starsNotifyIdFromKey(action.meta?.arg?.idempotencyKey)
+    if (amount > 0 && id) {
+      notifyStarsWallet(store, {
+        userId,
+        id,
+        kind: 'spend',
+        amount,
+        existingIds: new Set((after.communications?.notifications || []).map((item) => item.id)),
+      })
+    }
+  }
+
+  if (action.type === 'stars/giftToPublisher/fulfilled' && action.payload?.ok && !action.payload?.idempotent) {
+    const userId = after.auth.user?.id
+    const amount = Number(action.payload.amount) || Number(action.meta?.arg?.amount) || 0
+    const sendId = starsNotifyIdFromKey(action.meta?.arg?.idempotencyKey)
+    const existingIds = new Set((after.communications?.notifications || []).map((item) => item.id))
+    notifyStarsWallet(store, {
+      userId,
+      id: sendId,
+      kind: 'giftSent',
+      amount,
+      existingIds,
+    })
+    const recipientId = resolvePublisherOwnerId(
+      after,
+      action.payload.recipientType || action.meta?.arg?.recipientType,
+      action.payload.recipientId || action.meta?.arg?.recipientId,
+    )
+    if (recipientId && recipientId !== userId) {
+      notifyStarsWallet(store, {
+        userId: recipientId,
+        id: starsNotifyIdFromKey(`${action.meta?.arg?.idempotencyKey || sendId}:credit`),
+        kind: 'giftReceived',
+        amount,
+        existingIds,
+      })
     }
   }
 

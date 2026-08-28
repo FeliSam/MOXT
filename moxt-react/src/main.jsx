@@ -94,7 +94,10 @@ async function bootstrap() {
     requestIdleCallback(
       () => {
         void import('./pages/DashboardPage')
-        void import('./config/navigation').then(({ preloadRoute }) => preloadRoute('/dashboard'))
+        void import('./config/navigation').then(({ preloadRoute, warmNavRoutes }) => {
+          preloadRoute('/dashboard')
+          warmNavRoutes(['/transfers', '/marketplace', '/parcels'])
+        })
       },
       { timeout: 5000 },
     )

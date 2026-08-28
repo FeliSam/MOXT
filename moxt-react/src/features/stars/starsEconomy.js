@@ -3,6 +3,7 @@ import { resolveStarsActionCost } from './starsPricing'
 
 export function quoteStarsSpend({
   bonusAvailable = 0,
+  linkedBonusAvailable = 0,
   paidAvailable = 0,
   category,
   formulaKey = 'standard',
@@ -11,7 +12,9 @@ export function quoteStarsSpend({
   config = DEFAULT_QUOTA_CONFIG,
 } = {}) {
   const totalCost = resolveStarsActionCost({ category, formulaKey, durationKey, config })
-  const bonus = Math.min(Number(bonusAvailable) || 0, totalCost)
+  const primary = Math.min(Number(bonusAvailable) || 0, totalCost)
+  const secondary = Math.min(Number(linkedBonusAvailable) || 0, totalCost - primary)
+  const bonus = primary + secondary
   const paid = totalCost - bonus
   const insufficient = paid > (Number(paidAvailable) || 0)
   return {
@@ -21,6 +24,8 @@ export function quoteStarsSpend({
     cost: totalCost,
     totalCost,
     bonus,
+    bonusPrimary: primary,
+    bonusSecondary: secondary,
     paid,
     insufficient,
     remainingBonus: Number(bonusAvailable) || 0,

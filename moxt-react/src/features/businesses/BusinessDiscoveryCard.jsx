@@ -13,11 +13,11 @@ import { isBusinessPublishReady } from './businessPublishUtils'
 import { BusinessRatingBadge } from '../reviews/BusinessRatingBadge'
 
 const CARD_CLASS =
-  'flex w-full flex-col gap-2.5 rounded-[1.4rem] border-0 bg-[var(--app-surface)] p-3.5 shadow-[var(--shadow-card)] transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-hover)]'
+  'flex min-w-0 flex-col gap-2.5 rounded-[1.4rem] border-0 bg-[var(--app-surface)] p-3.5 shadow-[var(--shadow-card)] transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-hover)]'
 
-/** Largeur fixe des cartes dans le carrousel dashboard (−30 % vs clamp d’origine). */
+/** Largeur des cartes dans le carrousel dashboard (laisse voir la carte suivante). */
 export const BUSINESS_DISCOVERY_RAIL_WIDTH_CLASS =
-  'w-[clamp(10.85rem,55vw,13.3rem)] shrink-0 sm:w-[clamp(11.2rem,29vw,13.65rem)]'
+  'w-[clamp(12.45rem,62.9vw,15.25rem)] shrink-0 sm:w-[clamp(12.85rem,33.2vw,15.6rem)]'
 
 export function BusinessDiscoveryCard({ business, user, className = '' }) {
   const { t } = useLanguage()
@@ -32,7 +32,7 @@ export function BusinessDiscoveryCard({ business, user, className = '' }) {
   const services = (business.services || []).slice(0, 2)
 
   return (
-    <article className={`${CARD_CLASS} ${className}`}>
+    <article className={`${CARD_CLASS} ${className || 'w-full'}`}>
       <Link to={`/businesses/${business.id}`} className="flex min-w-0 flex-1 flex-col gap-2.5">
         <div className="flex min-w-0 items-start gap-2.5">
           {business.logoUrl ? (

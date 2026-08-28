@@ -26,6 +26,7 @@ import {
   publicationTypeCounts,
   visiblePublicationCount,
   visiblePublicationTypeTabs,
+  preferredPublicationArchiveTab,
 } from '../publications/publicationCatalogUtils'
 import { PublicationCatalogNav } from '../publications/PublicationCatalogNav'
 import { useRefreshPublicationsData } from '../publications/useRefreshPublicationsData'
@@ -64,7 +65,7 @@ export function BusinessPublicationsPanel({
 
   useRefreshPublicationsData(guestMode ? null : businessId)
 
-  const archiveTab = searchParams.get('status') === 'archived' ? 'archived' : 'active'
+  const requestedArchiveTab = searchParams.get('status') === 'archived' ? 'archived' : 'active'
   const typeTab = BUSINESS_PUBLICATION_TYPE_TABS.some((tab) => tab.id === searchParams.get('type'))
     ? searchParams.get('type')
     : 'listing'
@@ -105,10 +106,8 @@ export function BusinessPublicationsPanel({
     videoItems,
   ])
 
-  const archiveCounts = useMemo(
-    () => publicationArchiveCounts(publications, { typeTab }),
-    [publications, typeTab],
-  )
+  const archiveCounts = useMemo(() => publicationArchiveCounts(publications), [publications])
+  const archiveTab = preferredPublicationArchiveTab(publications, requestedArchiveTab)
   const typeCounts = useMemo(
     () => publicationTypeCounts(publications, archiveTab),
     [archiveTab, publications],
@@ -148,10 +147,9 @@ export function BusinessPublicationsPanel({
   }, [typeTab, visibleTypeTabs])
 
   useEffect(() => {
-    if (!showArchives && archiveTab === 'archived') {
-      setArchiveTab('active')
-    }
-  }, [archiveTab, showArchives])
+    if (archiveTab === requestedArchiveTab) return
+    setArchiveTab(archiveTab)
+  }, [archiveTab, requestedArchiveTab])
 
   return (
     <div className="grid gap-4">

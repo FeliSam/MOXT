@@ -37,10 +37,11 @@ function PriceChip({ children, compact = false }) {
   )
 }
 
-export function StarsPricingGuide({ config = DEFAULT_QUOTA_CONFIG, ownerType = 'user' }) {
+export function StarsPricingGuide({ config = DEFAULT_QUOTA_CONFIG, ownerType = 'user', linkedBusiness = false }) {
   const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const poolQuota = monthlyBonusPoolForPlan(ownerType, config)
+  const businessPoolQuota = monthlyBonusPoolForPlan('business', config)
   const sampleCategory = 'marketplace'
   const publishCost = resolveStarsActionCost({ category: 'marketplace', config })
   const videoCost = resolveStarsActionCost({ category: 'video', config })
@@ -63,6 +64,9 @@ export function StarsPricingGuide({ config = DEFAULT_QUOTA_CONFIG, ownerType = '
           {!open ? (
             <span className="mt-2 flex flex-wrap gap-1.5">
               <PriceChip compact>{t('stars.pricingChipPool', { n: poolQuota })}</PriceChip>
+              {linkedBusiness ? (
+                <PriceChip compact>{t('stars.pricingChipPoolBusiness', { n: businessPoolQuota })}</PriceChip>
+              ) : null}
               <PriceChip compact>{t('stars.pricingChipPublish', { n: publishCost })}</PriceChip>
               <PriceChip compact>{t('stars.pricingChipVideo', { n: videoCost })}</PriceChip>
               <PriceChip compact>{t('stars.pricingChipStatus', { n: statusCost })}</PriceChip>

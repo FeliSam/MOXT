@@ -49,6 +49,7 @@ import {
   publicationArchiveCounts,
   publicationTotalCount,
   publicationTypeCounts,
+  preferredPublicationArchiveTab,
   visiblePublicationCount,
   visiblePublicationTypeTabs,
 } from '../features/publications/publicationCatalogUtils'
@@ -126,7 +127,7 @@ export function MyPublicationsPage() {
     return false
   }
 
-  const archiveTab = searchParams.get('status') === 'archived' ? 'archived' : 'active'
+  const requestedArchiveTab = searchParams.get('status') === 'archived' ? 'archived' : 'active'
   const panel = searchParams.get('panel') === 'subscribers' ? 'subscribers' : 'publications'
   const typeTab = PUBLICATION_TYPE_TABS.some((tab) => tab.id === searchParams.get('type'))
     ? searchParams.get('type')
@@ -139,9 +140,12 @@ export function MyPublicationsPage() {
   )
   const typeTabSource = scope === 'business' ? BUSINESS_PUBLICATION_TYPE_TABS : PUBLICATION_TYPE_TABS
   const archiveCounts = useMemo(
-    () => publicationArchiveCounts(publications, { includePending: true, typeTab }),
-    [publications, typeTab],
+    () => publicationArchiveCounts(publications, { includePending: true }),
+    [publications],
   )
+  const archiveTab = preferredPublicationArchiveTab(publications, requestedArchiveTab, {
+    includePending: true,
+  })
   const typeCounts = useMemo(
     () => publicationTypeCounts(publications, archiveTab, { includePending: true }),
     [archiveTab, publications],
@@ -275,10 +279,9 @@ export function MyPublicationsPage() {
   }, [typeTab, visibleTypeTabs])
 
   useEffect(() => {
-    if (!hasArchives && archiveTab === 'archived') {
-      setArchiveTab('active')
-    }
-  }, [archiveTab, hasArchives])
+    if (archiveTab === requestedArchiveTab) return
+    setArchiveTab(archiveTab)
+  }, [archiveTab, requestedArchiveTab])
 
   function setScope(next) {
     const params = new URLSearchParams(searchParams)

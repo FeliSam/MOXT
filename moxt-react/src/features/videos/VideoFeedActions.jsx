@@ -1,5 +1,5 @@
 import { FiHeart, FiMessageCircle, FiMoreHorizontal, FiShare2, FiUserPlus } from 'react-icons/fi'
-import { useDispatch, useSelector } from 'react-redux'
+import { shallowEqual, useDispatch, useSelector } from 'react-redux'
 import { useLanguage } from '../../contexts/useLanguage'
 import { useGuestAction } from '../guest/useGuestAction'
 import {
@@ -13,7 +13,7 @@ import {
   FEED_ACTION_ICON_CLASS,
   FEED_ACTION_ICON_SM_CLASS,
   FEED_ACTION_ICON_WRAP_CLASS,
-  FEED_ACTION_RAIL_CLASS,
+  feedActionRailClass,
   FeedActionCount,
 } from '../feed/feedActionStyles.jsx'
 import { liveFeedSocialStats } from '../feed/feedItemUtils'
@@ -90,10 +90,14 @@ export function VideoFeedActions({
   onComment,
   onShare,
   onMore,
+  visible = true,
 }) {
   const { t } = useLanguage()
   const p3 = (key, vars) => phase3Text(t, key, vars)
-  const social = useSelector((state) => liveFeedSocialStats(state, 'video', video?.id, ''))
+  const social = useSelector(
+    (state) => liveFeedSocialStats(state, 'video', video?.id, ''),
+    shallowEqual,
+  )
   const likeCount = social.likeCount
   const commentCount = social.commentCount
   const shareCount = Number(video?.shareCount) || Number(item?.stats?.shares) || 0
@@ -104,10 +108,11 @@ export function VideoFeedActions({
 
   return (
     <div
-      className={FEED_ACTION_RAIL_CLASS}
+      className={feedActionRailClass(visible)}
       data-testid="feed-action-rail"
       data-kind="video"
       data-entity={video?.id || ''}
+      aria-hidden={visible ? undefined : true}
     >
       <button
         type="button"

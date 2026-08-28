@@ -4,8 +4,29 @@ import { sanitizeListingByType } from '../../config/listingConfig'
 import { createLocalStorage } from '../../services/createLocalStorage'
 import { storageService } from '../../services/storageService'
 import { mergeRemoteById } from '@moxt/shared/utils/mergeRemoteById.js'
+import { createId } from '../../services/createId'
 import { saveListingRemote } from './marketplaceRemote'
 import { normalizeListingImages } from './listingImageUtils'
+
+function asIdArray(value) {
+  if (Array.isArray(value)) return value.map(String).filter(Boolean)
+  return []
+}
+
+function asCommentArray(value) {
+  if (!Array.isArray(value)) return []
+  return value
+    .filter((item) => item && typeof item === 'object')
+    .map((item) => ({
+      id: item.id || createId('CMT'),
+      authorId: item.authorId || item.author_id || '',
+      authorName: item.authorName || item.author_name || '',
+      authorAvatarUrl: item.authorAvatarUrl || item.author_avatar_url || '',
+      text: String(item.text || '').trim(),
+      createdAt: item.createdAt || item.created_at || new Date().toISOString(),
+    }))
+    .filter((item) => item.text)
+}
 
 const storage = createLocalStorage('moxt-listings-v1')
 const reportsStorage = createLocalStorage('moxt-listing-reports-v1')
@@ -67,6 +88,8 @@ export const normalizeListing = (listing) => {
     contactCount: Number(listing.contactCount || 0),
     shareCount: Number(listing.shareCount || 0),
     favorites: Array.isArray(listing.favorites) ? listing.favorites : [],
+    likes: asIdArray(listing.likes),
+    comments: asCommentArray(listing.comments),
     images: (() => {
       const resolved = normalizeListingImages(listing.images, listing.payload?.images)
       if (resolved.length) return resolved
@@ -128,6 +151,8 @@ const marketplaceSlice = createSlice({
             contactCount: 0,
             shareCount: 0,
             favorites: [],
+            likes: [],
+            comments: [],
             images: values.images || [],
             condition: sanitizedValues.condition,
             brand: sanitizedValues.brand,
@@ -178,6 +203,8 @@ const marketplaceSlice = createSlice({
             contactCount: 0,
             shareCount: 0,
             favorites: [],
+            likes: [],
+            comments: [],
             questions: [],
             history: [{ status: 'draft', at: now, actorId: ownerId }],
             createdAt: now,
@@ -196,6 +223,8 @@ const marketplaceSlice = createSlice({
         createdAt: listing.createdAt,
         history: listing.history,
         favorites: listing.favorites,
+        likes: listing.likes,
+        comments: listing.comments,
         views: listing.views,
       }
       const sanitizedChanges = sanitizeListingByType({
@@ -292,6 +321,56 @@ const marketplaceSlice = createSlice({
         ? listing.favorites.filter((id) => id !== action.payload.userId)
         : [...listing.favorites, action.payload.userId]
     },
+    toggleListingLike(state, action) {
+      const listing = state.items.find((item) => item.id === action.payload.listingId)
+      if (!listing || !action.payload.userId) return
+      if (!Array.isArray(listing.likes)) listing.likes = []
+      const idx = listing.likes.indexOf(action.payload.userId)
+      if (idx === -1) listing.likes.push(action.payload.userId)
+      else listing.likes.splice(idx, 1)
+      listing.updatedAt = new Date().toISOString()
+    },
+    addListingComment: {
+      reducer(state, action) {
+        const listing = state.items.find((item) => item.id === action.payload.listingId)
+        if (!listing) return
+        if (!Array.isArray(listing.comments)) listing.comments = []
+        listing.comments.push(action.payload.comment)
+        listing.updatedAt = new Date().toISOString()
+      },
+      prepare({ listingId, authorId, authorName, authorAvatarUrl, text }) {
+        return {
+          payload: {
+            listingId,
+            comment: {
+              id: createId('CMT'),
+              authorId,
+              authorName,
+              authorAvatarUrl: authorAvatarUrl || '',
+              text: String(text || '').trim(),
+              createdAt: new Date().toISOString(),
+            },
+          },
+        }
+      },
+    },
+    deleteListingComment(state, action) {
+      const { listingId, commentId } = action.payload
+      const listing = state.items.find((item) => item.id === listingId)
+      if (!listing || !commentId) return
+      listing.comments = (listing.comments || []).filter((c) => c.id !== commentId)
+      listing.updatedAt = new Date().toISOString()
+    },
+    restoreListingComment(state, action) {
+      const { listingId, comment } = action.payload
+      const listing = state.items.find((item) => item.id === listingId)
+      if (!listing || !comment?.id) return
+      if ((listing.comments || []).some((c) => c.id === comment.id)) return
+      listing.comments = [...(listing.comments || []), comment].sort(
+        (a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0),
+      )
+      listing.updatedAt = new Date().toISOString()
+    },
     updateListingStatus(state, action) {
       const listing = state.items.find((item) => item.id === action.payload.id)
       if (!listing) return
@@ -381,6 +460,10 @@ export const {
   saveListingDraft,
   setMarketplaceFilters,
   toggleListingFavorite,
+  toggleListingLike,
+  addListingComment,
+  deleteListingComment,
+  restoreListingComment,
   updateListing,
   updateListingReportStatus,
   updateListingStatus,

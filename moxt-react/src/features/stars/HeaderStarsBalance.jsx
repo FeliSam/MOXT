@@ -3,7 +3,7 @@ import { FiStar } from 'react-icons/fi'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../../contexts/useLanguage'
-import { loadStarsBalance } from './starsSlice'
+import { loadStarsBalance, loadStarsHistory } from './starsSlice'
 import { totalStarsAvailable } from './starsWalletUi'
 import { useStarsModuleEnabled } from './useStarsModuleEnabled'
 
@@ -17,6 +17,7 @@ export function HeaderStarsBalance() {
   useEffect(() => {
     if (!starsEnabled || !userId) return
     dispatch(loadStarsBalance({ ownerType: 'user', ownerId: userId }))
+    dispatch(loadStarsHistory({ ownerType: 'user', ownerId: userId, limit: 50 }))
   }, [dispatch, starsEnabled, userId])
 
   if (!starsEnabled) return null

@@ -20,6 +20,33 @@ describe('marketplaceRemote questions', () => {
     expect(listingQuestionFromRemoteRow(merged[0].questions[0]).text).toBe('Disponible ?')
   })
 
+  it('prend les likes et commentaires colonnes plutôt que le payload', () => {
+    const listing = listingFromRemoteRow({
+      id: 'ANN-1',
+      owner_id: 'owner',
+      title: 'Velo',
+      likes: ['u2'],
+      comments: [
+        {
+          id: 'CMT-1',
+          authorId: 'u2',
+          authorName: 'Marie',
+          text: 'Super',
+          createdAt: '2026-08-28T10:00:00.000Z',
+        },
+      ],
+      payload: {
+        id: 'ANN-1',
+        likes: ['stale'],
+        comments: [],
+      },
+    })
+
+    expect(listing.likes).toEqual(['u2'])
+    expect(listing.comments).toHaveLength(1)
+    expect(listing.comments[0].text).toBe('Super')
+  })
+
   it('conserve les images du payload quand la colonne images est vide', () => {
     const listing = listingFromRemoteRow({
       id: 'ANN-IMG',

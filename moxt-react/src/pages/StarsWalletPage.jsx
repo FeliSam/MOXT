@@ -3,9 +3,8 @@ import {
   FiAlertCircle,
   FiArrowDownLeft,
   FiArrowUpRight,
-  FiBriefcase,
+  FiChevronLeft,
   FiChevronRight,
-  FiGift,
   FiInfo,
   FiRefreshCw,
   FiStar,
@@ -16,14 +15,14 @@ import { useDispatch, useSelector } from 'react-redux'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { useLanguage } from '../contexts/useLanguage'
-import { BONUS_POOL_CATEGORY, monthlyBonusPoolForPlan } from '../features/stars/starsConfig'
+import { monthlyBonusPoolForPlan } from '../features/stars/starsConfig'
 import { StarsPricingGuide } from '../features/stars/StarsPricingGuide'
 import { historyEntryMeta, normalizeStarsHistory } from '../features/stars/starsHistoryUtils'
 import { loadStarsBalance, loadStarsCatalog, loadStarsHistory } from '../features/stars/starsSlice'
-import {
-  formatStarsPeriod,
-  STARS_CATEGORY_META,
-} from '../features/stars/starsWalletUi'
+import { formatStarsPeriod, totalStarsAvailable } from '../features/stars/starsWalletUi'
+import { selectActiveBusinessForOwner } from '../features/businesses/businessVisibility'
+
+const HISTORY_PAGE_SIZE = 10
 
 function WalletSkeleton() {
   return (
@@ -36,78 +35,80 @@ function WalletSkeleton() {
 
 function HistoryRow({ item, t, packages }) {
   const meta = historyEntryMeta(item, t, packages)
-  const category = meta.poolGrant
-    ? t('stars.bonusPoolShort')
-    : meta.categoryKey === 'boost'
-      ? t('stars.categories.boost')
-      : meta.categoryKey && meta.categoryKey !== 'purchase'
-        ? t(`stars.categories.${meta.categoryKey}`)
-        : null
-  const CategoryIcon = meta.poolGrant ? FiGift : STARS_CATEGORY_META[meta.categoryKey]?.icon
+  const timeLabel = item.created_at
+    ? new Date(item.created_at).toLocaleString(undefined, {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : ''
 
   return (
-    <li className="flex items-center gap-3 rounded-2xl border border-[var(--app-border)]/60 bg-[var(--app-surface)] px-3 py-3 shadow-sm">
+    <li className="flex min-w-0 items-center gap-3 rounded-xl border border-[var(--app-border)]/60 bg-[var(--app-surface)] px-3 py-2.5 shadow-sm">
       <span
-        className={`grid size-10 shrink-0 place-items-center rounded-xl ${
+        className={`grid size-9 shrink-0 place-items-center rounded-xl ${
           meta.isCredit
             ? 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-300'
             : 'bg-amber-500/12 text-amber-700 dark:text-amber-300'
         }`}
       >
         {meta.isCredit ? (
-          <FiArrowDownLeft className="text-lg" aria-hidden />
+          <FiArrowDownLeft className="text-base" aria-hidden />
         ) : (
-          <FiArrowUpRight className="text-lg" aria-hidden />
+          <FiArrowUpRight className="text-base" aria-hidden />
         )}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="flex flex-wrap items-center gap-1.5 text-sm font-bold">
-          <span className={meta.isCredit ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-800 dark:text-amber-200'}>
+        <p className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          <span
+            className={`text-sm font-black tabular-nums ${
+              meta.isCredit ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-800 dark:text-amber-200'
+            }`}
+          >
             {meta.isCredit ? '+' : '−'}
-            {meta.amount}
-            <span className="ml-0.5 text-[var(--app-text-muted)]">★</span>
+            {meta.amount}★
           </span>
-          <span className="text-[var(--app-text-muted)]">
-            {meta.starType === 'bonus' ? t('stars.bonusPoolShort') : t('stars.paidBalance')}
-          </span>
-          {category && CategoryIcon ? (
-            <span
-              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                meta.poolGrant
-                  ? 'bg-brand-500/10 text-brand-800 dark:text-brand-200'
-                  : meta.isCredit
-                    ? 'bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]'
-                    : 'bg-amber-500/10 text-amber-900 dark:text-amber-200'
-              }`}
-            >
-              <CategoryIcon className="text-[11px]" aria-hidden />
-              {category}
-            </span>
-          ) : null}
+          <span className="truncate text-sm font-semibold text-[var(--app-text)]">{meta.headline}</span>
         </p>
-        <p className="mt-0.5 truncate text-xs font-semibold text-[var(--app-text)]">{meta.headline}</p>
         {meta.detail ? (
-          <p className="mt-0.5 truncate text-xs text-[var(--app-text-faint)]">{meta.detail}</p>
+          <p className="mt-0.5 truncate text-xs text-[var(--app-text-muted)]">{meta.detail}</p>
         ) : null}
       </div>
       <time className="shrink-0 text-[10px] font-semibold tabular-nums text-[var(--app-text-faint)]">
-        {item.created_at
-          ? new Date(item.created_at).toLocaleString(undefined, {
-              day: '2-digit',
-              month: 'short',
-              hour: '2-digit',
-              minute: '2-digit',
-            })
-          : ''}
+        {timeLabel}
       </time>
     </li>
   )
 }
 
-function BalanceSplitBar({ bonus, paid, t }) {
+function PoolMeter({ label, remaining, quota, t }) {
+  const usedPct =
+    quota > 0 ? Math.min(100, Math.round(((quota - remaining) / quota) * 100)) : 0
+  return (
+    <div className="rounded-xl bg-white/10 px-3 py-2.5 backdrop-blur-sm">
+      <div className="mb-1.5 flex items-center justify-between gap-2 text-[11px] font-bold">
+        <span className="text-white/75">{label}</span>
+        <span className="tabular-nums text-white">
+          {remaining}/{quota} ★
+        </span>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-white/15">
+        <div
+          className="h-full rounded-full bg-emerald-300/90 transition-all"
+          style={{ width: `${100 - usedPct}%` }}
+        />
+      </div>
+      <p className="mt-1.5 text-[10px] text-white/70">{t('stars.bonusPoolPeriodHint')}</p>
+    </div>
+  )
+}
+
+function BalanceSplitBar({ personalBonus, businessBonus, paid, hasBusiness, t }) {
+  const bonus = personalBonus + (hasBusiness ? businessBonus : 0)
   const total = bonus + paid
   const bonusPct = total > 0 ? Math.round((bonus / total) * 100) : 0
-  const paidPct = total > 0 ? 100 - bonusPct : 0
+  const paidPct = total > 0 ? Math.max(0, 100 - bonusPct) : 0
 
   return (
     <div className="mt-5">
@@ -117,7 +118,7 @@ function BalanceSplitBar({ bonus, paid, t }) {
             <div
               className="bg-emerald-300/90 transition-all"
               style={{ width: `${bonusPct}%` }}
-              title={t('stars.walletSplitBonus', { n: bonus })}
+              title={t('stars.walletSplitPersonalBonus', { n: bonus })}
             />
           ) : null}
           {paid > 0 ? (
@@ -134,13 +135,21 @@ function BalanceSplitBar({ bonus, paid, t }) {
       <div className="mt-3 grid grid-cols-2 gap-2">
         <div className="rounded-xl bg-white/10 px-3 py-2.5 backdrop-blur-sm">
           <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-white/70">
-            <FiGift className="text-xs" aria-hidden />
+            <FiUser className="text-xs" aria-hidden />
             {t('stars.bonusPoolShort')}
           </p>
           <p className="mt-0.5 font-display text-xl font-black tabular-nums">
             {bonus}
             <span className="ml-1 text-sm font-bold text-white/65">★</span>
           </p>
+          {hasBusiness ? (
+            <p className="mt-0.5 text-[10px] font-semibold text-white/65">
+              {t('stars.bonusPoolCombinedHint', {
+                personal: personalBonus,
+                business: businessBonus,
+              })}
+            </p>
+          ) : null}
         </div>
         <div className="rounded-xl bg-white/10 px-3 py-2.5 backdrop-blur-sm">
           <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-white/70">
@@ -161,92 +170,51 @@ export function StarsWalletPage() {
   const { t, language } = useLanguage()
   const dispatch = useDispatch()
   const user = useSelector((state) => state.auth.user)
-  const { balance, transactions, packages, status, error } = useSelector((state) => state.stars)
-  const [ownerType, setOwnerType] = useState('user')
-  const business = useSelector((state) =>
-    (state.businesses?.items || []).find((item) => item.ownerId === user?.id),
+  const ownedBusiness = useSelector((state) =>
+    selectActiveBusinessForOwner(state.businesses?.items || [], state.auth.user?.id),
   )
+  const { balance, transactions, packages, status, error } = useSelector((state) => state.stars)
 
   useEffect(() => {
     dispatch(loadStarsCatalog())
-    dispatch(
-      loadStarsBalance({
-        ownerType,
-        ownerId: ownerType === 'business' ? business?.id : user?.id,
-      }),
-    )
-    dispatch(
-      loadStarsHistory({
-        ownerType,
-        ownerId: ownerType === 'business' ? business?.id : user?.id,
-        limit: 50,
-      }),
-    )
-  }, [dispatch, ownerType, business?.id, user?.id])
+    dispatch(loadStarsBalance({ ownerType: 'user', ownerId: user?.id }))
+    dispatch(loadStarsHistory({ ownerType: 'user', ownerId: user?.id, limit: 50 }))
+  }, [dispatch, ownedBusiness?.id, user?.id])
 
   const enforced = Boolean(balance?.enforced)
-  const bonus = balance?.bonus || {}
-  const paidBalance = Number(balance?.paid ?? 0)
-  const poolQuota =
-    balance?.bonusPoolGranted ??
-    balance?.quotas?.[BONUS_POOL_CATEGORY] ??
-    balance?.quotas?.pool ??
-    monthlyBonusPoolForPlan(ownerType, balance?.config)
-  const poolRemaining = Number(balance?.bonusPool ?? bonus?.pool ?? bonus?.[BONUS_POOL_CATEGORY] ?? 0)
-  const totalAvailable = paidBalance + poolRemaining
+  const paidBalance = Number(balance?.sharedPaid ?? balance?.paid ?? 0)
+  const personalBonus = Number(balance?.personalBonus ?? (balance?.businessBonus != null ? 0 : balance?.bonusPool) ?? 0)
+  const businessBonus = Number(balance?.businessBonus ?? 0)
+  const linkedBusiness = Boolean(balance?.linkedBusinessId || ownedBusiness?.id)
+  const personalQuota =
+    balance?.personalBonusGranted ??
+    monthlyBonusPoolForPlan('user', balance?.config)
+  const businessQuota =
+    balance?.businessBonusGranted ??
+    monthlyBonusPoolForPlan('business', balance?.config)
+  const bonusRemaining = personalBonus + (linkedBusiness ? businessBonus : 0)
+  const bonusQuota = personalQuota + (linkedBusiness ? businessQuota : 0)
+  const totalAvailable = totalStarsAvailable(balance)
   const periodLabel = formatStarsPeriod(balance?.period, language || 'fr')
-  const poolUsedPct =
-    poolQuota > 0 ? Math.min(100, Math.round(((poolQuota - poolRemaining) / poolQuota) * 100)) : 0
   const historyItems = useMemo(() => normalizeStarsHistory(transactions), [transactions])
+  const historyPageCount = Math.max(1, Math.ceil(historyItems.length / HISTORY_PAGE_SIZE) || 1)
+  const [historyPage, setHistoryPage] = useState(1)
+  const safeHistoryPage = Math.min(historyPage, historyPageCount)
+  const pagedHistory = useMemo(() => {
+    const start = (safeHistoryPage - 1) * HISTORY_PAGE_SIZE
+    return historyItems.slice(start, start + HISTORY_PAGE_SIZE)
+  }, [historyItems, safeHistoryPage])
+  const historyFrom = historyItems.length ? (safeHistoryPage - 1) * HISTORY_PAGE_SIZE + 1 : 0
+  const historyTo = Math.min(safeHistoryPage * HISTORY_PAGE_SIZE, historyItems.length)
   const loadingBalance = status === 'loading' && !balance
 
   function refresh() {
-    dispatch(
-      loadStarsBalance({
-        ownerType,
-        ownerId: ownerType === 'business' ? business?.id : user?.id,
-      }),
-    )
-    dispatch(
-      loadStarsHistory({
-        ownerType,
-        ownerId: ownerType === 'business' ? business?.id : user?.id,
-        limit: 50,
-      }),
-    )
+    dispatch(loadStarsBalance({ ownerType: 'user', ownerId: user?.id }))
+    dispatch(loadStarsHistory({ ownerType: 'user', ownerId: user?.id, limit: 50 }))
   }
 
   return (
-    <div className="mx-auto grid max-w-3xl gap-4 pb-4">
-      {business ? (
-        <div className="grid grid-cols-2 gap-1.5 rounded-2xl bg-[var(--app-surface-muted)] p-1.5 ring-1 ring-[var(--app-border)]/50">
-          <button
-            type="button"
-            className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold transition ${
-              ownerType === 'user'
-                ? 'bg-[var(--app-surface)] text-[var(--app-text)] shadow-sm'
-                : 'text-[var(--app-text-muted)] hover:text-[var(--app-text)]'
-            }`}
-            onClick={() => setOwnerType('user')}
-          >
-            <FiUser aria-hidden />
-            {t('stars.personalWallet')}
-          </button>
-          <button
-            type="button"
-            className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold transition ${
-              ownerType === 'business'
-                ? 'bg-[var(--app-surface)] text-[var(--app-text)] shadow-sm'
-                : 'text-[var(--app-text-muted)] hover:text-[var(--app-text)]'
-            }`}
-            onClick={() => setOwnerType('business')}
-          >
-            <FiBriefcase aria-hidden />
-            {t('stars.businessWallet')}
-          </button>
-        </div>
-      ) : null}
-
+    <div className="mx-auto grid w-full max-w-7xl gap-4 pb-4">
       <section className="relative overflow-hidden rounded-[1.75rem] bg-gradient-to-br from-amber-500 via-brand-600 to-violet-700 p-5 text-white shadow-[0_20px_50px_rgba(15,23,42,0.18)] sm:p-6">
         <div className="pointer-events-none absolute -left-8 -top-10 size-40 rounded-full bg-white/15 blur-3xl" aria-hidden />
         <div className="pointer-events-none absolute -bottom-12 -right-8 size-48 rounded-full bg-violet-300/20 blur-3xl" aria-hidden />
@@ -280,7 +248,6 @@ export function StarsWalletPage() {
             {loadingBalance ? '…' : totalAvailable}
             <span className="ml-1 text-2xl font-bold text-white/75">★</span>
           </p>
-          <p className="mt-1 text-xs text-white/80">{t('stars.totalAvailableHint')}</p>
           {periodLabel ? (
             <p className="mt-1 text-[11px] font-semibold text-white/65">
               {t('stars.periodLabel', { period: periodLabel })}
@@ -288,23 +255,22 @@ export function StarsWalletPage() {
           ) : null}
         </div>
 
-        <BalanceSplitBar bonus={poolRemaining} paid={paidBalance} t={t} />
+        <BalanceSplitBar
+          personalBonus={personalBonus}
+          businessBonus={businessBonus}
+          paid={paidBalance}
+          hasBusiness={linkedBusiness}
+          t={t}
+        />
 
-        {enforced && poolQuota > 0 ? (
-          <div className="relative mt-4 rounded-xl bg-white/10 px-3 py-2.5 backdrop-blur-sm">
-            <div className="mb-1.5 flex items-center justify-between gap-2 text-[11px] font-bold">
-              <span className="text-white/75">{t('stars.bonusPoolSection')}</span>
-              <span className="tabular-nums text-white">
-                {poolRemaining}/{poolQuota} ★
-              </span>
-            </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-white/15">
-              <div
-                className="h-full rounded-full bg-emerald-300/90 transition-all"
-                style={{ width: `${100 - poolUsedPct}%` }}
-              />
-            </div>
-            <p className="mt-1.5 text-[10px] text-white/70">{t('stars.bonusPoolPeriodHint')}</p>
+        {enforced && bonusQuota > 0 ? (
+          <div className="relative mt-4">
+            <PoolMeter
+              label={t('stars.bonusPoolSection')}
+              remaining={bonusRemaining}
+              quota={bonusQuota}
+              t={t}
+            />
           </div>
         ) : null}
 
@@ -370,16 +336,56 @@ export function StarsWalletPage() {
                   </Link>
                 </div>
               ) : (
-                <ul className="grid gap-2">
-                  {historyItems.map((item) => (
-                    <HistoryRow key={item.id} item={item} t={t} packages={packages} />
-                  ))}
-                </ul>
+                <>
+                  <ul className="grid grid-cols-1 gap-2">
+                    {pagedHistory.map((item) => (
+                      <HistoryRow key={item.id} item={item} t={t} packages={packages} />
+                    ))}
+                  </ul>
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--app-border)]/70 pt-3">
+                    <p className="text-xs font-bold tabular-nums text-[var(--app-text-muted)]">
+                      {t('stars.historyPageRange', {
+                        from: historyFrom,
+                        to: historyTo,
+                        total: historyItems.length,
+                      })}
+                    </p>
+                    {historyPageCount > 1 ? (
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          icon={FiChevronLeft}
+                          disabled={safeHistoryPage <= 1}
+                          onClick={() => setHistoryPage((page) => Math.max(1, page - 1))}
+                        >
+                          {t('stars.historyPrev')}
+                        </Button>
+                        <span className="min-w-10 text-center text-xs font-black tabular-nums text-[var(--app-text-muted)]">
+                          {safeHistoryPage}/{historyPageCount}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          iconRight={FiChevronRight}
+                          disabled={safeHistoryPage >= historyPageCount}
+                          onClick={() => setHistoryPage((page) => Math.min(historyPageCount, page + 1))}
+                        >
+                          {t('stars.historyNext')}
+                        </Button>
+                      </div>
+                    ) : null}
+                  </div>
+                </>
               )}
             </div>
           </Card>
 
-          <StarsPricingGuide config={balance.config} ownerType={ownerType} />
+          <StarsPricingGuide
+            config={balance.config}
+            ownerType="user"
+            linkedBusiness={linkedBusiness}
+          />
         </>
       ) : null}
     </div>

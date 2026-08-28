@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildUnifiedFeedItems,
+  countFeedKinds,
   feedItemKey,
   feedOrderSignature,
   feedPath,
@@ -354,5 +355,43 @@ describe('feedItemUtils', () => {
     expect(b.likeCount).toBe(2)
     expect(a.commentCount).toBe(2)
     expect(b.commentCount).toBe(2)
+  })
+
+  it('inclut les offres P2P actives et ignore les archives', () => {
+    const items = buildUnifiedFeedItems({
+      videos: { items: [] },
+      marketplace: { items: [] },
+      parcels: { items: [] },
+      jobs: { items: [] },
+      events: { items: [] },
+      posts: { items: [] },
+      p2p: {
+        offers: [
+          {
+            id: 'P2P-1',
+            status: 'active',
+            fromCurrency: 'XOF',
+            toCurrency: 'RUB',
+            amount: 10000,
+            rate: 0.12,
+            ownerId: 'u1',
+            ownerName: 'Awa',
+            createdAt: '2026-08-20T00:00:00.000Z',
+          },
+          {
+            id: 'P2P-2',
+            status: 'archived',
+            fromCurrency: 'RUB',
+            toCurrency: 'XOF',
+            amount: 1,
+            ownerId: 'u2',
+          },
+        ],
+      },
+      businesses: { items: [] },
+    })
+    expect(items.map((item) => item.id)).toEqual(['p2p:P2P-1'])
+    expect(countFeedKinds(items).p2p).toBe(1)
+    expect(parseFeedItemParam('p2p:P2P-1')?.kind).toBe('p2p')
   })
 })

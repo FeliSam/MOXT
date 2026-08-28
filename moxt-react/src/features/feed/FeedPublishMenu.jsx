@@ -139,11 +139,12 @@ export function FeedPublishMenu({ variant = 'inline', className = '' }) {
     function onKey(event) {
       if (event.key === 'Escape') requestClose()
     }
+    const previousOverflow = document.body.style.overflow
     document.addEventListener('keydown', onKey)
     document.body.style.overflow = 'hidden'
     return () => {
       document.removeEventListener('keydown', onKey)
-      document.body.style.overflow = ''
+      document.body.style.overflow = previousOverflow
     }
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 

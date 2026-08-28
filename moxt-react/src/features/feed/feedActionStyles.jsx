@@ -8,6 +8,13 @@ import { CountBounce } from '../../components/ui/CountBounce'
 export const FEED_ACTION_RAIL_CLASS =
   'pointer-events-auto fixed bottom-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] right-3 z-[var(--z-page-float)] flex flex-col items-center gap-3 touch-manipulation md:absolute md:bottom-10 md:z-30'
 
+/** Rail pré-monté sur les voisins : visible seulement sur la slide active (évite le délai au snap). */
+export function feedActionRailClass(visible = true) {
+  return visible
+    ? FEED_ACTION_RAIL_CLASS
+    : `${FEED_ACTION_RAIL_CLASS} invisible pointer-events-none`
+}
+
 export const FEED_ACTION_BTN_CLASS =
   'relative flex touch-manipulation items-center justify-center text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.85)]'
 

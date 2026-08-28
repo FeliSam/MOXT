@@ -7,6 +7,7 @@ import {
   upsertPublisherSubscription,
 } from '../account/accountSlice'
 import { selectPublisherSubscription } from '../account/subscriptionSelectors'
+import { EntityVerifiedName } from '../../components/ui/EntityVerifiedName'
 import { useGuestAction } from '../guest/useGuestAction'
 import { useLanguage } from '../../contexts/useLanguage'
 import { phase3Text } from '../../i18n/phase3I18n'
@@ -117,9 +118,15 @@ export function FeedSlideShell({
   )
 
   const nameEl = (
-    <span className="block max-w-[8.5rem] truncate text-sm font-black tracking-tight text-white sm:max-w-[11rem]">
-      {name}
-    </span>
+    <EntityVerifiedName
+      name={name}
+      userId={publisher?.type === 'user' ? publisher?.id : undefined}
+      businessId={publisher?.type === 'business' ? publisher?.id : undefined}
+      verified={publisher?.verified}
+      className="max-w-[8.5rem] text-sm font-black tracking-tight text-white sm:max-w-[11rem]"
+      nameClassName="truncate"
+      iconClassName="text-emerald-400"
+    />
   )
 
   return (
@@ -183,8 +190,8 @@ export function FeedSlideShell({
             </Link>
           ) : null}
         </div>
-        {showActions && item && active ? (
-          <FeedItemActions key={item.id} item={item} />
+        {showActions && item ? (
+          <FeedItemActions key={item.id} item={item} visible={active} />
         ) : null}
       </div>
     </section>

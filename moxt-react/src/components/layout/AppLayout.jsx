@@ -287,14 +287,12 @@ export function AppLayout({ children }) {
 
           <div
 
-            key={location.pathname}
-
             className={
               isMessagesRoute
-                ? `page-enter flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden ${
+                ? `flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden ${
                     messagesFixedViewport ? 'h-full' : ''
                   }`
-                : 'page-enter min-w-0'
+                : 'min-w-0'
             }
 
           >

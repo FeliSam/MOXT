@@ -58,17 +58,15 @@ function getMobileHeaderActions(pathname, { canFeed, canJobs, canNews, canEvents
   const isFeed = pathMatches(pathname, '/feed') || pathname === '/videos'
   const showContextualShortcuts =
     !isTransfers && !isParcels && !isNews && !isMarketplace && !isFeed
-  const sectionPublish = isP2P && !pathMatches(pathname, '/p2p/publish')
-    ? { to: '/p2p/publish', labelKey: 'p2p.page.proposeOffer', gate: 'p2p', always: true }
-    : canJobs && isJobs && !pathMatches(pathname, '/jobs/publish')
-      ? { to: '/jobs/publish', labelKey: 'jobs.browse.publish', gate: 'publish' }
-      : canParcels && isParcels && !pathMatches(pathname, '/parcels/publish')
-        ? { to: '/parcels/publish', labelKey: 'parcels.browse.actions.publish', gate: 'voyage' }
-        : canEvents && isEvents && !pathMatches(pathname, '/events/publish')
-          ? { to: '/events/publish', labelKey: 'events.browse.create', gate: 'publish' }
-          : null
+  const sectionPublish = canJobs && isJobs && !pathMatches(pathname, '/jobs/publish')
+    ? { to: '/jobs/publish', labelKey: 'jobs.browse.publish', gate: 'publish' }
+    : canParcels && isParcels && !pathMatches(pathname, '/parcels/publish')
+      ? { to: '/parcels/publish', labelKey: 'parcels.browse.actions.publish', gate: 'voyage' }
+      : canEvents && isEvents && !pathMatches(pathname, '/events/publish')
+        ? { to: '/events/publish', labelKey: 'events.browse.create', gate: 'publish' }
+        : null
   return {
-    showPublishMenu: isHome || isMarketplace,
+    showPublishMenu: isHome || isMarketplace || (isP2P && !pathMatches(pathname, '/p2p/publish')),
     sectionPublish,
     showNews: canNews && showContextualShortcuts && !(isFeedViewport && canFeed),
     showFeed: isFeedViewport && canFeed && (showContextualShortcuts || isNews),
@@ -82,7 +80,7 @@ function getMobileHeaderActions(pathname, { canFeed, canJobs, canNews, canEvents
 export function Header({ hideOnMobile = false }) {
   const location = useLocation()
   const navigate = useNavigate()
-  const { requireP2PPublish, requirePublish, requireVoyagePublish } = useSecurityGate()
+  const { requirePublish, requireVoyagePublish } = useSecurityGate()
   const route = getRouteMetadata(location.pathname)
   const user = useSelector((state) => state.auth.user)
   const unreadCount = useSelector(selectUnreadNotificationCount)
@@ -175,11 +173,7 @@ export function Header({ hideOnMobile = false }) {
               onClick={() => {
                 const { gate, to } = mobileActions.sectionPublish
                 const allowed =
-                  gate === 'p2p'
-                    ? requireP2PPublish()
-                    : gate === 'voyage'
-                      ? requireVoyagePublish()
-                      : requirePublish()
+                  gate === 'voyage' ? requireVoyagePublish() : requirePublish()
                 if (allowed) navigate(to)
               }}
             >

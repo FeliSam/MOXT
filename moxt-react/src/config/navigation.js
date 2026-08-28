@@ -89,8 +89,21 @@ export const routePreloaders = {
   '/disputes': () => import('../pages/DisputesPage'),
 }
 
+export function pathnameFromTo(to) {
+  if (typeof to === 'string') {
+    return to.split('#')[0].split('?')[0]
+  }
+  return to?.pathname || ''
+}
+
 export function preloadRoute(path) {
-  return routePreloaders[path]?.()
+  return routePreloaders[pathnameFromTo(path)]?.()
+}
+
+export function warmNavRoutes(paths) {
+  for (const path of paths) {
+    preloadRoute(path)
+  }
 }
 
 export const navigationGroups = [

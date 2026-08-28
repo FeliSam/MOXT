@@ -18,6 +18,7 @@ const ENTITY_TO_KIND = {
   event: 'event',
   events: 'event',
   post: 'post',
+  p2p: 'p2p',
 }
 
 const BOOST_FORMULA_WEIGHT = {

@@ -1,19 +1,20 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { FiGrid } from 'react-icons/fi'
-import { NavLink, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { bottomNavigationItems } from '../../config/bottomNavigation'
-import { preloadRoute } from '../../config/navigation'
+import { warmNavRoutes } from '../../config/navigation'
 import { resolveNavLabel } from '../../config/navLabel'
 import { useLanguage } from '../../contexts/useLanguage'
 import { TOUR_MORE_EVENT } from '../../features/onboarding/tourChrome'
 import { useDevModuleNavAccess } from '../../hooks/useDevModuleAccess'
+import { FastNavLink } from '../routing/FastNavLink'
 import { selectMoreMenuBadgeCount } from './moreServicesUtils'
 import { MobileMoreDrawer } from './MobileMoreDrawer'
 
 const BOTTOM_NAV_SLOT =
-  'relative z-[1] flex min-h-[3.75rem] flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 transition-all duration-[var(--transition-fast)] active:scale-[0.96]'
+  'relative z-[1] flex min-h-[3.75rem] flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 transition-transform duration-75 active:scale-[0.98]'
 
 const BOTTOM_NAV_ICON =
   'grid size-9 shrink-0 place-items-center rounded-[0.7rem] transition-colors duration-[var(--transition-fast)]'
@@ -42,13 +43,11 @@ function BottomNavLabel({ children }) {
 function BottomNavItem({ item, resolveLabel, itemRef }) {
   const { icon, path, id } = item
   return (
-    <NavLink
+    <FastNavLink
       ref={itemRef}
       to={path}
       end={path === '/dashboard'}
       data-tour={`nav-${id}`}
-      onFocus={() => preloadRoute(path)}
-      onMouseEnter={() => preloadRoute(path)}
       className={({ isActive }) =>
         `${BOTTOM_NAV_SLOT} ${
           isActive
@@ -63,7 +62,7 @@ function BottomNavItem({ item, resolveLabel, itemRef }) {
           <BottomNavLabel>{resolveLabel(item)}</BottomNavLabel>
         </>
       )}
-    </NavLink>
+    </FastNavLink>
   )
 }
 
@@ -95,6 +94,19 @@ export function BottomNavigation() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- ferme le tiroir suite à une navigation (système externe : le routeur)
     setMoreOpen(false)
   }, [location.pathname])
+
+  useEffect(() => {
+    const paths = visibleItems.map((item) => item.path)
+    const warm = () => warmNavRoutes(paths)
+    const hasIdle = typeof requestIdleCallback === 'function'
+    const idle = hasIdle
+      ? requestIdleCallback(warm, { timeout: 1200 })
+      : window.setTimeout(warm, 120)
+    return () => {
+      if (hasIdle) cancelIdleCallback(idle)
+      else window.clearTimeout(idle)
+    }
+  }, [visibleItems])
 
   useEffect(() => {
     function onTourMore(event) {
@@ -151,7 +163,7 @@ export function BottomNavigation() {
     >
       <span
         aria-hidden="true"
-        className="bottom-nav-indicator pointer-events-none absolute rounded-xl bg-[var(--app-surface-muted)] transition-[transform,width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+        className="bottom-nav-indicator pointer-events-none absolute rounded-xl bg-[var(--app-surface-muted)] transition-[transform,width,opacity] duration-150 ease-out"
         style={{
           width: indicator.width,
           transform: `translateX(${indicator.left}px)`,
@@ -173,7 +185,10 @@ export function BottomNavigation() {
       <button
         type="button"
         data-tour="nav-more"
-        onClick={() => setMoreOpen(true)}
+        onClick={() => {
+          warmNavRoutes(['/messages', '/p2p', '/jobs', '/news', '/stars', '/notifications'])
+          setMoreOpen(true)
+        }}
         aria-label={
           moreBadge > 0
             ? t('nav.moreServicesUnreadAria', { count: moreBadge > 9 ? '9+' : moreBadge })

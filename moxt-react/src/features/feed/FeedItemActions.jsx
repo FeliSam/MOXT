@@ -10,15 +10,17 @@ import {
   FiMessageCircle,
   FiMoreHorizontal,
   FiPackage,
+  FiRepeat,
   FiShare2,
   FiX,
 } from 'react-icons/fi'
-import { useDispatch, useSelector } from 'react-redux'
+import { shallowEqual, useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import { useLanguage } from '../../contexts/useLanguage'
 import { useGuestAction } from '../guest/useGuestAction'
-import { toggleListingFavorite } from '../marketplace/marketplaceSlice'
+import { toggleListingLike } from '../marketplace/marketplaceSlice'
 import { toggleLike } from '../posts/postsSlice'
+import { FeedCommentsSheet } from './FeedCommentsSheet'
 import { useShareEntity } from '../share/useShareEntity'
 import { addToast } from '../ui/uiSlice'
 import { phase3Text } from '../../i18n/phase3I18n'
@@ -28,7 +30,7 @@ import {
   FEED_ACTION_ICON_CLASS,
   FEED_ACTION_ICON_SM_CLASS,
   FEED_ACTION_ICON_WRAP_CLASS,
-  FEED_ACTION_RAIL_CLASS,
+  feedActionRailClass,
   FeedActionCount,
 } from './feedActionStyles.jsx'
 
@@ -153,12 +155,13 @@ const OPEN_ICON = {
   parcel: FiPackage,
   job: FiBriefcase,
   event: FiCalendar,
+  p2p: FiRepeat,
   discovery: FiExternalLink,
 }
 
 function railKeysForKind(kind) {
   if (kind === 'post' || kind === 'listing') return ['like', 'comment', 'share', 'more']
-  if (kind === 'parcel' || kind === 'job' || kind === 'event' || kind === 'discovery') {
+  if (kind === 'parcel' || kind === 'job' || kind === 'event' || kind === 'p2p' || kind === 'discovery') {
     return ['open', 'share', 'more']
   }
   return ['open', 'share', 'more']
@@ -166,9 +169,9 @@ function railKeysForKind(kind) {
 
 /**
  * Rail d’actions par type de publication (annonce ≠ colis ≠ découverte).
- * Monté seulement sur la slide active (position fixed hors shell mobile).
+ * Pré-monté sur les slides voisines ; `visible` masque le rail fixed inactif.
  */
-export function FeedItemActions({ item }) {
+export function FeedItemActions({ item, visible = true }) {
   const { t } = useLanguage()
   const p3 = (key, vars) => phase3Text(t, key, vars)
   const dispatch = useDispatch()
@@ -176,10 +179,12 @@ export function FeedItemActions({ item }) {
   const user = useSelector((state) => state.auth.user)
   const { requireAccount, promptAccount } = useGuestAction()
   const [moreOpen, setMoreOpen] = useState(false)
+  const [commentsOpen, setCommentsOpen] = useState(false)
   const entityKey = `${item.kind}:${item.entityId || item.id}`
   const railKeys = railKeysForKind(item.kind)
-  const social = useSelector((state) =>
-    liveFeedSocialStats(state, item.kind, item.entityId, user?.id),
+  const social = useSelector(
+    (state) => liveFeedSocialStats(state, item.kind, item.entityId, state.auth.user?.id),
+    shallowEqual,
   )
 
   const liked = social.liked
@@ -206,9 +211,11 @@ export function FeedItemActions({ item }) {
           ? p3('feed.cta.job')
           : item.kind === 'event'
             ? p3('feed.cta.event')
-            : item.kind === 'post'
-              ? p3('feed.cta.post')
-              : p3('feed.openDetail')
+            : item.kind === 'p2p'
+              ? p3('feed.cta.p2p')
+              : item.kind === 'post'
+                ? p3('feed.cta.post')
+                : p3('feed.openDetail')
 
   function goDetail() {
     if (item.href) navigate(item.href)
@@ -230,8 +237,16 @@ export function FeedItemActions({ item }) {
         promptAccount(p3('videos.feed.guestLike'))
         return
       }
-      dispatch(toggleListingFavorite({ listingId: item.entityId, userId: user.id }))
+      dispatch(toggleListingLike({ listingId: item.entityId, userId: user.id }))
     }
+  }
+
+  function handleComment() {
+    if (item.kind === 'post' || item.kind === 'listing') {
+      setCommentsOpen(true)
+      return
+    }
+    goDetail()
   }
 
   function renderAction(key) {
@@ -259,7 +274,7 @@ export function FeedItemActions({ item }) {
         <button
           key={key}
           type="button"
-          onClick={goDetail}
+          onClick={handleComment}
           onPointerDown={stopTouchBubble}
           onTouchStart={stopTouchBubble}
           className={FEED_ACTION_BTN_CLASS}
@@ -326,13 +341,20 @@ export function FeedItemActions({ item }) {
   return (
     <>
       <div
-        className={FEED_ACTION_RAIL_CLASS}
+        className={feedActionRailClass(visible)}
         data-testid="feed-action-rail"
         data-kind={item.kind}
         data-entity={item.entityId || item.id}
+        aria-hidden={visible ? undefined : true}
       >
         {railKeys.map(renderAction)}
       </div>
+      <FeedCommentsSheet
+        kind={item.kind}
+        entityId={item.entityId}
+        open={commentsOpen}
+        onClose={() => setCommentsOpen(false)}
+      />
       <FeedMoreSheet item={item} open={moreOpen} onClose={() => setMoreOpen(false)} />
     </>
   )

@@ -107,7 +107,7 @@ export function Button({
       ) : null}
 
       {!iconOnly && children ? (
-        <span className={`relative z-[1] ${loading ? 'opacity-70' : ''}`}>{children}</span>
+        <span className={`btn-label relative z-[1] ${loading ? 'opacity-70' : ''}`}>{children}</span>
       ) : null}
 
       {!loading && IconRight ? (

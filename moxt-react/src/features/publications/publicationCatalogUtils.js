@@ -307,6 +307,23 @@ export function publicationArchiveCounts(
   }
 }
 
+/**
+ * S’il n’y a plus d’actifs mais des archives, on affiche les archives.
+ * L’inverse : onglet archives vide → revenir aux actives.
+ */
+export function preferredPublicationArchiveTab(
+  publications,
+  requestedTab = 'active',
+  { includePending = false } = {},
+) {
+  const counts = publicationArchiveCounts(publications, { includePending, typeTab: 'all' })
+  if (requestedTab === 'archived' && counts.archived === 0) return 'active'
+  if (requestedTab !== 'archived' && counts.active === 0 && counts.archived > 0) {
+    return 'archived'
+  }
+  return requestedTab === 'archived' ? 'archived' : 'active'
+}
+
 export function publicationTotalViews(publications) {
   const listingViews = publications.listings.reduce((sum, item) => sum + (Number(item.views) || 0), 0)
   const videoViews = (publications.videos || []).reduce(

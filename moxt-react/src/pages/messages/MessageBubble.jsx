@@ -33,7 +33,43 @@ import {
 } from '../../features/communications/messageTranslate'
 import { EntityVerifiedName } from '../../components/ui/EntityVerifiedName'
 import { ReportDialog } from '../../components/ui/ReportDialog'
+import { useMediaQuery } from '../../hooks/useMediaQuery'
 import { vibrateMenuOpen } from '../../utils/deviceVibrate'
+
+const MESSAGE_ACTION_SHEET_MQ = '(max-width: 1023px)'
+
+function MessageActionMenuSheet({ menuRef, onClose, enterAnim, actionsLabel, closeLabel, children }) {
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [])
+
+  function stopBubble(event) {
+    event.stopPropagation()
+  }
+
+  return (
+    <div className="message-action-menu-sheet" role="dialog" aria-modal="true" aria-label={actionsLabel}>
+      <button
+        type="button"
+        className="message-action-menu-sheet-backdrop"
+        aria-label={closeLabel}
+        onClick={onClose}
+      />
+      <div
+        ref={menuRef}
+        className={`message-action-menu-sheet-panel ${enterAnim ? 'drawer-enter' : ''}`}
+        onClick={stopBubble}
+        onPointerDown={stopBubble}
+      >
+        <div className="message-action-menu-sheet-handle" aria-hidden="true" />
+        {children}
+      </div>
+    </div>
+  )
+}
 
 function bubbleClassName(mine, groupedWithPrevious, groupedWithNext, failed) {
   const classes = ['message-bubble', mine ? 'message-bubble--sent' : 'message-bubble--received']
@@ -147,6 +183,55 @@ function MessageEmojiActionRow({ emojis, onPick, t }) {
   )
 }
 
+function MessageActionSheetList({ children }) {
+  return (
+    <div className="message-action-menu-list" role="menu">
+      {children}
+    </div>
+  )
+}
+
+function MessageActionSheetItem({
+  icon: Icon,
+  label,
+  onClick,
+  to,
+  danger = false,
+  className = '',
+  ...props
+}) {
+  const itemClass = [
+    'message-action-menu-sheet-item',
+    danger ? 'message-action-menu-sheet-item--danger' : '',
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ')
+
+  const content = (
+    <>
+      <span className="message-action-menu-sheet-item-icon" aria-hidden="true">
+        <Icon />
+      </span>
+      <span className="message-action-menu-sheet-item-label">{label}</span>
+    </>
+  )
+
+  if (to) {
+    return (
+      <Link to={to} className={itemClass} onClick={onClick} {...props}>
+        {content}
+      </Link>
+    )
+  }
+
+  return (
+    <button type="button" className={itemClass} onClick={onClick} {...props}>
+      {content}
+    </button>
+  )
+}
+
 function MessageReadStatus({ pending, pop = false, status }) {
   const { t } = useLanguage()
   if (pending) {
@@ -228,6 +313,7 @@ export function MessageBubble({
   user,
 }) {
   const { t } = useLanguage()
+  const mobileSheet = useMediaQuery(MESSAGE_ACTION_SHEET_MQ)
   const stackRef = useRef(null)
   const bubbleRef = useRef(null)
   const actionsTriggerRef = useRef(null)
@@ -269,6 +355,7 @@ export function MessageBubble({
     showTranslateIcon && hasCaption && Boolean(onTranslate) && translateLanguageOptions.length > 0
 
   // Menu en portal (fixed) : deux barres (emojis + actions), borné au fil de messagerie.
+  // Sur petit écran : bottom sheet ancré en bas.
   useLayoutEffect(() => {
     if (!showActions) {
       const clearId = requestAnimationFrame(() => {
@@ -276,6 +363,10 @@ export function MessageBubble({
         setMenuPlacement('below')
       })
       return () => cancelAnimationFrame(clearId)
+    }
+    if (mobileSheet) {
+      const frame = requestAnimationFrame(() => setMenuCoords({ sheet: true }))
+      return () => cancelAnimationFrame(frame)
     }
     const anchor = bubbleRef.current || actionsTriggerRef.current
     if (!anchor) return
@@ -299,7 +390,21 @@ export function MessageBubble({
       window.removeEventListener('resize', update)
       window.removeEventListener('scroll', update, true)
     }
-  }, [showActions, mine, failed, menuView, canUseTranslateIcon, onReact])
+  }, [showActions, mine, failed, menuView, canUseTranslateIcon, onReact, mobileSheet])
+
+  useEffect(() => {
+    if (!showActions) return undefined
+    if (menuEnterStartedRef.current) return undefined
+    if (!mobileSheet && !menuCoords) return undefined
+
+    menuEnterStartedRef.current = true
+    const enterTimer = window.setTimeout(() => setMenuEnterAnim(true), 0)
+    const exitTimer = window.setTimeout(() => setMenuEnterAnim(false), mobileSheet ? 220 : 340)
+    return () => {
+      window.clearTimeout(enterTimer)
+      window.clearTimeout(exitTimer)
+    }
+  }, [showActions, menuCoords, mobileSheet])
 
   useEffect(() => {
     if (!showActions) {
@@ -308,16 +413,6 @@ export function MessageBubble({
     }
     void vibrateMenuOpen()
   }, [showActions])
-
-  useEffect(() => {
-    if (!showActions) return undefined
-    if (!menuCoords || menuEnterStartedRef.current) return undefined
-
-    menuEnterStartedRef.current = true
-    setMenuEnterAnim(true)
-    const timer = window.setTimeout(() => setMenuEnterAnim(false), 340)
-    return () => window.clearTimeout(timer)
-  }, [showActions, menuCoords])
 
   useEffect(() => {
     if (!openActions) {
@@ -466,6 +561,307 @@ export function MessageBubble({
   } message-action-menu-stack message-action-menu-stack--portal ${
     mine ? 'message-action-menu-stack--sent' : ''
   } ${menuPlacement === 'above' ? 'message-action-menu-stack--above' : ''}`
+
+  function stopMenuBubble(event) {
+    event.stopPropagation()
+  }
+
+  function renderActionMenuContent() {
+    if (failed) {
+      if (mobileSheet) {
+        return (
+          <MessageActionSheetList>
+            <MessageActionSheetItem
+              icon={FiRefreshCw}
+              label={t('messages.retry')}
+              onClick={(event) => runAction(event, () => onRetry?.(message))}
+            />
+            {mine ? (
+              <MessageActionSheetItem
+                icon={FiTrash2}
+                label={t('messages.delete')}
+                danger
+                onClick={(event) => runAction(event, () => onDelete(message.id))}
+              />
+            ) : null}
+          </MessageActionSheetList>
+        )
+      }
+
+      return (
+        <div className="message-action-menu-row message-action-menu-row--actions" role="menu">
+          <button
+            type="button"
+            onClick={(event) => runAction(event, () => onRetry?.(message))}
+            aria-label={t('messages.retry')}
+            className="message-action-menu-btn"
+          >
+            <FiRefreshCw />
+          </button>
+          {mine ? (
+            <button
+              type="button"
+              onClick={(event) => runAction(event, () => onDelete(message.id))}
+              aria-label={t('messages.delete')}
+              className="message-action-menu-btn message-action-menu-btn--danger"
+            >
+              <FiTrash2 />
+            </button>
+          ) : null}
+        </div>
+      )
+    }
+
+    if (menuView === 'translate' && canUseTranslateIcon) {
+      return (
+        <div className="message-action-menu-row message-action-menu-row--translate" role="menu">
+          <div className="message-action-menu-header">
+            <button
+              type="button"
+              className="message-action-menu-btn"
+              aria-label={messagesText(t, 'messages.translateBack')}
+              onClick={(event) => {
+                event.stopPropagation()
+                setMenuView('actions')
+              }}
+            >
+              <FiChevronLeft aria-hidden="true" />
+            </button>
+            <span className="message-action-menu-title">
+              {translateHintLanguage
+                ? messagesText(t, 'messages.translateFromHint', { language: translateHintLanguage })
+                : messagesText(t, 'messages.translateInto')}
+            </span>
+          </div>
+          {translateLanguageOptions.map((code) => (
+            <button
+              key={code}
+              type="button"
+              className="message-action-menu-lang"
+              onClick={(event) => {
+                event.stopPropagation()
+                onTranslate?.(message, code)
+                onCloseActions?.()
+              }}
+            >
+              <span aria-hidden="true">{LANGUAGE_LABELS[code]?.flag || ''}</span>
+              <span>
+                {code === 'ru'
+                  ? messagesText(t, 'messages.translateRussianFallback')
+                  : languageLabel(code)}
+              </span>
+            </button>
+          ))}
+        </div>
+      )
+    }
+
+    return (
+      <>
+        {onReact ? (
+          <MessageEmojiActionRow
+            emojis={QUICK_REACTIONS}
+            t={t}
+            onPick={(event, emoji) => {
+              event.stopPropagation()
+              onReact(message.id, emoji)
+              onCloseActions?.()
+            }}
+          />
+        ) : null}
+        {mobileSheet && onReact ? (
+          <div className="message-action-menu-sheet-divider" role="separator" aria-hidden="true" />
+        ) : null}
+        {mobileSheet ? (
+          <MessageActionSheetList>
+            <MessageActionSheetItem
+              icon={FiCornerUpLeft}
+              label={t('messages.reply')}
+              onClick={(event) => runAction(event, () => onReply(message.id))}
+            />
+            <MessageActionSheetItem
+              icon={FiCopy}
+              label={t('messages.copy')}
+              onClick={(event) => runAction(event, () => onCopy?.(message, displayText))}
+            />
+            {canUseTranslateIcon ? (
+              <MessageActionSheetItem
+                icon={FiGlobe}
+                label={t('messages.translate')}
+                className={
+                  translating
+                    ? 'message-action-menu-sheet-item--translate-loading'
+                    : translateIconConnected
+                      ? 'message-action-menu-sheet-item--translate-connected'
+                      : ''
+                }
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setMenuView('translate')
+                }}
+              />
+            ) : null}
+            {!mine ? (
+              <MessageActionSheetItem
+                icon={FiUser}
+                label={messagesText(t, 'messages.viewProfile')}
+                to={`/users/${message.senderId}/publications`}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onCloseActions?.()
+                }}
+              />
+            ) : null}
+            {!mine && onReport ? (
+              <MessageActionSheetItem
+                icon={FiFlag}
+                label={t('messages.report')}
+                danger
+                onClick={(event) => {
+                  event.preventDefault()
+                  event.stopPropagation()
+                  onCloseActions?.()
+                  setReportOpen(true)
+                }}
+              />
+            ) : null}
+            {mine ? (
+              <MessageActionSheetItem
+                icon={FiEdit2}
+                label={t('messages.edit')}
+                onClick={(event) => runAction(event, onEdit)}
+              />
+            ) : null}
+            {mine ? (
+              <MessageActionSheetItem
+                icon={FiTrash2}
+                label={t('messages.delete')}
+                danger
+                onClick={(event) => runAction(event, () => onDelete(message.id))}
+              />
+            ) : null}
+          </MessageActionSheetList>
+        ) : (
+          <div className="message-action-menu-row message-action-menu-row--actions" role="menu">
+            <button
+              type="button"
+              onClick={(event) => runAction(event, () => onReply(message.id))}
+              aria-label={t('messages.reply')}
+              className="message-action-menu-btn"
+            >
+              <FiCornerUpLeft />
+            </button>
+            <button
+              type="button"
+              onClick={(event) => runAction(event, () => onCopy?.(message, displayText))}
+              aria-label={t('messages.copy')}
+              className="message-action-menu-btn"
+            >
+              <FiCopy />
+            </button>
+            {canUseTranslateIcon ? (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setMenuView('translate')
+                }}
+                aria-label={t('messages.translate')}
+                title={t('messages.translate')}
+                className={`message-action-menu-btn message-action-menu-btn--translate ${
+                  translating ? 'message-action-menu-btn--translate-loading' : ''
+                } ${translateIconConnected ? 'message-action-menu-btn--translate-connected' : ''}`}
+              >
+                <FiGlobe aria-hidden="true" />
+              </button>
+            ) : null}
+            {!mine ? (
+              <Link
+                to={`/users/${message.senderId}/publications`}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onCloseActions?.()
+                }}
+                aria-label={messagesText(t, 'messages.viewProfile')}
+                className="message-action-menu-btn"
+              >
+                <FiUser />
+              </Link>
+            ) : null}
+            {!mine && onReport ? (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault()
+                  event.stopPropagation()
+                  onCloseActions?.()
+                  setReportOpen(true)
+                }}
+                aria-label={t('messages.report')}
+                className="message-action-menu-btn message-action-menu-btn--danger"
+              >
+                <FiFlag aria-hidden="true" />
+              </button>
+            ) : null}
+            {mine ? (
+              <button
+                type="button"
+                onClick={(event) => runAction(event, onEdit)}
+                aria-label={t('messages.edit')}
+                className="message-action-menu-btn"
+              >
+                <FiEdit2 />
+              </button>
+            ) : null}
+            {mine ? (
+              <button
+                type="button"
+                onClick={(event) => runAction(event, () => onDelete(message.id))}
+                aria-label={t('messages.delete')}
+                className="message-action-menu-btn message-action-menu-btn--danger"
+              >
+                <FiTrash2 />
+              </button>
+            ) : null}
+          </div>
+        )}
+      </>
+    )
+  }
+
+  function renderActionMenuPortal() {
+    const content = renderActionMenuContent()
+
+    if (mobileSheet) {
+      return (
+        <MessageActionMenuSheet
+          menuRef={menuRef}
+          onClose={() => onCloseActions?.()}
+          enterAnim={menuEnterAnim}
+          actionsLabel={messagesText(t, 'messages.messageActions')}
+          closeLabel={t('common.close')}
+        >
+          <div className="message-action-menu-stack message-action-menu-stack--sheet">{content}</div>
+        </MessageActionMenuSheet>
+      )
+    }
+
+    return (
+      <div
+        ref={menuRef}
+        className={menuStackClassName}
+        style={{
+          top: menuCoords?.top ?? -9999,
+          left: menuCoords?.left ?? 0,
+          visibility: menuCoords ? 'visible' : 'hidden',
+        }}
+        onClick={stopMenuBubble}
+        onPointerDown={stopMenuBubble}
+      >
+        {content}
+      </div>
+    )
+  }
 
   return (
     <div
@@ -640,203 +1036,7 @@ export function MessageBubble({
       ) : null}
 
       {showActions && typeof document !== 'undefined'
-        ? createPortal(
-            failed ? (
-              <div
-                ref={menuRef}
-                className={menuStackClassName}
-                style={{
-                  top: menuCoords?.top ?? -9999,
-                  left: menuCoords?.left ?? 0,
-                  visibility: menuCoords ? 'visible' : 'hidden',
-                }}
-                onClick={(event) => event.stopPropagation()}
-                onPointerDown={(event) => event.stopPropagation()}
-              >
-                <div className="message-action-menu-row message-action-menu-row--actions" role="menu">
-                  <button
-                    type="button"
-                    onClick={(event) => runAction(event, () => onRetry?.(message))}
-                    aria-label={t('messages.retry')}
-                    className="message-action-menu-btn"
-                  >
-                    <FiRefreshCw />
-                  </button>
-                  {mine ? (
-                    <button
-                      type="button"
-                      onClick={(event) => runAction(event, () => onDelete(message.id))}
-                      aria-label={t('messages.delete')}
-                      className="message-action-menu-btn message-action-menu-btn--danger"
-                    >
-                      <FiTrash2 />
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-            ) : menuView === 'translate' && canUseTranslateIcon ? (
-              <div
-                ref={menuRef}
-                className={menuStackClassName}
-                style={{
-                  top: menuCoords?.top ?? -9999,
-                  left: menuCoords?.left ?? 0,
-                  visibility: menuCoords ? 'visible' : 'hidden',
-                }}
-                onClick={(event) => event.stopPropagation()}
-                onPointerDown={(event) => event.stopPropagation()}
-              >
-                <div className="message-action-menu-row message-action-menu-row--translate" role="menu">
-                  <div className="message-action-menu-header">
-                    <button
-                      type="button"
-                      className="message-action-menu-btn"
-                      aria-label={messagesText(t, 'messages.translateBack')}
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        setMenuView('actions')
-                      }}
-                    >
-                      <FiChevronLeft aria-hidden="true" />
-                    </button>
-                    <span className="message-action-menu-title">
-                      {translateHintLanguage
-                        ? messagesText(t, 'messages.translateFromHint', { language: translateHintLanguage })
-                        : messagesText(t, 'messages.translateInto')}
-                    </span>
-                  </div>
-                  {translateLanguageOptions.map((code) => (
-                    <button
-                      key={code}
-                      type="button"
-                      className="message-action-menu-lang"
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        onTranslate?.(message, code)
-                        onCloseActions?.()
-                      }}
-                    >
-                      <span aria-hidden="true">{LANGUAGE_LABELS[code]?.flag || ''}</span>
-                      <span>
-                        {code === 'ru'
-                          ? messagesText(t, 'messages.translateRussianFallback')
-                          : languageLabel(code)}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div
-                ref={menuRef}
-                className={menuStackClassName}
-                style={{
-                  top: menuCoords?.top ?? -9999,
-                  left: menuCoords?.left ?? 0,
-                  visibility: menuCoords ? 'visible' : 'hidden',
-                }}
-                onClick={(event) => event.stopPropagation()}
-                onPointerDown={(event) => event.stopPropagation()}
-              >
-                {onReact ? (
-                  <MessageEmojiActionRow
-                    emojis={QUICK_REACTIONS}
-                    t={t}
-                    onPick={(event, emoji) => {
-                      event.stopPropagation()
-                      onReact(message.id, emoji)
-                      onCloseActions?.()
-                    }}
-                  />
-                ) : null}
-                <div className="message-action-menu-row message-action-menu-row--actions" role="menu">
-                  <button
-                    type="button"
-                    onClick={(event) => runAction(event, () => onReply(message.id))}
-                    aria-label={t('messages.reply')}
-                    className="message-action-menu-btn"
-                  >
-                    <FiCornerUpLeft />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(event) =>
-                      runAction(event, () => onCopy?.(message, displayText))
-                    }
-                    aria-label={t('messages.copy')}
-                    className="message-action-menu-btn"
-                  >
-                    <FiCopy />
-                  </button>
-                  {canUseTranslateIcon ? (
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        setMenuView('translate')
-                      }}
-                      aria-label={t('messages.translate')}
-                      title={t('messages.translate')}
-                      className={`message-action-menu-btn message-action-menu-btn--translate ${
-                        translating ? 'message-action-menu-btn--translate-loading' : ''
-                      } ${translateIconConnected ? 'message-action-menu-btn--translate-connected' : ''}`}
-                    >
-                      <FiGlobe aria-hidden="true" />
-                    </button>
-                  ) : null}
-                  {!mine ? (
-                    <Link
-                      to={`/users/${message.senderId}/publications`}
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        onCloseActions?.()
-                      }}
-                      aria-label={messagesText(t, 'messages.viewProfile')}
-                      className="message-action-menu-btn"
-                    >
-                      <FiUser />
-                    </Link>
-                  ) : null}
-                  {!mine && onReport ? (
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.preventDefault()
-                        event.stopPropagation()
-                        onCloseActions?.()
-                        setReportOpen(true)
-                      }}
-                      aria-label={t('messages.report')}
-                      className="message-action-menu-btn message-action-menu-btn--danger"
-                    >
-                      <FiFlag aria-hidden="true" />
-                    </button>
-                  ) : null}
-                  {mine ? (
-                    <button
-                      type="button"
-                      onClick={(event) => runAction(event, onEdit)}
-                      aria-label={t('messages.edit')}
-                      className="message-action-menu-btn"
-                    >
-                      <FiEdit2 />
-                    </button>
-                  ) : null}
-                  {mine ? (
-                    <button
-                      type="button"
-                      onClick={(event) => runAction(event, () => onDelete(message.id))}
-                      aria-label={t('messages.delete')}
-                      className="message-action-menu-btn message-action-menu-btn--danger"
-                    >
-                      <FiTrash2 />
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-            ),
-            document.body,
-          )
+        ? createPortal(renderActionMenuPortal(), document.body)
         : null}
 
       <ReportDialog

@@ -10,6 +10,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { navigationGroups, preloadRoute } from '../../config/navigation'
+import { FastNavLink } from '../routing/FastNavLink'
 import { resolveNavLabel } from '../../config/navLabel'
 import {
   moreServicesExcludedPaths,
@@ -430,17 +431,15 @@ function SidebarLink({
   const Icon = item.icon
   const label = resolveLabel(item)
   return (
-    <NavLink
+    <FastNavLink
       to={item.path}
       end={item.path === '/dashboard'}
       data-tour={item.id ? `nav-${item.id}` : undefined}
       onClick={onClick}
       onMouseEnter={() => {
-        preloadRoute(item.path)
         onRailHover?.()
       }}
       onFocus={() => {
-        preloadRoute(item.path)
         onRailHover?.()
       }}
       className={({ isActive }) =>
@@ -499,6 +498,6 @@ function SidebarLink({
           </span>
         </span>
       )}
-    </NavLink>
+    </FastNavLink>
   )
 }

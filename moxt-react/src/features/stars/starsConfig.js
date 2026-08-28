@@ -9,7 +9,7 @@ export const DEFAULT_QUOTA_CONFIG = {
   enabled: true,
   rolloutPercent: 100,
   pilotUserIds: [],
-  monthlyBonusPool: { personal: 30, business: 100 },
+  monthlyBonusPool: { personal: 60, business: 150 },
   publish: {
     marketplace: 20,
     jobs: 20,

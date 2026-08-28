@@ -75,7 +75,7 @@ function PublicationCardShell({
       <Link
         to={path}
         onClick={handleGuestClick}
-        className={`relative block h-[290px] w-full overflow-hidden bg-gradient-to-br xl:h-[333px] ${tone} ${
+        className={`relative block h-[145px] w-full overflow-hidden bg-gradient-to-br xl:h-[167px] ${tone} ${
           archived ? 'opacity-75 saturate-[0.85]' : ''
         }`}
       >
@@ -111,9 +111,15 @@ function PublicationCardShell({
         </div>
       </Link>
       {actions ? (
-        <div className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,7.75rem),1fr))] gap-1.5 bg-[var(--app-surface)] p-2.5 [&>a]:min-w-0 [&>button]:min-w-0 [&_button]:min-w-0 [&_button]:w-full [&_button]:max-w-full [&_button]:flex-wrap [&_button]:whitespace-normal">
+        <div className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,7.75rem),1fr))] gap-1.5 bg-[var(--app-surface)] p-2.5 max-sm:flex max-sm:flex-wrap max-sm:justify-start [&>a]:min-w-0 [&>button]:min-w-0 [&_button]:min-w-0 [&_button]:w-full [&_button]:max-w-full [&_button]:flex-wrap [&_button]:whitespace-normal max-sm:[&>a]:inline-flex max-sm:[&>a]:shrink-0 max-sm:[&_button]:!size-9 max-sm:[&_button]:!min-h-9 max-sm:[&_button]:!w-9 max-sm:[&_button]:!max-w-none max-sm:[&_button]:!shrink-0 max-sm:[&_button]:!flex-none max-sm:[&_button]:!p-0 max-sm:[&_button]:!flex-nowrap max-sm:[&_.btn-label]:sr-only">
           <Link to={path} onClick={handleGuestClick}>
-            <Button variant="secondary" icon={FiExternalLink} size="sm" className="w-full">
+            <Button
+              variant="secondary"
+              icon={FiExternalLink}
+              size="sm"
+              className="w-full max-sm:w-auto"
+              aria-label={phase3Text(t, 'publications.cards.open')}
+            >
               {phase3Text(t, 'publications.cards.open')}
             </Button>
           </Link>

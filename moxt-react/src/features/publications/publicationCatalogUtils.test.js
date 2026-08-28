@@ -5,6 +5,7 @@ import {
   filterPublicationsByScope,
   filterPublicationsByTabs,
   publicationArchiveCounts,
+  preferredPublicationArchiveTab,
   PUBLICATION_TYPE_TABS,
   visiblePublicationTypeTabs,
 } from './publicationCatalogUtils'
@@ -150,5 +151,31 @@ describe('publicationCatalogUtils', () => {
       other: 1,
     })
     expect(visible.map((tab) => tab.id)).toEqual(['listing', 'event', 'other'])
+  })
+
+  it('affiche les archives quand il n’y a plus d’éléments actifs', () => {
+    const onlyArchived = {
+      listings: [{ id: 'L1', status: 'archived' }],
+      parcels: [],
+      jobs: [],
+      events: [],
+      videos: [],
+      posts: [],
+      others: [],
+    }
+    expect(preferredPublicationArchiveTab(onlyArchived, 'active')).toBe('archived')
+    expect(preferredPublicationArchiveTab(onlyArchived, 'archived')).toBe('archived')
+
+    const onlyActive = {
+      listings: [{ id: 'L1', status: 'active' }],
+      parcels: [],
+      jobs: [],
+      events: [],
+      videos: [],
+      posts: [],
+      others: [],
+    }
+    expect(preferredPublicationArchiveTab(onlyActive, 'active')).toBe('active')
+    expect(preferredPublicationArchiveTab(onlyActive, 'archived')).toBe('active')
   })
 })

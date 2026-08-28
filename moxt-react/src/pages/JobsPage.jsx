@@ -54,7 +54,7 @@ export function JobsPage() {
   const filteredJobs = useMemo(
     () =>
       jobs.filter((job) => {
-        if (showMine && (job.ownerId !== user.id || job.businessId)) return false
+        if (showMine && (job.ownerId !== user?.id || job.businessId)) return false
         const sectorLabel = jobSectorLabel(t, job.sector)
         const haystack =
           `${job.title} ${job.publisherName} ${job.sector} ${sectorLabel} ${job.location} ${job.description}`.toLowerCase()
@@ -70,7 +70,7 @@ export function JobsPage() {
             sectorLabel.toLowerCase().includes(sectorFilter))
         )
       }),
-    [filters, jobs, showMine, t, user.id],
+    [filters, jobs, showMine, t, user?.id],
   )
 
   const activeJobs = useMemo(
@@ -78,10 +78,10 @@ export function JobsPage() {
       sortBySubscriptionPriority(
         filteredJobs.filter((job) => job.status === 'active'),
         subscriptions,
-        user.id,
+        user?.id,
         'job',
       ),
-    [filteredJobs, subscriptions, user.id],
+    [filteredJobs, subscriptions, user?.id],
   )
 
   const archivedJobs = useMemo(

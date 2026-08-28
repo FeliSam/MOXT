@@ -548,18 +548,17 @@ export function VideoFeedSlide({ item, index, active }) {
       }
     >
       <FeedVideoPlayer video={video} active={active} onActivate={handleActivate} />
-      {active ? (
-        <VideoFeedActions
-          key={video.id}
-          video={video}
-          item={item}
-          liked={liked}
-          onLike={handleLike}
-          onComment={() => setCommentsOpen(true)}
-          onShare={share}
-          onMore={handleMore}
-        />
-      ) : null}
+      <VideoFeedActions
+        key={video.id}
+        video={video}
+        item={item}
+        liked={liked}
+        onLike={handleLike}
+        onComment={() => setCommentsOpen(true)}
+        onShare={share}
+        onMore={handleMore}
+        visible={active}
+      />
       <VideoCommentsSheet
         video={video}
         open={commentsOpen}

@@ -685,6 +685,26 @@ const handlers = {
   // ── Compteurs de vues ─────────────────────────────────────────────────────
   // Incrément atomique côté serveur (RPC) : un simple update lu-puis-écrit
   // perdrait des vues concurrentes. Le RPC ignore aussi les vues de l'auteur.
+  'marketplace/toggleListingLike': async (payload) => {
+    const { error } = await supabase.rpc('moxt_listing_toggle_like', {
+      p_listing_id: payload.listingId,
+    })
+    if (error) throw error
+  },
+  'marketplace/addListingComment': async (payload) => {
+    const { error } = await supabase.rpc('moxt_listing_add_comment', {
+      p_listing_id: payload.listingId,
+      p_comment: payload.comment,
+    })
+    if (error) throw error
+  },
+  'marketplace/deleteListingComment': async (payload) => {
+    const { error } = await supabase.rpc('moxt_listing_delete_comment', {
+      p_listing_id: payload.listingId,
+      p_comment_id: payload.commentId,
+    })
+    if (error) throw error
+  },
   'marketplace/incrementListingView': async (payload) => {
     await supabase.rpc('moxt_increment_view', {
       p_entity_type: 'listing',
@@ -1321,9 +1341,9 @@ const handlers = {
   // pour contourner le RLS et garantir le push même hors ligne.
   'communications/addNotification': async (payload, state) => {
     const currentUser = state.auth.user
-    if (!currentUser || payload.userId === currentUser.id || payload.type === 'message') return
+    if (!currentUser || !payload.userId || payload.type === 'message') return
     // SECURITY DEFINER RPC: peer inserts bypass "own notifications only" RLS.
-    // Soft-fail: une notif manquée ne doit jamais bloquer le flux métier / toast spam.
+    // Also persist self Stars/system alerts so they survive refresh and other devices.
     const { error } = await supabase.rpc('moxt_create_notification', {
       p_id: payload.id,
       p_user_id: payload.userId,
@@ -2286,6 +2306,20 @@ export const supabaseMiddleware = (store) => (next) => (action) => {
           store.dispatch({
             type: 'posts/restoreComment',
             payload: { postId: action.payload.postId, comment },
+          })
+        }
+      }
+      if (action.type === 'marketplace/deleteListingComment') {
+        const beforeListing = beforeState.marketplace?.items?.find(
+          (item) => item.id === action.payload?.listingId,
+        )
+        const listingComment = beforeListing?.comments?.find(
+          (item) => item.id === action.payload?.commentId,
+        )
+        if (listingComment) {
+          store.dispatch({
+            type: 'marketplace/restoreListingComment',
+            payload: { listingId: action.payload.listingId, comment: listingComment },
           })
         }
       }

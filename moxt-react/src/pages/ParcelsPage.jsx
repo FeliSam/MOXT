@@ -64,7 +64,7 @@ export function ParcelsPage() {
   const visibleParcels = useMemo(
     () => {
       const filtered = parcels.filter((parcel) => {
-        if (showMine && (parcel.ownerId !== user.id || parcel.businessId)) return false
+        if (showMine && (parcel.ownerId !== user?.id || parcel.businessId)) return false
         if (!showMine && isArchived(parcel)) return false
         const haystack =
           `${parcel.origin} ${parcel.destination} ${parcel.ownerName} ${parcel.conditions}`.toLowerCase()
@@ -91,7 +91,7 @@ export function ParcelsPage() {
         'parcel',
       )
     },
-    [activeCountryCode, filters, parcels, subscriptions, user?.id, userCountry, showMine, today, user.id],
+    [activeCountryCode, filters, parcels, subscriptions, user?.id, userCountry, showMine, today],
   )
 
   const totalAvailableKg = useMemo(() => {

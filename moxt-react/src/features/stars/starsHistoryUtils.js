@@ -99,6 +99,32 @@ export function historyEntryMeta(item, t, packages = []) {
     }
   }
 
+  if (isCredit && item.ref_type === 'referral') {
+    return {
+      isCredit: true,
+      amount,
+      headline: t('stars.historyReferral'),
+      detail: item?.reason || null,
+      poolGrant: false,
+      showCategoryBadge: false,
+      categoryKey: 'referral',
+      starType: 'paid',
+    }
+  }
+
+  if (isCredit && (item.ref_type === 'gift' || item.category === 'gift')) {
+    return {
+      isCredit: true,
+      amount,
+      headline: t('stars.historyGiftReceived'),
+      detail: item?.reason || null,
+      poolGrant: false,
+      showCategoryBadge: false,
+      categoryKey: 'gift',
+      starType: 'paid',
+    }
+  }
+
   if (isPoolBonusCredit(item)) {
     return {
       isCredit: true,
@@ -116,7 +142,9 @@ export function historyEntryMeta(item, t, packages = []) {
     const category = String(item?.category || item?.ref_type || '')
     let headline = t('stars.historySpendGeneric')
 
-    if (item?.ref_type === 'boost' || category === 'boost') {
+    if (item?.ref_type === 'gift' || category === 'gift') {
+      headline = t('stars.historyGiftSent')
+    } else if (item?.ref_type === 'boost' || category === 'boost') {
       headline = t('stars.historySpendBoost')
     } else if (category === 'status') {
       headline = t('stars.historySpendStatus')

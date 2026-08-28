@@ -34,6 +34,20 @@ describe('starsEconomy', () => {
     expect(quote.insufficient).toBe(false)
   })
 
+  it('complète avec le pool bonus lié puis les Paid', () => {
+    const quote = quoteStarsSpend({
+      bonusAvailable: 5,
+      linkedBonusAvailable: 10,
+      paidAvailable: 25,
+      category: 'video',
+      formulaKey: 'standard',
+    })
+    expect(quote.bonusPrimary).toBe(5)
+    expect(quote.bonusSecondary).toBe(10)
+    expect(quote.bonus).toBe(15)
+    expect(quote.paid).toBe(10)
+  })
+
   it('complète avec des Paid si le pool bonus est insuffisant', () => {
     const quote = quoteStarsSpend({
       bonusAvailable: 5,
@@ -82,8 +96,8 @@ describe('starsEconomy', () => {
   })
 
   it('lit le pool bonus mensuel depuis la config', () => {
-    expect(DEFAULT_QUOTA_CONFIG.monthlyBonusPool.personal).toBe(30)
-    expect(DEFAULT_QUOTA_CONFIG.monthlyBonusPool.business).toBe(100)
+    expect(DEFAULT_QUOTA_CONFIG.monthlyBonusPool.personal).toBe(60)
+    expect(DEFAULT_QUOTA_CONFIG.monthlyBonusPool.business).toBe(150)
     expect(DEFAULT_QUOTA_CONFIG.enabled).toBe(true)
     expect(DEFAULT_QUOTA_CONFIG.rolloutPercent).toBe(100)
   })

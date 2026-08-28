@@ -85,9 +85,9 @@ export function P2POrderPage() {
   const myReview = useSelector((state) =>
     state.reviews.items.find(
       (item) =>
-        item.authorId === user.id &&
+        item.authorId === user?.id &&
         item.targetType === REVIEW_TARGET_TYPES.USER_PROFILE &&
-        item.targetId === (order?.buyerId === user.id ? order?.sellerId : order?.buyerId),
+        item.targetId === (order?.buyerId === user?.id ? order?.sellerId : order?.buyerId),
     ),
   )
   const dispute = useSelector((state) =>
@@ -110,9 +110,9 @@ export function P2POrderPage() {
     ORDER_STATUS_KEYS[status] ? t(ORDER_STATUS_KEYS[status].labelKey) : status
 
   const isStaff = ['admin', 'superadmin', 'moderator'].includes(user?.role)
-  const isParty = order && [order.buyerId, order.sellerId].includes(user.id)
-  const isBuyer = Boolean(order && user.id === order.buyerId)
-  const isSeller = Boolean(order && user.id === order.sellerId)
+  const isParty = order && user?.id && [order.buyerId, order.sellerId].includes(user.id)
+  const isBuyer = Boolean(order && user?.id === order.buyerId)
+  const isSeller = Boolean(order && user?.id === order.sellerId)
   const receivePhone = order?.receivePhone || linkedOffer?.receivePhone || ''
   const receiveName =
     order?.receiveName ||

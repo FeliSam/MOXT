@@ -7,13 +7,14 @@ import { isActiveListing } from '../marketplace/listingCatalogUtils.js'
 import {
   isActiveEvent,
   isActiveJob,
+  isActiveP2POffer,
   isActiveParcel,
   isActivePost,
   isActiveVideo,
 } from '../publications/publicationCatalogUtils.js'
 import { videoFeedPath } from '../videos/videoUtils.js'
 
-export const FEED_KINDS = ['video', 'listing', 'parcel', 'job', 'event', 'post']
+export const FEED_KINDS = ['video', 'listing', 'parcel', 'job', 'event', 'post', 'p2p']
 
 export const FEED_TYPE_FILTERS = [
   { id: 'all', labelKey: 'feed.filters.all' },
@@ -23,6 +24,7 @@ export const FEED_TYPE_FILTERS = [
   { id: 'job', labelKey: 'feed.filters.job' },
   { id: 'event', labelKey: 'feed.filters.event' },
   { id: 'post', labelKey: 'feed.filters.post' },
+  { id: 'p2p', labelKey: 'feed.filters.p2p' },
 ]
 
 export function feedItemKey(kind, entityId) {
@@ -55,6 +57,7 @@ const FEED_DESKTOP_FALLBACK_BY_KIND = {
   job: '/jobs',
   event: '/events',
   post: '/news',
+  p2p: '/p2p',
 }
 
 /** Cible de redirection quand `/feed` est ouvert sur grand écran. */
@@ -106,8 +109,10 @@ export function linkedPostToFeedItemId(post) {
           ? 'parcel'
           : sourceType === 'job'
             ? 'job'
-            : sourceType === 'event'
-              ? 'event'
+          : sourceType === 'event'
+            ? 'event'
+            : sourceType === 'p2p'
+              ? 'p2p'
               : null
   if (!kind || !FEED_KINDS.includes(kind)) return null
   return feedItemKey(kind, post.sourceId)
@@ -181,6 +186,7 @@ const FEED_ENTITY_COLLECTIONS = {
   parcel: (state) => state.parcels?.items,
   job: (state) => state.jobs?.items,
   event: (state) => state.events?.items,
+  p2p: (state) => state.p2p?.offers,
 }
 
 export function resolveFeedEntity(state, kind, entityId) {
@@ -197,7 +203,7 @@ export function entityOwnSocial(kind, entity) {
     const fromFavorites = Array.isArray(entity.favorites) ? entity.favorites : []
     const fromLikes = Array.isArray(entity.likes) ? entity.likes : []
     return {
-      likes: [...fromFavorites, ...fromLikes],
+      likes: [...new Set([...fromFavorites, ...fromLikes].map(String).filter(Boolean))],
       comments: Array.isArray(entity.comments) ? entity.comments : [],
     }
   }
@@ -449,8 +455,9 @@ export function normalizeJobFeedItem(job, state = {}) {
     feedHref: feedPath({ item: feedItemKey('job', job.id) }),
     stats: {
       views: Number(job.views) || 0,
-      city: job.city,
+      city: job.city || job.location || '',
       contractType: job.contractType,
+      salary: job.salary || '',
       likes: social.likes,
       comments: social.comments,
     },
@@ -483,11 +490,43 @@ export function normalizeEventFeedItem(event, state = {}) {
     stats: {
       views: Number(event.views) || 0,
       city: event.city,
+      venue: event.venue || '',
       startAt: event.startAt,
       likes: social.likes,
       comments: social.comments,
     },
     source: event,
+  }
+}
+
+export function normalizeP2pFeedItem(offer, state = {}) {
+  if (!offer?.id || !isActiveP2POffer(offer)) return null
+  const business = resolveBusiness(state, offer.businessId)
+  const publisher = offer.businessId
+    ? publisherFromBusiness(business, offer.businessName || offer.ownerName || '')
+    : publisherFromUser(offer.ownerId, offer.ownerName || '', offer.ownerAvatarUrl || '')
+  const pair = [offer.fromCurrency, offer.toCurrency].filter(Boolean).join(' → ')
+  return {
+    id: feedItemKey('p2p', offer.id),
+    kind: 'p2p',
+    entityId: offer.id,
+    createdAt: offer.createdAt || '',
+    publisher,
+    media: { images: [], videoUrl: '', poster: '' },
+    title: pair || 'P2P',
+    caption: offer.notes || offer.description || '',
+    href: `/p2p/${offer.id}`,
+    feedHref: feedPath({ item: feedItemKey('p2p', offer.id) }),
+    stats: {
+      views: Number(offer.views) || 0,
+      amount: Number(offer.amount) || 0,
+      rate: Number(offer.rate) || 0,
+      fromCurrency: offer.fromCurrency || '',
+      toCurrency: offer.toCurrency || '',
+      likes: 0,
+      comments: 0,
+    },
+    source: offer,
   }
 }
 
@@ -540,6 +579,7 @@ export function buildUnifiedFeedItems(state, { typeFilter = 'all', boosts = null
   if (want('job')) pushAll(state.jobs?.items || [], normalizeJobFeedItem)
   if (want('event')) pushAll(state.events?.items || [], normalizeEventFeedItem)
   if (want('post')) pushAll(state.posts?.items || [], normalizePostFeedItem)
+  if (want('p2p')) pushAll(state.p2p?.offers || [], normalizeP2pFeedItem)
 
   if (boosts === null) {
     const ctx = rankCtx || buildFeedRankContext(state, user)
@@ -560,7 +600,7 @@ export function pickInitialFeedIndex(items, itemParam, state = {}) {
 }
 
 /** Signature stable (ids + vedettes) — ignore le re-tri organique intra-session. */
-export function feedOrderSignature(items = []) {
+export function feedOrderSignature(items = [], salt = '') {
   const ids = items
     .map((item) => item.id)
     .sort()
@@ -570,7 +610,7 @@ export function feedOrderSignature(items = []) {
     .map((item) => item.id)
     .sort()
     .join('|')
-  return `${ids}::${featured}`
+  return `${ids}::${featured}::${salt}`
 }
 
 /**

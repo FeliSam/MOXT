@@ -220,10 +220,11 @@ export function DiscoveryFeedSlide({ item, index, active = true }) {
           </div>
         </div>
 
-        {active && actionItem ? (
+        {actionItem ? (
           <FeedItemActions
             key={`${actionItem.kind}:${actionItem.entityId}`}
             item={actionItem}
+            visible={active}
           />
         ) : null}
 
